@@ -11,33 +11,48 @@ import java.util.logging.Logger;
  */
 <span class="fc" id="L12">public class SubsetSamplingVoidFinder extends AbstractVoidFinder {</span>
         
-<span class="fc" id="L14">    protected int sortedIdxLo = -1;</span>
+    /**
+     *
+     */
+<span class="fc" id="L17">    protected int sortedIdxLo = -1;</span>
     
-<span class="fc" id="L16">    protected int sortedIdxHi = -1;</span>
+    /**
+     *
+     */
+<span class="fc" id="L22">    protected int sortedIdxHi = -1;</span>
     
+    /**
+     *
+     */
     public void constructLogger() {
-<span class="fc" id="L19">        this.log = Logger.getLogger(this.getClass().getName());</span>
-<span class="fc" id="L20">    }   </span>
-    
+<span class="fc" id="L28">        this.log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L29">    }</span>
+
+    /**
+     *
+     */
     @Override
     protected void findVoidsImpl() {
 
-<span class="fc" id="L25">        findVoidsByPairBounds();</span>
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L37">        findVoidsByPairBounds();</span>
+<span class="fc" id="L38">    }</span>
     
+    /**
+     *
+     */
     @Override
     protected void initializeVariables() {
         
-<span class="fc" id="L31">        super.initializeVariables();</span>
+<span class="fc" id="L46">        super.initializeVariables();</span>
         
         // if not set by user
-<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (sortedIdxLo == -1) {</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (sortedIdxLo == -1) {</span>
             
-<span class="fc" id="L36">            this.sortedIdxLo = 0;</span>
+<span class="fc" id="L51">            this.sortedIdxLo = 0;</span>
 
-<span class="fc" id="L38">            this.sortedIdxHi = indexer.getNXY();</span>
+<span class="fc" id="L53">            this.sortedIdxHi = indexer.getNXY();</span>
         }
-<span class="fc" id="L40">    }</span>
+<span class="fc" id="L55">    }</span>
     
     /**
      * set the low index of the range of indexes.  the indexes are w.r.t. the array
@@ -46,8 +61,8 @@ import java.util.logging.Logger;
      * @param idx
      */
     public void setSortedIdxLo(int idx) {
-<span class="fc" id="L49">        this.sortedIdxLo = idx;</span>
-<span class="fc" id="L50">    }</span>
+<span class="fc" id="L64">        this.sortedIdxLo = idx;</span>
+<span class="fc" id="L65">    }</span>
     
     /**
      * set the high index of the range of indexes.  the indexes are w.r.t. the array
@@ -56,21 +71,21 @@ import java.util.logging.Logger;
      * @param idx
      */
     public void setSortedIdxHi(int idx) {
-<span class="fc" id="L59">        this.sortedIdxHi = idx;</span>
-<span class="fc" id="L60">    }</span>
+<span class="fc" id="L74">        this.sortedIdxHi = idx;</span>
+<span class="fc" id="L75">    }</span>
 
     /**
      * find voids by excluding pairs of points that contain other points within their bounds
      */
     protected void findVoidsByPairBounds() {
        
-<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (int uSortedXIndex = sortedIdxLo; uSortedXIndex &lt; sortedIdxHi; uSortedXIndex++) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int uSortedXIndex = sortedIdxLo; uSortedXIndex &lt; sortedIdxHi; uSortedXIndex++) {</span>
             
-<span class="fc bfc" id="L69" title="All 2 branches covered.">            for (int vSortedXIndex = (uSortedXIndex + 1); vSortedXIndex &lt; sortedIdxHi; vSortedXIndex++) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            for (int vSortedXIndex = (uSortedXIndex + 1); vSortedXIndex &lt; sortedIdxHi; vSortedXIndex++) {</span>
                                 
-<span class="fc" id="L71">                processIndexedRegion(uSortedXIndex, vSortedXIndex);</span>
+<span class="fc" id="L86">                processIndexedRegion(uSortedXIndex, vSortedXIndex);</span>
             }
         }
-<span class="fc" id="L74">    }</span>
+<span class="fc" id="L89">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

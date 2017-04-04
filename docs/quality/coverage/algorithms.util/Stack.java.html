@@ -17,36 +17,48 @@ import algorithms.compGeometry.clustering.twopointcorrelation.SimpleLinkedListNo
  */
 <span class="fc" id="L18">public class Stack extends SimpleLinkedListNode {</span>
 
+    /**
+     *
+     * @return
+     */
     public SimpleLinkedListNode pop() {
         
-<span class="fc bfc" id="L22" title="All 2 branches covered.">        if (this.key == -1) {</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (this.key == -1) {</span>
             
-<span class="fc" id="L24">            return null;</span>
+<span class="fc" id="L28">            return null;</span>
         }
         
-<span class="fc" id="L27">        SimpleLinkedListNode node = new SimpleLinkedListNode(key);</span>
+<span class="fc" id="L31">        SimpleLinkedListNode node = new SimpleLinkedListNode(key);</span>
         
-<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (next == null) {</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (next == null) {</span>
             
-<span class="fc" id="L31">            this.key = -1;</span>
+<span class="fc" id="L35">            this.key = -1;</span>
             
         } else {
             
-<span class="fc" id="L35">            this.key = next.getKey();</span>
+<span class="fc" id="L39">            this.key = next.getKey();</span>
             
-<span class="fc" id="L37">            this.next = next.getNext();</span>
+<span class="fc" id="L41">            this.next = next.getNext();</span>
         }
         
-<span class="fc" id="L40">        return node;        </span>
+<span class="fc" id="L44">        return node;        </span>
     }
     
+    /**
+     *
+     * @return
+     */
     public int peek() {
-<span class="fc" id="L44">        return this.key;</span>
+<span class="fc" id="L52">        return this.key;</span>
     }
     
+    /**
+     *
+     * @return
+     */
     public boolean isEmpty() {
         
-<span class="fc bfc" id="L49" title="All 2 branches covered.">        return (this.key == -1);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        return (this.key == -1);</span>
     }
     
 }

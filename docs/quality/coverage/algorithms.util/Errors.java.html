@@ -36,34 +36,42 @@
 <span class="fc" id="L36">        return dy;</span>
     }
 
+    /**
+     *
+     * @param x
+     * @param y
+     * @param sigma
+     * @param mu
+     * @return
+     */
     public static float[] calculateYErrorsByGaussian(float[] x, float[] y, float sigma, float mu) {
 
         /*                  1
          * p(x) dx = -----------------  exp( -(x - mu)^2/(2sigma^2) ) dx
          *           sigma * sqrt(2pi)
          */
-<span class="nc" id="L45">        float[] erry = new float[y.length];</span>
+<span class="nc" id="L53">        float[] erry = new float[y.length];</span>
 
-<span class="nc" id="L47">        float a = (float) (1.0f/(sigma * Math.sqrt(2.0f*Math.PI)));</span>
+<span class="nc" id="L55">        float a = (float) (1.0f/(sigma * Math.sqrt(2.0f*Math.PI)));</span>
 
-<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (int i = 0; i &lt; erry.length; i++) {</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        for (int i = 0; i &lt; erry.length; i++) {</span>
 
-<span class="nc" id="L51">            float b = (x[i] - mu)/sigma;</span>
-<span class="nc" id="L52">            b *= b;</span>
+<span class="nc" id="L59">            float b = (x[i] - mu)/sigma;</span>
+<span class="nc" id="L60">            b *= b;</span>
 
-<span class="nc" id="L54">            b *= -1.0f/2.0f;</span>
+<span class="nc" id="L62">            b *= -1.0f/2.0f;</span>
 
             float dx;
-<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (i &lt; (erry.length - 1)) {</span>
-<span class="nc" id="L58">                dx = x[i + 1] - x[i];</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">            if (i &lt; (erry.length - 1)) {</span>
+<span class="nc" id="L66">                dx = x[i + 1] - x[i];</span>
             } else {
-<span class="nc" id="L60">                dx = x[i] - x[i-1];</span>
+<span class="nc" id="L68">                dx = x[i] - x[i-1];</span>
             }
 
-<span class="nc" id="L63">            erry[i] = (float) (a * y[i] * Math.exp(b) * dx);</span>
+<span class="nc" id="L71">            erry[i] = (float) (a * y[i] * Math.exp(b) * dx);</span>
         }
 
-<span class="nc" id="L66">        return erry;</span>
+<span class="nc" id="L74">        return erry;</span>
     }
 
 
@@ -84,27 +92,27 @@
      */
     public static float[] populateXErrorsByPointSeparation(float[] x) {
 
-<span class="fc" id="L87">        float[] errx = new float[x.length];</span>
+<span class="fc" id="L95">        float[] errx = new float[x.length];</span>
 
         // take minimum of nearest neighboring point instead of average of both
-<span class="fc" id="L90">        float xdiffSum = 0;</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 1; i &lt; (errx.length - 1); i++) {</span>
-<span class="fc" id="L92">            float diff0 = x[i] - x[i - 1];</span>
-<span class="fc" id="L93">            float diff1 = x[i+1] - x[i];</span>
+<span class="fc" id="L98">        float xdiffSum = 0;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 1; i &lt; (errx.length - 1); i++) {</span>
+<span class="fc" id="L100">            float diff0 = x[i] - x[i - 1];</span>
+<span class="fc" id="L101">            float diff1 = x[i+1] - x[i];</span>
 
-<span class="fc bfc" id="L95" title="All 2 branches covered.">            float diffMin = (diff0 &lt; diff1) ? diff0 : diff1;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            float diffMin = (diff0 &lt; diff1) ? diff0 : diff1;</span>
 
-<span class="fc" id="L97">            errx[i] = diffMin/2.f;</span>
+<span class="fc" id="L105">            errx[i] = diffMin/2.f;</span>
 
-<span class="fc" id="L99">            xdiffSum += errx[i];</span>
+<span class="fc" id="L107">            xdiffSum += errx[i];</span>
         }
 
         // handle the 2 endpoints:
-<span class="fc" id="L103">        xdiffSum /= (errx.length - 2);</span>
-<span class="fc" id="L104">        errx[0] = xdiffSum;</span>
-<span class="fc" id="L105">        errx[errx.length - 1] = xdiffSum;</span>
+<span class="fc" id="L111">        xdiffSum /= (errx.length - 2);</span>
+<span class="fc" id="L112">        errx[0] = xdiffSum;</span>
+<span class="fc" id="L113">        errx[errx.length - 1] = xdiffSum;</span>
 
-<span class="fc" id="L107">        return errx;</span>
+<span class="fc" id="L115">        return errx;</span>
     }
 
 }

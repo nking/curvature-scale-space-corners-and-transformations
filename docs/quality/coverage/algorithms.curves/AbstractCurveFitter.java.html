@@ -7,82 +7,146 @@ import java.util.Arrays;
 import algorithms.curves.GEVChiSquareMinimization.WEIGHTS_DURING_CHISQSUM;
 import algorithms.misc.MiscMath;
 
+/**
+ *
+ * @author nichole
+ */
 public abstract class AbstractCurveFitter implements ICurveFitter {
 
+    /**
+     *
+     */
     protected final float[] x;
+
+    /**
+     *
+     */
     protected final float[] y;
 
+    /**
+     *
+     */
     protected final float[] xe;
+
+    /**
+     *
+     */
     protected final float[] ye;
 
+    /**
+     *
+     */
     protected final float xmin; 
+
+    /**
+     *
+     */
     protected final float xmax;
+
+    /**
+     *
+     */
     protected final float ymin;
+
+    /**
+     *
+     */
     protected final float ymax;
 
-<span class="fc" id="L23">    protected float xScale = -1;</span>
+    /**
+     *
+     */
+<span class="fc" id="L59">    protected float xScale = -1;</span>
     
     // the factor by which the y axis can be multiplied to return it to the original values
-<span class="fc" id="L26">    protected float yScale = -1;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L66">        protected float yScale = -1;</span>
     
+    /**
+     *
+     */
     protected final GeneralizedExtremeValue gev;
     
-<span class="fc" id="L30">    protected boolean debug = false;</span>
+    /**
+     *
+     */
+<span class="fc" id="L76">    protected boolean debug = false;</span>
     
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xErrPoints
+     * @param yErrPoints
+     */
     public AbstractCurveFitter(float[] xPoints, float[] yPoints,
-<span class="fc" id="L33">        float[] xErrPoints, float[] yErrPoints) {</span>
+<span class="fc" id="L86">        float[] xErrPoints, float[] yErrPoints) {</span>
 
-<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (xPoints == null) {</span>
-<span class="nc" id="L36">            throw new IllegalArgumentException(&quot;xPoints cannot be null&quot;);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (xPoints == null) {</span>
+<span class="nc" id="L89">            throw new IllegalArgumentException(&quot;xPoints cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (yPoints == null) {</span>
-<span class="nc" id="L39">            throw new IllegalArgumentException(&quot;yPoints cannot be null&quot;);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (yPoints == null) {</span>
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;yPoints cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (xErrPoints == null) {</span>
-<span class="nc" id="L42">            throw new IllegalArgumentException(&quot;xErrPoints cannot be null&quot;);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (xErrPoints == null) {</span>
+<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;xErrPoints cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (yErrPoints == null) {</span>
-<span class="nc" id="L45">            throw new IllegalArgumentException(&quot;yErrPoints cannot be null&quot;);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (yErrPoints == null) {</span>
+<span class="nc" id="L98">            throw new IllegalArgumentException(&quot;yErrPoints cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L48">        float[] tmp = Arrays.copyOf(xPoints, xPoints.length);</span>
-<span class="fc" id="L49">        this.xScale = scaleDataTo1(tmp);</span>
-<span class="fc" id="L50">        this.x = tmp;</span>
+<span class="fc" id="L101">        float[] tmp = Arrays.copyOf(xPoints, xPoints.length);</span>
+<span class="fc" id="L102">        this.xScale = scaleDataTo1(tmp);</span>
+<span class="fc" id="L103">        this.x = tmp;</span>
 
-<span class="fc" id="L52">        tmp = Arrays.copyOf(yPoints, yPoints.length);</span>
-<span class="fc" id="L53">        this.yScale = scaleDataTo1(tmp);</span>
-<span class="fc" id="L54">        this.y = tmp;</span>
+<span class="fc" id="L105">        tmp = Arrays.copyOf(yPoints, yPoints.length);</span>
+<span class="fc" id="L106">        this.yScale = scaleDataTo1(tmp);</span>
+<span class="fc" id="L107">        this.y = tmp;</span>
 
-<span class="fc" id="L56">        tmp = Arrays.copyOf(xErrPoints, xErrPoints.length);</span>
-<span class="fc" id="L57">        scaleDataTo1(tmp, xScale);</span>
-<span class="fc" id="L58">        this.xe = tmp;</span>
+<span class="fc" id="L109">        tmp = Arrays.copyOf(xErrPoints, xErrPoints.length);</span>
+<span class="fc" id="L110">        scaleDataTo1(tmp, xScale);</span>
+<span class="fc" id="L111">        this.xe = tmp;</span>
 
-<span class="fc" id="L60">        tmp = Arrays.copyOf(yErrPoints, yErrPoints.length);</span>
-<span class="fc" id="L61">        scaleDataTo1(tmp, yScale);</span>
-<span class="fc" id="L62">        this.ye = tmp;</span>
+<span class="fc" id="L113">        tmp = Arrays.copyOf(yErrPoints, yErrPoints.length);</span>
+<span class="fc" id="L114">        scaleDataTo1(tmp, yScale);</span>
+<span class="fc" id="L115">        this.ye = tmp;</span>
 
-<span class="fc" id="L64">        this.gev = new GeneralizedExtremeValue(x, y, xe, ye);</span>
+<span class="fc" id="L117">        this.gev = new GeneralizedExtremeValue(x, y, xe, ye);</span>
         
-<span class="fc" id="L66">        xmin = x[0];</span>
-<span class="fc" id="L67">        xmax = x[x.length - 1];</span>
-<span class="fc" id="L68">        ymin = 0.0f;</span>
-<span class="fc" id="L69">        ymax = MiscMath.findMax(y);</span>
+<span class="fc" id="L119">        xmin = x[0];</span>
+<span class="fc" id="L120">        xmax = x[x.length - 1];</span>
+<span class="fc" id="L121">        ymin = 0.0f;</span>
+<span class="fc" id="L122">        ymax = MiscMath.findMax(y);</span>
       
-<span class="fc" id="L71">    }</span>
+<span class="fc" id="L124">    }</span>
     
+    /**
+     *
+     * @param a
+     * @return
+     */
     protected final float scaleDataTo1(float[] a) {
-<span class="fc" id="L74">        float max = MiscMath.findMax(a);</span>
-<span class="fc" id="L75">        scaleDataTo1(a, max);</span>
-<span class="fc" id="L76">        return max;</span>
+<span class="fc" id="L132">        float max = MiscMath.findMax(a);</span>
+<span class="fc" id="L133">        scaleDataTo1(a, max);</span>
+<span class="fc" id="L134">        return max;</span>
     }
+
+    /**
+     *
+     * @param a
+     * @param scale
+     */
     protected final void scaleDataTo1(float[] a, float scale) {
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L80">            return;</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L144">            return;</span>
         }
-<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="fc" id="L83">            a[i] = a[i]/scale;</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L147">            a[i] = a[i]/scale;</span>
         }
-<span class="fc" id="L85">    }</span>
+<span class="fc" id="L149">    }</span>
 
     /**
      * turn debugging results in comments such as intermediate fit results being
@@ -91,8 +155,8 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
      * @param doUseDebug
      */
     public void setDebug(boolean doUseDebug) {
-<span class="fc" id="L94">        debug = doUseDebug;</span>
-<span class="fc" id="L95">    }</span>
+<span class="fc" id="L158">        debug = doUseDebug;</span>
+<span class="fc" id="L159">    }</span>
 
     
     /**
@@ -106,23 +170,23 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
      */
     public float calculateChiSquareSum(float[] yNormalizedModel, WEIGHTS_DURING_CHISQSUM wdc) {
 
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (yNormalizedModel == null) {</span>
-<span class="nc" id="L110">            return Float.POSITIVE_INFINITY;</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (yNormalizedModel == null) {</span>
+<span class="nc" id="L174">            return Float.POSITIVE_INFINITY;</span>
         }
 
-<span class="fc" id="L113">        float[] w = calcWeights(wdc, yNormalizedModel);</span>
+<span class="fc" id="L177">        float[] w = calcWeights(wdc, yNormalizedModel);</span>
 
-<span class="fc" id="L115">        float chiSum = 0.f;</span>
+<span class="fc" id="L179">        float chiSum = 0.f;</span>
 
-<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (int i = 0; i &lt; yNormalizedModel.length; i++) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (int i = 0; i &lt; yNormalizedModel.length; i++) {</span>
 
-<span class="fc" id="L119">            float z = yScale*(yNormalizedModel[i] - y[i]);</span>
-<span class="fc" id="L120">            z *= z*w[i];</span>
+<span class="fc" id="L183">            float z = yScale*(yNormalizedModel[i] - y[i]);</span>
+<span class="fc" id="L184">            z *= z*w[i];</span>
 
-<span class="fc" id="L122">            chiSum += z;</span>
+<span class="fc" id="L186">            chiSum += z;</span>
         }
 
-<span class="fc" id="L125">        return chiSum;</span>
+<span class="fc" id="L189">        return chiSum;</span>
     }
 
     /**
@@ -135,40 +199,45 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
      */
     float[] calcWeights(WEIGHTS_DURING_CHISQSUM wdc, float[] yModel) {
 
-<span class="fc" id="L138">        float[] w = new float[yModel.length];</span>
+<span class="fc" id="L202">        float[] w = new float[yModel.length];</span>
 
-<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        if ((wdc != null) &amp;&amp; (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.INVERSE_Y.ordinal())) {</span>
-<span class="nc bnc" id="L141" title="All 2 branches missed.">            for (int i = 0; i &lt; w.length; i++) {</span>
-<span class="nc" id="L142">                w[i] = 1.0f/(yScale*y[i]);</span>
+<span class="pc bpc" id="L204" title="2 of 4 branches missed.">        if ((wdc != null) &amp;&amp; (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.INVERSE_Y.ordinal())) {</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            for (int i = 0; i &lt; w.length; i++) {</span>
+<span class="nc" id="L206">                w[i] = 1.0f/(yScale*y[i]);</span>
             }
-<span class="pc bpc" id="L144" title="2 of 4 branches missed.">         } else if ((wdc != null) &amp;&amp; (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.MODEL_Y.ordinal())) {</span>
-<span class="nc bnc" id="L145" title="All 2 branches missed.">            for (int i = 0; i &lt; w.length; i++) {</span>
-<span class="nc" id="L146">                w[i] = yModel[i]*yScale;</span>
+<span class="pc bpc" id="L208" title="2 of 4 branches missed.">         } else if ((wdc != null) &amp;&amp; (wdc.ordinal() == WEIGHTS_DURING_CHISQSUM.MODEL_Y.ordinal())) {</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            for (int i = 0; i &lt; w.length; i++) {</span>
+<span class="nc" id="L210">                w[i] = yModel[i]*yScale;</span>
             }
          } else {
-<span class="fc" id="L149">            boolean hasValidValues = hasValidValues(ye);</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">            if (hasValidValues) {</span>
-<span class="fc bfc" id="L151" title="All 2 branches covered.">                for (int i = 0; i &lt; w.length; i++) {</span>
-<span class="fc" id="L152">                    w[i] = ye[i]*yScale;</span>
+<span class="fc" id="L213">            boolean hasValidValues = hasValidValues(ye);</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">            if (hasValidValues) {</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">                for (int i = 0; i &lt; w.length; i++) {</span>
+<span class="fc" id="L216">                    w[i] = ye[i]*yScale;</span>
                 }
             } else {
-<span class="nc" id="L155">                throw new IllegalStateException(&quot;dy has invalid values&quot;);</span>
+<span class="nc" id="L219">                throw new IllegalStateException(&quot;dy has invalid values&quot;);</span>
             }
         }
 
-<span class="fc" id="L159">        return w;</span>
+<span class="fc" id="L223">        return w;</span>
     }
 
+    /**
+     *
+     * @param a
+     * @return
+     */
     protected boolean hasValidValues(float[] a) {
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L164">            return false;</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L233">            return false;</span>
         }
-<span class="fc bfc" id="L166" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            if (Float.isNaN(a[i])) {</span>
-<span class="nc" id="L168">                return false;</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">            if (Float.isNaN(a[i])) {</span>
+<span class="nc" id="L237">                return false;</span>
             }
         }
-<span class="fc" id="L171">        return true;</span>
+<span class="fc" id="L240">        return true;</span>
     }
     
     /**
@@ -180,12 +249,12 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
      */
     public float calculateChiSquareStatistic(float[] yModel, WEIGHTS_DURING_CHISQSUM wdc) {
 
-<span class="fc" id="L183">        float chiSquareSum = calculateChiSquareSum(yModel, wdc);</span>
+<span class="fc" id="L252">        float chiSquareSum = calculateChiSquareSum(yModel, wdc);</span>
 
         // minus one due to having to calculate the mean by using the data
-<span class="fc" id="L186">        float degreesOfFreedom = yModel.length - 3 - 1;</span>
+<span class="fc" id="L255">        float degreesOfFreedom = yModel.length - 3 - 1;</span>
 
-<span class="fc" id="L188">        return chiSquareSum/degreesOfFreedom;</span>
+<span class="fc" id="L257">        return chiSquareSum/degreesOfFreedom;</span>
     }
 
     /**
@@ -193,13 +262,13 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
      * @return
      */
     public float calcYErrSquareSum() {
-<span class="fc" id="L196">        float sum = 0.f;</span>
-<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (int i = 0; i &lt; y.length; i++) {</span>
-<span class="fc" id="L198">            float z = yScale*ye[i];</span>
-<span class="fc" id="L199">            z *= z;</span>
-<span class="fc" id="L200">            sum += z;</span>
+<span class="fc" id="L265">        float sum = 0.f;</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        for (int i = 0; i &lt; y.length; i++) {</span>
+<span class="fc" id="L267">            float z = yScale*ye[i];</span>
+<span class="fc" id="L268">            z *= z;</span>
+<span class="fc" id="L269">            sum += z;</span>
         }
-<span class="fc" id="L202">        return sum;</span>
+<span class="fc" id="L271">        return sum;</span>
     }
     
     /**
@@ -215,11 +284,11 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
     * @return an array of k and sigma, respectively
     */
    public static float[] generateRandomParameters(SecureRandom sr, float mu) {
-<span class="fc" id="L218">       float kMin = 0.00001f;</span>
-<span class="fc" id="L219">       float kMax = 0.001f;</span>
-<span class="fc" id="L220">       float sigmaMin = 0.025f;</span>
-<span class="fc" id="L221">       float sigmaMax = 20.0f*sigmaMin;</span>
-<span class="fc" id="L222">       return generateRandomParameters(sr, kMin, kMax, sigmaMin, sigmaMax, mu);</span>
+<span class="fc" id="L287">       float kMin = 0.00001f;</span>
+<span class="fc" id="L288">       float kMax = 0.001f;</span>
+<span class="fc" id="L289">       float sigmaMin = 0.025f;</span>
+<span class="fc" id="L290">       float sigmaMax = 20.0f*sigmaMin;</span>
+<span class="fc" id="L291">       return generateRandomParameters(sr, kMin, kMax, sigmaMin, sigmaMax, mu);</span>
    }
 
    /**
@@ -235,26 +304,33 @@ public abstract class AbstractCurveFitter implements ICurveFitter {
     */
    public static float[] generateRandomParameters(SecureRandom sr, float kMin, float kMax, float sigmaMin, float sigmaMax, float mu) {
 
-<span class="fc" id="L238">       float sDiff = sigmaMax - sigmaMin;</span>
-<span class="fc" id="L239">       float kDiff = kMax - kMin;</span>
+<span class="fc" id="L307">       float sDiff = sigmaMax - sigmaMin;</span>
+<span class="fc" id="L308">       float kDiff = kMax - kMin;</span>
 
-<span class="fc" id="L241">       float sigma = sigmaMin + sr.nextFloat() * sDiff;</span>
+<span class="fc" id="L310">       float sigma = sigmaMin + sr.nextFloat() * sDiff;</span>
 
-<span class="fc" id="L243">       float k = kMin + sr.nextFloat() * kDiff;</span>
+<span class="fc" id="L312">       float k = kMin + sr.nextFloat() * kDiff;</span>
 
-<span class="fc" id="L245">       boolean go = true;</span>
-<span class="fc bfc" id="L246" title="All 2 branches covered.">       while (go) {</span>
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">           if ( (k * mu) &gt; -1*sigma) {</span>
+<span class="fc" id="L314">       boolean go = true;</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">       while (go) {</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">           if ( (k * mu) &gt; -1*sigma) {</span>
 
-<span class="fc" id="L249">               go = false;</span>
+<span class="fc" id="L318">               go = false;</span>
 
-<span class="fc" id="L251">               k = kMin + sr.nextFloat() * kDiff;</span>
+<span class="fc" id="L320">               k = kMin + sr.nextFloat() * kDiff;</span>
            }
        }
 
-<span class="fc" id="L255">       return new float[]{k, sigma};</span>
+<span class="fc" id="L324">       return new float[]{k, sigma};</span>
    }
 
+    /**
+     *
+     * @param weightMethod
+     * @return
+     * @throws FailedToConvergeException
+     * @throws IOException
+     */
     public abstract GEVYFit fitCurveKGreaterThanZero(WEIGHTS_DURING_CHISQSUM weightMethod) 
         throws FailedToConvergeException, IOException;
        

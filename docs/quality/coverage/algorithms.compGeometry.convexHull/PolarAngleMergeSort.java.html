@@ -18,183 +18,201 @@ import java.util.Arrays;
      */
     protected static final double eps = 0.0000000001;//Double.MAX_VALUE;
 
+    /**
+     *
+     * @param xP0
+     * @param yP0
+     * @param x
+     * @param y
+     * @return
+     */
     public static int sort(float xP0, float yP0, float[] x, float[] y) {
 
-<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (x == null) {</span>
-<span class="fc" id="L24">        	throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (x == null) {</span>
+<span class="fc" id="L32">        	throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
         }
-<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (y == null) {</span>
-<span class="fc" id="L27">        	throw new IllegalArgumentException(&quot;y cannot be null&quot;);</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (y == null) {</span>
+<span class="fc" id="L35">        	throw new IllegalArgumentException(&quot;y cannot be null&quot;);</span>
         }
-<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (x.length != y.length) {</span>
-<span class="fc" id="L30">        	throw new IllegalArgumentException(&quot;number of items in x must be the same as in y&quot;);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (x.length != y.length) {</span>
+<span class="fc" id="L38">        	throw new IllegalArgumentException(&quot;number of items in x must be the same as in y&quot;);</span>
         }
         
-<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (x.length == 1) {</span>
-<span class="fc" id="L34">            return 1;</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (x.length == 1) {</span>
+<span class="fc" id="L42">            return 1;</span>
         }
 
         // for angles which are same, a delete operation is needed after all processing
         //    and ability to ignore the point to be deleted.
-<span class="fc" id="L39">        double[] polarAngle = new double[x.length];</span>
+<span class="fc" id="L47">        double[] polarAngle = new double[x.length];</span>
 
-<span class="fc" id="L41">        sort(xP0, yP0, x, y, 1, x.length - 1, polarAngle);</span>
+<span class="fc" id="L49">        sort(xP0, yP0, x, y, 1, x.length - 1, polarAngle);</span>
         
-<span class="fc" id="L43">        int nUsable = reduceToUniquePolarAngles(xP0, yP0, x, y, polarAngle);</span>
+<span class="fc" id="L51">        int nUsable = reduceToUniquePolarAngles(xP0, yP0, x, y, polarAngle);</span>
         
-<span class="fc" id="L45">        return nUsable;</span>
+<span class="fc" id="L53">        return nUsable;</span>
     }
 
     static int reduceToUniquePolarAngles(double xP0, double yP0, double[] x, double[] y, double[] polarAngle) {
 
-<span class="fc" id="L50">        int lastKeptIndex = 0;</span>
+<span class="fc" id="L58">        int lastKeptIndex = 0;</span>
 
-<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (int i = 1; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 1; i &lt; x.length; i++) {</span>
 
             // store
-<span class="fc" id="L55">            x[lastKeptIndex + 1] = x[i];</span>
-<span class="fc" id="L56">            y[lastKeptIndex + 1] = y[i];</span>
+<span class="fc" id="L63">            x[lastKeptIndex + 1] = x[i];</span>
+<span class="fc" id="L64">            y[lastKeptIndex + 1] = y[i];</span>
 
             // look ahead
-<span class="fc" id="L59">            int nSkip = 0;</span>
-<span class="fc" id="L60">            int nextI = i + 1;</span>
-<span class="fc" id="L61">            double maxDistance = relativeLengthOfLine(xP0, yP0, x[i], y[i]);</span>
-<span class="fc" id="L62">            int indexMaxDistance = i;</span>
+<span class="fc" id="L67">            int nSkip = 0;</span>
+<span class="fc" id="L68">            int nextI = i + 1;</span>
+<span class="fc" id="L69">            double maxDistance = relativeLengthOfLine(xP0, yP0, x[i], y[i]);</span>
+<span class="fc" id="L70">            int indexMaxDistance = i;</span>
 
-<span class="fc bfc" id="L64" title="All 4 branches covered.">            while ( (nextI &lt; x.length) &amp;&amp; (Math.abs( polarAngle[i] - polarAngle[nextI] ) &lt; eps) ) {</span>
-<span class="fc" id="L65">                double dist = relativeLengthOfLine(xP0, yP0, x[nextI], y[nextI]);</span>
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">                if (maxDistance &lt; dist) {</span>
-<span class="fc" id="L67">                    maxDistance = dist;</span>
-<span class="fc" id="L68">                    indexMaxDistance = nextI;</span>
+<span class="fc bfc" id="L72" title="All 4 branches covered.">            while ( (nextI &lt; x.length) &amp;&amp; (Math.abs( polarAngle[i] - polarAngle[nextI] ) &lt; eps) ) {</span>
+<span class="fc" id="L73">                double dist = relativeLengthOfLine(xP0, yP0, x[nextI], y[nextI]);</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">                if (maxDistance &lt; dist) {</span>
+<span class="fc" id="L75">                    maxDistance = dist;</span>
+<span class="fc" id="L76">                    indexMaxDistance = nextI;</span>
                 }
-<span class="fc" id="L70">                nSkip++;</span>
-<span class="fc" id="L71">                nextI++;</span>
-<span class="fc" id="L72">            }</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (nSkip &gt; 0) {</span>
-<span class="fc" id="L74">                x[lastKeptIndex + 1] = x[indexMaxDistance];</span>
-<span class="fc" id="L75">                y[lastKeptIndex + 1] = y[indexMaxDistance];</span>
-<span class="fc" id="L76">                i = nextI - 1;</span>
+<span class="fc" id="L78">                nSkip++;</span>
+<span class="fc" id="L79">                nextI++;</span>
+<span class="fc" id="L80">            }</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (nSkip &gt; 0) {</span>
+<span class="fc" id="L82">                x[lastKeptIndex + 1] = x[indexMaxDistance];</span>
+<span class="fc" id="L83">                y[lastKeptIndex + 1] = y[indexMaxDistance];</span>
+<span class="fc" id="L84">                i = nextI - 1;</span>
             }
 
-<span class="fc" id="L79">            lastKeptIndex++;</span>
+<span class="fc" id="L87">            lastKeptIndex++;</span>
         }
-<span class="fc" id="L81">        return lastKeptIndex + 1;</span>
+<span class="fc" id="L89">        return lastKeptIndex + 1;</span>
     }
 
     static int reduceToUniquePolarAngles(float xP0, float yP0, float[] x, float[] y, double[] polarAngle) {
 
-<span class="fc" id="L86">        int lastKeptIndex = 0;</span>
+<span class="fc" id="L94">        int lastKeptIndex = 0;</span>
 
-<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (int i = 1; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int i = 1; i &lt; x.length; i++) {</span>
 
             // store
-<span class="fc" id="L91">            x[lastKeptIndex + 1] = x[i];</span>
-<span class="fc" id="L92">            y[lastKeptIndex + 1] = y[i];</span>
+<span class="fc" id="L99">            x[lastKeptIndex + 1] = x[i];</span>
+<span class="fc" id="L100">            y[lastKeptIndex + 1] = y[i];</span>
 
             // look ahead
-<span class="fc" id="L95">            int nSkip = 0;</span>
-<span class="fc" id="L96">            int nextI = i + 1;</span>
-<span class="fc" id="L97">            double maxDistance = relativeLengthOfLine(xP0, yP0, x[i], y[i]);</span>
-<span class="fc" id="L98">            int indexMaxDistance = i;</span>
+<span class="fc" id="L103">            int nSkip = 0;</span>
+<span class="fc" id="L104">            int nextI = i + 1;</span>
+<span class="fc" id="L105">            double maxDistance = relativeLengthOfLine(xP0, yP0, x[i], y[i]);</span>
+<span class="fc" id="L106">            int indexMaxDistance = i;</span>
 
-<span class="fc bfc" id="L100" title="All 4 branches covered.">            while ( (nextI &lt; x.length) &amp;&amp; (Math.abs( polarAngle[i] - polarAngle[nextI] ) &lt; eps) ) {</span>
-<span class="fc" id="L101">                double dist = relativeLengthOfLine(xP0, yP0, x[nextI], y[nextI]);</span>
-<span class="fc bfc" id="L102" title="All 2 branches covered.">                if (maxDistance &lt; dist) {</span>
-<span class="fc" id="L103">                    maxDistance = dist;</span>
-<span class="fc" id="L104">                    indexMaxDistance = nextI;</span>
+<span class="fc bfc" id="L108" title="All 4 branches covered.">            while ( (nextI &lt; x.length) &amp;&amp; (Math.abs( polarAngle[i] - polarAngle[nextI] ) &lt; eps) ) {</span>
+<span class="fc" id="L109">                double dist = relativeLengthOfLine(xP0, yP0, x[nextI], y[nextI]);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                if (maxDistance &lt; dist) {</span>
+<span class="fc" id="L111">                    maxDistance = dist;</span>
+<span class="fc" id="L112">                    indexMaxDistance = nextI;</span>
                 }
-<span class="fc" id="L106">                nSkip++;</span>
-<span class="fc" id="L107">                nextI++;</span>
-<span class="fc" id="L108">            }</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (nSkip &gt; 0) {</span>
-<span class="fc" id="L110">                x[lastKeptIndex + 1] = x[indexMaxDistance];</span>
-<span class="fc" id="L111">                y[lastKeptIndex + 1] = y[indexMaxDistance];</span>
-<span class="fc" id="L112">                i = nextI - 1;</span>
+<span class="fc" id="L114">                nSkip++;</span>
+<span class="fc" id="L115">                nextI++;</span>
+<span class="fc" id="L116">            }</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            if (nSkip &gt; 0) {</span>
+<span class="fc" id="L118">                x[lastKeptIndex + 1] = x[indexMaxDistance];</span>
+<span class="fc" id="L119">                y[lastKeptIndex + 1] = y[indexMaxDistance];</span>
+<span class="fc" id="L120">                i = nextI - 1;</span>
             }
 
-<span class="fc" id="L115">            lastKeptIndex++;</span>
+<span class="fc" id="L123">            lastKeptIndex++;</span>
         }
-<span class="fc" id="L117">        return lastKeptIndex + 1;</span>
+<span class="fc" id="L125">        return lastKeptIndex + 1;</span>
     }
 
+    /**
+     *
+     * @param xP0
+     * @param yP0
+     * @param x
+     * @param y
+     * @param indexLo
+     * @param indexHi
+     * @param polarAngle
+     */
     protected static void sort(float xP0, float yP0, float[] x, float[] y, int indexLo, int indexHi, double[] polarAngle) {
 
-<span class="fc" id="L122">        int indexMid = -1;</span>
+<span class="fc" id="L140">        int indexMid = -1;</span>
 
-<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (indexLo &lt; indexHi) {</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (indexLo &lt; indexHi) {</span>
 
-<span class="fc" id="L126">            indexMid = (indexLo + indexHi) &gt;&gt; 1;</span>
+<span class="fc" id="L144">            indexMid = (indexLo + indexHi) &gt;&gt; 1;</span>
 
-<span class="fc" id="L128">            sort(xP0, yP0, x, y, indexLo, indexMid, polarAngle);</span>
-<span class="fc" id="L129">            sort(xP0, yP0, x, y, indexMid + 1, indexHi, polarAngle);</span>
-<span class="fc" id="L130">            merge(xP0, yP0, x, y, indexLo, indexMid, indexHi, polarAngle);</span>
+<span class="fc" id="L146">            sort(xP0, yP0, x, y, indexLo, indexMid, polarAngle);</span>
+<span class="fc" id="L147">            sort(xP0, yP0, x, y, indexMid + 1, indexHi, polarAngle);</span>
+<span class="fc" id="L148">            merge(xP0, yP0, x, y, indexLo, indexMid, indexHi, polarAngle);</span>
         }
-<span class="fc" id="L132">    }</span>
+<span class="fc" id="L150">    }</span>
 
     private static void merge( float xP0, float yP0, float[] x, float[] y, int indexLo, int indexMid, int indexHi, double[] polarAngle) {
 
-<span class="fc" id="L136">        int nLeft = indexMid - indexLo + 1;</span>
-<span class="fc" id="L137">        int nRight = indexHi - indexMid;</span>
+<span class="fc" id="L154">        int nLeft = indexMid - indexLo + 1;</span>
+<span class="fc" id="L155">        int nRight = indexHi - indexMid;</span>
 
-<span class="fc" id="L139">        float[] xLeft = Arrays.copyOfRange(x, indexLo, indexMid + 2);       // add 1 for sentinel</span>
-<span class="fc" id="L140">        float[] yLeft = Arrays.copyOfRange(y, indexLo, indexMid + 2);</span>
-<span class="fc" id="L141">        double[] angleLeft = new double[nLeft + 1];</span>
+<span class="fc" id="L157">        float[] xLeft = Arrays.copyOfRange(x, indexLo, indexMid + 2);       // add 1 for sentinel</span>
+<span class="fc" id="L158">        float[] yLeft = Arrays.copyOfRange(y, indexLo, indexMid + 2);</span>
+<span class="fc" id="L159">        double[] angleLeft = new double[nLeft + 1];</span>
 
-<span class="fc" id="L143">        float[] xRight = Arrays.copyOfRange(x, indexMid + 1, indexHi + 2);  // add 1 for sentinel</span>
-<span class="fc" id="L144">        float[] yRight = Arrays.copyOfRange(y, indexMid + 1, indexHi + 2);</span>
-<span class="fc" id="L145">        double[] angleRight = new double[nRight + 1];</span>
+<span class="fc" id="L161">        float[] xRight = Arrays.copyOfRange(x, indexMid + 1, indexHi + 2);  // add 1 for sentinel</span>
+<span class="fc" id="L162">        float[] yRight = Arrays.copyOfRange(y, indexMid + 1, indexHi + 2);</span>
+<span class="fc" id="L163">        double[] angleRight = new double[nRight + 1];</span>
 
         int i, j, index;
 
-<span class="fc bfc" id="L149" title="All 2 branches covered.">        for (i = 0; i &lt; nLeft; i++) {</span>
-<span class="fc" id="L150">            index = indexLo + i;</span>
-<span class="fc" id="L151">            angleLeft[i] = LinesAndAngles.calculatePolarSineTheta(xP0, yP0, x[index], y[index]);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        for (i = 0; i &lt; nLeft; i++) {</span>
+<span class="fc" id="L168">            index = indexLo + i;</span>
+<span class="fc" id="L169">            angleLeft[i] = LinesAndAngles.calculatePolarSineTheta(xP0, yP0, x[index], y[index]);</span>
         }
 
-<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (j = 0; j &lt; nRight; j++) {</span>
-<span class="fc" id="L155">            index = indexMid + j + 1;</span>
-<span class="fc" id="L156">            angleRight[j] = LinesAndAngles.calculatePolarSineTheta(xP0, yP0, x[index], y[index]);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        for (j = 0; j &lt; nRight; j++) {</span>
+<span class="fc" id="L173">            index = indexMid + j + 1;</span>
+<span class="fc" id="L174">            angleRight[j] = LinesAndAngles.calculatePolarSineTheta(xP0, yP0, x[index], y[index]);</span>
         }
 
-<span class="fc" id="L159">        xLeft[nLeft] = Float.MAX_VALUE;</span>
-<span class="fc" id="L160">        yLeft[nLeft] = Float.MAX_VALUE;</span>
-<span class="fc" id="L161">        angleLeft[nLeft] = Double.MAX_VALUE;</span>
-<span class="fc" id="L162">        xRight[nRight] = Float.MAX_VALUE;</span>
-<span class="fc" id="L163">        yRight[nRight] = Float.MAX_VALUE;</span>
-<span class="fc" id="L164">        angleRight[nRight] = Double.MAX_VALUE;</span>
+<span class="fc" id="L177">        xLeft[nLeft] = Float.MAX_VALUE;</span>
+<span class="fc" id="L178">        yLeft[nLeft] = Float.MAX_VALUE;</span>
+<span class="fc" id="L179">        angleLeft[nLeft] = Double.MAX_VALUE;</span>
+<span class="fc" id="L180">        xRight[nRight] = Float.MAX_VALUE;</span>
+<span class="fc" id="L181">        yRight[nRight] = Float.MAX_VALUE;</span>
+<span class="fc" id="L182">        angleRight[nRight] = Double.MAX_VALUE;</span>
 
-<span class="fc" id="L166">        i = 0;</span>
-<span class="fc" id="L167">        j = 0;</span>
+<span class="fc" id="L184">        i = 0;</span>
+<span class="fc" id="L185">        j = 0;</span>
 
-<span class="fc bfc" id="L169" title="All 2 branches covered.">        for (int k = indexLo; k &lt;= indexHi; k++) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (int k = indexLo; k &lt;= indexHi; k++) {</span>
 
-<span class="fc" id="L171">            double angDiff = angleLeft[i] - angleRight[j];</span>
-<span class="fc bfc" id="L172" title="All 2 branches covered.">            if (angDiff &lt; 0) {</span>
-<span class="fc" id="L173">                angDiff *= -1.;</span>
+<span class="fc" id="L189">            double angDiff = angleLeft[i] - angleRight[j];</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (angDiff &lt; 0) {</span>
+<span class="fc" id="L191">                angDiff *= -1.;</span>
             }
-<span class="fc bfc" id="L175" title="All 4 branches covered.">            if ( (angDiff &lt; eps ) || (angleLeft[i] &lt; angleRight[j] ) ) {</span>
+<span class="fc bfc" id="L193" title="All 4 branches covered.">            if ( (angDiff &lt; eps ) || (angleLeft[i] &lt; angleRight[j] ) ) {</span>
 
-<span class="fc" id="L177">                y[k] = yLeft[i];</span>
-<span class="fc" id="L178">                x[k] = xLeft[i];</span>
-<span class="fc" id="L179">                polarAngle[k] = angleLeft[i];</span>
-<span class="fc" id="L180">                i++;</span>
+<span class="fc" id="L195">                y[k] = yLeft[i];</span>
+<span class="fc" id="L196">                x[k] = xLeft[i];</span>
+<span class="fc" id="L197">                polarAngle[k] = angleLeft[i];</span>
+<span class="fc" id="L198">                i++;</span>
             } else {
 
-<span class="fc" id="L183">                y[k] = yRight[j];</span>
-<span class="fc" id="L184">                x[k] = xRight[j];</span>
-<span class="fc" id="L185">                polarAngle[k] = angleRight[j];</span>
-<span class="fc" id="L186">                j++;</span>
+<span class="fc" id="L201">                y[k] = yRight[j];</span>
+<span class="fc" id="L202">                x[k] = xRight[j];</span>
+<span class="fc" id="L203">                polarAngle[k] = angleRight[j];</span>
+<span class="fc" id="L204">                j++;</span>
             }
         }
-<span class="fc" id="L189">    }</span>
+<span class="fc" id="L207">    }</span>
 
     static double relativeLengthOfLine(double x1, double y1, double x2, double y2) {
-<span class="fc" id="L192">        double dx2 = (x2 - x1);</span>
-<span class="fc" id="L193">        dx2 *= dx2;</span>
-<span class="fc" id="L194">        double dy2 = (y2 - y1);</span>
-<span class="fc" id="L195">        dy2 *= dy2;</span>
+<span class="fc" id="L210">        double dx2 = (x2 - x1);</span>
+<span class="fc" id="L211">        dx2 *= dx2;</span>
+<span class="fc" id="L212">        double dy2 = (y2 - y1);</span>
+<span class="fc" id="L213">        dy2 *= dy2;</span>
         //double d = Math.sqrt(dx2 + dy2);
-<span class="fc" id="L197">        return dx2 + dy2;</span>
+<span class="fc" id="L215">        return dx2 + dy2;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

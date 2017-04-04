@@ -9,112 +9,132 @@ import java.util.List;
  */
 <span class="nc" id="L10">public class Sorter {</span>
     
+    /**
+     *
+     * @param a
+     */
     public static void mergeSortByXThenY(List&lt;PairFloat&gt; a) {
-<span class="pc bpc" id="L13" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L14">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L17" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L18">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L16" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
-<span class="nc" id="L17">            return;</span>
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
+<span class="nc" id="L21">            return;</span>
         }
-<span class="fc" id="L19">        mergeSortByXThenY(a, 0, a.size() - 1);</span>
-<span class="fc" id="L20">    }</span>
+<span class="fc" id="L23">        mergeSortByXThenY(a, 0, a.size() - 1);</span>
+<span class="fc" id="L24">    }</span>
     
+    /**
+     *
+     * @param a
+     * @param idxLo
+     * @param idxHi
+     */
     public static void mergeSortByXThenY(List&lt;PairFloat&gt; a, int idxLo, int idxHi) {
-<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L24">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L34">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
         
-<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
             
-<span class="fc" id="L29">            int idxMid = (idxLo + idxHi)/2;</span>
-<span class="fc" id="L30">            mergeSortByXThenY(a, 0, idxMid);</span>
-<span class="fc" id="L31">            mergeSortByXThenY(a, idxMid + 1, idxHi); </span>
-<span class="fc" id="L32">            mergeByXThenY(a, idxLo, idxMid, idxHi);</span>
+<span class="fc" id="L39">            int idxMid = (idxLo + idxHi)/2;</span>
+<span class="fc" id="L40">            mergeSortByXThenY(a, 0, idxMid);</span>
+<span class="fc" id="L41">            mergeSortByXThenY(a, idxMid + 1, idxHi); </span>
+<span class="fc" id="L42">            mergeByXThenY(a, idxLo, idxMid, idxHi);</span>
         }
-<span class="fc" id="L34">    }</span>
-    
-    public static void mergeSortByYThenX(List&lt;PairFloat&gt; a) {
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L38">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
-        }
-<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
-<span class="nc" id="L41">            return;</span>
-        }
-<span class="fc" id="L43">        mergeSortByYThenX(a, 0, a.size() - 1);</span>
 <span class="fc" id="L44">    }</span>
     
-    public static void mergeSortByYThenX(List&lt;PairFloat&gt; a, int idxLo, int idxHi) {
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L48">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+    /**
+     *
+     * @param a
+     */
+    public static void mergeSortByYThenX(List&lt;PairFloat&gt; a) {
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L52">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-        
-<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
-            
-<span class="fc" id="L53">            int idxMid = (idxLo + idxHi)/2;</span>
-<span class="fc" id="L54">            mergeSortByYThenX(a, 0, idxMid);</span>
-<span class="fc" id="L55">            mergeSortByYThenX(a, idxMid + 1, idxHi); </span>
-<span class="fc" id="L56">            mergeByYThenX(a, idxLo, idxMid, idxHi);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
+<span class="nc" id="L55">            return;</span>
         }
+<span class="fc" id="L57">        mergeSortByYThenX(a, 0, a.size() - 1);</span>
 <span class="fc" id="L58">    }</span>
     
-<span class="fc" id="L60">    private final static PairFloat sentinel = new PairFloat(Float.MAX_VALUE, Float.MAX_VALUE);</span>
+    /**
+     *
+     * @param a
+     * @param idxLo
+     * @param idxHi
+     */
+    public static void mergeSortByYThenX(List&lt;PairFloat&gt; a, int idxLo, int idxHi) {
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L68">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+            
+<span class="fc" id="L73">            int idxMid = (idxLo + idxHi)/2;</span>
+<span class="fc" id="L74">            mergeSortByYThenX(a, 0, idxMid);</span>
+<span class="fc" id="L75">            mergeSortByYThenX(a, idxMid + 1, idxHi); </span>
+<span class="fc" id="L76">            mergeByYThenX(a, idxLo, idxMid, idxHi);</span>
+        }
+<span class="fc" id="L78">    }</span>
+    
+<span class="fc" id="L80">    private final static PairFloat sentinel = new PairFloat(Float.MAX_VALUE, Float.MAX_VALUE);</span>
 
     private static void mergeByXThenY(List&lt;PairFloat&gt; a, int idxLo, int idxMid, 
         int idxHi) {
         
-<span class="fc" id="L65">        List&lt;PairFloat&gt; left = new ArrayList&lt;PairFloat&gt;(a.subList(idxLo, idxMid + 1));</span>
-<span class="fc" id="L66">        List&lt;PairFloat&gt; right = new ArrayList&lt;PairFloat&gt;(a.subList(idxMid + 1, idxHi + 1));</span>
-<span class="fc" id="L67">        left.add(sentinel);</span>
-<span class="fc" id="L68">        right.add(sentinel);</span>
-<span class="fc" id="L69">        int leftPos = 0;</span>
-<span class="fc" id="L70">        int rightPos = 0;</span>
+<span class="fc" id="L85">        List&lt;PairFloat&gt; left = new ArrayList&lt;PairFloat&gt;(a.subList(idxLo, idxMid + 1));</span>
+<span class="fc" id="L86">        List&lt;PairFloat&gt; right = new ArrayList&lt;PairFloat&gt;(a.subList(idxMid + 1, idxHi + 1));</span>
+<span class="fc" id="L87">        left.add(sentinel);</span>
+<span class="fc" id="L88">        right.add(sentinel);</span>
+<span class="fc" id="L89">        int leftPos = 0;</span>
+<span class="fc" id="L90">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; ++k) {</span>
-<span class="fc" id="L73">            boolean setL = false;</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">            if (left.get(leftPos).getX() &lt; right.get(rightPos).getX()) {</span>
-<span class="fc" id="L75">                setL = true;</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">            } else if (left.get(leftPos).getX() == right.get(rightPos).getX()) {</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (left.get(leftPos).getY() &lt; right.get(rightPos).getY()) {</span>
-<span class="fc" id="L78">                    setL = true;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; ++k) {</span>
+<span class="fc" id="L93">            boolean setL = false;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (left.get(leftPos).getX() &lt; right.get(rightPos).getX()) {</span>
+<span class="fc" id="L95">                setL = true;</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            } else if (left.get(leftPos).getX() == right.get(rightPos).getX()) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                if (left.get(leftPos).getY() &lt; right.get(rightPos).getY()) {</span>
+<span class="fc" id="L98">                    setL = true;</span>
                 }
             }
-<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (setL) {</span>
-<span class="fc" id="L82">                a.set(k, left.get(leftPos));</span>
-<span class="fc" id="L83">                leftPos++;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (setL) {</span>
+<span class="fc" id="L102">                a.set(k, left.get(leftPos));</span>
+<span class="fc" id="L103">                leftPos++;</span>
             } else {
-<span class="fc" id="L85">                a.set(k, right.get(rightPos));</span>
-<span class="fc" id="L86">                rightPos++;</span>
+<span class="fc" id="L105">                a.set(k, right.get(rightPos));</span>
+<span class="fc" id="L106">                rightPos++;</span>
             }
         }
-<span class="fc" id="L89">    }</span>
+<span class="fc" id="L109">    }</span>
     
     private static void mergeByYThenX(List&lt;PairFloat&gt; a, int idxLo, int idxMid, 
         int idxHi) {
         
-<span class="fc" id="L94">        List&lt;PairFloat&gt; left = new ArrayList&lt;PairFloat&gt;(a.subList(idxLo, idxMid + 1));</span>
-<span class="fc" id="L95">        List&lt;PairFloat&gt; right = new ArrayList&lt;PairFloat&gt;(a.subList(idxMid + 1, idxHi + 1));</span>
-<span class="fc" id="L96">        left.add(sentinel);</span>
-<span class="fc" id="L97">        right.add(sentinel);</span>
-<span class="fc" id="L98">        int leftPos = 0;</span>
-<span class="fc" id="L99">        int rightPos = 0;</span>
+<span class="fc" id="L114">        List&lt;PairFloat&gt; left = new ArrayList&lt;PairFloat&gt;(a.subList(idxLo, idxMid + 1));</span>
+<span class="fc" id="L115">        List&lt;PairFloat&gt; right = new ArrayList&lt;PairFloat&gt;(a.subList(idxMid + 1, idxHi + 1));</span>
+<span class="fc" id="L116">        left.add(sentinel);</span>
+<span class="fc" id="L117">        right.add(sentinel);</span>
+<span class="fc" id="L118">        int leftPos = 0;</span>
+<span class="fc" id="L119">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; ++k) {</span>
-<span class="fc" id="L102">            boolean setL = false;</span>
-<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (left.get(leftPos).getY() &lt; right.get(rightPos).getY()) {</span>
-<span class="fc" id="L104">                setL = true;</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">            } else if (left.get(leftPos).getY() == right.get(rightPos).getY()) {</span>
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">                if (left.get(leftPos).getX() &lt; right.get(rightPos).getX()) {</span>
-<span class="fc" id="L107">                    setL = true;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; ++k) {</span>
+<span class="fc" id="L122">            boolean setL = false;</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (left.get(leftPos).getY() &lt; right.get(rightPos).getY()) {</span>
+<span class="fc" id="L124">                setL = true;</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            } else if (left.get(leftPos).getY() == right.get(rightPos).getY()) {</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">                if (left.get(leftPos).getX() &lt; right.get(rightPos).getX()) {</span>
+<span class="fc" id="L127">                    setL = true;</span>
                 }
             }
-<span class="fc bfc" id="L110" title="All 2 branches covered.">            if (setL) {</span>
-<span class="fc" id="L111">                a.set(k, left.get(leftPos));</span>
-<span class="fc" id="L112">                leftPos++;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            if (setL) {</span>
+<span class="fc" id="L131">                a.set(k, left.get(leftPos));</span>
+<span class="fc" id="L132">                leftPos++;</span>
             } else {
-<span class="fc" id="L114">                a.set(k, right.get(rightPos));</span>
-<span class="fc" id="L115">                rightPos++;</span>
+<span class="fc" id="L134">                a.set(k, right.get(rightPos));</span>
+<span class="fc" id="L135">                rightPos++;</span>
             }
         }
-<span class="fc" id="L118">    }</span>
+<span class="fc" id="L138">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

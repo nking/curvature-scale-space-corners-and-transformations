@@ -22,36 +22,76 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L23">    Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="fc" id="L25">    public static enum CLUSTER_SEPARATION {</span>
-        SMALL, MODERATE, LARGE
+    /**
+     *
+     */
+    public static enum CLUSTER_SEPARATION {
+
+        /**
+         *
+         */
+        SMALL,
+
+        /**
+         *
+         */
+        MODERATE,
+
+        /**
+         *
+         */
+        LARGE
     }
 
+    /**
+     *
+     * @return
+     */
     protected int getExpectedNumberOfClusters() {
-<span class="nc bnc" id="L30" title="All 2 branches missed.">        return (xc == null) ? 0 : xc.length;</span>
-    }
-    protected int getTotalNumberOfPoints() {
-<span class="nc bnc" id="L33" title="All 2 branches missed.">        return (x == null) ? 0 : x.length;</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        return (xc == null) ? 0 : xc.length;</span>
     }
 
+    /**
+     *
+     * @return
+     */
+    protected int getTotalNumberOfPoints() {
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        return (x == null) ? 0 : x.length;</span>
+    }
+
+    /**
+     *
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     public AxisIndexer createIndexerWithRandomPoints() throws NoSuchAlgorithmException {
 
-<span class="nc" id="L38">        float xmin = 0;</span>
-<span class="nc" id="L39">        float xmax = 300;</span>
-<span class="nc" id="L40">        float ymin = 0;</span>
-<span class="nc" id="L41">        float ymax = 300;</span>
+<span class="nc" id="L69">        float xmin = 0;</span>
+<span class="nc" id="L70">        float xmax = 300;</span>
+<span class="nc" id="L71">        float ymin = 0;</span>
+<span class="nc" id="L72">        float ymax = 300;</span>
 
-<span class="nc" id="L43">        return createIndexerWithRandomPoints(xmin, xmax, ymin, ymax);</span>
+<span class="nc" id="L74">        return createIndexerWithRandomPoints(xmin, xmax, ymin, ymax);</span>
     }
 
+    /**
+     *
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     public AxisIndexer createIndexerWithRandomPoints(float xmin,
         float xmax, float ymin, float ymax) throws NoSuchAlgorithmException {
 
-<span class="fc" id="L49">        SecureRandom srr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
-<span class="fc" id="L50">        srr.setSeed( System.currentTimeMillis() );</span>
-<span class="fc" id="L51">        long seed = srr.nextLong();</span>
+<span class="fc" id="L89">        SecureRandom srr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="fc" id="L90">        srr.setSeed( System.currentTimeMillis() );</span>
+<span class="fc" id="L91">        long seed = srr.nextLong();</span>
 
-<span class="fc" id="L53">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
-<span class="fc" id="L54">        sr.setSeed( seed );</span>
+<span class="fc" id="L93">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="fc" id="L94">        sr.setSeed( seed );</span>
         //sr.setSeed(-2384802679227907254l);
 
         // randomly choose between point sets:
@@ -64,138 +104,188 @@ import java.util.logging.Logger;
         // within the tests in TwoPointVoidTests, and those are kept somewhat
         // small due to runtime with 'useCompleteSampling'
 
-<span class="fc" id="L67">        int setChoice = sr.nextInt(4);</span>
+<span class="fc" id="L107">        int setChoice = sr.nextInt(4);</span>
 
-<span class="fc" id="L69">        int nBackgroundPoints = 0;</span>
-<span class="fc" id="L70">        int[] nClusters = null;</span>
+<span class="fc" id="L109">        int nBackgroundPoints = 0;</span>
+<span class="fc" id="L110">        int[] nClusters = null;</span>
 
-<span class="fc" id="L72">        CLUSTER_SEPARATION clusterSep = null;</span>
+<span class="fc" id="L112">        CLUSTER_SEPARATION clusterSep = null;</span>
 
-<span class="fc" id="L74">        int sum = 0;</span>
-<span class="fc bfc" id="L75" title="All 4 branches covered.">        switch(setChoice) {</span>
+<span class="fc" id="L114">        int sum = 0;</span>
+<span class="fc bfc" id="L115" title="All 4 branches covered.">        switch(setChoice) {</span>
             case 0:
-<span class="fc" id="L77">                nClusters = new int[]{30, 40, 60};</span>
-<span class="fc" id="L78">                sum = 0;</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">                for (int i = 0; i &lt; nClusters.length; i++) {</span>
-<span class="fc" id="L80">                    sum += nClusters[i];</span>
+<span class="fc" id="L117">                nClusters = new int[]{30, 40, 60};</span>
+<span class="fc" id="L118">                sum = 0;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                for (int i = 0; i &lt; nClusters.length; i++) {</span>
+<span class="fc" id="L120">                    sum += nClusters[i];</span>
                 }
-<span class="fc" id="L82">                nBackgroundPoints = (int)0.1*sum;</span>
-<span class="fc" id="L83">                clusterSep = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
-<span class="fc" id="L84">                break;</span>
+<span class="fc" id="L122">                nBackgroundPoints = (int)0.1*sum;</span>
+<span class="fc" id="L123">                clusterSep = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
+<span class="fc" id="L124">                break;</span>
             case 1:
-<span class="fc" id="L86">                nClusters = new int[]{30, 40, 60};</span>
-<span class="fc" id="L87">                sum = 0;</span>
-<span class="fc bfc" id="L88" title="All 2 branches covered.">                for (int i = 0; i &lt; nClusters.length; i++) {</span>
-<span class="fc" id="L89">                    sum += nClusters[i];</span>
+<span class="fc" id="L126">                nClusters = new int[]{30, 40, 60};</span>
+<span class="fc" id="L127">                sum = 0;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">                for (int i = 0; i &lt; nClusters.length; i++) {</span>
+<span class="fc" id="L129">                    sum += nClusters[i];</span>
                 }
-<span class="fc" id="L91">                nBackgroundPoints = sum;</span>
-<span class="fc" id="L92">                clusterSep = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
-<span class="fc" id="L93">                break;</span>
+<span class="fc" id="L131">                nBackgroundPoints = sum;</span>
+<span class="fc" id="L132">                clusterSep = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
+<span class="fc" id="L133">                break;</span>
             case 2:
-<span class="fc" id="L95">                nClusters = new int[]{30, 40, 60};</span>
-<span class="fc" id="L96">                sum = 0;</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">                for (int i = 0; i &lt; nClusters.length; i++) {</span>
-<span class="fc" id="L98">                    sum += nClusters[i];</span>
+<span class="fc" id="L135">                nClusters = new int[]{30, 40, 60};</span>
+<span class="fc" id="L136">                sum = 0;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">                for (int i = 0; i &lt; nClusters.length; i++) {</span>
+<span class="fc" id="L138">                    sum += nClusters[i];</span>
                 }
-<span class="fc" id="L100">                nBackgroundPoints = 10*sum;</span>
-<span class="fc" id="L101">                clusterSep = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
-<span class="fc" id="L102">                break;</span>
+<span class="fc" id="L140">                nBackgroundPoints = 10*sum;</span>
+<span class="fc" id="L141">                clusterSep = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
+<span class="fc" id="L142">                break;</span>
             default:
             //case 3:
-<span class="fc" id="L105">                nClusters = new int[0];</span>
-<span class="fc" id="L106">                nBackgroundPoints = 150;</span>
+<span class="fc" id="L145">                nClusters = new int[0];</span>
+<span class="fc" id="L146">                nBackgroundPoints = 150;</span>
                 break;
         }
 
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        int nn = (nClusters == null) ? 0 : nClusters.length;</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">        String ns = (clusterSep == null) ? &quot;&quot; : clusterSep.name();</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        int nn = (nClusters == null) ? 0 : nClusters.length;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        String ns = (clusterSep == null) ? &quot;&quot; : clusterSep.name();</span>
 
-<span class="fc" id="L113">        log.info(&quot;Creating points: &quot; + nn + &quot; clusters, &quot;</span>
+<span class="fc" id="L153">        log.info(&quot;Creating points: &quot; + nn + &quot; clusters, &quot;</span>
             + nBackgroundPoints + &quot; background points, &quot; + ns);
 
-<span class="fc" id="L116">        return createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax, nClusters, nBackgroundPoints, clusterSep);</span>
+<span class="fc" id="L156">        return createIndexerWithRandomPoints(sr, xmin, xmax, ymin, ymax, nClusters, nBackgroundPoints, clusterSep);</span>
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param nClusters
+     * @param nBackgroundPoints
+     * @param clusterSeparation
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int[] nClusters, int nBackgroundPoints, CLUSTER_SEPARATION clusterSeparation) {
 
-<span class="fc" id="L122">        createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);</span>
+<span class="fc" id="L174">        createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);</span>
 
-<span class="fc" id="L124">        AxisIndexer indexer = new AxisIndexer();</span>
-<span class="fc" id="L125">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
+<span class="fc" id="L176">        AxisIndexer indexer = new AxisIndexer();</span>
+<span class="fc" id="L177">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
 
-<span class="fc" id="L127">        return indexer;</span>
+<span class="fc" id="L179">        return indexer;</span>
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfClusters
+     * @param minimumNumberOfPointsPerCluster
+     * @param maximumNumberOfPointsPerCluster
+     * @param backgroundPointFractionToClusters
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters) {
 
-<span class="fc" id="L134">        int dn = maximumNumberOfPointsPerCluster - minimumNumberOfPointsPerCluster;</span>
+<span class="fc" id="L199">        int dn = maximumNumberOfPointsPerCluster - minimumNumberOfPointsPerCluster;</span>
 
-<span class="fc" id="L136">        int count = 0;</span>
-<span class="fc" id="L137">        int[] nClusters = new int[numberOfClusters];</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfClusters; i++) {</span>
-<span class="fc bfc" id="L139" title="All 2 branches covered.">            int add = (dn == 0) ? 0 : sr.nextInt(dn);</span>
-<span class="fc" id="L140">            nClusters[i] = + minimumNumberOfPointsPerCluster + add;</span>
-<span class="fc" id="L141">            count += nClusters[i];</span>
+<span class="fc" id="L201">        int count = 0;</span>
+<span class="fc" id="L202">        int[] nClusters = new int[numberOfClusters];</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfClusters; i++) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            int add = (dn == 0) ? 0 : sr.nextInt(dn);</span>
+<span class="fc" id="L205">            nClusters[i] = + minimumNumberOfPointsPerCluster + add;</span>
+<span class="fc" id="L206">            count += nClusters[i];</span>
         }
 
-<span class="fc" id="L144">        int nBackgroundPoints = (int)backgroundPointFractionToClusters*count;</span>
+<span class="fc" id="L209">        int nBackgroundPoints = (int)backgroundPointFractionToClusters*count;</span>
 
-<span class="fc" id="L146">        CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
+<span class="fc" id="L211">        CLUSTER_SEPARATION clusterSeparation = CLUSTER_SEPARATION.values()[sr.nextInt(2)];</span>
 
 
-<span class="fc" id="L149">        createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);</span>
+<span class="fc" id="L214">        createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);</span>
 
-<span class="fc" id="L151">        AxisIndexer indexer = new AxisIndexer();</span>
-<span class="fc" id="L152">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
+<span class="fc" id="L216">        AxisIndexer indexer = new AxisIndexer();</span>
+<span class="fc" id="L217">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
 
-<span class="fc" id="L154">        return indexer;</span>
+<span class="fc" id="L219">        return indexer;</span>
     }
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfClusters
+     * @param minimumNumberOfPointsPerCluster
+     * @param maximumNumberOfPointsPerCluster
+     * @param backgroundPointFractionToClusters
+     * @param clusterSeparation
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfClusters, int minimumNumberOfPointsPerCluster, int maximumNumberOfPointsPerCluster,
         float backgroundPointFractionToClusters, CLUSTER_SEPARATION clusterSeparation) {
 
-<span class="nc" id="L161">        int dn = maximumNumberOfPointsPerCluster - minimumNumberOfPointsPerCluster;</span>
+<span class="nc" id="L240">        int dn = maximumNumberOfPointsPerCluster - minimumNumberOfPointsPerCluster;</span>
 
-<span class="nc" id="L163">        int count = 0;</span>
-<span class="nc" id="L164">        int[] nClusters = new int[numberOfClusters];</span>
-<span class="nc bnc" id="L165" title="All 2 branches missed.">        for (int i = 0; i &lt; numberOfClusters; i++) {</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">            int add = (dn == 0) ? 0 : sr.nextInt(dn);</span>
-<span class="nc" id="L167">            nClusters[i] = + minimumNumberOfPointsPerCluster + add;</span>
-<span class="nc" id="L168">            count += nClusters[i];</span>
+<span class="nc" id="L242">        int count = 0;</span>
+<span class="nc" id="L243">        int[] nClusters = new int[numberOfClusters];</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        for (int i = 0; i &lt; numberOfClusters; i++) {</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">            int add = (dn == 0) ? 0 : sr.nextInt(dn);</span>
+<span class="nc" id="L246">            nClusters[i] = + minimumNumberOfPointsPerCluster + add;</span>
+<span class="nc" id="L247">            count += nClusters[i];</span>
         }
 
-<span class="nc" id="L171">        int nBackgroundPoints = (int)backgroundPointFractionToClusters*count;</span>
+<span class="nc" id="L250">        int nBackgroundPoints = (int)backgroundPointFractionToClusters*count;</span>
 
-<span class="nc" id="L173">        createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);</span>
+<span class="nc" id="L252">        createPoints(nBackgroundPoints, nClusters, clusterSeparation, xmin, xmax, ymin, ymax, sr, false);</span>
 
-<span class="nc" id="L175">        AxisIndexer indexer = new AxisIndexer();</span>
-<span class="nc" id="L176">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
+<span class="nc" id="L254">        AxisIndexer indexer = new AxisIndexer();</span>
+<span class="nc" id="L255">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
 
-<span class="nc" id="L178">        return indexer;</span>
+<span class="nc" id="L257">        return indexer;</span>
     }
 
+    /**
+     *
+     * @param sr
+     * @param maxRadius
+     * @param numberOfPoints
+     * @param xc0
+     * @param yc0
+     * @param x0
+     * @param y0
+     * @param xyStartOffset
+     */
     protected void createRandomPointsAroundCenter(SecureRandom sr, float maxRadius,
         int numberOfPoints, float xc0, float yc0, float[] x0, float[] y0, int xyStartOffset) {
 
-<span class="fc bfc" id="L184" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfPoints; i++) {</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfPoints; i++) {</span>
 
-<span class="fc" id="L186">            float radius = maxRadius * sr.nextFloat();</span>
-<span class="fc" id="L187">            double angle = 360. * sr.nextDouble();</span>
+<span class="fc" id="L276">            float radius = maxRadius * sr.nextFloat();</span>
+<span class="fc" id="L277">            double angle = 360. * sr.nextDouble();</span>
 
-<span class="fc" id="L189">            float[] xy = calculateXAndYFromXcYcAndRadius(xc0, yc0, radius, angle);</span>
+<span class="fc" id="L279">            float[] xy = calculateXAndYFromXcYcAndRadius(xc0, yc0, radius, angle);</span>
 
-<span class="pc bpc" id="L191" title="2 of 4 branches missed.">            if ((xy[0] &gt; 0) &amp;&amp; (xy[1] &gt; 0)) {</span>
-<span class="fc" id="L192">                x0[xyStartOffset + i] = xy[0];</span>
-<span class="fc" id="L193">                y0[xyStartOffset + i] = xy[1];</span>
+<span class="pc bpc" id="L281" title="2 of 4 branches missed.">            if ((xy[0] &gt; 0) &amp;&amp; (xy[1] &gt; 0)) {</span>
+<span class="fc" id="L282">                x0[xyStartOffset + i] = xy[0];</span>
+<span class="fc" id="L283">                y0[xyStartOffset + i] = xy[1];</span>
             } else {
-<span class="nc" id="L195">                i--;</span>
+<span class="nc" id="L285">                i--;</span>
             }
         }
-<span class="fc" id="L198">    }</span>
+<span class="fc" id="L288">    }</span>
     
     /**
      * create a group of points around a center whose density distribution decreases
@@ -265,176 +355,222 @@ import java.util.logging.Logger;
          *     create n_i points within that  r_i annulus randomly.
          */ 
                 
-<span class="fc" id="L268">        int nBins = 5;</span>
+<span class="fc" id="L358">        int nBins = 5;</span>
         
-<span class="fc" id="L270">        double sum = 0;</span>
-<span class="fc bfc" id="L271" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; i++) {</span>
+<span class="fc" id="L360">        double sum = 0;</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; i++) {</span>
             
-<span class="fc" id="L273">            float x = (nBins - i)/(float)nBins;</span>
-<span class="fc" id="L274">            float xInner = (nBins - i - 1.f)/(float)nBins;</span>
+<span class="fc" id="L363">            float x = (nBins - i)/(float)nBins;</span>
+<span class="fc" id="L364">            float xInner = (nBins - i - 1.f)/(float)nBins;</span>
             
             // r_i = math.sqrt(  (nbins - i)/nbins ) * maxr
             // this is rOuter for current bin
-<span class="fc" id="L278">            double rOuter = maxRadius * Math.sqrt(x);</span>
-<span class="fc" id="L279">            double rInner = maxRadius * Math.sqrt(xInner);</span>
-<span class="fc" id="L280">            double ri = (rOuter + rInner)/2.;</span>
+<span class="fc" id="L368">            double rOuter = maxRadius * Math.sqrt(x);</span>
+<span class="fc" id="L369">            double rInner = maxRadius * Math.sqrt(xInner);</span>
+<span class="fc" id="L370">            double ri = (rOuter + rInner)/2.;</span>
             
-<span class="fc" id="L282">            double f = Math.pow(maxRadius/(maxRadius - ri), 2);</span>
+<span class="fc" id="L372">            double f = Math.pow(maxRadius/(maxRadius - ri), 2);</span>
                                                 
-<span class="fc" id="L284">            sum += (numberOfPoints/f);</span>
+<span class="fc" id="L374">            sum += (numberOfPoints/f);</span>
         }
-<span class="fc" id="L286">        float fraction = (float)(numberOfPoints/sum);</span>
+<span class="fc" id="L376">        float fraction = (float)(numberOfPoints/sum);</span>
         
-<span class="fc" id="L288">        int offset = xyStartOffset;</span>
+<span class="fc" id="L378">        int offset = xyStartOffset;</span>
         
-<span class="fc bfc" id="L290" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; i++) {</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; i++) {</span>
                         
             // index 0 is outer edge, rOuter = maxRadius
             
-<span class="fc" id="L294">            float x = (nBins - i)/(float)nBins;</span>
-<span class="fc" id="L295">            float xInner = (nBins - i - 1.f)/(float)nBins;</span>
+<span class="fc" id="L384">            float x = (nBins - i)/(float)nBins;</span>
+<span class="fc" id="L385">            float xInner = (nBins - i - 1.f)/(float)nBins;</span>
             
             // r_i = math.sqrt(  (nbins - i)/nbins ) * maxr
             // this is rOuter for current bin
-<span class="fc" id="L299">            double rOuter = maxRadius * Math.sqrt(x);</span>
-<span class="fc" id="L300">            double rInner = maxRadius * Math.sqrt(xInner);</span>
-<span class="fc" id="L301">            double ri = (rOuter + rInner)/2.;</span>
+<span class="fc" id="L389">            double rOuter = maxRadius * Math.sqrt(x);</span>
+<span class="fc" id="L390">            double rInner = maxRadius * Math.sqrt(xInner);</span>
+<span class="fc" id="L391">            double ri = (rOuter + rInner)/2.;</span>
             
             // maxradius = 80,  n=300
             // i=0   r_i=76   n ~ 0            f=large number 1/(maxRadius-r_i)
             // i=x   r_x=40   n ~ 300/(2^2)     
             // i=n-1 r_n-1=0  n close to 300
             
-<span class="fc" id="L308">            double f = Math.pow(maxRadius/(maxRadius - ri), 2);</span>
+<span class="fc" id="L398">            double f = Math.pow(maxRadius/(maxRadius - ri), 2);</span>
             
-<span class="fc" id="L310">            double n = fraction * numberOfPoints/f;</span>
+<span class="fc" id="L400">            double n = fraction * numberOfPoints/f;</span>
             
-<span class="fc" id="L312">            log.finest(&quot;n_&quot; + i + &quot; = &quot; + n + &quot; r_i=&quot; + ri + &quot; f_i=&quot; + f</span>
+<span class="fc" id="L402">            log.finest(&quot;n_&quot; + i + &quot; = &quot; + n + &quot; r_i=&quot; + ri + &quot; f_i=&quot; + f</span>
                 + &quot; (maxRadius=&quot; + maxRadius 
                 + &quot; rOuter=&quot; + rOuter + &quot; rInner=&quot; + rInner + &quot;)&quot;);
             
-<span class="fc" id="L316">            int np = (int)n;</span>
+<span class="fc" id="L406">            int np = (int)n;</span>
             //if (i == 2) {
-<span class="fc bfc" id="L318" title="All 2 branches covered.">            for (int ii = 0; ii &lt; np; ii++) {</span>
-<span class="fc" id="L319">                float[] xy = calculateRandomXAndYWithinAnnulus(sr, xc0, yc0, (float)rInner, (float)rOuter);</span>
-<span class="pc bpc" id="L320" title="2 of 4 branches missed.">                if ((xy[0] &gt; 0) &amp;&amp; (xy[1] &gt; 0)) {</span>
-<span class="fc" id="L321">                    x0[offset + ii] = xy[0];</span>
-<span class="fc" id="L322">                    y0[offset + ii] = xy[1];</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">            for (int ii = 0; ii &lt; np; ii++) {</span>
+<span class="fc" id="L409">                float[] xy = calculateRandomXAndYWithinAnnulus(sr, xc0, yc0, (float)rInner, (float)rOuter);</span>
+<span class="pc bpc" id="L410" title="2 of 4 branches missed.">                if ((xy[0] &gt; 0) &amp;&amp; (xy[1] &gt; 0)) {</span>
+<span class="fc" id="L411">                    x0[offset + ii] = xy[0];</span>
+<span class="fc" id="L412">                    y0[offset + ii] = xy[1];</span>
                 } else {
                     // redo random point
-<span class="nc" id="L325">                    ii--;</span>
+<span class="nc" id="L415">                    ii--;</span>
                 }
             }
             //}
-<span class="fc" id="L329">            offset += np;</span>
+<span class="fc" id="L419">            offset += np;</span>
         }
         
         // if there are rounding errors in np so that an index remains unset at end of array, set it's value to xc, yc
-<span class="fc bfc" id="L333" title="All 2 branches covered.">        for (int i = 0; i &lt; x0.length; i++) {</span>
-<span class="pc bpc" id="L334" title="1 of 4 branches missed.">            if (x0[i] == 0 &amp;&amp; y0[i] == 0) {</span>
-<span class="fc" id="L335">                x0[i] = xc0;</span>
-<span class="fc" id="L336">                y0[i] = yc0;</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">        for (int i = 0; i &lt; x0.length; i++) {</span>
+<span class="pc bpc" id="L424" title="1 of 4 branches missed.">            if (x0[i] == 0 &amp;&amp; y0[i] == 0) {</span>
+<span class="fc" id="L425">                x0[i] = xc0;</span>
+<span class="fc" id="L426">                y0[i] = yc0;</span>
             }
         }
-<span class="fc" id="L339">    }</span>
+<span class="fc" id="L429">    }</span>
 
+    /**
+     *
+     * @param sr
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param numberOfPointsToCreate
+     * @param xPoints
+     * @param yPoints
+     * @param minSeparationBetweenPoints
+     */
     protected void createRandomSeparatedPoints(SecureRandom sr, float xmin, float xmax, float ymin, float ymax,
         int numberOfPointsToCreate, float[] xPoints, float[] yPoints, float minSeparationBetweenPoints) {
 
-<span class="fc" id="L344">        float xWidth = xmax - xmin;</span>
-<span class="fc" id="L345">        float yHeight = ymax - ymin;</span>
+<span class="fc" id="L446">        float xWidth = xmax - xmin;</span>
+<span class="fc" id="L447">        float yHeight = ymax - ymin;</span>
 
-<span class="fc" id="L347">        float xx = -1;</span>
-<span class="fc" id="L348">        float yy = -1;</span>
+<span class="fc" id="L449">        float xx = -1;</span>
+<span class="fc" id="L450">        float yy = -1;</span>
 
-<span class="fc bfc" id="L350" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfPointsToCreate; i++) {</span>
+<span class="fc bfc" id="L452" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfPointsToCreate; i++) {</span>
 
-<span class="fc" id="L352">            boolean sepIsLarger = false;</span>
+<span class="fc" id="L454">            boolean sepIsLarger = false;</span>
 
-<span class="fc bfc" id="L354" title="All 2 branches covered.">            while (!sepIsLarger) {</span>
-<span class="fc" id="L355">                xx = xmin + sr.nextFloat()*xWidth;</span>
-<span class="fc" id="L356">                yy = ymin + sr.nextFloat()*yHeight;</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">            while (!sepIsLarger) {</span>
+<span class="fc" id="L457">                xx = xmin + sr.nextFloat()*xWidth;</span>
+<span class="fc" id="L458">                yy = ymin + sr.nextFloat()*yHeight;</span>
 
-<span class="fc" id="L358">                sepIsLarger = separationBetweenExistingPointsIsLargerThanMin(</span>
+<span class="fc" id="L460">                sepIsLarger = separationBetweenExistingPointsIsLargerThanMin(</span>
                     xPoints, yPoints, i, xx, yy, minSeparationBetweenPoints);
 
             }
-<span class="fc" id="L362">            xPoints[i] = xx;</span>
-<span class="fc" id="L363">            yPoints[i] = yy;</span>
+<span class="fc" id="L464">            xPoints[i] = xx;</span>
+<span class="fc" id="L465">            yPoints[i] = yy;</span>
         }
-<span class="fc" id="L365">    }</span>
+<span class="fc" id="L467">    }</span>
 
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param nXY
+     * @param xp
+     * @param yp
+     * @param minimumSeparation
+     * @return
+     */
     protected boolean separationBetweenExistingPointsIsLargerThanMin(float[] x0, float[] y0, int nXY,
         float xp, float yp, float minimumSeparation) {
 
-<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (nXY == 0) {</span>
-<span class="fc" id="L371">            return true;</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        if (nXY == 0) {</span>
+<span class="fc" id="L483">            return true;</span>
         }
 
-<span class="fc" id="L374">        float eps = minimumSeparation/10.f;</span>
+<span class="fc" id="L486">        float eps = minimumSeparation/10.f;</span>
 
-<span class="fc" id="L376">        float minSq = minimumSeparation * minimumSeparation;</span>
+<span class="fc" id="L488">        float minSq = minimumSeparation * minimumSeparation;</span>
 
-<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
 
-<span class="fc" id="L380">            double distSq = LinesAndAngles.distSquared(x0[i], y0[i], xp, yp) + eps;</span>
+<span class="fc" id="L492">            double distSq = LinesAndAngles.distSquared(x0[i], y0[i], xp, yp) + eps;</span>
 
-<span class="fc bfc" id="L382" title="All 2 branches covered.">            if (distSq &lt; minSq) {</span>
-<span class="fc" id="L383">                return false;</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">            if (distSq &lt; minSq) {</span>
+<span class="fc" id="L495">                return false;</span>
             }
         }
-<span class="fc" id="L386">        return true;</span>
+<span class="fc" id="L498">        return true;</span>
     }
 
+    /**
+     *
+     * @param sr
+     * @param nBackgroundPoints
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param x0
+     * @param y0
+     * @param xyStartOffset
+     */
     protected void createRandomPointsInRectangle(SecureRandom sr, int nBackgroundPoints,
         float xmin, float xmax, float ymin, float ymax,
         float[] x0, float[] y0,  int xyStartOffset) {
 
-<span class="fc" id="L393">        float xWidth = xmax - xmin;</span>
-<span class="fc" id="L394">        float yHeight = ymax - ymin;</span>
+<span class="fc" id="L517">        float xWidth = xmax - xmin;</span>
+<span class="fc" id="L518">        float yHeight = ymax - ymin;</span>
 
-<span class="fc bfc" id="L396" title="All 2 branches covered.">        for (int i = 0; i &lt; nBackgroundPoints; i++) {</span>
-<span class="fc" id="L397">            x0[xyStartOffset + i] = sr.nextFloat()*xWidth;</span>
-<span class="fc" id="L398">            y0[xyStartOffset + i] = sr.nextFloat()*yHeight;</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">        for (int i = 0; i &lt; nBackgroundPoints; i++) {</span>
+<span class="fc" id="L521">            x0[xyStartOffset + i] = sr.nextFloat()*xWidth;</span>
+<span class="fc" id="L522">            y0[xyStartOffset + i] = sr.nextFloat()*yHeight;</span>
         }
-<span class="fc" id="L400">    }</span>
+<span class="fc" id="L524">    }</span>
     
+    /**
+     *
+     * @param numberOfBackgroundPoints
+     * @param numberOfClusterPoints
+     * @param clusterSeparation
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param sr
+     * @param useRandomForErrors
+     */
     protected void createPoints(int numberOfBackgroundPoints, int[] numberOfClusterPoints,
         CLUSTER_SEPARATION clusterSeparation,
         float xmin, float xmax, float ymin, float ymax, SecureRandom sr, boolean useRandomForErrors) {
 
-<span class="pc bpc" id="L406" title="1 of 2 branches missed.">        int nClusters = (numberOfClusterPoints == null) ? 0 : numberOfClusterPoints.length;</span>
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">        int nClusters = (numberOfClusterPoints == null) ? 0 : numberOfClusterPoints.length;</span>
 
-<span class="fc" id="L408">        int nTotalPoints = 0;</span>
+<span class="fc" id="L544">        int nTotalPoints = 0;</span>
 
-<span class="fc bfc" id="L410" title="All 2 branches covered.">        for (int i = 0; i &lt; nClusters; i++) {</span>
-<span class="fc" id="L411">            nTotalPoints += numberOfClusterPoints[i];</span>
+<span class="fc bfc" id="L546" title="All 2 branches covered.">        for (int i = 0; i &lt; nClusters; i++) {</span>
+<span class="fc" id="L547">            nTotalPoints += numberOfClusterPoints[i];</span>
         }
 
-<span class="fc" id="L414">        nTotalPoints += numberOfBackgroundPoints;</span>
+<span class="fc" id="L550">        nTotalPoints += numberOfBackgroundPoints;</span>
 
         // contains points sequentially for: background, cluster[0],...cluster[n-1]
-<span class="fc" id="L417">        x = new float[nTotalPoints];</span>
-<span class="fc" id="L418">        y = new float[nTotalPoints];</span>
+<span class="fc" id="L553">        x = new float[nTotalPoints];</span>
+<span class="fc" id="L554">        y = new float[nTotalPoints];</span>
 
         // compare these to findings.  they are used to generate the clusters
-<span class="fc" id="L421">        xc = new float[nClusters];</span>
-<span class="fc" id="L422">        yc = new float[nClusters];</span>
+<span class="fc" id="L557">        xc = new float[nClusters];</span>
+<span class="fc" id="L558">        yc = new float[nClusters];</span>
 
-<span class="fc" id="L424">        createRandomPointsInRectangle(sr, numberOfBackgroundPoints, xmin, xmax, ymin, ymax, x, y, 0);</span>
+<span class="fc" id="L560">        createRandomPointsInRectangle(sr, numberOfBackgroundPoints, xmin, xmax, ymin, ymax, x, y, 0);</span>
 
-<span class="fc" id="L426">        int startOffset = numberOfBackgroundPoints;</span>
+<span class="fc" id="L562">        int startOffset = numberOfBackgroundPoints;</span>
         
-<span class="fc" id="L428">        createRandomClusters(sr, xmin, xmax, ymin, ymax, numberOfClusterPoints, clusterSeparation, x, y, xc, yc, startOffset);</span>
+<span class="fc" id="L564">        createRandomClusters(sr, xmin, xmax, ymin, ymax, numberOfClusterPoints, clusterSeparation, x, y, xc, yc, startOffset);</span>
         
-<span class="fc" id="L430">        xErrors = new float[nTotalPoints];</span>
-<span class="fc" id="L431">        yErrors = new float[nTotalPoints];</span>
-<span class="fc bfc" id="L432" title="All 2 branches covered.">        for (int i = 0; i &lt; nTotalPoints; i++) {</span>
+<span class="fc" id="L566">        xErrors = new float[nTotalPoints];</span>
+<span class="fc" id="L567">        yErrors = new float[nTotalPoints];</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">        for (int i = 0; i &lt; nTotalPoints; i++) {</span>
             // simulate x error as a percent error of 0.03 for each bin
-<span class="fc" id="L434">            xErrors[i] = x[i] * 0.03f;</span>
-<span class="fc" id="L435">            yErrors[i] = (float) (Math.sqrt(y[i]));</span>
+<span class="fc" id="L570">            xErrors[i] = x[i] * 0.03f;</span>
+<span class="fc" id="L571">            yErrors[i] = (float) (Math.sqrt(y[i]));</span>
         }
-<span class="fc" id="L437">    }</span>
+<span class="fc" id="L573">    }</span>
     
     /**
      * populate arrays xx and yy with clusters randomly populated for the given arguments.
@@ -448,13 +584,15 @@ import java.util.logging.Logger;
      * @param clusterSeparation
      * @param xx
      * @param yy
+     * @param xcenters
      * @param startOffset
+     * @param ycenters
      */
     public void createRandomClusters(SecureRandom sr, float xmin, float xmax, float ymin, float ymax, 
         int[] numberOfClusterPoints, CLUSTER_SEPARATION clusterSeparation, float[] xx, float[] yy, 
         float[] xcenters, float[] ycenters, int startOffset) {
         
-<span class="pc bpc" id="L457" title="1 of 2 branches missed.">        int nClusters = (numberOfClusterPoints == null) ? 0 : numberOfClusterPoints.length;</span>
+<span class="pc bpc" id="L595" title="1 of 2 branches missed.">        int nClusters = (numberOfClusterPoints == null) ? 0 : numberOfClusterPoints.length;</span>
                 
         /*  For n = 3
          *
@@ -466,88 +604,100 @@ import java.util.logging.Logger;
          *             d=max/2*n               .  |
          *                                     r=max/4*n
          */
-<span class="fc bfc" id="L469" title="All 2 branches covered.">        if (nClusters &gt; 0) {</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">        if (nClusters &gt; 0) {</span>
 
-<span class="fc" id="L471">            float maxClusterRadius = (xmax - xmin) / (4.0f * nClusters);</span>
+<span class="fc" id="L609">            float maxClusterRadius = (xmax - xmin) / (4.0f * nClusters);</span>
             float minDistanceBetweenClusterCenters;
             float factor;
-<span class="fc bfc" id="L474" title="All 2 branches covered.">            if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.LARGE.ordinal()) {</span>
-<span class="fc" id="L475">                factor = 4.0f;</span>
-<span class="fc bfc" id="L476" title="All 2 branches covered.">            } else if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.SMALL.ordinal()) {</span>
-<span class="fc" id="L477">                factor = 2.0f;</span>
+<span class="fc bfc" id="L612" title="All 2 branches covered.">            if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.LARGE.ordinal()) {</span>
+<span class="fc" id="L613">                factor = 4.0f;</span>
+<span class="fc bfc" id="L614" title="All 2 branches covered.">            } else if (clusterSeparation.ordinal() == CLUSTER_SEPARATION.SMALL.ordinal()) {</span>
+<span class="fc" id="L615">                factor = 2.0f;</span>
             } else {
-<span class="fc" id="L479">                factor = 3.0f;</span>
+<span class="fc" id="L617">                factor = 3.0f;</span>
             }
-<span class="fc" id="L481">            maxClusterRadius = 0.8f*(xmax - xmin) / (factor * nClusters);</span>
-<span class="fc" id="L482">            minDistanceBetweenClusterCenters = (factor * maxClusterRadius);</span>
+<span class="fc" id="L619">            maxClusterRadius = 0.8f*(xmax - xmin) / (factor * nClusters);</span>
+<span class="fc" id="L620">            minDistanceBetweenClusterCenters = (factor * maxClusterRadius);</span>
 
-<span class="fc" id="L484">            createRandomSeparatedPoints(sr, xmin + maxClusterRadius, xmax - maxClusterRadius,</span>
+<span class="fc" id="L622">            createRandomSeparatedPoints(sr, xmin + maxClusterRadius, xmax - maxClusterRadius,</span>
                 ymin + maxClusterRadius, ymax - maxClusterRadius,
                 nClusters, xcenters, ycenters, minDistanceBetweenClusterCenters);
             
-<span class="fc bfc" id="L488" title="All 2 branches covered.">            for (int i = 0; i &lt; nClusters; i++) {</span>
+<span class="fc bfc" id="L626" title="All 2 branches covered.">            for (int i = 0; i &lt; nClusters; i++) {</span>
 
-<span class="fc" id="L490">                int n = numberOfClusterPoints[i];</span>
+<span class="fc" id="L628">                int n = numberOfClusterPoints[i];</span>
 
-<span class="fc" id="L492">                createRandomPointsAroundCenter(sr, maxClusterRadius, n, xcenters[i], ycenters[i], xx, yy, startOffset);</span>
+<span class="fc" id="L630">                createRandomPointsAroundCenter(sr, maxClusterRadius, n, xcenters[i], ycenters[i], xx, yy, startOffset);</span>
 
-<span class="fc" id="L494">                startOffset += n;</span>
+<span class="fc" id="L632">                startOffset += n;</span>
             }
         }
-<span class="fc" id="L497">    }</span>
+<span class="fc" id="L635">    }</span>
 
+    /**
+     *
+     * @param sr
+     * @param numberOfClusterPoints
+     * @param xmin
+     * @param xmax
+     * @param ymin
+     * @param ymax
+     * @param maximumRadius
+     * @return
+     */
     public AxisIndexer createIndexerWithRandomPointsAroundCenterWithDSquared(
         SecureRandom sr, int numberOfClusterPoints,
         float xmin, float xmax, float ymin, float ymax, float maximumRadius) {
 
         // contains points sequentially for: background, cluster[0],...cluster[n-1]
-<span class="fc" id="L504">        x = new float[numberOfClusterPoints];</span>
-<span class="fc" id="L505">        y = new float[numberOfClusterPoints];</span>
+<span class="fc" id="L653">        x = new float[numberOfClusterPoints];</span>
+<span class="fc" id="L654">        y = new float[numberOfClusterPoints];</span>
 
         // compare these to findings.  they are used to generate the clusters
-<span class="fc" id="L508">        xc = new float[1];</span>
-<span class="fc" id="L509">        yc = new float[1];</span>
+<span class="fc" id="L657">        xc = new float[1];</span>
+<span class="fc" id="L658">        yc = new float[1];</span>
         
         /*
          *  draw center of group as anywhere from xmin + maxRadius to xmax-maxRadius and similar for y
          */
 
-<span class="fc" id="L515">        float xcd = (xmax + xmin)/2.f;</span>
-<span class="fc" id="L516">        float ycd = (ymax + ymin)/2.f;</span>
-<span class="fc" id="L517">        float xdiff = ((xmax - xmin)/2.f) - maximumRadius;</span>
-<span class="fc" id="L518">        float ydiff = ((ymax - ymin)/2.f) - maximumRadius;</span>
-<span class="fc" id="L519">        float xd = (xdiff*sr.nextFloat());</span>
-<span class="fc" id="L520">        float yd = (ydiff*sr.nextFloat());</span>
-<span class="pc bpc" id="L521" title="1 of 2 branches missed.">        float xCenter = (sr.nextBoolean()) ? xcd + xd : xcd - xd;</span>
-<span class="pc bpc" id="L522" title="1 of 2 branches missed.">        float yCenter = (sr.nextBoolean()) ? ycd + yd : ycd - yd;</span>
+<span class="fc" id="L664">        float xcd = (xmax + xmin)/2.f;</span>
+<span class="fc" id="L665">        float ycd = (ymax + ymin)/2.f;</span>
+<span class="fc" id="L666">        float xdiff = ((xmax - xmin)/2.f) - maximumRadius;</span>
+<span class="fc" id="L667">        float ydiff = ((ymax - ymin)/2.f) - maximumRadius;</span>
+<span class="fc" id="L668">        float xd = (xdiff*sr.nextFloat());</span>
+<span class="fc" id="L669">        float yd = (ydiff*sr.nextFloat());</span>
+<span class="pc bpc" id="L670" title="1 of 2 branches missed.">        float xCenter = (sr.nextBoolean()) ? xcd + xd : xcd - xd;</span>
+<span class="pc bpc" id="L671" title="1 of 2 branches missed.">        float yCenter = (sr.nextBoolean()) ? ycd + yd : ycd - yd;</span>
         
-<span class="fc" id="L524">        xc[0] = xCenter;</span>
-<span class="fc" id="L525">        yc[0] = yCenter;</span>
+<span class="fc" id="L673">        xc[0] = xCenter;</span>
+<span class="fc" id="L674">        yc[0] = yCenter;</span>
         
-<span class="fc" id="L527">        createRandomPointsAroundCenterWithDSquared(sr, maximumRadius,</span>
+<span class="fc" id="L676">        createRandomPointsAroundCenterWithDSquared(sr, maximumRadius,</span>
             numberOfClusterPoints, xCenter, yCenter, x, y, 0);
 
-<span class="fc" id="L530">        xErrors = new float[numberOfClusterPoints];</span>
-<span class="fc" id="L531">        yErrors = new float[numberOfClusterPoints];</span>
-<span class="fc bfc" id="L532" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfClusterPoints; i++) {</span>
+<span class="fc" id="L679">        xErrors = new float[numberOfClusterPoints];</span>
+<span class="fc" id="L680">        yErrors = new float[numberOfClusterPoints];</span>
+<span class="fc bfc" id="L681" title="All 2 branches covered.">        for (int i = 0; i &lt; numberOfClusterPoints; i++) {</span>
             // simulate x error as a percent error of 0.03 for each bin
-<span class="fc" id="L534">            xErrors[i] = x[i] * 0.03f;</span>
-<span class="fc" id="L535">            yErrors[i] = (float) (Math.sqrt(y[i]));</span>
+<span class="fc" id="L683">            xErrors[i] = x[i] * 0.03f;</span>
+<span class="fc" id="L684">            yErrors[i] = (float) (Math.sqrt(y[i]));</span>
         }
         
-<span class="fc" id="L538">        AxisIndexer indexer = new AxisIndexer();</span>
-<span class="fc" id="L539">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
+<span class="fc" id="L687">        AxisIndexer indexer = new AxisIndexer();</span>
+<span class="fc" id="L688">        indexer.sortAndIndexX(x, y, xErrors, yErrors, x.length);</span>
 
-<span class="fc" id="L541">        return indexer;</span>
+<span class="fc" id="L690">        return indexer;</span>
     }
 
      /**
-     *      |
-     *      |
-     * -----|.....  &lt;---- angle is w.r.t y=0, x=xc.  increases in CW order
-     *      |
-     *      |
-     *
+     &lt;pre&gt;
+            |
+            |
+       -----|.....  &amp;lt;---- angle is w.r.t y=0, x=xc.  increases in CW order
+            |
+            |
+     &lt;/pre&gt;
      * @param xc
      * @param yc
      * @param radius
@@ -556,21 +706,22 @@ import java.util.logging.Logger;
      */
     public static float[] calculateXAndYFromXcYcAndRadius(float xc, float yc, float radius, double angleInDegreesFromYEQ0XGT0) {
 
-<span class="fc" id="L559">        double dx = radius * Math.cos(angleInDegreesFromYEQ0XGT0 * (Math.PI/180.f));</span>
-<span class="fc" id="L560">        double dy = radius * Math.sin(angleInDegreesFromYEQ0XGT0 * (Math.PI/180.f));</span>
+<span class="fc" id="L709">        double dx = radius * Math.cos(angleInDegreesFromYEQ0XGT0 * (Math.PI/180.f));</span>
+<span class="fc" id="L710">        double dy = radius * Math.sin(angleInDegreesFromYEQ0XGT0 * (Math.PI/180.f));</span>
 
-<span class="fc" id="L562">        float x = (float) (xc + dx);</span>
-<span class="fc" id="L563">        float y = (float) (yc - dy);</span>
-<span class="fc" id="L564">        return new float[]{x, y};</span>
+<span class="fc" id="L712">        float x = (float) (xc + dx);</span>
+<span class="fc" id="L713">        float y = (float) (yc - dy);</span>
+<span class="fc" id="L714">        return new float[]{x, y};</span>
     }
 
     /**
-     *   *  |  *
-     *      |
-     * -----|.....  &lt;---- angle is w.r.t y=0, x=xc.  increases in CCW order
-     *  *   |
-     *      |  *
-     *
+     &lt;pre&gt;
+         *  |  *
+            |
+       -----|.....  &amp;lt;---- angle is w.r.t y=0, x=xc.  increases in CCW order
+        *   |
+            |  *
+     &lt;/pre&gt;
      * @param xc
      * @param yc
      * @param radius
@@ -579,7 +730,7 @@ import java.util.logging.Logger;
      */
     static float[] calculateXAndYFromXcYcAndRadiusCCW(float xc, float yc, float radius, double angleInDegreesFromYEQ0XGT0) {
 
-<span class="nc" id="L582">        return calculateXAndYFromXcYcAndRadius(xc, yc, radius, 360 - angleInDegreesFromYEQ0XGT0);</span>
+<span class="nc" id="L733">        return calculateXAndYFromXcYcAndRadius(xc, yc, radius, 360 - angleInDegreesFromYEQ0XGT0);</span>
     }
     
     static float[] calculateRandomXAndYWithinAnnulus(SecureRandom sr, 
@@ -590,13 +741,13 @@ import java.util.logging.Logger;
         *    -- then choose a random angle zero through 360.
         *    -- then determine x and y from the distance and the angle
         */
-<span class="fc" id="L593">        float radius = innerRadius + (outerRadius - innerRadius) * sr.nextFloat();</span>
+<span class="fc" id="L744">        float radius = innerRadius + (outerRadius - innerRadius) * sr.nextFloat();</span>
         
-<span class="fc" id="L595">        double angle = 360. * sr.nextDouble();</span>
+<span class="fc" id="L746">        double angle = 360. * sr.nextDouble();</span>
         
-<span class="fc" id="L597">        float[] xy = calculateXAndYFromXcYcAndRadius(xc, yc, radius, angle);</span>
+<span class="fc" id="L748">        float[] xy = calculateXAndYFromXcYcAndRadius(xc, yc, radius, angle);</span>
         
-<span class="fc" id="L599">        return xy;</span>
+<span class="fc" id="L750">        return xy;</span>
     }
 
 }

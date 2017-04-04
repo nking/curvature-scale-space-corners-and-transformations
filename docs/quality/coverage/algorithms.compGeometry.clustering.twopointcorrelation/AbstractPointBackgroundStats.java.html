@@ -30,33 +30,56 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
      */
     protected float backgroundDensityError;
 
+    /**
+     *
+     */
     protected final AxisIndexer indexer;
-<span class="fc" id="L34">    protected boolean didReadPerisistedIndexer = false;</span>
-<span class="fc" id="L35">    protected boolean debug = false;</span>
 
-<span class="fc" id="L37">    public AbstractPointBackgroundStats(AxisIndexer indexedSortedPoints) {</span>
-<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (indexedSortedPoints == null) {</span>
-<span class="fc" id="L39">            throw new IllegalArgumentException(&quot;indexedSortedPoints cannot be null&quot;);</span>
+    /**
+     *
+     */
+<span class="fc" id="L41">    protected boolean didReadPerisistedIndexer = false;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L46">    protected boolean debug = false;</span>
+
+    /**
+     *
+     * @param indexedSortedPoints
+     */
+<span class="fc" id="L52">    public AbstractPointBackgroundStats(AxisIndexer indexedSortedPoints) {</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (indexedSortedPoints == null) {</span>
+<span class="fc" id="L54">            throw new IllegalArgumentException(&quot;indexedSortedPoints cannot be null&quot;);</span>
         }
-<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (indexedSortedPoints.getX() == null) {</span>
-<span class="fc" id="L42">            throw new IllegalArgumentException(&quot;indexedSortedPoints has to contain sorted data&quot;);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (indexedSortedPoints.getX() == null) {</span>
+<span class="fc" id="L57">            throw new IllegalArgumentException(&quot;indexedSortedPoints has to contain sorted data&quot;);</span>
         }
-<span class="fc" id="L44">        this.indexer = indexedSortedPoints;</span>
-<span class="fc" id="L45">    }</span>
+<span class="fc" id="L59">        this.indexer = indexedSortedPoints;</span>
+<span class="fc" id="L60">    }</span>
     /**
      * load the indexer from the file and note that point errors are expected to be in the file
      * @param persistedIndexerFilePath
      * @throws IOException
      */
-<span class="fc" id="L51">    public AbstractPointBackgroundStats(String persistedIndexerFilePath) throws IOException {</span>
-<span class="fc" id="L52">        indexer = SerializerUtil.readPersistedPoints(persistedIndexerFilePath, true);</span>
-<span class="fc" id="L53">        didReadPerisistedIndexer = true;</span>
-<span class="fc" id="L54">    }</span>
+<span class="fc" id="L66">    public AbstractPointBackgroundStats(String persistedIndexerFilePath) throws IOException {</span>
+<span class="fc" id="L67">        indexer = SerializerUtil.readPersistedPoints(persistedIndexerFilePath, true);</span>
+<span class="fc" id="L68">        didReadPerisistedIndexer = true;</span>
+<span class="fc" id="L69">    }</span>
 
+    /**
+     *
+     * @param turnDebugOn
+     */
     public void setDebug(boolean turnDebugOn) {
-<span class="fc" id="L57">        this.debug = turnDebugOn;</span>
-<span class="fc" id="L58">    }</span>
+<span class="fc" id="L76">        this.debug = turnDebugOn;</span>
+<span class="fc" id="L77">    }</span>
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     */
     public abstract void calc() throws TwoPointVoidStatsException;
 
     /**
@@ -74,106 +97,148 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
      */
     public void calc(String persistedBackgroundFileName) throws TwoPointVoidStatsException, IOException {
 
-<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (!didReadPerisistedIndexer) {</span>
-<span class="nc" id="L78">            throw new IllegalStateException(&quot;In order to use a persisted set of point densities, need to read the complementary indexer files too.&quot;);</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (!didReadPerisistedIndexer) {</span>
+<span class="nc" id="L101">            throw new IllegalStateException(&quot;In order to use a persisted set of point densities, need to read the complementary indexer files too.&quot;);</span>
         }
-<span class="fc" id="L80">        readTwoPointBackground(persistedBackgroundFileName);</span>
+<span class="fc" id="L103">        readTwoPointBackground(persistedBackgroundFileName);</span>
 
-<span class="fc" id="L82">        calculateStats();</span>
-<span class="fc" id="L83">    }</span>
+<span class="fc" id="L105">        calculateStats();</span>
+<span class="fc" id="L106">    }</span>
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     */
     protected abstract void calculateStats() throws TwoPointVoidStatsException;
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public abstract String persistTwoPointBackground() throws IOException;
 
+    /**
+     *
+     * @param persistedFilePath
+     * @return
+     * @throws IOException
+     */
     public abstract boolean readTwoPointBackground(String persistedFilePath) throws IOException;
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public String persistIndexer() throws IOException {
-<span class="fc" id="L92">        return SerializerUtil.serializeIndexer(indexer);</span>
+<span class="fc" id="L135">        return SerializerUtil.serializeIndexer(indexer);</span>
     }
 
+    /**
+     *
+     * @param oos
+     * @throws IOException
+     */
     protected abstract void serializeTwoPointBackground(ObjectOutputStream oos) throws IOException;
 
+    /**
+     *
+     * @param fileRootName
+     * @return
+     * @throws IOException
+     */
     protected String serializeTwoPointBackground(String fileRootName) throws IOException {
 
-<span class="fc" id="L99">        String number = Calendar.getInstance().getTime().toString();</span>
-<span class="fc" id="L100">        number = number.replaceAll(&quot;\\s+&quot;, &quot;&quot;);</span>
+<span class="fc" id="L153">        String number = Calendar.getInstance().getTime().toString();</span>
+<span class="fc" id="L154">        number = number.replaceAll(&quot;\\s+&quot;, &quot;&quot;);</span>
 
-<span class="fc" id="L102">        String fileName = fileRootName + number + &quot;.bin&quot;;</span>
-<span class="fc" id="L103">        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);</span>
+<span class="fc" id="L156">        String fileName = fileRootName + number + &quot;.bin&quot;;</span>
+<span class="fc" id="L157">        String filePath = ResourceFinder.getAFilePathInTmpData(fileName);</span>
 
-<span class="fc" id="L105">        File file = new File(filePath);</span>
+<span class="fc" id="L159">        File file = new File(filePath);</span>
 
-<span class="fc" id="L107">        OutputStream fos = null;</span>
-<span class="fc" id="L108">        ObjectOutputStream oos = null;</span>
+<span class="fc" id="L161">        OutputStream fos = null;</span>
+<span class="fc" id="L162">        ObjectOutputStream oos = null;</span>
 
         try {
-<span class="fc" id="L111">            fos = new FileOutputStream(file);</span>
+<span class="fc" id="L165">            fos = new FileOutputStream(file);</span>
 
-<span class="fc" id="L113">            oos = new ObjectOutputStream(fos);</span>
+<span class="fc" id="L167">            oos = new ObjectOutputStream(fos);</span>
 
-<span class="fc" id="L115">            serializeTwoPointBackground(oos);</span>
+<span class="fc" id="L169">            serializeTwoPointBackground(oos);</span>
 
-<span class="fc" id="L117">            return file.getPath();</span>
+<span class="fc" id="L171">            return file.getPath();</span>
 
         } finally {
-<span class="nc" id="L120">            try {</span>
-<span class="pc bpc" id="L121" title="3 of 4 branches missed.">                if (fos != null) {</span>
-<span class="pc" id="L122">                    fos.close();</span>
+<span class="nc" id="L174">            try {</span>
+<span class="pc bpc" id="L175" title="3 of 4 branches missed.">                if (fos != null) {</span>
+<span class="pc" id="L176">                    fos.close();</span>
                 }
-<span class="pc bpc" id="L124" title="3 of 4 branches missed.">                if (oos != null) {</span>
-<span class="pc" id="L125">                    oos.close();</span>
+<span class="pc bpc" id="L178" title="3 of 4 branches missed.">                if (oos != null) {</span>
+<span class="pc" id="L179">                    oos.close();</span>
                 }
-<span class="nc" id="L127">            } catch (IOException e1) {</span>
-<span class="nc" id="L128">                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());</span>
-<span class="pc" id="L129">            }</span>
+<span class="nc" id="L181">            } catch (IOException e1) {</span>
+<span class="nc" id="L182">                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());</span>
+<span class="pc" id="L183">            }</span>
         }
     }
 
+    /**
+     *
+     * @param oos
+     * @throws IOException
+     */
     protected abstract void deserializeTwoPointBackground(ObjectInputStream oos) throws IOException;
 
+    /**
+     *
+     * @param persistedFilePath
+     * @return
+     * @throws IOException
+     */
     protected boolean deserializeTwoPointBackground(String persistedFilePath) throws IOException {
 
-<span class="fc" id="L137">        File file = new File(persistedFilePath);</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (!file.exists()) {</span>
-<span class="nc" id="L139">            throw new IOException(&quot;Could not find file&quot;);</span>
+<span class="fc" id="L202">        File file = new File(persistedFilePath);</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (!file.exists()) {</span>
+<span class="nc" id="L204">            throw new IOException(&quot;Could not find file&quot;);</span>
         }
 
-<span class="fc" id="L142">        InputStream fis = null;</span>
-<span class="fc" id="L143">        ObjectInputStream ois = null;</span>
+<span class="fc" id="L207">        InputStream fis = null;</span>
+<span class="fc" id="L208">        ObjectInputStream ois = null;</span>
 
         try {
-<span class="fc" id="L146">            fis = new FileInputStream(file);</span>
+<span class="fc" id="L211">            fis = new FileInputStream(file);</span>
 
-<span class="fc" id="L148">            ois = new ObjectInputStream(fis);</span>
+<span class="fc" id="L213">            ois = new ObjectInputStream(fis);</span>
 
-<span class="fc" id="L150">            deserializeTwoPointBackground(ois);</span>
+<span class="fc" id="L215">            deserializeTwoPointBackground(ois);</span>
 
-<span class="fc" id="L152">            return true;</span>
+<span class="fc" id="L217">            return true;</span>
 
-<span class="nc" id="L154">        } catch (IOException e1) {</span>
-<span class="nc" id="L155">            Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());</span>
+<span class="nc" id="L219">        } catch (IOException e1) {</span>
+<span class="nc" id="L220">            Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());</span>
         } finally {
-<span class="nc" id="L157">            try {</span>
-<span class="pc bpc" id="L158" title="5 of 6 branches missed.">                if (fis != null) {</span>
-<span class="pc" id="L159">                    fis.close();</span>
+<span class="nc" id="L222">            try {</span>
+<span class="pc bpc" id="L223" title="5 of 6 branches missed.">                if (fis != null) {</span>
+<span class="pc" id="L224">                    fis.close();</span>
                 }
-<span class="pc bpc" id="L161" title="5 of 6 branches missed.">                if (ois != null) {</span>
-<span class="pc" id="L162">                    ois.close();</span>
+<span class="pc bpc" id="L226" title="5 of 6 branches missed.">                if (ois != null) {</span>
+<span class="pc" id="L227">                    ois.close();</span>
                 }
-<span class="nc" id="L164">            } catch (IOException e1) {</span>
-<span class="nc" id="L165">                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());</span>
-<span class="pc" id="L166">            }</span>
-<span class="nc" id="L167">        }</span>
+<span class="nc" id="L229">            } catch (IOException e1) {</span>
+<span class="nc" id="L230">                Logger.getLogger(SerializerUtil.class.getName()).severe(e1.getMessage());</span>
+<span class="pc" id="L231">            }</span>
+<span class="nc" id="L232">        }</span>
 
-<span class="nc" id="L169">        return false;</span>
+<span class="nc" id="L234">        return false;</span>
     }
 
     /**
      * @return the backgroundDensity
      */
     public float getBackgroundDensity() {
-<span class="fc" id="L176">        return this.backgroundDensity;</span>
+<span class="fc" id="L241">        return this.backgroundDensity;</span>
     }
 
     /**
@@ -183,7 +248,7 @@ public abstract class AbstractPointBackgroundStats implements IPointBackgroundSt
      * @return the backgroundDensityError
      */
     public float getBackgroundDensityError() {
-<span class="fc" id="L186">        return this.backgroundDensityError;</span>
+<span class="fc" id="L251">        return this.backgroundDensityError;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

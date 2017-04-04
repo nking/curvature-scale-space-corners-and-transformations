@@ -12,224 +12,247 @@ import java.io.ObjectOutput;
 
     private static final long serialVersionUID = -7105371701539621066L;
 
-<span class="fc" id="L15">    protected float[] xHist = null;</span>
-<span class="fc" id="L16">    protected int[] yHist = null;</span>
-<span class="fc" id="L17">    protected float[] yHistFloat = null;</span>
-<span class="fc" id="L18">    protected float[] yErrors = null;</span>
-<span class="fc" id="L19">    protected float[] xErrors = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L18">    protected float[] xHist = null;</span>
 
+    /**
+     *
+     */
+<span class="fc" id="L23">    protected int[] yHist = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L28">    protected float[] yHistFloat = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L33">    protected float[] yErrors = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L38">    protected float[] xErrors = null;</span>
+
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed() {
 
-<span class="fc" id="L23">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+<span class="fc" id="L46">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
 
-<span class="pc bpc" id="L25" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
 
-<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
 
-<span class="fc" id="L29">        int overheadBytes = 16;</span>
+<span class="fc" id="L52">        int overheadBytes = 16;</span>
 
-<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
-<span class="fc" id="L32">        int arrayBytes = 32/8;</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
+<span class="fc" id="L55">        int arrayBytes = 32/8;</span>
 
-<span class="fc" id="L34">        long sumBytes = 0;</span>
+<span class="fc" id="L57">        long sumBytes = 0;</span>
 
-<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (xHist != null) {</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (xHist != null) {</span>
 
-<span class="fc" id="L38">            sumBytes += (arrayBytes + (xHist.length*arrayBytes));</span>
+<span class="fc" id="L61">            sumBytes += (arrayBytes + (xHist.length*arrayBytes));</span>
 
-<span class="fc" id="L40">            sumBytes += (arrayBytes + (yHist.length*arrayBytes));</span>
+<span class="fc" id="L63">            sumBytes += (arrayBytes + (yHist.length*arrayBytes));</span>
         }
 
-<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (yHistFloat != null) {</span>
-<span class="fc" id="L44">            sumBytes += (arrayBytes + (yHistFloat.length*arrayBytes));</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (yHistFloat != null) {</span>
+<span class="fc" id="L67">            sumBytes += (arrayBytes + (yHistFloat.length*arrayBytes));</span>
         }
 
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (yErrors != null) {</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (yErrors != null) {</span>
 
-<span class="fc" id="L49">            sumBytes += (arrayBytes + (xErrors.length*arrayBytes));</span>
+<span class="fc" id="L72">            sumBytes += (arrayBytes + (xErrors.length*arrayBytes));</span>
 
-<span class="fc" id="L51">            sumBytes += (arrayBytes + (yErrors.length*arrayBytes));</span>
+<span class="fc" id="L74">            sumBytes += (arrayBytes + (yErrors.length*arrayBytes));</span>
         }
 
-<span class="fc" id="L54">        sumBytes += overheadBytes;</span>
+<span class="fc" id="L77">        sumBytes += overheadBytes;</span>
 
         // amount of padding needed to make it a round 8 bytes
-<span class="fc" id="L57">        long padding = (sumBytes % 8);</span>
+<span class="fc" id="L80">        long padding = (sumBytes % 8);</span>
 
-<span class="fc" id="L59">        sumBytes += padding;</span>
+<span class="fc" id="L82">        sumBytes += padding;</span>
 
-<span class="fc" id="L61">        return sumBytes;</span>
+<span class="fc" id="L84">        return sumBytes;</span>
     }
 
     /**
      * @return the xHist
      */
     public float[] getXHist() {
-<span class="fc" id="L68">        return xHist;</span>
+<span class="fc" id="L91">        return xHist;</span>
     }
 
     /**
      * @return the yHist
      */
     public int[] getYHist() {
-<span class="fc" id="L75">        return yHist;</span>
+<span class="fc" id="L98">        return yHist;</span>
     }
 
     /**
      * @return the yHistFloat
      */
     public float[] getYHistFloat() {
-<span class="fc" id="L82">        return yHistFloat;</span>
+<span class="fc" id="L105">        return yHistFloat;</span>
     }
 
     /**
      * @return the yErrors
      */
     public float[] getYErrors() {
-<span class="fc" id="L89">        return yErrors;</span>
+<span class="fc" id="L112">        return yErrors;</span>
     }
 
     /**
      * @return the xErrors
      */
     public float[] getXErrors() {
-<span class="fc" id="L96">        return xErrors;</span>
+<span class="fc" id="L119">        return xErrors;</span>
     }
 
     /**
      * @param xHist the xHist to set
      */
     public void setXHist(float[] xHist) {
-<span class="fc" id="L103">        this.xHist = xHist;</span>
-<span class="fc" id="L104">    }</span>
+<span class="fc" id="L126">        this.xHist = xHist;</span>
+<span class="fc" id="L127">    }</span>
 
     /**
      * @param yHist the yHist to set
      */
     public void setYHist(int[] yHist) {
-<span class="fc" id="L110">        this.yHist = yHist;</span>
-<span class="fc" id="L111">    }</span>
+<span class="fc" id="L133">        this.yHist = yHist;</span>
+<span class="fc" id="L134">    }</span>
 
     /**
      * @param yHistFloat the yHistFloat to set
      */
     public void setYHistFloat(float[] yHistFloat) {
-<span class="fc" id="L117">        this.yHistFloat = yHistFloat;</span>
-<span class="fc" id="L118">    }</span>
+<span class="fc" id="L140">        this.yHistFloat = yHistFloat;</span>
+<span class="fc" id="L141">    }</span>
 
     /**
      * @param yErrors the yErrors to set
      */
     public void setYErrors(float[] yErrors) {
-<span class="fc" id="L124">        this.yErrors = yErrors;</span>
-<span class="fc" id="L125">    }</span>
+<span class="fc" id="L147">        this.yErrors = yErrors;</span>
+<span class="fc" id="L148">    }</span>
 
     /**
      * @param xErrors the xErrors to set
      */
     public void setXErrors(float[] xErrors) {
-<span class="fc" id="L131">        this.xErrors = xErrors;</span>
-<span class="fc" id="L132">    }</span>
+<span class="fc" id="L154">        this.xErrors = xErrors;</span>
+<span class="fc" id="L155">    }</span>
     
     public String toString() {
         
-<span class="nc" id="L136">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L159">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L138">        sb.append(&quot;histogram=[&quot;);</span>
+<span class="nc" id="L161">        sb.append(&quot;histogram=[&quot;);</span>
         
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
             
-<span class="nc" id="L142">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
+<span class="nc" id="L165">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
             
-<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (yHist != null) {</span>
-<span class="nc" id="L145">                sb.append(yHist[i]);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (yHist != null) {</span>
+<span class="nc" id="L168">                sb.append(yHist[i]);</span>
             } else {
-<span class="nc" id="L147">                sb.append(yHistFloat[i]);</span>
+<span class="nc" id="L170">                sb.append(yHistFloat[i]);</span>
             }
-<span class="nc" id="L149">            sb.append(&quot;) &quot;);</span>
+<span class="nc" id="L172">            sb.append(&quot;) &quot;);</span>
             
         }
         
-<span class="nc" id="L153">        sb.append(&quot;]\n&quot;);</span>
+<span class="nc" id="L176">        sb.append(&quot;]\n&quot;);</span>
         
-<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (xErrors != null) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (xErrors != null) {</span>
             
-<span class="nc" id="L157">            sb.append(&quot;histogram errors=[&quot;);</span>
+<span class="nc" id="L180">            sb.append(&quot;histogram errors=[&quot;);</span>
             
-<span class="nc bnc" id="L159" title="All 2 branches missed.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
 
-<span class="nc" id="L161">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
+<span class="nc" id="L184">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
 
-<span class="nc" id="L163">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
+<span class="nc" id="L186">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
             }
             
-<span class="nc" id="L166">            sb.append(&quot;]\n&quot;);</span>
+<span class="nc" id="L189">            sb.append(&quot;]\n&quot;);</span>
         }      
         
-<span class="nc" id="L169">        return sb.toString();</span>
+<span class="nc" id="L192">        return sb.toString();</span>
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
 
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (xHist == null) {</span>
-<span class="nc" id="L176">            return;</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">        if (xHist == null) {</span>
+<span class="nc" id="L199">            return;</span>
         }
 
-<span class="fc" id="L179">        out.writeInt(xHist.length);</span>
+<span class="fc" id="L202">        out.writeInt(xHist.length);</span>
 
-<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
 
-<span class="fc" id="L183">            out.writeFloat(xHist[i]);</span>
-<span class="fc" id="L184">            out.writeInt(yHist[i]);</span>
-<span class="fc" id="L185">            out.writeFloat(yHistFloat[i]);</span>
+<span class="fc" id="L206">            out.writeFloat(xHist[i]);</span>
+<span class="fc" id="L207">            out.writeInt(yHist[i]);</span>
+<span class="fc" id="L208">            out.writeFloat(yHistFloat[i]);</span>
 
-<span class="fc" id="L187">            out.flush();</span>
+<span class="fc" id="L210">            out.flush();</span>
         }
 
-<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (xErrors == null) {</span>
-<span class="nc" id="L191">            out.writeInt(0);</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">        if (xErrors == null) {</span>
+<span class="nc" id="L214">            out.writeInt(0);</span>
         } else {
-<span class="fc" id="L193">            out.writeInt(xErrors.length);</span>
+<span class="fc" id="L216">            out.writeInt(xErrors.length);</span>
         
-<span class="fc bfc" id="L195" title="All 2 branches covered.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
 
-<span class="fc" id="L197">                out.writeFloat(xErrors[i]);</span>
-<span class="fc" id="L198">                out.writeFloat(yErrors[i]);</span>
+<span class="fc" id="L220">                out.writeFloat(xErrors[i]);</span>
+<span class="fc" id="L221">                out.writeFloat(yErrors[i]);</span>
 
-<span class="fc" id="L200">                out.flush();</span>
+<span class="fc" id="L223">                out.flush();</span>
             }
         }
-<span class="fc" id="L203">    }</span>
+<span class="fc" id="L226">    }</span>
 
     @Override
     public void readExternal(ObjectInput in) throws IOException {
 
-<span class="fc" id="L208">        int n = in.readInt();</span>
+<span class="fc" id="L231">        int n = in.readInt();</span>
 
-<span class="fc" id="L210">        xHist = new float[n];</span>
-<span class="fc" id="L211">        yHist = new int[n];</span>
-<span class="fc" id="L212">        yHistFloat = new float[n];</span>
+<span class="fc" id="L233">        xHist = new float[n];</span>
+<span class="fc" id="L234">        yHist = new int[n];</span>
+<span class="fc" id="L235">        yHistFloat = new float[n];</span>
 
-<span class="fc bfc" id="L214" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L215">            xHist[i] = in.readFloat();</span>
-<span class="fc" id="L216">            yHist[i] = in.readInt();</span>
-<span class="fc" id="L217">            yHistFloat[i] = in.readFloat();</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L238">            xHist[i] = in.readFloat();</span>
+<span class="fc" id="L239">            yHist[i] = in.readInt();</span>
+<span class="fc" id="L240">            yHistFloat[i] = in.readFloat();</span>
         }
 
-<span class="fc" id="L220">        int ne = in.readInt();</span>
+<span class="fc" id="L243">        int ne = in.readInt();</span>
 
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (ne == 0) {</span>
-<span class="nc" id="L223">            return;</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (ne == 0) {</span>
+<span class="nc" id="L246">            return;</span>
         }
 
-<span class="fc" id="L226">        xErrors = new float[ne];</span>
-<span class="fc" id="L227">        yErrors = new float[ne];</span>
+<span class="fc" id="L249">        xErrors = new float[ne];</span>
+<span class="fc" id="L250">        yErrors = new float[ne];</span>
 
-<span class="fc bfc" id="L229" title="All 2 branches covered.">        for (int i = 0; i &lt; ne; i++) {</span>
-<span class="fc" id="L230">            xErrors[i] = in.readFloat();</span>
-<span class="fc" id="L231">            yErrors[i] = in.readFloat();</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        for (int i = 0; i &lt; ne; i++) {</span>
+<span class="fc" id="L253">            xErrors[i] = in.readFloat();</span>
+<span class="fc" id="L254">            yErrors[i] = in.readFloat();</span>
         }
-<span class="fc" id="L233">    }</span>
+<span class="fc" id="L256">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

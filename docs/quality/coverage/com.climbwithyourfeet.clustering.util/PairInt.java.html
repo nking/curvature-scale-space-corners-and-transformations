@@ -9,43 +9,78 @@
  */
 public class PairInt {
     
+    /**
+     *
+     */
     protected final int x;
+
+    /**
+     *
+     */
     protected final int y;
     
-<span class="fc" id="L15">    public PairInt(int xPoint, int yPoint) {</span>
-<span class="fc" id="L16">        x = xPoint;</span>
-<span class="fc" id="L17">        y = yPoint;</span>
-<span class="fc" id="L18">    }</span>
+    /**
+     *
+     * @param xPoint
+     * @param yPoint
+     */
+<span class="fc" id="L27">    public PairInt(int xPoint, int yPoint) {</span>
+<span class="fc" id="L28">        x = xPoint;</span>
+<span class="fc" id="L29">        y = yPoint;</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     *
+     * @return
+     */
     public int getX() {
-<span class="fc" id="L20">        return x;</span>
+<span class="fc" id="L37">        return x;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public int getY() {
-<span class="fc" id="L23">        return y;</span>
+<span class="fc" id="L45">        return y;</span>
     }
 
     @Override
     public boolean equals(Object obj) {
         
-<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if (!(obj instanceof PairInt)) {</span>
-<span class="nc" id="L30">            return false;    </span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (!(obj instanceof PairInt)) {</span>
+<span class="nc" id="L52">            return false;    </span>
         }
         
-<span class="fc" id="L33">        PairInt other = (PairInt)obj;</span>
+<span class="fc" id="L55">        PairInt other = (PairInt)obj;</span>
         
-<span class="pc bpc" id="L35" title="2 of 4 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
+<span class="pc bpc" id="L57" title="2 of 4 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
     }
 
     @Override
     public int hashCode() {
         
-<span class="fc" id="L41">        int hash = fnvHashCode(this.x, this.y);</span>
+<span class="fc" id="L63">        int hash = fnvHashCode(this.x, this.y);</span>
 
-<span class="fc" id="L43">        return hash;</span>
+<span class="fc" id="L65">        return hash;</span>
     }
 
-<span class="fc" id="L46">    protected static int fnv321aInit = 0x811c9dc5;</span>
-<span class="fc" id="L47">    protected static int fnv32Prime = 0x01000193;</span>
+    /**
+     *
+     */
+<span class="fc" id="L71">    protected static int fnv321aInit = 0x811c9dc5;</span>
 
+    /**
+     *
+     */
+<span class="fc" id="L76">    protected static int fnv32Prime = 0x01000193;</span>
+
+    /**
+     *
+     * @param i0
+     * @param i1
+     * @return
+     */
     protected int fnvHashCode(int i0, int i1) {
 
         /*
@@ -58,36 +93,40 @@ public class PairInt {
          * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
          */
 
-<span class="fc" id="L61">        int hash = 0;</span>
+<span class="fc" id="L96">        int hash = 0;</span>
 
-<span class="fc" id="L63">        int sum = fnv321aInit;</span>
+<span class="fc" id="L98">        int sum = fnv321aInit;</span>
 
         // xor the bottom with the current octet.
-<span class="fc" id="L66">        sum ^= i0;</span>
+<span class="fc" id="L101">        sum ^= i0;</span>
 
         // multiply by the 32 bit FNV magic prime mod 2^32
-<span class="fc" id="L69">        sum *= fnv32Prime;</span>
+<span class="fc" id="L104">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L71">        sum ^= i1;</span>
+<span class="fc" id="L106">        sum ^= i1;</span>
         
-<span class="fc" id="L73">        sum *= fnv32Prime;</span>
+<span class="fc" id="L108">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L75">        hash = sum;</span>
+<span class="fc" id="L110">        hash = sum;</span>
 
-<span class="fc" id="L77">        return hash;</span>
+<span class="fc" id="L112">        return hash;</span>
     }
     
+    /**
+     *
+     * @return
+     */
     public PairInt copy() {
-<span class="nc" id="L81">        return new PairInt(x, y);</span>
+<span class="nc" id="L120">        return new PairInt(x, y);</span>
     }
 
     @Override
     public String toString() {
         
-<span class="nc" id="L87">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
-<span class="nc" id="L88">        sb.append(Integer.toString(x)).append(&quot;,&quot;).append(Integer.toString(y)).append(&quot;)&quot;);</span>
+<span class="nc" id="L126">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
+<span class="nc" id="L127">        sb.append(Integer.toString(x)).append(&quot;,&quot;).append(Integer.toString(y)).append(&quot;)&quot;);</span>
         
-<span class="nc" id="L90">        return sb.toString();</span>
+<span class="nc" id="L129">        return sb.toString();</span>
     }
     
 }

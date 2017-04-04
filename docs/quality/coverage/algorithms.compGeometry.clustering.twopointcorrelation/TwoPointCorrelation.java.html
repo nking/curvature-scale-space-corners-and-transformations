@@ -109,54 +109,149 @@ import java.util.logging.Logger;
  */
 public class TwoPointCorrelation {
 
+    /**
+     *
+     */
     protected enum STATE {
-        INITIALIZED, BACKGROUND_SET, CLUSTERS_FOUND
+
+        /**
+         *
+         */
+        INITIALIZED,
+
+        /**
+         *
+         */
+        BACKGROUND_SET,
+
+        /**
+         *
+         */
+        CLUSTERS_FOUND
     }
 
+    /**
+     *
+     */
     protected enum BACKGROUND_METHOD {
-        FIT_TWO_POINT_VOIDS, USER_SUPPLIED, DESERIALIZED
+
+        /**
+         *
+         */
+        FIT_TWO_POINT_VOIDS,
+
+        /**
+         *
+         */
+        USER_SUPPLIED,
+
+        /**
+         *
+         */
+        DESERIALIZED
     }
 
+    /**
+     *
+     */
     protected final AxisIndexer indexer;
 
-<span class="pc" id="L122">    protected Boolean refineSolution = Boolean.FALSE;</span>
+    /**
+     *
+     */
+<span class="pc" id="L162">    protected Boolean refineSolution = Boolean.FALSE;</span>
 
-<span class="pc" id="L124">    protected boolean allowRefinement = false;</span>
+    /**
+     *
+     */
+<span class="pc" id="L167">    protected boolean allowRefinement = false;</span>
 
-<span class="pc" id="L126">    protected AxisIndexer tempRefineSolnIndexer = null;</span>
+    /**
+     *
+     */
+<span class="pc" id="L172">    protected AxisIndexer tempRefineSolnIndexer = null;</span>
 
     private float backgroundDensity;
     private float backgroundError;
-<span class="pc" id="L130">    private float sigmaFactor = 2.5f;</span>
+<span class="pc" id="L176">    private float sigmaFactor = 2.5f;</span>
     // we are looking for points which have density &gt; sigmaFactor*backgroundAverage
 
-<span class="pc" id="L133">    protected int minimumNumberInCluster = 5;</span>
+    /**
+     *
+     */
+<span class="pc" id="L182">    protected int minimumNumberInCluster = 5;</span>
 
-<span class="pc" id="L135">    protected STATE state = null;</span>
-<span class="pc" id="L136">    protected BACKGROUND_METHOD bMethod = null;</span>
+    /**
+     *
+     */
+<span class="pc" id="L187">    protected STATE state = null;</span>
 
-<span class="pc" id="L138">    protected IGroupFinder groupFinder = null;</span>
+    /**
+     *
+     */
+<span class="pc" id="L192">    protected BACKGROUND_METHOD bMethod = null;</span>
 
-<span class="pc" id="L140">    protected boolean persistTheMinimaStats = false;</span>
-<span class="pc" id="L141">    protected String indexerFilePath = null;</span>
-<span class="pc" id="L142">    protected String minimaStatsFilePath = null;</span>
+    /**
+     *
+     */
+<span class="pc" id="L197">    protected IGroupFinder groupFinder = null;</span>
+
+    /**
+     *
+     */
+<span class="pc" id="L202">    protected boolean persistTheMinimaStats = false;</span>
+
+    /**
+     *
+     */
+<span class="pc" id="L207">    protected String indexerFilePath = null;</span>
+
+    /**
+     *
+     */
+<span class="pc" id="L212">    protected String minimaStatsFilePath = null;</span>
 
     // for debugging plots, keeping a handle on TwoPointVoidStats.
-<span class="pc" id="L145">    public IPointBackgroundStats backgroundStats = null;</span>
 
-<span class="pc" id="L147">    protected boolean debug = false;</span>
+    /**
+     *
+     */
+<span class="pc" id="L219">        public IPointBackgroundStats backgroundStats = null;</span>
 
-<span class="pc" id="L149">    protected boolean doLogPerformanceMetrics = false;</span>
+    /**
+     *
+     */
+<span class="pc" id="L224">    protected boolean debug = false;</span>
 
-<span class="pc" id="L151">    protected boolean setUseDownhillSimplexHistogramFitting = false;</span>
+    /**
+     *
+     */
+<span class="pc" id="L229">    protected boolean doLogPerformanceMetrics = false;</span>
+
+    /**
+     *
+     */
+<span class="pc" id="L234">    protected boolean setUseDownhillSimplexHistogramFitting = false;</span>
     
-<span class="pc" id="L153">    protected boolean useFindMethodForSparseBackground = false;</span>
+    /**
+     *
+     */
+<span class="pc" id="L239">    protected boolean useFindMethodForSparseBackground = false;</span>
     
-<span class="pc" id="L155">    protected boolean useFindMethodForHavingABackground = false;</span>
+    /**
+     *
+     */
+<span class="pc" id="L244">    protected boolean useFindMethodForHavingABackground = false;</span>
     
-<span class="pc" id="L157">    protected boolean automateTheFindMethodChoice = true;</span>
+    /**
+     *
+     */
+<span class="pc" id="L249">    protected boolean automateTheFindMethodChoice = true;</span>
 
-<span class="pc" id="L159">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    /**
+     *
+     */
+<span class="pc" id="L254">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     /**
      * constructor without errors on xPoints and yPoints.  Note that the
@@ -167,87 +262,120 @@ public class TwoPointCorrelation {
      * @param yPoints
      * @param nXYPoints
      */
-<span class="nc" id="L170">    public TwoPointCorrelation(float[] xPoints, float[] yPoints, int nXYPoints) {</span>
+<span class="nc" id="L265">    public TwoPointCorrelation(float[] xPoints, float[] yPoints, int nXYPoints) {</span>
 
-<span class="nc" id="L172">        this.indexer = new AxisIndexer();</span>
+<span class="nc" id="L267">        this.indexer = new AxisIndexer();</span>
 
-<span class="nc" id="L174">        float[] xPointErrors = Errors.populateYErrorsBySqrt(xPoints);</span>
-<span class="nc" id="L175">        float[] yPointErrors = Errors.populateYErrorsBySqrt(yPoints);</span>
+<span class="nc" id="L269">        float[] xPointErrors = Errors.populateYErrorsBySqrt(xPoints);</span>
+<span class="nc" id="L270">        float[] yPointErrors = Errors.populateYErrorsBySqrt(yPoints);</span>
 
-<span class="nc" id="L177">        indexer.sortAndIndexX(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);</span>
+<span class="nc" id="L272">        indexer.sortAndIndexX(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);</span>
 
-<span class="nc" id="L179">        state = STATE.INITIALIZED;</span>
-<span class="nc" id="L180">    }</span>
+<span class="nc" id="L274">        state = STATE.INITIALIZED;</span>
+<span class="nc" id="L275">    }</span>
 
-<span class="fc" id="L182">    public TwoPointCorrelation(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nXYPoints) {</span>
+    /**
+     *
+     * @param xPoints
+     * @param yPoints
+     * @param xPointErrors
+     * @param yPointErrors
+     * @param nXYPoints
+     */
+<span class="fc" id="L285">    public TwoPointCorrelation(float[] xPoints, float[] yPoints, float[] xPointErrors, float[] yPointErrors, int nXYPoints) {</span>
 
-<span class="fc" id="L184">        this.indexer = new AxisIndexer();</span>
+<span class="fc" id="L287">        this.indexer = new AxisIndexer();</span>
 
-<span class="fc" id="L186">        indexer.sortAndIndexX(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);</span>
+<span class="fc" id="L289">        indexer.sortAndIndexX(xPoints, yPoints, xPointErrors, yPointErrors, nXYPoints);</span>
 
-<span class="fc" id="L188">        state = STATE.INITIALIZED;</span>
-<span class="fc" id="L189">    }</span>
+<span class="fc" id="L291">        state = STATE.INITIALIZED;</span>
+<span class="fc" id="L292">    }</span>
 
-<span class="nc" id="L191">    public TwoPointCorrelation(String indexerFilePath) throws IOException {</span>
+    /**
+     *
+     * @param indexerFilePath
+     * @throws IOException
+     */
+<span class="nc" id="L299">    public TwoPointCorrelation(String indexerFilePath) throws IOException {</span>
 
-<span class="nc" id="L193">        this.indexer = SerializerUtil.readPersistedPoints(indexerFilePath, true);</span>
+<span class="nc" id="L301">        this.indexer = SerializerUtil.readPersistedPoints(indexerFilePath, true);</span>
 
-<span class="nc" id="L195">        state = STATE.INITIALIZED;</span>
-<span class="nc" id="L196">    }</span>
+<span class="nc" id="L303">        state = STATE.INITIALIZED;</span>
+<span class="nc" id="L304">    }</span>
 
-<span class="fc" id="L198">    public TwoPointCorrelation(AxisIndexer axisIndexer) throws IOException {</span>
+    /**
+     *
+     * @param axisIndexer
+     * @throws IOException
+     */
+<span class="fc" id="L311">    public TwoPointCorrelation(AxisIndexer axisIndexer) throws IOException {</span>
 
-<span class="fc" id="L200">        this.indexer = axisIndexer;</span>
+<span class="fc" id="L313">        this.indexer = axisIndexer;</span>
 
-<span class="fc" id="L202">        state = STATE.INITIALIZED;</span>
-<span class="fc" id="L203">    }</span>
+<span class="fc" id="L315">        state = STATE.INITIALIZED;</span>
+<span class="fc" id="L316">    }</span>
 
+    /**
+     *
+     */
     public void setThresholdFactorToTwo() {
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L207">            log.info(&quot;threshhold=2.0&quot;);</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L323">            log.info(&quot;threshhold=2.0&quot;);</span>
         }
-<span class="fc" id="L209">        sigmaFactor = 2.0f;</span>
-<span class="fc" id="L210">    }</span>
-    public void setThresholdFactorToTwoPointFive() {
-<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L213">            log.info(&quot;threshhold=2.5&quot;);</span>
-        }
-<span class="nc" id="L215">        sigmaFactor = 2.5f;</span>
-<span class="nc" id="L216">    }</span>
-    public void setThresholdFactorToThree() {
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L219">            log.info(&quot;threshhold=3.0&quot;);</span>
-        }
-<span class="fc" id="L221">        sigmaFactor = 3.0f;</span>
-<span class="fc" id="L222">    }</span>
+<span class="fc" id="L325">        sigmaFactor = 2.0f;</span>
+<span class="fc" id="L326">    }</span>
 
+    /**
+     *
+     */
+    public void setThresholdFactorToTwoPointFive() {
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L333">            log.info(&quot;threshhold=2.5&quot;);</span>
+        }
+<span class="nc" id="L335">        sigmaFactor = 2.5f;</span>
+<span class="nc" id="L336">    }</span>
+
+    /**
+     *
+     */
+    public void setThresholdFactorToThree() {
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L343">            log.info(&quot;threshhold=3.0&quot;);</span>
+        }
+<span class="fc" id="L345">        sigmaFactor = 3.0f;</span>
+<span class="fc" id="L346">    }</span>
+
+    /**
+     *
+     * @param turnDebugOn
+     */
     public void setDebug(boolean turnDebugOn) {
-<span class="fc" id="L225">        this.debug = turnDebugOn;</span>
-<span class="fc" id="L226">    }</span>
+<span class="fc" id="L353">        this.debug = turnDebugOn;</span>
+<span class="fc" id="L354">    }</span>
     
     /**
      * for datasets where you know that there are no points outside of the groups.
      * This has to be set before findClusters() is invoked.
      */
     public void useFindMethodForDataWithoutBackgroundPoints() {
-<span class="pc bpc" id="L233" title="1 of 2 branches missed.">        if (useFindMethodForHavingABackground) {</span>
-<span class="nc" id="L234">            throw new IllegalStateException(&quot;useFindMethodForDataWithoutBackgroundPoints and useFindMethodForHavingABackground cannot both be set&quot;);</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">        if (useFindMethodForHavingABackground) {</span>
+<span class="nc" id="L362">            throw new IllegalStateException(&quot;useFindMethodForDataWithoutBackgroundPoints and useFindMethodForHavingABackground cannot both be set&quot;);</span>
         }
-<span class="fc" id="L236">        this.useFindMethodForSparseBackground = true;</span>
-<span class="fc" id="L237">        this.automateTheFindMethodChoice = false;</span>
-<span class="fc" id="L238">    }</span>
+<span class="fc" id="L364">        this.useFindMethodForSparseBackground = true;</span>
+<span class="fc" id="L365">        this.automateTheFindMethodChoice = false;</span>
+<span class="fc" id="L366">    }</span>
     /**
      * This is the default method.  It expects that there are background data points
      * outside of groups findable in the dataset.
      * it's the default for datasets without large spatial gaps in them.
      */
     public void useFindMethodForDataWithBackgroundPoints() {
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (useFindMethodForSparseBackground) {</span>
-<span class="nc" id="L246">            throw new IllegalStateException(&quot;useFindMethodForDataWithoutBackgroundPoints and useFindMethodForHavingABackground cannot both be set&quot;);</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">        if (useFindMethodForSparseBackground) {</span>
+<span class="nc" id="L374">            throw new IllegalStateException(&quot;useFindMethodForDataWithoutBackgroundPoints and useFindMethodForHavingABackground cannot both be set&quot;);</span>
         }
-<span class="fc" id="L248">        this.useFindMethodForHavingABackground = true;</span>
-<span class="fc" id="L249">        this.automateTheFindMethodChoice = false;</span>
-<span class="fc" id="L250">    }</span>
+<span class="fc" id="L376">        this.useFindMethodForHavingABackground = true;</span>
+<span class="fc" id="L377">        this.automateTheFindMethodChoice = false;</span>
+<span class="fc" id="L378">    }</span>
 
     /**
      * if letting the code fit the background distribution, this method will use
@@ -256,104 +384,138 @@ public class TwoPointCorrelation {
      * solver.
      */
     public void setUseDownhillSimplexHistogramFitting() {
-<span class="fc" id="L259">        this.setUseDownhillSimplexHistogramFitting = true;</span>
-<span class="fc" id="L260">    }</span>
+<span class="fc" id="L387">        this.setUseDownhillSimplexHistogramFitting = true;</span>
+<span class="fc" id="L388">    }</span>
 
+    /**
+     *
+     */
     protected void logPerformanceMetrics() {
-<span class="fc" id="L263">        this.doLogPerformanceMetrics = true;</span>
-<span class="fc" id="L264">    }</span>
+<span class="fc" id="L394">        this.doLogPerformanceMetrics = true;</span>
+<span class="fc" id="L395">    }</span>
 
+    /**
+     *
+     * @param doPersistIndexer
+     * @throws IOException
+     */
     public void persistIndexer(boolean doPersistIndexer) throws IOException {
-<span class="nc" id="L267">        indexerFilePath = SerializerUtil.serializeIndexer(indexer);</span>
-<span class="nc" id="L268">    }</span>
+<span class="nc" id="L403">        indexerFilePath = SerializerUtil.serializeIndexer(indexer);</span>
+<span class="nc" id="L404">    }</span>
 
+    /**
+     *
+     * @param doPersistMinimaStats
+     */
     public void setPersistMinimaStats(boolean doPersistMinimaStats) {
-<span class="nc" id="L271">        persistTheMinimaStats = doPersistMinimaStats;</span>
-<span class="nc" id="L272">    }</span>
+<span class="nc" id="L411">        persistTheMinimaStats = doPersistMinimaStats;</span>
+<span class="nc" id="L412">    }</span>
 
+    /**
+     *
+     * @param minimumNumberForClusterMembership
+     */
     public void setMinimumNumberInCluster(int minimumNumberForClusterMembership) {
-<span class="nc" id="L275">        this.minimumNumberInCluster = minimumNumberForClusterMembership;</span>
-<span class="nc" id="L276">    }</span>
+<span class="nc" id="L419">        this.minimumNumberInCluster = minimumNumberForClusterMembership;</span>
+<span class="nc" id="L420">    }</span>
 
+    /**
+     *
+     */
     public void setAllowRefinement() {
-<span class="nc" id="L279">        allowRefinement = true;</span>
-<span class="nc" id="L280">    }</span>
+<span class="nc" id="L426">        allowRefinement = true;</span>
+<span class="nc" id="L427">    }</span>
 
+    /**
+     *
+     * @param backgroundDensity
+     * @param standardDeviationOfBackground
+     */
     public void setBackground(float backgroundDensity, float standardDeviationOfBackground) {
 
-<span class="fc" id="L284">        this.backgroundDensity = backgroundDensity;</span>
+<span class="fc" id="L436">        this.backgroundDensity = backgroundDensity;</span>
 
-<span class="fc" id="L286">        this.backgroundError = standardDeviationOfBackground;</span>
+<span class="fc" id="L438">        this.backgroundError = standardDeviationOfBackground;</span>
 
-<span class="fc" id="L288">        state = STATE.BACKGROUND_SET;</span>
+<span class="fc" id="L440">        state = STATE.BACKGROUND_SET;</span>
 
-<span class="fc" id="L290">        bMethod = BACKGROUND_METHOD.USER_SUPPLIED;</span>
-<span class="fc" id="L291">    }</span>
+<span class="fc" id="L442">        bMethod = BACKGROUND_METHOD.USER_SUPPLIED;</span>
+<span class="fc" id="L443">    }</span>
 
     /**
      * calculate the background density if it has not been set manually by the user.
-     *
-     * @see TwoPointVoidStats.calc()
      *
      * @throws TwoPointVoidStatsException
      * @throws IOException
      */
     public void calculateBackground() throws TwoPointVoidStatsException, IOException {
 
-<span class="pc bpc" id="L303" title="3 of 4 branches missed.">        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {</span>
+<span class="pc bpc" id="L453" title="3 of 4 branches missed.">        if ((bMethod == null) || (bMethod.ordinal() != BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {</span>
 
-<span class="fc" id="L305">            calculateBackgroundVia2PtVoidFit();</span>
+<span class="fc" id="L455">            calculateBackgroundVia2PtVoidFit();</span>
         }
-<span class="fc" id="L307">    }</span>
+<span class="fc" id="L457">    }</span>
 
-    void reuseStatsForBackgroundCalculation(String minimaFilePath) throws TwoPointVoidStatsException, IOException {
+    /**
+     * 
+     * @param minimaFilePath
+     * @throws TwoPointVoidStatsException
+     * @throws IOException 
+     */
+    void reuseStatsForBackgroundCalculation(String minimaFilePath) throws 
+        TwoPointVoidStatsException, IOException {
 
-<span class="nc" id="L311">        TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);</span>
-<span class="nc" id="L312">        minStats.setDebug(debug);</span>
-<span class="nc bnc" id="L313" title="All 2 branches missed.">        if (setUseDownhillSimplexHistogramFitting) {</span>
-<span class="nc" id="L314">            minStats.setUseDownhillSimplexHistogramFitting();</span>
+<span class="nc" id="L468">        TwoPointVoidStats minStats = new TwoPointVoidStats(indexer);</span>
+<span class="nc" id="L469">        minStats.setDebug(debug);</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">        if (setUseDownhillSimplexHistogramFitting) {</span>
+<span class="nc" id="L471">            minStats.setUseDownhillSimplexHistogramFitting();</span>
         }
 
-<span class="nc" id="L317">        minStats.setStandardDeviationFactor(sigmaFactor);</span>
+<span class="nc" id="L474">        minStats.setStandardDeviationFactor(sigmaFactor);</span>
         
-<span class="nc bnc" id="L319" title="All 2 branches missed.">        if (useFindMethodForSparseBackground) {</span>
-<span class="nc" id="L320">            minStats.setInterpretForSparseBackgroundToTrue();</span>
-<span class="nc bnc" id="L321" title="All 2 branches missed.">        } else if (automateTheFindMethodChoice) {</span>
-<span class="nc" id="L322">            minStats.automateTheFindMethodChoice();</span>
-<span class="nc bnc" id="L323" title="All 2 branches missed.">        } else if (useFindMethodForHavingABackground) {</span>
-<span class="nc" id="L324">            minStats.setInterpretForSparseBackgroundToFalse();</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">        if (useFindMethodForSparseBackground) {</span>
+<span class="nc" id="L477">            minStats.setInterpretForSparseBackgroundToTrue();</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        } else if (automateTheFindMethodChoice) {</span>
+<span class="nc" id="L479">            minStats.automateTheFindMethodChoice();</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        } else if (useFindMethodForHavingABackground) {</span>
+<span class="nc" id="L481">            minStats.setInterpretForSparseBackgroundToFalse();</span>
         }
 
-<span class="nc" id="L327">        minStats.calc(minimaFilePath);</span>
+<span class="nc" id="L484">        minStats.calc(minimaFilePath);</span>
 
-<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L330">            backgroundStats = minStats;</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L487">            backgroundStats = minStats;</span>
         }
 
-<span class="nc" id="L333">        this.backgroundDensity = minStats.getBackgroundDensity();</span>
-<span class="nc" id="L334">        this.backgroundError = minStats.getBackgroundDensityError();</span>
+<span class="nc" id="L490">        this.backgroundDensity = minStats.getBackgroundDensity();</span>
+<span class="nc" id="L491">        this.backgroundError = minStats.getBackgroundDensityError();</span>
 
-<span class="nc bnc" id="L336" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L337">            log.info(&quot;background density =&quot;</span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L494">            log.info(&quot;background density =&quot;</span>
                 + this.backgroundDensity + &quot; with error =&quot; + this.backgroundError);
         }
 
-<span class="nc" id="L341">        state = STATE.BACKGROUND_SET;</span>
+<span class="nc" id="L498">        state = STATE.BACKGROUND_SET;</span>
 
-<span class="nc" id="L343">        bMethod = BACKGROUND_METHOD.DESERIALIZED;</span>
-<span class="nc" id="L344">    }</span>
+<span class="nc" id="L500">        bMethod = BACKGROUND_METHOD.DESERIALIZED;</span>
+<span class="nc" id="L501">    }</span>
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
     protected void calculateBackgroundVia2PtVoidFit() throws TwoPointVoidStatsException, IOException {
 
-<span class="pc bpc" id="L348" title="3 of 4 branches missed.">        if ((bMethod != null) &amp;&amp; (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {</span>
-<span class="nc" id="L349">            return;</span>
+<span class="pc bpc" id="L510" title="3 of 4 branches missed.">        if ((bMethod != null) &amp;&amp; (bMethod.ordinal() == BACKGROUND_METHOD.USER_SUPPLIED.ordinal())) {</span>
+<span class="nc" id="L511">            return;</span>
         }
         
-<span class="fc" id="L352">        TwoPointVoidStats voidStats = null;</span>
+<span class="fc" id="L514">        TwoPointVoidStats voidStats = null;</span>
 
-<span class="pc bpc" id="L354" title="1 of 2 branches missed.">        if (refineSolution.booleanValue()) {</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">        if (refineSolution.booleanValue()) {</span>
 
-<span class="nc" id="L356">            voidStats = new TwoPointVoidStats(tempRefineSolnIndexer);</span>
+<span class="nc" id="L518">            voidStats = new TwoPointVoidStats(tempRefineSolnIndexer);</span>
 
             //voidStats.setUseCompleteSampling();
 
@@ -361,452 +523,527 @@ public class TwoPointCorrelation {
 
         } else {
 
-<span class="fc" id="L364">            voidStats = new TwoPointVoidStats(indexer);</span>
+<span class="fc" id="L526">            voidStats = new TwoPointVoidStats(indexer);</span>
         }
 
-<span class="fc bfc" id="L367" title="All 2 branches covered.">        if (useFindMethodForSparseBackground) {</span>
-<span class="fc" id="L368">            voidStats.setInterpretForSparseBackgroundToTrue();</span>
-<span class="fc bfc" id="L369" title="All 2 branches covered.">        } else if (automateTheFindMethodChoice) {</span>
-<span class="fc" id="L370">            voidStats.automateTheFindMethodChoice();</span>
-<span class="pc bpc" id="L371" title="1 of 2 branches missed.">        } else if (useFindMethodForHavingABackground) {</span>
-<span class="fc" id="L372">            voidStats.setInterpretForSparseBackgroundToFalse();</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">        if (useFindMethodForSparseBackground) {</span>
+<span class="fc" id="L530">            voidStats.setInterpretForSparseBackgroundToTrue();</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">        } else if (automateTheFindMethodChoice) {</span>
+<span class="fc" id="L532">            voidStats.automateTheFindMethodChoice();</span>
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        } else if (useFindMethodForHavingABackground) {</span>
+<span class="fc" id="L534">            voidStats.setInterpretForSparseBackgroundToFalse();</span>
         }
 
-<span class="fc" id="L375">        voidStats.setDebug(debug);</span>
+<span class="fc" id="L537">        voidStats.setDebug(debug);</span>
 
-<span class="fc" id="L377">        voidStats.setStandardDeviationFactor(sigmaFactor);</span>
+<span class="fc" id="L539">        voidStats.setStandardDeviationFactor(sigmaFactor);</span>
 
-<span class="fc bfc" id="L379" title="All 2 branches covered.">        if (doLogPerformanceMetrics) {</span>
-<span class="fc" id="L380">            voidStats.logPerformanceMetrics();</span>
+<span class="fc bfc" id="L541" title="All 2 branches covered.">        if (doLogPerformanceMetrics) {</span>
+<span class="fc" id="L542">            voidStats.logPerformanceMetrics();</span>
         }
 
-<span class="fc bfc" id="L383" title="All 2 branches covered.">        if (setUseDownhillSimplexHistogramFitting) {</span>
-<span class="fc" id="L384">            voidStats.setUseDownhillSimplexHistogramFitting();</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">        if (setUseDownhillSimplexHistogramFitting) {</span>
+<span class="fc" id="L546">            voidStats.setUseDownhillSimplexHistogramFitting();</span>
         }
 
-<span class="fc" id="L387">        voidStats.calc();</span>
+<span class="fc" id="L549">        voidStats.calc();</span>
 
-<span class="fc" id="L389">        backgroundStats = voidStats;</span>
+<span class="fc" id="L551">        backgroundStats = voidStats;</span>
 
-<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (persistTheMinimaStats) {</span>
-<span class="nc" id="L392">            minimaStatsFilePath = voidStats.persistTwoPointBackground();</span>
+<span class="pc bpc" id="L553" title="1 of 2 branches missed.">        if (persistTheMinimaStats) {</span>
+<span class="nc" id="L554">            minimaStatsFilePath = voidStats.persistTwoPointBackground();</span>
         }
 
-<span class="fc" id="L395">        this.backgroundDensity = voidStats.getBackgroundDensity();</span>
-<span class="fc" id="L396">        this.backgroundError = voidStats.getBackgroundDensityError();</span>
+<span class="fc" id="L557">        this.backgroundDensity = voidStats.getBackgroundDensity();</span>
+<span class="fc" id="L558">        this.backgroundError = voidStats.getBackgroundDensityError();</span>
         
-<span class="pc bpc" id="L398" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L560" title="1 of 2 branches missed.">        if (debug) {</span>
             
-<span class="nc" id="L400">            log.info(&quot;==&gt;background density =&quot;</span>
+<span class="nc" id="L562">            log.info(&quot;==&gt;background density =&quot;</span>
                 + this.backgroundDensity + &quot; with error =&quot; + this.backgroundError);
          
-<span class="nc" id="L403">            float xHalfInterval = (voidStats.statsHistogram.getXHist()[1] - voidStats.statsHistogram.getXHist()[0]) / 2.0f;</span>
-<span class="nc" id="L404">            float xmin = 0;</span>
-<span class="nc" id="L405">            float xmax = voidStats.statsHistogram.getXHist()[voidStats.statsHistogram.getXHist().length - 1] + xHalfInterval;</span>
-<span class="nc" id="L406">            float ymin = 0;</span>
-<span class="nc" id="L407">            float ymax = MiscMath.findMax(voidStats.statsHistogram.getYHistFloat());</span>
+<span class="nc" id="L565">            float xHalfInterval = (voidStats.statsHistogram.getXHist()[1] - voidStats.statsHistogram.getXHist()[0]) / 2.0f;</span>
+<span class="nc" id="L566">            float xmin = 0;</span>
+<span class="nc" id="L567">            float xmax = voidStats.statsHistogram.getXHist()[voidStats.statsHistogram.getXHist().length - 1] + xHalfInterval;</span>
+<span class="nc" id="L568">            float ymin = 0;</span>
+<span class="nc" id="L569">            float ymax = MiscMath.findMax(voidStats.statsHistogram.getYHistFloat());</span>
             
-<span class="nc" id="L409">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);</span>
+<span class="nc" id="L571">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);</span>
 
             try {
-<span class="nc" id="L412">                plotter.addPlot(voidStats.statsHistogram.getXHist(), voidStats.statsHistogram.getYHistFloat(), </span>
-<span class="nc" id="L413">                    voidStats.bestFit.getOriginalScaleX(), voidStats.bestFit.getOriginalScaleYFit(), &quot;&quot;);</span>
-<span class="nc" id="L414">                plotter.writeFile2();</span>
-<span class="nc" id="L415">            } catch (Exception e) {</span>
-<span class="nc" id="L416">                Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());</span>
-<span class="nc" id="L417">            }</span>
+<span class="nc" id="L574">                plotter.addPlot(voidStats.statsHistogram.getXHist(), voidStats.statsHistogram.getYHistFloat(), </span>
+<span class="nc" id="L575">                    voidStats.bestFit.getOriginalScaleX(), voidStats.bestFit.getOriginalScaleYFit(), &quot;&quot;);</span>
+<span class="nc" id="L576">                plotter.writeFile2();</span>
+<span class="nc" id="L577">            } catch (Exception e) {</span>
+<span class="nc" id="L578">                Logger.getLogger(this.getClass().getSimpleName()).severe(e.getMessage());</span>
+<span class="nc" id="L579">            }</span>
         }
 
-<span class="fc" id="L420">        state = STATE.BACKGROUND_SET;</span>
+<span class="fc" id="L582">        state = STATE.BACKGROUND_SET;</span>
 
-<span class="fc" id="L422">        bMethod = BACKGROUND_METHOD.FIT_TWO_POINT_VOIDS;</span>
-<span class="fc" id="L423">    }</span>
+<span class="fc" id="L584">        bMethod = BACKGROUND_METHOD.FIT_TWO_POINT_VOIDS;</span>
+<span class="fc" id="L585">    }</span>
 
+    /**
+     *
+     * @param startTimeMillis
+     * @param stopTimeMillis
+     * @param methodName
+     * @param nPoints
+     */
     protected void printPerformanceMetrics(long startTimeMillis, long stopTimeMillis, String methodName, int nPoints) {
 
-<span class="fc" id="L427">        long diffSec = (stopTimeMillis - startTimeMillis)/1000;</span>
+<span class="fc" id="L596">        long diffSec = (stopTimeMillis - startTimeMillis)/1000;</span>
 
-<span class="fc" id="L429">        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();</span>
-<span class="fc" id="L430">        MemoryUsage heapUsage = mbean.getHeapMemoryUsage();</span>
-<span class="fc" id="L431">        MemoryUsage nonHeapUsage = mbean.getNonHeapMemoryUsage();</span>
+<span class="fc" id="L598">        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();</span>
+<span class="fc" id="L599">        MemoryUsage heapUsage = mbean.getHeapMemoryUsage();</span>
+<span class="fc" id="L600">        MemoryUsage nonHeapUsage = mbean.getNonHeapMemoryUsage();</span>
 
-<span class="fc" id="L433">        String str = String.format(&quot;%35s:  N=%9d  RT(sec)=%8d  instance estimates(bytes)=%9d   heapUsed(bytes)=%9d   memoryPoolsSum(bytes)=%9d&quot;,</span>
+<span class="fc" id="L602">        String str = String.format(&quot;%35s:  N=%9d  RT(sec)=%8d  instance estimates(bytes)=%9d   heapUsed(bytes)=%9d   memoryPoolsSum(bytes)=%9d&quot;,</span>
             methodName,
-<span class="fc" id="L435">            nPoints, diffSec, approximateMemoryUsed(),</span>
-<span class="fc" id="L436">            heapUsage.getUsed(), nonHeapUsage.getUsed() );</span>
+<span class="fc" id="L604">            nPoints, diffSec, approximateMemoryUsed(),</span>
+<span class="fc" id="L605">            heapUsage.getUsed(), nonHeapUsage.getUsed() );</span>
 
-<span class="fc" id="L438">        Logger.getLogger(this.getClass().getSimpleName()).info(str);</span>
-<span class="fc" id="L439">    }</span>
+<span class="fc" id="L607">        Logger.getLogger(this.getClass().getSimpleName()).info(str);</span>
+<span class="fc" id="L608">    }</span>
 
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed() {
 
-<span class="fc" id="L443">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+<span class="fc" id="L616">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
 
-<span class="pc bpc" id="L445" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+<span class="pc bpc" id="L618" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
 
-<span class="pc bpc" id="L447" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+<span class="pc bpc" id="L620" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
 
-<span class="fc" id="L449">        int overheadBytes = 16;</span>
+<span class="fc" id="L622">        int overheadBytes = 16;</span>
 
-<span class="pc bpc" id="L451" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
-<span class="fc" id="L452">        int arrayBytes = 32/8;</span>
-<span class="fc" id="L453">        int refBytes = nbits/8;</span>
+<span class="pc bpc" id="L624" title="1 of 2 branches missed.">        int intBytes = (is32Bit) ? 4 : 8;</span>
+<span class="fc" id="L625">        int arrayBytes = 32/8;</span>
+<span class="fc" id="L626">        int refBytes = nbits/8;</span>
 
         /*
          * enums:  one has 4 items
          *         one has 3 items
          */
-<span class="fc" id="L459">        long sumBits = 4*nbits;</span>
-<span class="fc" id="L460">        long tmpSumBytes = (sumBits/8) + overheadBytes;</span>
-<span class="fc" id="L461">        long padding = (tmpSumBytes % 8);</span>
-<span class="fc" id="L462">        long sumBytes = tmpSumBytes + padding;</span>
-<span class="fc" id="L463">        sumBits = 3*nbits;</span>
-<span class="fc" id="L464">        tmpSumBytes = (sumBits/8) + overheadBytes;</span>
-<span class="fc" id="L465">        padding = (tmpSumBytes % 8);</span>
-<span class="fc" id="L466">        sumBytes += (tmpSumBytes + padding);</span>
+<span class="fc" id="L632">        long sumBits = 4*nbits;</span>
+<span class="fc" id="L633">        long tmpSumBytes = (sumBits/8) + overheadBytes;</span>
+<span class="fc" id="L634">        long padding = (tmpSumBytes % 8);</span>
+<span class="fc" id="L635">        long sumBytes = tmpSumBytes + padding;</span>
+<span class="fc" id="L636">        sumBits = 3*nbits;</span>
+<span class="fc" id="L637">        tmpSumBytes = (sumBits/8) + overheadBytes;</span>
+<span class="fc" id="L638">        padding = (tmpSumBytes % 8);</span>
+<span class="fc" id="L639">        sumBytes += (tmpSumBytes + padding);</span>
 
         // a reference to each of the enums
-<span class="fc" id="L469">        sumBytes += (2*intBytes);</span>
+<span class="fc" id="L642">        sumBytes += (2*intBytes);</span>
 
-<span class="fc" id="L471">        sumBytes += indexer.approximateMemoryUsed();</span>
+<span class="fc" id="L644">        sumBytes += indexer.approximateMemoryUsed();</span>
 
-<span class="pc bpc" id="L473" title="1 of 2 branches missed.">        if (groupFinder != null) {</span>
-<span class="fc" id="L474">            sumBytes += groupFinder.approximateMemoryUsed();</span>
+<span class="pc bpc" id="L646" title="1 of 2 branches missed.">        if (groupFinder != null) {</span>
+<span class="fc" id="L647">            sumBytes += groupFinder.approximateMemoryUsed();</span>
         }
-<span class="pc bpc" id="L476" title="1 of 2 branches missed.">        if (backgroundStats != null) {</span>
-<span class="fc" id="L477">            sumBytes += backgroundStats.approximateMemoryUsed();</span>
+<span class="pc bpc" id="L649" title="1 of 2 branches missed.">        if (backgroundStats != null) {</span>
+<span class="fc" id="L650">            sumBytes += backgroundStats.approximateMemoryUsed();</span>
         }
-<span class="pc bpc" id="L479" title="1 of 2 branches missed.">        if (indexerFilePath != null) {</span>
+<span class="pc bpc" id="L652" title="1 of 2 branches missed.">        if (indexerFilePath != null) {</span>
             // String size on the heap = reference size + content size?
-<span class="nc" id="L481">            sumBytes += (intBytes + (indexerFilePath.length()*intBytes));</span>
+<span class="nc" id="L654">            sumBytes += (intBytes + (indexerFilePath.length()*intBytes));</span>
         }
-<span class="pc bpc" id="L483" title="1 of 2 branches missed.">        if (minimaStatsFilePath != null) {</span>
-<span class="nc" id="L484">            sumBytes += (intBytes + (minimaStatsFilePath.length()*intBytes));</span>
+<span class="pc bpc" id="L656" title="1 of 2 branches missed.">        if (minimaStatsFilePath != null) {</span>
+<span class="nc" id="L657">            sumBytes += (intBytes + (minimaStatsFilePath.length()*intBytes));</span>
         }
 
         // 8 variables in the stack are each word size
-<span class="fc" id="L488">        sumBytes += 8 * intBytes;</span>
+<span class="fc" id="L661">        sumBytes += 8 * intBytes;</span>
 
         // log is reference size on the heap
-<span class="fc" id="L491">        sumBytes += intBytes;</span>
+<span class="fc" id="L664">        sumBytes += intBytes;</span>
 
-<span class="fc" id="L493">        sumBytes += overheadBytes;</span>
+<span class="fc" id="L666">        sumBytes += overheadBytes;</span>
 
         // amount of padding needed to make it a round 8 bytes
-<span class="fc" id="L496">        padding = (sumBytes % 8);</span>
+<span class="fc" id="L669">        padding = (sumBytes % 8);</span>
 
-<span class="fc" id="L498">        sumBytes += padding;</span>
+<span class="fc" id="L671">        sumBytes += padding;</span>
 
-<span class="fc" id="L500">        return sumBytes;</span>
+<span class="fc" id="L673">        return sumBytes;</span>
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
     public void findClusters() throws TwoPointVoidStatsException, IOException {
 
-<span class="pc bpc" id="L505" title="1 of 2 branches missed.">        if (state.ordinal() &lt; STATE.BACKGROUND_SET.ordinal()) {</span>
-<span class="nc" id="L506">            calculateBackgroundVia2PtVoidFit();</span>
+<span class="pc bpc" id="L683" title="1 of 2 branches missed.">        if (state.ordinal() &lt; STATE.BACKGROUND_SET.ordinal()) {</span>
+<span class="nc" id="L684">            calculateBackgroundVia2PtVoidFit();</span>
         }
 
-<span class="fc" id="L509">        findGroups();</span>
-<span class="fc" id="L510">    }</span>
+<span class="fc" id="L687">        findGroups();</span>
+<span class="fc" id="L688">    }</span>
 
+    /**
+     *
+     * @return
+     */
     public IGroupFinder getGroupFinder() {
-<span class="nc" id="L513">        return groupFinder;</span>
+<span class="nc" id="L695">        return groupFinder;</span>
     }
 
+    /**
+     *
+     * @param xMin
+     * @param xMax
+     * @param yMin
+     * @param yMax
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @throws TwoPointVoidStatsException
+     */
     public String plotClusters(float xMin, float xMax, float yMin, float yMax)
         throws FileNotFoundException, IOException, TwoPointVoidStatsException {
 
-<span class="nc" id="L519">        TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xMin, xMax, yMin, yMax);</span>
-<span class="nc" id="L520">        plotter.addPlot(this);</span>
+<span class="nc" id="L712">        TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xMin, xMax, yMin, yMax);</span>
+<span class="nc" id="L713">        plotter.addPlot(this);</span>
 
-<span class="nc" id="L522">        return plotter.writeFile();</span>
+<span class="nc" id="L715">        return plotter.writeFile();</span>
     }
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @throws TwoPointVoidStatsException
+     */
     public String plotClusters() throws FileNotFoundException, IOException, TwoPointVoidStatsException {
 
-<span class="fc" id="L527">        float[] xMinMax = MiscMath.calculateOuterRoundedMinAndMax(indexer.getX());</span>
-<span class="fc" id="L528">        float[] yMinMax = MiscMath.calculateOuterRoundedMinAndMax(indexer.getY());</span>
+<span class="fc" id="L727">        float[] xMinMax = MiscMath.calculateOuterRoundedMinAndMax(indexer.getX());</span>
+<span class="fc" id="L728">        float[] yMinMax = MiscMath.calculateOuterRoundedMinAndMax(indexer.getY());</span>
 
-<span class="fc" id="L530">        TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xMinMax[0], xMinMax[1], yMinMax[0], yMinMax[1]);</span>
-<span class="fc" id="L531">        String label = &quot;&quot;;</span>
-<span class="pc bpc" id="L532" title="1 of 4 branches missed.">        if ((this.backgroundStats != null) &amp;&amp; (this.backgroundStats instanceof TwoPointVoidStats)) {</span>
-<span class="fc" id="L533">            GEVYFit bestFit = ((TwoPointVoidStats)this.backgroundStats).bestFit;</span>
-<span class="pc bpc" id="L534" title="1 of 2 branches missed.">            if (bestFit != null) {</span>
-<span class="fc" id="L535">                label = String.format(&quot;k=%.7f sigma=%.7f mu=%.7f&quot;, bestFit.getK(), bestFit.getSigma(), bestFit.getMu());</span>
+<span class="fc" id="L730">        TwoPointCorrelationPlotter plotter = new TwoPointCorrelationPlotter(xMinMax[0], xMinMax[1], yMinMax[0], yMinMax[1]);</span>
+<span class="fc" id="L731">        String label = &quot;&quot;;</span>
+<span class="pc bpc" id="L732" title="1 of 4 branches missed.">        if ((this.backgroundStats != null) &amp;&amp; (this.backgroundStats instanceof TwoPointVoidStats)) {</span>
+<span class="fc" id="L733">            GEVYFit bestFit = ((TwoPointVoidStats)this.backgroundStats).bestFit;</span>
+<span class="pc bpc" id="L734" title="1 of 2 branches missed.">            if (bestFit != null) {</span>
+<span class="fc" id="L735">                label = String.format(&quot;k=%.7f sigma=%.7f mu=%.7f&quot;, bestFit.getK(), bestFit.getSigma(), bestFit.getMu());</span>
             }
         }
-<span class="fc" id="L538">        plotter.addPlot(this, label);</span>
+<span class="fc" id="L738">        plotter.addPlot(this, label);</span>
 
-<span class="fc" id="L540">        return plotter.writeFile3();</span>
+<span class="fc" id="L740">        return plotter.writeFile3();</span>
     }
 
+    /**
+     *
+     * @throws TwoPointVoidStatsException
+     * @throws IOException
+     */
     protected void findGroups() throws TwoPointVoidStatsException, IOException {
 
-<span class="fc" id="L545">        long startTimeMillis = System.currentTimeMillis();</span>
+<span class="fc" id="L750">        long startTimeMillis = System.currentTimeMillis();</span>
 
-<span class="pc bpc" id="L547" title="1 of 4 branches missed.">        if ((this.backgroundStats != null) &amp;&amp; (this.backgroundStats instanceof TwoPointVoidStats)</span>
-<span class="fc bfc" id="L548" title="All 2 branches covered.">            &amp;&amp; ((TwoPointVoidStats)backgroundStats).getInterpretForSparseBackground().booleanValue()) {</span>
+<span class="pc bpc" id="L752" title="1 of 4 branches missed.">        if ((this.backgroundStats != null) &amp;&amp; (this.backgroundStats instanceof TwoPointVoidStats)</span>
+<span class="fc bfc" id="L753" title="All 2 branches covered.">            &amp;&amp; ((TwoPointVoidStats)backgroundStats).getInterpretForSparseBackground().booleanValue()) {</span>
 
             // for method without any background points, we use the density of the edge points without a factor
-<span class="fc" id="L551">            groupFinder = new DFSGroupFinder(backgroundDensity, 1.0f);</span>
+<span class="fc" id="L756">            groupFinder = new DFSGroupFinder(backgroundDensity, 1.0f);</span>
 
         } else {
 
-<span class="fc" id="L555">            groupFinder = new DFSGroupFinder(backgroundDensity, sigmaFactor);</span>
+<span class="fc" id="L760">            groupFinder = new DFSGroupFinder(backgroundDensity, sigmaFactor);</span>
         }
 
-<span class="fc" id="L558">        groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);</span>
+<span class="fc" id="L763">        groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);</span>
 
-<span class="fc" id="L560">        groupFinder.findGroups(indexer);</span>
+<span class="fc" id="L765">        groupFinder.findGroups(indexer);</span>
 
-<span class="fc" id="L562">        state = STATE.CLUSTERS_FOUND;</span>
+<span class="fc" id="L767">        state = STATE.CLUSTERS_FOUND;</span>
 
-<span class="fc bfc" id="L564" title="All 2 branches covered.">        if (doLogPerformanceMetrics) {</span>
+<span class="fc bfc" id="L769" title="All 2 branches covered.">        if (doLogPerformanceMetrics) {</span>
 
-<span class="fc" id="L566">            long stopTimeMillis = System.currentTimeMillis();</span>
+<span class="fc" id="L771">            long stopTimeMillis = System.currentTimeMillis();</span>
 
-<span class="fc" id="L568">            printPerformanceMetrics(startTimeMillis, stopTimeMillis, &quot;findGroups&quot;, indexer.getNXY());</span>
+<span class="fc" id="L773">            printPerformanceMetrics(startTimeMillis, stopTimeMillis, &quot;findGroups&quot;, indexer.getNXY());</span>
         }
 
-<span class="pc bpc" id="L571" title="7 of 8 branches missed.">        if (allowRefinement &amp;&amp; !refineSolution &amp;&amp; backgroundStats != null &amp;&amp; backgroundStats instanceof TwoPointVoidStats) {</span>
+<span class="pc bpc" id="L776" title="7 of 8 branches missed.">        if (allowRefinement &amp;&amp; !refineSolution &amp;&amp; backgroundStats != null &amp;&amp; backgroundStats instanceof TwoPointVoidStats) {</span>
 
-<span class="nc" id="L573">            TwoPointVoidStats tmp = (TwoPointVoidStats)backgroundStats;</span>
+<span class="nc" id="L778">            TwoPointVoidStats tmp = (TwoPointVoidStats)backgroundStats;</span>
 
-<span class="nc bnc" id="L575" title="All 2 branches missed.">            if ((indexer.getNumberOfPoints() &gt;= 9000) /*tmp.getInterpretForSparseBackground() != null &amp;&amp; tmp.getInterpretForSparseBackground().booleanValue()*/) {</span>
+<span class="nc bnc" id="L780" title="All 2 branches missed.">            if ((indexer.getNumberOfPoints() &gt;= 9000) /*tmp.getInterpretForSparseBackground() != null &amp;&amp; tmp.getInterpretForSparseBackground().booleanValue()*/) {</span>
 
-<span class="nc bnc" id="L577" title="All 4 branches missed.">                if (tmp.getSampling() != null &amp;&amp; tmp.getSampling().ordinal() == VoidSampling.COMPLETE.ordinal()) {</span>
+<span class="nc bnc" id="L782" title="All 4 branches missed.">                if (tmp.getSampling() != null &amp;&amp; tmp.getSampling().ordinal() == VoidSampling.COMPLETE.ordinal()) {</span>
                     
-<span class="nc" id="L579">                    log.info(&quot;refining the solution by subtracting the points in groups to redetermine the background density&quot;);</span>
+<span class="nc" id="L784">                    log.info(&quot;refining the solution by subtracting the points in groups to redetermine the background density&quot;);</span>
                     
-<span class="nc" id="L581">                    tempRefineSolnIndexer = createIndexerMinusGroupPoints();</span>
+<span class="nc" id="L786">                    tempRefineSolnIndexer = createIndexerMinusGroupPoints();</span>
 
-<span class="nc bnc" id="L583" title="All 2 branches missed.">                    if (tempRefineSolnIndexer != null) {</span>
+<span class="nc bnc" id="L788" title="All 2 branches missed.">                    if (tempRefineSolnIndexer != null) {</span>
 
                         // subtract the groups to create a new indexer
-<span class="nc" id="L586">                        refineSolution = Boolean.TRUE;</span>
+<span class="nc" id="L791">                        refineSolution = Boolean.TRUE;</span>
 
-<span class="nc" id="L588">                        state = STATE.INITIALIZED;</span>
+<span class="nc" id="L793">                        state = STATE.INITIALIZED;</span>
 
                         
-<span class="nc" id="L591">                        float[] xymm = tempRefineSolnIndexer.findXYMinMax();</span>
-<span class="nc" id="L592">                        PolygonAndPointPlotter p0 = new PolygonAndPointPlotter();</span>
-<span class="nc" id="L593">                        p0.addPlot(indexer.getX(), indexer.getY(),</span>
-<span class="nc" id="L594">                            indexer.getXErrors(), indexer.getYErrors(), &quot;original&quot;);</span>
-<span class="nc" id="L595">                        p0.writeFile3();</span>
-<span class="nc" id="L596">                        p0.addPlot(tempRefineSolnIndexer.getX(), tempRefineSolnIndexer.getY(),</span>
-<span class="nc" id="L597">                            tempRefineSolnIndexer.getXErrors(), tempRefineSolnIndexer.getYErrors(), &quot;refining...&quot;);</span>
+<span class="nc" id="L796">                        float[] xymm = tempRefineSolnIndexer.findXYMinMax();</span>
+<span class="nc" id="L797">                        PolygonAndPointPlotter p0 = new PolygonAndPointPlotter();</span>
+<span class="nc" id="L798">                        p0.addPlot(indexer.getX(), indexer.getY(),</span>
+<span class="nc" id="L799">                            indexer.getXErrors(), indexer.getYErrors(), &quot;original&quot;);</span>
+<span class="nc" id="L800">                        p0.writeFile3();</span>
+<span class="nc" id="L801">                        p0.addPlot(tempRefineSolnIndexer.getX(), tempRefineSolnIndexer.getY(),</span>
+<span class="nc" id="L802">                            tempRefineSolnIndexer.getXErrors(), tempRefineSolnIndexer.getYErrors(), &quot;refining...&quot;);</span>
 
-<span class="nc" id="L599">                        findClusters();</span>
+<span class="nc" id="L804">                        findClusters();</span>
 
-<span class="nc" id="L601">                        tempRefineSolnIndexer = null;</span>
+<span class="nc" id="L806">                        tempRefineSolnIndexer = null;</span>
                     }
                 }
             }
         }
-<span class="fc" id="L606">    }</span>
+<span class="fc" id="L811">    }</span>
 
     private AxisIndexer createIndexerMinusGroupPoints() {
 
-<span class="nc bnc" id="L610" title="All 2 branches missed.">        if (indexer == null) {</span>
-<span class="nc" id="L611">            throw new IllegalStateException(&quot;indexer cannot be null&quot;);</span>
+<span class="nc bnc" id="L815" title="All 2 branches missed.">        if (indexer == null) {</span>
+<span class="nc" id="L816">            throw new IllegalStateException(&quot;indexer cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L613" title="All 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L614">            throw new IllegalStateException(&quot;groupFinder cannot be null&quot;);</span>
+<span class="nc bnc" id="L818" title="All 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L819">            throw new IllegalStateException(&quot;groupFinder cannot be null&quot;);</span>
         }
 
-<span class="nc" id="L617">        int[] pointToGroupIndexes = groupFinder.getPointToGroupIndexes();</span>
+<span class="nc" id="L822">        int[] pointToGroupIndexes = groupFinder.getPointToGroupIndexes();</span>
 
-<span class="nc" id="L619">        int numberInGroups = 0;</span>
-<span class="nc bnc" id="L620" title="All 2 branches missed.">        for (int idx : pointToGroupIndexes) {</span>
-<span class="nc bnc" id="L621" title="All 2 branches missed.">            if (idx &gt; -1) {</span>
-<span class="nc" id="L622">                numberInGroups++;</span>
+<span class="nc" id="L824">        int numberInGroups = 0;</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">        for (int idx : pointToGroupIndexes) {</span>
+<span class="nc bnc" id="L826" title="All 2 branches missed.">            if (idx &gt; -1) {</span>
+<span class="nc" id="L827">                numberInGroups++;</span>
             }
         }
 
-<span class="nc" id="L626">        int n = indexer.getNumberOfPoints() - numberInGroups;</span>
+<span class="nc" id="L831">        int n = indexer.getNumberOfPoints() - numberInGroups;</span>
 
-<span class="nc bnc" id="L628" title="All 2 branches missed.">        if (n == 0) {</span>
-<span class="nc" id="L629">            return null;</span>
+<span class="nc bnc" id="L833" title="All 2 branches missed.">        if (n == 0) {</span>
+<span class="nc" id="L834">            return null;</span>
         }
 
-<span class="nc" id="L632">        float[] tmpx = new float[n];</span>
-<span class="nc" id="L633">        float[] tmpy = new float[n];</span>
-<span class="nc" id="L634">        float[] tmpxe = new float[n];</span>
-<span class="nc" id="L635">        float[] tmpye = new float[n];</span>
+<span class="nc" id="L837">        float[] tmpx = new float[n];</span>
+<span class="nc" id="L838">        float[] tmpy = new float[n];</span>
+<span class="nc" id="L839">        float[] tmpxe = new float[n];</span>
+<span class="nc" id="L840">        float[] tmpye = new float[n];</span>
 
-<span class="nc" id="L637">        int count = 0;</span>
+<span class="nc" id="L842">        int count = 0;</span>
 
-<span class="nc bnc" id="L639" title="All 2 branches missed.">        for (int i = 0; i &lt; pointToGroupIndexes.length; i++) {</span>
+<span class="nc bnc" id="L844" title="All 2 branches missed.">        for (int i = 0; i &lt; pointToGroupIndexes.length; i++) {</span>
 
-<span class="nc" id="L641">            int groupId = pointToGroupIndexes[i];</span>
+<span class="nc" id="L846">            int groupId = pointToGroupIndexes[i];</span>
 
-<span class="nc bnc" id="L643" title="All 2 branches missed.">            if (groupId == -1) {</span>
+<span class="nc bnc" id="L848" title="All 2 branches missed.">            if (groupId == -1) {</span>
 
-<span class="nc" id="L645">                tmpx[count] = indexer.getX()[i];</span>
-<span class="nc" id="L646">                tmpy[count] = indexer.getY()[i];</span>
-<span class="nc" id="L647">                tmpxe[count] = indexer.getXErrors()[i];</span>
-<span class="nc" id="L648">                tmpye[count] = indexer.getYErrors()[i];</span>
+<span class="nc" id="L850">                tmpx[count] = indexer.getX()[i];</span>
+<span class="nc" id="L851">                tmpy[count] = indexer.getY()[i];</span>
+<span class="nc" id="L852">                tmpxe[count] = indexer.getXErrors()[i];</span>
+<span class="nc" id="L853">                tmpye[count] = indexer.getYErrors()[i];</span>
 
-<span class="nc" id="L650">                count++;</span>
+<span class="nc" id="L855">                count++;</span>
             }
         }
 
-<span class="nc" id="L654">        AxisIndexer tmpIndexer = new AxisIndexer();</span>
-<span class="nc" id="L655">        tmpIndexer.sortAndIndexX(tmpx, tmpy, tmpxe, tmpye, tmpx.length);</span>
+<span class="nc" id="L859">        AxisIndexer tmpIndexer = new AxisIndexer();</span>
+<span class="nc" id="L860">        tmpIndexer.sortAndIndexX(tmpx, tmpy, tmpxe, tmpye, tmpx.length);</span>
 
-<span class="nc" id="L657">        return tmpIndexer;</span>
+<span class="nc" id="L862">        return tmpIndexer;</span>
     }
 
+    /**
+     *
+     * @return
+     */
     protected float calculateFractionOfPointsOutsideOfClusters() {
 
-<span class="nc bnc" id="L662" title="All 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">        if (groupFinder == null) {</span>
             // there are no clusters, so fraction outside is 1.0
-<span class="nc" id="L664">            return 1.0f;</span>
+<span class="nc" id="L873">            return 1.0f;</span>
         }
 
-<span class="nc" id="L667">        int nGroups = groupFinder.getNumberOfGroups();</span>
+<span class="nc" id="L876">        int nGroups = groupFinder.getNumberOfGroups();</span>
 
-<span class="nc" id="L669">        boolean[] insideClusters = new boolean[indexer.getNXY()];</span>
+<span class="nc" id="L878">        boolean[] insideClusters = new boolean[indexer.getNXY()];</span>
 
-<span class="nc bnc" id="L671" title="All 2 branches missed.">        for (int i = 0; i &lt; nGroups; i++) {</span>
+<span class="nc bnc" id="L880" title="All 2 branches missed.">        for (int i = 0; i &lt; nGroups; i++) {</span>
 
-<span class="nc" id="L673">            SimpleLinkedListNode groupNode = groupFinder.getGroupMembershipList()[i];</span>
+<span class="nc" id="L882">            SimpleLinkedListNode groupNode = groupFinder.getGroupMembershipList()[i];</span>
 
-<span class="nc bnc" id="L675" title="All 4 branches missed.">            while ((groupNode != null) &amp;&amp; (groupNode.key != -1)) {</span>
+<span class="nc bnc" id="L884" title="All 4 branches missed.">            while ((groupNode != null) &amp;&amp; (groupNode.key != -1)) {</span>
 
-<span class="nc" id="L677">                int pointIndex = groupNode.key;</span>
+<span class="nc" id="L886">                int pointIndex = groupNode.key;</span>
 
-<span class="nc" id="L679">                insideClusters[pointIndex] = true;</span>
+<span class="nc" id="L888">                insideClusters[pointIndex] = true;</span>
 
-<span class="nc" id="L681">                groupNode = groupNode.getNext();</span>
-<span class="nc" id="L682">            }</span>
+<span class="nc" id="L890">                groupNode = groupNode.getNext();</span>
+<span class="nc" id="L891">            }</span>
         }
 
         // count number outside
-<span class="nc" id="L686">        int count = 0;</span>
-<span class="nc bnc" id="L687" title="All 2 branches missed.">        for (int i = 0; i &lt; insideClusters.length; i++) {</span>
-<span class="nc bnc" id="L688" title="All 2 branches missed.">            if (!insideClusters[i]) {</span>
-<span class="nc" id="L689">                count++;</span>
+<span class="nc" id="L895">        int count = 0;</span>
+<span class="nc bnc" id="L896" title="All 2 branches missed.">        for (int i = 0; i &lt; insideClusters.length; i++) {</span>
+<span class="nc bnc" id="L897" title="All 2 branches missed.">            if (!insideClusters[i]) {</span>
+<span class="nc" id="L898">                count++;</span>
             }
         }
 
-<span class="nc" id="L693">        float frac = (float)count/(float)indexer.getNXY();</span>
+<span class="nc" id="L902">        float frac = (float)count/(float)indexer.getNXY();</span>
 
-<span class="nc" id="L695">        return frac;</span>
+<span class="nc" id="L904">        return frac;</span>
     }
     
+    /**
+     *
+     * @param xHull
+     * @param yHull
+     * @return
+     */
     public float[] calculateAreaAndCentroidOfHull(float[] xHull, float[] yHull) {
-<span class="pc bpc" id="L699" title="2 of 4 branches missed.">        if (xHull == null || yHull == null) {</span>
-<span class="nc" id="L700">            throw new IllegalArgumentException(&quot;neither xHull nor yHull can be null&quot;);</span>
+<span class="pc bpc" id="L914" title="2 of 4 branches missed.">        if (xHull == null || yHull == null) {</span>
+<span class="nc" id="L915">            throw new IllegalArgumentException(&quot;neither xHull nor yHull can be null&quot;);</span>
         }
-<span class="fc" id="L702">        return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xHull, yHull);</span>
+<span class="fc" id="L917">        return LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(xHull, yHull);</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNumberOfGroups() {
-<span class="pc bpc" id="L706" title="1 of 2 branches missed.">        return (groupFinder != null) ? groupFinder.getNumberOfGroups() : 0;</span>
+<span class="pc bpc" id="L925" title="1 of 2 branches missed.">        return (groupFinder != null) ? groupFinder.getNumberOfGroups() : 0;</span>
     }
 
+    /**
+     *
+     * @param groupNumber
+     * @return
+     */
     public float[] calculateGroupCentroidUsingAllPointsEquallyWeighted(
         int groupNumber) {
 
-<span class="nc bnc" id="L712" title="All 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L713">            return null;</span>
+<span class="nc bnc" id="L936" title="All 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L937">            return null;</span>
         }
 
-<span class="nc" id="L716">        int nGroups = groupFinder.getNumberOfGroups() ;</span>
+<span class="nc" id="L940">        int nGroups = groupFinder.getNumberOfGroups() ;</span>
 
-<span class="nc bnc" id="L718" title="All 2 branches missed.">        if (groupNumber &gt;= nGroups) {</span>
-<span class="nc" id="L719">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L942" title="All 2 branches missed.">        if (groupNumber &gt;= nGroups) {</span>
+<span class="nc" id="L943">            throw new IllegalArgumentException(</span>
                 &quot;groupNumber is larger than existing number of groups&quot;);
         }
 
-<span class="nc" id="L723">        float[] xMember = getGroupFinder().getX(groupNumber, indexer);</span>
-<span class="nc" id="L724">        float[] yMember = getGroupFinder().getY(groupNumber, indexer);</span>
+<span class="nc" id="L947">        float[] xMember = getGroupFinder().getX(groupNumber, indexer);</span>
+<span class="nc" id="L948">        float[] yMember = getGroupFinder().getY(groupNumber, indexer);</span>
 
-<span class="nc" id="L726">        float xCoordsAvg = 0;</span>
-<span class="nc" id="L727">        float yCoordsAvg = 0;</span>
-<span class="nc" id="L728">        int count = 0;</span>
+<span class="nc" id="L950">        float xCoordsAvg = 0;</span>
+<span class="nc" id="L951">        float yCoordsAvg = 0;</span>
+<span class="nc" id="L952">        int count = 0;</span>
 
-<span class="nc bnc" id="L730" title="All 2 branches missed.">        for (int i = 0; i &lt; xMember.length; i++) {</span>
-<span class="nc" id="L731">            xCoordsAvg += xMember[i];</span>
-<span class="nc" id="L732">            yCoordsAvg += yMember[i];</span>
+<span class="nc bnc" id="L954" title="All 2 branches missed.">        for (int i = 0; i &lt; xMember.length; i++) {</span>
+<span class="nc" id="L955">            xCoordsAvg += xMember[i];</span>
+<span class="nc" id="L956">            yCoordsAvg += yMember[i];</span>
         }
 
-<span class="nc" id="L735">        xCoordsAvg /= (float)count;</span>
-<span class="nc" id="L736">        yCoordsAvg /= (float)count;</span>
+<span class="nc" id="L959">        xCoordsAvg /= (float)count;</span>
+<span class="nc" id="L960">        yCoordsAvg /= (float)count;</span>
 
-<span class="nc" id="L738">        return new float[]{xCoordsAvg, yCoordsAvg};</span>
+<span class="nc" id="L962">        return new float[]{xCoordsAvg, yCoordsAvg};</span>
     }
 
+    /**
+     *
+     * @param groupNumber
+     * @return
+     */
     public ArrayPair getGroupHull(int groupNumber) {
 
-<span class="pc bpc" id="L743" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L744">            return null;</span>
+<span class="pc bpc" id="L972" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L973">            return null;</span>
         }
 
-<span class="fc" id="L747">        int nGroups = groupFinder.getNumberOfGroups() ;</span>
+<span class="fc" id="L976">        int nGroups = groupFinder.getNumberOfGroups() ;</span>
 
-<span class="pc bpc" id="L749" title="1 of 2 branches missed.">        if (groupNumber &gt;= nGroups) {</span>
-<span class="nc" id="L750">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L978" title="1 of 2 branches missed.">        if (groupNumber &gt;= nGroups) {</span>
+<span class="nc" id="L979">            throw new IllegalArgumentException(</span>
                 &quot;groupNumber is larger than existing number of groups&quot;);
         }
 
-<span class="fc" id="L754">        float[] xg = groupFinder.getX(groupNumber, indexer);</span>
+<span class="fc" id="L983">        float[] xg = groupFinder.getX(groupNumber, indexer);</span>
         
-<span class="fc" id="L756">        float[] yg = groupFinder.getY(groupNumber, indexer);</span>
+<span class="fc" id="L985">        float[] yg = groupFinder.getY(groupNumber, indexer);</span>
         
         try {
             
-<span class="fc" id="L760">            GrahamScan scan = new GrahamScan();</span>
+<span class="fc" id="L989">            GrahamScan scan = new GrahamScan();</span>
             
-<span class="fc" id="L762">            scan.computeHull(xg, yg);</span>
+<span class="fc" id="L991">            scan.computeHull(xg, yg);</span>
 
-<span class="fc" id="L764">            return new ArrayPair(scan.getXHull(), scan.getYHull());</span>
+<span class="fc" id="L993">            return new ArrayPair(scan.getXHull(), scan.getYHull());</span>
 
-<span class="nc" id="L766">        } catch (GrahamScanTooFewPointsException e) {</span>
+<span class="nc" id="L995">        } catch (GrahamScanTooFewPointsException e) {</span>
 
-<span class="nc" id="L768">            return new ArrayPair(new float[0], new float[0]);</span>
+<span class="nc" id="L997">            return new ArrayPair(new float[0], new float[0]);</span>
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public ArrayPair getHullCentroids() {
 
-<span class="pc bpc" id="L774" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L775">            return null;</span>
+<span class="pc bpc" id="L1007" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L1008">            return null;</span>
         }
 
-<span class="fc" id="L778">        int nGroups = groupFinder.getNumberOfGroups() ;</span>
+<span class="fc" id="L1011">        int nGroups = groupFinder.getNumberOfGroups() ;</span>
 
-<span class="fc" id="L780">        float[] xc = new float[nGroups];</span>
-<span class="fc" id="L781">        float[] yc = new float[nGroups];</span>
+<span class="fc" id="L1013">        float[] xc = new float[nGroups];</span>
+<span class="fc" id="L1014">        float[] yc = new float[nGroups];</span>
         
-<span class="fc bfc" id="L783" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; i++) {</span>
+<span class="fc bfc" id="L1016" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; i++) {</span>
             
-<span class="fc" id="L785">            ArrayPair hull = getGroupHull(i);</span>
+<span class="fc" id="L1018">            ArrayPair hull = getGroupHull(i);</span>
             
-<span class="fc" id="L787">            float[] ca = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(</span>
-<span class="fc" id="L788">                hull.getX(), hull.getY());</span>
+<span class="fc" id="L1020">            float[] ca = LinesAndAngles.calcAreaAndCentroidOfSimplePolygon(</span>
+<span class="fc" id="L1021">                hull.getX(), hull.getY());</span>
             
-<span class="pc bpc" id="L790" title="1 of 2 branches missed.">            if (ca != null) {</span>
+<span class="pc bpc" id="L1023" title="1 of 2 branches missed.">            if (ca != null) {</span>
                
-<span class="fc" id="L792">                xc[i] = ca[1];</span>
+<span class="fc" id="L1025">                xc[i] = ca[1];</span>
             
-<span class="fc" id="L794">                yc[i] = ca[2];</span>
+<span class="fc" id="L1027">                yc[i] = ca[2];</span>
             
             } else {
                 
-<span class="nc" id="L798">                xc[i] = 0;</span>
+<span class="nc" id="L1031">                xc[i] = 0;</span>
             
-<span class="nc" id="L800">                yc[i] = 0;</span>
+<span class="nc" id="L1033">                yc[i] = 0;</span>
             }
             
         }
         
-<span class="fc" id="L805">        return new ArrayPair(xc, yc);</span>
+<span class="fc" id="L1038">        return new ArrayPair(xc, yc);</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public float getBackgroundDensity() {
-<span class="fc" id="L809">        return backgroundDensity;</span>
+<span class="fc" id="L1046">        return backgroundDensity;</span>
     }
 
     /**
@@ -816,45 +1053,77 @@ public class TwoPointCorrelation {
      * @return
      */
     public float getBackgroundDensityError() {
-<span class="nc" id="L819">        return backgroundError;</span>
+<span class="nc" id="L1056">        return backgroundError;</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getX() {
-<span class="fc" id="L823">        return indexer.getX();</span>
+<span class="fc" id="L1064">        return indexer.getX();</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getY() {
-<span class="fc" id="L827">        return indexer.getY();</span>
+<span class="fc" id="L1072">        return indexer.getY();</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getXErrors() {
-<span class="fc" id="L830">        return indexer.getXErrors();</span>
+<span class="fc" id="L1080">        return indexer.getXErrors();</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getYErrors() {
-<span class="fc" id="L833">        return indexer.getYErrors();</span>
+<span class="fc" id="L1088">        return indexer.getYErrors();</span>
     }
     AxisIndexer getIndexer() {
-<span class="nc" id="L836">        return indexer;</span>
+<span class="nc" id="L1091">        return indexer;</span>
     }
     
+    /**
+     *
+     * @return
+     */
     public int getMinimumNumberForGroupMembership() {
-<span class="nc" id="L840">        return minimumNumberInCluster;</span>
+<span class="nc" id="L1099">        return minimumNumberInCluster;</span>
     }
+
+    /**
+     *
+     * @param minNumber
+     */
     public void setMinimumNumberForGroupMembership(int minNumber) {
-<span class="nc" id="L843">        this.minimumNumberInCluster = minNumber;</span>
-<span class="nc" id="L844">    }</span>
+<span class="nc" id="L1107">        this.minimumNumberInCluster = minNumber;</span>
+<span class="nc" id="L1108">    }</span>
     
+    /**
+     *
+     * @param groupNumber
+     * @return
+     */
     public ArrayPair getGroup(int groupNumber) {
         
-<span class="pc bpc" id="L848" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L849">            throw new IllegalStateException(</span>
+<span class="pc bpc" id="L1117" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L1118">            throw new IllegalStateException(</span>
                 &quot;groupFinder is null.  Please run findClusters() first.&quot;);
         }
                     
-<span class="fc" id="L853">        float[] xg = groupFinder.getX(groupNumber, indexer);</span>
+<span class="fc" id="L1122">        float[] xg = groupFinder.getX(groupNumber, indexer);</span>
         
-<span class="fc" id="L855">        float[] yg = groupFinder.getY(groupNumber, indexer);</span>
+<span class="fc" id="L1124">        float[] yg = groupFinder.getY(groupNumber, indexer);</span>
         
-<span class="fc" id="L857">        return new ArrayPair(xg, yg);      </span>
+<span class="fc" id="L1126">        return new ArrayPair(xg, yg);      </span>
     }
 
 }

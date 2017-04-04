@@ -9,26 +9,32 @@ import java.util.logging.Logger;
  * 
  * RT complexity for findVoids()
  *
- * findVoids() is N^2/2 - N/2 which is &lt; O(N^2),
+ * findVoids() is N^2/2 - N/2 which is &amp;lt; O(N^2),
  * but it invokes processIndexedRegion which can be O(1) to O(N-1).
  *
  * total RT complexity:
- *     best time:  is N^2 - N   which is &lt; O(N^2)
- *     worse time: is N^3 - N^2 which is &lt; O(N^3)
+ *     best time:  is N^2 - N   which is &amp;lt; O(N^2)
+ *     worse time: is N^3 - N^2 which is &amp;lt; O(N^3)
  *&lt;/pre&gt;
  * @author nichole
  */
 <span class="fc" id="L21">public class CompleteSamplingVoidFinder extends AbstractVoidFinder {</span>
 
+    /**
+     *
+     */
     public void constructLogger() {
-<span class="fc" id="L24">        this.log = Logger.getLogger(this.getClass().getName());</span>
-<span class="fc" id="L25">    }</span>
+<span class="fc" id="L27">        this.log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L28">    }</span>
 
+    /**
+     *
+     */
     @Override
     protected void findVoidsImpl() {
 
-<span class="fc" id="L30">        findVoidsByPairBounds();</span>
-<span class="fc" id="L31">    }</span>
+<span class="fc" id="L36">        findVoidsByPairBounds();</span>
+<span class="fc" id="L37">    }</span>
 
     /**
      * find voids by looking for other points within bounds of pairs
@@ -42,15 +48,15 @@ import java.util.logging.Logger;
         //    *(i,j)
 
         // this is &lt; O(N^2), but processIndexedRegion can be O(1) to O(N-1)
-<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int uSortedXIndex = 0; uSortedXIndex &lt; indexer.getNumberOfPoints(); </span>
-<span class="fc" id="L46">            uSortedXIndex++) {</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int uSortedXIndex = 0; uSortedXIndex &lt; indexer.getNumberOfPoints(); </span>
+<span class="fc" id="L52">            uSortedXIndex++) {</span>
 
-<span class="fc" id="L48">            for (int vSortedXIndex = (uSortedXIndex + 1); </span>
-<span class="fc bfc" id="L49" title="All 2 branches covered.">                vSortedXIndex &lt; indexer.getNumberOfPoints(); vSortedXIndex++) {</span>
+<span class="fc" id="L54">            for (int vSortedXIndex = (uSortedXIndex + 1); </span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">                vSortedXIndex &lt; indexer.getNumberOfPoints(); vSortedXIndex++) {</span>
 
-<span class="fc" id="L51">                processIndexedRegion(uSortedXIndex, vSortedXIndex);</span>
+<span class="fc" id="L57">                processIndexedRegion(uSortedXIndex, vSortedXIndex);</span>
             }
         }
-<span class="fc" id="L54">    }</span>
+<span class="fc" id="L60">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

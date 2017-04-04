@@ -7,19 +7,43 @@
  */
 <span class="pc" id="L8">public enum VoidSampling {</span>
 
-<span class="fc" id="L10">    COMPLETE, </span>
-<span class="fc" id="L11">    LEAST_COMPLETE, </span>
-<span class="fc" id="L12">    COMPLETE_ON_SUBSET,</span>
-<span class="fc" id="L13">    FOR_SPARSE_BACKGROUND,</span>
-<span class="fc" id="L14">    N_A;</span>
+    /**
+     *
+     */
+<span class="fc" id="L13">    COMPLETE, </span>
+
+    /**
+     *
+     */
+<span class="fc" id="L18">    LEAST_COMPLETE, </span>
+
+    /**
+     *
+     */
+<span class="fc" id="L23">    COMPLETE_ON_SUBSET,</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L28">    FOR_SPARSE_BACKGROUND,</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L33">    N_A;</span>
     
+    /**
+     *
+     * @param name
+     * @return
+     */
     public static VoidSampling resolve(String name) {
-<span class="pc bpc" id="L17" title="1 of 2 branches missed.">        for (VoidSampling vs : VoidSampling.values()) {</span>
-<span class="pc bpc" id="L18" title="1 of 2 branches missed.">            if (vs.name().equals(name)) {</span>
-<span class="fc" id="L19">                return vs;</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        for (VoidSampling vs : VoidSampling.values()) {</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">            if (vs.name().equals(name)) {</span>
+<span class="fc" id="L43">                return vs;</span>
             }
         }
-<span class="nc" id="L22">        return null;</span>
+<span class="nc" id="L46">        return null;</span>
     }
     
 }

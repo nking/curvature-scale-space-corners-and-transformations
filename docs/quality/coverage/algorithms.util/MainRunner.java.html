@@ -15,146 +15,170 @@ import java.util.HashMap;
  */
 public class MainRunner {
 
-<span class="fc" id="L18">    protected HashMap&lt;String, String&gt; arguments = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L21">    protected HashMap&lt;String, String&gt; arguments = null;</span>
 
-<span class="fc" id="L20">    protected TwoPointCorrelation clusterFinder = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L26">    protected TwoPointCorrelation clusterFinder = null;</span>
 
-<span class="fc" id="L22">    public MainRunner() {</span>
+    /**
+     *
+     */
+<span class="fc" id="L31">    public MainRunner() {</span>
 
-<span class="fc" id="L24">    }</span>
+<span class="fc" id="L33">    }</span>
+
+    /**
+     *
+     * @return
+     */
     public HashMap&lt;String, String&gt; getArguments() {
-<span class="nc" id="L26">        return arguments;</span>
+<span class="nc" id="L40">        return arguments;</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public TwoPointCorrelation getTwoPointCorrelation() {
-<span class="nc" id="L30">        return clusterFinder;</span>
+<span class="nc" id="L48">        return clusterFinder;</span>
     }
 
+    /**
+     *
+     * @param reader
+     * @param args
+     * @return
+     */
     public TwoPointCorrelation run(IInputFileReader reader, String[] args) {
 
-<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (args != null) {</span>
-<span class="fc bfc" id="L36" title="All 2 branches covered.">            for (int i = 0; i &lt; args.length; i++) {</span>
-<span class="fc" id="L37">                System.out.println(args[i]);</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (args != null) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            for (int i = 0; i &lt; args.length; i++) {</span>
+<span class="fc" id="L61">                System.out.println(args[i]);</span>
             }
         }
 
-<span class="pc bpc" id="L41" title="2 of 4 branches missed.">        if (args == null || args.length &lt; 2) {</span>
-<span class="nc" id="L42">            System.out.println(&quot;Requires file:  --file /path/to/file/fileName.txt which contains rows of x&lt;tab&gt;y&lt;tab&gt;xerr&lt;tab&gt;yerr&quot;);</span>
-<span class="nc" id="L43">            System.out.println(&quot;     optional:  --twosigma&quot;);</span>
-<span class="nc" id="L44">            System.out.println(&quot;     optional:  --threesigma&quot;);</span>
-<span class="nc" id="L45">            System.out.println(&quot;     optional:  --background 0.3 (requires backgrounderror guesstimate at least)&quot;);</span>
-<span class="nc" id="L46">            System.out.println(&quot;     optional:  --backgrounderror 0.1&quot;);</span>
-<span class="nc" id="L47">            System.out.println(&quot;     optional:  --debug&quot;);</span>
-<span class="nc" id="L48">            return null;</span>
+<span class="pc bpc" id="L65" title="2 of 4 branches missed.">        if (args == null || args.length &lt; 2) {</span>
+<span class="nc" id="L66">            System.out.println(&quot;Requires file:  --file /path/to/file/fileName.txt which contains rows of x&lt;tab&gt;y&lt;tab&gt;xerr&lt;tab&gt;yerr&quot;);</span>
+<span class="nc" id="L67">            System.out.println(&quot;     optional:  --twosigma&quot;);</span>
+<span class="nc" id="L68">            System.out.println(&quot;     optional:  --threesigma&quot;);</span>
+<span class="nc" id="L69">            System.out.println(&quot;     optional:  --background 0.3 (requires backgrounderror guesstimate at least)&quot;);</span>
+<span class="nc" id="L70">            System.out.println(&quot;     optional:  --backgrounderror 0.1&quot;);</span>
+<span class="nc" id="L71">            System.out.println(&quot;     optional:  --debug&quot;);</span>
+<span class="nc" id="L72">            return null;</span>
         }
 
-<span class="fc" id="L51">        arguments = new HashMap&lt;String, String&gt;();</span>
+<span class="fc" id="L75">        arguments = new HashMap&lt;String, String&gt;();</span>
 
-<span class="fc" id="L53">        boolean useTwo = false;</span>
-<span class="fc" id="L54">        boolean useThree = false;</span>
-<span class="fc" id="L55">        boolean debug = false;</span>
+<span class="fc" id="L77">        boolean useTwo = false;</span>
+<span class="fc" id="L78">        boolean useThree = false;</span>
+<span class="fc" id="L79">        boolean debug = false;</span>
 
-<span class="fc" id="L57">        Float bckgnd = null;</span>
-<span class="fc" id="L58">        Float bckgndErr = null;</span>
+<span class="fc" id="L81">        Float bckgnd = null;</span>
+<span class="fc" id="L82">        Float bckgndErr = null;</span>
 
-<span class="fc" id="L60">        String filePath = null;</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (int i = 0; i &lt; args.length; i++) {</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (args[i].equals(&quot;--file&quot;)) {</span>
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                if ( (i+1) &lt; args.length) {</span>
-<span class="fc" id="L64">                    filePath = args[i+1];</span>
-<span class="fc" id="L65">                    i++;</span>
-<span class="fc" id="L66">                    arguments.put(&quot;filePath&quot;, filePath);</span>
+<span class="fc" id="L84">        String filePath = null;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; args.length; i++) {</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (args[i].equals(&quot;--file&quot;)) {</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">                if ( (i+1) &lt; args.length) {</span>
+<span class="fc" id="L88">                    filePath = args[i+1];</span>
+<span class="fc" id="L89">                    i++;</span>
+<span class="fc" id="L90">                    arguments.put(&quot;filePath&quot;, filePath);</span>
                 }
-<span class="fc bfc" id="L68" title="All 2 branches covered.">            } else if (args[i].equals(&quot;--twosigma&quot;)) {</span>
-<span class="fc" id="L69">                useTwo = true;</span>
-<span class="fc" id="L70">                arguments.put(&quot;useSigmaTwo&quot;, &quot;true&quot;);</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">            } else if (args[i].equals(&quot;--threesigma&quot;)) {</span>
-<span class="fc" id="L72">                useThree = true;</span>
-<span class="fc" id="L73">                arguments.put(&quot;useSigmaThree&quot;, &quot;true&quot;);</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">            } else if (args[i].equals(&quot;--background&quot;)) {</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">                if ( (i+1) &lt; args.length) {</span>
-<span class="fc" id="L76">                    String tmp = args[i+1];</span>
-<span class="fc" id="L77">                    bckgnd = Float.valueOf(tmp);</span>
-<span class="fc" id="L78">                    i++;</span>
-<span class="fc" id="L79">                    arguments.put(&quot;background&quot;, tmp);</span>
-<span class="fc" id="L80">                }</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">            } else if (args[i].equals(&quot;--backgrounderror&quot;)) {</span>
-<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                if ( (i+1) &lt; args.length) {</span>
-<span class="fc" id="L83">                    String tmp = args[i+1];</span>
-<span class="fc" id="L84">                    bckgndErr = Float.valueOf(tmp);</span>
-<span class="fc" id="L85">                    i++;</span>
-<span class="fc" id="L86">                    arguments.put(&quot;backgrounderror&quot;, tmp);</span>
-<span class="fc" id="L87">                }</span>
-<span class="nc bnc" id="L88" title="All 2 branches missed.">            } else if (args[i].equals(&quot;--debug&quot;)) {</span>
-<span class="nc" id="L89">                debug = true;</span>
-<span class="nc" id="L90">                arguments.put(&quot;debug&quot;, &quot;true&quot;);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            } else if (args[i].equals(&quot;--twosigma&quot;)) {</span>
+<span class="fc" id="L93">                useTwo = true;</span>
+<span class="fc" id="L94">                arguments.put(&quot;useSigmaTwo&quot;, &quot;true&quot;);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            } else if (args[i].equals(&quot;--threesigma&quot;)) {</span>
+<span class="fc" id="L96">                useThree = true;</span>
+<span class="fc" id="L97">                arguments.put(&quot;useSigmaThree&quot;, &quot;true&quot;);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            } else if (args[i].equals(&quot;--background&quot;)) {</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">                if ( (i+1) &lt; args.length) {</span>
+<span class="fc" id="L100">                    String tmp = args[i+1];</span>
+<span class="fc" id="L101">                    bckgnd = Float.valueOf(tmp);</span>
+<span class="fc" id="L102">                    i++;</span>
+<span class="fc" id="L103">                    arguments.put(&quot;background&quot;, tmp);</span>
+<span class="fc" id="L104">                }</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            } else if (args[i].equals(&quot;--backgrounderror&quot;)) {</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">                if ( (i+1) &lt; args.length) {</span>
+<span class="fc" id="L107">                    String tmp = args[i+1];</span>
+<span class="fc" id="L108">                    bckgndErr = Float.valueOf(tmp);</span>
+<span class="fc" id="L109">                    i++;</span>
+<span class="fc" id="L110">                    arguments.put(&quot;backgrounderror&quot;, tmp);</span>
+<span class="fc" id="L111">                }</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            } else if (args[i].equals(&quot;--debug&quot;)) {</span>
+<span class="nc" id="L113">                debug = true;</span>
+<span class="nc" id="L114">                arguments.put(&quot;debug&quot;, &quot;true&quot;);</span>
             } else {
-<span class="nc" id="L92">                System.out.println(&quot;WARNING, not an option: &quot; + args[i]);</span>
+<span class="nc" id="L116">                System.out.println(&quot;WARNING, not an option: &quot; + args[i]);</span>
             }
         }
 
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (filePath == null) {</span>
-<span class="nc" id="L97">            System.err.println(&quot;Requires file:  --file /path/to/file/fileName.txt which contains rows of x&lt;tab&gt;y&lt;tab&gt;xerr&lt;tab&gt;yerr&quot;);</span>
-<span class="nc" id="L98">            return null;</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (filePath == null) {</span>
+<span class="nc" id="L121">            System.err.println(&quot;Requires file:  --file /path/to/file/fileName.txt which contains rows of x&lt;tab&gt;y&lt;tab&gt;xerr&lt;tab&gt;yerr&quot;);</span>
+<span class="nc" id="L122">            return null;</span>
         }
 
-<span class="pc bpc" id="L101" title="1 of 4 branches missed.">        if ((bckgnd != null) &amp;&amp; (bckgndErr == null)) {</span>
-<span class="nc" id="L102">            System.err.println(&quot;Requires  --backgrounderror if --background is set&quot;);</span>
-<span class="nc" id="L103">            return null;</span>
+<span class="pc bpc" id="L125" title="1 of 4 branches missed.">        if ((bckgnd != null) &amp;&amp; (bckgndErr == null)) {</span>
+<span class="nc" id="L126">            System.err.println(&quot;Requires  --backgrounderror if --background is set&quot;);</span>
+<span class="nc" id="L127">            return null;</span>
         }
 
         try {
 
-<span class="fc" id="L108">            reader.read(filePath);</span>
+<span class="fc" id="L132">            reader.read(filePath);</span>
 
-<span class="fc" id="L110">            Logger.getLogger(MainRunner.class.getName()).info(&quot;begin TwoPointCorrelation&quot;);</span>
+<span class="fc" id="L134">            Logger.getLogger(MainRunner.class.getName()).info(&quot;begin TwoPointCorrelation&quot;);</span>
 
-<span class="fc" id="L112">            clusterFinder = new TwoPointCorrelation(</span>
-<span class="fc" id="L113">                reader.getX(), reader.getY(), reader.getXErrors(), reader.getYErrors(), reader.getX().length);</span>
+<span class="fc" id="L136">            clusterFinder = new TwoPointCorrelation(</span>
+<span class="fc" id="L137">                reader.getX(), reader.getY(), reader.getXErrors(), reader.getYErrors(), reader.getX().length);</span>
 
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L116">                clusterFinder.setDebug(true);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L140">                clusterFinder.setDebug(true);</span>
             } else {
-<span class="fc" id="L118">                clusterFinder.setDebug(false);</span>
+<span class="fc" id="L142">                clusterFinder.setDebug(false);</span>
             }
 
 
             // default is 2.5
-<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (useTwo) {</span>
-<span class="fc" id="L124">                clusterFinder.setThresholdFactorToTwo();</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">            } else if (useThree) {</span>
-<span class="fc" id="L126">                clusterFinder.setThresholdFactorToThree();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (useTwo) {</span>
+<span class="fc" id="L148">                clusterFinder.setThresholdFactorToTwo();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">            } else if (useThree) {</span>
+<span class="fc" id="L150">                clusterFinder.setThresholdFactorToThree();</span>
             }
 
 
-<span class="fc bfc" id="L130" title="All 2 branches covered.">            if (bckgnd != null) {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (bckgnd != null) {</span>
 
-<span class="fc" id="L132">                Logger.getLogger(MainRunner.class.getName()).info(&quot;set background and error&quot;);</span>
+<span class="fc" id="L156">                Logger.getLogger(MainRunner.class.getName()).info(&quot;set background and error&quot;);</span>
 
-<span class="fc" id="L134">                clusterFinder.setBackground(bckgnd.floatValue(), bckgndErr.floatValue());</span>
+<span class="fc" id="L158">                clusterFinder.setBackground(bckgnd.floatValue(), bckgndErr.floatValue());</span>
 
             } else {
 
-<span class="fc" id="L138">                Logger.getLogger(MainRunner.class.getName()).info(&quot;calculate background&quot;);</span>
+<span class="fc" id="L162">                Logger.getLogger(MainRunner.class.getName()).info(&quot;calculate background&quot;);</span>
 
-<span class="fc" id="L140">                clusterFinder.calculateBackground();</span>
+<span class="fc" id="L164">                clusterFinder.calculateBackground();</span>
             }
 
 
-<span class="fc" id="L144">            Logger.getLogger(MainRunner.class.getName()).info(&quot;find clusters&quot;);</span>
+<span class="fc" id="L168">            Logger.getLogger(MainRunner.class.getName()).info(&quot;find clusters&quot;);</span>
 
-<span class="fc" id="L146">            clusterFinder.findClusters();</span>
+<span class="fc" id="L170">            clusterFinder.findClusters();</span>
             
 
-<span class="fc" id="L149">            String plotFilePath = clusterFinder.plotClusters();</span>
+<span class="fc" id="L173">            String plotFilePath = clusterFinder.plotClusters();</span>
             
-<span class="fc" id="L151">            return clusterFinder;</span>
+<span class="fc" id="L175">            return clusterFinder;</span>
 
-<span class="nc" id="L153">        } catch (Exception e) {</span>
-<span class="nc" id="L154">            e.printStackTrace();</span>
+<span class="nc" id="L177">        } catch (Exception e) {</span>
+<span class="nc" id="L178">            e.printStackTrace();</span>
         }
         
-<span class="nc" id="L157">        return null;</span>
+<span class="nc" id="L181">        return null;</span>
     }
 
 }

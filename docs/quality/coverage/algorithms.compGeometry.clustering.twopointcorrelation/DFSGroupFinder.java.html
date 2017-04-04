@@ -9,7 +9,7 @@ import algorithms.util.Stack;
  * &lt;pre&gt;
  * An implementation of IGroupFinder that uses a depth first search algorithm
  * to visit all nodes in a dataset and put into groups those within 
- * distance &lt; threshhold * threshholdFactor from each other.
+ * distance &amp;lt; threshhold * threshholdFactor from each other.
  * 
  * the runtime complexity is a little larger, but on the order of O(N^2)
  * 
@@ -24,62 +24,90 @@ import algorithms.util.Stack;
 public class DFSGroupFinder extends AbstractGroupFinder {
 
     // 0 = unvisited, 1 = processing, 2 = visited
-<span class="fc" id="L27">    protected int[] color = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L31">        protected int[] color = null;</span>
     
-<span class="fc" id="L29">    protected int[] sortedXIndexes = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L36">    protected int[] sortedXIndexes = null;</span>
     
+    /**
+     *
+     */
     protected final float thrsh;
     
-<span class="fc" id="L33">    protected AxisIndexer indexer = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L46">    protected AxisIndexer indexer = null;</span>
     
+    /**
+     *
+     * @param threshhold
+     * @param threshholdFactor
+     */
     public DFSGroupFinder(float threshhold, float threshholdFactor) {
         
-<span class="fc" id="L37">        super(threshhold, threshholdFactor);</span>
+<span class="fc" id="L55">        super(threshhold, threshholdFactor);</span>
         
-<span class="fc" id="L39">        thrsh = threshhold * threshholdFactor;        </span>
-<span class="fc" id="L40">    }</span>
+<span class="fc" id="L57">        thrsh = threshhold * threshholdFactor;        </span>
+<span class="fc" id="L58">    }</span>
     
+    /**
+     *
+     */
     public void constructLogger() {
-<span class="fc" id="L43">        this.log = Logger.getLogger(this.getClass().getName());</span>
-<span class="fc" id="L44">    }   </span>
-    
+<span class="fc" id="L64">        this.log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L65">    }</span>
+
+    /**
+     *
+     * @param indexer
+     */
     @Override
     protected void findClusters(AxisIndexer indexer) {
              
-<span class="fc" id="L49">        log.info(&quot;using a critical density of &quot; + threshhold + &quot; * &quot; </span>
+<span class="fc" id="L74">        log.info(&quot;using a critical density of &quot; + threshhold + &quot; * &quot; </span>
             + threshholdFactor + &quot; = &quot; + thrsh);
         
         // traverse the data by ordered x values using 
         //     indexer.getSortedXIndexes() so can break when exceed critical distance
         
-<span class="fc" id="L55">        this.indexer = indexer;</span>
+<span class="fc" id="L80">        this.indexer = indexer;</span>
         
-<span class="fc" id="L57">        sortedXIndexes = indexer.getSortedXIndexes();</span>
+<span class="fc" id="L82">        sortedXIndexes = indexer.getSortedXIndexes();</span>
                 
         // 0 = unvisited, 1 = processing, 2 = visited
-<span class="fc" id="L60">        color = new int[sortedXIndexes.length];</span>
+<span class="fc" id="L85">        color = new int[sortedXIndexes.length];</span>
 
         //findClustersRecursive();
         
-<span class="fc" id="L64">        findClustersIterative();</span>
+<span class="fc" id="L89">        findClustersIterative();</span>
         
-<span class="fc" id="L66">    }</span>
+<span class="fc" id="L91">    }</span>
     
+    /**
+     *
+     */
     protected void findClustersIterative() {
 
-<span class="fc" id="L70">        Stack stack = new Stack();</span>
+<span class="fc" id="L98">        Stack stack = new Stack();</span>
         
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (int uSortedXIndex = (sortedXIndexes.length - 1); uSortedXIndex &gt; -1; uSortedXIndex--) {</span>
-<span class="fc" id="L73">            stack.insert(uSortedXIndex);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (int uSortedXIndex = (sortedXIndexes.length - 1); uSortedXIndex &gt; -1; uSortedXIndex--) {</span>
+<span class="fc" id="L101">            stack.insert(uSortedXIndex);</span>
         }
                 
-<span class="fc" id="L76">        color[stack.peek()] = 2;</span>
+<span class="fc" id="L104">        color[stack.peek()] = 2;</span>
         
-<span class="fc bfc" id="L78" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
             
-<span class="fc" id="L80">            SimpleLinkedListNode uNode = stack.pop();</span>
+<span class="fc" id="L108">            SimpleLinkedListNode uNode = stack.pop();</span>
             
-<span class="fc" id="L82">            int uSortedXIndex = uNode.getKey();</span>
+<span class="fc" id="L110">            int uSortedXIndex = uNode.getKey();</span>
             
             // we process the pair when their point density is higher than thrsh:
             //  
@@ -92,68 +120,74 @@ public class DFSGroupFinder extends AbstractGroupFinder {
             
             // association of 2 points for separation &lt;= critSeparation
             
-<span class="fc" id="L95">            float critSeparation = 2.f/thrsh;</span>
+<span class="fc" id="L123">            float critSeparation = 2.f/thrsh;</span>
 
-<span class="fc" id="L97">            float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];</span>
-<span class="fc" id="L98">            float minXAssoc = uX - critSeparation;</span>
-<span class="fc" id="L99">            float maxXAssoc = uX + critSeparation;</span>
-<span class="fc" id="L100">            float uY = indexer.getY()[ sortedXIndexes[uSortedXIndex] ];</span>
-<span class="fc" id="L101">            float minYAssoc = uY - critSeparation;</span>
-<span class="fc" id="L102">            float maxYAssoc = uY + critSeparation;</span>
+<span class="fc" id="L125">            float uX = indexer.getX()[ sortedXIndexes[uSortedXIndex] ];</span>
+<span class="fc" id="L126">            float minXAssoc = uX - critSeparation;</span>
+<span class="fc" id="L127">            float maxXAssoc = uX + critSeparation;</span>
+<span class="fc" id="L128">            float uY = indexer.getY()[ sortedXIndexes[uSortedXIndex] ];</span>
+<span class="fc" id="L129">            float minYAssoc = uY - critSeparation;</span>
+<span class="fc" id="L130">            float maxYAssoc = uY + critSeparation;</span>
             
             // for each neighbor v of u
-<span class="fc bfc" id="L105" title="All 2 branches covered.">            for (int vSortedXIndex = 0; vSortedXIndex &lt; sortedXIndexes.length; </span>
-<span class="fc" id="L106">                vSortedXIndex++) {</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            for (int vSortedXIndex = 0; vSortedXIndex &lt; sortedXIndexes.length; </span>
+<span class="fc" id="L134">                vSortedXIndex++) {</span>
 
-<span class="fc bfc" id="L108" title="All 4 branches covered.">                if (color[vSortedXIndex] != 0 || (uSortedXIndex == vSortedXIndex)) {</span>
-<span class="fc" id="L109">                    continue;</span>
+<span class="fc bfc" id="L136" title="All 4 branches covered.">                if (color[vSortedXIndex] != 0 || (uSortedXIndex == vSortedXIndex)) {</span>
+<span class="fc" id="L137">                    continue;</span>
                 }
                 
-<span class="fc" id="L112">                float vX = indexer.getX()[ sortedXIndexes[vSortedXIndex] ];</span>
+<span class="fc" id="L140">                float vX = indexer.getX()[ sortedXIndexes[vSortedXIndex] ];</span>
                 
-<span class="fc bfc" id="L114" title="All 2 branches covered.">                if (vX &lt; minXAssoc) {</span>
-<span class="fc" id="L115">                    continue;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                if (vX &lt; minXAssoc) {</span>
+<span class="fc" id="L143">                    continue;</span>
                 }
                 
-<span class="fc bfc" id="L118" title="All 2 branches covered.">                if (vX &gt; maxXAssoc) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                if (vX &gt; maxXAssoc) {</span>
                     // we've past the distance in the ordered x array of points associated with u,                 
-<span class="fc" id="L120">                    break;</span>
+<span class="fc" id="L148">                    break;</span>
                 }
                 
-<span class="fc" id="L123">                float vY = indexer.getY()[ sortedXIndexes[vSortedXIndex] ];</span>
+<span class="fc" id="L151">                float vY = indexer.getY()[ sortedXIndexes[vSortedXIndex] ];</span>
                 
-<span class="fc bfc" id="L125" title="All 4 branches covered.">                if ((vY &lt; minYAssoc) || (vY &gt; maxYAssoc)) {</span>
-<span class="fc" id="L126">                    continue;</span>
+<span class="fc bfc" id="L153" title="All 4 branches covered.">                if ((vY &lt; minYAssoc) || (vY &gt; maxYAssoc)) {</span>
+<span class="fc" id="L154">                    continue;</span>
                 }
                 
                 // one last check using the true separation
                 
-<span class="fc" id="L131">                double sep = Math.sqrt(LinesAndAngles.distSquared(uX, uY, vX, vY));</span>
+<span class="fc" id="L159">                double sep = Math.sqrt(LinesAndAngles.distSquared(uX, uY, vX, vY));</span>
                   
-<span class="fc bfc" id="L133" title="All 2 branches covered.">                if (sep &gt; critSeparation) {</span>
-<span class="fc" id="L134">                    continue;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                if (sep &gt; critSeparation) {</span>
+<span class="fc" id="L162">                    continue;</span>
                 }
                 
-<span class="fc" id="L137">                log.fine(&quot;  comparing: (&quot; + uX + &quot;,&quot; + uY + &quot;)  (&quot; </span>
+<span class="fc" id="L165">                log.fine(&quot;  comparing: (&quot; + uX + &quot;,&quot; + uY + &quot;)  (&quot; </span>
                     + vX + &quot;,&quot; + vY + &quot;)  sep=&quot; + sep + &quot; cr=&quot; + critSeparation);
       
-<span class="fc" id="L140">                color[vSortedXIndex] = 2;</span>
+<span class="fc" id="L168">                color[vSortedXIndex] = 2;</span>
                 
-<span class="fc" id="L142">                processPair(indexer, uSortedXIndex, vSortedXIndex);</span>
+<span class="fc" id="L170">                processPair(indexer, uSortedXIndex, vSortedXIndex);</span>
                 
                 // inserting back at the top of the stack assures that the search continues next from an associated point
-<span class="fc" id="L145">                stack.insert(vSortedXIndex);</span>
+<span class="fc" id="L173">                stack.insert(vSortedXIndex);</span>
             }
-<span class="fc" id="L147">        }</span>
-<span class="fc" id="L148">    }</span>
+<span class="fc" id="L175">        }</span>
+<span class="fc" id="L176">    }</span>
     
+    /**
+     *
+     * @param indexer
+     * @param uSortedXIndex
+     * @param vSortedXIndex
+     */
     protected void processPair(AxisIndexer indexer, int uSortedXIndex, int vSortedXIndex) {
         
         //log.finest(&quot;processPair &quot; + uSortedXIndex + &quot;:&quot; + vSortedXIndex);           
         
-<span class="fc" id="L154">        int uIdx = indexer.getSortedXIndexes()[uSortedXIndex];</span>
+<span class="fc" id="L188">        int uIdx = indexer.getSortedXIndexes()[uSortedXIndex];</span>
         
-<span class="fc" id="L156">        int vIdx = indexer.getSortedXIndexes()[vSortedXIndex];</span>
+<span class="fc" id="L190">        int vIdx = indexer.getSortedXIndexes()[vSortedXIndex];</span>
         
         int groupId;
         
@@ -164,50 +198,50 @@ public class DFSGroupFinder extends AbstractGroupFinder {
         float tmpvy = indexer.getY()[ sortedXIndexes[vSortedXIndex] ];
         */
         
-<span class="fc bfc" id="L167" title="All 4 branches covered.">        if ((pointToGroupIndex[uIdx] &gt; -1) &amp;&amp; (pointToGroupIndex[vIdx] == -1)) {</span>
+<span class="fc bfc" id="L201" title="All 4 branches covered.">        if ((pointToGroupIndex[uIdx] &gt; -1) &amp;&amp; (pointToGroupIndex[vIdx] == -1)) {</span>
         
-<span class="fc" id="L169">            groupId = pointToGroupIndex[uIdx];</span>
+<span class="fc" id="L203">            groupId = pointToGroupIndex[uIdx];</span>
             
-<span class="fc" id="L171">            pointToGroupIndex[vIdx] = groupId;</span>
+<span class="fc" id="L205">            pointToGroupIndex[vIdx] = groupId;</span>
             
-<span class="fc" id="L173">            groupMembership[groupId].insert(vIdx);</span>
+<span class="fc" id="L207">            groupMembership[groupId].insert(vIdx);</span>
             
-<span class="pc bpc" id="L175" title="1 of 4 branches missed.">        } else if ((pointToGroupIndex[vIdx] &gt; -1) &amp;&amp; (pointToGroupIndex[uIdx] == -1)) {</span>
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">        } else if ((pointToGroupIndex[vIdx] &gt; -1) &amp;&amp; (pointToGroupIndex[uIdx] == -1)) {</span>
             
-<span class="nc" id="L177">            groupId = pointToGroupIndex[vIdx];</span>
+<span class="nc" id="L211">            groupId = pointToGroupIndex[vIdx];</span>
             
-<span class="nc" id="L179">            pointToGroupIndex[uIdx] = groupId;</span>
+<span class="nc" id="L213">            pointToGroupIndex[uIdx] = groupId;</span>
             
-<span class="nc" id="L181">            groupMembership[groupId].insert(uIdx);</span>
+<span class="nc" id="L215">            groupMembership[groupId].insert(uIdx);</span>
             
-<span class="pc bpc" id="L183" title="1 of 4 branches missed.">        } else if ((pointToGroupIndex[uIdx] == -1) &amp;&amp; (pointToGroupIndex[vIdx] == -1)) {</span>
+<span class="pc bpc" id="L217" title="1 of 4 branches missed.">        } else if ((pointToGroupIndex[uIdx] == -1) &amp;&amp; (pointToGroupIndex[vIdx] == -1)) {</span>
             
-<span class="fc" id="L185">            checkAndExpandGroupMembershipArray();</span>
+<span class="fc" id="L219">            checkAndExpandGroupMembershipArray();</span>
             
-<span class="fc" id="L187">            groupId = nGroups;</span>
+<span class="fc" id="L221">            groupId = nGroups;</span>
             
-<span class="fc" id="L189">            pointToGroupIndex[uIdx] = groupId;</span>
+<span class="fc" id="L223">            pointToGroupIndex[uIdx] = groupId;</span>
             
-<span class="fc" id="L191">            pointToGroupIndex[vIdx] = groupId; </span>
+<span class="fc" id="L225">            pointToGroupIndex[vIdx] = groupId; </span>
             
-<span class="fc" id="L193">            groupMembership[groupId].insert(uIdx);</span>
+<span class="fc" id="L227">            groupMembership[groupId].insert(uIdx);</span>
             
-<span class="fc" id="L195">            groupMembership[groupId].insert(vIdx);</span>
+<span class="fc" id="L229">            groupMembership[groupId].insert(vIdx);</span>
      
-<span class="fc" id="L197">            nGroups++;</span>
+<span class="fc" id="L231">            nGroups++;</span>
             
         } else {
             
-<span class="fc" id="L201">            groupId = -1;</span>
+<span class="fc" id="L235">            groupId = -1;</span>
             
-<span class="fc" id="L203">            log.finest(&quot;not reading &quot; + uIdx + &quot;:&quot; + vIdx );</span>
+<span class="fc" id="L237">            log.finest(&quot;not reading &quot; + uIdx + &quot;:&quot; + vIdx );</span>
         }
         
         /*
         log.fine(groupId + &quot;) processPair  (&quot; + tmpux + &quot;,&quot; + tmpuy + &quot;)&quot;);
         log.fine(groupId + &quot;) processPair  (&quot; + tmpvx + &quot;,&quot; + tmpvy + &quot;)&quot;);
         */
-<span class="fc" id="L210">    }</span>
+<span class="fc" id="L244">    }</span>
  
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

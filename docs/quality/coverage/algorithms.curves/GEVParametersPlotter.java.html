@@ -18,211 +18,254 @@ import java.io.Reader;
  */
 public class GEVParametersPlotter {
 
+    /**
+     *
+     */
     protected final StringBuffer plotContent;
 
-<span class="nc" id="L23">    protected int plotNumber = 0;</span>
+    /**
+     *
+     */
+<span class="nc" id="L29">    protected int plotNumber = 0;</span>
 
-<span class="nc" id="L25">    public GEVParametersPlotter() throws FileNotFoundException, IOException {</span>
-<span class="nc" id="L26">        plotContent = getTemplateHtmlPlot();</span>
-<span class="nc" id="L27">    }</span>
+    /**
+     *
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+<span class="nc" id="L36">    public GEVParametersPlotter() throws FileNotFoundException, IOException {</span>
+<span class="nc" id="L37">        plotContent = getTemplateHtmlPlot();</span>
+<span class="nc" id="L38">    }</span>
 
+    /**
+     *
+     * @param k
+     * @param sigma
+     * @param mu
+     * @param slope0
+     * @param slope1
+     * @param slope2
+     */
     public void addPlot(float[] k, float[] sigma, float[] mu, float[] slope0, float[] slope1, float[] slope2) {
 
-<span class="nc" id="L31">        float kMin      = Float.MAX_VALUE;</span>
-<span class="nc" id="L32">        float sigmaMin  = Float.MAX_VALUE;</span>
-<span class="nc" id="L33">        float muMin     = Float.MAX_VALUE;</span>
+<span class="nc" id="L51">        float kMin      = Float.MAX_VALUE;</span>
+<span class="nc" id="L52">        float sigmaMin  = Float.MAX_VALUE;</span>
+<span class="nc" id="L53">        float muMin     = Float.MAX_VALUE;</span>
 
-<span class="nc" id="L35">        float kMax      = Float.MIN_VALUE;</span>
-<span class="nc" id="L36">        float sigmaMax  = Float.MIN_VALUE;</span>
-<span class="nc" id="L37">        float muMax     = Float.MIN_VALUE;</span>
+<span class="nc" id="L55">        float kMax      = Float.MIN_VALUE;</span>
+<span class="nc" id="L56">        float sigmaMax  = Float.MIN_VALUE;</span>
+<span class="nc" id="L57">        float muMax     = Float.MIN_VALUE;</span>
 
-<span class="nc" id="L39">        float slope0Min = Float.MAX_VALUE;</span>
-<span class="nc" id="L40">        float slope1Min = Float.MAX_VALUE;</span>
-<span class="nc" id="L41">        float slope2Min = Float.MAX_VALUE;</span>
+<span class="nc" id="L59">        float slope0Min = Float.MAX_VALUE;</span>
+<span class="nc" id="L60">        float slope1Min = Float.MAX_VALUE;</span>
+<span class="nc" id="L61">        float slope2Min = Float.MAX_VALUE;</span>
 
-<span class="nc" id="L43">        float slope0Max = Float.MIN_VALUE;</span>
-<span class="nc" id="L44">        float slope1Max = Float.MIN_VALUE;</span>
-<span class="nc" id="L45">        float slope2Max = Float.MIN_VALUE;</span>
+<span class="nc" id="L63">        float slope0Max = Float.MIN_VALUE;</span>
+<span class="nc" id="L64">        float slope1Max = Float.MIN_VALUE;</span>
+<span class="nc" id="L65">        float slope2Max = Float.MIN_VALUE;</span>
 
-<span class="nc" id="L47">        StringBuffer dataSB = new StringBuffer();</span>
+<span class="nc" id="L67">        StringBuffer dataSB = new StringBuffer();</span>
 
         //  ===== add points data =====
-<span class="nc" id="L50">        dataSB.append(&quot;\n\n&quot;).append(&quot;var data_&quot;).append(plotNumber).append(&quot; = [\n&quot;);</span>
-<span class="nc bnc" id="L51" title="All 2 branches missed.">        for (int i = 0; i &lt; k.length; i++) {</span>
+<span class="nc" id="L70">        dataSB.append(&quot;\n\n&quot;).append(&quot;var data_&quot;).append(plotNumber).append(&quot; = [\n&quot;);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        for (int i = 0; i &lt; k.length; i++) {</span>
 
-<span class="nc bnc" id="L53" title="All 2 branches missed.">            if (i &gt; 0) {</span>
-<span class="nc" id="L54">                dataSB.append(&quot;,\n&quot;);</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L74">                dataSB.append(&quot;,\n&quot;);</span>
             }
 
-<span class="nc" id="L57">            dataSB.append(&quot;    {k:&quot;).append(k[i]).append(&quot;, sigma:&quot;).append(sigma[i])</span>
-<span class="nc" id="L58">                .append(&quot;, mu:&quot;).append(mu[i]).append(&quot;, slope0:&quot;).append(slope0[i])</span>
-<span class="nc" id="L59">                .append(&quot;, slope1:&quot;).append(slope1[i]).append(&quot;, slope2:&quot;).append(slope2[i]).append(&quot;}&quot;);</span>
+<span class="nc" id="L77">            dataSB.append(&quot;    {k:&quot;).append(k[i]).append(&quot;, sigma:&quot;).append(sigma[i])</span>
+<span class="nc" id="L78">                .append(&quot;, mu:&quot;).append(mu[i]).append(&quot;, slope0:&quot;).append(slope0[i])</span>
+<span class="nc" id="L79">                .append(&quot;, slope1:&quot;).append(slope1[i]).append(&quot;, slope2:&quot;).append(slope2[i]).append(&quot;}&quot;);</span>
 
-<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (k[i] &lt; kMin) {</span>
-<span class="nc" id="L62">                kMin = k[i];</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            if (k[i] &lt; kMin) {</span>
+<span class="nc" id="L82">                kMin = k[i];</span>
             }
-<span class="nc bnc" id="L64" title="All 2 branches missed.">            if (k[i] &gt; kMax) {</span>
-<span class="nc" id="L65">                kMax = k[i];</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (k[i] &gt; kMax) {</span>
+<span class="nc" id="L85">                kMax = k[i];</span>
             }
-<span class="nc bnc" id="L67" title="All 2 branches missed.">            if (sigma[i] &lt; sigmaMin) {</span>
-<span class="nc" id="L68">                sigmaMin = sigma[i];</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            if (sigma[i] &lt; sigmaMin) {</span>
+<span class="nc" id="L88">                sigmaMin = sigma[i];</span>
             }
-<span class="nc bnc" id="L70" title="All 2 branches missed.">            if (sigma[i] &gt; sigmaMax) {</span>
-<span class="nc" id="L71">                sigmaMax = sigma[i];</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            if (sigma[i] &gt; sigmaMax) {</span>
+<span class="nc" id="L91">                sigmaMax = sigma[i];</span>
             }
-<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (mu[i] &lt; muMin) {</span>
-<span class="nc" id="L74">                muMin = mu[i];</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            if (mu[i] &lt; muMin) {</span>
+<span class="nc" id="L94">                muMin = mu[i];</span>
             }
-<span class="nc bnc" id="L76" title="All 2 branches missed.">            if (mu[i] &gt; muMax) {</span>
-<span class="nc" id="L77">                muMax = mu[i];</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (mu[i] &gt; muMax) {</span>
+<span class="nc" id="L97">                muMax = mu[i];</span>
             }
-<span class="nc bnc" id="L79" title="All 2 branches missed.">            if (slope0[i] &lt; slope0Min) {</span>
-<span class="nc" id="L80">                slope0Min = slope0[i];</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            if (slope0[i] &lt; slope0Min) {</span>
+<span class="nc" id="L100">                slope0Min = slope0[i];</span>
             }
-<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (slope0[i] &gt; slope0Max) {</span>
-<span class="nc" id="L83">                slope0Max = slope0[i];</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (slope0[i] &gt; slope0Max) {</span>
+<span class="nc" id="L103">                slope0Max = slope0[i];</span>
             }
-<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (slope1[i] &lt; slope1Min) {</span>
-<span class="nc" id="L86">                slope1Min = slope1[i];</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            if (slope1[i] &lt; slope1Min) {</span>
+<span class="nc" id="L106">                slope1Min = slope1[i];</span>
             }
-<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (slope1[i] &gt; slope1Max) {</span>
-<span class="nc" id="L89">                slope1Max = slope1[i];</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            if (slope1[i] &gt; slope1Max) {</span>
+<span class="nc" id="L109">                slope1Max = slope1[i];</span>
             }
-<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (slope2[i] &lt; slope2Min) {</span>
-<span class="nc" id="L92">                slope2Min = slope2[i];</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (slope2[i] &lt; slope2Min) {</span>
+<span class="nc" id="L112">                slope2Min = slope2[i];</span>
             }
-<span class="nc bnc" id="L94" title="All 2 branches missed.">            if (slope2[i] &gt; slope2Max) {</span>
-<span class="nc" id="L95">                slope2Max = slope2[i];</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            if (slope2[i] &gt; slope2Max) {</span>
+<span class="nc" id="L115">                slope2Max = slope2[i];</span>
             }
         }
-<span class="nc" id="L98">        dataSB.append(&quot;\n];\n&quot;);</span>
+<span class="nc" id="L118">        dataSB.append(&quot;\n];\n&quot;);</span>
 
-<span class="nc" id="L100">        String kMinStr = String.format(&quot;%.7f&quot;, kMin);</span>
-<span class="nc" id="L101">        String kMaxStr = String.format(&quot;%.7f&quot;, kMax);</span>
-<span class="nc" id="L102">        String sigmaMinStr = String.format(&quot;%.7f&quot;, sigmaMin);</span>
-<span class="nc" id="L103">        String sigmaMaxStr = String.format(&quot;%.7f&quot;, sigmaMax);</span>
-<span class="nc" id="L104">        String muMinStr = String.format(&quot;%.7f&quot;, muMin);</span>
-<span class="nc" id="L105">        String muMaxStr = String.format(&quot;%.7f&quot;, muMax);</span>
+<span class="nc" id="L120">        String kMinStr = String.format(&quot;%.7f&quot;, kMin);</span>
+<span class="nc" id="L121">        String kMaxStr = String.format(&quot;%.7f&quot;, kMax);</span>
+<span class="nc" id="L122">        String sigmaMinStr = String.format(&quot;%.7f&quot;, sigmaMin);</span>
+<span class="nc" id="L123">        String sigmaMaxStr = String.format(&quot;%.7f&quot;, sigmaMax);</span>
+<span class="nc" id="L124">        String muMinStr = String.format(&quot;%.7f&quot;, muMin);</span>
+<span class="nc" id="L125">        String muMaxStr = String.format(&quot;%.7f&quot;, muMax);</span>
 
-<span class="nc" id="L107">        String slope0MinStr = String.format(&quot;%.7f&quot;, slope0Min);</span>
-<span class="nc" id="L108">        String slope1MinStr = String.format(&quot;%.7f&quot;, slope1Min);</span>
-<span class="nc" id="L109">        String slope2MinStr = String.format(&quot;%.7f&quot;, slope2Min);</span>
+<span class="nc" id="L127">        String slope0MinStr = String.format(&quot;%.7f&quot;, slope0Min);</span>
+<span class="nc" id="L128">        String slope1MinStr = String.format(&quot;%.7f&quot;, slope1Min);</span>
+<span class="nc" id="L129">        String slope2MinStr = String.format(&quot;%.7f&quot;, slope2Min);</span>
 
-<span class="nc" id="L111">        String slope0MaxStr = String.format(&quot;%.7f&quot;, slope0Max);</span>
-<span class="nc" id="L112">        String slope1MaxStr = String.format(&quot;%.7f&quot;, slope1Max);</span>
-<span class="nc" id="L113">        String slope2MaxStr = String.format(&quot;%.7f&quot;, slope2Max);</span>
+<span class="nc" id="L131">        String slope0MaxStr = String.format(&quot;%.7f&quot;, slope0Max);</span>
+<span class="nc" id="L132">        String slope1MaxStr = String.format(&quot;%.7f&quot;, slope1Max);</span>
+<span class="nc" id="L133">        String slope2MaxStr = String.format(&quot;%.7f&quot;, slope2Max);</span>
 
-<span class="nc" id="L115">        dataSB.append(&quot;\n&quot;).append(&quot;var min_maxes_&quot;).append(plotNumber).append(&quot; = {\n&quot;);</span>
-<span class="nc" id="L116">        dataSB.append(&quot;    k_min:&quot;).append(kMinStr).append(&quot;, k_max:&quot;).append(kMaxStr)</span>
-<span class="nc" id="L117">            .append(&quot;, sigma_min:&quot;).append(sigmaMinStr).append(&quot;, sigma_max:&quot;).append(sigmaMaxStr)</span>
-<span class="nc" id="L118">            .append(&quot;, mu_min:&quot;).append(muMinStr).append(&quot;, mu_max:&quot;).append(muMaxStr)</span>
-<span class="nc" id="L119">            .append(&quot;, slope0_min:&quot;).append(slope0MinStr).append(&quot;, slope0_max:&quot;).append(slope0MaxStr)</span>
-<span class="nc" id="L120">            .append(&quot;, slope1_min:&quot;).append(slope1MinStr).append(&quot;, slope1_max:&quot;).append(slope1MaxStr)</span>
-<span class="nc" id="L121">            .append(&quot;, slope2_min:&quot;).append(slope2MinStr).append(&quot;, slope2_max:&quot;).append(slope2MaxStr)</span>
-<span class="nc" id="L122">            .append(&quot;};\n&quot;);</span>
+<span class="nc" id="L135">        dataSB.append(&quot;\n&quot;).append(&quot;var min_maxes_&quot;).append(plotNumber).append(&quot; = {\n&quot;);</span>
+<span class="nc" id="L136">        dataSB.append(&quot;    k_min:&quot;).append(kMinStr).append(&quot;, k_max:&quot;).append(kMaxStr)</span>
+<span class="nc" id="L137">            .append(&quot;, sigma_min:&quot;).append(sigmaMinStr).append(&quot;, sigma_max:&quot;).append(sigmaMaxStr)</span>
+<span class="nc" id="L138">            .append(&quot;, mu_min:&quot;).append(muMinStr).append(&quot;, mu_max:&quot;).append(muMaxStr)</span>
+<span class="nc" id="L139">            .append(&quot;, slope0_min:&quot;).append(slope0MinStr).append(&quot;, slope0_max:&quot;).append(slope0MaxStr)</span>
+<span class="nc" id="L140">            .append(&quot;, slope1_min:&quot;).append(slope1MinStr).append(&quot;, slope1_max:&quot;).append(slope1MaxStr)</span>
+<span class="nc" id="L141">            .append(&quot;, slope2_min:&quot;).append(slope2MinStr).append(&quot;, slope2_max:&quot;).append(slope2MaxStr)</span>
+<span class="nc" id="L142">            .append(&quot;};\n&quot;);</span>
 
 
         // ======= add RENDER statement ==========
-<span class="nc" id="L126">        dataSB.append(&quot;\nrenderPlot('plot&quot;).append(plotNumber).append(&quot;', data_&quot;).append(plotNumber)</span>
-<span class="nc" id="L127">            .append(&quot;, min_maxes_&quot;).append(plotNumber)</span>
-<span class="nc" id="L128">            .append(&quot;);\n\n&quot;);</span>
+<span class="nc" id="L146">        dataSB.append(&quot;\nrenderPlot('plot&quot;).append(plotNumber).append(&quot;', data_&quot;).append(plotNumber)</span>
+<span class="nc" id="L147">            .append(&quot;, min_maxes_&quot;).append(plotNumber)</span>
+<span class="nc" id="L148">            .append(&quot;);\n\n&quot;);</span>
 
 
-<span class="nc" id="L131">        String srchFor = &quot;/* === DO NOT REMOVE THIS == END DATA */&quot;;</span>
-<span class="nc" id="L132">        int insertOffset = plotContent.indexOf(srchFor);</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (insertOffset == -1) {</span>
-<span class="nc" id="L134">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
+<span class="nc" id="L151">        String srchFor = &quot;/* === DO NOT REMOVE THIS == END DATA */&quot;;</span>
+<span class="nc" id="L152">        int insertOffset = plotContent.indexOf(srchFor);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (insertOffset == -1) {</span>
+<span class="nc" id="L154">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
         }
-<span class="nc" id="L136">        plotContent.insert(insertOffset, dataSB.toString());</span>
-<span class="nc" id="L137">        dataSB = null;</span>
+<span class="nc" id="L156">        plotContent.insert(insertOffset, dataSB.toString());</span>
+<span class="nc" id="L157">        dataSB = null;</span>
 
         // ========== add the PLOT DIVS ==============
-<span class="nc" id="L140">        StringBuffer plotDivs = new StringBuffer();</span>
-<span class="nc" id="L141">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;'              class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L142">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_k_slope0'     class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L143">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_k_slope1'     class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L144">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_k_slope2'     class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L145">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_sigma_slope0' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L146">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_sigma_slope1' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L147">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_sigma_slope2' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L148">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_mu_slope0'    class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L149">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_mu_slope1'    class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
-<span class="nc" id="L150">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_mu_slope2'    class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L160">        StringBuffer plotDivs = new StringBuffer();</span>
+<span class="nc" id="L161">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;'              class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L162">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_k_slope0'     class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L163">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_k_slope1'     class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L164">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_k_slope2'     class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L165">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_sigma_slope0' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L166">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_sigma_slope1' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L167">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_sigma_slope2' class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L168">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_mu_slope0'    class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L169">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_mu_slope1'    class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
+<span class="nc" id="L170">        plotDivs.append(&quot;&lt;div id='plot&quot;).append(plotNumber).append(&quot;_mu_slope2'    class='plot'&gt;&lt;/div&gt;\n&quot;);</span>
 
-<span class="nc" id="L152">        srchFor = &quot;&lt;!-- === DO NOT REMOVE THIS == END PLOT DIVS --&gt;&quot;;</span>
-<span class="nc" id="L153">        insertOffset = plotContent.indexOf(srchFor);</span>
-<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (insertOffset == -1) {</span>
-<span class="nc" id="L155">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
+<span class="nc" id="L172">        srchFor = &quot;&lt;!-- === DO NOT REMOVE THIS == END PLOT DIVS --&gt;&quot;;</span>
+<span class="nc" id="L173">        insertOffset = plotContent.indexOf(srchFor);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (insertOffset == -1) {</span>
+<span class="nc" id="L175">            throw new IllegalStateException(&quot;cannot find END DATA marker&quot;);</span>
         }
-<span class="nc" id="L157">        plotContent.insert(insertOffset, plotDivs.toString());</span>
-<span class="nc" id="L158">        plotDivs = null;</span>
+<span class="nc" id="L177">        plotContent.insert(insertOffset, plotDivs.toString());</span>
+<span class="nc" id="L178">        plotDivs = null;</span>
 
-<span class="nc" id="L160">        plotNumber++;</span>
-<span class="nc" id="L161">    }</span>
+<span class="nc" id="L180">        plotNumber++;</span>
+<span class="nc" id="L181">    }</span>
 
+    /**
+     *
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot() throws FileNotFoundException, IOException {
-<span class="nc" id="L164">        return getTemplateHtmlPlot(&quot;plot_gev.html&quot;);</span>
+<span class="nc" id="L190">        return getTemplateHtmlPlot(&quot;plot_gev.html&quot;);</span>
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     protected StringBuffer getTemplateHtmlPlot(String fileName) throws FileNotFoundException, IOException {
 
-<span class="nc" id="L169">        StringBuffer sb = new StringBuffer();</span>
+<span class="nc" id="L202">        StringBuffer sb = new StringBuffer();</span>
 
-<span class="nc" id="L171">        Reader reader = null;</span>
-<span class="nc" id="L172">        BufferedReader in = null;</span>
+<span class="nc" id="L204">        Reader reader = null;</span>
+<span class="nc" id="L205">        BufferedReader in = null;</span>
 
         try {
-<span class="nc" id="L175">            String path = ResourceFinder.findFileInResources(fileName);</span>
+<span class="nc" id="L208">            String path = ResourceFinder.findFileInResources(fileName);</span>
 
-<span class="nc" id="L177">            reader = new FileReader(new File(path));</span>
-<span class="nc" id="L178">            in = new BufferedReader(reader);</span>
+<span class="nc" id="L210">            reader = new FileReader(new File(path));</span>
+<span class="nc" id="L211">            in = new BufferedReader(reader);</span>
 
-<span class="nc" id="L180">            String line = in.readLine();</span>
+<span class="nc" id="L213">            String line = in.readLine();</span>
 
-<span class="nc bnc" id="L182" title="All 2 branches missed.">            while (line != null) {</span>
-<span class="nc" id="L183">                sb.append(line).append(&quot;\n&quot;);</span>
-<span class="nc" id="L184">                line = in.readLine();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            while (line != null) {</span>
+<span class="nc" id="L216">                sb.append(line).append(&quot;\n&quot;);</span>
+<span class="nc" id="L217">                line = in.readLine();</span>
             }
 
-<span class="nc" id="L187">        } catch(IOException e) {</span>
+<span class="nc" id="L220">        } catch(IOException e) {</span>
 
-<span class="nc" id="L189">            ClassLoader cls = ResourceFinder.class.getClassLoader();</span>
+<span class="nc" id="L222">            ClassLoader cls = ResourceFinder.class.getClassLoader();</span>
 
-<span class="nc" id="L191">            InputStream input = cls.getResourceAsStream(fileName);</span>
+<span class="nc" id="L224">            InputStream input = cls.getResourceAsStream(fileName);</span>
 
-<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (input == null) {</span>
-<span class="nc" id="L194">                throw new IOException(&quot;could not find file &quot; + fileName);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">            if (input == null) {</span>
+<span class="nc" id="L227">                throw new IOException(&quot;could not find file &quot; + fileName);</span>
             }
 
-<span class="nc" id="L197">            reader = new InputStreamReader(input);</span>
-<span class="nc" id="L198">            in = new BufferedReader(reader);</span>
+<span class="nc" id="L230">            reader = new InputStreamReader(input);</span>
+<span class="nc" id="L231">            in = new BufferedReader(reader);</span>
 
-<span class="nc" id="L200">            String line = in.readLine();</span>
+<span class="nc" id="L233">            String line = in.readLine();</span>
 
-<span class="nc bnc" id="L202" title="All 2 branches missed.">            while (line != null) {</span>
-<span class="nc" id="L203">                sb.append(line).append(&quot;\n&quot;);</span>
-<span class="nc" id="L204">                line = in.readLine();</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            while (line != null) {</span>
+<span class="nc" id="L236">                sb.append(line).append(&quot;\n&quot;);</span>
+<span class="nc" id="L237">                line = in.readLine();</span>
             }
 
         } finally {
-<span class="nc bnc" id="L208" title="All 6 branches missed.">            if (in != null) {</span>
-<span class="nc" id="L209">                in.close();</span>
+<span class="nc bnc" id="L241" title="All 6 branches missed.">            if (in != null) {</span>
+<span class="nc" id="L242">                in.close();</span>
             }
-<span class="nc bnc" id="L211" title="All 6 branches missed.">            if (reader != null) {</span>
-<span class="nc" id="L212">                reader.close();</span>
+<span class="nc bnc" id="L244" title="All 6 branches missed.">            if (reader != null) {</span>
+<span class="nc" id="L245">                reader.close();</span>
             }
         }
 
-<span class="nc" id="L216">        return sb;</span>
+<span class="nc" id="L249">        return sb;</span>
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void writeFile() throws IOException {
-<span class="nc" id="L220">        writeToFile(this.plotContent.toString(), &quot;gev.html&quot;);</span>
-<span class="nc" id="L221">    }</span>
+<span class="nc" id="L257">        writeToFile(this.plotContent.toString(), &quot;gev.html&quot;);</span>
+<span class="nc" id="L258">    }</span>
 
+    /**
+     *
+     * @param fileContent
+     * @param fileName
+     * @throws IOException
+     */
     protected void writeToFile(String fileContent, String fileName) throws IOException {
 
-<span class="nc" id="L225">        String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);</span>
-<span class="nc" id="L226">    }</span>
+<span class="nc" id="L268">        String copyFilePath = ResourceFinder.writeToCWD(fileContent, fileName);</span>
+<span class="nc" id="L269">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

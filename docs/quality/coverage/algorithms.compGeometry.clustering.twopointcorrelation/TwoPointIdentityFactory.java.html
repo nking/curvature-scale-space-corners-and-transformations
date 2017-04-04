@@ -9,30 +9,35 @@ import algorithms.util.Util;
  */
 <span class="fc" id="L10">public class TwoPointIdentityFactory {</span>
     
+    /**
+     *
+     * @param indexerNXY
+     * @return
+     */
     public static ITwoPointIdentity create(int indexerNXY) {
 
-<span class="fc bfc" id="L14" title="All 2 branches covered.">        if (indexerNXY &lt;= TwoPointHashMap.nMax) {</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">        if (indexerNXY &lt;= TwoPointHashMap.nMax) {</span>
 
-<span class="fc" id="L16">            long requiredMemory = TwoPointHashMap.checkRequiredMemory((long)indexerNXY);</span>
+<span class="fc" id="L21">            long requiredMemory = TwoPointHashMap.checkRequiredMemory((long)indexerNXY);</span>
 
-<span class="fc" id="L18">            long totAvail = Util.getAvailableHeapMemory();</span>
+<span class="fc" id="L23">            long totAvail = Util.getAvailableHeapMemory();</span>
 
-<span class="fc" id="L20">            java.util.logging.Logger.getLogger(TwoPointIdentityFactory.class.getName()).fine(</span>
+<span class="fc" id="L25">            java.util.logging.Logger.getLogger(TwoPointIdentityFactory.class.getName()).fine(</span>
                 &quot; memory required = &quot;  + (requiredMemory/1000000.) + &quot; [MB]\n&quot; +
                 &quot;       memory available = &quot; + (totAvail/1000000.) + &quot; [MB] &quot;);
 
-<span class="fc bfc" id="L24" title="All 2 branches covered.">            if (requiredMemory &lt; totAvail) {</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">            if (requiredMemory &lt; totAvail) {</span>
 
-<span class="fc" id="L26">                return new TwoPointHashMap(indexerNXY);</span>
+<span class="fc" id="L31">                return new TwoPointHashMap(indexerNXY);</span>
 
             } else {
 
-<span class="fc" id="L30">                return new TwoPointHash(indexerNXY);</span>
+<span class="fc" id="L35">                return new TwoPointHash(indexerNXY);</span>
             } 
 
         } else {
 
-<span class="fc" id="L35">            return new TwoPointHash(indexerNXY);</span>
+<span class="fc" id="L40">            return new TwoPointHash(indexerNXY);</span>
         }
     }
 }

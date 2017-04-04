@@ -8,86 +8,112 @@ import java.util.Arrays;
  */
 <span class="nc" id="L9">public class Histogram {</span>
     
+    /**
+     *
+     * @param xMin
+     * @param xMax
+     * @param nBins
+     * @param values
+     * @param valueErrors
+     * @return
+     */
     public static HistogramHolder createSimpleHistogram(
         final float xMin, final float xMax, int nBins, 
         float[] values, float[] valueErrors) {
 
-<span class="pc bpc" id="L15" title="3 of 6 branches missed.">        if (values == null || valueErrors == null || </span>
+<span class="pc bpc" id="L24" title="3 of 6 branches missed.">        if (values == null || valueErrors == null || </span>
             values.length != valueErrors.length) {
             
-<span class="nc" id="L18">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L27">            throw new IllegalArgumentException(</span>
                 &quot;values and valueErrors cannot be null and must be the same length&quot;);
         }
                 
-<span class="fc" id="L22">        float binWidth = calculateBinWidth(xMin, xMax, nBins);</span>
+<span class="fc" id="L31">        float binWidth = calculateBinWidth(xMin, xMax, nBins);</span>
 
-<span class="fc" id="L24">        float[] xHist = new float[nBins];</span>
-<span class="fc" id="L25">        int[] yHist = new int[nBins];</span>
+<span class="fc" id="L33">        float[] xHist = new float[nBins];</span>
+<span class="fc" id="L34">        int[] yHist = new int[nBins];</span>
         
-<span class="fc" id="L27">        Histogram.createHistogram(values, nBins, xMin, xMax,</span>
+<span class="fc" id="L36">        Histogram.createHistogram(values, nBins, xMin, xMax,</span>
             xHist, yHist, binWidth);
 
-<span class="fc" id="L30">        float[] yHistFloat = new float[yHist.length];</span>
-<span class="fc bfc" id="L31" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
-<span class="fc" id="L32">            yHistFloat[i] = (float) yHist[i];</span>
+<span class="fc" id="L39">        float[] yHistFloat = new float[yHist.length];</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+<span class="fc" id="L41">            yHistFloat[i] = (float) yHist[i];</span>
         }
 
-<span class="fc" id="L35">        float[] yErrors = new float[xHist.length];</span>
-<span class="fc" id="L36">        float[] xErrors = new float[xHist.length];</span>
+<span class="fc" id="L44">        float[] yErrors = new float[xHist.length];</span>
+<span class="fc" id="L45">        float[] xErrors = new float[xHist.length];</span>
 
-<span class="fc" id="L38">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);</span>
+<span class="fc" id="L47">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);</span>
 
-<span class="fc" id="L40">        HistogramHolder histogram = new HistogramHolder();</span>
-<span class="fc" id="L41">        histogram.setXHist(xHist);</span>
-<span class="fc" id="L42">        histogram.setYHist(yHist);</span>
-<span class="fc" id="L43">        histogram.setYHistFloat(yHistFloat);</span>
-<span class="fc" id="L44">        histogram.setYErrors(yErrors);</span>
-<span class="fc" id="L45">        histogram.setXErrors(xErrors);</span>
+<span class="fc" id="L49">        HistogramHolder histogram = new HistogramHolder();</span>
+<span class="fc" id="L50">        histogram.setXHist(xHist);</span>
+<span class="fc" id="L51">        histogram.setYHist(yHist);</span>
+<span class="fc" id="L52">        histogram.setYHistFloat(yHistFloat);</span>
+<span class="fc" id="L53">        histogram.setYErrors(yErrors);</span>
+<span class="fc" id="L54">        histogram.setXErrors(xErrors);</span>
         
-<span class="fc" id="L47">        return histogram;</span>
+<span class="fc" id="L56">        return histogram;</span>
     }
     
+    /**
+     *
+     * @param minValue
+     * @param maxValue
+     * @param nBins
+     * @return
+     */
     protected static float calculateBinWidth(float minValue, float maxValue, int nBins) {
 
-<span class="fc" id="L52">        float xInterval = (maxValue - minValue)/(float)nBins;</span>
+<span class="fc" id="L68">        float xInterval = (maxValue - minValue)/(float)nBins;</span>
 
         // expand interval if necessary to make sure the last point is in the last bin
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if ((int) ((maxValue - minValue)/xInterval) != (nBins - 1)) {</span>
-<span class="fc" id="L56">            float t = (maxValue + minValue)/2.0f;</span>
-<span class="fc" id="L57">            int powDelta = MiscMath.findPowerOf10(t);</span>
-<span class="fc" id="L58">            float pow10 = (float)Math.pow(10, powDelta);</span>
-<span class="fc" id="L59">            xInterval = (maxValue - minValue + pow10)/(float)nBins;</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if ((int) ((maxValue - minValue)/xInterval) != (nBins - 1)) {</span>
+<span class="fc" id="L72">            float t = (maxValue + minValue)/2.0f;</span>
+<span class="fc" id="L73">            int powDelta = MiscMath.findPowerOf10(t);</span>
+<span class="fc" id="L74">            float pow10 = (float)Math.pow(10, powDelta);</span>
+<span class="fc" id="L75">            xInterval = (maxValue - minValue + pow10)/(float)nBins;</span>
         }
 
-<span class="fc" id="L62">        return xInterval;</span>
+<span class="fc" id="L78">        return xInterval;</span>
     }
     
+    /**
+     *
+     * @param a
+     * @param nBins
+     * @param aMin
+     * @param aMax
+     * @param xHist
+     * @param yHist
+     * @param binWidth
+     */
     public static void createHistogram(float[] a, int nBins,
         float aMin, float aMax, float[] xHist, int[] yHist, float binWidth) {
 
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L69">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if (xHist == null || xHist.length != nBins) {</span>
-<span class="nc" id="L72">            throw new IllegalArgumentException(&quot;xHist has to be of size nBins and initialized&quot;);</span>
+<span class="pc bpc" id="L97" title="2 of 4 branches missed.">        if (xHist == null || xHist.length != nBins) {</span>
+<span class="nc" id="L98">            throw new IllegalArgumentException(&quot;xHist has to be of size nBins and initialized&quot;);</span>
         }
-<span class="pc bpc" id="L74" title="2 of 4 branches missed.">        if (yHist == null || yHist.length != nBins) {</span>
-<span class="nc" id="L75">            throw new IllegalArgumentException(&quot;yHist has to be of size nBins and initialized&quot;);</span>
-        }
-
-<span class="fc" id="L78">        Arrays.fill(yHist, 0);</span>
-
-<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; i++) {</span>
-<span class="fc" id="L81">            xHist[i] = aMin + (float)i*binWidth + (binWidth/2.f);</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">        if (yHist == null || yHist.length != nBins) {</span>
+<span class="nc" id="L101">            throw new IllegalArgumentException(&quot;yHist has to be of size nBins and initialized&quot;);</span>
         }
 
-<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="fc" id="L85">            int bin = (int) ((a[i] - aMin)/binWidth);</span>
-<span class="pc bpc" id="L86" title="1 of 4 branches missed.">            if ((bin &gt; -1) &amp;&amp; (bin &lt; nBins)) {</span>
-<span class="fc" id="L87">                yHist[bin]++;</span>
+<span class="fc" id="L104">        Arrays.fill(yHist, 0);</span>
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; i++) {</span>
+<span class="fc" id="L107">            xHist[i] = aMin + (float)i*binWidth + (binWidth/2.f);</span>
+        }
+
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L111">            int bin = (int) ((a[i] - aMin)/binWidth);</span>
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">            if ((bin &gt; -1) &amp;&amp; (bin &lt; nBins)) {</span>
+<span class="fc" id="L113">                yHist[bin]++;</span>
             }
         }
-<span class="fc" id="L90">    }</span>
+<span class="fc" id="L116">    }</span>
 
     /**
      * Populate the arrays xHistErrorsOutput and yHistErrorsOutput with errors
@@ -134,27 +160,27 @@ import java.util.Arrays;
         float[] values, float[] valueErrors, float[] xHistErrorsOutput, 
         float[] yHistErrorsOutput) {
 
-<span class="fc" id="L137">        float xInterval = xHist[1] - xHist[0];</span>
-<span class="fc" id="L138">        float xmin = xHist[0] - (xInterval/2.0f);</span>
+<span class="fc" id="L163">        float xInterval = xHist[1] - xHist[0];</span>
+<span class="fc" id="L164">        float xmin = xHist[0] - (xInterval/2.0f);</span>
 
-<span class="fc" id="L140">        float[] sumErrorPerBin = new float[xHist.length];</span>
+<span class="fc" id="L166">        float[] sumErrorPerBin = new float[xHist.length];</span>
 
-<span class="fc" id="L142">        float sumErrorAllPoints = 0;</span>
+<span class="fc" id="L168">        float sumErrorAllPoints = 0;</span>
         //float sumPercentErrorAllPoints = 0;
 
-<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int i = 0; i &lt; valueErrors.length; i++) {</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        for (int i = 0; i &lt; valueErrors.length; i++) {</span>
 
-<span class="fc" id="L147">            int bin = (int) ((values[i] - xmin)/xInterval);</span>
+<span class="fc" id="L173">            int bin = (int) ((values[i] - xmin)/xInterval);</span>
 
             // in units of y
-<span class="fc" id="L150">            float a = valueErrors[i];</span>
-<span class="fc" id="L151">            a *= a;</span>
+<span class="fc" id="L176">            float a = valueErrors[i];</span>
+<span class="fc" id="L177">            a *= a;</span>
 
-<span class="pc bpc" id="L153" title="1 of 4 branches missed.">            if ((bin &gt; -1) &amp;&amp; (bin &lt; xHist.length)) {</span>
+<span class="pc bpc" id="L179" title="1 of 4 branches missed.">            if ((bin &gt; -1) &amp;&amp; (bin &lt; xHist.length)) {</span>
 
-<span class="fc" id="L155">                sumErrorPerBin[bin] += a;</span>
+<span class="fc" id="L181">                sumErrorPerBin[bin] += a;</span>
 
-<span class="fc" id="L157">                sumErrorAllPoints += a;</span>
+<span class="fc" id="L183">                sumErrorAllPoints += a;</span>
 
                 //float b = valueErrors[i]/values[i];
                 //sumPercentErrorAllPoints += (b*b);
@@ -163,49 +189,49 @@ import java.util.Arrays;
 
         // the x value was determined from all points, so the error should be taken
         //   as the average error of all points
-<span class="fc" id="L166">        float aveErrorOfAllPoints = (float)Math.sqrt(sumErrorAllPoints)/yHist.length;</span>
+<span class="fc" id="L192">        float aveErrorOfAllPoints = (float)Math.sqrt(sumErrorAllPoints)/yHist.length;</span>
 
         // the percent errors, divided over all bins, which is what was done to learn the binwdith
         //float avePercentErrorOfAllPoints = (float)Math.sqrt(sumPercentErrorAllPoints)/yHist.length;
 
-<span class="fc" id="L171">        float sumAlt = 0;</span>
-<span class="fc" id="L172">        float sumOrigSquared = 0;</span>
-<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+<span class="fc" id="L197">        float sumAlt = 0;</span>
+<span class="fc" id="L198">        float sumOrigSquared = 0;</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
 
-<span class="fc" id="L175">            float sumErrorBinSquared = sumErrorPerBin[i];</span>
+<span class="fc" id="L201">            float sumErrorBinSquared = sumErrorPerBin[i];</span>
 
             // compare to aveErrorOfAllPoints... should be similar
             //float be = (float) Math.sqrt(sumErrorBinSquared);
 
-<span class="fc" id="L180">            float c = aveErrorOfAllPoints;</span>
+<span class="fc" id="L206">            float c = aveErrorOfAllPoints;</span>
 
             // estimating it as binWidth/2. any point has x value = bin center +- binWidth/2
-<span class="fc" id="L183">            xHistErrorsOutput[i] = xInterval/2.0f; //c;</span>
+<span class="fc" id="L209">            xHistErrorsOutput[i] = xInterval/2.0f; //c;</span>
 
             //float a = (float)Math.sqrt(sumErrorBinSquared * (1.0f - (1.0f/yHist.length));
-<span class="fc" id="L186">            float ai = sumErrorBinSquared;</span>
-<span class="fc" id="L187">            float af = sumErrorBinSquared/yHist.length;</span>
-<span class="fc" id="L188">            float a = (float)Math.sqrt(ai - af);</span>
+<span class="fc" id="L212">            float ai = sumErrorBinSquared;</span>
+<span class="fc" id="L213">            float af = sumErrorBinSquared/yHist.length;</span>
+<span class="fc" id="L214">            float a = (float)Math.sqrt(ai - af);</span>
 
-<span class="fc bfc" id="L190" title="All 2 branches covered.">            float yBinError = (yHist[i] == 0) ? 0 : a/yHist[i];</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">            float yBinError = (yHist[i] == 0) ? 0 : a/yHist[i];</span>
 
-<span class="fc" id="L192">            yHistErrorsOutput[i] = yBinError;</span>
+<span class="fc" id="L218">            yHistErrorsOutput[i] = yBinError;</span>
 
-<span class="fc" id="L194">            sumAlt += yBinError;</span>
+<span class="fc" id="L220">            sumAlt += yBinError;</span>
 
 
-<span class="fc bfc" id="L197" title="All 2 branches covered.">            float yBinErrorOrig = (yHist[i] == 0) ? 0 : (float)Math.sqrt(sumErrorPerBin[i])/yHist[i];</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            float yBinErrorOrig = (yHist[i] == 0) ? 0 : (float)Math.sqrt(sumErrorPerBin[i])/yHist[i];</span>
 
-<span class="fc" id="L199">            sumOrigSquared += yBinErrorOrig;</span>
+<span class="fc" id="L225">            sumOrigSquared += yBinErrorOrig;</span>
         }
 
-<span class="fc" id="L202">        float contribFromAllToEachBin = (sumOrigSquared - sumAlt)/yHist.length;</span>
+<span class="fc" id="L228">        float contribFromAllToEachBin = (sumOrigSquared - sumAlt)/yHist.length;</span>
 
-<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
 
-<span class="fc" id="L206">            yHistErrorsOutput[i] += contribFromAllToEachBin;</span>
+<span class="fc" id="L232">            yHistErrorsOutput[i] += contribFromAllToEachBin;</span>
         }
-<span class="fc" id="L208">    }</span>
+<span class="fc" id="L234">    }</span>
     
      /**
      * make assumption that errors are dominated by shot noise and so the noise is sqrt(y[i]).
@@ -215,26 +241,88 @@ import java.util.Arrays;
      */
     public static float[] populateYErrorsBySqrt(float[] y) {
 
-<span class="fc" id="L218">        float[] dy = new float[y.length];</span>
+<span class="fc" id="L244">        float[] dy = new float[y.length];</span>
 
-<span class="fc" id="L220">        float maxError = 0.f;</span>
+<span class="fc" id="L246">        float maxError = 0.f;</span>
 
-<span class="fc bfc" id="L222" title="All 2 branches covered.">        for (int i = 0; i &lt; dy.length; i++) {</span>
-<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (y[i] &gt; 0) {</span>
-<span class="fc" id="L224">                dy[i] =(float)(Math.sqrt(y[i]));</span>
-<span class="fc bfc" id="L225" title="All 2 branches covered.">                if (dy[i] &gt; maxError) {</span>
-<span class="fc" id="L226">                    maxError = dy[i];</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        for (int i = 0; i &lt; dy.length; i++) {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">            if (y[i] &gt; 0) {</span>
+<span class="fc" id="L250">                dy[i] =(float)(Math.sqrt(y[i]));</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                if (dy[i] &gt; maxError) {</span>
+<span class="fc" id="L252">                    maxError = dy[i];</span>
                 }
             }
         }
-<span class="fc bfc" id="L230" title="All 2 branches covered.">        for (int i = 0; i &lt; dy.length; i++) {</span>
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">            if (y[i] == 0) {</span>
-<span class="nc" id="L232">                dy[i] = maxError;</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        for (int i = 0; i &lt; dy.length; i++) {</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">            if (y[i] == 0) {</span>
+<span class="nc" id="L258">                dy[i] = maxError;</span>
             }
         }
 
-<span class="fc" id="L236">        return dy;</span>
+<span class="fc" id="L262">        return dy;</span>
     }
 
+    /**
+     *
+     * @param hist
+     * @return
+     */
+    public static int findFirstPeakIndex(HistogramHolder hist) {
+        
+<span class="fc" id="L272">        float yPeak = Float.MIN_VALUE;</span>
+<span class="fc" id="L273">        int yPeakIdx = -1;</span>
+        
+        // specific to use here, find max within first half of histogram
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        for (int i = 0; i &lt; hist.getXHist().length &gt;&gt; 1; i++) {</span>
+            
+<span class="fc" id="L278">            float y = hist.getYHistFloat()[i];</span>
+            
+<span class="fc bfc" id="L280" title="All 2 branches covered.">            if (y &gt; yPeak) {</span>
+<span class="fc" id="L281">                yPeak = y;</span>
+<span class="fc" id="L282">                yPeakIdx = i;</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">            } else if (yPeakIdx &gt; -1) {</span>
+<span class="fc" id="L284">                break;</span>
+            }
+        }
+        
+<span class="fc" id="L288">        return yPeakIdx;</span>
+    }
+
+    /**
+     *
+     * @param hist
+     * @param yPeakIdx
+     * @return
+     */
+    public static int findFirstMinimaFollowingPeak(HistogramHolder hist, 
+        int yPeakIdx) {
+    
+        //TODO:  could be improved to smooth over noise to find true minimum
+        
+        // find min within first half of histogram, after peak
+<span class="fc" id="L303">        int n = (int)(0.5f * hist.getXHist().length);</span>
+        
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        if ((n - yPeakIdx) &lt; 3) {</span>
+<span class="fc" id="L306">            n = hist.getXHist().length;</span>
+        }
+        
+<span class="fc" id="L309">        float yPrev = hist.getYHistFloat()[yPeakIdx];</span>
+        
+<span class="fc" id="L311">        int yMinimaIdx = yPeakIdx;</span>
+        
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">        for (int i = (yPeakIdx + 1); i &lt; n; i++) {</span>
+            
+<span class="fc" id="L315">            float y = hist.getYHistFloat()[i];</span>
+            
+<span class="fc bfc" id="L317" title="All 2 branches covered.">            if (y &lt; yPrev) {</span>
+<span class="fc" id="L318">                yPrev = y;</span>
+<span class="fc" id="L319">                yMinimaIdx = i;</span>
+            } else {
+                break;
+            }
+        }
+        
+<span class="fc" id="L325">        return yMinimaIdx;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

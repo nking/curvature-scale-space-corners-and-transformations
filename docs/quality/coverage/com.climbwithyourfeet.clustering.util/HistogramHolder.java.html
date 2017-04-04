@@ -14,118 +14,137 @@ import java.util.logging.Logger;
     
     private static final long serialVersionUID = -7105371701539621066L;
 
-<span class="fc" id="L17">    protected float[] xHist = null;</span>
-<span class="fc" id="L18">    protected int[] yHist = null;</span>
-<span class="fc" id="L19">    protected float[] yHistFloat = null;</span>
-<span class="fc" id="L20">    protected float[] yErrors = null;</span>
-<span class="fc" id="L21">    protected float[] xErrors = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L20">    protected float[] xHist = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L25">    protected int[] yHist = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L30">    protected float[] yHistFloat = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L35">    protected float[] yErrors = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L40">    protected float[] xErrors = null;</span>
 
     /**
      * @return the xHist
      */
     public float[] getXHist() {
-<span class="fc" id="L27">        return xHist;</span>
+<span class="fc" id="L46">        return xHist;</span>
     }
 
     /**
      * @return the yHist
      */
     public int[] getYHist() {
-<span class="fc" id="L34">        return yHist;</span>
+<span class="fc" id="L53">        return yHist;</span>
     }
 
     /**
      * @return the yHistFloat
      */
     public float[] getYHistFloat() {
-<span class="fc" id="L41">        return yHistFloat;</span>
+<span class="fc" id="L60">        return yHistFloat;</span>
     }
 
     /**
      * @return the yErrors
      */
     public float[] getYErrors() {
-<span class="nc" id="L48">        return yErrors;</span>
+<span class="nc" id="L67">        return yErrors;</span>
     }
 
     /**
      * @return the xErrors
      */
     public float[] getXErrors() {
-<span class="nc" id="L55">        return xErrors;</span>
+<span class="nc" id="L74">        return xErrors;</span>
     }
 
     /**
      * @param xHist the xHist to set
      */
     public void setXHist(float[] xHist) {
-<span class="fc" id="L62">        this.xHist = xHist;</span>
-<span class="fc" id="L63">    }</span>
+<span class="fc" id="L81">        this.xHist = xHist;</span>
+<span class="fc" id="L82">    }</span>
 
     /**
      * @param yHist the yHist to set
      */
     public void setYHist(int[] yHist) {
-<span class="fc" id="L69">        this.yHist = yHist;</span>
-<span class="fc" id="L70">    }</span>
+<span class="fc" id="L88">        this.yHist = yHist;</span>
+<span class="fc" id="L89">    }</span>
 
     /**
      * @param yHistFloat the yHistFloat to set
      */
     public void setYHistFloat(float[] yHistFloat) {
-<span class="fc" id="L76">        this.yHistFloat = yHistFloat;</span>
-<span class="fc" id="L77">    }</span>
+<span class="fc" id="L95">        this.yHistFloat = yHistFloat;</span>
+<span class="fc" id="L96">    }</span>
 
     /**
      * @param yErrors the yErrors to set
      */
     public void setYErrors(float[] yErrors) {
-<span class="fc" id="L83">        this.yErrors = yErrors;</span>
-<span class="fc" id="L84">    }</span>
+<span class="fc" id="L102">        this.yErrors = yErrors;</span>
+<span class="fc" id="L103">    }</span>
 
     /**
      * @param xErrors the xErrors to set
      */
     public void setXErrors(float[] xErrors) {
-<span class="fc" id="L90">        this.xErrors = xErrors;</span>
-<span class="fc" id="L91">    }</span>
+<span class="fc" id="L109">        this.xErrors = xErrors;</span>
+<span class="fc" id="L110">    }</span>
     
     public String toString() {
         
-<span class="nc" id="L95">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L114">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="nc" id="L97">        sb.append(&quot;histogram=[&quot;);</span>
+<span class="nc" id="L116">        sb.append(&quot;histogram=[&quot;);</span>
         
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        for (int i = 0; i &lt; xHist.length; i++) {</span>
             
-<span class="nc" id="L101">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
+<span class="nc" id="L120">            sb.append(&quot;(&quot;).append(xHist[i]).append(&quot;, &quot;);</span>
             
-<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (yHist != null) {</span>
-<span class="nc" id="L104">                sb.append(yHist[i]);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">            if (yHist != null) {</span>
+<span class="nc" id="L123">                sb.append(yHist[i]);</span>
             } else {
-<span class="nc" id="L106">                sb.append(yHistFloat[i]);</span>
+<span class="nc" id="L125">                sb.append(yHistFloat[i]);</span>
             }
-<span class="nc" id="L108">            sb.append(&quot;) &quot;);</span>
+<span class="nc" id="L127">            sb.append(&quot;) &quot;);</span>
             
         }
         
-<span class="nc" id="L112">        sb.append(&quot;]\n&quot;);</span>
+<span class="nc" id="L131">        sb.append(&quot;]\n&quot;);</span>
         
-<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (xErrors != null) {</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (xErrors != null) {</span>
             
-<span class="nc" id="L116">            sb.append(&quot;histogram errors=[&quot;);</span>
+<span class="nc" id="L135">            sb.append(&quot;histogram errors=[&quot;);</span>
             
-<span class="nc bnc" id="L118" title="All 2 branches missed.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            for (int i = 0; i &lt; xErrors.length; i++) {</span>
 
-<span class="nc" id="L120">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
+<span class="nc" id="L139">                sb.append(&quot;(&quot;).append(xErrors[i]).append(&quot;, &quot;);</span>
 
-<span class="nc" id="L122">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
+<span class="nc" id="L141">                sb.append(yErrors[i]).append(&quot;) &quot;);</span>
             }
             
-<span class="nc" id="L125">            sb.append(&quot;]\n&quot;);</span>
+<span class="nc" id="L144">            sb.append(&quot;]\n&quot;);</span>
         }      
         
-<span class="nc" id="L128">        return sb.toString();</span>
+<span class="nc" id="L147">        return sb.toString();</span>
     }
 
     /**
@@ -141,61 +160,61 @@ import java.util.logging.Logger;
         try {
             // only using a class if it exists already in classpath. 
             // class not imported to avoid a dependency in the packaged jar
-<span class="fc" id="L144">            ClassLoader cls = this.getClass().getClassLoader();</span>
-<span class="fc" id="L145">            Class&lt;?&gt; plotClass = cls.loadClass(&quot;algorithms.util.PolygonAndPointPlotter&quot;);</span>
+<span class="fc" id="L163">            ClassLoader cls = this.getClass().getClassLoader();</span>
+<span class="fc" id="L164">            Class&lt;?&gt; plotClass = cls.loadClass(&quot;algorithms.util.PolygonAndPointPlotter&quot;);</span>
          
-<span class="fc" id="L147">            Class&lt;?&gt;[] argTypes0 = new Class&lt;?&gt;[]{float.class, float.class, </span>
+<span class="fc" id="L166">            Class&lt;?&gt;[] argTypes0 = new Class&lt;?&gt;[]{float.class, float.class, </span>
                 float.class, float.class, float[].class, float[].class, 
                 float[].class, float[].class, String.class};
             
-<span class="fc" id="L151">            Method method0 = plotClass.getMethod(&quot;addPlot&quot;, argTypes0);</span>
+<span class="fc" id="L170">            Method method0 = plotClass.getMethod(&quot;addPlot&quot;, argTypes0);</span>
             
-<span class="fc" id="L153">            Constructor constructor = null;</span>
-<span class="pc bpc" id="L154" title="1 of 2 branches missed.">            for (Constructor c : plotClass.getConstructors()) {</span>
-<span class="fc bfc" id="L155" title="All 2 branches covered.">                if (c.getParameterCount() == 0) {</span>
-<span class="fc" id="L156">                    constructor = c;</span>
-<span class="fc" id="L157">                    break;</span>
+<span class="fc" id="L172">            Constructor constructor = null;</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">            for (Constructor c : plotClass.getConstructors()) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">                if (c.getParameterCount() == 0) {</span>
+<span class="fc" id="L175">                    constructor = c;</span>
+<span class="fc" id="L176">                    break;</span>
                 }
             }
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">            if (constructor == null) {</span>
-<span class="nc" id="L161">                return null;</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">            if (constructor == null) {</span>
+<span class="nc" id="L180">                return null;</span>
             }
             
-<span class="fc" id="L164">            Object plotterObj = constructor.newInstance();</span>
+<span class="fc" id="L183">            Object plotterObj = constructor.newInstance();</span>
 
-<span class="fc" id="L166">            float[] xh = xHist;</span>
-<span class="fc" id="L167">            float[] yh = yHistFloat;</span>
+<span class="fc" id="L185">            float[] xh = xHist;</span>
+<span class="fc" id="L186">            float[] yh = yHistFloat;</span>
 
-<span class="fc" id="L169">            float yMin = MiscMath.findMin(yh);</span>
-<span class="fc" id="L170">            int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">            if (yMaxIdx == -1) {</span>
-<span class="nc" id="L172">                return null;</span>
+<span class="fc" id="L188">            float yMin = MiscMath.findMin(yh);</span>
+<span class="fc" id="L189">            int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            if (yMaxIdx == -1) {</span>
+<span class="nc" id="L191">                return null;</span>
             }
-<span class="fc" id="L174">            float yMax = yh[yMaxIdx];</span>
+<span class="fc" id="L193">            float yMax = yh[yMaxIdx];</span>
 
-<span class="fc" id="L176">            float xMin = MiscMath.findMin(xh);</span>
-<span class="fc" id="L177">            float xMax = MiscMath.findMax(xh);</span>
+<span class="fc" id="L195">            float xMin = MiscMath.findMin(xh);</span>
+<span class="fc" id="L196">            float xMax = MiscMath.findMax(xh);</span>
             
-<span class="fc" id="L179">            Object[] args0 = new Object[]{xMin, xMax, yMin, yMax, xh, yh, xh, yh, label};</span>
+<span class="fc" id="L198">            Object[] args0 = new Object[]{xMin, xMax, yMin, yMax, xh, yh, xh, yh, label};</span>
 
-<span class="fc" id="L181">            method0.invoke(plotterObj, args0);</span>
+<span class="fc" id="L200">            method0.invoke(plotterObj, args0);</span>
             
-<span class="fc" id="L183">            Class&lt;?&gt;[] argTypes1 = new Class&lt;?&gt;[]{String.class};</span>
+<span class="fc" id="L202">            Class&lt;?&gt;[] argTypes1 = new Class&lt;?&gt;[]{String.class};</span>
             
-<span class="fc" id="L185">            Method method1 = plotClass.getMethod(&quot;writeFile&quot;, argTypes1);</span>
+<span class="fc" id="L204">            Method method1 = plotClass.getMethod(&quot;writeFile&quot;, argTypes1);</span>
             
-<span class="fc" id="L187">            Object[] args1 = new Object[]{outputFileSuffix};</span>
+<span class="fc" id="L206">            Object[] args1 = new Object[]{outputFileSuffix};</span>
             
-<span class="fc" id="L189">            String filePath = (String) method1.invoke(plotterObj, args1);</span>
+<span class="fc" id="L208">            String filePath = (String) method1.invoke(plotterObj, args1);</span>
         
-<span class="fc" id="L191">            return filePath;</span>
+<span class="fc" id="L210">            return filePath;</span>
             
-<span class="nc" id="L193">        } catch (Exception ex) {</span>
-<span class="nc" id="L194">            Logger.getLogger(CriticalDensitySolver.class.getName()).</span>
-<span class="nc" id="L195">                log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L212">        } catch (Exception ex) {</span>
+<span class="nc" id="L213">            Logger.getLogger(CriticalDensitySolver.class.getName()).</span>
+<span class="nc" id="L214">                log(Level.SEVERE, null, ex);</span>
         }
         
-<span class="nc" id="L198">        return null;</span>
+<span class="nc" id="L217">        return null;</span>
     }
     
 }

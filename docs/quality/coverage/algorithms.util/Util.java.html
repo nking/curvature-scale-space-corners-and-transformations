@@ -6,58 +6,78 @@ import java.io.IOException;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.ManagementFactory;
 
-<span class="fc" id="L9">public class Util {</span>
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L13">public class Util {</span>
     
+    /**
+     *
+     * @param hist
+     * @param label
+     * @param outputFileSuffix
+     * @return
+     * @throws IOException
+     */
     public static String plotHistogram(HistogramHolder hist,
         String label, String outputFileSuffix) throws IOException {
                 
-<span class="fc" id="L14">        float[] xh = hist.getXHist();</span>
-<span class="fc" id="L15">        float[] yh = hist.getYHistFloat();</span>
+<span class="fc" id="L26">        float[] xh = hist.getXHist();</span>
+<span class="fc" id="L27">        float[] yh = hist.getYHistFloat();</span>
         
-<span class="fc" id="L17">        float yMin = MiscMath.findMin(yh);</span>
-<span class="fc" id="L18">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
-<span class="pc bpc" id="L19" title="1 of 2 branches missed.">        if (yMaxIdx == -1) {</span>
-<span class="nc" id="L20">            return null;</span>
+<span class="fc" id="L29">        float yMin = MiscMath.findMin(yh);</span>
+<span class="fc" id="L30">        int yMaxIdx = MiscMath.findYMaxIndex(yh);</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (yMaxIdx == -1) {</span>
+<span class="nc" id="L32">            return null;</span>
         }
-<span class="fc" id="L22">        float yMax = yh[yMaxIdx];</span>
+<span class="fc" id="L34">        float yMax = yh[yMaxIdx];</span>
         
-<span class="fc" id="L24">        float xMin = MiscMath.findMin(xh);</span>
-<span class="fc" id="L25">        float xMax = MiscMath.findMax(xh);        </span>
+<span class="fc" id="L36">        float xMin = MiscMath.findMin(xh);</span>
+<span class="fc" id="L37">        float xMax = MiscMath.findMax(xh);        </span>
                 
-<span class="fc" id="L27">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="fc" id="L39">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
 
-<span class="fc" id="L29">        plotter.addPlot(</span>
+<span class="fc" id="L41">        plotter.addPlot(</span>
             xMin, xMax, yMin, yMax,
             xh, yh, xh, yh, label);
 
-<span class="fc" id="L33">        return plotter.writeFile(outputFileSuffix);</span>
+<span class="fc" id="L45">        return plotter.writeFile(outputFileSuffix);</span>
     }
     
+    /**
+     *
+     * @param hist
+     * @param label
+     * @param outputFileSuffix
+     * @return
+     * @throws IOException
+     */
     public String plotLogHistogram(HistogramHolder hist,
         String label, String outputFileSuffix) throws IOException {
                 
-<span class="nc" id="L39">        float[] xh = hist.getXHist();</span>
-<span class="nc" id="L40">        float[] yh = hist.getYHistFloat();</span>
+<span class="nc" id="L59">        float[] xh = hist.getXHist();</span>
+<span class="nc" id="L60">        float[] yh = hist.getYHistFloat();</span>
         
-<span class="nc" id="L42">        float[] yLogH = new float[yh.length];</span>
-<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (int i = 0; i &lt; yh.length; ++i) {</span>
-<span class="nc" id="L44">            yLogH[i] = (float)Math.log(yh[i]/Math.log(10));</span>
+<span class="nc" id="L62">        float[] yLogH = new float[yh.length];</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        for (int i = 0; i &lt; yh.length; ++i) {</span>
+<span class="nc" id="L64">            yLogH[i] = (float)Math.log(yh[i]/Math.log(10));</span>
         }
         
-<span class="nc" id="L47">        float yMin = MiscMath.findMin(yLogH);</span>
-<span class="nc" id="L48">        int yMaxIdx = MiscMath.findYMaxIndex(yLogH);</span>
-<span class="nc" id="L49">        float yMax = yLogH[yMaxIdx];</span>
+<span class="nc" id="L67">        float yMin = MiscMath.findMin(yLogH);</span>
+<span class="nc" id="L68">        int yMaxIdx = MiscMath.findYMaxIndex(yLogH);</span>
+<span class="nc" id="L69">        float yMax = yLogH[yMaxIdx];</span>
         
-<span class="nc" id="L51">        float xMin = MiscMath.findMin(xh);</span>
-<span class="nc" id="L52">        float xMax = MiscMath.findMax(xh);</span>
+<span class="nc" id="L71">        float xMin = MiscMath.findMin(xh);</span>
+<span class="nc" id="L72">        float xMax = MiscMath.findMax(xh);</span>
                         
-<span class="nc" id="L54">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="nc" id="L74">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
 
-<span class="nc" id="L56">        plotter.addPlot(</span>
+<span class="nc" id="L76">        plotter.addPlot(</span>
             xMin, xMax, yMin, yMax,
             xh, yLogH, xh, yLogH, label);
 
-<span class="nc" id="L60">        return plotter.writeFile(outputFileSuffix);</span>
+<span class="nc" id="L80">        return plotter.writeFile(outputFileSuffix);</span>
     }
      
     /**
@@ -66,16 +86,17 @@ import java.lang.management.ManagementFactory;
     Note that it does not know if the amount
     of memory available to the program from the OS is less than the JVM expects
     from command line flags
+     * @return 
     */
     public static long getAvailableHeapMemory() {
 
-<span class="fc" id="L72">        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();</span>
-<span class="fc" id="L73">        long heapUsage = mbean.getHeapMemoryUsage().getUsed();</span>
-<span class="fc" id="L74">        long totMemory = Runtime.getRuntime().totalMemory();</span>
+<span class="fc" id="L93">        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();</span>
+<span class="fc" id="L94">        long heapUsage = mbean.getHeapMemoryUsage().getUsed();</span>
+<span class="fc" id="L95">        long totMemory = Runtime.getRuntime().totalMemory();</span>
 
-<span class="fc" id="L76">        long totAvail = totMemory - heapUsage;</span>
+<span class="fc" id="L97">        long totAvail = totMemory - heapUsage;</span>
 
-<span class="fc" id="L78">        return totAvail;</span>
+<span class="fc" id="L99">        return totAvail;</span>
     }
 
 }

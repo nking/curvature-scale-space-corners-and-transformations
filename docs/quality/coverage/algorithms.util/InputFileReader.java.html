@@ -13,133 +13,194 @@ import java.util.logging.Logger;
  */
 public class InputFileReader implements IInputFileReader {
 
-<span class="fc" id="L16">    protected float[] x = null;</span>
-<span class="fc" id="L17">    protected float[] y = null;</span>
-<span class="fc" id="L18">    protected float[] xErrors = null;</span>
-<span class="fc" id="L19">    protected float[] yErrors = null;</span>
-<span class="fc" id="L20">    protected int nPoints = 0;</span>
+    /**
+     *
+     */
+<span class="fc" id="L19">    protected float[] x = null;</span>
 
-<span class="fc" id="L22">    protected Logger log = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L24">    protected float[] y = null;</span>
 
-<span class="fc" id="L24">    protected String filePath = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L29">    protected float[] xErrors = null;</span>
 
-<span class="fc" id="L26">    public InputFileReader(){</span>
-<span class="fc" id="L27">        log = Logger.getLogger(this.getClass().getName());</span>
-<span class="fc" id="L28">    }</span>
+    /**
+     *
+     */
+<span class="fc" id="L34">    protected float[] yErrors = null;</span>
 
+    /**
+     *
+     */
+<span class="fc" id="L39">    protected int nPoints = 0;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L44">    protected Logger log = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L49">    protected String filePath = null;</span>
+
+    /**
+     *
+     */
+<span class="fc" id="L54">    public InputFileReader(){</span>
+<span class="fc" id="L55">        log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     *
+     */
     protected void initArrays() {
-<span class="fc" id="L31">        int n = 100;</span>
-<span class="fc" id="L32">        x = new float[n];</span>
-<span class="fc" id="L33">        y = new float[n];</span>
-<span class="fc" id="L34">        xErrors = new float[n];</span>
-<span class="fc" id="L35">        yErrors = new float[n];</span>
-<span class="fc" id="L36">    }</span>
+<span class="fc" id="L62">        int n = 100;</span>
+<span class="fc" id="L63">        x = new float[n];</span>
+<span class="fc" id="L64">        y = new float[n];</span>
+<span class="fc" id="L65">        xErrors = new float[n];</span>
+<span class="fc" id="L66">        yErrors = new float[n];</span>
+<span class="fc" id="L67">    }</span>
 
+    /**
+     *
+     * @param pathToFile
+     * @throws IOException
+     */
     public void read(String pathToFile) throws IOException {
 
-<span class="fc" id="L40">        this.filePath = pathToFile;</span>
+<span class="fc" id="L76">        this.filePath = pathToFile;</span>
 
-<span class="fc" id="L42">        initArrays();</span>
+<span class="fc" id="L78">        initArrays();</span>
 
-<span class="fc" id="L44">        FileReader reader = null;</span>
-<span class="fc" id="L45">        BufferedReader in = null;</span>
+<span class="fc" id="L80">        FileReader reader = null;</span>
+<span class="fc" id="L81">        BufferedReader in = null;</span>
 
         try {
-<span class="fc" id="L48">            File fl = new File(filePath);</span>
+<span class="fc" id="L84">            File fl = new File(filePath);</span>
 
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">            if (!fl.exists()) {</span>
-<span class="nc" id="L51">                throw new IOException(&quot;file &quot; + filePath + &quot; does not exist&quot;);</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            if (!fl.exists()) {</span>
+<span class="nc" id="L87">                throw new IOException(&quot;file &quot; + filePath + &quot; does not exist&quot;);</span>
             }
 
-<span class="fc" id="L54">            reader = new FileReader(fl);</span>
-<span class="fc" id="L55">            in = new BufferedReader(reader);</span>
+<span class="fc" id="L90">            reader = new FileReader(fl);</span>
+<span class="fc" id="L91">            in = new BufferedReader(reader);</span>
 
-<span class="fc" id="L57">            String line = in.readLine();</span>
+<span class="fc" id="L93">            String line = in.readLine();</span>
 
-<span class="fc" id="L59">            log.info(&quot;loading &quot; + filePath);</span>
+<span class="fc" id="L95">            log.info(&quot;loading &quot; + filePath);</span>
 
-<span class="fc bfc" id="L61" title="All 2 branches covered.">            while (line != null) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            while (line != null) {</span>
 
-<span class="fc" id="L63">                String[] values = line.split(&quot;\t&quot;);</span>
-<span class="pc bpc" id="L64" title="2 of 4 branches missed.">                if (values == null || values.length != 4) {</span>
-<span class="nc" id="L65">                    throw new IOException(&quot;file data has to be tab separated, and 4 columns of: x y xError yError&quot;);</span>
+<span class="fc" id="L99">                String[] values = line.split(&quot;\t&quot;);</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">                if (values == null || values.length != 4) {</span>
+<span class="nc" id="L101">                    throw new IOException(&quot;file data has to be tab separated, and 4 columns of: x y xError yError&quot;);</span>
                 }
-<span class="fc" id="L67">                expandArraysIfNecessary();</span>
+<span class="fc" id="L103">                expandArraysIfNecessary();</span>
 
-<span class="fc bfc" id="L69" title="All 2 branches covered.">                for (int i = 0; i &lt; values.length; i++) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">                for (int i = 0; i &lt; values.length; i++) {</span>
 
-<span class="fc" id="L71">                    Float value = Float.valueOf(values[i]);</span>
+<span class="fc" id="L107">                    Float value = Float.valueOf(values[i]);</span>
 
-<span class="pc bpc" id="L73" title="1 of 5 branches missed.">                    switch (i) {</span>
+<span class="pc bpc" id="L109" title="1 of 5 branches missed.">                    switch (i) {</span>
                         case 0:
-<span class="fc" id="L75">                            x[nPoints] = value;</span>
-<span class="fc" id="L76">                            break;</span>
+<span class="fc" id="L111">                            x[nPoints] = value;</span>
+<span class="fc" id="L112">                            break;</span>
                         case 1:
-<span class="fc" id="L78">                            y[nPoints] = value;</span>
-<span class="fc" id="L79">                            break;</span>
+<span class="fc" id="L114">                            y[nPoints] = value;</span>
+<span class="fc" id="L115">                            break;</span>
                         case 2:
-<span class="fc" id="L81">                            xErrors[nPoints] = value;</span>
-<span class="fc" id="L82">                            break;</span>
+<span class="fc" id="L117">                            xErrors[nPoints] = value;</span>
+<span class="fc" id="L118">                            break;</span>
                         case 3:
-<span class="fc" id="L84">                            yErrors[nPoints] = value;</span>
-<span class="fc" id="L85">                            break;</span>
+<span class="fc" id="L120">                            yErrors[nPoints] = value;</span>
+<span class="fc" id="L121">                            break;</span>
                         default:
                             break;
                     }
                 }
 
-<span class="fc" id="L91">                nPoints++;</span>
+<span class="fc" id="L127">                nPoints++;</span>
 
-<span class="fc" id="L93">                line = in.readLine();</span>
-<span class="fc" id="L94">            }</span>
+<span class="fc" id="L129">                line = in.readLine();</span>
+<span class="fc" id="L130">            }</span>
 
         } finally {
-<span class="pc bpc" id="L97" title="3 of 4 branches missed.">            if (reader != null) {</span>
-<span class="pc" id="L98">                reader.close();</span>
+<span class="pc bpc" id="L133" title="3 of 4 branches missed.">            if (reader != null) {</span>
+<span class="pc" id="L134">                reader.close();</span>
             }
-<span class="pc bpc" id="L100" title="3 of 4 branches missed.">            if (in != null) {</span>
-<span class="pc" id="L101">                in.close();</span>
+<span class="pc bpc" id="L136" title="3 of 4 branches missed.">            if (in != null) {</span>
+<span class="pc" id="L137">                in.close();</span>
             }
-<span class="pc" id="L103">            condenseArrays();</span>
-<span class="pc" id="L104">            log.info(&quot;finished loading file&quot;);</span>
-<span class="fc" id="L105">        }</span>
-<span class="fc" id="L106">    }</span>
+<span class="pc" id="L139">            condenseArrays();</span>
+<span class="pc" id="L140">            log.info(&quot;finished loading file&quot;);</span>
+<span class="fc" id="L141">        }</span>
+<span class="fc" id="L142">    }</span>
 
+    /**
+     *
+     */
     protected void expandArraysIfNecessary() {
         
         // 0 1 2 3  nPoints=3    x.length should be at least nPoints+1
         
-<span class="fc bfc" id="L112" title="All 2 branches covered.">        if ((nPoints + 1) &gt; x.length) {</span>
-<span class="fc" id="L113">            int expand = (int)(1.3f*(nPoints + 1));</span>
-<span class="fc" id="L114">            x = Arrays.copyOf(x, expand);</span>
-<span class="fc" id="L115">            y = Arrays.copyOf(y, expand);</span>
-<span class="fc" id="L116">            xErrors = Arrays.copyOf(xErrors, expand);</span>
-<span class="fc" id="L117">            yErrors = Arrays.copyOf(yErrors, expand);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if ((nPoints + 1) &gt; x.length) {</span>
+<span class="fc" id="L152">            int expand = (int)(1.3f*(nPoints + 1));</span>
+<span class="fc" id="L153">            x = Arrays.copyOf(x, expand);</span>
+<span class="fc" id="L154">            y = Arrays.copyOf(y, expand);</span>
+<span class="fc" id="L155">            xErrors = Arrays.copyOf(xErrors, expand);</span>
+<span class="fc" id="L156">            yErrors = Arrays.copyOf(yErrors, expand);</span>
         }
-<span class="fc" id="L119">    }</span>
+<span class="fc" id="L158">    }</span>
     
+    /**
+     *
+     */
     protected void condenseArrays() {
-<span class="fc" id="L122">        x = Arrays.copyOf(x, nPoints);</span>
-<span class="fc" id="L123">        y = Arrays.copyOf(y, nPoints);</span>
-<span class="fc" id="L124">        xErrors = Arrays.copyOf(xErrors, nPoints);</span>
-<span class="fc" id="L125">        yErrors = Arrays.copyOf(yErrors, nPoints);</span>
-<span class="fc" id="L126">    }</span>
+<span class="fc" id="L164">        x = Arrays.copyOf(x, nPoints);</span>
+<span class="fc" id="L165">        y = Arrays.copyOf(y, nPoints);</span>
+<span class="fc" id="L166">        xErrors = Arrays.copyOf(xErrors, nPoints);</span>
+<span class="fc" id="L167">        yErrors = Arrays.copyOf(yErrors, nPoints);</span>
+<span class="fc" id="L168">    }</span>
 
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getX() {
-<span class="fc" id="L130">        return x;</span>
+<span class="fc" id="L176">        return x;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getY() {
-<span class="fc" id="L134">        return y;</span>
+<span class="fc" id="L185">        return y;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getXErrors() {
-<span class="fc" id="L138">        return xErrors;</span>
+<span class="fc" id="L194">        return xErrors;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     @Override
     public float[] getYErrors() {
-<span class="fc" id="L142">        return yErrors;</span>
+<span class="fc" id="L203">        return yErrors;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -11,73 +11,98 @@ import java.util.logging.Logger;
  */
 public class VoidReader extends AbstractVoidFinder {
 
+    /**
+     *
+     * @param ois
+     * @throws IOException
+     */
     public VoidReader(ObjectInputStream ois) throws IOException {
         
-<span class="fc" id="L16">        super();</span>
+<span class="fc" id="L21">        super();</span>
         
-<span class="fc" id="L18">        this.sampling = VoidSampling.N_A;</span>
+<span class="fc" id="L23">        this.sampling = VoidSampling.N_A;</span>
         
-<span class="fc" id="L20">        deserializeTwoPointBackground(ois);        </span>
-<span class="fc" id="L21">    }</span>
+<span class="fc" id="L25">        deserializeTwoPointBackground(ois);        </span>
+<span class="fc" id="L26">    }</span>
     
+    /**
+     *
+     * @param sampling
+     */
     public void setSampling(VoidSampling sampling) {
         // do nothing
-<span class="fc" id="L25">    }</span>
+<span class="fc" id="L34">    }</span>
     
+    /**
+     *
+     * @param indexer
+     * @throws TwoPointVoidStatsException
+     */
     public void findVoids(AxisIndexer indexer) throws TwoPointVoidStatsException {
         
-<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (indexer == null) {</span>
-<span class="fc" id="L30">            throw new IllegalArgumentException(&quot;indexer cannot be null&quot;);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (indexer == null) {</span>
+<span class="fc" id="L44">            throw new IllegalArgumentException(&quot;indexer cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L33">        this.indexer = indexer;</span>
+<span class="fc" id="L47">        this.indexer = indexer;</span>
         
-<span class="fc" id="L35">        constructLogger();</span>
+<span class="fc" id="L49">        constructLogger();</span>
         
         //initializeVariables();
         
-<span class="fc" id="L39">        findVoidsImpl();</span>
+<span class="fc" id="L53">        findVoidsImpl();</span>
         
-<span class="fc" id="L41">        condenseArrays();</span>
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L55">        condenseArrays();</span>
+<span class="fc" id="L56">    }</span>
     
+    /**
+     *
+     */
     @Override
     protected void findVoidsImpl() {
         // do nothing.  the voids were already 'found' and read in from ObjectInputStream
-<span class="fc" id="L47">    }</span>
+<span class="fc" id="L64">    }</span>
 
+    /**
+     *
+     */
     @Override
     public void constructLogger() {
-<span class="fc" id="L51">        this.log = Logger.getLogger(this.getClass().getName());</span>
-<span class="fc" id="L52">    }</span>
+<span class="fc" id="L71">        this.log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L72">    }</span>
 
+    /**
+     *
+     * @param ois
+     * @throws IOException
+     */
     protected void deserializeTwoPointBackground(ObjectInputStream ois) throws IOException {
         
-<span class="fc" id="L56">        this.nTwoPointSurfaceDensities = ois.readInt();</span>
+<span class="fc" id="L81">        this.nTwoPointSurfaceDensities = ois.readInt();</span>
 
-<span class="fc" id="L58">        this.allTwoPointSurfaceDensities = new float[nTwoPointSurfaceDensities];</span>
-<span class="fc" id="L59">        this.allTwoPointSurfaceDensitiesErrors = new float[nTwoPointSurfaceDensities];</span>
-<span class="fc" id="L60">        this.point1 = new int[nTwoPointSurfaceDensities];</span>
-<span class="fc" id="L61">        this.point2 = new int[nTwoPointSurfaceDensities];</span>
+<span class="fc" id="L83">        this.allTwoPointSurfaceDensities = new float[nTwoPointSurfaceDensities];</span>
+<span class="fc" id="L84">        this.allTwoPointSurfaceDensitiesErrors = new float[nTwoPointSurfaceDensities];</span>
+<span class="fc" id="L85">        this.point1 = new int[nTwoPointSurfaceDensities];</span>
+<span class="fc" id="L86">        this.point2 = new int[nTwoPointSurfaceDensities];</span>
 
-<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (int i = 0; i &lt; nTwoPointSurfaceDensities; i++) {</span>
-<span class="fc" id="L64">            this.allTwoPointSurfaceDensities[i] = ois.readFloat();</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (int i = 0; i &lt; nTwoPointSurfaceDensities; i++) {</span>
+<span class="fc" id="L89">            this.allTwoPointSurfaceDensities[i] = ois.readFloat();</span>
         }
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int i = 0; i &lt; nTwoPointSurfaceDensities; i++) {</span>
-<span class="fc" id="L67">            this.point1[i] = ois.readInt();</span>
-<span class="fc" id="L68">            this.point2[i] = ois.readInt();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 0; i &lt; nTwoPointSurfaceDensities; i++) {</span>
+<span class="fc" id="L92">            this.point1[i] = ois.readInt();</span>
+<span class="fc" id="L93">            this.point2[i] = ois.readInt();</span>
         }
-<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = 0; i &lt; nTwoPointSurfaceDensities; i++) {</span>
-<span class="fc" id="L71">            this.allTwoPointSurfaceDensitiesErrors[i] = ois.readFloat();</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int i = 0; i &lt; nTwoPointSurfaceDensities; i++) {</span>
+<span class="fc" id="L96">            this.allTwoPointSurfaceDensitiesErrors[i] = ois.readFloat();</span>
         }
         try {
-<span class="fc" id="L74">            String s = ois.readUTF();</span>
-<span class="pc bpc" id="L75" title="2 of 4 branches missed.">            if (s != null &amp;&amp; s.length() &gt; 0) {</span>
-<span class="fc" id="L76">                sampling = VoidSampling.resolve(s);</span>
+<span class="fc" id="L99">            String s = ois.readUTF();</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">            if (s != null &amp;&amp; s.length() &gt; 0) {</span>
+<span class="fc" id="L101">                sampling = VoidSampling.resolve(s);</span>
             }
-<span class="nc" id="L78">        } catch(IOException e) {</span>
-<span class="fc" id="L79">        }</span>
-<span class="fc" id="L80">    }</span>
+<span class="nc" id="L103">        } catch(IOException e) {</span>
+<span class="fc" id="L104">        }</span>
+<span class="fc" id="L105">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

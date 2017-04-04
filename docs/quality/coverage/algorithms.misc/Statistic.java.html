@@ -1,13 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Statistic.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">Statistic.java</span></div><h1>Statistic.java</h1><pre class="source lang-java linenums">package algorithms.misc;
 
+/**
+ *
+ * @author nichole
+ */
 public class Statistic {
 
-<span class="fc" id="L5">    protected float avg = Float.MIN_VALUE;</span>
+    /**
+     *
+     */
+<span class="fc" id="L12">    protected float avg = Float.MIN_VALUE;</span>
     
+    /**
+     *
+     */
     protected final int n;
     
-<span class="fc" id="L9">    protected float stDev = -1;</span>
+    /**
+     *
+     */
+<span class="fc" id="L22">    protected float stDev = -1;</span>
     
+    /**
+     *
+     */
     protected final int[] m;
     
     /**
@@ -30,70 +46,119 @@ public class Statistic {
      */
     protected final float ySz;
     
-<span class="fc" id="L33">    public Statistic(int[] items, float[] xCells, float[] yCells, float xDivSz, float yDivSz) {</span>
+    /**
+     *
+     * @param items
+     * @param xCells
+     * @param yCells
+     * @param xDivSz
+     * @param yDivSz
+     */
+<span class="fc" id="L57">    public Statistic(int[] items, float[] xCells, float[] yCells, float xDivSz, float yDivSz) {</span>
         
-<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (items == null) {</span>
-<span class="nc" id="L36">            throw new IllegalArgumentException(&quot;items cannot be null&quot;);</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (items == null) {</span>
+<span class="nc" id="L60">            throw new IllegalArgumentException(&quot;items cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L39">        this.n = items.length;</span>
+<span class="fc" id="L63">        this.n = items.length;</span>
         
-<span class="fc" id="L41">        this.m = items;</span>
+<span class="fc" id="L65">        this.m = items;</span>
         
-<span class="fc" id="L43">        this.xSz = xDivSz;</span>
+<span class="fc" id="L67">        this.xSz = xDivSz;</span>
         
-<span class="fc" id="L45">        this.ySz = yDivSz;</span>
+<span class="fc" id="L69">        this.ySz = yDivSz;</span>
         
-<span class="fc" id="L47">        this.itemsX = xCells;</span>
+<span class="fc" id="L71">        this.itemsX = xCells;</span>
         
-<span class="fc" id="L49">        this.itemsY = yCells;</span>
+<span class="fc" id="L73">        this.itemsY = yCells;</span>
         
-<span class="fc" id="L51">        calculateStats();</span>
-<span class="fc" id="L52">    }</span>
+<span class="fc" id="L75">        calculateStats();</span>
+<span class="fc" id="L76">    }</span>
     
+    /**
+     *
+     * @return
+     */
     public float getAverage() {
-<span class="fc" id="L55">        return avg;</span>
+<span class="fc" id="L83">        return avg;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public float getStandardDeviation() {
-<span class="fc" id="L58">        return stDev;</span>
+<span class="fc" id="L91">        return stDev;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public int[] getItems() {
-<span class="fc" id="L61">        return m;</span>
+<span class="fc" id="L99">        return m;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public int getNumberOfItems() {
-<span class="fc" id="L64">        return n;</span>
+<span class="fc" id="L107">        return n;</span>
     }
     
+    /**
+     *
+     * @return
+     */
     public float[] getItemsX() {
-<span class="nc" id="L68">        return itemsX;</span>
+<span class="nc" id="L115">        return itemsX;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public float[] getItemsY() {
-<span class="nc" id="L71">        return itemsY;</span>
+<span class="nc" id="L123">        return itemsY;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public float getXSz() {
-<span class="fc" id="L74">        return xSz;</span>
+<span class="fc" id="L131">        return xSz;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public float getYSz() {
-<span class="nc" id="L77">        return ySz;</span>
+<span class="nc" id="L139">        return ySz;</span>
     }
     
+    /**
+     *
+     */
     protected void calculateStats() {
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (avg &gt; Float.MIN_VALUE) {</span>
-<span class="nc" id="L82">            return;</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (avg &gt; Float.MIN_VALUE) {</span>
+<span class="nc" id="L147">            return;</span>
         }
         
-<span class="fc" id="L85">        float s = 0.f;</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int item : m) {</span>
-<span class="fc" id="L87">            s += item;</span>
+<span class="fc" id="L150">        float s = 0.f;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (int item : m) {</span>
+<span class="fc" id="L152">            s += item;</span>
         }
-<span class="fc" id="L89">        avg = s/n;</span>
+<span class="fc" id="L154">        avg = s/n;</span>
         
-<span class="fc" id="L91">        s = 0.f;</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int i = 0; i &lt; m.length; i++) {</span>
-<span class="fc" id="L93">            s += Math.pow((m[i] - avg), 2);</span>
+<span class="fc" id="L156">        s = 0.f;</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        for (int i = 0; i &lt; m.length; i++) {</span>
+<span class="fc" id="L158">            s += Math.pow((m[i] - avg), 2);</span>
         }
         
-<span class="fc" id="L96">        stDev = (float) Math.sqrt(s/(n-1));;</span>
-<span class="fc" id="L97">    }</span>
+<span class="fc" id="L161">        stDev = (float) Math.sqrt(s/(n-1));;</span>
+<span class="fc" id="L162">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

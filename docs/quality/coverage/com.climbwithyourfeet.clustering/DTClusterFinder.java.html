@@ -20,6 +20,7 @@ import javax.imageio.ImageIO;
  * runtime complexity ~ O(N_pixels) + ~O(N_points * lg2(N_points))
  * 
  * @author nichole
+ * @param &lt;T&gt;
  */
 public class DTClusterFinder&lt;T extends PairInt&gt; {
     
@@ -27,176 +28,216 @@ public class DTClusterFinder&lt;T extends PairInt&gt; {
     private final int width;
     private final int height;
     
-<span class="fc" id="L30">    private float critDens = Float.POSITIVE_INFINITY;</span>
+<span class="fc" id="L31">    private float critDens = Float.POSITIVE_INFINITY;</span>
     
-<span class="fc" id="L32">    private DTGroupFinder&lt;T&gt; groupFinder = null;</span>
+<span class="fc" id="L33">    private DTGroupFinder&lt;T&gt; groupFinder = null;</span>
 
     private enum STATE {
         INIT, HAVE_CLUSTER_DENSITY, HAVE_GROUPS
     }
     
-<span class="fc" id="L38">    private STATE state = null;</span>
+<span class="fc" id="L39">    private STATE state = null;</span>
     
-<span class="fc" id="L40">    private float threshholdFactor = 2.5f;</span>
+<span class="fc" id="L41">    private float threshholdFactor = 2.5f;</span>
     
-<span class="fc" id="L42">    private int minimumNumberInCluster = 3;</span>
+<span class="fc" id="L43">    private int minimumNumberInCluster = 3;</span>
     
-<span class="fc" id="L44">    private boolean debug = false;</span>
+<span class="fc" id="L45">    private boolean debug = false;</span>
 
-<span class="fc" id="L46">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L47">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="fc" id="L48">    public DTClusterFinder(Set&lt;T&gt; thePoints, int width, int height) {</span>
+    /**
+     *
+     * @param thePoints
+     * @param width
+     * @param height
+     */
+<span class="fc" id="L55">    public DTClusterFinder(Set&lt;T&gt; thePoints, int width, int height) {</span>
         
-<span class="fc" id="L50">        this.points = thePoints;</span>
-<span class="fc" id="L51">        this.width = width;</span>
-<span class="fc" id="L52">        this.height = height;</span>
+<span class="fc" id="L57">        this.points = thePoints;</span>
+<span class="fc" id="L58">        this.width = width;</span>
+<span class="fc" id="L59">        this.height = height;</span>
         
-<span class="fc" id="L54">        state = STATE.INIT;</span>
-<span class="fc" id="L55">    }</span>
+<span class="fc" id="L61">        state = STATE.INIT;</span>
+<span class="fc" id="L62">    }</span>
     
+    /**
+     *
+     */
     public void setToDebug() {
-<span class="fc" id="L58">        debug = true;</span>
-<span class="fc" id="L59">    }</span>
+<span class="fc" id="L68">        debug = true;</span>
+<span class="fc" id="L69">    }</span>
     
+    /**
+     *
+     * @param factor
+     */
     public void setThreshholdFactor(float factor) {
-<span class="nc" id="L62">        this.threshholdFactor = factor;</span>
-<span class="nc" id="L63">    }</span>
+<span class="nc" id="L76">        this.threshholdFactor = factor;</span>
+<span class="nc" id="L77">    }</span>
     
+    /**
+     *
+     * @param n
+     */
     public void setMinimumNumberInCluster(int n) {
-<span class="nc" id="L66">        this.minimumNumberInCluster = n;</span>
-<span class="nc" id="L67">    }</span>
+<span class="nc" id="L84">        this.minimumNumberInCluster = n;</span>
+<span class="nc" id="L85">    }</span>
     
+    /**
+     *
+     */
     public void calculateCriticalDensity() {
         
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
-<span class="nc" id="L72">            return;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
+<span class="nc" id="L93">            return;</span>
         }
         
-<span class="fc" id="L75">        DistanceTransform&lt;T&gt; dtr = new DistanceTransform&lt;T&gt;();</span>
-<span class="fc" id="L76">        int[][] dt = dtr.applyMeijsterEtAl(points, width, height);</span>
+<span class="fc" id="L96">        DistanceTransform&lt;T&gt; dtr = new DistanceTransform&lt;T&gt;();</span>
+<span class="fc" id="L97">        int[][] dt = dtr.applyMeijsterEtAl(points, width, height);</span>
         
-<span class="fc" id="L78">        CriticalDensitySolver densSolver = new CriticalDensitySolver();</span>
+<span class="fc" id="L99">        CriticalDensitySolver densSolver = new CriticalDensitySolver();</span>
         
-<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (debug) {</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (debug) {</span>
             
-<span class="fc" id="L82">            densSolver.setToDebug();</span>
+<span class="fc" id="L103">            densSolver.setToDebug();</span>
 
-<span class="fc" id="L84">            log.info(&quot;print dist trans for &quot; + points.size() + &quot; points &quot; +</span>
+<span class="fc" id="L105">            log.info(&quot;print dist trans for &quot; + points.size() + &quot; points &quot; +</span>
                 &quot;within width=&quot; + width + &quot; height=&quot; + height);
             
-<span class="fc" id="L87">            int[] minMax = MiscMath.findMinMaxValues(dt);</span>
+<span class="fc" id="L108">            int[] minMax = MiscMath.findMinMaxValues(dt);</span>
             
-<span class="fc" id="L89">            log.info(&quot;min and max =&quot; + Arrays.toString(minMax));</span>
+<span class="fc" id="L110">            log.info(&quot;min and max =&quot; + Arrays.toString(minMax));</span>
             
             try {
-<span class="fc" id="L92">                writeDebugImage(dt, Long.toString(System.currentTimeMillis()));</span>
-<span class="nc" id="L93">            } catch (IOException ex) {</span>
-<span class="nc" id="L94">                Logger.getLogger(DTClusterFinder.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="fc" id="L95">            }</span>
+<span class="fc" id="L113">                writeDebugImage(dt, Long.toString(System.currentTimeMillis()));</span>
+<span class="nc" id="L114">            } catch (IOException ex) {</span>
+<span class="nc" id="L115">                Logger.getLogger(DTClusterFinder.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L116">            }</span>
         }
                 
-<span class="fc" id="L98">        this.critDens = densSolver.findCriticalDensity(dt, points.size(), </span>
+<span class="fc" id="L119">        this.critDens = densSolver.findCriticalDensity(dt, points.size(), </span>
             width, height);  
         
-<span class="fc" id="L101">        this.state = STATE.HAVE_CLUSTER_DENSITY;</span>
-<span class="fc" id="L102">    }</span>
+<span class="fc" id="L122">        this.state = STATE.HAVE_CLUSTER_DENSITY;</span>
+<span class="fc" id="L123">    }</span>
     
+    /**
+     *
+     * @param dens
+     */
     public void setCriticalDensity(float dens) {
         
-<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
-<span class="nc" id="L107">            throw new IllegalStateException(&quot;cluster density is already set&quot;);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &gt; -1) {</span>
+<span class="nc" id="L132">            throw new IllegalStateException(&quot;cluster density is already set&quot;);</span>
         }
         
-<span class="nc" id="L110">        this.critDens = dens;</span>
+<span class="nc" id="L135">        this.critDens = dens;</span>
         
-<span class="nc" id="L112">        this.state = STATE.HAVE_CLUSTER_DENSITY;</span>
-<span class="nc" id="L113">    }</span>
+<span class="nc" id="L137">        this.state = STATE.HAVE_CLUSTER_DENSITY;</span>
+<span class="nc" id="L138">    }</span>
     
+    /**
+     *
+     */
     public void findClusters() {
         
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &lt; 0) {</span>
-<span class="nc" id="L118">            calculateCriticalDensity();</span>
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        } else if (state.compareTo(STATE.HAVE_GROUPS) &gt;= 0) {</span>
-<span class="nc" id="L120">            return;</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (state.compareTo(STATE.HAVE_CLUSTER_DENSITY) &lt; 0) {</span>
+<span class="nc" id="L146">            calculateCriticalDensity();</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        } else if (state.compareTo(STATE.HAVE_GROUPS) &gt;= 0) {</span>
+<span class="nc" id="L148">            return;</span>
         }
         
-<span class="fc" id="L123">        groupFinder = new DTGroupFinder&lt;T&gt;();</span>
+<span class="fc" id="L151">        groupFinder = new DTGroupFinder&lt;T&gt;();</span>
         
-<span class="fc" id="L125">        groupFinder.setThreshholdFactor(threshholdFactor);</span>
+<span class="fc" id="L153">        groupFinder.setThreshholdFactor(threshholdFactor);</span>
         
-<span class="fc" id="L127">        groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);</span>
+<span class="fc" id="L155">        groupFinder.setMinimumNumberInCluster(minimumNumberInCluster);</span>
         
-<span class="fc" id="L129">        groupFinder.calculateGroups(critDens, points);</span>
+<span class="fc" id="L157">        groupFinder.calculateGroups(critDens, points);</span>
         
-<span class="fc" id="L131">    }</span>
+<span class="fc" id="L159">    }</span>
     
+    /**
+     *
+     * @return
+     */
     public int getNumberOfClusters() {
         
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L136">            return 0;</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L168">            return 0;</span>
         }
         
-<span class="fc" id="L139">        return groupFinder.getNumberOfGroups();</span>
+<span class="fc" id="L171">        return groupFinder.getNumberOfGroups();</span>
     }
     
+    /**
+     *
+     * @param idx
+     * @return
+     */
     public Set&lt;T&gt; getCluster(int idx) {
         
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
-<span class="nc" id="L145">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (groupFinder == null) {</span>
+<span class="nc" id="L182">            throw new IllegalArgumentException(</span>
                 &quot;findClusters was not successfully invoked&quot;);
         }
         
-<span class="pc bpc" id="L149" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (groupFinder.getNumberOfGroups() - 1))) {</span>
-<span class="nc" id="L150">            throw new IllegalArgumentException(&quot;idx is out of bounds&quot;);</span>
+<span class="pc bpc" id="L186" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (groupFinder.getNumberOfGroups() - 1))) {</span>
+<span class="nc" id="L187">            throw new IllegalArgumentException(&quot;idx is out of bounds&quot;);</span>
         }
         
-<span class="fc" id="L153">        return groupFinder.getGroup(idx);</span>
+<span class="fc" id="L190">        return groupFinder.getGroup(idx);</span>
     }
     
+    /**
+     *
+     * @return
+     */
     public float getCriticalDensity() {
-<span class="fc" id="L157">        return critDens;</span>
+<span class="fc" id="L198">        return critDens;</span>
     }
     
     private void writeDebugImage(int[][] dt, String fileSuffix) throws IOException {
         
-<span class="fc" id="L162">        BufferedImage outputImage = new BufferedImage(width, height, </span>
+<span class="fc" id="L203">        BufferedImage outputImage = new BufferedImage(width, height, </span>
             BufferedImage.TYPE_BYTE_GRAY);
 
-<span class="fc" id="L165">        WritableRaster raster = outputImage.getRaster();</span>
+<span class="fc" id="L206">        WritableRaster raster = outputImage.getRaster();</span>
         
-<span class="fc bfc" id="L167" title="All 2 branches covered.">        for (int i = 0; i &lt; dt.length; ++i) {</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (int j = 0; j &lt; dt[0].length; ++j) {</span>
-<span class="fc" id="L169">                int v = dt[i][j];</span>
-<span class="fc" id="L170">                raster.setSample(i, j, 0, v);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (int i = 0; i &lt; dt.length; ++i) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            for (int j = 0; j &lt; dt[0].length; ++j) {</span>
+<span class="fc" id="L210">                int v = dt[i][j];</span>
+<span class="fc" id="L211">                raster.setSample(i, j, 0, v);</span>
             }
         }
         
         // write to an output directory.  we have user.dir from system properties
         // but no other knowledge of users's directory structure
-<span class="fc" id="L176">        URL baseDirURL = this.getClass().getClassLoader().getResource(&quot;.&quot;);</span>
-<span class="fc" id="L177">        String baseDir = null;</span>
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (baseDirURL != null) {</span>
-<span class="fc" id="L179">            baseDir = baseDirURL.getPath();</span>
+<span class="fc" id="L217">        URL baseDirURL = this.getClass().getClassLoader().getResource(&quot;.&quot;);</span>
+<span class="fc" id="L218">        String baseDir = null;</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">        if (baseDirURL != null) {</span>
+<span class="fc" id="L220">            baseDir = baseDirURL.getPath();</span>
         } else {
-<span class="nc" id="L181">            baseDir = System.getProperty(&quot;user.dir&quot;);</span>
+<span class="nc" id="L222">            baseDir = System.getProperty(&quot;user.dir&quot;);</span>
         }
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (baseDir == null) {</span>
-<span class="nc" id="L184">            return;</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        if (baseDir == null) {</span>
+<span class="nc" id="L225">            return;</span>
         }
-<span class="fc" id="L186">        File t = new File(baseDir + &quot;/bin&quot;);</span>
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (t.exists()) {</span>
-<span class="nc" id="L188">            baseDir = t.getPath();</span>
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        } else if ((new File(baseDir + &quot;/target&quot;)).exists()) {</span>
-<span class="nc" id="L190">            baseDir = baseDir + &quot;/target&quot;;</span>
+<span class="fc" id="L227">        File t = new File(baseDir + &quot;/bin&quot;);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (t.exists()) {</span>
+<span class="nc" id="L229">            baseDir = t.getPath();</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">        } else if ((new File(baseDir + &quot;/target&quot;)).exists()) {</span>
+<span class="nc" id="L231">            baseDir = baseDir + &quot;/target&quot;;</span>
         }
         
         // no longer need to use file.separator
-<span class="fc" id="L194">        String outFilePath = baseDir + &quot;/distance_transform_&quot; + fileSuffix + &quot;.png&quot;;</span>
+<span class="fc" id="L235">        String outFilePath = baseDir + &quot;/distance_transform_&quot; + fileSuffix + &quot;.png&quot;;</span>
         
-<span class="fc" id="L196">        ImageIO.write(outputImage, &quot;PNG&quot;, new File(outFilePath));</span>
+<span class="fc" id="L237">        ImageIO.write(outputImage, &quot;PNG&quot;, new File(outFilePath));</span>
         
-<span class="fc" id="L198">        Logger.getLogger(this.getClass().getName()).info(&quot;wrote &quot; + outFilePath);</span>
-<span class="fc" id="L199">    }</span>
+<span class="fc" id="L239">        Logger.getLogger(this.getClass().getName()).info(&quot;wrote &quot; + outFilePath);</span>
+<span class="fc" id="L240">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

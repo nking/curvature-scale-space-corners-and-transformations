@@ -5,7 +5,11 @@ import java.util.logging.Logger;
 
 import algorithms.misc.MiscMath;
 
-<span class="nc" id="L8">public class DerivGEV {</span>
+/**
+ *
+ * @author nichole
+ */
+<span class="nc" id="L12">public class DerivGEV {</span>
 
     /*&lt;pre&gt;
      *                          (   (      ( x-mu))-(1/k))
@@ -128,7 +132,12 @@ import algorithms.misc.MiscMath;
      * &lt;/pre&gt;
      */
 
-<span class="fc" id="L131">    protected static Logger log = Logger.getLogger(DerivGEV.class.getName());</span>
+    /**
+     *
+     */
+    
+
+<span class="fc" id="L140">    protected static Logger log = Logger.getLogger(DerivGEV.class.getName());</span>
 
     /**
      * calculate the derivative of the GEV w.r.t. x
@@ -144,12 +153,12 @@ import algorithms.misc.MiscMath;
      */
     public static double derivWRTX(float yConst, float mu, float k, float sigma, float x) {
 
-<span class="fc" id="L147">        double z = 1. + k *( (x-mu)/sigma );</span>
+<span class="fc" id="L156">        double z = 1. + k *( (x-mu)/sigma );</span>
         double a, f1, f2;
 
-<span class="fc" id="L150">        double dzdx = k/sigma;</span>
+<span class="fc" id="L159">        double dzdx = k/sigma;</span>
         
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        boolean zIsNegative = (z &lt; 0);</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        boolean zIsNegative = (z &lt; 0);</span>
         // When z is negative, need to use alternative methods for exponentiation:
         // For z^(g/h)
         // For the complex exponentiation operator, that is complex bases, 
@@ -157,33 +166,33 @@ import algorithms.misc.MiscMath;
         //    the principal value is
         //        (-1)^(g/h) * ((1./z)^(g/h))
 
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (zIsNegative) {</span>
-<span class="nc" id="L161">            double invNegZ = -1.0*(1.0/z);</span>
-<span class="nc" id="L162">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="nc" id="L163">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
-<span class="nc" id="L164">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
-<span class="nc" id="L165">        } else {</span>
-<span class="fc" id="L166">            a = -1.*Math.pow(z, (-1./k));</span>
-<span class="fc" id="L167">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (zIsNegative) {</span>
+<span class="nc" id="L170">            double invNegZ = -1.0*(1.0/z);</span>
+<span class="nc" id="L171">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="nc" id="L172">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
+<span class="nc" id="L173">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
+<span class="nc" id="L174">        } else {</span>
+<span class="fc" id="L175">            a = -1.*Math.pow(z, (-1./k));</span>
+<span class="fc" id="L176">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
         }
 
-<span class="fc" id="L170">        f1 = Math.exp( a );</span>
+<span class="fc" id="L179">        f1 = Math.exp( a );</span>
         
         double df2dx, df1dx;
 
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (zIsNegative) {</span>
-<span class="nc" id="L175">            double invNegZ = -1.0*(1.0/z);</span>
-<span class="nc" id="L176">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="nc" id="L177">            df2dx = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdx;</span>
-<span class="nc" id="L178">            df1dx = f1 * neg1Pow * (1./k) * Math.pow(invNegZ, (-1. - (1./k))) * dzdx;</span>
-<span class="nc" id="L179">        } else {</span>
-<span class="fc" id="L180">            df2dx = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdx;</span>
-<span class="fc" id="L181">            df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (zIsNegative) {</span>
+<span class="nc" id="L184">            double invNegZ = -1.0*(1.0/z);</span>
+<span class="nc" id="L185">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="nc" id="L186">            df2dx = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdx;</span>
+<span class="nc" id="L187">            df1dx = f1 * neg1Pow * (1./k) * Math.pow(invNegZ, (-1. - (1./k))) * dzdx;</span>
+<span class="nc" id="L188">        } else {</span>
+<span class="fc" id="L189">            df2dx = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdx;</span>
+<span class="fc" id="L190">            df1dx = f1 * (1./k) * Math.pow(z, (-1. - (1./k))) * dzdx;</span>
         } 
 
-<span class="fc" id="L184">        double dydx = (yConst/sigma) * ( f1 * df2dx + f2 * df1dx );</span>
+<span class="fc" id="L193">        double dydx = (yConst/sigma) * ( f1 * df2dx + f2 * df1dx );</span>
 
-<span class="fc" id="L186">        return dydx;</span>
+<span class="fc" id="L195">        return dydx;</span>
     }
 
     /**
@@ -200,10 +209,10 @@ import algorithms.misc.MiscMath;
      */
     public static double derivWRTK(float yConst, float mu, float k, float sigma, float x) {
 
-<span class="fc" id="L203">        double z = 1. + k *( (x-mu)/sigma );</span>
+<span class="fc" id="L212">        double z = 1. + k *( (x-mu)/sigma );</span>
         double a, f1, f2;
         
-<span class="fc bfc" id="L206" title="All 2 branches covered.">        boolean zIsNegative = (z &lt; 0);</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        boolean zIsNegative = (z &lt; 0);</span>
         // When z is negative, need to use alternative methods for exponentiation:
         // For z^(g/h)
         // For the complex exponentiation operator, that is complex bases, 
@@ -211,17 +220,17 @@ import algorithms.misc.MiscMath;
         //    the principal value is
         //        (-1)^(g/h) * ((1./z)^(g/h))
 
-<span class="fc bfc" id="L214" title="All 2 branches covered.">        if (zIsNegative) {</span>
-<span class="fc" id="L215">            double invNegZ = -1.0*(1.0/z);</span>
-<span class="fc" id="L216">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="fc" id="L217">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
-<span class="fc" id="L218">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
-<span class="fc" id="L219">        } else {</span>
-<span class="fc" id="L220">            a = -1.*Math.pow(z, (-1./k));</span>
-<span class="fc" id="L221">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        if (zIsNegative) {</span>
+<span class="fc" id="L224">            double invNegZ = -1.0*(1.0/z);</span>
+<span class="fc" id="L225">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="fc" id="L226">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
+<span class="fc" id="L227">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
+<span class="fc" id="L228">        } else {</span>
+<span class="fc" id="L229">            a = -1.*Math.pow(z, (-1./k));</span>
+<span class="fc" id="L230">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
         }
 
-<span class="fc" id="L224">        f1 = Math.exp( a );</span>
+<span class="fc" id="L233">        f1 = Math.exp( a );</span>
 
         // df1dk     = f1 * -z^(-1/k) * ( -1*(-1/k) * (dzdk/z)  +  (1/k^2) * ln( -z ) )
 
@@ -231,30 +240,30 @@ import algorithms.misc.MiscMath;
         //    use a taylor series approximation for negative values plus handling for the number of cycles
         // so df1dk and df2dk are approximated with very small deltas
 
-<span class="fc" id="L234">        double deltaK = 0.0001;</span>
+<span class="fc" id="L243">        double deltaK = 0.0001;</span>
 
-<span class="fc" id="L236">        double k_1 = k + deltaK;</span>
-<span class="fc" id="L237">        double z_1 = 1. + k_1 *( (x-mu)/sigma );</span>
+<span class="fc" id="L245">        double k_1 = k + deltaK;</span>
+<span class="fc" id="L246">        double z_1 = 1. + k_1 *( (x-mu)/sigma );</span>
         
-<span class="fc bfc" id="L239" title="All 2 branches covered.">        boolean z_1IsNegative = (z &lt; 0);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        boolean z_1IsNegative = (z &lt; 0);</span>
         double a_1, f2_1;
         
-<span class="fc bfc" id="L242" title="All 2 branches covered.">        if (z_1IsNegative) {</span>
-<span class="fc" id="L243">            double invNegZ = -1.0*(1.0/z_1);</span>
-<span class="fc" id="L244">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="fc" id="L245">            a_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1./k_1));</span>
-<span class="fc" id="L246">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
-<span class="fc" id="L247">            f2_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );</span>
-<span class="fc" id="L248">        } else {</span>
-<span class="fc" id="L249">            a_1 = -1. * Math.pow(z_1, (-1./k_1));</span>
-<span class="fc" id="L250">            f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        if (z_1IsNegative) {</span>
+<span class="fc" id="L252">            double invNegZ = -1.0*(1.0/z_1);</span>
+<span class="fc" id="L253">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="fc" id="L254">            a_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1./k_1));</span>
+<span class="fc" id="L255">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
+<span class="fc" id="L256">            f2_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );</span>
+<span class="fc" id="L257">        } else {</span>
+<span class="fc" id="L258">            a_1 = -1. * Math.pow(z_1, (-1./k_1));</span>
+<span class="fc" id="L259">            f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );</span>
         }
 
-<span class="fc" id="L253">        f1 = Math.exp( a );</span>
+<span class="fc" id="L262">        f1 = Math.exp( a );</span>
 
-<span class="fc" id="L255">        double df1dk = (Math.exp( a_1 ) - f1)/deltaK;</span>
+<span class="fc" id="L264">        double df1dk = (Math.exp( a_1 ) - f1)/deltaK;</span>
 
-<span class="fc" id="L257">        double df2dk = (f2_1 - f2)/deltaK;</span>
+<span class="fc" id="L266">        double df2dk = (f2_1 - f2)/deltaK;</span>
 
         // to compare to the derivative:
         /*double dzdk = (x-mu)/sigma;
@@ -266,15 +275,14 @@ import algorithms.misc.MiscMath;
             log.info( String.format(&quot;  df2dk   estimate=%4.6f  deriv=%4.6f   (z=%4.6f, k=%4.6f)&quot;, df2dk, compare_df2dk, z, k));
         }*/
 
-<span class="fc" id="L269">        double dydk = (yConst/sigma) * ( f1 * df2dk + f2 * df1dk );</span>
+<span class="fc" id="L278">        double dydk = (yConst/sigma) * ( f1 * df2dk + f2 * df1dk );</span>
 
-<span class="fc" id="L271">        return dydk;</span>
+<span class="fc" id="L280">        return dydk;</span>
     }
 
     /**
      * calculate d/dk of GEV using the difference between GEVs given minor changes in k
      *
-     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -283,17 +291,17 @@ import algorithms.misc.MiscMath;
      */
     static Double estimateDerivUsingDeltaK(float mu, float k, float sigma, float x) {
 
-<span class="fc" id="L286">        float deltaK = 0.0001f*k;</span>
+<span class="fc" id="L294">        float deltaK = 0.0001f*k;</span>
 
-<span class="fc" id="L288">        Double d0 = GeneralizedExtremeValue.generateYGEV(x, (k - deltaK), sigma, mu);</span>
+<span class="fc" id="L296">        Double d0 = GeneralizedExtremeValue.generateYGEV(x, (k - deltaK), sigma, mu);</span>
 
-<span class="fc" id="L290">        Double d1 = GeneralizedExtremeValue.generateYGEV(x, (k), sigma, mu);</span>
+<span class="fc" id="L298">        Double d1 = GeneralizedExtremeValue.generateYGEV(x, (k), sigma, mu);</span>
 
-<span class="fc" id="L292">        Double d2 = GeneralizedExtremeValue.generateYGEV(x, (k + deltaK), sigma, mu);</span>
+<span class="fc" id="L300">        Double d2 = GeneralizedExtremeValue.generateYGEV(x, (k + deltaK), sigma, mu);</span>
 
-<span class="fc" id="L294">        Double d = estimateDerivUsingDelta(d0, d1, d2, deltaK);</span>
+<span class="fc" id="L302">        Double d = estimateDerivUsingDelta(d0, d1, d2, deltaK);</span>
 
-<span class="fc" id="L296">        return d;</span>
+<span class="fc" id="L304">        return d;</span>
     }
 
     /**
@@ -309,37 +317,37 @@ import algorithms.misc.MiscMath;
      */
     protected static Double estimateDerivUsingDelta(Double d0, Double d1, Double d2, double delta) {
 
-<span class="pc bpc" id="L312" title="3 of 6 branches missed.">        if (d0 != null &amp;&amp; d1 != null &amp;&amp; d2 != null) {</span>
+<span class="pc bpc" id="L320" title="3 of 6 branches missed.">        if (d0 != null &amp;&amp; d1 != null &amp;&amp; d2 != null) {</span>
 
-<span class="fc" id="L314">            double delta0 = d1.doubleValue() - d0.doubleValue();</span>
+<span class="fc" id="L322">            double delta0 = d1.doubleValue() - d0.doubleValue();</span>
 
-<span class="fc" id="L316">            double delta1 = d2.doubleValue() - d1.doubleValue();</span>
+<span class="fc" id="L324">            double delta1 = d2.doubleValue() - d1.doubleValue();</span>
 
-<span class="fc" id="L318">            double d = (delta0 + delta1)/2.;</span>
+<span class="fc" id="L326">            double d = (delta0 + delta1)/2.;</span>
 
-<span class="fc" id="L320">            return (d/delta);</span>
+<span class="fc" id="L328">            return (d/delta);</span>
 
-<span class="nc bnc" id="L322" title="All 4 branches missed.">        } else if (d1 != null &amp;&amp; d2 != null) {</span>
+<span class="nc bnc" id="L330" title="All 4 branches missed.">        } else if (d1 != null &amp;&amp; d2 != null) {</span>
 
-<span class="nc" id="L324">            double d = d2.doubleValue() - d1.doubleValue();</span>
+<span class="nc" id="L332">            double d = d2.doubleValue() - d1.doubleValue();</span>
 
-<span class="nc" id="L326">            return (d/delta);</span>
+<span class="nc" id="L334">            return (d/delta);</span>
 
-<span class="nc bnc" id="L328" title="All 4 branches missed.">        } else if (d0 != null &amp;&amp; d1 != null) {</span>
+<span class="nc bnc" id="L336" title="All 4 branches missed.">        } else if (d0 != null &amp;&amp; d1 != null) {</span>
 
-<span class="nc" id="L330">            double d = d1.doubleValue() - d0.doubleValue();</span>
+<span class="nc" id="L338">            double d = d1.doubleValue() - d0.doubleValue();</span>
 
-<span class="nc" id="L332">            return (d/delta);</span>
+<span class="nc" id="L340">            return (d/delta);</span>
 
-<span class="nc bnc" id="L334" title="All 4 branches missed.">        } else if (d0 != null &amp;&amp; d2 != null) {</span>
+<span class="nc bnc" id="L342" title="All 4 branches missed.">        } else if (d0 != null &amp;&amp; d2 != null) {</span>
 
-<span class="nc" id="L336">            double d = d2.doubleValue() - d0.doubleValue();</span>
+<span class="nc" id="L344">            double d = d2.doubleValue() - d0.doubleValue();</span>
 
-<span class="nc" id="L338">            return (d/delta);</span>
+<span class="nc" id="L346">            return (d/delta);</span>
 
         } else {
 
-<span class="nc" id="L342">            return null;</span>
+<span class="nc" id="L350">            return null;</span>
         }
     }
 
@@ -357,13 +365,13 @@ import algorithms.misc.MiscMath;
      */
     public static double derivWRTSigma(float yConst, float mu, float k, float sigma, float x) {
 
-<span class="fc" id="L360">        double z = 1. + k *( (x-mu)/sigma );</span>
+<span class="fc" id="L368">        double z = 1. + k *( (x-mu)/sigma );</span>
         double a, f1, f2, df2dsigma, df1dsigma;
 
         //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
         //double f2 = Math.pow(z, (-1. - (1./k)) );
 
-<span class="fc bfc" id="L366" title="All 2 branches covered.">        boolean zIsNegative = (z &lt; 0);</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">        boolean zIsNegative = (z &lt; 0);</span>
         // When z is negative, need to use alternative methods for exponentiation:
         // 
         // For z^(g/h)
@@ -377,46 +385,45 @@ import algorithms.misc.MiscMath;
         //    the principal value is
         //        (-1)^(g/h) * ((1./z)^(g/h))
 
-<span class="fc" id="L380">        double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);</span>
+<span class="fc" id="L388">        double dzdsigma = -1. * k * (x-mu) * Math.pow(sigma, -2.);</span>
         
-<span class="fc bfc" id="L382" title="All 2 branches covered.">        if (zIsNegative) {</span>
-<span class="fc" id="L383">            double invNegZ = -1.0*(1.0/z);</span>
-<span class="fc" id="L384">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="fc" id="L385">            a = -1. * neg1Pow * Math.pow(invNegZ, (-1./k));</span>
-<span class="fc" id="L386">            f1 = Math.exp( a );</span>
-<span class="fc" id="L387">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)));</span>
-            //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
-<span class="fc" id="L389">            df2dsigma = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdsigma;</span>
-            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-<span class="fc" id="L391">            df1dsigma =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdsigma;</span>
-<span class="fc" id="L392">        } else {</span>
-<span class="fc" id="L393">            a = -1. * Math.pow(z, (-1./k));</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">        if (zIsNegative) {</span>
+<span class="fc" id="L391">            double invNegZ = -1.0*(1.0/z);</span>
+<span class="fc" id="L392">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="fc" id="L393">            a = -1. * neg1Pow * Math.pow(invNegZ, (-1./k));</span>
 <span class="fc" id="L394">            f1 = Math.exp( a );</span>
-<span class="fc" id="L395">            f2 = Math.pow(z, (-1. - (1.f/k)));</span>
+<span class="fc" id="L395">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)));</span>
             //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
-<span class="fc" id="L397">            df2dsigma = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdsigma;</span>
+<span class="fc" id="L397">            df2dsigma = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdsigma;</span>
             //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-<span class="fc" id="L399">            df1dsigma =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdsigma;</span>
+<span class="fc" id="L399">            df1dsigma =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdsigma;</span>
+<span class="fc" id="L400">        } else {</span>
+<span class="fc" id="L401">            a = -1. * Math.pow(z, (-1./k));</span>
+<span class="fc" id="L402">            f1 = Math.exp( a );</span>
+<span class="fc" id="L403">            f2 = Math.pow(z, (-1. - (1.f/k)));</span>
+            //(-1-(1/k)) * z^(-2-(1/k)) * dzdsigma
+<span class="fc" id="L405">            df2dsigma = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdsigma;</span>
+            //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
+<span class="fc" id="L407">            df1dsigma =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdsigma;</span>
         }
                
-<span class="fc" id="L402">        double f0 = (yConst/sigma);</span>
+<span class="fc" id="L410">        double f0 = (yConst/sigma);</span>
 
-<span class="fc" id="L404">        double df0dsigma = -1.f*yConst/(sigma*sigma);</span>
+<span class="fc" id="L412">        double df0dsigma = -1.f*yConst/(sigma*sigma);</span>
 
-<span class="fc" id="L406">        double dydSigma = (  df0dsigma * f1 * f2 ) + ( df1dsigma * f0 * f2 ) + (df2dsigma * f0 * f1 );</span>
+<span class="fc" id="L414">        double dydSigma = (  df0dsigma * f1 * f2 ) + ( df1dsigma * f0 * f2 ) + (df2dsigma * f0 * f1 );</span>
 
-<span class="fc bfc" id="L408" title="All 2 branches covered.">        if (Double.isNaN(dydSigma)) {</span>
-<span class="fc" id="L409">            Double d = estimateDerivUsingDeltaSigma(mu, k, sigma, x);</span>
-<span class="pc bpc" id="L410" title="1 of 2 branches missed.">            return (d != null) ? d.doubleValue() : 0;</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">        if (Double.isNaN(dydSigma)) {</span>
+<span class="fc" id="L417">            Double d = estimateDerivUsingDeltaSigma(mu, k, sigma, x);</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">            return (d != null) ? d.doubleValue() : 0;</span>
         }
 
-<span class="fc" id="L413">        return dydSigma;</span>
+<span class="fc" id="L421">        return dydSigma;</span>
     }
 
     /**
      * calculate d/dk of GEV using the difference between GEVs given minor changes in k
      *
-     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -425,15 +432,15 @@ import algorithms.misc.MiscMath;
      */
     static Double estimateDerivUsingDeltaSigma(float mu, float k, float sigma, float x) {
 
-<span class="fc" id="L428">        float delta = 0.0001f*sigma;</span>
+<span class="fc" id="L435">        float delta = 0.0001f*sigma;</span>
 
-<span class="fc" id="L430">        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma - delta), mu);</span>
+<span class="fc" id="L437">        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma - delta), mu);</span>
 
-<span class="fc" id="L432">        Double d1 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, mu);</span>
+<span class="fc" id="L439">        Double d1 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, mu);</span>
 
-<span class="fc" id="L434">        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma + delta), mu);</span>
+<span class="fc" id="L441">        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, (sigma + delta), mu);</span>
 
-<span class="fc" id="L436">        return estimateDerivUsingDelta(d0, d1, d2, delta);</span>
+<span class="fc" id="L443">        return estimateDerivUsingDelta(d0, d1, d2, delta);</span>
     }
 
     /**
@@ -450,16 +457,16 @@ import algorithms.misc.MiscMath;
      */
     public static double derivWRTMu(float yConst, float mu, float k, float sigma, float x) {
 
-<span class="fc" id="L453">        double z = 1. + k *( (x-mu)/sigma );</span>
+<span class="fc" id="L460">        double z = 1. + k *( (x-mu)/sigma );</span>
 
         //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
         //double f2 = Math.pow(z, (-1. - (1./k)) );
 
         double a, f1, f2, df1dmu, df2dmu;
         
-<span class="fc" id="L460">        double dzdmu = -1. * k/sigma;</span>
+<span class="fc" id="L467">        double dzdmu = -1. * k/sigma;</span>
         
-<span class="fc bfc" id="L462" title="All 2 branches covered.">        boolean zIsNegative = (z &lt; 0);</span>
+<span class="fc bfc" id="L469" title="All 2 branches covered.">        boolean zIsNegative = (z &lt; 0);</span>
         // When z is negative, need to use alternative methods for exponentiation:
         // For z^(g/h)
         // For the complex exponentiation operator, that is complex bases, 
@@ -467,61 +474,59 @@ import algorithms.misc.MiscMath;
         //    the principal value is
         //        (-1)^(g/h) * ((1./z)^(g/h))
 
-<span class="fc bfc" id="L470" title="All 2 branches covered.">        if (zIsNegative) {</span>
-<span class="fc" id="L471">            double invNegZ = -1.0*(1.0/z);</span>
-<span class="fc" id="L472">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="fc" id="L473">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
-<span class="fc" id="L474">            f1 = Math.exp( a );</span>
-<span class="fc" id="L475">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">        if (zIsNegative) {</span>
+<span class="fc" id="L478">            double invNegZ = -1.0*(1.0/z);</span>
+<span class="fc" id="L479">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="fc" id="L480">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
+<span class="fc" id="L481">            f1 = Math.exp( a );</span>
+<span class="fc" id="L482">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
             
             //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
-<span class="fc" id="L478">            df2dmu = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdmu;</span>
+<span class="fc" id="L485">            df2dmu = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdmu;</span>
 
             //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-<span class="fc" id="L481">            df1dmu =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdmu;</span>
-<span class="fc" id="L482">        } else {</span>
-<span class="fc" id="L483">            a = -1.*Math.pow(z, (-1./k));</span>
-<span class="fc" id="L484">            f1 = Math.exp( a );</span>
-<span class="fc" id="L485">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
+<span class="fc" id="L488">            df1dmu =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdmu;</span>
+<span class="fc" id="L489">        } else {</span>
+<span class="fc" id="L490">            a = -1.*Math.pow(z, (-1./k));</span>
+<span class="fc" id="L491">            f1 = Math.exp( a );</span>
+<span class="fc" id="L492">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
           
             //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
-<span class="fc" id="L488">            df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;</span>
+<span class="fc" id="L495">            df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;</span>
 
             //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-<span class="fc" id="L491">            df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;</span>
+<span class="fc" id="L498">            df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;</span>
         }
 
-<span class="fc" id="L494">        double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );</span>
+<span class="fc" id="L501">        double dydmu = (yConst/sigma) * ( f1 * df2dmu + f2 * df1dmu );</span>
 
-<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (Double.isNaN(dydmu)) {</span>
-<span class="fc" id="L497">            Double d = estimateDerivUsingDeltaMu(mu, k, sigma, x);</span>
-<span class="pc bpc" id="L498" title="1 of 2 branches missed.">            return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L503" title="1 of 2 branches missed.">        if (Double.isNaN(dydmu)) {</span>
+<span class="nc" id="L504">            Double d = estimateDerivUsingDeltaMu(mu, k, sigma, x);</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">            return (d != null) ? d.doubleValue() : 0;</span>
         }
 
-<span class="fc" id="L501">        return dydmu;</span>
+<span class="fc" id="L508">        return dydmu;</span>
     }
 
     /**
      * estimate d/dmu of GEV using the difference between GEVs given minor changes in k
-     *
-     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @return
+     * @return 
      */
     static Double estimateDerivUsingDeltaMu(float mu, float k, float sigma, float x) {
 
-<span class="fc" id="L516">        float deltaMu = 0.0001f*mu;</span>
+<span class="fc" id="L521">        float deltaMu = 0.0001f*mu;</span>
 
-<span class="fc" id="L518">        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu - deltaMu));</span>
+<span class="fc" id="L523">        Double d0 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu - deltaMu));</span>
 
-<span class="fc" id="L520">        Double d1 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, mu);</span>
+<span class="fc" id="L525">        Double d1 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, mu);</span>
 
-<span class="fc" id="L522">        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu + deltaMu));</span>
+<span class="fc" id="L527">        Double d2 = GeneralizedExtremeValue.generateYGEV(x, k, sigma, (mu + deltaMu));</span>
 
-<span class="fc" id="L524">        return estimateDerivUsingDelta(d0, d1, d2, deltaMu);</span>
+<span class="fc" id="L529">        return estimateDerivUsingDelta(d0, d1, d2, deltaMu);</span>
     }
 
     /**
@@ -547,8 +552,6 @@ import algorithms.misc.MiscMath;
      *    item [1] is to return the value of the best chiSqSum here to the invoker
      *    if r was set to non-zero values.
      * @param x normalized x values of histogram to fit
-     * @param y normalized y values of histogram to fit
-     * @param ye normalized y error values of histogram to fit
      * @param r the array to pass back values to be added to vars found by this method.
      *     the items are ordered so that index=0 holds delta k, index=1 holds delta sigma,
      *     index=2 holds delta mu.  the values may be zero if no step was found to
@@ -557,13 +560,11 @@ import algorithms.misc.MiscMath;
      * @param normalizedYErr
      * @param idx0 start of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
      * @param idx1 stop of index within derivs, inclusive, to use in solution.  index 0 = k, index 1 = sigma, index 2 = mu
-     * @param r array to populate with answers.  it's given as an argument to reuse the array
-     * @return
      */
     public static void derivsThatMinimizeChiSqSum(float[] vars, float[] varsMin, float[] varsMax, float[] chiSqSumReturn,
         float[] x, float[] normalizedY, float[] normalizedYErr, float[] r, int idx0, int idx1) {
 
-<span class="fc" id="L566">        Arrays.fill(r, 0);</span>
+<span class="fc" id="L567">        Arrays.fill(r, 0);</span>
 
         // to determine the suggested step for k, sigma, or mu,
         //   we look at the first derivatives of the point in the model GEV right after the maximum
@@ -572,115 +573,124 @@ import algorithms.misc.MiscMath;
         //   with the smallest resulting chisqsum from the curve produced by the change is the
         //   result returned in derivs for that variable.
 
-<span class="fc bfc" id="L575" title="All 2 branches covered.">        for (int i = idx0; i &lt; (idx1 + 1); i++) {</span>
+<span class="fc bfc" id="L576" title="All 2 branches covered.">        for (int i = idx0; i &lt; (idx1 + 1); i++) {</span>
 
-<span class="fc" id="L577">            float k = vars[0] + r[0];</span>
-<span class="fc" id="L578">            float sigma = vars[1] + r[1];</span>
-<span class="fc" id="L579">            float mu = vars[2] + r[2];</span>
+<span class="fc" id="L578">            float k = vars[0] + r[0];</span>
+<span class="fc" id="L579">            float sigma = vars[1] + r[1];</span>
+<span class="fc" id="L580">            float mu = vars[2] + r[2];</span>
 
-<span class="fc" id="L581">            float[] yGEV = GeneralizedExtremeValue.genCurve(x, vars[0], vars[1], vars[2]);</span>
-<span class="pc bpc" id="L582" title="1 of 2 branches missed.">            if (yGEV == null) {</span>
-<span class="nc" id="L583">                return;</span>
+<span class="fc" id="L582">            float[] yGEV = GeneralizedExtremeValue.genCurve(x, vars[0], vars[1], vars[2]);</span>
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">            if (yGEV == null) {</span>
+<span class="nc" id="L584">                return;</span>
             }
-<span class="fc" id="L585">            int yMaxIdx = MiscMath.findYMaxIndex(yGEV);</span>
-<span class="pc bpc" id="L586" title="1 of 2 branches missed.">            if (yMaxIdx &lt; 0) {</span>
-<span class="nc" id="L587">                yMaxIdx = 0;</span>
+<span class="fc" id="L586">            int yMaxIdx = MiscMath.findYMaxIndex(yGEV);</span>
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">            if (yMaxIdx &lt; 0) {</span>
+<span class="nc" id="L588">                yMaxIdx = 0;</span>
             }
-<span class="fc" id="L589">            float yMax = yGEV[yMaxIdx];</span>
-<span class="fc bfc" id="L590" title="All 2 branches covered.">            for (int ii = 0; ii &lt; yGEV.length; ii++){</span>
-<span class="fc" id="L591">                yGEV[ii] /= yMax;</span>
+<span class="fc" id="L590">            float yMax = yGEV[yMaxIdx];</span>
+<span class="fc bfc" id="L591" title="All 2 branches covered.">            for (int ii = 0; ii &lt; yGEV.length; ii++){</span>
+<span class="fc" id="L592">                yGEV[ii] /= yMax;</span>
             }
-<span class="fc" id="L593">            float yConst = 1.f/yMax;</span>
+<span class="fc" id="L594">            float yConst = 1.f/yMax;</span>
 
-<span class="fc" id="L595">            int xIdx = yMaxIdx + 1;</span>
-<span class="fc bfc" id="L596" title="All 2 branches covered.">            if (xIdx &gt; x.length - 1) {</span>
-<span class="fc" id="L597">                xIdx = x.length - 1;</span>
+<span class="fc" id="L596">            int xIdx = yMaxIdx + 1;</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">            if (xIdx &gt; x.length - 1) {</span>
+<span class="fc" id="L598">                xIdx = x.length - 1;</span>
             }
 
-<span class="fc" id="L600">            float xPoint = x[xIdx];</span>
+<span class="fc" id="L601">            float xPoint = x[xIdx];</span>
 
-<span class="fc" id="L602">            float bestChiSqSum = chiSqSumReturn[0];</span>
+<span class="fc" id="L603">            float bestChiSqSum = chiSqSumReturn[0];</span>
 
-<span class="fc" id="L604">            float[] yGEVPlus = null;</span>
-<span class="fc" id="L605">            float[] yGEVMinus = null;</span>
-<span class="fc" id="L606">            double rModified = 0;</span>
+<span class="fc" id="L605">            float[] yGEVPlus = null;</span>
+<span class="fc" id="L606">            float[] yGEVMinus = null;</span>
+<span class="fc" id="L607">            double rModified = 0;</span>
 
-<span class="pc bpc" id="L608" title="1 of 4 branches missed.">            switch(i) {</span>
+<span class="pc bpc" id="L609" title="1 of 4 branches missed.">            switch(i) {</span>
                 // calculate a step size that would affect a change in GEV by using the 1st and 2nd partial derivatives
                 case 0: {
                     // k
-<span class="fc" id="L612">                    rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, xPoint);</span>
-<span class="fc" id="L613">                    break;</span>
+<span class="fc" id="L613">                    rModified = calculatePreconditionerModifiedResidualK(yConst, mu, k, sigma, xPoint);</span>
+<span class="fc" id="L614">                    break;</span>
                 }
                 case 1: {
                     // sigma
-<span class="fc" id="L617">                    rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, xPoint);</span>
-<span class="fc" id="L618">                    break;</span>
+<span class="fc" id="L618">                    rModified = calculatePreconditionerModifiedResidualSigma(yConst, mu, k, sigma, xPoint);</span>
+<span class="fc" id="L619">                    break;</span>
                 }
                 case 2: {
                     // mu
-<span class="fc" id="L622">                    rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, xPoint);</span>
+<span class="fc" id="L623">                    rModified = calculatePreconditionerModifiedResidualMu(yConst, mu, k, sigma, xPoint);</span>
                     break;
                 }
             }
 
-<span class="pc bpc" id="L627" title="1 of 4 branches missed.">            switch(i) {</span>
+<span class="pc bpc" id="L628" title="1 of 4 branches missed.">            switch(i) {</span>
                 case 0: {
                     // k
-<span class="pc bpc" id="L630" title="1 of 2 branches missed.">                    if (rModified != 0) {</span>
-<span class="fc bfc" id="L631" title="All 4 branches covered.">                        if (((float)(k + rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(k + rModified) &lt;= varsMax[i])) {</span>
-<span class="fc" id="L632">                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);</span>
+<span class="pc bpc" id="L631" title="1 of 2 branches missed.">                    if (rModified != 0) {</span>
+<span class="fc bfc" id="L632" title="All 4 branches covered.">                        if (((float)(k + rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(k + rModified) &lt;= varsMax[i])) {</span>
+<span class="fc" id="L633">                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k + rModified), sigma, mu);</span>
                         }
-<span class="fc bfc" id="L634" title="All 4 branches covered.">                        if (((float)(k - rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(k - rModified) &lt;= varsMax[i])) {</span>
-<span class="fc" id="L635">                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);</span>
+<span class="fc bfc" id="L635" title="All 4 branches covered.">                        if (((float)(k - rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(k - rModified) &lt;= varsMax[i])) {</span>
+<span class="fc" id="L636">                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, (float)(k - rModified), sigma, mu);</span>
                         }
                     }
                     break;
                 }
                 case 1: {
                     // sigma
-<span class="pc bpc" id="L642" title="1 of 2 branches missed.">                    if (rModified != 0) {</span>
-<span class="fc bfc" id="L643" title="All 4 branches covered.">                        if (((float)(sigma + rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(sigma + rModified) &lt;= varsMax[i])) {</span>
-<span class="fc" id="L644">                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);</span>
+<span class="pc bpc" id="L643" title="1 of 2 branches missed.">                    if (rModified != 0) {</span>
+<span class="fc bfc" id="L644" title="All 4 branches covered.">                        if (((float)(sigma + rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(sigma + rModified) &lt;= varsMax[i])) {</span>
+<span class="fc" id="L645">                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma + rModified), mu);</span>
                         }
-<span class="fc bfc" id="L646" title="All 4 branches covered.">                        if (((float)(sigma - rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(sigma - rModified) &lt;= varsMax[i])) {</span>
-<span class="fc" id="L647">                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);</span>
+<span class="fc bfc" id="L647" title="All 4 branches covered.">                        if (((float)(sigma - rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(sigma - rModified) &lt;= varsMax[i])) {</span>
+<span class="fc" id="L648">                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, (float)(sigma - rModified), mu);</span>
                         }
                     }
                     break;
                 }
                 case 2: {
                     // mu
-<span class="fc bfc" id="L654" title="All 2 branches covered.">                    if (rModified != 0) {</span>
-<span class="fc bfc" id="L655" title="All 4 branches covered.">                        if (((float)(mu + rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(mu + rModified) &lt;= varsMax[i])) {</span>
-<span class="fc" id="L656">                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));</span>
+<span class="fc bfc" id="L655" title="All 2 branches covered.">                    if (rModified != 0) {</span>
+<span class="fc bfc" id="L656" title="All 4 branches covered.">                        if (((float)(mu + rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(mu + rModified) &lt;= varsMax[i])) {</span>
+<span class="fc" id="L657">                            yGEVPlus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu + rModified));</span>
                         }
-<span class="fc bfc" id="L658" title="All 4 branches covered.">                        if (((float)(mu - rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(mu - rModified) &lt;= varsMax[i])) {</span>
-<span class="fc" id="L659">                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));</span>
+<span class="fc bfc" id="L659" title="All 4 branches covered.">                        if (((float)(mu - rModified) &gt;= varsMin[i]) &amp;&amp; ((float)(mu - rModified) &lt;= varsMax[i])) {</span>
+<span class="fc" id="L660">                            yGEVMinus = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, (float)(mu - rModified));</span>
                         }
                     }
                     break;
                 }
             }
 
-<span class="fc bfc" id="L666" title="All 2 branches covered.">            float chiSqSumPlus = (yGEVPlus != null) ? chiSqSum(yGEVPlus, normalizedY, normalizedYErr) : Float.MAX_VALUE;</span>
-<span class="fc bfc" id="L667" title="All 2 branches covered.">            float chiSqSumMinus = (yGEVMinus != null) ? chiSqSum(yGEVMinus, normalizedY, normalizedYErr) : Float.MAX_VALUE;</span>
-<span class="fc bfc" id="L668" title="All 2 branches covered.">            boolean bestIsPlus = (chiSqSumPlus &lt; chiSqSumMinus);</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">            float chiSqSumPlus = (yGEVPlus != null) ? chiSqSum(yGEVPlus, normalizedY, normalizedYErr) : Float.MAX_VALUE;</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">            float chiSqSumMinus = (yGEVMinus != null) ? chiSqSum(yGEVMinus, normalizedY, normalizedYErr) : Float.MAX_VALUE;</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">            boolean bestIsPlus = (chiSqSumPlus &lt; chiSqSumMinus);</span>
 
-<span class="fc bfc" id="L670" title="All 4 branches covered.">            if (bestIsPlus &amp;&amp; (chiSqSumPlus &lt; bestChiSqSum)) {</span>
-<span class="fc" id="L671">                r[i] = (float) rModified;</span>
-<span class="fc" id="L672">                bestChiSqSum = chiSqSumPlus;</span>
-<span class="fc" id="L673">                chiSqSumReturn[1] = bestChiSqSum;</span>
-<span class="fc bfc" id="L674" title="All 2 branches covered.">            } else if (chiSqSumMinus &lt; bestChiSqSum) {</span>
-<span class="fc" id="L675">                r[i] = (float) (-1.f * rModified);</span>
-<span class="fc" id="L676">                bestChiSqSum = chiSqSumMinus;</span>
-<span class="fc" id="L677">                chiSqSumReturn[1] = bestChiSqSum;</span>
+<span class="fc bfc" id="L671" title="All 4 branches covered.">            if (bestIsPlus &amp;&amp; (chiSqSumPlus &lt; bestChiSqSum)) {</span>
+<span class="fc" id="L672">                r[i] = (float) rModified;</span>
+<span class="fc" id="L673">                bestChiSqSum = chiSqSumPlus;</span>
+<span class="fc" id="L674">                chiSqSumReturn[1] = bestChiSqSum;</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">            } else if (chiSqSumMinus &lt; bestChiSqSum) {</span>
+<span class="fc" id="L676">                r[i] = (float) (-1.f * rModified);</span>
+<span class="fc" id="L677">                bestChiSqSum = chiSqSumMinus;</span>
+<span class="fc" id="L678">                chiSqSumReturn[1] = bestChiSqSum;</span>
             }
 
-<span class="fc" id="L680">            log.finest(&quot; derivs[&quot; + i + &quot;]=&quot; + r[i]);</span>
+<span class="fc" id="L681">            log.finest(&quot; derivs[&quot; + i + &quot;]=&quot; + r[i]);</span>
         }
-<span class="fc" id="L682">    }</span>
+<span class="fc" id="L683">    }</span>
 
+    /**
+     *
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
     public static double calculatePreconditionerModifiedResidualK(float yConst, float mu, float k, float sigma, float x) {
 
         // using Incomplete Cholesky factorization with fill 0 (ICU0) to apply preconditioning
@@ -689,20 +699,20 @@ import algorithms.misc.MiscMath;
         // k component to residuals = d(1,1) * (&amp;#8706;/&amp;#8706;k)
         //       where d(1,1) is 1./(&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k), that is 1./(&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k)
 
-<span class="fc" id="L692">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
+<span class="fc" id="L702">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
 
-<span class="pc bpc" id="L694" title="1 of 2 branches missed.">        if (dydk == null) {</span>
-<span class="nc" id="L695">            return 0;</span>
+<span class="pc bpc" id="L704" title="1 of 2 branches missed.">        if (dydk == null) {</span>
+<span class="nc" id="L705">            return 0;</span>
         }
 
-<span class="fc" id="L698">        Double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk);</span>
+<span class="fc" id="L708">        Double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk);</span>
 
-<span class="pc bpc" id="L700" title="1 of 2 branches missed.">        if (d2ydkdk == null) {</span>
-<span class="nc" id="L701">            return dydk;</span>
+<span class="pc bpc" id="L710" title="1 of 2 branches missed.">        if (d2ydkdk == null) {</span>
+<span class="nc" id="L711">            return dydk;</span>
         }
-<span class="fc" id="L703">        double resid = dydk/d2ydkdk;</span>
+<span class="fc" id="L713">        double resid = dydk/d2ydkdk;</span>
 
-<span class="fc" id="L705">        return resid;</span>
+<span class="fc" id="L715">        return resid;</span>
     }
 
     /**
@@ -711,6 +721,7 @@ import algorithms.misc.MiscMath;
      * The method uses the tested DerivGEV.derivWRTK() for dfdk and plugs in different k's
      * to estimate d2fdkdk
      *
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -719,15 +730,15 @@ import algorithms.misc.MiscMath;
      */
     public static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x) {
 
-<span class="nc" id="L722">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
+<span class="nc" id="L733">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
 
-<span class="nc bnc" id="L724" title="All 2 branches missed.">        if (dydk == null) {</span>
-<span class="nc" id="L725">            return 0;</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">        if (dydk == null) {</span>
+<span class="nc" id="L736">            return 0;</span>
         }
 
-<span class="nc" id="L728">        Double d = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
+<span class="nc" id="L739">        Double d = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
 
-<span class="nc bnc" id="L730" title="All 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="nc bnc" id="L741" title="All 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -736,6 +747,7 @@ import algorithms.misc.MiscMath;
      * resuse in other equations, but has to trust that dydk was derived with the
      * same k, sigma, mu, and x.
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -745,17 +757,17 @@ import algorithms.misc.MiscMath;
      */
     public static double estimateDY2DKDK(float yConst, float mu, float k, float sigma, float x, double dydk) {
 
-<span class="fc" id="L748">        float factor = 0.0001f;</span>
+<span class="fc" id="L760">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L750">        double delta = (k*factor);</span>
+<span class="fc" id="L762">        double delta = (k*factor);</span>
 
-<span class="fc" id="L752">        Double dydk_0 = DerivGEV.derivWRTK(yConst, mu, (float)(k - delta), sigma, x);</span>
+<span class="fc" id="L764">        Double dydk_0 = DerivGEV.derivWRTK(yConst, mu, (float)(k - delta), sigma, x);</span>
 
-<span class="fc" id="L754">        Double dydk_2 = DerivGEV.derivWRTK(yConst, mu, (float)(k + delta), sigma, x);</span>
+<span class="fc" id="L766">        Double dydk_2 = DerivGEV.derivWRTK(yConst, mu, (float)(k + delta), sigma, x);</span>
 
-<span class="fc" id="L756">        Double d = estimateDerivUsingDelta(dydk_0, dydk, dydk_2, delta);</span>
+<span class="fc" id="L768">        Double d = estimateDerivUsingDelta(dydk_0, dydk, dydk_2, delta);</span>
 
-<span class="pc bpc" id="L758" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L770" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -764,6 +776,7 @@ import algorithms.misc.MiscMath;
      * resuse in other equations, but has to trust that dydk was derived with the
      * same k, sigma, mu, and x.
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -775,17 +788,17 @@ import algorithms.misc.MiscMath;
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;sigma
 
-<span class="fc" id="L778">        float factor = 0.0001f;</span>
+<span class="fc" id="L791">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L780">        double delta = (sigma*factor);</span>
+<span class="fc" id="L793">        double delta = (sigma*factor);</span>
 
-<span class="fc" id="L782">        Double dydk_0 = DerivGEV.derivWRTK(yConst, mu, k, (float)(sigma - delta), x);</span>
+<span class="fc" id="L795">        Double dydk_0 = DerivGEV.derivWRTK(yConst, mu, k, (float)(sigma - delta), x);</span>
 
-<span class="fc" id="L784">        Double dydk_2 = DerivGEV.derivWRTK(yConst, mu, k, (float)(sigma + delta), x);</span>
+<span class="fc" id="L797">        Double dydk_2 = DerivGEV.derivWRTK(yConst, mu, k, (float)(sigma + delta), x);</span>
 
-<span class="fc" id="L786">        Double d = estimateDerivUsingDelta(dydk_0, dydk, dydk_2, delta);</span>
+<span class="fc" id="L799">        Double d = estimateDerivUsingDelta(dydk_0, dydk, dydk_2, delta);</span>
 
-<span class="pc bpc" id="L788" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L801" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -806,17 +819,17 @@ import algorithms.misc.MiscMath;
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;mu
 
-<span class="fc" id="L809">        float factor = 0.0001f;</span>
+<span class="fc" id="L822">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L811">        double delta = (mu*factor);</span>
+<span class="fc" id="L824">        double delta = (mu*factor);</span>
 
-<span class="fc" id="L813">        Double dydk_0 = DerivGEV.derivWRTK(yConst, (float)(mu - delta), k, sigma, x);</span>
+<span class="fc" id="L826">        Double dydk_0 = DerivGEV.derivWRTK(yConst, (float)(mu - delta), k, sigma, x);</span>
 
-<span class="fc" id="L815">        Double dydk_2 = DerivGEV.derivWRTK(yConst, (float)(mu + delta), k, sigma, x);</span>
+<span class="fc" id="L828">        Double dydk_2 = DerivGEV.derivWRTK(yConst, (float)(mu + delta), k, sigma, x);</span>
 
-<span class="fc" id="L817">        Double d = estimateDerivUsingDelta(dydk_0, dydk, dydk_2, delta);</span>
+<span class="fc" id="L830">        Double d = estimateDerivUsingDelta(dydk_0, dydk, dydk_2, delta);</span>
 
-<span class="pc bpc" id="L819" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L832" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -825,6 +838,7 @@ import algorithms.misc.MiscMath;
      * resuse in other equations, but has to trust that dydsigma was derived with the
      * same k, sigma, mu, and x.
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -836,17 +850,17 @@ import algorithms.misc.MiscMath;
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;sigma = estimate as (dyds_2 - dyds)/ds
 
-<span class="fc" id="L839">        float factor = 0.0001f;</span>
+<span class="fc" id="L853">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L841">        double delta = (sigma*factor);</span>
+<span class="fc" id="L855">        double delta = (sigma*factor);</span>
 
-<span class="fc" id="L843">        Double dyds_0 = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma - delta), x);</span>
+<span class="fc" id="L857">        Double dyds_0 = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma - delta), x);</span>
 
-<span class="fc" id="L845">        Double dyds_2 = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma + delta), x);</span>
+<span class="fc" id="L859">        Double dyds_2 = DerivGEV.derivWRTSigma(yConst, mu, k, (float)(sigma + delta), x);</span>
 
-<span class="fc" id="L847">        Double d = estimateDerivUsingDelta(dyds_0, dydsigma, dyds_2, delta);</span>
+<span class="fc" id="L861">        Double d = estimateDerivUsingDelta(dyds_0, dydsigma, dyds_2, delta);</span>
 
-<span class="pc bpc" id="L849" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L863" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -856,28 +870,29 @@ import algorithms.misc.MiscMath;
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @param dydsigma
+     * @param dydmu
      * @return
      */
     public static double estimateDY2DMuDMu(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;mu&amp;#8706;mu
 
-<span class="fc" id="L870">        float factor = 0.0001f;</span>
+<span class="fc" id="L885">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L872">        double delta = (mu*factor);</span>
+<span class="fc" id="L887">        double delta = (mu*factor);</span>
 
-<span class="fc" id="L874">        Double dydm_0 = DerivGEV.derivWRTMu(yConst, (float)(mu - delta), k, sigma, x);</span>
+<span class="fc" id="L889">        Double dydm_0 = DerivGEV.derivWRTMu(yConst, (float)(mu - delta), k, sigma, x);</span>
 
-<span class="fc" id="L876">        Double dydm_2 = DerivGEV.derivWRTMu(yConst, (float)(mu + delta), k, sigma, x);</span>
+<span class="fc" id="L891">        Double dydm_2 = DerivGEV.derivWRTMu(yConst, (float)(mu + delta), k, sigma, x);</span>
 
-<span class="fc" id="L878">        Double d = estimateDerivUsingDelta(dydm_0, dydmu, dydm_2, delta);</span>
+<span class="fc" id="L893">        Double d = estimateDerivUsingDelta(dydm_0, dydmu, dydm_2, delta);</span>
 
-<span class="pc bpc" id="L880" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L895" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -888,28 +903,29 @@ import algorithms.misc.MiscMath;
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @param dydsigma
+     * @param dydmu
      * @return
      */
     public static double estimateDY2DMuDK(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;mu&amp;#8706;k
 
-<span class="fc" id="L902">        float factor = 0.0001f;</span>
+<span class="fc" id="L918">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L904">        double delta = (k*factor);</span>
+<span class="fc" id="L920">        double delta = (k*factor);</span>
 
-<span class="fc" id="L906">        Double dydm_0 = DerivGEV.derivWRTMu(yConst, mu, (float)(k - delta), sigma, x);</span>
+<span class="fc" id="L922">        Double dydm_0 = DerivGEV.derivWRTMu(yConst, mu, (float)(k - delta), sigma, x);</span>
 
-<span class="fc" id="L908">        Double dydm_2 = DerivGEV.derivWRTMu(yConst, mu, (float)(k + delta), sigma, x);</span>
+<span class="fc" id="L924">        Double dydm_2 = DerivGEV.derivWRTMu(yConst, mu, (float)(k + delta), sigma, x);</span>
 
-<span class="fc" id="L910">        Double d = estimateDerivUsingDelta(dydm_0, dydmu, dydm_2, delta);</span>
+<span class="fc" id="L926">        Double d = estimateDerivUsingDelta(dydm_0, dydmu, dydm_2, delta);</span>
 
-<span class="pc bpc" id="L912" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L928" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -920,28 +936,29 @@ import algorithms.misc.MiscMath;
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
      * @param x
-     * @param dydsigma
+     * @param dydmu
      * @return
      */
     public static double estimateDY2DMuDSigma(float yConst, float mu, float k, float sigma, float x, double dydmu) {
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;mu&amp;#8706;sigma
 
-<span class="fc" id="L934">        float factor = 0.0001f;</span>
+<span class="fc" id="L951">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L936">        double delta = (sigma*factor);</span>
+<span class="fc" id="L953">        double delta = (sigma*factor);</span>
 
-<span class="fc" id="L938">        Double dydm_0 = DerivGEV.derivWRTMu(yConst, mu, k, (float)(sigma - delta), x);</span>
+<span class="fc" id="L955">        Double dydm_0 = DerivGEV.derivWRTMu(yConst, mu, k, (float)(sigma - delta), x);</span>
 
-<span class="fc" id="L940">        Double dydm_2 = DerivGEV.derivWRTMu(yConst, mu, k, (float)(sigma + delta), x);</span>
+<span class="fc" id="L957">        Double dydm_2 = DerivGEV.derivWRTMu(yConst, mu, k, (float)(sigma + delta), x);</span>
 
-<span class="fc" id="L942">        Double d = estimateDerivUsingDelta(dydm_0, dydmu, dydm_2, delta);</span>
+<span class="fc" id="L959">        Double d = estimateDerivUsingDelta(dydm_0, dydmu, dydm_2, delta);</span>
 
-<span class="pc bpc" id="L944" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L961" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -952,6 +969,7 @@ import algorithms.misc.MiscMath;
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -963,17 +981,17 @@ import algorithms.misc.MiscMath;
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;k = estimate as (dy2_ds_dk - dyds)/dk
 
-<span class="fc" id="L966">        float factor = 0.0001f;</span>
+<span class="fc" id="L984">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L968">        double delta = (k*factor);</span>
+<span class="fc" id="L986">        double delta = (k*factor);</span>
 
-<span class="fc" id="L970">        Double dydk_0 = DerivGEV.derivWRTSigma(yConst, mu, (float)(k - delta), sigma, x);</span>
+<span class="fc" id="L988">        Double dydk_0 = DerivGEV.derivWRTSigma(yConst, mu, (float)(k - delta), sigma, x);</span>
 
-<span class="fc" id="L972">        Double dydk_2 = DerivGEV.derivWRTSigma(yConst, mu, (float)(k + delta), sigma, x);</span>
+<span class="fc" id="L990">        Double dydk_2 = DerivGEV.derivWRTSigma(yConst, mu, (float)(k + delta), sigma, x);</span>
 
-<span class="fc" id="L974">        Double d = estimateDerivUsingDelta(dydk_0, dydsigma, dydk_2, delta);</span>
+<span class="fc" id="L992">        Double d = estimateDerivUsingDelta(dydk_0, dydsigma, dydk_2, delta);</span>
 
-<span class="pc bpc" id="L976" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L994" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
     /**
@@ -984,6 +1002,7 @@ import algorithms.misc.MiscMath;
      * same k, sigma, mu, and x.
      * 
      * 
+     * @param yConst
      * @param mu
      * @param k
      * @param sigma
@@ -995,19 +1014,28 @@ import algorithms.misc.MiscMath;
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;mu = estimate as (dy2_ds_dk - dyds)/dk
 
-<span class="fc" id="L998">        float factor = 0.0001f;</span>
+<span class="fc" id="L1017">        float factor = 0.0001f;</span>
 
-<span class="fc" id="L1000">        double delta = (sigma*factor);</span>
+<span class="fc" id="L1019">        double delta = (sigma*factor);</span>
 
-<span class="fc" id="L1002">        Double dyds_0 = DerivGEV.derivWRTSigma(yConst, (float)(mu - delta), k, sigma, x);</span>
+<span class="fc" id="L1021">        Double dyds_0 = DerivGEV.derivWRTSigma(yConst, (float)(mu - delta), k, sigma, x);</span>
 
-<span class="fc" id="L1004">        Double dyds_2 = DerivGEV.derivWRTSigma(yConst, (float)(mu + delta), k, sigma, x);</span>
+<span class="fc" id="L1023">        Double dyds_2 = DerivGEV.derivWRTSigma(yConst, (float)(mu + delta), k, sigma, x);</span>
 
-<span class="fc" id="L1006">        Double d = estimateDerivUsingDelta(dyds_0, dydsigma, dyds_2, delta);</span>
+<span class="fc" id="L1025">        Double d = estimateDerivUsingDelta(dyds_0, dydsigma, dyds_2, delta);</span>
 
-<span class="pc bpc" id="L1008" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
+<span class="pc bpc" id="L1027" title="1 of 2 branches missed.">        return (d != null) ? d.doubleValue() : 0;</span>
     }
 
+    /**
+     *
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
     public static double calculatePreconditionerModifiedResidualSigma(
         float yConst, float mu, float k, float sigma, float x) {
 
@@ -1018,47 +1046,56 @@ import algorithms.misc.MiscMath;
         //       where d(2,2) is ( 1./ ( (&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;sigma) - (&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;k)*( 1/(&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k, that is &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k) ) * (&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;sigma) ) )
 
         // &amp;#8706;/&amp;#8706;sigma
-<span class="fc" id="L1021">        Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);</span>
+<span class="fc" id="L1049">        Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);</span>
 
-<span class="pc bpc" id="L1023" title="1 of 2 branches missed.">        if (dyds == null) {</span>
-<span class="nc" id="L1024">            return 0;</span>
+<span class="pc bpc" id="L1051" title="1 of 2 branches missed.">        if (dyds == null) {</span>
+<span class="nc" id="L1052">            return 0;</span>
         }
 
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;sigma
-<span class="fc" id="L1029">        double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds);</span>
+<span class="fc" id="L1057">        double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds);</span>
 
 
         // (&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;k) = estimate as (dydsigma_1 - dydsigma)/dsigma
-<span class="fc" id="L1033">        double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds);</span>
+<span class="fc" id="L1061">        double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds);</span>
 
         // &amp;#8706;/&amp;#8706;k
-<span class="fc" id="L1036">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
+<span class="fc" id="L1064">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
 
-<span class="pc bpc" id="L1038" title="1 of 2 branches missed.">        if (dydk != null) {</span>
+<span class="pc bpc" id="L1066" title="1 of 2 branches missed.">        if (dydk != null) {</span>
 
             // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k, that is &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k
-<span class="fc" id="L1041">            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
+<span class="fc" id="L1069">            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
 
             // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;sigma
-<span class="fc" id="L1044">            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
+<span class="fc" id="L1072">            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
 
-<span class="fc" id="L1046">            double modification = d2ydsds - (d2ydsdk / d2ydkdk) * d2ydkds;</span>
+<span class="fc" id="L1074">            double modification = d2ydsds - (d2ydsdk / d2ydkdk) * d2ydkds;</span>
 
-<span class="fc" id="L1048">            double resid = dyds / modification;</span>
+<span class="fc" id="L1076">            double resid = dyds / modification;</span>
 
-<span class="fc" id="L1050">            return resid;</span>
+<span class="fc" id="L1078">            return resid;</span>
 
         } else {
 
-<span class="nc" id="L1054">            double modification = d2ydsds;</span>
+<span class="nc" id="L1082">            double modification = d2ydsds;</span>
 
-<span class="nc" id="L1056">            double resid = dyds / modification;</span>
+<span class="nc" id="L1084">            double resid = dyds / modification;</span>
 
-<span class="nc" id="L1058">            return resid;</span>
+<span class="nc" id="L1086">            return resid;</span>
         }
     }
 
+    /**
+     *
+     * @param yConst
+     * @param mu
+     * @param k
+     * @param sigma
+     * @param x
+     * @return
+     */
     public static double calculatePreconditionerModifiedResidualMu(
         float yConst, float mu, float k, float sigma, float x) {
 
@@ -1089,59 +1126,59 @@ import algorithms.misc.MiscMath;
         */
 
         // &amp;#8706;/&amp;#8706;mu
-<span class="fc" id="L1092">        Double dydmu = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x);</span>
+<span class="fc" id="L1129">        Double dydmu = DerivGEV.derivWRTMu(yConst, mu, k, sigma, x);</span>
 
-<span class="pc bpc" id="L1094" title="1 of 2 branches missed.">        if (dydmu == null) {</span>
-<span class="nc" id="L1095">            return 0;</span>
+<span class="pc bpc" id="L1131" title="1 of 2 branches missed.">        if (dydmu == null) {</span>
+<span class="nc" id="L1132">            return 0;</span>
         }
 
         // &amp;#8706;/&amp;#8706;sigma
-<span class="fc" id="L1099">        Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);</span>
-<span class="pc bpc" id="L1100" title="1 of 2 branches missed.">        if (dyds == null) {</span>
-<span class="nc" id="L1101">            return 0;</span>
+<span class="fc" id="L1136">        Double dyds = DerivGEV.derivWRTSigma(yConst, mu, k, sigma, x);</span>
+<span class="pc bpc" id="L1137" title="1 of 2 branches missed.">        if (dyds == null) {</span>
+<span class="nc" id="L1138">            return 0;</span>
         }
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;sigma
-<span class="fc" id="L1105">        double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds.doubleValue());</span>
+<span class="fc" id="L1142">        double d2ydsds = estimateDY2DSigmaDSigma(yConst, mu, k, sigma, x, dyds.doubleValue());</span>
 
-<span class="fc bfc" id="L1107" title="All 2 branches covered.">        if (d2ydsds == 0) {</span>
-<span class="fc" id="L1108">            return 0;</span>
+<span class="fc bfc" id="L1144" title="All 2 branches covered.">        if (d2ydsds == 0) {</span>
+<span class="fc" id="L1145">            return 0;</span>
         }
 
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;mu&amp;#8706;mu
-<span class="fc" id="L1113">        double d2ydmdm = estimateDY2DMuDMu(yConst, mu, k, sigma, x, dydmu.doubleValue());</span>
+<span class="fc" id="L1150">        double d2ydmdm = estimateDY2DMuDMu(yConst, mu, k, sigma, x, dydmu.doubleValue());</span>
 
         // &amp;#8706;/&amp;#8706;k
-<span class="fc" id="L1116">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
+<span class="fc" id="L1153">        Double dydk = DerivGEV.derivWRTK(yConst, mu, k, sigma, x);</span>
 
         double pt1;
 
-<span class="pc bpc" id="L1120" title="1 of 2 branches missed.">        if (dydk != null) {</span>
+<span class="pc bpc" id="L1157" title="1 of 2 branches missed.">        if (dydk != null) {</span>
 
             // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;mu&amp;#8706;k
-<span class="fc" id="L1123">            double d2ydmdk = estimateDY2DMuDK(yConst, mu, k, sigma, x, dydmu.doubleValue());</span>
+<span class="fc" id="L1160">            double d2ydmdk = estimateDY2DMuDK(yConst, mu, k, sigma, x, dydmu.doubleValue());</span>
 
             // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k, that is &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;k
-<span class="fc" id="L1126">            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
+<span class="fc" id="L1163">            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
 
             // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;mu
-<span class="fc" id="L1129">            double d2ydkdm = estimateDY2DKDMu(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
+<span class="fc" id="L1166">            double d2ydkdm = estimateDY2DKDMu(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
 
-<span class="fc" id="L1131">            pt1 = d2ydmdm - (d2ydmdk*d2ydkdm / d2ydkdk);</span>
+<span class="fc" id="L1168">            pt1 = d2ydmdm - (d2ydmdk*d2ydkdm / d2ydkdk);</span>
 
-<span class="fc" id="L1133">        } else {</span>
+<span class="fc" id="L1170">        } else {</span>
 
-<span class="nc" id="L1135">            pt1 = d2ydmdm;</span>
+<span class="nc" id="L1172">            pt1 = d2ydmdm;</span>
         }
 
         // (&amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;k) = estimate as (dydsigma_1 - dydsigma)/dsigma
-<span class="fc" id="L1139">        double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds.doubleValue());</span>
+<span class="fc" id="L1176">        double d2ydsdk = estimateDY2DSigmaDK(yConst, mu, k, sigma, x, dyds.doubleValue());</span>
 
-<span class="fc" id="L1141">        double d2ydmds = estimateDY2DMuDSigma(yConst, mu, k, sigma, x, dydmu.doubleValue());</span>
+<span class="fc" id="L1178">        double d2ydmds = estimateDY2DMuDSigma(yConst, mu, k, sigma, x, dydmu.doubleValue());</span>
 
         // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;mu
-<span class="fc" id="L1144">        double d2ydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds.doubleValue());</span>
+<span class="fc" id="L1181">        double d2ydsdm = estimateDY2DSigmaDMu(yConst, mu, k, sigma, x, dyds.doubleValue());</span>
 
         // d(3,3) = 1./( (pt1) - ( &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;mu&amp;#8706;sigma * pt2_1 * &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;mu ))
         //
@@ -1150,46 +1187,56 @@ import algorithms.misc.MiscMath;
 
         double pt2, pt2_1;
 
-<span class="pc bpc" id="L1153" title="1 of 2 branches missed.">        if (d2ydmds == 0) {</span>
-<span class="nc" id="L1154">            pt2 = 0;</span>
-<span class="nc" id="L1155">            pt2_1 = 0;</span>
+<span class="pc bpc" id="L1190" title="1 of 2 branches missed.">        if (d2ydmds == 0) {</span>
+<span class="nc" id="L1191">            pt2 = 0;</span>
+<span class="nc" id="L1192">            pt2_1 = 0;</span>
 
-<span class="pc bpc" id="L1157" title="1 of 4 branches missed.">        } else if (d2ydsdk != 0 &amp;&amp; dydk != null) {</span>
+<span class="pc bpc" id="L1194" title="1 of 4 branches missed.">        } else if (d2ydsdk != 0 &amp;&amp; dydk != null) {</span>
 
             // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;sigma&amp;#8706;k
-<span class="fc" id="L1160">            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
+<span class="fc" id="L1197">            double d2ydkdk = estimateDY2DKDK(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
 
             // &amp;#8706;&lt;sup&gt;2&lt;/sup&gt;/&amp;#8706;k&amp;#8706;sigma
-<span class="fc" id="L1163">            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
+<span class="fc" id="L1200">            double d2ydkds = estimateDY2DKDSigma(yConst, mu, k, sigma, x, dydk.doubleValue());</span>
 
-<span class="fc" id="L1165">            pt2_1 = d2ydsds - (d2ydsdk * d2ydkds / d2ydkdk);</span>
+<span class="fc" id="L1202">            pt2_1 = d2ydsds - (d2ydsdk * d2ydkds / d2ydkdk);</span>
 
-<span class="fc" id="L1167">            pt2_1 = 1./pt2_1;</span>
+<span class="fc" id="L1204">            pt2_1 = 1./pt2_1;</span>
 
-<span class="fc" id="L1169">            pt2 = d2ydmds * pt2_1 * d2ydsdm;</span>
+<span class="fc" id="L1206">            pt2 = d2ydmds * pt2_1 * d2ydsdm;</span>
 
-<span class="fc" id="L1171">        } else {</span>
+<span class="fc" id="L1208">        } else {</span>
 
-<span class="fc" id="L1173">            pt2_1 = 1./d2ydsds;</span>
+<span class="fc" id="L1210">            pt2_1 = 1./d2ydsds;</span>
 
-<span class="fc" id="L1175">            pt2 = d2ydmds * pt2_1 * d2ydsdm;</span>
+<span class="fc" id="L1212">            pt2 = d2ydmds * pt2_1 * d2ydsdm;</span>
         }
 
-<span class="fc" id="L1178">        double modification = pt1 - pt2;</span>
+<span class="fc" id="L1215">        double modification = pt1 - pt2;</span>
 
-<span class="fc" id="L1180">        double resid = dydmu/modification;</span>
+<span class="fc" id="L1217">        double resid = dydmu/modification;</span>
 
-<span class="fc" id="L1182">        return resid;</span>
+<span class="fc" id="L1219">        return resid;</span>
     }
 
+    /**
+     *
+     * @param k
+     * @param sigma
+     * @param mu
+     * @param x
+     * @param normalizedY
+     * @param normalizedYErr
+     * @return
+     */
     public static Float chiSqSum(final float k, final float sigma, final float mu, final float[] x,
         final float[] normalizedY, final float[] normalizedYErr) {
 
-<span class="fc" id="L1188">        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);</span>
-<span class="pc bpc" id="L1189" title="1 of 2 branches missed.">        if (yGEV == null) {</span>
-<span class="nc" id="L1190">            return null;</span>
+<span class="fc" id="L1235">        float[] yGEV = GeneralizedExtremeValue.generateNormalizedCurve(x, k, sigma, mu);</span>
+<span class="pc bpc" id="L1236" title="1 of 2 branches missed.">        if (yGEV == null) {</span>
+<span class="nc" id="L1237">            return null;</span>
         }
-<span class="fc" id="L1192">        return chiSqSum(yGEV, normalizedY, normalizedYErr);</span>
+<span class="fc" id="L1239">        return chiSqSum(yGEV, normalizedY, normalizedYErr);</span>
     }
 
     /**
@@ -1202,7 +1249,7 @@ import algorithms.misc.MiscMath;
      * @return
      */
     public static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr) {
-<span class="fc" id="L1205">        return chiSqSum(normalizedYGEV, normalizedY, normalizedYErr, 0, normalizedY.length);</span>
+<span class="fc" id="L1252">        return chiSqSum(normalizedYGEV, normalizedY, normalizedYErr, 0, normalizedY.length);</span>
     }
 
 
@@ -1214,19 +1261,18 @@ import algorithms.misc.MiscMath;
      * @param normalizedYGEV
      * @param normalizedY
      * @param normalizedYErr
-     * @param x
      * @param startIdx
      * @param stopIdx the last index, exclusive
      * @return
      */
     public static float chiSqSum(float[] normalizedYGEV, float[] normalizedY, float[] normalizedYErr,
         int startIdx, int stopIdx) {
-<span class="fc" id="L1224">        float chiSqSum = 0.0f;</span>
-<span class="fc bfc" id="L1225" title="All 2 branches covered.">        for (int ii = startIdx; ii &lt; stopIdx; ii++) {</span>
-<span class="fc" id="L1226">            float z = (normalizedYGEV[ii] - normalizedY[ii]);</span>
-<span class="fc" id="L1227">            chiSqSum += z*z*normalizedYErr[ii];</span>
+<span class="fc" id="L1270">        float chiSqSum = 0.0f;</span>
+<span class="fc bfc" id="L1271" title="All 2 branches covered.">        for (int ii = startIdx; ii &lt; stopIdx; ii++) {</span>
+<span class="fc" id="L1272">            float z = (normalizedYGEV[ii] - normalizedY[ii]);</span>
+<span class="fc" id="L1273">            chiSqSum += z*z*normalizedYErr[ii];</span>
         }
-<span class="fc" id="L1229">        return chiSqSum;</span>
+<span class="fc" id="L1275">        return chiSqSum;</span>
     }
 
     /**
@@ -1245,16 +1291,16 @@ import algorithms.misc.MiscMath;
      */
     public static double secondDerivKDerivMu(float yConst, float mu, float k, float sigma, float x) {
 
-<span class="nc" id="L1248">        double z = 1. + k *( (x-mu)/sigma );</span>
+<span class="nc" id="L1294">        double z = 1. + k *( (x-mu)/sigma );</span>
 
         //double f1 = Math.exp( -1.*Math.pow(z, -1./k) );
         //double f2 = Math.pow(z, (-1. - (1./k)) );
 
         double a, f1, f2, df1dmu, df2dmu;
         
-<span class="nc" id="L1255">        double dzdmu = -1. * k/sigma;</span>
+<span class="nc" id="L1301">        double dzdmu = -1. * k/sigma;</span>
         
-<span class="nc bnc" id="L1257" title="All 2 branches missed.">        boolean zIsNegative = (z &lt; 0);</span>
+<span class="nc bnc" id="L1303" title="All 2 branches missed.">        boolean zIsNegative = (z &lt; 0);</span>
         // When z is negative, need to use alternative methods for exponentiation:
         // For z^(g/h)
         // For the complex exponentiation operator, that is complex bases, 
@@ -1262,80 +1308,80 @@ import algorithms.misc.MiscMath;
         //    the principal value is
         //        (-1)^(g/h) * ((1./z)^(g/h))
 
-<span class="nc bnc" id="L1265" title="All 2 branches missed.">        if (zIsNegative) {</span>
-<span class="nc" id="L1266">            double invNegZ = -1.0*(1.0/z);</span>
-<span class="nc" id="L1267">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="nc" id="L1268">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
-<span class="nc" id="L1269">            f1 = Math.exp( a );</span>
-<span class="nc" id="L1270">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
+<span class="nc bnc" id="L1311" title="All 2 branches missed.">        if (zIsNegative) {</span>
+<span class="nc" id="L1312">            double invNegZ = -1.0*(1.0/z);</span>
+<span class="nc" id="L1313">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="nc" id="L1314">            a = -1. * neg1Pow * (float) Math.pow(invNegZ, (-1./k));</span>
+<span class="nc" id="L1315">            f1 = Math.exp( a );</span>
+<span class="nc" id="L1316">            f2 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k)) );</span>
             
             //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
-<span class="nc" id="L1273">            df2dmu = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdmu;</span>
+<span class="nc" id="L1319">            df2dmu = neg1Pow * (-1. - (1./k)) * Math.pow(invNegZ, (-2. - (1./k)) ) * dzdmu;</span>
 
             //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-<span class="nc" id="L1276">            df1dmu =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdmu;</span>
-<span class="nc" id="L1277">        } else {</span>
-<span class="nc" id="L1278">            a = -1.*Math.pow(z, (-1./k));</span>
-<span class="nc" id="L1279">            f1 = Math.exp( a );</span>
-<span class="nc" id="L1280">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
+<span class="nc" id="L1322">            df1dmu =  f1 * neg1Pow * (1./k) * Math.pow(invNegZ, -1. - (1./k)) * dzdmu;</span>
+<span class="nc" id="L1323">        } else {</span>
+<span class="nc" id="L1324">            a = -1.*Math.pow(z, (-1./k));</span>
+<span class="nc" id="L1325">            f1 = Math.exp( a );</span>
+<span class="nc" id="L1326">            f2 = Math.pow(z, (-1. - (1./k)) );</span>
           
             //(-1-(1/k)) * z^(-2-(1/k)) * dzdmu
-<span class="nc" id="L1283">            df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;</span>
+<span class="nc" id="L1329">            df2dmu = (-1. - (1./k)) * Math.pow(z, (-2. - (1./k)) ) * dzdmu;</span>
 
             //f1 * (1/k) * z^(-1 - (1/k)) * dzdsigma
-<span class="nc" id="L1286">            df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;</span>
+<span class="nc" id="L1332">            df1dmu =  f1 * (1./k) * Math.pow(z, -1. - (1./k)) * dzdmu;</span>
         }
         
-<span class="nc" id="L1289">        float deltaK = 0.0001f;</span>
-<span class="nc" id="L1290">        float deltaMu = 0.0001f;</span>
-<span class="nc" id="L1291">        double k_1 = k + deltaK;</span>
-<span class="nc" id="L1292">        double mu_1 = mu + deltaMu;</span>
-<span class="nc" id="L1293">        double z_1 = 1. + k_1 *( (x-mu)/sigma );</span>
-<span class="nc" id="L1294">        double z_1_1 = 1. + k_1 *( (x-mu_1)/sigma );</span>
+<span class="nc" id="L1335">        float deltaK = 0.0001f;</span>
+<span class="nc" id="L1336">        float deltaMu = 0.0001f;</span>
+<span class="nc" id="L1337">        double k_1 = k + deltaK;</span>
+<span class="nc" id="L1338">        double mu_1 = mu + deltaMu;</span>
+<span class="nc" id="L1339">        double z_1 = 1. + k_1 *( (x-mu)/sigma );</span>
+<span class="nc" id="L1340">        double z_1_1 = 1. + k_1 *( (x-mu_1)/sigma );</span>
 
         double a_1, f2_1;
-<span class="nc bnc" id="L1297" title="All 2 branches missed.">        if (z_1 &lt; 0) {</span>
-<span class="nc" id="L1298">            double invNegZ = -1.0*(1.0/z_1);</span>
-<span class="nc" id="L1299">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="nc" id="L1300">            a_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1./k_1));</span>
-<span class="nc" id="L1301">            f2_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );</span>
-<span class="nc" id="L1302">        } else {</span>
-<span class="nc" id="L1303">            a_1 = -1. * Math.pow(z_1, (-1./k_1));</span>
-<span class="nc" id="L1304">            f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );</span>
+<span class="nc bnc" id="L1343" title="All 2 branches missed.">        if (z_1 &lt; 0) {</span>
+<span class="nc" id="L1344">            double invNegZ = -1.0*(1.0/z_1);</span>
+<span class="nc" id="L1345">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="nc" id="L1346">            a_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1./k_1));</span>
+<span class="nc" id="L1347">            f2_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );</span>
+<span class="nc" id="L1348">        } else {</span>
+<span class="nc" id="L1349">            a_1 = -1. * Math.pow(z_1, (-1./k_1));</span>
+<span class="nc" id="L1350">            f2_1 = Math.pow(z_1, (-1. - (1./k_1)) );</span>
         }
         
         double a_1_1, f2_1_1;
-<span class="nc bnc" id="L1308" title="All 2 branches missed.">        if (z_1_1 &lt; 0) {</span>
-<span class="nc" id="L1309">            double invNegZ = -1.0*(1.0/z_1_1);</span>
-<span class="nc" id="L1310">            double neg1Pow = -1.0; // TODO:  revisit this</span>
-<span class="nc" id="L1311">            a_1_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1.f/k_1));</span>
-<span class="nc" id="L1312">            f2_1_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );</span>
-<span class="nc" id="L1313">        } else {</span>
-<span class="nc" id="L1314">            a_1_1 = -1. * Math.pow(z_1_1, (-1.f/k_1));</span>
-<span class="nc" id="L1315">            f2_1_1 = Math.pow(z_1_1, (-1. - (1./k_1)) );</span>
+<span class="nc bnc" id="L1354" title="All 2 branches missed.">        if (z_1_1 &lt; 0) {</span>
+<span class="nc" id="L1355">            double invNegZ = -1.0*(1.0/z_1_1);</span>
+<span class="nc" id="L1356">            double neg1Pow = -1.0; // TODO:  revisit this</span>
+<span class="nc" id="L1357">            a_1_1 = -1. * neg1Pow * Math.pow(invNegZ, (-1.f/k_1));</span>
+<span class="nc" id="L1358">            f2_1_1 = neg1Pow * Math.pow(invNegZ, (-1. - (1./k_1)) );</span>
+<span class="nc" id="L1359">        } else {</span>
+<span class="nc" id="L1360">            a_1_1 = -1. * Math.pow(z_1_1, (-1.f/k_1));</span>
+<span class="nc" id="L1361">            f2_1_1 = Math.pow(z_1_1, (-1. - (1./k_1)) );</span>
         }
         
-<span class="nc" id="L1318">        double f1_1 = Math.exp( a_1 );</span>
-<span class="nc" id="L1319">        double df1dk = (Math.exp( a_1 ) - f1)/deltaK;</span>
-<span class="nc" id="L1320">        double df1dk_1 = (Math.exp( a_1_1 ) - f1_1)/deltaK;</span>
-<span class="nc" id="L1321">        double df2dk = (f2_1 - f2)/deltaK;</span>
-<span class="nc" id="L1322">        double df2dk_1 = (f2_1_1 - f2_1)/deltaK;</span>
+<span class="nc" id="L1364">        double f1_1 = Math.exp( a_1 );</span>
+<span class="nc" id="L1365">        double df1dk = (Math.exp( a_1 ) - f1)/deltaK;</span>
+<span class="nc" id="L1366">        double df1dk_1 = (Math.exp( a_1_1 ) - f1_1)/deltaK;</span>
+<span class="nc" id="L1367">        double df2dk = (f2_1 - f2)/deltaK;</span>
+<span class="nc" id="L1368">        double df2dk_1 = (f2_1_1 - f2_1)/deltaK;</span>
 
 
         //pt1_0 = ∂/∂mu( df2dk )  the derivative involves potential log(negative number) so work around:
-<span class="nc" id="L1326">        double pt1_0 = (df2dk_1 - df2dk)/deltaMu;</span>
+<span class="nc" id="L1372">        double pt1_0 = (df2dk_1 - df2dk)/deltaMu;</span>
 
         // pt2_0 = ∂/∂mu( df1dk ) the derivative involves potential log(negative number) so work around:
-<span class="nc" id="L1329">        double pt2_0 = (df1dk_1 - df1dk)/deltaMu;</span>
+<span class="nc" id="L1375">        double pt2_0 = (df1dk_1 - df1dk)/deltaMu;</span>
 
 
-<span class="nc" id="L1332">        double pt2 = f2 * pt2_0 + df1dk * df2dmu;</span>
+<span class="nc" id="L1378">        double pt2 = f2 * pt2_0 + df1dk * df2dmu;</span>
 
-<span class="nc" id="L1334">        double pt1 = (f1 * pt1_0) + (df2dk * df1dmu);</span>
+<span class="nc" id="L1380">        double pt1 = (f1 * pt1_0) + (df2dk * df1dmu);</span>
 
-<span class="nc" id="L1336">        double d2fdkdmu = (yConst/sigma) * (pt1 + pt2);</span>
+<span class="nc" id="L1382">        double d2fdkdmu = (yConst/sigma) * (pt1 + pt2);</span>
 
-<span class="nc" id="L1338">        return d2fdkdmu;</span>
+<span class="nc" id="L1384">        return d2fdkdmu;</span>
     }
 
     /*

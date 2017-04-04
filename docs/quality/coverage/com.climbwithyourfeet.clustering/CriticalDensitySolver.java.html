@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CriticalDensitySolver.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">com.climbwithyourfeet.clustering</a> &gt; <span class="el_source">CriticalDensitySolver.java</span></div><h1>CriticalDensitySolver.java</h1><pre class="source lang-java linenums">package com.climbwithyourfeet.clustering;
 
+import algorithms.sorting.MultiArrayMergeSort;
 import com.climbwithyourfeet.clustering.util.Histogram;
 import com.climbwithyourfeet.clustering.util.HistogramHolder;
 import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -13,16 +15,25 @@ import java.util.logging.Logger;
  */
 public class CriticalDensitySolver {
         
-<span class="fc" id="L16">    private boolean debug = false;</span>
+<span class="fc" id="L18">    private boolean debug = false;</span>
     
-<span class="fc" id="L18">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    /**
+     *
+     */
+<span class="fc" id="L23">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="fc" id="L20">    public CriticalDensitySolver() {</span>
-<span class="fc" id="L21">    }</span>
+    /**
+     *
+     */
+<span class="fc" id="L28">    public CriticalDensitySolver() {</span>
+<span class="fc" id="L29">    }</span>
     
+    /**
+     *
+     */
     public void setToDebug() {
-<span class="fc" id="L24">        debug = true;</span>
-<span class="fc" id="L25">    }</span>
+<span class="fc" id="L35">        debug = true;</span>
+<span class="fc" id="L36">    }</span>
     
     /**
      * using histograms of inverse sqrt of distance transform, find the center 
@@ -38,9 +49,9 @@ public class CriticalDensitySolver {
     float findCriticalDensity(int[][] distTrans, int nPoints, int width, 
         int height) {
         
-<span class="fc" id="L41">        float critDens = findCriticalDensity(distTrans);</span>
+<span class="fc" id="L52">        float critDens = findCriticalDensity(distTrans);</span>
 
-<span class="fc" id="L43">        return critDens;</span>
+<span class="fc" id="L54">        return critDens;</span>
         
     }
     
@@ -52,196 +63,215 @@ public class CriticalDensitySolver {
      * @return 
      */
     protected float findCriticalDensity(float[] values) {
-         
-<span class="fc" id="L56">        float[] vErrors = Histogram.populateYErrorsBySqrt(values);</span>
-
-<span class="fc" id="L58">        List&lt;HistogramHolder&gt; histList = new ArrayList&lt;HistogramHolder&gt;();</span>
-
-<span class="fc" id="L60">        float xl = MiscMath.findMax(values);</span>
-<span class="fc" id="L61">        int nb = 40;</span>
+        
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">        if (values == null || values.length &lt; 10) {</span>
+<span class="nc" id="L68">            throw new IllegalArgumentException(&quot;values length must be 10 or more&quot;);</span>
+        }
         
         /*
-        steps xl down as needed and changes nb to 20 when small
+        the goal of this method is to form a histogram comparable to the
+        GeneralizedExtremeValue function to find the critical density
+        (which is near the peak).
+        
+        TODO: This method needs improvements, especially for small numbers.
         */
         
-<span class="fc" id="L67">        int hc = 0;</span>
+<span class="fc" id="L79">        float[] vErrors = Histogram.populateYErrorsBySqrt(values);</span>
+
+<span class="fc" id="L81">        int nb = 40;</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (nb &gt; values.length) {</span>
+<span class="nc" id="L83">            nb = values.length/4;</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (nb == 0) {</span>
+<span class="nc" id="L85">                nb = 1;</span>
+            }
+        }
         
-<span class="fc" id="L69">        int maxHC = 5;</span>
+<span class="fc" id="L89">        float xl = MiscMath.findMax(values);</span>
+               
+<span class="fc" id="L91">        HistogramHolder hist = Histogram.createSimpleHistogram(</span>
+            0, xl, nb, values, vErrors);
         
-<span class="fc" id="L71">        boolean breakOnNext = false;</span>
+<span class="fc" id="L94">        int len = hist.getXHist().length;</span>
         
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        while (hc &lt; maxHC) {</span>
-                        
-<span class="fc" id="L75">            HistogramHolder hist = Histogram.createSimpleHistogram(</span>
+<span class="fc" id="L96">        int yFirstPeakIdx = Histogram.findFirstPeakIndex(hist);</span>
+                
+<span class="fc" id="L98">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+        
+<span class="fc" id="L100">        float xMax = 0;</span>
+        
+<span class="fc" id="L102">        boolean p1Corr = false;</span>
+        
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">        while (yMaxIdx &lt; 2 &amp;&amp; values.length &gt; 10) {</span>
+<span class="fc" id="L105">            values = Arrays.copyOf(values, values.length);</span>
+<span class="fc" id="L106">            Arrays.sort(values);</span>
+            // trim away t half bin
+<span class="fc" id="L108">            int idx = Arrays.binarySearch(values, hist.getXHist()[len/2]);</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            if (idx &lt; 0) {</span>
+<span class="fc" id="L110">                idx = -1*(idx + 1);</span>
+            }
+<span class="fc" id="L112">            values = Arrays.copyOf(values, idx);</span>
+<span class="fc" id="L113">            vErrors = Histogram.populateYErrorsBySqrt(values);</span>
+            
+<span class="fc" id="L115">            xl = values[values.length - 1];</span>
+            
+<span class="fc" id="L117">            float binSize = hist.getXHist()[0]/2.f;</span>
+            
+<span class="fc" id="L119">            nb = Math.round(xl/binSize);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">            if (nb &lt; 10) {</span>
+<span class="nc" id="L121">                nb = 10;</span>
+            }
+            
+<span class="fc" id="L124">            hist = Histogram.createSimpleHistogram(</span>
+               0, xl, nb, values, vErrors);
+       
+<span class="fc" id="L127">            len = hist.getXHist().length;</span>
+        
+<span class="fc" id="L129">            yFirstPeakIdx = Histogram.findFirstPeakIndex(hist);</span>
+                
+<span class="fc" id="L131">            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+                  
+<span class="fc" id="L133">            xMax = 2.0f * hist.getXHist()[yMaxIdx];</span>
+           
+<span class="fc" id="L135">            p1Corr = true;</span>
+<span class="fc" id="L136">        }</span>
+
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (debug) {</span>
+<span class="fc" id="L139">            String outFileSuffix = &quot;_cluster_&quot;;</span>
+<span class="fc" id="L140">            hist.plotHistogram(&quot;clstr&quot;, outFileSuffix);</span>
+        
+<span class="fc" id="L142">            System.out.println(&quot;1stPeakIdx=&quot; + yFirstPeakIdx +</span>
+                 &quot; yMaxIdx=&quot; + yMaxIdx + &quot; out of &quot; + len
+<span class="fc" id="L144">                + &quot; x[01stPeak]=&quot; + hist.getXHist()[yFirstPeakIdx] +</span>
+<span class="fc" id="L145">                &quot; x[yMaxIdx]=&quot; + hist.getXHist()[yMaxIdx] + </span>
+                &quot; p1Corr=&quot; + p1Corr);
+        }
+        
+        //System.out.println(&quot;y1=&quot; + yFirstPeakIdx + &quot; ymx=&quot; +
+        //    yMaxIdx + &quot; len=&quot; + len);
+        
+<span class="fc bfc" id="L152" title="All 6 branches covered.">        if (!p1Corr &amp;&amp; yMaxIdx &gt; yFirstPeakIdx &amp;&amp; (yMaxIdx &gt; (len/2))) {</span>
+            
+<span class="fc" id="L154">            nb = 10;</span>
+<span class="fc" id="L155">            hist = Histogram.createSimpleHistogram(</span>
+                0, xl, nb, values, vErrors);
+            
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">            if (hist == null) {</span>
+<span class="nc" id="L159">                throw new IllegalStateException(&quot;error in algorithm&quot;);</span>
+            }
+
+<span class="fc bfc" id="L162" title="All 2 branches covered.">            if (debug) {</span>
+<span class="fc" id="L163">                String outFileSuffix = &quot;_cluster_2_&quot;;</span>
+<span class="fc" id="L164">                hist.plotHistogram(&quot;clstr&quot;, outFileSuffix);</span>
+            }
+        
+<span class="fc" id="L167">            yFirstPeakIdx = Histogram.findFirstPeakIndex(hist);</span>
+            
+<span class="fc" id="L169">            yMaxIdx = Histogram.findFirstMinimaFollowingPeak(hist, yFirstPeakIdx);</span>
+
+<span class="fc" id="L171">            xMax = 1.1f * hist.getXHist()[yMaxIdx];</span>
+            
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        } else if (!p1Corr) {</span>
+                    
+            // calculate the y quartiles above zero
+<span class="fc" id="L176">            float[] quartiles = calcXQuartilesAboveZero(hist);</span>
+
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (debug) {</span>
+<span class="fc" id="L179">                System.out.println(&quot;quartiles=&quot; + Arrays.toString(quartiles));</span>
+            }
+            
+<span class="fc" id="L182">            xl = Math.max(quartiles[0], quartiles[1]);</span>
+
+<span class="fc" id="L184">            nb /= 2;</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">            if (nb == 0) {</span>
+<span class="nc" id="L186">                nb = 1;</span>
+            }
+
+            // make another histogram w/ x range being the 2nd quartile
+<span class="fc" id="L190">            hist = Histogram.createSimpleHistogram(</span>
                 0, xl, nb, values, vErrors);
         
-<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (debug) {</span>
-<span class="fc" id="L79">                String outFileSuffix = &quot;_cluster_&quot; + hc;</span>
-<span class="fc" id="L80">                hist.plotHistogram(&quot;clstr&quot;, outFileSuffix);</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            if (debug) {</span>
+<span class="fc" id="L194">                String outFileSuffix = &quot;_cluster_2_&quot;;</span>
+<span class="fc" id="L195">                hist.plotHistogram(&quot;clstr&quot;, outFileSuffix);</span>
             }
             
-<span class="pc bpc" id="L83" title="3 of 6 branches missed.">            if (hist == null || hist.getXHist() == null || hist.getXHist().length == 0) {</span>
-<span class="nc" id="L84">                break;</span>
-            }
-            
-<span class="fc" id="L87">            histList.add(hist);</span>
-            
-<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (breakOnNext) {</span>
-<span class="fc" id="L90">                break;</span>
-            }
-            
-<span class="fc" id="L93">            int len = hist.getXHist().length;</span>
-            
-<span class="fc" id="L95">            double areaH0 = MiscMath.calculateArea(hist, 0, (len/2) - 1);</span>
-<span class="fc" id="L96">            double areaH1 = MiscMath.calculateArea(hist, (len/2), len - 1);</span>
-                        
-<span class="fc bfc" id="L98" title="All 2 branches covered.">            if ((areaH1/areaH0) &gt; 0.75) {</span>
-                // decrease the number of bins
-<span class="fc bfc" id="L100" title="All 2 branches covered.">                if (nb &lt;= 10) {</span>
-<span class="fc" id="L101">                    break;</span>
-                }
-<span class="fc" id="L103">                nb /= 2;</span>
-<span class="fc" id="L104">                hc++;</span>
-<span class="fc" id="L105">                continue;</span>
-            }
-            
-<span class="fc" id="L108">            int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
-                        
-<span class="fc" id="L110">            int yMax = hist.getYHist()[yMaxIdx];</span>
-<span class="fc" id="L111">            int yLast = hist.getYHist()[len - 1];</span>
-            
-<span class="fc" id="L113">            int yLimit = yMax/10;</span>
-                        
-<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (hc &gt; 0) {</span>
-<span class="fc" id="L116">                yLimit = yMax/15;</span>
-            }
-            
-<span class="fc" id="L119">            int yLimitIdx = -1;</span>
-                        
-<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (yLast &lt; yLimit) {</span>
-                // shorten xmax and try again
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">                for (int i = (len - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L124">                    int y = hist.getYHist()[i];</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">                    if (y &gt;= yLimit) {</span>
-<span class="fc" id="L126">                        yLimitIdx = i;</span>
-<span class="fc" id="L127">                        break;</span>
-                    }
-                }
-<span class="fc bfc" id="L130" title="All 2 branches covered.">                if (nb == 40) {</span>
-<span class="fc" id="L131">                    nb = 20;</span>
-                }
-<span class="fc" id="L133">                float halfBin =  0.5f*(hist.getXHist()[1] -  hist.getXHist()[0]);</span>
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">                if (yLimitIdx &gt; -1) {</span>
-                    // a work around to next getting stuck at same size:
-<span class="fc bfc" id="L136" title="All 2 branches covered.">                    if ((len - yLimitIdx) &lt; 5) {</span>
-<span class="fc" id="L137">                        yLimitIdx = len - 5;</span>
-                    }
-<span class="fc" id="L139">                    float tmp = hist.getXHist()[yLimitIdx] - halfBin;</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">                    if ((xl/tmp) &gt; 15) {</span>
-                        // extreme zoom-in of high peak near idx=0
-<span class="pc bpc" id="L142" title="1 of 2 branches missed.">                        if (yLimitIdx == 0) {</span>
-<span class="nc" id="L143">                            xl = hist.getXHist()[1] - halfBin;</span>
-                        } else {
-<span class="fc" id="L145">                            xl = tmp;</span>
-                        }
-<span class="fc" id="L147">                        breakOnNext = true;</span>
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">                    } else if (tmp &lt; halfBin) {</span>
-                        // extreme zoom-in of high peak near idx=0
-<span class="nc" id="L150">                        xl = halfBin;</span>
-<span class="nc" id="L151">                        breakOnNext = true;</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">                    } else if (tmp &lt; xl) {</span>
-<span class="fc" id="L153">                        xl = tmp;</span>
-                    }
-<span class="fc" id="L155">                } else {</span>
-<span class="nc" id="L156">                    xl = hist.getXHist()[1] - halfBin;</span>
-                }
-            } else {
-                break;
-            }
-            
-<span class="fc" id="L162">            hc++;</span>
-<span class="fc" id="L163">        }</span>
+<span class="fc" id="L198">            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (histList.isEmpty()) {</span>
-            // should default null result be density such that there are no clusters (~0)
-            // or every point is its own cluster (infinity)
-<span class="nc" id="L168">            return 0;</span>
+<span class="fc" id="L200">            xMax = 1.1f * hist.getXHist()[yMaxIdx];</span>
         }
         
-<span class="fc" id="L171">        HistogramHolder hist = histList.get(histList.size() - 1);</span>
-<span class="fc" id="L172">        int len = hist.getXHist().length;</span>
-        
-        // find area of first peak, start search after first bin which
-        // sometimes has a delta function.
-        //TODO: this may need to be revised
-<span class="fc" id="L177">        int firstNonZeroIdx = -1;</span>
-<span class="fc" id="L178">        int firstZeroAfterPeakIdx = len - 1;</span>
-        
-<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = 1; i &lt; len; ++i) {</span>
-            
-<span class="fc" id="L182">            int y = hist.getYHist()[i];</span>
-            
-<span class="fc bfc" id="L184" title="All 2 branches covered.">            if (firstNonZeroIdx == -1) {</span>
-<span class="fc bfc" id="L185" title="All 2 branches covered.">                if (y &gt; 0) {</span>
-<span class="fc" id="L186">                    firstNonZeroIdx = i;</span>
-                }
-            } else {
-                // the start of the first peak has been found so look for the end
-<span class="fc bfc" id="L190" title="All 2 branches covered.">                if (y == 0) {</span>
-<span class="fc" id="L191">                    firstZeroAfterPeakIdx = i;</span>
-<span class="fc" id="L192">                    break;</span>
-                }
-            }
-        }
-                
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (firstNonZeroIdx == -1) {</span>
-<span class="nc" id="L198">            return 0;</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (yMaxIdx == -1) {</span>
+<span class="nc" id="L204">            return 0;</span>
         }
         
-        // find weighted x from firstNonZeroIdx to firstZeroAfterPeakIdx
-<span class="fc" id="L202">        float yPeakSum = 0;</span>
-<span class="fc bfc" id="L203" title="All 2 branches covered.">        for (int i = firstNonZeroIdx; i &lt; firstZeroAfterPeakIdx; ++i) {</span>
-<span class="fc" id="L204">            yPeakSum += hist.getYHist()[i];</span>
-        }
-        
-<span class="fc" id="L207">        float weightedX = 0;</span>
-<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (int i = firstNonZeroIdx; i &lt; firstZeroAfterPeakIdx; ++i) {</span>
-<span class="fc" id="L209">            float w = hist.getYHistFloat()[i]/yPeakSum;</span>
-<span class="fc" id="L210">            weightedX += (w * hist.getXHist()[i]);</span>
-        }
-                
-        //wanting an answer that is a little higher 
-        // than the weghted center but still within the bounds of the peak.
-        /*int nh = (firstZeroAfterPeakIdx - firstNonZeroIdx)/2;
-        double areaH0 = MiscMath.calculateArea(hist, firstNonZeroIdx, nh);
-        double areaH1 = MiscMath.calculateArea(hist, nh + 1, firstZeroAfterPeakIdx);
-        */
-<span class="fc" id="L219">        float frac9 = (0.9f * hist.getXHist()[firstZeroAfterPeakIdx] )</span>
-<span class="fc" id="L220">            + (0.1f * hist.getXHist()[firstNonZeroIdx]);</span>
-        
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (weightedX &lt; frac9) {</span>
-<span class="fc" id="L223">            weightedX = 0.5f * (weightedX + frac9);</span>
-        }
-        
-<span class="fc" id="L226">        return weightedX;</span>
+<span class="fc" id="L207">        return xMax;</span>
     }
 
     private float findCriticalDensity(int[][] distTrans) {
         
-<span class="fc" id="L231">        int w = distTrans.length;</span>
-<span class="fc" id="L232">        int h = distTrans[0].length;</span>
+<span class="fc" id="L212">        int w = distTrans.length;</span>
+<span class="fc" id="L213">        int h = distTrans[0].length;</span>
         
-<span class="fc" id="L234">        float[] values = new float[w * h];</span>
-<span class="fc" id="L235">        int count2 = 0;</span>
-<span class="fc bfc" id="L236" title="All 2 branches covered.">        for (int i0 = 0; i0 &lt; w; ++i0) {</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">            for (int j0 = 0; j0 &lt; h; ++j0) {</span>
-<span class="fc" id="L238">                int v = distTrans[i0][j0];</span>
-<span class="fc" id="L239">                values[count2] = (float) (1. / Math.sqrt(v));</span>
-<span class="fc" id="L240">                count2++;</span>
+<span class="fc" id="L215">        float[] values = new float[w * h];</span>
+<span class="fc" id="L216">        int count2 = 0;</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        for (int i0 = 0; i0 &lt; w; ++i0) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            for (int j0 = 0; j0 &lt; h; ++j0) {</span>
+<span class="fc" id="L219">                int v = distTrans[i0][j0];</span>
+<span class="fc" id="L220">                values[count2] = (float) (1. / Math.sqrt(v));</span>
+<span class="fc" id="L221">                count2++;</span>
             }
         }
 
-<span class="fc" id="L244">        return findCriticalDensity(values);</span>
+<span class="fc" id="L225">        return findCriticalDensity(values);</span>
+    }
+
+    private float[] calcXQuartilesAboveZero(HistogramHolder hist) {
+
+        // making a cumulative array of y.
+        
+<span class="fc" id="L232">        int n = hist.getXHist().length;</span>
+<span class="fc" id="L233">        double[] ys = new double[n];</span>
+<span class="fc" id="L234">        int count = 0;</span>
+<span class="fc" id="L235">        ys[0] = hist.getYHist()[0];</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        for (int i = 1; i &lt; n; ++i) {</span>
+<span class="fc" id="L237">            ys[i] = hist.getYHist()[i] + ys[i - 1];</span>
+        }
+        
+<span class="fc" id="L240">        double yTot = ys[n - 1];</span>
+        
+        // where y cumulative is yTot/2
+<span class="fc" id="L243">        int medianIdx = Arrays.binarySearch(ys, yTot/2);</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        if (medianIdx &lt; 0) {</span>
+            // idx = -*idx2 - 1
+<span class="fc" id="L246">            medianIdx = -1*(medianIdx + 1);</span>
+        }
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (medianIdx &gt; (n - 1)) {</span>
+<span class="nc" id="L249">            medianIdx = n - 1;</span>
+        }
+        
+        // where y curmulative is yTot/4
+<span class="fc" id="L253">        int q12Idx = Arrays.binarySearch(ys, yTot/2);</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (q12Idx &lt; 0) {</span>
+            // idx = -*idx2 - 1
+<span class="fc" id="L256">            q12Idx = -1*(q12Idx + 1);</span>
+        }
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        if (q12Idx &gt; (n - 1)) {</span>
+<span class="nc" id="L259">            q12Idx = n - 1;</span>
+        }
+        
+        // where y curmulative is 3*yTot/4
+<span class="fc" id="L263">        int q34Idx = Arrays.binarySearch(ys, 3.*yTot/4.);</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (q34Idx &lt; 0) {</span>
+            // idx = -*idx2 - 1
+<span class="fc" id="L266">            q34Idx = -1*(q34Idx + 1);</span>
+        }
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        if (q34Idx &gt; (n - 1)) {</span>
+<span class="nc" id="L269">            q34Idx = n - 1;</span>
+        }
+        
+<span class="fc" id="L272">        float[] xs = hist.getXHist();        </span>
+        
+<span class="fc" id="L274">        return new float[]{xs[q12Idx], xs[medianIdx], xs[q34Idx], xs[n - 1]};</span>
     }
 
 }

@@ -58,21 +58,44 @@ public class AxisIndexer {
      */
     protected int nXY;
 
-<span class="fc" id="L61">    protected float xmin = Float.MAX_VALUE;</span>
+    /**
+     *
+     */
+<span class="fc" id="L64">    protected float xmin = Float.MAX_VALUE;</span>
     
-<span class="fc" id="L63">    protected float ymin = xmin;</span>
+    /**
+     *
+     */
+<span class="fc" id="L69">    protected float ymin = xmin;</span>
     
-<span class="fc" id="L65">    protected float xmax = Float.MIN_VALUE;</span>
+    /**
+     *
+     */
+<span class="fc" id="L74">    protected float xmax = Float.MIN_VALUE;</span>
     
-<span class="fc" id="L67">    protected float ymax = xmax;</span>
+    /**
+     *
+     */
+<span class="fc" id="L79">    protected float ymax = xmax;</span>
     
-<span class="fc" id="L69">    public AxisIndexer() {</span>
-<span class="fc" id="L70">    }</span>
+    /**
+     *
+     */
+<span class="fc" id="L84">    public AxisIndexer() {</span>
+<span class="fc" id="L85">    }</span>
 
+    /**
+     *
+     * @return
+     */
     public int getNXY() {
-<span class="fc" id="L73">        return nXY;</span>
+<span class="fc" id="L92">        return nXY;</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public long approximateMemoryUsed() {
 
         /*
@@ -105,37 +128,37 @@ public class AxisIndexer {
 
         */
 
-<span class="fc" id="L108">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+<span class="fc" id="L131">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
 
-<span class="pc bpc" id="L110" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
+<span class="pc bpc" id="L133" title="2 of 4 branches missed.">        boolean is32Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? false : true;</span>
 
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        int n = (x == null) ? 0 : x.length;</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        int n = (x == null) ? 0 : x.length;</span>
 
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        int nbits = (is32Bit) ? 32 : 64;</span>
 
-<span class="fc" id="L116">        int arrayRefBits = 32;</span>
+<span class="fc" id="L139">        int arrayRefBits = 32;</span>
 
-<span class="fc" id="L118">        int overheadBytes = 16;</span>
+<span class="fc" id="L141">        int overheadBytes = 16;</span>
 
         // 4 float and 1 int arrays on the heap
-<span class="fc" id="L121">        long sumBits = 5*(arrayRefBits + (n*nbits));</span>
+<span class="fc" id="L144">        long sumBits = 5*(arrayRefBits + (n*nbits));</span>
 
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (xErrors != null) {</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (xErrors != null) {</span>
             // 2 float arrays on the heap
-<span class="fc" id="L125">            sumBits += (2*(arrayRefBits + (xErrors.length * nbits)));</span>
+<span class="fc" id="L148">            sumBits += (2*(arrayRefBits + (xErrors.length * nbits)));</span>
         }
 
         // 5 primitives
-<span class="fc" id="L129">        sumBits += 5*nbits;</span>
+<span class="fc" id="L152">        sumBits += 5*nbits;</span>
 
-<span class="fc" id="L131">        long sumBytes = (sumBits/8) + overheadBytes;</span>
+<span class="fc" id="L154">        long sumBytes = (sumBits/8) + overheadBytes;</span>
 
         // amount of padding needed to make it a round 8 bytes
-<span class="fc" id="L134">        long padding = (sumBytes % 8);</span>
+<span class="fc" id="L157">        long padding = (sumBytes % 8);</span>
 
-<span class="fc" id="L136">        sumBytes += padding;</span>
+<span class="fc" id="L159">        sumBytes += padding;</span>
 
-<span class="fc" id="L138">        return sumBytes;</span>
+<span class="fc" id="L161">        return sumBytes;</span>
     }
 
     /**
@@ -157,33 +180,33 @@ public class AxisIndexer {
     public void sortAndIndexX(float[] xPoints, float[] yPoints, 
         float[] xPointErrors, float[] yPointErrors, int nPoints) {
 
-<span class="fc" id="L160">        this.x = Arrays.copyOf(xPoints, nPoints);</span>
-<span class="fc" id="L161">        this.y = Arrays.copyOf(yPoints, nPoints);</span>
-<span class="fc" id="L162">        this.xErrors = Arrays.copyOf(xPointErrors, nPoints);</span>
-<span class="fc" id="L163">        this.yErrors = Arrays.copyOf(yPointErrors, nPoints);</span>
+<span class="fc" id="L183">        this.x = Arrays.copyOf(xPoints, nPoints);</span>
+<span class="fc" id="L184">        this.y = Arrays.copyOf(yPoints, nPoints);</span>
+<span class="fc" id="L185">        this.xErrors = Arrays.copyOf(xPointErrors, nPoints);</span>
+<span class="fc" id="L186">        this.yErrors = Arrays.copyOf(yPointErrors, nPoints);</span>
 
-<span class="fc" id="L165">        this.nXY = nPoints;</span>
+<span class="fc" id="L188">        this.nXY = nPoints;</span>
 
-<span class="fc" id="L167">        this.sortedXIndexes = new int[nXY];</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
-<span class="fc" id="L169">            sortedXIndexes[i] = i;</span>
+<span class="fc" id="L190">        this.sortedXIndexes = new int[nXY];</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
+<span class="fc" id="L192">            sortedXIndexes[i] = i;</span>
         }
 
-<span class="fc" id="L172">        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);</span>
+<span class="fc" id="L195">        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);</span>
         
-<span class="fc" id="L174">        xmin = xPoints[0];</span>
+<span class="fc" id="L197">        xmin = xPoints[0];</span>
         
-<span class="fc" id="L176">        xmax = xPoints[xPoints.length - 1];</span>
+<span class="fc" id="L199">        xmax = xPoints[xPoints.length - 1];</span>
         
-<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (float yp : yPoints) {</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">            if (yp &gt; ymax) {</span>
-<span class="fc" id="L180">                ymax = yp;</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (float yp : yPoints) {</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">            if (yp &gt; ymax) {</span>
+<span class="fc" id="L203">                ymax = yp;</span>
             }
-<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (yp &lt; ymin) {</span>
-<span class="fc" id="L183">                ymin = yp;</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">            if (yp &lt; ymin) {</span>
+<span class="fc" id="L206">                ymin = yp;</span>
             }
         }
-<span class="fc" id="L186">    }</span>
+<span class="fc" id="L209">    }</span>
 
     /**
      * sort the pair (xPoints, yPoints) by x and index them then sort by y and
@@ -198,44 +221,48 @@ public class AxisIndexer {
      */
     public void sortAndIndexX(float[] xPoints, float[] yPoints, int nPoints) {
 
-<span class="fc" id="L201">        this.x = Arrays.copyOf(xPoints, nPoints);</span>
-<span class="fc" id="L202">        this.y = Arrays.copyOf(yPoints, nPoints);</span>
-<span class="fc" id="L203">        this.xErrors = null;</span>
-<span class="fc" id="L204">        this.yErrors = null;</span>
+<span class="fc" id="L224">        this.x = Arrays.copyOf(xPoints, nPoints);</span>
+<span class="fc" id="L225">        this.y = Arrays.copyOf(yPoints, nPoints);</span>
+<span class="fc" id="L226">        this.xErrors = null;</span>
+<span class="fc" id="L227">        this.yErrors = null;</span>
 
-<span class="fc" id="L206">        this.nXY = nPoints;</span>
+<span class="fc" id="L229">        this.nXY = nPoints;</span>
 
-<span class="fc" id="L208">        this.sortedXIndexes = new int[nXY];</span>
-<span class="fc bfc" id="L209" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
-<span class="fc" id="L210">            sortedXIndexes[i] = i;</span>
+<span class="fc" id="L231">        this.sortedXIndexes = new int[nXY];</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY; i++) {</span>
+<span class="fc" id="L233">            sortedXIndexes[i] = i;</span>
         }
 
-<span class="fc" id="L213">        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);</span>
+<span class="fc" id="L236">        MultiArrayMergeSort.sortBy1stArg(xPoints, yPoints, sortedXIndexes, nXY);</span>
 
-<span class="fc" id="L215">        xmin = xPoints[0];</span>
+<span class="fc" id="L238">        xmin = xPoints[0];</span>
         
-<span class="fc" id="L217">        xmax = xPoints[xPoints.length - 1];</span>
+<span class="fc" id="L240">        xmax = xPoints[xPoints.length - 1];</span>
         
-<span class="fc bfc" id="L219" title="All 2 branches covered.">        for (float yp : yPoints) {</span>
-<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (yp &gt; ymax) {</span>
-<span class="fc" id="L221">                ymax = yp;</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        for (float yp : yPoints) {</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">            if (yp &gt; ymax) {</span>
+<span class="fc" id="L244">                ymax = yp;</span>
             }
-<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (yp &lt; ymin) {</span>
-<span class="fc" id="L224">                ymin = yp;</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">            if (yp &lt; ymin) {</span>
+<span class="fc" id="L247">                ymin = yp;</span>
             }
         }
-<span class="fc" id="L227">    }</span>
+<span class="fc" id="L250">    }</span>
     
+    /**
+     *
+     * @return
+     */
     public float[] findXYMinMax() {
 
-<span class="fc" id="L231">        return new float[]{xmin, xmax, ymin, ymax};</span>
+<span class="fc" id="L258">        return new float[]{xmin, xmax, ymin, ymax};</span>
     }
  
     /**
      * @return the sortedXIndexes
      */
     public int[] getSortedXIndexes() {
-<span class="fc" id="L238">        return sortedXIndexes;</span>
+<span class="fc" id="L265">        return sortedXIndexes;</span>
     }
 
     /**
@@ -244,7 +271,7 @@ public class AxisIndexer {
      * @return the x
      */
     public float[] getX() {
-<span class="fc" id="L247">        return x;</span>
+<span class="fc" id="L274">        return x;</span>
     }
 
     /**
@@ -253,7 +280,7 @@ public class AxisIndexer {
      * @return the y
      */
     public float[] getY() {
-<span class="fc" id="L256">        return y;</span>
+<span class="fc" id="L283">        return y;</span>
     }
 
     /**
@@ -261,7 +288,7 @@ public class AxisIndexer {
      * @return the xErrors
      */
     public float[] getXErrors() {
-<span class="fc" id="L264">        return xErrors;</span>
+<span class="fc" id="L291">        return xErrors;</span>
     }
 
     /**
@@ -270,11 +297,15 @@ public class AxisIndexer {
      * @return the yErrors
      */
     public float[] getYErrors() {
-<span class="fc" id="L273">        return yErrors;</span>
+<span class="fc" id="L300">        return yErrors;</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public int getNumberOfPoints() {
-<span class="fc" id="L277">        return nXY;</span>
+<span class="fc" id="L308">        return nXY;</span>
     }
 
 }

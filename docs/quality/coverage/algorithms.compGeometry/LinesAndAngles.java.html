@@ -19,18 +19,18 @@ import java.util.Arrays;
           * P2
           .
           .
-          .   * P1      &lt;--- P2 is counterclockwise from P1 w.r.t. origin o
+          .   * P1     &amp;lt;--- P2 is counterclockwise from P1 w.r.t. origin o
           .
           o
       
                 * P2
                 .
-        P1 *    .       &lt;--- P2 is clockwise from P1 w.r.t. origin o
+        P1 *    .      &amp;lt;--- P2 is clockwise from P1 w.r.t. origin o
                 .
                 .
                 o
-     &lt;/pre&gt;
      
+     &lt;/pre&gt;
      * @param x1
      * @param y1
      * @param x2
@@ -40,71 +40,112 @@ import java.util.Arrays;
     public static int crossProduct(int x1, int y1, int x2, int y2) {
 <span class="fc" id="L41">        return ((x1*y2) - (x2*y1));</span>
     }
+
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double crossProduct(double x1, double y1, double x2, double y2) {
-<span class="fc" id="L44">        return ((x1*y2) - (x2*y1));</span>
+<span class="fc" id="L53">        return ((x1*y2) - (x2*y1));</span>
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @param x4
+     * @param y4
+     * @return
+     */
     public static boolean linesIntersect(int x1, int y1,
         int x2, int y2, int x3, int y3, int x4, int y4) {
 
-<span class="fc" id="L50">        int d1 = direction(x3, y3, x4, y4, x1, y1);</span>
-<span class="fc" id="L51">        int d2 = direction(x3, y3, x4, y4, x2, y2);</span>
-<span class="fc" id="L52">        int d3 = direction(x1, y1, x2, y2, x3, y3);</span>
-<span class="fc" id="L53">        int d4 = direction(x1, y1, x2, y2, x4, y4);</span>
+<span class="fc" id="L71">        int d1 = direction(x3, y3, x4, y4, x1, y1);</span>
+<span class="fc" id="L72">        int d2 = direction(x3, y3, x4, y4, x2, y2);</span>
+<span class="fc" id="L73">        int d3 = direction(x1, y1, x2, y2, x3, y3);</span>
+<span class="fc" id="L74">        int d4 = direction(x1, y1, x2, y2, x4, y4);</span>
 
-<span class="pc bpc" id="L55" title="4 of 16 branches missed.">        if (</span>
+<span class="pc bpc" id="L76" title="4 of 16 branches missed.">        if (</span>
             (((d1 &gt; 0) &amp;&amp; (d2 &lt; 0)) || ((d1 &lt; 0) &amp;&amp; (d2 &gt; 0)))
             &amp;&amp;
             (((d3 &gt; 0) &amp;&amp; (d4 &lt; 0)) || ((d3 &lt; 0) &amp;&amp; (d4 &gt; 0)))
         ) {
-<span class="fc" id="L60">            return true;</span>
-<span class="pc bpc" id="L61" title="1 of 4 branches missed.">        } else if ( ((d1 == 0) &amp;&amp; onSegment(x3, y3, x4, y4, x1, y1)) ) {</span>
-<span class="fc" id="L62">            return true;</span>
-<span class="pc bpc" id="L63" title="3 of 4 branches missed.">        } else if ( ((d2 == 0) &amp;&amp; onSegment(x3, y3, x4, y4, x2, y2)) ) {</span>
-<span class="nc" id="L64">            return true;</span>
-<span class="pc bpc" id="L65" title="3 of 4 branches missed.">        } else if ( ((d3 == 0) &amp;&amp; onSegment(x1, y1, x2, y2, x3, y3)) ) {</span>
-<span class="nc" id="L66">            return true;</span>
-<span class="pc bpc" id="L67" title="3 of 4 branches missed.">        } else if ( ((d4 == 0) &amp;&amp; onSegment(x1, y1, x2, y2, x4, y4)) ) {</span>
-<span class="nc" id="L68">            return true;</span>
+<span class="fc" id="L81">            return true;</span>
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">        } else if ( ((d1 == 0) &amp;&amp; onSegment(x3, y3, x4, y4, x1, y1)) ) {</span>
+<span class="fc" id="L83">            return true;</span>
+<span class="pc bpc" id="L84" title="3 of 4 branches missed.">        } else if ( ((d2 == 0) &amp;&amp; onSegment(x3, y3, x4, y4, x2, y2)) ) {</span>
+<span class="nc" id="L85">            return true;</span>
+<span class="pc bpc" id="L86" title="3 of 4 branches missed.">        } else if ( ((d3 == 0) &amp;&amp; onSegment(x1, y1, x2, y2, x3, y3)) ) {</span>
+<span class="nc" id="L87">            return true;</span>
+<span class="pc bpc" id="L88" title="3 of 4 branches missed.">        } else if ( ((d4 == 0) &amp;&amp; onSegment(x1, y1, x2, y2, x4, y4)) ) {</span>
+<span class="nc" id="L89">            return true;</span>
         }
-<span class="fc" id="L70">        return false;</span>
+<span class="fc" id="L91">        return false;</span>
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
     public static int direction(int x1, int y1, int x2, int y2, int x3, int y3) {
 
-<span class="fc" id="L75">        int x31 = x3 - x1;</span>
-<span class="fc" id="L76">        int y31 = y3 - y1;</span>
+<span class="fc" id="L106">        int x31 = x3 - x1;</span>
+<span class="fc" id="L107">        int y31 = y3 - y1;</span>
 
-<span class="fc" id="L78">        int x21 = x2 - x1;</span>
-<span class="fc" id="L79">        int y21 = y2 - y1;</span>
+<span class="fc" id="L109">        int x21 = x2 - x1;</span>
+<span class="fc" id="L110">        int y21 = y2 - y1;</span>
 
-<span class="fc" id="L81">        return crossProduct(x31, y31, x21, y21);</span>
+<span class="fc" id="L112">        return crossProduct(x31, y31, x21, y21);</span>
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
     public static double direction(float x1, float y1, float x2, float y2, float x3, float y3) {
 
-<span class="fc" id="L86">        double x31 = x3 - x1;</span>
-<span class="fc" id="L87">        double y31 = y3 - y1;</span>
+<span class="fc" id="L127">        double x31 = x3 - x1;</span>
+<span class="fc" id="L128">        double y31 = y3 - y1;</span>
 
-<span class="fc" id="L89">        double x21 = x2 - x1;</span>
-<span class="fc" id="L90">        double y21 = y2 - y1;</span>
+<span class="fc" id="L130">        double x21 = x2 - x1;</span>
+<span class="fc" id="L131">        double y21 = y2 - y1;</span>
 
-<span class="fc" id="L92">        return crossProduct(x31, y31, x21, y21);</span>
+<span class="fc" id="L133">        return crossProduct(x31, y31, x21, y21);</span>
     }
 
     static boolean onSegment(int x1, int y1,
         int x2, int y2, int x3, int y3) {
 
-<span class="fc bfc" id="L98" title="All 2 branches covered.">        int minx12 = (x1 &lt; x2) ? x1 : x2;</span>
-<span class="fc bfc" id="L99" title="All 2 branches covered.">        int miny12 = (y1 &lt; y2) ? y1 : y2;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        int minx12 = (x1 &lt; x2) ? x1 : x2;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        int miny12 = (y1 &lt; y2) ? y1 : y2;</span>
 
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        int maxx12 = (x1 &gt; x2) ? x1 : x2;</span>
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        int maxy12 = (y1 &gt; y2) ? y1 : y2;</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        int maxx12 = (x1 &gt; x2) ? x1 : x2;</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        int maxy12 = (y1 &gt; y2) ? y1 : y2;</span>
 
-<span class="pc bpc" id="L104" title="4 of 8 branches missed.">        if ( (minx12 &lt;= x3) &amp;&amp; (x3 &lt;= maxx12) &amp;&amp; (miny12 &lt;= y3) &amp;&amp; (y3 &lt;= maxy12) ) {</span>
-<span class="fc" id="L105">            return true;</span>
+<span class="pc bpc" id="L145" title="4 of 8 branches missed.">        if ( (minx12 &lt;= x3) &amp;&amp; (x3 &lt;= maxx12) &amp;&amp; (miny12 &lt;= y3) &amp;&amp; (y3 &lt;= maxy12) ) {</span>
+<span class="fc" id="L146">            return true;</span>
         } else {
-<span class="nc" id="L107">            return false;</span>
+<span class="nc" id="L148">            return false;</span>
         }
     }
 
@@ -121,12 +162,12 @@ import java.util.Arrays;
         // log.info(&quot;(&quot; + x1 + &quot;,&quot; + y1 + &quot;),&quot; + &quot;(&quot; + x2 + &quot;,&quot; + y2 + &quot;)&quot;);
         // determine quadrant of points
 
-<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (x2 == x1) {</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">            if (y2 == y1) {</span>
-<span class="fc" id="L126">                return 0.0f;</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (x2 == x1) {</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            if (y2 == y1) {</span>
+<span class="fc" id="L167">                return 0.0f;</span>
             }
-<span class="fc" id="L128">    		return 1.0;//0.0f??</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">    	} else if (x2 &gt; x1) {</span>
+<span class="fc" id="L169">    		return 1.0;//0.0f??</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">    	} else if (x2 &gt; x1) {</span>
              //
              //       p2 o
              //         /
@@ -141,9 +182,9 @@ import java.util.Arrays;
              //         \
              //       p2 o
              //
-<span class="fc" id="L144">            double c = lengthOfLine(x1, y1, x2, y2);</span>
-<span class="fc" id="L145">            double b = lengthOfLine(x2, y1, x2, y2);</span>
-<span class="fc" id="L146">            return (b/c);</span>
+<span class="fc" id="L185">            double c = lengthOfLine(x1, y1, x2, y2);</span>
+<span class="fc" id="L186">            double b = lengthOfLine(x2, y1, x2, y2);</span>
+<span class="fc" id="L187">            return (b/c);</span>
         } else {
              //                                                       .
              //   p2 o              p2 o
@@ -156,24 +197,32 @@ import java.util.Arrays;
              //        b| /          sin(t) = b/c + sin(pi)
              //         |/ c
              //      p2 o
-<span class="fc" id="L159">            double c = lengthOfLine(x1, y1, x2, y2);</span>
-<span class="fc" id="L160">            double b = lengthOfLine(x2, y1, x1, y1);</span>
+<span class="fc" id="L200">            double c = lengthOfLine(x1, y1, x2, y2);</span>
+<span class="fc" id="L201">            double b = lengthOfLine(x2, y1, x1, y1);</span>
 
             // the angle is actually (1-b/c) + sin90 = (1-b/c) + 1 = (b/c)
 
-<span class="fc" id="L164">            return (b/c) + 1.0;</span>
+<span class="fc" id="L205">            return (b/c) + 1.0;</span>
         }
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double calculatePolarSineTheta(float x1, float y1, float x2, float y2) {
         // log.info(&quot;(&quot; + x1 + &quot;,&quot; + y1 + &quot;),&quot; + &quot;(&quot; + x2 + &quot;,&quot; + y2 + &quot;)&quot;);
         // determine quadrant of points
-<span class="fc bfc" id="L171" title="All 2 branches covered.">        if (x2 == x1) {</span>
-<span class="fc bfc" id="L172" title="All 2 branches covered.">            if (y2 == y1) {</span>
-<span class="fc" id="L173">                return 0.0f;</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (x2 == x1) {</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">            if (y2 == y1) {</span>
+<span class="fc" id="L222">                return 0.0f;</span>
             }
-<span class="fc" id="L175">                return 1.0;//0.0f??</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">        } else if (x2 &gt; x1) {</span>
+<span class="fc" id="L224">                return 1.0;//0.0f??</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">        } else if (x2 &gt; x1) {</span>
              //
              //       p2 o
              //         /
@@ -188,9 +237,9 @@ import java.util.Arrays;
              //         \
              //       p2 o
              //
-<span class="fc" id="L191">            double c = lengthOfLine(x1, y1, x2, y2);</span>
-<span class="fc" id="L192">            double b = lengthOfLine(x2, y1, x2, y2);</span>
-<span class="fc" id="L193">            return (b/c);</span>
+<span class="fc" id="L240">            double c = lengthOfLine(x1, y1, x2, y2);</span>
+<span class="fc" id="L241">            double b = lengthOfLine(x2, y1, x2, y2);</span>
+<span class="fc" id="L242">            return (b/c);</span>
         } else {
             //                                                       .
             //   p2 o              p2 o
@@ -203,27 +252,43 @@ import java.util.Arrays;
             //        b| /          sin(t) = b/c + sin(pi)
             //         |/ c
             //      p2 o
-<span class="fc" id="L206">           double c = lengthOfLine(x1, y1, x2, y2);</span>
-<span class="fc" id="L207">           double b = lengthOfLine(x2, y1, x1, y1);</span>
+<span class="fc" id="L255">           double c = lengthOfLine(x1, y1, x2, y2);</span>
+<span class="fc" id="L256">           double b = lengthOfLine(x2, y1, x1, y1);</span>
 
            // the angle is actually (1-b/c) + sin90 = (1-b/c) + 1 = (b/c)
 
-<span class="fc" id="L211">           return (b/c) + 1.0;</span>
+<span class="fc" id="L260">           return (b/c) + 1.0;</span>
        }
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double lengthOfLine(double x1, double y1, double x2, double y2) {
-<span class="fc" id="L216">        double d = Math.sqrt( distSquared( x1,  y1,  x2,  y2) );</span>
-<span class="fc" id="L217">        return d;</span>
+<span class="fc" id="L273">        double d = Math.sqrt( distSquared( x1,  y1,  x2,  y2) );</span>
+<span class="fc" id="L274">        return d;</span>
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static double distSquared(double x1, double y1, double x2, double y2) {
 
-<span class="fc" id="L222">        double dx2 = (x2 - x1);</span>
-<span class="fc" id="L223">        dx2 *= dx2;</span>
-<span class="fc" id="L224">        double dy2 = (y2 - y1);</span>
-<span class="fc" id="L225">        dy2 *= dy2;</span>
-<span class="fc" id="L226">        return dx2 + dy2;</span>
+<span class="fc" id="L287">        double dx2 = (x2 - x1);</span>
+<span class="fc" id="L288">        dx2 *= dx2;</span>
+<span class="fc" id="L289">        double dy2 = (y2 - y1);</span>
+<span class="fc" id="L290">        dy2 *= dy2;</span>
+<span class="fc" id="L291">        return dx2 + dy2;</span>
     }
 
     /** &lt;pre&gt;from http://en.wikipedia.org/wiki/Line-line_intersection
@@ -244,7 +309,7 @@ import java.util.Arrays;
                                \
                                 *
                             (x2, y2)
-           &lt;pre&gt;
+           &lt;/pre&gt;
          * 
          * @param x1
          * @param y1
@@ -288,277 +353,354 @@ import java.util.Arrays;
          *
          */
 
-<span class="fc" id="L291">        double x1y2minusy1x2 = (x1*y2) - (y1*x2);</span>
+<span class="fc" id="L356">        double x1y2minusy1x2 = (x1*y2) - (y1*x2);</span>
 
-<span class="fc" id="L293">        double x3y4minusy3x4 = (x3*y4) - (y3*x4);</span>
+<span class="fc" id="L358">        double x3y4minusy3x4 = (x3*y4) - (y3*x4);</span>
 
-<span class="fc" id="L295">        double x3minusx4 = x3 - x4;</span>
+<span class="fc" id="L360">        double x3minusx4 = x3 - x4;</span>
 
-<span class="fc" id="L297">        double y3minusy4 = y3 - y4;</span>
+<span class="fc" id="L362">        double y3minusy4 = y3 - y4;</span>
 
-<span class="fc" id="L299">        double y1minusy2 = y1 - y2;</span>
+<span class="fc" id="L364">        double y1minusy2 = y1 - y2;</span>
 
-<span class="fc" id="L301">        double x1minusx2 = x1 - x2;</span>
+<span class="fc" id="L366">        double x1minusx2 = x1 - x2;</span>
 
-<span class="fc" id="L303">        double p_denom = (x1minusx2*y3minusy4) - (y1minusy2*x3minusx4);</span>
+<span class="fc" id="L368">        double p_denom = (x1minusx2*y3minusy4) - (y1minusy2*x3minusx4);</span>
 
-<span class="fc bfc" id="L305" title="All 2 branches covered.">        if (p_denom == 0.0) {</span>
-<span class="fc" id="L306">            return null;</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (p_denom == 0.0) {</span>
+<span class="fc" id="L371">            return null;</span>
         }
 
-<span class="fc" id="L309">        double p_x = ((x1y2minusy1x2 * x3minusx4) - (x3y4minusy3x4 * x1minusx2))/p_denom;</span>
+<span class="fc" id="L374">        double p_x = ((x1y2minusy1x2 * x3minusx4) - (x3y4minusy3x4 * x1minusx2))/p_denom;</span>
 
-<span class="fc" id="L311">        double p_y = ((x1y2minusy1x2 * y3minusy4) - (x3y4minusy3x4 * y1minusy2))/p_denom;</span>
+<span class="fc" id="L376">        double p_y = ((x1y2minusy1x2 * y3minusy4) - (x3y4minusy3x4 * y1minusy2))/p_denom;</span>
 
-<span class="fc" id="L313">        return new double[]{p_x, p_y};</span>
+<span class="fc" id="L378">        return new double[]{p_x, p_y};</span>
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @param x4
+     * @param y4
+     * @return
+     */
     public static double[] intersectionOf2Lines_2(float x1, float y1, float x2, float y2,
         float x3, float y3, float x4, float y4) {
 
-<span class="fc" id="L319">        double tc1=(x2-x1);</span>
+<span class="fc" id="L396">        double tc1=(x2-x1);</span>
 
-<span class="fc" id="L321">        double tc2=(y2-y1);</span>
+<span class="fc" id="L398">        double tc2=(y2-y1);</span>
 
-<span class="fc" id="L323">        double sc1=(x4-x3);</span>
+<span class="fc" id="L400">        double sc1=(x4-x3);</span>
 
-<span class="fc" id="L325">        double sc2=(y4-y3);</span>
+<span class="fc" id="L402">        double sc2=(y4-y3);</span>
 
-<span class="fc" id="L327">        double con1=(x3-x1);</span>
+<span class="fc" id="L404">        double con1=(x3-x1);</span>
 
-<span class="fc" id="L329">        double con2=(y3-y1);</span>
+<span class="fc" id="L406">        double con2=(y3-y1);</span>
 
-<span class="fc" id="L331">        double p_denom = (tc2*sc1-tc1*sc2);</span>
+<span class="fc" id="L408">        double p_denom = (tc2*sc1-tc1*sc2);</span>
 
-<span class="pc bpc" id="L333" title="1 of 2 branches missed.">        if (p_denom == 0.0) {</span>
-<span class="nc" id="L334">            return null;</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">        if (p_denom == 0.0) {</span>
+<span class="nc" id="L411">            return null;</span>
         }
 
-<span class="fc" id="L337">        double con=tc2*con1-tc1*con2;</span>
-<span class="fc" id="L338">        double s = con/p_denom;</span>
+<span class="fc" id="L414">        double con=tc2*con1-tc1*con2;</span>
+<span class="fc" id="L415">        double s = con/p_denom;</span>
 
-<span class="fc" id="L340">        double ax = (s*sc1);</span>
-<span class="fc" id="L341">        double ay = (s*sc2);</span>
-<span class="fc" id="L342">        double p_x = x3 - ax;</span>
-<span class="fc" id="L343">        double p_y = y3 - ay;</span>
+<span class="fc" id="L417">        double ax = (s*sc1);</span>
+<span class="fc" id="L418">        double ay = (s*sc2);</span>
+<span class="fc" id="L419">        double p_x = x3 - ax;</span>
+<span class="fc" id="L420">        double p_y = y3 - ay;</span>
 
-<span class="fc" id="L345">        return new double[]{p_x, p_y};</span>
+<span class="fc" id="L422">        return new double[]{p_x, p_y};</span>
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
     public static float calculateSlope(float x1, float y1, float x2, float y2) {
-<span class="fc" id="L349">        return ( y2 - y1 ) / (x2 - x1);</span>
-    }
-    public static float calculateTangentSlope(float x1, float y1, float x2, float y2) {
-<span class="fc" id="L352">        return -1.f*( x2 - x1 ) / (y2 - y1);</span>
+<span class="fc" id="L434">        return ( y2 - y1 ) / (x2 - x1);</span>
     }
 
+    /**
+     *
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
+    public static float calculateTangentSlope(float x1, float y1, float x2, float y2) {
+<span class="fc" id="L446">        return -1.f*( x2 - x1 ) / (y2 - y1);</span>
+    }
+
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param y
+     * @param slope
+     * @return
+     */
     public static float calculateX(float x0, float y0, float y, float slope) {
-<span class="fc" id="L356">        return ( x0 + ((y - y0)/slope) );</span>
+<span class="fc" id="L458">        return ( x0 + ((y - y0)/slope) );</span>
     }
 
     //  (yTopPolygon-y0)/(xTopPolygon-x0) = slope
-    public static float calculateY(float x0, float y0, float x, float slope) {
-<span class="nc" id="L361">        return ( y0 + slope*(x - x0) );</span>
+
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param x
+     * @param slope
+     * @return
+     */
+        public static float calculateY(float x0, float y0, float x, float slope) {
+<span class="nc" id="L472">        return ( y0 + slope*(x - x0) );</span>
     }
 
+    /**
+     *
+     * @param xi
+     * @param yi
+     * @param xj
+     * @param yj
+     * @param xMin
+     * @param xMax
+     * @param yMin
+     * @param yMax
+     * @return
+     */
     public static float[] calculatePerpendicularBisectingSegment(float xi, 
         float yi, float xj, float yj, float xMin, float xMax, float yMin, 
         float yMax) {
 
-<span class="fc" id="L368">        float xmidpoint = (xi + xj)/2.f;</span>
-<span class="fc" id="L369">        float ymidpoint = (yi + yj)/2.f;</span>
+<span class="fc" id="L491">        float xmidpoint = (xi + xj)/2.f;</span>
+<span class="fc" id="L492">        float ymidpoint = (yi + yj)/2.f;</span>
 
-<span class="fc" id="L371">        float yLeft = yMax;</span>
-<span class="fc" id="L372">        float yRight = yMin;</span>
+<span class="fc" id="L494">        float yLeft = yMax;</span>
+<span class="fc" id="L495">        float yRight = yMin;</span>
         float xLeft, xRight;
 
-<span class="pc bpc" id="L375" title="1 of 2 branches missed.">        if (xi == xj) {</span>
-<span class="nc" id="L376">            yLeft = ymidpoint;</span>
-<span class="nc" id="L377">            yRight = ymidpoint;</span>
+<span class="pc bpc" id="L498" title="1 of 2 branches missed.">        if (xi == xj) {</span>
+<span class="nc" id="L499">            yLeft = ymidpoint;</span>
+<span class="nc" id="L500">            yRight = ymidpoint;</span>
 
-<span class="nc" id="L379">            xLeft = xMin;</span>
+<span class="nc" id="L502">            xLeft = xMin;</span>
 
-<span class="nc" id="L381">            xRight = xMax;</span>
+<span class="nc" id="L504">            xRight = xMax;</span>
 
-<span class="pc bpc" id="L383" title="1 of 2 branches missed.">        } else if (yi == yj) {</span>
-<span class="nc" id="L384">            xLeft = xmidpoint;</span>
-<span class="nc" id="L385">            xRight = xmidpoint;</span>
+<span class="pc bpc" id="L506" title="1 of 2 branches missed.">        } else if (yi == yj) {</span>
+<span class="nc" id="L507">            xLeft = xmidpoint;</span>
+<span class="nc" id="L508">            xRight = xmidpoint;</span>
 
-<span class="nc" id="L387">            yLeft = yMin;</span>
-<span class="nc" id="L388">            yRight = yMax;</span>
+<span class="nc" id="L510">            yLeft = yMin;</span>
+<span class="nc" id="L511">            yRight = yMax;</span>
 
         } else {
 
-<span class="fc" id="L392">            float slope = calculateTangentSlope(xi, yi, xj, yj);</span>
+<span class="fc" id="L515">            float slope = calculateTangentSlope(xi, yi, xj, yj);</span>
 
-<span class="fc" id="L394">            xLeft = calculateX(xmidpoint, ymidpoint, yLeft, slope);</span>
-<span class="fc" id="L395">            xRight = calculateX(xmidpoint, ymidpoint, yRight, slope);</span>
+<span class="fc" id="L517">            xLeft = calculateX(xmidpoint, ymidpoint, yLeft, slope);</span>
+<span class="fc" id="L518">            xRight = calculateX(xmidpoint, ymidpoint, yRight, slope);</span>
 
-<span class="pc bpc" id="L397" title="1 of 2 branches missed.">            if (xLeft &gt; xRight) {</span>
-<span class="fc" id="L398">                float tmp = xLeft;</span>
-<span class="fc" id="L399">                xLeft = xRight;</span>
-<span class="fc" id="L400">                xRight = tmp;</span>
-<span class="fc" id="L401">                tmp = yLeft;</span>
-<span class="fc" id="L402">                yLeft = yRight;</span>
-<span class="fc" id="L403">                yRight = tmp;</span>
+<span class="pc bpc" id="L520" title="1 of 2 branches missed.">            if (xLeft &gt; xRight) {</span>
+<span class="fc" id="L521">                float tmp = xLeft;</span>
+<span class="fc" id="L522">                xLeft = xRight;</span>
+<span class="fc" id="L523">                xRight = tmp;</span>
+<span class="fc" id="L524">                tmp = yLeft;</span>
+<span class="fc" id="L525">                yLeft = yRight;</span>
+<span class="fc" id="L526">                yRight = tmp;</span>
             }
 
-<span class="pc bpc" id="L406" title="1 of 2 branches missed.">            if (xLeft &gt; xMax) {</span>
-<span class="nc" id="L407">                xLeft = xMax;</span>
-<span class="nc" id="L408">                yLeft = calculateY(xmidpoint, ymidpoint, xLeft, slope);</span>
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">            if (xLeft &gt; xMax) {</span>
+<span class="nc" id="L530">                xLeft = xMax;</span>
+<span class="nc" id="L531">                yLeft = calculateY(xmidpoint, ymidpoint, xLeft, slope);</span>
             }
-<span class="pc bpc" id="L410" title="1 of 2 branches missed.">            if (xLeft &lt; xMin) {</span>
-<span class="nc" id="L411">                xLeft = xMin;</span>
-<span class="nc" id="L412">                yLeft = calculateY(xmidpoint, ymidpoint, xLeft, slope);</span>
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">            if (xLeft &lt; xMin) {</span>
+<span class="nc" id="L534">                xLeft = xMin;</span>
+<span class="nc" id="L535">                yLeft = calculateY(xmidpoint, ymidpoint, xLeft, slope);</span>
             }
-<span class="pc bpc" id="L414" title="1 of 2 branches missed.">            if (xRight &gt; xMax) {</span>
-<span class="nc" id="L415">                xRight = xMax;</span>
-<span class="nc" id="L416">                yRight = calculateY(xmidpoint, ymidpoint, xRight, slope);</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">            if (xRight &gt; xMax) {</span>
+<span class="nc" id="L538">                xRight = xMax;</span>
+<span class="nc" id="L539">                yRight = calculateY(xmidpoint, ymidpoint, xRight, slope);</span>
             }
-<span class="pc bpc" id="L418" title="1 of 2 branches missed.">            if (xRight &lt; xMin) {</span>
-<span class="nc" id="L419">                xRight = xMin;</span>
-<span class="nc" id="L420">                yRight = calculateY(xmidpoint, ymidpoint, xRight, slope);</span>
+<span class="pc bpc" id="L541" title="1 of 2 branches missed.">            if (xRight &lt; xMin) {</span>
+<span class="nc" id="L542">                xRight = xMin;</span>
+<span class="nc" id="L543">                yRight = calculateY(xmidpoint, ymidpoint, xRight, slope);</span>
             }
-<span class="pc bpc" id="L422" title="1 of 2 branches missed.">            if (yRight &gt; yMax) {</span>
-<span class="nc" id="L423">                yRight = yMax;</span>
-<span class="nc" id="L424">                xRight = calculateX(xmidpoint, ymidpoint, yRight, slope);</span>
+<span class="pc bpc" id="L545" title="1 of 2 branches missed.">            if (yRight &gt; yMax) {</span>
+<span class="nc" id="L546">                yRight = yMax;</span>
+<span class="nc" id="L547">                xRight = calculateX(xmidpoint, ymidpoint, yRight, slope);</span>
             }
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">            if (yRight &lt; yMin) {</span>
-<span class="nc" id="L427">                yRight = yMin;</span>
-<span class="nc" id="L428">                xRight = calculateX(xmidpoint, ymidpoint, yRight, slope);</span>
+<span class="pc bpc" id="L549" title="1 of 2 branches missed.">            if (yRight &lt; yMin) {</span>
+<span class="nc" id="L550">                yRight = yMin;</span>
+<span class="nc" id="L551">                xRight = calculateX(xmidpoint, ymidpoint, yRight, slope);</span>
             }
-<span class="pc bpc" id="L430" title="1 of 2 branches missed.">            if (yLeft &gt; yMax) {</span>
-<span class="nc" id="L431">                yLeft = yMax;</span>
-<span class="nc" id="L432">                xLeft = calculateX(xmidpoint, ymidpoint, yLeft, slope);</span>
+<span class="pc bpc" id="L553" title="1 of 2 branches missed.">            if (yLeft &gt; yMax) {</span>
+<span class="nc" id="L554">                yLeft = yMax;</span>
+<span class="nc" id="L555">                xLeft = calculateX(xmidpoint, ymidpoint, yLeft, slope);</span>
             }
-<span class="pc bpc" id="L434" title="1 of 2 branches missed.">            if (yLeft &lt; yMin) {</span>
-<span class="nc" id="L435">                yLeft = yMin;</span>
-<span class="nc" id="L436">                xLeft = calculateX(xmidpoint, ymidpoint, yLeft, slope);</span>
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">            if (yLeft &lt; yMin) {</span>
+<span class="nc" id="L558">                yLeft = yMin;</span>
+<span class="nc" id="L559">                xLeft = calculateX(xmidpoint, ymidpoint, yLeft, slope);</span>
             }
         }
 
-<span class="fc" id="L440">        return new float[]{xLeft, yLeft, xRight, yRight};</span>
+<span class="fc" id="L563">        return new float[]{xLeft, yLeft, xRight, yRight};</span>
     }
    
+    /**
+     *
+     * @param x0
+     * @param y0
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @param generalEps
+     * @return
+     */
     public static boolean segmentIsWithinSegment(float x0, float y0, float x1, 
         float y1, float x2, float y2, float x3, float y3, float generalEps) {
 
         // check that slopes are the same.
         // then range checks
-<span class="fc" id="L448">        float segment01Slope = (y1 - y0)/(x1 - x0);</span>
-<span class="fc" id="L449">        float segment23Slope = (y3 - y2)/(x3 - x2);</span>
+<span class="fc" id="L584">        float segment01Slope = (y1 - y0)/(x1 - x0);</span>
+<span class="fc" id="L585">        float segment23Slope = (y3 - y2)/(x3 - x2);</span>
 
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        float t01 = (segment01Slope &lt; 0) ? -1.f*segment01Slope : segment01Slope;</span>
-<span class="fc bfc" id="L452" title="All 2 branches covered.">        float t23 = (segment23Slope &lt; 0) ? -1.f*segment23Slope : segment23Slope;</span>
-<span class="pc bpc" id="L453" title="1 of 2 branches missed.">        if (Math.abs(t01 - t23) &gt; generalEps) {</span>
-<span class="nc" id="L454">            return false;</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">        float t01 = (segment01Slope &lt; 0) ? -1.f*segment01Slope : segment01Slope;</span>
+<span class="fc bfc" id="L588" title="All 2 branches covered.">        float t23 = (segment23Slope &lt; 0) ? -1.f*segment23Slope : segment23Slope;</span>
+<span class="pc bpc" id="L589" title="1 of 2 branches missed.">        if (Math.abs(t01 - t23) &gt; generalEps) {</span>
+<span class="nc" id="L590">            return false;</span>
         }
 
         //re-order by incr xTopPolygon and yTopPolygon
-<span class="fc bfc" id="L458" title="All 6 branches covered.">        if ( (x0 &gt; x1) || ((x0 == x1) &amp;&amp; (y0 &gt; y1)) ) {</span>
-<span class="fc" id="L459">            float tmp = x0;</span>
-<span class="fc" id="L460">            x0 = x1;</span>
-<span class="fc" id="L461">            x1 = tmp;</span>
-<span class="fc" id="L462">            tmp = y0;</span>
-<span class="fc" id="L463">            y0 = y1;</span>
-<span class="fc" id="L464">            y1 = tmp;</span>
+<span class="fc bfc" id="L594" title="All 6 branches covered.">        if ( (x0 &gt; x1) || ((x0 == x1) &amp;&amp; (y0 &gt; y1)) ) {</span>
+<span class="fc" id="L595">            float tmp = x0;</span>
+<span class="fc" id="L596">            x0 = x1;</span>
+<span class="fc" id="L597">            x1 = tmp;</span>
+<span class="fc" id="L598">            tmp = y0;</span>
+<span class="fc" id="L599">            y0 = y1;</span>
+<span class="fc" id="L600">            y1 = tmp;</span>
         }
-<span class="fc bfc" id="L466" title="All 6 branches covered.">        if ( (x2 &gt; x3) || ((x2 == x3) &amp;&amp; (y2 &gt; y3)) ) {</span>
-<span class="fc" id="L467">            float tmp = x2;</span>
-<span class="fc" id="L468">            x2 = x3;</span>
-<span class="fc" id="L469">            x3 = tmp;</span>
-<span class="fc" id="L470">            tmp = y2;</span>
-<span class="fc" id="L471">            y2 = y3;</span>
-<span class="fc" id="L472">            y3 = tmp;</span>
+<span class="fc bfc" id="L602" title="All 6 branches covered.">        if ( (x2 &gt; x3) || ((x2 == x3) &amp;&amp; (y2 &gt; y3)) ) {</span>
+<span class="fc" id="L603">            float tmp = x2;</span>
+<span class="fc" id="L604">            x2 = x3;</span>
+<span class="fc" id="L605">            x3 = tmp;</span>
+<span class="fc" id="L606">            tmp = y2;</span>
+<span class="fc" id="L607">            y2 = y3;</span>
+<span class="fc" id="L608">            y3 = tmp;</span>
         }
         // Now we have x0 &lt; x1   and   x2 &lt; x3
 
 
         //  look for  0  2  3  1  in xTopPolygon  and matching pattern in yTopPolygon
 
-<span class="fc bfc" id="L479" title="All 4 branches covered.">        if ( (x0 &lt;= x2) &amp;&amp; (x3 &lt;= x1) ) {</span>
-<span class="pc bpc" id="L480" title="2 of 8 branches missed.">            if ( (y0 &lt;= y1) &amp;&amp; (y2 &lt;= y3) &amp;&amp; (y0 &lt;= y2) &amp;&amp; (y3 &lt;= y1) ) {</span>
-<span class="fc" id="L481">                return true;</span>
-<span class="pc bpc" id="L482" title="3 of 8 branches missed.">            } else if ((y0 &gt;= y1) &amp;&amp; (y2 &gt;= y3) &amp;&amp; (y0 &gt;= y2) &amp;&amp; (y3 &gt;= y1)) {</span>
-<span class="fc" id="L483">                return true;</span>
+<span class="fc bfc" id="L615" title="All 4 branches covered.">        if ( (x0 &lt;= x2) &amp;&amp; (x3 &lt;= x1) ) {</span>
+<span class="pc bpc" id="L616" title="2 of 8 branches missed.">            if ( (y0 &lt;= y1) &amp;&amp; (y2 &lt;= y3) &amp;&amp; (y0 &lt;= y2) &amp;&amp; (y3 &lt;= y1) ) {</span>
+<span class="fc" id="L617">                return true;</span>
+<span class="pc bpc" id="L618" title="3 of 8 branches missed.">            } else if ((y0 &gt;= y1) &amp;&amp; (y2 &gt;= y3) &amp;&amp; (y0 &gt;= y2) &amp;&amp; (y3 &gt;= y1)) {</span>
+<span class="fc" id="L619">                return true;</span>
             }
         } else {
             //  look for  2  0  1  3  in xTopPolygon  and matching pattern in yTopPolygon
-<span class="fc bfc" id="L487" title="All 2 branches covered.">            if (segment01Slope &gt; 0) {</span>
-<span class="pc bpc" id="L488" title="2 of 4 branches missed.">                if ( (x2 &lt;= x0) &amp;&amp; (x1 &lt;= x3) ) {</span>
-<span class="nc bnc" id="L489" title="All 8 branches missed.">                    if ( (y1 &lt;= y0) &amp;&amp; (y3 &lt;= y2) &amp;&amp; (y2 &lt;= y0) &amp;&amp; (y1 &lt;= y3) ) {</span>
-<span class="nc" id="L490">                        return true;</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">            if (segment01Slope &gt; 0) {</span>
+<span class="pc bpc" id="L624" title="2 of 4 branches missed.">                if ( (x2 &lt;= x0) &amp;&amp; (x1 &lt;= x3) ) {</span>
+<span class="nc bnc" id="L625" title="All 8 branches missed.">                    if ( (y1 &lt;= y0) &amp;&amp; (y3 &lt;= y2) &amp;&amp; (y2 &lt;= y0) &amp;&amp; (y1 &lt;= y3) ) {</span>
+<span class="nc" id="L626">                        return true;</span>
                     }
                 }
             } else {
-<span class="pc bpc" id="L494" title="3 of 4 branches missed.">                if ( (x2 &lt;= x0) &amp;&amp; (x1 &lt;= x3) ) {</span>
-<span class="nc bnc" id="L495" title="All 8 branches missed.">                    if ( (y0 &gt;= y1) &amp;&amp; (y2 &gt;= y3) &amp;&amp; (y2 &gt;= y0) &amp;&amp; (y1 &gt;= y3) ) {</span>
-<span class="nc" id="L496">                        return true;</span>
+<span class="pc bpc" id="L630" title="3 of 4 branches missed.">                if ( (x2 &lt;= x0) &amp;&amp; (x1 &lt;= x3) ) {</span>
+<span class="nc bnc" id="L631" title="All 8 branches missed.">                    if ( (y0 &gt;= y1) &amp;&amp; (y2 &gt;= y3) &amp;&amp; (y2 &gt;= y0) &amp;&amp; (y1 &gt;= y3) ) {</span>
+<span class="nc" id="L632">                        return true;</span>
                     }
                 }
             }
         }
 
-<span class="fc" id="L502">        return false;</span>
+<span class="fc" id="L638">        return false;</span>
     }
 
+    /**
+     *
+     * @param xPolygon
+     * @param yPolygon
+     * @return
+     */
     public static float[] calcAreaAndCentroidOfSimplePolygon(float[] xPolygon, 
         float[] yPolygon) {
 
-<span class="pc bpc" id="L508" title="1 of 2 branches missed.">        if (xPolygon.length &lt; 3) {</span>
-<span class="nc" id="L509">            return null;</span>
+<span class="pc bpc" id="L650" title="1 of 2 branches missed.">        if (xPolygon.length &lt; 3) {</span>
+<span class="nc" id="L651">            return null;</span>
         }
 
-<span class="fc" id="L512">        float area = 0;</span>
+<span class="fc" id="L654">        float area = 0;</span>
 
-<span class="fc" id="L514">        boolean allPointsArePositive = true;</span>
+<span class="fc" id="L656">        boolean allPointsArePositive = true;</span>
 
         // from wikipedia
-<span class="fc bfc" id="L517" title="All 2 branches covered.">        for (int i = 0; i &lt; (xPolygon.length - 1); i++) {</span>
-<span class="fc" id="L518">            float a = xPolygon[i] * yPolygon[i+1];</span>
-<span class="fc" id="L519">            float b = xPolygon[i+1] * yPolygon[i];</span>
-<span class="fc" id="L520">            area += (a-b);</span>
+<span class="fc bfc" id="L659" title="All 2 branches covered.">        for (int i = 0; i &lt; (xPolygon.length - 1); i++) {</span>
+<span class="fc" id="L660">            float a = xPolygon[i] * yPolygon[i+1];</span>
+<span class="fc" id="L661">            float b = xPolygon[i+1] * yPolygon[i];</span>
+<span class="fc" id="L662">            area += (a-b);</span>
 
-<span class="pc bpc" id="L522" title="2 of 4 branches missed.">            if ((xPolygon[i] &lt; 0) || (yPolygon[i] &lt; 0)) {</span>
-<span class="nc" id="L523">                allPointsArePositive = false;</span>
+<span class="pc bpc" id="L664" title="2 of 4 branches missed.">            if ((xPolygon[i] &lt; 0) || (yPolygon[i] &lt; 0)) {</span>
+<span class="nc" id="L665">                allPointsArePositive = false;</span>
             }
         }
-<span class="pc bpc" id="L526" title="2 of 4 branches missed.">        if ((xPolygon[xPolygon.length - 1] &lt; 0) || (yPolygon[xPolygon.length - 1] &lt; 0)) {</span>
-<span class="nc" id="L527">            allPointsArePositive = false;</span>
+<span class="pc bpc" id="L668" title="2 of 4 branches missed.">        if ((xPolygon[xPolygon.length - 1] &lt; 0) || (yPolygon[xPolygon.length - 1] &lt; 0)) {</span>
+<span class="nc" id="L669">            allPointsArePositive = false;</span>
         }
-<span class="pc bpc" id="L529" title="1 of 4 branches missed.">        if ((area &lt; 0) &amp;&amp; allPointsArePositive) {</span>
-<span class="fc" id="L530">            area *= -1;</span>
+<span class="pc bpc" id="L671" title="1 of 4 branches missed.">        if ((area &lt; 0) &amp;&amp; allPointsArePositive) {</span>
+<span class="fc" id="L672">            area *= -1;</span>
         }
-<span class="fc" id="L532">        area *= 0.5f;</span>
+<span class="fc" id="L674">        area *= 0.5f;</span>
 
 
-<span class="fc" id="L535">        float xc = 0;</span>
-<span class="fc bfc" id="L536" title="All 2 branches covered.">        for (int i = 0; i &lt; (xPolygon.length - 1); i++) {</span>
-<span class="fc" id="L537">            float a = xPolygon[i] * yPolygon[i+1];</span>
-<span class="fc" id="L538">            float b = xPolygon[i+1] * yPolygon[i];</span>
+<span class="fc" id="L677">        float xc = 0;</span>
+<span class="fc bfc" id="L678" title="All 2 branches covered.">        for (int i = 0; i &lt; (xPolygon.length - 1); i++) {</span>
+<span class="fc" id="L679">            float a = xPolygon[i] * yPolygon[i+1];</span>
+<span class="fc" id="L680">            float b = xPolygon[i+1] * yPolygon[i];</span>
 
-<span class="fc" id="L540">            xc += ( (xPolygon[i] + xPolygon[i+1]) * (a - b) );</span>
+<span class="fc" id="L682">            xc += ( (xPolygon[i] + xPolygon[i+1]) * (a - b) );</span>
         }
-<span class="fc" id="L542">        xc *= (1./(6.*area));</span>
-<span class="pc bpc" id="L543" title="1 of 4 branches missed.">        if ((xc &lt; 0) &amp;&amp; allPointsArePositive) {</span>
-<span class="fc" id="L544">            xc *= -1;</span>
+<span class="fc" id="L684">        xc *= (1./(6.*area));</span>
+<span class="pc bpc" id="L685" title="1 of 4 branches missed.">        if ((xc &lt; 0) &amp;&amp; allPointsArePositive) {</span>
+<span class="fc" id="L686">            xc *= -1;</span>
         }
 
 
-<span class="fc" id="L548">        float yc = 0;</span>
-<span class="fc bfc" id="L549" title="All 2 branches covered.">        for (int i = 0; i &lt; (xPolygon.length - 1); i++) {</span>
-<span class="fc" id="L550">            float a = xPolygon[i] * yPolygon[i+1];</span>
-<span class="fc" id="L551">            float b = xPolygon[i+1] * yPolygon[i];</span>
+<span class="fc" id="L690">        float yc = 0;</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">        for (int i = 0; i &lt; (xPolygon.length - 1); i++) {</span>
+<span class="fc" id="L692">            float a = xPolygon[i] * yPolygon[i+1];</span>
+<span class="fc" id="L693">            float b = xPolygon[i+1] * yPolygon[i];</span>
 
-<span class="fc" id="L553">            yc += ( (yPolygon[i] + yPolygon[i+1]) * (a - b) );</span>
+<span class="fc" id="L695">            yc += ( (yPolygon[i] + yPolygon[i+1]) * (a - b) );</span>
         }
         //yc = yPolygon[0] - yc; // make it relative to zero point
-<span class="fc" id="L556">        yc *= (1./(6.*area));</span>
-<span class="pc bpc" id="L557" title="1 of 4 branches missed.">        if ((yc &lt; 0) &amp;&amp; allPointsArePositive) {</span>
-<span class="fc" id="L558">            yc *= -1;</span>
+<span class="fc" id="L698">        yc *= (1./(6.*area));</span>
+<span class="pc bpc" id="L699" title="1 of 4 branches missed.">        if ((yc &lt; 0) &amp;&amp; allPointsArePositive) {</span>
+<span class="fc" id="L700">            yc *= -1;</span>
         }
 
-<span class="fc" id="L561">        return new float[]{area, xc, yc};</span>
+<span class="fc" id="L703">        return new float[]{area, xc, yc};</span>
     }
 
     /**
@@ -576,70 +718,70 @@ import java.util.Arrays;
     public static ArrayPair createPolygonOfTopFWFractionMax(float[] x, 
         float[] y, float[] xe, float[] ye, float topFraction) {
 
-<span class="fc" id="L579">        float[] xTopPolygon = new float[x.length + 3];</span>
-<span class="fc" id="L580">        float[] yTopPolygon = new float[y.length + 3];</span>
+<span class="fc" id="L721">        float[] xTopPolygon = new float[x.length + 3];</span>
+<span class="fc" id="L722">        float[] yTopPolygon = new float[y.length + 3];</span>
         
-<span class="pc bpc" id="L582" title="1 of 2 branches missed.">        float[] xTopPolygonError = (xe == null) ? null : new float[x.length + 3];</span>
-<span class="pc bpc" id="L583" title="1 of 2 branches missed.">        float[] yTopPolygonError = (ye == null) ? null : new float[x.length + 3];</span>
+<span class="pc bpc" id="L724" title="1 of 2 branches missed.">        float[] xTopPolygonError = (xe == null) ? null : new float[x.length + 3];</span>
+<span class="pc bpc" id="L725" title="1 of 2 branches missed.">        float[] yTopPolygonError = (ye == null) ? null : new float[x.length + 3];</span>
         
-<span class="fc" id="L585">        int yPeakIndex = MiscMath.findYMaxIndex(y);</span>
+<span class="fc" id="L727">        int yPeakIndex = MiscMath.findYMaxIndex(y);</span>
 
-<span class="fc" id="L587">        float yFractionLimit = y[yPeakIndex]*topFraction;</span>
+<span class="fc" id="L729">        float yFractionLimit = y[yPeakIndex]*topFraction;</span>
 
-<span class="fc" id="L589">        int polygonCount = 1; // leave space for the interpolated 1st point</span>
+<span class="fc" id="L731">        int polygonCount = 1; // leave space for the interpolated 1st point</span>
 
         // these are w.r.t. x and y
-<span class="fc" id="L592">        int firstIndex = -1;</span>
-<span class="fc" id="L593">        int lastIndex = -1;</span>
+<span class="fc" id="L734">        int firstIndex = -1;</span>
+<span class="fc" id="L735">        int lastIndex = -1;</span>
 
-<span class="fc bfc" id="L595" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L737" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
 
-<span class="fc bfc" id="L597" title="All 2 branches covered.">            if (i &lt;= yPeakIndex) {</span>
+<span class="fc bfc" id="L739" title="All 2 branches covered.">            if (i &lt;= yPeakIndex) {</span>
 
-<span class="fc bfc" id="L599" title="All 2 branches covered.">                if (y[i] &gt;= yFractionLimit) {</span>
+<span class="fc bfc" id="L741" title="All 2 branches covered.">                if (y[i] &gt;= yFractionLimit) {</span>
 
-<span class="fc bfc" id="L601" title="All 2 branches covered.">                    if (firstIndex == -1) {</span>
-<span class="fc" id="L602">                        firstIndex = i;</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">                    if (firstIndex == -1) {</span>
+<span class="fc" id="L744">                        firstIndex = i;</span>
                     }
 
-<span class="fc" id="L605">                    xTopPolygon[polygonCount] = x[i];</span>
-<span class="fc" id="L606">                    yTopPolygon[polygonCount] = y[i];</span>
-<span class="pc bpc" id="L607" title="1 of 2 branches missed.">                    if (xTopPolygonError != null) {</span>
-<span class="nc" id="L608">                        xTopPolygonError[polygonCount] = xe[i];</span>
-<span class="nc" id="L609">                        yTopPolygonError[polygonCount] = ye[i];</span>
+<span class="fc" id="L747">                    xTopPolygon[polygonCount] = x[i];</span>
+<span class="fc" id="L748">                    yTopPolygon[polygonCount] = y[i];</span>
+<span class="pc bpc" id="L749" title="1 of 2 branches missed.">                    if (xTopPolygonError != null) {</span>
+<span class="nc" id="L750">                        xTopPolygonError[polygonCount] = xe[i];</span>
+<span class="nc" id="L751">                        yTopPolygonError[polygonCount] = ye[i];</span>
                     }
-<span class="fc" id="L611">                    polygonCount++;</span>
+<span class="fc" id="L753">                    polygonCount++;</span>
                 }
-<span class="fc bfc" id="L613" title="All 2 branches covered.">            } else if (y[i] &gt;= yFractionLimit) {</span>
+<span class="fc bfc" id="L755" title="All 2 branches covered.">            } else if (y[i] &gt;= yFractionLimit) {</span>
 
-<span class="fc" id="L615">                xTopPolygon[polygonCount] = x[i];</span>
-<span class="fc" id="L616">                yTopPolygon[polygonCount] = y[i];</span>
-<span class="pc bpc" id="L617" title="1 of 2 branches missed.">                if (xTopPolygonError != null) {</span>
-<span class="nc" id="L618">                    xTopPolygonError[polygonCount] = xe[i];</span>
-<span class="nc" id="L619">                    yTopPolygonError[polygonCount] = ye[i];</span>
+<span class="fc" id="L757">                xTopPolygon[polygonCount] = x[i];</span>
+<span class="fc" id="L758">                yTopPolygon[polygonCount] = y[i];</span>
+<span class="pc bpc" id="L759" title="1 of 2 branches missed.">                if (xTopPolygonError != null) {</span>
+<span class="nc" id="L760">                    xTopPolygonError[polygonCount] = xe[i];</span>
+<span class="nc" id="L761">                    yTopPolygonError[polygonCount] = ye[i];</span>
                 }
-<span class="fc" id="L621">                polygonCount++;</span>
+<span class="fc" id="L763">                polygonCount++;</span>
 
             } else {
                 // we are below the yFractionLimit
-<span class="fc" id="L625">                lastIndex = i - 1;</span>
-<span class="fc" id="L626">                break;</span>
+<span class="fc" id="L767">                lastIndex = i - 1;</span>
+<span class="fc" id="L768">                break;</span>
             }
         }
-<span class="fc bfc" id="L629" title="All 2 branches covered.">        if (lastIndex == -1) {</span>
-<span class="fc" id="L630">            lastIndex = x.length - 1;</span>
+<span class="fc bfc" id="L771" title="All 2 branches covered.">        if (lastIndex == -1) {</span>
+<span class="fc" id="L772">            lastIndex = x.length - 1;</span>
         }
 
         // compress the array.  we will add two items beyond polygonCount.
         //    one for the interpolated yFractionLimit, and the other for a
         //    copy of the first point to close the polygon
-<span class="pc bpc" id="L636" title="1 of 2 branches missed.">        if ((polygonCount + 1) &lt; xTopPolygon.length) {</span>
-<span class="fc" id="L637">            xTopPolygon = Arrays.copyOf(xTopPolygon, (polygonCount + 2));</span>
-<span class="fc" id="L638">            yTopPolygon = Arrays.copyOf(yTopPolygon, (polygonCount + 2));</span>
+<span class="pc bpc" id="L778" title="1 of 2 branches missed.">        if ((polygonCount + 1) &lt; xTopPolygon.length) {</span>
+<span class="fc" id="L779">            xTopPolygon = Arrays.copyOf(xTopPolygon, (polygonCount + 2));</span>
+<span class="fc" id="L780">            yTopPolygon = Arrays.copyOf(yTopPolygon, (polygonCount + 2));</span>
             
-<span class="pc bpc" id="L640" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
-<span class="nc" id="L641">                xTopPolygonError = Arrays.copyOf(xTopPolygonError, (polygonCount + 2));</span>
-<span class="nc" id="L642">                yTopPolygonError = Arrays.copyOf(yTopPolygonError, (polygonCount + 2));</span>
+<span class="pc bpc" id="L782" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
+<span class="nc" id="L783">                xTopPolygonError = Arrays.copyOf(xTopPolygonError, (polygonCount + 2));</span>
+<span class="nc" id="L784">                yTopPolygonError = Arrays.copyOf(yTopPolygonError, (polygonCount + 2));</span>
             }
         }
 
@@ -664,37 +806,37 @@ import java.util.Arrays;
          */
 
         // interpolate first point
-<span class="fc" id="L667">        yTopPolygon[0] = yFractionLimit;</span>
-<span class="pc bpc" id="L668" title="1 of 2 branches missed.">        if (xTopPolygonError != null) {</span>
+<span class="fc" id="L809">        yTopPolygon[0] = yFractionLimit;</span>
+<span class="pc bpc" id="L810" title="1 of 2 branches missed.">        if (xTopPolygonError != null) {</span>
             // TODO: correct this
-<span class="nc" id="L670">            yTopPolygonError[0] = ye[0];</span>
+<span class="nc" id="L812">            yTopPolygonError[0] = ye[0];</span>
         }
         
-<span class="fc bfc" id="L673" title="All 2 branches covered.">        if (firstIndex &gt; 0) {</span>
+<span class="fc bfc" id="L815" title="All 2 branches covered.">        if (firstIndex &gt; 0) {</span>
             /* case (0), case (1), and case (2)
              *  y[pt_i] - y[pt_0]    y[pt_i] - y[limit]                               y[pt_i] - y[limit]
              *  ----------------- =  ------------------  ====&gt;  x[pt_i] - x[limit] =  ------------------ * x[pt_i] - x[pt_0]
              *  x[pt_i] - x[pt_0]    x[pt_i] - x[limit]                               y[pt_i] - y[pt_0]
              */
-<span class="fc" id="L679">            float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex] - y[firstIndex - 1]);</span>
-<span class="fc" id="L680">            xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex] - x[firstIndex - 1]));</span>
+<span class="fc" id="L821">            float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex] - y[firstIndex - 1]);</span>
+<span class="fc" id="L822">            xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex] - x[firstIndex - 1]));</span>
             
-<span class="pc bpc" id="L682" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
-<span class="nc" id="L683">                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[firstIndex], 2) + </span>
-<span class="nc" id="L684">                    Math.pow(xe[firstIndex - 1], 2));</span>
+<span class="pc bpc" id="L824" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
+<span class="nc" id="L825">                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[firstIndex], 2) + </span>
+<span class="nc" id="L826">                    Math.pow(xe[firstIndex - 1], 2));</span>
             }
             
-<span class="pc bpc" id="L687" title="1 of 4 branches missed.">        } else if ((firstIndex == 0) &amp;&amp; (yPeakIndex == 0)) {</span>
+<span class="pc bpc" id="L829" title="1 of 4 branches missed.">        } else if ((firstIndex == 0) &amp;&amp; (yPeakIndex == 0)) {</span>
             /* case (3)
              * there is no point before the peak, so we create a point right below as a straight line
              */
-<span class="fc" id="L691">             xTopPolygon[0] = x[yPeakIndex];</span>
+<span class="fc" id="L833">             xTopPolygon[0] = x[yPeakIndex];</span>
 
-<span class="pc bpc" id="L693" title="1 of 2 branches missed.">             if (xTopPolygonError != null) {</span>
-<span class="nc" id="L694">                 xTopPolygonError[0] = xe[yPeakIndex];</span>
+<span class="pc bpc" id="L835" title="1 of 2 branches missed.">             if (xTopPolygonError != null) {</span>
+<span class="nc" id="L836">                 xTopPolygonError[0] = xe[yPeakIndex];</span>
              }
              
-<span class="pc bpc" id="L697" title="2 of 4 branches missed.">        } else if ((firstIndex == 0) &amp;&amp; (yPeakIndex &gt; 0)) {</span>
+<span class="pc bpc" id="L839" title="2 of 4 branches missed.">        } else if ((firstIndex == 0) &amp;&amp; (yPeakIndex &gt; 0)) {</span>
             /* case (4)
              * There is a point before the peak, so we extend line.
              *   y[firstIndex+1] - y[firstIndex]     y[firstIndex] - y[limit]
@@ -709,51 +851,51 @@ import java.util.Arrays;
              * x[limit] = x[firstIndex] -   ------------------------------ * x[firstIndex+1] - x[firstIndex]
              *                              y[firstIndex+1] - y[firstIndex]
              */
-<span class="fc" id="L712">            float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex + 1] - y[firstIndex]);</span>
-<span class="fc" id="L713">            xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex + 1] - x[firstIndex]));</span>
+<span class="fc" id="L854">            float tmp = (y[firstIndex] - yFractionLimit)/(y[firstIndex + 1] - y[firstIndex]);</span>
+<span class="fc" id="L855">            xTopPolygon[0] = x[firstIndex] - (tmp * (x[firstIndex + 1] - x[firstIndex]));</span>
 
-<span class="pc bpc" id="L715" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
-<span class="nc" id="L716">                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[firstIndex], 2) + </span>
-<span class="nc" id="L717">                    Math.pow(xe[firstIndex + 1], 2));</span>
+<span class="pc bpc" id="L857" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
+<span class="nc" id="L858">                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[firstIndex], 2) + </span>
+<span class="nc" id="L859">                    Math.pow(xe[firstIndex + 1], 2));</span>
             }
             
-<span class="fc" id="L720">        } else {</span>
-<span class="nc" id="L721">            throw new IllegalStateException(&quot;have not solved for this first point! &quot;);</span>
+<span class="fc" id="L862">        } else {</span>
+<span class="nc" id="L863">            throw new IllegalStateException(&quot;have not solved for this first point! &quot;);</span>
         }
 
         // interpolate the point after lastIndex
 
-<span class="fc" id="L726">        yTopPolygon[polygonCount] = yFractionLimit;</span>
-<span class="pc bpc" id="L727" title="1 of 2 branches missed.">        if (xTopPolygonError != null) {</span>
+<span class="fc" id="L868">        yTopPolygon[polygonCount] = yFractionLimit;</span>
+<span class="pc bpc" id="L869" title="1 of 2 branches missed.">        if (xTopPolygonError != null) {</span>
             // TODO: correct this
-<span class="nc" id="L729">            yTopPolygonError[polygonCount] = ye[0];</span>
+<span class="nc" id="L871">            yTopPolygonError[polygonCount] = ye[0];</span>
         }
         
-<span class="fc bfc" id="L732" title="All 2 branches covered.">        if (lastIndex &lt; (x.length - 1)) {</span>
+<span class="fc bfc" id="L874" title="All 2 branches covered.">        if (lastIndex &lt; (x.length - 1)) {</span>
             /* case (0), case (1), and case (2)
              *  y[pt_j] - y[pt_k]    y[pt_j] - y[limit]                               y[pt_j] - y[limit]
              *  ----------------- =  ------------------  ====&gt;  x[pt_j] - x[limit] =  ------------------ * x[pt_j] - x[pt_k]
              *  x[pt_j] - x[pt_k]    x[pt_j] - x[limit]                               y[pt_j] - y[pt_k]
              */
-<span class="fc" id="L738">            float slope = (y[lastIndex] - yFractionLimit)/(y[lastIndex] - y[lastIndex + 1]);</span>
-<span class="fc" id="L739">            xTopPolygon[polygonCount] = x[lastIndex] - (slope * (x[lastIndex] - x[lastIndex + 1]));</span>
+<span class="fc" id="L880">            float slope = (y[lastIndex] - yFractionLimit)/(y[lastIndex] - y[lastIndex + 1]);</span>
+<span class="fc" id="L881">            xTopPolygon[polygonCount] = x[lastIndex] - (slope * (x[lastIndex] - x[lastIndex + 1]));</span>
 
-<span class="pc bpc" id="L741" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
-<span class="nc" id="L742">                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[lastIndex], 2) + </span>
-<span class="nc" id="L743">                    Math.pow(xe[lastIndex + 1], 2));</span>
+<span class="pc bpc" id="L883" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
+<span class="nc" id="L884">                xTopPolygonError[0] = (float)Math.sqrt(Math.pow(xe[lastIndex], 2) + </span>
+<span class="nc" id="L885">                    Math.pow(xe[lastIndex + 1], 2));</span>
             }
             
-<span class="pc bpc" id="L746" title="1 of 4 branches missed.">        } else if ((lastIndex == (x.length - 1)) &amp;&amp; (lastIndex == yPeakIndex)) {</span>
+<span class="pc bpc" id="L888" title="1 of 4 branches missed.">        } else if ((lastIndex == (x.length - 1)) &amp;&amp; (lastIndex == yPeakIndex)) {</span>
             /* case (3)
              * there is no point after the peak, so we create a point right below as a straight line
              */
-<span class="fc" id="L750">             xTopPolygon[polygonCount] = x[yPeakIndex];</span>
+<span class="fc" id="L892">             xTopPolygon[polygonCount] = x[yPeakIndex];</span>
 
-<span class="pc bpc" id="L752" title="1 of 2 branches missed.">             if (xTopPolygonError != null) {</span>
-<span class="nc" id="L753">                 xTopPolygonError[polygonCount] = xe[yPeakIndex];</span>
+<span class="pc bpc" id="L894" title="1 of 2 branches missed.">             if (xTopPolygonError != null) {</span>
+<span class="nc" id="L895">                 xTopPolygonError[polygonCount] = xe[yPeakIndex];</span>
              }
             
-<span class="pc bpc" id="L756" title="2 of 4 branches missed.">        } else if ((lastIndex == (x.length - 1)) &amp;&amp; (yPeakIndex &lt; lastIndex)) {</span>
+<span class="pc bpc" id="L898" title="2 of 4 branches missed.">        } else if ((lastIndex == (x.length - 1)) &amp;&amp; (yPeakIndex &lt; lastIndex)) {</span>
             /* case (4)
              * There is a point after the peak, so we extend line.
              *   y[lastIndex-1] - y[lastIndex]     y[lastIndex] - y[limit]
@@ -768,34 +910,34 @@ import java.util.Arrays;
              * x[limit] = x[lastIndex] -   ------------------------------ * x[lastIndex-1] - x[lastIndex]
              *                              y[lastIndex-1] - y[lastIndex]
              */
-<span class="fc" id="L771">            float tmp = (y[lastIndex] - yFractionLimit)/(y[lastIndex - 1] - y[lastIndex]);</span>
-<span class="fc" id="L772">            xTopPolygon[polygonCount] = x[lastIndex] - (tmp * (x[lastIndex - 1] - x[lastIndex]));</span>
+<span class="fc" id="L913">            float tmp = (y[lastIndex] - yFractionLimit)/(y[lastIndex - 1] - y[lastIndex]);</span>
+<span class="fc" id="L914">            xTopPolygon[polygonCount] = x[lastIndex] - (tmp * (x[lastIndex - 1] - x[lastIndex]));</span>
 
-<span class="pc bpc" id="L774" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
-<span class="nc" id="L775">                xTopPolygonError[polygonCount] = (float)Math.sqrt(Math.pow(xe[lastIndex], 2) + </span>
-<span class="nc" id="L776">                    Math.pow(xe[lastIndex - 1], 2));</span>
+<span class="pc bpc" id="L916" title="1 of 2 branches missed.">            if (xTopPolygonError != null) {</span>
+<span class="nc" id="L917">                xTopPolygonError[polygonCount] = (float)Math.sqrt(Math.pow(xe[lastIndex], 2) + </span>
+<span class="nc" id="L918">                    Math.pow(xe[lastIndex - 1], 2));</span>
             }
             
-<span class="fc" id="L779">        } else {</span>
-<span class="nc" id="L780">            throw new IllegalStateException(&quot;have not solved for this later point! &quot;);</span>
+<span class="fc" id="L921">        } else {</span>
+<span class="nc" id="L922">            throw new IllegalStateException(&quot;have not solved for this later point! &quot;);</span>
         }
 
-<span class="fc" id="L783">        xTopPolygon[xTopPolygon.length - 1] = xTopPolygon[0];</span>
-<span class="fc" id="L784">        yTopPolygon[xTopPolygon.length - 1] = yTopPolygon[0];</span>
+<span class="fc" id="L925">        xTopPolygon[xTopPolygon.length - 1] = xTopPolygon[0];</span>
+<span class="fc" id="L926">        yTopPolygon[xTopPolygon.length - 1] = yTopPolygon[0];</span>
 
-<span class="pc bpc" id="L786" title="1 of 2 branches missed.">        if (xTopPolygonError != null) {</span>
-<span class="nc" id="L787">            xTopPolygonError[xTopPolygon.length - 1] = xTopPolygonError[0];</span>
-<span class="nc" id="L788">            yTopPolygonError[xTopPolygon.length - 1] = yTopPolygonError[0];</span>
+<span class="pc bpc" id="L928" title="1 of 2 branches missed.">        if (xTopPolygonError != null) {</span>
+<span class="nc" id="L929">            xTopPolygonError[xTopPolygon.length - 1] = xTopPolygonError[0];</span>
+<span class="nc" id="L930">            yTopPolygonError[xTopPolygon.length - 1] = yTopPolygonError[0];</span>
         }
         
-<span class="fc" id="L791">        ArrayPair xy = null;</span>
-<span class="pc bpc" id="L792" title="1 of 2 branches missed.">        if (xTopPolygonError == null) {</span>
-<span class="fc" id="L793">            xy = new ArrayPair(xTopPolygon, yTopPolygon);</span>
+<span class="fc" id="L933">        ArrayPair xy = null;</span>
+<span class="pc bpc" id="L934" title="1 of 2 branches missed.">        if (xTopPolygonError == null) {</span>
+<span class="fc" id="L935">            xy = new ArrayPair(xTopPolygon, yTopPolygon);</span>
         } else {
-<span class="nc" id="L795">            xy = new ArrayPair(xTopPolygon, yTopPolygon, xTopPolygonError, yTopPolygonError);</span>
+<span class="nc" id="L937">            xy = new ArrayPair(xTopPolygon, yTopPolygon, xTopPolygonError, yTopPolygonError);</span>
         }
 
-<span class="fc" id="L798">        return xy;</span>
+<span class="fc" id="L940">        return xy;</span>
     }
 
 }

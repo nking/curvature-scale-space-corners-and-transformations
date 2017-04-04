@@ -9,44 +9,79 @@
  */
 public class PairFloat {
     
+    /**
+     *
+     */
     protected final float x;
+
+    /**
+     *
+     */
     protected final float y;
     
-<span class="fc" id="L15">    public PairFloat(float xPoint, float yPoint) {</span>
-<span class="fc" id="L16">        x = xPoint;</span>
-<span class="fc" id="L17">        y = yPoint;</span>
-<span class="fc" id="L18">    }</span>
+    /**
+     *
+     * @param xPoint
+     * @param yPoint
+     */
+<span class="fc" id="L27">    public PairFloat(float xPoint, float yPoint) {</span>
+<span class="fc" id="L28">        x = xPoint;</span>
+<span class="fc" id="L29">        y = yPoint;</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     *
+     * @return
+     */
     public float getX() {
-<span class="fc" id="L20">        return x;</span>
+<span class="fc" id="L37">        return x;</span>
     }
+
+    /**
+     *
+     * @return
+     */
     public float getY() {
-<span class="fc" id="L23">        return y;</span>
+<span class="fc" id="L45">        return y;</span>
     }
 
     @Override
     public boolean equals(Object obj) {
         
-<span class="nc bnc" id="L29" title="All 2 branches missed.">        if (!(obj instanceof PairFloat)) {</span>
-<span class="nc" id="L30">            return false;    </span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (!(obj instanceof PairFloat)) {</span>
+<span class="nc" id="L52">            return false;    </span>
         }
         
-<span class="nc" id="L33">        PairFloat other = (PairFloat)obj;</span>
+<span class="nc" id="L55">        PairFloat other = (PairFloat)obj;</span>
         
-<span class="nc bnc" id="L35" title="All 4 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
+<span class="nc bnc" id="L57" title="All 4 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
     }
 
     @Override
     public int hashCode() {
         
-<span class="fc" id="L41">        int hash = fnvHashCode(Float.floatToIntBits(this.x), </span>
-<span class="fc" id="L42">            Float.floatToIntBits(this.y));</span>
+<span class="fc" id="L63">        int hash = fnvHashCode(Float.floatToIntBits(this.x), </span>
+<span class="fc" id="L64">            Float.floatToIntBits(this.y));</span>
 
-<span class="fc" id="L44">        return hash;</span>
+<span class="fc" id="L66">        return hash;</span>
     }
 
-<span class="fc" id="L47">    protected static int fnv321aInit = 0x811c9dc5;</span>
-<span class="fc" id="L48">    protected static int fnv32Prime = 0x01000193;</span>
+    /**
+     *
+     */
+<span class="fc" id="L72">    protected static int fnv321aInit = 0x811c9dc5;</span>
 
+    /**
+     *
+     */
+<span class="fc" id="L77">    protected static int fnv32Prime = 0x01000193;</span>
+
+    /**
+     *
+     * @param i0
+     * @param i1
+     * @return
+     */
     protected int fnvHashCode(int i0, int i1) {
 
         /*
@@ -59,32 +94,32 @@ public class PairFloat {
          * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
          */
 
-<span class="fc" id="L62">        int hash = 0;</span>
+<span class="fc" id="L97">        int hash = 0;</span>
 
-<span class="fc" id="L64">        int sum = fnv321aInit;</span>
+<span class="fc" id="L99">        int sum = fnv321aInit;</span>
 
         // xor the bottom with the current octet.
-<span class="fc" id="L67">        sum ^= i0;</span>
+<span class="fc" id="L102">        sum ^= i0;</span>
 
         // multiply by the 32 bit FNV magic prime mod 2^32
-<span class="fc" id="L70">        sum *= fnv32Prime;</span>
+<span class="fc" id="L105">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L72">        sum ^= i1;</span>
+<span class="fc" id="L107">        sum ^= i1;</span>
         
-<span class="fc" id="L74">        sum *= fnv32Prime;</span>
+<span class="fc" id="L109">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L76">        hash = sum;</span>
+<span class="fc" id="L111">        hash = sum;</span>
 
-<span class="fc" id="L78">        return hash;</span>
+<span class="fc" id="L113">        return hash;</span>
     }
 
     @Override
     public String toString() {
         
-<span class="nc" id="L84">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
-<span class="nc" id="L85">        sb.append(Float.toString(x)).append(&quot;,&quot;).append(Float.toString(y)).append(&quot;)&quot;);</span>
+<span class="nc" id="L119">        StringBuilder sb = new StringBuilder(&quot;(&quot;);</span>
+<span class="nc" id="L120">        sb.append(Float.toString(x)).append(&quot;,&quot;).append(Float.toString(y)).append(&quot;)&quot;);</span>
         
-<span class="nc" id="L87">        return sb.toString();</span>
+<span class="nc" id="L122">        return sb.toString();</span>
     }
     
 }

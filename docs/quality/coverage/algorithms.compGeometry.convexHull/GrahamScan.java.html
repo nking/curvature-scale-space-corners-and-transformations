@@ -26,27 +26,46 @@ import java.util.Arrays;
  */
 public class GrahamScan {
 
-<span class="fc" id="L29">    protected XYStack points = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L32">    protected XYStack points = null;</span>
 
-<span class="fc" id="L31">    protected float[] xHull = null;</span>
-<span class="fc" id="L32">    protected float[] yHull = null;</span>
+    /**
+     *
+     */
+<span class="fc" id="L37">    protected float[] xHull = null;</span>
 
-<span class="fc" id="L34">	public GrahamScan() {</span>
-<span class="fc" id="L35">	}</span>
+    /**
+     *
+     */
+<span class="fc" id="L42">    protected float[] yHull = null;</span>
 
+    /**
+     *
+     */
+<span class="fc" id="L47">    public GrahamScan() {</span>
+<span class="fc" id="L48">	}</span>
+
+    /**
+     *
+     * @param x
+     * @param y
+     * @throws GrahamScanTooFewPointsException
+     */
     public void computeHull(float[] x, float[] y) throws GrahamScanTooFewPointsException {
 
-<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (x == null) {</span>
-<span class="fc" id="L40">	    	throw new IllegalArgumentException(&quot;xArray cannot be null&quot;);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (x == null) {</span>
+<span class="fc" id="L59">	    	throw new IllegalArgumentException(&quot;xArray cannot be null&quot;);</span>
         }
-<span class="fc bfc" id="L42" title="All 2 branches covered.">	    if (y == null) {</span>
-<span class="fc" id="L43">	    	throw new IllegalArgumentException(&quot;yArray cannot be null&quot;);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">	    if (y == null) {</span>
+<span class="fc" id="L62">	    	throw new IllegalArgumentException(&quot;yArray cannot be null&quot;);</span>
         }
-<span class="fc bfc" id="L45" title="All 2 branches covered.">	    if (x.length != y.length) {</span>
-<span class="fc" id="L46">	    	throw new IllegalArgumentException(&quot;xArray must have the same number of items as yArray&quot;);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">	    if (x.length != y.length) {</span>
+<span class="fc" id="L65">	    	throw new IllegalArgumentException(&quot;xArray must have the same number of items as yArray&quot;);</span>
         }
-<span class="fc bfc" id="L48" title="All 2 branches covered.">	    if (x.length &lt; 3) {</span>
-<span class="fc" id="L49">	        throw new IllegalArgumentException(&quot;xArray must have at least 3 items&quot;);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">	    if (x.length &lt; 3) {</span>
+<span class="fc" id="L68">	        throw new IllegalArgumentException(&quot;xArray must have at least 3 items&quot;);</span>
         }
 
         /*
@@ -73,23 +92,23 @@ public class GrahamScan {
 
         // (1) let p0 be the point in Q w/ minimum yCoord,
         //     or the leftmost point if more than one w/ same minimum yCoord.
-<span class="fc" id="L76">        MultiArrayMergeSort.sortBy1stArgThen2nd(y, x);</span>
+<span class="fc" id="L95">        MultiArrayMergeSort.sortBy1stArgThen2nd(y, x);</span>
         
-<span class="fc" id="L78">        points = new XYStack(x.length);</span>
+<span class="fc" id="L97">        points = new XYStack(x.length);</span>
 
-<span class="fc" id="L80">        int p0Index = 0;</span>
+<span class="fc" id="L99">        int p0Index = 0;</span>
 
         // (2) let &lt;p1, p2, ..., pm&gt; be the remaining points in Q, sorted
 	    //     by polar angle in counterclockwise order around p0
 	    //     (if more than one pt has same angle, keep only the furthest from p0)
-<span class="fc" id="L85">    	int nPointsUsable = PolarAngleMergeSort.sort(x[p0Index], y[p0Index], x, y);</span>
+<span class="fc" id="L104">    	int nPointsUsable = PolarAngleMergeSort.sort(x[p0Index], y[p0Index], x, y);</span>
 
-<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (nPointsUsable &lt; 3) {</span>
-<span class="fc" id="L88">	        throw new GrahamScanTooFewPointsException(&quot;polar angle sorting has reduced the number of points to less than 3&quot;);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (nPointsUsable &lt; 3) {</span>
+<span class="fc" id="L107">	        throw new GrahamScanTooFewPointsException(&quot;polar angle sorting has reduced the number of points to less than 3&quot;);</span>
         }
 
-<span class="fc" id="L91">        points.push( x[p0Index], y[p0Index]);</span>
-<span class="fc" id="L92">        points.push( x[1], y[1]);</span>
+<span class="fc" id="L110">        points.push( x[p0Index], y[p0Index]);</span>
+<span class="fc" id="L111">        points.push( x[1], y[1]);</span>
         //points.push( x[2], y[2]);
         
         float topX, topY;
@@ -98,55 +117,67 @@ public class GrahamScan {
         //    while angle between next-to-top(S), top(S) and p_i makes a nonleft turn
         //        do pop(S)
         //    push(pi, S)
-<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int i = 2; i &lt; nPointsUsable; i++) {</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (int i = 2; i &lt; nPointsUsable; i++) {</span>
     
-<span class="fc" id="L103">            topX = points.peekTopX();</span>
-<span class="fc" id="L104">            topY = points.peekTopY();</span>
+<span class="fc" id="L122">            topX = points.peekTopX();</span>
+<span class="fc" id="L123">            topY = points.peekTopY();</span>
             
-<span class="fc" id="L106">            double direction = LinesAndAngles.direction(</span>
-<span class="fc" id="L107">                points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,</span>
+<span class="fc" id="L125">            double direction = LinesAndAngles.direction(</span>
+<span class="fc" id="L126">                points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,</span>
                 x[i], y[i]);
             
-<span class="pc bpc" id="L110" title="1 of 4 branches missed.">            while (!points.isEmpty() /*&amp;&amp; !Double.isNaN(direction)*/ &amp;&amp; (direction &gt; 0)) {</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">            while (!points.isEmpty() /*&amp;&amp; !Double.isNaN(direction)*/ &amp;&amp; (direction &gt; 0)) {</span>
 
-<span class="fc" id="L112">                points.pop();</span>
+<span class="fc" id="L131">                points.pop();</span>
 
-<span class="fc" id="L114">                topX = points.peekTopX();</span>
-<span class="fc" id="L115">                topY = points.peekTopY();</span>
+<span class="fc" id="L133">                topX = points.peekTopX();</span>
+<span class="fc" id="L134">                topY = points.peekTopY();</span>
                 
-<span class="fc" id="L117">                direction = LinesAndAngles.direction(</span>
-<span class="fc" id="L118">                    points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,</span>
+<span class="fc" id="L136">                direction = LinesAndAngles.direction(</span>
+<span class="fc" id="L137">                    points.peekNextToTopX(), points.peekNextToTopY(), topX, topY,</span>
                     x[i], y[i]);                
             }
 
-<span class="fc" id="L122">            points.push(x[i], y[i]);</span>
+<span class="fc" id="L141">            points.push(x[i], y[i]);</span>
         }
 
-<span class="fc" id="L125">        populateHull();</span>
-<span class="fc" id="L126">    }</span>
+<span class="fc" id="L144">        populateHull();</span>
+<span class="fc" id="L145">    }</span>
 
+    /**
+     *
+     * @return
+     */
     public float[] getXHull() {
-<span class="fc" id="L129">        return this.xHull;</span>
+<span class="fc" id="L152">        return this.xHull;</span>
     }
 
+    /**
+     *
+     * @return
+     */
     public float[] getYHull() {
-<span class="fc" id="L133">        return this.yHull;</span>
+<span class="fc" id="L160">        return this.yHull;</span>
     }
 
+    /**
+     *
+     * @throws GrahamScanTooFewPointsException
+     */
     protected void populateHull() throws GrahamScanTooFewPointsException {
 
-<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (points == null) {</span>
-<span class="fc" id="L139">            throw new GrahamScanTooFewPointsException(&quot;Points cannot be null.  Use computeHull first.&quot;);</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        if (points == null) {</span>
+<span class="fc" id="L170">            throw new GrahamScanTooFewPointsException(&quot;Points cannot be null.  Use computeHull first.&quot;);</span>
         }
         
-<span class="fc" id="L142">        int n = points.getNPoints() + 1;</span>
+<span class="fc" id="L173">        int n = points.getNPoints() + 1;</span>
 
-<span class="fc" id="L144">        this.xHull = Arrays.copyOf(points.x, n);</span>
-<span class="fc" id="L145">        this.yHull = Arrays.copyOf(points.y, n);</span>
+<span class="fc" id="L175">        this.xHull = Arrays.copyOf(points.x, n);</span>
+<span class="fc" id="L176">        this.yHull = Arrays.copyOf(points.y, n);</span>
 
-<span class="fc" id="L147">        this.xHull[n-1] = points.x[0];</span>
-<span class="fc" id="L148">        this.yHull[n-1] = points.y[0];</span>
-<span class="fc" id="L149">    }</span>
+<span class="fc" id="L178">        this.xHull[n-1] = points.x[0];</span>
+<span class="fc" id="L179">        this.yHull[n-1] = points.y[0];</span>
+<span class="fc" id="L180">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

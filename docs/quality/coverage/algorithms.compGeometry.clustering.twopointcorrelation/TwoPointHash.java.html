@@ -102,8 +102,8 @@ class TwoPointHash implements ITwoPointIdentity {
 
     /**
      * search is O(1). (unless there are many collisions)
-     * @param i0
-     * @param i1
+     * @param index0
+     * @param index1
      * @return 
      */
     public Node search(int index0, int index1) {
