@@ -1,4 +1,4 @@
 Implementation-Title: Density_Clustering
-Implementation-Version: 1.0
+Implementation-Version: 1.1
 Implementation-Vendor: NicholeKing
 Implementation-URL: http://nking.github.io/two-point-correlation/

@@ -41,10 +41,9 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         float ymax = 300;
 
         long seed = System.currentTimeMillis();
+        seed = 1491310649097L;
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-
-        //seed = 1443413022277L;
 
         log.info("SEED=" + seed);
         
@@ -123,7 +122,9 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
                 clusterFinder.findClusters();
 
                 int nGroups = clusterFinder.getNumberOfClusters();
-
+ 
+                System.out.println("  nGroups=" + nGroups);
+                
                 List<Set<PairInt>> groupList = new ArrayList<Set<PairInt>>();
                 for (int k = 0; k < nGroups; ++k) {
                     Set<PairInt> set = clusterFinder.getCluster(k);
@@ -248,6 +249,8 @@ public class DTClusterFinderTest extends BaseTwoPointTest {
         }
         
         plotter.writeFile2();
+        
+        int z = 0;
     }
     
     /**

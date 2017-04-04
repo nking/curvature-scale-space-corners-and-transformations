@@ -78,7 +78,6 @@ public class CriticalDensitySolver {
         
         float[] vErrors = Histogram.populateYErrorsBySqrt(values);
 
-        float xl = MiscMath.findMax(values);
         int nb = 40;
         if (nb > values.length) {
             nb = values.length/4;
@@ -86,27 +85,73 @@ public class CriticalDensitySolver {
                 nb = 1;
             }
         }
-                
+        
+        float xl = MiscMath.findMax(values);
+               
         HistogramHolder hist = Histogram.createSimpleHistogram(
             0, xl, nb, values, vErrors);
         
-        if (debug) {
-            String outFileSuffix = "_cluster_";
-            hist.plotHistogram("clstr", outFileSuffix);
-        }
-
         int len = hist.getXHist().length;
         
         int yFirstPeakIdx = Histogram.findFirstPeakIndex(hist);
                 
         int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+        float xMax = 0;
+        
+        boolean p1Corr = false;
+        
+        while (yMaxIdx < 2 && values.length > 10) {
+            values = Arrays.copyOf(values, values.length);
+            Arrays.sort(values);
+            // trim away t half bin
+            int idx = Arrays.binarySearch(values, hist.getXHist()[len/2]);
+            if (idx < 0) {
+                idx = -1*(idx + 1);
+            }
+            values = Arrays.copyOf(values, idx);
+            vErrors = Histogram.populateYErrorsBySqrt(values);
+            
+            xl = values[values.length - 1];
+            
+            float binSize = hist.getXHist()[0]/2.f;
+            
+            nb = Math.round(xl/binSize);
+            if (nb < 10) {
+                nb = 10;
+            }
+            
+            hist = Histogram.createSimpleHistogram(
+               0, xl, nb, values, vErrors);
+       
+            len = hist.getXHist().length;
+        
+            yFirstPeakIdx = Histogram.findFirstPeakIndex(hist);
+                
+            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+                  
+            xMax = 2.0f * hist.getXHist()[yMaxIdx];
+           
+            p1Corr = true;
+        }
 
+        if (debug) {
+            String outFileSuffix = "_cluster_";
+            hist.plotHistogram("clstr", outFileSuffix);
+        
+            System.out.println("1stPeakIdx=" + yFirstPeakIdx +
+                 " yMaxIdx=" + yMaxIdx + " out of " + len
+                + " x[01stPeak]=" + hist.getXHist()[yFirstPeakIdx] +
+                " x[yMaxIdx]=" + hist.getXHist()[yMaxIdx] + 
+                " p1Corr=" + p1Corr);
+        }
+        
         //System.out.println("y1=" + yFirstPeakIdx + " ymx=" +
         //    yMaxIdx + " len=" + len);
         
-        if (yMaxIdx > yFirstPeakIdx && (yMaxIdx > (len/2))) {
+        if (!p1Corr && yMaxIdx > yFirstPeakIdx && (yMaxIdx > (len/2))) {
             
-            nb = 8;
+            nb = 10;
             hist = Histogram.createSimpleHistogram(
                 0, xl, nb, values, vErrors);
             
@@ -123,7 +168,9 @@ public class CriticalDensitySolver {
             
             yMaxIdx = Histogram.findFirstMinimaFollowingPeak(hist, yFirstPeakIdx);
 
-        } else {
+            xMax = 1.1f * hist.getXHist()[yMaxIdx];
+            
+        } else if (!p1Corr) {
                     
             // calculate the y quartiles above zero
             float[] quartiles = calcXQuartilesAboveZero(hist);
@@ -143,14 +190,21 @@ public class CriticalDensitySolver {
             hist = Histogram.createSimpleHistogram(
                 0, xl, nb, values, vErrors);
         
+            if (debug) {
+                String outFileSuffix = "_cluster_2_";
+                hist.plotHistogram("clstr", outFileSuffix);
+            }
+            
             yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());
+        
+            xMax = 1.1f * hist.getXHist()[yMaxIdx];
         }
         
         if (yMaxIdx == -1) {
             return 0;
         }
         
-        return 1.1f * hist.getXHist()[yMaxIdx];
+        return xMax;
     }
 
     private float findCriticalDensity(int[][] distTrans) {

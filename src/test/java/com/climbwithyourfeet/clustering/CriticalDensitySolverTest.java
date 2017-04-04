@@ -147,8 +147,8 @@ public class CriticalDensitySolverTest extends TestCase {
         CriticalDensitySolver dSolver = new CriticalDensitySolver();
         dSolver.setToDebug();
         
-        //for (int i = 0; i < fileNames.length; ++i) {
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 0; i < fileNames.length; ++i) {
+        //for (int i = 0; i < 1; ++i) {
             
             String fileName = fileNames[i];
             
@@ -159,9 +159,12 @@ public class CriticalDensitySolverTest extends TestCase {
             float r0 = r0s[i];
             float r1 = r1s[i];
                         
-            System.out.println("i=" + i + " r0=" + r0 + " r1=" + r1 + " critDens=" + critDens);
+            System.out.println("i=" + i + " r0=" + r0 + " r1=" + r1 
+                + " critDens=" + critDens);
 
-            assertTrue(critDens >= r0 && critDens <= r1);
+            assertTrue(
+                (critDens >= 0.9*r0) 
+                && critDens <= r1);
         }
     }
     
