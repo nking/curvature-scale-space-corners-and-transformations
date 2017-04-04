@@ -1,2 +1,5 @@
+-- redo a couple of "other" snapshots on two-pt-correl web page:
+   the dbscan and the curved arrow from the finnish data set
+
 -- continuing with use: 
       improve the histogram critical density solver and its tests
