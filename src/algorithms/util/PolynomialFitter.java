@@ -1,15 +1,10 @@
 package algorithms.util;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.misc.MiscMath;
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  * methods associated with fitting a 2nd order polynomial curve.
@@ -76,6 +71,26 @@ public class PolynomialFitter {
         
         return null;
     }
+    
+    /**
+    public float[] solve(float[] x, float[] y, int highestOrder) {
+        
+        /*
+        w_0 + w_1*x + w_2*x^2 ... = summation w_j * x^j                                j = 0 to M
+                
+        to add a penalty term for using higher degree polynomials,
+        lambda is the regulazation term to penalize overfitting
+        
+        E(w) = 0.5 * sum{ w_j * x^j - t_n }^2 + 0.5 * lambda * ||w||^2
+                     n=1toN
+        
+        where ||w||^2 = w^T*w = w_0^2 + w_1^2 + ... w_M^2
+        
+        see "shrinkage" methods, "ridge regression", and "weight decay"
+        
+        E_RMS = sqrt(2 * E(w)/N)
+         
+    }*/
     
     /**
      * determine good end points for the polynomial fit to the points.
