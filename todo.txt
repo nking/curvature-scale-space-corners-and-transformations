@@ -1,3 +1,10 @@
+-- consider changing over some of the matrix math to use jblas
+   (example is in unit tests)
+
+(1) reading bishop 2006
+   and looking at
+    http://www.gaussianprocess.org/gpml/code/matlab/doc/
+(2) read the remote sensing paper
 
 -- consider improving the histograms in external project used by
     this one, two-point=correlation
@@ -10,7 +17,23 @@
    ...trifocal tensor
 
 -- finish the new HOGs comparison method
-   
+
+-- interesting:
+   solving the transformations between 2 images
+   when have most the camera matrix, except focal length.
+
+   http://www.vis.uky.edu/~stewe/publications/stewenius_05_cvpr_focal.pdf
+
+   for Structure in Motion, camera information is needed and 5 points of
+      correspondence.
+   When camera infor is not available, epipolar geometry w/ 7 points of
+      correspondence is used, but is not as stable.
+
+   also see
+       P. Sturm, On Focal Length Calibration from Two Views,
+       IEEE International Conference on Computer Vision and Pattern
+       Recognition, Volume 2, pp. 145–150, 2001
+ 
 -- geohashing and bag of words, etc
 
 -- consider implementing Paris and Durand 2007
