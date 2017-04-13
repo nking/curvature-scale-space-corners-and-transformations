@@ -511,6 +511,12 @@ public class MatrixUtil {
         return c;
     }
     
+    /**
+     * perform dot product and return matrix of size mrows X ncols
+     * @param m
+     * @param n
+     * @return 
+     */
     public static DenseMatrix multiply(
         Matrix m, Matrix n) {
 
