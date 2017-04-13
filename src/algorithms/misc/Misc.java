@@ -17,6 +17,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -306,5 +307,84 @@ public class Misc {
         }
         
         return set;
+    }
+
+    public static void reverse(float[] a) {
+        
+        int n = a.length;
+        
+        if (n < 2) {
+            return;
+        }
+                
+        int end = n >> 1;
+        // 0 1 2 3 4
+        for (int i = 0; i < end; i++) {
+            int idx2 = n - i - 1;
+            float swap = a[i];
+            a[i] = a[idx2];
+            a[idx2] = swap;
+        }
+        
+    }
+    
+    /**
+     * assuming that the coefficients are ordered from highest order to
+     * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
+     * apply them to x and resturn the model.
+     * @param coeffs
+     * @param x
+     * @return 
+     */
+    public static float[] generate(float[] coeffs, float[] x) {
+        
+        float[] y = new float[x.length];
+        
+        int n0 = coeffs.length;
+        int n = n0 - 1;
+        
+        float[] xsub = Arrays.copyOf(x, x.length);
+        for (int i = 0; i < n; ++i) {
+            float c = coeffs[n - i - 1];
+            for (int j = 0; j < x.length; ++j) {
+                float t = c * xsub[j];
+                y[j] += t;
+                xsub[j] *= x[j];
+            }            
+        }
+        for (int j = 0; j < x.length; ++j) {
+            y[j] += coeffs[n];
+        }
+        return y;
+    }
+    
+    /**
+     * assuming that the coefficients are ordered from highest order to
+     * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
+     * apply them to x and resturn the model.
+     * @param coeffs
+     * @param x
+     * @return 
+     */
+    public static double[] generate(double[] coeffs, double[] x) {
+        
+        double[] y = new double[x.length];
+        
+        int n0 = coeffs.length;
+        int n = n0 - 1;
+        
+        double[] xsub = Arrays.copyOf(x, x.length);
+        for (int i = 0; i < n; ++i) {
+            double c = coeffs[n - i - 1];
+            for (int j = 0; j < x.length; ++j) {
+                double t = c * xsub[j];
+                y[j] += t;
+                xsub[j] *= x[j];
+            }            
+        }
+        for (int j = 0; j < x.length; ++j) {
+            y[j] += coeffs[n];
+        }
+        return y;
     }
 }
