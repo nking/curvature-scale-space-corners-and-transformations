@@ -1224,7 +1224,7 @@ public class LBFGS {
     }
 
     //////////////////////
-    static double vecdot(double[] a, double[] b, int n) {
+    public static double vecdot(double[] a, double[] b, int n) {
         return innerProduct(a, b);
     }
 
