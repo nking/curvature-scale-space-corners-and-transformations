@@ -2,17 +2,6 @@
    (example is in unit tests).  jblas is already included in project,
    but accessed mostly via MTJ.
 
--- LBFGS
-   -- needs tests.
-      -- looking at gsl
-         gsl_multimin_fdfminimizer_vector_bfgs2
-          
-      -- considering a test for rosenbrock function
-         -- see wikipedia on it
-            f(x,y) = (a - x)^2  + b*(y - x^2)^2
-            global minimum is at (a, a^2) where f(x,y) = 0
-            usually a=1 and b=100
-
 -- would like an elasticnet implementation 
    -- considering a port of the arpa supported dlib class and dependencies
       https://github.com/davisking/dlib
@@ -21,7 +10,7 @@
          http://blog.dlib.net/2014/10/mitie-v03-released-now-with-java-and-r.html?m=1
 
    -- could also consider the small api:
-   possibly https://github.com/yinlou/mltk/search?utf8=%E2%9C%93&q=elastic-net&type=
+   https://github.com/yinlou/mltk/search?utf8=%E2%9C%93&q=elastic-net&type=
 
 -- for global search/optimization methods, consider importing
       https://github.com/aimacode/aima-java

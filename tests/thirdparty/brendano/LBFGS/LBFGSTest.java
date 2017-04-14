@@ -11,10 +11,12 @@ import thirdparty.brendano.LBFGS.LBFGS.Result;
  */
 public class LBFGSTest extends TestCase {
 
+    boolean debug = false;
+    
     /**
      * unit test ported from gsl project file
      * multimin/test.c
-     * donloaded from 
+     * downloaded from 
      * http://mirror.team-cymru.org/gnu/gsl/
      * the code has license 
      * GNU General Public License.
@@ -24,17 +26,12 @@ public class LBFGSTest extends TestCase {
      */
     public void test0() {
         
-        //TODO: port the minimizer test of the GSL project method
-        // gsl_multimin_fdfminimizer_vector_bfgs
-        // in multimin/test.c
-        
-        // check BFGS
         rosenbrock();
         rosenbrock1();
         
-        //roth();
-        //wood();
-        //simpleAbs();
+        roth();
+        wood();
+        simpleAbs();
        
     }
    
@@ -46,10 +43,11 @@ public class LBFGSTest extends TestCase {
         
         Result r = LBFGS.lbfgs(coeffs, f);
         
+        if (debug)
         System.out.println("roth coeffs=" + Arrays.toString(coeffs));
         
-        //assertTrue(Math.abs(coeffs[0] - 2.) < 0.1);
-        //assertTrue(Math.abs(coeffs[1] - 0.) < 0.1);
+        assertTrue(Math.abs(coeffs[0] - 5.) < 0.1);
+        assertTrue(Math.abs(coeffs[1] - 4.) < 0.1);
         
     }
     
@@ -57,15 +55,17 @@ public class LBFGSTest extends TestCase {
         
         double[] coeffs = new double[] {-3.0, -1.0, -3.0, -1.0};
         
-        //4, 0
         Wood f = new Wood();
         
         Result r = LBFGS.lbfgs(coeffs, f);
         
+        if (debug)
         System.out.println("wood coeffs=" + Arrays.toString(coeffs));
         
-        //assertTrue(Math.abs(coeffs[0] - 4.) < 0.1);
-        //assertTrue(Math.abs(coeffs[1] - 0.) < 0.1);
+        assertTrue(Math.abs(coeffs[0] - -1.) < 0.1);
+        assertTrue(Math.abs(coeffs[1] - 1.) < 0.1);
+        assertTrue(Math.abs(coeffs[2] - -1.) < 0.1);
+        assertTrue(Math.abs(coeffs[3] - 1.) < 0.1);
     }
     
     private void rosenbrock() {
@@ -76,6 +76,7 @@ public class LBFGSTest extends TestCase {
         
         Result r = LBFGS.lbfgs(coeffs, f);
         
+        if (debug)
         System.out.println("rb coeffs=" + Arrays.toString(coeffs));
         
         assertTrue(Math.abs(coeffs[0] - 1.) < 0.1);
@@ -89,6 +90,7 @@ public class LBFGSTest extends TestCase {
         
         Result r = LBFGS.lbfgs(coeffs, f);
         
+        if (debug)
         System.out.println("rb1 coeffs=" + Arrays.toString(coeffs));
         
         assertTrue(Math.abs(coeffs[0] - 1.) < 0.1);
@@ -99,15 +101,15 @@ public class LBFGSTest extends TestCase {
         
         double[] coeffs = new double[] {1., 2.0};
         
-        //2, 0
         SimpleAbs f = new SimpleAbs();
         
         Result r = LBFGS.lbfgs(coeffs, f);
         
+        if (debug)
         System.out.println("sa coeffs=" + Arrays.toString(coeffs));
         
-        //assertTrue(Math.abs(coeffs[0] - 2.) < 0.1);
-        //assertTrue(Math.abs(coeffs[1] - 0.) < 0.1);
+        assertTrue(Math.abs(coeffs[0] - 1.) < 0.1);
+        assertTrue(Math.abs(coeffs[1] - 2.) < 0.1);
     }
 
     private static class Roth implements Function {
@@ -130,8 +132,17 @@ public class LBFGSTest extends TestCase {
             
             outputGradient[0] = 2 * a + 2 * b;
             outputGradient[1] = 2 * a * c + 2 * b * d;
+       
+            double m = a * a + b * b;
             
-            return a * a + b * b;
+            /*
+            System.out.println("==>vars=" + Arrays.toString(coeffs));
+            System.out.println("==>gradient=" + Arrays.toString(outputGradient));
+            System.out.println("==>gradient=" + Arrays.toString(outputGradient));
+            System.out.println("==>m=" + m);
+            */
+            
+            return m;
         }
     }
     
@@ -157,10 +168,19 @@ public class LBFGSTest extends TestCase {
             outputGradient[2] = 360 * u3 * t2 - 2 * (1 - u3);
             outputGradient[3] = -180 * t2 - 20.2 * (1 - u4) - 19.8 * (1 - u2);
         
-            return 100 * t1 * t1 + (1 - u1) * (1 - u1)
+            double m = 100 * t1 * t1 + (1 - u1) * (1 - u1)
                 + 90 * t2 * t2 + (1 - u3) * (1 - u3)
                 + 10.1 * ((1 - u2) * (1 - u2) + (1 - u4) * (1 - u4))
                 + 19.8 * (1 - u2) * (1 - u4);
+            
+            /*
+            System.out.println("==>vars=" + Arrays.toString(coeffs));
+            System.out.println("==>gradient=" + Arrays.toString(outputGradient));
+            System.out.println("==>gradient=" + Arrays.toString(outputGradient));
+            System.out.println("==>m=" + m);
+            */
+            
+            return m;
         }
     }
     
@@ -217,7 +237,16 @@ public class LBFGSTest extends TestCase {
             outputGradient[0] = sign0;
             outputGradient[1] = sign1;
             
-            return Math.abs(a) + Math.abs(b);
+            double m = Math.abs(a) + Math.abs(b);
+        
+            /*
+            System.out.println("==>vars=" + Arrays.toString(coeffs));
+            System.out.println("==>gradient=" + Arrays.toString(outputGradient));
+            System.out.println("==>gradient=" + Arrays.toString(outputGradient));
+            System.out.println("==>m=" + m);
+            */
+            
+            return m;
         }
     }
 }
