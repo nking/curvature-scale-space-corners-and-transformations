@@ -45,11 +45,8 @@ public class Helper {
 
             Arrays.fill(outputGradient, 0.);
             
-            int n0 = vars.length;
-            int n = n0 - 1;
+  //TODO: there is still an error here          
             
-     //TODO: there's still an error here       
-                            
             /*
             calculating the gradient of the polynomial coefficients
            

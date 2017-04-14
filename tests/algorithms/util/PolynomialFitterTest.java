@@ -82,9 +82,9 @@ public class PolynomialFitterTest extends TestCase {
             points.add(p);
         }
         
-        polyFitter.plotFit(coef, points, 20, 400, 12, "test");
+        PolynomialFitter.plotFit(coef, points, 20, 400, 12, "test");
         
-        double resid = polyFitter.calcResiduals(coef, points);
+        double resid = PolynomialFitter.calcResiduals(coef, points);
         
         assertTrue(Math.abs(resid) < 0.01);
         
@@ -93,8 +93,9 @@ public class PolynomialFitterTest extends TestCase {
         double[] x2 = new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         double[] y2 = new double[]{1, 6, 17, 34, 57, 86, 121, 162, 209, 262, 321};
        
-        double[] init = new double[]{1, 1, 1};// ans is 3, 2, 1
-        //double[] init = new double[]{3, 2, 1};
+        //double[] init = new double[]{1, 1, 1};// ans is 3, 2, 1
+        //double[] init = new double[]{3.1, 1.3, 1.06};
+        double[] init = new double[]{1, 1, 1};
         Function f = new FunctionPolyML(x2, y2, init);
         
 		Params p = new Params();
