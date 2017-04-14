@@ -22,7 +22,7 @@ public class PolynomialFitterTest extends TestCase {
     public PolynomialFitterTest() {
     }
     
-    public void estMisc_generate() {
+    public void testMisc_generate() {
 
         double[] x2 = new double[]{0, 1, 2,  3,  4,  5, 
             6,    7,   8,  9,   10};
