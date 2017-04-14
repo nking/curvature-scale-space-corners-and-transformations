@@ -355,6 +355,26 @@ public class Misc {
     /**
      * assuming that the coefficients are ordered from highest order to
      * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
+     * apply them to x and populate the model in outputY.
+     * @param coeffs
+     * @param x
+     * @param outputY
+     */
+    public static void generate(double[] coeffs, double[] x, double[] outputY) {
+                
+        for (int i = 0; i < x.length; ++i) {
+            double x2 = 1;
+            for (int j = coeffs.length - 1; j > -1; j--) {
+                double c = coeffs[j];
+                outputY[i] += (c * x2);
+                x2 *= x[i];
+            }
+        }        
+    }
+    
+    /**
+     * assuming that the coefficients are ordered from highest order to
+     * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
      * apply them to x and return the model.
      * @param coeffs
      * @param x
@@ -364,14 +384,7 @@ public class Misc {
         
         double[] y = new double[x.length];
         
-        for (int i = 0; i < x.length; ++i) {
-            double x2 = 1;
-            for (int j = coeffs.length - 1; j > -1; j--) {
-                double c = coeffs[j];
-                y[i] += (c * x2);
-                x2 *= x[i];
-            }
-        }
+        generate(coeffs, x, y);
         
         return y;
     }

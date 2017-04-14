@@ -167,6 +167,18 @@ public class MatrixUtil {
     
     public static double[] subtract(double[] m, double[] n) {
 
+        int len = m.length;
+     
+        double[] c = new double[len];
+        
+        subtract(m, n, c);
+
+        return c;
+    }
+    
+    public static void subtract(double[] m, double[] n,
+        double[] output) {
+
         if (m == null || m.length == 0) {
             throw new IllegalArgumentException("m cannot be null or empty");
         }
@@ -178,14 +190,10 @@ public class MatrixUtil {
         }
         
         int len = m.length;
-     
-        double[] c = new double[len];
-        
+             
         for (int i = 0; i < len; i++) {
-            c[i] = m[i] - n[i];
+            output[i] = m[i] - n[i];
         }
-
-        return c;
     }
     
     public static DenseMatrix subtract(DenseMatrix m, DenseMatrix n) {

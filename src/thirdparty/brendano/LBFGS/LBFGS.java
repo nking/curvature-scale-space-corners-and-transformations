@@ -3,8 +3,13 @@ package thirdparty.brendano.LBFGS;
 import java.util.Arrays;
 
 /**
- * from https://github.com/brendano/myutil/blob/master/src/util/LBFGS.java which
- * has license: GPL version 2 and the following documentation:
+ * The class implements a local search/optimization method that is 
+ * quasi-Newton called L-BFGS by Broyden-Fletcher-Goldfarb-Shanno.
+ * 
+ * The code was imported from 
+ * https://github.com/brendano/myutil/blob/master/src/util/LBFGS.java 
+ * which has license: GPL version 2 
+ * and the following documentation:
  *
  * a port of liblbfgs to java http://www.chokkan.org/software/liblbfgs/
  *
