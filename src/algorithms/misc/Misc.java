@@ -339,29 +339,23 @@ public class Misc {
     public static float[] generate(float[] coeffs, float[] x) {
         
         float[] y = new float[x.length];
-        
-        int n0 = coeffs.length;
-        int n = n0 - 1;
-        
-        float[] xsub = Arrays.copyOf(x, x.length);
-        for (int i = 0; i < n; ++i) {
-            float c = coeffs[n - i - 1];
-            for (int j = 0; j < x.length; ++j) {
-                float t = c * xsub[j];
-                y[j] += t;
-                xsub[j] *= x[j];
-            }            
+                
+        for (int i = 0; i < x.length; ++i) {
+            float x2 = 1;
+            for (int j = coeffs.length - 1; j > -1; j--) {
+                float c = coeffs[j];
+                y[i] += (c * x2);
+                x2 *= x[i];
+            }
         }
-        for (int j = 0; j < x.length; ++j) {
-            y[j] += coeffs[n];
-        }
+        
         return y;
     }
     
     /**
      * assuming that the coefficients are ordered from highest order to
      * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
-     * apply them to x and resturn the model.
+     * apply them to x and return the model.
      * @param coeffs
      * @param x
      * @return 
@@ -370,21 +364,15 @@ public class Misc {
         
         double[] y = new double[x.length];
         
-        int n0 = coeffs.length;
-        int n = n0 - 1;
+        for (int i = 0; i < x.length; ++i) {
+            double x2 = 1;
+            for (int j = coeffs.length - 1; j > -1; j--) {
+                double c = coeffs[j];
+                y[i] += (c * x2);
+                x2 *= x[i];
+            }
+        }
         
-        double[] xsub = Arrays.copyOf(x, x.length);
-        for (int i = 0; i < n; ++i) {
-            double c = coeffs[n - i - 1];
-            for (int j = 0; j < x.length; ++j) {
-                double t = c * xsub[j];
-                y[j] += t;
-                xsub[j] *= x[j];
-            }            
-        }
-        for (int j = 0; j < x.length; ++j) {
-            y[j] += coeffs[n];
-        }
         return y;
     }
 }
