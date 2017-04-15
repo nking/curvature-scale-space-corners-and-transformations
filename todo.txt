@@ -24,6 +24,8 @@
     and looking at
     http://www.gaussianprocess.org/gpml/code/matlab/doc/
     and tensorflow
+    -- Conditional Random Fields
+
 
 (2) read the remote sensing paper
 
@@ -77,8 +79,6 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
     of points too (a lkeeping labeled regions contiguous)
 
 -- consider implementing a mean shift algorithm
-
--- Conditional Random Fields
 
 -- fix the ransac iterator estimate that has a limit of
     1790

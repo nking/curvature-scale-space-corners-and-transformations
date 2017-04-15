@@ -360,7 +360,7 @@ public class PolynomialFitter {
     
     /**
      * solve for polynomial fit to curve x,y using coefficients up to
-     * orfer polyDegree. inclusive.
+     * order polyDegree. inclusive.
      * Note that this method does not use regularization.
      * This uses a Vandermonde matrix and QR 
      * decomposition.
@@ -368,7 +368,7 @@ public class PolynomialFitter {
      * @param dataX
      * @param dataY
      * @param polyDegree polynomial degree to fit up to
-     * @return 2nd order polynomial coefficients if solved, else null.
+     * @return polyDegree order polynomial coefficients if solved, else null.
      * The coefficients are used in y = c0*1 + c1*x[i] + c2*x[i]*x[i]
      */
     public float[] solveOLS(float[] dataX, float[] dataY, int polyDegree) {
@@ -454,37 +454,19 @@ public class PolynomialFitter {
         return c;
     }
     
-    /*
-    solve using 
-       step-wise
-       ARD
-       lasso and ElasticNet
-          -- if multiple dep correlated vars, elasticnet is better at using
-             them while lasso would discard all but first
-       ridge regression: 
-           con is uses cross validation to find best subset to represent
-           the training data and this is time consuming.
+    public double[] solve2ndOrderML(double[] dataX, double[] dataY) {
     
-    impl a HuberRegressor as loss function
-    */
-    
-    public float[] solve2ndOrderML(float[] dataX, float[] dataY, 
-        int polyDegree) {
-    
+        //TODO: provide a good first guess for init coefficients
+        //   since this is a local search/optimization method
+        
         /*
-        minimizing the log of likelihood to find best fitting
-           parameters.
+        double[] init = new double[]{1, 1, 1};
+        Function f = new FunctionPolyML(dataX, dataY, init);
+        Result r = LBFGS.lbfgs(init, f);
         
-        using a 2nd order polynomial, that is, 3 coefficients
-        
-        using a choice of minimization methods
-           (if monotonic, can use a Nelder Meade,
-           else a conjugate gradient, BFGS, or grid search)
-          
-        using a choice of priors.
-           uniform?  Gaussian?  Laplace?
+        return init;
         */
-    
+        
         throw new UnsupportedOperationException("not yet impl");
     }
     
