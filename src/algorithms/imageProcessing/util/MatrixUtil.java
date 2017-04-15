@@ -165,6 +165,37 @@ public class MatrixUtil {
         return c;
     }
     
+    public static double[] subtract(double[] m, double[] n) {
+
+        int len = m.length;
+     
+        double[] c = new double[len];
+        
+        subtract(m, n, c);
+
+        return c;
+    }
+    
+    public static void subtract(double[] m, double[] n,
+        double[] output) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.length == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        if (m.length != n.length) {
+            throw new IllegalArgumentException("m and n must be same length");
+        }
+        
+        int len = m.length;
+             
+        for (int i = 0; i < len; i++) {
+            output[i] = m[i] - n[i];
+        }
+    }
+    
     public static DenseMatrix subtract(DenseMatrix m, DenseMatrix n) {
 
         if (m == null) {
@@ -511,6 +542,12 @@ public class MatrixUtil {
         return c;
     }
     
+    /**
+     * perform dot product and return matrix of size mrows X ncols
+     * @param m
+     * @param n
+     * @return 
+     */
     public static DenseMatrix multiply(
         Matrix m, Matrix n) {
 

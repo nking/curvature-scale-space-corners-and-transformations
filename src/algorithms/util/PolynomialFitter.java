@@ -1,10 +1,19 @@
 package algorithms.util;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.QR;
+import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 
 /**
  * methods associated with fitting a 2nd order polynomial curve.
@@ -73,26 +82,6 @@ public class PolynomialFitter {
     }
     
     /**
-    public float[] solve(float[] x, float[] y, int highestOrder) {
-        
-        /*
-        w_0 + w_1*x + w_2*x^2 ... = summation w_j * x^j                                j = 0 to M
-                
-        to add a penalty term for using higher degree polynomials,
-        lambda is the regulazation term to penalize overfitting
-        
-        E(w) = 0.5 * sum{ w_j * x^j - t_n }^2 + 0.5 * lambda * ||w||^2
-                     n=1toN
-        
-        where ||w||^2 = w^T*w = w_0^2 + w_1^2 + ... w_M^2
-        
-        see "shrinkage" methods, "ridge regression", and "weight decay"
-        
-        E_RMS = sqrt(2 * E(w)/N)
-         
-    }*/
-    
-    /**
      * determine good end points for the polynomial fit to the points.
      * runtime complexity is O(N*lg_2(N)) + O(N)
      * @param coefficients
@@ -101,7 +90,7 @@ public class PolynomialFitter {
      */
     public static float[] determineGoodEndPoints(float[] coefficients,
         Set<PairInt> points) {
-        
+
         /*
         determine good endpoints for the polynomial solution.
         it depends upon the orientation of the rainbow polynomial.
@@ -310,10 +299,265 @@ public class PolynomialFitter {
         return new double[]{avg, stDev};
     }
     
-    private static class IntArrayWrapper {
-        int[] a;
-        public IntArrayWrapper(int[] values) {
-            a = Arrays.copyOf(values, values.length);
+    /**
+     * solve for 2nd order curve for a random sample of 1000 points from
+     * (dataX, dataY).
+     * 
+     * @param points
+     * @return 2nd order polynomial coefficients if solved, else null
+     */
+    public float[] solveAfterRandomSampling(Set<PairInt> points) {
+        
+        SecureRandom sr = new SecureRandom();
+        
+        sr.setSeed(System.currentTimeMillis());
+        
+        return solveAfterRandomSampling(points, sr);
+    }
+    
+    /**
+     * solve for 2nd order curve for a random sample of 1000 points from
+     * (dataX, dataY).
+     * 
+     * @param points
+     * @param sr instance of secure random to use for generating random numbers
+     * @return 2nd order polynomial coefficients if solved, else null.
+     * the coefficients are used in y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+     */
+    protected float[] solveAfterRandomSampling(Set<PairInt> points,
+        SecureRandom sr) {
+        
+        int n = (points.size() > 2500) ? 2500 : points.size();
+        
+        List<PairInt> tmp = new ArrayList<PairInt>(points);
+        
+        int[] indexes = new int[n];
+        if (n != points.size()) {
+            MiscMath.chooseRandomly(sr, indexes, points.size());
+        } else {
+            for (int i = 0; i < n; i++) {
+                indexes[i] = i;
+            }
+        }
+        
+        float[] xP = new float[n];
+        float[] yP = new float[xP.length];
+        int i = 0;
+        for (int idx : indexes) {
+            PairInt p = tmp.get(idx);
+            xP[i] = p.getX();
+            yP[i] = p.getY();
+            i++;
+        }
+        tmp = null;
+        
+        // y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+        float[] coeff = solveOLS(xP, yP, 2);
+        Misc.reverse(coeff);
+        
+        return coeff;
+    }
+    
+    /**
+     * solve for polynomial fit to curve x,y using coefficients up to
+     * order polyDegree. inclusive.
+     * Note that this method does not use regularization.
+     * This uses a Vandermonde matrix and QR 
+     * decomposition.
+     * 
+     * @param dataX
+     * @param dataY
+     * @param polyDegree polynomial degree to fit up to
+     * @return polyDegree order polynomial coefficients if solved, else null.
+     * The coefficients are used in y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+     */
+    public float[] solveOLS(float[] dataX, float[] dataY, int polyDegree) {
+       
+        // adapted from the Go solution of http://rosettacode.org/wiki/Polynomial_Fitting
+        
+        /*
+        polyDegree unknowns and m data
+        
+        solving for the coefficients of y = c0*1 + c1*x[i] + c2*x[i]*x[i]
+        
+        The Vandermonde matrix fills the matrix with the representation of the
+        x powers of data, that is the "monomials" 1, x[i], x[i]^2, ... x[i]^(n-1)
+        
+        | 1  x[i]    (x[i])^2   |  | c0 |    | y[i]   |
+        | 1  x[i+1]  (x[i+1])^2 |  | c1 | =  | y[i+1] |
+        | ..  ...      ...      |  | c2 |    | ...    |
+        
+        X * c = Y
+        
+        then c = Y / X is ==> c = X^-1 * Y
+        
+        for over determined systems, QR decomposition (or SVD or normal equations) 
+        can be used.
+            find Q, R such that X = Q^T * R (QR decomposition)
+            then solve R*c = Q*Y
+        
+        */
+        int m = dataX.length;
+        
+        //int polyDegree = 2;
+        
+        int n = polyDegree + 1;
+        
+        DenseMatrix y = new DenseMatrix(m, 1);
+        
+        DenseMatrix x = new DenseMatrix(m, n);
+                
+        for (int i = 0; i < m; i++) {
+            y.set(i, 0, dataY[i]);
+            float ip = 1.f;
+            for (int j = 0; j < n; j++) {
+                x.set(i, j, ip);
+                ip *= dataX[i];
+            }
+        }
+        
+        // same size as x, that is (m, n)
+        QR qrDecomp = no.uib.cipr.matrix.QR.factorize(x);
+        
+        if (qrDecomp == null) {
+            return null;
+        }
+       
+        //nCols=X.length, nRows=X.length
+        DenseMatrix q = qrDecomp.getQ();
+        
+        //symmetric matrix of size min(m, n) on a side
+        UpperTriangDenseMatrix r = qrDecomp.getR();
+        
+        //nCols=X.length, nRows=X.length
+        DenseMatrix qqT = MatrixUtil.transpose(q);
+        
+        //size n X 1
+        DenseMatrix qty = MatrixUtil.multiply(qqT, y);
+        
+        // R\*(Q^T * y) --> Moore-Penrose pseudoinverse(r) * Q^T * y
+        // r is UpperTriangDenseMatrix (right upper)
+        
+        //System.out.println("r=" + r.toString());
+        //System.out.println("qty=" + qty.toString());
+        
+        // size is min(m, n) X 1
+        float[] c = new float[n];
+        for (int i = (n - 1); i >= 0; i--) {
+            c[i] = (float)qty.get(i, 0);
+            for (int j = (i + 1); j < n; j++) {
+                c[i] -= c[j] * r.get(i, j);
+            }
+            c[i] /= r.get(i, i);
+        }
+        
+        return c;
+    }
+    
+    public double[] solve2ndOrderML(double[] dataX, double[] dataY) {
+    
+        //TODO: provide a good first guess for init coefficients
+        //   since this is a local search/optimization method
+        
+        /*
+        double[] init = new double[]{1, 1, 1};
+        Function f = new FunctionPolyML(dataX, dataY, init);
+        Result r = LBFGS.lbfgs(init, f);
+        
+        return init;
+        */
+        
+        throw new UnsupportedOperationException("not yet impl");
+    }
+    
+    private double calcUniformLogPrior(float[] coeffs, float[] lower,
+        float[] upper) {
+        
+        int n = coeffs.length;
+        
+        if (n != lower.length || n != upper.length) {
+            throw new IllegalArgumentException("all input argumnets must be"
+                + " same length");
+        }
+        
+        boolean t0 = true;
+        
+        for (int i = 0; i < n; ++i) {
+            float c = coeffs[i];
+            if (c < lower[i] || c > upper[i]) {
+                t0 = false;
+                break;
+            }
+        }
+        
+        if (t0) {
+            return 0.;
+        } 
+        
+        return Double.NEGATIVE_INFINITY;
+    }
+    
+    private double calcUniformLogProbability(float[] coeffs, float[] x, float[] y,
+        float[] yerr) {
+        
+        throw new UnsupportedOperationException("not yet impl");
+    }
+    
+    // lambda = -2 * result
+    public static double calcLogLikelihood(float[] coeffs, float[] x, float[] y,
+        float[] yerr) {
+        
+        float[] model = Misc.generate(coeffs, x);
+       
+        float[] diff = MatrixUtil.subtract(y, model);
+        
+        float[] mnAndStDev = MiscMath.getAvgAndStDev(diff);
+        
+        float sigma = mnAndStDev[1] * mnAndStDev[1];
+         
+        int n = x.length;
+        
+        if (true) {
+            
+            double dotProd = 0;
+            for (int i = 0; i < diff.length; ++i) {
+                dotProd += (diff[i] * diff[i]);
+            }
+
+            double f
+                = Math.pow((1.0 / (2.0 * Math.PI * sigma)), n / 2.)
+                * Math.exp(-1. * (dotProd / (2. * sigma)));
+
+            return Math.log(f);
+        
+        } else {
+
+            //NOTE: this is adapted from "emcee" examples/line.py.
+            // https://github.com/dfm
+            // MIT license,
+            // Copyright (c) 2010-2016 Daniel Foreman-Mackey & contributors.
+
+            
+            //TODO: need to supply this to method
+            double prevLnF = 1;
+            
+            double s = 0;
+            
+            for (int i = 0; i < diff.length; ++i) {
+                float t0 = (yerr[i] * yerr[i]);
+                double t1 = (model[i] * model[i]);
+                t1 *= Math.exp(2. * prevLnF);
+                double invSigma2 = 1./(t0 + t1);
+                
+                double t2 = (diff[i] * diff[i]);
+                
+                s += (t2 * invSigma2 - Math.log(invSigma2));
+            }
+            
+            s *= -0.5;
+            
+            return s;
         }
     }
+    
 }

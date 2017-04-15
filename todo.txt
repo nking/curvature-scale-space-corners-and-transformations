@@ -1,8 +1,39 @@
+-- consider changing over some of the matrix math to use jblas
+   (example is in unit tests).  jblas is already included in project,
+   but accessed mostly via MTJ.
 
--- consider improving the histograms in external project used by
-    this one, two-point=correlation
+-- would like an elasticnet implementation 
+   -- considering a port of the arpa supported dlib class and dependencies
+      https://github.com/davisking/dlib
+      -- mitie created an interface to the c++ port to java:
+         https://github.com/mit-nlp/MITIE
+         http://blog.dlib.net/2014/10/mitie-v03-released-now-with-java-and-r.html?m=1
+
+   -- could also consider the small api:
+   https://github.com/yinlou/mltk/search?utf8=%E2%9C%93&q=elastic-net&type=
+
+-- for global search/optimization methods, consider importing
+      https://github.com/aimacode/aima-java
+     -- use the simulted annealing and/or other global
+        optimization for the polynomial curve fitting
+     would like to consider importing best global optimization
+     (? random search, a genetic algorithm, simulated annealing,
+      or particle swarm)
+
+(1) reading bishop 2006
+    and looking at
+    http://www.gaussianprocess.org/gpml/code/matlab/doc/
+    and tensorflow
+    -- Conditional Random Fields
+
+
+(2) read the remote sensing paper
 
 -- consider making a greyscale MSEREdges
+
+-- when return t improving the segmentation, run MSEREdges on
+     the berkeley benchmark data
+
 
 -- consider implementing a affine transformation class
 
@@ -10,7 +41,23 @@
    ...trifocal tensor
 
 -- finish the new HOGs comparison method
-   
+
+-- interesting:
+   solving the transformations between 2 images
+   when have most the camera matrix, except focal length.
+
+   http://www.vis.uky.edu/~stewe/publications/stewenius_05_cvpr_focal.pdf
+
+   for Structure in Motion, camera information is needed and 5 points of
+      correspondence.
+   When camera infor is not available, epipolar geometry w/ 7 points of
+      correspondence is used, but is not as stable.
+
+   also see
+       P. Sturm, On Focal Length Calibration from Two Views,
+       IEEE International Conference on Computer Vision and Pattern
+       Recognition, Volume 2, pp. 145–150, 2001
+ 
 -- geohashing and bag of words, etc
 
 -- consider implementing Paris and Durand 2007
@@ -32,8 +79,6 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
     of points too (a lkeeping labeled regions contiguous)
 
 -- consider implementing a mean shift algorithm
-
--- Conditional Random Fields
 
 -- fix the ransac iterator estimate that has a limit of
     1790

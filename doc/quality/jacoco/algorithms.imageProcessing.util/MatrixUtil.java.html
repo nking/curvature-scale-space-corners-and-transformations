@@ -165,43 +165,74 @@ import no.uib.cipr.matrix.sparse.SparseVector;
 <span class="fc" id="L165">        return c;</span>
     }
     
+    public static double[] subtract(double[] m, double[] n) {
+
+<span class="nc" id="L170">        int len = m.length;</span>
+     
+<span class="nc" id="L172">        double[] c = new double[len];</span>
+        
+<span class="nc" id="L174">        subtract(m, n, c);</span>
+
+<span class="nc" id="L176">        return c;</span>
+    }
+    
+    public static void subtract(double[] m, double[] n,
+        double[] output) {
+
+<span class="pc bpc" id="L182" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L183">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+        }
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="nc" id="L186">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+        }
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (m.length != n.length) {</span>
+<span class="nc" id="L189">            throw new IllegalArgumentException(&quot;m and n must be same length&quot;);</span>
+        }
+        
+<span class="fc" id="L192">        int len = m.length;</span>
+             
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="fc" id="L195">            output[i] = m[i] - n[i];</span>
+        }
+<span class="fc" id="L197">    }</span>
+    
     public static DenseMatrix subtract(DenseMatrix m, DenseMatrix n) {
 
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (m == null) {</span>
-<span class="nc" id="L171">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        if (m == null) {</span>
+<span class="nc" id="L202">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (n == null) {</span>
-<span class="nc" id="L174">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">        if (n == null) {</span>
+<span class="nc" id="L205">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L176" title="2 of 4 branches missed.">        if (m.numRows() != n.numRows() || m.numColumns() != n.numColumns()) {</span>
-<span class="nc" id="L177">            throw new IllegalArgumentException(&quot;m and n must be same length&quot;);</span>
+<span class="pc bpc" id="L207" title="2 of 4 branches missed.">        if (m.numRows() != n.numRows() || m.numColumns() != n.numColumns()) {</span>
+<span class="nc" id="L208">            throw new IllegalArgumentException(&quot;m and n must be same length&quot;);</span>
         }
         
-<span class="fc" id="L180">        DenseMatrix output = new DenseMatrix(m.numRows(), m.numColumns());</span>
+<span class="fc" id="L211">        DenseMatrix output = new DenseMatrix(m.numRows(), m.numColumns());</span>
         
-<span class="fc bfc" id="L182" title="All 2 branches covered.">        for (int i = 0; i &lt; m.numRows(); ++i) {</span>
-<span class="fc bfc" id="L183" title="All 2 branches covered.">            for (int j = 0; j &lt; m.numColumns(); ++j) {</span>
-<span class="fc" id="L184">                double v0 = m.get(i, j);</span>
-<span class="fc" id="L185">                double v1 = n.get(i, j);</span>
-<span class="fc" id="L186">                output.set(i, j, v0 - v1);</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">        for (int i = 0; i &lt; m.numRows(); ++i) {</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            for (int j = 0; j &lt; m.numColumns(); ++j) {</span>
+<span class="fc" id="L215">                double v0 = m.get(i, j);</span>
+<span class="fc" id="L216">                double v1 = n.get(i, j);</span>
+<span class="fc" id="L217">                output.set(i, j, v0 - v1);</span>
             }
         }
         
-<span class="fc" id="L190">        return output;</span>
+<span class="fc" id="L221">        return output;</span>
     }
     
     public static void add(int[] m, int n) {
 
-<span class="pc bpc" id="L195" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L196">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L226" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L227">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L199">        int len = m.length;</span>
+<span class="fc" id="L230">        int len = m.length;</span>
              
-<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++) {</span>
-<span class="fc" id="L202">            m[i] += n;</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="fc" id="L233">            m[i] += n;</span>
         }
-<span class="fc" id="L204">    }</span>
+<span class="fc" id="L235">    }</span>
     
     /**
      * performs eigenvalue decomposition, checks the matrix products and returns
@@ -217,14 +248,14 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         
         EVD evd;
         try {
-<span class="fc" id="L220">            evd = EVD.factorize(m);</span>
-<span class="nc" id="L221">        } catch (NotConvergedException ex) {</span>
-<span class="nc" id="L222">            Logger.getLogger(MatrixUtil.class.getName()).log(</span>
+<span class="fc" id="L251">            evd = EVD.factorize(m);</span>
+<span class="nc" id="L252">        } catch (NotConvergedException ex) {</span>
+<span class="nc" id="L253">            Logger.getLogger(MatrixUtil.class.getName()).log(</span>
                 Level.SEVERE, null, ex);
-<span class="nc" id="L224">            return null;</span>
-<span class="fc" id="L225">        }</span>
+<span class="nc" id="L255">            return null;</span>
+<span class="fc" id="L256">        }</span>
         
-<span class="fc" id="L227">        DenseMatrix rightEigenVectors = evd.getRightEigenvectors();</span>
+<span class="fc" id="L258">        DenseMatrix rightEigenVectors = evd.getRightEigenvectors();</span>
         
         //System.out.println(&quot;a=\n&quot; + m.toString());
         //System.out.println(&quot;left e=\n&quot; + evd.getLeftEigenvectors().toString());
@@ -234,11 +265,11 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         //    MatrixUtil.multiply(leftEigenVectors.transpose(),
         //        MatrixUtil.multiply(m, rightEigenVectors)));
         
-<span class="fc" id="L237">        double[] eigenValues = evd.getRealEigenvalues();</span>
+<span class="fc" id="L268">        double[] eigenValues = evd.getRealEigenvalues();</span>
         
-<span class="fc" id="L239">        DenseMatrix d = new DenseMatrix(eigenValues.length, eigenValues.length);</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">        for (int i = 0; i &lt; eigenValues.length; ++i) {</span>
-<span class="fc" id="L241">            d.set(i, i, eigenValues[i]);</span>
+<span class="fc" id="L270">        DenseMatrix d = new DenseMatrix(eigenValues.length, eigenValues.length);</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        for (int i = 0; i &lt; eigenValues.length; ++i) {</span>
+<span class="fc" id="L272">            d.set(i, i, eigenValues[i]);</span>
         }
         
         /*
@@ -254,236 +285,236 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         u is the left eigen vector and lambda is the eigen values.
         */
         // A * V
-<span class="fc" id="L257">        DenseMatrix check0_right = MatrixUtil.multiply(m, rightEigenVectors);</span>
+<span class="fc" id="L288">        DenseMatrix check0_right = MatrixUtil.multiply(m, rightEigenVectors);</span>
         // D * V
-<span class="fc" id="L259">        DenseMatrix check1_right = MatrixUtil.multiply(rightEigenVectors, d);</span>
+<span class="fc" id="L290">        DenseMatrix check1_right = MatrixUtil.multiply(rightEigenVectors, d);</span>
                 
         //System.out.println(&quot;check0_right=\n&quot; + check0_right);
         //System.out.println(&quot;check1_right=\n&quot; + check1_right);
 
         // get columns of vectors passing product test
-<span class="fc" id="L265">        TIntSet columns = check(check0_right, check1_right);</span>
+<span class="fc" id="L296">        TIntSet columns = check(check0_right, check1_right);</span>
         
         // filter for unique eigen vectors and values
-<span class="fc" id="L268">        TIntSet rm = new TIntHashSet();</span>
-<span class="fc" id="L269">        TDoubleSet exists = new TDoubleHashSet();</span>
-<span class="fc" id="L270">        TIntIterator iter = columns.iterator();</span>
-<span class="fc bfc" id="L271" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L272">            int col = iter.next();</span>
-<span class="fc" id="L273">            double ev = eigenValues[col];</span>
-<span class="pc bpc" id="L274" title="1 of 2 branches missed.">            if (exists.contains(ev)) {</span>
-<span class="nc" id="L275">                rm.add(col);</span>
+<span class="fc" id="L299">        TIntSet rm = new TIntHashSet();</span>
+<span class="fc" id="L300">        TDoubleSet exists = new TDoubleHashSet();</span>
+<span class="fc" id="L301">        TIntIterator iter = columns.iterator();</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L303">            int col = iter.next();</span>
+<span class="fc" id="L304">            double ev = eigenValues[col];</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">            if (exists.contains(ev)) {</span>
+<span class="nc" id="L306">                rm.add(col);</span>
             } else {
-<span class="fc" id="L277">                exists.add(ev);</span>
+<span class="fc" id="L308">                exists.add(ev);</span>
             }
-<span class="fc" id="L279">        }</span>
-<span class="fc" id="L280">        columns.removeAll(rm);</span>
+<span class="fc" id="L310">        }</span>
+<span class="fc" id="L311">        columns.removeAll(rm);</span>
         
-<span class="fc" id="L282">        DenseMatrix rightVectors2 = new DenseMatrix(rightEigenVectors.numRows(),</span>
-<span class="fc" id="L283">            columns.size());</span>
-<span class="fc" id="L284">        TDoubleList eigenValues2 = new TDoubleArrayList(columns.size());</span>
-<span class="fc" id="L285">        int col2 = 0;</span>
+<span class="fc" id="L313">        DenseMatrix rightVectors2 = new DenseMatrix(rightEigenVectors.numRows(),</span>
+<span class="fc" id="L314">            columns.size());</span>
+<span class="fc" id="L315">        TDoubleList eigenValues2 = new TDoubleArrayList(columns.size());</span>
+<span class="fc" id="L316">        int col2 = 0;</span>
         
-<span class="fc" id="L287">        iter = columns.iterator();</span>
-<span class="fc bfc" id="L288" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L289">            int col = iter.next();            </span>
-<span class="fc" id="L290">            eigenValues2.add(eigenValues[col]);</span>
+<span class="fc" id="L318">        iter = columns.iterator();</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L320">            int col = iter.next();            </span>
+<span class="fc" id="L321">            eigenValues2.add(eigenValues[col]);</span>
             
-<span class="fc bfc" id="L292" title="All 2 branches covered.">            for (int row = 0; row &lt; rightEigenVectors.numRows(); ++row) {</span>
-<span class="fc" id="L293">                rightVectors2.set(row, col2, </span>
-<span class="fc" id="L294">                    rightEigenVectors.get(row, col));</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">            for (int row = 0; row &lt; rightEigenVectors.numRows(); ++row) {</span>
+<span class="fc" id="L324">                rightVectors2.set(row, col2, </span>
+<span class="fc" id="L325">                    rightEigenVectors.get(row, col));</span>
             }
             
-<span class="fc" id="L297">            col2++;</span>
-<span class="fc" id="L298">        }</span>
+<span class="fc" id="L328">            col2++;</span>
+<span class="fc" id="L329">        }</span>
         
-<span class="fc" id="L300">        return new Object[]{rightVectors2, eigenValues2};</span>
+<span class="fc" id="L331">        return new Object[]{rightVectors2, eigenValues2};</span>
     }
     
     // this is adapted from JAMA matrix test http://math.nist.gov/javanumerics/jama/
     // Jama-1.0.3.zip
     private static TIntSet check(DenseMatrix m, DenseMatrix n) {
         
-<span class="fc" id="L307">        TIntSet columns = new TIntHashSet();</span>
+<span class="fc" id="L338">        TIntSet columns = new TIntHashSet();</span>
             
-<span class="fc" id="L309">        double eps = Math.pow(2.0, -52.0);</span>
+<span class="fc" id="L340">        double eps = Math.pow(2.0, -52.0);</span>
         
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (m.norm(Matrix.Norm.Frobenius) == 0. &amp;&amp; </span>
-<span class="nc bnc" id="L312" title="All 2 branches missed.">            n.norm(Matrix.Norm.Frobenius) &lt; 10 * eps) {</span>
-<span class="nc" id="L313">            return columns;</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (m.norm(Matrix.Norm.Frobenius) == 0. &amp;&amp; </span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">            n.norm(Matrix.Norm.Frobenius) &lt; 10 * eps) {</span>
+<span class="nc" id="L344">            return columns;</span>
         }
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">        if (n.norm(Matrix.Norm.Frobenius) == 0. &amp;&amp; </span>
-<span class="nc bnc" id="L316" title="All 2 branches missed.">            m.norm(Matrix.Norm.Frobenius) &lt; 10 * eps) {</span>
-<span class="nc" id="L317">            return columns;</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (n.norm(Matrix.Norm.Frobenius) == 0. &amp;&amp; </span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">            m.norm(Matrix.Norm.Frobenius) &lt; 10 * eps) {</span>
+<span class="nc" id="L348">            return columns;</span>
         }
         
-<span class="fc" id="L320">        double mNorm = Math.max(m.norm(Matrix.Norm.One), </span>
-<span class="fc" id="L321">            n.norm(Matrix.Norm.Frobenius));</span>
-<span class="fc" id="L322">        double c2 = 1000 * eps * mNorm;</span>
+<span class="fc" id="L351">        double mNorm = Math.max(m.norm(Matrix.Norm.One), </span>
+<span class="fc" id="L352">            n.norm(Matrix.Norm.Frobenius));</span>
+<span class="fc" id="L353">        double c2 = 1000 * eps * mNorm;</span>
         
-<span class="fc" id="L324">        DenseVector d = new DenseVector(m.numRows());</span>
+<span class="fc" id="L355">        DenseVector d = new DenseVector(m.numRows());</span>
         
-<span class="fc bfc" id="L326" title="All 2 branches covered.">        for (int j = 0; j &lt; m.numColumns(); ++j) {</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">            for (int i = 0; i &lt; m.numRows(); ++i) {</span>
-<span class="fc" id="L328">                double v0 = m.get(i, j);</span>
-<span class="fc" id="L329">                double v1 = n.get(i, j);</span>
-<span class="fc" id="L330">                double diff = v0 - v1;</span>
-<span class="fc" id="L331">                d.set(i, diff);</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">        for (int j = 0; j &lt; m.numColumns(); ++j) {</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">            for (int i = 0; i &lt; m.numRows(); ++i) {</span>
+<span class="fc" id="L359">                double v0 = m.get(i, j);</span>
+<span class="fc" id="L360">                double v1 = n.get(i, j);</span>
+<span class="fc" id="L361">                double diff = v0 - v1;</span>
+<span class="fc" id="L362">                d.set(i, diff);</span>
             }
-<span class="fc" id="L333">            double c = d.norm(Vector.Norm.One);            </span>
-<span class="fc bfc" id="L334" title="All 2 branches covered.">            if (c &lt; c2) {</span>
-<span class="fc" id="L335">                columns.add(j);</span>
+<span class="fc" id="L364">            double c = d.norm(Vector.Norm.One);            </span>
+<span class="fc bfc" id="L365" title="All 2 branches covered.">            if (c &lt; c2) {</span>
+<span class="fc" id="L366">                columns.add(j);</span>
             }
         }
         
-<span class="fc" id="L339">        return columns;</span>
+<span class="fc" id="L370">        return columns;</span>
     }
     
     public static double[] multiply(double[][] m, double[] n) {
 
-<span class="pc bpc" id="L344" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L345">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L375" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L376">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L347" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
-<span class="nc" id="L348">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L378" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="nc" id="L379">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L351">        int mcols = m.length;</span>
+<span class="fc" id="L382">        int mcols = m.length;</span>
 
-<span class="fc" id="L353">        int mrows = m[0].length;</span>
+<span class="fc" id="L384">        int mrows = m[0].length;</span>
 
-<span class="fc" id="L355">        int ncols = n.length;</span>
+<span class="fc" id="L386">        int ncols = n.length;</span>
         
-<span class="pc bpc" id="L357" title="1 of 2 branches missed.">        if (mcols != ncols) {</span>
-<span class="nc" id="L358">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (mcols != ncols) {</span>
+<span class="nc" id="L389">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m must equal the number of rows in n&quot;);
         }
         
-<span class="fc" id="L362">        double[] c = new double[mrows];</span>
+<span class="fc" id="L393">        double[] c = new double[mrows];</span>
 
-<span class="fc" id="L364">        int cCol = 0;</span>
+<span class="fc" id="L395">        int cCol = 0;</span>
         
-<span class="fc bfc" id="L366" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
                         
-<span class="fc bfc" id="L368" title="All 2 branches covered.">            for (int col = 0; col &lt; mcols; col++) {</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">            for (int col = 0; col &lt; mcols; col++) {</span>
                 
-<span class="fc" id="L370">                c[cCol] += (m[col][row] * n[col]);</span>
+<span class="fc" id="L401">                c[cCol] += (m[col][row] * n[col]);</span>
             }
             
-<span class="fc" id="L373">            cCol++;        </span>
+<span class="fc" id="L404">            cCol++;        </span>
         }
 
-<span class="fc" id="L376">        return c;</span>
+<span class="fc" id="L407">        return c;</span>
     }
     
     public static float[] multiply(float[][] m, float[] n) {
 
-<span class="nc bnc" id="L381" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L382">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="nc bnc" id="L412" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L413">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="nc bnc" id="L384" title="All 4 branches missed.">        if (n == null || n.length == 0) {</span>
-<span class="nc" id="L385">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="nc bnc" id="L415" title="All 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="nc" id="L416">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="nc" id="L388">        int mcols = m.length;</span>
+<span class="nc" id="L419">        int mcols = m.length;</span>
 
-<span class="nc" id="L390">        int mrows = m[0].length;</span>
+<span class="nc" id="L421">        int mrows = m[0].length;</span>
 
-<span class="nc" id="L392">        int ncols = n.length;</span>
+<span class="nc" id="L423">        int ncols = n.length;</span>
         
-<span class="nc bnc" id="L394" title="All 2 branches missed.">        if (mcols != ncols) {</span>
-<span class="nc" id="L395">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">        if (mcols != ncols) {</span>
+<span class="nc" id="L426">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m must equal the number of rows in n&quot;);
         }
         
-<span class="nc" id="L399">        float[] c = new float[mrows];</span>
+<span class="nc" id="L430">        float[] c = new float[mrows];</span>
 
-<span class="nc" id="L401">        int cCol = 0;</span>
+<span class="nc" id="L432">        int cCol = 0;</span>
         
-<span class="nc bnc" id="L403" title="All 2 branches missed.">        for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">        for (int row = 0; row &lt; mrows; row++) {</span>
                         
-<span class="nc bnc" id="L405" title="All 2 branches missed.">            for (int col = 0; col &lt; mcols; col++) {</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">            for (int col = 0; col &lt; mcols; col++) {</span>
                 
-<span class="nc" id="L407">                c[cCol] += (m[col][row] * n[col]);</span>
+<span class="nc" id="L438">                c[cCol] += (m[col][row] * n[col]);</span>
             }
             
-<span class="nc" id="L410">            cCol++;        </span>
+<span class="nc" id="L441">            cCol++;        </span>
         }
 
-<span class="nc" id="L413">        return c;</span>
+<span class="nc" id="L444">        return c;</span>
     }
     
     public static void multiply(int[] m, int factor) {
 
-<span class="pc bpc" id="L418" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L419">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L449" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L450">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L422">        int len = m.length;</span>
+<span class="fc" id="L453">        int len = m.length;</span>
                 
-<span class="fc bfc" id="L424" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++) {                        </span>
-<span class="fc" id="L425">            m[i] *= factor;</span>
+<span class="fc bfc" id="L455" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++) {                        </span>
+<span class="fc" id="L456">            m[i] *= factor;</span>
         }
-<span class="fc" id="L427">    }</span>
+<span class="fc" id="L458">    }</span>
     
     
     public static void multiply(float[][] a, float m) {
 
-<span class="pc bpc" id="L432" title="2 of 4 branches missed.">        if (a == null || a.length == 0) {</span>
-<span class="nc" id="L433">            throw new IllegalArgumentException(&quot;a cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L463" title="2 of 4 branches missed.">        if (a == null || a.length == 0) {</span>
+<span class="nc" id="L464">            throw new IllegalArgumentException(&quot;a cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L436">        int mcols = a.length;</span>
+<span class="fc" id="L467">        int mcols = a.length;</span>
 
-<span class="fc" id="L438">        int mrows = a[0].length;</span>
+<span class="fc" id="L469">        int mrows = a[0].length;</span>
         
-<span class="fc bfc" id="L440" title="All 2 branches covered.">        for (int col = 0; col &lt; mcols; col++) {</span>
-<span class="fc bfc" id="L441" title="All 2 branches covered.">            for (int row = 0; row &lt; mrows; row++) {</span>
-<span class="fc" id="L442">                a[col][row] *= m;</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">        for (int col = 0; col &lt; mcols; col++) {</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">            for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc" id="L473">                a[col][row] *= m;</span>
             }            
         }
-<span class="fc" id="L445">    }</span>
+<span class="fc" id="L476">    }</span>
     
     public static void multiply(int[] m, int[] n) {
 
-<span class="nc bnc" id="L449" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L450">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="nc bnc" id="L480" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L481">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="nc bnc" id="L453" title="All 4 branches missed.">        if (n == null || n.length == 0) {</span>
-<span class="nc" id="L454">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="nc bnc" id="L484" title="All 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="nc" id="L485">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="nc bnc" id="L457" title="All 2 branches missed.">        if (m.length != n.length) {</span>
-<span class="nc" id="L458">            throw new IllegalArgumentException(&quot;m must be the same size as n&quot;);</span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">        if (m.length != n.length) {</span>
+<span class="nc" id="L489">            throw new IllegalArgumentException(&quot;m must be the same size as n&quot;);</span>
         }
         
-<span class="nc" id="L461">        int len = m.length;</span>
+<span class="nc" id="L492">        int len = m.length;</span>
                 
-<span class="nc bnc" id="L463" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++) {                        </span>
-<span class="nc" id="L464">            m[i] *= n[i];</span>
+<span class="nc bnc" id="L494" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++) {                        </span>
+<span class="nc" id="L495">            m[i] *= n[i];</span>
         }
-<span class="nc" id="L466">    }</span>
+<span class="nc" id="L497">    }</span>
     
     public static double[][] multiply(double[][] m, double[][] n) {
 
-<span class="pc bpc" id="L470" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L471">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L501" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L502">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L473" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
-<span class="nc" id="L474">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L504" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="nc" id="L505">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L477">        int mrows = m.length;</span>
+<span class="fc" id="L508">        int mrows = m.length;</span>
 
-<span class="fc" id="L479">        int mcols = m[0].length;</span>
+<span class="fc" id="L510">        int mcols = m[0].length;</span>
 
-<span class="fc" id="L481">        int nrows = n.length;</span>
+<span class="fc" id="L512">        int nrows = n.length;</span>
         
-<span class="fc" id="L483">        int ncols = n[0].length;</span>
+<span class="fc" id="L514">        int ncols = n[0].length;</span>
         
-<span class="pc bpc" id="L485" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
-<span class="nc" id="L486">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
+<span class="nc" id="L517">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m must equal the number of rows in n&quot;);
         }
         
@@ -495,42 +526,48 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         d*p0+... d*p d*p
         */
         
-<span class="fc" id="L498">        double[][] c = new double[mrows][];</span>
+<span class="fc" id="L529">        double[][] c = new double[mrows][];</span>
         
-<span class="fc bfc" id="L500" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
-<span class="fc" id="L501">            c[row] = new double[ncols];</span>
-<span class="fc bfc" id="L502" title="All 2 branches covered.">            for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
-<span class="fc" id="L503">                double sum = 0;                </span>
-<span class="fc bfc" id="L504" title="All 2 branches covered.">                for (int mcol = 0; mcol &lt; mcols; mcol++) {</span>
-<span class="fc" id="L505">                    sum += (m[row][mcol] * n[mcol][ncol]);                    </span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc" id="L532">            c[row] = new double[ncols];</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">            for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
+<span class="fc" id="L534">                double sum = 0;                </span>
+<span class="fc bfc" id="L535" title="All 2 branches covered.">                for (int mcol = 0; mcol &lt; mcols; mcol++) {</span>
+<span class="fc" id="L536">                    sum += (m[row][mcol] * n[mcol][ncol]);                    </span>
                 }
-<span class="fc" id="L507">                c[row][ncol] = sum;</span>
+<span class="fc" id="L538">                c[row][ncol] = sum;</span>
             }            
         }
 
-<span class="fc" id="L511">        return c;</span>
+<span class="fc" id="L542">        return c;</span>
     }
     
+    /**
+     * perform dot product and return matrix of size mrows X ncols
+     * @param m
+     * @param n
+     * @return 
+     */
     public static DenseMatrix multiply(
         Matrix m, Matrix n) {
 
-<span class="pc bpc" id="L517" title="3 of 6 branches missed.">        if (m == null || m.numRows() == 0 || m.numColumns() == 0) {</span>
-<span class="nc" id="L518">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L554" title="3 of 6 branches missed.">        if (m == null || m.numRows() == 0 || m.numColumns() == 0) {</span>
+<span class="nc" id="L555">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L520" title="3 of 6 branches missed.">        if (n == null || n.numRows() == 0 || n.numColumns() == 0) {</span>
-<span class="nc" id="L521">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L557" title="3 of 6 branches missed.">        if (n == null || n.numRows() == 0 || n.numColumns() == 0) {</span>
+<span class="nc" id="L558">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L524">        int mrows = m.numRows();</span>
+<span class="fc" id="L561">        int mrows = m.numRows();</span>
 
-<span class="fc" id="L526">        int mcols = m.numColumns();</span>
+<span class="fc" id="L563">        int mcols = m.numColumns();</span>
 
-<span class="fc" id="L528">        int nrows = n.numRows();</span>
+<span class="fc" id="L565">        int nrows = n.numRows();</span>
         
-<span class="fc" id="L530">        int ncols = n.numColumns();</span>
+<span class="fc" id="L567">        int ncols = n.numColumns();</span>
         
-<span class="pc bpc" id="L532" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
-<span class="nc" id="L533">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L569" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
+<span class="nc" id="L570">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m must equal the number of rows in n&quot;);
         }
         
@@ -542,41 +579,41 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         d*p0+... d*p d*p
         */
         
-<span class="fc" id="L545">        no.uib.cipr.matrix.DenseMatrix c = new DenseMatrix(mrows, ncols);</span>
+<span class="fc" id="L582">        no.uib.cipr.matrix.DenseMatrix c = new DenseMatrix(mrows, ncols);</span>
         
-<span class="fc bfc" id="L547" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
-<span class="fc bfc" id="L548" title="All 2 branches covered.">            for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
-<span class="fc" id="L549">                double sum = 0;                </span>
-<span class="fc bfc" id="L550" title="All 2 branches covered.">                for (int mcol = 0; mcol &lt; mcols; mcol++) {</span>
-<span class="fc" id="L551">                    sum += (m.get(row, mcol) * n.get(mcol, ncol));                    </span>
+<span class="fc bfc" id="L584" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">            for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
+<span class="fc" id="L586">                double sum = 0;                </span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">                for (int mcol = 0; mcol &lt; mcols; mcol++) {</span>
+<span class="fc" id="L588">                    sum += (m.get(row, mcol) * n.get(mcol, ncol));                    </span>
                 }
-<span class="fc" id="L553">                c.set(row, ncol, sum);</span>
+<span class="fc" id="L590">                c.set(row, ncol, sum);</span>
             }            
         }
 
-<span class="fc" id="L557">        return c;</span>
+<span class="fc" id="L594">        return c;</span>
     }
     
     public static long countNodes(FlexCompRowMatrix a) {
         
-<span class="fc" id="L562">        long count = 0;</span>
-<span class="fc" id="L563">        Iterator&lt;MatrixEntry&gt; iter = a.iterator();</span>
-<span class="fc bfc" id="L564" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L565">            iter.next();</span>
-<span class="fc" id="L566">            ++count;</span>
+<span class="fc" id="L599">        long count = 0;</span>
+<span class="fc" id="L600">        Iterator&lt;MatrixEntry&gt; iter = a.iterator();</span>
+<span class="fc bfc" id="L601" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L602">            iter.next();</span>
+<span class="fc" id="L603">            ++count;</span>
         }
-<span class="fc" id="L568">        return count;</span>
+<span class="fc" id="L605">        return count;</span>
     }
 
     public static long countNodes(FlexCompColMatrix a) {
         
-<span class="nc" id="L573">        long count = 0;</span>
-<span class="nc" id="L574">        Iterator&lt;MatrixEntry&gt; iter = a.iterator();</span>
-<span class="nc bnc" id="L575" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L576">            iter.next();</span>
-<span class="nc" id="L577">            ++count;</span>
+<span class="nc" id="L610">        long count = 0;</span>
+<span class="nc" id="L611">        Iterator&lt;MatrixEntry&gt; iter = a.iterator();</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L613">            iter.next();</span>
+<span class="nc" id="L614">            ++count;</span>
         }
-<span class="nc" id="L579">        return count;</span>
+<span class="nc" id="L616">        return count;</span>
     }
     
     /**
@@ -589,80 +626,80 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     public static FlexCompRowMatrix sparseMatrixSubtract(FlexCompRowMatrix m, 
         FlexCompRowMatrix n) {
 
-<span class="pc bpc" id="L592" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
-<span class="nc" id="L593">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L629" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
+<span class="nc" id="L630">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L595" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
-<span class="nc" id="L596">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L632" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
+<span class="nc" id="L633">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L599">        int mrows = m.numRows();</span>
+<span class="fc" id="L636">        int mrows = m.numRows();</span>
 
-<span class="fc" id="L601">        int mcols = m.numColumns();</span>
+<span class="fc" id="L638">        int mcols = m.numColumns();</span>
 
-<span class="pc bpc" id="L603" title="2 of 4 branches missed.">        if (mrows != n.numRows() || mcols != n.numColumns()) {</span>
-<span class="nc" id="L604">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L640" title="2 of 4 branches missed.">        if (mrows != n.numRows() || mcols != n.numColumns()) {</span>
+<span class="nc" id="L641">            throw new IllegalArgumentException(</span>
                 &quot;m and n must be the same size&quot;);
         }
         
-<span class="fc" id="L608">        FlexCompRowMatrix c = new FlexCompRowMatrix(mrows, mcols);</span>
+<span class="fc" id="L645">        FlexCompRowMatrix c = new FlexCompRowMatrix(mrows, mcols);</span>
         
-<span class="fc" id="L610">        Set&lt;PairInt&gt; processed = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L647">        Set&lt;PairInt&gt; processed = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L612">        long count = 0;</span>
+<span class="fc" id="L649">        long count = 0;</span>
         
-<span class="fc" id="L614">        Iterator&lt;MatrixEntry&gt; iter = m.iterator();</span>
-<span class="fc bfc" id="L615" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L616">            MatrixEntry entry = iter.next();</span>
-<span class="fc" id="L617">            int col = entry.column();</span>
-<span class="fc" id="L618">            int row = entry.row();</span>
-<span class="fc" id="L619">            double v = entry.get();</span>
+<span class="fc" id="L651">        Iterator&lt;MatrixEntry&gt; iter = m.iterator();</span>
+<span class="fc bfc" id="L652" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L653">            MatrixEntry entry = iter.next();</span>
+<span class="fc" id="L654">            int col = entry.column();</span>
+<span class="fc" id="L655">            int row = entry.row();</span>
+<span class="fc" id="L656">            double v = entry.get();</span>
             
-<span class="fc" id="L621">            double v2 = n.get(row, col);</span>
+<span class="fc" id="L658">            double v2 = n.get(row, col);</span>
             
-<span class="fc" id="L623">            double result = v - v2;</span>
+<span class="fc" id="L660">            double result = v - v2;</span>
             
-<span class="fc bfc" id="L625" title="All 2 branches covered.">            if (result != 0) {</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">            if (result != 0) {</span>
             
-<span class="fc" id="L627">                c.set(row, col, v - v2);</span>
+<span class="fc" id="L664">                c.set(row, col, v - v2);</span>
                 
-<span class="fc" id="L629">                count++;</span>
+<span class="fc" id="L666">                count++;</span>
             }
             
-<span class="fc" id="L632">            processed.add(new PairInt(row, col));</span>
+<span class="fc" id="L669">            processed.add(new PairInt(row, col));</span>
            
-<span class="fc" id="L634">        }</span>
+<span class="fc" id="L671">        }</span>
         
-<span class="fc" id="L636">        iter = n.iterator();</span>
-<span class="fc bfc" id="L637" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L638">            MatrixEntry entry = iter.next();</span>
-<span class="fc" id="L639">            int col = entry.column();</span>
-<span class="fc" id="L640">            int row = entry.row();</span>
+<span class="fc" id="L673">        iter = n.iterator();</span>
+<span class="fc bfc" id="L674" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L675">            MatrixEntry entry = iter.next();</span>
+<span class="fc" id="L676">            int col = entry.column();</span>
+<span class="fc" id="L677">            int row = entry.row();</span>
             
-<span class="fc" id="L642">            PairInt p = new PairInt(row, col);</span>
-<span class="fc bfc" id="L643" title="All 2 branches covered.">            if (processed.contains(p)) {</span>
-<span class="fc" id="L644">                continue;</span>
+<span class="fc" id="L679">            PairInt p = new PairInt(row, col);</span>
+<span class="fc bfc" id="L680" title="All 2 branches covered.">            if (processed.contains(p)) {</span>
+<span class="fc" id="L681">                continue;</span>
             }
             
-<span class="fc" id="L647">            double v2 = entry.get();</span>
+<span class="fc" id="L684">            double v2 = entry.get();</span>
             
-<span class="fc" id="L649">            double v = m.get(row, col);</span>
+<span class="fc" id="L686">            double v = m.get(row, col);</span>
             
-<span class="fc" id="L651">            double result = v - v2;</span>
+<span class="fc" id="L688">            double result = v - v2;</span>
             
-<span class="pc bpc" id="L653" title="1 of 2 branches missed.">            if (result != 0) {</span>
+<span class="pc bpc" id="L690" title="1 of 2 branches missed.">            if (result != 0) {</span>
             
-<span class="fc" id="L655">                c.set(row, col, v - v2);</span>
+<span class="fc" id="L692">                c.set(row, col, v - v2);</span>
                 
-<span class="fc" id="L657">                count++;</span>
+<span class="fc" id="L694">                count++;</span>
             }
             
             //processed.add(p);
-<span class="fc" id="L661">        }</span>
+<span class="fc" id="L698">        }</span>
         
         //System.out.println(count + &quot; nodes in output sparse matrix&quot;);
         
-<span class="fc" id="L665">        return c;</span>
+<span class="fc" id="L702">        return c;</span>
     }
     
     /**
@@ -677,80 +714,80 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         
         //TODO: consider use parameterization here with FlexCompRowMatrix method
 
-<span class="pc bpc" id="L680" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
-<span class="nc" id="L681">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L717" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
+<span class="nc" id="L718">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L683" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
-<span class="nc" id="L684">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L720" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
+<span class="nc" id="L721">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L687">        int mrows = m.numRows();</span>
+<span class="fc" id="L724">        int mrows = m.numRows();</span>
 
-<span class="fc" id="L689">        int mcols = m.numColumns();</span>
+<span class="fc" id="L726">        int mcols = m.numColumns();</span>
 
-<span class="pc bpc" id="L691" title="2 of 4 branches missed.">        if (mrows != n.numRows() || mcols != n.numColumns()) {</span>
-<span class="nc" id="L692">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L728" title="2 of 4 branches missed.">        if (mrows != n.numRows() || mcols != n.numColumns()) {</span>
+<span class="nc" id="L729">            throw new IllegalArgumentException(</span>
                 &quot;m and n must be the same size&quot;);
         }
         
-<span class="fc" id="L696">        FlexCompColMatrix c = new FlexCompColMatrix(mrows, mcols);</span>
+<span class="fc" id="L733">        FlexCompColMatrix c = new FlexCompColMatrix(mrows, mcols);</span>
         
-<span class="fc" id="L698">        Set&lt;PairInt&gt; processed = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L735">        Set&lt;PairInt&gt; processed = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L700">        long count = 0;</span>
+<span class="fc" id="L737">        long count = 0;</span>
         
-<span class="fc" id="L702">        Iterator&lt;MatrixEntry&gt; iter = m.iterator();</span>
-<span class="fc bfc" id="L703" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L704">            MatrixEntry entry = iter.next();</span>
-<span class="fc" id="L705">            int col = entry.column();</span>
-<span class="fc" id="L706">            int row = entry.row();</span>
-<span class="fc" id="L707">            double v = entry.get();</span>
+<span class="fc" id="L739">        Iterator&lt;MatrixEntry&gt; iter = m.iterator();</span>
+<span class="fc bfc" id="L740" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L741">            MatrixEntry entry = iter.next();</span>
+<span class="fc" id="L742">            int col = entry.column();</span>
+<span class="fc" id="L743">            int row = entry.row();</span>
+<span class="fc" id="L744">            double v = entry.get();</span>
             
-<span class="fc" id="L709">            double v2 = n.get(row, col);</span>
+<span class="fc" id="L746">            double v2 = n.get(row, col);</span>
             
-<span class="fc" id="L711">            double result = v - v2;</span>
+<span class="fc" id="L748">            double result = v - v2;</span>
             
-<span class="fc bfc" id="L713" title="All 2 branches covered.">            if (result != 0) {</span>
+<span class="fc bfc" id="L750" title="All 2 branches covered.">            if (result != 0) {</span>
             
-<span class="fc" id="L715">                c.set(row, col, v - v2);</span>
+<span class="fc" id="L752">                c.set(row, col, v - v2);</span>
                 
-<span class="fc" id="L717">                count++;</span>
+<span class="fc" id="L754">                count++;</span>
             }
             
-<span class="fc" id="L720">            processed.add(new PairInt(row, col));</span>
+<span class="fc" id="L757">            processed.add(new PairInt(row, col));</span>
            
-<span class="fc" id="L722">        }</span>
+<span class="fc" id="L759">        }</span>
         
-<span class="fc" id="L724">        iter = n.iterator();</span>
-<span class="fc bfc" id="L725" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L726">            MatrixEntry entry = iter.next();</span>
-<span class="fc" id="L727">            int col = entry.column();</span>
-<span class="fc" id="L728">            int row = entry.row();</span>
+<span class="fc" id="L761">        iter = n.iterator();</span>
+<span class="fc bfc" id="L762" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L763">            MatrixEntry entry = iter.next();</span>
+<span class="fc" id="L764">            int col = entry.column();</span>
+<span class="fc" id="L765">            int row = entry.row();</span>
             
-<span class="fc" id="L730">            PairInt p = new PairInt(row, col);</span>
-<span class="fc bfc" id="L731" title="All 2 branches covered.">            if (processed.contains(p)) {</span>
-<span class="fc" id="L732">                continue;</span>
+<span class="fc" id="L767">            PairInt p = new PairInt(row, col);</span>
+<span class="fc bfc" id="L768" title="All 2 branches covered.">            if (processed.contains(p)) {</span>
+<span class="fc" id="L769">                continue;</span>
             }
             
-<span class="fc" id="L735">            double v2 = entry.get();</span>
+<span class="fc" id="L772">            double v2 = entry.get();</span>
             
-<span class="fc" id="L737">            double v = m.get(row, col);</span>
+<span class="fc" id="L774">            double v = m.get(row, col);</span>
             
-<span class="fc" id="L739">            double result = v - v2;</span>
+<span class="fc" id="L776">            double result = v - v2;</span>
             
-<span class="pc bpc" id="L741" title="1 of 2 branches missed.">            if (result != 0) {</span>
+<span class="pc bpc" id="L778" title="1 of 2 branches missed.">            if (result != 0) {</span>
             
-<span class="fc" id="L743">                c.set(row, col, v - v2);</span>
+<span class="fc" id="L780">                c.set(row, col, v - v2);</span>
                 
-<span class="fc" id="L745">                count++;</span>
+<span class="fc" id="L782">                count++;</span>
             }
             
             //processed.add(p);
-<span class="fc" id="L749">        }</span>
+<span class="fc" id="L786">        }</span>
         
         //System.out.println(count + &quot; nodes in output sparse matrix&quot;);
         
-<span class="fc" id="L753">        return c;</span>
+<span class="fc" id="L790">        return c;</span>
     }
     
     /**
@@ -764,23 +801,23 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     public static FlexCompRowMatrix sparseMatrixMultiply(
         FlexCompRowMatrix m, FlexCompRowMatrix n) {
 
-<span class="pc bpc" id="L767" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
-<span class="nc" id="L768">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L804" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
+<span class="nc" id="L805">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L770" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
-<span class="nc" id="L771">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L807" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
+<span class="nc" id="L808">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L774">        int mrows = m.numRows();</span>
+<span class="fc" id="L811">        int mrows = m.numRows();</span>
 
-<span class="fc" id="L776">        int mcols = m.numColumns();</span>
+<span class="fc" id="L813">        int mcols = m.numColumns();</span>
 
-<span class="fc" id="L778">        int nrows = n.numRows();</span>
+<span class="fc" id="L815">        int nrows = n.numRows();</span>
         
-<span class="fc" id="L780">        int ncols = n.numColumns();</span>
+<span class="fc" id="L817">        int ncols = n.numColumns();</span>
         
-<span class="pc bpc" id="L782" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
-<span class="nc" id="L783">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L819" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
+<span class="nc" id="L820">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m must equal the number of rows in n&quot;);
         }
         
@@ -792,39 +829,39 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         d*p0+... d*p d*p
         */
         
-<span class="fc" id="L795">        long count = 0;</span>
+<span class="fc" id="L832">        long count = 0;</span>
         
-<span class="fc" id="L797">        Iterator&lt;VectorEntry&gt; iter = null;</span>
+<span class="fc" id="L834">        Iterator&lt;VectorEntry&gt; iter = null;</span>
         
-<span class="fc" id="L799">        FlexCompRowMatrix c = new FlexCompRowMatrix(mrows, ncols);</span>
+<span class="fc" id="L836">        FlexCompRowMatrix c = new FlexCompRowMatrix(mrows, ncols);</span>
                         
-<span class="fc bfc" id="L801" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc bfc" id="L838" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
             
-<span class="fc bfc" id="L803" title="All 2 branches covered.">            for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">            for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
                 
-<span class="fc" id="L805">                double sum = 0;</span>
+<span class="fc" id="L842">                double sum = 0;</span>
                 
-<span class="fc" id="L807">                iter = m.getRow(row).iterator();</span>
-<span class="fc bfc" id="L808" title="All 2 branches covered.">                while (iter.hasNext()) {</span>
-<span class="fc" id="L809">                    VectorEntry entry = iter.next();</span>
-<span class="fc" id="L810">                    int mcol = entry.index();</span>
-<span class="fc" id="L811">                    double vm = entry.get();</span>
-<span class="fc" id="L812">                    double vn = n.get(mcol, ncol);</span>
-<span class="fc" id="L813">                    sum += (vm * vn);</span>
-<span class="fc" id="L814">                }</span>
+<span class="fc" id="L844">                iter = m.getRow(row).iterator();</span>
+<span class="fc bfc" id="L845" title="All 2 branches covered.">                while (iter.hasNext()) {</span>
+<span class="fc" id="L846">                    VectorEntry entry = iter.next();</span>
+<span class="fc" id="L847">                    int mcol = entry.index();</span>
+<span class="fc" id="L848">                    double vm = entry.get();</span>
+<span class="fc" id="L849">                    double vn = n.get(mcol, ncol);</span>
+<span class="fc" id="L850">                    sum += (vm * vn);</span>
+<span class="fc" id="L851">                }</span>
                 //for (int mcol = 0; mcol &lt; mcols; mcol++) {
                 //    sum += (m.get(row, mcol) * n.get(mcol, ncol));                    
                 //}
-<span class="fc bfc" id="L818" title="All 2 branches covered.">                if (sum != 0) {</span>
-<span class="fc" id="L819">                    c.set(row, ncol, sum);</span>
-<span class="fc" id="L820">                    count++;</span>
+<span class="fc bfc" id="L855" title="All 2 branches covered.">                if (sum != 0) {</span>
+<span class="fc" id="L856">                    c.set(row, ncol, sum);</span>
+<span class="fc" id="L857">                    count++;</span>
                 }
             } 
         }
 
         //System.out.println(count + &quot; nodes in output sparse matrix&quot;);
         
-<span class="fc" id="L827">        return c;</span>
+<span class="fc" id="L864">        return c;</span>
     }
     
      /**
@@ -838,23 +875,23 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     public static FlexCompColMatrix sparseMatrixMultiply(
         FlexCompColMatrix m, FlexCompColMatrix n) {
 
-<span class="pc bpc" id="L841" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
-<span class="nc" id="L842">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L878" title="2 of 4 branches missed.">        if (m == null || m.numRows() == 0) {</span>
+<span class="nc" id="L879">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L844" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
-<span class="nc" id="L845">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L881" title="2 of 4 branches missed.">        if (n == null || n.numRows() == 0) {</span>
+<span class="nc" id="L882">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L848">        int mrows = m.numRows();</span>
+<span class="fc" id="L885">        int mrows = m.numRows();</span>
 
-<span class="fc" id="L850">        int mcols = m.numColumns();</span>
+<span class="fc" id="L887">        int mcols = m.numColumns();</span>
 
-<span class="fc" id="L852">        int nrows = n.numRows();</span>
+<span class="fc" id="L889">        int nrows = n.numRows();</span>
         
-<span class="fc" id="L854">        int ncols = n.numColumns();</span>
+<span class="fc" id="L891">        int ncols = n.numColumns();</span>
         
-<span class="pc bpc" id="L856" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
-<span class="nc" id="L857">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L893" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
+<span class="nc" id="L894">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m must equal the number of rows in n&quot;);
         }
         
@@ -866,75 +903,75 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         d*p0+e*p3  ...  d*p1    d*p2
         */
         
-<span class="fc" id="L869">        long count = 0;</span>
+<span class="fc" id="L906">        long count = 0;</span>
         
-<span class="fc" id="L871">        Iterator&lt;VectorEntry&gt; iter = null;</span>
+<span class="fc" id="L908">        Iterator&lt;VectorEntry&gt; iter = null;</span>
         
-<span class="fc" id="L873">        FlexCompColMatrix c = new FlexCompColMatrix(mrows, ncols);</span>
+<span class="fc" id="L910">        FlexCompColMatrix c = new FlexCompColMatrix(mrows, ncols);</span>
                             
-<span class="fc bfc" id="L875" title="All 2 branches covered.">        for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
+<span class="fc bfc" id="L912" title="All 2 branches covered.">        for (int ncol = 0; ncol &lt; ncols; ncol++) {</span>
         
-<span class="fc" id="L877">            SparseVector nColVec = n.getColumn(ncol);</span>
+<span class="fc" id="L914">            SparseVector nColVec = n.getColumn(ncol);</span>
             
-<span class="fc bfc" id="L879" title="All 2 branches covered.">            for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc bfc" id="L916" title="All 2 branches covered.">            for (int row = 0; row &lt; mrows; row++) {</span>
                 
-<span class="fc" id="L881">                double sum = 0;</span>
+<span class="fc" id="L918">                double sum = 0;</span>
                 
-<span class="fc" id="L883">                int colCount = 0;</span>
-<span class="fc" id="L884">                iter = nColVec.iterator();</span>
-<span class="fc bfc" id="L885" title="All 2 branches covered.">                while (iter.hasNext()) {</span>
-<span class="fc" id="L886">                    VectorEntry entry = iter.next();</span>
-<span class="fc" id="L887">                    int mcol = entry.index();</span>
-<span class="fc" id="L888">                    double vn = entry.get();</span>
-<span class="fc" id="L889">                    double vm = m.get(row, colCount);</span>
-<span class="fc" id="L890">                    sum += (vm * vn);</span>
-<span class="fc" id="L891">                    colCount++;</span>
-<span class="fc" id="L892">                }</span>
-<span class="fc bfc" id="L893" title="All 2 branches covered.">                if (sum != 0) {</span>
-<span class="fc" id="L894">                    c.set(row, ncol, sum);</span>
-<span class="fc" id="L895">                    count++;</span>
+<span class="fc" id="L920">                int colCount = 0;</span>
+<span class="fc" id="L921">                iter = nColVec.iterator();</span>
+<span class="fc bfc" id="L922" title="All 2 branches covered.">                while (iter.hasNext()) {</span>
+<span class="fc" id="L923">                    VectorEntry entry = iter.next();</span>
+<span class="fc" id="L924">                    int mcol = entry.index();</span>
+<span class="fc" id="L925">                    double vn = entry.get();</span>
+<span class="fc" id="L926">                    double vm = m.get(row, colCount);</span>
+<span class="fc" id="L927">                    sum += (vm * vn);</span>
+<span class="fc" id="L928">                    colCount++;</span>
+<span class="fc" id="L929">                }</span>
+<span class="fc bfc" id="L930" title="All 2 branches covered.">                if (sum != 0) {</span>
+<span class="fc" id="L931">                    c.set(row, ncol, sum);</span>
+<span class="fc" id="L932">                    count++;</span>
                 }
             } 
         }
 
         //System.out.println(count + &quot; nodes in output sparse matrix&quot;);
         
-<span class="fc" id="L902">        return c;</span>
+<span class="fc" id="L939">        return c;</span>
     }
     
     public static double[][] convertToRowMajor(DenseMatrix a) {
-<span class="nc" id="L906">        int nc = a.numColumns();</span>
-<span class="nc" id="L907">        int nr = a.numRows();</span>
-<span class="nc" id="L908">        double[][] out = new double[nr][];</span>
-<span class="nc bnc" id="L909" title="All 2 branches missed.">        for (int i = 0; i &lt; nr; ++i) {</span>
-<span class="nc" id="L910">            out[i] = new double[nc];</span>
-<span class="nc bnc" id="L911" title="All 2 branches missed.">            for (int j = 0; j &lt; nc; ++j) {</span>
-<span class="nc" id="L912">                out[i][j] = a.get(i, j);</span>
+<span class="nc" id="L943">        int nc = a.numColumns();</span>
+<span class="nc" id="L944">        int nr = a.numRows();</span>
+<span class="nc" id="L945">        double[][] out = new double[nr][];</span>
+<span class="nc bnc" id="L946" title="All 2 branches missed.">        for (int i = 0; i &lt; nr; ++i) {</span>
+<span class="nc" id="L947">            out[i] = new double[nc];</span>
+<span class="nc bnc" id="L948" title="All 2 branches missed.">            for (int j = 0; j &lt; nc; ++j) {</span>
+<span class="nc" id="L949">                out[i][j] = a.get(i, j);</span>
             }
         }
-<span class="nc" id="L915">        return out;</span>
+<span class="nc" id="L952">        return out;</span>
     }
     
     public static double[][] dot(DenseMatrix m1, DenseMatrix m2) {
         
-<span class="pc bpc" id="L920" title="1 of 2 branches missed.">        if (m1 == null) {</span>
-<span class="nc" id="L921">            throw new IllegalArgumentException(&quot;m1 cannot be null&quot;);</span>
+<span class="pc bpc" id="L957" title="1 of 2 branches missed.">        if (m1 == null) {</span>
+<span class="nc" id="L958">            throw new IllegalArgumentException(&quot;m1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L923" title="1 of 2 branches missed.">        if (m2 == null) {</span>
-<span class="nc" id="L924">            throw new IllegalArgumentException(&quot;m2 cannot be null&quot;);</span>
+<span class="pc bpc" id="L960" title="1 of 2 branches missed.">        if (m2 == null) {</span>
+<span class="nc" id="L961">            throw new IllegalArgumentException(&quot;m2 cannot be null&quot;);</span>
         }
-<span class="fc" id="L926">        int cCols = m2.numColumns();</span>
-<span class="fc" id="L927">        int cRows = m1.numRows();</span>
+<span class="fc" id="L963">        int cCols = m2.numColumns();</span>
+<span class="fc" id="L964">        int cRows = m1.numRows();</span>
         
-<span class="pc bpc" id="L929" title="1 of 2 branches missed.">        if (m1.numColumns() != m2.numRows()) {</span>
-<span class="nc" id="L930">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L966" title="1 of 2 branches missed.">        if (m1.numColumns() != m2.numRows()) {</span>
+<span class="nc" id="L967">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m1 != number of rows in m2&quot;);
         }
         
         // m1 dot m2
-<span class="fc" id="L935">        double[][] m = new double[cRows][cCols];</span>
-<span class="fc bfc" id="L936" title="All 2 branches covered.">        for (int i = 0; i &lt; cRows; i++) {</span>
-<span class="fc" id="L937">            m[i] = new double[cCols];</span>
+<span class="fc" id="L972">        double[][] m = new double[cRows][cCols];</span>
+<span class="fc bfc" id="L973" title="All 2 branches covered.">        for (int i = 0; i &lt; cRows; i++) {</span>
+<span class="fc" id="L974">            m[i] = new double[cCols];</span>
         }
         
         /*
@@ -948,17 +985,17 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         row=0, col=0:nCols0  times and plus col=(cAdd=1), row=0:nRows1 --&gt; stored in row, row + (cAdd=0)
         */
         
-<span class="fc bfc" id="L951" title="All 2 branches covered.">        for (int colAdd = 0; colAdd &lt; m2.numColumns(); colAdd++) {</span>
-<span class="fc bfc" id="L952" title="All 2 branches covered.">            for (int row = 0; row &lt; m1.numRows(); ++row) {</span>
-<span class="fc bfc" id="L953" title="All 2 branches covered.">                for (int col = 0; col &lt; m1.numColumns(); col++) {</span>
-<span class="fc" id="L954">                    double a = m1.get(row, col);</span>
-<span class="fc" id="L955">                    double b = m2.get(col, colAdd);</span>
-<span class="fc" id="L956">                    m[row][colAdd] += (a * b);</span>
+<span class="fc bfc" id="L988" title="All 2 branches covered.">        for (int colAdd = 0; colAdd &lt; m2.numColumns(); colAdd++) {</span>
+<span class="fc bfc" id="L989" title="All 2 branches covered.">            for (int row = 0; row &lt; m1.numRows(); ++row) {</span>
+<span class="fc bfc" id="L990" title="All 2 branches covered.">                for (int col = 0; col &lt; m1.numColumns(); col++) {</span>
+<span class="fc" id="L991">                    double a = m1.get(row, col);</span>
+<span class="fc" id="L992">                    double b = m2.get(col, colAdd);</span>
+<span class="fc" id="L993">                    m[row][colAdd] += (a * b);</span>
                 }
             }
         }
 
-<span class="fc" id="L961">        return m;</span>
+<span class="fc" id="L998">        return m;</span>
     }
         
     /**
@@ -970,126 +1007,126 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static double[][] dot(double[][] m1, double[][] m2) {
         
-<span class="nc bnc" id="L973" title="All 2 branches missed.">        if (m1 == null) {</span>
-<span class="nc" id="L974">            throw new IllegalArgumentException(&quot;m1 cannot be null&quot;);</span>
+<span class="nc bnc" id="L1010" title="All 2 branches missed.">        if (m1 == null) {</span>
+<span class="nc" id="L1011">            throw new IllegalArgumentException(&quot;m1 cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L976" title="All 2 branches missed.">        if (m2 == null) {</span>
-<span class="nc" id="L977">            throw new IllegalArgumentException(&quot;m2 cannot be null&quot;);</span>
+<span class="nc bnc" id="L1013" title="All 2 branches missed.">        if (m2 == null) {</span>
+<span class="nc" id="L1014">            throw new IllegalArgumentException(&quot;m2 cannot be null&quot;);</span>
         }
-<span class="nc" id="L979">        int cCols = m2[0].length;</span>
-<span class="nc" id="L980">        int cRows = m1.length;</span>
+<span class="nc" id="L1016">        int cCols = m2[0].length;</span>
+<span class="nc" id="L1017">        int cRows = m1.length;</span>
         
-<span class="nc bnc" id="L982" title="All 2 branches missed.">        if (m1[0].length != m2.length) {</span>
-<span class="nc" id="L983">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1019" title="All 2 branches missed.">        if (m1[0].length != m2.length) {</span>
+<span class="nc" id="L1020">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in m1 != number of rows in m2&quot;);
         }
         
         // m1 dot m2
-<span class="nc" id="L988">        double[][] m = new double[cRows][cCols];</span>
-<span class="nc bnc" id="L989" title="All 2 branches missed.">        for (int i = 0; i &lt; cRows; i++) {</span>
-<span class="nc" id="L990">            m[i] = new double[cCols];</span>
+<span class="nc" id="L1025">        double[][] m = new double[cRows][cCols];</span>
+<span class="nc bnc" id="L1026" title="All 2 branches missed.">        for (int i = 0; i &lt; cRows; i++) {</span>
+<span class="nc" id="L1027">            m[i] = new double[cCols];</span>
         }
         
-<span class="nc bnc" id="L993" title="All 2 branches missed.">        for (int colAdd = 0; colAdd &lt; m2[0].length; colAdd++) {</span>
-<span class="nc bnc" id="L994" title="All 2 branches missed.">            for (int row = 0; row &lt; m1.length; ++row) {</span>
-<span class="nc bnc" id="L995" title="All 2 branches missed.">                for (int col = 0; col &lt; m1[0].length; col++) {</span>
-<span class="nc" id="L996">                    double a = m1[row][col];</span>
-<span class="nc" id="L997">                    double b = m2[col][colAdd];</span>
-<span class="nc" id="L998">                    m[row][colAdd] += (a * b);</span>
+<span class="nc bnc" id="L1030" title="All 2 branches missed.">        for (int colAdd = 0; colAdd &lt; m2[0].length; colAdd++) {</span>
+<span class="nc bnc" id="L1031" title="All 2 branches missed.">            for (int row = 0; row &lt; m1.length; ++row) {</span>
+<span class="nc bnc" id="L1032" title="All 2 branches missed.">                for (int col = 0; col &lt; m1[0].length; col++) {</span>
+<span class="nc" id="L1033">                    double a = m1[row][col];</span>
+<span class="nc" id="L1034">                    double b = m2[col][colAdd];</span>
+<span class="nc" id="L1035">                    m[row][colAdd] += (a * b);</span>
                 }
             }
         }
 
-<span class="nc" id="L1003">        return m;</span>
+<span class="nc" id="L1040">        return m;</span>
     }
     
     public static float[][] transpose(float[][] m) {
 
-<span class="pc bpc" id="L1008" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L1009">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1045" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L1046">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L1012">        int mRows = m.length;</span>
-<span class="fc" id="L1013">        int mCols = m[0].length;</span>
+<span class="fc" id="L1049">        int mRows = m.length;</span>
+<span class="fc" id="L1050">        int mCols = m[0].length;</span>
         
-<span class="fc" id="L1015">        float[][] t = new float[mCols][];</span>
-<span class="fc bfc" id="L1016" title="All 2 branches covered.">        for (int i = 0; i &lt; mCols; i++) {</span>
-<span class="fc" id="L1017">            t[i] = new float[mRows];</span>
+<span class="fc" id="L1052">        float[][] t = new float[mCols][];</span>
+<span class="fc bfc" id="L1053" title="All 2 branches covered.">        for (int i = 0; i &lt; mCols; i++) {</span>
+<span class="fc" id="L1054">            t[i] = new float[mRows];</span>
         }
         
-<span class="fc bfc" id="L1020" title="All 2 branches covered.">        for (int i = 0; i &lt; mRows; i++) {</span>
-<span class="fc bfc" id="L1021" title="All 2 branches covered.">            for (int j = 0; j &lt; mCols; j++) {</span>
-<span class="fc" id="L1022">                t[j][i] = m[i][j];</span>
+<span class="fc bfc" id="L1057" title="All 2 branches covered.">        for (int i = 0; i &lt; mRows; i++) {</span>
+<span class="fc bfc" id="L1058" title="All 2 branches covered.">            for (int j = 0; j &lt; mCols; j++) {</span>
+<span class="fc" id="L1059">                t[j][i] = m[i][j];</span>
             }
         }
         
-<span class="fc" id="L1026">        return t;</span>
+<span class="fc" id="L1063">        return t;</span>
     }
     
     public static DenseMatrix transpose(DenseMatrix m) {
         
-<span class="fc" id="L1031">        int mRows = m.numRows();</span>
-<span class="fc" id="L1032">        int mCols = m.numColumns();</span>
+<span class="fc" id="L1068">        int mRows = m.numRows();</span>
+<span class="fc" id="L1069">        int mCols = m.numColumns();</span>
         
-<span class="fc" id="L1034">        double[][] t = new double[mRows][];</span>
-<span class="fc bfc" id="L1035" title="All 2 branches covered.">        for (int i = 0; i &lt; mRows; i++) {</span>
-<span class="fc" id="L1036">            t[i] = new double[mCols];</span>
-<span class="fc bfc" id="L1037" title="All 2 branches covered.">            for (int j = 0; j &lt; mCols; j++) {</span>
-<span class="fc" id="L1038">                t[i][j] = m.get(i, j);</span>
+<span class="fc" id="L1071">        double[][] t = new double[mRows][];</span>
+<span class="fc bfc" id="L1072" title="All 2 branches covered.">        for (int i = 0; i &lt; mRows; i++) {</span>
+<span class="fc" id="L1073">            t[i] = new double[mCols];</span>
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">            for (int j = 0; j &lt; mCols; j++) {</span>
+<span class="fc" id="L1075">                t[i][j] = m.get(i, j);</span>
             }
         } 
         
-<span class="fc" id="L1042">        double[][] transposed = transpose(t);</span>
+<span class="fc" id="L1079">        double[][] transposed = transpose(t);</span>
         
-<span class="fc" id="L1044">        DenseMatrix mT = new DenseMatrix(transposed);</span>
+<span class="fc" id="L1081">        DenseMatrix mT = new DenseMatrix(transposed);</span>
         
-<span class="fc" id="L1046">        return mT;</span>
+<span class="fc" id="L1083">        return mT;</span>
     }
     
     public static double[][] transpose(double[][] m) {
 
-<span class="pc bpc" id="L1051" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L1052">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1088" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L1089">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L1055">        int mRows = m.length;</span>
-<span class="fc" id="L1056">        int mCols = m[0].length;</span>
+<span class="fc" id="L1092">        int mRows = m.length;</span>
+<span class="fc" id="L1093">        int mCols = m[0].length;</span>
         
-<span class="fc" id="L1058">        double[][] t = new double[mCols][];</span>
-<span class="fc bfc" id="L1059" title="All 2 branches covered.">        for (int i = 0; i &lt; mCols; i++) {</span>
-<span class="fc" id="L1060">            t[i] = new double[mRows];</span>
+<span class="fc" id="L1095">        double[][] t = new double[mCols][];</span>
+<span class="fc bfc" id="L1096" title="All 2 branches covered.">        for (int i = 0; i &lt; mCols; i++) {</span>
+<span class="fc" id="L1097">            t[i] = new double[mRows];</span>
         }
         
-<span class="fc bfc" id="L1063" title="All 2 branches covered.">        for (int i = 0; i &lt; mRows; i++) {</span>
-<span class="fc bfc" id="L1064" title="All 2 branches covered.">            for (int j = 0; j &lt; mCols; j++) {</span>
-<span class="fc" id="L1065">                t[j][i] = m[i][j];</span>
+<span class="fc bfc" id="L1100" title="All 2 branches covered.">        for (int i = 0; i &lt; mRows; i++) {</span>
+<span class="fc bfc" id="L1101" title="All 2 branches covered.">            for (int j = 0; j &lt; mCols; j++) {</span>
+<span class="fc" id="L1102">                t[j][i] = m[i][j];</span>
             }
         }
         
-<span class="fc" id="L1069">        return t;</span>
+<span class="fc" id="L1106">        return t;</span>
     }
     
     public static Complex[][] swapXandY(Complex[][] m) {
 
-<span class="nc bnc" id="L1074" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L1075">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="nc bnc" id="L1111" title="All 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L1112">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="nc" id="L1078">        int mRows = m.length;</span>
-<span class="nc" id="L1079">        int mCols = m[0].length;</span>
+<span class="nc" id="L1115">        int mRows = m.length;</span>
+<span class="nc" id="L1116">        int mCols = m[0].length;</span>
         
-<span class="nc" id="L1081">        Complex[][] t = new Complex[mCols][];</span>
-<span class="nc bnc" id="L1082" title="All 2 branches missed.">        for (int i = 0; i &lt; mCols; i++) {</span>
-<span class="nc" id="L1083">            t[i] = new Complex[mRows];</span>
+<span class="nc" id="L1118">        Complex[][] t = new Complex[mCols][];</span>
+<span class="nc bnc" id="L1119" title="All 2 branches missed.">        for (int i = 0; i &lt; mCols; i++) {</span>
+<span class="nc" id="L1120">            t[i] = new Complex[mRows];</span>
         }
         
-<span class="nc bnc" id="L1086" title="All 2 branches missed.">        for (int i = 0; i &lt; mRows; i++) {</span>
-<span class="nc bnc" id="L1087" title="All 2 branches missed.">            for (int j = 0; j &lt; mCols; j++) {</span>
-<span class="nc" id="L1088">                t[j][i] = m[i][j];</span>
+<span class="nc bnc" id="L1123" title="All 2 branches missed.">        for (int i = 0; i &lt; mRows; i++) {</span>
+<span class="nc bnc" id="L1124" title="All 2 branches missed.">            for (int j = 0; j &lt; mCols; j++) {</span>
+<span class="nc" id="L1125">                t[j][i] = m[i][j];</span>
             }
         }
         
-<span class="nc" id="L1092">        return t;</span>
+<span class="nc" id="L1129">        return t;</span>
     }
     
     /**
@@ -1100,23 +1137,23 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static double[][] multiplyByTranspose(double[][] p, double[][] n) {
 
-<span class="pc bpc" id="L1103" title="2 of 4 branches missed.">        if (p == null || p.length == 0) {</span>
-<span class="nc" id="L1104">            throw new IllegalArgumentException(&quot;p cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1140" title="2 of 4 branches missed.">        if (p == null || p.length == 0) {</span>
+<span class="nc" id="L1141">            throw new IllegalArgumentException(&quot;p cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L1106" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
-<span class="nc" id="L1107">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1143" title="2 of 4 branches missed.">        if (n == null || n.length == 0) {</span>
+<span class="nc" id="L1144">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L1110">        int prows = p.length;</span>
+<span class="fc" id="L1147">        int prows = p.length;</span>
 
-<span class="fc" id="L1112">        int pcols = p[0].length;</span>
+<span class="fc" id="L1149">        int pcols = p[0].length;</span>
 
-<span class="fc" id="L1114">        int nrows = n.length;</span>
+<span class="fc" id="L1151">        int nrows = n.length;</span>
         
-<span class="fc" id="L1116">        int ncols = n[0].length;</span>
+<span class="fc" id="L1153">        int ncols = n[0].length;</span>
         
-<span class="pc bpc" id="L1118" title="1 of 2 branches missed.">        if (pcols != ncols) {</span>
-<span class="nc" id="L1119">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1155" title="1 of 2 branches missed.">        if (pcols != ncols) {</span>
+<span class="nc" id="L1156">            throw new IllegalArgumentException(</span>
                 &quot;the number of columns in p must equal the number of cols in n &quot;
                 + &quot;for multiplication of m by transpose of n&quot;);
         }
@@ -1140,46 +1177,46 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         (p6*x1 + p7*y1 + p8*1)  (p6*x2 + p7*y2 + p8*1)
         */
         
-<span class="fc" id="L1143">        double[][] c = new double[prows][];</span>
+<span class="fc" id="L1180">        double[][] c = new double[prows][];</span>
        
-<span class="fc bfc" id="L1145" title="All 2 branches covered.">        for (int row = 0; row &lt; prows; row++) {</span>
-<span class="fc" id="L1146">            c[row] = new double[nrows];</span>
-<span class="fc bfc" id="L1147" title="All 2 branches covered.">            for (int nrow = 0; nrow &lt; nrows; nrow++) {</span>
-<span class="fc" id="L1148">                double sum = 0;                </span>
-<span class="fc bfc" id="L1149" title="All 2 branches covered.">                for (int mcol = 0; mcol &lt; pcols; mcol++) {</span>
-<span class="fc" id="L1150">                    sum += (p[row][mcol] * n[nrow][mcol]);                    </span>
+<span class="fc bfc" id="L1182" title="All 2 branches covered.">        for (int row = 0; row &lt; prows; row++) {</span>
+<span class="fc" id="L1183">            c[row] = new double[nrows];</span>
+<span class="fc bfc" id="L1184" title="All 2 branches covered.">            for (int nrow = 0; nrow &lt; nrows; nrow++) {</span>
+<span class="fc" id="L1185">                double sum = 0;                </span>
+<span class="fc bfc" id="L1186" title="All 2 branches covered.">                for (int mcol = 0; mcol &lt; pcols; mcol++) {</span>
+<span class="fc" id="L1187">                    sum += (p[row][mcol] * n[nrow][mcol]);                    </span>
                 }
-<span class="fc" id="L1152">                c[row][nrow] = sum;</span>
+<span class="fc" id="L1189">                c[row][nrow] = sum;</span>
             }            
         }
 
-<span class="fc" id="L1156">        return c;</span>
+<span class="fc" id="L1193">        return c;</span>
     }
     
 
     public static double[] multiply(Matrix a, double[] b) {
         
-<span class="pc bpc" id="L1162" title="2 of 4 branches missed.">        if (a == null || a.numRows() == 0) {</span>
-<span class="nc" id="L1163">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1199" title="2 of 4 branches missed.">        if (a == null || a.numRows() == 0) {</span>
+<span class="nc" id="L1200">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L1165" title="2 of 4 branches missed.">        if (b == null || b.length == 0) {</span>
-<span class="nc" id="L1166">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1202" title="2 of 4 branches missed.">        if (b == null || b.length == 0) {</span>
+<span class="nc" id="L1203">            throw new IllegalArgumentException(&quot;n cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L1169">        int mrows = a.numRows();</span>
+<span class="fc" id="L1206">        int mrows = a.numRows();</span>
 
-<span class="fc" id="L1171">        int mcols = a.numColumns();</span>
+<span class="fc" id="L1208">        int mcols = a.numColumns();</span>
 
-<span class="fc" id="L1173">        int nrows = b.length;</span>
+<span class="fc" id="L1210">        int nrows = b.length;</span>
         
-<span class="pc bpc" id="L1175" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
-<span class="nc" id="L1176">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1212" title="1 of 2 branches missed.">        if (mcols != nrows) {</span>
+<span class="nc" id="L1213">            throw new IllegalArgumentException(</span>
                 &quot;the number of cols in a must equal the length of b&quot;);
         }
         
-<span class="fc" id="L1180">        double[] c = new double[mrows];</span>
+<span class="fc" id="L1217">        double[] c = new double[mrows];</span>
 
-<span class="fc" id="L1182">        int cCol = 0;</span>
+<span class="fc" id="L1219">        int cCol = 0;</span>
         
         /*
         a0 1 2     0
@@ -1187,52 +1224,52 @@ import no.uib.cipr.matrix.sparse.SparseVector;
                    2
         */
         
-<span class="fc bfc" id="L1190" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
-<span class="fc bfc" id="L1191" title="All 2 branches covered.">            for (int col = 0; col &lt; mcols; col++) {</span>
-<span class="fc" id="L1192">                c[cCol] += (a.get(row, col) * b[col]);</span>
+<span class="fc bfc" id="L1227" title="All 2 branches covered.">        for (int row = 0; row &lt; mrows; row++) {</span>
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">            for (int col = 0; col &lt; mcols; col++) {</span>
+<span class="fc" id="L1229">                c[cCol] += (a.get(row, col) * b[col]);</span>
             }
-<span class="fc" id="L1194">            cCol++;        </span>
+<span class="fc" id="L1231">            cCol++;        </span>
         }
 
-<span class="fc" id="L1197">        return c;</span>
+<span class="fc" id="L1234">        return c;</span>
     }
     
     public static void multiply(Matrix a, double b) {
         
-<span class="pc bpc" id="L1202" title="2 of 4 branches missed.">        if (a == null || a.numRows() == 0) {</span>
-<span class="nc" id="L1203">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1239" title="2 of 4 branches missed.">        if (a == null || a.numRows() == 0) {</span>
+<span class="nc" id="L1240">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
         
-<span class="fc" id="L1206">        Iterator&lt;MatrixEntry&gt; iter = a.iterator();</span>
-<span class="fc bfc" id="L1207" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L1208">            MatrixEntry entry = iter.next();</span>
-<span class="fc" id="L1209">            entry.set(entry.get() * b);</span>
-<span class="fc" id="L1210">        }</span>
+<span class="fc" id="L1243">        Iterator&lt;MatrixEntry&gt; iter = a.iterator();</span>
+<span class="fc bfc" id="L1244" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L1245">            MatrixEntry entry = iter.next();</span>
+<span class="fc" id="L1246">            entry.set(entry.get() * b);</span>
+<span class="fc" id="L1247">        }</span>
         
-<span class="fc" id="L1212">    }</span>
+<span class="fc" id="L1249">    }</span>
 
     public static double trace(double[][] d) {
         
-<span class="fc" id="L1216">        double sum = 0;</span>
+<span class="fc" id="L1253">        double sum = 0;</span>
         
-<span class="fc" id="L1218">        int n = Math.min(d.length, d[0].length);</span>
-<span class="fc bfc" id="L1219" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1220">            sum += d[i][i];</span>
+<span class="fc" id="L1255">        int n = Math.min(d.length, d[0].length);</span>
+<span class="fc bfc" id="L1256" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1257">            sum += d[i][i];</span>
         }
         
-<span class="fc" id="L1223">        return sum;</span>
+<span class="fc" id="L1260">        return sum;</span>
     }
 
     public static float[][] copy(float[][] a) {
 
-<span class="fc" id="L1228">        float[][] c = new float[a.length][a[0].length];</span>
+<span class="fc" id="L1265">        float[][] c = new float[a.length][a[0].length];</span>
 
-<span class="fc bfc" id="L1230" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc" id="L1231">            c[i] = new float[a[0].length];</span>
-<span class="fc" id="L1232">            System.arraycopy(a[i], 0, c[i], 0, a[0].length);</span>
+<span class="fc bfc" id="L1267" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc" id="L1268">            c[i] = new float[a[0].length];</span>
+<span class="fc" id="L1269">            System.arraycopy(a[i], 0, c[i], 0, a[0].length);</span>
         }
         
-<span class="fc" id="L1235">        return c;</span>
+<span class="fc" id="L1272">        return c;</span>
     }
     
     public static class EigenValuesAndVectors {
@@ -1262,15 +1299,15 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     
     public static double[][] copy(double[][] a) {
         
-<span class="nc" id="L1265">        double[][] m = new double[a.length][];</span>
+<span class="nc" id="L1302">        double[][] m = new double[a.length][];</span>
         
-<span class="nc bnc" id="L1267" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L1268">            int n0 = a[i].length;</span>
-<span class="nc" id="L1269">            m[i] = new double[n0];</span>
-<span class="nc" id="L1270">            System.arraycopy(a[i], 0, m[i], 0, n0);</span>
+<span class="nc bnc" id="L1304" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L1305">            int n0 = a[i].length;</span>
+<span class="nc" id="L1306">            m[i] = new double[n0];</span>
+<span class="nc" id="L1307">            System.arraycopy(a[i], 0, m[i], 0, n0);</span>
         }
         
-<span class="nc" id="L1273">        return m;</span>
+<span class="nc" id="L1310">        return m;</span>
     }
     
     /**
@@ -1281,15 +1318,15 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static double[][] arrayTransposeDotArray(double[] a) {
         
-<span class="nc bnc" id="L1284" title="All 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L1285">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="nc bnc" id="L1321" title="All 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L1322">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="nc bnc" id="L1287" title="All 2 branches missed.">        if (a.length == 0) {</span>
-<span class="nc" id="L1288">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">        if (a.length == 0) {</span>
+<span class="nc" id="L1325">            throw new IllegalArgumentException(</span>
                 &quot;a length must be &gt; 0&quot;);
         }
         
-<span class="nc" id="L1292">        int n = a.length;</span>
+<span class="nc" id="L1329">        int n = a.length;</span>
         
         /*
         a0    a0 a1 a2
@@ -1297,20 +1334,20 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         a2
         */
         
-<span class="nc" id="L1300">        double[][] m = new double[n][n];</span>
-<span class="nc bnc" id="L1301" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L1302">            m[i] = new double[n];</span>
+<span class="nc" id="L1337">        double[][] m = new double[n][n];</span>
+<span class="nc bnc" id="L1338" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L1339">            m[i] = new double[n];</span>
         }
         
-<span class="nc bnc" id="L1305" title="All 2 branches missed.">        for (int row = 0; row &lt; n; ++row) {</span>
-<span class="nc" id="L1306">            double v1 = a[row];</span>
-<span class="nc bnc" id="L1307" title="All 2 branches missed.">            for (int col = 0; col &lt; n; col++) {</span>
-<span class="nc" id="L1308">                double v2 = a[col];</span>
-<span class="nc" id="L1309">                m[row][col] = (v1 * v2);</span>
+<span class="nc bnc" id="L1342" title="All 2 branches missed.">        for (int row = 0; row &lt; n; ++row) {</span>
+<span class="nc" id="L1343">            double v1 = a[row];</span>
+<span class="nc bnc" id="L1344" title="All 2 branches missed.">            for (int col = 0; col &lt; n; col++) {</span>
+<span class="nc" id="L1345">                double v2 = a[col];</span>
+<span class="nc" id="L1346">                m[row][col] = (v1 * v2);</span>
             }
         }
 
-<span class="nc" id="L1313">        return m;</span>
+<span class="nc" id="L1350">        return m;</span>
     }
     
     /**
@@ -1321,49 +1358,49 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static DenseMatrix scaleToUnitStandardDeviation(DenseMatrix a) {
         
-<span class="nc" id="L1324">        int n = a.numColumns();</span>
-<span class="nc" id="L1325">        int nRows = a.numRows();</span>
+<span class="nc" id="L1361">        int n = a.numColumns();</span>
+<span class="nc" id="L1362">        int nRows = a.numRows();</span>
                 
-<span class="nc" id="L1327">        double[] mean = new double[nRows];</span>
-<span class="nc bnc" id="L1328" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
-<span class="nc bnc" id="L1329" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1330">                mean[j] += a.get(j, i);</span>
+<span class="nc" id="L1364">        double[] mean = new double[nRows];</span>
+<span class="nc bnc" id="L1365" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
+<span class="nc bnc" id="L1366" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1367">                mean[j] += a.get(j, i);</span>
             }
         }
-<span class="nc bnc" id="L1333" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1334">            mean[j] /= (double)n;</span>
+<span class="nc bnc" id="L1370" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1371">            mean[j] /= (double)n;</span>
         }
         
-<span class="nc" id="L1337">        double[] diff = new double[nRows];</span>
-<span class="nc bnc" id="L1338" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
-<span class="nc bnc" id="L1339" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1340">                double d = a.get(j, i) - mean[j];</span>
-<span class="nc" id="L1341">                diff[j] += (d * d);</span>
+<span class="nc" id="L1374">        double[] diff = new double[nRows];</span>
+<span class="nc bnc" id="L1375" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
+<span class="nc bnc" id="L1376" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1377">                double d = a.get(j, i) - mean[j];</span>
+<span class="nc" id="L1378">                diff[j] += (d * d);</span>
             }
         }
-<span class="nc bnc" id="L1344" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1345">            diff[j] /= (double)n;//((double)n - 1.);</span>
+<span class="nc bnc" id="L1381" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1382">            diff[j] /= (double)n;//((double)n - 1.);</span>
         }
         
-<span class="nc" id="L1348">        double[] scaleFactors = new double[nRows];</span>
-<span class="nc bnc" id="L1349" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1350">            scaleFactors[j] = Math.sqrt(1./diff[j]);</span>
+<span class="nc" id="L1385">        double[] scaleFactors = new double[nRows];</span>
+<span class="nc bnc" id="L1386" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1387">            scaleFactors[j] = Math.sqrt(1./diff[j]);</span>
         }
         
         /*
         transformation for no rotation:  x*s - xc*s
            (data - mean) * scaleFactor
         */        
-<span class="nc" id="L1357">        DenseMatrix a2 = new DenseMatrix(nRows, a.numColumns());</span>
-<span class="nc bnc" id="L1358" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
-<span class="nc bnc" id="L1359" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1360">                double centered = a.get(j, i) - mean[j];</span>
-<span class="nc" id="L1361">                double v = centered * scaleFactors[j];</span>
-<span class="nc" id="L1362">                a2.set(j, i, v);</span>
+<span class="nc" id="L1394">        DenseMatrix a2 = new DenseMatrix(nRows, a.numColumns());</span>
+<span class="nc bnc" id="L1395" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
+<span class="nc bnc" id="L1396" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1397">                double centered = a.get(j, i) - mean[j];</span>
+<span class="nc" id="L1398">                double v = centered * scaleFactors[j];</span>
+<span class="nc" id="L1399">                a2.set(j, i, v);</span>
             }
         }
         
-<span class="nc" id="L1366">        return a2;</span>
+<span class="nc" id="L1403">        return a2;</span>
     }
     
     /**
@@ -1374,115 +1411,115 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static DenseMatrix scaleToUnitStandardDeviation2(DenseMatrix a) {
         
-<span class="nc" id="L1377">        int n = a.numColumns();</span>
-<span class="nc" id="L1378">        int nRows = a.numRows();</span>
+<span class="nc" id="L1414">        int n = a.numColumns();</span>
+<span class="nc" id="L1415">        int nRows = a.numRows();</span>
                 
-<span class="nc" id="L1380">        double[] mean = new double[nRows];</span>
-<span class="nc bnc" id="L1381" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
-<span class="nc bnc" id="L1382" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1383">                mean[j] += a.get(j, i);</span>
+<span class="nc" id="L1417">        double[] mean = new double[nRows];</span>
+<span class="nc bnc" id="L1418" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
+<span class="nc bnc" id="L1419" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1420">                mean[j] += a.get(j, i);</span>
             }
         }
-<span class="nc bnc" id="L1386" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1387">            mean[j] /= (double)n;</span>
+<span class="nc bnc" id="L1423" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1424">            mean[j] /= (double)n;</span>
         }
         
-<span class="nc" id="L1390">        double[] diff = new double[nRows];</span>
-<span class="nc bnc" id="L1391" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
-<span class="nc bnc" id="L1392" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1393">                double d = a.get(j, i) - mean[j];</span>
-<span class="nc" id="L1394">                diff[j] += Math.abs(d);</span>
+<span class="nc" id="L1427">        double[] diff = new double[nRows];</span>
+<span class="nc bnc" id="L1428" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
+<span class="nc bnc" id="L1429" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1430">                double d = a.get(j, i) - mean[j];</span>
+<span class="nc" id="L1431">                diff[j] += Math.abs(d);</span>
             }
         }
-<span class="nc bnc" id="L1397" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1398">            diff[j] /= (n - 1.);</span>
+<span class="nc bnc" id="L1434" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1435">            diff[j] /= (n - 1.);</span>
         }
         
-<span class="nc" id="L1401">        double sqrtTwo = Math.sqrt(2.);</span>
-<span class="nc" id="L1402">        double[] scaleFactors = new double[nRows];</span>
-<span class="nc bnc" id="L1403" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1404">            scaleFactors[j] = sqrtTwo/diff[j];</span>
+<span class="nc" id="L1438">        double sqrtTwo = Math.sqrt(2.);</span>
+<span class="nc" id="L1439">        double[] scaleFactors = new double[nRows];</span>
+<span class="nc bnc" id="L1440" title="All 2 branches missed.">        for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1441">            scaleFactors[j] = sqrtTwo/diff[j];</span>
         }
         
         /*
         transformation for no rotation:  x*s - xc*s
            (data - mean) * scaleFactor
         */        
-<span class="nc" id="L1411">        DenseMatrix a2 = new DenseMatrix(nRows, a.numColumns());</span>
-<span class="nc bnc" id="L1412" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
-<span class="nc bnc" id="L1413" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L1414">                double centered = a.get(j, i) - mean[j];</span>
-<span class="nc" id="L1415">                double v = centered * scaleFactors[j];</span>
-<span class="nc" id="L1416">                a2.set(j, i, v);</span>
+<span class="nc" id="L1448">        DenseMatrix a2 = new DenseMatrix(nRows, a.numColumns());</span>
+<span class="nc bnc" id="L1449" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {            </span>
+<span class="nc bnc" id="L1450" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L1451">                double centered = a.get(j, i) - mean[j];</span>
+<span class="nc" id="L1452">                double v = centered * scaleFactors[j];</span>
+<span class="nc" id="L1453">                a2.set(j, i, v);</span>
             }
         }
         
-<span class="nc" id="L1420">        return a2;</span>
+<span class="nc" id="L1457">        return a2;</span>
     }
     
     public static double[] extractRawPitchRollFromRotation(DenseMatrix rotMatrix) {
         
-<span class="nc" id="L1425">        double yaw = Math.atan2(rotMatrix.get(1, 0), rotMatrix.get(0, 0));</span>
+<span class="nc" id="L1462">        double yaw = Math.atan2(rotMatrix.get(1, 0), rotMatrix.get(0, 0));</span>
         
-<span class="nc" id="L1427">        double pitch = Math.atan2(-rotMatrix.get(2, 0),</span>
-<span class="nc" id="L1428">            Math.sqrt(rotMatrix.get(2, 1)*rotMatrix.get(2, 1) +</span>
-<span class="nc" id="L1429">                rotMatrix.get(2, 2)*rotMatrix.get(2, 2)));</span>
+<span class="nc" id="L1464">        double pitch = Math.atan2(-rotMatrix.get(2, 0),</span>
+<span class="nc" id="L1465">            Math.sqrt(rotMatrix.get(2, 1)*rotMatrix.get(2, 1) +</span>
+<span class="nc" id="L1466">                rotMatrix.get(2, 2)*rotMatrix.get(2, 2)));</span>
          
-<span class="nc" id="L1431">        double roll = Math.atan2(rotMatrix.get(2, 1), rotMatrix.get(2, 2));</span>
+<span class="nc" id="L1468">        double roll = Math.atan2(rotMatrix.get(2, 1), rotMatrix.get(2, 2));</span>
         
-<span class="nc" id="L1433">        return new double[]{yaw, pitch, roll};</span>
+<span class="nc" id="L1470">        return new double[]{yaw, pitch, roll};</span>
     }
     
     public static DenseMatrix calculateRotationMatrix(double yaw,
         double pitch, double roll) {
                 
-<span class="nc" id="L1439">        DenseMatrix rot = new DenseMatrix(3, 3);</span>
+<span class="nc" id="L1476">        DenseMatrix rot = new DenseMatrix(3, 3);</span>
         
-<span class="nc" id="L1441">        return calculateRotationMatrix(rot, yaw, pitch, roll);</span>
+<span class="nc" id="L1478">        return calculateRotationMatrix(rot, yaw, pitch, roll);</span>
     }
     
     protected static DenseMatrix calculateRotationMatrix(
         DenseMatrix m, double yaw, double pitch, double roll) {
                         
-<span class="nc" id="L1447">        m.set(0, 0, Math.cos(yaw) * Math.cos(pitch));</span>
-<span class="nc" id="L1448">        m.set(0, 1, </span>
-<span class="nc" id="L1449">            (Math.cos(yaw)*Math.sin(pitch)*Math.sin(roll) - </span>
-<span class="nc" id="L1450">            Math.sin(yaw)*Math.cos(roll)));</span>
-<span class="nc" id="L1451">        m.set(0, 2, </span>
-<span class="nc" id="L1452">            (Math.cos(yaw)*Math.sin(pitch)*Math.cos(roll) + </span>
-<span class="nc" id="L1453">            Math.sin(yaw)*Math.sin(roll)));</span>
+<span class="nc" id="L1484">        m.set(0, 0, Math.cos(yaw) * Math.cos(pitch));</span>
+<span class="nc" id="L1485">        m.set(0, 1, </span>
+<span class="nc" id="L1486">            (Math.cos(yaw)*Math.sin(pitch)*Math.sin(roll) - </span>
+<span class="nc" id="L1487">            Math.sin(yaw)*Math.cos(roll)));</span>
+<span class="nc" id="L1488">        m.set(0, 2, </span>
+<span class="nc" id="L1489">            (Math.cos(yaw)*Math.sin(pitch)*Math.cos(roll) + </span>
+<span class="nc" id="L1490">            Math.sin(yaw)*Math.sin(roll)));</span>
         
-<span class="nc" id="L1455">        m.set(1, 0, Math.sin(yaw) * Math.cos(pitch));</span>
-<span class="nc" id="L1456">        m.set(1, 1, </span>
-<span class="nc" id="L1457">            (Math.sin(yaw)*Math.sin(pitch)*Math.sin(roll) + </span>
-<span class="nc" id="L1458">            Math.cos(yaw)*Math.cos(roll)));</span>
-<span class="nc" id="L1459">        m.set(1, 2, </span>
-<span class="nc" id="L1460">            (Math.sin(yaw)*Math.sin(pitch)*Math.cos(roll) - </span>
-<span class="nc" id="L1461">            Math.cos(yaw)*Math.sin(roll)));</span>
+<span class="nc" id="L1492">        m.set(1, 0, Math.sin(yaw) * Math.cos(pitch));</span>
+<span class="nc" id="L1493">        m.set(1, 1, </span>
+<span class="nc" id="L1494">            (Math.sin(yaw)*Math.sin(pitch)*Math.sin(roll) + </span>
+<span class="nc" id="L1495">            Math.cos(yaw)*Math.cos(roll)));</span>
+<span class="nc" id="L1496">        m.set(1, 2, </span>
+<span class="nc" id="L1497">            (Math.sin(yaw)*Math.sin(pitch)*Math.cos(roll) - </span>
+<span class="nc" id="L1498">            Math.cos(yaw)*Math.sin(roll)));</span>
         
-<span class="nc" id="L1463">        m.set(2, 0, -Math.sin(pitch));</span>
-<span class="nc" id="L1464">        m.set(0, 0, Math.cos(pitch) * Math.sin(roll));</span>
-<span class="nc" id="L1465">        m.set(0, 0, Math.cos(pitch) * Math.cos(roll));</span>
+<span class="nc" id="L1500">        m.set(2, 0, -Math.sin(pitch));</span>
+<span class="nc" id="L1501">        m.set(0, 0, Math.cos(pitch) * Math.sin(roll));</span>
+<span class="nc" id="L1502">        m.set(0, 0, Math.cos(pitch) * Math.cos(roll));</span>
         
-<span class="nc" id="L1467">        return m;</span>
+<span class="nc" id="L1504">        return m;</span>
     }
     
     public static String printMatrix(double[][] params) {
         
-<span class="nc bnc" id="L1472" title="All 2 branches missed.">        if (params == null) {</span>
-<span class="nc" id="L1473">            return &quot;&quot;;</span>
+<span class="nc bnc" id="L1509" title="All 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L1510">            return &quot;&quot;;</span>
         }
         
-<span class="nc" id="L1476">        StringBuffer sb = new StringBuffer();</span>
-<span class="nc bnc" id="L1477" title="All 2 branches missed.">        for (int row = 0; row &lt; params.length; row++) {</span>
-<span class="nc" id="L1478">            sb.append(&quot;row &quot;).append(Integer.toString(row)).append(&quot;:&quot;);</span>
-<span class="nc bnc" id="L1479" title="All 2 branches missed.">            for (int col = 0; col &lt; params[0].length; col++) {</span>
-<span class="nc" id="L1480">                sb.append(&quot; &quot;).append(Double.toString(params[row][col]));</span>
+<span class="nc" id="L1513">        StringBuffer sb = new StringBuffer();</span>
+<span class="nc bnc" id="L1514" title="All 2 branches missed.">        for (int row = 0; row &lt; params.length; row++) {</span>
+<span class="nc" id="L1515">            sb.append(&quot;row &quot;).append(Integer.toString(row)).append(&quot;:&quot;);</span>
+<span class="nc bnc" id="L1516" title="All 2 branches missed.">            for (int col = 0; col &lt; params[0].length; col++) {</span>
+<span class="nc" id="L1517">                sb.append(&quot; &quot;).append(Double.toString(params[row][col]));</span>
             }
-<span class="nc" id="L1482">            sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L1519">            sb.append(&quot;\n&quot;);</span>
         }
         
-<span class="nc" id="L1485">        return sb.toString();</span>
+<span class="nc" id="L1522">        return sb.toString();</span>
     }
 
    /**
@@ -1496,30 +1533,30 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static int transformToZeroBasedClasses(DenseMatrix classes) {
         
-<span class="nc" id="L1499">        Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();        </span>
+<span class="nc" id="L1536">        Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();        </span>
         
-<span class="nc bnc" id="L1501" title="All 2 branches missed.">        for (int i = 0; i &lt; classes.numColumns(); ++i) {</span>
-<span class="nc" id="L1502">            double v = classes.get(0, i);</span>
-<span class="nc" id="L1503">            set.add(Integer.valueOf((int)Math.round(v)));</span>
+<span class="nc bnc" id="L1538" title="All 2 branches missed.">        for (int i = 0; i &lt; classes.numColumns(); ++i) {</span>
+<span class="nc" id="L1539">            double v = classes.get(0, i);</span>
+<span class="nc" id="L1540">            set.add(Integer.valueOf((int)Math.round(v)));</span>
         }
                 
-<span class="nc" id="L1506">        List&lt;Integer&gt; sorted = new ArrayList&lt;Integer&gt;(set);</span>
-<span class="nc" id="L1507">        Collections.sort(sorted);</span>
+<span class="nc" id="L1543">        List&lt;Integer&gt; sorted = new ArrayList&lt;Integer&gt;(set);</span>
+<span class="nc" id="L1544">        Collections.sort(sorted);</span>
         
         // make a map for O(1) look ups
-<span class="nc" id="L1510">        Map&lt;Integer, Integer&gt; transformIndexMap = new HashMap&lt;Integer, Integer&gt;();</span>
-<span class="nc bnc" id="L1511" title="All 2 branches missed.">        for (int i = 0; i &lt; sorted.size(); ++i) {</span>
-<span class="nc" id="L1512">            transformIndexMap.put(sorted.get(i), Integer.valueOf(i));</span>
+<span class="nc" id="L1547">        Map&lt;Integer, Integer&gt; transformIndexMap = new HashMap&lt;Integer, Integer&gt;();</span>
+<span class="nc bnc" id="L1548" title="All 2 branches missed.">        for (int i = 0; i &lt; sorted.size(); ++i) {</span>
+<span class="nc" id="L1549">            transformIndexMap.put(sorted.get(i), Integer.valueOf(i));</span>
         }
         
-<span class="nc bnc" id="L1515" title="All 2 branches missed.">        for (int i = 0; i &lt; classes.numColumns(); ++i) {</span>
-<span class="nc" id="L1516">            double v = classes.get(0, i);</span>
-<span class="nc" id="L1517">            int key = (int)Math.round(v);</span>
-<span class="nc" id="L1518">            int v2 = transformIndexMap.get(Integer.valueOf(key));</span>
-<span class="nc" id="L1519">            classes.set(0, i, v2);</span>
+<span class="nc bnc" id="L1552" title="All 2 branches missed.">        for (int i = 0; i &lt; classes.numColumns(); ++i) {</span>
+<span class="nc" id="L1553">            double v = classes.get(0, i);</span>
+<span class="nc" id="L1554">            int key = (int)Math.round(v);</span>
+<span class="nc" id="L1555">            int v2 = transformIndexMap.get(Integer.valueOf(key));</span>
+<span class="nc" id="L1556">            classes.set(0, i, v2);</span>
         }
         
-<span class="nc" id="L1522">        return set.size();</span>
+<span class="nc" id="L1559">        return set.size();</span>
     }
     
     /**
@@ -1557,33 +1594,33 @@ import no.uib.cipr.matrix.sparse.SparseVector;
         zero, transposed).
         */
         
-<span class="fc" id="L1560">        double tol = singularThreshold(svd);</span>
+<span class="fc" id="L1597">        double tol = singularThreshold(svd);</span>
         
         //NXN
-<span class="fc" id="L1563">        DenseMatrix vT = (DenseMatrix) svd.getVt().transpose();</span>
+<span class="fc" id="L1600">        DenseMatrix vT = (DenseMatrix) svd.getVt().transpose();</span>
         
-<span class="fc" id="L1565">        int N = vT.numColumns();</span>
+<span class="fc" id="L1602">        int N = vT.numColumns();</span>
         
         // null space nRows = M (which is size of U)
         // null space nCols N - the number of items in s above tol.
         
         // s sometimes has fewer than N items if the last are all zeroes
-<span class="fc" id="L1571">        double[] s = svd.getS();</span>
+<span class="fc" id="L1608">        double[] s = svd.getS();</span>
                 
         // indexes in s that are zero or &lt; tol
-<span class="fc" id="L1574">        TIntList zeroIdxs = new TIntArrayList();</span>
+<span class="fc" id="L1611">        TIntList zeroIdxs = new TIntArrayList();</span>
         
-<span class="fc bfc" id="L1576" title="All 2 branches covered.">        for (int i = 0; i &lt; N; ++i) {</span>
-<span class="fc bfc" id="L1577" title="All 2 branches covered.">            if (i &gt;= (s.length)) {</span>
-<span class="fc" id="L1578">                zeroIdxs.add(i);</span>
+<span class="fc bfc" id="L1613" title="All 2 branches covered.">        for (int i = 0; i &lt; N; ++i) {</span>
+<span class="fc bfc" id="L1614" title="All 2 branches covered.">            if (i &gt;= (s.length)) {</span>
+<span class="fc" id="L1615">                zeroIdxs.add(i);</span>
             } else {
-<span class="fc bfc" id="L1580" title="All 2 branches covered.">                if (s[i] &lt; tol) {</span>
-<span class="fc" id="L1581">                    zeroIdxs.add(i);</span>
+<span class="fc bfc" id="L1617" title="All 2 branches covered.">                if (s[i] &lt; tol) {</span>
+<span class="fc" id="L1618">                    zeroIdxs.add(i);</span>
                 }
             }
         }
         
-<span class="fc" id="L1586">        DenseMatrix nullSpace = new DenseMatrix(N, zeroIdxs.size());</span>
+<span class="fc" id="L1623">        DenseMatrix nullSpace = new DenseMatrix(N, zeroIdxs.size());</span>
         
         /*
         v0=Type = dense real , numRows = 5 , numCols = 5
@@ -1597,18 +1634,18 @@ import no.uib.cipr.matrix.sparse.SparseVector;
                            z0      z1      z2
         */
         
-<span class="fc" id="L1600">        int r = 0;</span>
-<span class="fc bfc" id="L1601" title="All 2 branches covered.">        for (int i0 = 0; i0 &lt; zeroIdxs.size(); ++i0) {</span>
-<span class="fc" id="L1602">            int vCol = zeroIdxs.get(i0);</span>
+<span class="fc" id="L1637">        int r = 0;</span>
+<span class="fc bfc" id="L1638" title="All 2 branches covered.">        for (int i0 = 0; i0 &lt; zeroIdxs.size(); ++i0) {</span>
+<span class="fc" id="L1639">            int vCol = zeroIdxs.get(i0);</span>
             // extract column vCol from vT and store it as column r in nullSpace
-<span class="fc bfc" id="L1604" title="All 2 branches covered.">            for (int vRow = 0; vRow &lt; vT.numRows(); ++vRow) {</span>
-<span class="fc" id="L1605">                double v = vT.get(vRow, vCol);</span>
-<span class="fc" id="L1606">                nullSpace.set(vRow, r, v);</span>
+<span class="fc bfc" id="L1641" title="All 2 branches covered.">            for (int vRow = 0; vRow &lt; vT.numRows(); ++vRow) {</span>
+<span class="fc" id="L1642">                double v = vT.get(vRow, vCol);</span>
+<span class="fc" id="L1643">                nullSpace.set(vRow, r, v);</span>
             }
-<span class="fc" id="L1608">            ++r;</span>
+<span class="fc" id="L1645">            ++r;</span>
         }
         
-<span class="fc" id="L1611">        return nullSpace;</span>
+<span class="fc" id="L1648">        return nullSpace;</span>
     }
     
     /**
@@ -1641,40 +1678,40 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static double singularThreshold(SVD svd) {
         
-<span class="fc" id="L1644">        double largest = 0;</span>
+<span class="fc" id="L1681">        double largest = 0;</span>
         
-<span class="fc" id="L1646">        double w[] = svd.getS();</span>
+<span class="fc" id="L1683">        double w[] = svd.getS();</span>
 
-<span class="fc" id="L1648">        int N = w.length;</span>
+<span class="fc" id="L1685">        int N = w.length;</span>
 
-<span class="fc bfc" id="L1650" title="All 2 branches covered.">        for( int j = 0; j &lt; N; j++ ) {</span>
-<span class="fc bfc" id="L1651" title="All 2 branches covered.">            if( w[j] &gt; largest)</span>
-<span class="fc" id="L1652">                largest = w[j];</span>
+<span class="fc bfc" id="L1687" title="All 2 branches covered.">        for( int j = 0; j &lt; N; j++ ) {</span>
+<span class="fc bfc" id="L1688" title="All 2 branches covered.">            if( w[j] &gt; largest)</span>
+<span class="fc" id="L1689">                largest = w[j];</span>
         }
 
-<span class="fc" id="L1655">        int M = Math.max(svd.getU().numColumns(), svd.getU().numRows());</span>
+<span class="fc" id="L1692">        int M = Math.max(svd.getU().numColumns(), svd.getU().numRows());</span>
         
-<span class="fc" id="L1657">        return M * largest * Math.pow(2,-52);</span>
+<span class="fc" id="L1694">        return M * largest * Math.pow(2,-52);</span>
     }
     
     public static DenseMatrix extractAColumn(DenseMatrix m, int column) {
         
-<span class="nc" id="L1662">        DenseMatrix a = new DenseMatrix(m.numRows(), 1);</span>
-<span class="nc bnc" id="L1663" title="All 2 branches missed.">        for (int i = 0; i &lt; m.numRows(); ++i) {</span>
-<span class="nc" id="L1664">            a.set(i, 0, m.get(i, column));</span>
+<span class="nc" id="L1699">        DenseMatrix a = new DenseMatrix(m.numRows(), 1);</span>
+<span class="nc bnc" id="L1700" title="All 2 branches missed.">        for (int i = 0; i &lt; m.numRows(); ++i) {</span>
+<span class="nc" id="L1701">            a.set(i, 0, m.get(i, column));</span>
         }
         
-<span class="nc" id="L1667">        return a;</span>
+<span class="nc" id="L1704">        return a;</span>
     }
     
     public static DenseMatrix extractARow(DenseMatrix m, int row) {
         
-<span class="nc" id="L1672">        DenseMatrix a = new DenseMatrix(1, m.numColumns());</span>
-<span class="nc bnc" id="L1673" title="All 2 branches missed.">        for (int i = 0; i &lt; m.numColumns(); ++i) {</span>
-<span class="nc" id="L1674">            a.set(0, i, m.get(row, i));</span>
+<span class="nc" id="L1709">        DenseMatrix a = new DenseMatrix(1, m.numColumns());</span>
+<span class="nc bnc" id="L1710" title="All 2 branches missed.">        for (int i = 0; i &lt; m.numColumns(); ++i) {</span>
+<span class="nc" id="L1711">            a.set(0, i, m.get(row, i));</span>
         }
         
-<span class="nc" id="L1677">        return a;</span>
+<span class="nc" id="L1714">        return a;</span>
     }
     
     /**
@@ -1690,9 +1727,9 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static double determinant(Matrix m) {
 
-<span class="nc" id="L1693">        double[][] a = no.uib.cipr.matrix.Matrices.getArray(m);</span>
+<span class="nc" id="L1730">        double[][] a = no.uib.cipr.matrix.Matrices.getArray(m);</span>
         
-<span class="nc" id="L1695">        return determinant(a);</span>
+<span class="nc" id="L1732">        return determinant(a);</span>
     }
     
     /**
@@ -1708,33 +1745,33 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static double determinant(double[][] m) {
 
-<span class="pc bpc" id="L1711" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
-<span class="nc" id="L1712">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L1748" title="2 of 4 branches missed.">        if (m == null || m.length == 0) {</span>
+<span class="nc" id="L1749">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="pc bpc" id="L1714" title="1 of 2 branches missed.">        if (m.length != m[0].length) {</span>
-<span class="nc" id="L1715">            throw new IllegalArgumentException(&quot;m must be a square&quot;);</span>
+<span class="pc bpc" id="L1751" title="1 of 2 branches missed.">        if (m.length != m[0].length) {</span>
+<span class="nc" id="L1752">            throw new IllegalArgumentException(&quot;m must be a square&quot;);</span>
         }
-<span class="pc bpc" id="L1717" title="1 of 2 branches missed.">        if (m.length == 1) {</span>
-<span class="nc" id="L1718">            return m[0][0];</span>
-<span class="fc bfc" id="L1719" title="All 2 branches covered.">        } else if (m.length == 2) {</span>
-<span class="fc" id="L1720">            double s = ( m[0][0]*m[1][1] ) - ( m[0][1]*m[1][0] );</span>
-<span class="fc" id="L1721">            return s;</span>
+<span class="pc bpc" id="L1754" title="1 of 2 branches missed.">        if (m.length == 1) {</span>
+<span class="nc" id="L1755">            return m[0][0];</span>
+<span class="fc bfc" id="L1756" title="All 2 branches covered.">        } else if (m.length == 2) {</span>
+<span class="fc" id="L1757">            double s = ( m[0][0]*m[1][1] ) - ( m[0][1]*m[1][0] );</span>
+<span class="fc" id="L1758">            return s;</span>
         } else {
-<span class="fc" id="L1723">            double s = 0.0;</span>
+<span class="fc" id="L1760">            double s = 0.0;</span>
             // use 1st row as cofactors and minors
-<span class="fc bfc" id="L1725" title="All 2 branches covered.">            for (int i = 0; i &lt; m.length; i++) {</span>
+<span class="fc bfc" id="L1762" title="All 2 branches covered.">            for (int i = 0; i &lt; m.length; i++) {</span>
 
-<span class="fc" id="L1727">                double[][] n = copyExcept(m, i, 0);</span>
+<span class="fc" id="L1764">                double[][] n = copyExcept(m, i, 0);</span>
                 
-<span class="fc" id="L1729">                double tmp = m[i][0] * determinant(n);</span>
+<span class="fc" id="L1766">                double tmp = m[i][0] * determinant(n);</span>
                                 
-<span class="fc bfc" id="L1731" title="All 2 branches covered.">                if ((i &amp; 1) == 0) {</span>
-<span class="fc" id="L1732">                    s +=  tmp;</span>
+<span class="fc bfc" id="L1768" title="All 2 branches covered.">                if ((i &amp; 1) == 0) {</span>
+<span class="fc" id="L1769">                    s +=  tmp;</span>
                 } else {
-<span class="fc" id="L1734">                    s -=  tmp;</span>
+<span class="fc" id="L1771">                    s -=  tmp;</span>
                 }
             }
-<span class="fc" id="L1737">            return s;</span>
+<span class="fc" id="L1774">            return s;</span>
         }
     }
     
@@ -1747,31 +1784,31 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     private static double[][] copyExcept(double[][] m, int col, int row) {
 
-<span class="fc" id="L1750">        double[][] n = new double[m.length - 1][m.length - 1];</span>
+<span class="fc" id="L1787">        double[][] n = new double[m.length - 1][m.length - 1];</span>
 
-<span class="fc" id="L1752">        int nr = 0;</span>
-<span class="fc" id="L1753">        int nc = 0;</span>
+<span class="fc" id="L1789">        int nr = 0;</span>
+<span class="fc" id="L1790">        int nc = 0;</span>
 
-<span class="fc bfc" id="L1755" title="All 2 branches covered.">        for (int mCol = 0; mCol &lt; m.length; mCol++) {</span>
-<span class="fc bfc" id="L1756" title="All 2 branches covered.">            if (mCol == col) {</span>
-<span class="fc" id="L1757">                continue;</span>
+<span class="fc bfc" id="L1792" title="All 2 branches covered.">        for (int mCol = 0; mCol &lt; m.length; mCol++) {</span>
+<span class="fc bfc" id="L1793" title="All 2 branches covered.">            if (mCol == col) {</span>
+<span class="fc" id="L1794">                continue;</span>
             }
 
-<span class="fc" id="L1760">            n[nc] = new double[m.length - 1];</span>
+<span class="fc" id="L1797">            n[nc] = new double[m.length - 1];</span>
             
-<span class="fc" id="L1762">            nr = 0;</span>
-<span class="fc bfc" id="L1763" title="All 2 branches covered.">            for (int mRow = 0; mRow &lt; m[0].length; mRow++) {</span>
-<span class="fc bfc" id="L1764" title="All 2 branches covered.">                if (mRow == row) {</span>
-<span class="fc" id="L1765">                    continue;</span>
+<span class="fc" id="L1799">            nr = 0;</span>
+<span class="fc bfc" id="L1800" title="All 2 branches covered.">            for (int mRow = 0; mRow &lt; m[0].length; mRow++) {</span>
+<span class="fc bfc" id="L1801" title="All 2 branches covered.">                if (mRow == row) {</span>
+<span class="fc" id="L1802">                    continue;</span>
                 }
 
-<span class="fc" id="L1768">                n[nc][nr] = m[mCol][mRow];</span>
-<span class="fc" id="L1769">                nr++;</span>
+<span class="fc" id="L1805">                n[nc][nr] = m[mCol][mRow];</span>
+<span class="fc" id="L1806">                nr++;</span>
             }
-<span class="fc" id="L1771">            nc++;</span>
+<span class="fc" id="L1808">            nc++;</span>
         }
 
-<span class="fc" id="L1774">        return n;</span>
+<span class="fc" id="L1811">        return n;</span>
     }
 
     /**
@@ -1786,15 +1823,15 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static DenseMatrix inverse(DenseMatrix m) {
 
-<span class="fc" id="L1789">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L1826">        ImageProcessor imageProcessor = new ImageProcessor();</span>
             
-<span class="fc" id="L1791">        double[][] m2 = imageProcessor.copyToDouble2D(m);</span>
+<span class="fc" id="L1828">        double[][] m2 = imageProcessor.copyToDouble2D(m);</span>
            
-<span class="fc" id="L1793">        double[][] invM2 = inverse(m2);</span>
+<span class="fc" id="L1830">        double[][] invM2 = inverse(m2);</span>
         
-<span class="fc" id="L1795">        DenseMatrix invM = new DenseMatrix(invM2);</span>
+<span class="fc" id="L1832">        DenseMatrix invM = new DenseMatrix(invM2);</span>
         
-<span class="fc" id="L1797">        return invM;</span>
+<span class="fc" id="L1834">        return invM;</span>
     }
     
     /**
@@ -1810,28 +1847,28 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     public static double[][] inverse(double[][] m) {
 
         // create cofactor of matrix:
-<span class="fc" id="L1813">        double[][] cofactor = createCofactor(m);</span>
+<span class="fc" id="L1850">        double[][] cofactor = createCofactor(m);</span>
 
-<span class="fc" id="L1815">        double[][] cofactorTransposed = transpose(cofactor);</span>
+<span class="fc" id="L1852">        double[][] cofactorTransposed = transpose(cofactor);</span>
 
-<span class="fc" id="L1817">        double det = determinant(m);</span>
+<span class="fc" id="L1854">        double det = determinant(m);</span>
 
-<span class="fc" id="L1819">        multiply(cofactorTransposed, 1./det);</span>
+<span class="fc" id="L1856">        multiply(cofactorTransposed, 1./det);</span>
 
-<span class="fc" id="L1821">        return cofactorTransposed;</span>
+<span class="fc" id="L1858">        return cofactorTransposed;</span>
     }
     
     public static void multiply(double[][] m, double factor) {
 
-<span class="fc" id="L1826">        int nrows = m.length;</span>
-<span class="fc" id="L1827">        int ncols = m[0].length;</span>
+<span class="fc" id="L1863">        int nrows = m.length;</span>
+<span class="fc" id="L1864">        int ncols = m[0].length;</span>
 
-<span class="fc bfc" id="L1829" title="All 2 branches covered.">        for (int i = 0; i &lt; nrows; i++) {</span>
-<span class="fc bfc" id="L1830" title="All 2 branches covered.">            for (int j = 0; j &lt; ncols; j++) {</span>
-<span class="fc" id="L1831">                m[i][j] = factor*m[i][j];</span>
+<span class="fc bfc" id="L1866" title="All 2 branches covered.">        for (int i = 0; i &lt; nrows; i++) {</span>
+<span class="fc bfc" id="L1867" title="All 2 branches covered.">            for (int j = 0; j &lt; ncols; j++) {</span>
+<span class="fc" id="L1868">                m[i][j] = factor*m[i][j];</span>
             }
         }
-<span class="fc" id="L1834">    }</span>
+<span class="fc" id="L1871">    }</span>
     
     /*
          * e.g.    | 1  -5  2 |         | 3 4 |         | 7 4 |         | 7 3 |
@@ -1850,33 +1887,33 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     */
     public static double[][] createCofactor(double[][] m) {
 
-<span class="fc" id="L1853">        int ncols = m.length;</span>
-<span class="fc" id="L1854">        int nrows = m[0].length;</span>
+<span class="fc" id="L1890">        int ncols = m.length;</span>
+<span class="fc" id="L1891">        int nrows = m[0].length;</span>
 
-<span class="fc" id="L1856">        double[][] cofactor = new double[ncols][nrows];</span>
+<span class="fc" id="L1893">        double[][] cofactor = new double[ncols][nrows];</span>
 
-<span class="fc bfc" id="L1858" title="All 2 branches covered.">        for (int i = 0; i &lt; ncols; i++) {</span>
+<span class="fc bfc" id="L1895" title="All 2 branches covered.">        for (int i = 0; i &lt; ncols; i++) {</span>
             
-<span class="fc" id="L1860">            cofactor[i] = new double[nrows];</span>
+<span class="fc" id="L1897">            cofactor[i] = new double[nrows];</span>
 
-<span class="fc bfc" id="L1862" title="All 2 branches covered.">            boolean si = ((i &amp; 1) == 1); // sign is -</span>
+<span class="fc bfc" id="L1899" title="All 2 branches covered.">            boolean si = ((i &amp; 1) == 1); // sign is -</span>
 
-<span class="fc bfc" id="L1864" title="All 2 branches covered.">            for (int j = 0; j &lt; nrows; j++) {</span>
+<span class="fc bfc" id="L1901" title="All 2 branches covered.">            for (int j = 0; j &lt; nrows; j++) {</span>
 
-<span class="fc bfc" id="L1866" title="All 2 branches covered.">                boolean sj = ((j &amp; 1) == 1); // sign is -</span>
+<span class="fc bfc" id="L1903" title="All 2 branches covered.">                boolean sj = ((j &amp; 1) == 1); // sign is -</span>
 
-<span class="fc" id="L1868">                double[][] n = copyExcept(m, i, j);</span>
+<span class="fc" id="L1905">                double[][] n = copyExcept(m, i, j);</span>
 
-<span class="fc" id="L1870">                double cfctr = determinant(n);</span>
+<span class="fc" id="L1907">                double cfctr = determinant(n);</span>
 
-<span class="fc bfc" id="L1872" title="All 2 branches covered.">                if (si ^ sj) { // XOR if either is 1 but not both</span>
-<span class="fc" id="L1873">                    cfctr = -1*cfctr;</span>
+<span class="fc bfc" id="L1909" title="All 2 branches covered.">                if (si ^ sj) { // XOR if either is 1 but not both</span>
+<span class="fc" id="L1910">                    cfctr = -1*cfctr;</span>
                 }
 
-<span class="fc" id="L1876">                cofactor[i][j] = cfctr;</span>
+<span class="fc" id="L1913">                cofactor[i][j] = cfctr;</span>
             }
          }
-<span class="fc" id="L1879">        return cofactor;</span>
+<span class="fc" id="L1916">        return cofactor;</span>
     }
     
     /**
@@ -1887,15 +1924,15 @@ import no.uib.cipr.matrix.sparse.SparseVector;
      */
     public static float[][] multiplyPointwise(float[][] a, float[][] b) {
 
-<span class="fc" id="L1890">        float[][] c = copy(a);</span>
+<span class="fc" id="L1927">        float[][] c = copy(a);</span>
 
-<span class="fc bfc" id="L1892" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; ++i) {</span>
-<span class="fc bfc" id="L1893" title="All 2 branches covered.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
-<span class="fc" id="L1894">                c[i][j] *= b[i][j];</span>
+<span class="fc bfc" id="L1929" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; ++i) {</span>
+<span class="fc bfc" id="L1930" title="All 2 branches covered.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
+<span class="fc" id="L1931">                c[i][j] *= b[i][j];</span>
             }
         }
 
-<span class="fc" id="L1898">        return c;</span>
+<span class="fc" id="L1935">        return c;</span>
     }
 
     /**
@@ -1907,15 +1944,15 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     public static DenseMatrix multiplyPointwise(DenseMatrix a, 
         DenseMatrix b) {
 
-<span class="fc" id="L1910">        DenseMatrix c = a.copy();</span>
+<span class="fc" id="L1947">        DenseMatrix c = a.copy();</span>
 
-<span class="fc bfc" id="L1912" title="All 2 branches covered.">        for (int i = 0; i &lt; c.numRows(); ++i) {</span>
-<span class="fc bfc" id="L1913" title="All 2 branches covered.">            for (int j = 0; j &lt; c.numColumns(); ++j) {</span>
-<span class="fc" id="L1914">                c.set(i, j, c.get(i, j) * b.get(i, j));</span>
+<span class="fc bfc" id="L1949" title="All 2 branches covered.">        for (int i = 0; i &lt; c.numRows(); ++i) {</span>
+<span class="fc bfc" id="L1950" title="All 2 branches covered.">            for (int j = 0; j &lt; c.numColumns(); ++j) {</span>
+<span class="fc" id="L1951">                c.set(i, j, c.get(i, j) * b.get(i, j));</span>
             }
         }
 
-<span class="fc" id="L1918">        return c;</span>
+<span class="fc" id="L1955">        return c;</span>
     }
 
 }

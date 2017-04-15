@@ -17,6 +17,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -306,5 +307,85 @@ public class Misc {
         }
         
         return set;
+    }
+
+    public static void reverse(float[] a) {
+        
+        int n = a.length;
+        
+        if (n < 2) {
+            return;
+        }
+                
+        int end = n >> 1;
+        // 0 1 2 3 4
+        for (int i = 0; i < end; i++) {
+            int idx2 = n - i - 1;
+            float swap = a[i];
+            a[i] = a[idx2];
+            a[idx2] = swap;
+        }
+        
+    }
+    
+    /**
+     * assuming that the coefficients are ordered from highest order to
+     * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
+     * apply them to x and resturn the model.
+     * @param coeffs
+     * @param x
+     * @return 
+     */
+    public static float[] generate(float[] coeffs, float[] x) {
+        
+        float[] y = new float[x.length];
+                
+        for (int i = 0; i < x.length; ++i) {
+            float x2 = 1;
+            for (int j = coeffs.length - 1; j > -1; j--) {
+                float c = coeffs[j];
+                y[i] += (c * x2);
+                x2 *= x[i];
+            }
+        }
+        
+        return y;
+    }
+    
+    /**
+     * assuming that the coefficients are ordered from highest order to
+     * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
+     * apply them to x and populate the model in outputY.
+     * @param coeffs
+     * @param x
+     * @param outputY
+     */
+    public static void generate(double[] coeffs, double[] x, double[] outputY) {
+                
+        for (int i = 0; i < x.length; ++i) {
+            double x2 = 1;
+            for (int j = coeffs.length - 1; j > -1; j--) {
+                double c = coeffs[j];
+                outputY[i] += (c * x2);
+                x2 *= x[i];
+            }
+        }        
+    }
+    
+    /**
+     * assuming that the coefficients are ordered from highest order to
+     * lowest, e.g. coeff[0] * x^2 + coeff[1] * x coeff[2],
+     * apply them to x and return the model.
+     * @param coeffs
+     * @param x
+     * @return 
+     */
+    public static double[] generate(double[] coeffs, double[] x) {
+        
+        double[] y = new double[x.length];
+        
+        generate(coeffs, x, y);
+        
+        return y;
     }
 }
