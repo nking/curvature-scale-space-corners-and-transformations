@@ -192,8 +192,8 @@ public class BinaryTrie&lt;S extends BinaryTrieNode&lt;T&gt;, T&gt;
     public T find(T x) {
 <span class="fc" id="L193">        int ix = it.intValue(x);</span>
 <span class="fc" id="L194">        T v = findValue(ix);</span>
-<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (v == null) {</span>
-<span class="fc" id="L196">            return v;</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (v == null) {</span>
+<span class="nc" id="L196">            return v;</span>
 <span class="fc bfc" id="L197" title="All 2 branches covered.">        } else if (it.intValue(v) == ix) {</span>
 <span class="fc" id="L198">            return v;</span>
         }
@@ -218,7 +218,7 @@ public class BinaryTrie&lt;S extends BinaryTrieNode&lt;T&gt;, T&gt;
         } else {
 <span class="fc" id="L219">            u = u.jump.child[next]; </span>
         }
-<span class="fc bfc" id="L221" title="All 2 branches covered.">		return u == dummy ? null : u.x;</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		return u == dummy ? null : u.x;</span>
 	}
 
     /**

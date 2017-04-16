@@ -165,15 +165,15 @@ public class CSSCornerMaker {
 <span class="fc" id="L165">        List&lt;CornerArray&gt; output = new ArrayList&lt;CornerArray&gt;();</span>
 <span class="fc bfc" id="L166" title="All 2 branches covered.">        for (List&lt;CornerArray&gt; scaleSpaceCorners : edgeCornerLists) {</span>
 <span class="fc" id="L167">            boolean found = false;</span>
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            for (CornerArray corners : scaleSpaceCorners) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (CornerArray corners : scaleSpaceCorners) {</span>
 <span class="fc bfc" id="L169" title="All 2 branches covered.">                if (corners.getSIGMA() == selectedSigma) {</span>
 <span class="fc" id="L170">                    output.add(corners);</span>
 <span class="fc" id="L171">                    found = true;</span>
 <span class="fc" id="L172">                    break;</span>
                 }
 <span class="fc" id="L174">            }</span>
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">            if (!found) {</span>
-<span class="nc" id="L176">                output.add(new CornerArray(selectedSigma));</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (!found) {</span>
+<span class="fc" id="L176">                output.add(new CornerArray(selectedSigma));</span>
             }
 <span class="fc" id="L178">        }</span>
             
