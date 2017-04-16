@@ -467,86 +467,86 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
         return init;
         */
         
-        throw new UnsupportedOperationException(&quot;not yet impl&quot;);
+<span class="nc" id="L470">        throw new UnsupportedOperationException(&quot;not yet impl&quot;);</span>
     }
     
     private double calcUniformLogPrior(float[] coeffs, float[] lower,
         float[] upper) {
         
-        int n = coeffs.length;
+<span class="nc" id="L476">        int n = coeffs.length;</span>
         
-        if (n != lower.length || n != upper.length) {
-            throw new IllegalArgumentException(&quot;all input argumnets must be&quot;
+<span class="nc bnc" id="L478" title="All 4 branches missed.">        if (n != lower.length || n != upper.length) {</span>
+<span class="nc" id="L479">            throw new IllegalArgumentException(&quot;all input argumnets must be&quot;</span>
                 + &quot; same length&quot;);
         }
         
-        boolean t0 = true;
+<span class="nc" id="L483">        boolean t0 = true;</span>
         
-        for (int i = 0; i &lt; n; ++i) {
-            float c = coeffs[i];
-            if (c &lt; lower[i] || c &gt; upper[i]) {
+<span class="nc bnc" id="L485" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L486">            float c = coeffs[i];</span>
+<span class="nc bnc" id="L487" title="All 4 branches missed.">            if (c &lt; lower[i] || c &gt; upper[i]) {</span>
 <span class="nc" id="L488">                t0 = false;</span>
-                break;
+<span class="nc" id="L489">                break;</span>
             }
         }
         
-        if (t0) {
+<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (t0) {</span>
 <span class="nc" id="L494">            return 0.;</span>
         } 
-<span class="nc bnc" id="L496" title="All 4 branches missed.">        </span>
+        
 <span class="nc" id="L497">        return Double.NEGATIVE_INFINITY;</span>
     }
     
     private double calcUniformLogProbability(float[] coeffs, float[] x, float[] y,
-<span class="nc" id="L501">        float[] yerr) {</span>
-        
-<span class="nc bnc" id="L503" title="All 2 branches missed.">        throw new UnsupportedOperationException(&quot;not yet impl&quot;);</span>
-<span class="nc" id="L504">    }</span>
-<span class="nc bnc" id="L505" title="All 4 branches missed.">    </span>
-<span class="nc" id="L506">    // lambda = -2 * result</span>
-<span class="nc" id="L507">    public static double calcLogLikelihood(float[] coeffs, float[] x, float[] y,</span>
         float[] yerr) {
         
-        float[] model = Misc.generate(coeffs, x);
-<span class="nc bnc" id="L511" title="All 2 branches missed.">       </span>
+<span class="nc" id="L503">        throw new UnsupportedOperationException(&quot;not yet impl&quot;);</span>
+    }
+    
+    // lambda = -2 * result
+    public static double calcLogLikelihood(float[] coeffs, float[] x, float[] y,
+        float[] yerr) {
+        
+<span class="nc" id="L510">        float[] model = Misc.generate(coeffs, x);</span>
+       
 <span class="nc" id="L512">        float[] diff = MatrixUtil.subtract(y, model);</span>
         
-        float[] mnAndStDev = MiscMath.getAvgAndStDev(diff);
-<span class="nc" id="L515">        </span>
-        float sigma = mnAndStDev[1] * mnAndStDev[1];
+<span class="nc" id="L514">        float[] mnAndStDev = MiscMath.getAvgAndStDev(diff);</span>
+        
+<span class="nc" id="L516">        float sigma = mnAndStDev[1] * mnAndStDev[1];</span>
          
-        int n = x.length;
+<span class="nc" id="L518">        int n = x.length;</span>
         
         if (true) {
-<span class="nc" id="L521">            </span>
-            double dotProd = 0;
-            for (int i = 0; i &lt; diff.length; ++i) {
-                dotProd += (diff[i] * diff[i]);
+            
+<span class="nc" id="L522">            double dotProd = 0;</span>
+<span class="nc bnc" id="L523" title="All 2 branches missed.">            for (int i = 0; i &lt; diff.length; ++i) {</span>
+<span class="nc" id="L524">                dotProd += (diff[i] * diff[i]);</span>
             }
 
-            double f
+<span class="nc" id="L527">            double f</span>
 <span class="nc" id="L528">                = Math.pow((1.0 / (2.0 * Math.PI * sigma)), n / 2.)</span>
-                * Math.exp(-1. * (dotProd / (2. * sigma)));
-<span class="nc" id="L530"></span>
-            return Math.log(f);
-<span class="nc" id="L532">        </span>
+<span class="nc" id="L529">                * Math.exp(-1. * (dotProd / (2. * sigma)));</span>
+
+<span class="nc" id="L531">            return Math.log(f);</span>
+        
         } else {
-<span class="nc" id="L534"></span>
+
             //NOTE: this is adapted from &quot;emcee&quot; examples/line.py.
-<span class="nc" id="L536">            // https://github.com/dfm</span>
+            // https://github.com/dfm
             // MIT license,
             // Copyright (c) 2010-2016 Daniel Foreman-Mackey &amp; contributors.
 
-<span class="nc" id="L540">            </span>
-<span class="nc bnc" id="L541" title="All 2 branches missed.">            //TODO: need to supply this to method</span>
-<span class="nc" id="L542">            double prevLnF = 1;</span>
+            
+            //TODO: need to supply this to method
+            double prevLnF = 1;
             
             double s = 0;
-<span class="nc" id="L545">            </span>
-<span class="nc" id="L546">            for (int i = 0; i &lt; diff.length; ++i) {</span>
-<span class="nc" id="L547">                float t0 = (yerr[i] * yerr[i]);</span>
+            
+            for (int i = 0; i &lt; diff.length; ++i) {
+                float t0 = (yerr[i] * yerr[i]);
                 double t1 = (model[i] * model[i]);
-<span class="nc" id="L549">                t1 *= Math.exp(2. * prevLnF);</span>
+                t1 *= Math.exp(2. * prevLnF);
                 double invSigma2 = 1./(t0 + t1);
                 
                 double t2 = (diff[i] * diff[i]);

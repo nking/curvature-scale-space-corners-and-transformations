@@ -2,15 +2,17 @@
    (example is in unit tests).  jblas is already included in project,
    but accessed mostly via MTJ.
 
+-- run the polynomial min log likelihood 
+      with dlib bfgs to look at convergence
+      with current gradient
+
 -- would like an elasticnet implementation 
-   -- considering a port of the arpa supported dlib class and dependencies
+   -- considering a port of the arpa supported dlib class and 
+      dependencies
       https://github.com/davisking/dlib
       -- mitie created an interface to the c++ port to java:
          https://github.com/mit-nlp/MITIE
          http://blog.dlib.net/2014/10/mitie-v03-released-now-with-java-and-r.html?m=1
-
-   -- could also consider the small api:
-   https://github.com/yinlou/mltk/search?utf8=%E2%9C%93&q=elastic-net&type=
 
 -- for global search/optimization methods, consider importing
       https://github.com/aimacode/aima-java
@@ -19,6 +21,7 @@
      would like to consider importing best global optimization
      (? random search, a genetic algorithm, simulated annealing,
       or particle swarm)
+    -- consider the "clever algorithms" 
 
 (1) reading bishop 2006
     and looking at
