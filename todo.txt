@@ -2,9 +2,12 @@
    (example is in unit tests).  jblas is already included in project,
    but accessed mostly via MTJ.
 
--- run the polynomial min log likelihood 
+-- run the polynomial unit test for LBFGS
       with dlib bfgs to look at convergence
-      with current gradient
+      with current gradient.
+      -- passes for dlib search strategy-5, but not 20,
+      so need to consider adding another search strategy
+      to LBFGS.java here
 
 -- would like an elasticnet implementation 
    -- considering a port of the arpa supported dlib class and 
