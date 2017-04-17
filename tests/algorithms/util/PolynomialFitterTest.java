@@ -59,7 +59,12 @@ public class PolynomialFitterTest extends TestCase {
     }
 
     public void test0() throws Exception {
-                
+             
+        //NOTE: running this test w/ the dlib versions of lbfgs shows
+        //   that it passes for search strategy 5,
+        //   but not search strategy 20, and the results
+        //   below are the same as the later.
+        
         // test from: http://rosettacode.org/wiki/Polynomial_Fitting
         //3 x2 + 2 x + 1
         float[] x = new float[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};

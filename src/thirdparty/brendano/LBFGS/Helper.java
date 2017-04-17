@@ -13,12 +13,11 @@ import thirdparty.brendano.LBFGS.LBFGS.Function;
 public class Helper {
    
     /**
-     * NOTE: NOT READY FOR USE.  THE Gradient calculation needs to be
-     * improved.
-     * a function that calculates the negative of the log likelihood
+     * NOTE: NOT READY FOR USE.
+     * a function that calculates chi squared of model and data.
      * useful for 2D curve fitting.
      */
-    public static class FunctionPolyML implements Function {
+    public static class FunctionPoly implements Function {
 
         final double[] xp;
         final double[] yp;
@@ -26,7 +25,7 @@ public class Helper {
 
         //TODO: consider a constructor that accepts errors for the points
         
-        public FunctionPolyML(final double[] xPoints, double[] yPoints,
+        public FunctionPoly(final double[] xPoints, double[] yPoints,
             double[] init) {
             if (xPoints.length != yPoints.length) {
                 throw new IllegalArgumentException(
@@ -46,20 +45,7 @@ public class Helper {
             final double sumDiff = polynomialCoeffGradient(xp, yp, coeffs, 
                 outputGradient, diff);
          
-            // TODO: revisit this to consider including errors given
-            //   to the code for each point.
-            
-            double[] mnAndStDv = MiscMath.getAvgAndStDev(diff);
-            double sigma = mnAndStDv[1] * mnAndStDv[1];
-            
-            double f = Math.pow((1.0/(2.0*Math.PI*sigma)), (coeffs.length/2))
-                * Math.exp(-1. * sumDiff/(2. * sigma));
-    
-            double lnf = -2. * Math.log(f);
-            
-            System.out.println(" lnf=" + lnf);
-
-            return lnf;
+            return sumDiff;
         }
     }
  
@@ -104,6 +90,7 @@ public class Helper {
         for (int i = 0; i < xp.length; ++i) {
             double x2 = 1;
             double dyAtX = outputDiffY[i];
+            sumDiff += (dyAtX * dyAtX);
             double dydx = dPolydXHL(coeffs, xp[i]);
             for (int j = coeffs.length - 1; j > -1; j--) {
                 int varIdx = coeffs.length - j - 1;
@@ -122,7 +109,6 @@ public class Helper {
                     break;
                 }
             }
-            sumDiff += (dyAtX * dyAtX);
         }
         sumDiff = Math.sqrt(sumDiff);
 
