@@ -28,12 +28,10 @@ public class LBFGSOptimization {
         // evaluates the objective at this set of coefficients.
         // e.g. could return chiSq
         double f (double[] coeffs);
-        double f (double a);
         
         // estimates the coeficient gradient by comparing the
         //   data with the model
         double[] der(double[] coeffs);
-        double der(double a);
     }
       
     /*

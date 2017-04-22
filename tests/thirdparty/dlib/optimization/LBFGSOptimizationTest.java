@@ -235,11 +235,6 @@ public class LBFGSOptimizationTest extends TestCase {
         }
 
         @Override
-        public double f(double d) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
         public double[] der(double[] coeffs) {
             
             double[] outputGradient = new double[coeffs.length];
@@ -267,10 +262,6 @@ public class LBFGSOptimizationTest extends TestCase {
             return outputGradient;
         }
 
-        @Override
-        public double der(double d) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
     }
     
     private static class Wood implements LBFGSOptimization.IFunction {
@@ -301,11 +292,6 @@ public class LBFGSOptimizationTest extends TestCase {
             */
             
             return m;
-        }
-
-        @Override
-        public double f(double d) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
         @Override
@@ -340,10 +326,6 @@ public class LBFGSOptimizationTest extends TestCase {
             return outputGradient;
         }
 
-        @Override
-        public double der(double d) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
     }
     
     private static class Rosenbrock implements LBFGSOptimization.IFunction {
@@ -357,11 +339,6 @@ public class LBFGSOptimizationTest extends TestCase {
             double b = u * u - v;            
             double a = u - 1;
             return a * a + 10 * b * b;
-        }
-        
-        @Override
-        public double f(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
         @Override
@@ -378,11 +355,6 @@ public class LBFGSOptimizationTest extends TestCase {
             return der;
         }
         
-        @Override
-        public double der(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-       
     }
     
     private static class SimpleAbs implements LBFGSOptimization.IFunction {
@@ -422,12 +394,7 @@ public class LBFGSOptimizationTest extends TestCase {
             
             return m;
         }
-        
-        @Override
-        public double f(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
+      
         @Override
         public double[] der(double[] coeffs) {
             
@@ -465,11 +432,6 @@ public class LBFGSOptimizationTest extends TestCase {
             */
             
             return der;
-        }
-        
-        @Override
-        public double der(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
         
     }

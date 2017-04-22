@@ -53,11 +53,6 @@ public class Helper {
         }
 
         @Override
-        public double f(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
         public double[] der(double[] coeffs) {
             
             System.out.println("a0 der");
@@ -74,11 +69,6 @@ public class Helper {
             System.out.print("==>gradient="); printFormattedArray(gradient);
             
             return gradient;
-        }
-
-        @Override
-        public double der(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
         // ----------------------
@@ -197,8 +187,11 @@ public class Helper {
         System.out.println("]");
     }
     
-    // add the dlib reference here.  this is adapted
-    //    from their optimization tests
+    /**
+     * adapted from dlib optimization.h Copyright (C) 2008 Davis E. King
+     * (davis@dlib.net) License: Boost Software License See LICENSE.txt for the
+     * full license.
+     */
     public static class CentralDifferences implements IFunction {
         
         private final IFunction f;
@@ -219,21 +212,11 @@ public class Helper {
         }
 
         @Override
-        public double f(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        @Override
         public double[] der(double[] coeffs) {
 
             return derivative(coeffs);
         }
 
-        @Override
-        public double der(double a) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-        
         /**
         adapted from dlib optimization.h
         Copyright (C) 2008  Davis E. King (davis@dlib.net)
@@ -258,17 +241,13 @@ public class Helper {
                 // finite difference:  this is the approx jacobian
                 der[i] = (delta_plus - delta_minus)/(2.*eps); 
 
-                //NOTE: newtons method would continue with:
+                //NOTE: newton's method would continue with:
                 // x_(i+1) = x_i - (delta_plus/der(i))
 
                 // and finally restore the old value of this element
                 e[i] = old_val;
             }
             
-            //NLK
-            System.out.println("derivitave=" + Arrays.toString(der));
-            
-
             return der;
         }
     };
