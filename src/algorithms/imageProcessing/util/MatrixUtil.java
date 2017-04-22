@@ -1234,6 +1234,62 @@ public class MatrixUtil {
         return c;
     }
     
+    public static void multiply(TDoubleArrayList a, double f) {
+        for (int i = 0; i < a.size(); ++i) {
+            a.set(i, f * a.get(i));
+        }
+    }
+    
+    public static void multiply(double[] a, double f) {
+        for (int i = 0; i < a.length; ++i) {
+            a[i] *= f;
+        }
+    }
+    
+    public static double multiplyByTranspose(TDoubleArrayList a, 
+        TDoubleArrayList b) {
+        int sz0 = a.size();
+        int sz1 = b.size();
+        if (sz0 != sz1) {
+            throw new IllegalArgumentException(
+                "a and b must be same size");
+        }
+        double s = 0;
+        for (int i = 0; i < a.size(); ++i) {
+            s += a.get(i) * b.get(i);
+        }
+        return s;
+    }
+    
+    public static double multiplyByTranspose(double[] a, 
+        double[] b) {
+        int sz0 = a.length;
+        int sz1 = b.length;
+        if (sz0 != sz1) {
+            throw new IllegalArgumentException(
+                "a and b must be same size");
+        }
+        double s = 0;
+        for (int i = 0; i < a.length; ++i) {
+            s += a[i] * b[i];
+        }
+        return s;
+    }
+    
+    public static TDoubleArrayList subtract(TDoubleArrayList a, TDoubleArrayList b) {
+        int sz0 = a.size();
+        int sz1 = b.size();
+        if (sz0 != sz1) {
+            throw new IllegalArgumentException(
+                "a and b must be same size");
+        }
+        TDoubleArrayList c = new TDoubleArrayList(sz0);
+        for (int i = 0; i < a.size(); ++i) {
+            c.add(a.get(i) - b.get(i));
+        }
+        return c;
+    }
+    
     public static void multiply(Matrix a, double b) {
         
         if (a == null || a.numRows() == 0) {
@@ -1247,7 +1303,7 @@ public class MatrixUtil {
         }
         
     }
-
+    
     public static double trace(double[][] d) {
         
         double sum = 0;

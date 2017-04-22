@@ -967,6 +967,7 @@ public class LBFGS {
             }
         }
 
+
         /* Allocate working space. */
         xp = new double[n];
         g = new double[n];
@@ -1050,7 +1051,7 @@ public class LBFGS {
 	        step = 1.0 / sqrt(vecdot(d, d, n))
          */
         step[0] = vec2norminv(d, n);
-
+        
         k = 1;
         end = 0;
         for (;;) {
@@ -1115,6 +1116,7 @@ public class LBFGS {
 	            The criterion is given by the following formula:
 	                (f(past_x) - f(x)) / f(x) < \delta
              */
+                 
             if (pf != null) {
                 /* We don't test the stopping criterion while k < past. */
                 if (param.past <= k) {

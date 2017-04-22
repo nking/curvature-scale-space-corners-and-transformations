@@ -2,7 +2,6 @@ package thirdparty.brendano.LBFGS;
 
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscMath;
 import java.util.Arrays;
 import thirdparty.brendano.LBFGS.LBFGS.Function;
 
@@ -22,7 +21,7 @@ public class Helper {
         final double[] xp;
         final double[] yp;
         final double[] initVars;
-
+                
         //TODO: consider a constructor that accepts errors for the points
         
         public FunctionPoly(final double[] xPoints, double[] yPoints,
@@ -35,16 +34,19 @@ public class Helper {
             this.yp = yPoints;
             this.initVars = init;
         }
-
+        
         @Override
         public double evaluate(final double[] coeffs,
-            final double[] outputGradient, int nCoeffs, double step) {
+            final double[] outputGradient, int nCoeffs, 
+            double step) {
         
+            // when using derivative, eps=1.e-15;
+            
             final double[] diff = new double[yp.length];
             
-            final double sumDiff = polynomialCoeffGradient(xp, yp, coeffs, 
+            double sumDiff = polynomialCoeffGradient(xp, yp, coeffs, 
                 outputGradient, diff);
-         
+            
             return sumDiff;
         }
     }
@@ -116,12 +118,12 @@ public class Helper {
             outputCoeffGrad[j] /= xp.length;
         }
         
-        /*
+       
         System.out.println("==>vars=" + Arrays.toString(coeffs));
-        System.out.print("==>diff="); printFormattedArray(outputDiffY);
+        //System.out.print("==>diff="); printFormattedArray(outputDiffY);
         System.out.println("==>sumDiff=" + sumDiff);
         System.out.print("==>gradient="); printFormattedArray(outputCoeffGrad);
-        */
+       
         
         return sumDiff;
     }
@@ -188,4 +190,67 @@ public class Helper {
         }
         System.out.println("]");
     }
+    
+    // estimates the derivtive using finite difference method.
+    // NOTE that this method is adapted from dlib tests for
+    //  optimization 
+    //  (include refence here if keep this class).
+    public static class CentralDifferences implements Function {
+        
+        private final Function f;
+        private final double eps;
+   
+        public CentralDifferences(Function f) {
+            this.f = f;
+            this.eps = 1.e-7;
+        }
+        public CentralDifferences(Function f, double eps) {
+            this.f = f;
+            this.eps = eps;
+        }
+        
+        @Override
+        public double evaluate(double[] coeffs, double[] g, int n, 
+            double step) {
+                        
+            double sumDiff = derivative(coeffs, g);
+            
+            return sumDiff;
+        }
+
+        private double derivative(double[] coeffs, double[] der) {
+        
+            System.out.println("a1");
+            
+            double sumDiff = 0;
+            
+            int n = coeffs.length;
+            
+            Arrays.fill(der, 0);
+            
+            double[] e = Arrays.copyOf(coeffs, n);
+            
+            double[] unused = new double[der.length];
+            
+            for (int i = 0; i < n; ++i) {
+                final double old_val = e[i];
+
+                e[i] += eps;
+                final double delta_plus = f.evaluate(e, unused, coeffs.length, 1);
+                e[i] = old_val - eps;
+                final double delta_minus = f.evaluate(e, unused, coeffs.length, 1);
+
+                der[i] = (delta_plus - delta_minus)
+                    /((old_val+eps)-(old_val-eps)); 
+
+                // and finally restore the old value of this element
+                e[i] = old_val;
+                
+                sumDiff += (der[i] * der[i]);
+            }
+
+            return Math.sqrt(sumDiff);
+        }
+
+    };
 }

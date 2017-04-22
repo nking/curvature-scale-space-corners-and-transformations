@@ -5,7 +5,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
-import thirdparty.brendano.LBFGS.Helper.FunctionPolyML;
+import thirdparty.brendano.LBFGS.Helper.CentralDifferences;
+import thirdparty.brendano.LBFGS.Helper.FunctionPoly;
 import thirdparty.brendano.LBFGS.LBFGS;
 import thirdparty.brendano.LBFGS.LBFGS.Function;
 import thirdparty.brendano.LBFGS.LBFGS.Params;
@@ -22,7 +23,7 @@ public class PolynomialFitterTest extends TestCase {
     public PolynomialFitterTest() {
     }
     
-    public void testMisc_generate() {
+    public void estMisc_generate() {
 
         double[] x2 = new double[]{0, 1, 2,  3,  4,  5, 
             6,    7,   8,  9,   10};
@@ -59,12 +60,7 @@ public class PolynomialFitterTest extends TestCase {
     }
 
     public void test0() throws Exception {
-             
-        //NOTE: running this test w/ the dlib versions of lbfgs shows
-        //   that it passes for search strategy 5,
-        //   but not search strategy 20, and the results
-        //   below are the same as the later.
-        
+            
         // test from: http://rosettacode.org/wiki/Polynomial_Fitting
         //3 x2 + 2 x + 1
         float[] x = new float[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -108,9 +104,16 @@ public class PolynomialFitterTest extends TestCase {
         //double[] init = new double[]{3, 2, 1};// ans is 3, 2, 1
         //double[] init = new double[]{3.1, 1.3, 1.06};
         double[] init = new double[]{1, 1, 1};
-        Function f = new FunctionPolyML(x2, y2, init);
+        FunctionPoly f = new FunctionPoly(x2, y2, init);
         
-		Params p = new Params();
+        //NOTE: with a simple function and small number of parameters,
+        // need to use a smaller queue of previous coefficients and gradients
+        
+        Params params = new Params();
+        params.m = 5;
+        params.past = 5;
+        params.max_linesearch = 100;
+       
 		ProgressCallback cb = new ProgressCallback() {
 			@Override
 			public int apply(double[] x, double[] g, double fx, double xnorm,
@@ -119,11 +122,11 @@ public class PolynomialFitterTest extends TestCase {
 				return 0;
 			}
 		};
-       
-        //Result r = LBFGS.lbfgsNice(init, 1000, f, cb);
         
-        //Result r = LBFGS.lbfgs(init, f);
-        Result r = LBFGS.lbfgs(init, f, cb);
+        CentralDifferences f2 = new CentralDifferences(f, 1.e-7);
+              
+        //Result r = LBFGS.lbfgs(init, f, cb, params);
+        Result r = LBFGS.lbfgs(init, f2, cb);
         
         System.out.println("lbfgs coef = " + 
             Arrays.toString(init));
