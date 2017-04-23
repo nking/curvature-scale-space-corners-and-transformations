@@ -45,7 +45,7 @@ public class LBFGSOptimizationTest extends TestCase {
         }
     }
     
-    public void estLBFGS_poly_1st_deriv() {
+    public void testLBFGS_poly_1st_deriv() {
         
         double[] x2 = new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         double[] y2 = new double[]{1, 6, 17, 34, 57, 86, 121, 162, 209, 262, 321};
