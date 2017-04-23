@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Helper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.dlib.optimization</a> &gt; <span class="el_source">Helper.java</span></div><h1>Helper.java</h1><pre class="source lang-java linenums">package thirdparty.dlib.optimization;
+
+import java.util.Arrays;
+import thirdparty.dlib.optimization.LBFGSOptimization.IFunction;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="nc" id="L10">public class Helper {</span>
+   
+    // NOT READY FOR USE
+    public static class FunctionPoly implements IFunction {
+
+        final double[] xp;
+        final double[] yp;
+        
+        public FunctionPoly(double[] xData, double[] yData) {
+            if (xData.length != yData.length) {
+                throw new IllegalArgumentException(
+                    &quot;xData and yData must be same length&quot;);
+            }
+            this.xp = Arrays.copyOf(xData, xData.length);
+            this.yp = Arrays.copyOf(yData, yData.length);
+        }
+        
+        @Override
+        public double f(double[] coeffs) {
+    
+            System.out.println(&quot;aa0&quot;);
+            
+            double[] gen = new double[xp.length];
+            double[] gradient = new double[coeffs.length];
+            double[] diffY = new double[xp.length];
+       
+            double sumDiff = calcGradient(coeffs, gen, gradient, diffY);
+            
+            System.out.println(&quot;poly coeffs=&quot; + Arrays.toString(coeffs));
+            System.out.println(&quot;  diff=&quot; + sumDiff);
+
+            return sumDiff;
+        }
+
+        @Override
+        public double[] der(double[] coeffs) {
+            
+            System.out.println(&quot;a0 der&quot;);
+            
+            double[] gen = new double[xp.length];
+            double[] gradient = new double[coeffs.length];
+            double[] diffY = new double[xp.length];
+       
+            double diffSum = calcGradient(coeffs, gen, gradient, diffY);
+        
+            System.out.println(&quot;==&gt;vars=&quot; + Arrays.toString(coeffs));
+            //System.out.print(&quot;==&gt;diff=&quot;); printFormattedArray(outputDiffY);
+            System.out.println(&quot;==&gt;sumDiff=&quot; + diffSum);
+            System.out.print(&quot;==&gt;gradient=&quot;); printFormattedArray(gradient);
+            
+            return gradient;
+        }
+
+        double calcGradient(double[] coeffs, 
+            double[] gen, double[] outputCoeffGrad,
+            double[] outputDiffY) {
+
+            generatePolynomial(coeffs, xp, gen);
+
+            double sumDiff = 0;
+            for (int i = 0; i &lt; 11; ++i) {
+                outputDiffY[i] = (gen[i] - yp[i]);
+                sumDiff += (outputDiffY[i] * outputDiffY[i]);
+            }
+            sumDiff = Math.sqrt(sumDiff);
+
+            for (int j = 0; j &lt; 3; ++j) {
+                outputCoeffGrad[j] = 0.;
+            }
+
+            for (int i = 0; i &lt; 11; ++i) {
+                double x2 = 1;
+                double dyAtX = outputDiffY[i];
+                double dydx = dPolydXHL(coeffs, xp[i]);
+                for (int j = 2; j &gt; -1; j--) {
+                    int varIdx = 3 - j - 1;
+
+                    //dc/dx = dy/dx * dc/dy
+                    //dc = dx * dy/dx * dc/dy
+                    double dx = dyAtX * (xp[i]/gen[i]);
+                    //outputCoeffGrad[varIdx] += ( dx * dydx / x2);
+
+                    //NOTE: a faster objective is:
+                    outputCoeffGrad[varIdx] += (dyAtX/x2);
+                    
+                    x2 *= xp[i];
+
+                    if (x2 == 0.0) {
+                        break;
+                    }
+                }
+            }
+
+            for (int j = 0; j &lt; 3; ++j) {
+                outputCoeffGrad[j] /= xp.length;
+            }
+            
+            /*
+            System.out.println(&quot;==&gt;vars=&quot; + Arrays.toString(coeffs));
+            //System.out.print(&quot;==&gt;diff=&quot;); printFormattedArray(outputDiffY);
+            System.out.println(&quot;==&gt;sumDiff=&quot; + sumDiff);
+            System.out.print(&quot;==&gt;gradient=&quot;); printFormattedArray(outputCoeffGrad);
+            */
+            
+            return sumDiff;
+        }
+
+        void generatePolynomial(double[] coeffs, 
+            double[] xPoly, double[] gen) {
+
+            for (int i = 0; i &lt; 11; ++i) {
+                gen[i] = 0.;
+            }        
+
+            for (int i = 0; i &lt; 11; ++i) {
+                double x2 = 1.;
+                for (int j = 2; j &gt; -1; j--) {
+                    double c = coeffs[j];
+                    gen[i] += (c * x2);
+                    x2 *= xPoly[i];
+                }
+            }
+        }
+
+        double dPolydX(int order, double coeff, double x) {
+            if (order == 0) {
+                return 0;
+            }
+            double dydx = coeff * (double)order * Math.pow(x, order - 1);
+            return dydx;
+        }
+    
+        double dPolydXHL(double[] coeffs,  double x) {
+            double sum = 0;
+            for (int i = 0; i &lt; 3; ++i) {
+                int order = 3 - i - 1;
+                if (order == 0) continue;
+                sum += dPolydX(order, coeffs[i], x);
+            }
+            return sum;
+        }
+
+        double calcStDev(double[] x) {
+            double sumX = 0;
+            for (int i = 0; i &lt; 11; i++) {
+                sumX += x[i];
+            }
+            double avgX = sumX/11.;
+            sumX = 0;
+            for (int i = 0; i &lt; 11; i++) {
+                double diffX = x[i] - avgX;
+                sumX += (diffX * diffX);
+            }
+            double stdDevX = Math.sqrt(sumX/10.);
+            return stdDevX;
+        }
+    }
+
+    private static void printFormattedArray(double[] a) {
+<span class="nc" id="L169">        System.out.print(&quot;[&quot;);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (double m : a) {</span>
+<span class="nc" id="L171">            System.out.format(&quot;%.3f, &quot;, (float)m);</span>
+        }
+<span class="nc" id="L173">        System.out.println(&quot;]&quot;);</span>
+<span class="nc" id="L174">    }</span>
+    
+    /**
+     * adapted from dlib optimization.h Copyright (C) 2008 Davis E. King
+     * (davis@dlib.net) License: Boost Software License See LICENSE.txt for the
+     * full license.
+     */
+    public static class CentralDifferences implements IFunction {
+        
+        private final IFunction f;
+        private final double eps;
+   
+        public CentralDifferences(IFunction f) {
+            this.f = f;
+            this.eps = 1.e-7;
+        }
+        public CentralDifferences(IFunction f, double eps) {
+            this.f = f;
+            this.eps = eps;
+        }
+    
+        @Override
+        public double f(double[] coeffs) {
+            return f.f(coeffs);
+        }
+
+        @Override
+        public double[] der(double[] coeffs) {
+
+            return derivative(coeffs);
+        }
+
+        /**
+        adapted from dlib optimization.h
+        Copyright (C) 2008  Davis E. King (davis@dlib.net)
+        License: Boost Software License   See LICENSE.txt for the full license.
+        */
+        private double[] derivative(double[] coeffs) {
+        
+            System.out.println(&quot;a1  x.size=&quot; + coeffs.length);
+            
+            int n = coeffs.length;
+            
+            double[] der = new double[n];
+            double[] e = Arrays.copyOf(coeffs, n);
+            
+            for (int i = 0; i &lt; n; ++i) {
+                final double old_val = e[i];
+                e[i] += eps;
+                final double delta_plus = f(e);
+                e[i] = old_val - eps;
+                final double delta_minus = f(e);
+
+                // finite difference:  this is the approx jacobian
+                der[i] = (delta_plus - delta_minus)/(2.*eps); 
+
+                //NOTE: newton's method would continue with:
+                // x_(i+1) = x_i - (delta_plus/der(i))
+
+                // and finally restore the old value of this element
+                e[i] = old_val;
+            }
+            
+            return der;
+        }
+    };
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

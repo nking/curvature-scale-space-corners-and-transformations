@@ -338,18 +338,18 @@ import java.util.logging.Logger;
      */
     public static float[] generate(float[] coeffs, float[] x) {
         
-<span class="fc" id="L341">        float[] y = new float[x.length];</span>
+<span class="nc" id="L341">        float[] y = new float[x.length];</span>
                 
-<span class="fc bfc" id="L343" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; ++i) {</span>
-<span class="fc" id="L344">            float x2 = 1;</span>
-<span class="fc bfc" id="L345" title="All 2 branches covered.">            for (int j = coeffs.length - 1; j &gt; -1; j--) {</span>
-<span class="fc" id="L346">                float c = coeffs[j];</span>
-<span class="fc" id="L347">                y[i] += (c * x2);</span>
-<span class="fc" id="L348">                x2 *= x[i];</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L344">            float x2 = 1;</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            for (int j = coeffs.length - 1; j &gt; -1; j--) {</span>
+<span class="nc" id="L346">                float c = coeffs[j];</span>
+<span class="nc" id="L347">                y[i] += (c * x2);</span>
+<span class="nc" id="L348">                x2 *= x[i];</span>
             }
         }
         
-<span class="fc" id="L352">        return y;</span>
+<span class="nc" id="L352">        return y;</span>
     }
     
     /**
@@ -362,15 +362,15 @@ import java.util.logging.Logger;
      */
     public static void generate(double[] coeffs, double[] x, double[] outputY) {
                 
-<span class="fc bfc" id="L365" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; ++i) {</span>
-<span class="fc" id="L366">            double x2 = 1;</span>
-<span class="fc bfc" id="L367" title="All 2 branches covered.">            for (int j = coeffs.length - 1; j &gt; -1; j--) {</span>
-<span class="fc" id="L368">                double c = coeffs[j];</span>
-<span class="fc" id="L369">                outputY[i] += (c * x2);</span>
-<span class="fc" id="L370">                x2 *= x[i];</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L366">            double x2 = 1;</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">            for (int j = coeffs.length - 1; j &gt; -1; j--) {</span>
+<span class="nc" id="L368">                double c = coeffs[j];</span>
+<span class="nc" id="L369">                outputY[i] += (c * x2);</span>
+<span class="nc" id="L370">                x2 *= x[i];</span>
             }
         }        
-<span class="fc" id="L373">    }</span>
+<span class="nc" id="L373">    }</span>
     
     /**
      * assuming that the coefficients are ordered from highest order to
@@ -382,11 +382,11 @@ import java.util.logging.Logger;
      */
     public static double[] generate(double[] coeffs, double[] x) {
         
-<span class="fc" id="L385">        double[] y = new double[x.length];</span>
+<span class="nc" id="L385">        double[] y = new double[x.length];</span>
         
-<span class="fc" id="L387">        generate(coeffs, x, y);</span>
+<span class="nc" id="L387">        generate(coeffs, x, y);</span>
         
-<span class="fc" id="L389">        return y;</span>
+<span class="nc" id="L389">        return y;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -2,17 +2,39 @@
    (example is in unit tests).  jblas is already included in project,
    but accessed mostly via MTJ.
 
--- run the polynomial min log likelihood 
-      with dlib bfgs to look at convergence
-      with current gradient
+-- while reading bishop 2006, a goal is to add specific methods
+   that are alternatives to what s present, for example, in curve fitting.
+   - present are regression w/ OLS, ThielSen for example
+     and would like to add local optimization of polynomial fitting w/ LBFGS,
+     and curve fitting w/ regularization and loss function using "elastic net".
+     -- dlib is a C++ library w/ both of those.
+        can either:
+        -- extract the needed classes and port to java making a small lightweight
+           inclusion.
+           pros: small and fast
+           cons: a brief look at the code suggests porting the needed SVM might
+                 take awhile.
+        -- OR can use CMake and SWIG to make jni bindings for dlib.
+           (or include MITIE and build it)
+           pros: other classes in dlib are useful for exploration of more of Bishop2006
+                 material.  same could be said for the larger MITIE project.
+           cons: requires for build, installation of CMake and SWIG (and PCRE)
+                 that currently requires more than one step for the user.
+                 - to make it seamless for user, could change builds to
+                   maven and use a CMake plugin and a dependency on SWIG
+                   which presumably has a maven plugin.
+                   NOTE: details to the later are at the end of this file.
+                   the reader given a few installation instructions is 
+                   more fesible at this time.
+
+-- NOTE that the polynomial unit test for dlib LBFGS
+      -- passes for dlib search strategy-5, but not 20,
+      so need to consider adding another search strategy
+      to LBFGS.java here or replacing it with use of dlib
+      as outlined above.
 
 -- would like an elasticnet implementation 
-   -- considering a port of the arpa supported dlib class and 
-      dependencies
-      https://github.com/davisking/dlib
-      -- mitie created an interface to the c++ port to java:
-         https://github.com/mit-nlp/MITIE
-         http://blog.dlib.net/2014/10/mitie-v03-released-now-with-java-and-r.html?m=1
+   -- see outline above... dlib has this
 
 -- for global search/optimization methods, consider importing
       https://github.com/aimacode/aima-java
@@ -101,3 +123,32 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- more reading on 3d reconstruction
 
 -- finish the special topics reading
+
+-- no priority:
+   for jni bindings of the c++ dlib library, would like to automate
+    the steps of compile, outlined by the MITIE project.
+    dependencies:
+      -- swig:
+         swig is platform specific and depends upon another platform 
+           specific library called PCRE (needed to make pearl bindings)
+         to automate the installation if needed and then the use of swig
+            to compile,
+            a possibility is the use of 2 maven2 plugins:
+               -- freehep-swig-plugin 
+               -- freehep-nar-plugin 
+            the swig plugin requires some additional configuration for
+            the download and there is a small amount of documentation 
+            on that.
+            -- missing is the information that PCRE needs to be downloaded
+               also so that would need to be added to the configuration
+               if possible.
+            A caveat to this is that these numerous steps to a mvn target
+              checking for swig and dependencies and installing them with
+              nar when needed would have to be tested for all platforms.
+      -- nar:
+            writing the nar commands to use swig and cmake would have to
+            include the platform specific details present in the
+            MITIE README.md file, espec for windows.
+     cannot easily test on all platforms at this time, so will leave this
+     as a todo target for the interesting details, but essentially no
+     expected priority.
