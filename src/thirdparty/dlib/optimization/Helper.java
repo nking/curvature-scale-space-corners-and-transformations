@@ -29,17 +29,6 @@ public class Helper {
     
             System.out.println("aa0");
             
-            /*
-            double[] gen = new double[xp.length];
-            generatePolynomial(coeffs, xp, gen);
-            double sumDiff = 0;
-            for (int i = 0; i < 11; ++i) {
-                double diff = gen[i] - yp[i];
-                sumDiff += (diff * diff);
-            }
-            sumDiff = Math.sqrt(sumDiff);
-            */
-            
             double[] gen = new double[xp.length];
             double[] gradient = new double[coeffs.length];
             double[] diffY = new double[xp.length];
@@ -71,9 +60,6 @@ public class Helper {
             return gradient;
         }
 
-        // ----------------------
-        // NOT READY for use.  need to revisit to make sure
-        //   that result is convex 
         double calcGradient(double[] coeffs, 
             double[] gen, double[] outputCoeffGrad,
             double[] outputDiffY) {
@@ -82,7 +68,7 @@ public class Helper {
 
             double sumDiff = 0;
             for (int i = 0; i < 11; ++i) {
-                outputDiffY[i] = gen[i] - yp[i];
+                outputDiffY[i] = (gen[i] - yp[i]);
                 sumDiff += (outputDiffY[i] * outputDiffY[i]);
             }
             sumDiff = Math.sqrt(sumDiff);
@@ -100,12 +86,12 @@ public class Helper {
 
                     //dc/dx = dy/dx * dc/dy
                     //dc = dx * dy/dx * dc/dy
-                    //outputCoeffGrad(varIdx) += (dyAtX * dydx / x2);
-
                     double dx = dyAtX * (xp[i]/gen[i]);
-                    outputCoeffGrad[varIdx] +=
-                        ( dx * dydx / x2);
+                    //outputCoeffGrad[varIdx] += ( dx * dydx / x2);
 
+                    //NOTE: a faster objective is:
+                    outputCoeffGrad[varIdx] += (dyAtX/x2);
+                    
                     x2 *= xp[i];
 
                     if (x2 == 0.0) {
@@ -115,7 +101,7 @@ public class Helper {
             }
 
             for (int j = 0; j < 3; ++j) {
-                outputCoeffGrad[j] /= 11.;
+                outputCoeffGrad[j] /= xp.length;
             }
             
             /*

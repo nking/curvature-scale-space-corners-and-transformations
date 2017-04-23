@@ -4,6 +4,8 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import java.util.Arrays;
 
 /**
+ * NOT READY FOR USE YET
+ * 
  * a port to java of dlib optimization method find_min.
  * The only search strategy ported is LBFGS, so the 
  * search strategy argument is specific, but could be 
@@ -87,8 +89,7 @@ public class LBFGSOptimization {
             
             //NLK: adding this for stop criteria
             fValue = f.f(x);
-            double[] tmp = f.der(x);
-            System.arraycopy(tmp, 0, g, 0, tmp.length);
+            g = f.der(x);
 
             if (!Double.isFinite(fValue)) {
                 throw new IllegalStateException(

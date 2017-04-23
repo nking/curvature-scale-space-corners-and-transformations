@@ -39,7 +39,38 @@ public class LBFGSOptimizationTest extends TestCase {
        
         System.out.println("min=" + min + " \n   coeffs=" +
             Arrays.toString(init));
+       
+        for (int i = 0; i < init.length; ++i) {
+            assertTrue(Math.abs(init[i] - expected[i]) < 0.1);
+        }
+    }
+    
+    public void estLBFGS_poly_1st_deriv() {
         
+        double[] x2 = new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        double[] y2 = new double[]{1, 6, 17, 34, 57, 86, 121, 162, 209, 262, 321};
+       
+        double[] init = new double[]{1, 1, 1};
+        double[] expected = new double[]{3., 2., 1.};
+        
+        Helper.FunctionPoly f = new Helper.FunctionPoly(x2, y2);
+        
+        LBFGSSearchStrategy searchStrategy = new LBFGSSearchStrategy(5);
+        ObjectiveDeltaStopStrategy stopStrategy 
+            = new ObjectiveDeltaStopStrategy(1.e-15);
+        
+        double fLower = -10;
+        
+        LBFGSOptimization opt = new LBFGSOptimization();
+        double min = opt.findMin(searchStrategy, 
+            stopStrategy, f, init, fLower);
+       
+        System.out.println("-->min=" + min + " \n   coeffs=" +
+            Arrays.toString(init));
+        
+        for (int i = 0; i < init.length; ++i) {
+            assertTrue(Math.abs(init[i] - expected[i]) < 0.1);
+        }
     }
     
     /**
