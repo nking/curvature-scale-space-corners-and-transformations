@@ -33,25 +33,27 @@ public class Helper {
        
             double sumDiff = calcGradient(coeffs, gen, gradient, diffY);
             
-            //System.out.println("poly coeffs=" + Arrays.toString(coeffs));
-            //System.out.println("  diff=" + sumDiff);
+            System.out.println("poly coeffs=" + Arrays.toString(coeffs));
+            System.out.println("  diff=" + sumDiff);
 
             return sumDiff;
         }
 
         @Override
         public double[] der(double[] coeffs) {
-                        
+            
+            System.out.println("a0 der");
+            
             double[] gen = new double[xp.length];
             double[] gradient = new double[coeffs.length];
             double[] diffY = new double[xp.length];
        
             double diffSum = calcGradient(coeffs, gen, gradient, diffY);
         
-            //System.out.println("==>vars=" + Arrays.toString(coeffs));
+            System.out.println("==>vars=" + Arrays.toString(coeffs));
             //System.out.print("==>diff="); printFormattedArray(outputDiffY);
-            //System.out.println("==>sumDiff=" + diffSum);
-            //System.out.print("==>gradient="); printFormattedArray(gradient);
+            System.out.println("==>sumDiff=" + diffSum);
+            System.out.print("==>gradient="); printFormattedArray(gradient);
             
             return gradient;
         }
@@ -205,7 +207,9 @@ public class Helper {
         License: Boost Software License   See LICENSE.txt for the full license.
         */
         private double[] derivative(double[] coeffs) {
-                    
+        
+            System.out.println("a1  x.size=" + coeffs.length);
+            
             int n = coeffs.length;
             
             double[] der = new double[n];

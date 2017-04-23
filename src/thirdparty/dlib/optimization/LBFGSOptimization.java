@@ -94,7 +94,29 @@ public class LBFGSOptimization {
             fValue = f.f(x);
             g = f.der(x);
 
+            System.out.print("count=" + count + " X=:\n  ");
+            for (int ii = 0; ii < x.length; ++ii) {
+                System.out.print(x[ii] + ", ");
+            }
+            System.out.println(" ");
+            System.out.print(" s=:\n  ");
+            for (int ii = 0; ii < s.length; ++ii) {
+                System.out.print(s[ii] + ", ");
+            }
+            System.out.println(" ");
+            System.out.println(" alpha=" + alpha);
+            System.out.print(" x=:\n  ");
+            for (int ii = 0; ii < x.length; ++ii) {
+                System.out.print(x[ii] + ", ");
+            }
+            System.out.println(" ");
+            System.out.print(" g=:\n  ");
+            for (int ii = 0; ii < g.length; ++ii) {
+                System.out.print(g[ii] + ", ");
+            }
+            System.out.println(" ");
             count++;
+
             
             if (!Double.isFinite(fValue)) {
                 throw new IllegalStateException(
@@ -159,6 +181,8 @@ public class LBFGSOptimization {
         if (mu < 0)
             alpha = -alpha;
         alpha = putInRange(0, 0.65*mu, alpha);
+
+        System.out.println("L0 alpha=" + alpha);
         
         double last_alpha = 0;
         double last_val = f0;
@@ -185,6 +209,7 @@ public class LBFGSOptimization {
             // we are done with the line search since we found a value smaller
             // than the minimum f value
             if (val <= minF) {
+                System.out.println("L1 alpha=" + alpha);
                 return alpha;
             }
 
@@ -197,16 +222,20 @@ public class LBFGSOptimization {
 
                 a = last_alpha;
                 b = alpha;
-                                
+                
+                System.out.println("L2 alpha=" + alpha);
+                
                 break;
             }
 
             if (Math.abs(val_der) <= thresh) {
+                System.out.println("L3 alpha=" + alpha);
                 return alpha;
             }
 
             // if we are stuck not making progress then quit with the current alpha
             if (last_alpha == alpha || itr >= maxIter) {
+                System.out.println("L4 alpha=" + alpha);
                 return alpha;
             }
 
@@ -218,7 +247,9 @@ public class LBFGSOptimization {
 
                 a = alpha;
                 b = last_alpha;
-                                
+                
+                System.out.println("L5 alpha=" + alpha);
+                
                 break;
             }
 
@@ -232,11 +263,13 @@ public class LBFGSOptimization {
                 first = Math.min(mu, alpha + tau1a*(alpha - last_alpha));
                 last  = Math.min(mu, alpha + tau1b*(alpha - last_alpha));
             
+                System.out.println("L6 alpha=" + alpha);
             } else {
                 
                 first = Math.max(mu, alpha + tau1a*(alpha - last_alpha));
                 last  = Math.max(mu, alpha + tau1b*(alpha - last_alpha));
             
+                System.out.println("L7 alpha=" + alpha);
             }
             
 
@@ -246,11 +279,15 @@ public class LBFGSOptimization {
                 alpha = last_alpha + (alpha-last_alpha)
                     * poly_min_extrap(last_val, last_val_der, 
                     val, val_der, 1e10);
-                            
+            
+                System.out.println("L8 alpha=" + alpha);
+                
             } else {
                 alpha = alpha + (last_alpha-alpha)
                     *poly_min_extrap(val, val_der, 
-                    last_val, last_val_der, 1e10);                
+                    last_val, last_val_der, 1e10);
+                
+                System.out.println("L9 alpha=" + alpha);
             }
             
             alpha = putInRange(first, last, alpha);
@@ -258,8 +295,12 @@ public class LBFGSOptimization {
             last_alpha = temp;
 
             last_val = val;
-            last_val_der = val_der;            
+            last_val_der = val_der;
+            
+            System.out.println("L10 alpha=" + alpha);
         }
+
+        System.out.println("L1 alpha=" + alpha);
 
         // Now do the sectioning phase from 2.6.4
         while (true) {
@@ -279,11 +320,13 @@ public class LBFGSOptimization {
             // we are done with the line search since we found a value smaller
             // than the minimum f value or we ran out of iterations.
             if (val <= minF || itr >= maxIter) {
+                System.out.println("L11 alpha=" + alpha);
                 return alpha;
             }
 
             // stop if the interval gets so small that it isn't shrinking any more due to rounding error 
             if (a == first || b == last) {
+                System.out.println("L12 alpha=" + alpha);
                 return b;
             }
 
@@ -293,6 +336,7 @@ public class LBFGSOptimization {
             // alpha.
             final double max_possible_alpha = Math.max(Math.abs(a), Math.abs(b));
             if (Math.abs(max_possible_alpha*d0) <= Math.abs(f0) * 2.2e-16) {
+                System.out.println("L13 alpha=" + alpha);
                 return alpha;
             }
 
@@ -301,8 +345,10 @@ public class LBFGSOptimization {
                 b = alpha;
                 b_val = val;
                 b_val_der = val_der;
+                System.out.println("L14 alpha=" + alpha);
             } else {
                 if (Math.abs(val_der) <= thresh) {
+                    System.out.println("L15 alpha=" + alpha);
                     return alpha;
                 }
 
@@ -310,13 +356,19 @@ public class LBFGSOptimization {
                     
                     b = a;
                     b_val = a_val;
-                    b_val_der = a_val_der;                    
+                    b_val_der = a_val_der;
+                    
+                    System.out.println("L16 alpha=" + alpha);
                 }
 
                 a = alpha;
                 a_val = val;
-                a_val_der = val_der;                
+                a_val_der = val_der;
+                
+                System.out.println("L17 alpha=" + alpha);
             }
+
+            System.out.println("L18 alpha=" + alpha);            
         }
     }
     
