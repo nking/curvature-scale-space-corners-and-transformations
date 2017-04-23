@@ -57,11 +57,9 @@ public class LBFGSSearchStrategy {
 
     public long get_max_line_search_iterations() { return 100; }
 
-    //template <typename T> matrix<double,0,1>& 
     double[] get_next_direction (
         double[] x, double fValue, 
         double[] funct_derivative) {
-        
 
         prev_direction = Arrays.copyOf(funct_derivative, funct_derivative.length);
         MatrixUtil.multiply(prev_direction, -1.);
@@ -85,20 +83,23 @@ public class LBFGSSearchStrategy {
             dh_temp.y = MatrixUtil.subtract(funct_derivative, prev_derivative);
 
             double temp = MatrixUtil.multiplyByTranspose(dh_temp.s, dh_temp.y);
+        
             // only accept this bit of data if temp isn't zero
             if (Math.abs(temp) > 1.e-7) {
         
-                dh_temp.rho = 1/temp;
+                dh_temp.rho = 1./temp;
+                
+                dh_temp = dh_temp.copy();
                 data.add(data.size(), dh_temp);
                 
             } else {
                     
-                data.clear();
+                data.clear();    
             }
 
             if (data.size() > 0) {
                 // This block of code is from algorithm 7.4 in the Nocedal book.
-        
+                            
                 // makes total size(n) and erases all items after it
                 alpha = resize(alpha, data.size());
                
@@ -114,12 +115,10 @@ public class LBFGSSearchStrategy {
                     MatrixUtil.multiply(t, alpha[i]);
                                         
                     for (int j = 0; j < prev_direction.length; ++j) {
-                    
-                        prev_direction[j] = 
-                            prev_direction[j] - t[j];
+                        prev_direction[j] -= t[j];
                     }
                 }
-
+                
                 // Take a guess at what the first H matrix should be.  
                 // This formula below is what is suggested
                 // in the book Numerical Optimization by Nocedal and 
@@ -135,7 +134,6 @@ public class LBFGSSearchStrategy {
 
                 MatrixUtil.multiply(prev_direction, H_0);
 
-                    
                 for (int i = 0; i < data.size(); ++i) {
                     
                     double beta = 
@@ -143,13 +141,13 @@ public class LBFGSSearchStrategy {
                         MatrixUtil.multiplyByTranspose(
                         data.get(i).y, prev_direction);
                     
-                    double[] t = Arrays.copyOf(data.get(i).s, data.get(i).s.length);
+                    //prev_direction += data[i].s * (alpha[i] - beta);
                     
+                    double[] t = Arrays.copyOf(data.get(i).s, data.get(i).s.length);
                     MatrixUtil.multiply(t, alpha[i] - beta);
                 
                     for (int j = 0; j < prev_direction.length; ++j) {
-                        prev_direction[j] = 
-                            prev_direction[j] + t[j];
+                        prev_direction[j] += t[j];
                     }
                 }
             }
@@ -161,16 +159,17 @@ public class LBFGSSearchStrategy {
             // defined in sequence/sequence_kernel_c.h
             remove(data, 0, dh_temp);
             
+            
         }
 
         // NLK:change to copy instead of just assignment
         prev_x = Arrays.copyOf(x, x.length);
         prev_derivative = Arrays.copyOf(funct_derivative, funct_derivative.length);
-      
+        
         if (prev_direction == null) {
             prev_direction = new double[x.length];
         }
-        
+                
         return prev_direction;
     }
 
@@ -224,20 +223,11 @@ public class LBFGSSearchStrategy {
         double[] s = null;
         double[] y = null;
         double rho = Double.NEGATIVE_INFINITY;
-        
-        /*
-        public DataHelper multiply(double f) {
-            DataHelper tmp = copy();
-            MatrixUtil.multiply(tmp.s, f);
-            MatrixUtil.multiply(tmp.y, f);
-            tmp.rho *= f;
-            return tmp;
-        }*/
-        
+       
         public DataHelper copy() {
             DataHelper tmp = new DataHelper();
             tmp.s = Arrays.copyOf(s, s.length);
-            tmp.s = Arrays.copyOf(y, y.length);
+            tmp.y = Arrays.copyOf(y, y.length);
             tmp.rho = rho;
             return tmp;
         }
@@ -264,10 +254,9 @@ public class LBFGSSearchStrategy {
     private void remove (LinkedList<DataHelper> data,
         int pos, DataHelper item) {
         
-        DataHelper cNode = data.get(pos);
-        
-        DataHelper tmp = cNode;
-        data.set(pos, item);
+        data.remove(item);
+        data.removeFirst();
+        data.addFirst(item);
         
         //NOTE, using svm requires additional logic here
     }

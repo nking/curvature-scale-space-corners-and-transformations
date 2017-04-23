@@ -41,15 +41,6 @@ public class ObjectiveDeltaStopStrategy {
 
         ++curIter;
         
-        if (true) {
-            System.out.println("curIter=" + curIter + " maxIter=" + maxIter +
-                " fValue=" + fValue 
-                + " prevFunctValue=" + prevFunctValue +
-                " minDelta=" + minDelta + 
-                " fV-pfV=" + (fValue - prevFunctValue) +
-                " stop=" + (Math.abs(fValue - prevFunctValue) < minDelta));
-        }
-        
         if (beenUsed) {
             // Check if we have hit the max allowable number of iterations.  (but only
             // check if _max_iter is enabled (i.e. not 0)).
