@@ -85,7 +85,6 @@ public class LBFGSOptimization {
             
             // Take the search step indicated by the above line search
             //x += alpha*s;
-            x = Arrays.copyOf(x, x.length);
             for (int i = 0; i < s.length; ++i) {
                 x[i] += (alpha * s[i]);
             }

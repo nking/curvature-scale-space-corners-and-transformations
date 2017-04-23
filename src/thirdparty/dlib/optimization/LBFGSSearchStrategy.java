@@ -1,7 +1,6 @@
 package thirdparty.dlib.optimization;
 
 import algorithms.imageProcessing.util.MatrixUtil;
-import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -30,7 +29,7 @@ public class LBFGSSearchStrategy {
     
     //sequence<data_helper>::kernel_2a data;
     //  this could be replaced with equiv of dlib kernel_2a
-    private LinkedList<DataHelper> data = new LinkedList<DataHelper>();
+    private final LinkedList<DataHelper> data;
     
     /*
     private sequence<data_helper>::kernel_2a data;
@@ -49,6 +48,9 @@ public class LBFGSSearchStrategy {
             throw new IllegalArgumentException("maxSize has to be > 0");
         }
         this.maxSize = maxSize;    
+        
+        //NOTE: if change to an extended LinkedHashSet, can set the capacity to maxSize
+        data = new LinkedList<DataHelper>();
     }
     
     public double get_wolfe_rho() { return 0.01; }
@@ -224,6 +226,12 @@ public class LBFGSSearchStrategy {
             // remove the oldest element in the data sequence
             // defined in sequence/sequence_kernel_c.h
             remove(data, 0, dh_temp);
+            
+            //NOTE: remove is not invoked often so have decided to keep linkedlist.  
+            // TODO: in future, extend LinkedHashSet and add an instance 
+            //       variable in it to keep track of the last item
+            //       in the list.  then change the data type of data to
+            //       the extended LinkedHashSet.
             
             System.out.println("oss 10");
         }
