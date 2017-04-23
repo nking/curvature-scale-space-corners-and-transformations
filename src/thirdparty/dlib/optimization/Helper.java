@@ -33,27 +33,25 @@ public class Helper {
        
             double sumDiff = calcGradient(coeffs, gen, gradient, diffY);
             
-            System.out.println("poly coeffs=" + Arrays.toString(coeffs));
-            System.out.println("  diff=" + sumDiff);
+            //System.out.println("poly coeffs=" + Arrays.toString(coeffs));
+            //System.out.println("  diff=" + sumDiff);
 
             return sumDiff;
         }
 
         @Override
         public double[] der(double[] coeffs) {
-            
-            System.out.println("a0 der");
-            
+                        
             double[] gen = new double[xp.length];
             double[] gradient = new double[coeffs.length];
             double[] diffY = new double[xp.length];
        
             double diffSum = calcGradient(coeffs, gen, gradient, diffY);
         
-            System.out.println("==>vars=" + Arrays.toString(coeffs));
+            //System.out.println("==>vars=" + Arrays.toString(coeffs));
             //System.out.print("==>diff="); printFormattedArray(outputDiffY);
-            System.out.println("==>sumDiff=" + diffSum);
-            System.out.print("==>gradient="); printFormattedArray(gradient);
+            //System.out.println("==>sumDiff=" + diffSum);
+            //System.out.print("==>gradient="); printFormattedArray(gradient);
             
             return gradient;
         }
@@ -78,16 +76,9 @@ public class Helper {
             for (int i = 0; i < 11; ++i) {
                 double x2 = 1;
                 double dyAtX = outputDiffY[i];
-                double dydx = dPolydXHL(coeffs, xp[i]);
                 for (int j = 2; j > -1; j--) {
                     int varIdx = 3 - j - 1;
 
-                    //dc/dx = dy/dx * dc/dy
-                    //dc = dx * dy/dx * dc/dy
-                    double dx = dyAtX * (xp[i]/gen[i]);
-                    //outputCoeffGrad[varIdx] += ( dx * dydx / x2);
-
-                    //NOTE: a faster objective is:
                     outputCoeffGrad[varIdx] += (dyAtX/x2);
                     
                     x2 *= xp[i];
