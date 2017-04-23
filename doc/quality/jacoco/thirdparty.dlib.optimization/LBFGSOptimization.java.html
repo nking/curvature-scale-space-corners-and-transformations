@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LBFGSOptimization.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.dlib.optimization</a> &gt; <span class="el_source">LBFGSOptimization.java</span></div><h1>LBFGSOptimization.java</h1><pre class="source lang-java linenums">package thirdparty.dlib.optimization;
+
+import algorithms.imageProcessing.util.MatrixUtil;
+import java.util.Arrays;
+
+/**
+ * NOT READY FOR USE YET
+ * 
+ * a port to java of dlib optimization method find_min.
+ * The only search strategy ported is LBFGS, so the 
+ * search strategy argument is specific, but could be 
+ * generalized if more than one is implemented,
+ * and then find_min abstracted...
+ * 
+ * the dlib project has copyright:
+ * Copyright (C) 2008  Davis E. King (davis@dlib.net)
+   License: Boost Software License   See LICENSE.txt for the full license.
+ * @author nichole
+ */
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">public class LBFGSOptimization {</span>
+  
+    // f is a function, that when given the coefficients,
+    //   returns the generated function
+    
+    // df is a function, that when given the coefficients and any
+    //   other arguments, returns the coefficient gradient
+    
+    public static interface IFunction {
+        
+        // evaluates the objective at this set of coefficients.
+        // e.g. could return chiSq
+        double f (double[] coeffs);
+        
+        // estimates the coeficient gradient by comparing the
+        //   data with the model
+        double[] der(double[] coeffs);
+    }
+      
+    /*
+    val=find_min(lbfgs_search_strategy(5),
+                 objective_delta_stop_strategy(eps),
+                 poly, derivative(poly,1e-5), x, minf);
+    */
+    public double findMin(LBFGSSearchStrategy searchStrategy,
+        ObjectiveDeltaStopStrategy stopStrategy, 
+        IFunction f,
+        double[] x /* e.g. coeffs if a polynomial*/,
+        double minF) {
+      
+<span class="fc" id="L50">        double[] s = new double[x.length];</span>
+        
+<span class="fc" id="L52">        double fValue = f.f(x);</span>
+<span class="fc" id="L53">        double[] g = f.der(x);</span>
+
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (!Double.isFinite(fValue)) {</span>
+<span class="nc" id="L56">            throw new IllegalStateException(</span>
+                &quot;The objective function generated non-finite outputs&quot;);
+        }
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (double gv : g) {</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">            if (!Double.isFinite(gv)) {</span>
+<span class="nc" id="L61">                throw new IllegalStateException(</span>
+                    &quot;The objective function generated non-finite outputs&quot;);
+            }
+        }
+        
+<span class="pc bpc" id="L66" title="1 of 4 branches missed.">        while (stopStrategy.shouldContinueSearch(x, fValue, g) &amp;&amp;</span>
+            fValue &gt; minF) {
+        
+<span class="fc" id="L69">            s = searchStrategy.get_next_direction(x, fValue, g);</span>
+        
+<span class="fc" id="L71">            LineSearchFunction fls = new LineSearchFunction(</span>
+                f, x, s, fValue);
+            
+<span class="fc" id="L74">            LineSearchFunction flsDer = new LineSearchFunction(</span>
+                f, x, s, g);
+            
+<span class="fc" id="L77">            double alpha = line_search(</span>
+                fls, fValue, flsDer,
+<span class="fc" id="L79">                MatrixUtil.multiplyByTranspose(g, s), // &lt;== gradient * delX</span>
+<span class="fc" id="L80">                searchStrategy.get_wolfe_rho(), </span>
+<span class="fc" id="L81">                searchStrategy.get_wolfe_sigma(), </span>
+                minF, 100);
+
+            // Take the search step indicated by the above line search
+            //x += alpha*s;
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            for (int i = 0; i &lt; s.length; ++i) {</span>
+<span class="fc" id="L87">                x[i] += (alpha * s[i]);</span>
+            }
+            
+            //NLK: adding this for stop criteria
+<span class="fc" id="L91">            fValue = f.f(x);</span>
+<span class="fc" id="L92">            g = f.der(x);</span>
+
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">            if (!Double.isFinite(fValue)) {</span>
+<span class="nc" id="L95">                throw new IllegalStateException(</span>
+                    &quot;The objective function generated non-finite outputs&quot;);
+            }
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            for (double gv : g) {</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">                if (!Double.isFinite(gv)) {</span>
+<span class="nc" id="L100">                    throw new IllegalStateException(</span>
+                        &quot;The objective function generated non-finite outputs&quot;);
+                }
+            }
+<span class="fc" id="L104">        }</span>
+
+<span class="fc" id="L106">        return fValue;</span>
+    }
+    
+    //from optimization_line_search.h
+    private double line_search(
+        LineSearchFunction f,
+        double f0, LineSearchFunction der,
+        double d0, double rho, double sigma, 
+        double minF, int maxIter) {
+        
+<span class="pc bpc" id="L116" title="9 of 10 branches missed.">        assert(0 &lt; rho &amp;&amp; rho &lt; sigma &amp;&amp; sigma &lt; 1 &amp;&amp; maxIter &gt; 0);</span>
+        /*
+            &quot;\tdouble line_search()&quot; +
+             &quot;\n\tYou have given invalid arguments to this function&quot;
+            + &quot;\n\t sigma:    &quot; + sigma
+            + &quot;\n\t rho:      &quot; + rho 
+            + &quot;\n\t max_iter: &quot; + max_iter 
+        */
+
+        // The bracketing phase of this function is implemented according to block 2.6.2 from
+        // the book Practical Methods of Optimization by R. Fletcher.   The sectioning 
+        // phase is an implementation of 2.6.4 from the same book.
+
+        // 1 &lt;= tau1a &lt; tau1b. Controls the alpha jump size during the 
+        // bracketing phase of
+        // the search.
+<span class="fc" id="L132">        final double tau1a = 1.4;</span>
+<span class="fc" id="L133">        final double tau1b = 9;</span>
+
+        // it must be the case that 0 &lt; tau2 &lt; tau3 &lt;= 1/2 for the algorithm 
+        // to function correctly but the specific values of tau2 and tau3 
+        // aren't super important.
+<span class="fc" id="L138">        final double tau2 = 1.0/10.0;</span>
+<span class="fc" id="L139">        final double tau3 = 1.0/2.0;</span>
+
+        // Stop right away and return a step size of 0 if the gradient is 0 at the starting point
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (Math.abs(d0) &lt;= Math.abs(f0) * 2.22e-16)</span>
+<span class="nc" id="L143">            return 0;</span>
+
+        // Stop right away if the current value is good enough according to min_f
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (f0 &lt;= minF)</span>
+<span class="nc" id="L147">            return 0;</span>
+
+        // Figure out a reasonable upper bound on how large alpha can get.
+<span class="fc" id="L150">        final double mu = (minF - f0)/(rho * d0);</span>
+
+
+<span class="fc" id="L153">        double alpha = 1;</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (mu &lt; 0)</span>
+<span class="nc" id="L155">            alpha = -alpha;</span>
+<span class="fc" id="L156">        alpha = putInRange(0, 0.65*mu, alpha);</span>
+
+<span class="fc" id="L158">        double last_alpha = 0;</span>
+<span class="fc" id="L159">        double last_val = f0;</span>
+<span class="fc" id="L160">        double last_val_der = d0;</span>
+
+        // The bracketing stage will find a range of points [a,b]
+        // that contains a reasonable solution to the line search
+        double a, b;
+
+        // These variables will hold the values and derivatives of f(a) and f(b)
+        double a_val, b_val, a_val_der, b_val_der;
+
+        // This thresh value represents the Wolfe curvature condition
+<span class="fc" id="L170">        final double thresh = Math.abs(sigma*d0);</span>
+
+<span class="fc" id="L172">        int itr = 0;</span>
+        // do the bracketing stage to find the bracket range [a,b]
+        while (true) {
+                        
+<span class="fc" id="L176">            ++itr;</span>
+<span class="fc" id="L177">            final double val = f.operator(alpha, false);</span>
+<span class="fc" id="L178">            final double val_der = der.operator(alpha, true);</span>
+            
+            // we are done with the line search since we found a value smaller
+            // than the minimum f value
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            if (val &lt;= minF) {</span>
+<span class="nc" id="L183">                return alpha;</span>
+            }
+
+<span class="pc bpc" id="L186" title="1 of 4 branches missed.">            if (val &gt; f0 + rho*alpha*d0 || val &gt;= last_val) {</span>
+            
+<span class="fc" id="L188">                a_val = last_val;</span>
+<span class="fc" id="L189">                a_val_der = last_val_der;</span>
+<span class="fc" id="L190">                b_val = val;</span>
+<span class="fc" id="L191">                b_val_der = val_der;</span>
+
+<span class="fc" id="L193">                a = last_alpha;</span>
+<span class="fc" id="L194">                b = alpha;</span>
+<span class="fc" id="L195">                break;</span>
+            }
+
+<span class="fc bfc" id="L198" title="All 2 branches covered.">            if (Math.abs(val_der) &lt;= thresh) {</span>
+<span class="fc" id="L199">                return alpha;</span>
+            }
+
+            // if we are stuck not making progress then quit with the current alpha
+<span class="pc bpc" id="L203" title="2 of 4 branches missed.">            if (last_alpha == alpha || itr &gt;= maxIter) {</span>
+<span class="nc" id="L204">                return alpha;</span>
+            }
+
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            if (val_der &gt;= 0) {</span>
+<span class="fc" id="L208">                a_val = val;</span>
+<span class="fc" id="L209">                a_val_der = val_der;</span>
+<span class="fc" id="L210">                b_val = last_val;</span>
+<span class="fc" id="L211">                b_val_der = last_val_der;</span>
+
+<span class="fc" id="L213">                a = alpha;</span>
+<span class="fc" id="L214">                b = last_alpha;</span>
+<span class="fc" id="L215">                break;</span>
+            }
+
+
+
+<span class="fc" id="L220">            final double temp = alpha;</span>
+            // Pick a larger range [first, last].  We will pick the next alpha in that
+            // range.
+            double first, last;
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">            if (mu &gt; 0) {</span>
+<span class="fc" id="L225">                first = Math.min(mu, alpha + tau1a*(alpha - last_alpha));</span>
+<span class="fc" id="L226">                last  = Math.min(mu, alpha + tau1b*(alpha - last_alpha));</span>
+            
+            } else {
+                
+<span class="nc" id="L230">                first = Math.max(mu, alpha + tau1a*(alpha - last_alpha));</span>
+<span class="nc" id="L231">                last  = Math.max(mu, alpha + tau1b*(alpha - last_alpha));</span>
+            }
+            
+
+
+            // pick a point between first and last by doing some kind of interpolation
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">            if (last_alpha &lt; alpha) {</span>
+<span class="fc" id="L238">                alpha = last_alpha + (alpha-last_alpha)</span>
+<span class="fc" id="L239">                    * poly_min_extrap(last_val, last_val_der, </span>
+                    val, val_der, 1e10);
+            } else {
+<span class="nc" id="L242">                alpha = alpha + (last_alpha-alpha)</span>
+<span class="nc" id="L243">                    *poly_min_extrap(val, val_der, </span>
+                    last_val, last_val_der, 1e10);
+            }
+            
+<span class="fc" id="L247">            alpha = putInRange(first, last, alpha);</span>
+
+<span class="fc" id="L249">            last_alpha = temp;</span>
+
+<span class="fc" id="L251">            last_val = val;</span>
+<span class="fc" id="L252">            last_val_der = val_der;</span>
+            
+<span class="fc" id="L254">        }</span>
+
+
+        // Now do the sectioning phase from 2.6.4
+        while (true) {
+            
+<span class="fc" id="L260">            ++itr;</span>
+<span class="fc" id="L261">            double first = a + tau2*(b-a);</span>
+<span class="fc" id="L262">            double last = b - tau3*(b-a);</span>
+
+            // use interpolation to pick alpha between first and last
+<span class="fc" id="L265">            alpha = a + (b-a)</span>
+<span class="fc" id="L266">                *poly_min_extrap(a_val, a_val_der, b_val, b_val_der);</span>
+<span class="fc" id="L267">            alpha = putInRange(first,last,alpha);</span>
+            
+<span class="fc" id="L269">            final double val = f.operator(alpha, false);</span>
+<span class="fc" id="L270">            final double val_der = der.operator(alpha, true);</span>
+
+            // we are done with the line search since we found a value smaller
+            // than the minimum f value or we ran out of iterations.
+<span class="pc bpc" id="L274" title="1 of 4 branches missed.">            if (val &lt;= minF || itr &gt;= maxIter) {</span>
+<span class="fc" id="L275">                return alpha;</span>
+            }
+
+            // stop if the interval gets so small that it isn't shrinking any more due to rounding error 
+<span class="pc bpc" id="L279" title="2 of 4 branches missed.">            if (a == first || b == last) {</span>
+<span class="nc" id="L280">                return b;</span>
+            }
+
+            // If alpha has basically become zero then just stop.  Think of it like this,
+            // if we take the largest possible alpha step will the objective function
+            // change at all?  If not then there isn't any point looking for a better
+            // alpha.
+<span class="fc" id="L287">            final double max_possible_alpha = Math.max(Math.abs(a), Math.abs(b));</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">            if (Math.abs(max_possible_alpha*d0) &lt;= Math.abs(f0) * 2.2e-16) {</span>
+<span class="nc" id="L289">                return alpha;</span>
+            }
+
+
+<span class="pc bpc" id="L293" title="1 of 4 branches missed.">            if (val &gt; f0 + rho*alpha*d0 || val &gt;= a_val) {</span>
+<span class="fc" id="L294">                b = alpha;</span>
+<span class="fc" id="L295">                b_val = val;</span>
+<span class="fc" id="L296">                b_val_der = val_der;</span>
+            } else {
+<span class="fc bfc" id="L298" title="All 2 branches covered.">                if (Math.abs(val_der) &lt;= thresh) {</span>
+<span class="fc" id="L299">                    return alpha;</span>
+                }
+
+<span class="fc bfc" id="L302" title="All 2 branches covered.">                if ( (b-a)*val_der &gt;= 0) {</span>
+                    
+<span class="fc" id="L304">                    b = a;</span>
+<span class="fc" id="L305">                    b_val = a_val;</span>
+<span class="fc" id="L306">                    b_val_der = a_val_der;</span>
+                }
+
+<span class="fc" id="L309">                a = alpha;</span>
+<span class="fc" id="L310">                a_val = val;</span>
+<span class="fc" id="L311">                a_val_der = val_der;</span>
+                
+            }
+            
+<span class="fc" id="L315">        }</span>
+    }
+    
+    public static class LineSearchFunction {
+                
+        private double scalarR = 0;
+        private double[] start;
+        private double[] direction;
+        private IFunction funct;
+        private double[] matrixR = null;
+        
+        public IFunction getFunction() {
+            return funct;
+        }
+        
+        public LineSearchFunction(
+            IFunction f, double[] start_, double[] direction_) { 
+            this.funct = f;
+            this.start = start_;
+            this.direction = direction_;
+        }
+
+        public LineSearchFunction(
+            IFunction f, double[] start_, double[] direction_, double[] r) { 
+            this.funct = f;
+            this.start = start_;
+            this.direction = direction_;
+            this.matrixR = r;
+        }
+        
+        //make_line_search_function(f, x, s, fValue),
+        public LineSearchFunction(
+            IFunction f, double[] start_, double[] direction_, double fValue) { 
+            this.funct = f;
+            this.start = start_;
+            this.direction = direction_;
+            this.scalarR = fValue;
+        }
+        
+        public double operator(double x, boolean isGradient) {
+            
+            //return get_value(f(start + x*direction));
+            
+            double[] v0 = Arrays.copyOf(direction, direction.length);
+            MatrixUtil.multiply(v0, x);
+            
+            for (int i = 0; i &lt; start.length; ++i) {
+                v0[i] += start[i];
+            }
+            
+            
+            if (isGradient) {
+                double[] gValue = funct.der(v0);
+                return get_value(gValue);
+            } else {
+                double fValue = funct.f(v0);
+                return get_value(fValue);
+            }            
+        }
+        
+        public double get_value(double[] x) {
+            
+            if (matrixR != null) {
+                matrixR = x;
+            }
+            
+            double result = MatrixUtil.multiplyByTranspose(x, direction);
+            
+            return result;
+        }
+        
+        private double get_value(double r) {
+            // save a copy of this value for later
+            if (scalarR &gt; 0) {
+                scalarR = r;
+            }
+
+            return r;
+        }
+    }
+   
+    private double putInRange(double a, double b, double val) {
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        if (a &lt; b) {</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">            if (val &lt; a) {</span>
+<span class="fc" id="L399">                return a;</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            } else if (val &gt; b) {</span>
+<span class="fc" id="L401">                return b;</span>
+            }
+        } else {
+<span class="fc bfc" id="L404" title="All 2 branches covered.">            if (val &lt; b) {</span>
+<span class="fc" id="L405">                return b;</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">            } else if (val &gt; a) {</span>
+<span class="fc" id="L407">                return a;</span>
+            }
+        }
+<span class="fc" id="L410">        return val;</span>
+    }
+
+    private double poly_min_extrap (
+        double f0, double d0,
+        double f1, double d1) {
+<span class="fc" id="L416">        return poly_min_extrap(f0, d0, f1, d1, 1.);</span>
+    }
+    
+    private double poly_min_extrap (
+        double f0, double d0,
+        double f1, double d1, double limit) {
+                
+<span class="fc" id="L423">        final double n = 3*(f1 - f0) - 2*d0 - d1;</span>
+<span class="fc" id="L424">        final double e = d0 + d1 - 2*(f1 - f0);</span>
+
+
+        // find the minimum of the derivative of the polynomial
+
+<span class="fc" id="L429">        double temp = Math.max(n*n - 3*e*d0,0.0);</span>
+
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">        if (temp &lt; 0)</span>
+<span class="nc" id="L432">            return 0.5;</span>
+
+<span class="fc" id="L434">        temp = Math.sqrt(temp);</span>
+
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (Math.abs(e) &lt;= 2.2e-16)</span>
+<span class="nc" id="L437">            return 0.5;</span>
+
+        // figure out the two possible min values
+<span class="fc" id="L440">        double x1 = (temp - n)/(3*e);</span>
+<span class="fc" id="L441">        double x2 = -(temp + n)/(3*e);</span>
+
+        // compute the value of the interpolating polynomial at these two points
+<span class="fc" id="L444">        double y1 = f0 + d0*x1 + n*x1*x1 + e*x1*x1*x1;</span>
+<span class="fc" id="L445">        double y2 = f0 + d0*x2 + n*x2*x2 + e*x2*x2*x2;</span>
+
+        // pick the best point
+        double x;
+<span class="fc bfc" id="L449" title="All 2 branches covered.">        if (y1 &lt; y2)</span>
+<span class="fc" id="L450">            x = x1;</span>
+        else
+<span class="fc" id="L452">            x = x2;</span>
+
+        // now make sure the minimum is within the allowed range of [0,limit] 
+<span class="fc" id="L455">        return putInRange(0,limit,x);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
