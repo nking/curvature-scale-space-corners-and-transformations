@@ -79,8 +79,9 @@ public class Helper {
                 for (int j = 2; j > -1; j--) {
                     int varIdx = 3 - j - 1;
 
+                    //dy * (dc/dy)
                     outputCoeffGrad[varIdx] += (dyAtX/x2);
-                    
+                                        
                     x2 *= xp[i];
 
                     if (x2 == 0.0) {
