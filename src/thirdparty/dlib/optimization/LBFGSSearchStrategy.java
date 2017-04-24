@@ -1,7 +1,6 @@
 package thirdparty.dlib.optimization;
 
 import algorithms.imageProcessing.util.MatrixUtil;
-import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -30,7 +29,7 @@ public class LBFGSSearchStrategy {
     
     //sequence<data_helper>::kernel_2a data;
     //  this could be replaced with equiv of dlib kernel_2a
-    private LinkedList<DataHelper> data = new LinkedList<DataHelper>();
+    private final LinkedList<DataHelper> data;
     
     /*
     private sequence<data_helper>::kernel_2a data;
@@ -49,6 +48,9 @@ public class LBFGSSearchStrategy {
             throw new IllegalArgumentException("maxSize has to be > 0");
         }
         this.maxSize = maxSize;    
+        
+        //NOTE: if change to an extended LinkedHashSet, can set the capacity to maxSize
+        data = new LinkedList<DataHelper>();
     }
     
     public double get_wolfe_rho() { return 0.01; }
@@ -57,12 +59,10 @@ public class LBFGSSearchStrategy {
 
     public long get_max_line_search_iterations() { return 100; }
 
-    //template <typename T> matrix<double,0,1>& 
     double[] get_next_direction (
         double[] x, double fValue, 
         double[] funct_derivative) {
         
-
         prev_direction = Arrays.copyOf(funct_derivative, funct_derivative.length);
         MatrixUtil.multiply(prev_direction, -1.);
 
@@ -85,20 +85,22 @@ public class LBFGSSearchStrategy {
             dh_temp.y = MatrixUtil.subtract(funct_derivative, prev_derivative);
 
             double temp = MatrixUtil.multiplyByTranspose(dh_temp.s, dh_temp.y);
+        
             // only accept this bit of data if temp isn't zero
             if (Math.abs(temp) > 1.e-7) {
         
-                dh_temp.rho = 1/temp;
-                data.add(data.size(), dh_temp);
+                dh_temp.rho = 1./temp;
                 
+                dh_temp = dh_temp.copy();
+                data.add(data.size(), dh_temp);                
             } else {
                     
-                data.clear();
+                data.clear();                
             }
 
             if (data.size() > 0) {
                 // This block of code is from algorithm 7.4 in the Nocedal book.
-        
+                            
                 // makes total size(n) and erases all items after it
                 alpha = resize(alpha, data.size());
                
@@ -114,12 +116,10 @@ public class LBFGSSearchStrategy {
                     MatrixUtil.multiply(t, alpha[i]);
                                         
                     for (int j = 0; j < prev_direction.length; ++j) {
-                    
-                        prev_direction[j] = 
-                            prev_direction[j] - t[j];
+                        prev_direction[j] -= t[j];
                     }
                 }
-
+                
                 // Take a guess at what the first H matrix should be.  
                 // This formula below is what is suggested
                 // in the book Numerical Optimization by Nocedal and 
@@ -134,7 +134,6 @@ public class LBFGSSearchStrategy {
                 H_0 = putInRange(0.001, 1000.0, H_0);
 
                 MatrixUtil.multiply(prev_direction, H_0);
-
                     
                 for (int i = 0; i < data.size(); ++i) {
                     
@@ -143,15 +142,15 @@ public class LBFGSSearchStrategy {
                         MatrixUtil.multiplyByTranspose(
                         data.get(i).y, prev_direction);
                     
-                    double[] t = Arrays.copyOf(data.get(i).s, data.get(i).s.length);
+                    //prev_direction += data[i].s * (alpha[i] - beta);
                     
+                    double[] t = Arrays.copyOf(data.get(i).s, data.get(i).s.length);
                     MatrixUtil.multiply(t, alpha[i] - beta);
                 
                     for (int j = 0; j < prev_direction.length; ++j) {
-                        prev_direction[j] = 
-                            prev_direction[j] + t[j];
+                        prev_direction[j] += t[j];
                     }
-                }
+                }                
             }
         }
         
@@ -161,16 +160,21 @@ public class LBFGSSearchStrategy {
             // defined in sequence/sequence_kernel_c.h
             remove(data, 0, dh_temp);
             
+            //NOTE: remove is not invoked often so have decided to keep linkedlist.  
+            // TODO: in future, extend LinkedHashSet and add an instance 
+            //       variable in it to keep track of the last item
+            //       in the list.  then change the data type of data to
+            //       the extended LinkedHashSet.
+            
         }
 
-        // NLK:change to copy instead of just assignment
         prev_x = Arrays.copyOf(x, x.length);
         prev_derivative = Arrays.copyOf(funct_derivative, funct_derivative.length);
-      
+        
         if (prev_direction == null) {
             prev_direction = new double[x.length];
         }
-        
+                
         return prev_direction;
     }
 
@@ -237,7 +241,7 @@ public class LBFGSSearchStrategy {
         public DataHelper copy() {
             DataHelper tmp = new DataHelper();
             tmp.s = Arrays.copyOf(s, s.length);
-            tmp.s = Arrays.copyOf(y, y.length);
+            tmp.y = Arrays.copyOf(y, y.length);
             tmp.rho = rho;
             return tmp;
         }
@@ -264,10 +268,9 @@ public class LBFGSSearchStrategy {
     private void remove (LinkedList<DataHelper> data,
         int pos, DataHelper item) {
         
-        DataHelper cNode = data.get(pos);
-        
-        DataHelper tmp = cNode;
-        data.set(pos, item);
+        data.removeFirst();
+        data.addFirst(item);
+        data.removeLast();
         
         //NOTE, using svm requires additional logic here
     }

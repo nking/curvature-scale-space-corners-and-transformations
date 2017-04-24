@@ -149,6 +149,9 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
             writing the nar commands to use swig and cmake would have to
             include the platform specific details present in the
             MITIE README.md file, espec for windows.
+            this builds archive files so would be an offline step to
+            provide os specific dependencies (which can do if convert 
+            project to maven build system)
      cannot easily test on all platforms at this time, so will leave this
      as a todo target for the interesting details, but essentially no
      expected priority.

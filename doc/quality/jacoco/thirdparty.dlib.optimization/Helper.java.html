@@ -9,7 +9,6 @@ import thirdparty.dlib.optimization.LBFGSOptimization.IFunction;
  */
 <span class="nc" id="L10">public class Helper {</span>
    
-    // NOT READY FOR USE
     public static class FunctionPoly implements IFunction {
 
         final double[] xp;
@@ -26,36 +25,32 @@ import thirdparty.dlib.optimization.LBFGSOptimization.IFunction;
         
         @Override
         public double f(double[] coeffs) {
-    
-            System.out.println(&quot;aa0&quot;);
-            
+                
             double[] gen = new double[xp.length];
             double[] gradient = new double[coeffs.length];
             double[] diffY = new double[xp.length];
        
             double sumDiff = calcGradient(coeffs, gen, gradient, diffY);
             
-            System.out.println(&quot;poly coeffs=&quot; + Arrays.toString(coeffs));
-            System.out.println(&quot;  diff=&quot; + sumDiff);
+            //System.out.println(&quot;poly coeffs=&quot; + Arrays.toString(coeffs));
+            //System.out.println(&quot;  diff=&quot; + sumDiff);
 
             return sumDiff;
         }
 
         @Override
         public double[] der(double[] coeffs) {
-            
-            System.out.println(&quot;a0 der&quot;);
-            
+                        
             double[] gen = new double[xp.length];
             double[] gradient = new double[coeffs.length];
             double[] diffY = new double[xp.length];
        
             double diffSum = calcGradient(coeffs, gen, gradient, diffY);
         
-            System.out.println(&quot;==&gt;vars=&quot; + Arrays.toString(coeffs));
+            //System.out.println(&quot;==&gt;vars=&quot; + Arrays.toString(coeffs));
             //System.out.print(&quot;==&gt;diff=&quot;); printFormattedArray(outputDiffY);
-            System.out.println(&quot;==&gt;sumDiff=&quot; + diffSum);
-            System.out.print(&quot;==&gt;gradient=&quot;); printFormattedArray(gradient);
+            //System.out.println(&quot;==&gt;sumDiff=&quot; + diffSum);
+            //System.out.print(&quot;==&gt;gradient=&quot;); printFormattedArray(gradient);
             
             return gradient;
         }
@@ -80,18 +75,12 @@ import thirdparty.dlib.optimization.LBFGSOptimization.IFunction;
             for (int i = 0; i &lt; 11; ++i) {
                 double x2 = 1;
                 double dyAtX = outputDiffY[i];
-                double dydx = dPolydXHL(coeffs, xp[i]);
                 for (int j = 2; j &gt; -1; j--) {
                     int varIdx = 3 - j - 1;
 
-                    //dc/dx = dy/dx * dc/dy
-                    //dc = dx * dy/dx * dc/dy
-                    double dx = dyAtX * (xp[i]/gen[i]);
-                    //outputCoeffGrad[varIdx] += ( dx * dydx / x2);
-
-                    //NOTE: a faster objective is:
+                    //dy * (dc/dy)
                     outputCoeffGrad[varIdx] += (dyAtX/x2);
-                    
+                                        
                     x2 *= xp[i];
 
                     if (x2 == 0.0) {
@@ -166,12 +155,12 @@ import thirdparty.dlib.optimization.LBFGSOptimization.IFunction;
     }
 
     private static void printFormattedArray(double[] a) {
-<span class="nc" id="L169">        System.out.print(&quot;[&quot;);</span>
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (double m : a) {</span>
-<span class="nc" id="L171">            System.out.format(&quot;%.3f, &quot;, (float)m);</span>
+<span class="nc" id="L158">        System.out.print(&quot;[&quot;);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        for (double m : a) {</span>
+<span class="nc" id="L160">            System.out.format(&quot;%.3f, &quot;, (float)m);</span>
         }
-<span class="nc" id="L173">        System.out.println(&quot;]&quot;);</span>
-<span class="nc" id="L174">    }</span>
+<span class="nc" id="L162">        System.out.println(&quot;]&quot;);</span>
+<span class="nc" id="L163">    }</span>
     
     /**
      * adapted from dlib optimization.h Copyright (C) 2008 Davis E. King

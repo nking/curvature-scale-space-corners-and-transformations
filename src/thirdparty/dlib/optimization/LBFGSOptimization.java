@@ -4,8 +4,6 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import java.util.Arrays;
 
 /**
- * NOT READY FOR USE YET
- * 
  * a port to java of dlib optimization method find_min.
  * The only search strategy ported is LBFGS, so the 
  * search strategy argument is specific, but could be 
@@ -35,19 +33,14 @@ public class LBFGSOptimization {
         //   data with the model
         double[] der(double[] coeffs);
     }
-      
-    /*
-    val=find_min(lbfgs_search_strategy(5),
-                 objective_delta_stop_strategy(eps),
-                 poly, derivative(poly,1e-5), x, minf);
-    */
+  
     public double findMin(LBFGSSearchStrategy searchStrategy,
         ObjectiveDeltaStopStrategy stopStrategy, 
         IFunction f,
         double[] x /* e.g. coeffs if a polynomial*/,
         double minF) {
       
-        double[] s = new double[x.length];
+        double[] s;
         
         double fValue = f.f(x);
         double[] g = f.der(x);
@@ -63,11 +56,14 @@ public class LBFGSOptimization {
             }
         }
         
+        long count = 0;
+        
         while (stopStrategy.shouldContinueSearch(x, fValue, g) &&
             fValue > minF) {
         
             s = searchStrategy.get_next_direction(x, fValue, g);
-        
+            s = Arrays.copyOf(s, s.length);
+            
             LineSearchFunction fls = new LineSearchFunction(
                 f, x, s, fValue);
             
@@ -81,16 +77,19 @@ public class LBFGSOptimization {
                 searchStrategy.get_wolfe_sigma(), 
                 minF, 100);
 
+            
             // Take the search step indicated by the above line search
             //x += alpha*s;
             for (int i = 0; i < s.length; ++i) {
                 x[i] += (alpha * s[i]);
             }
-            
+             
             //NLK: adding this for stop criteria
             fValue = f.f(x);
             g = f.der(x);
-
+            
+            count++;
+            
             if (!Double.isFinite(fValue)) {
                 throw new IllegalStateException(
                     "The objective function generated non-finite outputs");
@@ -154,7 +153,7 @@ public class LBFGSOptimization {
         if (mu < 0)
             alpha = -alpha;
         alpha = putInRange(0, 0.65*mu, alpha);
-
+        
         double last_alpha = 0;
         double last_val = f0;
         double last_val_der = d0;
@@ -180,6 +179,7 @@ public class LBFGSOptimization {
             // we are done with the line search since we found a value smaller
             // than the minimum f value
             if (val <= minF) {
+                System.out.println("L1 alpha=" + alpha);
                 return alpha;
             }
 
@@ -192,6 +192,7 @@ public class LBFGSOptimization {
 
                 a = last_alpha;
                 b = alpha;
+                                
                 break;
             }
 
@@ -212,6 +213,7 @@ public class LBFGSOptimization {
 
                 a = alpha;
                 b = last_alpha;
+                                
                 break;
             }
 
@@ -229,19 +231,21 @@ public class LBFGSOptimization {
                 
                 first = Math.max(mu, alpha + tau1a*(alpha - last_alpha));
                 last  = Math.max(mu, alpha + tau1b*(alpha - last_alpha));
+            
             }
             
-
 
             // pick a point between first and last by doing some kind of interpolation
             if (last_alpha < alpha) {
                 alpha = last_alpha + (alpha-last_alpha)
                     * poly_min_extrap(last_val, last_val_der, 
                     val, val_der, 1e10);
+                            
             } else {
                 alpha = alpha + (last_alpha-alpha)
                     *poly_min_extrap(val, val_der, 
                     last_val, last_val_der, 1e10);
+                
             }
             
             alpha = putInRange(first, last, alpha);
@@ -252,7 +256,6 @@ public class LBFGSOptimization {
             last_val_der = val_der;
             
         }
-
 
         // Now do the sectioning phase from 2.6.4
         while (true) {
@@ -303,15 +306,13 @@ public class LBFGSOptimization {
                     
                     b = a;
                     b_val = a_val;
-                    b_val_der = a_val_der;
+                    b_val_der = a_val_der;                    
                 }
 
                 a = alpha;
                 a_val = val;
-                a_val_der = val_der;
-                
+                a_val_der = val_der;                
             }
-            
         }
     }
     
@@ -375,7 +376,8 @@ public class LBFGSOptimization {
         public double get_value(double[] x) {
             
             if (matrixR != null) {
-                matrixR = x;
+                //NOTE: not used
+                matrixR = Arrays.copyOf(x, x.length);
             }
             
             double result = MatrixUtil.multiplyByTranspose(x, direction);
