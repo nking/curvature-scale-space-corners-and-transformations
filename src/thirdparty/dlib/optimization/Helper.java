@@ -9,7 +9,6 @@ import thirdparty.dlib.optimization.LBFGSOptimization.IFunction;
  */
 public class Helper {
    
-    // NOT READY FOR USE
     public static class FunctionPoly implements IFunction {
 
         final double[] xp;
