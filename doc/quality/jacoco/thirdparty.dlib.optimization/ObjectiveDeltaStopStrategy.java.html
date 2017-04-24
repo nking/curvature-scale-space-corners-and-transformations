@@ -8,17 +8,17 @@
  */
 public class ObjectiveDeltaStopStrategy {
     
-<span class="pc" id="L11">    private double minDelta = 1.e-7;</span>
-<span class="pc" id="L12">    private boolean beenUsed = false;</span>
-<span class="pc" id="L13">    private int maxIter = 0;</span>
-<span class="pc" id="L14">    private double prevFunctValue = 0;</span>
-<span class="pc" id="L15">    private boolean verbose = false;</span>
+<span class="fc" id="L11">    private double minDelta = 1.e-7;</span>
+<span class="fc" id="L12">    private boolean beenUsed = false;</span>
+<span class="fc" id="L13">    private int maxIter = 0;</span>
+<span class="fc" id="L14">    private double prevFunctValue = 0;</span>
+<span class="fc" id="L15">    private boolean verbose = false;</span>
     
-<span class="pc" id="L17">    private int curIter = 0;</span>
+<span class="fc" id="L17">    private int curIter = 0;</span>
     
-<span class="nc" id="L19">    public ObjectiveDeltaStopStrategy(double eps) {</span>
-<span class="nc" id="L20">        this.minDelta = eps;</span>
-<span class="nc" id="L21">    }</span>
+<span class="fc" id="L19">    public ObjectiveDeltaStopStrategy(double eps) {</span>
+<span class="fc" id="L20">        this.minDelta = eps;</span>
+<span class="fc" id="L21">    }</span>
     
 <span class="fc" id="L23">    public ObjectiveDeltaStopStrategy(double eps, int maxIter) {</span>
 <span class="fc" id="L24">        this.minDelta = eps;</span>
@@ -41,31 +41,22 @@ public class ObjectiveDeltaStopStrategy {
 
 <span class="fc" id="L42">        ++curIter;</span>
         
-        if (true) {
-<span class="fc" id="L45">            System.out.println(&quot;curIter=&quot; + curIter + &quot; maxIter=&quot; + maxIter +</span>
-                &quot; fValue=&quot; + fValue 
-                + &quot; prevFunctValue=&quot; + prevFunctValue +
-                &quot; minDelta=&quot; + minDelta + 
-                &quot; fV-pfV=&quot; + (fValue - prevFunctValue) +
-<span class="fc bfc" id="L50" title="All 2 branches covered.">                &quot; stop=&quot; + (Math.abs(fValue - prevFunctValue) &lt; minDelta));</span>
-        }
-        
-<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (beenUsed) {</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (beenUsed) {</span>
             // Check if we have hit the max allowable number of iterations.  (but only
             // check if _max_iter is enabled (i.e. not 0)).
-<span class="pc bpc" id="L56" title="1 of 4 branches missed.">            if (maxIter != 0 &amp;&amp; curIter &gt; maxIter) {</span>
-<span class="fc" id="L57">                return false;</span>
+<span class="pc bpc" id="L47" title="1 of 4 branches missed.">            if (maxIter != 0 &amp;&amp; curIter &gt; maxIter) {</span>
+<span class="nc" id="L48">                return false;</span>
             }
 
             // check if the function change was too small
-<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (Math.abs(fValue - prevFunctValue) &lt; minDelta) {</span>
-<span class="fc" id="L62">                return false;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            if (Math.abs(fValue - prevFunctValue) &lt; minDelta) {</span>
+<span class="fc" id="L53">                return false;</span>
             }
         }
         
-<span class="fc" id="L66">        beenUsed = true;</span>
-<span class="fc" id="L67">        prevFunctValue = fValue;</span>
-<span class="fc" id="L68">        return true;</span>
+<span class="fc" id="L57">        beenUsed = true;</span>
+<span class="fc" id="L58">        prevFunctValue = fValue;</span>
+<span class="fc" id="L59">        return true;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
