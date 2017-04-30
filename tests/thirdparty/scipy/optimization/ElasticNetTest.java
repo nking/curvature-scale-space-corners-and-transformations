@@ -1,6 +1,9 @@
 package thirdparty.scipy.optimization;
 
+import algorithms.misc.Misc;
+import gnu.trove.list.array.TIntArrayList;
 import java.util.Arrays;
+import java.util.Random;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -17,7 +20,7 @@ public class ElasticNetTest extends TestCase {
      * 
      * @throws NotConvergedException 
      */
-    public void estPoly() throws NotConvergedException {
+    public void testPoly() throws NotConvergedException {
         
         //test data from: http://rosettacode.org/wiki/Polynomial_Fitting
         double[] x = new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -87,9 +90,10 @@ public class ElasticNetTest extends TestCase {
         assertEquals(3, pred.length);
         double[] expected = new double[]{1};
         
-        System.out.println("coef=" + Arrays.toString(coef));
-        System.out.println("pred=" + Arrays.toString(pred));
-        System.out.println("expected pred=" + Arrays.toString(expected));
+        System.out.println("0 coef=" + Arrays.toString(coef));
+        System.out.println("0 pred=" + Arrays.toString(pred));
+        System.out.println("0 expected pred=" + Arrays.toString(expected));
+        System.out.println("0 dualGaps=" + clf.getDualGap());
         
         for (int i = 0; i < coef.length; ++i) {
             assertTrue(Math.abs(coef[i] - 1.) < 0.1);
@@ -114,6 +118,7 @@ public class ElasticNetTest extends TestCase {
         System.out.println("1 coef=" + Arrays.toString(coef));
         System.out.println("1 pred=" + Arrays.toString(pred));
         System.out.println("1 expected pred=" + Arrays.toString(expected));
+        System.out.println("1 dualGaps=" + clf.getDualGap());
         
         assertEquals(expected.length, coef.length);
         for (int i = 0; i < coef.length; ++i) {
@@ -136,7 +141,7 @@ public class ElasticNetTest extends TestCase {
         System.out.println("2 coef=" + Arrays.toString(coef));
         System.out.println("2 pred=" + Arrays.toString(pred));
         System.out.println("2 expected pred=" + Arrays.toString(expected));
-        
+        System.out.println("2 dualGaps=" + clf.getDualGap());
         
         assertEquals(expected.length, coef.length);
         for (int i = 0; i < coef.length; ++i) {
@@ -149,29 +154,99 @@ public class ElasticNetTest extends TestCase {
         //assert_almost_equal(clf.dual_gap_, 0)        
     }
     
-    /*
-    def test_warm_start_convergence():
-        X, y, _, _ = build_dataset()
-        model = ElasticNet(alpha=1e-3, tol=1e-3).fit(X, y)
-        n_iter_reference = model.n_iter_
+    public void test_warm_start_convergence_overconstrined() {
+        
+        Data data = build_dataset();
+        data = build_dataset(200, 180, 5);
+        
+        double[][] X = data.X;
+        double[] y = data.y;
+        
+        ElasticNet model = new ElasticNet(1e-3, 1e-3);
+        model.fit(X, y);
+        
+        System.out.println("2 coef=" + Arrays.toString(model.getCoef()));
+        System.out.println("2 dualGaps=" + model.getDualGap());
+        
+        TIntArrayList nIters = model._nIters();
+        for (int i = 0; i < nIters.size(); ++i) {
+            System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
+        int n0 = nIters.get(0);
 
-        # This dataset is not trivial enough for the model to converge in one pass.
-        assert_greater(n_iter_reference, 2)
+        //# This dataset is not trivial enough for the model to 
+        // converge in one pass.
+        assertTrue(n0 > 2);
 
-        # Check that n_iter_ is invariant to multiple calls to fit
-        # when warm_start=False, all else being equal.
-        model.fit(X, y)
-        n_iter_cold_start = model.n_iter_
-        assert_equal(n_iter_cold_start, n_iter_reference)
+        //# Check that n_iter_ is invariant to multiple calls to fit
+        //# when warm_start=False, all else being equal.
+        model.fit(X, y);
+        nIters = model._nIters();
+        for (int i = 0; i < nIters.size(); ++i) {
+            System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
+        int n1 = nIters.get(0);
+        assertEquals(n0, n1);
 
-        # Fit the same model again, using a warm start: the optimizer just performs
-        # a single pass before checking that it has already converged
-        model.set_params(warm_start=True)
-        model.fit(X, y)
-        n_iter_warm_start = model.n_iter_
-        assert_equal(n_iter_warm_start, 1)
+        //# Fit the same model again, using a warm start: the optimizer 
+        //just performs
+        //# a single pass before checking that it has already converged
+        model.setToUseWarmStart();
+        model.fit(X, y);
+        nIters = model._nIters();
+        for (int i = 0; i < nIters.size(); ++i) {
+            System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
+        int n2 = nIters.get(0);
+        assertEquals(1, n2);
+    }
+    
+    public void test_warm_start_convergence_underconstrined() {
+        
+        Data data = build_dataset();
+        data = build_dataset(100, 200, 10);
+        
+        double[][] X = data.X;
+        double[] y = data.y;
+        
+        ElasticNet model = new ElasticNet(1e-3, 1e-3);
+        model.fit(X, y);
+        
+        System.out.println("2 coef=" + Arrays.toString(model.getCoef()));
+        System.out.println("2 dualGaps=" + model.getDualGap());
+        
+        TIntArrayList nIters = model._nIters();
+        for (int i = 0; i < nIters.size(); ++i) {
+            System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
+        int n0 = nIters.get(0);
 
-    */
+        //# This dataset is not trivial enough for the model to 
+        // converge in one pass.
+        assertTrue(n0 > 2);
+
+        //# Check that n_iter_ is invariant to multiple calls to fit
+        //# when warm_start=False, all else being equal.
+        model.fit(X, y);
+        nIters = model._nIters();
+        for (int i = 0; i < nIters.size(); ++i) {
+            System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
+        int n1 = nIters.get(0);
+        assertEquals(n0, n1);
+
+        //# Fit the same model again, using a warm start: the optimizer 
+        //just performs
+        //# a single pass before checking that it has already converged
+        model.setToUseWarmStart();
+        model.fit(X, y);
+        nIters = model._nIters();
+        for (int i = 0; i < nIters.size(); ++i) {
+            System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
+        int n2 = nIters.get(0);
+        assertEquals(1, n2);
+    }
     
     /*
     def test_warm_start_convergence():
@@ -231,21 +306,6 @@ public class ElasticNetTest extends TestCase {
     */
     
     /*
-    def test_overrided_gram_matrix():
-        X, y, _, _ = build_dataset(n_samples=20, n_features=10)
-        Gram = X.T.dot(X)
-        clf = ElasticNet(selection='cyclic', tol=1e-8, precompute=Gram,
-                         fit_intercept=True)
-        assert_warns_message(UserWarning,
-                             "Gram matrix was provided but X was centered"
-                             " to fit intercept, "
-                             "or X was normalized : recomputing Gram matrix.",
-                             clf.fit, X, y)
-
-
-    */
-    
-    /*
     def test_enet_float_precision():
     # Generate dataset
     X, y, X_test, y_test = build_dataset(n_samples=20, n_features=10)
@@ -299,28 +359,90 @@ public class ElasticNetTest extends TestCase {
                                           intercept[(v, np.float64)],
                                           decimal=4)
 
-
     */
     
-    /*
-    def build_dataset(n_samples=50, n_features=200, n_informative_features=10,
-        n_targets=1):
+    private Data build_dataset() {
+        int nSamples = 50;
+        int nFeatures = 200;
+        int nInformative = 10;
         
-        """
-        build an ill-posed linear regression problem with many noisy features and
-        comparatively few samples
-        """
+        return build_dataset(nSamples, nFeatures, nInformative);
+    }
     
-        random_state = np.random.RandomState(0)
-        if n_targets > 1:
-            w = random_state.randn(n_features, n_targets)
-        else:
-            w = random_state.randn(n_features)
-        w[n_informative_features:] = 0.0
-        X = random_state.randn(n_samples, n_features)
-        y = np.dot(X, w)
-        X_test = random_state.randn(n_samples, n_features)
-        y_test = np.dot(X_test, w)
-        return X, y, X_test, y_test
-    */
+    private Data build_dataset(int nSamples, int nFeatures, 
+        int nInformative) {
+       
+        //build an ill-posed linear regression problem with many noisy 
+        //features and comparatively few samples
+    
+        int nTargets = 1;
+        
+        Random rng = Misc.getSecureRandom();
+        long seed = System.currentTimeMillis();
+        System.out.println("SEED=" + seed);
+        rng.setSeed(seed);
+        
+        double[] w = new double[nFeatures];
+        for (int i = 0; i < nFeatures; ++i) {
+            w[i] = rng.nextDouble();
+        }
+        for (int i = nInformative; i < nFeatures; ++i) {
+            w[i] = 0.;
+        }
+        
+        //X = random_state.randn(n_samples, n_features)
+        double[][] X = new double[nSamples][nFeatures];
+        for (int i = 0; i < nSamples; ++i) {
+            X[i] = new double[nFeatures];
+            for (int j = 0; j < nFeatures; ++j) {
+                X[i][j] = rng.nextDouble();
+            }
+        }
+        
+        double[] y = new double[nSamples];
+        for (int row = 0; row < nSamples; ++row) {
+            double sum = 0;
+            for (int col = 0; col < nFeatures; ++col) {
+                sum += X[row][col] * w[col];
+            }
+            y[row] = sum;
+        }
+        
+        //X_test = random_state.randn(n_samples, n_features)
+        double[][] Xtest = new double[nSamples][nFeatures];
+        for (int i = 0; i < nSamples; ++i) {
+            Xtest[i] = new double[nFeatures];
+            for (int j = 0; j < nFeatures; ++j) {
+                Xtest[i][j] = rng.nextDouble();
+            }
+        }
+        
+        //y_test = np.dot(X_test, w)
+        double[] ytest = new double[nSamples];
+        for (int row = 0; row < nSamples; ++row) {
+            double sum = 0;
+            for (int col = 0; col < nFeatures; ++col) {
+                sum += X[row][col] * w[col];
+            }
+            ytest[row] = sum;
+        }
+        
+        Data data = new Data();
+        data.X = X;
+        data.Xtest = Xtest;
+        data.y = y;
+        data.ytest = ytest;
+        data.w = w;
+                
+        return data;
+    }
+    
+    private static class Data {
+        double[][] X;
+        double[] y;
+        double[][] Xtest;
+        double[] ytest;
+        double[] w;
+    }
+   
 }

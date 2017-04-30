@@ -329,6 +329,10 @@ public class ElasticNet {
     public double[] getCoef() {
         return coef;
     }
+    
+    public double getDualGap() {
+        return dualGap;
+    }
 
     public void setNMaxIter(int n) {
         this.nMaxIter = n;
@@ -340,6 +344,10 @@ public class ElasticNet {
 
     public void setPositiveParam(boolean pos) {
         this.positive = pos;
+    }
+    
+    public void setToUseWarmStart() {
+        this.warmStart = true;
     }
 
     private CenResults _centerData(double[][] X2, double[] y2,
@@ -1039,5 +1047,9 @@ public class ElasticNet {
         } else {
             this.intercept = 0.;
         }
+    }
+    
+    public TIntArrayList _nIters() {
+        return nIter;
     }
 }
