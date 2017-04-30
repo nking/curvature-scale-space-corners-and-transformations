@@ -11,6 +11,11 @@
       or particle swarm)
     -- consider the "clever algorithms" 
 
+     Three examples of MCMC techniques include the 
+        Metropolis-Hastings algorithm, 
+        Simulated Annealing for global optimization, and the 
+        Gibbs sampler
+
 (1) reading bishop 2006
     and looking at
     http://www.gaussianprocess.org/gpml/code/matlab/doc/
@@ -18,13 +23,21 @@
     -- Conditional Random Fields
 
 
-(2) read the remote sensing paper
+(2) read the remote s ensing paper
+
+
+-- revisit the two-point correlation project to make improvements:
+    -- use a disjoint forest in assigning points to clusters.
+       (see ConnectedPointsFinder.java)
+    -- consider kernel smoothing on the distance transform results
+       before histograms (replace gaussian kernel w/ binomial approx)
+    -- refine density calculation separate logic for the 2 cases of 
+       having background points and not
 
 -- consider making a greyscale MSEREdges
 
--- when return t improving the segmentation, run MSEREdges on
+-- when return to improving the segmentation, run MSEREdges on
      the berkeley benchmark data
-
 
 -- consider implementing a affine transformation class
 
@@ -58,7 +71,7 @@
 http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 
 -- low priority: improve the auxillary methods in the partial shape matchers
-    to calculate cost given correspondence.
+    to calculate cost when given correspondence.
 
 -- consider implementing multi-level buckets
 
@@ -67,7 +80,7 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- consider implementing the vanishing lines based upon MSER ellipses
 
 -- consider making a version of normalized cuts that uses the spatial location
-    of points too (a lkeeping labeled regions contiguous)
+    of points too (lkeeping labeled regions contiguous)
 
 -- consider implementing a mean shift algorithm
 
@@ -93,17 +106,16 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- no priority:
    for jni bindings of the c++ dlib library, would like to automate
     the steps of compile, outlined by the MITIE project.
-    dependencies:
+    dependencies (but for automated platform independence):
       -- swig:
          swig is platform specific and depends upon another platform 
-           specific library called PCRE (needed to make pearl bindings)
+           specific library called PCRE (needed to make pearl bindings).
          to automate the installation if needed and then the use of swig
-            to compile,
-            a possibility is the use of 2 maven2 plugins:
+            to compiJle, a possibility is the use of 2 maven2 plugins:
                -- freehep-swig-plugin 
                -- freehep-nar-plugin 
             the swig plugin requires some additional configuration for
-            the download and there is a small amount of documentation 
+            the download and there is only a small amount of documentation 
             on that.
             -- missing is the information that PCRE needs to be downloaded
                also so that would need to be added to the configuration
