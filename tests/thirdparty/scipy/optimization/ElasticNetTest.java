@@ -16,6 +16,8 @@ public class ElasticNetTest extends TestCase {
     public ElasticNetTest() {
     }
     
+    boolean debug = false;
+    
     /**
      * 
      * @throws NotConvergedException 
@@ -38,7 +40,9 @@ public class ElasticNetTest extends TestCase {
         
         double[] coef = en.getCoef();
         
+        if (debug) {
         System.out.println("coef=" + Arrays.toString(coef));
+        }
         
         double[] expected = new double[]{2., 3.};
         assertEquals(expected.length, coef.length);
@@ -90,10 +94,12 @@ public class ElasticNetTest extends TestCase {
         assertEquals(3, pred.length);
         double[] expected = new double[]{1};
         
+        if (debug) {
         System.out.println("0 coef=" + Arrays.toString(coef));
         System.out.println("0 pred=" + Arrays.toString(pred));
         System.out.println("0 expected pred=" + Arrays.toString(expected));
         System.out.println("0 dualGaps=" + clf.getDualGap());
+        }
         
         for (int i = 0; i < coef.length; ++i) {
             assertTrue(Math.abs(coef[i] - 1.) < 0.1);
@@ -115,10 +121,12 @@ public class ElasticNetTest extends TestCase {
         expected = new double[]{0.50819};
         coef = clf.getCoef();
         
+        if (debug) {
         System.out.println("1 coef=" + Arrays.toString(coef));
         System.out.println("1 pred=" + Arrays.toString(pred));
         System.out.println("1 expected pred=" + Arrays.toString(expected));
         System.out.println("1 dualGaps=" + clf.getDualGap());
+        }
         
         assertEquals(expected.length, coef.length);
         for (int i = 0; i < coef.length; ++i) {
@@ -138,10 +146,12 @@ public class ElasticNetTest extends TestCase {
         expected = new double[]{0.45454};
         coef = clf.getCoef();
         
+        if (debug) {
         System.out.println("2 coef=" + Arrays.toString(coef));
         System.out.println("2 pred=" + Arrays.toString(pred));
         System.out.println("2 expected pred=" + Arrays.toString(expected));
         System.out.println("2 dualGaps=" + clf.getDualGap());
+        }
         
         assertEquals(expected.length, coef.length);
         for (int i = 0; i < coef.length; ++i) {
@@ -165,12 +175,16 @@ public class ElasticNetTest extends TestCase {
         ElasticNet model = new ElasticNet(1e-3, 1e-3);
         model.fit(X, y);
         
+        if (debug) {
         System.out.println("2 coef=" + Arrays.toString(model.getCoef()));
         System.out.println("2 dualGaps=" + model.getDualGap());
+        }
         
         TIntArrayList nIters = model._nIters();
+        if (debug) {
         for (int i = 0; i < nIters.size(); ++i) {
             System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
         }
         int n0 = nIters.get(0);
 
@@ -182,8 +196,10 @@ public class ElasticNetTest extends TestCase {
         //# when warm_start=False, all else being equal.
         model.fit(X, y);
         nIters = model._nIters();
+        if (debug) {
         for (int i = 0; i < nIters.size(); ++i) {
             System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
         }
         int n1 = nIters.get(0);
         assertEquals(n0, n1);
@@ -194,8 +210,10 @@ public class ElasticNetTest extends TestCase {
         model.setToUseWarmStart();
         model.fit(X, y);
         nIters = model._nIters();
+        if (debug) {
         for (int i = 0; i < nIters.size(); ++i) {
             System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
         }
         int n2 = nIters.get(0);
         assertEquals(1, n2);
@@ -212,12 +230,16 @@ public class ElasticNetTest extends TestCase {
         ElasticNet model = new ElasticNet(1e-3, 1e-3);
         model.fit(X, y);
         
+        if (debug) {
         System.out.println("2 coef=" + Arrays.toString(model.getCoef()));
         System.out.println("2 dualGaps=" + model.getDualGap());
+        }
         
         TIntArrayList nIters = model._nIters();
+        if (debug) {
         for (int i = 0; i < nIters.size(); ++i) {
             System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
         }
         int n0 = nIters.get(0);
 
@@ -229,8 +251,10 @@ public class ElasticNetTest extends TestCase {
         //# when warm_start=False, all else being equal.
         model.fit(X, y);
         nIters = model._nIters();
+        if (debug) {
         for (int i = 0; i < nIters.size(); ++i) {
             System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
         }
         int n1 = nIters.get(0);
         assertEquals(n0, n1);
@@ -241,125 +265,58 @@ public class ElasticNetTest extends TestCase {
         model.setToUseWarmStart();
         model.fit(X, y);
         nIters = model._nIters();
+        if (debug) {
         for (int i = 0; i < nIters.size(); ++i) {
             System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
         }
         int n2 = nIters.get(0);
         assertEquals(1, n2);
     }
     
-    /*
-    def test_warm_start_convergence():
-        X, y, _, _ = build_dataset()
-        model = ElasticNet(alpha=1e-3, tol=1e-3).fit(X, y)
-        n_iter_reference = model.n_iter_
+    public void test_random_descent() {
+        
+        //# Test that both random and cyclic selection give the same results.
+        //# Ensure that the test models fully converge and check a wide
+        //# range of conditions.
 
-        # This dataset is not trivial enough for the model to converge in one pass.
-        assert_greater(n_iter_reference, 2)
+        //# This uses the coordinate descent algo using the gram trick.
+        Data data = build_dataset();
+        data = build_dataset(50, 20, 20);
+        
+        double[][] X = data.X;
+        double[] y = data.y;
+        
+        ElasticNet model = new ElasticNet(1e-3, 1e-8);
+        model.setSeletion(ElasticNet.Selection.CYCLIC);
+        model.fit(X, y);
+        
+        ElasticNet rand = new ElasticNet(1e-3, 1e-8);
+        rand.setSeletion(ElasticNet.Selection.RANDOM);
+        rand.fit(X, y);
+        
+        TIntArrayList nIters = model._nIters();
+        if (debug) {
+        for (int i = 0; i < nIters.size(); ++i) {
+            System.out.println("i=" + i + " nIter=" + nIters.get(i));
+        }
+        }
+        int n0 = nIters.get(0);
+        
+        double[] c0 = model.getCoef();
+        double[] c1 = rand.getCoef();
+        
+        if (debug) {
+        System.out.println("sequential coef=" + Arrays.toString(c0));
+        System.out.println("random coef=" + Arrays.toString(c1));
+        }
+        
+        assertTrue(ElasticNet.allClose(c0, c1));
 
-        # Check that n_iter_ is invariant to multiple calls to fit
-        # when warm_start=False, all else being equal.
-        model.fit(X, y)
-        n_iter_cold_start = model.n_iter_
-        assert_equal(n_iter_cold_start, n_iter_reference)
-
-        # Fit the same model again, using a warm start: the optimizer just performs
-        # a single pass before checking that it has already converged
-        model.set_params(warm_start=True)
-        model.fit(X, y)
-        n_iter_warm_start = model.n_iter_
-        assert_equal(n_iter_warm_start, 1)
-
-    */
-    
-    /*
-    def test_random_descent():
-        # Test that both random and cyclic selection give the same results.
-        # Ensure that the test models fully converge and check a wide
-        # range of conditions.
-
-        # This uses the coordinate descent algo using the gram trick.
-        X, y, _, _ = build_dataset(n_samples=50, n_features=20)
-        clf_cyclic = ElasticNet(selection='cyclic', tol=1e-8)
-        clf_cyclic.fit(X, y)
-        clf_random = ElasticNet(selection='random', tol=1e-8, random_state=42)
-        clf_random.fit(X, y)
-        assert_array_almost_equal(clf_cyclic.coef_, clf_random.coef_)
-        assert_almost_equal(clf_cyclic.intercept_, clf_random.intercept_)
-
-        # This uses the descent algo without the gram trick
-        clf_cyclic = ElasticNet(selection='cyclic', tol=1e-8)
-        clf_cyclic.fit(X.T, y[:20])
-        clf_random = ElasticNet(selection='random', tol=1e-8, random_state=42)
-        clf_random.fit(X.T, y[:20])
-        assert_array_almost_equal(clf_cyclic.coef_, clf_random.coef_)
-        assert_almost_equal(clf_cyclic.intercept_, clf_random.intercept_)
-
-        # Sparse Case
-        clf_cyclic = ElasticNet(selection='cyclic', tol=1e-8)
-        clf_cyclic.fit(sparse.csr_matrix(X), y)
-        clf_random = ElasticNet(selection='random', tol=1e-8, random_state=42)
-        clf_random.fit(sparse.csr_matrix(X), y)
-        assert_array_almost_equal(clf_cyclic.coef_, clf_random.coef_)
-        assert_almost_equal(clf_cyclic.intercept_, clf_random.intercept_)
-
-    */
-    
-    /*
-    def test_enet_float_precision():
-    # Generate dataset
-    X, y, X_test, y_test = build_dataset(n_samples=20, n_features=10)
-    # Here we have a small number of iterations, and thus the
-    # ElasticNet might not converge. This is to speed up tests
-
-    for normalize in [True, False]:
-        for fit_intercept in [True, False]:
-            coef = {}
-            intercept = {}
-            for dtype in [np.float64, np.float32]:
-                clf = ElasticNet(alpha=0.5, max_iter=100, precompute=False,
-                                 fit_intercept=fit_intercept,
-                                 normalize=normalize)
-
-                X = dtype(X)
-                y = dtype(y)
-                ignore_warnings(clf.fit)(X, y)
-
-                coef[('simple', dtype)] = clf.coef_
-                intercept[('simple', dtype)] = clf.intercept_
-
-                assert_equal(clf.coef_.dtype, dtype)
-
-                # test precompute Gram array
-                Gram = X.T.dot(X)
-                clf_precompute = ElasticNet(alpha=0.5, max_iter=100,
-                                            precompute=Gram,
-                                            fit_intercept=fit_intercept,
-                                            normalize=normalize)
-                ignore_warnings(clf_precompute.fit)(X, y)
-                assert_array_almost_equal(clf.coef_, clf_precompute.coef_)
-                assert_array_almost_equal(clf.intercept_,
-                                          clf_precompute.intercept_)
-
-                # test multi task enet
-                multi_y = np.hstack((y[:, np.newaxis], y[:, np.newaxis]))
-                clf_multioutput = MultiTaskElasticNet(
-                    alpha=0.5, max_iter=100, fit_intercept=fit_intercept,
-                    normalize=normalize)
-                clf_multioutput.fit(X, multi_y)
-                coef[('multi', dtype)] = clf_multioutput.coef_
-                intercept[('multi', dtype)] = clf_multioutput.intercept_
-                assert_equal(clf.coef_.dtype, dtype)
-
-            for v in ['simple', 'multi']:
-                assert_array_almost_equal(coef[(v, np.float32)],
-                                          coef[(v, np.float64)],
-                                          decimal=4)
-                assert_array_almost_equal(intercept[(v, np.float32)],
-                                          intercept[(v, np.float64)],
-                                          decimal=4)
-
-    */
+        double inter0 = model.getIntercept();
+        double inter1 = rand.getIntercept();
+        assertTrue(Math.abs(inter0 - inter1) < 0.01);
+    }
     
     private Data build_dataset() {
         int nSamples = 50;
@@ -379,7 +336,9 @@ public class ElasticNetTest extends TestCase {
         
         Random rng = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
+        if (debug) {
         System.out.println("SEED=" + seed);
+        }
         rng.setSeed(seed);
         
         double[] w = new double[nFeatures];

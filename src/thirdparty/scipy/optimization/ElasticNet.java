@@ -30,7 +30,6 @@ import java.util.logging.Logger;
   License: BSD 3 clause
  </pre>
 
- NOT READY FOR USE
  */
 public class ElasticNet {
 
@@ -87,7 +86,7 @@ public class ElasticNet {
     random_state : int, RandomState instance, or None (default)
                 The seed of the pseudo random number generator that selects
                 a random feature to update. Useful only when selection is set to
-                'random'.
+                 'random'.
     */
     private Random rng = null;
     private long ranSeed = 0;
@@ -325,6 +324,10 @@ public class ElasticNet {
 
         return scores;
     }
+    
+    public double getIntercept() {
+        return intercept;
+    }
 
     public double[] getCoef() {
         return coef;
@@ -434,15 +437,16 @@ public class ElasticNet {
         }
         return true;
     }
-    private boolean allClose(double[] a, double[] b) {
-        double rtol=1.e-5;
-        double atol=1.e-8;
+    
+    public static boolean allClose(double[] a, double[] b) {
+        double rtol = 1.e-5;
+        double atol = 1.e-8;
         for (int i = 0; i < a.length; ++i) {
             double a0 = a[i];
             double b0 = b[i];
-           if (!(Math.abs(a0 - b0) <= (atol + rtol * Math.abs(b0)))) {
-               return false;
-           }
+            if (!(Math.abs(a0 - b0) <= (atol + rtol * Math.abs(b0)))) {
+                return false;
+            }
         }
         return true;
     }
