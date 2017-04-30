@@ -594,6 +594,91 @@ public class MatrixUtil {
         return c;
     }
     
+    /**
+     * perform dot product of m and a diagonalized matrix of diag,
+     * and return matrix of size mrows X mcols
+     * @param m
+     * @param diag
+     * @return 
+     */
+    public static double[][] multiplyByDiagonal(
+        double[][] m, double[] diag) {
+
+        if (m == null || m.length == 0 || m[0].length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (diag == null || diag.length == 0) {
+            throw new IllegalArgumentException("diag cannot be null or empty");
+        }
+        
+        int mrows = m.length;
+
+        int mcols = m[0].length;
+
+        int nrows = diag.length;
+                
+        if (mcols != nrows) {
+            throw new IllegalArgumentException(
+                "the number of columns in m must equal the number of rows in n");
+        }
+        
+        /*
+        a b c      p0 0  0
+        d e f      0  p1 0
+                   0  0  p2        
+        */
+        
+        double[][] c = new double[mrows][mcols];
+        
+        for (int row = 0; row < mrows; row++) {
+            c[row] = new double[mcols];
+            for (int mcol = 0; mcol < mcols; mcol++) {
+                c[row][mcol] = m[row][mcol] * diag[mcol];
+            }            
+        }
+
+        return c;
+    }
+    
+    /**
+     * perform dot product of m and a diagonalized matrix of diag,
+     * and return matrix of size mrows X mcols
+     * @param m
+     * @param diag
+     */
+    public static void multiplyByDiagonal(DenseMatrix m, double[] diag) {
+
+        if (m == null || m.numRows() == 0 || m.numColumns() == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (diag == null || diag.length == 0) {
+            throw new IllegalArgumentException("diag cannot be null or empty");
+        }
+        
+        int mrows = m.numRows();
+
+        int mcols = m.numColumns();
+
+        int nrows = diag.length;
+                
+        if (mcols != nrows) {
+            throw new IllegalArgumentException(
+                "the number of columns in m must equal the number of rows in n");
+        }
+        
+        /*
+        a b c      p0 0  0
+        d e f      0  p1 0
+                   0  0  p2        
+        */
+                
+        for (int row = 0; row < mrows; row++) {
+            for (int mcol = 0; mcol < mcols; mcol++) {
+                m.set(row, mcol,  m.get(row, mcol) * diag[mcol]);
+            }            
+        }
+    }
+    
     public static long countNodes(FlexCompRowMatrix a) {
         
         long count = 0;
@@ -1327,6 +1412,20 @@ public class MatrixUtil {
         
         return c;
     }
+
+    public static double dot(double[] a, double[] b) {
+
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("a.length must == b.length");
+        }
+        
+        double sum = 0;
+        for (int i = 0; i < a.length; ++i) {
+            sum += (a[i] * b[i]);
+        }
+
+        return sum;
+    }
     
     public static class EigenValuesAndVectors {
         private final double[] eigenValues;
@@ -1971,7 +2070,7 @@ public class MatrixUtil {
          }
         return cofactor;
     }
-    
+   
     /**
      * NOTE, this is a point wise multiply rather than a dot product
      * @param a

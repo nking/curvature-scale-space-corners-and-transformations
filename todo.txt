@@ -2,40 +2,6 @@
    (example is in unit tests).  jblas is already included in project,
    but accessed mostly via MTJ.
 
--- while reading bishop 2006, a goal is to add specific methods
-   that are alternatives to what s present, for example, in curve fitting.
-   - present are regression w/ OLS, ThielSen for example
-     and would like to add local optimization of polynomial fitting w/ LBFGS,
-     and curve fitting w/ regularization and loss function using "elastic net".
-     -- dlib is a C++ library w/ both of those.
-        can either:
-        -- extract the needed classes and port to java making a small lightweight
-           inclusion.
-           pros: small and fast
-           cons: a brief look at the code suggests porting the needed SVM might
-                 take awhile.
-        -- OR can use CMake and SWIG to make jni bindings for dlib.
-           (or include MITIE and build it)
-           pros: other classes in dlib are useful for exploration of more of Bishop2006
-                 material.  same could be said for the larger MITIE project.
-           cons: requires for build, installation of CMake and SWIG (and PCRE)
-                 that currently requires more than one step for the user.
-                 - to make it seamless for user, could change builds to
-                   maven and use a CMake plugin and a dependency on SWIG
-                   which presumably has a maven plugin.
-                   NOTE: details to the later are at the end of this file.
-                   the reader given a few installation instructions is 
-                   more fesible at this time.
-
--- NOTE that the polynomial unit test for dlib LBFGS
-      -- passes for dlib search strategy-5, but not 20,
-      so need to consider adding another search strategy
-      to LBFGS.java here or replacing it with use of dlib
-      as outlined above.
-
--- would like an elasticnet implementation 
-   -- see outline above... dlib has this
-
 -- for global search/optimization methods, consider importing
       https://github.com/aimacode/aima-java
      -- use the simulted annealing and/or other global
