@@ -34,10 +34,13 @@ public class ElasticNetTest extends TestCase {
         en.fit(x2, y);
         
         double[] coef = en.getCoef();
+        
+        System.out.println("coef=" + Arrays.toString(coef));
+        
         double[] expected = new double[]{2., 3.};
         assertEquals(expected.length, coef.length);
         for (int i = 0; i < coef.length; ++i) {
-            assertTrue(Math.abs(coef[i] - expected[i]) < 0.01);
+            assertTrue(Math.abs(coef[i] - expected[i]) < 0.05);
         }
     }
     
@@ -78,23 +81,24 @@ public class ElasticNetTest extends TestCase {
         double l1_ratio = 1.0;
         ElasticNet clf = new ElasticNet(alpha, l1_ratio);
         clf.fit(x, y);
-  //      double[] pred = clf.predict(t);
+        double[] pred = clf.predict(t);
         double[] coef = clf.getCoef();
         assertEquals(1, coef.length);
-  //      assertEquals(3, pred.length);
+        assertEquals(3, pred.length);
         double[] expected = new double[]{1};
         
         System.out.println("coef=" + Arrays.toString(coef));
- //       System.out.println("pred=" + Arrays.toString(pred));
+        System.out.println("pred=" + Arrays.toString(pred));
         System.out.println("expected pred=" + Arrays.toString(expected));
         
- //       for (int i = 0; i < coef.length; ++i) {
- //           assertTrue(Math.abs(coef[i] - 1.) < 0.1);
- //       }
+        for (int i = 0; i < coef.length; ++i) {
+            assertTrue(Math.abs(coef[i] - 1.) < 0.1);
+        }
         
- //       for (int i = 0; i < pred.length; ++i) {
- //           assertTrue(Math.abs(pred[i] - expected[i]) < 0.1);
- //       }
+        expected = new double[]{2, 3, 4};
+        for (int i = 0; i < pred.length; ++i) {
+            assertTrue(Math.abs(pred[i] - expected[i]) < 0.1);
+        }
         //assert_almost_equal(clf.dual_gap_, 0)
 
         alpha = 0.5;
@@ -103,34 +107,34 @@ public class ElasticNetTest extends TestCase {
         boolean precompute = false;
         clf = new ElasticNet(alpha, l1_ratio, max_iter);
         clf.fit(x, y);
-  //      pred = clf.predict(t);
+        pred = clf.predict(t);
         expected = new double[]{0.50819};
         coef = clf.getCoef();
         
         System.out.println("1 coef=" + Arrays.toString(coef));
-  //      System.out.println("1 pred=" + Arrays.toString(pred));
+        System.out.println("1 pred=" + Arrays.toString(pred));
         System.out.println("1 expected pred=" + Arrays.toString(expected));
         
         assertEquals(expected.length, coef.length);
- //       for (int i = 0; i < coef.length; ++i) {
- //           assertTrue(Math.abs(coef[i] - expected[i]) < 0.001);
- //       }
+        for (int i = 0; i < coef.length; ++i) {
+            assertTrue(Math.abs(coef[i] - expected[i]) < 0.001);
+        }
         expected = new double[]{1.0163, 1.5245, 2.0327};
- //       for (int i = 0; i < pred.length; ++i) {
- //           assertTrue(Math.abs(pred[i] - expected[i]) < 0.001);
- //       }
+        for (int i = 0; i < pred.length; ++i) {
+            assertTrue(Math.abs(pred[i] - expected[i]) < 0.001);
+        }
         //assert_almost_equal(clf.dual_gap_, 0)
 
         alpha = 0.5;
         l1_ratio = 0.5;
         clf = new ElasticNet(alpha, l1_ratio);
         clf.fit(x, y);
- //       pred = clf.predict(t);
+        pred = clf.predict(t);
         expected = new double[]{0.45454};
         coef = clf.getCoef();
         
         System.out.println("2 coef=" + Arrays.toString(coef));
- //       System.out.println("2 pred=" + Arrays.toString(pred));
+        System.out.println("2 pred=" + Arrays.toString(pred));
         System.out.println("2 expected pred=" + Arrays.toString(expected));
         
         
@@ -139,9 +143,9 @@ public class ElasticNetTest extends TestCase {
             assertTrue(Math.abs(coef[i] - expected[i]) < 0.001);
         }
         expected = new double[]{0.9090, 1.3636, 1.8181};
-  //      for (int i = 0; i < pred.length; ++i) {
-  //          assertTrue(Math.abs(pred[i] - expected[i]) < 0.001);
-  //      }        
+        for (int i = 0; i < pred.length; ++i) {
+            assertTrue(Math.abs(pred[i] - expected[i]) < 0.001);
+        }        
         //assert_almost_equal(clf.dual_gap_, 0)        
     }
     

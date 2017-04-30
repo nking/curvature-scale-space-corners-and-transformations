@@ -56,7 +56,7 @@ public class ElasticNet {
     private boolean doNormalize = false;
     
     // if doFitIntercept is true, this is populated
-    private double intercept = Double.NEGATIVE_INFINITY;
+    private double intercept = 0.;
 
     private double[] coef;
 
@@ -284,8 +284,46 @@ public class ElasticNet {
         this.selection = sel;
     }
 
+    /**
+     * Predict using the linear model
+     * 
+     * @param testData 2 dimensional data of format [nSamples[nFeatures]
+     * where features is the coefficients for polynomial regression, for
+     * example.
+     * @return 
+     */
     public double[] predict(double[][] testData) {
-        throw new UnsupportedOperationException("not yet implemented");
+        return decision_function(testData);            
+    }
+    
+    /**
+     * Predict confidence scores for samples.
+
+        The confidence score for a sample is the signed distance of that
+        sample to the hyperplane.
+      
+     * @param testData
+     * @return 
+     */
+    private double[] decision_function(double[][] XD) {
+    
+        int nFeatures = coef.length;
+        if (XD[0].length != nFeatures) {
+            throw new IllegalArgumentException(
+                "X has " + XD[0].length + 
+                " features per sample; expecting " + nFeatures);
+        }
+        
+        double[] scores = new double[XD.length];
+        for (int row = 0; row < XD.length; ++row) {
+            double sum = 0;
+            for (int col = 0; col < nFeatures; ++col) {
+                sum += XD[row][col] * coef[col];
+            }
+            scores[row] = sum + intercept;
+        }
+
+        return scores;
     }
 
     public double[] getCoef() {
