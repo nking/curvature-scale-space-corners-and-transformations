@@ -830,8 +830,29 @@ public class CMAEvolutionStrategy implements java.io.Serializable {
             java.io.FileInputStream fis = new java.io.FileInputStream(fileName);
             properties.load(fis);
             fis.close();
-        } 
-        catch(java.io.IOException e) { 
+            
+            // edit paths
+            if (properties.contains("outputFileNamesPrefix")) {
+                // if local directory bin exists, use it,
+                // else use user's cwd
+                String filename = (String) properties.get("outputFileNamesPrefix");
+                String dir;
+                try {
+                    dir = ResourceFinder.findOutputTestDirectory();
+                } catch(java.io.IOException e) { 
+                    try {
+                        dir = ResourceFinder.getAFilePathInCWD("");
+                    } catch(java.io.IOException e2) { 
+                        dir = System.getProperty("user.dir");
+                        if (dir == null || dir.equals("")) {
+                            dir = ".";
+                        }
+                    }
+                }
+                properties.setProperty("outputFileNamesPrefix",
+                    dir + System.getProperty("file.separator") + fileName);
+            }
+        } catch(java.io.IOException e) { 
             warning("File '" + fileName + "' not found, no options read");
             // e.printStackTrace();
         }
@@ -2189,7 +2210,7 @@ public class CMAEvolutionStrategy implements java.io.Serializable {
     	xmean = new double[]{x}; // allows "late binding" of dimension N
     }
     
-    /** set initial seach point <code>xmean</code> coordinate-wise uniform 
+    /** set initial search point <code>xmean</code> coordinate-wise uniform 
      * between <code>l</code> and <code>u</code>, 
      * dimension needs to have been set before
      * 
@@ -2484,7 +2505,7 @@ public class CMAEvolutionStrategy implements java.io.Serializable {
     	String s = new String();    
     	s = countiter + " " + counteval + " " + sigma + " " + axisratio + " " 
     	   + maxsqrtdiagC/minsqrtdiagC + " "; 
-    	double[] tmp = (double[]) diagD.clone();
+    	double[] tmp = diagD.clone();
     	java.util.Arrays.sort(tmp);
     	for (int i = 0; i < N; ++i) {
     		s += tmp[i] + " ";
