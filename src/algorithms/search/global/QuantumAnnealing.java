@@ -163,7 +163,7 @@ package algorithms.search.global;
     
     Ref 8: "Quantum stochastic optimization" 1989 by Apolloni et al
     Reg 9: "A numerical implementation of Quantum Annealing" 1990 by
-           polloni et al.
+           Apolloni et al.
        
     
     Consider variants:
@@ -192,12 +192,19 @@ package algorithms.search.global;
 public class QuantumAnnealing {
     
     /*
-    psuedocode from 
-    An introduction to quantum annealing"
+    pseudocode from "An introduction to quantum annealing"
         by Falco and Tamascelli
     
     NOTE: still reading the variants of QA and QSO so might
     not implement following the pseudocode here.
+    
+    Looking at the pseudocode, it seems as if the success of 
+    finding the true global minimum depends upon the initial
+    conditions, that is, the global min solution would have to be
+    within a connected distance of tunelling and local minima from
+    the start conditions...so the MC approach is probably better
+    for some problems at exploring state space, but haven't read
+    details yet...
     
     --------------------------------------------
     procedure 1 QA
