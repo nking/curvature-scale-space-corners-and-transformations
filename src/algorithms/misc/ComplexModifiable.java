@@ -48,6 +48,13 @@ public class ComplexModifiable {
         re = real;
         im = imag;
     }
+    
+    public void setReal(double real) {
+        re = real;
+    }
+    public void setImag(double imag) {
+        im = imag;
+    }
 
     // return a string representation of the invoking Complex object
     public String toString() {
@@ -194,7 +201,8 @@ public class ComplexModifiable {
 
     // return a new Complex object whose value is the complex cosine of this
     public ComplexModifiable cos() {
-        return new ComplexModifiable(Math.cos(re) * Math.cosh(im), -Math.sin(re) * Math.sinh(im));
+        return new ComplexModifiable(Math.cos(re) * Math.cosh(im), 
+            -Math.sin(re) * Math.sinh(im));
     }
 
     // return a new Complex object whose value is the complex tangent of this

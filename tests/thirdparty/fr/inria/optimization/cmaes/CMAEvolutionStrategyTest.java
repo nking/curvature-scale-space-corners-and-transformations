@@ -1,12 +1,7 @@
 package thirdparty.fr.inria.optimization.cmaes;
 
 import algorithms.misc.Misc;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import thirdparty.fr.inria.optimization.cmaes.fitness.IObjectiveFunction;
 import junit.framework.TestCase;
