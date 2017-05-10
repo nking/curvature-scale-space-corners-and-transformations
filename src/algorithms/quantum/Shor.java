@@ -7,6 +7,8 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 import java.util.Random;
+import thirdparty.ardeleanasm.complexnumbers.ComplexMath;
+import thirdparty.ardeleanasm.complexnumbers.ComplexNumber;
 import thirdparty.ardeleanasm.gates.EGateTypes;
 import thirdparty.ardeleanasm.gates.ExpModGate;
 import thirdparty.ardeleanasm.gates.GateProducer;
@@ -267,11 +269,23 @@ public class Shor {
         QRegister qReg = new QRegister(log2Nsq);
         qReg.initialize();
         
+        System.out.println("registar q states:");
+        for (int ii = 0; ii < qReg.size(); ++ii) {
+            int len = qReg.get(ii).getQubit().length;
+            System.out.println("node=" + ii + " nStates=" + len);
+        }
+        
         QRegisterOperations regOps = QRegisterOperations.getInstance();
 		IGate hGate = factory.getGate(EGateTypes.E_HadamardGate);	
 
         // tensor product of all qubits:
         Qubit superposition = regOps.entangle(qReg); 
+        
+        System.out.println("AFTER ent registar q states:");
+        for (int ii = 0; ii < qReg.size(); ++ii) {
+            int len = qReg.get(ii).getQubit().length;
+            System.out.println("node=" + ii + " nStates=" + len);
+        }
         
         int[] targetPosition = new int[log2Nsq];
         for (int ii = 1; ii < log2Nsq; ++ii) {
@@ -298,7 +312,6 @@ public class Shor {
           This is still a superposition of Q states. 
 
           f(x) = a^x mod N   
-        
         */
         
         IGate eGate = new ExpModGate();
@@ -375,10 +388,137 @@ public class Shor {
       
         */
       
-    return null;
-}
+        return null;
+    }
+    
+    /**
+     * NOT READY FOR USE YET
+     * 
+     * @return 
+     */
+    public int[] run2() {
+        
+        //NOTE: could make this class extend QuantumAlgorithms
+
+        int i;
+  
+        // try random GCD first (no quantum computer emulation)
+        int[] result = randomGCD(number);
+        assert(result != null);
+        
+        //3) If gcd(a, N) ≠ 1, then this number is a nontrivial factor of N, 
+        //   so we are done.
+        
+        // counting the number of factors that are not 1, and are positive 
+        int a = 0;
+        int nFactors = 0;
+        for (int r : result) {
+            if (r > 1) {
+                nFactors++;
+                if (r > a) {
+                    a = r;
+                }
+            }
+        }
+        if (nFactors > 1) {
+            // temporarily commenting out while impl rest of algorithm
+    //        return result;
+        } else if (nFactors == 0) {
+            throw new IllegalArgumentException("either " + number + " is not "
+                + " valid input or there is an error in the algorithm");
+        }
+  
+        System.out.println("factorization so far=" + Arrays.toString(result));
+        System.out.println("random factor=" + a + " of number=" + number);
+        
+        int maxQ = 2 * number * number - 1;
+        int log2Nsq = (int)Math.ceil(Math.log(maxQ)/Math.log(2));
+
+        // number^2 <= Q <= 2*number^2
+        // Q = 2^q --> q = log_2(Q)
+        System.out.println("n qubits=" + log2Nsq);        
+        
+        QRegister qReg = new QRegister(log2Nsq);
+        qReg.initialize();
+        
+        // looks like it might be necessary to apply the 
+        //    modular exponentiation operation to
+        //    all qubits first before any superposition
+        //    in order to simplify the math which is applied
+        //    to each qubit
+        
+        System.out.println("registar q states:");
+        for (int ii = 0; ii < qReg.size(); ++ii) {
+            int len = qReg.get(ii).getQubit().length;
+            System.out.println("node=" + ii + " nStates=" + len);
+        }
+        
+        //NOTE: need to look at the exponentiation math.
+        //   this operation of applying the factor to
+        //   each qubit fits the circuit diagram,
+        //   but the need for L2 normalization
+        //   might invalidate the overall logic.
+        //   also need to be certain that putting
+        //   this operation in front of the hadamard superposition
+        //   is valid.
+        
+        for (int x = 0; x < qReg.size(); ++x) {
+            
+            //a^x mod N
+            double fx = Math.pow(a, x) % number;
+            
+            Qubit qu = qReg.get(x);
+                        
+            ComplexNumber[] states = qu.getQubit();
+            for (int xs = 0; xs < states.length; ++xs) {
+                ComplexNumber state = states[xs];
+                states[xs] = ComplexMath.multiply(state, fx);
+            }
+            double norm = Math.sqrt(qu.sumSquareStates());
+            double fctr = 1./norm;
+            for (int xs = 0; xs < states.length; ++xs) {
+                ComplexNumber state = states[xs];
+                states[xs] = ComplexMath.multiply(state, fctr);
+            }
+            
+            qReg.change(x, qu);
+            
+            assert(qu.isValid());
+        }
+        
+        QRegisterOperations regOps = QRegisterOperations.getInstance();
+		
+        // tensor product of all qubits:
+        Qubit superposition = regOps.entangle(qReg); 
+        assert(superposition.isValid());
+        
+        System.out.println("2 sp=" + superposition);
+         
+        GatesAbstractFactory factory = GateProducer.getGateFactory();
+        
+        IGate hGate = factory.getGate(EGateTypes.E_HadamardGate);	
+        
+        int[] targetPosition = new int[log2Nsq];
+        for (int ii = 1; ii < log2Nsq; ++ii) {
+            targetPosition[ii] = ii;
+        }
+        
+        //double qCo = Math.pow(maxQ, -0.5);
+        superposition = hGate.applyGate(superposition, targetPosition, null, log2Nsq);	
+
+        System.out.println("sp=" + superposition);
+        
+        assert(superposition.isValid());
+       
+        // need to apply QFT
+      
+        return null;
+    }
 
     public int[] randomGCD(int N) {
+        
+        //TODO: will edit this later.
+        //   the random number retry is not correct for the context
         
         if (N < 6) {
             throw new IllegalArgumentException("N must be > 5");

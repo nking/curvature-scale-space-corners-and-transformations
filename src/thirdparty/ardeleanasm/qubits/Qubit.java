@@ -102,6 +102,15 @@ public class Qubit {
 		hash += (this.qubitVector != null ? Arrays.hashCode(qubitVector) : 0);
 		return hash;
 	}
+    
+    public double sumSquareStates() {
+        double sum=0.0;
+		for(ComplexNumber c:this.qubitVector){
+			double mod = ComplexMath.mod(c);
+			sum += mod*mod;
+		}
+        return sum;
+    }
 	
 	/**
 	 * Check if qubit state is valid, that is, the sum of the squares == 1,
@@ -110,12 +119,7 @@ public class Qubit {
 	 */
 	public boolean isValid(){
         double eps = 1.e-6;
-		double sum=0.0;
-		for(ComplexNumber c:this.qubitVector){
-			double mod = ComplexMath.mod(c);
-			sum += mod*mod;
-		}
-        System.out.println("sum=" + sum);
+		double sum = sumSquareStates();
 		return (Math.abs(sum - 1.0) < eps);
 	}
 }
