@@ -3,6 +3,8 @@ package algorithms.quantum;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.GreatestCommonDenominator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 import java.util.Random;
 import thirdparty.ardeleanasm.gates.EGateTypes;
@@ -88,7 +90,11 @@ public class Shor {
     private final int number;
     
     public Shor(int number) {
-                
+               
+        if (number < 6) {
+            throw new IllegalArgumentException("number must be > 5");
+        }
+        
         long seed = System.currentTimeMillis();
         rng = Misc.getSecureRandom();
         rng.setSeed(seed);
@@ -99,6 +105,10 @@ public class Shor {
     }
 
     public Shor(int number, long seed) {
+        
+        if (number < 6) {
+            throw new IllegalArgumentException("number must be > 5");
+        }
         
         rng = Misc.getSecureRandom();
         rng.setSeed(seed);
@@ -122,6 +132,7 @@ public class Shor {
         // try random GCD first (no quantum computer emulation)
         int[] result = randomGCD(number);
         assert(result != null);
+        
         //3) If gcd(a, N) ≠ 1, then this number is a nontrivial factor of N, 
         //   so we are done.
         
@@ -139,15 +150,13 @@ public class Shor {
         if (nFactors > 1) {
             // temporarily commenting out while impl rest of algorithm
     //        return result;
-        } else {
-            a = number;
+        } else if (nFactors == 0) {
+            throw new IllegalArgumentException("either " + number + " is not "
+                + " valid input or there is an error in the algorithm");
         }
   
-        if (number < 15) {
-            throw new IllegalStateException("N must be >= 15");
-        }
-        
         System.out.println("factorization so far=" + Arrays.toString(result));
+        System.out.println("random factor=" + a + " of number=" + number);
         
         /*
         4) Otherwise, use the period-finding subroutine (below) to find r, 
@@ -264,7 +273,6 @@ public class Shor {
         // tensor product of all qubits:
         Qubit superposition = regOps.entangle(qReg); 
         
-        // used to specify superposition of all qbits
         int[] targetPosition = new int[log2Nsq];
         for (int ii = 1; ii < log2Nsq; ++ii) {
             targetPosition[ii] = ii;
@@ -292,17 +300,21 @@ public class Shor {
           f(x) = a^x mod N   
         
         */
+        
         IGate eGate = new ExpModGate();
         int[] conditions = new int[] {a, number};
         
-        superposition = hGate.applyGate(superposition, null, conditions, 
-            log2Nsq);	
+        //NOTE: paused here
+        
+        superposition = eGate.applyGate(superposition, targetPosition, 
+            conditions, log2Nsq);
+        
+        assert(superposition.isValid());
 
         //qReg.change(0, superposition);
         
         System.out.println("2 sp=" + superposition);
         
-        //NOTE: paused here
         
         /*
         period finding
@@ -368,14 +380,36 @@ public class Shor {
 
     public int[] randomGCD(int N) {
         
+        if (N < 6) {
+            throw new IllegalArgumentException("N must be > 5");
+        }
+        
         /*
         1) Pick a random number a < N.
         2) Compute gcd(a, N). This may be done using the Euclidean algorithm.
         */
         
-        int a = rng.nextInt(N - 2) + 2;
-       
-        int[] result = GreatestCommonDenominator.extendedEuclid(a, N);
+        TIntSet tried = new TIntHashSet();
+        
+        int[] result = null;
+        
+        int nFactors = 0;
+        while (nFactors < 2) {
+        
+            int a = rng.nextInt(N - 2) + 2;
+            while (tried.contains(a)) {
+                a = rng.nextInt(N - 2) + 2;
+            }
+            tried.add(a);
+        
+            result = GreatestCommonDenominator.extendedEuclid(a, N);
+        
+            for (int r : result) {
+                if (r > 1) {
+                    nFactors++;
+                }
+            }
+        }
         
         return result;
     }

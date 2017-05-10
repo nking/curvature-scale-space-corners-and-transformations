@@ -18,12 +18,18 @@ code is from
  license notices must be preserved. Contributors provide
  an express grant of patent rights.
 */
+
+/**
+ * create a qubit holding a pair of complex numbers
+ * (1/sqrt(2), 0), (1/sqrt(2), 0)
+ */
 public class QubitPlus extends Qubit {
 	/**
 	 * Construct a new <code> QubitPlus</code> object.
 	 */
 	public QubitPlus() {
-		super(new ComplexNumber(1.0 / Math.sqrt(2), 0.0), new ComplexNumber(1.0 / Math.sqrt(2), 0.0));
+		super(new ComplexNumber(1.0 / Math.sqrt(2), 0.0), 
+            new ComplexNumber(1.0 / Math.sqrt(2), 0.0));
 	}
 
 }

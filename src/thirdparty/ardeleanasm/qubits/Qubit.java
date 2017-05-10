@@ -115,6 +115,7 @@ public class Qubit {
 			double mod = ComplexMath.mod(c);
 			sum += mod*mod;
 		}
+        System.out.println("sum=" + sum);
 		return (Math.abs(sum - 1.0) < eps);
 	}
 }

@@ -19,7 +19,7 @@ import thirdparty.ardeleanasm.qubits.Qubit;
  * Note that there are alternate ways to implement this operation and they 
  * may be better numerically or more efficient.
  * 
- * for example, for this quantum operation, 
+ * for example, for this quantum operation in
  * libquantum uses decohere, squaring, modulus, toffoli gate, and more
                          
  * 
@@ -45,25 +45,15 @@ public final class ExpModGate implements IGate {
         
         int a = conditions[0];
         int N = conditions[1];
+        
+        //a^x mod N
+        
+        System.out.println("a=" + a + " N=" + N);
         				
         ComplexNumber[] states = inputQubit.getQubit();
 		ComplexNumber bufferState;
-		            
-        for (int j = 0; j < states.length; j++) {
-
-            bufferState = states[j];
-                        
-            double x = ComplexMath.mod(bufferState);
-            
-            //a^x mod N
-            
-            double y = Math.pow(a, x);
-            y = y % N;
-            
-            bufferState = ComplexMath.multiply(bufferState, y);
-            
-            states[j] = bufferState;
-		}
+        
+        //NOT YET IMPL
         
         Qubit output = new Qubit(states);
         assert(output.isValid());
