@@ -220,5 +220,4 @@ public class ComplexModifiable {
         ComplexModifiable sum = new ComplexModifiable(real, imag);
         return sum;
     }
-
 }

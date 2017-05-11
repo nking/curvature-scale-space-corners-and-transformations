@@ -1,0 +1,12 @@
+this is a port of libquantum-1.0.0 from c to java.
+
+the code was downloaded from 
+   
+the copyrights are in the individual files,
+   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+their license is
+     GNU General Public License version 3
+
+Note that for now, the memoization class for method
+   invocation called objcode, has been removed.
+
