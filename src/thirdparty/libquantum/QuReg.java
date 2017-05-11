@@ -476,7 +476,7 @@ public class QuReg {
         // Eradicate all amplitudes of base states which have been ruled out
         //   by the measurement and get the norm of the new register 
         for (i = 0; i < reg.size; i++) {
-            if ((((reg.node[i].getState() & pos2) == 0) && (value == 0))
+            if ((((reg.node[i].getState() & pos2) > 0) && (value > 0))
                 || (((reg.node[i].getState() & pos2) == 0) && (value == 0))) {
                 
                 d += reg.node[i].amplitude.abs();
@@ -499,7 +499,7 @@ public class QuReg {
         // Determine the numbers of the new base states and norm 
         // the quantum register 
         for (i = 0, j = 0; i < reg.size; i++) {
-            if ((((reg.node[i].getState() & pos2) == 0) && (value == 0))
+            if ((((reg.node[i].getState() & pos2) > 0) && (value > 0))
                 || (((reg.node[i].getState() & pos2) == 0) && (value == 0))) {
                 for (k = 0, rpat = 0; k < pos; k++) {
                     rpat += shiftLeftTruncate(k);
