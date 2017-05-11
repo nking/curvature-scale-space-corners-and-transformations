@@ -159,7 +159,7 @@ public class QuReg {
      * @param shift
      * @return 
      */
-    static int shiftLeftTruncate(int shift) {
+    public static int shiftLeftTruncate(int shift) {
         int tmp;
         if (shift > 30) {
             tmp = Integer.MAX_VALUE;
@@ -323,7 +323,7 @@ public class QuReg {
     /**
      * Delete a quantum register but leave the hash table alive
      */
-    void quantum_delete_qureg_hashpreserve(QuantumReg reg) {
+    static void quantum_delete_qureg_hashpreserve(QuantumReg reg) {
         reg.node = null;
     }
 

@@ -27,7 +27,7 @@ import algorithms.misc.ComplexModifiable;
 public class Matrix {
 
     //#define M(m, x, y) m.t[(x)+(y)*m.cols]
-    public ComplexModifiable M(QuantumMatrix m, int x, int y) {
+    public static ComplexModifiable M(QuantumMatrix m, int x, int y) {
         return m.t[(x) + (y) * m.cols];
     }
 
