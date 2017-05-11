@@ -337,14 +337,17 @@ public class Gates {
             }
 
             // allocate memory for the new basis states 
-            System.out.format("reg.size + add=%i\n", reg.size + addsize);
-            if (reg.node.length != reg.size + addsize) {
-                reg.node = Arrays.copyOf(reg.node, reg.size + addsize);
+            int sz2 = reg.size + addsize;
+            System.out.format("reg.size + add=%d\n", sz2);
+            if (reg.node.length != sz2) {
+                reg.node = Arrays.copyOf(reg.node, sz2);
             }
 
             for (i = 0; i < addsize; i++) {
-                reg.node[i + reg.size].setState(0);
-                reg.node[i + reg.size].amplitude = new ComplexModifiable(0, 0);
+                int idx2 = i + reg.size;
+                reg.node[idx2] = new QuantumRegNode();
+                reg.node[idx2].setState(0);
+                reg.node[idx2].amplitude = new ComplexModifiable(0, 0);
             }
         }
 
@@ -508,9 +511,10 @@ public class Gates {
         }
 
         for (i = 0; i < addsize; i++) {
-            reg.node[i + reg.size].setState(0);
-            reg.node[i + reg.size].amplitude.setReal(0);
-            reg.node[i + reg.size].amplitude.setImag(0);
+            int idx2 = i + reg.size;
+            reg.node[idx2] = new QuantumRegNode();
+            reg.node[idx2].setState(0);
+            reg.node[idx2].amplitude = new ComplexModifiable(0, 0);
         }
 
         done = new int[reg.size + addsize];
@@ -1404,14 +1408,14 @@ public class Gates {
     void quantum_qft(int width, QuantumReg reg) {
         int i, j;
 
-        System.out.format(" quantum_qft nloop=%i\n", width);
+        System.out.format(" quantum_qft nloop=%d\n", width);
 
         for (i = width - 1; i >= 0; i--) {
             for (j = width - 1; j > i; j--) {
                 quantum_cond_phase(j, i, reg);
             }
 
-            System.out.format(" ..%i", i);
+            System.out.format(" ..%d", i);
 
             quantum_hadamard(i, reg);
         }

@@ -126,7 +126,7 @@ public class QuReg {
         }
         reg.hash[i] = pos + 1;
 
-        System.out.format("   added hash i=%i\n", i);
+        System.out.format("   added hash i=%d\n", i);
     }
 
     /**
@@ -146,7 +146,7 @@ public class QuReg {
             reg.hash[i] = 0;
             ++nzd;
         }
-        System.out.format(" quantum_reconstruct_hash: zeroed TOTAL n=%i\n", nzd);
+        System.out.format(" quantum_reconstruct_hash: zeroed TOTAL n=%d\n", nzd);
 
         for (i = 0; i < reg.size; i++) {
             quantum_add_hash(reg.node[i].getState(), i, reg);
@@ -258,8 +258,8 @@ public class QuReg {
         reg.node[0].amplitude =  new ComplexModifiable(1, 0);
 
         System.err.format(
-            "init reg: %i qubits, 1 node, and %i hash table length, hashw=%i\n",
-            reg.width, (1 << reg.hashw), reg.hashw);
+            "init reg: %d qubits, 1 node, and %d hash table length, hashw=%d\n",
+            reg.width, nHash, reg.hashw);
 
         return reg;
     }
@@ -357,7 +357,7 @@ public class QuReg {
                     System.out.format(" ");
                 }
                 int tmp = shiftLeftTruncate(j);
-                System.out.format("%i", ((tmp & reg.node[i].getState()) > 0));
+                System.out.format("%d", ((tmp & reg.node[i].getState()) > 0));
             }
 
             System.out.format(">)\n");
@@ -373,7 +373,7 @@ public class QuReg {
         int i;
         for (i = 0; i < reg.size; i++) {
             int tmp = shiftLeftTruncate(reg.width / 2);
-            System.out.format("%i: %lli\n", i, 
+            System.out.format("%d: %lli\n", i, 
                 reg.node[i].getState() - i * tmp);
         }
     }
@@ -405,7 +405,7 @@ public class QuReg {
         int tmp = shiftLeftTruncate(reg.hashw);
         for (i = 0; i < tmp; i++) {
             if (i > 0) {
-                System.out.format("%i: %i %llu\n", i, reg.hash[i] - 1,
+                System.out.format("%d: %d %llu\n", i, reg.hash[i] - 1,
                     reg.node[reg.hash[i] - 1].getState());
             }
         }

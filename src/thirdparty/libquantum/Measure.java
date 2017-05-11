@@ -74,7 +74,7 @@ public class Measure {
 
         int pos2 = QuReg.shiftLeftTruncate(pos);
 
-        System.out.format("  -- 2 %i\n", reg.size);
+        System.out.format("  -- 2 %d\n", reg.size);
 
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
