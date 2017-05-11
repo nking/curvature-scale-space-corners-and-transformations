@@ -71,7 +71,7 @@ public class Gates {
     void quantum_cnot(int control, int target, QuantumReg reg) {
   
         int i;
-        int[] qec = new int[0];
+        int[] qec = new int[1];
 
         quantum_qec_get_status(qec, null);
         
