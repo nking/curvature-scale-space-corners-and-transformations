@@ -1014,4 +1014,420 @@ public class Gates {
 
         quantum_qec_counter(1, 0, reg);
     }
+    
+    // ----- from expn.c, omuln.c, Multiplication modulo an integer N ----
+    
+    /**
+     * x^a mod n
+     * @param N
+     * @param x
+     * @param width_input
+     * @param width
+     * @param reg 
+     */
+    void quantum_exp_mod_n(int N, int x, int width_input, int width, QuantumReg reg) {
+
+        int i, j, f;
+
+        quantum_sigma_x(2 * width + 2, reg);
+        for (i = 1; i <= width_input; i++) {
+            f = x % N;			//compute
+            for (j = 1; j < i; j++) {
+                f *= f;	//x^2^(i-1)
+                f = f % N;
+            }
+            mul_mod_n(N, f, 3 * width + 1 + i, width, reg);
+        }
+    }
+
+    void emul(int a, int L, int width, QuantumReg reg){
+
+	    int i;
+        for (i = width - 1; i >= 0; i--) {
+            if (((a >> i) & 1) > 0) {
+                quantum_toffoli(2 * width + 2, L, width + i, reg);
+            }
+        }
+    }
+
+    void muln(int N, int a, int ctl, int width, QuantumReg reg) {
+        //ctl tells, which bit is the external enable bit
+	
+        int i;
+        int L = 2 * width + 1;
+
+        quantum_toffoli(ctl, 2 * width + 2, L, reg);
+
+        emul(a % N, L, width, reg);
+
+        quantum_toffoli(ctl, 2 * width + 2, L, reg);
+
+        for (i = 1; i < width; i++) {
+            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+            add_mod_n(N, ((1 << i) * a) % N, width, reg);
+            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+        }
+
+    }
+
+    void muln_inv(int N, int a, int ctl, int width, QuantumReg reg){
+
+        //ctl tells, which bit is the external enable bit
+	
+        int i;
+        int L = 2 * width + 1;
+
+        Classic classic = new Classic();
+        
+        a = classic.quantum_inverse_mod(N, a);
+
+        for (i = width - 1; i > 0; i--) {
+            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+            add_mod_n(N, N - ((1 << i) * a) % N, width, reg);
+            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+        }
+
+        quantum_toffoli(ctl, 2 * width + 2, L, reg);
+        emul(a % N, L, width, reg);
+        quantum_toffoli(ctl, 2 * width + 2, L, reg);
+    }
+
+    void mul_mod_n(int N, int a, int ctl, int width, QuantumReg reg) {
+  
+        muln(N, a, ctl, width, reg);
+
+        quantum_swaptheleads_omuln_controlled(ctl, width, reg);
+
+        muln_inv(N, a, ctl, width, reg);
+    }
+  
+    // ------oaddn.c: Addition modulo an integer N ----
+
+    private int num_regs = 4;
+    
+    /**
+     * if bit "compare" - the global enable bit - is set, test_sums checks, if
+     * the sum of the c-number and the q-number in register add_sum is greater
+     * than n and sets the next lower bit to "compare"
+     */
+    void test_sum(int compare, int width, QuantumReg reg) {
+        int i;
+
+        if ((compare & QuReg.shiftLeftTruncate(width - 1)) > 0) {
+            quantum_cnot(2 * width - 1, width - 1, reg);
+            quantum_sigma_x(2 * width - 1, reg);
+            quantum_cnot(2 * width - 1, 0, reg);
+        } else {
+            quantum_sigma_x(2 * width - 1, reg);
+            quantum_cnot(2 * width - 1, width - 1, reg);
+        }
+        for (i = (width - 2); i > 0; i--) {
+            if ((compare & QuReg.shiftLeftTruncate(i)) > 0) {
+                //is bit i set in compare?
+                quantum_toffoli(i + 1, width + i, i, reg);
+                quantum_sigma_x(width + i, reg);
+                quantum_toffoli(i + 1, width + i, 0, reg);
+            } else {
+                quantum_sigma_x(width + i, reg);
+                quantum_toffoli(i + 1, width + i, i, reg);
+            }
+        }
+        if ((compare & 1) > 0) {
+            quantum_sigma_x(width, reg);
+            quantum_toffoli(width, 1, 0, reg);
+        }
+        quantum_toffoli(2 * width + 1, 0, 2 * width, reg);//set output to 1 if enabled and b < compare
+
+        if ((compare & 1) > 0) {
+            quantum_toffoli(width, 1, 0, reg);
+            quantum_sigma_x(width, reg);
+        }
+
+        for (i = 1; i <= (width - 2); i++) {
+            if ((compare & QuReg.shiftLeftTruncate(i)) > 0) {
+                //is bit i set in compare?
+                quantum_toffoli(i + 1, width + i, 0, reg);
+                quantum_sigma_x(width + i, reg);
+                quantum_toffoli(i + 1, width + i, i, reg);
+            } else {
+                quantum_toffoli(i + 1, width + i, i, reg);
+                quantum_sigma_x(width + i, reg);
+            }
+        }
+        if ((compare & QuReg.shiftLeftTruncate(width - 1)) > 0) {
+            quantum_cnot(2 * width - 1, 0, reg);
+            quantum_sigma_x(2 * width - 1, reg);
+            quantum_cnot(2 * width - 1, width - 1, reg);
+        } else {
+            quantum_cnot(2 * width - 1, width - 1, reg);
+            quantum_sigma_x(2 * width - 1, reg);
+        }
+
+    }
+
+    /**This is a semi-quantum fulladder. It adds to b_in
+    a c-number. Carry-in bit is c_in and carry_out is
+    c_out. xlt-l and L are enablebits. See documentation
+    for further information
+   */
+    void muxfa(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
+        int total, QuantumReg reg){
+
+      //a,
+
+      if (a == 0) {//00
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_cnot(b_in, c_in, reg);
+        }
+
+        if (a == 3) {//11
+            quantum_toffoli(L, c_in, c_out, reg);
+            quantum_cnot(L, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_cnot(b_in, c_in, reg);
+        }
+
+        if (a == 1) {//01
+            quantum_toffoli(L, xlt_l, b_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, b_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_cnot(b_in, c_in, reg);
+        }
+
+        if (a == 2) {//10
+            quantum_sigma_x(xlt_l, reg);
+            quantum_toffoli(L, xlt_l, b_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, b_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_cnot(b_in, c_in, reg);
+            quantum_sigma_x(xlt_l, reg);
+        }
+    }
+
+    /**
+    * This is just the inverse operation of the semi-quantum fulladder
+    */
+    void muxfa_inv(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
+        int total, QuantumReg reg){
+
+        //a,
+
+        if (a == 0) {//00
+            quantum_cnot(b_in, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+        }
+
+        if (a == 3) {//11
+            quantum_cnot(b_in, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_cnot(L, c_in, reg);
+            quantum_toffoli(L, c_in, c_out, reg);
+        }
+
+        if (a == 1) {//01
+            quantum_cnot(b_in, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, b_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, b_in, reg);
+        }
+
+        if (a == 2) {//10
+            quantum_sigma_x(xlt_l, reg);
+            quantum_cnot(b_in, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, c_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, b_in, reg);
+            quantum_toffoli(b_in, c_in, c_out, reg);
+            quantum_toffoli(L, xlt_l, b_in, reg);
+            quantum_sigma_x(xlt_l, reg);
+        }
+    }
+
+    /**This is a semi-quantum halfadder. It adds to b_in
+    a c-number. Carry-in bit is c_in and carry_out is
+    not necessary. xlt-l and L are enablebits. See
+    documentation for further information
+    */
+    void muxha(int a, int b_in, int c_in, int xlt_l, int L, int total, QuantumReg reg) {
+
+        //a,
+
+        if (a == 0) {//00
+            quantum_cnot(b_in, c_in, reg);
+        }
+
+        if (a == 3) {//11
+            quantum_cnot(L, c_in, reg);
+            quantum_cnot(b_in, c_in, reg);
+        }
+
+        if (a == 1) {//01
+            quantum_toffoli(L, xlt_l, c_in, reg);
+            quantum_cnot(b_in, c_in, reg);
+        }
+
+        if (a == 2) {//10
+            quantum_sigma_x(xlt_l, reg);
+            quantum_toffoli(L, xlt_l, c_in, reg);
+            quantum_cnot(b_in, c_in, reg);
+            quantum_sigma_x(xlt_l, reg);
+        }
+    }
+
+    //just the inverse of the semi quantum-halfadder
+    void muxha_inv(int a, int b_in, int c_in, int xlt_l, int L, int total, 
+        QuantumReg reg){
+
+        //a,
+
+        if (a == 0) {//00
+            quantum_cnot(b_in, c_in, reg);
+        }
+
+        if (a == 3) {//11
+            quantum_cnot(b_in, c_in, reg);
+            quantum_cnot(L, c_in, reg);
+        }
+
+        if (a == 1) {//01
+            quantum_cnot(b_in, c_in, reg);
+            quantum_toffoli(L, xlt_l, c_in, reg);
+        }
+
+        if (a == 2) {//10
+            quantum_sigma_x(xlt_l, reg);
+            quantum_cnot(b_in, c_in, reg);
+            quantum_toffoli(L, xlt_l, c_in, reg);
+            quantum_sigma_x(xlt_l, reg);
+        }
+    }
+
+    void madd(int a, int a_inv, int width, QuantumReg reg){
+        
+	    int i, j;
+        int total;
+        total = num_regs * width + 2;
+        for (i = 0; i < width - 1; i++) {
+            if ((QuReg.shiftLeftTruncate(i) & a) > 0) {
+                j = 1 << 1;
+            } else {
+                j = 0;
+            }
+            if ((QuReg.shiftLeftTruncate(i) & a_inv) > 0) {
+                j += 1;
+            }
+            muxfa(j, width + i, i, i + 1, 2 * width, 2 * width + 1, total, reg);
+        }
+        j = 0;
+        if ((QuReg.shiftLeftTruncate(width - 1) & a) > 0) {
+            j = 2;
+        }
+        if ((QuReg.shiftLeftTruncate(width - 1) & a_inv) > 0) {
+            j += 1;
+        }
+        muxha(j, 2 * width - 1, width - 1, 2 * width, 2 * width + 1, total, reg);
+    }
+
+    void madd_inv(int a, int a_inv, int width, QuantumReg reg){
+        
+	    int i, j;
+        int total;
+        total = num_regs * width + 2;
+        j = 0;
+
+        if ((QuReg.shiftLeftTruncate(width - 1) & a) > 0) {
+            j = 2;
+        }
+        if ((QuReg.shiftLeftTruncate(width - 1) & a_inv) > 0) {
+            j += 1;
+        }
+        muxha_inv(j, width - 1, 2 * width - 1, 2 * width, 2 * width + 1, total, reg);
+
+        for (i = width - 2; i >= 0; i--) {
+            if ((QuReg.shiftLeftTruncate(i) & a) > 0) {
+                j = 1 << 1;
+            } else {
+                j = 0;
+            }
+            if ((QuReg.shiftLeftTruncate(i) & a_inv) > 0) {
+                j += 1;
+            }
+            muxfa_inv(j, i, width + i, width + 1 + i, 2 * width, 2 * width + 1, total, reg);
+        }
+    }
+
+    void addn(int N, int a, int width, QuantumReg reg){
+
+        //add a to register reg (mod N)
+
+	    test_sum(N - a, width, reg); //xlt N-a
+        madd((1 << (width)) + a - N, a, width, reg);//madd 2^K+a-N
+    }
+
+    void addn_inv(int N, int a, int width, QuantumReg reg){
+
+        //inverse of add a to register reg (mod N)
+
+        quantum_cnot(2 * width + 1, 2 * width, reg);//Attention! cnot gate instead of not, as in description
+        madd_inv((1 << (width)) - a, N - a, width, reg);//madd 2^K+(N-a)-N = 2^K-a
+
+        quantum_swaptheleads(width, reg);
+
+        test_sum(a, width, reg);
+    }
+
+    void add_mod_n(int N, int a, int width, QuantumReg reg){
+
+        //add a to register reg (mod N) and clear the scratch bits
+
+	    addn(N, a, width, reg);
+        addn_inv(N, a, width, reg);
+    }
+
+    // ------- quantum fourier transform ------
+    
+    /**
+     * Perform a QFT on a quantum register. This is done by application of
+     * conditional phase shifts and hadamard gates. At the end, the position of
+     * the bits is reversed.
+     */
+    void quantum_qft(int width, QuantumReg reg) {
+        int i, j;
+
+        System.out.format(" quantum_qft nloop=%i\n", width);
+
+        for (i = width - 1; i >= 0; i--) {
+            for (j = width - 1; j > i; j--) {
+                quantum_cond_phase(j, i, reg);
+            }
+
+            System.out.format(" ..%i", i);
+
+            quantum_hadamard(i, reg);
+        }
+        System.out.format("\n");
+    }
+
+    void quantum_qft_inv(int width, QuantumReg reg) {
+  
+        int i, j;
+
+        for (i = 0; i < width; i++) {
+            quantum_hadamard(i, reg);
+            for (j = i + 1; j < width; j++) {
+                quantum_cond_phase_inv(j, i, reg);
+            }
+        }
+    }
+    
 }
