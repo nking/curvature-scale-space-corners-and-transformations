@@ -63,7 +63,7 @@ public class QuReg {
         //TODO: check the reduction of 0x9e370001UL by a bit:
         //   is the result a decent magic number at least as good as the previous?
         //k32 *= 1327202304.5;
-        long tmp = k32 * 1327202304;
+        long tmp = k32 * 1327202304L;
         if (tmp > Integer.MAX_VALUE) {
             k32 = Integer.MAX_VALUE;
         } else {
