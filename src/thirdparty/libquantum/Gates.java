@@ -455,7 +455,13 @@ public class Gates {
             if (decsize > 0) {
                 reg.size -= decsize;
                 if (reg.node.length != reg.size) {
+                    int len1 = reg.node.length;
                     reg.node = Arrays.copyOf(reg.node, reg.size);
+                    for (i = len1; i < reg.size; i++) {
+                        reg.node[i] = new QuantumRegNode();
+                        reg.node[i].setState(0);
+                        reg.node[i].amplitude = new ComplexModifiable(0, 0);
+                    }
                 }
             }
         }
@@ -580,7 +586,13 @@ public class Gates {
         if (decsize > 0) {
             reg.size -= decsize;
             if (reg.node.length != reg.size) {
+                int len1 = reg.node.length;
                 reg.node = Arrays.copyOf(reg.node, reg.size);
+                for (i = len1; i < reg.size; i++) {
+                    reg.node[i] = new QuantumRegNode();
+                    reg.node[i].setState(0);
+                    reg.node[i].amplitude = new ComplexModifiable(0, 0);
+                }
             }
         }
 

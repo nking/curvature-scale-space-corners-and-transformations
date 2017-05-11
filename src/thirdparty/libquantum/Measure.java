@@ -97,14 +97,13 @@ public class Measure {
         
         QuReg qureg = new QuReg();
 
-        QuantumReg out = qureg.quantum_state_collapse(pos, result, reg);
+        QuantumReg out = qureg.quantum_state_collapse(
+            pos, result, reg);
 
         System.out.format("  -- 5\n");
 
-        QuReg.quantum_delete_qureg_hashpreserve(reg);
-
-        System.out.format("  -- 6\n");
-
+        qureg.quantum_copy_qureg(out, reg);
+    
         return result;
     }
 
@@ -163,6 +162,11 @@ public class Measure {
         // Build the new quantum register 
         out.size = size;
         out.node = new QuantumRegNode[size];
+        for (int ii = 0; ii < reg.node.length; ii++) {
+            reg.node[ii] = new QuantumRegNode();
+            reg.node[ii].setState(0);
+            reg.node[ii].amplitude = new ComplexModifiable(0, 0);
+        }
 
         out.hashw = reg.hashw;
         out.hash = reg.hash;
@@ -180,8 +184,11 @@ public class Measure {
                 j++;
             }
         }
+        
+        QuReg qureg = new QuReg();
 
-        QuReg.quantum_delete_qureg_hashpreserve(reg);
+        qureg.quantum_copy_qureg(out, reg);
+        
         return result;
     }
 }

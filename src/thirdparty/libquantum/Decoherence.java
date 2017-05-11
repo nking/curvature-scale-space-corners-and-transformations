@@ -1,6 +1,5 @@
 package thirdparty.libquantum;
 
-import algorithms.misc.ComplexModifiable;
 import java.util.Random;
 
 /* decoherence.c: Simulation of decoherence effects

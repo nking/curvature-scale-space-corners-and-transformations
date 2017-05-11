@@ -215,6 +215,11 @@ public class QuReg {
         reg.hashw = width + 2;
 
         reg.node = new QuantumRegNode[size];
+        for (int ii = 0; ii < reg.node.length; ii++) {
+            reg.node[ii] = new QuantumRegNode();
+            reg.node[ii].setState(0);
+            reg.node[ii].amplitude = new ComplexModifiable(0, 0);
+        }
         
         // Allocate the hash table 
         int nHash = shiftLeftTruncate(reg.hashw);
@@ -278,7 +283,11 @@ public class QuReg {
 
         // Allocate memory for n basis states 
         reg.node = new QuantumRegNode[n];
-
+        for (int ii = 0; ii < reg.node.length; ii++) {
+            reg.node[ii] = new QuantumRegNode();
+            reg.node[ii].setState(0);
+            reg.node[ii].amplitude = new ComplexModifiable(0, 0);
+        }
         return reg;
     }
 
@@ -317,13 +326,6 @@ public class QuReg {
         reg.hash = null;
         reg.width = 0;
         reg.hashw = 0;
-        reg.node = null;
-    }
-
-    /**
-     * Delete a quantum register but leave the hash table alive
-     */
-    static void quantum_delete_qureg_hashpreserve(QuantumReg reg) {
         reg.node = null;
     }
 
@@ -425,7 +427,12 @@ public class QuReg {
 
         // allocate memory for the new basis states 
         reg.node = new QuantumRegNode[reg.size];
-         
+        for (int ii = 0; ii < reg.node.length; ii++) {
+            reg.node[ii] = new QuantumRegNode();
+            reg.node[ii].setState(0);
+            reg.node[ii].amplitude = new ComplexModifiable(0, 0);
+        }
+        
         // Allocate the hash table 
         int nHash = shiftLeftTruncate(reg.hashw);
         reg.hash = new int[nHash];
@@ -483,7 +490,12 @@ public class QuReg {
         out.node = new QuantumRegNode[size];
         out.hashw = reg.hashw;
         out.hash = reg.hash;
-
+        for (int ii = 0; ii < out.node.length; ii++) {
+            out.node[ii] = new QuantumRegNode();
+            out.node[ii].setState(0);
+            out.node[ii].amplitude = new ComplexModifiable(0, 0);
+        }
+        
         // Determine the numbers of the new base states and norm 
         // the quantum register 
         for (i = 0, j = 0; i < reg.size; i++) {
@@ -606,7 +618,13 @@ public class QuReg {
 
         reg.size += addsize;
         if (reg.node.length != reg.size) {
+            int len1 = reg.node.length;
             reg.node = Arrays.copyOf(reg.node, reg.size);
+            for (i = len1; i < reg.size; i++) {
+                reg.node[i] = new QuantumRegNode();
+                reg.node[i].setState(0);
+                reg.node[i].amplitude = new ComplexModifiable(0, 0);
+            }
         }
         
         k = reg1.size;
@@ -647,7 +665,13 @@ public class QuReg {
         // Allocate memory for basis states 
 
         if (reg1.node.length != reg1.size) {
+            int len1 = reg1.node.length;
             reg1.node = Arrays.copyOf(reg1.node, reg1.size);
+            for (i = len1; i < reg1.size; i++) {
+                reg1.node[i] = new QuantumRegNode();
+                reg1.node[i].setState(0);
+                reg1.node[i].amplitude = new ComplexModifiable(0, 0);
+            }
         }
         
         // Allocate the hash table 
