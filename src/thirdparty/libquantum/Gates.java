@@ -42,20 +42,21 @@ public class Gates {
     // need to look at the logic to see if the intention is
     // counter as a class variable or an instance variable.
     // will assume instance variable for now.
-    // same for freq
+    // same for freq and decoherence.
     private int counterQEC = 0;
     private static int freq = (1 << 30);
 
     /**
-     * Type of the QEC. Currently implemented versions are: 0: no QEC (default)
+     * Type of the QEC. Currently implemented versions are: 
+     * 0: no QEC (default)
      * 1: Steane's 3-bit code
      */
-    int type = 0;
+    private int type = 0;
 
     /**
      * How many qubits are protected
      */
-    int width = 0;
+    private int width = 0;
 
     private final Random rng;
     
@@ -98,7 +99,7 @@ public class Gates {
      */
     void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
         
-         int i;
+        int i;
         int[] qec = new int[1];
 
         quantum_qec_get_status(qec, null);
@@ -106,7 +107,7 @@ public class Gates {
         if (qec[0] > 0) {
             quantum_toffoli_ft(control1, control2, target, reg);
         } else {
-            
+
             for (i = 0; i < reg.size; i++) {
                 // Flip the target bit of a basis state if 
                 //both control bits are set 
@@ -283,7 +284,7 @@ public class Gates {
 
                 // construct the new basis state 
                 l = reg.node[i].getState() - (pat1 + pat2);
-                l += (pat1 << width);
+                l += QuReg.shiftLeftTruncate(pat1, width);
                 l += (pat2 >> width);
                 reg.node[i].setState(l);
             }
@@ -314,7 +315,7 @@ public class Gates {
         int addsize = 0, decsize = 0;
         //COMPLEX_FLOAT t, tnot = 0;
         ComplexModifiable t = null;
-        ComplexModifiable tnot = null;
+        ComplexModifiable tnot = new ComplexModifiable(0, 0);
         float limit;
         int[] done;
 
@@ -362,7 +363,8 @@ public class Gates {
             if (done[i] == 0) {
                 // determine if the target of the basis state is set
                 int iset = reg.node[i].getState() & QuReg.shiftLeftTruncate(target);
-                tnot = new ComplexModifiable(0, 0);
+                tnot.setReal(0);
+                tnot.setImag(0);
 
                 j = QuReg.quantum_get_state(reg.node[i].getState()
                     ^ QuReg.shiftLeftTruncate(target),  reg);
@@ -408,23 +410,21 @@ public class Gates {
                 } else {
                     // new basis state will be created 
 
-                    if ((m.t[1] == null || m.t[1].abs() == 0.0) && (iset > 0)) {
+                    if ((m.t[1].abs() == 0.0) && (iset > 0)) {
                         break;
                     }
-                    if ((m.t[2] == null || m.t[2].abs() == 0.0) && (iset == 0)) {
+                    if ((m.t[2].abs() == 0.0) && (iset == 0)) {
                         break;
                     }
                     reg.node[k].setState(reg.node[i].getState()
                         ^ QuReg.shiftLeftTruncate(target));
 
                     if (iset > 0) {
-                        ComplexModifiable tmp = m.t[1].copy();
-                        tmp.times(t);
-                        reg.node[k].amplitude = tmp;
+                        reg.node[k].amplitude.resetTo(m.t[1]);
+                        reg.node[k].amplitude.times(t);
                     } else {
-                        ComplexModifiable tmp = m.t[2].copy();
-                        tmp.times(t);
-                        reg.node[k].amplitude = tmp;
+                        reg.node[k].amplitude.resetTo(m.t[2]);
+                        reg.node[k].amplitude.times(t);
                     }
 
                     k++;
@@ -448,6 +448,7 @@ public class Gates {
                     decsize++;
                 } else if (j > 0) {
                     reg.node[i - j].setState(reg.node[i].getState());
+    //TODO: here, need to check for whether to copy upon assignment     
                     reg.node[i - j].amplitude = reg.node[i].amplitude;
                 }
             }

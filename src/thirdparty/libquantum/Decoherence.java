@@ -30,13 +30,13 @@ public class Decoherence {
      * Status of the decoherence simulation. Non-zero means enabled and
      * decoherence effects will be simulated.
      */
-    int quantum_status = 0;
+    private int quantum_status = 0;
 
     /**
      * Decoherence parameter. The higher the value, the greater the decoherence
      * impact.
      */
-    float quantum_lambda = 0;
+    private float quantum_lambda = 0;
 
     float quantum_get_decoherence() {
         return quantum_lambda;

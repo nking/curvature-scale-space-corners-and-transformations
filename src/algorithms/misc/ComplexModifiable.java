@@ -55,6 +55,11 @@ public class ComplexModifiable {
     public void setImag(double imag) {
         im = imag;
     }
+    
+    public void resetTo(ComplexModifiable m) {
+        this.re = m.re;
+        this.im = m.im;
+    }
 
     // return a string representation of the invoking Complex object
     public String toString() {

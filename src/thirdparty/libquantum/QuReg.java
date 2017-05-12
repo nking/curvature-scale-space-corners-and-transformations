@@ -154,7 +154,7 @@ public class QuReg {
     }
     
     /**
-     * convenienc method to handle c truncation due to a left shift
+     * convenience method to handle c truncation due to a left shift
      * that produces a number larger than integer.max_value.
      * @param shift
      * @return 
@@ -165,6 +165,24 @@ public class QuReg {
             tmp = Integer.MAX_VALUE;
         } else {
             tmp = 1 << shift;
+        }
+        return tmp;
+    }
+    
+    /**
+     * convenience method to handle c truncation due to a left shift
+     * that produces a number larger than integer.max_value.
+     * @param a number to be bit shifted
+     * @param shift
+     * @return 
+     */
+    public static int shiftLeftTruncate(int a, int shift) {
+        int nBitsA = (int)Math.ceil(Math.log(a)/Math.log(2));
+        int tmp;
+        if ((shift + nBitsA) > 30) {
+            tmp = Integer.MAX_VALUE;
+        } else {
+            tmp = a << shift;
         }
         return tmp;
     }
