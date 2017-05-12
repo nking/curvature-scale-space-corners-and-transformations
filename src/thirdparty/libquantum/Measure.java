@@ -70,11 +70,7 @@ public class Measure {
         double pa = 0, r;
         //MAX_UNSIGNED pos2;
 
-        System.out.format("  -- 1\n");
-
         int pos2 = QuReg.shiftLeftTruncate(pos);
-
-        System.out.format("  -- 2 %d\n", reg.size);
 
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
@@ -85,11 +81,8 @@ public class Measure {
 
         // Compare the probability for 0 with a random number 
         // and determine the result of the measurement 
-        System.out.format("  -- 3\n");
 
         r = rng.nextDouble();
-
-        System.out.format("  -- 4\n");
 
         if (r > pa) {
             result = 1;
@@ -99,8 +92,6 @@ public class Measure {
 
         QuantumReg out = qureg.quantum_state_collapse(
             pos, result, reg);
-
-        System.out.format("  -- 5\n");
 
         qureg.quantum_copy_qureg(out, reg);
     
@@ -167,7 +158,6 @@ public class Measure {
             reg.node[ii].setState(0);
             reg.node[ii].amplitude = new ComplexModifiable(0, 0);
         }
-
         out.hashw = reg.hashw;
         out.hash = reg.hash;
         out.width = reg.width;
@@ -177,9 +167,8 @@ public class Measure {
         for (i = 0, j = 0; i < reg.size; i++) {
             if (reg.node[i].amplitude.abs() > 0) {
                 out.node[j].setState(reg.node[i].getState());
-                ComplexModifiable tmp = reg.node[i].amplitude.copy();
-                tmp.times(1/Math.sqrt(d));
-                out.node[j].amplitude = tmp;
+                out.node[j].amplitude.resetTo(reg.node[i].amplitude);
+                out.node[j].amplitude.times(1/Math.sqrt(d));
 
                 j++;
             }
