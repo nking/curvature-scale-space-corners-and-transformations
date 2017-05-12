@@ -74,7 +74,7 @@ public class Measure {
 
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
-            if ((reg.node[i].getState() & pos2) != 0) {
+            if ((reg.node[i].getState() & pos2) == 0) {
                 pa += reg.node[i].amplitude.squareSum();
             }
         }
