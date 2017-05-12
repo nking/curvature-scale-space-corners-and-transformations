@@ -30,19 +30,10 @@ Quantum Error Correction.
  */
 public class Gates {
 
-    // TODO: review the use of the variable counter inside and outside this
-    //  instance to see whether it should be a class variable or an instance
-    //  variable.  assuming the later for now.
-    private int counter = 0;
-    
     private final float epsilon = 0.000001f;
     
-    //TODO: review this class and it's use.
-    // counter was a static variable in a method below.
-    // need to look at the logic to see if the intention is
-    // counter as a class variable or an instance variable.
-    // will assume instance variable for now.
-    // same for freq and decoherence.
+    private int counter = 0;
+    
     private int counterQEC = 0;
     private static int freq = (1 << 30);
 
@@ -369,10 +360,14 @@ public class Gates {
                 j = QuReg.quantum_get_state(reg.node[i].getState()
                     ^ QuReg.shiftLeftTruncate(target),  reg);
 
-                t = reg.node[i].amplitude;
-
+                if (t == null) {
+                    t = reg.node[i].amplitude;
+                } else {
+                    t.resetTo(reg.node[i].amplitude);
+                }
+                
                 if (j >= 0) {
-                    tnot = reg.node[j].amplitude;
+                    tnot.resetTo(reg.node[j].amplitude);
                 }
 
                 if (iset > 0) {
@@ -381,14 +376,14 @@ public class Gates {
                     ComplexModifiable t3 = m.t[3].copy();
                     t3.times(t);
                     t2.plus(t3);
-                    reg.node[i].amplitude = t2;
+                    reg.node[i].amplitude.resetTo(t2);
                 } else {
                     ComplexModifiable t0 = m.t[0].copy();
                     t0.times(t);
                     ComplexModifiable t1 = m.t[1].copy();
                     t1.times(tnot);
                     t0.plus(t1);
-                    reg.node[i].amplitude = t0;
+                    reg.node[i].amplitude.resetTo(t0);
                 }
 
                 if (j >= 0) {
@@ -398,14 +393,14 @@ public class Gates {
                         ComplexModifiable t1 = m.t[1].copy();
                         t1.times(t);
                         t0.plus(t1);
-                        reg.node[j].amplitude = t0;
+                        reg.node[j].amplitude.resetTo(t0);
                     } else {
                         ComplexModifiable t2 = m.t[2].copy();
                         t2.times(t);
                         ComplexModifiable t3 = m.t[3].copy();
                         t3.times(tnot);
                         t2.plus(t3);
-                        reg.node[j].amplitude = t2;
+                        reg.node[j].amplitude.resetTo(t2);
                     }
                 } else {
                     // new basis state will be created 
@@ -448,8 +443,7 @@ public class Gates {
                     decsize++;
                 } else if (j > 0) {
                     reg.node[i - j].setState(reg.node[i].getState());
-    //TODO: here, need to check for whether to copy upon assignment     
-                    reg.node[i - j].amplitude = reg.node[i].amplitude;
+                    reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);
                 }
             }
 
@@ -458,10 +452,10 @@ public class Gates {
                 if (reg.node.length != reg.size) {
                     int len1 = reg.node.length;
                     reg.node = Arrays.copyOf(reg.node, reg.size);
-                    for (i = len1; i < reg.size; i++) {
-                        reg.node[i] = new QuantumRegNode();
-                        reg.node[i].setState(0);
-                        reg.node[i].amplitude = new ComplexModifiable(0, 0);
+                    for (int ii = len1; ii < reg.size; ii++) {
+                        reg.node[ii] = new QuantumRegNode();
+                        reg.node[ii].setState(0);
+                        reg.node[ii].amplitude = new ComplexModifiable(0, 0);
                     }
                 }
             }
@@ -485,6 +479,9 @@ public class Gates {
         int i, j, k, l;
         int addsize = 0, decsize = 0;
         ComplexModifiable[] psi_sub = new ComplexModifiable[4];
+        for (i = 0; i < 4; ++i) {
+            psi_sub[i] = new ComplexModifiable(0, 0);
+        }
         int[] base = new int[4];
         int[] bits = new int[2];
         float limit;
@@ -492,10 +489,8 @@ public class Gates {
 
         // Build hash table 
         int end = QuReg.shiftLeftTruncate(reg.hashw);
-        for (i = 0; i < end; i++) {
-            reg.hash[i] = 0;
-        }
-
+        Arrays.fill(reg.hash, 0, end, 0);
+      
         for (i = 0; i < reg.size; i++) {
             QuReg.quantum_add_hash(reg.node[i].getState(), i, reg);
         }
@@ -538,13 +533,12 @@ public class Gates {
             if (done[i] == 0) {
                 j = QuReg.quantum_bitmask(reg.node[i].getState(), 2, bits);
                 base[j] = i;
-                base[j ^ 1] = QuReg.quantum_get_state(reg.node[i].getState()
-                    ^ QuReg.shiftLeftTruncate(target2), reg);
-                base[j ^ 2] = QuReg.quantum_get_state(reg.node[i].getState()
-                    ^ QuReg.shiftLeftTruncate(target1), reg);
-                base[j ^ 3] = QuReg.quantum_get_state(reg.node[i].getState()
-                    ^ QuReg.shiftLeftTruncate(target1)
-                    ^ QuReg.shiftLeftTruncate(target2), reg);
+                int state = reg.node[i].getState();
+                int tmp2 = QuReg.shiftLeftTruncate(target2);
+                int tmp1 = QuReg.shiftLeftTruncate(target1);
+                base[j ^ 1] = QuReg.quantum_get_state(state ^ tmp2, reg);
+                base[j ^ 2] = QuReg.quantum_get_state(state ^ tmp1, reg);
+                base[j ^ 3] = QuReg.quantum_get_state(state ^ tmp1 ^ tmp2, reg);
 
                 for (j = 0; j < 4; j++) {
                     if (base[j] == -1) {
@@ -552,7 +546,7 @@ public class Gates {
                         //		  reg->node[l].state = reg->node[i].state
                         l++;
                     }
-                    psi_sub[j] = reg.node[base[j]].amplitude;
+                    psi_sub[j].resetTo(reg.node[base[j]].amplitude);
                 }
 
                 for (j = 0; j < 4; j++) {
@@ -561,7 +555,7 @@ public class Gates {
                     for (k = 0; k < 4; k++) {
                         ComplexModifiable tmp = Matrix.M(m, k, j).copy();
                         tmp.times(psi_sub[k]);
-                        reg.node[base[j]].amplitude.plus(tmp);
+                        reg.node[base[j]].amplitude.plus(tmp);                        
                     }
 
                     done[base[j]] = 1;
@@ -577,10 +571,8 @@ public class Gates {
                 j++;
                 decsize++;
             } else if (j > 0) {
-                //TODO look into whether the complex modifiable assignment
-                // should be a copy
                 reg.node[i - j].setState(reg.node[i].getState());
-                reg.node[i - j].amplitude = reg.node[i].amplitude;
+                reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);
             }
         }
 
@@ -589,10 +581,10 @@ public class Gates {
             if (reg.node.length != reg.size) {
                 int len1 = reg.node.length;
                 reg.node = Arrays.copyOf(reg.node, reg.size);
-                for (i = len1; i < reg.size; i++) {
-                    reg.node[i] = new QuantumRegNode();
-                    reg.node[i].setState(0);
-                    reg.node[i].amplitude = new ComplexModifiable(0, 0);
+                for (int ii = len1; ii < reg.size; ii++) {
+                    reg.node[ii] = new QuantumRegNode();
+                    reg.node[ii].setState(0);
+                    reg.node[ii].amplitude = new ComplexModifiable(0, 0);
                 }
             }
         }
@@ -640,7 +632,7 @@ public class Gates {
         QuantumMatrix m = matrix.quantum_new_matrix(2, 2);
 
         m.t[0] = new ComplexModifiable(Math.cos(gamma / 2), 0);
-        m.t[1] = new ComplexModifiable(0, - Math.sin(gamma / 2));
+        m.t[1] = new ComplexModifiable(0, -Math.sin(gamma / 2));
         m.t[2] = new ComplexModifiable(0, -Math.sin(gamma / 2));
         m.t[3] = new ComplexModifiable(Math.cos(gamma / 2), 0);
 
@@ -695,7 +687,6 @@ public class Gates {
         //return cos(phi) + IMAGINARY * sin(phi);
         double angle = gamma;
         ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));
-
 
         for (i = 0; i < reg.size; i++) {
             reg.node[i].amplitude.times(z);
@@ -987,11 +978,17 @@ public class Gates {
         int c1, c2;
         //MAX_UNSIGNED mask;
         int mask;
-
-        mask = QuReg.shiftLeftTruncate(target)
+        
+        long mask0 = QuReg.shiftLeftTruncate(target)
             + QuReg.shiftLeftTruncate(target + width)
             + QuReg.shiftLeftTruncate(target + 2 * width);
-
+        // TODO: replace w/ a bitmask here and elsewhere
+        if (mask0 < Integer.MAX_VALUE) {
+            mask = (int)mask0;
+        } else {
+            mask = Integer.MAX_VALUE;
+        }
+        
         for (i = 0; i < reg.size; i++) {
             c1 = 0;
             c2 = 0;
@@ -1081,10 +1078,10 @@ public class Gates {
 
         for (i = 1; i < width; i++) {
             quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
-            add_mod_n(N, ((1 << i) * a) % N, width, reg);
+            add_mod_n(N, (QuReg.shiftLeftTruncate(i) * a) % N, 
+                width, reg);
             quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
         }
-
     }
 
     void muln_inv(int N, int a, int ctl, int width, QuantumReg reg){
@@ -1100,7 +1097,9 @@ public class Gates {
 
         for (i = width - 1; i > 0; i--) {
             quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
-            add_mod_n(N, N - ((1 << i) * a) % N, width, reg);
+            add_mod_n(N, 
+                N - (QuReg.shiftLeftTruncate(i) * a) % N, 
+                width, reg);
             quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
         }
 
@@ -1127,57 +1126,57 @@ public class Gates {
      * the sum of the c-number and the q-number in register add_sum is greater
      * than n and sets the next lower bit to "compare"
      */
-    void test_sum(int compare, int width, QuantumReg reg) {
+    void test_sum(int compare, int w, QuantumReg reg) {
         int i;
 
-        if ((compare & QuReg.shiftLeftTruncate(width - 1)) > 0) {
-            quantum_cnot(2 * width - 1, width - 1, reg);
-            quantum_sigma_x(2 * width - 1, reg);
-            quantum_cnot(2 * width - 1, 0, reg);
+        if ((compare & QuReg.shiftLeftTruncate(w - 1)) > 0) {
+            quantum_cnot(2 * w - 1, w - 1, reg);
+            quantum_sigma_x(2 * w - 1, reg);
+            quantum_cnot(2 * w - 1, 0, reg);
         } else {
-            quantum_sigma_x(2 * width - 1, reg);
-            quantum_cnot(2 * width - 1, width - 1, reg);
+            quantum_sigma_x(2 * w - 1, reg);
+            quantum_cnot(2 * w - 1, w - 1, reg);
         }
-        for (i = (width - 2); i > 0; i--) {
+        for (i = (w - 2); i > 0; i--) {
             if ((compare & QuReg.shiftLeftTruncate(i)) > 0) {
                 //is bit i set in compare?
-                quantum_toffoli(i + 1, width + i, i, reg);
-                quantum_sigma_x(width + i, reg);
-                quantum_toffoli(i + 1, width + i, 0, reg);
+                quantum_toffoli(i + 1, w + i, i, reg);
+                quantum_sigma_x(w + i, reg);
+                quantum_toffoli(i + 1, w + i, 0, reg);
             } else {
-                quantum_sigma_x(width + i, reg);
-                quantum_toffoli(i + 1, width + i, i, reg);
+                quantum_sigma_x(w + i, reg);
+                quantum_toffoli(i + 1, w + i, i, reg);
             }
         }
         if ((compare & 1) > 0) {
-            quantum_sigma_x(width, reg);
-            quantum_toffoli(width, 1, 0, reg);
+            quantum_sigma_x(w, reg);
+            quantum_toffoli(w, 1, 0, reg);
         }
-        quantum_toffoli(2 * width + 1, 0, 2 * width, reg);//set output to 1 if enabled and b < compare
+        quantum_toffoli(2 * w + 1, 0, 2 * w, reg);//set output to 1 if enabled and b < compare
 
         if ((compare & 1) > 0) {
-            quantum_toffoli(width, 1, 0, reg);
-            quantum_sigma_x(width, reg);
+            quantum_toffoli(w, 1, 0, reg);
+            quantum_sigma_x(w, reg);
         }
 
-        for (i = 1; i <= (width - 2); i++) {
+        for (i = 1; i <= (w - 2); i++) {
             if ((compare & QuReg.shiftLeftTruncate(i)) > 0) {
                 //is bit i set in compare?
-                quantum_toffoli(i + 1, width + i, 0, reg);
-                quantum_sigma_x(width + i, reg);
-                quantum_toffoli(i + 1, width + i, i, reg);
+                quantum_toffoli(i + 1, w + i, 0, reg);
+                quantum_sigma_x(w + i, reg);
+                quantum_toffoli(i + 1, w + i, i, reg);
             } else {
-                quantum_toffoli(i + 1, width + i, i, reg);
-                quantum_sigma_x(width + i, reg);
+                quantum_toffoli(i + 1, w + i, i, reg);
+                quantum_sigma_x(w + i, reg);
             }
         }
-        if ((compare & QuReg.shiftLeftTruncate(width - 1)) > 0) {
-            quantum_cnot(2 * width - 1, 0, reg);
-            quantum_sigma_x(2 * width - 1, reg);
-            quantum_cnot(2 * width - 1, width - 1, reg);
+        if ((compare & QuReg.shiftLeftTruncate(w - 1)) > 0) {
+            quantum_cnot(2 * w - 1, 0, reg);
+            quantum_sigma_x(2 * w - 1, reg);
+            quantum_cnot(2 * w - 1, w - 1, reg);
         } else {
-            quantum_cnot(2 * width - 1, width - 1, reg);
-            quantum_sigma_x(2 * width - 1, reg);
+            quantum_cnot(2 * w - 1, w - 1, reg);
+            quantum_sigma_x(2 * w - 1, reg);
         }
 
     }
@@ -1329,86 +1328,88 @@ public class Gates {
         }
     }
 
-    void madd(int a, int a_inv, int width, QuantumReg reg){
+    void madd(int a, int a_inv, int w, QuantumReg reg){
         
 	    int i, j;
         int total;
-        total = num_regs * width + 2;
-        for (i = 0; i < width - 1; i++) {
-            if ((QuReg.shiftLeftTruncate(i) & a) > 0) {
-                j = 1 << 1;
+        total = num_regs * w + 2;
+        for (i = 0; i < w - 1; i++) {
+            int tmp = QuReg.shiftLeftTruncate(i);
+            if ((tmp & a) > 0) {
+                j = tmp;
             } else {
                 j = 0;
             }
-            if ((QuReg.shiftLeftTruncate(i) & a_inv) > 0) {
+            if ((tmp & a_inv) > 0) {
                 j += 1;
             }
-            muxfa(j, width + i, i, i + 1, 2 * width, 2 * width + 1, total, reg);
+            muxfa(j, w + i, i, i + 1, 2 * w, 2 * w + 1, total, reg);
         }
         j = 0;
-        if ((QuReg.shiftLeftTruncate(width - 1) & a) > 0) {
+        if ((QuReg.shiftLeftTruncate(w - 1) & a) > 0) {
             j = 2;
         }
-        if ((QuReg.shiftLeftTruncate(width - 1) & a_inv) > 0) {
+        if ((QuReg.shiftLeftTruncate(w - 1) & a_inv) > 0) {
             j += 1;
         }
-        muxha(j, 2 * width - 1, width - 1, 2 * width, 2 * width + 1, total, reg);
+        muxha(j, 2 * w - 1, w - 1, 2 * w, 2 * w + 1, total, reg);
     }
 
-    void madd_inv(int a, int a_inv, int width, QuantumReg reg){
+    void madd_inv(int a, int a_inv, int w, QuantumReg reg){
         
 	    int i, j;
         int total;
-        total = num_regs * width + 2;
+        total = num_regs * w + 2;
         j = 0;
 
-        if ((QuReg.shiftLeftTruncate(width - 1) & a) > 0) {
+        if ((QuReg.shiftLeftTruncate(w - 1) & a) > 0) {
             j = 2;
         }
-        if ((QuReg.shiftLeftTruncate(width - 1) & a_inv) > 0) {
+        if ((QuReg.shiftLeftTruncate(w - 1) & a_inv) > 0) {
             j += 1;
         }
-        muxha_inv(j, width - 1, 2 * width - 1, 2 * width, 2 * width + 1, total, reg);
+        muxha_inv(j, w - 1, 2 * w - 1, 2 * w, 2 * w + 1, total, reg);
 
-        for (i = width - 2; i >= 0; i--) {
-            if ((QuReg.shiftLeftTruncate(i) & a) > 0) {
-                j = 1 << 1;
+        for (i = w - 2; i >= 0; i--) {
+            int tmp = QuReg.shiftLeftTruncate(i); 
+            if ((tmp & a) > 0) {
+                j = tmp;
             } else {
                 j = 0;
             }
-            if ((QuReg.shiftLeftTruncate(i) & a_inv) > 0) {
+            if ((tmp & a_inv) > 0) {
                 j += 1;
             }
-            muxfa_inv(j, i, width + i, width + 1 + i, 2 * width, 2 * width + 1, total, reg);
+            muxfa_inv(j, i, w + i, w + 1 + i, 2 * w, 2 * w + 1, total, reg);
         }
     }
 
-    void addn(int N, int a, int width, QuantumReg reg){
+    void addn(int N, int a, int w, QuantumReg reg){
 
         //add a to register reg (mod N)
 
-	    test_sum(N - a, width, reg); //xlt N-a
-        madd((1 << (width)) + a - N, a, width, reg);//madd 2^K+a-N
+	    test_sum(N - a, w, reg); //xlt N-a
+        madd(QuReg.shiftLeftTruncate(w) + a - N, a, w, reg);//madd 2^K+a-N
     }
 
-    void addn_inv(int N, int a, int width, QuantumReg reg){
+    void addn_inv(int N, int a, int w, QuantumReg reg){
 
         //inverse of add a to register reg (mod N)
 
-        quantum_cnot(2 * width + 1, 2 * width, reg);//Attention! cnot gate instead of not, as in description
-        madd_inv((1 << (width)) - a, N - a, width, reg);//madd 2^K+(N-a)-N = 2^K-a
+        quantum_cnot(2 * w + 1, 2 * w, reg);//Attention! cnot gate instead of not, as in description
+        madd_inv(QuReg.shiftLeftTruncate(w) - a, N - a, w, reg);//madd 2^K+(N-a)-N = 2^K-a
 
-        quantum_swaptheleads(width, reg);
+        quantum_swaptheleads(w, reg);
 
-        test_sum(a, width, reg);
+        test_sum(a, w, reg);
     }
 
-    void add_mod_n(int N, int a, int width, QuantumReg reg){
+    void add_mod_n(int N, int a, int w, QuantumReg reg){
 
         //add a to register reg (mod N) and clear the scratch bits
 
-	    addn(N, a, width, reg);
-        addn_inv(N, a, width, reg);
+	    addn(N, a, w, reg);
+        addn_inv(N, a, w, reg);
     }
 
     // ------- quantum fourier transform ------
@@ -1418,13 +1419,13 @@ public class Gates {
      * conditional phase shifts and hadamard gates. At the end, the position of
      * the bits is reversed.
      */
-    void quantum_qft(int width, QuantumReg reg) {
+    void quantum_qft(int w, QuantumReg reg) {
         int i, j;
 
-        System.out.format(" quantum_qft nloop=%d\n", width);
+        System.out.format(" quantum_qft nloop=%d\n", w);
 
-        for (i = width - 1; i >= 0; i--) {
-            for (j = width - 1; j > i; j--) {
+        for (i = w - 1; i >= 0; i--) {
+            for (j = w - 1; j > i; j--) {
                 quantum_cond_phase(j, i, reg);
             }
 
@@ -1435,13 +1436,13 @@ public class Gates {
         System.out.format("\n");
     }
 
-    void quantum_qft_inv(int width, QuantumReg reg) {
+    void quantum_qft_inv(int w, QuantumReg reg) {
   
         int i, j;
 
-        for (i = 0; i < width; i++) {
+        for (i = 0; i < w; i++) {
             quantum_hadamard(i, reg);
-            for (j = i + 1; j < width; j++) {
+            for (j = i + 1; j < w; j++) {
                 quantum_cond_phase_inv(j, i, reg);
             }
         }
