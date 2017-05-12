@@ -1334,15 +1334,16 @@ public class Gates {
 	    int i, j;
         int total;
         total = num_regs * w + 2;
+
         for (i = 0; i < w - 1; i++) {
             int tmp = QuReg.shiftLeftTruncate(i);
             if ((tmp & a) != 0) {
-                j = tmp;
+                j = 2;
             } else {
                 j = 0;
             }
             if ((tmp & a_inv) != 0) {
-                j += 1;
+                j++;
             }
             muxfa(j, w + i, i, i + 1, 2 * w, 2 * w + 1, total, reg);
         }
@@ -1351,7 +1352,7 @@ public class Gates {
             j = 2;
         }
         if ((QuReg.shiftLeftTruncate(w - 1) & a_inv) != 0) {
-            j += 1;
+            j++;
         }
         muxha(j, 2 * w - 1, w - 1, 2 * w, 2 * w + 1, total, reg);
     }
@@ -1374,7 +1375,7 @@ public class Gates {
         for (i = w - 2; i >= 0; i--) {
             int tmp = QuReg.shiftLeftTruncate(i); 
             if ((tmp & a) != 0) {
-                j = tmp;
+                j = 2;
             } else {
                 j = 0;
             }
