@@ -1,38 +1,156 @@
+http://www.quantumplayground.net/#/home
+
 -- libquantum:
-   -- the c complex class has different assignment behavoir.
-      for c0 = c1, c0 retains its address and copies in the
-         content of c1 which remains a separate object.
-      so need to edit java for the same behavior
-   -- also, expecting that objcode doesn't affect final
-      result, but need to look into that in detail.
    -- add the notes in util's shor.java regarding quantum computer
       notation, etc 
        into the lib quantum code comments.
+   -- port grovers to java
+   -- consider where to refactor method names to camel case
 
 -- consider changing over some of the matrix math to use jblas
    (example is in unit tests).  jblas is already included in project,
    but accessed mostly via MTJ.
 
+(1) healthy topics to impl at some point, probably now:
+   the PIM code is solving graph and path problems
+   -- Grover's...interesting and a tangent, but
+        would like to review in detail
+        https://pdfs.semanticscholar.org/834b/579cde622a51a1f1459319a48452e5d9760d.pdf
+   -- shors...same, it is a tangent to the other
+        problems, but maybe a good thing to have details
+        of for a good comparison example w/ a
+        simulated quantum computer.
+   -- maximal cliques and cover sets w/ SAT and/or QSO/SA
+   -- a little more about MCMC
+   -- still reading so some things are not clear.
+       are some of the PIMC examples expecting
+       that the user (me) take the potential function
+       and sample it using an MC algorithm,
+       then feed those initial points to the algorithm?
+       -- if yes, then what is the difference between
+           the MC's... GSL has a quantum MC doesn't it?
+           the sissa.it esspresso project does.
+           just general differences in notes would be 
+           useful
+-- looking at PIMC:
+    http://web.engr.illinois.edu/~bkclark/PIMCTutorial/tutorial.pdf
+
+-- global search:
+   bayesian optimization.
+   see code listing section at:
+    http://www.cleveralgorithms.com/nature-inspired/probabilistic/boa.html
+   see https://github.com/fmfn/BayesianOptimization/blob/master/examples/usage.py
+
+paused reading file:///Users/nichole/Downloads/Allegato_32620%20(1).pdf
+  on page 6
+
+Perron–Frobenius theorem
+[22, p 54ff],
+
+
+-- AQC is not restricted only to optimization problems 
+    (unlike QA) - an universal AQC can run any
+    quantum algorithm, and has been shown to be computationally 
+    equivalent to the gate model of quatnum
+    computation, as both can be efficiently mapped into 
+    each other [16].
+    Quantum adiabatic algorithms have been aplied to solve 
+    various optimization problems, for instance
+    finding cliques 27 in random graphs [17]. 
+    There is no know classical algorithm that finds the largest
+    clique in a random graph with high probability and runs in 
+    polynomial time.
+    In these algorithms, the condition for adiabaticity is 
+    fulfilled globaly by using only the minimum
+    energy gap between ground and first exited state to 
+    determine the computation time. This method
+    (global evolution) is not efficient in some cases, such as 
+    adiabatic Grover’s search algorithm [18] and
+    adiabatic Deutsch-Jozsa algorithm [19] as they result 
+    in a complexity τglobal = O(N) (which is complexity
+    of classical algorithms). However these algorithms can 
+    be improved by application of local adiabatic
+    evolution yielding an optimal performance of a quantum 
+    algorithm, τlocal = O( √ N ).
+    On the other hand, the universal AQC can provide 
+    solution to a problem in polynomial time if
+    the same problem can be solved in polynomial time 
+    using logic gate quantum computer. Evidently,
+    the polynomial advantage does not depend on the 
+    local evolution (instead it only provides a quadratic
+    enhancement).
+
+    -- read
+       Altaisky, M. V., N. N. Zolnikova, N. E. Kaputkina, V. A. Krylov, Yu. E. Lozovik, and N. S. Dattani. 2015. “Towards a Feasible Implementation of Quantum Neural Networks Using Quantum Dots.” arXiv:1503.05125.
+
+       Quantum algrithm for Closest Pattern Matching, Marcus and Imar
+
+
+  ... Quantum Stochastic Optimization
+   Discretizing a continuous Hamiltonian is straightforward process and changes the total run time T
+
+Childs A.M., Farhi E., Goldstone J., Gutmann S.: Finding cliques by quantum adiabatic evolution,
+Quantum Information and Computation 2, 181 (2002)
+
+Roland J., Cerf J. N.: Quantum Search by Local Adiabatic Evolution, Phys. Rev. A 65 (2002)
+[
+
+    ** start here again: http://www.columbia.edu/cu/chemistry/groups/berne/papers/jcp_118_2999_2003.pdf
+      https://arxiv.org/pdf/1408.3262.pdf
+
+    not sure if this is all here:
+       https://github.com/FabienDufoulon/QuantumAnnealing
+
+    quantum annealing
+   https://arxiv.org/pdf/1404.2465.pdf
+   * https://arxiv.org/pdf/1107.0794.pdf
+      (seudocode)
+   c++ impl https://github.com/FabienDufoulon/QuantumAnnealing 
+
+   https://arxiv.org/abs/1601.03030
+
+   if consider pso,
+       https://sourceforge.net/projects/jswarm-pso/?source=typ_redirect
+
 -- for global search/optimization methods, consider importing
-      https://github.com/aimacode/aima-java
+     https://github.com/aimacode/aima-java
      -- use the simulted annealing and/or other global
         optimization for the polynomial curve fitting
      would like to consider importing best global optimization
      (? random search, a genetic algorithm, simulated annealing,
-      or particle swarm)
-    -- consider the "clever algorithms" 
+     or particle swarm)
+     -- consider the "clever algorithms" 
 
      Three examples of MCMC techniques include the 
         Metropolis-Hastings algorithm, 
         Simulated Annealing for global optimization, and the 
         Gibbs sampler
 
+     -- BIPOP-CMA-ES ?  NEWUOA?
+        (Evolutionary Computation (EC) methods)
+        http://www.mitpressjournals.org/doi/pdf/10.1162/EVCO_a_00084
+        (Comparison of Global Search Algorithms for Continuous Black 
+           Box Optimization by Posik, Huler and Pa)
+        -- where are the tests for this paper?
+           - COCO (comparing continuous optimizers)
+             methodology (Hansen, Auger, et al., 2009)
+        https://github.com/numbbo/coco
+        tests are at:
+           https://github.com/numbbo/coco/tree/master/code-experiments/src
+        paper for 2016 coco frmework is at:
+           https://arxiv.org/pdf/1604.00359.pdf
+        good summary of the tests:
+           http://coco.gforge.inria.fr/
+
+       misc notes:
+          search params used in a run of cma-es:
+             N = 36, lambda = 15, mu=7, xl, xu, MaxFunEvals = 3000N^2
+
 (1) reading bishop 2006
     and looking at
     http://www.gaussianprocess.org/gpml/code/matlab/doc/
     and tensorflow
     -- Conditional Random Fields
-
 
 (2) read the remote s ensing paper
 

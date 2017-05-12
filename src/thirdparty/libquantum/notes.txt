@@ -7,6 +7,6 @@ the copyrights are in the individual files,
 their license is
      GNU General Public License version 3
 
-Note that for now, the memoization class for method
-   invocation called objcode, has been removed.
+Note that currently missing are the 
+ objcode and density classes.
 
