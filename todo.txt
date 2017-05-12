@@ -1,3 +1,14 @@
+-- libquantum:
+   -- the c complex class has different assignment behavoir.
+      for c0 = c1, c0 retains its address and copies in the
+         content of c1 which remains a separate object.
+      so need to edit java for the same behavior
+   -- also, expecting that objcode doesn't affect final
+      result, but need to look into that in detail.
+   -- add the notes in util's shor.java regarding quantum computer
+      notation, etc 
+       into the lib quantum code comments.
+
 -- consider changing over some of the matrix math to use jblas
    (example is in unit tests).  jblas is already included in project,
    but accessed mostly via MTJ.
