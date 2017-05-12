@@ -330,7 +330,6 @@ public class Gates {
 
             // allocate memory for the new basis states 
             int sz2 = reg.size + addsize;
-            System.out.format("reg.size + add=%d\n", sz2);
             if (reg.node.length != sz2) {
                 reg.node = Arrays.copyOf(reg.node, sz2);
             }
