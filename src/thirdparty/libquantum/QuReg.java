@@ -314,13 +314,11 @@ public class QuReg {
      */
     QuantumMatrix quantum_qureg2matrix(QuantumReg reg) {
         
-        QuantumMatrix m = new QuantumMatrix();
         int i;
 
-        
         Matrix matrix = new Matrix();
         int sz = shiftLeftTruncate(reg.width);
-        m = matrix.quantum_new_matrix(1, sz);
+        QuantumMatrix m = matrix.quantum_new_matrix(1, sz);
 
         for (i = 0; i < reg.size; i++) {
             m.t[reg.node[i].getState()] = reg.node[i].amplitude;

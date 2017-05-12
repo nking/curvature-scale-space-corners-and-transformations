@@ -26,13 +26,21 @@ import algorithms.misc.ComplexModifiable;
  */
 public class Matrix {
 
-    //#define M(m, x, y) m.t[(x)+(y)*m.cols]
+    /**
+     * extract the complex number m.t[(x) + (y) * m.cols]
+     * without copying.
+     * @param m
+     * @param x
+     * @param y
+     * @return 
+     */
     public static ComplexModifiable M(QuantumMatrix m, int x, int y) {
         return m.t[(x) + (y) * m.cols];
     }
 
     /**
-     * Create a new COLS x ROWS matrix
+     * Create a new COLS x ROWS matrix. 
+     * Note that m.t is initialized and filled.
      */
     QuantumMatrix quantum_new_matrix(int cols, int rows) {
         
@@ -40,7 +48,11 @@ public class Matrix {
 
         m.rows = rows;
         m.cols = cols;
-        m.t = new ComplexModifiable[cols * rows];
+        int n = cols * rows;
+        m.t = new ComplexModifiable[n];
+        for (int i = 0; i < n; ++i) {
+            m.t[i] = new ComplexModifiable(0, 0);
+        }
         
         return m;
     }
@@ -70,13 +82,12 @@ public class Matrix {
     QuantumMatrix quantum_mmult(QuantumMatrix A, QuantumMatrix B) {
         
         int i, j, k;
-        QuantumMatrix C = new QuantumMatrix();
 
         if (A.cols != B.rows) {
             throw new IllegalArgumentException("A.cols must == B.rows");
         }
 
-        C = quantum_new_matrix(B.cols, A.rows);
+        QuantumMatrix C = quantum_new_matrix(B.cols, A.rows);
 
         for (i = 0; i < B.cols; i++) {
             for (j = 0; j < A.rows; j++) {
