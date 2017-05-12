@@ -118,6 +118,10 @@ public class Shor {
         this.x = x;
     }
     
+    /**
+     * NOT READY FOR USE
+     *
+     */
     public int[] run() {
     
         final long t0 = System.currentTimeMillis();
