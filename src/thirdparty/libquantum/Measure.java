@@ -44,7 +44,7 @@ public class Measure {
             // given base state - r, return the base state as the
             // result. Otherwise, continue with the next base state. 
 
-            r -= reg.node[i].amplitude.abs();
+            r -= reg.node[i].amplitude.squareSum();
             if (0 >= r) {
                 return reg.node[i].getState();
             }
@@ -74,8 +74,8 @@ public class Measure {
 
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
-            if ((reg.node[i].getState() & pos2) == 0) {
-                pa += reg.node[i].amplitude.abs();
+            if ((reg.node[i].getState() & pos2) != 0) {
+                pa += reg.node[i].amplitude.squareSum();
             }
         }
 
@@ -112,7 +112,7 @@ public class Measure {
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
             if ((reg.node[i].getState() & pos2) == 0) {
-                pa += reg.node[i].amplitude.abs();
+                pa += reg.node[i].amplitude.squareSum();
             }
         }
 
@@ -128,25 +128,24 @@ public class Measure {
         // ruled out by the measurement and get the absolute 
         // of the new register 
         for (i = 0; i < reg.size; i++) {
-            if ((reg.node[i].getState() & pos2) > 0) {
+            if ((reg.node[i].getState() & pos2) != 0) {
                 if (result == 0) {
                     reg.node[i].amplitude.setReal(0);
                     reg.node[i].amplitude.setImag(0);
                 } else {
-                    d += reg.node[i].amplitude.abs();
+                    d += reg.node[i].amplitude.squareSum();
                     size++;
                 }
             } else {
-                if (result > 0) {
+                if (result != 0) {
                     reg.node[i].amplitude.setReal(0);
                     reg.node[i].amplitude.setImag(0);
                 } else {
-                    d += reg.node[i].amplitude.abs();
+                    d += reg.node[i].amplitude.squareSum();
                     size++;
                 }
             }
         }
-
         //TODO: revisit this for whether need to make copies of data for assignment
         
         QuantumReg out = new QuantumReg();
@@ -165,7 +164,7 @@ public class Measure {
         // Determine the numbers of the new base states and 
         // norm the quantum register 
         for (i = 0, j = 0; i < reg.size; i++) {
-            if (reg.node[i].amplitude.abs() > 0) {
+            if (reg.node[i].amplitude.abs() != 0) {
                 out.node[j].setState(reg.node[i].getState());
                 out.node[j].amplitude.resetTo(reg.node[i].amplitude);
                 out.node[j].amplitude.times(1/Math.sqrt(d));

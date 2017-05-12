@@ -73,6 +73,10 @@ public class ComplexModifiable {
     public double abs()   { return Math.hypot(re, im); }  // Math.sqrt(re*re + im*im)
     public double phase() { return Math.atan2(im, re); }  // between -pi and pi
 
+    public double squareSum() {
+        return (re * re) + (im * im);
+    }
+    
     /**
      * add the value of b to this instance
      * @param b

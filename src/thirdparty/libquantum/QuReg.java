@@ -41,39 +41,14 @@ public class QuReg {
         k32 = k32 >> (32 - width);
         return k32;
     }*/
-    static int quantum_hash64(long key, int width) {
-        //unsigned int k32;
-        int k32;
+    static int quantum_hash64(int key, int width) {
+
+        long k = (key & 0x7FFFFFFF) ^ (key >> 31);
+        k *= 1327202304L; // 0x9e370001UL >> 1
+        k &= ((1 << 31) - 1);
+        k = k >> (31L - width);
         
-        //             32 bit mask
-        //k32 = (key & 0xFFFFFFFF) ^ (key >> 32);
-        //             31 bit mask
-        k32 = (int)((key & 0x7FFFFFFF) ^ (key >> 32));
-        
-        //     31.3057 bits
-        //k32 *= 0x9e370001UL;
-        
-        //     unsigned int = unsigned int * unsigned long
-        //        32 bits        32 bits        64 bits
-        // in c, the righthand side are both converted to unsigned long
-        //       then result is narrowed to unsigned int.
-        //       overflow from unsigned long to unsigned int is truncated
-        //       so max value is 1<<32 bits - 1
-        
-        //TODO: check the reduction of 0x9e370001UL by a bit:
-        //   is the result a decent magic number at least as good as the previous?
-        //k32 *= 1327202304.5;
-        //TODO: replace with a bit mask
-        long tmp = k32 * 1327202304L;
-        if (tmp > Integer.MAX_VALUE) {
-            k32 = Integer.MAX_VALUE;
-        } else {
-            k32 = (int)tmp;
-        }
-        
-        k32 = k32 >> (32 - width);
-        
-        return k32;
+        return (int) k;
     }
 
     /**
@@ -89,7 +64,7 @@ public class QuReg {
 
         i = quantum_hash64(a, reg.hashw);
 
-        while (reg.hash[i] > 0) {
+        while (reg.hash[i] != 0) {
             if (reg.node[reg.hash[i] - 1].getState() == a) {
                 return reg.hash[i] - 1;
             }
@@ -112,8 +87,13 @@ public class QuReg {
         int i, mark = 0;
 
         i = quantum_hash64(a, reg.hashw);
-
-        while (reg.hash[i] > 0) {
+        
+        System.out.format("limit=%d\n", QuReg.shiftLeftTruncate(reg.hashw));
+        System.out.format("a=%d i=%d  H=%d\n", a, i, reg.hash[i]);
+        System.out.format("a=%d i=%d\n", 10, quantum_hash64(10, reg.hashw));
+        System.out.format("a=%d i=%d\n", 100, quantum_hash64(100, reg.hashw));
+   
+        while (reg.hash[i] != 0) {
             i++;
             // if i is > last index
             if (i == QuReg.shiftLeftTruncate(reg.hashw)) {
@@ -140,13 +120,9 @@ public class QuReg {
             return;
         }
 
-        int nzd = 0;
         int end = QuReg.shiftLeftTruncate(reg.hashw);
-        for (i = 0; i < end; i++) {
-            reg.hash[i] = 0;
-            ++nzd;
-        }
-
+        Arrays.fill(reg.hash, 0, end, 0);
+   
         for (i = 0; i < reg.size; i++) {
             quantum_add_hash(reg.node[i].getState(), i, reg);
         }
@@ -224,7 +200,7 @@ public class QuReg {
 
         // Determine the size of the quantum register 
         for (i = 0; i < m.rows; i++) {
-            if (m.t[i].abs() != 0.0) {
+            if (m.t[i].re() != 0.0) {
                 size++;
             }
         }
@@ -247,7 +223,7 @@ public class QuReg {
         // Copy the nonzero amplitudes of the vector into the 
         //quantum register 
         for (i = 0, j = 0; i < m.rows; i++) {
-            if (m.t[i].abs() != 0.0) {
+            if (m.t[i].re() != 0.0) {
                 reg.node[j].setState(i);
                 reg.node[j].amplitude.resetTo(m.t[i]);
                 j++;
@@ -284,7 +260,7 @@ public class QuReg {
         System.out.format(
             "init reg: %d qubits, 1 node, and %d hash table length, hashw=%d\n",
             reg.width, nHash, reg.hashw);
-
+         
         return reg;
     }
 
@@ -349,17 +325,18 @@ public class QuReg {
         int i, j;
 
         for (i = 0; i < reg.size; i++) {
-            System.out.format("% f %+fi|%lli> (%e) (|", 
+            System.out.format("%f %fi|%d> (%f) (|", 
                 reg.node[i].amplitude.re(),
                 reg.node[i].amplitude.im(), 
                 reg.node[i].getState(),
-                reg.node[i].amplitude.abs());
+                reg.node[i].amplitude.squareSum());
             for (j = reg.width - 1; j >= 0; j--) {
                 if (j % 4 == 3) {
                     System.out.format(" ");
                 }
                 int tmp = shiftLeftTruncate(j);
-                System.out.format("%d", ((tmp & reg.node[i].getState()) > 0));
+                int b = ((tmp & reg.node[i].getState()) > 0) ? 1 : 0;
+                System.out.format("%d", b);
             }
 
             System.out.format(">)\n");
@@ -375,7 +352,7 @@ public class QuReg {
         int i;
         for (i = 0; i < reg.size; i++) {
             int tmp = shiftLeftTruncate(reg.width / 2);
-            System.out.format("%d: %lli\n", i, 
+            System.out.format("%d: %d\n", i, 
                 reg.node[i].getState() - i * tmp);
         }
     }
@@ -406,8 +383,8 @@ public class QuReg {
         int i;
         int tmp = shiftLeftTruncate(reg.hashw);
         for (i = 0; i < tmp; i++) {
-            if (i > 0) {
-                System.out.format("%d: %d %llu\n", i, reg.hash[i] - 1,
+            if (i > 0 && reg.hash[i] > 0) {
+                System.out.format("%d: %d %d\n", i, reg.hash[i] - 1,
                     reg.node[reg.hash[i] - 1].getState());
             }
         }
@@ -475,10 +452,10 @@ public class QuReg {
         // Eradicate all amplitudes of base states which have been ruled out
         //   by the measurement and get the norm of the new register 
         for (i = 0; i < reg.size; i++) {
-            if ((((reg.node[i].getState() & pos2) > 0) && (value > 0))
+            if ((((reg.node[i].getState() & pos2) != 0) && (value != 0))
                 || (((reg.node[i].getState() & pos2) == 0) && (value == 0))) {
                 
-                d += reg.node[i].amplitude.abs();
+                d += reg.node[i].amplitude.squareSum();
                 size++;
             }
         }
@@ -498,7 +475,7 @@ public class QuReg {
         // Determine the numbers of the new base states and norm 
         // the quantum register 
         for (i = 0, j = 0; i < reg.size; i++) {
-            if ((((reg.node[i].getState() & pos2) > 0) && (value > 0))
+            if ((((reg.node[i].getState() & pos2) != 0) && (value != 0))
                 || (((reg.node[i].getState() & pos2) == 0) && (value == 0))) {
                 for (k = 0, rpat = 0; k < pos; k++) {
                     rpat += shiftLeftTruncate(k);
@@ -572,7 +549,7 @@ public class QuReg {
         ComplexModifiable f = new ComplexModifiable(0, 0);
 
         // Check whether quantum registers are sorted 
-        if (reg2.hashw > 0) {
+        if (reg2.hashw != 0) {
             quantum_reconstruct_hash(reg2);
         }
 
@@ -602,7 +579,7 @@ public class QuReg {
 
         quantum_copy_qureg(reg1, reg);
 
-        if ((reg1.hashw > 0) || (reg2.hashw > 0)) {
+        if ((reg1.hashw != 0) || (reg2.hashw != 0)) {
             quantum_reconstruct_hash(reg1);
             quantum_copy_qureg(reg1, reg);
 
@@ -650,7 +627,7 @@ public class QuReg {
         int i, j, k;
         int addsize = 0;
 
-        if ((reg1.hashw > 0) || (reg2.hashw > 0)) {
+        if ((reg1.hashw != 0) || (reg2.hashw != 0)) {
             quantum_reconstruct_hash(reg1);
 
             // Calculate the number of additional basis states 

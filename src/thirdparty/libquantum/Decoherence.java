@@ -46,7 +46,7 @@ public class Decoherence {
      * Initialize the decoherence simulation and set the decoherence parameter.
      */
     void quantum_set_decoherence(float l) {
-        if (l > 0) {
+        if (l != 0) {
             quantum_status = 1;
             quantum_lambda = l;
         } else {
@@ -70,7 +70,7 @@ public class Decoherence {
          */
         gates.quantum_gate_counter(1);
 
-        if (quantum_status > 0) {
+        if (quantum_status != 0) {
 
             nrands = new double[reg.width];
 
@@ -96,7 +96,7 @@ public class Decoherence {
                 angle = 0;
 
                 for (j = 0; j < reg.width; j++) {
-                    if ((reg.node[i].getState() & QuReg.shiftLeftTruncate(j)) > 0) {
+                    if ((reg.node[i].getState() & QuReg.shiftLeftTruncate(j)) != 0) {
                         angle += nrands[j];
                     } else {
                         angle -= nrands[j];
