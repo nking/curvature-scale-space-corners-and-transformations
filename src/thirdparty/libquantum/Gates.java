@@ -103,11 +103,11 @@ public class Gates {
                 // Flip the target bit of a basis state if 
                 //both control bits are set 
 
-                if ((reg.node[i].getState() & QuReg.shiftLeftTruncate(control1)) != 0) {
-                    if ((reg.node[i].getState() & QuReg.shiftLeftTruncate(control2)) != 0) {
-                        int tmp1 = reg.node[i].getState();
-                        tmp1 ^= QuReg.shiftLeftTruncate(target);
-                        reg.node[i].setState(tmp1);
+                int st = reg.node[i].getState(); 
+                if ((st & QuReg.shiftLeftTruncate(control1)) != 0) {
+                    if ((st & QuReg.shiftLeftTruncate(control2)) != 0) {
+                        st ^= QuReg.shiftLeftTruncate(target);
+                        reg.node[i].setState(st);
                     }
                 }
             }
@@ -305,7 +305,7 @@ public class Gates {
     void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
     
         int i, j, k;
-        int addsize = 0, decsize = 0;
+        int addsize = 0;
         //COMPLEX_FLOAT t, tnot = 0;
         ComplexModifiable t = null;
         ComplexModifiable tnot = new ComplexModifiable(0, 0);
@@ -317,6 +317,8 @@ public class Gates {
                 + "m.rows must == 2");
         }
         
+        assert(reg.size <= reg.node.length);
+           
         if (reg.hashw > 0) {
                         
             QuReg.quantum_reconstruct_hash(reg);
@@ -334,6 +336,7 @@ public class Gates {
             int sz2 = reg.size + addsize;
             if (reg.node.length != sz2) {
                 reg.node = Arrays.copyOf(reg.node, sz2);
+                assert(sz2 == reg.node.length);
             }
 
             for (i = 0; i < addsize; i++) {
@@ -433,8 +436,11 @@ public class Gates {
         }
         reg.size += addsize;
         
+        assert(reg.size <= reg.node.length);
+        
         // remove basis states with extremely small amplitude 
-        if (reg.hashw > 0) {
+        if (reg.hashw != 0) {
+            int decsize = 0;
             for (i = 0, j = 0; i < reg.size; i++) {
                 if (reg.node[i].amplitude.squareSum() < limit) {
                     j++;
@@ -447,19 +453,16 @@ public class Gates {
 
             if (decsize != 0) {
                 reg.size -= decsize;
-                if (reg.node.length != reg.size) {
-                    int len1 = reg.node.length;
-                    reg.node = Arrays.copyOf(reg.node, reg.size);
-                    for (int ii = len1; ii < reg.size; ii++) {
-                        reg.node[ii] = new QuantumRegNode();
-                        reg.node[ii].setState(0);
-                        reg.node[ii].amplitude = new ComplexModifiable(0, 0);
-                    }
+                int len1 = reg.node.length;
+                reg.node = Arrays.copyOf(reg.node, reg.size);
+                for (int ii = len1; ii < reg.size; ii++) {
+                    reg.node[ii] = new QuantumRegNode();
+                    reg.node[ii].setState(0);
+                    reg.node[ii].amplitude = new ComplexModifiable(0, 0);
                 }
             }
         }
-
-        decoherence.quantum_decohere(reg, rng, this);
+        decoherence.quantum_decohere(reg, rng, this);        
     }
 
     /**
@@ -489,6 +492,8 @@ public class Gates {
         int end = QuReg.shiftLeftTruncate(reg.hashw);
         Arrays.fill(reg.hash, 0, end, 0);
       
+        assert(reg.node.length >= reg.size);
+        
         for (i = 0; i < reg.size; i++) {
             QuReg.quantum_add_hash(reg.node[i].getState(), i, reg);
         }
@@ -558,7 +563,6 @@ public class Gates {
 
                     done[base[j]] = 1;
                 }
-
             }
         }
         reg.size += addsize;
@@ -987,6 +991,8 @@ public class Gates {
             mask = Integer.MAX_VALUE;
         }
         
+        System.out.println("toffoli_ft mask=" + mask);
+        
         for (i = 0; i < reg.size; i++) {
             c1 = 0;
             c2 = 0;
@@ -1045,6 +1051,7 @@ public class Gates {
         int i, j, f;
 
         quantum_sigma_x(2 * width + 2, reg);
+ 
         for (i = 1; i <= width_input; i++) {
             f = x % N;			//compute
             for (j = 1; j < i; j++) {
@@ -1065,57 +1072,66 @@ public class Gates {
         }
     }
 
-    void muln(int N, int a, int ctl, int width, QuantumReg reg) {
+    void muln(int N, int a, int ctl, int w, QuantumReg reg) {
         //ctl tells, which bit is the external enable bit
 	
         int i;
-        int L = 2 * width + 1;
+        int L = 2 * w + 1;
 
-        quantum_toffoli(ctl, 2 * width + 2, L, reg);
+        quantum_toffoli(ctl, 2 * w + 2, L, reg);
 
-        emul(a % N, L, width, reg);
+        emul(a % N, L, w, reg);
 
-        quantum_toffoli(ctl, 2 * width + 2, L, reg);
+        quantum_toffoli(ctl, 2 * w + 2, L, reg);
 
-        for (i = 1; i < width; i++) {
-            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+        for (i = 1; i < w; i++) {
+            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);
             add_mod_n(N, (QuReg.shiftLeftTruncate(i) * a) % N, 
-                width, reg);
-            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+                w, reg);
+            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);
         }
     }
 
-    void muln_inv(int N, int a, int ctl, int width, QuantumReg reg){
+    void muln_inv(int N, int a, int ctl, int w, QuantumReg reg){
 
         //ctl tells, which bit is the external enable bit
 	
         int i;
-        int L = 2 * width + 1;
+        int L = 2 * w + 1;
 
         Classic classic = new Classic();
         
         a = classic.quantum_inverse_mod(N, a);
-
-        for (i = width - 1; i > 0; i--) {
-            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+ 
+        for (i = w - 1; i > 0; i--) {
+            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);
+             
             add_mod_n(N, 
                 N - (QuReg.shiftLeftTruncate(i) * a) % N, 
-                width, reg);
-            quantum_toffoli(ctl, 2 * width + 2 + i, L, reg);
+                w, reg);           
+            
+            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);
+ 
         }
-
-        quantum_toffoli(ctl, 2 * width + 2, L, reg);
-        emul(a % N, L, width, reg);
-        quantum_toffoli(ctl, 2 * width + 2, L, reg);
+          
+        quantum_toffoli(ctl, 2 * w + 2, L, reg);
+      
+        emul(a % N, L, w, reg);
+       
+        quantum_toffoli(ctl, 2 * w + 2, L, reg);    
+        
     }
 
-    void mul_mod_n(int N, int a, int ctl, int width, QuantumReg reg) {
-  
-        muln(N, a, ctl, width, reg);
+    void mul_mod_n(int N, int a, int ctl, int w, QuantumReg reg) {
 
-        quantum_swaptheleads_omuln_controlled(ctl, width, reg);
 
-        muln_inv(N, a, ctl, width, reg);
+        muln(N, a, ctl, w, reg);
+
+        quantum_swaptheleads_omuln_controlled(ctl, w, reg);
+        
+
+        muln_inv(N, a, ctl, w, reg);
+
     }
   
     // ------oaddn.c: Addition modulo an integer N ----
@@ -1192,18 +1208,18 @@ public class Gates {
 
       //a,
 
-      if (a == 0) {//00
+        if (a == 0) {//00
             quantum_toffoli(b_in, c_in, c_out, reg);
             quantum_cnot(b_in, c_in, reg);
-        }
-
+        }        
+         
         if (a == 3) {//11
             quantum_toffoli(L, c_in, c_out, reg);
             quantum_cnot(L, c_in, reg);
             quantum_toffoli(b_in, c_in, c_out, reg);
-            quantum_cnot(b_in, c_in, reg);
+            quantum_cnot(b_in, c_in, reg);          
         }
-
+        
         if (a == 1) {//01
             quantum_toffoli(L, xlt_l, b_in, reg);
             quantum_toffoli(b_in, c_in, c_out, reg);
@@ -1213,7 +1229,7 @@ public class Gates {
             quantum_toffoli(b_in, c_in, c_out, reg);
             quantum_cnot(b_in, c_in, reg);
         }
-
+        
         if (a == 2) {//10
             quantum_sigma_x(xlt_l, reg);
             quantum_toffoli(L, xlt_l, b_in, reg);
@@ -1330,7 +1346,7 @@ public class Gates {
     }
 
     void madd(int a, int a_inv, int w, QuantumReg reg){
-        
+    
 	    int i, j;
         int total;
         total = num_regs * w + 2;
@@ -1390,7 +1406,8 @@ public class Gates {
 
         //add a to register reg (mod N)
 
-	    test_sum(N - a, w, reg); //xlt N-a
+	    test_sum(N - a, w, reg); //xlt N-a      
+        
         madd(QuReg.shiftLeftTruncate(w) + a - N, a, w, reg);//madd 2^K+a-N
     }
 
@@ -1411,6 +1428,7 @@ public class Gates {
         //add a to register reg (mod N) and clear the scratch bits
 
 	    addn(N, a, w, reg);
+ 
         addn_inv(N, a, w, reg);
     }
 

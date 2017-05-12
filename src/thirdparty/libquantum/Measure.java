@@ -146,7 +146,6 @@ public class Measure {
                 }
             }
         }
-        //TODO: revisit this for whether need to make copies of data for assignment
         
         QuantumReg out = new QuantumReg();
         // Build the new quantum register 

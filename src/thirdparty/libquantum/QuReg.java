@@ -1,6 +1,7 @@
 package thirdparty.libquantum;
 
 import algorithms.misc.ComplexModifiable;
+import algorithms.misc.MiscMath;
 import java.util.Arrays;
 
 /* qureg
@@ -105,6 +106,10 @@ public class QuReg {
                 }
             }
         }
+        
+        //NOTE: since this value is the index of reg.node,
+        //      it sometimes has an invalid value.
+        //      should the value be pos?
         reg.hash[i] = pos + 1;
     }
 
@@ -123,8 +128,11 @@ public class QuReg {
         int end = QuReg.shiftLeftTruncate(reg.hashw);
         Arrays.fill(reg.hash, 0, end, 0);
    
+        assert(reg.node.length >= reg.size);
+        
         for (i = 0; i < reg.size; i++) {
-            quantum_add_hash(reg.node[i].getState(), i, reg);
+            quantum_add_hash(reg.node[i].getState(), 
+                i, reg);
         }
     }
     
@@ -382,10 +390,18 @@ public class QuReg {
     void quantum_print_hash(QuantumReg reg) {
         int i;
         int tmp = shiftLeftTruncate(reg.hashw);
+        assert(reg.hash.length == tmp);
+        int hashMax = MiscMath.findMax(reg.hash);
+        System.out.println("hash length=" + reg.hash.length + " max value=" 
+            + hashMax + " node.length=" + reg.node.length);
+        assert(reg.node.length >= reg.size);
         for (i = 0; i < tmp; i++) {
             if (i > 0 && reg.hash[i] > 0) {
-                System.out.format("%d: %d %d\n", i, reg.hash[i] - 1,
-                    reg.node[reg.hash[i] - 1].getState());
+                int idx = reg.hash[i] - 1;
+                if (idx < reg.node.length) {
+                    System.out.format("%d: %d %d\n", i, idx,
+                        reg.node[idx].getState());
+                }
             }
         }
     }
