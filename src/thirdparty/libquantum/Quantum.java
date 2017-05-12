@@ -28,5 +28,5 @@ public class Quantum {
     //#define COMPLEX_FLOAT float _Complex
     //#define MAX_UNSIGNED unsigned long long
     
-    private static int MAX_INSIGNED = (1 << 63) - 1;
+    public static int MAX_INSIGNED = (1 << 63) - 1;
 }
