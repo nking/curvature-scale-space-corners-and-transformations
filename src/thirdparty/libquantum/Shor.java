@@ -148,25 +148,37 @@ public class Shor {
         QuReg qureg = new QuReg();
         
         QuantumReg qr = qureg.quantum_new_qureg(0, width);
-
-        Gates gates = new Gates(rng);
+ 
+        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
         
+        Gates gates = new Gates(rng);
+       
         for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, qr);
         }
         
+        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
+         
         int nbits = 3 * swidth + 2;
 
         qureg.quantum_addscratch(nbits, qr);
 
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
-         
+        
+        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
+     
         Measure measure = new Measure();
-       
+        
         for (i = 0; i < nbits; i++) {
             measure.quantum_bmeasure(0, qr, rng);
         }
+        
+        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
 
+        //System.out.println("after bmeasure\n"); 
+        //qureg.quantum_print_hash(qr);
+        //qureg.quantum_print_qureg(qr);
+ 
         gates.quantum_qft(width,  qr);
 
         for (i = 0; i < width / 2; i++) {
@@ -174,6 +186,8 @@ public class Shor {
             gates.quantum_cnot(width - i - 1, i, qr);
             gates.quantum_cnot(i, width - i - 1, qr);
         }
+        
+        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
 
         c = measure.quantum_measure(qr, rng);
 

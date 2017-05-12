@@ -15,17 +15,17 @@ public class ShorTest extends TestCase {
     }
     
     public void testRun() {
-        
+                
         int number = 15;
         
         final int[] expected = new int[]{3, 5};
         
-        int nTests = 50;
+        int nTests = 100;
         int nCorrect = 0;
         
         for (int i = 0; i < nTests; ++i) {
             
-            Shor shor = new Shor(15);
+            Shor shor = new Shor(15, 8);
         
             int[] factors = shor.run();
             

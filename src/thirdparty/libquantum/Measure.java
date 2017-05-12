@@ -83,7 +83,7 @@ public class Measure {
         // and determine the result of the measurement 
 
         r = rng.nextDouble();
-
+        
         if (r > pa) {
             result = 1;
         }
