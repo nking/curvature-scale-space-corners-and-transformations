@@ -115,6 +115,11 @@ public class Classic {
      * Calculate the inverse modulus of N and C
      */
     int quantum_inverse_mod(int n, int c) {
+        
+        if (c == 0) {
+            throw new IllegalArgumentException("c cannot == 0");
+        }
+        
         int i;
 
         for (i = 1; (i * c) % n != 1; i++);

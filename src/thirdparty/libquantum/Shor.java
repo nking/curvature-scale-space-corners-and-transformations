@@ -128,7 +128,7 @@ public class Shor {
         System.out.println("SEED=" + rSeed);
         System.out.format("N = %d, %d qubits required\n", N, width+3*swidth+2);
         
-        if (x != 0) {
+        if (x == 0) {
             Classic classic = new Classic();
             while ((classic.quantum_gcd(N, x) > 1) || (x < 2)) {
                 //x = rand() % N;
@@ -148,29 +148,14 @@ public class Shor {
         Gates gates = new Gates(rng);
         
         for (i = 0; i < width; i++) {
-
-            System.out.format("%d) before H : hash table length=%d size=%d\n",
-                i, QuReg.shiftLeftTruncate(qr.hashw), qr.size);
-
             gates.quantum_hadamard(i, qr);
-
-            System.out.format("%d) after H : hash table length=%d size=%d\n",
-                i, QuReg.shiftLeftTruncate(qr.hashw), qr.size);
         }
         
         int nbits = 3 * swidth + 2;
 
         qureg.quantum_addscratch(nbits, qr);
 
-        System.out.format("after addscratch : hash table length=%d size=%d\n",
-            QuReg.shiftLeftTruncate(qr.hashw), qr.size);
-
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
-
-        System.out.format("after quantum_exp_mod_n : hash table length=%d size=%d\n",
-            (1 << qr.hashw), qr.size);
-
-        System.out.println("nbits=" + nbits);
          
         Measure measure = new Measure();
        
@@ -178,13 +163,7 @@ public class Shor {
             measure.quantum_bmeasure(0, qr, rng);
         }
 
-        System.out.format("after quantum_bmeasure : hash table length=%d size=%d\n",
-            QuReg.shiftLeftTruncate(qr.hashw), qr.size);
-
         gates.quantum_qft(width,  qr);
-
-        System.out.format("after quantum_qft : hash table length=%d size=%d\n",
-            QuReg.shiftLeftTruncate(qr.hashw), qr.size);
 
         for (i = 0; i < width / 2; i++) {
             gates.quantum_cnot(i, width - i - 1, qr);
@@ -192,13 +171,9 @@ public class Shor {
             gates.quantum_cnot(i, width - i - 1, qr);
         }
 
-        System.out.format("after quantum_cnot : hash table length=%d size=%d\n",
-            QuReg.shiftLeftTruncate(qr.hashw), qr.size);
-
         c = measure.quantum_measure(qr, rng);
 
-        System.out.format("after quantum_measure : hash table length=%d size=%d\n",
-            QuReg.shiftLeftTruncate(qr.hashw), qr.size);
+        System.out.println("c=" + c);
 
         if (c == -1) {
             System.out.format("Impossible Measurement!\n");

@@ -1040,6 +1040,10 @@ public class Gates {
      */
     void quantum_exp_mod_n(int N, int x, int width_input, int width, QuantumReg reg) {
 
+        if (x == 0) {
+            throw new IllegalArgumentException("x cannot == 0");
+        }
+        
         int i, j, f;
 
         quantum_sigma_x(2 * width + 2, reg);
