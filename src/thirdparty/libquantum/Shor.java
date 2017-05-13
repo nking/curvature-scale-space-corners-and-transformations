@@ -119,13 +119,11 @@ public class Shor {
     }
     
     /**
-     * NOT READY FOR USE
-     *
+     * 
+     * @return returns 2 factors of number, else returns a single item error code. 
      */
     public int[] run() {
-    
-        final long t0 = System.currentTimeMillis();
-        
+            
         int width = Classic.quantum_getwidth(N*N);
         int swidth = Classic.quantum_getwidth(N);
     
@@ -174,10 +172,6 @@ public class Shor {
         }
         
         assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
-
-        //System.out.println("after bmeasure\n"); 
-        //qureg.quantum_print_hash(qr);
-        //qureg.quantum_print_qureg(qr);
  
         gates.quantum_qft(width,  qr);
 

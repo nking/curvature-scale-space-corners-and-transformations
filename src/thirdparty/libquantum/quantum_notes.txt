@@ -1,0 +1,125 @@
+Miscellaneous notes I gathered while porting libquantum
+to java and looking into details of Shor's algorithm.
+
+    
+libquantum contains mathematical methods for the paradigm of
+a simulated quantum computer on a classical computer.
+
+ (wikipedia reference)    
+ The contrast in space complexity is quickly large:
+    the state of an n-bit system requires n bits,
+    but an n-qubit on a classical computer requires 
+    pow(2, n) complex coefficients.
+ 
+ In quantum computation, instead of the probable states of all bits 
+ adding up to 1,
+ allowed operations are unitary matrices, which are effectively rotations 
+ and they preserve the sum of the squares equals one, 
+ the Euclidean or L2 norm.
+ Also, because the states are represented by spin, 
+ quantum computations are reversible.
+    
+notes from "Basic concepts in quantum computation" by 
+       Ekert, Hayden, and Inamori
+
+    We shall assume that information is stored in the registers in binary 
+    form.  For example, 
+        the number 6 is represented by a register in state 
+        |1> ⊗ |1> ⊗ |0>. 
+    In more compact notation: |a> stands for the 
+       tensor product |a_(n−1)> ⊗ |a_(n−2)>. . . |a_1> ⊗ |a_0>, 
+       where a_i ∈ {0, 1},
+    and it represents a quantum register
+    prepared with the value 
+        a = 2^(0)a_0 + 2^(1)a_1 + . . . 2^(n−1)a_(n−1). 
+    There are 2^n states of this kind, representing all binary strings 
+    of length n or numbers from 0 to 2^(n−1),
+    and they form a convenient computational basis. In the following 
+    a ∈ {0, 1}^n
+    (a is a binary string of length n) implies that 
+    |a> belongs to the computational basis.
+
+    Thus a quantum register of size three can store individual numbers 
+    such as 3 or 7,
+        |0> ⊗ |1> ⊗ |1> ≡ |011> ≡ |3>, 
+        |1> ⊗ |1> ⊗ |1> ≡ |111> ≡ |7>, 
+
+    In the same quantum register of size 3 qubits.
+        the superposition (1/√2) * (|0> + |1>).
+    is 
+        (1/√2) * (|0> + |1>)  ⊗  (1/√2) * (|0> + |1>)  ⊗  (1/√2) * (|0> + |1>)
+
+    which in binary is:
+        |000> + |001> + |010> + |011> + |100> + |101> + |110> + |111>
+
+    and in decimal notation:
+        |0> + |1> + |2> + |3> + |4> + |5> + |6> + |7>
+
+    the later is the language the algorithm might be using that
+    needs to be transposed into the qubit operations.
+
+    The later is the decimal notation for a superposition of all states
+    for a 3 qubit system.
+
+    ...
+    Any attempt to measure the state
+        α|0> + β|1>
+    results in |0> with probability |α|2, and |1> with probability |β|2.
+        
+===============================
+Notes about Shor's algorithm
+---------------------------------
+        
+ following pseudocode in wikipedia
+ https://en.wikipedia.org/wiki/Shor%27s_algorithm
+ 
+    Shor's algorithm consists of two parts:
+    -- A reduction, which can be done on a classical computer, 
+       of the factoring problem to the problem of order-finding.
+    -- then A quantum algorithm to solve the order-finding problem.
+    
+       1) Pick a random number a < N.
+       2) Compute gcd(a, N). This may be done using the Euclidean algorithm.
+       3) If gcd(a, N) ≠ 1, then this number is a nontrivial factor of N, 
+          so we are done.
+       4) Otherwise, use the period-finding subroutine to find r, 
+          the period of the following function:
+              f(x)=a^{x}mod N
+              smallest pos integer r for which f(x+r) = f(x)
+              f(x + r)=a^{x + r}mod N = a^{x}mod N
+              
+         Note that this complex portion of the problem is encapsulated
+         by the method.
+                  
+              
+       5) If r is odd, go back to step 1.
+       6) If a^{r/2} ==  −1 (mod N), go back to step 1.
+       7) gcd(a^{r/2} + 1, N) and gcd(a^{r/2} - 1, N) 
+          are both nontrivial factors of N. We are done.
+       For example: N=15,a=7,r=4
+          gcd(7^{2}\pm 1,15)== gcd(49\pm 1,15)} 
+              where gcd(48,15)=3 and gcd(50,15)=5
+          
+    
+    The quantum circuits used for Shors algorithm are custom designed for 
+    each choice of N and each choice of the random a used in 
+          f(x) = a*x mod N. 
+    Given N, find Q = 2^q such that N^2 .leq. Q .lt. 2N^2, 
+    which implies Q/r>N. The input and output qubit registers need to hold 
+    superpositions of values from 0 to Q − 1, and so have q qubits each. 
+    Using what might appear to be twice as many qubits as necessary 
+    guarantees that there are at least N different x which produce the 
+    same f(x), even as the period r approaches N/2.
+
+    The circuit diagram uses symbols [H] for hadamard operations,
+    U*a*2^n for controlled unitary operations, and QFT quantum FT.
+
+                                        ______
+    |0> -[H]----------------------O-----|     |----
+    ...                          ...    |     | ...
+    |0> -[H]------------O---------|-----| QFT |----
+    |0> -[H]---O--------|---------|-----|_____|----
+    |1> -------|--------|---------|-------
+               |        |         |
+            [Ua2^0]  [Ua2^1] [Ua2^n-1]
+    
