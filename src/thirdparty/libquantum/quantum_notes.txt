@@ -1,5 +1,5 @@
 Miscellaneous notes I gathered while porting libquantum
-to java and looking into details of Shor's algorithm.
+to java and while looking into details of Shor's algorithm.
 
     
 libquantum contains mathematical methods for the paradigm of
@@ -89,7 +89,8 @@ Notes about Shor's algorithm
               f(x + r)=a^{x + r}mod N = a^{x}mod N
               
          Note that this complex portion of the problem is encapsulated
-         by the method.
+         by the method
+           Gates.quantum_exp_mod_n
                   
               
        5) If r is odd, go back to step 1.
