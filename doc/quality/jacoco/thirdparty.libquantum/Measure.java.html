@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Measure.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.libquantum</a> &gt; <span class="el_source">Measure.java</span></div><h1>Measure.java</h1><pre class="source lang-java linenums">package thirdparty.libquantum;
+
+import algorithms.misc.ComplexModifiable;
+import java.util.Random;
+
+/* measure.c: Quantum register measurement
+
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+   This file is part of libquantum
+
+   libquantum is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 3 of the License,
+   or (at your option) any later version.
+
+   libquantum is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with libquantum; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
+
+ */
+<span class="fc" id="L28">public class Measure {</span>
+
+    /**
+     * Measure the contents of a quantum register
+     */
+    //MAX_UNSIGNED quantum_measure(QuantumReg reg, Random rng) {
+    int quantum_measure(QuantumReg reg, Random rng) {
+        
+        double r;
+        int i;
+
+        // Get a random number between 0 and 1 
+<span class="fc" id="L40">        r = rng.nextDouble();</span>
+
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+            // If the random number is less than the probability of the
+            // given base state - r, return the base state as the
+            // result. Otherwise, continue with the next base state. 
+
+<span class="fc" id="L47">            r -= reg.node[i].amplitude.squareSum();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (0 &gt;= r) {</span>
+<span class="fc" id="L49">                return reg.node[i].getState();</span>
+            }
+        }
+
+        // The sum of all probabilities is less than 1. Usually, 
+        // the cause for this is the application of a non-normalized 
+        // matrix, but there is a slim chance that rounding errors 
+        // may lead to this as well. 
+<span class="fc" id="L57">        return -1;</span>
+    }
+
+    /**
+     * Measure a single bit of a quantum register. The bit measured is indicated
+     * by its position POS, starting with 0 as the least significant bit. The
+     * new state of the quantum register depends on the result of the
+     * measurement.
+     */
+    int quantum_bmeasure(int pos, QuantumReg reg, Random rng) {
+  
+        int i;
+<span class="fc" id="L69">        int result = 0;</span>
+<span class="fc" id="L70">        double pa = 0, r;</span>
+        //MAX_UNSIGNED pos2;
+
+<span class="fc" id="L73">        int pos2 = QuReg.shiftLeftTruncate(pos);</span>
+
+        // Sum up the probability for 0 being the result 
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if ((reg.node[i].getState() &amp; pos2) == 0) {</span>
+<span class="fc" id="L78">                pa += reg.node[i].amplitude.squareSum();</span>
+            }
+        }
+
+        // Compare the probability for 0 with a random number 
+        // and determine the result of the measurement 
+
+<span class="fc" id="L85">        r = rng.nextDouble();</span>
+        
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (r &gt; pa) {</span>
+<span class="fc" id="L88">            result = 1;</span>
+        }
+        
+<span class="fc" id="L91">        QuReg qureg = new QuReg();</span>
+
+<span class="fc" id="L93">        QuantumReg out = qureg.quantum_state_collapse(</span>
+            pos, result, reg);
+
+<span class="fc" id="L96">        qureg.quantum_copy_qureg(out, reg);</span>
+    
+<span class="fc" id="L98">        return result;</span>
+    }
+
+    /**
+     * Measure a single bit, but do not remove it from the quantum register
+     */
+    int quantum_bmeasure_bitpreserve(int pos, QuantumReg reg, Random rng) {
+        int i, j;
+<span class="nc" id="L106">        int size = 0, result = 0;</span>
+<span class="nc" id="L107">        double d = 0, pa = 0, r;</span>
+        //MAX_UNSIGNED pos2;
+
+<span class="nc" id="L110">        int pos2 = QuReg.shiftLeftTruncate(pos);</span>
+
+        // Sum up the probability for 0 being the result 
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            if ((reg.node[i].getState() &amp; pos2) == 0) {</span>
+<span class="nc" id="L115">                pa += reg.node[i].amplitude.squareSum();</span>
+            }
+        }
+
+        // Compare the probability for 0 with a random number 
+        // and determine the result of the measurement 
+<span class="nc" id="L121">        r = rng.nextDouble();</span>
+
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (r &gt; pa) {</span>
+<span class="nc" id="L124">            result = 1;</span>
+        }
+
+        // Eradicate all amplitudes of base states which have been 
+        // ruled out by the measurement and get the absolute 
+        // of the new register 
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            if ((reg.node[i].getState() &amp; pos2) != 0) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">                if (result == 0) {</span>
+<span class="nc" id="L133">                    reg.node[i].amplitude.setReal(0);</span>
+<span class="nc" id="L134">                    reg.node[i].amplitude.setImag(0);</span>
+                } else {
+<span class="nc" id="L136">                    d += reg.node[i].amplitude.squareSum();</span>
+<span class="nc" id="L137">                    size++;</span>
+                }
+            } else {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                if (result != 0) {</span>
+<span class="nc" id="L141">                    reg.node[i].amplitude.setReal(0);</span>
+<span class="nc" id="L142">                    reg.node[i].amplitude.setImag(0);</span>
+                } else {
+<span class="nc" id="L144">                    d += reg.node[i].amplitude.squareSum();</span>
+<span class="nc" id="L145">                    size++;</span>
+                }
+            }
+        }
+        
+<span class="nc" id="L150">        QuantumReg out = new QuantumReg();</span>
+        // Build the new quantum register 
+<span class="nc" id="L152">        out.size = size;</span>
+<span class="nc" id="L153">        out.node = new QuantumRegNode[size];</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        for (int ii = 0; ii &lt; reg.node.length; ii++) {</span>
+<span class="nc" id="L155">            reg.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L156">            reg.node[ii].setState(0);</span>
+<span class="nc" id="L157">            reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+        }
+<span class="nc" id="L159">        out.hashw = reg.hashw;</span>
+<span class="nc" id="L160">        out.hash = reg.hash;</span>
+<span class="nc" id="L161">        out.width = reg.width;</span>
+
+        // Determine the numbers of the new base states and 
+        // norm the quantum register 
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            if (reg.node[i].amplitude.abs() != 0) {</span>
+<span class="nc" id="L167">                out.node[j].setState(reg.node[i].getState());</span>
+<span class="nc" id="L168">                out.node[j].amplitude.resetTo(reg.node[i].amplitude);</span>
+<span class="nc" id="L169">                out.node[j].amplitude.times(1/Math.sqrt(d));</span>
+
+<span class="nc" id="L171">                j++;</span>
+            }
+        }
+        
+<span class="nc" id="L175">        QuReg qureg = new QuReg();</span>
+
+<span class="nc" id="L177">        qureg.quantum_copy_qureg(out, reg);</span>
+        
+<span class="nc" id="L179">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

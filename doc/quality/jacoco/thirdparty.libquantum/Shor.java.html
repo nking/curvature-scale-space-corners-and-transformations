@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Shor.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.libquantum</a> &gt; <span class="el_source">Shor.java</span></div><h1>Shor.java</h1><pre class="source lang-java linenums">package thirdparty.libquantum;
+
+import algorithms.misc.Misc;
+import java.util.Random;
+
+ /* shor.c: Implementation of Shor's factoring algorithm
+
+   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+
+   This file is part of libquantum
+
+   libquantum is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 3 of the License,
+   or (at your option) any later version.
+
+   libquantum is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with libquantum; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
+
+*/
+
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">public class Shor {</span>
+        
+    private QuantumReg qr;
+    
+    /**
+     * the number to factorize
+     */
+    private final int N;
+    
+    /**
+     * random factor of N
+     */
+<span class="pc" id="L41">    private int x = 0;</span>
+    
+    private final Random rng;
+    
+    private final long rSeed;
+    
+<span class="nc" id="L47">    public Shor(int number) {</span>
+        
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L50">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+        }
+        
+<span class="nc" id="L53">        this.N = number;</span>
+        
+<span class="nc" id="L55">        this.rSeed = System.nanoTime();</span>
+        
+<span class="nc" id="L57">        this.rng = Misc.getSecureRandom();</span>
+<span class="nc" id="L58">        this.rng.setSeed(rSeed);</span>
+<span class="nc" id="L59">    }</span>
+    
+<span class="nc" id="L61">    public Shor(int number, long rSeed) {</span>
+        
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L64">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+        }
+        
+<span class="nc" id="L67">        this.N = number;</span>
+        
+<span class="nc" id="L69">        this.rSeed = rSeed;</span>
+        
+<span class="nc" id="L71">        this.rng = Misc.getSecureRandom();</span>
+<span class="nc" id="L72">        this.rng.setSeed(rSeed);</span>
+<span class="nc" id="L73">    }</span>
+    
+    /**
+     * 
+     * @param number
+     * @param rSeed
+     * @param x a known factor of x to use in initializing the quantum order 
+     * finder
+     */
+<span class="fc" id="L82">    public Shor(int number, int x) {</span>
+        
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L85">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+        }
+        
+<span class="fc" id="L88">        this.N = number;</span>
+        
+<span class="fc" id="L90">        this.rSeed = System.currentTimeMillis();</span>
+        
+<span class="fc" id="L92">        this.rng = Misc.getSecureRandom();</span>
+<span class="fc" id="L93">        this.rng.setSeed(rSeed);</span>
+                
+<span class="fc" id="L95">        this.x = x;</span>
+<span class="fc" id="L96">    }</span>
+    
+    /**
+     * 
+     * @param number
+     * @param rSeed
+     * @param x a known factor of x to use in initializing the quantum order 
+     * finder
+     */
+<span class="nc" id="L105">    public Shor(int number, long rSeed, int x) {</span>
+        
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L108">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+        }
+        
+<span class="nc" id="L111">        this.N = number;</span>
+        
+<span class="nc" id="L113">        this.rSeed = rSeed;</span>
+        
+<span class="nc" id="L115">        this.rng = Misc.getSecureRandom();</span>
+<span class="nc" id="L116">        this.rng.setSeed(rSeed);</span>
+        
+<span class="nc" id="L118">        this.x = x;</span>
+<span class="nc" id="L119">    }</span>
+    
+    /**
+     * 
+     * @return returns 2 factors of number, else returns a single item error code. 
+     */
+    public int[] run() {
+            
+<span class="fc" id="L127">        int width = Classic.quantum_getwidth(N*N);</span>
+<span class="fc" id="L128">        int swidth = Classic.quantum_getwidth(N);</span>
+    
+<span class="fc" id="L130">        System.out.println(&quot;SEED=&quot; + rSeed);</span>
+<span class="fc" id="L131">        System.out.format(&quot;N = %d, %d qubits required\n&quot;, N, width+3*swidth+2);</span>
+        
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (x == 0) {</span>
+<span class="nc" id="L134">            Classic classic = new Classic();</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">            while ((classic.quantum_gcd(N, x) &gt; 1) || (x &lt; 2)) {</span>
+                //x = rand() % N;
+<span class="nc" id="L137">                x = rng.nextInt((1&lt;&lt;16)-1) % N;</span>
+            }
+        }
+        
+        int i;
+        int c,q,a,b, factor;
+
+<span class="fc" id="L144">        System.out.format(&quot;Random factor: %d of %d\n&quot;, x, N);</span>
+
+<span class="fc" id="L146">        QuReg qureg = new QuReg();</span>
+        
+<span class="fc" id="L148">        QuantumReg qr = qureg.quantum_new_qureg(0, width);</span>
+ 
+<span class="pc bpc" id="L150" title="3 of 4 branches missed.">        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));</span>
+        
+<span class="fc" id="L152">        Gates gates = new Gates(rng);</span>
+       
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (i = 0; i &lt; width; i++) {</span>
+<span class="fc" id="L155">            gates.quantum_hadamard(i, qr);</span>
+        }
+        
+<span class="pc bpc" id="L158" title="3 of 4 branches missed.">        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));</span>
+         
+<span class="fc" id="L160">        int nbits = 3 * swidth + 2;</span>
+
+<span class="fc" id="L162">        qureg.quantum_addscratch(nbits, qr);</span>
+
+<span class="fc" id="L164">        gates.quantum_exp_mod_n(N, x, width, swidth,  qr);</span>
+        
+<span class="pc bpc" id="L166" title="3 of 4 branches missed.">        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));</span>
+     
+<span class="fc" id="L168">        Measure measure = new Measure();</span>
+        
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        for (i = 0; i &lt; nbits; i++) {</span>
+<span class="fc" id="L171">            measure.quantum_bmeasure(0, qr, rng);</span>
+        }
+        
+<span class="pc bpc" id="L174" title="3 of 4 branches missed.">        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));</span>
+ 
+<span class="fc" id="L176">        gates.quantum_qft(width,  qr);</span>
+
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (i = 0; i &lt; width / 2; i++) {</span>
+<span class="fc" id="L179">            gates.quantum_cnot(i, width - i - 1, qr);</span>
+<span class="fc" id="L180">            gates.quantum_cnot(width - i - 1, i, qr);</span>
+<span class="fc" id="L181">            gates.quantum_cnot(i, width - i - 1, qr);</span>
+        }
+        
+<span class="pc bpc" id="L184" title="3 of 4 branches missed.">        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));</span>
+
+<span class="fc" id="L186">        c = measure.quantum_measure(qr, rng);</span>
+
+<span class="fc" id="L188">        System.out.println(&quot;c=&quot; + c);</span>
+
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (c == -1) {</span>
+<span class="fc" id="L191">            System.out.format(&quot;Impossible Measurement!\n&quot;);</span>
+<span class="fc" id="L192">            return new int[]{-1};</span>
+        }
+
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (c == 0) {</span>
+<span class="fc" id="L196">            System.out.format(&quot;Measured zero, try again.\n&quot;);</span>
+<span class="fc" id="L197">            return new int[]{0};</span>
+        }
+
+<span class="fc" id="L200">        q = 1 &lt;&lt; (width);</span>
+
+<span class="fc" id="L202">        System.out.format(&quot;Measured %d (%f), &quot;, c, (float) c / q);</span>
+
+<span class="fc" id="L204">        Classic classic = new Classic();</span>
+<span class="fc" id="L205">        int[] cInOut = new int[]{c};</span>
+<span class="fc" id="L206">        int[] qInOut = new int[]{q};</span>
+<span class="fc" id="L207">        classic.quantum_frac_approx(cInOut, qInOut, width);</span>
+<span class="fc" id="L208">        c = cInOut[0];</span>
+<span class="fc" id="L209">        q = qInOut[0];</span>
+        
+<span class="fc" id="L211">        System.out.format(&quot;fractional approximation is %d/%d.\n&quot;, c, q);</span>
+
+<span class="pc bpc" id="L213" title="3 of 4 branches missed.">        if ((q % 2 == 1) &amp;&amp; (2 * q &lt; (1 &lt;&lt; width))) {</span>
+<span class="nc" id="L214">            System.out.format(&quot;Odd denominator, trying to expand by 2.\n&quot;);</span>
+<span class="nc" id="L215">            q *= 2;</span>
+        }
+
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">        if (q % 2 == 1) {</span>
+<span class="nc" id="L219">            System.out.format(&quot;Odd period, try again.\n&quot;);</span>
+<span class="nc" id="L220">            return new int[]{-2};</span>
+        }
+
+<span class="fc" id="L223">        System.out.format(&quot;%d\n&quot;, 11);</span>
+
+<span class="fc" id="L225">        System.out.format(&quot;Possible period is %d.\n&quot;, q);</span>
+
+<span class="fc" id="L227">        a = classic.quantum_ipow(x, q / 2) + 1 % N;</span>
+<span class="fc" id="L228">        b = classic.quantum_ipow(x, q / 2) - 1 % N;</span>
+
+<span class="fc" id="L230">        a = classic.quantum_gcd(N, a);</span>
+<span class="fc" id="L231">        b = classic.quantum_gcd(N, b);</span>
+
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">        if (a &gt; b) {</span>
+<span class="fc" id="L234">            factor = a;</span>
+        } else {
+<span class="nc" id="L236">            factor = b;</span>
+        }
+
+<span class="pc bpc" id="L239" title="2 of 4 branches missed.">        if ((factor &lt; N) &amp;&amp; (factor &gt; 1)) {</span>
+<span class="fc" id="L240">            System.out.format(&quot;%d = %d * %d\n&quot;, N, factor, N / factor);</span>
+        } else {
+<span class="nc" id="L242">            System.out.format(&quot;Unable to determine factors, try again.\n&quot;);</span>
+<span class="nc" id="L243">            return new int[]{-2};</span>
+        }
+
+<span class="fc" id="L246">        return new int[]{factor, N/factor};</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>QuReg.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.libquantum</a> &gt; <span class="el_source">QuReg.java</span></div><h1>QuReg.java</h1><pre class="source lang-java linenums">package thirdparty.libquantum;
+
+import algorithms.misc.ComplexModifiable;
+import algorithms.misc.MiscMath;
+import java.util.Arrays;
+
+/* qureg
+Quantum register management
+
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+   This file is part of libquantum
+
+   libquantum is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 3 of the License,
+   or (at your option) any later version.
+
+   libquantum is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with libquantum; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
+
+ */
+
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">public class QuReg {</span>
+
+    /**
+     * Our 64-bit multiplicative hash function
+     * that is actually 31 bit.
+     * TODO: refactor name when refactor for camel case.
+     */
+    /*static inline unsigned int quantum_hash64(MAX_UNSIGNED key, int width) {
+        unsigned int k32;
+        k32 = (key &amp; 0xFFFFFFFF) ^ (key &gt;&gt; 32);
+        k32 *= 0x9e370001UL;
+        k32 = k32 &gt;&gt; (32 - width);
+        return k32;
+    }*/
+    static int quantum_hash64(int key, int width) {
+
+        //this will always be == key value unless allow key type to be long
+        //long k = (key &amp; 0x7FFFFFFF) ^ (key &gt;&gt; 31);
+<span class="fc" id="L49">        long k =  key * 1327202304L; // factor is 0x9e370001UL &gt;&gt; 1 which is 30.3057</span>
+<span class="fc" id="L50">        k &amp;= ((1 &lt;&lt; 31) - 1);</span>
+<span class="fc" id="L51">        k = k &gt;&gt; (31L - width);</span>
+        
+<span class="fc" id="L53">        return (int) k;</span>
+    }
+    
+    /*
+    static int quantum_hash64_approx(int key, int width) {
+
+        A look at rewriting the above without branch logic and for a
+        platform that is only 32 bits and has no long representation 
+        as a bit mask exercise...
+        the result is that the resulting range of values is too small because
+            the factor, when made into a log2 integer, is too close to the
+            31 bits.
+            so factor would need to be changed for better results.
+        
+        key = argument given
+        factor = 1327202304
+        factorbits = 30.30574114988822 = 31  (can be determing w/ bit twiddling)
+        keybits = number of bits of key
+        
+        avoiding overflow for k =  key * factor:
+            since 2^a * 2^b = 2^(a+b)
+            have total number of bits thus far = keybits + factorbits
+            
+        mask by 31 bits
+            (keybits + factorbits) retains full value if sum is less than 31
+            else result is 0
+               will use the java ability of &gt;&gt;&gt; to determine a sign, 
+               int sign = (totalbits - 31) &gt;&gt;&gt; 31
+        
+        then subtract 31-width from the running total number of bits
+        
+        then shift 1 left by the result 
+        
+        here is the algorithm revised to use only the positive portion of
+        an integer, and to use bit shifts without branching also.
+    
+        int keybits = MiscMath.numberOfBitsWOB(key);
+        // factorbits should probably depend upon width
+        int factorbits = 30; // 30.30574114988822
+        int totalbits = keybits + factorbits;
+        int sign = (totalbits - 31) &gt;&gt;&gt; 31;
+        totalbits -= sign * (31 - width);
+        
+        int k32 = 1 &lt;&lt; totalbits;
+        return k32;
+    }
+    */
+
+    /**
+     * Get the position of a given base state via the hash table
+     */
+    //static inline int quantum_get_state(MAX_UNSIGNED a, quantum_reg reg) {
+    static int quantum_get_state(int a, QuantumReg reg) {
+        int i;
+
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (reg.hashw == 0) {</span>
+<span class="nc" id="L109">            return a;</span>
+        }
+
+<span class="fc" id="L112">        i = quantum_hash64(a, reg.hashw);</span>
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        while (reg.hash[i] != 0) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (reg.node[reg.hash[i] - 1].getState() == a) {</span>
+<span class="fc" id="L116">                return reg.hash[i] - 1;</span>
+            }
+<span class="fc" id="L118">            i++;</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">            if (i == QuReg.shiftLeftTruncate(reg.hashw)) {</span>
+<span class="nc" id="L120">                i = 0;</span>
+            }
+        }
+
+<span class="fc" id="L124">        return -1;</span>
+
+    }
+
+    /**
+     * Add an element to the hash table
+     */
+    //static inline void quantum_add_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg) {
+    static void quantum_add_hash(int a, int pos, QuantumReg reg) {
+
+<span class="fc" id="L134">        int i, mark = 0;</span>
+
+<span class="fc" id="L136">        i = quantum_hash64(a, reg.hashw);</span>
+        
+        //System.out.format(&quot;limit=%d\n&quot;, QuReg.shiftLeftTruncate(reg.hashw));
+        //System.out.format(&quot;a=%d i=%d  H=%d\n&quot;, a, i, reg.hash[i]);
+        //System.out.format(&quot;a=%d i=%d\n&quot;, 10, quantum_hash64(10, reg.hashw));
+        //System.out.format(&quot;a=%d i=%d\n&quot;, 100, quantum_hash64(100, reg.hashw));
+   
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        while (reg.hash[i] != 0) {</span>
+<span class="nc" id="L144">            i++;</span>
+            // if i is &gt; last index
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            if (i == QuReg.shiftLeftTruncate(reg.hashw)) {</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                if (mark == 0) {</span>
+<span class="nc" id="L148">                    i = 0;</span>
+<span class="nc" id="L149">                    mark = 1;</span>
+                } else {
+<span class="nc" id="L151">                    throw new IllegalStateException(&quot;hash is full&quot;);</span>
+                }
+            }
+        }
+        
+        //NOTE: since this value is the index of reg.node,
+        //      it sometimes has an invalid value.
+        //      should the value be pos?
+<span class="fc" id="L159">        reg.hash[i] = pos + 1;</span>
+<span class="fc" id="L160">    }</span>
+
+    /**
+     * Reconstruct hash table
+     */
+    static void quantum_reconstruct_hash(QuantumReg reg) {
+  
+        int i;
+
+        /* Check whether register is sorted */
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (reg.hashw == 0) {</span>
+<span class="nc" id="L171">            return;</span>
+        }
+
+<span class="fc" id="L174">        int end = QuReg.shiftLeftTruncate(reg.hashw);</span>
+<span class="fc" id="L175">        Arrays.fill(reg.hash, 0, end, 0);</span>
+   
+<span class="pc bpc" id="L177" title="3 of 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
+        
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc" id="L180">            quantum_add_hash(reg.node[i].getState(), </span>
+                i, reg);
+        }
+<span class="fc" id="L183">    }</span>
+    
+    /**
+     * convenience method to handle c truncation due to a left shift
+     * that produces a number larger than integer.max_value.
+     * @param shift
+     * @return 
+     */
+    public static int shiftLeftTruncate(int shift) {
+        int tmp;
+        //TODO: change to use a bit mask
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (shift &gt; 30) {</span>
+<span class="nc" id="L195">            tmp = Integer.MAX_VALUE;</span>
+        } else {
+<span class="fc" id="L197">            tmp = 1 &lt;&lt; shift;</span>
+        }
+<span class="fc" id="L199">        return tmp;</span>
+    }
+    
+    /**
+     * convenience method to handle c truncation due to a left shift
+     * that produces a number larger than integer.max_value.
+     * @param a number to be bit shifted
+     * @param shift
+     * @return 
+     */
+    public static int shiftLeftTruncate(int a, int shift) {
+        //TODO: change to use a bit mask
+<span class="fc" id="L211">        int nBitsA = (int)Math.ceil(Math.log(a)/Math.log(2));</span>
+        int tmp;
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">        if ((shift + nBitsA) &gt; 30) {</span>
+<span class="nc" id="L214">            tmp = Integer.MAX_VALUE;</span>
+        } else {
+<span class="fc" id="L216">            tmp = a &lt;&lt; shift;</span>
+        }
+<span class="fc" id="L218">        return tmp;</span>
+    }
+
+    /**
+     * Return the reduced bitmask of a basis state
+     */
+    //static int quantum_bitmask(MAX_UNSIGNED a, int width, int  *bits) {
+    static int quantum_bitmask(int a, int width, int[] bits) {
+        
+        int i;
+<span class="nc" id="L228">        int mask = 0;</span>
+
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        for (i = 0; i &lt; width; i++) {</span>
+            //if (a &amp; ((MAX_UNSIGNED) 1 &lt;&lt; bits[i])) {
+<span class="nc" id="L232">            int tmp = shiftLeftTruncate(bits[i]);</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">            if ((a &amp; tmp) &gt; 0) {</span>
+<span class="nc" id="L234">                mask += shiftLeftTruncate(i);</span>
+            }
+        }
+
+<span class="nc" id="L238">        return mask;</span>
+    }
+
+    /**
+     * Convert a vector to a quantum register
+     */
+    QuantumReg quantum_matrix2qureg(QuantumMatrix m, int w) {
+  
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        if (m.cols != 1) {</span>
+<span class="nc" id="L247">            throw new IllegalArgumentException(&quot;m nCols must == 1&quot;);</span>
+        }
+        
+<span class="nc" id="L250">        QuantumReg reg = new QuantumReg();</span>
+<span class="nc" id="L251">        int i, j, size = 0;</span>
+
+<span class="nc" id="L253">        reg.width = w;</span>
+
+        // Determine the size of the quantum register 
+<span class="nc bnc" id="L256" title="All 2 branches missed.">        for (i = 0; i &lt; m.rows; i++) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">            if (m.t[i].re() != 0.0) {</span>
+<span class="nc" id="L258">                size++;</span>
+            }
+        }
+
+        // Allocate the required memory 
+<span class="nc" id="L263">        reg.size = size;</span>
+<span class="nc" id="L264">        reg.hashw = w + 2;</span>
+
+<span class="nc" id="L266">        reg.node = new QuantumRegNode[size];</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        for (int ii = 0; ii &lt; reg.node.length; ii++) {</span>
+<span class="nc" id="L268">            reg.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L269">            reg.node[ii].setState(0);</span>
+<span class="nc" id="L270">            reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+        }
+        
+        // Allocate the hash table 
+<span class="nc" id="L274">        int nHash = shiftLeftTruncate(reg.hashw);</span>
+<span class="nc" id="L275">        reg.hash = new int[nHash];</span>
+
+        // Copy the nonzero amplitudes of the vector into the 
+        //quantum register 
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        for (i = 0, j = 0; i &lt; m.rows; i++) {</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            if (m.t[i].re() != 0.0) {</span>
+<span class="nc" id="L281">                reg.node[j].setState(i);</span>
+<span class="nc" id="L282">                reg.node[j].amplitude.resetTo(m.t[i]);</span>
+<span class="nc" id="L283">                j++;</span>
+            }
+        }
+
+<span class="nc" id="L287">        return reg;</span>
+    }
+
+    /**
+     * Create a new quantum register from scratch
+     */
+    //QuantumReg quantum_new_qureg(MAX_UNSIGNED initval, int width) {
+    QuantumReg quantum_new_qureg(int initval, int w) {
+        
+<span class="fc" id="L296">        QuantumReg reg = new QuantumReg();</span>
+
+<span class="fc" id="L298">        reg.width = w;</span>
+<span class="fc" id="L299">        reg.size = 1;</span>
+<span class="fc" id="L300">        reg.hashw = w + 2;</span>
+
+        // Allocate memory for 1 base state 
+<span class="fc" id="L303">        reg.node = new QuantumRegNode[1];</span>
+
+        // Allocate the hash table 
+<span class="fc" id="L306">        int nHash = shiftLeftTruncate(reg.hashw);</span>
+<span class="fc" id="L307">        reg.hash = new int[nHash];</span>
+
+        // Initialize the quantum register 
+<span class="fc" id="L310">        reg.node[0] = new QuantumRegNode();</span>
+<span class="fc" id="L311">        reg.node[0].setState(initval);</span>
+<span class="fc" id="L312">        reg.node[0].amplitude =  new ComplexModifiable(1, 0);</span>
+
+<span class="fc" id="L314">        System.out.format(</span>
+            &quot;init reg: %d qubits, 1 node, and %d hash table length, hashw=%d\n&quot;,
+<span class="fc" id="L316">            reg.width, nHash, reg.hashw);</span>
+         
+<span class="fc" id="L318">        return reg;</span>
+    }
+
+    /**
+     * Returns an empty quantum register of size N
+     * with instantiated nodes.
+     */
+    QuantumReg quantum_new_qureg_size(int n, int w) {
+        
+<span class="nc" id="L327">        QuantumReg reg = new QuantumReg();</span>
+
+<span class="nc" id="L329">        reg.width = w;</span>
+<span class="nc" id="L330">        reg.size = n;</span>
+<span class="nc" id="L331">        reg.hashw = 0;</span>
+<span class="nc" id="L332">        reg.hash = null;</span>
+
+        // Allocate memory for n basis states 
+<span class="nc" id="L335">        reg.node = new QuantumRegNode[n];</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        for (int ii = 0; ii &lt; reg.node.length; ii++) {</span>
+<span class="nc" id="L337">            reg.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L338">            reg.node[ii].setState(0);</span>
+<span class="nc" id="L339">            reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+        }
+<span class="nc" id="L341">        return reg;</span>
+    }
+
+    /**
+     * Convert a quantum register to a vector
+     */
+    QuantumMatrix quantum_qureg2matrix(QuantumReg reg) {
+        
+        int i;
+
+<span class="nc" id="L351">        Matrix matrix = new Matrix();</span>
+<span class="nc" id="L352">        int sz = shiftLeftTruncate(reg.width);</span>
+<span class="nc" id="L353">        QuantumMatrix m = matrix.quantum_new_matrix(1, sz);</span>
+
+<span class="nc bnc" id="L355" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L356">            m.t[reg.node[i].getState()].resetTo(reg.node[i].amplitude);</span>
+        }
+
+<span class="nc" id="L359">        return m;</span>
+    }
+
+    /**
+     * Copy the contents of src to dst
+     */
+    void quantum_copy_qureg(QuantumReg src, QuantumReg dst) {
+   
+<span class="fc" id="L367">        dst.hash = Arrays.copyOf(src.hash, src.hash.length);</span>
+<span class="fc" id="L368">        dst.hashw = src.hashw;</span>
+<span class="fc" id="L369">        dst.node = Arrays.copyOf(src.node, src.node.length);</span>
+<span class="fc" id="L370">        dst.size = src.size;</span>
+<span class="fc" id="L371">        dst.width = src.width;</span>
+<span class="fc" id="L372">    }</span>
+
+    /**
+     * Print the contents of a quantum register to stdout
+     */
+    void quantum_print_qureg(QuantumReg reg) {
+        
+        int i, j;
+
+<span class="nc bnc" id="L381" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L382">            System.out.format(&quot;%f %fi|%d&gt; (%f) (|&quot;, </span>
+<span class="nc" id="L383">                reg.node[i].amplitude.re(),</span>
+<span class="nc" id="L384">                reg.node[i].amplitude.im(), </span>
+<span class="nc" id="L385">                reg.node[i].getState(),</span>
+<span class="nc" id="L386">                reg.node[i].amplitude.squareSum());</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">            for (j = reg.width - 1; j &gt;= 0; j--) {</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">                if (j % 4 == 3) {</span>
+<span class="nc" id="L389">                    System.out.format(&quot; &quot;);</span>
+                }
+<span class="nc" id="L391">                int tmp = shiftLeftTruncate(j);</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">                int b = ((tmp &amp; reg.node[i].getState()) &gt; 0) ? 1 : 0;</span>
+<span class="nc" id="L393">                System.out.format(&quot;%d&quot;, b);</span>
+            }
+
+<span class="nc" id="L396">            System.out.format(&quot;&gt;)\n&quot;);</span>
+        }
+
+<span class="nc" id="L399">        System.out.format(&quot;\n&quot;);</span>
+<span class="nc" id="L400">    }</span>
+
+    /**
+     * Print the output of the modular exponentation algorithm
+     */
+    void quantum_print_expn(QuantumReg reg) {
+        int i;
+<span class="nc bnc" id="L407" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L408">            int tmp = shiftLeftTruncate(reg.width / 2);</span>
+<span class="nc" id="L409">            System.out.format(&quot;%d: %d\n&quot;, i, </span>
+<span class="nc" id="L410">                reg.node[i].getState() - i * tmp);</span>
+        }
+<span class="nc" id="L412">    }</span>
+
+    /**
+     * Add additional space to a qureg. It is initialized to zero and can be
+     * used as scratch space. Note that the space gets added at the LSB
+     */
+    void quantum_addscratch(int bits, QuantumReg reg) {
+        
+        int i, oldwidth;
+        //MAX_UNSIGNED l;
+        int l;
+
+<span class="fc" id="L424">        oldwidth = reg.width;</span>
+<span class="fc" id="L425">        reg.width += bits;</span>
+
+<span class="fc bfc" id="L427" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc" id="L428">            l = shiftLeftTruncate(reg.node[i].getState(), bits);</span>
+<span class="fc" id="L429">            reg.node[i].setState(l);</span>
+        }
+<span class="fc" id="L431">    }</span>
+
+    /**
+     * Print the hash table to stdout and test if the hash table is corrupted
+     */
+    void quantum_print_hash(QuantumReg reg) {
+        int i;
+<span class="nc" id="L438">        int tmp = shiftLeftTruncate(reg.hashw);</span>
+<span class="nc bnc" id="L439" title="All 4 branches missed.">        assert(reg.hash.length == tmp);</span>
+<span class="nc" id="L440">        int hashMax = MiscMath.findMax(reg.hash);</span>
+<span class="nc" id="L441">        System.out.println(&quot;hash length=&quot; + reg.hash.length + &quot; max value=&quot; </span>
+            + hashMax + &quot; node.length=&quot; + reg.node.length);
+<span class="nc bnc" id="L443" title="All 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">        for (i = 0; i &lt; tmp; i++) {</span>
+<span class="nc bnc" id="L445" title="All 4 branches missed.">            if (i &gt; 0 &amp;&amp; reg.hash[i] &gt; 0) {</span>
+<span class="nc" id="L446">                int idx = reg.hash[i] - 1;</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">                if (idx &lt; reg.node.length) {</span>
+<span class="nc" id="L448">                    System.out.format(&quot;%d: %d %d\n&quot;, i, idx,</span>
+<span class="nc" id="L449">                        reg.node[idx].getState());</span>
+                }
+            }
+        }
+<span class="nc" id="L453">    }</span>
+
+    /**
+     * Compute the Kronecker product of two quantum registers.
+     * 
+     * &lt;pre&gt;
+     *   if reg1 is A which is a 2^n vector and 
+     *   reg2 is B which is a 2^m vector,
+     *  
+     *      the kronecker product is
+     * 
+     *      |A&gt; ⊗ |B&gt; is  | A_1 * B_1         |
+     *                    | A_1 * B_2         |
+     *                       ...
+     *                    | A_1 * B_(2^m)     |
+     *                        ...
+     *                    | A_2 * B_1         |
+     *                        ...
+     *                    | A_(2^n) * B_(2^m) |
+     * &lt;/pre&gt;
+     *
+     */
+    QuantumReg quantum_kronecker(QuantumReg reg1, QuantumReg reg2) {
+  
+        int i, j;
+<span class="nc" id="L478">        QuantumReg reg = new QuantumReg();</span>
+
+<span class="nc" id="L480">        reg.width = reg1.width + reg2.width;</span>
+<span class="nc" id="L481">        reg.size = reg1.size * reg2.size;</span>
+<span class="nc" id="L482">        reg.hashw = reg.width + 2;</span>
+
+        // allocate memory for the new basis states 
+<span class="nc" id="L485">        reg.node = new QuantumRegNode[reg.size];</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">        for (int ii = 0; ii &lt; reg.node.length; ii++) {</span>
+<span class="nc" id="L487">            reg.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L488">            reg.node[ii].setState(0);</span>
+<span class="nc" id="L489">            reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+        }
+        
+        // Allocate the hash table 
+<span class="nc" id="L493">        int nHash = shiftLeftTruncate(reg.hashw);</span>
+<span class="nc" id="L494">        reg.hash = new int[nHash];</span>
+        
+<span class="nc bnc" id="L496" title="All 2 branches missed.">        for (i = 0; i &lt; reg1.size; i++) {</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">            for (j = 0; j &lt; reg2.size; j++) {</span>
+                // printf(&quot;processing |%lli&gt; x |%lli&gt;\n&quot;, reg1-&gt;node[i].state, 
+                //reg2 -&gt; node[j].state
+                //);
+                //printf(&quot;%lli\n&quot;, (reg1 -&gt; node[i].state) &lt;&lt; reg2 -&gt; width);
+                
+<span class="nc" id="L503">                int tmp = shiftLeftTruncate(reg1.node[i].getState(), reg2.width);</span>
+<span class="nc" id="L504">                reg.node[i * reg2.size + j].setState( </span>
+<span class="nc" id="L505">                    tmp | reg2.node[j].getState());</span>
+                
+<span class="nc" id="L507">                reg.node[i * reg2.size + j].amplitude.resetTo(reg1.node[i].amplitude);</span>
+<span class="nc" id="L508">                reg.node[i * reg2.size + j].amplitude.times(reg2.node[j].amplitude);</span>
+            }
+        }
+
+<span class="nc" id="L512">        return reg;</span>
+    }
+
+    /**
+     * Reduce the state vector after measurement or partial trace
+     */
+    QuantumReg quantum_state_collapse(int pos, int value, QuantumReg reg) {
+        int i, j, k;
+<span class="fc" id="L520">        int size = 0;</span>
+<span class="fc" id="L521">        double d = 0;</span>
+        
+<span class="fc" id="L523">        QuantumReg out = new QuantumReg();</span>
+        
+        //MAX_UNSIGNED lpat = 0, rpat = 0, pos2;
+        //pos2 = (MAX_UNSIGNED) 1 &lt;&lt; pos;
+<span class="fc" id="L527">        int lpat = 0;</span>
+<span class="fc" id="L528">        int rpat = 0;</span>
+<span class="fc" id="L529">        int pos2 = shiftLeftTruncate(pos);</span>
+        
+        // Eradicate all amplitudes of base states which have been ruled out
+        //   by the measurement and get the norm of the new register 
+<span class="fc bfc" id="L533" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L534" title="All 4 branches covered.">            if ((((reg.node[i].getState() &amp; pos2) != 0) &amp;&amp; (value != 0))</span>
+<span class="fc bfc" id="L535" title="All 4 branches covered.">                || (((reg.node[i].getState() &amp; pos2) == 0) &amp;&amp; (value == 0))) {</span>
+                
+<span class="fc" id="L537">                d += reg.node[i].amplitude.squareSum();</span>
+<span class="fc" id="L538">                size++;</span>
+            }
+        }
+
+        // Build the new quantum register 
+<span class="fc" id="L543">        out.width = reg.width - 1;</span>
+<span class="fc" id="L544">        out.size = size;</span>
+<span class="fc" id="L545">        out.node = new QuantumRegNode[size];</span>
+<span class="fc" id="L546">        out.hashw = reg.hashw;</span>
+<span class="fc" id="L547">        out.hash = reg.hash;</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">        for (int ii = 0; ii &lt; out.node.length; ii++) {</span>
+<span class="fc" id="L549">            out.node[ii] = new QuantumRegNode();</span>
+<span class="fc" id="L550">            out.node[ii].setState(0);</span>
+<span class="fc" id="L551">            out.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+        }
+        
+        // Determine the numbers of the new base states and norm 
+        // the quantum register 
+<span class="fc bfc" id="L556" title="All 2 branches covered.">        for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L557" title="All 4 branches covered.">            if ((((reg.node[i].getState() &amp; pos2) != 0) &amp;&amp; (value != 0))</span>
+<span class="fc bfc" id="L558" title="All 4 branches covered.">                || (((reg.node[i].getState() &amp; pos2) == 0) &amp;&amp; (value == 0))) {</span>
+<span class="pc bpc" id="L559" title="1 of 2 branches missed.">                for (k = 0, rpat = 0; k &lt; pos; k++) {</span>
+<span class="nc" id="L560">                    rpat += shiftLeftTruncate(k);</span>
+                }
+
+<span class="fc" id="L563">                rpat &amp;= reg.node[i].getState();</span>
+
+                /* in the c code compiled on 64 bit platform,
+                   MAX_UNSIGNED is an unsigned long long
+                   but since the sizeof gives that type in bytes
+                   then k = number of bytes * 8,
+                   k is the number of bits
+                for (k = sizeof(MAX_UNSIGNED) * 8 - 1, lpat = 0; k &gt; pos; k--) {
+                    lpat += (MAX_UNSIGNED) 1 &lt;&lt; k;
+                }
+                */
+                
+<span class="fc bfc" id="L575" title="All 2 branches covered.">                for (k = 31 - 1, lpat = 0; k &gt; pos; k--) {</span>
+<span class="fc" id="L576">                    lpat += shiftLeftTruncate(k);</span>
+                }
+
+<span class="fc" id="L579">                lpat &amp;= reg.node[i].getState();</span>
+
+<span class="fc" id="L581">                out.node[j].setState((lpat &gt;&gt; 1) | rpat);</span>
+                
+<span class="fc" id="L583">                out.node[j].amplitude.resetTo(reg.node[i].amplitude);</span>
+<span class="fc" id="L584">                out.node[j].amplitude.times(1./Math.sqrt(d));</span>
+                
+<span class="fc" id="L586">                j++;</span>
+            }
+        }
+
+<span class="fc" id="L590">        return out;</span>
+    }
+
+    /**
+     * Compute the dot product of two quantum registers.
+     * 
+     * &lt;pre&gt;
+     * |psi&gt; = summation over j of alpha*_j * |j&gt;
+     * 
+     * |phi&gt; = summation over j of beta*_j * |j&gt;
+     * 
+     * dot product
+     * (psi|phi&gt; = summation over j of alpha*_j * beta_j
+     * 
+     * &lt;/pre&gt;
+     *
+     */
+    ComplexModifiable quantum_dot_product(QuantumReg reg1, QuantumReg reg2) {
+        
+        int i, j;
+<span class="nc" id="L610">        ComplexModifiable f = new ComplexModifiable(0, 0);</span>
+
+        // Check whether quantum registers are sorted 
+<span class="nc bnc" id="L613" title="All 2 branches missed.">        if (reg2.hashw &gt; 0) {</span>
+<span class="nc" id="L614">            quantum_reconstruct_hash(reg2);</span>
+        }
+        
+<span class="nc bnc" id="L617" title="All 2 branches missed.">        for (i = 0; i &lt; reg1.size; i++) {</span>
+            
+<span class="nc" id="L619">            j = quantum_get_state(reg1.node[i].getState(), reg2);</span>
+
+            // state exists in reg2 
+<span class="nc bnc" id="L622" title="All 2 branches missed.">            if (j &gt; -1) {</span>
+<span class="nc" id="L623">                ComplexModifiable tmp2 = reg1.node[i].amplitude.copy();</span>
+<span class="nc" id="L624">                tmp2.conjugate();</span>
+<span class="nc" id="L625">                tmp2.times(reg2.node[j].amplitude);</span>
+                
+<span class="nc" id="L627">                f.plus(tmp2);</span>
+            }
+        }
+<span class="nc" id="L630">        return f;</span>
+    }
+
+    /**
+     * Same as above, but without complex conjugation
+     */
+    ComplexModifiable quantum_dot_product_noconj(QuantumReg reg1, QuantumReg reg2) {
+  
+        int i, j;
+<span class="nc" id="L639">        ComplexModifiable f = new ComplexModifiable(0, 0);</span>
+
+        // Check whether quantum registers are sorted 
+<span class="nc bnc" id="L642" title="All 2 branches missed.">        if (reg2.hashw != 0) {</span>
+<span class="nc" id="L643">            quantum_reconstruct_hash(reg2);</span>
+        }
+
+<span class="nc bnc" id="L646" title="All 2 branches missed.">        for (i = 0; i &lt; reg1.size; i++) {</span>
+<span class="nc" id="L647">            j = quantum_get_state(reg1.node[i].getState(), reg2);</span>
+
+            // state exists in reg2 
+<span class="nc bnc" id="L650" title="All 2 branches missed.">            if (j &gt; -1) {</span>
+<span class="nc" id="L651">                ComplexModifiable tmp2 = reg1.node[i].amplitude.copy();</span>
+<span class="nc" id="L652">                tmp2.times(reg2.node[j].amplitude);</span>
+<span class="nc" id="L653">                f.plus(tmp2);</span>
+            }
+        }
+<span class="nc" id="L656">        return f;</span>
+    }
+
+    /**
+     * Vector addition of two quantum registers. This is a purely mathematical
+     * operation without any physical meaning, so only use it if you know what
+     * you are doing.
+     */
+    QuantumReg quantum_vectoradd(QuantumReg reg1, QuantumReg reg2) {
+  
+        int i, j, k;
+<span class="nc" id="L667">        int addsize = 0;</span>
+<span class="nc" id="L668">        QuantumReg reg = new QuantumReg();</span>
+
+<span class="nc" id="L670">        quantum_copy_qureg(reg1, reg);</span>
+
+<span class="nc bnc" id="L672" title="All 4 branches missed.">        if ((reg1.hashw != 0) || (reg2.hashw != 0)) {</span>
+<span class="nc" id="L673">            quantum_reconstruct_hash(reg1);</span>
+<span class="nc" id="L674">            quantum_copy_qureg(reg1, reg);</span>
+
+            // Calculate the number of additional basis states 
+<span class="nc bnc" id="L677" title="All 2 branches missed.">            for (i = 0; i &lt; reg2.size; i++) {</span>
+<span class="nc bnc" id="L678" title="All 2 branches missed.">                if (quantum_get_state(reg2.node[i].getState(), reg1) == -1) {</span>
+<span class="nc" id="L679">                    addsize++;</span>
+                }
+            }
+        }
+
+<span class="nc" id="L684">        reg.size += addsize;</span>
+<span class="nc bnc" id="L685" title="All 2 branches missed.">        if (reg.node.length != reg.size) {</span>
+<span class="nc" id="L686">            int len1 = reg.node.length;</span>
+<span class="nc" id="L687">            reg.node = Arrays.copyOf(reg.node, reg.size);</span>
+<span class="nc bnc" id="L688" title="All 2 branches missed.">            for (i = len1; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L689">                reg.node[i] = new QuantumRegNode();</span>
+<span class="nc" id="L690">                reg.node[i].setState(0);</span>
+<span class="nc" id="L691">                reg.node[i].amplitude = new ComplexModifiable(0, 0);</span>
+            }
+        }
+        
+<span class="nc" id="L695">        k = reg1.size;</span>
+
+<span class="nc bnc" id="L697" title="All 2 branches missed.">        for (i = 0; i &lt; reg2.size; i++) {</span>
+<span class="nc" id="L698">            j = quantum_get_state(reg2.node[i].getState(), reg1);</span>
+
+<span class="nc bnc" id="L700" title="All 2 branches missed.">            if (j &gt;= 0) {</span>
+<span class="nc" id="L701">                reg.node[j].amplitude.plus(reg2.node[i].amplitude);</span>
+            } else {
+<span class="nc" id="L703">                reg.node[k].setState(reg2.node[i].getState());</span>
+<span class="nc" id="L704">                reg.node[k].amplitude.resetTo(reg2.node[i].amplitude);</span>
+<span class="nc" id="L705">                k++;</span>
+            }
+        }
+
+<span class="nc" id="L709">        return reg;</span>
+    }
+
+    /**
+     * Same as above, but the result is stored in the first register
+     */
+    void quantum_vectoradd_inplace(QuantumReg reg1, QuantumReg reg2) {
+  
+        int i, j, k;
+<span class="nc" id="L718">        int addsize = 0;</span>
+
+<span class="nc bnc" id="L720" title="All 4 branches missed.">        if ((reg1.hashw != 0) || (reg2.hashw != 0)) {</span>
+<span class="nc" id="L721">            quantum_reconstruct_hash(reg1);</span>
+
+            // Calculate the number of additional basis states 
+<span class="nc bnc" id="L724" title="All 2 branches missed.">            for (i = 0; i &lt; reg2.size; i++) {</span>
+<span class="nc bnc" id="L725" title="All 2 branches missed.">                if (quantum_get_state(reg2.node[i].getState(), reg1) == -1) {</span>
+<span class="nc" id="L726">                    addsize++;</span>
+                }
+            }
+        }
+        // Allocate memory for basis states 
+
+<span class="nc bnc" id="L732" title="All 2 branches missed.">        if (reg1.node.length != (reg1.size + addsize)) {</span>
+<span class="nc" id="L733">            int len1 = reg1.node.length;</span>
+<span class="nc" id="L734">            reg1.node = Arrays.copyOf(reg1.node, reg1.size + addsize);</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">            for (int ii = len1; ii &lt; (reg1.size + addsize); ii++) {</span>
+<span class="nc" id="L736">                reg1.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L737">                reg1.node[ii].setState(0);</span>
+<span class="nc" id="L738">                reg1.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+            }
+        }
+        
+        // Allocate the hash table 
+<span class="nc" id="L743">        k = reg1.size;</span>
+
+<span class="nc bnc" id="L745" title="All 2 branches missed.">        for (i = 0; i &lt; reg2.size; i++) {</span>
+<span class="nc" id="L746">            j = quantum_get_state(reg2.node[i].getState(), reg1);</span>
+
+<span class="nc bnc" id="L748" title="All 2 branches missed.">            if (j &gt;= 0) {</span>
+<span class="nc" id="L749">                reg1.node[j].amplitude.plus(reg2.node[i].amplitude);</span>
+            } else {
+<span class="nc" id="L751">                reg1.node[k].setState(reg2.node[i].getState());</span>
+<span class="nc" id="L752">                reg1.node[k].amplitude.resetTo(reg2.node[i].amplitude);</span>
+<span class="nc" id="L753">                k++;</span>
+            }
+        }
+<span class="nc" id="L756">        reg1.size += addsize;</span>
+<span class="nc" id="L757">    }</span>
+
+    /**
+     * Matrix-vector multiplication for a quantum register. A is a function
+     * returning a quantum register containing the row given in the first
+     * parameter. An additional parameter (e.g. time) may be supplied as well.
+     */
+    /*
+    QuantumReg quantum_matrix_qureg(
+        QuantumReg A (MAX_UNSIGNED, double), double t, QuantumReg reg) {
+  
+        MAX_UNSIGNED i;
+        QuantumReg reg2 = new QuantumReg();
+        QuantumReg tmp = new QuantumReg();
+
+        reg2.width = reg.width;
+        reg2.size = 1 &lt;&lt; reg2.width;
+        reg2.hashw = 0;
+        reg2.hash = null;
+
+        reg2.node = calloc(reg2.size, sizeof(quantum_reg_node));
+        if (!reg2.node) {
+            quantum_error(QUANTUM_ENOMEM);
+        }
+
+        quantum_memman(reg2.size * sizeof(quantum_reg_node));
+
+        for (i = 0; i &lt; (1 &lt;&lt; reg -&gt; width); i++) {
+            reg2.node[i].state = i;
+            tmp = A(i, t);
+            reg2.node[i].amplitude = quantum_dot_product_noconj( &amp; tmp, reg);
+            quantum_delete_qureg( &amp; tmp);
+        }
+
+        return reg2;
+
+    }
+    */
+    
+    /**
+     * Scalar multiplication of a quantum register. This is a purely
+     * mathematical operation without any physical meaning, so only use it if
+     * you know what you are doing.
+     */
+    void quantum_scalar_qureg(ComplexModifiable r, QuantumReg reg) {
+  
+        int i;
+
+<span class="nc bnc" id="L805" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L806">            reg.node[i].amplitude.times(r);</span>
+        }
+<span class="nc" id="L808">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -350,11 +350,11 @@ public class KDTreeFloat {
 <span class="fc" id="L350">                dist2 = distanceSq(retVal2.iterator().next(), </span>
                     leftValue, rightValue);
                 // TODO: consider a tolerance
-<span class="fc bfc" id="L353" title="All 2 branches covered.">                if (dist2 == 0) {</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">                if (dist2 == 0) {</span>
                     // this is the point
-<span class="fc" id="L355">                    bestDist = dist2;</span>
-<span class="fc" id="L356">                    bestNode = retVal2;</span>
-<span class="fc" id="L357">                    return bestNode;</span>
+<span class="nc" id="L355">                    bestDist = dist2;</span>
+<span class="nc" id="L356">                    bestNode = retVal2;</span>
+<span class="nc" id="L357">                    return bestNode;</span>
                 }
 <span class="fc bfc" id="L359" title="All 2 branches covered.">                if (dist2 == dist1) {</span>
 <span class="pc bpc" id="L360" title="1 of 2 branches missed.">                    if (dist1 == bestDist) {</span>

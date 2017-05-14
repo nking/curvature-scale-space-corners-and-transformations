@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMASolution.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.fr.inria.optimization.cmaes</a> &gt; <span class="el_source">CMASolution.java</span></div><h1>CMASolution.java</h1><pre class="source lang-java linenums">package thirdparty.fr.inria.optimization.cmaes;
+
+import thirdparty.fr.inria.optimization.cmaes.ISolutionPoint;
+
+/** solution point in search space. Rather plain implementation of the interface ISolutionPoint. 
+ * 
+ * see copyright in CMAEvolutionStrategy
+ * 
+ * @see ISolutionPoint
+ * */
+public class CMASolution implements ISolutionPoint, java.io.Serializable {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 6257830429350615236L;
+
+<span class="nc" id="L17">	public CMASolution() {</span>
+<span class="nc" id="L18">	}</span>
+
+<span class="fc" id="L20">	public CMASolution(double[] x, double fitnessValue, long evaluation) {</span>
+        // super(); // cave: default values for fields overwrite super()
+<span class="fc" id="L22">        this.functionValue = fitnessValue;</span>
+<span class="fc" id="L23">        this.x = x.clone(); // deep copy, see http://java.sun.com/docs/books/jls/third_edition/html/arrays.html 10.7</span>
+<span class="fc" id="L24">        this.evaluation = evaluation;</span>
+<span class="fc" id="L25">    }</span>
+	
+	/* * as I do not know how to inherit clone in a decent way
+	 * and clone even might produce shallow copies
+	 */
+	public CMASolution deepCopy() {
+<span class="nc" id="L31">		return new CMASolution(x, functionValue, evaluation); </span>
+	}
+
+<span class="nc" id="L34">    public CMASolution(double[] x) {</span>
+<span class="nc" id="L35">	    this.x = x;</span>
+<span class="nc" id="L36">	}</span>
+    // getter functions
+<span class="nc" id="L38">    public double getFitness() { return functionValue; }</span>
+<span class="nc" id="L39">    public long getEvaluationNumber() { return evaluation; }</span>
+<span class="fc" id="L40">    public double[] getX() { return x.clone(); }</span>
+    
+    // setter functions
+<span class="nc" id="L43">    public void setFitness(double f) { functionValue = f; }</span>
+<span class="nc" id="L44">    public void setEvaluationNumber(long e) { evaluation = e; }</span>
+    public void setX(double[] x_in) 
+    { 
+<span class="nc" id="L47">    	x = new double[x_in.length];</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">    	for (int i = 0; i &lt; x.length; ++i)</span>
+<span class="nc" id="L49">    		x[i] = x_in[i];</span>
+<span class="nc" id="L50">    }</span>
+
+    /** objective function value of x */ 
+<span class="pc" id="L53">    private double functionValue = Double.NaN; </span>
+
+    /** argument to objective function to be optimized */ 
+    private double[] x; 
+
+    /** count when the solution was evaluated */
+<span class="pc" id="L59">	private long evaluation = 0;</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

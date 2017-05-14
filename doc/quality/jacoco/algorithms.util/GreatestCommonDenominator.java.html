@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GreatestCommonDenominator.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">GreatestCommonDenominator.java</span></div><h1>GreatestCommonDenominator.java</h1><pre class="source lang-java linenums">package algorithms.util;
+
+/**
+ * implemented from pseudocode from Cormen et al. 
+ * &quot;Introduction to Algorithms&quot;, Chap 31
+ *
+ * @author nichole
+ */
+<span class="nc" id="L9">public class GreatestCommonDenominator {</span>
+
+    /**
+     * return the greatest common denominator of the 2 integers.
+     *
+     * worse case runtime can never be greater than five times the number of its digits (base 10).
+     * avg case runtime is
+     * 
+     * @param a
+     * @param b
+     * @return
+     */
+    public static int euclid(int a, int b) {
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        if (b == 0) {</span>
+<span class="fc" id="L23">            return a;</span>
+        }
+<span class="fc" id="L25">        count++;</span>
+<span class="fc" id="L26">        return euclid(b, a % b);</span>
+    }
+<span class="fc" id="L28">    public static int count = 0;</span>
+
+    /**
+     * return the greatest common denominator of the 2 integers.
+     *
+     * worse case runtime can never be greater than five times the 
+     * O(log_2(min(m, n)).
+     * 
+     * @param a
+     * @param b
+     * @return
+     */
+    public static long euclid(long a, long b) {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (b == 0) {</span>
+<span class="nc" id="L42">            return a;</span>
+        }
+<span class="nc" id="L44">        count++;</span>
+<span class="nc" id="L45">        return euclid(b, a % b);</span>
+    }
+    
+    /*
+    r.t. complexity of multiplying 2 n bit numbers is
+         O(n log n log log n).
+    */
+
+    /**
+     * 
+     * extended euclid r.t. O(size(a) · size(b))?
+     * 
+     * @param a
+     * @param b
+     * @return 
+     */
+    public static int[] extendedEuclid(int a, int b) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (b == 0) {</span>
+<span class="fc" id="L63">            return new int[]{a, 1, 0};</span>
+        }
+<span class="fc" id="L65">        int[] dxy_p = extendedEuclid(b, a % b);</span>
+<span class="fc" id="L66">        int[] dxy = new int[] {</span>
+            dxy_p[0], dxy_p[2], (dxy_p[1] - (a/b)*dxy_p[2])
+        };
+<span class="fc" id="L69">        return dxy;</span>
+    }
+    
+    public static long[] extendedEuclid(long a, long b) {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (b == 0) {</span>
+<span class="nc" id="L74">            return new long[]{a, 1, 0};</span>
+        }
+        // r.t. complexity of '%' is O(a/b)
+<span class="nc" id="L77">        long[] dxy_p = extendedEuclid(b, a % b);</span>
+<span class="nc" id="L78">        long[] dxy = new long[] {</span>
+            dxy_p[0], dxy_p[2], (dxy_p[1] - (a/b)*dxy_p[2])
+        };
+<span class="nc" id="L81">        return dxy;</span>
+    }
+   
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

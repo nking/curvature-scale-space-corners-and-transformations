@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Decoherence.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.libquantum</a> &gt; <span class="el_source">Decoherence.java</span></div><h1>Decoherence.java</h1><pre class="source lang-java linenums">package thirdparty.libquantum;
+
+import java.util.Random;
+
+/* decoherence.c: Simulation of decoherence effects
+
+ibquantum provides an efficient model to simulate the effects of 
+decoherence. The effects are simulated by a random rotation about 
+the z axis, where the angle of the rotation is a normal distributed 
+value with the variance $2 \lambda$. $\lambda$ is the decoherence 
+parameter, which depends on the experimental realization of the 
+quantum computer. 
+A list of values for $\lambda$ is given in [DiVincenzo, 1995].
+
+   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+
+   This file is part of libquantum
+
+   libquantum is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 3 of the License,
+   or (at your option) any later version.
+
+   libquantum is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with libquantum; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
+
+ */
+<span class="fc" id="L35">public class Decoherence {</span>
+
+    /**
+     * Status of the decoherence simulation. Non-zero means enabled and
+     * decoherence effects will be simulated.
+     */
+<span class="fc" id="L41">    private int quantum_status = 0;</span>
+
+    /**
+     * Decoherence parameter. The higher the value, the greater the decoherence
+     * impact.
+     */
+<span class="fc" id="L47">    private float quantum_lambda = 0;</span>
+
+    float quantum_get_decoherence() {
+<span class="nc" id="L50">        return quantum_lambda;</span>
+    }
+
+    /**
+     * Initialize the decoherence simulation and set the decoherence parameter.
+     */
+    void quantum_set_decoherence(float l) {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (l != 0) {</span>
+<span class="nc" id="L58">            quantum_status = 1;</span>
+<span class="nc" id="L59">            quantum_lambda = l;</span>
+        } else {
+<span class="nc" id="L61">            quantum_status = 0;</span>
+        }
+<span class="nc" id="L63">    }</span>
+
+    /**
+     * Perform the actual decoherence of a quantum register for a single step of
+     * time. This is done by applying a phase shift by a normal distributed
+     * angle with the variance LAMBDA.
+     */
+    void quantum_decohere(QuantumReg reg, Random rng, Gates gates) {
+        double u, v, s, x;
+        double[] nrands;
+        double angle;
+        int i, j;
+
+        /**
+         * Increase the gate counter
+         */
+<span class="fc" id="L79">        gates.quantum_gate_counter(1);</span>
+
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (quantum_status != 0) {</span>
+
+<span class="nc" id="L83">            nrands = new double[reg.width];</span>
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            for (i = 0; i &lt; reg.width; i++) {</span>
+                
+                // Generate normal distributed random numbers
+                do {
+<span class="nc" id="L89">                    u = 2 * rng.nextDouble() - 1;</span>
+<span class="nc" id="L90">                    v = 2 * rng.nextDouble() - 1;</span>
+<span class="nc" id="L91">                    s = u * u + v * v;</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                } while (s &gt;= 1);</span>
+
+<span class="nc" id="L94">                x = u * Math.sqrt(-2 * Math.log(s) / s);</span>
+
+<span class="nc" id="L96">                x *= Math.sqrt(2 * quantum_lambda);</span>
+
+<span class="nc" id="L98">                nrands[i] = x / 2;</span>
+            }
+
+            // Apply the phase shifts for decoherence simulation */
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            for (i = 0; i &lt; reg.size; i++) {</span>
+                
+<span class="nc" id="L104">                angle = 0;</span>
+
+<span class="nc bnc" id="L106" title="All 2 branches missed.">                for (j = 0; j &lt; reg.width; j++) {</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">                    if ((reg.node[i].getState() &amp; QuReg.shiftLeftTruncate(j)) != 0) {</span>
+<span class="nc" id="L108">                        angle += nrands[j];</span>
+                    } else {
+<span class="nc" id="L110">                        angle -= nrands[j];</span>
+                    }
+                }
+                //cos(phi) + IMAGINARY * sin(phi)
+<span class="nc" id="L114">                double re = reg.node[i].amplitude.re() * Math.cos(angle);</span>
+<span class="nc" id="L115">                double im = reg.node[i].amplitude.im() * Math.sin(angle);</span>
+<span class="nc" id="L116">                reg.node[i].amplitude.setReal(re);</span>
+<span class="nc" id="L117">                reg.node[i].amplitude.setImag(im);</span>
+            }
+        }
+<span class="fc" id="L120">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
