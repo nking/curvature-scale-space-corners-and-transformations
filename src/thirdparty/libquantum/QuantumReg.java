@@ -36,8 +36,11 @@ public class QuantumReg {
     /** width of the hash array */
     public int hashw;
     
+    /** vectors w/ non-zero probability amplitudes */
     public QuantumRegNode[] node;
     
+    /** hash nolding indexes of node.  the hash length
+     is usually instantiated as (1 << hashw).*/
     public int[] hash;
 
 }

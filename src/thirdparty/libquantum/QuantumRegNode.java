@@ -26,6 +26,14 @@ import java.util.logging.Logger;
 
 */
 
+/**
+representation of a member of a quantum state vector psi
+with alpha being amplitude and state being j.
+<pre>
+   psi = summation from j = 0 to n of (alpha_j * |j> )
+</pre>
+  This node contains an element of alpha and j
+*/
 public class QuantumRegNode {
     
     private static transient Logger log = Logger.getLogger(

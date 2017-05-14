@@ -165,7 +165,8 @@ public class Gates {
     */
 
     /**
-     * Apply a sigma_x (or not) gate
+     * Apply a sigma_x (or not) gate which is a Pauli spin operation for 
+     * x axis.
      */
     void quantum_sigma_x(final int target, QuantumReg reg) {
   
@@ -190,7 +191,7 @@ public class Gates {
     }
 
     /**
-     * Apply a sigma_y gate
+     * Apply a sigma_y gate which is a Pauli spin operation for the y axis.
      */
     void quantum_sigma_y(int target, QuantumReg reg) {
   
@@ -226,7 +227,7 @@ public class Gates {
     }
 
     /**
-     * Apply a sigma_y gate
+     * Apply a sigma_z gate which is a Pauli spin operation for the z axis.
      */
     void quantum_sigma_z(int target, QuantumReg reg) {
         
@@ -595,7 +596,8 @@ public class Gates {
     }
 
     /**
-     * Apply a hadamard gate
+     * Apply a hadamard gate.
+     * this is a generalized class of fourier transforms.
      */
     void quantum_hadamard(int target, QuantumReg reg) {
   
@@ -698,7 +700,7 @@ public class Gates {
     }
 
     /**
-     * Apply a phase kick by the angle GAMMA
+     * Apply a phase kick (== shift) by the angle GAMMA
      */
     void quantum_phase_kick(int target, float gamma, QuantumReg reg) {
   

@@ -124,3 +124,124 @@ Notes about Shor's algorithm
                |        |         |
             [Ua2^0]  [Ua2^1] [Ua2^n-1]
     
+        
+===============================
+Notes about Grover's algorithm
+---------------------------------
+                
+from https://en.wikipedia.org/wiki/Grover%27s_algorithm
+            
+ Grover's algorithm is a quantum algorithm that finds 
+    with high probability the unique input to a black 
+    box function that produces a particular output 
+    value, using just
+O(sqrt(N)) evaluations of the function, where N is 
+the size of the function's domain. 
+    It was devised by Lov Grover in 1996.
+                
+    Although the algorithm is commonly called a database search algorithm,
+    it can also be thought of as a function inverter in that
+    give y = f(x),
+         one can find an x that has the given y
+                
+    can also be used for :
+      estimating the mean and median of a set of numbers, 
+      solving the collision problem,
+      cracking passwords.
+
+              
+              
+from "Quantum Mechanics Helps in Searching for a Needle 
+in a Haystack" by Grover
+        
+ Premise is that can reformat the problem into a 
+ superposition of states so that a memory bit in the 
+ simulated computer holds a superposition of states.
+              
+   the Grover search is a sequence of controlled unitary 
+   operations
+ on a pure state followed by measurement operation.
+      (1) create superposition
+          (wherein the amplitude of the system being in 
+          any of the 
+          N basic states of the system is equal
+      (2) the Walsh-Hadamard transformation operation, 
+      (3) third the selective rotation of the phases of states.
+             
+        
+     a basic quantum computer operation operates on a 
+        single qubit.
+        
+        the hadamard matrix M = (1/√2) | 1   1 |
+                                       | 1  -1 |
+        
+        applied to a single qubit produces a superposition 
+        of states
+        
+        In a system with states having n bits (it has N = 2^n
+        possible states), the transformation M performed on
+        each bit independently in sequence thus changing 
+        the state of the system has dimension 
+        dimension 2^n X 2^n. 
+        
+        If the case is an initial configuration with all n
+        bits in the first state, the resultant 
+        configuration will have
+        an identical amplitude of 2^(n/2) in each of 
+        the 2^n states.
+        -> This is a way of creating a superposition 
+        with the same
+        amplitude in all 2^n states.
+            
+
+    -------        
+        N-dimensional state space H, can 
+        be supplied by n = log2 N qubits
+        
+        function f(x)
+            == 1 when x satisifies search criteria, 
+               that is, x == w
+               |U_w|x> = -|x>
+            == 0 else is 0, that is, x != w
+               |U_w|x> = |x>
+                
+        this is then a condition inversion (== NOT gate) 
+        conditioned by the value of f(x) on the main system 
+                
+                |U_w|x> |y> ⊗ |x> |y⊗f(x)>
+                 
+                
+                
+                     circuit diagram 
+            
+            
+                       ------------------------
+                      /   diffuser              \
+              _____   _____  ____________   _____
+|0> -[H⊗n]---|     |--|H⊗n|--|2|0^n> -I_n|--|H⊗n|---- ...measure
+             | U_w |  -----  ------------   ----
+|1> -[H]-----|     |---------------------------------
+             ------|
+    
+             Repeat U_w + diffuser O(sqrt(N)) times
+    
+             where U_w is a quantum oracle operator which 
+             can recognize solutions and give them a 
+             negative sign
+
+the algorithm outline is:
+    (1) Initialize the system to the state
+        {\displaystyle |s\rangle ={\frac {1}{\sqrt {N}}}\sum _{x=0}^{N-1}|x\rangle } |s\rang = \frac{1}{\sqrt{N}} \sum_{x=0}^{N-1} |x\rang .
+    (2) Perform the following "Grover iteration" r(N) times. 
+        The function r(N), which is asymptotically O(N1/2), 
+        is described below.
+        -- Apply the operator 
+           {\displaystyle U_{\omega }} U_{\omega }.
+           U_w is the oracle operator
+        -- Apply the operator {\displaystyle U_{s}} U_{s}.
+   (3) Perform the measurement Ω. The measurement 
+       result will be eigenvalue 
+       λω with probability approaching 1 for N ≫ 1. 
+       From λω, ω may be obtained.
+
+--------

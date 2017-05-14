@@ -1,6 +1,6 @@
 this is a port of libquantum-1.0.0 from c to java.
 
-the code was downloaded from 
+the code was downloaded from http://www.libquantum.de/
    
 the copyrights are in the individual files,
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
@@ -9,4 +9,18 @@ their license is
 
 Note that currently missing are the 
  objcode and density classes.
+   
+from the libquantum documentation:
+     Density operator formalism
+When dealing with systems with many qubits, it is often inconvenient 
+to use state vectors to describe the system as the required computational 
+power grows exponentially. In the case of non-interacting subsystems the 
+problem can be solved by using the density operator formalism. 
+In this formalism the quantum state $\rho$ is represented by a statistical 
+mixture of state vectors where 
+
+\begin{displaymath}\rho = \sum_i p_i \vert\psi_i\rangle \hspace{-0.092cm} \langle\psi_i\vert \; . \end{displaymath}
+
+Here $p_i$ denotes the probability of finding the system in the state $\psi_i$ 
+    [Breuer, 2002].
 

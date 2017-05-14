@@ -4,6 +4,14 @@ import java.util.Random;
 
 /* decoherence.c: Simulation of decoherence effects
 
+ibquantum provides an efficient model to simulate the effects of 
+decoherence. The effects are simulated by a random rotation about 
+the z axis, where the angle of the rotation is a normal distributed 
+value with the variance $2 \lambda$. $\lambda$ is the decoherence 
+parameter, which depends on the experimental realization of the 
+quantum computer. 
+A list of values for $\lambda$ is given in [DiVincenzo, 1995].
+
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
