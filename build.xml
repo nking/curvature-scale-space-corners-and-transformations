@@ -137,6 +137,7 @@
             <exclude name="**/*Test*.java"/>
         </javac>
         <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
+        <copy file="${resources.dir}/CMAEvolutionStrategy.properties" todir="${src.out.dir}" />
     </target>
 
     <!-- compile tests  -->
@@ -337,7 +338,8 @@
             <exclude name="**/*Test*.java"/>
         </javac>
         <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
-
+        <copy file="${resources.dir}/CMAEvolutionStrategy.properties" todir="${src.out.dir}" />
+        
         <javac srcdir="${tests.dir}"
             destdir="${tests.out.dir}"
             source="${compile.target}"

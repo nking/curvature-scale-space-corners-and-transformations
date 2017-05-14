@@ -140,10 +140,10 @@ import java.util.Stack;
 <span class="nc" id="L140">            return;</span>
         }
 
-<span class="pc bpc" id="L143" title="1 of 4 branches missed.">        if (z.getRight() == null &amp;&amp; z.getLeft() == null) {</span>
+<span class="fc bfc" id="L143" title="All 4 branches covered.">        if (z.getRight() == null &amp;&amp; z.getLeft() == null) {</span>
 
             // handle case where z has no children
-<span class="nc bnc" id="L146" title="All 2 branches missed.">            if (z.getParent() == null) {</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            if (z.getParent() == null) {</span>
 <span class="nc bnc" id="L147" title="All 2 branches missed.">                if (root.equals(z)) {</span>
 <span class="nc" id="L148">                    root = null;</span>
                 } else {
@@ -152,9 +152,9 @@ import java.util.Stack;
 
             } else {
 
-<span class="nc" id="L155">                T parent = (T) z.getParent();</span>
-<span class="nc bnc" id="L156" title="All 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
-<span class="nc" id="L157">                    parent.setLeft(null);</span>
+<span class="fc" id="L155">                T parent = (T) z.getParent();</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="fc" id="L157">                    parent.setLeft(null);</span>
                 } else {
 <span class="nc bnc" id="L159" title="All 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
 <span class="nc bnc" id="L160" title="All 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
@@ -162,8 +162,8 @@ import java.util.Stack;
                     }
 <span class="nc" id="L163">                    parent.setRight(null);</span>
                 }
-<span class="nc" id="L165">                z.setParent(null);</span>
-<span class="nc" id="L166">            }</span>
+<span class="fc" id="L165">                z.setParent(null);</span>
+<span class="fc" id="L166">            }</span>
 
 <span class="fc bfc" id="L168" title="All 4 branches covered.">        } else if (z.getRight() != null &amp;&amp; z.getLeft() != null) {</span>
             // z has 2 children
@@ -194,14 +194,14 @@ import java.util.Stack;
             } else {
 
 <span class="fc" id="L196">                T parent = (T) z.getParent();</span>
-<span class="pc bpc" id="L197" title="2 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="pc bpc" id="L197" title="1 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
 <span class="fc" id="L198">                    parent.setLeft(y);</span>
                 } else {
-<span class="nc bnc" id="L200" title="All 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
-<span class="nc bnc" id="L201" title="All 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
+<span class="pc bpc" id="L200" title="3 of 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="pc bpc" id="L201" title="2 of 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
 <span class="nc" id="L202">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
                     }
-<span class="nc" id="L204">                    parent.setRight(y);</span>
+<span class="fc" id="L204">                    parent.setRight(y);</span>
                 }
 <span class="fc" id="L206">                y.setParent(parent);</span>
             }
@@ -228,7 +228,7 @@ import java.util.Stack;
             } else {
 
 <span class="fc" id="L230">                T parent = (T) z.getParent();</span>
-<span class="pc bpc" id="L231" title="1 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="fc bfc" id="L231" title="All 4 branches covered.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
 <span class="fc" id="L232">                    parent.setLeft(child);</span>
                 } else {
 <span class="pc bpc" id="L234" title="3 of 4 branches missed.">                    assert (parent.getRight().equals(z));</span>

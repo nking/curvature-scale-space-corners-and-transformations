@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Matrix.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.libquantum</a> &gt; <span class="el_source">Matrix.java</span></div><h1>Matrix.java</h1><pre class="source lang-java linenums">package thirdparty.libquantum;
+
+import algorithms.misc.ComplexModifiable;
+
+/* matrix.c: Matrix operations
+
+   Copyright 2003, 2005 Bjoern Butscher, Hendrik Weimer
+
+   This file is part of libquantum
+
+   libquantum is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 3 of the License,
+   or (at your option) any later version.
+
+   libquantum is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with libquantum; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
+
+ */
+<span class="fc" id="L27">public class Matrix {</span>
+
+    /**
+     * extract the complex number m.t[(x) + (y) * m.cols]
+     * without copying.
+     * @param m
+     * @param x
+     * @param y
+     * @return 
+     */
+    public static ComplexModifiable M(QuantumMatrix m, int x, int y) {
+<span class="nc" id="L38">        return m.t[(x) + (y) * m.cols];</span>
+    }
+
+    /**
+     * Create a new COLS x ROWS matrix. 
+     * Note that m.t is initialized and filled.
+     */
+    QuantumMatrix quantum_new_matrix(int cols, int rows) {
+        
+<span class="fc" id="L47">        QuantumMatrix m = new QuantumMatrix();</span>
+
+<span class="fc" id="L49">        m.rows = rows;</span>
+<span class="fc" id="L50">        m.cols = cols;</span>
+<span class="fc" id="L51">        int n = cols * rows;</span>
+<span class="fc" id="L52">        m.t = new ComplexModifiable[n];</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L54">            m.t[i] = new ComplexModifiable(0, 0);</span>
+        }
+        
+<span class="fc" id="L57">        return m;</span>
+    }
+
+    /**
+     * Print the contents of a matrix to stdout
+     */
+    void quantum_print_matrix(QuantumMatrix m) {
+        
+<span class="nc" id="L65">        int i, j, z = 0;</span>
+
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        while ((1 &lt;&lt; z++) &lt; m.rows);</span>
+<span class="nc" id="L68">        z--;</span>
+
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        for (i = 0; i &lt; m.rows; i++) {</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">            for (j = 0; j &lt; m.cols; j++) {</span>
+<span class="nc" id="L72">                System.out.format(&quot;%g %+gi &quot;, M(m, j, i).re(), M(m, j, i).im());</span>
+            }
+<span class="nc" id="L74">            System.out.format(&quot;\n&quot;);</span>
+        }
+<span class="nc" id="L76">        System.out.format(&quot;\n&quot;);</span>
+<span class="nc" id="L77">    }</span>
+
+    /**
+     * Matrix multiplication
+     */
+    QuantumMatrix quantum_mmult(QuantumMatrix A, QuantumMatrix B) {
+        
+        int i, j, k;
+
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (A.cols != B.rows) {</span>
+<span class="nc" id="L87">            throw new IllegalArgumentException(&quot;A.cols must == B.rows&quot;);</span>
+        }
+
+<span class="nc" id="L90">        QuantumMatrix C = quantum_new_matrix(B.cols, A.rows);</span>
+
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        for (i = 0; i &lt; B.cols; i++) {</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            for (j = 0; j &lt; A.rows; j++) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                for (k = 0; k &lt; B.rows; k++) {</span>
+<span class="nc" id="L95">                    ComplexModifiable tmp = M(A, k, j).copy();</span>
+<span class="nc" id="L96">                    tmp.times(M(B, i, k));</span>
+<span class="nc" id="L97">                    M(C, i, j).plus(tmp);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L102">        return C;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

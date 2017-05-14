@@ -48,6 +48,18 @@ public class ComplexModifiable {
         re = real;
         im = imag;
     }
+    
+    public void setReal(double real) {
+        re = real;
+    }
+    public void setImag(double imag) {
+        im = imag;
+    }
+    
+    public void resetTo(ComplexModifiable m) {
+        this.re = m.re;
+        this.im = m.im;
+    }
 
     // return a string representation of the invoking Complex object
     public String toString() {
@@ -61,6 +73,10 @@ public class ComplexModifiable {
     public double abs()   { return Math.hypot(re, im); }  // Math.sqrt(re*re + im*im)
     public double phase() { return Math.atan2(im, re); }  // between -pi and pi
 
+    public double squareSum() {
+        return (re * re) + (im * im);
+    }
+    
     /**
      * add the value of b to this instance
      * @param b
@@ -194,7 +210,8 @@ public class ComplexModifiable {
 
     // return a new Complex object whose value is the complex cosine of this
     public ComplexModifiable cos() {
-        return new ComplexModifiable(Math.cos(re) * Math.cosh(im), -Math.sin(re) * Math.sinh(im));
+        return new ComplexModifiable(Math.cos(re) * Math.cosh(im), 
+            -Math.sin(re) * Math.sinh(im));
     }
 
     // return a new Complex object whose value is the complex tangent of this
@@ -212,5 +229,4 @@ public class ComplexModifiable {
         ComplexModifiable sum = new ComplexModifiable(real, imag);
         return sum;
     }
-
 }

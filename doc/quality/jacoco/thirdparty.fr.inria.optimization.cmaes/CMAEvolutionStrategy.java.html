@@ -1,0 +1,2748 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMAEvolutionStrategy.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.fr.inria.optimization.cmaes</a> &gt; <span class="el_source">CMAEvolutionStrategy.java</span></div><h1>CMAEvolutionStrategy.java</h1><pre class="source lang-java linenums">package thirdparty.fr.inria.optimization.cmaes;
+
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*; // Properties, Arrays.sort, Formatter not needed anymore
+
+/* 
+    Copyright 1996, 2003, 2005, 2007 Nikolaus Hansen 
+    e-mail: hansen .AT. lri.fr
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License, version 3,
+    as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+
+ log of changes: 
+     o updateDistribution(double[][], double[], int) introduced,
+       for the time being
+       updateDistribution(double[][], double[]) evaluates to
+       updateDistribution(double[][], double[], 0), but it might become
+       updateDistribution(double[][], double[], popsize)
+     o init() cannot be called twice anymore, it's saver like this 
+     o warning() and error() print also to display-file
+     o checkEigenSystem() call is now an option, gives warnings, not
+       errors, and has its precision criteria adapted to Java.
+     o 06/08 fix: error for negative eigenvalues did not show up 
+     o 09/08: diagonal option included
+     o updateDistribution(double[][], double[]) is available, which 
+       implements an interface, independent of samplePopulation(). 
+     o variable locked is set at the end of supplementRemainders, 
+       instead at the beginning (09/03/08)
+     o bestever is set anew, if its current fitness is NaN (09/03/08)
+     o getBestRecentX() now returns really the recent best (10/03/17) 
+       (thanks to Markus Kemmerling for reporting this problem)
+	 o 2010/12/02: merge of r762 (diagonal option) and r2462 which were 
+	   subbranches since r752
+	 o test() uses flgdiag to get internally time linear
+
+ WISH LIST:
+     o test and consider refinement of 
+       updateDistribution(double[][], double[]) that
+       implements a &quot;saver&quot; interface, 
+       independent of samplePopulation
+       for example updateDistribution(ISolutionPoint[] pop)
+     o save all input parameters as output-properties file
+     o explicit control of data writing behavior in terms of iterations
+       to wait until the next writing?
+     o clean up sorting of eigenvalues/vectors which is done repeatedly
+     o implement a good boundary handling
+     o check Java random number generator and/or implement a private one. 
+	 o implement a general initialize_with_evaluated_points method, which
+	   estimates a good mean and covariance matrix either from all points
+	   or only from the lambda best points (actually mu best points then).
+	   cave about outlier points. 
+     o implement a CMA-ES-specific feed points method for initialization. It should
+       accept a population of evaluated points iteratively. It 
+       just needs to call updateDistribution with a population as input. 
+	 o save z instead of recomputing it? 
+     o improve error management to reasonable standard 
+     o provide output writing for given evaluation numbers and/or given fitness values
+     o better use the class java.lang.Object.Date to handle elapsed times?  
+
+ Last change: $Date: 2011-06-23 $     
+ */
+
+/** 
+ * implements the Covariance Matrix Adaptation Evolution Strategy (CMA-ES)
+ * for non-linear, non-convex, non-smooth, global function minimization. The CMA-Evolution Strategy
+ * (CMA-ES) is a reliable stochastic optimization method which should be applied,
+ * if derivative based methods, e.g. quasi-Newton BFGS or conjugate
+ * gradient, fail due to a rugged search landscape (e.g. noise, local
+ * optima, outlier, etc.)  of the objective function. Like a
+ * quasi-Newton method the CMA-ES learns and applies a variable metric
+ * of the underlying search space. Unlike a quasi-Newton method the
+ * CMA-ES does neither estimate nor use gradients, making it considerably more
+ * reliable in terms of finding a good, or even close to optimal, solution, finally.
+ *
+ * &lt;p&gt;In general, on smooth objective functions the CMA-ES is roughly ten times
+ * slower than BFGS (counting objective function evaluations, no gradients provided). 
+ * For up to &lt;math&gt;N=10&lt;/math&gt; variables also the derivative-free simplex
+ * direct search method (Nelder &amp; Mead) can be faster, but it is
+ * far less reliable than CMA-ES. 
+ *
+ * &lt;p&gt;The CMA-ES is particularly well suited for non-separable 
+ * and/or badly conditioned problems. 
+ * To observe the advantage of CMA compared to a conventional
+ * evolution strategy, it will usually take about 30&amp;#215;&lt;math&gt;N&lt;/math&gt; function
+ * evaluations. On difficult problems the complete
+ * optimization (a single run) is expected to take &lt;em&gt;roughly&lt;/em&gt;  between
+ * &lt;math&gt;30&amp;#215;N&lt;/math&gt; and &lt;math&gt;300&amp;#215;N&lt;sup&gt;2&lt;/sup&gt;&lt;/math&gt;
+ * function evaluations.  
+ *  
+ * &lt;p&gt;The main functionality is provided by the methods &lt;code&gt;double[][] {@link #samplePopulation()}&lt;/code&gt; and 
+ * &lt;code&gt;{@link #updateDistribution(double[])}&lt;/code&gt; or &lt;code&gt;{@link #updateDistribution(double[][], double[])}&lt;/code&gt;. 
+ * Here is an example code snippet, see file 
+ * &lt;tt&gt;CMAExample1.java&lt;/tt&gt; for a similar example, and 
+ *   &lt;tt&gt;CMAExample2.java&lt;/tt&gt; for a more extended example with multi-starts implemented.
+ *   &lt;pre&gt;
+        // new a CMA-ES and set some initial values
+        CMAEvolutionStrategy cma = new CMAEvolutionStrategy();
+        cma.readProperties(); // read options, see file CMAEvolutionStrategy.properties
+        cma.setDimension(10); // overwrite some loaded properties
+        cma.setTypicalX(0.5); // in each dimension, setInitialX can be used as well
+        cma.setInitialStandardDeviation(0.2); // also a mandatory setting 
+        cma.opts.stopFitness = 1e-9;          // optional setting
+
+        // initialize cma and get fitness array to fill in later
+        double[] fitness = cma.init();  // new double[cma.parameters.getPopulationSize()];
+
+        // initial output to files
+        cma.writeToDefaultFilesHeaders(0); // 0 == overwrites old files
+
+        // iteration loop
+        while(cma.stopConditions.getNumber() == 0) {
+
+            // core iteration step 
+            double[][] pop = cma.samplePopulation(); // get a new population of solutions
+            for(int i = 0; i &lt; pop.length; ++i) {    // for each candidate solution i
+                fitness[i] = fitfun.valueOf(pop[i]); //    compute fitness value, where fitfun
+            }                                        //    is the function to be minimized
+            cma.updateDistribution(fitness);         // use fitness array to update search distribution
+ 
+            // output to files
+            cma.writeToDefaultFiles();
+            ...in case, print output to console, eg. cma.println(), 
+               or process best found solution, getBestSolution()...
+        } // while 
+
+        // evaluate mean value as it is the best estimator for the optimum
+        cma.setFitnessOfMeanX(fitfun.valueOf(cma.getMeanX())); // updates the best ever solution 
+        ...retrieve best solution, termination criterion via stopConditions etc...    
+        
+        return cma.getBestX(); // best evaluated search point 
+        
+     *   &lt;/pre&gt;
+     *   The output generated by the function &lt;code&gt;writeToDefaultFiles&lt;/code&gt; can be 
+     *   plotted in Matlab or Scilab using &lt;tt&gt;plotcmaesdat.m&lt;/tt&gt; or
+     *   &lt;tt&gt;plotcmaesdat.sci&lt;/tt&gt; respectively, see {@link #writeToDefaultFiles()}. 
+     *     
+&lt;/P&gt;     
+&lt;P&gt; The implementation follows very closely &lt;a name=HK2004&gt;[3]&lt;/a&gt;. It supports small and large 
+population sizes, the latter by using the rank-&amp;micro;-update [2],
+together with weighted recombination for the covariance matrix, an
+improved parameter setting for large populations [3] and an (initially) diagonal covariance matrix [5]. 
+The latter is particularly useful for large dimension, e.g. larger 100. 
+The default population size is small [1]. An
+independent restart procedure with increasing population size [4]
+is implemented in class &lt;code&gt;{@link cmaes.examples.CMAExample2}&lt;/code&gt;.&lt;/P&gt;
+
+ * &lt;P&gt;&lt;B&gt;Practical hint&lt;/B&gt;: In order to solve an optimization problem in reasonable time it needs to be 
+ * reasonably encoded. In particular the domain width of variables should be 
+ * similar for all objective variables (decision variables), 
+ * such that the initial standard deviation can be chosen the same
+ * for each variable. For example, an affine-linear transformation could be applied to
+ * each variable, such that its typical domain becomes the interval [0,10]. 
+ * For positive variables a log-encoding or a square-encoding 
+ * should be considered, to avoid the need to set a hard boundary at zero, 
+ * see &lt;A href=&quot;http://www.lri.fr/~hansen/cmaes_inmatlab.html#practical&quot;&gt;here for a few more details&lt;/A&gt;.
+ * &lt;/P&gt;
+
+&lt;P&gt;&lt;B&gt;References&lt;/B&gt;
+&lt;UL&gt;
+&lt;LI&gt;[1] Hansen, N. and A. Ostermeier (2001). Completely
+Derandomized Self-Adaptation in Evolution Strategies. &lt;I&gt;Evolutionary
+Computation&lt;/I&gt;, 9(2), pp. 159-195. 
+&lt;/LI&gt;
+&lt;LI&gt;[2] Hansen, N., S.D. M&amp;uuml;ller and
+P. Koumoutsakos (2003). Reducing the Time Complexity of the
+Derandomized Evolution Strategy with Covariance Matrix Adaptation
+(CMA-ES). &lt;I&gt;Evolutionary Computation&lt;/I&gt;, 11(1), pp. 1-18.
+
+&lt;LI&gt;[3] Hansen and Kern (2004). Evaluating the CMA Evolution
+Strategy on Multimodal Test Functions. In &lt;I&gt; Eighth International
+Conference on Parallel Problem Solving from Nature PPSN VIII,
+Proceedings&lt;/I&gt;, pp. 282-291, Berlin: Springer.
+&lt;/LI&gt;
+&lt;LI&gt;[4]
+Auger, A, and Hansen, N. (2005). A Restart CMA Evolution Strategy
+With Increasing Population Size.&lt;/A&gt; In &lt;I&gt;Proceedings of the IEEE
+Congress on Evolutionary Computation, CEC 2005&lt;/I&gt;, pp.1769-1776.
+&lt;/LI&gt;
+&lt;LI&gt;[5]
+Ros, R. and N. Hansen (2008). A Simple
+Modification in CMA-ES Achieving Linear Time and Space Complexity.
+In Rudolph et al. (eds.) &lt;I&gt;Parallel Problem Solving from Nature, PPSN X,
+Proceedings&lt;/I&gt;, pp. 296-305, Springer.
+&lt;/LI&gt;
+&lt;/UL&gt;
+&lt;/P&gt;
+
+ * @see #samplePopulation()
+ * @see #updateDistribution(double[])
+ * @author Nikolaus Hansen, 1996, 2003, 2005, 2007
+ */
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">public class CMAEvolutionStrategy implements java.io.Serializable {</span>
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 2918241407634253526L;
+
+	/**
+     * 
+     */
+<span class="pc" id="L212">    public final String versionNumber = new String(&quot;0.99.40&quot;); </span>
+    
+    /** Interface to whether and which termination criteria are satisfied 
+     */
+    public class StopCondition { 
+    	int index = 0; // number of messages collected == index where to write next message
+    	String[] messages = new String[]{&quot;&quot;}; // Initialisation with empty string
+    	double lastcounteval;
+    	/** true whenever a termination criterion was met. clear() 
+    	 * re-sets this value to false. 
+    	 * @see #clear() 
+    	 */
+    	public boolean isTrue() {
+    		return test() &gt; 0;
+    	}
+    	/** evaluates to NOT isTrue(). 
+    	 * @see #isTrue()
+    	 */
+    	public boolean isFalse() {
+    		return !isTrue();
+    	}
+    	/** greater than zero whenever a termination criterion was satisfied, zero otherwise. 
+    	 * clear() re-sets this value to zero. 
+    	 * @return number of generated termination condition messages */
+    	public int getNumber() {
+    		return test();
+    	}
+
+    	/**
+    	 * get description messages of satisfied termination criteria.
+    	 * The messages start with one of &quot;Fitness:&quot;, &quot;TolFun:&quot;, &quot;TolFunHist:&quot;, 
+    	 * &quot;TolX:&quot;, &quot;TolUpX:&quot;, &quot;MaxFunEvals:&quot;, &quot;MaxIter:&quot;, &quot;ConditionNumber:&quot;, 
+    	 * &quot;NoEffectAxis:&quot;, &quot;NoEffectCoordinate:&quot;. 
+    	 * @return String[] s with messages of termination conditions.
+    	 *   s[0].equals(&quot;&quot;) is true if no termination condition is satisfied yet
+    	 */
+    	public String[] getMessages() { 
+    		test();
+    		return messages; /* first string might be empty */
+    	}                   
+    	/** remove all earlier termination condition messages 
+    	 */
+    	public void clear() {
+    		messages = new String[]{&quot;&quot;}; 
+    		index = 0;
+    	}
+
+    	private void appendMessage(String s) { 
+    		// could be replaced by ArrayList&lt;String&gt; or Vector&lt;String&gt;
+    		// but also String[] can be iterated easily since version 1.5 
+    		String [] mold = messages;
+    		messages = new String[index + 1];
+
+    		/* copy old messages */
+    		for (int i = 0; i &lt; index; ++i) 
+    			messages[i] = mold[i];
+
+    		messages[index++] = s + &quot; (iter=&quot; + countiter + &quot;,eval=&quot; + counteval + &quot;)&quot;;
+    	}
+
+    	/**
+    	 * Tests termination criteria and evaluates to  greater than zero when a
+    	 * termination criterion is satisfied. Repeated tests append the met criteria repeatedly, 
+    	 * only if the evaluation count has changed. 
+    	 * @return number of termination criteria satisfied
+    	 */
+    	int test() { 
+    		if (state &lt; 0)
+    			return 0;  // not yet initialized
+    		if (index &gt; 0 &amp;&amp; (counteval == lastcounteval 
+    		                    || counteval == lastcounteval+1)) // one evaluation for xmean is ignored
+    			return index;  // termination criterion already met
+
+    		lastcounteval = counteval; 
+    		
+    		/* FUNCTION VALUE */
+    		if ((countiter &gt; 1 || state &gt;= 3) &amp;&amp; bestever_fit &lt;= options.stopFitness)
+    				appendMessage(&quot;Fitness: Objective function value dropped below the target function value &quot; +
+    						options.stopFitness);
+
+    		/* #Fevals */
+    		if (counteval &gt;= options.stopMaxFunEvals)
+    			appendMessage(&quot;MaxFunEvals: maximum number of function evaluations &quot; + options.stopMaxFunEvals + &quot; reached&quot;);
+
+    		/* #iterations */
+    		if (countiter &gt;= options.stopMaxIter)
+    			appendMessage(&quot;MaxIter: maximum number of iterations reached&quot;);
+
+    		/* TOLFUN */
+    		if ((countiter &gt; 1 || state &gt;= 3)
+    			&amp;&amp; Math.max(math.max(fit.history), fit.fitness[fit.fitness.length-1].val)
+    					- Math.min(math.min(fit.history),fit.fitness[0].val) &lt;= options.stopTolFun) 
+    				appendMessage(&quot;TolFun: function value changes below stopTolFun=&quot; + options.stopTolFun);
+
+    		/* TOLFUNHIST */
+    		if (options.stopTolFunHist &gt;= 0 &amp;&amp; countiter &gt; fit.history.length) {
+    			if (math.max(fit.history) - math.min(fit.history) &lt;= options.stopTolFunHist) 
+    				appendMessage(&quot;TolFunHist: history of function value changes below stopTolFunHist=&quot; + options.stopTolFunHist);
+    		}
+
+    		/* TOLX */
+    		double tolx = Math.max(options.stopTolX, options.stopTolXFactor * minstartsigma);
+    		if (sigma * maxsqrtdiagC &lt; tolx 
+    				&amp;&amp; sigma * math.max(math.abs(pc)) &lt; tolx)
+    			appendMessage(&quot;TolX or TolXFactor: standard deviation below &quot; + tolx);
+
+    		/* TOLXUP */
+    		if (sigma * maxsqrtdiagC &gt; options.stopTolUpXFactor * maxstartsigma)
+    			appendMessage(&quot;TolUpX: standard deviation increased by more than stopTolUpXFactor=&quot; + 
+    					options.stopTolUpXFactor + 
+    					&quot;, larger initial standard deviation recommended&quot;);
+
+    		/* STOPNOW */
+    		if (options.stopnow)
+    		    appendMessage(&quot;Manual: flag Options.stopnow set or stop now in .properties file&quot;);
+    		
+    		/* Internal (numerical) stopping termination criteria */
+
+    		/* Test each principal axis i, whether x == x + 0.1 * sigma * rgD[i] * B[i] */
+    		for (int iAchse = 0; iAchse &lt; N; ++iAchse) {
+    			int iKoo;
+    			int l = flgdiag ? iAchse : 0;
+    			int u = flgdiag ? iAchse+1 : N;
+    			double fac = 0.1 * sigma * diagD[iAchse];
+    			for (iKoo = l; iKoo &lt; u; ++iKoo) { 
+    				if (xmean[iKoo] != xmean[iKoo] + fac * B[iKoo][iAchse])
+    					break; // is OK for this iAchse
+    			}
+    			if (iKoo == u) // no break, therefore no change for axis iAchse
+    				appendMessage(&quot;NoEffectAxis: Mutation &quot; + 0.1*sigma*diagD[iAchse] +
+    						&quot; in a principal axis &quot; + iAchse + &quot; has no effect&quot;);
+    		} /* for iAchse */
+
+    		/* Test whether one component of xmean is stuck */
+    		for (int iKoo = 0; iKoo &lt; N; ++iKoo) {
+    			if (xmean[iKoo] == xmean[iKoo] + 0.2*sigma*Math.sqrt(C[iKoo][iKoo]))
+    				appendMessage(&quot;NoEffectCoordinate: Mutation of size &quot; + 
+    						0.2*sigma*Math.sqrt(C[iKoo][iKoo]) +
+    						&quot; in coordinate &quot; + iKoo + &quot; has no effect&quot;);
+    		} /* for iKoo */
+
+    		/* Condition number */
+    		if (math.min(diagD) &lt;= 0)
+    			appendMessage(&quot;ConditionNumber: smallest eigenvalue smaller or equal zero&quot;);
+    		else if (math.max(diagD)/math.min(diagD) &gt; 1e7)
+    			appendMessage(&quot;ConditionNumber: condition number of the covariance matrix exceeds 1e14&quot;);
+    		return index; // call to appendMessage increments index
+    	}
+    } // StopCondtion
+
+
+    void testAndCorrectNumerics() { // not much left here
+
+    	/* Flat Fitness, Test if function values are identical */
+<span class="pc bpc" id="L366" title="2 of 6 branches missed.">    	if (getCountIter() &gt; 1 || (getCountIter() == 1 &amp;&amp; state &gt;= 3))</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">    		if (fit.fitness[0].val == fit.fitness[Math.min(sp.getLambda()-1, sp.getLambda()/2+1) - 1].val) {</span>
+<span class="nc" id="L368">    			warning(&quot;flat fitness landscape, consider reformulation of fitness, step-size increased&quot;);</span>
+<span class="nc" id="L369">    			sigma *= Math.exp(0.2+sp.getCs()/sp.getDamps());</span>
+    		}
+
+    	/* Align (renormalize) scale C (and consequently sigma) */
+    	/* e.g. for infinite stationary state simulations (noise
+    	 * handling needs to be introduced for that) */
+<span class="fc" id="L375">    	double fac = 1;</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">    	if (math.max(diagD) &lt; 1e-6) </span>
+<span class="nc" id="L377">    		fac = 1./math.max(diagD);</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">    	else if (math.min(diagD) &gt; 1e4)</span>
+<span class="nc" id="L379">    		fac = 1./math.min(diagD);</span>
+
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">    	if (fac != 1.) {</span>
+<span class="nc" id="L382">    		sigma /= fac;</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">    		for(int i = 0; i &lt; N; ++i) {</span>
+<span class="nc" id="L384">    			pc[i] *= fac;</span>
+<span class="nc" id="L385">    			diagD[i] *= fac;</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">    			for (int j = 0; j &lt;= i; ++j)</span>
+<span class="nc" id="L387">    				C[i][j] *= fac*fac;</span>
+    		}
+    	}
+<span class="fc" id="L390">    } // Test...</span>
+
+    /** options that can be changed (fields can be assigned) at any time to control 
+     * the running behavior
+     * */
+<span class="pc" id="L395">    public CMAOptions options = new CMAOptions();</span>
+
+<span class="pc" id="L397">    private CMAParameters sp = new CMAParameters(); // alias for inside use</span>
+    /** strategy parameters that can be set initially 
+     * */
+<span class="pc" id="L400">    public CMAParameters parameters = sp; // for outside use also</span>
+
+    /** permits access to whether and which termination conditions were satisfied */
+<span class="pc" id="L403">    public StopCondition stopConditions = new StopCondition(); </span>
+
+    int N;
+<span class="pc" id="L406">    long seed = System.currentTimeMillis();</span>
+<span class="pc" id="L407">    Random rand = new Random(seed); // Note: it also Serializable</span>
+
+<span class="pc" id="L409">    final MyMath math = new MyMath();</span>
+    double axisratio; 
+    long counteval;
+    long countiter;
+
+    long bestever_eval; // C style, TODO:  better make use of class CMASolution?
+    double[] bestever_x;
+<span class="pc" id="L416">    double bestever_fit = Double.NaN; </span>
+    // CMASolution bestever; // used as output variable
+
+<span class="pc" id="L419">    double sigma = 0.0;</span>
+    double[] typicalX; // eventually used to set initialX
+    double[] initialX; // set in the end of init()
+    double[] LBound, UBound;    // bounds
+    double[] xmean;
+<span class="pc" id="L424">    double xmean_fit = Double.NaN;</span>
+    double[] pc;
+    double[] ps;
+    double[][] C;
+    double maxsqrtdiagC;
+    double minsqrtdiagC;
+    double[][] B;
+    double[] diagD;
+    boolean flgdiag; // 0 == full covariance matrix
+    
+    /* init information */
+    double[] startsigma;
+    double maxstartsigma;
+    double minstartsigma;
+    
+    boolean iniphase;
+ 
+    /**
+     * state (postconditions):
+     *  -1 not yet initialized
+     *   0 initialized init()
+     *   0.5 reSizePopulation
+     *   1 samplePopulation, sampleSingle, reSampleSingle
+     *   2.5 updateSingle
+     *   3 updateDistribution
+     */
+<span class="pc" id="L450">    double state = -1;</span>
+<span class="pc" id="L451">    long citerlastwritten = 0;</span>
+<span class="pc" id="L452">    long countwritten = 0;</span>
+<span class="pc" id="L453">    int lockDimension = 0;</span>
+<span class="pc" id="L454">    int mode = 0;</span>
+<span class="pc" id="L455">    final int SINGLE_MODE = 1; // not in use anymore, keep for later developements?</span>
+<span class="pc" id="L456">    final int PARALLEL_MODE = 2;</span>
+
+    
+    long countCupdatesSinceEigenupdate;
+    
+    /* fitness information */
+    class FitnessCollector {
+        double history[];
+        IntDouble[] fitness;   // int holds index for respective arx
+        IntDouble[] raw; // sorted differently than fitness!
+        /** history of delta fitness / sigma^2. Here delta fitness is the minimum of 
+         * fitness value differences with distance lambda/2 in the ranking.  */
+        double[] deltaFitHist = new double[5];
+        int idxDeltaFitHist = 0;
+    }
+<span class="pc" id="L471">    protected FitnessCollector fit = new FitnessCollector();</span>
+
+    double recentFunctionValue; 
+    double recentMaxFunctionValue;
+    double recentMinFunctionValue;
+    int idxRecentOffspring; 
+    
+    double[][] arx;
+    /** recent population, no idea whether this is useful to be public */
+    public double[][] population; // returned not as a copy
+    double[] xold;
+    
+    double[] BDz;
+    double[] artmp;
+    
+<span class="pc" id="L486">    String propertiesFileName = &quot;CMAEvolutionStrategy.properties&quot;;</span>
+    /** postpones most initialization. For initialization use setInitial... 
+     * methods or set up a properties file, see file &quot;CMAEvolutionStrategy.properties&quot;. */
+<span class="fc" id="L489">    public CMAEvolutionStrategy() {</span>
+<span class="fc" id="L490">        state = -1;</span>
+<span class="fc" id="L491">    }</span>
+    
+    /** retrieves options and strategy parameters from properties input, see file &lt;tt&gt;CMAEvolutionStrategy.properties&lt;/tt&gt; 
+     *  for valid properties */
+<span class="nc" id="L495">    public CMAEvolutionStrategy(Properties properties) {</span>
+<span class="nc" id="L496">        setFromProperties(properties); </span>
+<span class="nc" id="L497">        state = -1;</span>
+<span class="nc" id="L498">    }</span>
+    /** reads properties (options, strategy parameter settings) from 
+     * file &lt;code&gt;propertiesFileName&lt;/code&gt;
+     * */
+<span class="nc" id="L502">    public CMAEvolutionStrategy(String propertiesFileName) {</span>
+<span class="nc" id="L503">        this.propertiesFileName = propertiesFileName; </span>
+<span class="nc" id="L504">        state = -1;</span>
+<span class="nc" id="L505">    }</span>
+
+    /** @param dimension    search space dimension, dimension of the
+     *       objective functions preimage, number of variables
+     */
+<span class="nc" id="L510">    public CMAEvolutionStrategy(int dimension) {</span>
+<span class="nc" id="L511">        setDimension(dimension);</span>
+<span class="nc" id="L512">        state = -1;</span>
+<span class="nc" id="L513">    }</span>
+   
+    /** initialization providing all mandatory input arguments at once. The following two 
+     * is equivalent
+     * &lt;PRE&gt;
+          cma.init(N, X, SD);
+     * &lt;/PRE&gt; and
+     * &lt;PRE&gt;
+          cma.setInitalX(X);  // 
+          cma.setInitialStandardDeviations(SD);
+          cma.init(N);
+     * &lt;/PRE&gt; 
+     *
+     * The call to &lt;code&gt;init&lt;/code&gt; is a point of no return for parameter 
+     * settings, and demands all mandatory input be set. &lt;code&gt;init&lt;/code&gt; then forces the 
+     * setting up of everything and calls 
+     * &lt;code&gt;parameters.supplementRemainders()&lt;/code&gt;. If &lt;code&gt;init&lt;/code&gt; was not called before, it is called once in
+     * &lt;code&gt;samplePopulation()&lt;/code&gt;. The return value is only provided for sake of convenience. 
+     * 
+     * @param dimension
+     * @param initialX double[] can be of size one, where all variables are set to the 
+     * same value, or of size dimension
+     * @param initialStandardDeviations can be of size one, where all standard
+     * deviations are set to the same value, or of size dimension
+     * 
+     * @return &lt;code&gt;double[] fitness&lt;/code&gt; of length population size lambda to assign and pass
+     * objective function values to &lt;code&gt;{@link #updateDistribution(double[])}&lt;/code&gt;
+     * 
+     * @see #init()
+     * @see #init(int)
+     * @see #setInitialX(double[])
+     * @see #setTypicalX(double[])
+     * @see #setInitialStandardDeviations(double[])
+     * @see #samplePopulation()
+     * @see CMAParameters#supplementRemainders(int, CMAOptions)
+     */
+    public double[] init(int dimension, double[] initialX, double[] initialStandardDeviations) { 
+<span class="nc" id="L550">    	setInitialX(initialX);</span>
+<span class="nc" id="L551">    	setInitialStandardDeviations(initialStandardDeviations);</span>
+<span class="nc" id="L552">    	return init(dimension);</span>
+    }
+    
+    private double[] getArrayOf(double x, int dim) {
+<span class="nc" id="L556">    	double[] res = new double[dim];</span>
+<span class="nc bnc" id="L557" title="All 2 branches missed.">    	for (int i = 0; i &lt; dim; ++i)</span>
+<span class="nc" id="L558">    		res[i] = x;</span>
+<span class="nc" id="L559">    	return res;</span>
+    }
+    /** 
+     * 
+     * @param x null or x.length==1 or x.length==dim, only for the second case x is expanded
+     * @param dim
+     * @return &lt;code&gt;null&lt;/code&gt; or &lt;code&gt;double[] x&lt;/code&gt; with &lt;code&gt;x.length==dim&lt;/code&gt;
+     */
+    private double[] expandToDimension(double[] x, int dim) {
+<span class="fc bfc" id="L568" title="All 2 branches covered.">    	if (x == null)</span>
+<span class="fc" id="L569">    		return null;</span>
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">    	if (x.length == dim)</span>
+<span class="fc" id="L571">    		return x;</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">    	if (x.length != 1)</span>
+<span class="nc" id="L573">    		error(&quot;x must have length one or length dimension&quot;);</span>
+
+<span class="nc" id="L575">    	return getArrayOf(x[0], dim);</span>
+    }
+
+    /**
+     * @param dimension search space dimension 
+     * @see #init(int, double[], double[])
+     * */
+    public double[] init(int dimension) { 
+<span class="nc" id="L583">    	setDimension(dimension);</span>
+<span class="nc" id="L584">    	return init();</span>
+    }
+    /** 
+     * @see #init(int, double[], double[])
+     * */
+    public double[] init() {
+    	int i;
+<span class="pc bpc" id="L591" title="1 of 2 branches missed.">    	if (N &lt;= 0)</span>
+<span class="nc" id="L592">    		error(&quot;dimension needs to be determined, use eg. setDimension() or setInitialX()&quot;);</span>
+<span class="pc bpc" id="L593" title="1 of 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L594">    		error(&quot;init() cannot be called twice&quot;);</span>
+<span class="pc bpc" id="L595" title="1 of 2 branches missed.">    	if (state == 0) // less save variant </span>
+<span class="nc" id="L596">    		return new double[sp.getLambda()]; </span>
+<span class="pc bpc" id="L597" title="1 of 2 branches missed.">    	if (state &gt; 0)  </span>
+<span class="nc" id="L598">    		error(&quot;init() cannot be called after the first population was sampled&quot;);</span>
+
+<span class="fc" id="L600">    	sp = parameters; /* just in case the user assigned parameters */</span>
+<span class="pc bpc" id="L601" title="1 of 2 branches missed.">    	if (sp.supplemented == 0) // a bit a hack</span>
+<span class="fc" id="L602">    		sp.supplementRemainders(N, options);</span>
+<span class="fc" id="L603">    	sp.locked = 1; // lambda cannot be changed anymore</span>
+
+<span class="fc" id="L605">    	diagD = new double[N];</span>
+<span class="fc bfc" id="L606" title="All 2 branches covered.">    	for (i = 0; i &lt; N; ++i)</span>
+<span class="fc" id="L607">    		diagD[i] = 1;</span>
+
+    	/* expand Boundaries */
+<span class="fc" id="L610">		LBound = expandToDimension(LBound, N);</span>
+<span class="pc bpc" id="L611" title="1 of 2 branches missed.">    	if (LBound == null) {</span>
+<span class="fc" id="L612">    		LBound = new double[N];</span>
+<span class="fc bfc" id="L613" title="All 2 branches covered.">    		for (i = 0; i &lt; N; ++i)</span>
+<span class="fc" id="L614">    			LBound[i] = Double.NEGATIVE_INFINITY;</span>
+    	}
+
+<span class="fc" id="L617">		UBound = expandToDimension(UBound, N);</span>
+<span class="pc bpc" id="L618" title="1 of 2 branches missed.">    	if (UBound == null) {</span>
+<span class="fc" id="L619">    		UBound = new double[N];</span>
+<span class="fc bfc" id="L620" title="All 2 branches covered.">    		for (i = 0; i &lt; N; ++i)</span>
+<span class="fc" id="L621">    			UBound[i] = Double.POSITIVE_INFINITY;</span>
+    	}
+
+    	/* Initialization of sigmas */
+<span class="pc bpc" id="L625" title="1 of 2 branches missed.">    	if (startsigma != null) { // </span>
+<span class="pc bpc" id="L626" title="1 of 2 branches missed.">    		if (startsigma.length == 1) {</span>
+<span class="fc" id="L627">    			sigma = startsigma[0];</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">    		} else if (startsigma.length == N) {</span>
+<span class="nc" id="L629">    			sigma = math.max(startsigma);</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">    			if (sigma &lt;= 0)</span>
+<span class="nc" id="L631">    				error(&quot;initial standard deviation sigma must be positive&quot;);</span>
+<span class="nc bnc" id="L632" title="All 2 branches missed.">    			for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc" id="L633">    				diagD[i] = startsigma[i]/sigma;</span>
+    			}
+    		} else
+<span class="nc bnc" id="L636" title="All 2 branches missed.">    			assert false;</span>
+    	} else {
+    		// we might use boundaries here to find startsigma, but I prefer to have stddevs mandatory 
+<span class="nc" id="L639">    		error(&quot;no initial standard deviation specified, use setInitialStandardDeviations()&quot;);</span>
+<span class="nc" id="L640">    		sigma = 0.5;</span>
+    	}
+
+<span class="pc bpc" id="L643" title="2 of 4 branches missed.">    	if (sigma &lt;= 0 || math.min(diagD) &lt;= 0) {</span>
+<span class="nc" id="L644">    		error(&quot;initial standard deviations not specified or non-positive, &quot; + </span>
+    		&quot;use setInitialStandarddeviations()&quot;); 
+<span class="nc" id="L646">    		sigma = 1;</span>
+    	}
+    	/* save initial standard deviation */
+<span class="pc bpc" id="L649" title="2 of 4 branches missed.">    	if (startsigma == null || startsigma.length == 1) { </span>
+<span class="fc" id="L650">    		startsigma = new double[N];</span>
+<span class="fc bfc" id="L651" title="All 2 branches covered.">    		for (i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L652">    			startsigma[i] = sigma * diagD[i];</span>
+    		}
+    	}
+<span class="fc" id="L655">    	maxstartsigma = math.max(startsigma);</span>
+<span class="fc" id="L656">    	minstartsigma = math.min(startsigma);</span>
+<span class="fc" id="L657">    	axisratio = maxstartsigma / minstartsigma; // axis parallel distribution</span>
+
+    	/* expand typicalX, might still be null afterwards */
+<span class="fc" id="L660">    	typicalX = expandToDimension(typicalX, N);</span>
+
+    	/* Initialization of xmean */
+<span class="fc" id="L663">    	xmean = expandToDimension(xmean, N);</span>
+<span class="pc bpc" id="L664" title="1 of 2 branches missed.">    	if (xmean == null) { </span>
+    		/* set via typicalX */
+<span class="nc bnc" id="L666" title="All 2 branches missed.">    		if (typicalX != null) {</span>
+<span class="nc" id="L667">    			xmean = typicalX.clone();</span>
+<span class="nc bnc" id="L668" title="All 2 branches missed.">    			for (i = 0; i &lt; N; ++i)</span>
+<span class="nc" id="L669">    				xmean[i] += sigma*diagD[i] * rand.nextGaussian();</span>
+    			/* set via boundaries, is depriciated */
+<span class="nc bnc" id="L671" title="All 2 branches missed.">    		} else if (math.max(UBound) &lt; Double.MAX_VALUE</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">    				&amp;&amp; math.min(LBound) &gt; -Double.MAX_VALUE) {</span>
+<span class="nc" id="L673">    			error(&quot;no initial search point (solution) X or typical X specified&quot;);</span>
+<span class="nc" id="L674">    			xmean = new double[N];</span>
+<span class="nc bnc" id="L675" title="All 2 branches missed.">    			for (i = 0; i &lt; N; ++i) { /* TODO: reconsider this algorithm to set X0 */</span>
+<span class="nc" id="L676">    				double offset = sigma*diagD[i];</span>
+<span class="nc" id="L677">    				double range = (UBound[i] - LBound[i] - 2*sigma*diagD[i]); </span>
+<span class="nc bnc" id="L678" title="All 2 branches missed.">    				if (offset &gt; 0.4 * (UBound[i] - LBound[i])) {</span>
+<span class="nc" id="L679">    					offset = 0.4 * (UBound[i] - LBound[i]);</span>
+<span class="nc" id="L680">    					range = 0.2 * (UBound[i] - LBound[i]);</span>
+    				}
+<span class="nc" id="L682">    				xmean[i] = LBound[i] + offset + rand.nextDouble() * range;</span>
+    			}
+    		} else {
+<span class="nc" id="L685">    			error(&quot;no initial search point (solution) X or typical X specified&quot;);</span>
+<span class="nc" id="L686">    			xmean = new double[N];</span>
+<span class="nc bnc" id="L687" title="All 2 branches missed.">    			for (i = 0; i &lt; N; ++i)</span>
+<span class="nc" id="L688">    				xmean[i] = rand.nextDouble();</span>
+    		}
+    	}
+
+<span class="pc bpc" id="L692" title="3 of 4 branches missed.">    	assert xmean != null;</span>
+<span class="pc bpc" id="L693" title="3 of 4 branches missed.">    	assert sigma &gt; 0; </span>
+    	
+    	/* interpret missing option value */
+<span class="pc bpc" id="L696" title="1 of 2 branches missed.">    	if (options.diagonalCovarianceMatrix &lt; 0) // necessary for hello world message</span>
+<span class="nc" id="L697">    		options.diagonalCovarianceMatrix = 1 * 150 * N / sp.lambda; // cave: duplication below</span>
+    	
+    	/* non-settable parameters */
+<span class="fc" id="L700">    	pc = new double[N];</span>
+<span class="fc" id="L701">    	ps = new double[N];</span>
+<span class="fc" id="L702">    	B = new double[N][N];</span>
+<span class="fc" id="L703">    	C = new double[N][N]; // essentially only i &lt;= j part is used</span>
+
+<span class="fc" id="L705">    	xold = new double[N];</span>
+<span class="fc" id="L706">    	BDz = new double[N];</span>
+<span class="fc" id="L707">    	bestever_x = xmean.clone();</span>
+    	// bestever = new CMASolution(xmean);
+<span class="fc" id="L709">    	artmp = new double[N];</span>
+
+
+<span class="fc" id="L712">    	fit.deltaFitHist = new double[5];</span>
+<span class="fc" id="L713">    	fit.idxDeltaFitHist = -1;</span>
+<span class="fc bfc" id="L714" title="All 2 branches covered.">    	for (i = 0; i &lt; fit.deltaFitHist.length; ++i)</span>
+<span class="fc" id="L715">    		fit.deltaFitHist[i] = 1.;</span>
+
+    	// code to be duplicated in reSizeLambda
+<span class="fc" id="L718">    	fit.fitness = new IntDouble[sp.getLambda()];   // including penalties, used yet</span>
+<span class="fc" id="L719">    	fit.raw = new IntDouble[sp.getLambda()];       // raw function values</span>
+<span class="fc" id="L720">    	fit.history = new double[10+30*N/sp.getLambda()];	</span>
+
+<span class="fc" id="L722">    	arx = new double[sp.getLambda()][N];</span>
+<span class="fc" id="L723">    	population = new double[sp.getLambda()][N];</span>
+
+<span class="fc bfc" id="L725" title="All 2 branches covered.">    	for (i = 0; i &lt; sp.getLambda(); ++i) {</span>
+<span class="fc" id="L726">    		fit.fitness[i] = new IntDouble();</span>
+<span class="fc" id="L727">    		fit.raw[i] = new IntDouble();</span>
+    	}
+
+    	// initialization
+<span class="fc bfc" id="L731" title="All 2 branches covered.">    	for (i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L732">    		pc[i] = 0;</span>
+<span class="fc" id="L733">    		ps[i] = 0;</span>
+<span class="fc bfc" id="L734" title="All 2 branches covered.">    		for (int j = 0; j &lt; N; ++j) {</span>
+<span class="fc" id="L735">    			B[i][j] = 0;</span>
+    		}
+<span class="fc bfc" id="L737" title="All 2 branches covered.">    		for (int j = 0; j &lt; i; ++j) {</span>
+<span class="fc" id="L738">    			C[i][j] = 0;</span>
+    		}
+<span class="fc" id="L740">    		B[i][i] = 1;</span>
+<span class="fc" id="L741">    		C[i][i] = diagD[i] * diagD[i];</span>
+    	}
+<span class="fc" id="L743">    	maxsqrtdiagC = Math.sqrt(math.max(math.diag(C)));</span>
+<span class="fc" id="L744">    	minsqrtdiagC = Math.sqrt(math.min(math.diag(C)));</span>
+<span class="fc" id="L745">    	countCupdatesSinceEigenupdate = 0;</span>
+<span class="fc" id="L746">    	iniphase = false; // obsolete</span>
+
+    	/* Some consistency check */
+<span class="fc bfc" id="L749" title="All 2 branches covered.">    	for (i = 0; i &lt; N; ++i) {</span>
+<span class="pc bpc" id="L750" title="1 of 2 branches missed.">    		if (LBound[i] &gt; UBound[i])</span>
+<span class="nc" id="L751">    			error(&quot;lower bound is greater than upper bound&quot;);</span>
+<span class="pc bpc" id="L752" title="1 of 2 branches missed.">    		if (typicalX != null) {</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">    			if (LBound[i] &gt; typicalX[i])</span>
+<span class="nc" id="L754">    				error(&quot;lower bound '&quot; + LBound[i] + &quot;'is greater than typicalX&quot; + typicalX[i]);</span>
+<span class="nc bnc" id="L755" title="All 2 branches missed.">    			if (UBound[i] &lt; typicalX[i])</span>
+<span class="nc" id="L756">    				error(&quot;upper bound '&quot; + UBound[i] + &quot;' is smaller than typicalX &quot; + typicalX[i]);</span>
+    		}
+    	}
+<span class="fc" id="L759">    	String[] s = stopConditions.getMessages();</span>
+<span class="pc bpc" id="L760" title="1 of 2 branches missed.">    	if(!s[0].equals(&quot;&quot;))</span>
+<span class="nc" id="L761">    		warning(&quot;termination condition satisfied at initialization: \n  &quot; + s[0]);</span>
+
+<span class="fc" id="L763">    	initialX = xmean.clone(); // keep finally chosen initialX</span>
+    	
+<span class="fc" id="L765">    	timings.start = System.currentTimeMillis();</span>
+<span class="fc" id="L766">    	timings.starteigen = System.currentTimeMillis();</span>
+
+<span class="fc" id="L768">    	state = 0;</span>
+<span class="pc bpc" id="L769" title="1 of 2 branches missed.">    	if(options.verbosity &gt; -1)</span>
+<span class="fc" id="L770">    		printlnHelloWorld();</span>
+
+<span class="fc" id="L772">    	return new double[sp.getLambda()];</span>
+
+    } // init()
+
+    /** get default parameters in new CMAParameters instance, dimension must 
+     * have been set before calling getDefaults
+     * 
+     * @see CMAParameters#getDefaults(int)
+     */
+    public CMAParameters getParameterDefaults() {
+<span class="nc" id="L782">    	return sp.getDefaults(N);</span>
+    }
+
+    /** get default parameters in new CMAParameters instance
+     * 
+     * @see CMAParameters#getDefaults(int)
+     */
+    public CMAParameters getParameterDefaults(int N) {
+<span class="nc" id="L790">    	return sp.getDefaults(N);</span>
+    }
+
+    /** reads properties from default
+     * input file CMAEvolutionStrategy.properties and
+     * sets options and strategy parameter settings
+     * accordingly. Options values can be changed at any time using this function. 
+     */
+    public Properties readProperties() {
+        
+<span class="fc" id="L800">        ClassLoader cls = ResourceFinder.class.getClassLoader();</span>
+<span class="fc" id="L801">        URL url = cls.getResource(propertiesFileName);</span>
+<span class="pc bpc" id="L802" title="1 of 2 branches missed.">        if (url != null) {</span>
+<span class="fc" id="L803">            propertiesFileName = url.getPath();</span>
+        } else {
+            try {
+                // search for in developer environment
+<span class="nc" id="L807">                propertiesFileName = ResourceFinder.findFileInResources(versionNumber);</span>
+<span class="nc" id="L808">            } catch (IOException ex) {</span>
+                try {
+<span class="nc" id="L810">                    propertiesFileName = ResourceFinder.getAFilePathInCWD(versionNumber);</span>
+<span class="nc" id="L811">                } catch (IOException ex1) {</span>
+<span class="nc" id="L812">                    throw new RuntimeException(&quot;could not find file &quot;</span>
+                        + &quot; \&quot;CMAEvolutionStrategy.properties\&quot;&quot;);
+<span class="nc" id="L814">                }</span>
+<span class="nc" id="L815">            }</span>
+        }
+        
+<span class="fc" id="L818">    	return readProperties(propertiesFileName);</span>
+    }
+<span class="pc" id="L820">    Properties properties = new Properties();</span>
+    /** reads properties from fileName and sets strategy parameters and options
+     * accordingly
+     * @param fileName of properties file
+     */
+    public Properties readProperties(String fileName) {
+<span class="fc" id="L826">        this.propertiesFileName = fileName;</span>
+//        if (fileName.equals(&quot;&quot;))
+//            return properties;
+        try {
+<span class="fc" id="L830">            java.io.FileInputStream fis = new java.io.FileInputStream(fileName);</span>
+<span class="fc" id="L831">            properties.load(fis);</span>
+<span class="fc" id="L832">            fis.close();</span>
+            
+            // edit paths
+<span class="pc bpc" id="L835" title="1 of 2 branches missed.">            if (properties.contains(&quot;outputFileNamesPrefix&quot;)) {</span>
+                // if local directory bin exists, use it,
+                // else use user's cwd
+<span class="nc" id="L838">                String filename = (String) properties.get(&quot;outputFileNamesPrefix&quot;);</span>
+                String dir;
+                try {
+<span class="nc" id="L841">                    dir = ResourceFinder.findOutputTestDirectory();</span>
+<span class="nc" id="L842">                } catch(java.io.IOException e) { </span>
+                    try {
+<span class="nc" id="L844">                        dir = ResourceFinder.getAFilePathInCWD(&quot;&quot;);</span>
+<span class="nc" id="L845">                    } catch(java.io.IOException e2) { </span>
+<span class="nc" id="L846">                        dir = System.getProperty(&quot;user.dir&quot;);</span>
+<span class="nc bnc" id="L847" title="All 4 branches missed.">                        if (dir == null || dir.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L848">                            dir = &quot;.&quot;;</span>
+                        }
+<span class="nc" id="L850">                    }</span>
+<span class="nc" id="L851">                }</span>
+<span class="nc" id="L852">                properties.setProperty(&quot;outputFileNamesPrefix&quot;,</span>
+<span class="nc" id="L853">                    dir + System.getProperty(&quot;file.separator&quot;) + fileName);</span>
+            }
+<span class="nc" id="L855">        } catch(java.io.IOException e) { </span>
+<span class="nc" id="L856">            warning(&quot;File '&quot; + fileName + &quot;' not found, no options read&quot;);</span>
+            // e.printStackTrace();
+<span class="fc" id="L858">        }</span>
+<span class="fc" id="L859">        setFromProperties(properties);</span>
+<span class="fc" id="L860">        return properties;</span>
+    }
+
+    /** reads properties from Properties class 
+     * input and sets options and parameters accordingly
+     * 
+     * @param properties java.util.Properties key-value hash table
+     * @see #readProperties()
+     */
+    public void setFromProperties(Properties properties) {
+        String s;
+        
+<span class="fc" id="L872">        options.setOptions(properties);</span>
+        
+<span class="pc bpc" id="L874" title="1 of 2 branches missed.">        if (state &gt;= 0) // only options can be changed afterwards</span>
+<span class="nc" id="L875">            return;     // defaults are already supplemented </span>
+
+//        if (properties.containsKey(&quot;boundaryLower&quot;) &amp;&amp;
+//                properties.containsKey(&quot;boundaryUpper&quot;)) {
+//            setBoundaries(parseDouble(getAllToken(properties.getProperty(&quot;boundaryLower&quot;))), 
+//                    parseDouble(getAllToken(properties.getProperty(&quot;boundaryUpper&quot;))));
+<span class="pc bpc" id="L881" title="1 of 2 branches missed.">        if ((s = properties.getProperty(&quot;typicalX&quot;)) != null) {</span>
+<span class="nc" id="L882">            setTypicalX(options.parseDouble(options.getAllToken(s))); </span>
+        }
+<span class="pc bpc" id="L884" title="1 of 2 branches missed.">        if ((s = properties.getProperty(&quot;initialX&quot;)) != null) {</span>
+<span class="fc" id="L885">            setInitialX(options.parseDouble(options.getAllToken(s))); </span>
+        }
+<span class="pc bpc" id="L887" title="1 of 2 branches missed.">        if ((s = properties.getProperty(&quot;initialStandardDeviations&quot;)) != null) {</span>
+<span class="fc" id="L888">            setInitialStandardDeviations(options.parseDouble(options.getAllToken(s)));</span>
+        }
+<span class="pc bpc" id="L890" title="1 of 2 branches missed.">        if ((s = properties.getProperty(&quot;dimension&quot;)) != null) { // parseInt does not ignore trailing spaces</span>
+<span class="fc" id="L891">            setDimension(Integer.parseInt(options.getFirstToken(s)));</span>
+        }
+<span class="pc bpc" id="L893" title="1 of 2 branches missed.">        if ((s = properties.getProperty(&quot;randomSeed&quot;)) != null) {</span>
+<span class="fc" id="L894">            setSeed(Long.parseLong(options.getFirstToken(s)));</span>
+        }
+<span class="pc bpc" id="L896" title="1 of 2 branches missed.">        if ((s = properties.getProperty(&quot;populationSize&quot;)) != null) {</span>
+<span class="nc" id="L897">            sp.setPopulationSize(Integer.parseInt(options.getFirstToken(s)));</span>
+        }
+<span class="pc bpc" id="L899" title="1 of 2 branches missed.">        if ((s = properties.getProperty(&quot;cCov&quot;)) != null) {</span>
+<span class="nc" id="L900">            sp.setCcov(Double.parseDouble(options.getFirstToken(s)));</span>
+        }
+        
+<span class="fc" id="L903">    }</span>
+//    private void infoVerbose(String s) {
+//        println(&quot; CMA-ES info: &quot; + s);
+//    }
+    
+    private void warning(String s) {
+<span class="nc" id="L909">        println(&quot; CMA-ES warning: &quot; + s);</span>
+<span class="nc" id="L910">    }</span>
+    private void error(String s) { // somehow a relict from the C history of this code
+<span class="nc" id="L912">        println(&quot; CMA-ES error: &quot; + s);</span>
+        //e.printStackTrace();            // output goes to System.err
+        //e.printStackTrace(System.out);  // send trace to stdout
+
+<span class="nc" id="L916">        throw new CMAException(&quot; CMA-ES error: &quot; + s);</span>
+        //      System.exit(-1); 
+    }
+    
+    /** some simple math utilities */
+    class MyMath { // implements java.io.Serializable {
+        int itest;
+        
+        double square(double d) {
+            return d*d;
+        }
+        double prod(double []ar) {
+            double res = 1.0;
+            for(int i = 0; i &lt; ar.length; ++i)
+                res *= ar[i];
+            return res;
+        }
+        
+        public double median(double ar[]) {
+            // need a copy of ar
+            double [] ar2 = new double[ar.length];
+            for (int i = 0; i &lt; ar.length; ++i)
+                ar2[i] = ar[i];
+            Arrays.sort(ar2);
+            if (ar2.length % 2 == 0)
+                return (ar2[ar.length/2] + ar2[ar.length/2-1]) / 2.;
+            else    
+                return ar2[ar.length/2];
+        }
+        
+        /** @return Maximum value of 1-D double array */
+        public double max(double ar[]) {
+            int i;
+            double m;
+            m = ar[0];
+            for (i = 1; i &lt; ar.length; ++i) {
+                if (m &lt; ar[i])
+                    m = ar[i];
+            }
+            return m;
+        }
+
+        /** sqrt(a^2 + b^2) without under/overflow. **/
+        public double hypot(double a, double b) {
+            double r  = 0;
+            if (Math.abs(a) &gt; Math.abs(b)) {
+               r = b/a;
+               r = Math.abs(a)*Math.sqrt(1+r*r);
+            } else if (b != 0) {
+               r = a/b;
+               r = Math.abs(b)*Math.sqrt(1+r*r);
+            }
+            return r;
+         }
+        /** @return index of minium value of 1-D double array */
+        public int minidx(double ar[]) {
+            return minidx(ar, ar.length-1);
+        }
+        
+        /** @return index of minium value of 1-D double 
+         *   array between index 0 and maxidx 
+         * @param ar double[] 
+         * @param maxidx last index to be considered */
+        public int minidx(double[] ar, int maxidx) {
+            int i, idx;
+            idx = 0;
+            for (i = 1; i &lt; maxidx; ++i) {
+                if (ar[idx] &gt; ar[i])
+                    idx = i;
+            }
+            return idx;
+        }
+
+        /** @return index of minium value of 1-D double 
+         *   array between index 0 and maxidx 
+         * @param ar double[] 
+         * @param maxidx last index to be considered */
+        protected int minidx(IntDouble[] ar, int maxidx) {
+            int i, idx;
+            idx = 0;
+            for (i = 1; i &lt; maxidx; ++i) {
+                if (ar[idx].val &gt; ar[i].val)
+                    idx = i;
+            }
+            return idx;
+        }
+
+        /** @return index of maximum value of 1-D double array */
+        public int maxidx(double ar[]) {
+            int i, idx;
+            idx = 0;
+            for (i = 1; i &lt; ar.length; ++i) {
+                if (ar[idx] &lt; ar[i])
+                    idx = i;
+            }
+            return idx;
+        }
+        /** @return Minimum value of 1-D double array */
+        public double min(double ar[]) {
+            int i;
+            double m;
+            m = ar[0];
+            for (i = 1; i &lt; ar.length; ++i) {
+                if (m &gt; ar[i])
+                    m = ar[i];
+            }
+            return m;
+        }
+        
+        /** @return Maximum value of 1-D Object array where the object implements Comparator 
+         *    Example: max(Double arx, arx[0]) */
+        public Double max(Double ar[], Comparator&lt;Double&gt; c) {
+            int i;
+            Double m;
+            m = ar[0];
+            for (i = 1; i &lt; ar.length; ++i) {
+                if (c.compare(m, ar[i]) &gt; 0)
+                    m = ar[i];
+            }
+            return m;
+        }
+        
+        /** @return Maximum value of 1-D IntDouble array */
+        public IntDouble max(IntDouble ar[]) {
+            int i;
+            IntDouble m;
+            m = ar[0];
+            for (i = 1; i &lt; ar.length; ++i) {
+                if (m.compare(m, ar[i]) &lt; 0)
+                    m = ar[i];
+            }
+            return m;
+        }
+        
+        /** @return Minimum value of 1-D IntDouble array */
+        public IntDouble min(IntDouble ar[]) {
+            int i;
+            IntDouble m;
+            m = ar[0];
+            for (i = 1; i &lt; ar.length; ++i) {
+                if (m.compare(m, ar[i]) &gt; 0)
+                    m = ar[i];
+            }
+            return m;
+        }
+        
+        /** @return Minimum value of 1-D Object array defining a Comparator */
+        public Double min(Double ar[], Comparator&lt;Double&gt; c) {
+            int i;
+            Double m;
+            m = ar[0];
+            for (i = 1; i &lt; ar.length; ++i) {
+                if (c.compare(m, ar[i]) &lt; 0)
+                    m = ar[i];
+            }
+            return m;
+        }
+        
+        /**
+         * @return Diagonal of an 2-D double array
+         */
+        public double[] diag(double ar[][]) {
+            int i;
+            double[] diag = new double[ar.length];
+            for (i = 0; i &lt; ar.length &amp;&amp; i &lt; ar[i].length; ++i)
+                diag[i] = ar[i][i];
+            return diag;
+        }
+        
+        /**
+         * @return 1-D double array of absolute values of an 1-D double array
+         */
+        public double[] abs(double v[]) {
+            double res[] = new double[v.length];
+            for(int i = 0; i &lt; v.length; ++i)
+                res[i] = Math.abs(v[i]);
+            return res;
+        }
+    } // MyMath
+    
+    class Timing {
+        Timing(){
+            birth = System.currentTimeMillis();
+            start = birth; // on the save side 
+        }
+        long birth; // time at construction, not really in use
+        long start; // time at end of init()
+        long starteigen; // time after flgdiag was turned off, ie when calls to eigen() start
+        long eigendecomposition = 0; // spent time in eigendecomposition
+        long writedefaultfiles = 0;        // spent time in writeToDefaultFiles
+    }
+<span class="pc" id="L1107">    Timing timings = new Timing();</span>
+    
+    /* flgforce == 1 force independent of time measurments, 
+     * flgforce == 2 force independent of uptodate-status
+     */
+    void eigendecomposition(int flgforce) {
+        /* Update B and D, calculate eigendecomposition */
+        int i, j;
+        
+<span class="pc bpc" id="L1116" title="1 of 4 branches missed.">        if (countCupdatesSinceEigenupdate == 0 &amp;&amp; flgforce &lt; 2)</span>
+<span class="fc" id="L1117">        	return;</span>
+
+    	//           20% is usually better in terms of running *time* (only on fast to evaluate functions)
+<span class="pc bpc" id="L1120" title="2 of 4 branches missed.">    	if (!flgdiag &amp;&amp; flgforce &lt;= 0 &amp;&amp; </span>
+    			(timings.eigendecomposition &gt; 1000 + options.maxTimeFractionForEigendecomposition 
+<span class="pc bpc" id="L1122" title="1 of 2 branches missed.">    					* (System.currentTimeMillis() - timings.starteigen)</span>
+<span class="pc bpc" id="L1123" title="1 of 2 branches missed.">    					|| countCupdatesSinceEigenupdate &lt; 1. / sp.getCcov() / N / 5.)) </span>
+<span class="nc" id="L1124">    		return;</span>
+
+<span class="pc bpc" id="L1126" title="1 of 2 branches missed.">    	if (flgdiag) {</span>
+<span class="nc bnc" id="L1127" title="All 2 branches missed.">    		for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc" id="L1128">    			diagD[i] = Math.sqrt(C[i][i]);</span>
+    		}
+<span class="nc" id="L1130">    		countCupdatesSinceEigenupdate = 0;</span>
+<span class="nc" id="L1131">        	timings.starteigen = System.currentTimeMillis(); // reset starting time</span>
+<span class="nc" id="L1132">        	timings.eigendecomposition = 0;             // not really necessary</span>
+    	} else {
+    		// set B &lt;- C
+<span class="fc bfc" id="L1135" title="All 2 branches covered.">    		for (i = 0; i &lt; N; ++i)</span>
+<span class="fc bfc" id="L1136" title="All 2 branches covered.">    			for (j = 0; j &lt;= i; ++j)</span>
+<span class="fc" id="L1137">    				B[i][j] = B[j][i] = C[i][j];</span>
+
+    		// eigendecomposition
+<span class="fc" id="L1140">    		double [] offdiag = new double[N];</span>
+<span class="fc" id="L1141">    		long firsttime = System.currentTimeMillis();</span>
+<span class="fc" id="L1142">    		tred2(N, B, diagD, offdiag);</span>
+<span class="fc" id="L1143">    		tql2(N, diagD, offdiag, B);</span>
+<span class="fc" id="L1144">    		timings.eigendecomposition += System.currentTimeMillis() - firsttime;</span>
+
+<span class="pc bpc" id="L1146" title="1 of 2 branches missed.">    		if (options.checkEigenSystem &gt; 0)</span>
+<span class="nc" id="L1147">    			checkEigenSystem( N,  C, diagD, B); // for debugging </span>
+
+    		// assign diagD to eigenvalue square roots
+<span class="fc bfc" id="L1150" title="All 2 branches covered.">    		for (i = 0; i &lt; N; ++i) {</span>
+<span class="pc bpc" id="L1151" title="1 of 2 branches missed.">    			if (diagD[i] &lt; 0) // numerical problem?</span>
+<span class="nc" id="L1152">    				error(&quot;an eigenvalue has become negative&quot;);</span>
+<span class="fc" id="L1153">    			diagD[i] = Math.sqrt(diagD[i]);</span>
+    		}
+<span class="fc" id="L1155">    		countCupdatesSinceEigenupdate = 0;</span>
+    	} // end Update B and D
+<span class="pc bpc" id="L1157" title="1 of 2 branches missed.">    	if (math.min(diagD) == 0) // error management is done elsewhere</span>
+<span class="nc" id="L1158">    		axisratio = Double.POSITIVE_INFINITY;</span>
+    	else
+<span class="fc" id="L1160">    		axisratio = math.max(diagD) / math.min(diagD);</span>
+
+<span class="fc" id="L1162">    } // eigendecomposition</span>
+
+
+    /* ========================================================= */
+    int
+    checkEigenSystem( int N,  double C[][], double diag[], double Q[][]) 
+    /* 
+       exhaustive test of the output of the eigendecomposition
+       needs O(n^3) operations 
+
+       produces error  
+       returns number of detected inaccuracies 
+    */
+    {
+        /* compute Q diag Q^T and Q Q^T to check */
+<span class="nc" id="L1177">      int i, j, k, res = 0;</span>
+      double cc, dd; 
+      String s;
+
+<span class="nc bnc" id="L1181" title="All 2 branches missed.">      for (i=0; i &lt; N; ++i)</span>
+<span class="nc bnc" id="L1182" title="All 2 branches missed.">    	  for (j=0; j &lt; N; ++j) {</span>
+<span class="nc bnc" id="L1183" title="All 2 branches missed.">    		  for (cc=0.,dd=0., k=0; k &lt; N; ++k) {</span>
+<span class="nc" id="L1184">    			  cc += diag[k] * Q[i][k] * Q[j][k];</span>
+<span class="nc" id="L1185">    			  dd += Q[i][k] * Q[j][k];</span>
+    		  }
+    		  /* check here, is the normalization the right one? */
+<span class="nc bnc" id="L1188" title="All 10 branches missed.">    		  if (Math.abs(cc - C[i&gt;j?i:j][i&gt;j?j:i])/Math.sqrt(C[i][i]*C[j][j]) &gt; 1e-10 </span>
+<span class="nc bnc" id="L1189" title="All 2 branches missed.">    				  &amp;&amp; Math.abs(cc - C[i&gt;j?i:j][i&gt;j?j:i]) &gt; 1e-9) { /* quite large */</span>
+<span class="nc bnc" id="L1190" title="All 8 branches missed.">    			  s = &quot; &quot; + i + &quot; &quot; + j + &quot; &quot; + cc + &quot; &quot; + C[i&gt;j?i:j][i&gt;j?j:i] + &quot; &quot; + (cc-C[i&gt;j?i:j][i&gt;j?j:i]);</span>
+<span class="nc" id="L1191">    			  warning(&quot;cmaes_t:Eigen(): imprecise result detected &quot; + s);</span>
+<span class="nc" id="L1192">    			  ++res; </span>
+    		  }
+<span class="nc bnc" id="L1194" title="All 4 branches missed.">    		  if (Math.abs(dd - (i==j?1:0)) &gt; 1e-10) {</span>
+<span class="nc" id="L1195">    			  s = i + &quot; &quot; + j + &quot; &quot; + dd;</span>
+<span class="nc" id="L1196">    			  warning(&quot;cmaes_t:Eigen(): imprecise result detected (Q not orthog.) &quot; + s);</span>
+<span class="nc" id="L1197">    			  ++res;</span>
+    		  }
+    	  }
+<span class="nc" id="L1200">      return res; </span>
+    }
+
+
+    
+    // Symmetric Householder reduction to tridiagonal form, taken from JAMA package.
+
+    private void tred2 (int n, double V[][], double d[], double e[]) {
+
+    //  This is derived from the Algol procedures tred2 by
+    //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
+    //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
+    //  Fortran subroutine in EISPACK.
+
+<span class="fc bfc" id="L1214" title="All 2 branches covered.">       for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L1215">          d[j] = V[n-1][j];</span>
+       }
+
+       // Householder reduction to tridiagonal form.
+    
+<span class="fc bfc" id="L1220" title="All 2 branches covered.">       for (int i = n-1; i &gt; 0; i--) {</span>
+    
+          // Scale to avoid under/overflow.
+    
+<span class="fc" id="L1224">          double scale = 0.0;</span>
+<span class="fc" id="L1225">          double h = 0.0;</span>
+<span class="fc bfc" id="L1226" title="All 2 branches covered.">          for (int k = 0; k &lt; i; k++) {</span>
+<span class="fc" id="L1227">             scale = scale + Math.abs(d[k]);</span>
+          }
+<span class="pc bpc" id="L1229" title="1 of 2 branches missed.">          if (scale == 0.0) {</span>
+<span class="nc" id="L1230">             e[i] = d[i-1];</span>
+<span class="nc bnc" id="L1231" title="All 2 branches missed.">             for (int j = 0; j &lt; i; j++) {</span>
+<span class="nc" id="L1232">                d[j] = V[i-1][j];</span>
+<span class="nc" id="L1233">                V[i][j] = 0.0;</span>
+<span class="nc" id="L1234">                V[j][i] = 0.0;</span>
+             }
+          } else {
+    
+             // Generate Householder vector.
+    
+<span class="fc bfc" id="L1240" title="All 2 branches covered.">             for (int k = 0; k &lt; i; k++) {</span>
+<span class="fc" id="L1241">                d[k] /= scale;</span>
+<span class="fc" id="L1242">                h += d[k] * d[k];</span>
+             }
+<span class="fc" id="L1244">             double f = d[i-1];</span>
+<span class="fc" id="L1245">             double g = Math.sqrt(h);</span>
+<span class="fc bfc" id="L1246" title="All 2 branches covered.">             if (f &gt; 0) {</span>
+<span class="fc" id="L1247">                g = -g;</span>
+             }
+<span class="fc" id="L1249">             e[i] = scale * g;</span>
+<span class="fc" id="L1250">             h = h - f * g;</span>
+<span class="fc" id="L1251">             d[i-1] = f - g;</span>
+<span class="fc bfc" id="L1252" title="All 2 branches covered.">             for (int j = 0; j &lt; i; j++) {</span>
+<span class="fc" id="L1253">                e[j] = 0.0;</span>
+             }
+    
+             // Apply similarity transformation to remaining columns.
+    
+<span class="fc bfc" id="L1258" title="All 2 branches covered.">             for (int j = 0; j &lt; i; j++) {</span>
+<span class="fc" id="L1259">                f = d[j];</span>
+<span class="fc" id="L1260">                V[j][i] = f;</span>
+<span class="fc" id="L1261">                g = e[j] + V[j][j] * f;</span>
+<span class="fc bfc" id="L1262" title="All 2 branches covered.">                for (int k = j+1; k &lt;= i-1; k++) {</span>
+<span class="fc" id="L1263">                   g += V[k][j] * d[k];</span>
+<span class="fc" id="L1264">                   e[k] += V[k][j] * f;</span>
+                }
+<span class="fc" id="L1266">                e[j] = g;</span>
+             }
+<span class="fc" id="L1268">             f = 0.0;</span>
+<span class="fc bfc" id="L1269" title="All 2 branches covered.">             for (int j = 0; j &lt; i; j++) {</span>
+<span class="fc" id="L1270">                e[j] /= h;</span>
+<span class="fc" id="L1271">                f += e[j] * d[j];</span>
+             }
+<span class="fc" id="L1273">             double hh = f / (h + h);</span>
+<span class="fc bfc" id="L1274" title="All 2 branches covered.">             for (int j = 0; j &lt; i; j++) {</span>
+<span class="fc" id="L1275">                e[j] -= hh * d[j];</span>
+             }
+<span class="fc bfc" id="L1277" title="All 2 branches covered.">             for (int j = 0; j &lt; i; j++) {</span>
+<span class="fc" id="L1278">                f = d[j];</span>
+<span class="fc" id="L1279">                g = e[j];</span>
+<span class="fc bfc" id="L1280" title="All 2 branches covered.">                for (int k = j; k &lt;= i-1; k++) {</span>
+<span class="fc" id="L1281">                   V[k][j] -= (f * e[k] + g * d[k]);</span>
+                }
+<span class="fc" id="L1283">                d[j] = V[i-1][j];</span>
+<span class="fc" id="L1284">                V[i][j] = 0.0;</span>
+             }
+          }
+<span class="fc" id="L1287">          d[i] = h;</span>
+       }
+    
+       // Accumulate transformations.
+    
+<span class="fc bfc" id="L1292" title="All 2 branches covered.">       for (int i = 0; i &lt; n-1; i++) {</span>
+<span class="fc" id="L1293">          V[n-1][i] = V[i][i];</span>
+<span class="fc" id="L1294">          V[i][i] = 1.0;</span>
+<span class="fc" id="L1295">          double h = d[i+1];</span>
+<span class="pc bpc" id="L1296" title="1 of 2 branches missed.">          if (h != 0.0) {</span>
+<span class="fc bfc" id="L1297" title="All 2 branches covered.">             for (int k = 0; k &lt;= i; k++) {</span>
+<span class="fc" id="L1298">                d[k] = V[k][i+1] / h;</span>
+             }
+<span class="fc bfc" id="L1300" title="All 2 branches covered.">             for (int j = 0; j &lt;= i; j++) {</span>
+<span class="fc" id="L1301">                double g = 0.0;</span>
+<span class="fc bfc" id="L1302" title="All 2 branches covered.">                for (int k = 0; k &lt;= i; k++) {</span>
+<span class="fc" id="L1303">                   g += V[k][i+1] * V[k][j];</span>
+                }
+<span class="fc bfc" id="L1305" title="All 2 branches covered.">                for (int k = 0; k &lt;= i; k++) {</span>
+<span class="fc" id="L1306">                   V[k][j] -= g * d[k];</span>
+                }
+             }
+          }
+<span class="fc bfc" id="L1310" title="All 2 branches covered.">          for (int k = 0; k &lt;= i; k++) {</span>
+<span class="fc" id="L1311">             V[k][i+1] = 0.0;</span>
+          }
+       }
+<span class="fc bfc" id="L1314" title="All 2 branches covered.">       for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L1315">          d[j] = V[n-1][j];</span>
+<span class="fc" id="L1316">          V[n-1][j] = 0.0;</span>
+       }
+<span class="fc" id="L1318">       V[n-1][n-1] = 1.0;</span>
+<span class="fc" id="L1319">       e[0] = 0.0;</span>
+<span class="fc" id="L1320">    } </span>
+
+    // Symmetric tridiagonal QL algorithm, taken from JAMA package.
+    
+    private void tql2 (int n, double d[], double e[], double V[][]) {
+
+    //  This is derived from the Algol procedures tql2, by
+    //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
+    //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
+    //  Fortran subroutine in EISPACK.
+    
+<span class="fc bfc" id="L1331" title="All 2 branches covered.">       for (int i = 1; i &lt; n; i++) {</span>
+<span class="fc" id="L1332">          e[i-1] = e[i];</span>
+       }
+<span class="fc" id="L1334">       e[n-1] = 0.0;</span>
+    
+<span class="fc" id="L1336">       double f = 0.0;</span>
+<span class="fc" id="L1337">       double tst1 = 0.0;</span>
+<span class="fc" id="L1338">       double eps = Math.pow(2.0,-52.0);</span>
+<span class="fc bfc" id="L1339" title="All 2 branches covered.">       for (int l = 0; l &lt; n; l++) {</span>
+
+          // Find small subdiagonal element
+    
+<span class="fc" id="L1343">          tst1 = Math.max(tst1,Math.abs(d[l]) + Math.abs(e[l]));</span>
+<span class="fc" id="L1344">          int m = l;</span>
+<span class="pc bpc" id="L1345" title="1 of 2 branches missed.">          while (m &lt; n) {</span>
+<span class="fc bfc" id="L1346" title="All 2 branches covered.">             if (Math.abs(e[m]) &lt;= eps*tst1) {</span>
+<span class="fc" id="L1347">                break;</span>
+             }
+<span class="fc" id="L1349">             m++;</span>
+          }
+
+          // If m == l, d[l] is an eigenvalue,
+          // otherwise, iterate.
+    
+<span class="fc bfc" id="L1355" title="All 2 branches covered.">          if (m &gt; l) {</span>
+<span class="fc" id="L1356">             int iter = 0;</span>
+             do {
+<span class="fc" id="L1358">                iter = iter + 1;  // (Could check iteration count here.)</span>
+    
+                // Compute implicit shift
+    
+<span class="fc" id="L1362">                double g = d[l];</span>
+<span class="fc" id="L1363">                double p = (d[l+1] - g) / (2.0 * e[l]);</span>
+<span class="fc" id="L1364">                double r = math.hypot(p,1.0);</span>
+<span class="fc bfc" id="L1365" title="All 2 branches covered.">                if (p &lt; 0) {</span>
+<span class="fc" id="L1366">                   r = -r;</span>
+                }
+<span class="fc" id="L1368">                d[l] = e[l] / (p + r);</span>
+<span class="fc" id="L1369">                d[l+1] = e[l] * (p + r);</span>
+<span class="fc" id="L1370">                double dl1 = d[l+1];</span>
+<span class="fc" id="L1371">                double h = g - d[l];</span>
+<span class="fc bfc" id="L1372" title="All 2 branches covered.">                for (int i = l+2; i &lt; n; i++) {</span>
+<span class="fc" id="L1373">                   d[i] -= h;</span>
+                }
+<span class="fc" id="L1375">                f = f + h;</span>
+    
+                // Implicit QL transformation.
+    
+<span class="fc" id="L1379">                p = d[m];</span>
+<span class="fc" id="L1380">                double c = 1.0;</span>
+<span class="fc" id="L1381">                double c2 = c;</span>
+<span class="fc" id="L1382">                double c3 = c;</span>
+<span class="fc" id="L1383">                double el1 = e[l+1];</span>
+<span class="fc" id="L1384">                double s = 0.0;</span>
+<span class="fc" id="L1385">                double s2 = 0.0;</span>
+<span class="fc bfc" id="L1386" title="All 2 branches covered.">                for (int i = m-1; i &gt;= l; i--) {</span>
+<span class="fc" id="L1387">                   c3 = c2;</span>
+<span class="fc" id="L1388">                   c2 = c;</span>
+<span class="fc" id="L1389">                   s2 = s;</span>
+<span class="fc" id="L1390">                   g = c * e[i];</span>
+<span class="fc" id="L1391">                   h = c * p;</span>
+<span class="fc" id="L1392">                   r = math.hypot(p,e[i]);</span>
+<span class="fc" id="L1393">                   e[i+1] = s * r;</span>
+<span class="fc" id="L1394">                   s = e[i] / r;</span>
+<span class="fc" id="L1395">                   c = p / r;</span>
+<span class="fc" id="L1396">                   p = c * d[i] - s * g;</span>
+<span class="fc" id="L1397">                   d[i+1] = h + s * (c * g + s * d[i]);</span>
+    
+                   // Accumulate transformation.
+    
+<span class="fc bfc" id="L1401" title="All 2 branches covered.">                   for (int k = 0; k &lt; n; k++) {</span>
+<span class="fc" id="L1402">                      h = V[k][i+1];</span>
+<span class="fc" id="L1403">                      V[k][i+1] = s * V[k][i] + c * h;</span>
+<span class="fc" id="L1404">                      V[k][i] = c * V[k][i] - s * h;</span>
+                   }
+                }
+<span class="fc" id="L1407">                p = -s * s2 * c3 * el1 * e[l] / dl1;</span>
+<span class="fc" id="L1408">                e[l] = s * p;</span>
+<span class="fc" id="L1409">                d[l] = c * p;</span>
+    
+                // Check for convergence.
+    
+<span class="fc bfc" id="L1413" title="All 2 branches covered.">             } while (Math.abs(e[l]) &gt; eps*tst1);</span>
+          }
+<span class="fc" id="L1415">          d[l] = d[l] + f;</span>
+<span class="fc" id="L1416">          e[l] = 0.0;</span>
+       }
+      
+       // Sort eigenvalues and corresponding vectors.
+    
+<span class="fc bfc" id="L1421" title="All 2 branches covered.">       for (int i = 0; i &lt; n-1; i++) {</span>
+<span class="fc" id="L1422">          int k = i;</span>
+<span class="fc" id="L1423">          double p = d[i];</span>
+<span class="fc bfc" id="L1424" title="All 2 branches covered.">          for (int j = i+1; j &lt; n; j++) {</span>
+<span class="fc bfc" id="L1425" title="All 2 branches covered.">             if (d[j] &lt; p) { // NH find smallest k&gt;i</span>
+<span class="fc" id="L1426">                k = j;</span>
+<span class="fc" id="L1427">                p = d[j];</span>
+             }
+          }
+<span class="fc bfc" id="L1430" title="All 2 branches covered.">          if (k != i) {</span>
+<span class="fc" id="L1431">             d[k] = d[i]; // swap k and i </span>
+<span class="fc" id="L1432">             d[i] = p;   </span>
+<span class="fc bfc" id="L1433" title="All 2 branches covered.">             for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L1434">                p = V[j][i];</span>
+<span class="fc" id="L1435">                V[j][i] = V[j][k];</span>
+<span class="fc" id="L1436">                V[j][k] = p;</span>
+             }
+          }
+       }
+<span class="fc" id="L1440">    } // tql2</span>
+
+    /** not really in use so far, just clones and copies
+     * 
+     * @param popx genotype
+     * @param popy phenotype, repaired
+     * @return popy
+     */
+    double[][] genoPhenoTransformation(double[][] popx, double[][] popy) {
+<span class="pc bpc" id="L1449" title="3 of 6 branches missed.">    	if (popy == null || popy == popx || popy.length != popx.length) </span>
+<span class="nc" id="L1450">    		popy = new double[popx.length][];</span>
+    	
+<span class="fc bfc" id="L1452" title="All 2 branches covered.">    	for (int i = 0; i &lt; popy.length; ++i)</span>
+<span class="fc" id="L1453">    		popy[i] = genoPhenoTransformation(popx[i], popy[i]);</span>
+    	
+<span class="fc" id="L1455">    	return popy;</span>
+    }
+    /** not really in use so far, just clones and copies
+     * 
+     * @param popx genotype
+     * @param popy phenotype, repaired
+     * @return popy
+     */
+    double[][] phenoGenoTransformation(double[][] popx, double[][] popy) {
+<span class="nc bnc" id="L1464" title="All 6 branches missed.">    	if (popy == null || popy == popx || popy.length != popx.length) </span>
+<span class="nc" id="L1465">    		popy = new double[popx.length][];</span>
+    	
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">    	for (int i = 0; i &lt; popy.length; ++i)</span>
+<span class="nc" id="L1468">    		popy[i] = phenoGenoTransformation(popx[i], popy[i]);</span>
+    	
+<span class="nc" id="L1470">    	return popy;</span>
+    }
+
+    /** not really in use so far, just clones and copies
+     * 
+     * @param x genotype
+     * @param y phenotype
+     * @return y
+     */
+    double[] genoPhenoTransformation(double[] x, double[] y) {
+<span class="pc bpc" id="L1480" title="3 of 6 branches missed.">    	if (y == null || y == x || y.length != x.length) {</span>
+<span class="nc" id="L1481">    		y = x.clone();</span>
+<span class="nc" id="L1482">    		return y; // for now return an identical copy</span>
+    	}
+<span class="fc bfc" id="L1484" title="All 2 branches covered.">    	for(int i = 0; i &lt; N; ++i)</span>
+<span class="fc" id="L1485">    		y[i] = x[i];</span>
+<span class="fc" id="L1486">    	return y;		</span>
+    }
+    /** not really in use so far, just clones and copies
+     * 
+     * @param x genotype
+     * @param y phenotype
+     * @return y
+     */
+    double[] phenoGenoTransformation(double[] x, double[] y) {
+<span class="nc bnc" id="L1495" title="All 6 branches missed.">    	if (y == null || y == x || y.length != x.length) {</span>
+<span class="nc" id="L1496">    		y = x.clone();</span>
+<span class="nc" id="L1497">    		return y; // for now return an identical copy</span>
+    	}
+<span class="nc bnc" id="L1499" title="All 2 branches missed.">    	for(int i = 0; i &lt; N; ++i)</span>
+<span class="nc" id="L1500">    		y[i] = x[i];</span>
+<span class="nc" id="L1501">    	return y;		</span>
+    }
+    
+    /**
+     * Samples the recent search distribution lambda times
+     * @return double[][] population, lambda times dimension array of sampled solutions, 
+     *   where &lt;code&gt;lambda == parameters.getPopulationSize()&lt;/code&gt; 
+     * @see #resampleSingle(int)
+     * @see #updateDistribution(double[])
+     * @see CMAParameters#getPopulationSize()
+     */
+    public double[][] samplePopulation() {
+        int i, j, iNk;
+        double sum;
+
+<span class="pc bpc" id="L1516" title="1 of 2 branches missed.">        if (state &lt; 0)</span>
+<span class="nc" id="L1517">            init();</span>
+<span class="pc bpc" id="L1518" title="1 of 4 branches missed.">        else if (state &lt; 3 &amp;&amp; state &gt; 2)</span>
+<span class="nc" id="L1519">                error(&quot;mixing of calls to updateSingle() and samplePopulation() is not possible&quot;);</span>
+        else    
+<span class="fc" id="L1521">            eigendecomposition(0); // latest possibility to generate B and diagD</span>
+        
+<span class="pc bpc" id="L1523" title="1 of 2 branches missed.">        if (state != 1)</span>
+<span class="fc" id="L1524">            ++countiter; </span>
+<span class="fc" id="L1525">        state = 1; // can be repeatedly called without problem</span>
+<span class="fc" id="L1526">        idxRecentOffspring = sp.getLambda() - 1; // not really necessary at the moment</span>
+
+        
+        // ensure maximal and minimal standard deviations
+<span class="pc bpc" id="L1530" title="3 of 4 branches missed.">        if (options.lowerStandardDeviations != null &amp;&amp; options.lowerStandardDeviations.length &gt; 0)</span>
+<span class="nc bnc" id="L1531" title="All 2 branches missed.">            for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc" id="L1532">                double d = options.lowerStandardDeviations[Math.min(i,options.lowerStandardDeviations.length-1)]; </span>
+<span class="nc bnc" id="L1533" title="All 2 branches missed.">                if(d &gt; sigma * minsqrtdiagC) </span>
+<span class="nc" id="L1534">                    sigma = d / minsqrtdiagC;</span>
+            }
+<span class="pc bpc" id="L1536" title="3 of 4 branches missed.">        if (options.upperStandardDeviations != null &amp;&amp; options.upperStandardDeviations.length &gt; 0)</span>
+<span class="nc bnc" id="L1537" title="All 2 branches missed.">            for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc" id="L1538">                double d = options.upperStandardDeviations[Math.min(i,options.upperStandardDeviations.length-1)]; </span>
+<span class="nc bnc" id="L1539" title="All 2 branches missed.">                if (d &lt; sigma * maxsqrtdiagC) </span>
+<span class="nc" id="L1540">                    sigma = d / maxsqrtdiagC;</span>
+            }
+        
+<span class="fc" id="L1543">        testAndCorrectNumerics();</span>
+        
+        /* sample the distribution */
+<span class="fc bfc" id="L1546" title="All 2 branches covered.">        for (iNk = 0; iNk &lt; sp.getLambda(); ++iNk) { /*</span>
+            * generate scaled
+            * random vector (D * z)
+            */
+
+            // code duplication from resampleSingle because of possible future resampling before GenoPheno
+            /* generate scaled random vector (D * z) */
+<span class="pc bpc" id="L1553" title="1 of 2 branches missed.">        	if (flgdiag)  </span>
+<span class="nc bnc" id="L1554" title="All 2 branches missed.">        	    for (i = 0; i &lt; N; ++i)</span>
+<span class="nc" id="L1555">        			arx[iNk][i] = xmean[i] + sigma * diagD[i] * rand.nextGaussian();</span>
+        	else {
+<span class="fc bfc" id="L1557" title="All 2 branches covered.">                for (i = 0; i &lt; N; ++i) </span>
+<span class="fc" id="L1558">        		    artmp[i] = diagD[i] * rand.nextGaussian();</span>
+        	
+        	    /* add mutation (sigma * B * (D*z)) */
+<span class="fc bfc" id="L1561" title="All 2 branches covered.">        	    for (i = 0; i &lt; N; ++i) {</span>
+<span class="fc bfc" id="L1562" title="All 2 branches covered.">        			for (j = 0, sum = 0; j &lt; N; ++j)</span>
+<span class="fc" id="L1563">        				sum += B[i][j] * artmp[j];</span>
+<span class="fc" id="L1564">        			arx[iNk][i] = xmean[i] + sigma * sum;</span>
+        		}
+            }
+            // redo this while isOutOfBounds(arx[iNk])
+        }
+
+        // I am desperately missing a const/readonly/visible qualifier. 
+<span class="fc" id="L1571">        return population = genoPhenoTransformation(arx, population);</span>
+        
+    } // end samplePopulation()
+
+    /** re-generate the &lt;code&gt;index&lt;/code&gt;-th solution. After getting lambda
+     * solution points with samplePopulation() the i-th point,
+     * i=0...lambda-1, can be sampled anew by resampleSingle(i). 
+     * 
+     * &lt;PRE&gt;
+     * double[][] pop = cma.samplePopulation();
+     * // check some stuff, i-th solution went wrong, therefore
+     * pop[i] = cma.resampleSingle(i); // assignment to keep the population consistent
+     * for (i = 0,...)
+     *   fitness[i] = fitfun.valueof(pop[i]);
+     * &lt;/PRE&gt;
+     *
+     * @see #samplePopulation()
+     */
+    public double[] resampleSingle(int index) {
+        int i,j;
+        double sum;
+<span class="nc bnc" id="L1592" title="All 2 branches missed.">        if (state != 1)</span>
+<span class="nc" id="L1593">            error(&quot;call samplePopulation before calling resampleSingle(int index)&quot;);</span>
+        
+        /* sample the distribution */
+        /* generate scaled random vector (D * z) */
+<span class="nc bnc" id="L1597" title="All 2 branches missed.">        if (flgdiag)</span>
+<span class="nc bnc" id="L1598" title="All 2 branches missed.">            for (i = 0; i &lt; N; ++i)</span>
+<span class="nc" id="L1599">        		arx[index][i] = xmean[i] + sigma * diagD[i] * rand.nextGaussian();</span>
+        else {
+<span class="nc bnc" id="L1601" title="All 2 branches missed.">            for (i = 0; i &lt; N; ++i) </span>
+<span class="nc" id="L1602">                artmp[i] = diagD[i] * rand.nextGaussian();</span>
+        	
+        	/* add mutation (sigma * B * (D*z)) */
+<span class="nc bnc" id="L1605" title="All 2 branches missed.">        	for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc bnc" id="L1606" title="All 2 branches missed.">        		for (j = 0, sum = 0; j &lt; N; ++j)</span>
+<span class="nc" id="L1607">        			sum += B[i][j] * artmp[j];</span>
+<span class="nc" id="L1608">        		arx[index][i] = xmean[i] + sigma * sum;</span>
+        	}
+        }
+<span class="nc" id="L1611">        return population[index] = genoPhenoTransformation(arx[index], population[index]); </span>
+    } // resampleSingle
+    
+    /** compute Mahalanobis norm of x - mean w.r.t. the current distribution 
+     * (using covariance matrix times squared step-size for the inner product). 
+     * TODO: to be tested. 
+     * @param x
+     * @param mean
+     * @return Malanobis norm of x - mean: sqrt((x-mean)' C^-1 (x-mean)) / sigma
+     */
+    public double mahalanobisNorm(double[] x, double[] mean) {
+<span class="nc" id="L1622">    	double yi, snorm = 0;</span>
+    	int i, j; 
+    	// snorm = (x-mean)' Cinverse (x-mean) = (x-mean)' (BD^2B')^-1 (x-mean)
+    	//       = (x-mean)' B'^-1 D^-2 B^-1 (x-mean) 
+    	//       = (x-mean)' B D^-1 D^-1 B' (x-mean)
+    	//       = (D^-1 B' (x-mean))' * (D^-1 B' (x-mean))
+    	/* calculate z := D^(-1) * B^(-1) * BDz into artmp, we could have stored z instead */
+<span class="nc bnc" id="L1629" title="All 2 branches missed.">    	for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc bnc" id="L1630" title="All 2 branches missed.">    		for (j = 0, yi = 0.; j &lt; N; ++j)</span>
+<span class="nc" id="L1631">    			yi += B[j][i] * (x[j]-mean[j]);</span>
+    		// yi = i-th component of B' (x-mean)
+<span class="nc" id="L1633">    		snorm += yi * yi / diagD[i] / diagD[i];</span>
+    	}
+<span class="nc" id="L1635">    	return Math.sqrt(snorm) / sigma;</span>
+    }
+
+	/** update of the search distribution from a population and its 
+	 * function values, see {@link #updateDistribution(double[][], double[], 0)}. 
+	 * This might become updateDistribution(double[][], double[], popsize)
+     * in future. 
+     * 
+     * @param population  double[lambda][N], lambda solutions
+     * @param functionValues  double[lambda], respective objective values of population
+     * 
+     * @see #samplePopulation()
+     * @see #updateDistribution(double[])
+     * @see #updateDistribution(double[][], double[], int)
+     */
+    public void updateDistribution(double[][] population, double[] functionValues) {
+<span class="nc" id="L1651">    	updateDistribution(population, functionValues, 0);</span>
+<span class="nc" id="L1652">    }</span>
+    
+	/** update of the search distribution from a population and its 
+	 * function values, an alternative interface for
+     * {@link #updateDistribution(double[] functionValues)}. functionValues is used to establish an 
+     * ordering of the elements in population. The first nInjected elements do not need to originate 
+     * from #samplePopulation() or can have been modified (TODO: to be tested). 
+     * 
+     * @param population  double[lambda][N], lambda solutions
+     * @param functionValues  double[lambda], respective objective values of population
+     * @param nInjected  int, first nInjected solutions of population were not sampled by 
+     * samplePopulation() or modified afterwards
+     * 
+     * @see #samplePopulation()
+     * @see #updateDistribution(double[])
+     */
+    public void updateDistribution(double[][] population, double[] functionValues, int nInjected) {
+   	    // TODO: Needs to be tested yet for nInjected &gt; 0
+    	// pass first input argument
+<span class="nc" id="L1671">    	arx = phenoGenoTransformation(population, null); // TODO should still be tested</span>
+<span class="nc bnc" id="L1672" title="All 2 branches missed.">    	for (int i = 0; i &lt; nInjected; ++i) {</span>
+<span class="nc" id="L1673">    		warning(&quot;TODO: checking of injected solution has not yet been tested&quot;);</span>
+            // if (mahalanobisNorm(arx[0], xmean) &gt; Math.sqrt(N) + 2) // testing: seems fine
+            //     System.out.println(mahalanobisNorm(arx[i], xmean)/Math.sqrt(N));
+<span class="nc" id="L1676">    		double upperLength = Math.sqrt(N) + 2. * N / (N+2.);  // should become an interfaced parameter? </span>
+<span class="nc" id="L1677">    		double fac = upperLength / mahalanobisNorm(arx[i], xmean); </span>
+<span class="nc bnc" id="L1678" title="All 2 branches missed.">    		if (fac &lt; 1)</span>
+<span class="nc bnc" id="L1679" title="All 2 branches missed.">    			for (int j = 0; j &lt; N; ++j)</span>
+<span class="nc" id="L1680">    				arx[i][j] = xmean[j] + fac * (arx[i][j] - xmean[j]);</span>
+    	}
+<span class="nc" id="L1682">    	updateDistribution(functionValues);</span>
+<span class="nc" id="L1683">    }</span>
+    
+    /** update of the search distribution after samplePopulation(). functionValues 
+     * determines the selection order (ranking) for the solutions in the previously sampled 
+     * population. This is just a different interface for updateDistribution(double[][], double[]).  
+     * @see #samplePopulation()
+     * @see #updateDistribution(double[][], double[])
+     */
+    public void updateDistribution(double[] functionValues) {
+<span class="pc bpc" id="L1692" title="1 of 2 branches missed.">        if (state == 3) {</span>
+<span class="nc" id="L1693">            error(&quot;updateDistribution() was already called&quot;);</span>
+        }
+<span class="pc bpc" id="L1695" title="1 of 2 branches missed.">        if (functionValues.length != sp.getLambda())</span>
+<span class="nc" id="L1696">        	error(&quot;argument double[] funcionValues.length=&quot; + functionValues.length </span>
+<span class="nc" id="L1697">        			+ &quot;!=&quot; + &quot;lambda=&quot; + sp.getLambda());</span>
+        
+        /* pass input argument */
+<span class="fc bfc" id="L1700" title="All 2 branches covered.">        for (int i = 0; i &lt; sp.getLambda(); ++i) {</span>
+<span class="fc" id="L1701">            fit.raw[i].val = functionValues[i];</span>
+<span class="fc" id="L1702">            fit.raw[i].i = i;</span>
+        }
+        
+<span class="fc" id="L1705">        counteval += sp.getLambda();</span>
+<span class="fc" id="L1706">        recentFunctionValue = math.min(fit.raw).val;</span>
+<span class="fc" id="L1707">        recentMaxFunctionValue = math.max(fit.raw).val;</span>
+<span class="fc" id="L1708">        recentMinFunctionValue = math.min(fit.raw).val;</span>
+<span class="fc" id="L1709">        updateDistribution();</span>
+<span class="fc" id="L1710">    }</span>
+    
+//    private IntDouble[] computePenalties() {
+//    	int i, j, iNk;
+//    	/* penalize repairment, eg. for boundaries */
+//    	// TODO: figure out whether the change of penalty is too large or fast which can disturb selection
+//    	//       this depence in particular on the length of fit.medianDeltaFit
+//    	if (true || countiter &lt; fit.deltaFitHist.length || countiter % 1*(N+2) == 0) {
+//    		// minimum of differences with distance lambda/2, better the 25%tile?
+//    		// assumes sorted array!! 
+//    		int ii = (sp.getLambda()) / 2;
+//    		double medianDeltaFit = Math.abs(fit.funValues[ii].d - fit.funValues[0].d);
+//    		for (i = 1; i + ii &lt; sp.getLambda(); ++i) 
+//    			// minimum because of outliers 
+//    			medianDeltaFit = Math.min(medianDeltaFit, Math.abs(fit.funValues[ii+i].d - fit.funValues[i].d));
+//    		medianDeltaFit /= sigma * sigma; // should be somehow constant, because dfit depends on sigma (verified on sphere)
+//    		if (medianDeltaFit &gt; 0) {
+////  			System.out.println(&quot;set&quot; + medianDeltaFit + &quot; &quot; + math.median(fit.medianDeltaFit));
+//    			if (fit.idxDeltaFitHist == -1) // first time: write all fields
+//    				for (i = 0; i &lt; fit.deltaFitHist.length; ++i)
+//    					fit.deltaFitHist[i] = medianDeltaFit;
+//    			if (++fit.idxDeltaFitHist == fit.deltaFitHist.length)
+//    				fit.idxDeltaFitHist = 0;
+//    			// save last five values in fit.medianDeltaFit
+//    			fit.deltaFitHist[fit.idxDeltaFitHist] = medianDeltaFit;
+//    		}                
+//    	}
+//    	/* calculate fitness by adding function value and repair penalty */
+//    	double penfactor = 1. * 5. * math.median(fit.deltaFitHist);
+//    	for (iNk = 0; iNk &lt; sp.getLambda(); ++iNk) {
+//    		double sqrnorm = 0;
+//    		double prod = Math.pow(math.prod(diagD), 1.0/(double)N);
+//    		/* calculate C^-1-norm of Delta x: norm(D^(-1) * B^(-1) * (Delta x))^2 */
+//    		for (i = 0; i &lt; N; ++i) {
+//    			double sum = 0.0;
+//    			for (j = 0, sum = 0.; j &lt; N; ++j)
+//    				sum += B[j][i] * ((arxrepaired[fit.funValues[iNk].i][j] - arx[fit.funValues[iNk].i][j]));
+//    			sqrnorm += math.square(sum / (Math.pow(diagD[i], 0.9) * Math.pow(prod, 0.10))); // regularization to I
+//    		}
+//    		// sqrnorm/N equals approximately 1/sigma^2
+//    		fit.fitness[iNk].d = fit.funValues[iNk].d + penfactor * sqrnorm / (N+2); // / (sigma * sigma);
+//    		fit.fitness[iNk].i = fit.funValues[iNk].i;
+//    		// System.out.println(math.median(fit.medianDeltaFit) + &quot; &quot; + sqrnorm / (N+2)); // / (sigma * sigma));
+//    	}
+////  	if (countiter % 10 == 1)
+////  	System.out.println(math.median(fit.medianDeltaFit) + &quot; &quot; + sqrnorm);
+//    	return fit.fitness;
+//
+//    }
+
+    private void updateDistribution() {
+        
+        int i, j, k, iNk, hsig;
+        double sum;
+        double psxps;
+        
+<span class="pc bpc" id="L1766" title="1 of 2 branches missed.">        if (state == 3) {</span>
+<span class="nc" id="L1767">            error(&quot;updateDistribution() was already called&quot;);</span>
+        }
+        
+        /* sort function values */
+<span class="fc" id="L1771">        Arrays.sort(fit.raw, fit.raw[0]);</span>
+        
+<span class="fc bfc" id="L1773" title="All 2 branches covered.">        for (iNk = 0; iNk &lt; sp.getLambda(); ++iNk) {</span>
+<span class="fc" id="L1774">        	fit.fitness[iNk].val = fit.raw[iNk].val; // superfluous at time</span>
+<span class="fc" id="L1775">        	fit.fitness[iNk].i = fit.raw[iNk].i;</span>
+        }
+
+        /* update fitness history */ 
+<span class="fc bfc" id="L1779" title="All 2 branches covered.">        for (i = fit.history.length - 1; i &gt; 0; --i)</span>
+<span class="fc" id="L1780">            fit.history[i] = fit.history[i - 1];</span>
+<span class="fc" id="L1781">        fit.history[0] = fit.raw[0].val;</span>
+        
+        /* save/update bestever-value */
+<span class="fc" id="L1784">        updateBestEver(arx[fit.raw[0].i], fit.raw[0].val, </span>
+<span class="fc" id="L1785">        		counteval - sp.getLambda() + fit.raw[0].i + 1);</span>
+        
+        /* re-calculate diagonal flag */
+<span class="pc bpc" id="L1788" title="2 of 4 branches missed.">        flgdiag = (options.diagonalCovarianceMatrix == 1 || options.diagonalCovarianceMatrix &gt;= countiter); </span>
+<span class="pc bpc" id="L1789" title="1 of 2 branches missed.">        if (options.diagonalCovarianceMatrix == -1) // options might have been re-read</span>
+<span class="nc bnc" id="L1790" title="All 2 branches missed.">        	flgdiag = (countiter &lt;= 1 * 150 * N / sp.lambda);  // CAVE: duplication of &quot;default&quot;</span>
+        
+        /* calculate xmean and BDz~N(0,C) */
+<span class="fc bfc" id="L1793" title="All 2 branches covered.">        for (i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L1794">            xold[i] = xmean[i];</span>
+<span class="fc" id="L1795">            xmean[i] = 0.;</span>
+<span class="fc bfc" id="L1796" title="All 2 branches covered.">            for (iNk = 0; iNk &lt; sp.getMu(); ++iNk)</span>
+<span class="fc" id="L1797">                xmean[i] += sp.getWeights()[iNk] * arx[fit.fitness[iNk].i][i];</span>
+<span class="fc" id="L1798">            BDz[i] = Math.sqrt(sp.getMueff()) * (xmean[i] - xold[i]) / sigma;</span>
+        }
+        
+        /* cumulation for sigma (ps) using B*z */
+<span class="pc bpc" id="L1802" title="1 of 2 branches missed.">        if (flgdiag) {</span>
+        	/* given B=I we have B*z = z = D^-1 BDz  */
+<span class="nc bnc" id="L1804" title="All 2 branches missed.">        	for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc" id="L1805">        		ps[i] = (1. - sp.getCs()) * ps[i]</span>
+<span class="nc" id="L1806">        		                               + Math.sqrt(sp.getCs() * (2. - sp.getCs())) </span>
+        		                               * BDz[i] / diagD[i];
+        	}
+        } else {
+        	/* calculate z := D^(-1) * B^(-1) * BDz into artmp, we could have stored z instead */
+<span class="fc bfc" id="L1811" title="All 2 branches covered.">        	for (i = 0; i &lt; N; ++i) {</span>
+<span class="fc bfc" id="L1812" title="All 2 branches covered.">        		for (j = 0, sum = 0.; j &lt; N; ++j)</span>
+<span class="fc" id="L1813">        			sum += B[j][i] * BDz[j];</span>
+<span class="fc" id="L1814">        		artmp[i] = sum / diagD[i];</span>
+        	}
+        	/* cumulation for sigma (ps) using B*z */
+<span class="fc bfc" id="L1817" title="All 2 branches covered.">        	for (i = 0; i &lt; N; ++i) {</span>
+<span class="fc bfc" id="L1818" title="All 2 branches covered.">        		for (j = 0, sum = 0.; j &lt; N; ++j)</span>
+<span class="fc" id="L1819">        			sum += B[i][j] * artmp[j];</span>
+<span class="fc" id="L1820">        		ps[i] = (1. - sp.getCs()) * ps[i]</span>
+<span class="fc" id="L1821">        		                               + Math.sqrt(sp.getCs() * (2. - sp.getCs())) * sum;</span>
+        	}
+        }
+
+        /* calculate norm(ps)^2 */
+<span class="fc" id="L1826">        psxps = 0;</span>
+<span class="fc bfc" id="L1827" title="All 2 branches covered.">        for (i = 0; i &lt; N; ++i)</span>
+<span class="fc" id="L1828">            psxps += ps[i] * ps[i];</span>
+        
+        /* cumulation for covariance matrix (pc) using B*D*z~N(0,C) */
+<span class="fc" id="L1831">        hsig = 0;</span>
+<span class="fc" id="L1832">        if (Math.sqrt(psxps)</span>
+<span class="fc bfc" id="L1833" title="All 2 branches covered.">                / Math.sqrt(1. - Math.pow(1. - sp.getCs(), 2. * countiter))</span>
+                / sp.chiN &lt; 1.4 + 2. / (N + 1.)) {
+<span class="fc" id="L1835">            hsig = 1;</span>
+        }
+<span class="fc bfc" id="L1837" title="All 2 branches covered.">        for (i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L1838">            pc[i] = (1. - sp.getCc()) * pc[i] + hsig</span>
+<span class="fc" id="L1839">            * Math.sqrt(sp.getCc() * (2. - sp.getCc())) * BDz[i];</span>
+        }
+        
+        /* stop initial phase, not in use anymore as hsig does the job */
+<span class="pc bpc" id="L1843" title="1 of 2 branches missed.">        if (iniphase</span>
+<span class="nc bnc" id="L1844" title="All 2 branches missed.">        		&amp;&amp; countiter &gt; Math.min(1 / sp.getCs(), 1 + N / sp.getMucov()))</span>
+<span class="nc" id="L1845">        	if (psxps / sp.getDamps()</span>
+<span class="nc bnc" id="L1846" title="All 2 branches missed.">        			/ (1. - Math.pow((1. - sp.getCs()), countiter)) &lt; N * 1.05)</span>
+<span class="nc" id="L1847">        		iniphase = false;</span>
+
+        /* this, it is harmful in a dynamic environment
+         * remove momentum in ps, if ps is large and fitness is getting worse */
+//        if (1 &lt; 3 &amp;&amp; psxps / N &gt; 1.5 + 10 * Math.sqrt(2. / N)
+//        		&amp;&amp; fit.history[0] &gt; fit.history[1] &amp;&amp; fit.history[0] &gt; fit.history[2]) {
+//          double tfac;
+// 
+//        	infoVerbose(countiter + &quot;: remove momentum &quot; + psxps / N + &quot; &quot;
+//        			+ ps[0] + &quot; &quot; + sigma);
+//
+//        	tfac = Math.sqrt((1 + Math.max(0, Math.log(psxps / N))) * N / psxps);
+//        	for (i = 0; i &lt; N; ++i)
+//        		ps[i] *= tfac;
+//        	psxps *= tfac * tfac;
+//        }
+
+        /* update of C */
+<span class="pc bpc" id="L1865" title="2 of 4 branches missed.">        if (sp.getCcov() &gt; 0 &amp;&amp; iniphase == false) {</span>
+            
+<span class="fc" id="L1867">            ++countCupdatesSinceEigenupdate;</span>
+            
+            /* update covariance matrix */
+<span class="fc bfc" id="L1870" title="All 2 branches covered.">            for (i = 0; i &lt; N; ++i)</span>
+<span class="pc bpc" id="L1871" title="1 of 2 branches missed.">                for (j = (flgdiag ? i : 0); </span>
+<span class="fc bfc" id="L1872" title="All 2 branches covered.">                     j &lt;= i; ++j) {</span>
+<span class="fc" id="L1873">                    C[i][j] = (1 - sp.getCcov(flgdiag))</span>
+                    * C[i][j]
+<span class="fc" id="L1875">                           + sp.getCcov()</span>
+<span class="fc" id="L1876">                           * (1. / sp.getMucov())</span>
+<span class="fc" id="L1877">                           * (pc[i] * pc[j] + (1 - hsig) * sp.getCc()</span>
+<span class="fc" id="L1878">                                   * (2. - sp.getCc()) * C[i][j]);</span>
+<span class="fc bfc" id="L1879" title="All 2 branches covered.">                    for (k = 0; k &lt; sp.getMu(); ++k) { /*</span>
+                    * additional rank mu
+                    * update
+                    */
+<span class="fc" id="L1883">                        C[i][j] += sp.getCcov() * (1 - 1. / sp.getMucov())</span>
+<span class="fc" id="L1884">                        * sp.getWeights()[k]</span>
+                                          * (arx[fit.fitness[k].i][i] - xold[i])
+                                          * (arx[fit.fitness[k].i][j] - xold[j]) / sigma
+                                          / sigma;
+                    }
+                }
+<span class="fc" id="L1890">            maxsqrtdiagC = Math.sqrt(math.max(math.diag(C)));</span>
+<span class="fc" id="L1891">            minsqrtdiagC = Math.sqrt(math.min(math.diag(C)));</span>
+        } // update of C
+        
+        /* update of sigma */
+<span class="fc" id="L1895">        sigma *= Math.exp(((Math.sqrt(psxps) / sp.chiN) - 1) * sp.getCs()</span>
+<span class="fc" id="L1896">                / sp.getDamps());</span>
+        
+<span class="fc" id="L1898">        state = 3;</span>
+        
+<span class="fc" id="L1900">    } // updateDistribution()</span>
+    
+    /** assigns lhs to a different instance with the same values, 
+     * sort of smart clone, but it may be that clone is as smart already 
+     * 
+     * @param rhs
+     * @param lhs
+     * @return
+     */
+    double[] assignNew(double[] rhs, double[] lhs) {
+<span class="pc bpc" id="L1910" title="3 of 4 branches missed.">    	assert rhs != null; // will produce an error anyway</span>
+<span class="pc bpc" id="L1911" title="3 of 6 branches missed.">    	if(lhs != null &amp;&amp; lhs != rhs &amp;&amp; lhs.length == rhs.length)</span>
+<span class="fc bfc" id="L1912" title="All 2 branches covered.">    		for(int i = 0; i &lt; lhs.length; ++i)</span>
+<span class="fc" id="L1913">    			lhs[i] = rhs[i];</span>
+    	else
+<span class="nc" id="L1915">    		lhs = rhs.clone();</span>
+<span class="fc" id="L1916">    	return lhs;</span>
+    }
+    void updateBestEver(double[] x, double fitness, long eval) {
+<span class="fc bfc" id="L1919" title="All 4 branches covered.">        if (fitness &lt; bestever_fit || Double.isNaN(bestever_fit)) {  // countiter == 1 not needed anymore</span>
+<span class="fc" id="L1920">            bestever_fit = fitness;</span>
+<span class="fc" id="L1921">            bestever_eval = eval;</span>
+<span class="fc" id="L1922">            bestever_x = assignNew(x, bestever_x); // save (hopefully) efficient assignment</span>
+        }
+<span class="fc" id="L1924">    }</span>
+    
+    /** ratio between length of longest and shortest axis 
+     * of the distribution ellipsoid, which is the square root
+     * of the largest divided by the smallest eigenvalue of the covariance matrix 
+     */
+    public double getAxisRatio() {
+<span class="nc" id="L1931">        return axisratio;</span>
+    }
+
+    /** get best evaluated solution found so far. 
+     * Remark that the distribution mean was not evaluated 
+     * but is expected to have an even better function value. 
+     * &lt;p&gt;Example: getBestSolution 
+     * @return best solution (search point) found so far 
+     * @see #getBestRecentSolution() 
+     * @see #getBestX() 
+     * @see #getMeanX() */
+    public CMASolution getBestSolution() {
+<span class="fc" id="L1943">        return new CMASolution(bestever_x, bestever_fit, bestever_eval);</span>
+    }
+    
+    /** eventually replaces the best-ever solution 
+     * 
+     * @param fitness function value computed for the solution {@link #getMeanX()}
+     * @return best-ever solution
+     */
+    public CMASolution setFitnessOfMeanX(double fitness) {
+<span class="fc" id="L1952">    	xmean_fit = fitness;</span>
+<span class="fc" id="L1953">    	++counteval;</span>
+<span class="fc" id="L1954">    	updateBestEver(xmean, fitness, counteval);</span>
+<span class="fc" id="L1955">    	return new CMASolution(bestever_x, bestever_fit, bestever_eval);</span>
+    }
+
+    /** get best evaluated search point found so far. 
+     * Remark that the distribution mean was not evaluated 
+     * but is expected to have an even better function value. 
+     * @return best search point found so far as double[]
+     * @see #getMeanX() */
+    public double[] getBestX() {
+<span class="nc bnc" id="L1964" title="All 2 branches missed.">        if (state &lt; 0)</span>
+<span class="nc" id="L1965">            return null;</span>
+<span class="nc" id="L1966">        return bestever_x.clone();</span>
+    }
+
+    /** objective function value of best solution found so far.
+     * @return objective function value of best solution found so far
+     * @see #getBestSolution()
+     */
+    public double getBestFunctionValue() {
+<span class="pc bpc" id="L1974" title="1 of 2 branches missed.">        if (state &lt; 0)</span>
+<span class="nc" id="L1975">            return Double.NaN;</span>
+<span class="fc" id="L1976">        return bestever_fit;</span>
+    }
+    /* * evaluation count when the best solution was found
+     * 
+     */
+    public long getBestEvaluationNumber() {
+<span class="fc" id="L1982">    	return bestever_eval;</span>
+    }
+
+    /** Get best evaluated solution of the last (recent) iteration. 
+     * This solution is supposed to be more robust than the 
+     * best ever solution in particular in possible case of 
+     * mis-attributed good fitness values.
+     * Remark that the distribution mean was not evaluated 
+     * but is expected to have an better function value. 
+     * @return best solution (search point) in recent iteration 
+     * @see #getBestSolution() 
+     * @see #getBestRecentX() 
+     * @see #getMeanX() */
+    public ISolutionPoint getBestRecentSolution() {
+<span class="nc" id="L1996">    	return new CMASolution(genoPhenoTransformation(arx[fit.raw[0].i], null), </span>
+    			fit.raw[0].val, 
+<span class="nc" id="L1998">    			counteval - sp.getLambda() + fit.raw[0].i + 1);</span>
+    }
+
+    /** best search point of the recent iteration. 
+     * @return Returns the recentFunctionValue.
+     * @see #getBestRecentFunctionValue()
+     */
+    public double[] getBestRecentX() {
+<span class="nc" id="L2006">        return genoPhenoTransformation(arx[fit.raw[0].i], null);</span>
+    }
+
+    /** objective function value of the,
+     * best solution in the 
+     * recent iteration (population)
+     * @return Returns the recentFunctionValue.
+     * @see #getBestEvaluationNumber()
+     * @see #getBestFunctionValue()
+     */
+    public double getBestRecentFunctionValue() {
+<span class="nc" id="L2017">        return recentMinFunctionValue;</span>
+    }
+
+    /** objective function value of the, 
+     * worst solution of the recent iteration.
+     * @return Returns the recentMaxFunctionValue.
+     */
+    public double getWorstRecentFunctionValue() {
+<span class="nc" id="L2025">        return recentMaxFunctionValue;</span>
+    }
+
+    /** Get mean of the current search distribution. The mean should
+     * be regarded as the best estimator for the global
+     * optimimum at the given iteration. In particular for noisy
+     * problems the distribution mean is the solution of choice
+     * preferable to the best or recent best. The return value is 
+     * &lt;em&gt;not&lt;/em&gt; a copy. Therefore it should not be change it, without 
+     * deep knowledge of the code (the effect of a mean change depends on
+     * the chosen transscription/implementation of the algorithm). 
+     * @return mean value of the current search distribution
+     * @see #getBestX() 
+     * @see #getBestRecentX() 
+     */
+    public double[] getMeanX() {
+<span class="fc" id="L2041">        return xmean.clone();</span>
+    }
+
+    public int getDimension() {
+<span class="nc" id="L2045">        return N;</span>
+    }
+
+    /**
+     * number of objective function evaluations counted so far
+     */
+    public long getCountEval() {
+<span class="nc" id="L2052">        return counteval;</span>
+    }
+
+    /**
+     * number of iterations conducted so far 
+     */
+    public long getCountIter() {
+<span class="fc" id="L2059">        return countiter;</span>
+    }
+    
+    /** the final setting of initial &lt;code&gt;x&lt;/code&gt; can 
+     * be retrieved only after &lt;code&gt;init()&lt;/code&gt; was called
+     * 
+     * @return &lt;code&gt;double[] initialX&lt;/code&gt; start point chosen for 
+     * distribution mean value &lt;code&gt;xmean&lt;/code&gt;
+     */ 
+    public double[] getInitialX() {
+<span class="nc bnc" id="L2069" title="All 2 branches missed.">    	if (state &lt; 0)</span>
+<span class="nc" id="L2070">    	error(&quot;initiaX not yet available, init() must be called first&quot;);</span>
+<span class="nc" id="L2071">    	return initialX.clone();</span>
+    }
+    
+    
+
+    /** get used random number generator instance */
+    public Random getRand() {
+<span class="nc" id="L2078">        return rand;</span>
+    }
+
+    /** get properties previously read from a property file.
+     * 
+     * @return java.util.Properties key-value hash table
+     * @see #readProperties()
+     */
+    public Properties getProperties() {
+<span class="nc" id="L2087">        return properties;</span>
+    }
+       
+    /**@see #setSeed(long) */
+    public long getSeed() {
+<span class="nc" id="L2092">        return seed;</span>
+    }
+//    /** Set lower and upper boundary in all variables 
+//     * 
+//     * @param xlow
+//     * @param xup
+//     */
+//    public void setBoundaries(double xlow, double xup) {
+//        int len = 1;
+//        if (N &gt; 0)
+//            len = N;
+//        LBound = new double[len];
+//        UBound = new double[len];
+//        for (int i= 0; i &lt; len; ++i) {
+//            LBound[i] = xlow;
+//            UBound[i] = xup;
+//        }
+//    }
+//    /** sets lower and upper boundaries in all variables. 
+//     * 
+//     * @param xlow lower boundary double[], can be 1-D or of length of the number of variables (dimension). 
+//     * @param xup see xlow
+//     */
+//    public void setBoundaries(double[] xlow, double[] xup) {
+//        if( xlow == null || xup ==  null)
+//            error(&quot;boundaries cannot be null&quot;);
+//        if (xlow.length == 1 &amp;&amp; xup.length == 1) {
+//            setBoundaries(xlow[0], xup[0]);
+//            return;
+//        }
+//        if ((N &gt; 0 &amp;&amp; (N != xlow.length || N != xup.length)) 
+//            || (xlow.length != xup.length))
+//            error(&quot;dimensions of boundaries do not match&quot;);
+//        this.LBound = xlow;
+//        this.UBound = xup;
+//        N = xlow.length; // changes N only if N was 0
+//    }
+
+    /**
+     * number of objective function evaluations counted so far
+     */
+    public long setCountEval(long c) {
+<span class="nc" id="L2134">        return counteval = c;</span>
+    }
+
+/** search space dimensions must be set before the optimization is started. */
+    public void setDimension(int n) {
+<span class="pc bpc" id="L2139" title="4 of 6 branches missed.">        if ((lockDimension &gt; 0 || state &gt;= 0) &amp;&amp; N != n)</span>
+<span class="nc" id="L2140">            error(&quot;dimension cannot be changed anymore or contradicts to initialX&quot;);</span>
+<span class="fc" id="L2141">        N = n;</span>
+<span class="fc" id="L2142">    }</span>
+
+    /** sets typicalX value, the same value in each coordinate
+     * @see #setTypicalX(double[])
+     */
+    public void setTypicalX(double x) {
+<span class="nc bnc" id="L2148" title="All 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2149">    		error(&quot;typical x cannot be set anymore&quot;);</span>
+<span class="nc" id="L2150">    	typicalX = new double[]{x}; // allows &quot;late binding&quot; of dimension</span>
+<span class="nc" id="L2151">    }</span>
+
+    /** sets typicalX value, which will be overwritten by initialX setting from properties 
+     * or {@link #setInitialX(double[])} function call. 
+     * Otherwise the initialX is sampled normally distributed from typicalX with initialStandardDeviations
+     * 
+     * @see #setTypicalX(double)
+     * @see #setInitialX(double[])
+     * @see #setInitialStandardDeviations(double[])
+     */
+    public void setTypicalX(double[] x) {
+<span class="nc bnc" id="L2162" title="All 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2163">    		error(&quot;typical x cannot be set anymore&quot;);</span>
+<span class="nc bnc" id="L2164" title="All 2 branches missed.">    	if (x.length == 1) { // to make properties work</span>
+<span class="nc" id="L2165">    		setTypicalX(x[0]);</span>
+<span class="nc" id="L2166">    		return;</span>
+    	}
+<span class="nc bnc" id="L2168" title="All 2 branches missed.">    	if (N &lt; 1)</span>
+<span class="nc" id="L2169">    		setDimension(x.length);</span>
+<span class="nc bnc" id="L2170" title="All 2 branches missed.">    	if (N != x.length)</span>
+<span class="nc" id="L2171">    		error(&quot;dimensions N=&quot; + N + &quot; and input x.length=&quot; + x.length + &quot;do not agree&quot;);</span>
+<span class="nc" id="L2172">    	typicalX = new double[N];</span>
+<span class="nc bnc" id="L2173" title="All 2 branches missed.">    	for (int i = 0; i &lt; N; ++i)</span>
+<span class="nc" id="L2174">    		typicalX[i] = x[i];</span>
+<span class="nc" id="L2175">    	lockDimension = 1;</span>
+<span class="nc" id="L2176">    }</span>
+
+    public void setInitialStandardDeviation(double startsigma) {
+<span class="pc bpc" id="L2179" title="1 of 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2180">    		error(&quot;standard deviations cannot be set anymore&quot;);</span>
+<span class="fc" id="L2181">        this.startsigma = new double[]{startsigma};</span>
+<span class="fc" id="L2182">    }</span>
+
+    public void setInitialStandardDeviations(double[] startsigma) {
+        // assert startsigma != null; // assert should not be used for public arg check
+<span class="pc bpc" id="L2186" title="1 of 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2187">    		error(&quot;standard deviations cannot be set anymore&quot;);</span>
+<span class="pc bpc" id="L2188" title="1 of 2 branches missed.">    	if (startsigma.length == 1) { // to make properties work</span>
+<span class="fc" id="L2189">    		setInitialStandardDeviation(startsigma[0]);</span>
+<span class="fc" id="L2190">    		return;</span>
+    	}
+<span class="nc bnc" id="L2192" title="All 4 branches missed.">    	if (N &gt; 0 &amp;&amp; N != startsigma.length)</span>
+<span class="nc" id="L2193">    		error(&quot;dimensions N=&quot; + N + &quot; and input startsigma.length=&quot; </span>
+    				+ startsigma.length + &quot;do not agree&quot;);
+<span class="nc bnc" id="L2195" title="All 2 branches missed.">        if (N == 0)</span>
+<span class="nc" id="L2196">        	setDimension(startsigma.length);</span>
+<span class="nc bnc" id="L2197" title="All 4 branches missed.">        assert N == startsigma.length;</span>
+<span class="nc" id="L2198">        this.startsigma = startsigma.clone();</span>
+<span class="nc" id="L2199">        lockDimension = 1;</span>
+<span class="nc" id="L2200">    }</span>
+
+    /** sets &lt;code&gt;initialX&lt;/code&gt; to the same value in each coordinate
+     * 
+     * @param x value
+     * @see #setInitialX(double[])
+     */
+    public void setInitialX(double x) {
+<span class="pc bpc" id="L2208" title="1 of 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2209">    		error(&quot;initial x cannot be set anymore&quot;);</span>
+<span class="fc" id="L2210">    	xmean = new double[]{x}; // allows &quot;late binding&quot; of dimension N</span>
+<span class="fc" id="L2211">    }</span>
+    
+    /** set initial search point &lt;code&gt;xmean&lt;/code&gt; coordinate-wise uniform 
+     * between &lt;code&gt;l&lt;/code&gt; and &lt;code&gt;u&lt;/code&gt;, 
+     * dimension needs to have been set before
+     * 
+     * @param l double lower value
+     * @param u double upper value 
+     * @see #setInitialX(double[])
+     * @see #setInitialX(double[], double[])
+     * */
+    public void setInitialX(double l, double u) {
+<span class="nc bnc" id="L2223" title="All 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2224">    		error(&quot;initial x cannot be set anymore&quot;);</span>
+<span class="nc bnc" id="L2225" title="All 2 branches missed.">    	if (N &lt; 1)</span>
+<span class="nc" id="L2226">    		error(&quot;dimension must have been specified before&quot;); </span>
+<span class="nc" id="L2227">    	xmean = new double[N];</span>
+<span class="nc bnc" id="L2228" title="All 2 branches missed.">    	for (int i = 0; i &lt; xmean.length; ++i)</span>
+<span class="nc" id="L2229">    		xmean[i] = l + (u-l) * rand.nextDouble();</span>
+<span class="nc" id="L2230">    	lockDimension = 1;</span>
+<span class="nc" id="L2231">    }</span>
+
+    /** set initial seach point &lt;code&gt;x&lt;/code&gt; coordinate-wise uniform 
+     * between &lt;code&gt;l&lt;/code&gt; and &lt;code&gt;u&lt;/code&gt;, 
+     * dimension needs to have been set before
+     * @param l double lower value
+     * @param u double upper value */
+    public void setInitialX(double[] l, double[] u) {
+<span class="nc bnc" id="L2239" title="All 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2240">    		error(&quot;initial x cannot be set anymore&quot;);</span>
+<span class="nc bnc" id="L2241" title="All 2 branches missed.">    	if (l.length != u.length)</span>
+<span class="nc" id="L2242">    		error(&quot;length of lower and upper values disagree&quot;);</span>
+<span class="nc" id="L2243">    	setDimension(l.length);</span>
+<span class="nc" id="L2244">    	xmean = new double[N];</span>
+<span class="nc bnc" id="L2245" title="All 2 branches missed.">    	for (int i = 0; i &lt; xmean.length; ++i)</span>
+<span class="nc" id="L2246">    		xmean[i] = l[i] + (u[i]-l[i]) * rand.nextDouble();</span>
+<span class="nc" id="L2247">    	lockDimension = 1;</span>
+<span class="nc" id="L2248">    }</span>
+
+    /** set initial search point to input value &lt;code&gt;x&lt;/code&gt;. &lt;code&gt;x.length==1&lt;/code&gt; is possible, otherwise 
+     * the search space dimension is set to &lt;code&gt;x.length&lt;/code&gt; irrevocably
+     * 
+     * @param x double[] initial point
+     * @see #setInitialX(double)
+     * @see #setInitialX(double, double) 
+     */
+    public void setInitialX(double[] x) {
+<span class="pc bpc" id="L2258" title="1 of 2 branches missed.">    	if (state &gt;= 0)</span>
+<span class="nc" id="L2259">    		error(&quot;initial x cannot be set anymore&quot;);</span>
+<span class="fc bfc" id="L2260" title="All 2 branches covered.">    	if (x.length == 1) { // to make properties work</span>
+<span class="fc" id="L2261">    		setInitialX(x[0]);</span>
+<span class="fc" id="L2262">    		return;</span>
+    	}
+<span class="pc bpc" id="L2264" title="2 of 4 branches missed.">        if (N &gt; 0 &amp;&amp; N != x.length)</span>
+<span class="nc" id="L2265">            error(&quot;dimensions do not match&quot;);</span>
+<span class="pc bpc" id="L2266" title="1 of 2 branches missed.">        if (N == 0)</span>
+<span class="nc" id="L2267">        	setDimension(x.length);</span>
+<span class="pc bpc" id="L2268" title="3 of 4 branches missed.">        assert N == x.length;</span>
+<span class="fc" id="L2269">        xmean = new double[N];</span>
+<span class="fc bfc" id="L2270" title="All 2 branches covered.">        for (int i = 0; i &lt; N; ++i)</span>
+<span class="fc" id="L2271">            xmean[i] = x[i];</span>
+<span class="fc" id="L2272">        lockDimension = 1; // because xmean is set up</span>
+<span class="fc" id="L2273">    }</span>
+    
+    public void setRand(Random rand) {
+<span class="nc" id="L2276">        this.rand = rand;</span>
+<span class="nc" id="L2277">    }</span>
+
+    /** Setter for the seed for the random number generator
+     * java.util.Random(seed). Changing the seed will only take
+     * effect before {@link #init()} was called.
+     *@param seed a long value to initialize java.util.Random(seed) 
+     */ 
+    public void setSeed(long seed) { 
+<span class="pc bpc" id="L2285" title="1 of 2 branches missed.">        if (state &gt;= 0)</span>
+<span class="nc" id="L2286">            warning(&quot;setting seed has no effect at this point&quot;);</span>
+        else {
+<span class="pc bpc" id="L2288" title="1 of 2 branches missed.">        	if (seed &lt;= 0) </span>
+<span class="fc" id="L2289">        		seed = System.currentTimeMillis();</span>
+<span class="fc" id="L2290">            this.seed = seed;</span>
+<span class="fc" id="L2291">            rand.setSeed(seed);</span>
+        }
+<span class="fc" id="L2293">    }</span>
+
+        /** printing output in a viewable formatting style. The printing  
+         * &lt;pre&gt;
+         * Iteration,#Fevals: rb Function Value Delta( best ,worst) |idx: Max SD idx: Min SD  | minsigD  sigma Axisratio | time, in eig
+         *   164( 8),   1638: 5.5061568003892640e-08 (-4e-08,3e-08) |  0: 3.3e-05  8: 1.5e-05 | 1.4e-05 5.6e-05   2.34   |  0.1  0.0 
+         *&lt;/pre&gt;
+         * shows the value of getPrintAnnotation() in the first line and in the second line
+         * &lt;li&gt;164 iteration number 
+         * &lt;li&gt;( 8) recently sampled search point in this iteration, 
+         * &lt;li&gt;1638: number of function evaluations
+         * &lt;li&gt;5.5061568003892640e-08 objective function value F of the best point 
+         * in the recent generation
+         * &lt;li&gt;(-4e-08, difference between the best ever evaluated function value to F,
+         * &lt;li&gt;3e-08) | difference between the worst function value of the recent generation to F
+         * &lt;li&gt;0: index of coordinate with largest standard deviation
+         * &lt;li&gt;3.3e-05 respective standard deviation
+         * &lt;li&gt;8: index of coordinate with smallest standard deviation
+         * &lt;li&gt;1.5e-05 | respective standard deviation
+         * &lt;li&gt;index of coordinate with smallest standard deviation: respective standard deviation
+         * &lt;li&gt;| 1.4e-05 standard deviation in smallest principal axis direction
+         * &lt;li&gt; 5.6e-05 sigma
+         * &lt;li&gt; 2.34 axisratio, ie. quotient between the standard deviations in largest an 
+         * smallest principal axis directions, ie. square root of the quotient between largest 
+         * and smallest eigenvalue of covariance matrix C
+         * &lt;li&gt; 0.1 time, overall elapsed time in seconds
+         * &lt;li&gt; 0.0 in eig, overall time spent within eigendecompostion
+         * @see #getPrintAnnotation()
+         * */
+    public String getPrintLine() {
+            /* 				   String.format(Locale.US, &quot; %1$4d(%2$2d): %3$5d &quot;, 
+             new Object[]{
+             new Long(countiter),
+             new Integer(idxRecentOffspring),
+             new Long(counteval)
+             })  
+             + String.format(Locale.US, &quot;%1$.16e (%2$+.0e %3$.0e)&quot;, 
+             new Object[]{
+             new Double(recentFunctionValue),
+             new Double(getBestFunctionValue() - recentFunctionValue),
+             new Double(recentMaxFunctionValue - recentFunctionValue)
+             })  
+             + String.format(Locale.US, &quot;%1$7.2f &quot;, 
+             new Object[]{
+             new Double(axisratio)
+             }) 
+             + String.format(Locale.US, &quot;%1$2d:%2$8.1e %3$2d:%4$8.1e&quot;, 
+             new Object[]{
+             new Integer(math.minidx(math.diag(C))), 
+             new Double(sigma * 
+             Math.sqrt(math.min(math.diag(C)))),
+             new Integer(math.maxidx(math.diag(C))), 
+             new Double(sigma * 
+             Math.sqrt(math.max(math.diag(C))))
+             })
+             */
+            String s;
+<span class="pc bpc" id="L2350" title="1 of 2 branches missed.">            if (state &lt; 0)</span>
+<span class="nc" id="L2351">                s = new String(</span>
+<span class="nc" id="L2352">                        new PrintfFormat(Locale.US, &quot; %4d&quot;).sprintf(countiter) +</span>
+<span class="nc" id="L2353">                        new PrintfFormat(Locale.US, &quot;(%2d), &quot;).sprintf(0) + </span>
+<span class="nc" id="L2354">                        new PrintfFormat(Locale.US, &quot;%6.0d: &quot;).sprintf(counteval));</span>
+            else    
+<span class="fc" id="L2356">                s = new String(</span>
+<span class="fc" id="L2357">                        new PrintfFormat(Locale.US, &quot; %4d&quot;).sprintf(countiter) +</span>
+<span class="fc" id="L2358">                        new PrintfFormat(Locale.US, &quot;(%2d), &quot;).sprintf(idxRecentOffspring+1) + </span>
+<span class="fc" id="L2359">                        new PrintfFormat(Locale.US, &quot;%6.0d: &quot;).sprintf(counteval) + </span>
+<span class="fc" id="L2360">                        new PrintfFormat(Locale.US, &quot;%.16e &quot;).sprintf(recentFunctionValue) + </span>
+<span class="fc" id="L2361">                        new PrintfFormat(Locale.US, &quot;(%+.0e,&quot;).sprintf(getBestFunctionValue() - recentFunctionValue) + </span>
+<span class="fc" id="L2362">                        new PrintfFormat(Locale.US, &quot;%.0e) | &quot;).sprintf(recentMaxFunctionValue - recentFunctionValue) + </span>
+<span class="fc" id="L2363">                        new PrintfFormat(Locale.US, &quot;%2d:&quot;).sprintf(math.maxidx(math.diag(C))) + </span>
+<span class="fc" id="L2364">                        new PrintfFormat(Locale.US, &quot;%8.1e &quot;).sprintf(sigma * maxsqrtdiagC) +</span>
+<span class="fc" id="L2365">                        new PrintfFormat(Locale.US, &quot;%2d:&quot;).sprintf(math.minidx(math.diag(C))) + </span>
+<span class="fc" id="L2366">                        new PrintfFormat(Locale.US, &quot;%8.1e &quot;).sprintf(sigma * minsqrtdiagC) + </span>
+<span class="fc" id="L2367">                        new PrintfFormat(Locale.US, &quot;| %6.1e &quot;).sprintf(sigma*math.min(diagD)) +</span>
+<span class="fc" id="L2368">                        new PrintfFormat(Locale.US, &quot;%6.1e &quot;).sprintf(sigma) + </span>
+<span class="fc" id="L2369">                        new PrintfFormat(Locale.US, &quot;%6.2f&quot;).sprintf(axisratio) +</span>
+<span class="fc" id="L2370">                        new PrintfFormat(Locale.US, &quot;   | %4.1f &quot;).sprintf((System.currentTimeMillis()-timings.start) / 1000.) +</span>
+<span class="fc" id="L2371">                        new PrintfFormat(Locale.US, &quot;%4.1f &quot;).sprintf(timings.eigendecomposition / 1000.) </span>
+                );
+            
+<span class="fc" id="L2374">            return s;</span>
+            
+            /*
+             return new String(
+             new Long(countiter) 
+             + &quot; &quot; +						   new Integer(idxRecentOffspring)
+             + &quot; &quot; +						   new Long(counteval)
+             + &quot; &quot; +						   new Double(recentFunctionValue)
+             //				+ &quot; &quot; +  						   new Double(FunctionValue() - recentFunctionValue)
+              //				+ &quot; &quot; +  						   new Double(recentMaxFunctionValue - recentFunctionValue)
+               + &quot; &quot; +  						   new Double(axisratio)
+               + &quot; &quot; +  						   new Integer(math.minidx(math.diag(C))) 
+               + &quot; &quot; +  						   new Double(sigma * 
+               Math.sqrt(math.min(math.diag(C))))
+               + &quot; &quot; +						   new Integer(math.maxidx(math.diag(C))) 
+               + &quot; &quot; +						   new Double(sigma * 
+               Math.sqrt(math.max(math.diag(C))))
+               );
+               */
+            /* formatting template
+             String.format(Locale.US, &quot;%1$6.2e %2$+.0e&quot;, 
+             new Object[]{
+             new Double(),
+             new Double()
+             })  
+             
+             */		   
+            //		   out.print(math.min(diagD));
+    //      out.print(&quot; &quot;);
+    //      new DecimalFormat(&quot;0.00E0&quot;).format((3.34)) + &quot; &quot; + 
+    //      (cma.fit.fitness[(cma.parameters.getLambda()/2)].d 
+    //      - cma.fit.fitness[0].d) + &quot;,&quot; +
+    //      cma.fit.fitness[cma.parameters.getLambda()-1].d + &quot;) | &quot; +
+            
+        }
+
+        /** returns an annotation string for the printings of method println(). */
+    public String getPrintAnnotation() {
+<span class="fc" id="L2412">        String s = new String(</span>
+        &quot;Iteration,#Fevals: rb Function Value Delta( best ,worst) |idx: Max SD idx: Min SD  | minsigD  sigma Axisratio | time, in eig&quot;);
+        //         491( 3),   3924: 1.1245467061992267e+00 (-2e-01,4e-01)  9: 7.8e-05  2: 5.0e-02 | 5.9e-03 1.3e-02 660.41 
+    
+<span class="fc" id="L2416">        return s;</span>
+    }
+
+        /** returns an informative initial message of the CMA-ES optimizer */
+    public String helloWorld() {
+<span class="fc" id="L2421">        String s = new String(</span>
+<span class="fc" id="L2422">                &quot;(&quot; + sp.getMu() + &quot;,&quot; + sp.getLambda() </span>
+<span class="fc" id="L2423">                + &quot;)-CMA-ES(mu_eff=&quot; + Math.round(10.*sp.getMueff())/10. + &quot;), Ver=\&quot;&quot; </span>
+                + versionNumber 
+                + &quot;\&quot;, dimension=&quot; + N 
+            	+ &quot;, &quot; + options.diagonalCovarianceMatrix + &quot; diagonal iter.&quot; 
+                + &quot;, randomSeed=&quot; + seed
+<span class="fc" id="L2428">                + &quot; (&quot; + new Date().toString() + &quot;)&quot;);</span>
+<span class="fc" id="L2429">        return s;</span>
+        
+    }
+    /** calls System.out.println(s) and writes s to the file outcmaesdisp.dat 
+     * by default, if writeDisplayToFile option is &gt; 0
+     * @see #getPrintLine() 
+     */
+    public void println(String s) {
+<span class="fc" id="L2437">        System.out.println(s);</span>
+<span class="pc bpc" id="L2438" title="1 of 2 branches missed.">        if (options.writeDisplayToFile &gt; 0)</span>
+<span class="fc" id="L2439">            writeToFile(options.outputFileNamesPrefix + &quot;disp&quot; + &quot;.dat&quot;, s, 1);</span>
+<span class="fc" id="L2440">    }</span>
+
+    /** calls println(getPrintLine()) 
+     * @see #getPrintLine() 
+     */
+    public void println() {
+<span class="fc" id="L2446">        println(getPrintLine());</span>
+<span class="fc" id="L2447">    }</span>
+
+    /** @see #getPrintAnnotation() */
+    public void printlnAnnotation() {
+<span class="fc" id="L2451">        println(getPrintAnnotation());</span>
+<span class="fc" id="L2452">    }</span>
+
+    /** calls println(helloWorld()) 
+         * @see #helloWorld() 
+         * @see #println(String)
+         */
+        public void printlnHelloWorld() {
+<span class="fc" id="L2459">            println(helloWorld());</span>
+<span class="fc" id="L2460">    }</span>
+
+    public String getDataRowFitness() {
+<span class="fc" id="L2463">        String s = new String();    </span>
+<span class="fc" id="L2464">        s = countiter + &quot; &quot; + counteval + &quot; &quot; + sigma + &quot; &quot; + axisratio + &quot; &quot;</span>
+        + bestever_fit + &quot; &quot;;
+<span class="pc bpc" id="L2466" title="1 of 2 branches missed.">        if (mode == SINGLE_MODE)</span>
+<span class="nc" id="L2467">            s += recentFunctionValue + &quot; &quot;;</span>
+        else  {
+<span class="fc" id="L2469">            s += fit.raw[0].val + &quot; &quot;;</span>
+<span class="fc" id="L2470">            s += fit.raw[sp.getLambda()/2].val + &quot; &quot;;</span>
+<span class="fc" id="L2471">            s += fit.raw[sp.getLambda()-1].val + &quot; &quot;;</span>
+<span class="fc" id="L2472">            s += math.min(diagD) + &quot; &quot;  </span>
+<span class="fc" id="L2473">            	+ (math.maxidx(math.diag(C))+1) + &quot; &quot; + sigma*maxsqrtdiagC + &quot; &quot; </span>
+<span class="fc" id="L2474">            	+ (math.minidx(math.diag(C))+1) + &quot; &quot;  + sigma*minsqrtdiagC;</span>
+            //for (int i = 0; i &lt; sp.getLambda(); ++i) {
+            //    s += fit.funValues[i].d + &quot; &quot;;
+            //}
+        }
+<span class="fc" id="L2479">        return s;</span>
+    }
+
+    public String getDataRowXRecentBest() {
+<span class="fc" id="L2483">        int idx = 0;</span>
+<span class="pc bpc" id="L2484" title="1 of 2 branches missed.">        if (mode == SINGLE_MODE)</span>
+<span class="nc" id="L2485">            idx = idxRecentOffspring; </span>
+<span class="fc" id="L2486">        String s = new String();    </span>
+<span class="pc bpc" id="L2487" title="1 of 2 branches missed.">        s = countiter + &quot; &quot; + counteval + &quot; &quot; + sigma + &quot; 0 &quot; </span>
+        	+ (state == 1 ? Double.NaN : fit.raw[idx].val) + &quot; &quot;;
+<span class="fc bfc" id="L2489" title="All 2 branches covered.">        for (int i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L2490">            s += arx[fit.raw[idx].i][i] + &quot; &quot;;</span>
+        }
+<span class="fc" id="L2492">        return s;</span>
+    }
+
+    public String getDataRowXMean() {
+<span class="fc" id="L2496">        String s = new String();    </span>
+<span class="fc" id="L2497">        s = countiter + &quot; &quot; + counteval + &quot; &quot; + sigma + &quot; 0 0 &quot;;</span>
+<span class="fc bfc" id="L2498" title="All 2 branches covered.">        for (int i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L2499">            s += xmean[i] + &quot; &quot;;</span>
+        }
+<span class="fc" id="L2501">        return s;</span>
+    }
+    /** 6-th to last column are sorted axis lengths axlen */
+    public String getDataRowAxlen() {
+<span class="fc" id="L2505">    	String s = new String();    </span>
+<span class="fc" id="L2506">    	s = countiter + &quot; &quot; + counteval + &quot; &quot; + sigma + &quot; &quot; + axisratio + &quot; &quot; </span>
+    	   + maxsqrtdiagC/minsqrtdiagC + &quot; &quot;; 
+<span class="fc" id="L2508">    	double[] tmp = diagD.clone();</span>
+<span class="fc" id="L2509">    	java.util.Arrays.sort(tmp);</span>
+<span class="fc bfc" id="L2510" title="All 2 branches covered.">    	for (int i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L2511">    		s += tmp[i] + &quot; &quot;;</span>
+    	}
+<span class="fc" id="L2513">    	return s;</span>
+    }
+    public String getDataRowStddev() {
+<span class="fc" id="L2516">    	String s = new String();    </span>
+<span class="fc" id="L2517">    	s = countiter + &quot; &quot; + counteval + &quot; &quot; + sigma + &quot; &quot; </span>
+<span class="fc" id="L2518">        + (1+math.maxidx(math.diag(C))) + &quot; &quot; + (1+math.minidx(math.diag(C))) + &quot; &quot;;</span>
+<span class="fc bfc" id="L2519" title="All 2 branches covered.">        for (int i = 0; i &lt; N; ++i) {</span>
+<span class="fc" id="L2520">            s += sigma * Math.sqrt(C[i][i]) + &quot; &quot;;</span>
+        }
+<span class="fc" id="L2522">        return s;</span>
+    }
+    /** correlations and covariances of the search distribution. The
+     * first, '%#'-commented row contains itertation number,
+     * evaluation number, and sigma. In the remaining rows the upper
+     * triangular part contains variances and covariances
+     * sigma*sigma*c_ij. The lower part contains correlations c_ij /
+     * sqrt(c_ii * c_jj).  */
+    public String getDataC() {
+	int i, j;
+<span class="nc" id="L2532">        String s = new String();    </span>
+<span class="nc" id="L2533">        s = &quot;%# &quot; + countiter + &quot; &quot; + counteval + &quot; &quot; + sigma + &quot;\n&quot;;</span>
+<span class="nc bnc" id="L2534" title="All 2 branches missed.">        for (i = 0; i &lt; N; ++i) {</span>
+<span class="nc bnc" id="L2535" title="All 2 branches missed.">	    for (j = 0; j &lt; i; ++j) // ouput correlation in the lower half</span>
+<span class="nc" id="L2536">		s += C[i][j] / Math.sqrt(C[i][i] * C[j][j]) + &quot; &quot;;</span>
+<span class="nc bnc" id="L2537" title="All 2 branches missed.">	    for (j = i; j &lt; N; ++j) </span>
+<span class="nc" id="L2538">		s += sigma * sigma * C[i][j] + &quot; &quot;;</span>
+<span class="nc" id="L2539">	    s += &quot;\n&quot;;</span>
+        }
+<span class="nc" id="L2541">        return s;</span>
+    }
+    
+<span class="pc" id="L2544">    private String[] fileswritten = new String[]{&quot;&quot;}; // also (re-)initialized in init()</span>
+    /** writes a string to a file, overwrites first, appends afterwards. 
+     * &lt;p&gt;Example: cma.writeToFile(&quot;cmaescorr.dat&quot;, cma.writeC()); 
+     * @param filename is a String giving the name of the file to be written
+     * @param data is a String of text/data to be written
+     * @param flgAppend for flgAppend&gt;0 old data are not overwritten
+     */
+    public void writeToFile(String filename, String data, int flgAppend) {
+<span class="fc bfc" id="L2552" title="All 2 branches covered.">        boolean appendflag = flgAppend &gt; 0;</span>
+<span class="fc bfc" id="L2553" title="All 4 branches covered.">        for (int i = 0; !appendflag &amp;&amp; i &lt; fileswritten.length; ++i)</span>
+<span class="pc bpc" id="L2554" title="1 of 2 branches missed.">            if(filename.equals(fileswritten[i])) {</span>
+<span class="nc" id="L2555">                appendflag = true;</span>
+            }
+<span class="fc" id="L2557">        java.io.PrintWriter out = null;</span>
+        try {
+<span class="fc" id="L2559">            out = new java.io.PrintWriter(new java.io.FileWriter(filename, appendflag));</span>
+<span class="fc" id="L2560">            out.println(data);</span>
+<span class="fc" id="L2561">            out.flush(); // no idea whether this makes sense</span>
+<span class="fc" id="L2562">            out.close();</span>
+<span class="nc" id="L2563">        } catch (java.io.FileNotFoundException e) {</span>
+<span class="nc" id="L2564">            warning(&quot;Could not find file '&quot; + filename  + &quot;'(FileNotFoundException)&quot;);</span>
+<span class="nc" id="L2565">        } catch (java.io.IOException e) {</span>
+<span class="nc" id="L2566">            warning(&quot;Could not open/write to file &quot; + filename);</span>
+            //e.printStackTrace();            // output goes to System.err
+            //e.printStackTrace(System.out);  // send trace to stdout
+        } finally {
+<span class="pc bpc" id="L2570" title="7 of 8 branches missed.">            if (out != null)</span>
+<span class="pc" id="L2571">                out.close();</span>
+        }
+        // if first time written
+        // append filename to fileswritten
+<span class="fc bfc" id="L2575" title="All 2 branches covered.">        if (appendflag == false) { </span>
+<span class="fc" id="L2576">            String s[] = fileswritten;</span>
+<span class="fc" id="L2577">            fileswritten = new String[fileswritten.length+1];</span>
+<span class="fc bfc" id="L2578" title="All 2 branches covered.">            for (int i = 0; i &lt; s.length; ++i)</span>
+<span class="fc" id="L2579">                fileswritten[i] = s[i];</span>
+<span class="fc" id="L2580">            fileswritten[fileswritten.length-1] = new String(filename);</span>
+        }
+<span class="fc" id="L2582">    }</span>
+    /** writes data output to default files. Uses opts.outputFileNamesPrefix to create filenames. 
+     * Columns 1-2 are iteration number and function evaluation count,  
+     * columns 6- are the data according to the filename. Maximum time spent
+     * for writing can be controlled in the properties file. 
+     * 
+     * &lt;p&gt;The output is written to files that can be printed in Matlab or Scilab (a free
+     * and easy to install Matlab &quot;clone&quot;).&lt;/p&gt;
+     * &lt;p&gt;
+     * Matlab:
+     * &lt;pre&gt;
+          cd 'directory_where_outfiles_and_plotcmaesdat.m_file_are'
+          plotcmaesdat;
+     * &lt;/pre&gt;
+     * Scilab:
+     * &lt;pre&gt;
+          cd 'directory_where_outfiles_and_plotcmaesdat.sci_file_are'
+          getf('plotcmaesdat.sci');
+          plotcmaesdat;
+     * &lt;/pre&gt;
+     * &lt;/p&gt;
+     * @see #writeToDefaultFiles(String fileNamePrefix)
+     * @see #writeToDefaultFiles(int)
+     *  */
+    public void writeToDefaultFiles() {
+<span class="fc" id="L2607">        writeToDefaultFiles(options.outputFileNamesPrefix);</span>
+<span class="fc" id="L2608">    }</span>
+    /** writes data output to default files. Maximum time spent
+     * for writing can be controlled in the properties file. For negative values
+     * no writing takes place, overruling the &lt;code&gt;flgForce&lt;/code&gt; input parameter below.
+     *  
+     * @param flgForce 0==write depending on time spent with writing, 
+     * 1==write if the iteration count has changed, 
+     * 2==write always, overruled by negative values of maxTimeFractionForWriteToDefaultFiles property
+     *  
+     * @see #writeToDefaultFiles() */
+    public void writeToDefaultFiles(int flgForce) {
+<span class="pc bpc" id="L2619" title="2 of 4 branches missed.">        if (flgForce &gt; 0 &amp;&amp; countiter != citerlastwritten) </span>
+<span class="fc" id="L2620">            citerlastwritten = -1; // force writing if something new is there</span>
+<span class="pc bpc" id="L2621" title="1 of 2 branches missed.">        if (flgForce &gt;= 2)</span>
+<span class="nc" id="L2622">            citerlastwritten = -1; // force writing </span>
+<span class="fc" id="L2623">        writeToDefaultFiles(options.outputFileNamesPrefix);</span>
+<span class="fc" id="L2624">    }</span>
+    /** 
+     * writes data to files &lt;tt&gt;fileNamePrefix&lt;/tt&gt;fit.dat, ...xmean.dat
+     * ...xbest.dat, ...std.dat, ...axlen.dat.
+     * @see #writeToDefaultFiles() 
+     * @param fileNamePrefix prefix String for filenames created to write data */
+    public void writeToDefaultFiles(String fileNamePrefix) {
+
+<span class="pc bpc" id="L2632" title="1 of 2 branches missed.">        if (options.maxTimeFractionForWriteToDefaultFiles &lt; 0) // overwrites force flag</span>
+<span class="nc" id="L2633">            return;</span>
+<span class="fc bfc" id="L2634" title="All 2 branches covered.">        if (citerlastwritten &gt;= 0) { // negative value forces writing</span>
+<span class="pc bpc" id="L2635" title="1 of 2 branches missed.">            if (state &lt; 1)</span>
+<span class="nc" id="L2636">                return;</span>
+<span class="pc bpc" id="L2637" title="1 of 2 branches missed.">            if (countiter == citerlastwritten)</span>
+<span class="nc" id="L2638">                return; </span>
+<span class="pc bpc" id="L2639" title="1 of 2 branches missed.">            if (options.maxTimeFractionForWriteToDefaultFiles &lt;= 0)</span>
+<span class="nc" id="L2640">                return;</span>
+<span class="pc bpc" id="L2641" title="1 of 6 branches missed.">            if (countiter &gt; 4 &amp;&amp; stopConditions.index == 0  // has no effect if stopCondition.test() was not called</span>
+                    // iteration gap is less than two times of the average gap, to not have large data holes
+                    // spoils the effect of reducing the timeFraction late in the run
+                    &amp;&amp; countiter - citerlastwritten - 1 &lt; 2.*(countiter - countwritten + 1.) / (countwritten + 1.)
+                    // allowed time is exhausted
+                    &amp;&amp; timings.writedefaultfiles &gt; options.maxTimeFractionForWriteToDefaultFiles 
+<span class="fc bfc" id="L2647" title="All 2 branches covered.">                    * (System.currentTimeMillis() - timings.start)) </span>
+<span class="fc" id="L2648">                return;</span>
+        }
+
+<span class="fc" id="L2651">        long firsttime = System.currentTimeMillis();</span>
+<span class="fc" id="L2652">        writeToFile(fileNamePrefix + &quot;fit.dat&quot;, getDataRowFitness(), 1);</span>
+<span class="fc" id="L2653">        writeToFile(fileNamePrefix + &quot;xmean.dat&quot;, getDataRowXMean(), 1);</span>
+<span class="fc" id="L2654">        writeToFile(fileNamePrefix + &quot;xrecentbest.dat&quot;, getDataRowXRecentBest(), 1);</span>
+<span class="fc" id="L2655">        writeToFile(fileNamePrefix + &quot;stddev.dat&quot;, getDataRowStddev(), 1); // sigma*sqrt(diag(C))</span>
+<span class="fc" id="L2656">        writeToFile(fileNamePrefix + &quot;axlen.dat&quot;, getDataRowAxlen(), 1);</span>
+<span class="fc" id="L2657">        timings.writedefaultfiles += System.currentTimeMillis() - firsttime;</span>
+//        System.out.println(timings.writedefaultfiles + &quot; &quot; 
+//                + (System.currentTimeMillis()-timings.start)  + &quot; &quot; + opts.maxTimeFractionForWriteToDefaultFiles);
+<span class="fc bfc" id="L2660" title="All 2 branches covered.">        if (countiter &lt; 3)</span>
+<span class="fc" id="L2661">            timings.writedefaultfiles = 0;</span>
+        
+<span class="fc" id="L2663">        ++countwritten; </span>
+<span class="fc" id="L2664">        citerlastwritten = countiter;</span>
+<span class="fc" id="L2665">    }</span>
+    /** writes header lines to the default files. Could become XML if needed. 
+     * 
+     * @param flgAppend == 0 means overwrite files,  == 1 means append to files
+     */
+    public void writeToDefaultFilesHeaders(int flgAppend) {
+<span class="fc" id="L2671">        writeToDefaultFilesHeaders(options.outputFileNamesPrefix, flgAppend);</span>
+<span class="fc" id="L2672">    }</span>
+    /** 
+     * Writes headers (column annotations) to files &lt;prefix&gt;fit.dat, ...xmean.dat
+     * ...xbest.dat, ...std.dat, ...axlen.dat, and in case the first data
+     * line, usually with the initial values. 
+     * @param fileNamePrefix String for filenames created to write data */
+    public void writeToDefaultFilesHeaders(String fileNamePrefix, int flgAppend) {
+<span class="pc bpc" id="L2679" title="1 of 2 branches missed.">        if (options.maxTimeFractionForWriteToDefaultFiles &lt; 0) // overwrites force flag</span>
+<span class="nc" id="L2680">            return;</span>
+<span class="fc" id="L2681">        String s = &quot;(randomSeed=&quot; + seed + &quot;, &quot; + new Date().toString() + &quot;)\n&quot;;</span>
+<span class="fc" id="L2682">        writeToFile(fileNamePrefix + &quot;fit.dat&quot;, </span>
+        		&quot;%# iteration evaluations sigma axisratio fitness_of(bestever best median worst) mindii &quot;
+        		+ &quot;idxmaxSD maxSD idxminSD minSD &quot; 
+        		+ s, flgAppend);
+<span class="fc" id="L2686">        writeToFile(fileNamePrefix + &quot;xmean.dat&quot;, </span>
+        &quot;%# iteration evaluations sigma void void mean(1...dimension) &quot; + s, flgAppend);
+<span class="pc bpc" id="L2688" title="1 of 2 branches missed.">        if (state == 0)</span>
+<span class="fc" id="L2689">            writeToFile(fileNamePrefix + &quot;xmean.dat&quot;, getDataRowXMean(), 1);</span>
+<span class="fc" id="L2690">        writeToFile(fileNamePrefix + &quot;xrecentbest.dat&quot;, </span>
+        &quot;%# iteration evaluations sigma void fitness_of_recent_best x_of_recent_best(1...dimension) &quot; 
+        		+ s, flgAppend);
+<span class="fc" id="L2693">        writeToFile(fileNamePrefix + &quot;stddev.dat&quot;, </span>
+                &quot;%# iteration evaluations sigma idxmaxSD idxminSD SDs=sigma*sqrt(diag(C)) &quot; 
+        		+ s, flgAppend);
+<span class="pc bpc" id="L2696" title="1 of 2 branches missed.">        if (state == 0)</span>
+<span class="fc" id="L2697">            writeToFile(fileNamePrefix + &quot;stddev.dat&quot;, getDataRowStddev(), 1);</span>
+<span class="fc" id="L2698">        writeToFile(fileNamePrefix + &quot;axlen.dat&quot;, </span>
+            &quot;%# iteration evaluations sigma axisratio stddevratio sort(diag(D)) (square roots of eigenvalues of C) &quot; 
+        		+ s, flgAppend);
+<span class="pc bpc" id="L2701" title="1 of 2 branches missed.">        if (state == 0)</span>
+<span class="fc" id="L2702">            writeToFile(fileNamePrefix + &quot;axlen.dat&quot;, getDataRowAxlen(), 1);</span>
+<span class="fc" id="L2703">    }</span>
+
+    /** very provisional error handling. Methods of the class
+     * CMAEvolutionStrategy might throw the CMAException, that
+     * need not be catched, because it extends the &quot;unchecked&quot;
+     * RuntimeException class */ 
+    public class CMAException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+    
+        CMAException(String s) {
+            super(s);
+        }
+    }
+}
+
+class IntDouble implements Comparator&lt;IntDouble&gt; {
+    int i;    // unique integer value, useful after sorting
+    double val; // double value
+<span class="nc" id="L2721">    public IntDouble(double d, int i) {</span>
+<span class="nc" id="L2722">        this.val = d;</span>
+<span class="nc" id="L2723">        this.i = i;</span>
+<span class="nc" id="L2724">    }</span>
+<span class="nc" id="L2725">    public IntDouble(double d) {</span>
+<span class="nc" id="L2726">        this.val = d;</span>
+<span class="nc" id="L2727">    }</span>
+<span class="fc" id="L2728">    public IntDouble() {</span>
+<span class="fc" id="L2729">    }</span>
+    public int compare(IntDouble o1, IntDouble o2) {
+<span class="fc bfc" id="L2731" title="All 2 branches covered.">        if (o1.val &lt; o2.val)</span>
+<span class="fc" id="L2732">            return -1;</span>
+<span class="pc bpc" id="L2733" title="1 of 2 branches missed.">        if (o1.val &gt; o2.val)</span>
+<span class="fc" id="L2734">            return 1;</span>
+<span class="nc bnc" id="L2735" title="All 2 branches missed.">        if (o1.i &lt; o2.i)</span>
+<span class="nc" id="L2736">            return -1;</span>
+<span class="nc bnc" id="L2737" title="All 2 branches missed.">        if (o1.i &gt; o2.i)</span>
+<span class="nc" id="L2738">            return 1;</span>
+<span class="nc" id="L2739">        return 0;</span>
+    }
+    
+    public boolean equals(IntDouble o1, IntDouble o2) {
+<span class="nc bnc" id="L2743" title="All 2 branches missed.">        if (o1.compare(o1, o2) == 0) // &amp;&amp; o1.hashCode() == o2.hashCode()</span>
+<span class="nc" id="L2744">            return true;</span>
+<span class="nc" id="L2745">        return false;</span>
+    }
+} // IntDouble
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
