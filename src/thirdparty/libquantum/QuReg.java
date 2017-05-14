@@ -44,13 +44,58 @@ public class QuReg {
     }*/
     static int quantum_hash64(int key, int width) {
 
-        long k = (key & 0x7FFFFFFF) ^ (key >> 31);
-        k *= 1327202304L; // 0x9e370001UL >> 1
+        //this will always be == key value unless allow key type to be long
+        //long k = (key & 0x7FFFFFFF) ^ (key >> 31);
+        long k =  key * 1327202304L; // factor is 0x9e370001UL >> 1 which is 30.3057
         k &= ((1 << 31) - 1);
         k = k >> (31L - width);
         
         return (int) k;
     }
+    
+    /*
+    static int quantum_hash64_approx(int key, int width) {
+
+        A look at rewriting the above without branch logic and for a
+        platform that is only 32 bits and has no long representation 
+        as a bit mask exercise...
+        the result is that the resulting range of values is too small because
+            the factor, when made into a log2 integer, is too close to the
+            31 bits.
+            so factor would need to be changed for better results.
+        
+        key = argument given
+        factor = 1327202304
+        factorbits = 30.30574114988822 = 31  (can be determing w/ bit twiddling)
+        keybits = number of bits of key
+        
+        avoiding overflow for k =  key * factor:
+            since 2^a * 2^b = 2^(a+b)
+            have total number of bits thus far = keybits + factorbits
+            
+        mask by 31 bits
+            (keybits + factorbits) retains full value if sum is less than 31
+            else result is 0
+               will use the java ability of >>> to determine a sign, 
+               int sign = (totalbits - 31) >>> 31
+        
+        then subtract 31-width from the running total number of bits
+        
+        then shift 1 left by the result 
+        
+        here is the algorithm revised to use only the positive portion of
+        an integer, and to use bit shifts without branching also.
+    
+        int keybits = MiscMath.numberOfBits(key);
+        int factorbits = 30; // 30.30574114988822
+        int totalbits = keybits + factorbits;
+        int sign = (totalbits - 31) >>> 31;
+        totalbits -= sign * (31 - width);
+        
+        int k32 = 1 << totalbits;
+        return k32;
+    }
+    */
 
     /**
      * Get the position of a given base state via the hash table
@@ -407,7 +452,24 @@ public class QuReg {
     }
 
     /**
-     * Compute the Kronecker product of two quantum registers
+     * Compute the Kronecker product of two quantum registers.
+     * 
+     * <pre>
+     *   if reg1 is A which is a 2^n vector and 
+     *   reg2 is B which is a 2^m vector,
+     *  
+     *      the kronecker product is
+     * 
+     *      |A> ⊗ |B> is  | A_1 * B_1         |
+     *                    | A_1 * B_2         |
+     *                       ...
+     *                    | A_1 * B_(2^m)     |
+     *                        ...
+     *                    | A_2 * B_1         |
+     *                        ...
+     *                    | A_(2^n) * B_(2^m) |
+     * </pre>
+     *
      */
     QuantumReg quantum_kronecker(QuantumReg reg1, QuantumReg reg2) {
   
@@ -528,7 +590,18 @@ public class QuReg {
     }
 
     /**
-     * Compute the dot product of two quantum registers
+     * Compute the dot product of two quantum registers.
+     * 
+     * <pre>
+     * |psi> = summation over j of alpha*_j * |j>
+     * 
+     * |phi> = summation over j of beta*_j * |j>
+     * 
+     * dot product
+     * (psi|phi> = summation over j of alpha*_j * beta_j
+     * 
+     * </pre>
+     *
      */
     ComplexModifiable quantum_dot_product(QuantumReg reg1, QuantumReg reg2) {
         
