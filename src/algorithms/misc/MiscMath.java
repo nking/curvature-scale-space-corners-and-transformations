@@ -1389,24 +1389,39 @@ public class MiscMath {
         }
         return new int[]{xMin, xMax, yMin, yMax};
     }
-
-    public static int numberOfBits(long i) {
+    
+    /**
+     * determine the number of bits without branching
+     * @param x
+     * @return 
+     */
+    public static int numberOfBits(int x) {
+        //from http://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer
+        //    referencing: http://books.google.com/books?id=iBNKMspIlqEC
+        x = x - ((x >> 1) & 0x55555555);
+        x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+        x = (x + (x >> 4)) & 0x0F0F0F0F;
+        x = x + (x >> 8);
+        x = x + (x >> 16);
+        x = x & 0x0000003F;
+        return x;
+    }
+  
+    /**
+     * determine the number of bits without branching
+     * @param c
+     * @return 
+     */
+    public static int numberOfBits(long v) {
         
-        if (i == 0) {
-            return 1;
-        }
-        
-        if (i < 0) {
-            i *= -1;
-        }
-        
-        int count = 0;
-        while (i > 0) {
-            i >>= 1L;
-            count++;
-        }
-        return count;
-        
+        //http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogFloat
+        long c =  ((v & 0xfff) * 0x1001001001001L 
+            & 0x84210842108421L) % 0x1f;
+        c = c + (((v & 0xfff000) >> 12) * 0x1001001001001L 
+            & 0x84210842108421L) % 0x1f;
+        c = c + ((v >> 24) * 0x1001001001001L 
+            & 0x84210842108421L) % 0x1f;
+        return (int)c;
     }
     
     /**
