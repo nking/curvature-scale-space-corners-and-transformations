@@ -86,7 +86,8 @@ public class QuReg {
         here is the algorithm revised to use only the positive portion of
         an integer, and to use bit shifts without branching also.
     
-        int keybits = MiscMath.numberOfBits(key);
+        int keybits = MiscMath.numberOfBitsWOB(key);
+        // factorbits should probably depend upon width
         int factorbits = 30; // 30.30574114988822
         int totalbits = keybits + factorbits;
         int sign = (totalbits - 31) >>> 31;

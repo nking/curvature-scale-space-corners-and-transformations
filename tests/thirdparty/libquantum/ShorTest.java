@@ -35,6 +35,9 @@ public class ShorTest extends TestCase {
         int nTests = 100;
         int nCorrect = 0;
         
+        int maxNRetries = 0;
+        int nRetries = 0;
+        
         for (int i = 0; i < nTests; ++i) {
             
             Shor shor = new Shor(15, 8);
@@ -45,11 +48,18 @@ public class ShorTest extends TestCase {
                 Arrays.sort(factors);
                 if (Arrays.equals(expected, factors)) {
                     nCorrect++;
+                    if (nRetries > maxNRetries) {
+                        maxNRetries = nRetries;
+                    }
+                    nRetries = 0;
+                } else {
+                    nRetries++;
                 }
             } 
         }
         
-        System.out.println("nTests=" + nTests + " nCorect=" + nCorrect);
+        System.out.println("nTests=" + nTests + " nCorrect=" + nCorrect +
+            " max number of retries between fails=" + maxNRetries);
         
     }
 }

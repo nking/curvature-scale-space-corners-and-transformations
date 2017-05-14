@@ -545,6 +545,8 @@ public class MiscMathTest extends TestCase {
             String bitstring = Integer.toBinaryString(i);
             int expected = bitstring.length();
             int result = MiscMath.numberOfBits(i);
+   // System.out.println(i + ") " + bitstring 
+   // + " exp=" + expected + " r=" + result);
             assertTrue(expected == result);
         }
     }
@@ -686,16 +688,24 @@ public class MiscMathTest extends TestCase {
     }
     
     public void testWriteToBigEndianBytes() {
-                
-        for (long i = 0; i < 62; ++i) {
+        
+        long v;
+        byte[] bytes;
+      
+        for (long i = 0; i < 63; ++i) {
             
-            long v = 1 << i;
+            v = 1L << i;
             
-            byte[] bytes = MiscMath.writeToBigEndianBytes(v);
+            bytes = MiscMath.writeToBigEndianBytes(v);
+           
+            int bitLength0 = BigInteger.valueOf(v).bitLength() - 1;
             
             BigInteger b = new BigInteger(bytes);
             
-            if (b.bitLength() > 63) {
+            //System.out.println("bitLength=" + 
+            //    " " + bitLength0 + " expected=" + i);
+            
+            if (bitLength0 > 63) {
                 throw new ArithmeticException("the result will not fit in a long");
             }
             long r = b.longValue();
