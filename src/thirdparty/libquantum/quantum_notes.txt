@@ -18,6 +18,29 @@ a simulated quantum computer on a classical computer.
  the Euclidean or L2 norm.
  Also, because the states are represented by spin, 
  quantum computations are reversible.
+
+    from the paper
+    "IS QUANTUM SEARCH PRACTICAL?" 2005, by 
+        VIAMONTES, MARKOV, AND HAYES
+   In a circuit design of the steps of linear algebra to
+   perform, the parallel composition of
+   gates uses the tensor product (Kronecker( and
+   the serial composition uses the ordinary matrix product.
+
+   The state vectors and gate matrices that
+   appear in typical quantum simulations are anything
+   but unstructured. In particular, they compress well
+   when simulated using the Quantum Information
+   Decision Diagram (QuIDD) data structure. A
+   QuIDD is a directed acyclic graph with one source
+   and multiple sinks, where each sink is labeled with
+   a complex number. Matrix and vector elements are
+   modeled by directed paths in the graph, as Figure 1
+   illustrates. Linear-algebraic operations can then be
+   implemented by graph algorithms in terms of compressed
+   data representations. Using data compression
+   might substantially reduce simulation runtime
+   for specific applications
     
 notes from "Basic concepts in quantum computation" by 
        Ekert, Hayden, and Inamori
@@ -141,7 +164,7 @@ the size of the function's domain.
                 
     Although the algorithm is commonly called a database search algorithm,
     it can also be thought of as a function inverter in that
-    give y = f(x),
+    given y = f(x),
          one can find an x that has the given y
                 
     can also be used for :
@@ -164,9 +187,9 @@ in a Haystack" by Grover
       (1) create superposition
           (wherein the amplitude of the system being in 
           any of the 
-          N basic states of the system is equal
+          N basic states of the system is equal)
       (2) the Walsh-Hadamard transformation operation, 
-      (3) third the selective rotation of the phases of states.
+      (3) the selective rotation of the phases of states.
              
         
      a basic quantum computer operation operates on a 
@@ -231,17 +254,66 @@ in a Haystack" by Grover
 
 the algorithm outline is:
     (1) Initialize the system to the state
-        {\displaystyle |s\rangle ={\frac {1}{\sqrt {N}}}\sum _{x=0}^{N-1}|x\rangle } |s\rang = \frac{1}{\sqrt{N}} \sum_{x=0}^{N-1} |x\rang .
+         |s> = (1/sqrt(N)) * summation over x=0 to N-1 of (|x>)
     (2) Perform the following "Grover iteration" r(N) times. 
-        The function r(N), which is asymptotically O(N1/2), 
+        The function r(N), which is asymptotically O(N^(1/2)), 
         is described below.
-        -- Apply the operator 
-           {\displaystyle U_{\omega }} U_{\omega }.
-           U_w is the oracle operator
-        -- Apply the operator {\displaystyle U_{s}} U_{s}.
+        -- Apply the operator U_w
+           U_w is the oracle operator.
+        
+           The oracle is a unitary operator operating on two qubits:
+                    U_w
+            |x>|q> ----> |x>|q⊗f(x)>
+            |x>  is the index qubit
+            |q> is the oracle qubit
+            ⊗ is addition modulo 2
+                    
+            this is usually written as
+                        U_w
+                |x>|q> ----> (-1)^(f(x)) * |x>          
+
+        -- Apply the operator U_s
    (3) Perform the measurement Ω. The measurement 
-       result will be eigenvalue 
-       λω with probability approaching 1 for N ≫ 1. 
-       From λω, ω may be obtained.
+       result will be eigenvalue λ_ω with probability approaching 1 
+       for N >> 1. 
+       From λ_ω, ω may be obtained.
 
 --------
+    regarding the oracle for Grover's:
+
+    from the paper
+    "IS QUANTUM SEARCH PRACTICAL?" 2005, by 
+        VIAMONTES, MARKOV, AND HAYES
+
+    for an oracle p(x) that can be evaluated on any record x
+    of the database, the aalgorithm then looks for an x
+    such that p(x) = 1. In this context, x can be addressed
+    by a k bit string, and the database can contain
+    up to N = 2k records.
+    Classically, we can evaluate or query p() on one
+    input at a time. In the quantum domain, however,
+    if p() can be evaluated on either x or y, then it can
+    also be evaluated on the superposition (x + y)/sqrt(2),
+    with the result (p(x) + p(y))/sqrt(2). 
+    This quantum parallelism enables search with sqrt(N)queries. 
+    If M elements satisfy the predicate, then sqrt(M/N)
+    queries suffice. The parallel evaluation of p() requires
+    a superposition of multiple bit strings at the
+    input, which can be achieved by starting in the
+    |00…0 state and applying the Hadamard gate H
+    on every qubit. This, of course, requires that p()
+    can interpret a bit string as a database record’s index
+    ...
+    To actually implement Grover’s algorithm
+    for a particular search problem, we must
+    explicitly construct p(). Several pitfalls are associated
+    with this important step and are related to the
+    complexity of p().
+    First, p(.) must be implemented on quantum hardware. 
+    Second small sale implementations of p(.) must exist
+      for the problem, else the number of gates combined
+      with the size of the database may make the implementation
+      of Grover's compuationally larger.
+    
+
+
