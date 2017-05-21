@@ -78,7 +78,7 @@ public class Classic {
             g -= i - 0.000005f;
             g = 1.0f / g;
 
-            if (i * den1 + den2 > QuReg.shiftLeftTruncate(width)) {
+            if (i * den1 + den2 > (2 << width)) {
                 break;
             }
 
@@ -90,8 +90,7 @@ public class Classic {
             num1 = num;
             den1 = den;
 
-        } while (Math.abs(((double) num / den) - f) > 1.0 / 
-            (2 * QuReg.shiftLeftTruncate(width)));
+        } while (Math.abs(((double) num / den) - f) > 1.0 / (2 * (1 << width)));
 
         aInOut[0] = num;
         bInOut[0] = den;
@@ -106,7 +105,7 @@ public class Classic {
         
         int i;
 
-        for (i = 1; QuReg.shiftLeftTruncate(i) < n; i++);
+        for (i = 1; 1<<i<n; i++);
 
         return i;
     }

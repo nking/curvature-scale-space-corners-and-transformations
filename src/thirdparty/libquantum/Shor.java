@@ -1,6 +1,7 @@
 package thirdparty.libquantum;
 
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import java.util.Random;
 
  /* shor.c: Implementation of Shor's factoring algorithm
@@ -26,6 +27,13 @@ import java.util.Random;
 
 */
 
+/**
+ * find the prime factors of a number.
+ * N is an odd composite.
+ * Also, ensure that N is not the power of a prime.
+ * can check by:
+ *    for all k .lte. log_2(N) that math.pow(N, k) is not an integer.
+ */
 public class Shor {
         
     private QuantumReg qr;
@@ -83,6 +91,9 @@ public class Shor {
         
         if (number < 15) {
             throw new IllegalArgumentException("Invalid number\n\n");
+        } else if (number > 32768) {
+            throw new IllegalArgumentException("number must"
+                + "be les than 32768");
         }
         
         this.N = number;
@@ -106,6 +117,9 @@ public class Shor {
         
         if (number < 15) {
             throw new IllegalArgumentException("Invalid number\n\n");
+        } else if (number > 32768) {
+            throw new IllegalArgumentException("number must"
+                + "be les than 32768");
         }
         
         this.N = number;
@@ -123,12 +137,26 @@ public class Shor {
      * @return returns 2 factors of number, else returns a single item error code. 
      */
     public int[] run() {
-            
-        int width = Classic.quantum_getwidth(N*N);
-        int swidth = Classic.quantum_getwidth(N);
-    
+        
+        /*
+        NOTE:
+           could consider out of context, the
+           "ESPRESSO algorithm", 
+               developed by Brayton et al. at the University of California, Berkeley
+           to look at optimizing gates for quantum algorithms.
+        
+        */
+        
+        // max width = 30 ==> max N is 32768, ontrained by array length
+        //int width = Classic.quantum_getwidth(N*N);
+        //int swidth = Classic.quantum_getwidth(N);
+        int width = MiscMath.numberOfBits(N * N);
+        int swidth = MiscMath.numberOfBits(N);
+        
+        
         System.out.println("SEED=" + rSeed);
-        System.out.format("N = %d, %d qubits required\n", N, width+3*swidth+2);
+        System.out.format("N = %d, width=%d, swidth=%d, %d qubits required\n", 
+            N, width, swidth, width+3*swidth+2);
         
         if (x == 0) {
             Classic classic = new Classic();
@@ -139,15 +167,18 @@ public class Shor {
         }
         
         int i;
-        int c,q,a,b, factor;
+        int q,a,b, factor;
 
         System.out.format("Random factor: %d of %d\n", x, N);
 
         QuReg qureg = new QuReg();
         
         QuantumReg qr = qureg.quantum_new_qureg(0, width);
+        
+        System.out.println("after construction, reg.size=" + qr.size
+          + " hash.length=" + qr.hash.length);
  
-        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
+        assert(qr.hash.length == (1 << qr.hashw));
         
         Gates gates = new Gates(rng);
        
@@ -155,15 +186,31 @@ public class Shor {
             gates.quantum_hadamard(i, qr);
         }
         
-        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
-         
+        System.out.println("after first hadamard, reg.size=" + qr.size
+          + " hash.length=" + qr.hash.length);
+                
+        /*{//DEBUG
+            qureg.quantum_print_qureg(qr);
+            for (i = 0; i < qr.size; i++) {
+                System.out.format("I %d %d\n", i, qr.node[i].state);
+            }
+        }*/
+        
+        assert(qr.hash.length == (1 << qr.hashw));
+        
         int nbits = 3 * swidth + 2;
-
         qureg.quantum_addscratch(nbits, qr);
-
+        
+        //qureg.quantum_print_qureg(qr);
+        
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         
-        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
+        //qureg.quantum_print_qureg(qr);
+        
+        System.out.println("after exp_mod_n, reg.size=" + qr.size
+          + " hash.length=" + qr.hash.length);
+        
+        assert(qr.hash.length == (1 << qr.hashw));
      
         Measure measure = new Measure();
         
@@ -171,19 +218,25 @@ public class Shor {
             measure.quantum_bmeasure(0, qr, rng);
         }
         
-        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
+        System.out.println("measure, reg.size=" + qr.size
+          + " hash.length=" + qr.hash.length);
+       
+        assert(qr.hash.length == (1 << qr.hashw));
  
         gates.quantum_qft(width,  qr);
 
+        System.out.println("after qft, reg.size=" + qr.size
+          + " hash.length=" + qr.hash.length);
+        
         for (i = 0; i < width / 2; i++) {
             gates.quantum_cnot(i, width - i - 1, qr);
             gates.quantum_cnot(width - i - 1, i, qr);
             gates.quantum_cnot(i, width - i - 1, qr);
         }
         
-        assert(qr.hash.length == QuReg.shiftLeftTruncate(qr.hashw));
+        assert(qr.hash.length == (1 << qr.hashw));
 
-        c = measure.quantum_measure(qr, rng);
+        long c = measure.quantum_measure(qr, rng);
 
         System.out.println("c=" + c);
 
@@ -202,7 +255,7 @@ public class Shor {
         System.out.format("Measured %d (%f), ", c, (float) c / q);
 
         Classic classic = new Classic();
-        int[] cInOut = new int[]{c};
+        int[] cInOut = new int[]{(int)c};
         int[] qInOut = new int[]{q};
         classic.quantum_frac_approx(cInOut, qInOut, width);
         c = cInOut[0];

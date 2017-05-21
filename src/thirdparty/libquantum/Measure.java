@@ -31,7 +31,7 @@ public class Measure {
      * Measure the contents of a quantum register
      */
     //MAX_UNSIGNED quantum_measure(QuantumReg reg, Random rng) {
-    int quantum_measure(QuantumReg reg, Random rng) {
+    long quantum_measure(QuantumReg reg, Random rng) {
         
         double r;
         int i;
@@ -46,7 +46,7 @@ public class Measure {
 
             r -= reg.node[i].amplitude.squareSum();
             if (0 >= r) {
-                return reg.node[i].getState();
+                return reg.node[i].state;
             }
         }
 
@@ -70,12 +70,25 @@ public class Measure {
         double pa = 0, r;
         //MAX_UNSIGNED pos2;
 
-        int pos2 = QuReg.shiftLeftTruncate(pos);
+        long pos2 = 1L << pos;
 
+        //System.out.format("REG.size=%d  pos2=%d\n", reg.size, pos2);
+        
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
-            if ((reg.node[i].getState() & pos2) == 0) {
+            
+            long st = reg.node[i].state; 
+            //System.out.format("%d) s=%d and=%d\n", 
+            //    i, st, (st & pos2));
+            
+            if ((st & pos2) == 0) {
+                
                 pa += reg.node[i].amplitude.squareSum();
+                
+                //System.out.format(
+                //    "  %d) re=%f im=%f pa=%f\n", 
+                //    i, reg.node[i].amplitude.re(),
+                //    reg.node[i].amplitude.im(), pa);
             }
         }
 
@@ -83,6 +96,8 @@ public class Measure {
         // and determine the result of the measurement 
 
         r = rng.nextDouble();
+        
+        //System.out.format("r=%f\n", r); 
         
         if (r > pa) {
             result = 1;
@@ -107,11 +122,11 @@ public class Measure {
         double d = 0, pa = 0, r;
         //MAX_UNSIGNED pos2;
 
-        int pos2 = QuReg.shiftLeftTruncate(pos);
+        long pos2 = 1L << pos;
 
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
-            if ((reg.node[i].getState() & pos2) == 0) {
+            if ((reg.node[i].state & pos2) == 0) {
                 pa += reg.node[i].amplitude.squareSum();
             }
         }
@@ -128,7 +143,7 @@ public class Measure {
         // ruled out by the measurement and get the absolute 
         // of the new register 
         for (i = 0; i < reg.size; i++) {
-            if ((reg.node[i].getState() & pos2) != 0) {
+            if ((reg.node[i].state & pos2) != 0) {
                 if (result == 0) {
                     reg.node[i].amplitude.setReal(0);
                     reg.node[i].amplitude.setImag(0);
@@ -153,7 +168,7 @@ public class Measure {
         out.node = new QuantumRegNode[size];
         for (int ii = 0; ii < reg.node.length; ii++) {
             reg.node[ii] = new QuantumRegNode();
-            reg.node[ii].setState(0);
+            reg.node[ii].state = 0;
             reg.node[ii].amplitude = new ComplexModifiable(0, 0);
         }
         out.hashw = reg.hashw;
@@ -164,7 +179,7 @@ public class Measure {
         // norm the quantum register 
         for (i = 0, j = 0; i < reg.size; i++) {
             if (reg.node[i].amplitude.abs() != 0) {
-                out.node[j].setState(reg.node[i].getState());
+                out.node[j].state = (reg.node[i].state);
                 out.node[j].amplitude.resetTo(reg.node[i].amplitude);
                 out.node[j].amplitude.times(1/Math.sqrt(d));
 

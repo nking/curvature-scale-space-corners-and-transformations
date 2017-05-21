@@ -74,7 +74,7 @@ public class ComplexModifiable {
     public double phase() { return Math.atan2(im, re); }  // between -pi and pi
 
     public double squareSum() {
-        return (re * re) + (im * im);
+        return Math.abs((re * re) + (im * im));
     }
     
     /**

@@ -104,7 +104,13 @@ public class Decoherence {
                 angle = 0;
 
                 for (j = 0; j < reg.width; j++) {
-                    if ((reg.node[i].getState() & QuReg.shiftLeftTruncate(j)) != 0) {
+                    
+                    System.out.format("decoh: (%d)%d AND=%d\n", j,
+                        reg.node[i].state, (1L << j),
+                        (reg.node[i].state & (1L << j))
+                    );
+                    
+                    if ((reg.node[i].state & (1L << j)) != 0) {
                         angle += nrands[j];
                     } else {
                         angle -= nrands[j];

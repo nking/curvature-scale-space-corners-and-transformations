@@ -43,17 +43,6 @@ public class QuantumRegNode {
     //MAX_UNSIGNED state;      /* j */
 
     public ComplexModifiable amplitude;
-    private int state = 0;
+    public long state = 0;
     
-    public void setState(int s) {
-        if (s < 0) {
-            log.warning("s < 0 so truncating to 0");
-            s = 0;
-        }
-        this.state = s;
-    }
-    
-    public int getState() {
-        return state;
-    }
 }

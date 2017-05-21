@@ -315,5 +315,17 @@ the algorithm outline is:
       with the size of the database may make the implementation
       of Grover's compuationally larger.
     
+    --- 
+    from "Quantum exhaustive key search with simplified-DES as a case study" 
+     by Almazrooie, Samsudin, Abdullah, and Mutter
 
+    created using libquantum, a quantum circuit for a classical block
+    cipher.  the circuit size is polynomial in the number of quantum gates.
+    The cipher is used as a black box oracle in the Grover search.
+    The quantum oracle is then queried over the produced ciphertext 
+    to mark the quantum state, which consists of plaintext and key 
+    qubits. 
+    ** The experimental results show that for a key of n-bit size 
+    and key space of N such that N = 2n, the key can be recovered 
+    in 𝒪((π/4)*sqrt(N))
 
