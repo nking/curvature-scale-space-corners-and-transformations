@@ -87,7 +87,7 @@ public class Gates {
      * Apply a toffoli (or controlled-controlled-not) gate
      */
     void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
-       
+
         int i;
         int[] qec = new int[1];
 
@@ -100,9 +100,9 @@ public class Gates {
             for (i = 0; i < reg.size; i++) {
                 // Flip the target bit of a basis state if 
                 //both control bits are set 
-                
-                long st = reg.node[i].state; 
-                    if ((st & (1L << control1)) != 0) {
+
+                long st = reg.node[i].state;
+                if ((st & (1L << control1)) != 0) {
                     if ((st & (1L << control2)) != 0) {
                         reg.node[i].state ^= (1L << target);
                     }
@@ -268,7 +268,7 @@ public class Gates {
                 pat2 = 0;
 
                 for (j = 0; j < width; j++) {
-                    pat2 += reg.node[i].state & (1L << (width + j));
+                    pat2 += (reg.node[i].state & (1L << (width + j)));
                 }
 
                 // construct the new basis state 
@@ -299,7 +299,7 @@ public class Gates {
      * Apply the 2x2 matrix M to the target bit. M should be unitary.
      */
     void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
-    
+            
         int i, j, k;
         int addsize = 0;
         //COMPLEX_FLOAT t, tnot = 0;
@@ -314,7 +314,9 @@ public class Gates {
         }
         
         assert(reg.size <= reg.node.length);
-           
+        
+        assert(reg.hashw >= 0);
+        
         if (reg.hashw > 0) {
                         
             QuReg.quantum_reconstruct_hash(reg);
@@ -360,7 +362,7 @@ public class Gates {
                 tnot.setImag(0);
 
                 j = QuReg.quantum_get_state(
-                    (reg.node[i].state ^ (1L << target)),  
+                    reg.node[i].state ^ (1L << target),  
                     reg);
                 
                 if (t == null) {
@@ -499,11 +501,11 @@ public class Gates {
         // calculate the number of basis states to be added 
         for (i = 0; i < reg.size; i++) {
             if (QuReg.quantum_get_state(
-                (int)(reg.node[i].state ^ (1L << target1)), reg) == -1) {
+                reg.node[i].state ^ (1L << target1), reg) == -1) {
                 addsize++;
             }
             if (QuReg.quantum_get_state(
-                (int)(reg.node[i].state ^ (1L << target2)), reg) == -1) {
+                reg.node[i].state ^ (1L << target2), reg) == -1) {
                 addsize++;
             }
         }
@@ -524,7 +526,7 @@ public class Gates {
 
         l = reg.size;
 
-        limit = (1.0f / (1L << reg.width)) / 1000000.f;
+        limit = (1.0f / (1L << reg.width)) / 1000000;
 
         bits[0] = target1;
         bits[1] = target2;
@@ -538,9 +540,9 @@ public class Gates {
                 long state = reg.node[i].state;
                 long tmp2 = 1L << target2;
                 long tmp1 = 1L << target1;
-                base[j ^ 1] = QuReg.quantum_get_state((state ^ tmp2), reg);
-                base[j ^ 2] = QuReg.quantum_get_state((state ^ tmp1), reg);
-                base[j ^ 3] = QuReg.quantum_get_state((state ^ tmp1 ^ tmp2), reg);
+                base[j ^ 1] = QuReg.quantum_get_state(state ^ tmp2, reg);
+                base[j ^ 2] = QuReg.quantum_get_state(state ^ tmp1, reg);
+                base[j ^ 3] = QuReg.quantum_get_state(state ^ tmp1 ^ tmp2, reg);
 
                 for (j = 0; j < 4; j++) {
                     if (base[j] == -1) {
@@ -1003,16 +1005,13 @@ public class Gates {
                 c1 ^= 1;
             }
 
-            if ((reg.node[i].state
-                & (1L << (control2))) != 0) {
+            if ((reg.node[i].state & (1L << (control2))) != 0) {
                 c2 = 1;
             }
-            if ((reg.node[i].state
-                & (1L << (control2 + width))) != 0) {
+            if ((reg.node[i].state & (1L << (control2 + width))) != 0) {
                 c2 ^= 1;
             }
-            if ((reg.node[i].state
-                & (1L << (control2 + 2 * width))) != 0) {
+            if ((reg.node[i].state & (1L << (control2 + 2 * width))) != 0) {
                 c2 ^= 1;
             }
 
@@ -1154,7 +1153,7 @@ public class Gates {
             quantum_cnot(2 * w - 1, w - 1, reg);
         }
         for (i = (w - 2); i > 0; i--) {
-            if ((compare & (1L << i)) != 0) {
+            if ((compare & (1 << i)) != 0) {
                 //is bit i set in compare?
                 quantum_toffoli(i + 1, w + i, i, reg);
                 quantum_sigma_x(w + i, reg);
@@ -1176,7 +1175,7 @@ public class Gates {
         }
 
         for (i = 1; i <= (w - 2); i++) {
-            if ((compare & (1L << i)) != 0) {
+            if ((compare & (1 << i)) != 0) {
                 //is bit i set in compare?
                 quantum_toffoli(i + 1, w + i, 0, reg);
                 quantum_sigma_x(w + i, reg);
@@ -1186,7 +1185,7 @@ public class Gates {
                 quantum_sigma_x(w + i, reg);
             }
         }
-        if ((compare & (1L << (w - 1))) != 0) {
+        if ((compare & (1 << (w - 1))) != 0) {
             quantum_cnot(2 * w - 1, 0, reg);
             quantum_sigma_x(2 * w - 1, reg);
             quantum_cnot(2 * w - 1, w - 1, reg);
@@ -1382,7 +1381,7 @@ public class Gates {
             j = 2;
         }
         if (((1<<(w-1)) & a_inv) != 0) {
-            j += 1;
+            j++;
         }
         muxha_inv(j, w - 1, 2 * w - 1, 2 * w, 2 * w + 1, total, reg);
 
@@ -1393,7 +1392,7 @@ public class Gates {
                 j = 0;
             }
             if (((1<<i) & a_inv) != 0) {
-                j += 1;
+                j++;
             }
             muxfa_inv(j, i, w + i, w + 1 + i, 2 * w, 2 * w + 1, total, reg);
         }
