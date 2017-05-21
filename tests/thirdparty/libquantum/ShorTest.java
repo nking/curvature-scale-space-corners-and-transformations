@@ -4,6 +4,7 @@ import algorithms.util.GreatestCommonDenominator;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import static thirdparty.libquantum.QuReg.quantum_hash64;
 
 /**
  *
@@ -16,7 +17,7 @@ public class ShorTest extends TestCase {
     public ShorTest() {
     }
     
-    public void testRun() {
+    public void estRun() {
         
         log.info("testRun");
         
@@ -66,7 +67,7 @@ public class ShorTest extends TestCase {
             " max number of retries between fails=" + maxNRetries);
     }
     
-    public void testEuclidModularMethods() {
+    public void estEuclidModularMethods() {
         
         log.info("testEuclidModularMethods");
         
@@ -90,7 +91,7 @@ public class ShorTest extends TestCase {
         
         int[] factors;
         
-        int nTests = 10;
+        int nTests = 100;
         
         for (int i = 0; i < nTests; ++i) {
             
@@ -101,4 +102,5 @@ public class ShorTest extends TestCase {
             log.info("*factors = " + Arrays.toString(factors));
         }
     }
+    
 }

@@ -147,7 +147,6 @@ public class Shor {
            "ESPRESSO algorithm", 
                developed by Brayton et al. at the University of California, Berkeley
            to look at optimizing gates for quantum algorithms.
-        
         */
         
         // max width = 30 ==> max N is 32768, ontrained by array length
@@ -215,13 +214,22 @@ public class Shor {
         
         assert(qr.hash.length == (1 << qr.hashw));
      
+        
+        //log.info("before bmeasure, reg.size=" + qr.size
+        //  + " hash.length=" + qr.hash.length);
+        //qureg.quantum_print_qureg(qr);
+        //for (i = 0; i < qr.size; i++) {
+        //    System.out.format("II %d %d\n", i, qr.node[i].state);
+        //}
+        
+        
         Measure measure = new Measure();
         
         for (i = 0; i < nbits; i++) {
             measure.quantum_bmeasure(0, qr, rng);
         }
         
-        //log.info(String.format("measure, reg.size=" + qr.size
+        //log.info(String.format("after measure, reg.size=" + qr.size
         //  + " hash.length=" + qr.hash.length));
        
         assert(qr.hash.length == (1 << qr.hashw));
