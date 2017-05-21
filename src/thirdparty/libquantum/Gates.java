@@ -300,13 +300,14 @@ public class Gates {
      */
     void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
             
-        int i, j, k;
+        int i, k;
         int addsize = 0;
         //COMPLEX_FLOAT t, tnot = 0;
         ComplexModifiable t = null;
         ComplexModifiable tnot = new ComplexModifiable(0, 0);
         float limit;
         int[] done;
+        int j = 0;
 
         if ((m.cols != 2) || (m.rows != 2)) {
             throw new IllegalArgumentException("n.cols must == 2 and "
@@ -351,7 +352,7 @@ public class Gates {
         k = reg.size;
 
         limit = (1.0f / (1L << reg.width)) * epsilon;
-
+        limit -= epsilon;
         // perform the actual matrix multiplication 
         for (i = 0; i < reg.size; i++) {
             if (done[i] == 0) {
@@ -527,7 +528,7 @@ public class Gates {
         l = reg.size;
 
         limit = (1.0f / (1L << reg.width)) / 1000000;
-
+        limit -= epsilon;
         bits[0] = target1;
         bits[1] = target2;
 
@@ -605,10 +606,11 @@ public class Gates {
         
         QuantumMatrix m = matrix.quantum_new_matrix(2, 2);
 
-        m.t[0] = new ComplexModifiable(Math.sqrt(1.0 / 2), 0);
-        m.t[1] = new ComplexModifiable(Math.sqrt(1.0 / 2), 0);
-        m.t[2] = new ComplexModifiable(Math.sqrt(1.0 / 2), 0);
-        m.t[3] = new ComplexModifiable(-Math.sqrt(1.0 / 2), 0);
+        double a = Math.sqrt(1.0 / 2);
+        m.t[0] = new ComplexModifiable(a, 0);
+        m.t[1] = new ComplexModifiable(a, 0);
+        m.t[2] = new ComplexModifiable(a, 0);
+        m.t[3] = new ComplexModifiable(-a, 0);
 
         quantum_gate1(target, m, reg);
 
