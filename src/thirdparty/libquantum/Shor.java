@@ -3,6 +3,7 @@ package thirdparty.libquantum;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import java.util.Random;
+import java.util.logging.Logger;
 
  /* shor.c: Implementation of Shor's factoring algorithm
 
@@ -35,6 +36,8 @@ import java.util.Random;
  *    for all k .lte. log_2(N) that math.pow(N, k) is not an integer.
  */
 public class Shor {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
         
     private QuantumReg qr;
     
@@ -154,9 +157,9 @@ public class Shor {
         int swidth = MiscMath.numberOfBits(N);
         
         
-        System.out.println("SEED=" + rSeed);
-        System.out.format("N = %d, width=%d, swidth=%d, %d qubits required\n", 
-            N, width, swidth, width+3*swidth+2);
+        log.info("SEED=" + rSeed);
+        log.info(String.format("N = %d, width=%d, swidth=%d, %d qubits required\n", 
+            N, width, swidth, width+3*swidth+2));
         
         if (x == 0) {
             Classic classic = new Classic();
@@ -169,14 +172,14 @@ public class Shor {
         int i;
         int q,a,b, factor;
 
-        System.out.format("Random factor: %d of %d\n", x, N);
+        log.info(String.format("Random factor: %d of %d\n", x, N));
 
         QuReg qureg = new QuReg();
         
         QuantumReg qr = qureg.quantum_new_qureg(0, width);
         
-        System.out.println("after construction, reg.size=" + qr.size
-          + " hash.length=" + qr.hash.length);
+        //log.info(String.format("after construction, reg.size=" + qr.size
+        //  + " hash.length=" + qr.hash.length));
  
         assert(qr.hash.length == (1 << qr.hashw));
         
@@ -186,8 +189,8 @@ public class Shor {
             gates.quantum_hadamard(i, qr);
         }
         
-        System.out.println("after first hadamard, reg.size=" + qr.size
-          + " hash.length=" + qr.hash.length);
+        // log.info(String.format("after first hadamard, reg.size=" + qr.size
+        //   + " hash.length=" + qr.hash.length));
                 
         /*{//DEBUG
             qureg.quantum_print_qureg(qr);
@@ -207,8 +210,8 @@ public class Shor {
         
         //qureg.quantum_print_qureg(qr);
         
-        System.out.println("after exp_mod_n, reg.size=" + qr.size
-          + " hash.length=" + qr.hash.length);
+        //log.info(String.format("after exp_mod_n, reg.size=" + qr.size
+        //  + " hash.length=" + qr.hash.length));
         
         assert(qr.hash.length == (1 << qr.hashw));
      
@@ -218,15 +221,15 @@ public class Shor {
             measure.quantum_bmeasure(0, qr, rng);
         }
         
-        System.out.println("measure, reg.size=" + qr.size
-          + " hash.length=" + qr.hash.length);
+        //log.info(String.format("measure, reg.size=" + qr.size
+        //  + " hash.length=" + qr.hash.length));
        
         assert(qr.hash.length == (1 << qr.hashw));
  
         gates.quantum_qft(width,  qr);
 
-        System.out.println("after qft, reg.size=" + qr.size
-          + " hash.length=" + qr.hash.length);
+        //log.info(String.format("after qft, reg.size=" + qr.size
+        //  + " hash.length=" + qr.hash.length));
         
         for (i = 0; i < width / 2; i++) {
             gates.quantum_cnot(i, width - i - 1, qr);
@@ -238,21 +241,21 @@ public class Shor {
 
         long c = measure.quantum_measure(qr, rng);
 
-        System.out.println("c=" + c);
+        log.info("c=" + c);
 
         if (c == -1) {
-            System.out.format("Impossible Measurement!\n");
+            log.info(String.format("Impossible Measurement!\n"));
             return new int[]{-1};
         }
 
         if (c == 0) {
-            System.out.format("Measured zero, try again.\n");
+            log.info(String.format("Measured zero, try again.\n"));
             return new int[]{0};
         }
 
         q = 1 << (width);
 
-        System.out.format("Measured %d (%f), ", c, (float) c / q);
+        log.info(String.format("Measured %d (%f), ", c, (float) c / q));
 
         Classic classic = new Classic();
         int[] cInOut = new int[]{(int)c};
@@ -261,21 +264,21 @@ public class Shor {
         c = cInOut[0];
         q = qInOut[0];
         
-        System.out.format("fractional approximation is %d/%d.\n", c, q);
+        log.info(String.format("fractional approximation is %d/%d.\n", c, q));
 
         if ((q % 2 == 1) && (2 * q < (1 << width))) {
-            System.out.format("Odd denominator, trying to expand by 2.\n");
+            log.info(String.format("Odd denominator, trying to expand by 2.\n"));
             q *= 2;
         }
 
         if (q % 2 == 1) {
-            System.out.format("Odd period, try again.\n");
+            log.info(String.format("Odd period, try again.\n"));
             return new int[]{-2};
         }
 
-        System.out.format("%d\n", 11);
+        log.info(String.format("%d\n", 11));
 
-        System.out.format("Possible period is %d.\n", q);
+        log.info(String.format("Possible period is %d.\n", q));
 
         a = classic.quantum_ipow(x, q / 2) + 1 % N;
         b = classic.quantum_ipow(x, q / 2) - 1 % N;
@@ -290,9 +293,9 @@ public class Shor {
         }
 
         if ((factor < N) && (factor > 1)) {
-            System.out.format("%d = %d * %d\n", N, factor, N / factor);
+            log.info(String.format("%d = %d * %d\n", N, factor, N / factor));
         } else {
-            System.out.format("Unable to determine factors, try again.\n");
+            log.info(String.format("Unable to determine factors, try again.\n"));
             return new int[]{-2};
         }
 

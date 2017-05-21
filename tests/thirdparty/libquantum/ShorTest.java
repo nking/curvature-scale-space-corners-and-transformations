@@ -2,6 +2,7 @@ package thirdparty.libquantum;
 
 import algorithms.util.GreatestCommonDenominator;
 import java.util.Arrays;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 /**
@@ -10,10 +11,14 @@ import junit.framework.TestCase;
  */
 public class ShorTest extends TestCase {
     
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
     public ShorTest() {
     }
     
     public void testRun() {
+        
+        log.info("testRun");
         
         /*
          from "Experimental demonstration of Shor’s algorithm with 
@@ -57,11 +62,13 @@ public class ShorTest extends TestCase {
             } 
         }
         
-        System.out.println("nTests=" + nTests + " nCorrect=" + nCorrect +
+        log.info("nTests=" + nTests + " nCorrect=" + nCorrect +
             " max number of retries between fails=" + maxNRetries);
     }
     
     public void testEuclidModularMethods() {
+        
+        log.info("testEuclidModularMethods");
         
         int[] factors;
                                       //14 * x = 30 % 100
@@ -79,6 +86,8 @@ public class ShorTest extends TestCase {
     
     public void testRun2() {
         
+        log.info("testRun2");
+        
         int[] factors;
         
         int nTests = 10;
@@ -89,7 +98,7 @@ public class ShorTest extends TestCase {
 
             factors = shor.run();
 
-            System.out.println("*factors = " + Arrays.toString(factors));
+            log.info("*factors = " + Arrays.toString(factors));
         }
     }
 }

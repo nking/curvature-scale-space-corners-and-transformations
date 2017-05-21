@@ -410,10 +410,10 @@ public class Gates {
                 } else {
                     // new basis state will be created 
 
-                    if ((m.t[1].re() == 0.0) && (iset != 0)) {
+                    if ((m.t[1].squareSum()== 0.0) && (iset != 0)) {
                         break;
                     }
-                    if ((m.t[2].re() == 0.0) && (iset == 0)) {
+                    if ((m.t[2].squareSum() == 0.0) && (iset == 0)) {
                         break;
                     }
                     reg.node[k].state = (reg.node[i].state ^ (1L << target));

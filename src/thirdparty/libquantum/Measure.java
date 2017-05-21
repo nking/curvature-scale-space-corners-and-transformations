@@ -179,7 +179,7 @@ public class Measure {
         // norm the quantum register 
         for (i = 0, j = 0; i < reg.size; i++) {
             if (reg.node[i].amplitude.abs() != 0) {
-                out.node[j].state = (reg.node[i].state);
+                out.node[j].state = reg.node[i].state;
                 out.node[j].amplitude.resetTo(reg.node[i].amplitude);
                 out.node[j].amplitude.times(1/Math.sqrt(d));
 

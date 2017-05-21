@@ -46,7 +46,7 @@ public class QuReg {
 
         //this will always be == key value unless allow key type to be long
         long k = (key & 0x7FFFFFFF) ^ (key >> 31);
-        k =  key * 1327202304L; // factor is 0x9e370001UL >> 1 which is 30.3057
+        k *= 1327202304L; // factor is 0x9e370001UL >> 1 which is 30.3057
         k &= ((1 << 31) - 1);
         k = k >> (31L - width);
         
@@ -115,7 +115,7 @@ public class QuReg {
         }
         
         //NOTE: since this value is the index of reg.node,
-        //      it sometimes has an invalid value.
+        //      for last entry, it has an invalid value.
         //      should the value be pos?
         reg.hash[i] = pos + 1;
     }
@@ -177,7 +177,7 @@ public class QuReg {
 
         // Determine the size of the quantum register 
         for (i = 0; i < m.rows; i++) {
-            if (m.t[i].re() != 0.0) {
+            if (m.t[i].squareSum()!= 0.0) {
                 size++;
             }
         }
@@ -200,7 +200,7 @@ public class QuReg {
         // Copy the nonzero amplitudes of the vector into the 
         //quantum register 
         for (i = 0, j = 0; i < m.rows; i++) {
-            if (m.t[i].re() != 0.0) {
+            if (m.t[i].squareSum() != 0.0) {
                 reg.node[j].state = i;
                 reg.node[j].amplitude.resetTo(m.t[i]);
                 j++;

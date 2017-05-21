@@ -249,7 +249,7 @@
     <target name="runTests" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.out.dir}" />
-        <junit fork="true" showoutput="true" filtertrace="off" 
+        <junit fork="false" showoutput="true" filtertrace="off" 
             printsummary="yes" haltonerror="true" haltonfailure="true">
             
             <assertions enablesystemassertions="true">
@@ -286,7 +286,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
-        <junit fork="true" filtertrace="on" printsummary="yes" 
+        <junit fork="false" filtertrace="on" printsummary="yes" 
             haltonerror="true" haltonfailure="true" showoutput="false">
             
             <assertions enablesystemassertions="true">
@@ -369,7 +369,7 @@
         <echo message="${src.out.dir}/logging.properties"/>
         <echo message="COMPILE debug=${compile.debug}" />
         
-        <junit fork="true" filtertrace="on" printsummary="yes" 
+        <junit fork="false" filtertrace="on" printsummary="yes" 
             haltonerror="true" haltonfailure="true" showoutput="false">
             
             <assertions enablesystemassertions="true">
@@ -387,8 +387,9 @@
 
             <jvmarg value="-enableassertions" />
 
-            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
-            <test name="${test}" fork="true" haltonfailure="yes">
+            <sysproperty key="java.util.logging.config.file" 
+                value="${src.out.dir}/logging.properties"/>
+            <test name="${test}" fork="false" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
             </test>
             
