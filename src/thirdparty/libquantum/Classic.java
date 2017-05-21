@@ -78,7 +78,7 @@ public class Classic {
             g -= i - 0.000005f;
             g = 1.0f / g;
 
-            if (i * den1 + den2 > (2 << width)) {
+            if (i * den1 + den2 > (1 << width)) {
                 break;
             }
 
