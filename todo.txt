@@ -1,37 +1,7 @@
-http://www.quantumplayground.net/#/home
-
--- libquantum:
-   -- add the notes in util's shor.java regarding quantum computer
-      notation, etc 
-       into the lib quantum code comments.
-   -- port grovers to java
-   -- consider where to refactor method names to camel case
-
--- consider changing over some of the matrix math to use jblas
-   (example is in unit tests).  jblas is already included in project,
-   but accessed mostly via MTJ.
-
 (1) healthy topics to impl at some point, probably now:
    the PIM code is solving graph and path problems
-   -- Grover's...interesting and a tangent, but
-        would like to review in detail
-        https://pdfs.semanticscholar.org/834b/579cde622a51a1f1459319a48452e5d9760d.pdf
-   -- shors...same, it is a tangent to the other
-        problems, but maybe a good thing to have details
-        of for a good comparison example w/ a
-        simulated quantum computer.
    -- maximal cliques and cover sets w/ SAT and/or QSO/SA
    -- a little more about MCMC
-   -- still reading so some things are not clear.
-       are some of the PIMC examples expecting
-       that the user (me) take the potential function
-       and sample it using an MC algorithm,
-       then feed those initial points to the algorithm?
-       -- if yes, then what is the difference between
-           the MC's... GSL has a quantum MC doesn't it?
-           the sissa.it esspresso project does.
-           just general differences in notes would be 
-           useful
 -- looking at PIMC:
     http://web.engr.illinois.edu/~bkclark/PIMCTutorial/tutorial.pdf
 
@@ -43,6 +13,9 @@ http://www.quantumplayground.net/#/home
 
 paused reading file:///Users/nichole/Downloads/Allegato_32620%20(1).pdf
   on page 6
+
+below notes were accidently committed. 
+need to clean them up after reading.
 
 Perron–Frobenius theorem
 [22, p 54ff],
