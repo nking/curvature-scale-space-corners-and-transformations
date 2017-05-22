@@ -77,7 +77,7 @@ A list of values for $\lambda$ is given in [DiVincenzo, 1995].
          * Increase the gate counter
          */
 <span class="fc" id="L79">        gates.quantum_gate_counter(1);</span>
-
+        
 <span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (quantum_status != 0) {</span>
 
 <span class="nc" id="L83">            nrands = new double[reg.width];</span>
@@ -104,19 +104,20 @@ A list of values for $\lambda$ is given in [DiVincenzo, 1995].
 <span class="nc" id="L104">                angle = 0;</span>
 
 <span class="nc bnc" id="L106" title="All 2 branches missed.">                for (j = 0; j &lt; reg.width; j++) {</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">                    if ((reg.node[i].getState() &amp; QuReg.shiftLeftTruncate(j)) != 0) {</span>
-<span class="nc" id="L108">                        angle += nrands[j];</span>
+                                        
+<span class="nc bnc" id="L108" title="All 2 branches missed.">                    if ((reg.node[i].state &amp; (1L &lt;&lt; j)) != 0) {</span>
+<span class="nc" id="L109">                        angle += nrands[j];</span>
                     } else {
-<span class="nc" id="L110">                        angle -= nrands[j];</span>
+<span class="nc" id="L111">                        angle -= nrands[j];</span>
                     }
                 }
                 //cos(phi) + IMAGINARY * sin(phi)
-<span class="nc" id="L114">                double re = reg.node[i].amplitude.re() * Math.cos(angle);</span>
-<span class="nc" id="L115">                double im = reg.node[i].amplitude.im() * Math.sin(angle);</span>
-<span class="nc" id="L116">                reg.node[i].amplitude.setReal(re);</span>
-<span class="nc" id="L117">                reg.node[i].amplitude.setImag(im);</span>
+<span class="nc" id="L115">                double re = reg.node[i].amplitude.re() * Math.cos(angle);</span>
+<span class="nc" id="L116">                double im = reg.node[i].amplitude.im() * Math.sin(angle);</span>
+<span class="nc" id="L117">                reg.node[i].amplitude.setReal(re);</span>
+<span class="nc" id="L118">                reg.node[i].amplitude.setImag(im);</span>
             }
         }
-<span class="fc" id="L120">    }</span>
+<span class="fc" id="L121">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

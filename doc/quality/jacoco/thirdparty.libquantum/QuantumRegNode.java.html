@@ -43,18 +43,13 @@ with alpha being amplitude and state being j.
     //MAX_UNSIGNED state;      /* j */
 
     public ComplexModifiable amplitude;
-<span class="fc" id="L46">    private int state = 0;</span>
-    
-    public void setState(int s) {
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (s &lt; 0) {</span>
-<span class="nc" id="L50">            log.warning(&quot;s &lt; 0 so truncating to 0&quot;);</span>
-<span class="nc" id="L51">            s = 0;</span>
-        }
-<span class="fc" id="L53">        this.state = s;</span>
-<span class="fc" id="L54">    }</span>
-    
-    public int getState() {
-<span class="fc" id="L57">        return state;</span>
+<span class="fc" id="L46">    public long state = 0;</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L50">        return (&quot;ampl=&quot; + amplitude.toString() + &quot; state=&quot; + state);</span>
     }
+    
+    
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

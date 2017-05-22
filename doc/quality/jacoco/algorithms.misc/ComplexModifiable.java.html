@@ -122,47 +122,51 @@ public class ComplexModifiable {
      * @param b
      */
     public void times(ComplexModifiable b) {
-<span class="fc" id="L125">        re = re * b.re - im * b.im;</span>
-<span class="fc" id="L126">        im = re * b.im + im * b.re;</span>
-<span class="fc" id="L127">    }</span>
+<span class="fc" id="L125">        double r = this.re;</span>
+<span class="fc" id="L126">        double i = this.im;</span>
+<span class="fc" id="L127">        re = r * b.re - i * b.im;</span>
+<span class="fc" id="L128">        im = r * b.im + i * b.re;</span>
+<span class="fc" id="L129">    }</span>
     
     /**
      * multiply the value of b with this instance
      * @param b
      */
     public void times(Complex b) {
-<span class="nc" id="L134">        re = re * b.re() - im * b.im();</span>
-<span class="nc" id="L135">        im = re * b.im() + im * b.re();</span>
-<span class="nc" id="L136">    }</span>
+<span class="nc" id="L136">        double r = this.re;</span>
+<span class="nc" id="L137">        double i = this.im;</span>
+<span class="nc" id="L138">        re = r * b.re() - i * b.im();</span>
+<span class="nc" id="L139">        im = r * b.im() + i * b.re();</span>
+<span class="nc" id="L140">    }</span>
 
     /**
      * multiply the value of b with this instance
      * @param b
      */
     public void times(double b) {
-<span class="fc" id="L143">        re *= b;</span>
-<span class="fc" id="L144">        im *= b;</span>
-<span class="fc" id="L145">    }</span>
+<span class="fc" id="L147">        re *= b;</span>
+<span class="fc" id="L148">        im *= b;</span>
+<span class="fc" id="L149">    }</span>
 
     /**
      * turn this instance into the conjugate of itself
      */
     public void conjugate() {  
-<span class="nc" id="L151">        im *= -1; </span>
-<span class="nc" id="L152">    }</span>
+<span class="nc" id="L155">        im *= -1; </span>
+<span class="nc" id="L156">    }</span>
     
     /**
      * turn this instance into the reciprocal of itself
      */
     public void reciprocal() {  
-<span class="nc" id="L158">        double scale = re*re + im*im;</span>
-<span class="nc" id="L159">        re /= scale;</span>
-<span class="nc" id="L160">        im /= (-scale);</span>
-<span class="nc" id="L161">    }</span>
+<span class="nc" id="L162">        double scale = re*re + im*im;</span>
+<span class="nc" id="L163">        re /= scale;</span>
+<span class="nc" id="L164">        im /= (-scale);</span>
+<span class="nc" id="L165">    }</span>
 
     // return the real or imaginary part
-<span class="fc" id="L164">    public double re() { return re; }</span>
-<span class="fc" id="L165">    public double im() { return im; }</span>
+<span class="fc" id="L168">    public double re() { return re; }</span>
+<span class="fc" id="L169">    public double im() { return im; }</span>
 
     /**
      * divide this instance by the value of b 
@@ -170,15 +174,15 @@ public class ComplexModifiable {
      */
     public void divided(ComplexModifiable b) {
         // reciprocal of b:
-<span class="nc" id="L173">        double bR = b.re();</span>
-<span class="nc" id="L174">        double bI = b.im();</span>
-<span class="nc" id="L175">        double scaleB = bR*bR + bI*bI;</span>
-<span class="nc" id="L176">        bR /= scaleB;</span>
-<span class="nc" id="L177">        bI /= (-scaleB);</span>
+<span class="nc" id="L177">        double bR = b.re();</span>
+<span class="nc" id="L178">        double bI = b.im();</span>
+<span class="nc" id="L179">        double scaleB = bR*bR + bI*bI;</span>
+<span class="nc" id="L180">        bR /= scaleB;</span>
+<span class="nc" id="L181">        bI /= (-scaleB);</span>
         
-<span class="nc" id="L179">        re *= bR;</span>
-<span class="nc" id="L180">        im *= bI;</span>
-<span class="nc" id="L181">    }</span>
+<span class="nc" id="L183">        re *= bR;</span>
+<span class="nc" id="L184">        im *= bI;</span>
+<span class="nc" id="L185">    }</span>
     
     /**
      * divide this instance by the value of b 
@@ -186,48 +190,48 @@ public class ComplexModifiable {
      */
     public void divided(Complex b) {
         // reciprocal of b:
-<span class="nc" id="L189">        double bR = b.re();</span>
-<span class="nc" id="L190">        double bI = b.im();</span>
-<span class="nc" id="L191">        double scaleB = bR*bR + bI*bI;</span>
-<span class="nc" id="L192">        bR /= scaleB;</span>
-<span class="nc" id="L193">        bI /= (-scaleB);</span>
+<span class="nc" id="L193">        double bR = b.re();</span>
+<span class="nc" id="L194">        double bI = b.im();</span>
+<span class="nc" id="L195">        double scaleB = bR*bR + bI*bI;</span>
+<span class="nc" id="L196">        bR /= scaleB;</span>
+<span class="nc" id="L197">        bI /= (-scaleB);</span>
         
-<span class="nc" id="L195">        re *= bR;</span>
-<span class="nc" id="L196">        im *= bI;</span>
-<span class="nc" id="L197">    }</span>
+<span class="nc" id="L199">        re *= bR;</span>
+<span class="nc" id="L200">        im *= bI;</span>
+<span class="nc" id="L201">    }</span>
 
     // return a new Complex object whose value is the complex exponential of this
     public ComplexModifiable exp() {
-<span class="nc" id="L201">        return new ComplexModifiable(</span>
-<span class="nc" id="L202">            Math.exp(re) * Math.cos(im), </span>
-<span class="nc" id="L203">            Math.exp(re) * Math.sin(im));</span>
+<span class="nc" id="L205">        return new ComplexModifiable(</span>
+<span class="nc" id="L206">            Math.exp(re) * Math.cos(im), </span>
+<span class="nc" id="L207">            Math.exp(re) * Math.sin(im));</span>
     }
 
     // return a new Complex object whose value is the complex sine of this
     public ComplexModifiable sin() {
-<span class="nc" id="L208">        return new ComplexModifiable(Math.sin(re) * Math.cosh(im), Math.cos(re) * Math.sinh(im));</span>
+<span class="nc" id="L212">        return new ComplexModifiable(Math.sin(re) * Math.cosh(im), Math.cos(re) * Math.sinh(im));</span>
     }
 
     // return a new Complex object whose value is the complex cosine of this
     public ComplexModifiable cos() {
-<span class="nc" id="L213">        return new ComplexModifiable(Math.cos(re) * Math.cosh(im), </span>
-<span class="nc" id="L214">            -Math.sin(re) * Math.sinh(im));</span>
+<span class="nc" id="L217">        return new ComplexModifiable(Math.cos(re) * Math.cosh(im), </span>
+<span class="nc" id="L218">            -Math.sin(re) * Math.sinh(im));</span>
     }
 
     // return a new Complex object whose value is the complex tangent of this
     public ComplexModifiable tan() {
-<span class="nc" id="L219">        ComplexModifiable c = cos();</span>
-<span class="nc" id="L220">        ComplexModifiable s = sin();</span>
-<span class="nc" id="L221">        s.divided(c);</span>
-<span class="nc" id="L222">        return s;</span>
+<span class="nc" id="L223">        ComplexModifiable c = cos();</span>
+<span class="nc" id="L224">        ComplexModifiable s = sin();</span>
+<span class="nc" id="L225">        s.divided(c);</span>
+<span class="nc" id="L226">        return s;</span>
     }
     
     // a static version of plus
     public static ComplexModifiable plus(ComplexModifiable a, ComplexModifiable b) {
-<span class="nc" id="L227">        double real = a.re + b.re;</span>
-<span class="nc" id="L228">        double imag = a.im + b.im;</span>
-<span class="nc" id="L229">        ComplexModifiable sum = new ComplexModifiable(real, imag);</span>
-<span class="nc" id="L230">        return sum;</span>
+<span class="nc" id="L231">        double real = a.re + b.re;</span>
+<span class="nc" id="L232">        double imag = a.im + b.im;</span>
+<span class="nc" id="L233">        ComplexModifiable sum = new ComplexModifiable(real, imag);</span>
+<span class="nc" id="L234">        return sum;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

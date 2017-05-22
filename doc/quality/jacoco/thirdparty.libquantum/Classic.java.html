@@ -78,7 +78,7 @@
 <span class="fc" id="L78">            g -= i - 0.000005f;</span>
 <span class="fc" id="L79">            g = 1.0f / g;</span>
 
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">            if (i * den1 + den2 &gt; QuReg.shiftLeftTruncate(width)) {</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">            if (i * den1 + den2 &gt; (1 &lt;&lt; width)) {</span>
 <span class="nc" id="L82">                break;</span>
             }
 
@@ -90,13 +90,12 @@
 <span class="fc" id="L90">            num1 = num;</span>
 <span class="fc" id="L91">            den1 = den;</span>
 
-<span class="fc" id="L93">        } while (Math.abs(((double) num / den) - f) &gt; 1.0 / </span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">            (2 * QuReg.shiftLeftTruncate(width)));</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        } while (Math.abs(((double) num / den) - f) &gt; 1.0 / (2 * (1 &lt;&lt; width)));</span>
 
-<span class="fc" id="L96">        aInOut[0] = num;</span>
-<span class="fc" id="L97">        bInOut[0] = den;</span>
+<span class="fc" id="L95">        aInOut[0] = num;</span>
+<span class="fc" id="L96">        bInOut[0] = den;</span>
 
-<span class="fc" id="L99">        return;</span>
+<span class="fc" id="L98">        return;</span>
     }
 
     /**
@@ -106,9 +105,9 @@
         
         int i;
 
-<span class="fc bfc" id="L109" title="All 2 branches covered.">        for (i = 1; QuReg.shiftLeftTruncate(i) &lt; n; i++);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        for (i = 1; 1&lt;&lt;i&lt;n; i++);</span>
 
-<span class="fc" id="L111">        return i;</span>
+<span class="nc" id="L110">        return i;</span>
     }
 
     /**
@@ -116,15 +115,15 @@
      */
     int quantum_inverse_mod(int n, int c) {
         
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (c == 0) {</span>
-<span class="nc" id="L120">            throw new IllegalArgumentException(&quot;c cannot == 0&quot;);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (c == 0) {</span>
+<span class="nc" id="L119">            throw new IllegalArgumentException(&quot;c cannot == 0&quot;);</span>
         }
         
         int i;
 
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (i = 1; (i * c) % n != 1; i++);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (i = 1; (i * c) % n != 1; i++);</span>
 
-<span class="fc" id="L127">        return i;</span>
+<span class="fc" id="L126">        return i;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

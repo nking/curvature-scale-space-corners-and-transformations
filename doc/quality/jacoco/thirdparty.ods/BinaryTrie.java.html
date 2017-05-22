@@ -165,7 +165,7 @@ public class BinaryTrie&lt;S extends BinaryTrieNode&lt;T&gt;, T&gt;
 <span class="fc bfc" id="L165" title="All 2 branches covered.">		while (v != null) {</span>
 <span class="fc bfc" id="L166" title="All 4 branches covered.">			if ((v.child[left] == null </span>
 	        	&amp;&amp; (v.jump == null ||
-<span class="fc bfc" id="L168" title="All 8 branches covered.">                it.intValue(v.jump.x) &gt; ix))</span>
+<span class="pc bpc" id="L168" title="1 of 8 branches missed.">                it.intValue(v.jump.x) &gt; ix))</span>
 			|| (v.child[right] == null 
 	    		&amp;&amp; (v.jump == null || 
 <span class="fc bfc" id="L171" title="All 2 branches covered.">                (v.jump.x != null &amp;&amp; it.intValue(v.jump.x) &lt; ix))</span>
@@ -192,8 +192,8 @@ public class BinaryTrie&lt;S extends BinaryTrieNode&lt;T&gt;, T&gt;
     public T find(T x) {
 <span class="fc" id="L193">        int ix = it.intValue(x);</span>
 <span class="fc" id="L194">        T v = findValue(ix);</span>
-<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (v == null) {</span>
-<span class="fc" id="L196">            return v;</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (v == null) {</span>
+<span class="nc" id="L196">            return v;</span>
 <span class="fc bfc" id="L197" title="All 2 branches covered.">        } else if (it.intValue(v) == ix) {</span>
 <span class="fc" id="L198">            return v;</span>
         }
@@ -218,7 +218,7 @@ public class BinaryTrie&lt;S extends BinaryTrieNode&lt;T&gt;, T&gt;
         } else {
 <span class="fc" id="L219">            u = u.jump.child[next]; </span>
         }
-<span class="fc bfc" id="L221" title="All 2 branches covered.">		return u == dummy ? null : u.x;</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		return u == dummy ? null : u.x;</span>
 	}
 
     /**
@@ -261,8 +261,8 @@ public class BinaryTrie&lt;S extends BinaryTrieNode&lt;T&gt;, T&gt;
 <span class="fc" id="L261">		i--;</span>
 <span class="fc bfc" id="L262" title="All 2 branches covered.">		for (; i &gt;= 0; i--) {</span>
 <span class="fc" id="L263">			c = (ix &gt;&gt;&gt; w-i-1) &amp; 1;</span>
-<span class="fc bfc" id="L264" title="All 2 branches covered.">			if (v.jump == u) {</span>
-<span class="fc" id="L265">				v.jump = u.child[1-c];</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">			if (v.jump == u) {</span>
+<span class="nc" id="L265">				v.jump = u.child[1-c];</span>
             }
 <span class="fc" id="L267">			v = v.parent;</span>
 		}
