@@ -90,11 +90,6 @@ public class QuReg {
 
         i = quantum_hash64(a, reg.hashw);
         
-        //System.out.format("limit=%d\n", QuReg.shiftLeftTruncate(reg.hashw));
-        //System.out.format("a=%d i=%d  H=%d\n", a, i, reg.hash[i]);
-        //System.out.format("a=%d i=%d\n", 10, quantum_hash64(10, reg.hashw));
-        //System.out.format("a=%d i=%d\n", 100, quantum_hash64(100, reg.hashw));
-   
         int end = 1 << reg.hashw;
         while (reg.hash[i] != 0) {
             i++;

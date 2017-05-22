@@ -78,17 +78,9 @@ public class Measure {
         for (i = 0; i < reg.size; i++) {
             
             long st = reg.node[i].state; 
-            //System.out.format("%d) s=%d and=%d\n", 
-            //    i, st, (st & pos2));
             
             if ((st & pos2) == 0) {
-                
                 pa += reg.node[i].amplitude.squareSum();
-                
-                //System.out.format(
-                //    "  %d) re=%f im=%f pa=%f\n", 
-                //    i, reg.node[i].amplitude.re(),
-                //    reg.node[i].amplitude.im(), pa);
             }
         }
 
@@ -96,9 +88,7 @@ public class Measure {
         // and determine the result of the measurement 
 
         r = rng.nextDouble();
-        
-        //System.out.format("r=%f\n", r); 
-        
+                
         if (r > pa) {
             result = 1;
         }

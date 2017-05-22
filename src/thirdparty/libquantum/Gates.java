@@ -36,7 +36,7 @@ public class Gates {
     
     private int counterQEC = 0;
     private static int freq = (1 << 30);
-
+    
     /**
      * Type of the QEC. Currently implemented versions are: 
      * 0: no QEC (default)
@@ -317,21 +317,22 @@ public class Gates {
         assert(reg.size <= reg.node.length);
         
         assert(reg.hashw >= 0);
-        
+              
         if (reg.hashw > 0) {
                         
             QuReg.quantum_reconstruct_hash(reg);
 
+            long shift = 1L << target;
             // calculate the number of basis states to be added 
             for (i = 0; i < reg.size; i++) {
                 // determine whether XORed basis state already exists 
-                long tst = reg.node[i].state
-                    ^ (1L << target);
+                long tst = reg.node[i].state ^ shift;
                 if (QuReg.quantum_get_state(tst, reg) == -1) {
                     addsize++;
+                    
                 }
             }
-
+            
             // allocate memory for the new basis states 
             int sz2 = reg.size + addsize;
             if (reg.node.length != sz2) {
@@ -341,9 +342,14 @@ public class Gates {
 
             for (i = 0; i < addsize; i++) {
                 int idx2 = i + reg.size;
-                reg.node[idx2] = new QuantumRegNode();
-                reg.node[idx2].state = 0;
-                reg.node[idx2].amplitude = new ComplexModifiable(0, 0);
+                if (reg.node[idx2] == null) {
+                    reg.node[idx2] = new QuantumRegNode();
+                    reg.node[idx2].amplitude = new ComplexModifiable(0, 0);
+                } else {
+                    reg.node[idx2].state = 0;
+                    reg.node[idx2].amplitude.setReal(0);
+                    reg.node[idx2].amplitude.setImag(0);
+                }
             }
         }
         
@@ -352,7 +358,7 @@ public class Gates {
         k = reg.size;
 
         limit = (1.0f / (1L << reg.width)) * epsilon;
-        limit -= epsilon;
+        
         // perform the actual matrix multiplication 
         for (i = 0; i < reg.size; i++) {
             if (done[i] == 0) {
@@ -375,7 +381,8 @@ public class Gates {
                 if (j >= 0) {
                     tnot.resetTo(reg.node[j].amplitude);
                 }
-
+                
+                
                 if (iset != 0) {
                     ComplexModifiable t2 = m.t[2].copy();
                     t2.times(tnot);
@@ -391,8 +398,10 @@ public class Gates {
                     t0.plus(t1);
                     reg.node[i].amplitude.resetTo(t0);
                 }
-
+                
+                
                 if (j >= 0) {
+                
                     if (iset != 0) {
                         ComplexModifiable t0 = m.t[0].copy();
                         t0.times(tnot);
@@ -408,17 +417,18 @@ public class Gates {
                         t2.plus(t3);
                         reg.node[j].amplitude.resetTo(t2);
                     }
+                                       
                 } else {
                     // new basis state will be created 
 
-                    if ((m.t[1].squareSum()== 0.0) && (iset != 0)) {
+                    if (((float)m.t[1].squareSum() == 0) && (iset != 0)) {
                         break;
                     }
-                    if ((m.t[2].squareSum() == 0.0) && (iset == 0)) {
+                    if (((float)m.t[2].squareSum() == 0) && (iset == 0)) {
                         break;
                     }
                     reg.node[k].state = (reg.node[i].state ^ (1L << target));
-
+                    
                     if (iset != 0) {
                         reg.node[k].amplitude.resetTo(m.t[1]);
                         reg.node[k].amplitude.times(t);
@@ -426,7 +436,7 @@ public class Gates {
                         reg.node[k].amplitude.resetTo(m.t[2]);
                         reg.node[k].amplitude.times(t);
                     }
-
+                    
                     k++;
                 }
 
@@ -443,12 +453,16 @@ public class Gates {
         if (reg.hashw != 0) {
             int decsize = 0;
             for (i = 0, j = 0; i < reg.size; i++) {
-                if (reg.node[i].amplitude.squareSum() < limit) {
+        
+                if ((float)reg.node[i].amplitude.squareSum() < limit) {
                     j++;
                     decsize++;
+                
                 } else if (j != 0) {
+                    
                     reg.node[i - j].state = reg.node[i].state;
                     reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);
+                
                 }
             }
 
@@ -463,6 +477,7 @@ public class Gates {
                 }
             }
         }
+        
         decoherence.quantum_decohere(reg, rng, this);        
     }
 
@@ -528,7 +543,7 @@ public class Gates {
         l = reg.size;
 
         limit = (1.0f / (1L << reg.width)) / 1000000;
-        limit -= epsilon;
+        
         bits[0] = target1;
         bits[1] = target2;
 
@@ -606,7 +621,7 @@ public class Gates {
         
         QuantumMatrix m = matrix.quantum_new_matrix(2, 2);
 
-        double a = Math.sqrt(1.0 / 2);
+        double a = Math.sqrt(1.0 / 2.);
         m.t[0] = new ComplexModifiable(a, 0);
         m.t[1] = new ComplexModifiable(a, 0);
         m.t[2] = new ComplexModifiable(a, 0);
@@ -729,8 +744,9 @@ public class Gates {
         
         //return cos(phi) + IMAGINARY * sin(phi);
         double angle = Math.PI / (1L << (control - target));
-        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));
-
+        ComplexModifiable z 
+            = new ComplexModifiable(Math.cos(angle), Math.sin(angle));
+        
         for (i = 0; i < reg.size; i++) {
             if ((reg.node[i].state & (1L << control)) != 0) {
                 if ((reg.node[i].state & (1L << target)) != 0) {
@@ -740,6 +756,7 @@ public class Gates {
         }
 
         decoherence.quantum_decohere(reg, rng, this);
+    
     }
 
     void quantum_cond_phase_inv(int control, int target, QuantumReg reg) {
@@ -1440,7 +1457,7 @@ public class Gates {
         int i, j;
 
         System.out.format(" quantum_qft nloop=%d\n", w);
-
+        
         for (i = w - 1; i >= 0; i--) {
             for (j = w - 1; j > i; j--) {
                 quantum_cond_phase(j, i, reg);
@@ -1450,7 +1467,7 @@ public class Gates {
 
             quantum_hadamard(i, reg);
         }
-        System.out.format("\n");
+        System.out.format("\n");        
     }
 
     void quantum_qft_inv(int w, QuantumReg reg) {

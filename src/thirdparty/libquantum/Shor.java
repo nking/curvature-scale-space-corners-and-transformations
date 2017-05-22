@@ -150,8 +150,6 @@ public class Shor {
         */
         
         // max width = 30 ==> max N is 32768, ontrained by array length
-        //int width = Classic.quantum_getwidth(N*N);
-        //int swidth = Classic.quantum_getwidth(N);
         int width = MiscMath.numberOfBits(N * N);
         int swidth = MiscMath.numberOfBits(N);
         
@@ -177,9 +175,6 @@ public class Shor {
         
         QuantumReg qr = qureg.quantum_new_qureg(0, width);
         
-        //log.info(String.format("after construction, reg.size=" + qr.size
-        //  + " hash.length=" + qr.hash.length));
- 
         assert(qr.hash.length == (1 << qr.hashw));
         
         Gates gates = new Gates(rng);
@@ -188,56 +183,31 @@ public class Shor {
             gates.quantum_hadamard(i, qr);
         }
         
-        // log.info(String.format("after first hadamard, reg.size=" + qr.size
-        //   + " hash.length=" + qr.hash.length));
-                
-        /*{//DEBUG
-            qureg.quantum_print_qureg(qr);
-            for (i = 0; i < qr.size; i++) {
-                System.out.format("I %d %d\n", i, qr.node[i].state);
-            }
-        }*/
-        
         assert(qr.hash.length == (1 << qr.hashw));
         
         int nbits = 3 * swidth + 2;
         qureg.quantum_addscratch(nbits, qr);
-        
-        //qureg.quantum_print_qureg(qr);
-        
+                
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
-        
-        //qureg.quantum_print_qureg(qr);
-        
-        //log.info(String.format("after exp_mod_n, reg.size=" + qr.size
-        //  + " hash.length=" + qr.hash.length));
         
         assert(qr.hash.length == (1 << qr.hashw));
      
-        
-        //log.info("before bmeasure, reg.size=" + qr.size
-        //  + " hash.length=" + qr.hash.length);
-        //qureg.quantum_print_qureg(qr);
-        //for (i = 0; i < qr.size; i++) {
-        //    System.out.format("II %d %d\n", i, qr.node[i].state);
-        //}
-        
-        
         Measure measure = new Measure();
         
         for (i = 0; i < nbits; i++) {
             measure.quantum_bmeasure(0, qr, rng);
         }
-        
-        //log.info(String.format("after measure, reg.size=" + qr.size
-        //  + " hash.length=" + qr.hash.length));
        
         assert(qr.hash.length == (1 << qr.hashw));
  
         gates.quantum_qft(width,  qr);
 
-        //log.info(String.format("after qft, reg.size=" + qr.size
-        //  + " hash.length=" + qr.hash.length));
+        //log.info("after qft, reg.size=" + qr.size
+        //  + " hash.length=" + qr.hash.length);
+        //qureg.quantum_print_qureg(qr);
+        //for (i = 0; i < qr.size; i++) {
+        //    System.out.format("IV %d %d\n", i, qr.node[i].state);
+        //}
         
         for (i = 0; i < width / 2; i++) {
             gates.quantum_cnot(i, width - i - 1, qr);

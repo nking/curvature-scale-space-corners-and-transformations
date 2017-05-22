@@ -77,7 +77,7 @@ public class Decoherence {
          * Increase the gate counter
          */
         gates.quantum_gate_counter(1);
-
+        
         if (quantum_status != 0) {
 
             nrands = new double[reg.width];
@@ -104,12 +104,7 @@ public class Decoherence {
                 angle = 0;
 
                 for (j = 0; j < reg.width; j++) {
-                    
-                    System.out.format("decoh: (%d)%d AND=%d\n", j,
-                        reg.node[i].state, (1L << j),
-                        (reg.node[i].state & (1L << j))
-                    );
-                    
+                                        
                     if ((reg.node[i].state & (1L << j)) != 0) {
                         angle += nrands[j];
                     } else {

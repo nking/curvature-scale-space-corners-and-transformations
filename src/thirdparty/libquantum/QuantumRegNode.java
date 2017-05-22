@@ -44,5 +44,11 @@ public class QuantumRegNode {
 
     public ComplexModifiable amplitude;
     public long state = 0;
+
+    @Override
+    public String toString() {
+        return ("ampl=" + amplitude.toString() + " state=" + state);
+    }
+    
     
 }

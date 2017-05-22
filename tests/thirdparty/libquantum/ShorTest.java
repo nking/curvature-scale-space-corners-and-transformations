@@ -17,7 +17,7 @@ public class ShorTest extends TestCase {
     public ShorTest() {
     }
     
-    public void estRun() {
+    public void testRun() {
         
         log.info("testRun");
         
@@ -67,7 +67,7 @@ public class ShorTest extends TestCase {
             " max number of retries between fails=" + maxNRetries);
     }
     
-    public void estEuclidModularMethods() {
+    public void testEuclidModularMethods() {
         
         log.info("testEuclidModularMethods");
         
@@ -91,7 +91,7 @@ public class ShorTest extends TestCase {
         
         int[] factors;
         
-        int nTests = 100;
+        int nTests = 5;
         
         for (int i = 0; i < nTests; ++i) {
             
