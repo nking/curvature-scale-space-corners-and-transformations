@@ -136,8 +136,14 @@ public class Shor {
     }
     
     /**
-     * essentially, makes a bitstring matrix and examines the
-     * bit spacings to find the factors.
+     * essentially, makes an array of bitstrings of
+       size 2^(N*N), calculates factors of
+       the moduli and applies them, then
+       examines the bit spacings by applying
+       conditional phase shifts and hadamard gates
+       followed by several rounds of measurement
+       of the qubit 0 and collapse of superposed waveforms
+       (reducing the states) then toggling the state bits.
      * 
      * @return returns 2 factors of number, else returns a single item error code. 
      */
@@ -213,12 +219,22 @@ public class Shor {
         //    System.out.format("IV %d %d\n", i, qr.node[i].state);
         //}
         
+        log.info("before last swap: "
+            + "reg.size=" + qr.size
+            + " hash.length=" + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+
         //SWAP = CNOT[i, j]CNOT[j, i]CNOT[i, j]
         for (i = 0; i < width / 2; i++) {
             gates.quantum_cnot(i, width - i - 1, qr);
             gates.quantum_cnot(width - i - 1, i, qr);
             gates.quantum_cnot(i, width - i - 1, qr);
         }
+
+        log.info("after last swap: "
+            + "reg.size=" + qr.size
+            + " hash.length=" + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
         
         assert(qr.hash.length == (1 << qr.hashw));
 
