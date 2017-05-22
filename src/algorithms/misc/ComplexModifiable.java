@@ -74,7 +74,7 @@ public class ComplexModifiable {
     public double phase() { return Math.atan2(im, re); }  // between -pi and pi
 
     public double squareSum() {
-        return Math.abs((re * re) + (im * im));
+        return (re * re) + (im * im);
     }
     
     /**
@@ -122,8 +122,10 @@ public class ComplexModifiable {
      * @param b
      */
     public void times(ComplexModifiable b) {
-        re = re * b.re - im * b.im;
-        im = re * b.im + im * b.re;
+        double r = this.re;
+        double i = this.im;
+        re = r * b.re - i * b.im;
+        im = r * b.im + i * b.re;
     }
     
     /**
@@ -131,8 +133,10 @@ public class ComplexModifiable {
      * @param b
      */
     public void times(Complex b) {
-        re = re * b.re() - im * b.im();
-        im = re * b.im() + im * b.re();
+        double r = this.re;
+        double i = this.im;
+        re = r * b.re() - i * b.im();
+        im = r * b.im() + i * b.re();
     }
 
     /**
