@@ -80,11 +80,13 @@ public class Decoherence {
         
         if (quantum_status != 0) {
 
+            //NOTE: this is 0's when quantum_lambda = 0
             nrands = new double[reg.width];
 
             for (i = 0; i < reg.width; i++) {
                 
                 // Generate normal distributed random numbers
+                // of v and u in range -1 to 1
                 do {
                     u = 2 * rng.nextDouble() - 1;
                     v = 2 * rng.nextDouble() - 1;
@@ -97,6 +99,8 @@ public class Decoherence {
 
                 nrands[i] = x / 2;
             }
+            
+            // when quantum_lambda == 0, this sets all reg.node imag ampl to 0 
 
             // Apply the phase shifts for decoherence simulation */
             for (i = 0; i < reg.size; i++) {

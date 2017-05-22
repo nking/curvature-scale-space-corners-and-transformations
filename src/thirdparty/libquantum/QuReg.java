@@ -304,7 +304,7 @@ public class QuReg {
                 reg.node[i].state,
                 reg.node[i].amplitude.squareSum());
             
-            //write bitstring of node's state in reverse
+            //write bitstring of node's state from msb to lsb
             for (j = reg.width - 1; j >= 0; j--) {
                 if (j % 4 == 3) {
                     System.out.format(" ");
@@ -334,8 +334,10 @@ public class QuReg {
     }
 
     /**
-     * Add additional space to a qureg. It is initialized to zero and can be
-     * used as scratch space. Note that the space gets added at the LSB
+     * Add additional space to a qureg. It is initialized to zero and 
+     * can be used as scratch space. Note that the space gets added at the LSB
+     makes current bitstrings in reg.node states larger by a 
+     * left bitshift of size bits.
      */
     void quantum_addscratch(int bits, QuantumReg reg) {
         
@@ -452,8 +454,6 @@ public class QuReg {
         
         //MAX_UNSIGNED lpat = 0, rpat = 0, pos2;
         //pos2 = (MAX_UNSIGNED) 1 << pos;
-        long lpat = 0;
-        long rpat = 0;
         long pos2 = 1L << pos;
         
         // Eradicate all amplitudes of base states which have been ruled out
@@ -481,6 +481,13 @@ public class QuReg {
             out.node[ii].state = 0;
             out.node[ii].amplitude = new ComplexModifiable(0, 0);
         }
+        
+        // ---- if value == 0, keep the states with set bit pos
+        //      else keep the states where bit pos is not set.
+        //      d becomes the new normalization for the out states.
+        
+        long lpat = 0;
+        long rpat = 0;
         
         // Determine the numbers of the new base states and norm 
         // the quantum register 

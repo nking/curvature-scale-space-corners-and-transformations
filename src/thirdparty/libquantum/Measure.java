@@ -90,11 +90,15 @@ public class Measure {
         r = rng.nextDouble();
                 
         if (r > pa) {
+            // more states have a set bit in position pos
             result = 1;
         }
         
         QuReg qureg = new QuReg();
 
+        // if result==1, removes all states without bit pos set
+        //   and renormalizes the amplitudes,
+        //   else, does the same for statues with bit pos set
         QuantumReg out = qureg.quantum_state_collapse(
             pos, result, reg);
 

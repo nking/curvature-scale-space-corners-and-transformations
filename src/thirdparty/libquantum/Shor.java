@@ -149,6 +149,10 @@ public class Shor {
      */
     public int[] run() {
        
+        //TODO: could consider adding ability to cache cofactors, that is x,
+        //   to not retry same x on subsequent run.
+        
+        
         // max width = 30 ==> max N is 32768, constrained by array length
         int width = MiscMath.numberOfBits(N * N);
         int swidth = MiscMath.numberOfBits(N);
@@ -183,23 +187,47 @@ public class Shor {
         //   register qr, and each bit is the figurative qubit in qr.
         //   each bitstring is stored as a node in register qr.
         //   the sum of the node amplitudes squared is approx 1.
+        
         for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, qr);
         }
         
-        //log.info("after init and norm with quantum_hadamard: "
-        //    + "reg.size=" + qr.size
-        //    + " hash.length=" + qr.hash.length);
-        //qureg.quantum_print_qureg(qr);
-        
+        /*
+        //log.info(
+        System.out.println(
+            "after init and norm with quantum_hadamard: "
+            + "reg.size=" + qr.size
+            + " hash.length=" + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        */
         assert(qr.hash.length == (1 << qr.hashw));
+        
+        // ---- shift existing node states left by nbits ----
         
         int nbits = 3 * swidth + 2;
         qureg.quantum_addscratch(nbits, qr);
         
+        /*
+        //log.info(
+        System.out.println(
+            "after addscratch: "
+            + "reg.size=" + qr.size
+            + " hash.length=" + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        */
+        
+        // ---- apply exp_mod_n ----
         
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         
+        /*
+        //log.info(
+        System.out.println(
+            "after exp_mod_n: "
+            + "reg.size=" + qr.size
+            + " hash.length=" + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        */
         assert(qr.hash.length == (1 << qr.hashw));
      
         Measure measure = new Measure();
@@ -210,20 +238,29 @@ public class Shor {
        
         assert(qr.hash.length == (1 << qr.hashw));
  
-        gates.quantum_qft(width,  qr);
-
-        //log.info("after qft, reg.size=" + qr.size
-        //  + " hash.length=" + qr.hash.length);
-        //qureg.quantum_print_qureg(qr);
-        //for (i = 0; i < qr.size; i++) {
-        //    System.out.format("IV %d %d\n", i, qr.node[i].state);
-        //}
-        
-        log.info("before last swap: "
+        /*
+        //log.info(
+        System.out.println(
+            "after bmeasure: "
             + "reg.size=" + qr.size
             + " hash.length=" + qr.hash.length);
         qureg.quantum_print_qureg(qr);
+        */
+        
+        gates.quantum_qft(width,  qr);
 
+        /*
+        //log.info(
+        System.out.println(
+            "after qft: "
+            + "reg.size=" + qr.size
+            + " hash.length=" + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        //for (i = 0; i < qr.size; i++) {
+        //    System.out.format("IV %d %d\n", i, qr.node[i].state);
+        //}
+        */
+        
         //SWAP = CNOT[i, j]CNOT[j, i]CNOT[i, j]
         for (i = 0; i < width / 2; i++) {
             gates.quantum_cnot(i, width - i - 1, qr);
@@ -231,11 +268,14 @@ public class Shor {
             gates.quantum_cnot(i, width - i - 1, qr);
         }
 
-        log.info("after last swap: "
+        /*
+        //log.info(
+        System.out.println(
+            "after last swap: "
             + "reg.size=" + qr.size
             + " hash.length=" + qr.hash.length);
         qureg.quantum_print_qureg(qr);
-        
+        */
         assert(qr.hash.length == (1 << qr.hashw));
 
         long c = measure.quantum_measure(qr, rng);

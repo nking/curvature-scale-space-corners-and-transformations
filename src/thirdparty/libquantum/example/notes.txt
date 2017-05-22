@@ -1,0 +1,4 @@
+present are the output of printing the register of bitstrings (states)
+
+The successive stages of Shor's algorithm for arguments 15, 8 
+are seen in t?.txt
