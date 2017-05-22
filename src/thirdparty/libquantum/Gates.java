@@ -91,6 +91,7 @@ public class Gates {
        "From Reversible Logic Gates to Universal Quantum Bases"
           by Bocharov and Svore
      * </pre>
+     * runtime complexity is O(reg.size)
      */
     void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
 
@@ -105,7 +106,7 @@ public class Gates {
 
             for (i = 0; i < reg.size; i++) {
                 // Flip the target bit of a basis state if 
-                //both control bits are set 
+                // both control bits are set 
 
                 long st = reg.node[i].state;
                 if ((st & (1L << control1)) != 0) {
@@ -286,7 +287,8 @@ public class Gates {
     }
 
     /**
-     * Swap WIDTH bits starting at WIDTH and 2*WIDTH+2 controlled by CONTROL
+     * Swap WIDTH bits starting at WIDTH and 2*WIDTH+2 controlled by CONTROL.
+     * runtime complexity is width * O(reg.size)
      */
     void quantum_swaptheleads_omuln_controlled(int control, int width, 
         QuantumReg reg) {
@@ -307,6 +309,9 @@ public class Gates {
 
     /**
      * Apply the 2x2 matrix M to the target bit. M should be unitary.
+     
+     runtime complexity is O(reg.size), though that size might expand
+     int method.
      */
     void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
             
@@ -1057,15 +1062,19 @@ public class Gates {
     // ----- from expn.c, omuln.c, Multiplication modulo an integer N ----
     
     /**
-     * calculates f(a) = x^a mod N in the width of the working space.
-     * 
+       calculates f(a) = x^a mod N in the width of the working space.
+       
+       runtime complexity is runtime complexity is 
+         width_input * swidth * O(reg.size).
+     
      * @param N
      * @param x
      * @param width_input
      * @param swidth
      * @param reg 
      */
-    void quantum_exp_mod_n(int N, int x, int width_input, int swidth, QuantumReg reg) {
+    void quantum_exp_mod_n(int N, int x, int width_input, int swidth, 
+        QuantumReg reg) {
 
         if (x == 0) {
             throw new IllegalArgumentException("x cannot == 0");
@@ -1084,6 +1093,7 @@ public class Gates {
             }
             //apply f mod N = f - floor(f / N) * N to
             //   the scratch workspace of largest value bitstrings
+            // runtime complexity is w * O(reg.size)
             mul_mod_n(N, f, 3 * swidth + 1 + i, swidth, reg);
         }
     }
@@ -1122,6 +1132,14 @@ public class Gates {
         }
     }
 
+    /**
+     * runtime complexity is w * O(reg.size)
+     * @param N
+     * @param a
+     * @param ctl
+     * @param w
+     * @param reg 
+     */
     void muln_inv(int N, int a, int ctl, int w, QuantumReg reg){
 
         //ctl tells, which bit is the external enable bit
@@ -1151,12 +1169,23 @@ public class Gates {
         
     }
 
+    /**
+     * runtime complexity is w * O(reg.size)
+     * @param N
+     * @param a
+     * @param ctl
+     * @param w
+     * @param reg 
+     */
     void mul_mod_n(int N, int a, int ctl, int w, QuantumReg reg) {
         
+        //runtime complexity is O(reg.size)
         muln(N, a, ctl, w, reg);
 
+        //runtime complexity is w * O(reg.size)
         quantum_swaptheleads_omuln_controlled(ctl, w, reg);
         
+        //runtime complexity is w * O(reg.size)
         muln_inv(N, a, ctl, w, reg);
     
     }

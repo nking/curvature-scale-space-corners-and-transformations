@@ -2,3 +2,9 @@ present are the output of printing the register of bitstrings (states)
 
 The successive stages of Shor's algorithm for arguments 15, 8 
 are seen in t?.txt
+
+Note that the format of the register print out for each
+node being a line in the file:
+
+    node.amplitude.real node.amplitude.imag'i' | state > (state bitstring)
+

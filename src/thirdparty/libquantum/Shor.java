@@ -144,12 +144,14 @@ public class Shor {
        followed by several rounds of measurement
        of the qubit 0 and collapse of superposed waveforms
        (reducing the states) then toggling the state bits.
-     * 
-     * @return returns 2 factors of number, else returns a single item error code. 
+      
+      runtime complexity is approx N^2 * log_2(N) * log_2(N).
+     
+     @return returns 2 factors of number, else returns a single item error code. 
      */
     public int[] run() {
        
-        //TODO: could consider adding ability to cache cofactors, that is x,
+        //TODO: consider adding ability to cache cofactors, that is x,
         //   to not retry same x on subsequent run.
         
         
@@ -188,6 +190,7 @@ public class Shor {
         //   each bitstring is stored as a node in register qr.
         //   the sum of the node amplitudes squared is approx 1.
         
+        // ~O(qr.size) where qr.size is 2*log_2(N)
         for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, qr);
         }
@@ -201,6 +204,7 @@ public class Shor {
         qureg.quantum_print_qureg(qr);
         */
         assert(qr.hash.length == (1 << qr.hashw));
+        
         
         // ---- shift existing node states left by nbits ----
         
@@ -216,8 +220,12 @@ public class Shor {
         qureg.quantum_print_qureg(qr);
         */
         
+        
         // ---- apply exp_mod_n ----
         
+        //runtime complexity is width * swidth * O(reg.size).
+        //    which is 2 * log_2(N) * log_2(N) * 2^(log_2(N*N))
+        //           ~ N^2 * 2 * log_2(N) * log_2(N)
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         
         /*

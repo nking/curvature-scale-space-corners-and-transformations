@@ -1,3 +1,7 @@
+Shor's for N=15, x=8
+number of qubits in initialized register is at first 
+   log_2(N*N) (=2*log_2(N)) = 8
+
     [junit] init reg: 8 qubits, 1 node, and 1024 hash table length, hashw=10
     [junit] after init and norm with quantum_hadamard: reg.size=256 hash.length=1024
     [junit] 0.062500 0.000000i|0> (0.003906) (| 0000 0000>)

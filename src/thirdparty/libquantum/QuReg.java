@@ -110,7 +110,7 @@ public class QuReg {
         }
         
         //NOTE: since this value is the index of reg.node,
-        //      for last entry, it has an invalid value.
+        //      the last entry is an invalid value.
         //      should the value be pos?
         reg.hash[i] = pos + 1;
     }

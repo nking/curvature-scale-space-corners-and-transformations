@@ -13,8 +13,7 @@ public class GreatestCommonDenominator {
     /**
      * return the greatest common denominator of the 2 integers.
      *
-     * worse case runtime can never be greater than five times the number of its digits (base 10).
-     * avg case runtime is
+     * runtime complexity is (?)
      * 
      * @param a
      * @param b
@@ -32,8 +31,7 @@ public class GreatestCommonDenominator {
     /**
      * return the greatest common denominator of the 2 integers.
      *
-     * worse case runtime can never be greater than five times the 
-     * O(log_2(min(m, n)).
+     * runtime complexity is (?)
      * 
      * @param a
      * @param b

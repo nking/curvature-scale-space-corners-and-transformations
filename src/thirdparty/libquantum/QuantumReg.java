@@ -43,7 +43,10 @@ public class QuantumReg {
     public QuantumRegNode[] node;
     
     /** hash holding indexes of node.  the hash length
-     is usually instantiated as (1 << hashw).*/
+     is usually instantiated as (1 leftshift hashw).
+     The hash is used by quantum_get_state to find the node
+     index having a given state.
+     */
     public int[] hash;
 
 }
