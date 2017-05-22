@@ -204,6 +204,8 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- more reading on 3d reconstruction
 
 -- finish the special topics reading
+   -- add to it "Mastering the game of Go with 
+      deep neural networks and tree search"
 
 -- no priority:
    for jni bindings of the c++ dlib library, would like to automate

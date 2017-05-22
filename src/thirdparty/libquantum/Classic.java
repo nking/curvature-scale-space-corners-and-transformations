@@ -53,7 +53,9 @@ public class Classic {
     }
 
     /**
-     * Fractional approximation of a decimal value
+     * Fractional approximation of a decimal value, that is, represent
+     * the fraction by smallest integers that produce
+     * the same value.
     
      * @param aInOut input and output array of size 1
      * @param bInOut input and output array of size 1
@@ -72,13 +74,22 @@ public class Classic {
         float g = f;
         int i, num2 = 0, den2 = 1, num1 = 1, den1 = 0, num = 0, den = 0;
 
+        int s = 1 << width;
+        
         do {
+            // essentially floor(g) unless within eps of ceiling
             i = (int) (g + 0.000005);
-
+            
+            // g      i   g               g
+            // 0.5    0   0.000005        1/0.000005
+            // 1.5    1   0.500005
+            // 1.99   2   -0.01+0.000005
+            // essentially, difference from floor unless within eps of ceiling
             g -= i - 0.000005f;
+            // inv of difference
             g = 1.0f / g;
 
-            if (i * den1 + den2 > (1 << width)) {
+            if (i * den1 + den2 > s) {
                 break;
             }
 
@@ -90,7 +101,7 @@ public class Classic {
             num1 = num;
             den1 = den;
 
-        } while (Math.abs(((double) num / den) - f) > 1.0 / (2 * (1 << width)));
+        } while (Math.abs(((double) num / den) - f) > 1.0 / (2 * s));
 
         aInOut[0] = num;
         bInOut[0] = den;

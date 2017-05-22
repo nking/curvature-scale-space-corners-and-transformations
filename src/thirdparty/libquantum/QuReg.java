@@ -303,6 +303,8 @@ public class QuReg {
                 reg.node[i].amplitude.im(), 
                 reg.node[i].state,
                 reg.node[i].amplitude.squareSum());
+            
+            //write bitstring of node's state in reverse
             for (j = reg.width - 1; j >= 0; j--) {
                 if (j % 4 == 3) {
                     System.out.format(" ");

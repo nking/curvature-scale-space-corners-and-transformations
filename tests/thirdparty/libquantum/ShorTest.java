@@ -4,7 +4,6 @@ import algorithms.util.GreatestCommonDenominator;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import static thirdparty.libquantum.QuReg.quantum_hash64;
 
 /**
  *

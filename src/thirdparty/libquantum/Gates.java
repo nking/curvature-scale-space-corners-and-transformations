@@ -84,7 +84,13 @@ public class Gates {
     }
 
     /**
-     * Apply a toffoli (or controlled-controlled-not) gate
+     * Apply a toffoli (or controlled-controlled-not) gate.
+     * <pre>
+     * this is a ternary gate with the property 
+     * CCNOT(x, y,z) = (x, y, (x ∧ y) ⊕ z).
+       "From Reversible Logic Gates to Universal Quantum Bases"
+          by Bocharov and Svore
+     * </pre>
      */
     void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
 
@@ -176,7 +182,6 @@ public class Gates {
             //System.out.println("NEXT sigma_x_ft");
             quantum_sigma_x_ft(target, reg);
         } else {
-            
             for (i = 0; i < reg.size; i++) {
                 // Flip the target bit of each basis state 
                 reg.node[i].state ^= (1L << target);
@@ -288,6 +293,11 @@ public class Gates {
    
         int i;
 
+        // brief summary of 2-bit swap gate at
+        // https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/FromReversibleLogicGatestoUniversalQuantumBases.pdf
+        // "From Reversible Logic Gates to Universal Quantum Bases"
+        //    by Bocharov and Svore
+        // SWAP = CNOT[1, 2]CNOT[2, 1]CNOT[1, 2]
         for (i = 0; i < width; i++) {
             quantum_toffoli(control, width + i, 2 * width + i + 2, reg);
             quantum_toffoli(control, 2 * width + i + 2, width + i, reg);
@@ -1047,22 +1057,26 @@ public class Gates {
     // ----- from expn.c, omuln.c, Multiplication modulo an integer N ----
     
     /**
-     * x^a mod n
+     * calculates f(a) = x^a mod N in the width of the working space.
+     * 
      * @param N
      * @param x
      * @param width_input
-     * @param width
+     * @param swidth
      * @param reg 
      */
-    void quantum_exp_mod_n(int N, int x, int width_input, int width, QuantumReg reg) {
+    void quantum_exp_mod_n(int N, int x, int width_input, int swidth, QuantumReg reg) {
 
         if (x == 0) {
             throw new IllegalArgumentException("x cannot == 0");
         }
         
         int i, j, f;
+        
+        //a mod b = a - floor(a / b) * b
 
-        quantum_sigma_x(2 * width + 2, reg);
+        //toggle bit '2 * width + 2' in each node state
+        quantum_sigma_x(2 * swidth + 2, reg);
  
         for (i = 1; i <= width_input; i++) {
             f = x % N;			//compute
@@ -1070,12 +1084,8 @@ public class Gates {
                 f *= f;	//x^2^(i-1)
                 f = f % N;
             }
-            mul_mod_n(N, f, 3 * width + 1 + i, width, reg);
+            mul_mod_n(N, f, 3 * swidth + 1 + i, swidth, reg);
         }
-        
-        //System.out.println("i=" + i);
-        //QuReg qureg = new QuReg();
-        //qureg.quantum_print_qureg(reg);
     }
 
     void emul(int a, int L, int width, QuantumReg reg){

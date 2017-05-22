@@ -136,23 +136,16 @@ public class Shor {
     }
     
     /**
+     * essentially, makes a bitstring matrix and examines the
+     * bit spacings to find the factors.
      * 
      * @return returns 2 factors of number, else returns a single item error code. 
      */
     public int[] run() {
-        
-        /*
-        NOTE:
-           could consider out of context, the
-           "ESPRESSO algorithm", 
-               developed by Brayton et al. at the University of California, Berkeley
-           to look at optimizing gates for quantum algorithms.
-        */
-        
-        // max width = 30 ==> max N is 32768, ontrained by array length
+       
+        // max width = 30 ==> max N is 32768, constrained by array length
         int width = MiscMath.numberOfBits(N * N);
         int swidth = MiscMath.numberOfBits(N);
-        
         
         log.info("SEED=" + rSeed);
         log.info(String.format("N = %d, width=%d, swidth=%d, %d qubits required\n", 
@@ -178,16 +171,27 @@ public class Shor {
         assert(qr.hash.length == (1 << qr.hashw));
         
         Gates gates = new Gates(rng);
-       
+        
+        // initialize 1<<width bitstrings and normalize them
+        //   the bitstring is the bitstring representation of a node.state in
+        //   register qr, and each bit is the figurative qubit in qr.
+        //   each bitstring is stored as a node in register qr.
+        //   the sum of the node amplitudes squared is approx 1.
         for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, qr);
         }
+        
+        //log.info("after init and norm with quantum_hadamard: "
+        //    + "reg.size=" + qr.size
+        //    + " hash.length=" + qr.hash.length);
+        //qureg.quantum_print_qureg(qr);
         
         assert(qr.hash.length == (1 << qr.hashw));
         
         int nbits = 3 * swidth + 2;
         qureg.quantum_addscratch(nbits, qr);
-                
+        
+        
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         
         assert(qr.hash.length == (1 << qr.hashw));
@@ -209,6 +213,7 @@ public class Shor {
         //    System.out.format("IV %d %d\n", i, qr.node[i].state);
         //}
         
+        //SWAP = CNOT[i, j]CNOT[j, i]CNOT[i, j]
         for (i = 0; i < width / 2; i++) {
             gates.quantum_cnot(i, width - i - 1, qr);
             gates.quantum_cnot(width - i - 1, i, qr);

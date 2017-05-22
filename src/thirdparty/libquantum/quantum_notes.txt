@@ -24,7 +24,7 @@ a simulated quantum computer on a classical computer.
         VIAMONTES, MARKOV, AND HAYES
    In a circuit design of the steps of linear algebra to
    perform, the parallel composition of
-   gates uses the tensor product (Kronecker( and
+   gates uses the tensor product (Kronecker) and
    the serial composition uses the ordinary matrix product.
 
    The state vectors and gate matrices that
@@ -88,6 +88,13 @@ notes from "Basic concepts in quantum computation" by
     Any attempt to measure the state
         α|0> + β|1>
     results in |0> with probability |α|2, and |1> with probability |β|2.
+
+    More on the subject is also in
+      "From Reversible Logic Gates to Universal Quantum Bases"
+      by Bocharov and Svore
+      and
+      "Quantum Computation and Quantum Information"
+      by Nielsen and Chuang 
         
 ===============================
 Notes about Shor's algorithm
@@ -328,4 +335,10 @@ the algorithm outline is:
     ** The experimental results show that for a key of n-bit size 
     and key space of N such that N = 2n, the key can be recovered 
     in 𝒪((π/4)*sqrt(N))
-
+------
+    consider reading:
+           "ESPRESSO algorithm", 
+               developed by Brayton et al. at the 
+               University of California, Berkeley
+           to look at optimizing gates for quantum algorithms.
+        
