@@ -90,11 +90,12 @@ public class ShorTest extends TestCase {
         
         int[] factors;
         
-        int nTests = 5;
+        int nTests = 10;
         
         for (int i = 0; i < nTests; ++i) {
             
             Shor shor = new Shor(99, 14);//32768
+            //Shor shor = new Shor(12345);//32768
 
             factors = shor.run();
 

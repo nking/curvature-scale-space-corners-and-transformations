@@ -34,6 +34,16 @@ import java.util.logging.Logger;
  * Also, ensure that N is not the power of a prime.
  * can check by:
  *    for all k .lte. log_2(N) that math.pow(N, k) is not an integer.
+ *
+ * the libquantum runtime complexity is approx N^2 * log_2(N) * log_2(N),
+     but here, have reduced the number of qubits at initialization to
+     2^(log2(N)) instead of 2^(log2(N*N)),
+        so the runtime complexity is now 
+        approx N * log_2(N) * log_2(N)
+        
+   For larger numbers, you might want to feedback the largest cofactor in a 
+   single result into another instance.
+    
  */
 public class Shor {
     
@@ -54,6 +64,8 @@ public class Shor {
     private final Random rng;
     
     private final long rSeed;
+    
+    private boolean useLargerInit = false;
     
     public Shor(int number) {
         
@@ -135,9 +147,13 @@ public class Shor {
         this.x = x;
     }
     
+    public void overrideToUseLargerInitialization() {
+        useLargerInit = true;
+    }
+    
     /**
      * essentially, makes an array of bitstrings of
-       size 2^(N*N), calculates factors of
+       size 2^(N), calculates factors of
        the moduli and applies them, then
        examines the bit spacings by applying
        conditional phase shifts and hadamard gates
@@ -145,7 +161,11 @@ public class Shor {
        of the qubit 0 and collapse of superposed waveforms
        (reducing the states) then toggling the state bits.
       
-      runtime complexity is approx N^2 * log_2(N) * log_2(N).
+     NOTE: the libquantum runtime complexity is approx N^2 * log_2(N) * log_2(N),
+     but here, have reduced the number of qubits at initialization to
+     2^(log2(N)) instead of 2^(log2(N*N)),
+        so the runtime complexity is now 
+        approx N * log_2(N) * log_2(N)
      
      @return returns 2 factors of number, else returns a single item error code. 
      */
@@ -158,6 +178,9 @@ public class Shor {
         // max width = 30 ==> max N is 32768, constrained by array length
         int width = MiscMath.numberOfBits(N * N);
         int swidth = MiscMath.numberOfBits(N);
+        if (!useLargerInit) {
+            width = swidth;
+        }
         
         log.info("SEED=" + rSeed);
         log.info(String.format("N = %d, width=%d, swidth=%d, %d qubits required\n", 
