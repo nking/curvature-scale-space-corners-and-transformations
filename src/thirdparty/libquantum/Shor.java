@@ -42,20 +42,26 @@ import java.util.logging.Logger;
         approx N * log_2(N) * log_2(N)
         
    For larger numbers, you might want to feedback the largest cofactor in a 
-   single result into another instance.
+   single result into another instance if the smallest primes are
+   wanted.
     
-   The code is limited to signed integers.
-    
-   Note, that in contrast, the general number field sieve integer 
-   factorization
+   The code is limited to signed integers.   Note that large N might
+   need an increased heap size and that garbage collection for
+   large heap size may affect the performance.
+   an article describing such an experience:
+       https://techblog.expedia.com/2015/09/25/solving-problems-with-very-large-java-heaps/
+
+   Note, that in contrast to Shor's algorithm, the general number 
+   field sieve integer factorization
    has runtime complexity O( exp( ( (64/9)*b*(log b * log b) )^(1/3) ) )
    where b is bit size of N (where N~log2(N)).
    https://en.wikipedia.org/wiki/General_number_field_sieve
    
-   Note also that the implementation here, if ported to run on a quantum computer
-   would reduce the "N" factor in the runtime complexity to ~log2(N),
-   (resulting in a runtime complexity of about (log_2(N) * log_2(N))^(3))
+   Note also that the implementation here, if ported to run on a 
+   quantum computer would reduce the runtime complexity to 
+   ~(log_2(N))^(3)
    which is larger than that of the general number field sieve algorithm. 
+
  */
 public class Shor {
     
