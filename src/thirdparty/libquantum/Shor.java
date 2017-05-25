@@ -35,33 +35,23 @@ import java.util.logging.Logger;
  * can check by:
  *    for all k .lte. log_2(N) that math.pow(N, k) is not an integer.
  *
- * the libquantum runtime complexity is approx N^2 * log_2(N) * log_2(N),
-     but here, have reduced the number of qubits at initialization to
-     2^(log2(N)) instead of 2^(log2(N*N)),
-        so the runtime complexity is now 
-        approx N * log_2(N) * log_2(N)
+ * the runtime complexity is approx log_2(N)
         
-   For larger numbers, you might want to feedback the largest cofactor in a 
+   For larger N, you might want to feedback the largest cofactor in a 
    single result into another instance if the smallest primes are
    wanted.
     
-   The code is limited to signed integers.   Note that large N might
-   need an increased heap size and that garbage collection for
-   large heap size may affect the performance.
-   an article describing such an experience:
-       https://techblog.expedia.com/2015/09/25/solving-problems-with-very-large-java-heaps/
-
+   The code is limited to signed integers.  It could be edited to
+   use VeryLongBitString for register node's status and adjust the libquantum
+   methods for that change.
+    
    Note, that in contrast to Shor's algorithm, the general number 
    field sieve integer factorization
    has runtime complexity O( exp( ( (64/9)*b*(log b * log b) )^(1/3) ) )
    where b is bit size of N (where N~log2(N)).
    https://en.wikipedia.org/wiki/General_number_field_sieve
+   Mpte, this should be checked for GNFS...found a different estimate too.
    
-   Note also that the implementation here, if ported to run on a 
-   quantum computer would reduce the runtime complexity to 
-   ~(log_2(N))^(3)
-   which is larger than that of the general number field sieve algorithm. 
-
  */
 public class Shor {
     
@@ -82,10 +72,6 @@ public class Shor {
     private final Random rng;
     
     private final long rSeed;
-    
-    private boolean useLargerInit = false;
-    
-    private boolean retryMeasure0 = false;
     
     public Shor(int number) {
         
@@ -166,14 +152,6 @@ public class Shor {
         this.x = x;
     }
     
-    public void overrideToUseLargerInitialization() {
-        useLargerInit = true;
-    }
-    
-    public void overrideToRetryMeasured0() {
-        retryMeasure0 = true;
-    }
-    
     /**
      * essentially, makes an array of bitstrings of
        size 2^(N), calculates factors of
@@ -184,11 +162,11 @@ public class Shor {
        of the qubit 0 and collapse of superposed waveforms
        (reducing the states) then toggling the state bits.
       
-     NOTE: the libquantum runtime complexity is approx N^2 * log_2(N) * log_2(N),
+     NOTE: the libquantum runtime complexity is approx N^2 * log_2(N),
      but here, have reduced the number of qubits at initialization to
      2^(log2(N)) instead of 2^(log2(N*N)),
         so the runtime complexity is now 
-        approx N * log_2(N) * log_2(N)
+        approx N * log_2(N)
      
      @return returns 2 factors of number, else returns a single item error code. 
      */
@@ -199,11 +177,9 @@ public class Shor {
         
         
         // max width = 30 ==> max N is 32768, constrained by array length
-        int width = MiscMath.numberOfBits(N * N);
+        //int width = MiscMath.numberOfBits(N * N);
         int swidth = MiscMath.numberOfBits(N);
-        if (!useLargerInit) {
-            width = swidth;
-        }
+        int width = 1;
         
         log.info("SEED=" + rSeed);
         log.info(String.format("N = %d, width=%d, swidth=%d, %d qubits required\n", 
@@ -236,7 +212,7 @@ public class Shor {
         //   each bitstring is stored as a node in register qr.
         //   the sum of the node amplitudes squared is approx 1.
         
-        // ~O(qr.size) where qr.size is 2^(log2(N))
+        // ~O(qr.size)
         for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, qr);
         }
@@ -257,20 +233,19 @@ public class Shor {
         int nbits = 3 * swidth + 2;
         qureg.quantum_addscratch(nbits, qr);
         
-        /*
+        
         //log.info(
         System.out.println(
             "after addscratch: "
             + "reg.size=" + qr.size
             + " hash.length=" + qr.hash.length);
         qureg.quantum_print_qureg(qr);
-        */
+        
         
         // ---- apply exp_mod_n ----
         
-        //runtime complexity is width * swidth * O(reg.size).
-        //           ~ log_2(N) * log_2(N) * 2^(log_2(N))
-        //           ~ N * log_2(N) * log_2(N)
+        //runtime complexity is width * O(reg.size).
+        //           ~ log_2(N) * qr.size
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         
         /*
@@ -300,7 +275,7 @@ public class Shor {
         qureg.quantum_print_qureg(qr);
         */
         
-        //log2(N) * (.lt. log2(N)) * 2^(log2(N))
+        //log2(N) * (.lt. log2(N)) * qr.size
         gates.quantum_qft(width,  qr);
 
         /*
@@ -322,14 +297,14 @@ public class Shor {
             gates.quantum_cnot(i, width - i - 1, qr);
         }
 
-        /*
+        ///*
         //log.info(
         System.out.println(
             "after last swap: "
             + "reg.size=" + qr.size
             + " hash.length=" + qr.hash.length);
         qureg.quantum_print_qureg(qr);
-        */
+        //*/
         assert(qr.hash.length == (1 << qr.hashw));
 
         long c = measure.quantum_measure(qr, rng);

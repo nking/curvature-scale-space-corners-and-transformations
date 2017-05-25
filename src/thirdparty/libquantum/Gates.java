@@ -1085,15 +1085,16 @@ public class Gates {
         //toggle bit '2 * width + 2' in each node state
         quantum_sigma_x(2 * swidth + 2, reg);
  
+        f = x % N;
+        int lastI = 1;
         for (i = 1; i <= width_input; i++) {
             f = x % N;			//compute
-            for (j = 1; j < i; j++) {
+            for (j = lastI; j < i; j++) {
                 f *= f;	//x^2^(i-1)
                 f = f % N;
             }
-            //apply f mod N = f - floor(f / N) * N to
-            //   the scratch workspace of largest value bitstrings
-            // runtime complexity is w * O(reg.size)
+            lastI = i;
+            //apply f mod N = f - floor(f / N) * N
             mul_mod_n(N, f, 3 * swidth + 1 + i, swidth, reg);
         }
     }
