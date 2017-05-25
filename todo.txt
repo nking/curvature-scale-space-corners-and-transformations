@@ -4,120 +4,17 @@
    -- a little more about MCMC
 -- looking at PIMC:
     http://web.engr.illinois.edu/~bkclark/PIMCTutorial/tutorial.pdf
+   - Three examples of MCMC techniques include the 
+        Metropolis-Hastings algorithm, 
+        Simulated Annealing for global optimization, and the 
+        Gibbs sampler
+
 
 -- global search:
    bayesian optimization.
    see code listing section at:
     http://www.cleveralgorithms.com/nature-inspired/probabilistic/boa.html
    see https://github.com/fmfn/BayesianOptimization/blob/master/examples/usage.py
-
-paused reading file:///Users/nichole/Downloads/Allegato_32620%20(1).pdf
-  on page 6
-
-below notes were accidently committed. 
-need to clean them up after reading.
-
-Perron–Frobenius theorem
-[22, p 54ff],
-
-
--- AQC is not restricted only to optimization problems 
-    (unlike QA) - an universal AQC can run any
-    quantum algorithm, and has been shown to be computationally 
-    equivalent to the gate model of quatnum
-    computation, as both can be efficiently mapped into 
-    each other [16].
-    Quantum adiabatic algorithms have been aplied to solve 
-    various optimization problems, for instance
-    finding cliques 27 in random graphs [17]. 
-    There is no know classical algorithm that finds the largest
-    clique in a random graph with high probability and runs in 
-    polynomial time.
-    In these algorithms, the condition for adiabaticity is 
-    fulfilled globaly by using only the minimum
-    energy gap between ground and first exited state to 
-    determine the computation time. This method
-    (global evolution) is not efficient in some cases, such as 
-    adiabatic Grover’s search algorithm [18] and
-    adiabatic Deutsch-Jozsa algorithm [19] as they result 
-    in a complexity τglobal = O(N) (which is complexity
-    of classical algorithms). However these algorithms can 
-    be improved by application of local adiabatic
-    evolution yielding an optimal performance of a quantum 
-    algorithm, τlocal = O( √ N ).
-    On the other hand, the universal AQC can provide 
-    solution to a problem in polynomial time if
-    the same problem can be solved in polynomial time 
-    using logic gate quantum computer. Evidently,
-    the polynomial advantage does not depend on the 
-    local evolution (instead it only provides a quadratic
-    enhancement).
-
-    -- read
-       Altaisky, M. V., N. N. Zolnikova, N. E. Kaputkina, V. A. Krylov, Yu. E. Lozovik, and N. S. Dattani. 2015. “Towards a Feasible Implementation of Quantum Neural Networks Using Quantum Dots.” arXiv:1503.05125.
-
-       Quantum algrithm for Closest Pattern Matching, Marcus and Imar
-
-
-  ... Quantum Stochastic Optimization
-   Discretizing a continuous Hamiltonian is straightforward process and changes the total run time T
-
-Childs A.M., Farhi E., Goldstone J., Gutmann S.: Finding cliques by quantum adiabatic evolution,
-Quantum Information and Computation 2, 181 (2002)
-
-Roland J., Cerf J. N.: Quantum Search by Local Adiabatic Evolution, Phys. Rev. A 65 (2002)
-[
-
-    ** start here again: http://www.columbia.edu/cu/chemistry/groups/berne/papers/jcp_118_2999_2003.pdf
-      https://arxiv.org/pdf/1408.3262.pdf
-
-    not sure if this is all here:
-       https://github.com/FabienDufoulon/QuantumAnnealing
-
-    quantum annealing
-   https://arxiv.org/pdf/1404.2465.pdf
-   * https://arxiv.org/pdf/1107.0794.pdf
-      (seudocode)
-   c++ impl https://github.com/FabienDufoulon/QuantumAnnealing 
-
-   https://arxiv.org/abs/1601.03030
-
-   if consider pso,
-       https://sourceforge.net/projects/jswarm-pso/?source=typ_redirect
-
--- for global search/optimization methods, consider importing
-     https://github.com/aimacode/aima-java
-     -- use the simulted annealing and/or other global
-        optimization for the polynomial curve fitting
-     would like to consider importing best global optimization
-     (? random search, a genetic algorithm, simulated annealing,
-     or particle swarm)
-     -- consider the "clever algorithms" 
-
-     Three examples of MCMC techniques include the 
-        Metropolis-Hastings algorithm, 
-        Simulated Annealing for global optimization, and the 
-        Gibbs sampler
-
-     -- BIPOP-CMA-ES ?  NEWUOA?
-        (Evolutionary Computation (EC) methods)
-        http://www.mitpressjournals.org/doi/pdf/10.1162/EVCO_a_00084
-        (Comparison of Global Search Algorithms for Continuous Black 
-           Box Optimization by Posik, Huler and Pa)
-        -- where are the tests for this paper?
-           - COCO (comparing continuous optimizers)
-             methodology (Hansen, Auger, et al., 2009)
-        https://github.com/numbbo/coco
-        tests are at:
-           https://github.com/numbbo/coco/tree/master/code-experiments/src
-        paper for 2016 coco frmework is at:
-           https://arxiv.org/pdf/1604.00359.pdf
-        good summary of the tests:
-           http://coco.gforge.inria.fr/
-
-       misc notes:
-          search params used in a run of cma-es:
-             N = 36, lambda = 15, mu=7, xl, xu, MaxFunEvals = 3000N^2
 
 (1) reading bishop 2006
     and looking at
@@ -202,6 +99,7 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- test for point sets containing noise
 
 -- more reading on 3d reconstruction
+   and http://www.cs.cornell.edu/~snavely/projects/skeletalset/SkeletalSets_cvpr08.pdf
 
 -- finish the special topics reading
    -- add to it "Mastering the game of Go with 
