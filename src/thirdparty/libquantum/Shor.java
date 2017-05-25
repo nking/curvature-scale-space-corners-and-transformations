@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  * can check by:
  *    for all k .lte. log_2(N) that math.pow(N, k) is not an integer.
  *
- * the runtime complexity is approx log_2(N)
+ * The runtime complexity is approx log_2(N) * less than log_2(N).
         
    For larger N, you might want to feedback the largest cofactor in a 
    single result into another instance if the smallest primes are
@@ -50,7 +50,7 @@ import java.util.logging.Logger;
    has runtime complexity O( exp( ( (64/9)*b*(log b * log b) )^(1/3) ) )
    where b is bit size of N (where N~log2(N)).
    https://en.wikipedia.org/wiki/General_number_field_sieve
-   Mpte, this should be checked for GNFS...found a different estimate too.
+   Note, this should be checked for GNFS...found a different estimate too.
    
  */
 public class Shor {
@@ -153,9 +153,8 @@ public class Shor {
     }
     
     /**
-     * essentially, makes an array of bitstrings of
-       size 2^(N), calculates factors of
-       the moduli and applies them, then
+     * essentially, makes an array of bitstrings of size 2^width, 
+     * calculates factors of the moduli and applies them, then
        examines the bit spacings by applying
        conditional phase shifts and hadamard gates
        followed by several rounds of measurement
@@ -163,10 +162,9 @@ public class Shor {
        (reducing the states) then toggling the state bits.
       
      NOTE: the libquantum runtime complexity is approx N^2 * log_2(N),
-     but here, have reduced the number of qubits at initialization to
-     2^(log2(N)) instead of 2^(log2(N*N)),
-        so the runtime complexity is now 
-        approx N * log_2(N)
+     but here, have reduced the number of qubits at initialization 
+     so the runtime complexity is now 
+        approx log_2(N) * log_2(N)
      
      @return returns 2 factors of number, else returns a single item error code. 
      */
