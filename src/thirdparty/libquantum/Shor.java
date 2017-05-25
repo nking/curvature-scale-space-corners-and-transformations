@@ -26,6 +26,8 @@ import java.util.logging.Logger;
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA
 
+NOTE: edits were made to the code for use in this project.
+The initial number of qubits was reduced to 1.
 */
 
 /**
