@@ -46,15 +46,21 @@ import java.util.logging.Logger;
     
    The code is limited to signed integers.
     
-   Note, that in contrast the general number field sieve integer factorizations,
+   Note, that in contrast, the general number field sieve integer 
+   factorization
    has runtime complexity O( exp( ( (64/9)*b*(log b * log b) )^(1/3) ) )
-   where b is bit size of N (which is ~log2(N)).
+   where b is bit size of N (where N~log2(N)).
+   https://en.wikipedia.org/wiki/General_number_field_sieve
    
+   Note also that the implementation here, if ported to run on a quantum computer
+   would reduce the "N" factor in the runtime complexity to ~log2(N),
+   (resulting in a runtime complexity of about (log_2(N) * log_2(N))^(3))
+   which is larger than that of the general number field sieve algorithm. 
  */
 public class Shor {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
-        
+    
     private QuantumReg qr;
     
     /**
@@ -253,7 +259,6 @@ public class Shor {
             + " hash.length=" + qr.hash.length);
         qureg.quantum_print_qureg(qr);
         */
-        
         
         // ---- apply exp_mod_n ----
         
