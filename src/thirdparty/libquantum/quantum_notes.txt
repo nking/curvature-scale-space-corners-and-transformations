@@ -342,3 +342,13 @@ the algorithm outline is:
                University of California, Berkeley
            to look at optimizing gates for quantum algorithms.
         
+-------
+   misc notes:
+       could abstract the quantum register node and 
+          make a specialized class of it that uses
+          a VeryLongBitString as the state variable,
+          and then create methods for the specialized
+          node.
+       that would enable impl of
+          "Simulation of Many-Body Fermi Systems on a 
+           Universal Quantum Computer" by Abrams and Lloyd
