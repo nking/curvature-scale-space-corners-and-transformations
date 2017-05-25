@@ -161,7 +161,7 @@ public class Shor {
        of the qubit 0 and collapse of superposed waveforms
        (reducing the states) then toggling the state bits.
       
-     NOTE: the libquantum runtime complexity is approx N^2 * log_2(N),
+     NOTE: the libquantum runtime complexity is approx N^2 * log_2(N) * * log_2(N),
      but here, have reduced the number of qubits at initialization 
      so the runtime complexity is now 
         approx log_2(N) * log_2(N)
@@ -295,14 +295,14 @@ public class Shor {
             gates.quantum_cnot(i, width - i - 1, qr);
         }
 
-        ///*
+        /*
         //log.info(
         System.out.println(
             "after last swap: "
             + "reg.size=" + qr.size
             + " hash.length=" + qr.hash.length);
         qureg.quantum_print_qureg(qr);
-        //*/
+        */
         assert(qr.hash.length == (1 << qr.hashw));
 
         long c = measure.quantum_measure(qr, rng);
