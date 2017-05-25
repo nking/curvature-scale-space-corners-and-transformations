@@ -41,7 +41,7 @@ import java.util.logging.Logger;
    single result into another instance if the smallest primes are
    wanted.
     
-   The code is limited to signed integers.  It could be edited to
+   The code is limited to positive signed integers.  It could be edited to
    use VeryLongBitString for register node's status and adjust the libquantum
    methods for that change.
     
