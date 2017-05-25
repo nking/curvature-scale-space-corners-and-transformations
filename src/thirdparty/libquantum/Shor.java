@@ -29,7 +29,7 @@ import java.util.logging.Logger;
 */
 
 /**
- * find the prime factors of a number.
+ * find the integer factors of a number.
  * N is an odd composite.
  * Also, ensure that N is not the power of a prime.
  * can check by:
@@ -44,6 +44,12 @@ import java.util.logging.Logger;
    For larger numbers, you might want to feedback the largest cofactor in a 
    single result into another instance.
     
+   The code is limited to signed integers.
+    
+   Note, that in contrast the general number field sieve integer factorizations,
+   has runtime complexity O( exp( ( (64/9)*b*(log b * log b) )^(1/3) ) )
+   where b is bit size of N (which is ~log2(N)).
+   
  */
 public class Shor {
     
@@ -66,6 +72,8 @@ public class Shor {
     private final long rSeed;
     
     private boolean useLargerInit = false;
+    
+    private boolean retryMeasure0 = false;
     
     public Shor(int number) {
         
@@ -98,7 +106,6 @@ public class Shor {
     /**
      * 
      * @param number
-     * @param rSeed
      * @param x a known factor of x to use in initializing the quantum order 
      * finder
      */
@@ -149,6 +156,10 @@ public class Shor {
     
     public void overrideToUseLargerInitialization() {
         useLargerInit = true;
+    }
+    
+    public void overrideToRetryMeasured0() {
+        retryMeasure0 = true;
     }
     
     /**
@@ -213,7 +224,7 @@ public class Shor {
         //   each bitstring is stored as a node in register qr.
         //   the sum of the node amplitudes squared is approx 1.
         
-        // ~O(qr.size) where qr.size is 2*log_2(N)
+        // ~O(qr.size) where qr.size is 2^(log2(N))
         for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, qr);
         }
@@ -247,8 +258,8 @@ public class Shor {
         // ---- apply exp_mod_n ----
         
         //runtime complexity is width * swidth * O(reg.size).
-        //    which is 2 * log_2(N) * log_2(N) * 2^(log_2(N*N))
-        //           ~ N^2 * 2 * log_2(N) * log_2(N)
+        //           ~ log_2(N) * log_2(N) * 2^(log_2(N))
+        //           ~ N * log_2(N) * log_2(N)
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         
         /*
@@ -278,6 +289,7 @@ public class Shor {
         qureg.quantum_print_qureg(qr);
         */
         
+        //log2(N) * (.lt. log2(N)) * 2^(log2(N))
         gates.quantum_qft(width,  qr);
 
         /*
@@ -313,6 +325,8 @@ public class Shor {
 
         log.info("c=" + c);
 
+        q = 1 << (width);
+        
         if (c == -1) {
             log.info(String.format("Impossible Measurement!\n"));
             return new int[]{-1};
@@ -322,8 +336,6 @@ public class Shor {
             log.info(String.format("Measured zero, try again.\n"));
             return new int[]{0};
         }
-
-        q = 1 << (width);
 
         log.info(String.format("Measured %d (%f), ", c, (float) c / q));
 

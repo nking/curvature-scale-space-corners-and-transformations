@@ -95,8 +95,9 @@ public class ShorTest extends TestCase {
         for (int i = 0; i < nTests; ++i) {
             
             Shor shor = new Shor(99, 14);//32768
-            //Shor shor = new Shor(12345);//32768
-
+            //Shor shor = new Shor(12345); //cofactors 5, 2469
+            //Shor shor = new Shor(2469);//cofactors 3, 823
+            
             factors = shor.run();
 
             log.info("*factors = " + Arrays.toString(factors));

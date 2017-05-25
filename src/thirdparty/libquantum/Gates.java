@@ -1491,6 +1491,8 @@ public class Gates {
      * Perform a QFT on a quantum register. This is done by application of
      * conditional phase shifts and hadamard gates. At the end, the position of
      * the bits is reversed.
+     * 
+     * runtime complexity is log2(N) * (.lt. log2(N)) * 2^(log2(N))
      */
     void quantum_qft(int w, QuantumReg reg) {
         
@@ -1498,6 +1500,9 @@ public class Gates {
 
         System.out.format(" quantum_qft nloop=%d\n", w);
         
+        //log2(N) * (< log2(N)) * 2^(log2(N))
+        
+        //2^(log2(N))
         for (i = w - 1; i >= 0; i--) {
             for (j = w - 1; j > i; j--) {
                 quantum_cond_phase(j, i, reg);
@@ -1505,6 +1510,7 @@ public class Gates {
 
             System.out.format(" ..%d", i);
 
+            //O(2^(log2(N)))
             quantum_hadamard(i, reg);
         }
         System.out.format("\n");        
