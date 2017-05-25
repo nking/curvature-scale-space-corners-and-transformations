@@ -90,17 +90,21 @@ import java.util.Random;
 <span class="fc" id="L90">        r = rng.nextDouble();</span>
                 
 <span class="fc bfc" id="L92" title="All 2 branches covered.">        if (r &gt; pa) {</span>
-<span class="fc" id="L93">            result = 1;</span>
+            // more states have a set bit in position pos
+<span class="fc" id="L94">            result = 1;</span>
         }
         
-<span class="fc" id="L96">        QuReg qureg = new QuReg();</span>
+<span class="fc" id="L97">        QuReg qureg = new QuReg();</span>
 
-<span class="fc" id="L98">        QuantumReg out = qureg.quantum_state_collapse(</span>
+        // if result==1, removes all states without bit pos set
+        //   and renormalizes the amplitudes,
+        //   else, does the same for statues with bit pos set
+<span class="fc" id="L102">        QuantumReg out = qureg.quantum_state_collapse(</span>
             pos, result, reg);
 
-<span class="fc" id="L101">        qureg.quantum_copy_qureg(out, reg);</span>
+<span class="fc" id="L105">        qureg.quantum_copy_qureg(out, reg);</span>
     
-<span class="fc" id="L103">        return result;</span>
+<span class="fc" id="L107">        return result;</span>
     }
 
     /**
@@ -108,80 +112,80 @@ import java.util.Random;
      */
     int quantum_bmeasure_bitpreserve(int pos, QuantumReg reg, Random rng) {
         int i, j;
-<span class="nc" id="L111">        int size = 0, result = 0;</span>
-<span class="nc" id="L112">        double d = 0, pa = 0, r;</span>
+<span class="nc" id="L115">        int size = 0, result = 0;</span>
+<span class="nc" id="L116">        double d = 0, pa = 0, r;</span>
         //MAX_UNSIGNED pos2;
 
-<span class="nc" id="L115">        long pos2 = 1L &lt;&lt; pos;</span>
+<span class="nc" id="L119">        long pos2 = 1L &lt;&lt; pos;</span>
 
         // Sum up the probability for 0 being the result 
-<span class="nc bnc" id="L118" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">            if ((reg.node[i].state &amp; pos2) == 0) {</span>
-<span class="nc" id="L120">                pa += reg.node[i].amplitude.squareSum();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            if ((reg.node[i].state &amp; pos2) == 0) {</span>
+<span class="nc" id="L124">                pa += reg.node[i].amplitude.squareSum();</span>
             }
         }
 
         // Compare the probability for 0 with a random number 
         // and determine the result of the measurement 
-<span class="nc" id="L126">        r = rng.nextDouble();</span>
+<span class="nc" id="L130">        r = rng.nextDouble();</span>
 
-<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (r &gt; pa) {</span>
-<span class="nc" id="L129">            result = 1;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (r &gt; pa) {</span>
+<span class="nc" id="L133">            result = 1;</span>
         }
 
         // Eradicate all amplitudes of base states which have been 
         // ruled out by the measurement and get the absolute 
         // of the new register 
-<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L136" title="All 2 branches missed.">            if ((reg.node[i].state &amp; pos2) != 0) {</span>
-<span class="nc bnc" id="L137" title="All 2 branches missed.">                if (result == 0) {</span>
-<span class="nc" id="L138">                    reg.node[i].amplitude.setReal(0);</span>
-<span class="nc" id="L139">                    reg.node[i].amplitude.setImag(0);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            if ((reg.node[i].state &amp; pos2) != 0) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">                if (result == 0) {</span>
+<span class="nc" id="L142">                    reg.node[i].amplitude.setReal(0);</span>
+<span class="nc" id="L143">                    reg.node[i].amplitude.setImag(0);</span>
                 } else {
-<span class="nc" id="L141">                    d += reg.node[i].amplitude.squareSum();</span>
-<span class="nc" id="L142">                    size++;</span>
+<span class="nc" id="L145">                    d += reg.node[i].amplitude.squareSum();</span>
+<span class="nc" id="L146">                    size++;</span>
                 }
             } else {
-<span class="nc bnc" id="L145" title="All 2 branches missed.">                if (result != 0) {</span>
-<span class="nc" id="L146">                    reg.node[i].amplitude.setReal(0);</span>
-<span class="nc" id="L147">                    reg.node[i].amplitude.setImag(0);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                if (result != 0) {</span>
+<span class="nc" id="L150">                    reg.node[i].amplitude.setReal(0);</span>
+<span class="nc" id="L151">                    reg.node[i].amplitude.setImag(0);</span>
                 } else {
-<span class="nc" id="L149">                    d += reg.node[i].amplitude.squareSum();</span>
-<span class="nc" id="L150">                    size++;</span>
+<span class="nc" id="L153">                    d += reg.node[i].amplitude.squareSum();</span>
+<span class="nc" id="L154">                    size++;</span>
                 }
             }
         }
         
-<span class="nc" id="L155">        QuantumReg out = new QuantumReg();</span>
+<span class="nc" id="L159">        QuantumReg out = new QuantumReg();</span>
         // Build the new quantum register 
-<span class="nc" id="L157">        out.size = size;</span>
-<span class="nc" id="L158">        out.node = new QuantumRegNode[size];</span>
-<span class="nc bnc" id="L159" title="All 2 branches missed.">        for (int ii = 0; ii &lt; reg.node.length; ii++) {</span>
-<span class="nc" id="L160">            reg.node[ii] = new QuantumRegNode();</span>
-<span class="nc" id="L161">            reg.node[ii].state = 0;</span>
-<span class="nc" id="L162">            reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+<span class="nc" id="L161">        out.size = size;</span>
+<span class="nc" id="L162">        out.node = new QuantumRegNode[size];</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        for (int ii = 0; ii &lt; reg.node.length; ii++) {</span>
+<span class="nc" id="L164">            reg.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L165">            reg.node[ii].state = 0;</span>
+<span class="nc" id="L166">            reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
         }
-<span class="nc" id="L164">        out.hashw = reg.hashw;</span>
-<span class="nc" id="L165">        out.hash = reg.hash;</span>
-<span class="nc" id="L166">        out.width = reg.width;</span>
+<span class="nc" id="L168">        out.hashw = reg.hashw;</span>
+<span class="nc" id="L169">        out.hash = reg.hash;</span>
+<span class="nc" id="L170">        out.width = reg.width;</span>
 
         // Determine the numbers of the new base states and 
         // norm the quantum register 
-<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">            if (reg.node[i].amplitude.abs() != 0) {</span>
-<span class="nc" id="L172">                out.node[j].state = reg.node[i].state;</span>
-<span class="nc" id="L173">                out.node[j].amplitude.resetTo(reg.node[i].amplitude);</span>
-<span class="nc" id="L174">                out.node[j].amplitude.times(1/Math.sqrt(d));</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            if (reg.node[i].amplitude.abs() != 0) {</span>
+<span class="nc" id="L176">                out.node[j].state = reg.node[i].state;</span>
+<span class="nc" id="L177">                out.node[j].amplitude.resetTo(reg.node[i].amplitude);</span>
+<span class="nc" id="L178">                out.node[j].amplitude.times(1/Math.sqrt(d));</span>
 
-<span class="nc" id="L176">                j++;</span>
+<span class="nc" id="L180">                j++;</span>
             }
         }
         
-<span class="nc" id="L180">        QuReg qureg = new QuReg();</span>
+<span class="nc" id="L184">        QuReg qureg = new QuReg();</span>
 
-<span class="nc" id="L182">        qureg.quantum_copy_qureg(out, reg);</span>
+<span class="nc" id="L186">        qureg.quantum_copy_qureg(out, reg);</span>
         
-<span class="nc" id="L184">        return result;</span>
+<span class="nc" id="L188">        return result;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

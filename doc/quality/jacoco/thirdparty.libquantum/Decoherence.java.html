@@ -80,44 +80,48 @@ A list of values for $\lambda$ is given in [DiVincenzo, 1995].
         
 <span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (quantum_status != 0) {</span>
 
-<span class="nc" id="L83">            nrands = new double[reg.width];</span>
+            //NOTE: this is 0's when quantum_lambda = 0
+<span class="nc" id="L84">            nrands = new double[reg.width];</span>
 
-<span class="nc bnc" id="L85" title="All 2 branches missed.">            for (i = 0; i &lt; reg.width; i++) {</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            for (i = 0; i &lt; reg.width; i++) {</span>
                 
                 // Generate normal distributed random numbers
+                // of v and u in range -1 to 1
                 do {
-<span class="nc" id="L89">                    u = 2 * rng.nextDouble() - 1;</span>
-<span class="nc" id="L90">                    v = 2 * rng.nextDouble() - 1;</span>
-<span class="nc" id="L91">                    s = u * u + v * v;</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">                } while (s &gt;= 1);</span>
+<span class="nc" id="L91">                    u = 2 * rng.nextDouble() - 1;</span>
+<span class="nc" id="L92">                    v = 2 * rng.nextDouble() - 1;</span>
+<span class="nc" id="L93">                    s = u * u + v * v;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                } while (s &gt;= 1);</span>
 
-<span class="nc" id="L94">                x = u * Math.sqrt(-2 * Math.log(s) / s);</span>
+<span class="nc" id="L96">                x = u * Math.sqrt(-2 * Math.log(s) / s);</span>
 
-<span class="nc" id="L96">                x *= Math.sqrt(2 * quantum_lambda);</span>
+<span class="nc" id="L98">                x *= Math.sqrt(2 * quantum_lambda);</span>
 
-<span class="nc" id="L98">                nrands[i] = x / 2;</span>
+<span class="nc" id="L100">                nrands[i] = x / 2;</span>
             }
+            
+            // when quantum_lambda == 0, this sets all reg.node imag ampl to 0 
 
             // Apply the phase shifts for decoherence simulation */
-<span class="nc bnc" id="L102" title="All 2 branches missed.">            for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            for (i = 0; i &lt; reg.size; i++) {</span>
                 
-<span class="nc" id="L104">                angle = 0;</span>
+<span class="nc" id="L108">                angle = 0;</span>
 
-<span class="nc bnc" id="L106" title="All 2 branches missed.">                for (j = 0; j &lt; reg.width; j++) {</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">                for (j = 0; j &lt; reg.width; j++) {</span>
                                         
-<span class="nc bnc" id="L108" title="All 2 branches missed.">                    if ((reg.node[i].state &amp; (1L &lt;&lt; j)) != 0) {</span>
-<span class="nc" id="L109">                        angle += nrands[j];</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                    if ((reg.node[i].state &amp; (1L &lt;&lt; j)) != 0) {</span>
+<span class="nc" id="L113">                        angle += nrands[j];</span>
                     } else {
-<span class="nc" id="L111">                        angle -= nrands[j];</span>
+<span class="nc" id="L115">                        angle -= nrands[j];</span>
                     }
                 }
                 //cos(phi) + IMAGINARY * sin(phi)
-<span class="nc" id="L115">                double re = reg.node[i].amplitude.re() * Math.cos(angle);</span>
-<span class="nc" id="L116">                double im = reg.node[i].amplitude.im() * Math.sin(angle);</span>
-<span class="nc" id="L117">                reg.node[i].amplitude.setReal(re);</span>
-<span class="nc" id="L118">                reg.node[i].amplitude.setImag(im);</span>
+<span class="nc" id="L119">                double re = reg.node[i].amplitude.re() * Math.cos(angle);</span>
+<span class="nc" id="L120">                double im = reg.node[i].amplitude.im() * Math.sin(angle);</span>
+<span class="nc" id="L121">                reg.node[i].amplitude.setReal(re);</span>
+<span class="nc" id="L122">                reg.node[i].amplitude.setImag(im);</span>
             }
         }
-<span class="fc" id="L121">    }</span>
+<span class="fc" id="L125">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

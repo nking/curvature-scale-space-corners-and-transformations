@@ -13,38 +13,36 @@ import algorithms.misc.MiscMath;
     /**
      * return the greatest common denominator of the 2 integers.
      *
-     * worse case runtime can never be greater than five times the number of its digits (base 10).
-     * avg case runtime is
+     * runtime complexity is (?)
      * 
      * @param a
      * @param b
      * @return
      */
     public static int euclid(int a, int b) {
-<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (b == 0) {</span>
-<span class="fc" id="L25">            return a;</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (b == 0) {</span>
+<span class="fc" id="L24">            return a;</span>
         }
-<span class="fc" id="L27">        count++;</span>
-<span class="fc" id="L28">        return euclid(b, a % b);</span>
+<span class="fc" id="L26">        count++;</span>
+<span class="fc" id="L27">        return euclid(b, a % b);</span>
     }
-<span class="fc" id="L30">    public static int count = 0;</span>
+<span class="fc" id="L29">    public static int count = 0;</span>
 
     /**
      * return the greatest common denominator of the 2 integers.
      *
-     * worse case runtime can never be greater than five times the 
-     * O(log_2(min(m, n)).
+     * runtime complexity is (?)
      * 
      * @param a
      * @param b
      * @return
      */
     public static long euclid(long a, long b) {
-<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (b == 0) {</span>
-<span class="nc" id="L44">            return a;</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (b == 0) {</span>
+<span class="nc" id="L42">            return a;</span>
         }
-<span class="nc" id="L46">        count++;</span>
-<span class="nc" id="L47">        return euclid(b, a % b);</span>
+<span class="nc" id="L44">        count++;</span>
+<span class="nc" id="L45">        return euclid(b, a % b);</span>
     }
     
     /**
@@ -73,39 +71,39 @@ import algorithms.misc.MiscMath;
         extended Euclidean algorithm.
         */
         
-<span class="fc" id="L76">        int min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L74">        int min = Integer.MAX_VALUE;</span>
         
-<span class="fc" id="L78">        int[] d_xp_yp = extendedEuclid(a, n);</span>
-<span class="pc bpc" id="L79" title="3 of 4 branches missed.">        if ((d_xp_yp[0] != 0) || d_xp_yp[2] != 0) {</span>
-<span class="fc" id="L80">            int d = d_xp_yp[0];</span>
-<span class="fc" id="L81">            int x0 = d_xp_yp[1] * (b/d) % n;</span>
-<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (int i = 0; i &lt; d; ++i) {</span>
+<span class="fc" id="L76">        int[] d_xp_yp = extendedEuclid(a, n);</span>
+<span class="pc bpc" id="L77" title="3 of 4 branches missed.">        if ((d_xp_yp[0] != 0) || d_xp_yp[2] != 0) {</span>
+<span class="fc" id="L78">            int d = d_xp_yp[0];</span>
+<span class="fc" id="L79">            int x0 = d_xp_yp[1] * (b/d) % n;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            for (int i = 0; i &lt; d; ++i) {</span>
                 
-<span class="fc" id="L84">                int x1 = (x0 + i*(n/d)) % n;</span>
+<span class="fc" id="L82">                int x1 = (x0 + i*(n/d)) % n;</span>
                 
                 //System.out.println(&quot; &quot; + d);
                 
-<span class="pc bpc" id="L88" title="1 of 4 branches missed.">                if (d &gt; 0 &amp;&amp; d &lt; min) {</span>
-<span class="fc" id="L89">                    min = d;</span>
+<span class="pc bpc" id="L86" title="1 of 4 branches missed.">                if (d &gt; 0 &amp;&amp; d &lt; min) {</span>
+<span class="fc" id="L87">                    min = d;</span>
                 }
             }
         }
-<span class="fc" id="L93">        return min;</span>
+<span class="fc" id="L91">        return min;</span>
     }
     
     public static int modularExponentiation(int a, int b, int n) {
-<span class="nc" id="L97">        int c = 0;</span>
-<span class="nc" id="L98">        int d = 1;</span>
-<span class="nc" id="L99">        int nbits = MiscMath.numberOfBits(b);</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">        for (int i = nbits - 1; i &gt;= 0; --i) {</span>
-<span class="nc" id="L101">            c *= 2;</span>
-<span class="nc" id="L102">            d = (d*d) % n;</span>
-<span class="nc bnc" id="L103" title="All 2 branches missed.">            if ((b &amp; (1 &lt;&lt; i)) != 0) {</span>
-<span class="nc" id="L104">                c++;</span>
-<span class="nc" id="L105">                d = (d*a) % n;</span>
+<span class="nc" id="L95">        int c = 0;</span>
+<span class="nc" id="L96">        int d = 1;</span>
+<span class="nc" id="L97">        int nbits = MiscMath.numberOfBits(b);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        for (int i = nbits - 1; i &gt;= 0; --i) {</span>
+<span class="nc" id="L99">            c *= 2;</span>
+<span class="nc" id="L100">            d = (d*d) % n;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if ((b &amp; (1 &lt;&lt; i)) != 0) {</span>
+<span class="nc" id="L102">                c++;</span>
+<span class="nc" id="L103">                d = (d*a) % n;</span>
             }
         }
-<span class="nc" id="L108">        return d;</span>
+<span class="nc" id="L106">        return d;</span>
     }
     
     /*
@@ -122,31 +120,31 @@ import algorithms.misc.MiscMath;
      * @return 
      */
     public static int[] extendedEuclid(int a, int b) {
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (b == 0) {</span>
-<span class="fc" id="L126">            return new int[]{a, 1, 0};</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (b == 0) {</span>
+<span class="fc" id="L124">            return new int[]{a, 1, 0};</span>
         }
         
-<span class="fc" id="L129">        int[] dxy_p = extendedEuclid(b, a % b);</span>
+<span class="fc" id="L127">        int[] dxy_p = extendedEuclid(b, a % b);</span>
         
-<span class="fc" id="L131">        System.out.format(&quot;a=%d b=%d (a/b)=%d d=%d x=%d y=%d\n&quot;, </span>
-<span class="fc" id="L132">            a, b, (a/b), dxy_p[0], dxy_p[2], (dxy_p[1] - (a/b)*dxy_p[2]));</span>
+<span class="fc" id="L129">        System.out.format(&quot;a=%d b=%d (a/b)=%d d=%d x=%d y=%d\n&quot;, </span>
+<span class="fc" id="L130">            a, b, (a/b), dxy_p[0], dxy_p[2], (dxy_p[1] - (a/b)*dxy_p[2]));</span>
         
-<span class="fc" id="L134">        int[] dxy = new int[] {</span>
+<span class="fc" id="L132">        int[] dxy = new int[] {</span>
             dxy_p[0], dxy_p[2], (dxy_p[1] - (a/b)*dxy_p[2])
         };
-<span class="fc" id="L137">        return dxy;</span>
+<span class="fc" id="L135">        return dxy;</span>
     }
     
     public static long[] extendedEuclid(long a, long b) {
-<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (b == 0) {</span>
-<span class="nc" id="L142">            return new long[]{a, 1, 0};</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (b == 0) {</span>
+<span class="nc" id="L140">            return new long[]{a, 1, 0};</span>
         }
         // r.t. complexity of '%' is O(a/b)
-<span class="nc" id="L145">        long[] dxy_p = extendedEuclid(b, a % b);</span>
-<span class="nc" id="L146">        long[] dxy = new long[] {</span>
+<span class="nc" id="L143">        long[] dxy_p = extendedEuclid(b, a % b);</span>
+<span class="nc" id="L144">        long[] dxy = new long[] {</span>
             dxy_p[0], dxy_p[2], (dxy_p[1] - (a/b)*dxy_p[2])
         };
-<span class="nc" id="L149">        return dxy;</span>
+<span class="nc" id="L147">        return dxy;</span>
     }
    
 }

@@ -26,19 +26,39 @@ import java.util.logging.Logger;
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    MA 02110-1301, USA
 
+NOTE: edits were made to the code for use in this project.
+The initial number of qubits was reduced to 1.
 */
 
 /**
- * find the prime factors of a number.
+ * find the integer factors of a number.
  * N is an odd composite.
  * Also, ensure that N is not the power of a prime.
  * can check by:
  *    for all k .lte. log_2(N) that math.pow(N, k) is not an integer.
- */
-<span class="pc bpc" id="L38" title="1 of 2 branches missed.">public class Shor {</span>
-    
-<span class="pc" id="L40">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+ *
+ * The runtime complexity is approx log_2(N) * less than log_2(N).
         
+   For larger N, you might want to feedback the largest cofactor in a 
+   single result into another instance if the smallest primes are
+   wanted.
+    
+   The code is limited to positive signed integers.  It could be edited to
+   use VeryLongBitString for register node's status and adjust the libquantum
+   methods for that change.
+    
+   Note, that in contrast to Shor's algorithm, the general number 
+   field sieve integer factorization
+   has runtime complexity O( exp( ( (64/9)*b*(log b * log b) )^(1/3) ) )
+   where b is bit size of N (where N~log2(N)).
+   https://en.wikipedia.org/wiki/General_number_field_sieve
+   Note, this should be checked for GNFS...found a different estimate too.
+   
+ */
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">public class Shor {</span>
+    
+<span class="pc" id="L60">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
     private QuantumReg qr;
     
     /**
@@ -49,65 +69,64 @@ import java.util.logging.Logger;
     /**
      * random factor of N
      */
-<span class="pc" id="L52">    private int x = 0;</span>
+<span class="pc" id="L72">    private int x = 0;</span>
     
     private final Random rng;
     
     private final long rSeed;
     
-<span class="nc" id="L58">    public Shor(int number) {</span>
+<span class="nc" id="L78">    public Shor(int number) {</span>
         
-<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (number &lt; 15) {</span>
-<span class="nc" id="L61">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L81">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
         }
         
-<span class="nc" id="L64">        this.N = number;</span>
+<span class="nc" id="L84">        this.N = number;</span>
         
-<span class="nc" id="L66">        this.rSeed = System.nanoTime();</span>
+<span class="nc" id="L86">        this.rSeed = System.nanoTime();</span>
         
-<span class="nc" id="L68">        this.rng = Misc.getSecureRandom();</span>
-<span class="nc" id="L69">        this.rng.setSeed(rSeed);</span>
-<span class="nc" id="L70">    }</span>
+<span class="nc" id="L88">        this.rng = Misc.getSecureRandom();</span>
+<span class="nc" id="L89">        this.rng.setSeed(rSeed);</span>
+<span class="nc" id="L90">    }</span>
     
-<span class="nc" id="L72">    public Shor(int number, long rSeed) {</span>
+<span class="nc" id="L92">    public Shor(int number, long rSeed) {</span>
         
-<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (number &lt; 15) {</span>
-<span class="nc" id="L75">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
         }
         
-<span class="nc" id="L78">        this.N = number;</span>
+<span class="nc" id="L98">        this.N = number;</span>
         
-<span class="nc" id="L80">        this.rSeed = rSeed;</span>
+<span class="nc" id="L100">        this.rSeed = rSeed;</span>
         
-<span class="nc" id="L82">        this.rng = Misc.getSecureRandom();</span>
-<span class="nc" id="L83">        this.rng.setSeed(rSeed);</span>
-<span class="nc" id="L84">    }</span>
+<span class="nc" id="L102">        this.rng = Misc.getSecureRandom();</span>
+<span class="nc" id="L103">        this.rng.setSeed(rSeed);</span>
+<span class="nc" id="L104">    }</span>
     
     /**
      * 
      * @param number
-     * @param rSeed
      * @param x a known factor of x to use in initializing the quantum order 
      * finder
      */
-<span class="fc" id="L93">    public Shor(int number, int x) {</span>
+<span class="fc" id="L112">    public Shor(int number, int x) {</span>
         
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (number &lt; 15) {</span>
-<span class="nc" id="L96">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        } else if (number &gt; 32768) {</span>
-<span class="nc" id="L98">            throw new IllegalArgumentException(&quot;number must&quot;</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L115">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        } else if (number &gt; 32768) {</span>
+<span class="nc" id="L117">            throw new IllegalArgumentException(&quot;number must&quot;</span>
                 + &quot;be les than 32768&quot;);
         }
         
-<span class="fc" id="L102">        this.N = number;</span>
+<span class="fc" id="L121">        this.N = number;</span>
         
-<span class="fc" id="L104">        this.rSeed = System.currentTimeMillis();</span>
+<span class="fc" id="L123">        this.rSeed = System.currentTimeMillis();</span>
         
-<span class="fc" id="L106">        this.rng = Misc.getSecureRandom();</span>
-<span class="fc" id="L107">        this.rng.setSeed(rSeed);</span>
+<span class="fc" id="L125">        this.rng = Misc.getSecureRandom();</span>
+<span class="fc" id="L126">        this.rng.setSeed(rSeed);</span>
                 
-<span class="fc" id="L109">        this.x = x;</span>
-<span class="fc" id="L110">    }</span>
+<span class="fc" id="L128">        this.x = x;</span>
+<span class="fc" id="L129">    }</span>
     
     /**
      * 
@@ -116,168 +135,239 @@ import java.util.logging.Logger;
      * @param x a known factor of x to use in initializing the quantum order 
      * finder
      */
-<span class="nc" id="L119">    public Shor(int number, long rSeed, int x) {</span>
+<span class="nc" id="L138">    public Shor(int number, long rSeed, int x) {</span>
         
-<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (number &lt; 15) {</span>
-<span class="nc" id="L122">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        } else if (number &gt; 32768) {</span>
-<span class="nc" id="L124">            throw new IllegalArgumentException(&quot;number must&quot;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (number &lt; 15) {</span>
+<span class="nc" id="L141">            throw new IllegalArgumentException(&quot;Invalid number\n\n&quot;);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        } else if (number &gt; 32768) {</span>
+<span class="nc" id="L143">            throw new IllegalArgumentException(&quot;number must&quot;</span>
                 + &quot;be les than 32768&quot;);
         }
         
-<span class="nc" id="L128">        this.N = number;</span>
+<span class="nc" id="L147">        this.N = number;</span>
         
-<span class="nc" id="L130">        this.rSeed = rSeed;</span>
+<span class="nc" id="L149">        this.rSeed = rSeed;</span>
         
-<span class="nc" id="L132">        this.rng = Misc.getSecureRandom();</span>
-<span class="nc" id="L133">        this.rng.setSeed(rSeed);</span>
+<span class="nc" id="L151">        this.rng = Misc.getSecureRandom();</span>
+<span class="nc" id="L152">        this.rng.setSeed(rSeed);</span>
         
-<span class="nc" id="L135">        this.x = x;</span>
-<span class="nc" id="L136">    }</span>
+<span class="nc" id="L154">        this.x = x;</span>
+<span class="nc" id="L155">    }</span>
     
     /**
-     * 
-     * @return returns 2 factors of number, else returns a single item error code. 
+     * essentially, makes an array of bitstrings of size 2^width, 
+     * calculates factors of the moduli and applies them, then
+       examines the bit spacings by applying
+       conditional phase shifts and hadamard gates
+       followed by several rounds of measurement
+       of the qubit 0 and collapse of superposed waveforms
+       (reducing the states) then toggling the state bits.
+      
+     NOTE: the libquantum runtime complexity is approx N^2 * log_2(N) * * log_2(N),
+     but here, have reduced the number of qubits at initialization 
+     so the runtime complexity is now 
+        approx log_2(N) * log_2(N)
+     
+     @return returns 2 factors of number, else returns a single item error code. 
      */
     public int[] run() {
-        
-        /*
-        NOTE:
-           could consider out of context, the
-           &quot;ESPRESSO algorithm&quot;, 
-               developed by Brayton et al. at the University of California, Berkeley
-           to look at optimizing gates for quantum algorithms.
-        */
-        
-        // max width = 30 ==&gt; max N is 32768, ontrained by array length
-<span class="fc" id="L153">        int width = MiscMath.numberOfBits(N * N);</span>
-<span class="fc" id="L154">        int swidth = MiscMath.numberOfBits(N);</span>
+       
+        //TODO: consider adding ability to cache cofactors, that is x,
+        //   to not retry same x on subsequent run.
         
         
-<span class="fc" id="L157">        log.info(&quot;SEED=&quot; + rSeed);</span>
-<span class="fc" id="L158">        log.info(String.format(&quot;N = %d, width=%d, swidth=%d, %d qubits required\n&quot;, </span>
-<span class="fc" id="L159">            N, width, swidth, width+3*swidth+2));</span>
+        // max width = 30 ==&gt; max N is 32768, constrained by array length
+        //int width = MiscMath.numberOfBits(N * N);
+<span class="fc" id="L181">        int swidth = MiscMath.numberOfBits(N);</span>
+<span class="fc" id="L182">        int width = 1;</span>
         
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (x == 0) {</span>
-<span class="nc" id="L162">            Classic classic = new Classic();</span>
-<span class="nc bnc" id="L163" title="All 4 branches missed.">            while ((classic.quantum_gcd(N, x) &gt; 1) || (x &lt; 2)) {</span>
+<span class="fc" id="L184">        log.info(&quot;SEED=&quot; + rSeed);</span>
+<span class="fc" id="L185">        log.info(String.format(&quot;N = %d, width=%d, swidth=%d, %d qubits required\n&quot;, </span>
+<span class="fc" id="L186">            N, width, swidth, width+3*swidth+2));</span>
+        
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (x == 0) {</span>
+<span class="nc" id="L189">            Classic classic = new Classic();</span>
+<span class="nc bnc" id="L190" title="All 4 branches missed.">            while ((classic.quantum_gcd(N, x) &gt; 1) || (x &lt; 2)) {</span>
                 //x = rand() % N;
-<span class="nc" id="L165">                x = rng.nextInt((1&lt;&lt;16)-1) % N;</span>
+<span class="nc" id="L192">                x = rng.nextInt((1&lt;&lt;16)-1) % N;</span>
             }
         }
         
         int i;
         int q,a,b, factor;
 
-<span class="fc" id="L172">        log.info(String.format(&quot;Random factor: %d of %d\n&quot;, x, N));</span>
+<span class="fc" id="L199">        log.info(String.format(&quot;Random factor: %d of %d\n&quot;, x, N));</span>
 
-<span class="fc" id="L174">        QuReg qureg = new QuReg();</span>
+<span class="fc" id="L201">        QuReg qureg = new QuReg();</span>
         
-<span class="fc" id="L176">        QuantumReg qr = qureg.quantum_new_qureg(0, width);</span>
+<span class="fc" id="L203">        QuantumReg qr = qureg.quantum_new_qureg(0, width);</span>
         
-<span class="pc bpc" id="L178" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+<span class="pc bpc" id="L205" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
         
-<span class="fc" id="L180">        Gates gates = new Gates(rng);</span>
-       
-<span class="fc bfc" id="L182" title="All 2 branches covered.">        for (i = 0; i &lt; width; i++) {</span>
-<span class="fc" id="L183">            gates.quantum_hadamard(i, qr);</span>
+<span class="fc" id="L207">        Gates gates = new Gates(rng);</span>
+        
+        // initialize 1&lt;&lt;width bitstrings and normalize them
+        //   the bitstring is the bitstring representation of a node.state in
+        //   register qr, and each bit is the figurative qubit in qr.
+        //   each bitstring is stored as a node in register qr.
+        //   the sum of the node amplitudes squared is approx 1.
+        
+        // ~O(qr.size)
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (i = 0; i &lt; width; i++) {</span>
+<span class="fc" id="L217">            gates.quantum_hadamard(i, qr);</span>
         }
         
-<span class="pc bpc" id="L186" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+        /*
+        //log.info(
+        System.out.println(
+            &quot;after init and norm with quantum_hadamard: &quot;
+            + &quot;reg.size=&quot; + qr.size
+            + &quot; hash.length=&quot; + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        */
+<span class="pc bpc" id="L228" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
         
-<span class="fc" id="L188">        int nbits = 3 * swidth + 2;</span>
-<span class="fc" id="L189">        qureg.quantum_addscratch(nbits, qr);</span>
-                
-<span class="fc" id="L191">        gates.quantum_exp_mod_n(N, x, width, swidth,  qr);</span>
         
-<span class="pc bpc" id="L193" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+        // ---- shift existing node states left by nbits ----
+        
+<span class="fc" id="L233">        int nbits = 3 * swidth + 2;</span>
+<span class="fc" id="L234">        qureg.quantum_addscratch(nbits, qr);</span>
+        
+        
+        //log.info(
+<span class="fc" id="L238">        System.out.println(</span>
+            &quot;after addscratch: &quot;
+            + &quot;reg.size=&quot; + qr.size
+            + &quot; hash.length=&quot; + qr.hash.length);
+<span class="fc" id="L242">        qureg.quantum_print_qureg(qr);</span>
+        
+        
+        // ---- apply exp_mod_n ----
+        
+        //runtime complexity is width * O(reg.size).
+        //           ~ log_2(N) * qr.size
+<span class="fc" id="L249">        gates.quantum_exp_mod_n(N, x, width, swidth,  qr);</span>
+        
+        /*
+        //log.info(
+        System.out.println(
+            &quot;after exp_mod_n: &quot;
+            + &quot;reg.size=&quot; + qr.size
+            + &quot; hash.length=&quot; + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        */
+<span class="pc bpc" id="L259" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
      
-<span class="fc" id="L195">        Measure measure = new Measure();</span>
+<span class="fc" id="L261">        Measure measure = new Measure();</span>
         
-<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (i = 0; i &lt; nbits; i++) {</span>
-<span class="fc" id="L198">            measure.quantum_bmeasure(0, qr, rng);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        for (i = 0; i &lt; nbits; i++) {</span>
+<span class="fc" id="L264">            measure.quantum_bmeasure(0, qr, rng);</span>
         }
        
-<span class="pc bpc" id="L201" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+<span class="pc bpc" id="L267" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
  
-<span class="fc" id="L203">        gates.quantum_qft(width,  qr);</span>
+        /*
+        //log.info(
+        System.out.println(
+            &quot;after bmeasure: &quot;
+            + &quot;reg.size=&quot; + qr.size
+            + &quot; hash.length=&quot; + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        */
+        
+        //log2(N) * (.lt. log2(N)) * qr.size
+<span class="fc" id="L279">        gates.quantum_qft(width,  qr);</span>
 
-        //log.info(&quot;after qft, reg.size=&quot; + qr.size
-        //  + &quot; hash.length=&quot; + qr.hash.length);
-        //qureg.quantum_print_qureg(qr);
+        /*
+        //log.info(
+        System.out.println(
+            &quot;after qft: &quot;
+            + &quot;reg.size=&quot; + qr.size
+            + &quot; hash.length=&quot; + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
         //for (i = 0; i &lt; qr.size; i++) {
         //    System.out.format(&quot;IV %d %d\n&quot;, i, qr.node[i].state);
         //}
+        */
         
-<span class="fc bfc" id="L212" title="All 2 branches covered.">        for (i = 0; i &lt; width / 2; i++) {</span>
-<span class="fc" id="L213">            gates.quantum_cnot(i, width - i - 1, qr);</span>
-<span class="fc" id="L214">            gates.quantum_cnot(width - i - 1, i, qr);</span>
-<span class="fc" id="L215">            gates.quantum_cnot(i, width - i - 1, qr);</span>
+        //SWAP = CNOT[i, j]CNOT[j, i]CNOT[i, j]
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">        for (i = 0; i &lt; width / 2; i++) {</span>
+<span class="nc" id="L295">            gates.quantum_cnot(i, width - i - 1, qr);</span>
+<span class="nc" id="L296">            gates.quantum_cnot(width - i - 1, i, qr);</span>
+<span class="nc" id="L297">            gates.quantum_cnot(i, width - i - 1, qr);</span>
         }
+
+        /*
+        //log.info(
+        System.out.println(
+            &quot;after last swap: &quot;
+            + &quot;reg.size=&quot; + qr.size
+            + &quot; hash.length=&quot; + qr.hash.length);
+        qureg.quantum_print_qureg(qr);
+        */
+<span class="pc bpc" id="L308" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+
+<span class="fc" id="L310">        long c = measure.quantum_measure(qr, rng);</span>
+
+<span class="fc" id="L312">        log.info(&quot;c=&quot; + c);</span>
+
+<span class="fc" id="L314">        q = 1 &lt;&lt; (width);</span>
         
-<span class="pc bpc" id="L218" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
-
-<span class="fc" id="L220">        long c = measure.quantum_measure(qr, rng);</span>
-
-<span class="fc" id="L222">        log.info(&quot;c=&quot; + c);</span>
-
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        if (c == -1) {</span>
-<span class="nc" id="L225">            log.info(String.format(&quot;Impossible Measurement!\n&quot;));</span>
-<span class="nc" id="L226">            return new int[]{-1};</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">        if (c == -1) {</span>
+<span class="nc" id="L317">            log.info(String.format(&quot;Impossible Measurement!\n&quot;));</span>
+<span class="nc" id="L318">            return new int[]{-1};</span>
         }
 
-<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (c == 0) {</span>
-<span class="fc" id="L230">            log.info(String.format(&quot;Measured zero, try again.\n&quot;));</span>
-<span class="fc" id="L231">            return new int[]{0};</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        if (c == 0) {</span>
+<span class="fc" id="L322">            log.info(String.format(&quot;Measured zero, try again.\n&quot;));</span>
+<span class="fc" id="L323">            return new int[]{0};</span>
         }
 
-<span class="fc" id="L234">        q = 1 &lt;&lt; (width);</span>
+<span class="fc" id="L326">        log.info(String.format(&quot;Measured %d (%f), &quot;, c, (float) c / q));</span>
 
-<span class="fc" id="L236">        log.info(String.format(&quot;Measured %d (%f), &quot;, c, (float) c / q));</span>
-
-<span class="fc" id="L238">        Classic classic = new Classic();</span>
-<span class="fc" id="L239">        int[] cInOut = new int[]{(int)c};</span>
-<span class="fc" id="L240">        int[] qInOut = new int[]{q};</span>
-<span class="fc" id="L241">        classic.quantum_frac_approx(cInOut, qInOut, width);</span>
-<span class="fc" id="L242">        c = cInOut[0];</span>
-<span class="fc" id="L243">        q = qInOut[0];</span>
+<span class="fc" id="L328">        Classic classic = new Classic();</span>
+<span class="fc" id="L329">        int[] cInOut = new int[]{(int)c};</span>
+<span class="fc" id="L330">        int[] qInOut = new int[]{q};</span>
+<span class="fc" id="L331">        classic.quantum_frac_approx(cInOut, qInOut, width);</span>
+<span class="fc" id="L332">        c = cInOut[0];</span>
+<span class="fc" id="L333">        q = qInOut[0];</span>
         
-<span class="fc" id="L245">        log.info(String.format(&quot;fractional approximation is %d/%d.\n&quot;, c, q));</span>
+<span class="fc" id="L335">        log.info(String.format(&quot;fractional approximation is %d/%d.\n&quot;, c, q));</span>
 
-<span class="pc bpc" id="L247" title="1 of 4 branches missed.">        if ((q % 2 == 1) &amp;&amp; (2 * q &lt; (1 &lt;&lt; width))) {</span>
-<span class="fc" id="L248">            log.info(String.format(&quot;Odd denominator, trying to expand by 2.\n&quot;));</span>
-<span class="fc" id="L249">            q *= 2;</span>
+<span class="pc bpc" id="L337" title="3 of 4 branches missed.">        if ((q % 2 == 1) &amp;&amp; (2 * q &lt; (1 &lt;&lt; width))) {</span>
+<span class="nc" id="L338">            log.info(String.format(&quot;Odd denominator, trying to expand by 2.\n&quot;));</span>
+<span class="nc" id="L339">            q *= 2;</span>
         }
 
-<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (q % 2 == 1) {</span>
-<span class="nc" id="L253">            log.info(String.format(&quot;Odd period, try again.\n&quot;));</span>
-<span class="nc" id="L254">            return new int[]{-2};</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (q % 2 == 1) {</span>
+<span class="nc" id="L343">            log.info(String.format(&quot;Odd period, try again.\n&quot;));</span>
+<span class="nc" id="L344">            return new int[]{-2};</span>
         }
 
-<span class="fc" id="L257">        log.info(String.format(&quot;%d\n&quot;, 11));</span>
+<span class="fc" id="L347">        log.info(String.format(&quot;%d\n&quot;, 11));</span>
 
-<span class="fc" id="L259">        log.info(String.format(&quot;Possible period is %d.\n&quot;, q));</span>
+<span class="fc" id="L349">        log.info(String.format(&quot;Possible period is %d.\n&quot;, q));</span>
 
-<span class="fc" id="L261">        a = classic.quantum_ipow(x, q / 2) + 1 % N;</span>
-<span class="fc" id="L262">        b = classic.quantum_ipow(x, q / 2) - 1 % N;</span>
+<span class="fc" id="L351">        a = classic.quantum_ipow(x, q / 2) + 1 % N;</span>
+<span class="fc" id="L352">        b = classic.quantum_ipow(x, q / 2) - 1 % N;</span>
 
-<span class="fc" id="L264">        a = classic.quantum_gcd(N, a);</span>
-<span class="fc" id="L265">        b = classic.quantum_gcd(N, b);</span>
+<span class="fc" id="L354">        a = classic.quantum_gcd(N, a);</span>
+<span class="fc" id="L355">        b = classic.quantum_gcd(N, b);</span>
 
-<span class="fc bfc" id="L267" title="All 2 branches covered.">        if (a &gt; b) {</span>
-<span class="fc" id="L268">            factor = a;</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">        if (a &gt; b) {</span>
+<span class="fc" id="L358">            factor = a;</span>
         } else {
-<span class="fc" id="L270">            factor = b;</span>
+<span class="nc" id="L360">            factor = b;</span>
         }
 
-<span class="pc bpc" id="L273" title="1 of 4 branches missed.">        if ((factor &lt; N) &amp;&amp; (factor &gt; 1)) {</span>
-<span class="fc" id="L274">            log.info(String.format(&quot;%d = %d * %d\n&quot;, N, factor, N / factor));</span>
+<span class="pc bpc" id="L363" title="2 of 4 branches missed.">        if ((factor &lt; N) &amp;&amp; (factor &gt; 1)) {</span>
+<span class="fc" id="L364">            log.info(String.format(&quot;%d = %d * %d\n&quot;, N, factor, N / factor));</span>
         } else {
-<span class="fc" id="L276">            log.info(String.format(&quot;Unable to determine factors, try again.\n&quot;));</span>
-<span class="fc" id="L277">            return new int[]{-2};</span>
+<span class="nc" id="L366">            log.info(String.format(&quot;Unable to determine factors, try again.\n&quot;));</span>
+<span class="nc" id="L367">            return new int[]{-2};</span>
         }
 
-<span class="fc" id="L280">        return new int[]{factor, N/factor};</span>
+<span class="fc" id="L370">        return new int[]{factor, N/factor};</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
