@@ -44,15 +44,14 @@ The initial number of qubits was reduced to 1.
    wanted.
     
    The code is limited to positive signed integers.  It could be edited to
-   use VeryLongBitString for register node's status and adjust the libquantum
-   methods for that change.
+   use VeryLongBitString for register node's status and create
+   the libquantum methods for that change, including possibly a change
+   of the hash key function.
     
    Note, that in contrast to Shor's algorithm, the general number 
    field sieve integer factorization
-   has runtime complexity O( exp( ( (64/9)*b*(log b * log b) )^(1/3) ) )
-   where b is bit size of N (where N~log2(N)).
-   https://en.wikipedia.org/wiki/General_number_field_sieve
-   Note, this should be checked for GNFS...found a different estimate too.
+   has runtime complexity ~ O( exp( (log N)^(1/3) * (log log N)^(2/3) ) )
+   (estimate is from "Quantum algorithms: an overview" by Montaro)
    
  */
 public class Shor {
