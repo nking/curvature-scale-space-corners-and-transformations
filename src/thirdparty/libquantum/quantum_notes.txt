@@ -344,11 +344,16 @@ the algorithm outline is:
         
 -------
    misc notes:
-       could abstract the quantum register node and 
+    -- could abstract the quantum register node and 
           make a specialized class of it that uses
           a VeryLongBitString as the state variable,
           and then create methods for the specialized
           node.
        that would enable impl of
           "Simulation of Many-Body Fermi Systems on a 
-           Universal Quantum Computer" by Abrams and Lloyd
+          Universal Quantum Computer" by Abrams and Lloyd
+    -- could impl k-clique (includes maximal clique for
+          large graphs too). runtime complexities?
+          "Finding cliques by quantum adiabatic evolution"
+           by Childs et al.  
+
