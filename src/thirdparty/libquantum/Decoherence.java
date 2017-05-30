@@ -66,6 +66,7 @@ public class Decoherence {
      * Perform the actual decoherence of a quantum register for a single step of
      * time. This is done by applying a phase shift by a normal distributed
      * angle with the variance LAMBDA.
+     * runtime complexity is O(reg.size) when lambda==0. else is O(reg.size * reg.width) 
      */
     void quantum_decohere(QuantumReg reg, Random rng, Gates gates) {
         double u, v, s, x;
@@ -83,21 +84,24 @@ public class Decoherence {
             //NOTE: this is 0's when quantum_lambda = 0
             nrands = new double[reg.width];
 
-            for (i = 0; i < reg.width; i++) {
+            if (quantum_lambda != 0.0) {
                 
-                // Generate normal distributed random numbers
-                // of v and u in range -1 to 1
-                do {
-                    u = 2 * rng.nextDouble() - 1;
-                    v = 2 * rng.nextDouble() - 1;
-                    s = u * u + v * v;
-                } while (s >= 1);
+                for (i = 0; i < reg.width; i++) {
 
-                x = u * Math.sqrt(-2 * Math.log(s) / s);
+                    // Generate normal distributed random numbers
+                    // of v and u in range -1 to 1
+                    do {
+                        u = 2 * rng.nextDouble() - 1;
+                        v = 2 * rng.nextDouble() - 1;
+                        s = u * u + v * v;
+                    } while (s >= 1);
 
-                x *= Math.sqrt(2 * quantum_lambda);
+                    x = u * Math.sqrt(-2 * Math.log(s) / s);
 
-                nrands[i] = x / 2;
+                    x *= Math.sqrt(2 * quantum_lambda);
+
+                    nrands[i] = x / 2;
+                }
             }
             
             // when quantum_lambda == 0, this sets all reg.node imag ampl to 0 

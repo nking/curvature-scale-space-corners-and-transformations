@@ -209,7 +209,7 @@ public class QuReg {
      * Create a new quantum register from scratch
      */
     //QuantumReg quantum_new_qureg(MAX_UNSIGNED initval, int width) {
-    QuantumReg quantum_new_qureg(long initval, int w) {
+    public QuantumReg quantum_new_qureg(long initval, int w) {
         
         QuantumReg reg = new QuantumReg();
 
@@ -281,7 +281,7 @@ public class QuReg {
     /**
      * Copy the contents of src to dst
      */
-    void quantum_copy_qureg(QuantumReg src, QuantumReg dst) {
+   public void quantum_copy_qureg(QuantumReg src, QuantumReg dst) {
    
         dst.hash = Arrays.copyOf(src.hash, src.hash.length);
         dst.hashw = src.hashw;
@@ -293,7 +293,7 @@ public class QuReg {
     /**
      * Print the contents of a quantum register to stdout
      */
-    void quantum_print_qureg(QuantumReg reg) {
+   public void quantum_print_qureg(QuantumReg reg) {
         
         int i, j;
 
@@ -324,7 +324,7 @@ public class QuReg {
     /**
      * Print the output of the modular exponentiation algorithm
      */
-    void quantum_print_expn(QuantumReg reg) {
+   public void quantum_print_expn(QuantumReg reg) {
         int i;
         for (i = 0; i < reg.size; i++) {
             long tmp = 1L << (reg.width / 2);
@@ -339,7 +339,7 @@ public class QuReg {
      makes current bitstrings in reg.node states larger by a 
      * left bitshift of size bits.
      */
-    void quantum_addscratch(int bits, QuantumReg reg) {
+   public void quantum_addscratch(int bits, QuantumReg reg) {
         
         int i, oldwidth;
         //MAX_UNSIGNED l;
@@ -363,7 +363,7 @@ public class QuReg {
     /**
      * Print the hash table to stdout and test if the hash table is corrupted
      */
-    void quantum_print_hash(QuantumReg reg) {
+   public void quantum_print_hash(QuantumReg reg) {
         int i;
         long tmp = 1L << reg.hashw;
         assert(reg.hash.length == tmp);
@@ -644,7 +644,7 @@ public class QuReg {
     /**
      * Same as above, but the result is stored in the first register
      */
-    void quantum_vectoradd_inplace(QuantumReg reg1, QuantumReg reg2) {
+   public void quantum_vectoradd_inplace(QuantumReg reg1, QuantumReg reg2) {
   
         int i, j, k;
         int addsize = 0;
@@ -730,7 +730,7 @@ public class QuReg {
      * mathematical operation without any physical meaning, so only use it if
      * you know what you are doing.
      */
-    void quantum_scalar_qureg(ComplexModifiable r, QuantumReg reg) {
+   public void quantum_scalar_qureg(ComplexModifiable r, QuantumReg reg) {
   
         int i;
 

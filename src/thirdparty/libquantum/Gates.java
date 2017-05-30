@@ -60,7 +60,7 @@ public class Gates {
     /**
      * Apply a controlled-not gate
      */
-    void quantum_cnot(int control, int target, QuantumReg reg) {
+   public void quantum_cnot(int control, int target, QuantumReg reg) {
   
         int i;
         int[] qec = new int[1];
@@ -90,10 +90,26 @@ public class Gates {
      * CCNOT(x, y,z) = (x, y, (x ∧ y) ⊕ z).
        "From Reversible Logic Gates to Universal Quantum Bases"
           by Bocharov and Svore
+           
+       From wikipedia
+          https://en.wikipedia.org/wiki/Toffoli_gate
+         
+       If the first two bits are set, it flips the third bit.
+            Truth table
+        INPUT	    OUTPUT
+        0 	0 	0   0   0   0 
+        0	0	1	0	0	1
+        0	1	0	0	1	0
+        0	1	1	0	1	1
+        1	0	0	1	0	0
+        1	0	1	1	0	1
+        1	1	0	1	1	1
+        1	1	1	1	1	0
      * </pre>
-     * runtime complexity is O(reg.size)
+     * runtime complexity is O(reg.size * reg.width),
+       but decoherence could be improved for case where lambda==0
      */
-    void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
+   public void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
 
         int i;
         int[] qec = new int[1];
@@ -126,7 +142,7 @@ public class Gates {
      * The target is given in the last argument.
      */
     /*
-    void quantum_unbounded_toffoli(int controlling, QuantumReg reg, ...) {
+   public void quantum_unbounded_toffoli(int controlling, QuantumReg reg, ...) {
   
         va_list bits;
         int target;
@@ -169,10 +185,11 @@ public class Gates {
     */
 
     /**
-     * Apply a sigma_x (or not) gate which is a Pauli spin operation for 
-     * x axis.
+     * Apply a sigma_x (or not) gate which is a Pauli spin 
+     * operation for x axis.
+     * runtime complexity is O(reg.width * reg.size).
      */
-    void quantum_sigma_x(final int target, QuantumReg reg) {
+   public void quantum_sigma_x(final int target, QuantumReg reg) {
   
         int i;
         int[] qec = new int[1];
@@ -194,7 +211,7 @@ public class Gates {
     /**
      * Apply a sigma_y gate which is a Pauli spin operation for the y axis.
      */
-    void quantum_sigma_y(int target, QuantumReg reg) {
+   public void quantum_sigma_y(int target, QuantumReg reg) {
   
         int i;
 
@@ -229,7 +246,7 @@ public class Gates {
     /**
      * Apply a sigma_z gate which is a Pauli spin operation for the z axis.
      */
-    void quantum_sigma_z(int target, QuantumReg reg) {
+   public void quantum_sigma_z(int target, QuantumReg reg) {
         
         int i;
 
@@ -247,7 +264,7 @@ public class Gates {
      * Swap the first WIDTH bits of the quantum register. This is done
      * classically by renaming the bits, unless QEC is enabled.
      */
-    void quantum_swaptheleads(int width, QuantumReg reg) {
+   public void quantum_swaptheleads(int width, QuantumReg reg) {
         int i, j;
         int pat1, pat2;
         int[] qec = new int[1];
@@ -290,7 +307,7 @@ public class Gates {
      * Swap WIDTH bits starting at WIDTH and 2*WIDTH+2 controlled by CONTROL.
      * runtime complexity is width * O(reg.size)
      */
-    void quantum_swaptheleads_omuln_controlled(int control, int width, 
+   public void quantum_swaptheleads_omuln_controlled(int control, int width, 
         QuantumReg reg) {
    
         int i;
@@ -310,10 +327,11 @@ public class Gates {
     /**
      * Apply the 2x2 matrix M to the target bit. M should be unitary.
      
-     runtime complexity is O(reg.size), though that size might expand
-     int method.
+     runtime complexity is O(reg.size), though reg.size is possibly increased
+     and for the last decohere operation is
+     is O(reg.size * reg.width)
      */
-    void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
+   public void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
             
         int i, k;
         int addsize = 0;
@@ -337,14 +355,13 @@ public class Gates {
                         
             QuReg.quantum_reconstruct_hash(reg);
 
-            long shift = 1L << target;
+            long shifted = 1L << target;
             // calculate the number of basis states to be added 
             for (i = 0; i < reg.size; i++) {
                 // determine whether XORed basis state already exists 
-                long tst = reg.node[i].state ^ shift;
+                long tst = reg.node[i].state ^ shifted;
                 if (QuReg.quantum_get_state(tst, reg) == -1) {
                     addsize++;
-                    
                 }
             }
             
@@ -468,16 +485,12 @@ public class Gates {
         if (reg.hashw != 0) {
             int decsize = 0;
             for (i = 0, j = 0; i < reg.size; i++) {
-        
                 if ((float)reg.node[i].amplitude.squareSum() < limit) {
                     j++;
                     decsize++;
-                
                 } else if (j != 0) {
-                    
                     reg.node[i - j].state = reg.node[i].state;
                     reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);
-                
                 }
             }
 
@@ -493,6 +506,7 @@ public class Gates {
             }
         }
         
+        //runtime complexity is O(reg.size * reg.width)
         decoherence.quantum_decohere(reg, rng, this);        
     }
 
@@ -500,7 +514,7 @@ public class Gates {
      * Apply the 4x4 matrix M to the bits TARGET1 and TARGET2. M should be
      * unitary. * Warning: code is mostly untested.
      */
-    void quantum_gate2(int target1, int target2, QuantumMatrix m,
+   public void quantum_gate2(int target1, int target2, QuantumMatrix m,
         QuantumReg reg) {
         
         if ((m.cols != 4) || (m.rows != 4)) {
@@ -629,8 +643,13 @@ public class Gates {
     /**
      * Apply a hadamard gate.
      * this is a generalized class of fourier transforms.
+     
+     runtime complexity is O(reg.size), though reg.size is possibly increased
+     and for the last decohere operation is
+     is O(reg.size * reg.width).
+    
      */
-    void quantum_hadamard(int target, QuantumReg reg) {
+   public void quantum_hadamard(int target, QuantumReg reg) {
   
         Matrix matrix = new Matrix();
         
@@ -649,7 +668,7 @@ public class Gates {
     /**
      * Apply a walsh-hadamard transform
      */
-    void quantum_walsh(int width, QuantumReg reg) {
+   public void quantum_walsh(int width, QuantumReg reg) {
   
         int i;
 
@@ -661,7 +680,7 @@ public class Gates {
     /**
      * Apply a rotation about the x-axis by the angle GAMMA
      */
-    void quantum_r_x(int target, float gamma, QuantumReg reg) {
+   public void quantum_r_x(int target, float gamma, QuantumReg reg) {
   
         Matrix matrix = new Matrix();
         
@@ -679,7 +698,7 @@ public class Gates {
     /**
      * Apply a rotation about the y-axis by the angle GAMMA
      */
-    void quantum_r_y(int target, float gamma, QuantumReg reg) {
+   public void quantum_r_y(int target, float gamma, QuantumReg reg) {
   
         Matrix matrix = new Matrix();
         
@@ -695,7 +714,7 @@ public class Gates {
     /**
      * Apply a rotation about the z-axis by the angle GAMMA
      */
-    void quantum_r_z(int target, float gamma, QuantumReg reg) {
+   public void quantum_r_z(int target, float gamma, QuantumReg reg) {
   
         int i;
         
@@ -717,7 +736,7 @@ public class Gates {
     /**
      * Scale the phase of qubit
      */
-    void quantum_phase_scale(int target, float gamma, QuantumReg reg) {
+   public void quantum_phase_scale(int target, float gamma, QuantumReg reg) {
   
         int i;
         //return cos(phi) + IMAGINARY * sin(phi);
@@ -734,7 +753,7 @@ public class Gates {
     /**
      * Apply a phase kick (== shift) by the angle GAMMA
      */
-    void quantum_phase_kick(int target, float gamma, QuantumReg reg) {
+   public void quantum_phase_kick(int target, float gamma, QuantumReg reg) {
   
         int i;
         //return cos(phi) + IMAGINARY * sin(phi);
@@ -753,7 +772,7 @@ public class Gates {
     /**
      * Apply a conditional phase shift by PI / 2^(CONTROL - TARGET)
      */
-    void quantum_cond_phase(int control, int target, QuantumReg reg) {
+   public void quantum_cond_phase(int control, int target, QuantumReg reg) {
   
         int i;
         
@@ -774,7 +793,7 @@ public class Gates {
     
     }
 
-    void quantum_cond_phase_inv(int control, int target, QuantumReg reg) {
+   public void quantum_cond_phase_inv(int control, int target, QuantumReg reg) {
   
         int i;
         //return cos(phi) + IMAGINARY * sin(phi);
@@ -792,7 +811,7 @@ public class Gates {
         decoherence.quantum_decohere(reg, rng, this);
     }
 
-    void quantum_cond_phase_kick(int control, int target, float gamma, 
+   public void quantum_cond_phase_kick(int control, int target, float gamma, 
         QuantumReg reg) {
   
         int i;
@@ -831,7 +850,7 @@ public class Gates {
     /**
      * Change the status of the QEC.
      */
-    void quantum_qec_set_status(int stype, int swidth) {
+   public void quantum_qec_set_status(int stype, int swidth) {
         type = stype;
         width = swidth;
     }
@@ -839,7 +858,7 @@ public class Gates {
     /**
      * Get the current QEC status
      */
-    void quantum_qec_get_status(int[] ptypeInOut, int[] pwidthInOut) {
+   public void quantum_qec_get_status(int[] ptypeInOut, int[] pwidthInOut) {
 
         if (ptypeInOut != null && ptypeInOut.length > 0) {
             ptypeInOut[0] = type;
@@ -853,7 +872,7 @@ public class Gates {
      * Encode a quantum register. All qubits up to SWIDTH are protected, the
      * rest is expanded with a repetition code.
      */
-    void quantum_qec_encode(int type, int width, QuantumReg reg) {
+   public void quantum_qec_encode(int type, int width, QuantumReg reg) {
         int i;
         float lambda;
 
@@ -885,7 +904,7 @@ public class Gates {
     /**
      * Decode a quantum register and perform Quantum Error Correction on it
      */
-    void quantum_qec_decode(int type, int width, QuantumReg reg) {
+   public void quantum_qec_decode(int type, int width, QuantumReg reg) {
 
         int i, a, b;
         int swidth;
@@ -959,7 +978,7 @@ public class Gates {
     /**
      * Fault-tolerant version of the NOT gate
      */
-    void quantum_sigma_x_ft(int target, QuantumReg reg) {
+   public void quantum_sigma_x_ft(int target, QuantumReg reg) {
         int tmp;
         float lambda;
 
@@ -983,7 +1002,7 @@ public class Gates {
     /**
      * Fault-tolerant version of the Controlled NOT gate
      */
-    void quantum_cnot_ft(int control, int target, QuantumReg reg) {
+   public void quantum_cnot_ft(int control, int target, QuantumReg reg) {
         
         int tmp;
         float lambda;
@@ -1009,7 +1028,7 @@ public class Gates {
     /**
      * Fault-tolerant version of the Toffoli gate
      */
-    void quantum_toffoli_ft(int control1, int control2, int target, 
+   public void quantum_toffoli_ft(int control1, int control2, int target, 
         QuantumReg reg) {
 
         int i;
@@ -1073,7 +1092,7 @@ public class Gates {
      * @param swidth
      * @param reg 
      */
-    void quantum_exp_mod_n(int N, int x, int width_input, int swidth, 
+   public void quantum_exp_mod_n(int N, int x, int width_input, int swidth, 
         QuantumReg reg) {
 
         if (x == 0) {
@@ -1099,7 +1118,7 @@ public class Gates {
         }
     }
 
-    void emul(int a, int L, int width, QuantumReg reg){
+   public void emul(int a, int L, int width, QuantumReg reg){
 
 	    int i;
         for (i = width - 1; i >= 0; i--) {
@@ -1109,7 +1128,7 @@ public class Gates {
         }
     }
 
-    void muln(int N, int a, int ctl, int w, QuantumReg reg) {
+   public void muln(int N, int a, int ctl, int w, QuantumReg reg) {
         //ctl tells, which bit is the external enable bit
 	
         int i;
@@ -1141,7 +1160,7 @@ public class Gates {
      * @param w
      * @param reg 
      */
-    void muln_inv(int N, int a, int ctl, int w, QuantumReg reg){
+   public void muln_inv(int N, int a, int ctl, int w, QuantumReg reg){
 
         //ctl tells, which bit is the external enable bit
 	
@@ -1178,7 +1197,7 @@ public class Gates {
      * @param w
      * @param reg 
      */
-    void mul_mod_n(int N, int a, int ctl, int w, QuantumReg reg) {
+   public void mul_mod_n(int N, int a, int ctl, int w, QuantumReg reg) {
         
         //runtime complexity is O(reg.size)
         muln(N, a, ctl, w, reg);
@@ -1200,7 +1219,7 @@ public class Gates {
      * the sum of the c-number and the q-number in register add_sum is greater
      * than n and sets the next lower bit to "compare"
      */
-    void test_sum(int compare, int w, QuantumReg reg) {
+   public void test_sum(int compare, int w, QuantumReg reg) {
         int i;
 
         if ((compare & (1L << (w - 1))) != 0) {
@@ -1260,7 +1279,7 @@ public class Gates {
     c_out. xlt-l and L are enablebits. See documentation
     for further information
    */
-    void muxfa(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
+   public void muxfa(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
         int total, QuantumReg reg){
 
       //a,
@@ -1303,7 +1322,7 @@ public class Gates {
     /**
     * This is just the inverse operation of the semi-quantum fulladder
     */
-    void muxfa_inv(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
+   public void muxfa_inv(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
         int total, QuantumReg reg){
 
         //a,
@@ -1348,7 +1367,7 @@ public class Gates {
     not necessary. xlt-l and L are enablebits. See
     documentation for further information
     */
-    void muxha(int a, int b_in, int c_in, int xlt_l, int L, int total, QuantumReg reg) {
+   public void muxha(int a, int b_in, int c_in, int xlt_l, int L, int total, QuantumReg reg) {
 
         //a,
 
@@ -1375,7 +1394,7 @@ public class Gates {
     }
 
     //just the inverse of the semi quantum-halfadder
-    void muxha_inv(int a, int b_in, int c_in, int xlt_l, int L, int total, 
+   public void muxha_inv(int a, int b_in, int c_in, int xlt_l, int L, int total, 
         QuantumReg reg){
 
         //a,
@@ -1402,7 +1421,7 @@ public class Gates {
         }
     }
 
-    void madd(int a, int a_inv, int w, QuantumReg reg){
+   public void madd(int a, int a_inv, int w, QuantumReg reg){
     
 	    int i, j;
         int total;
@@ -1429,7 +1448,7 @@ public class Gates {
         muxha(j, 2 * w - 1, w - 1, 2 * w, 2 * w + 1, total, reg);
     }
 
-    void madd_inv(int a, int a_inv, int w, QuantumReg reg){
+   public void madd_inv(int a, int a_inv, int w, QuantumReg reg){
         
 	    int i, j;
         int total;
@@ -1457,7 +1476,7 @@ public class Gates {
         }
     }
 
-    void addn(int N, int a, int w, QuantumReg reg){
+   public void addn(int N, int a, int w, QuantumReg reg){
 
         //add a to register reg (mod N)
 
@@ -1466,7 +1485,7 @@ public class Gates {
         madd((1 << w) + a - N, a, w, reg);//madd 2^K+a-N
     }
 
-    void addn_inv(int N, int a, int w, QuantumReg reg){
+   public void addn_inv(int N, int a, int w, QuantumReg reg){
 
         //inverse of add a to register reg (mod N)
 
@@ -1478,7 +1497,7 @@ public class Gates {
         test_sum(a, w, reg);
     }
 
-    void add_mod_n(int N, int a, int w, QuantumReg reg){
+   public void add_mod_n(int N, int a, int w, QuantumReg reg){
         
         //add a to register reg (mod N) and clear the scratch bits
 
@@ -1495,7 +1514,7 @@ public class Gates {
      * 
      * runtime complexity is log2(N) * (.lt. log2(N)) * 2^(log2(N))
      */
-    void quantum_qft(int w, QuantumReg reg) {
+   public void quantum_qft(int w, QuantumReg reg) {
         
         int i, j;
 
@@ -1517,7 +1536,7 @@ public class Gates {
         System.out.format("\n");        
     }
 
-    void quantum_qft_inv(int w, QuantumReg reg) {
+   public void quantum_qft_inv(int w, QuantumReg reg) {
   
         int i, j;
 

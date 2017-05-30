@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
-   This file is part of libquantum
+   This file is a port to java from a c file in libquantum.
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
@@ -205,10 +205,11 @@ public class Shor {
         
         Gates gates = new Gates(rng);
         
-        // initialize 1<<width bitstrings and normalize them
-        //   the bitstring is the bitstring representation of a node.state in
-        //   register qr, and each bit is the figurative qubit in qr.
-        //   each bitstring is stored as a node in register qr.
+        // initialize 1<<width bitstrings and normalize them.
+        //   the bitstring is the bitstring representation of a 
+        //   node.state in register qr, and each bit in the state 
+        //   is the figurative qubit in qr.
+        //   each state bitstring is stored in a node in register qr.
         //   the sum of the node amplitudes squared is approx 1.
         
         // ~O(qr.size)
@@ -243,7 +244,7 @@ public class Shor {
         
         // ---- apply exp_mod_n ----
         
-        //runtime complexity is width * O(reg.size).
+        //runtime complexity is width * O(qr.size).
         //           ~ log_2(N) * qr.size
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         

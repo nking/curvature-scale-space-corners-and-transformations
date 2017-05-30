@@ -3,8 +3,12 @@ present are the output of printing the register of bitstrings (states)
 The successive stages of Shor's algorithm for arguments 15, 8 
 are seen in t?.txt
 
+NOTE also that the results are for previous version which began
+with a width greater than 1, so has more nodes.
+The current implementation uses fewer nodes.
+
 Note that the format of the register print out for each
 node being a line in the file:
 
-    node.amplitude.real node.amplitude.imag'i' | state > (state bitstring)
+    node.amplitude.real node.amplitude.imag'i' | state > ampl^2 (state bitstring)
 

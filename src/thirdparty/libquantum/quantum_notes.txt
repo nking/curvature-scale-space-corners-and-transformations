@@ -341,6 +341,11 @@ the algorithm outline is:
                developed by Brayton et al. at the 
                University of California, Berkeley
            to look at optimizing gates for quantum algorithms.
+-------
+        "A quantum algorithm for finding the minimum"
+           by Durr and Hoyer
+
+            T [i] = x,
         
 -------
    misc notes:
@@ -356,4 +361,11 @@ the algorithm outline is:
           large graphs too). runtime complexities?
           "Finding cliques by quantum adiabatic evolution"
            by Childs et al.  
-
+    nice resource if updated, on some of the implementations
+    of quantum algorithms:
+       -- https://krishnakumarsekar.github.io/awesome-quantum-machine-learning/#quantumalgorithmsml-qknn
+          including:
+          https://github.com/ResearchCodesHub/QuantumGeneticAlgorithms/
+          
+    - "Quantum speed-up for unsupervised learning"
+           by Aïmeur, Brassard, and Gambs 

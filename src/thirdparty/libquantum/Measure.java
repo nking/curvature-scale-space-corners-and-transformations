@@ -62,6 +62,7 @@ public class Measure {
      * by its position POS, starting with 0 as the least significant bit. The
      * new state of the quantum register depends on the result of the
      * measurement.
+     * runtime complexity is O(reg.size)
      */
     int quantum_bmeasure(int pos, QuantumReg reg, Random rng) {
   
@@ -73,7 +74,7 @@ public class Measure {
         long pos2 = 1L << pos;
 
         //System.out.format("REG.size=%d  pos2=%d\n", reg.size, pos2);
-        
+                
         // Sum up the probability for 0 being the result 
         for (i = 0; i < reg.size; i++) {
             
@@ -98,7 +99,8 @@ public class Measure {
 
         // if result==1, removes all states without bit pos set
         //   and renormalizes the amplitudes,
-        //   else, does the same for statues with bit pos set
+        //   else, does the same for statues with bit pos set.
+        // runtime complexity is O(reg.size)
         QuantumReg out = qureg.quantum_state_collapse(
             pos, result, reg);
 
