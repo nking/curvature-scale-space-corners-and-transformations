@@ -281,7 +281,7 @@ public class Grover2 {
                 reg.node[j].amplitude.setReal(2. * avg - a);
             }
             
-            /*
+            
             // renormalize...can postpone until loop is finished
             double sumsq = 0;
             for (int j = 0; j < reg.size; ++j) {
@@ -294,7 +294,7 @@ public class Grover2 {
                 reg.node[j].amplitude.setImag(
                     reg.node[j].amplitude.im() / div);
             }
-            */
+            
             
             //DEBUG
             System.out.format("AFTER grover nITer=%d\n", nIter);
@@ -345,19 +345,6 @@ public class Grover2 {
             nIter++;
         }
         
-        // renormalize
-        double sumsq = 0;
-        for (int j = 0; j < reg.size; ++j) {
-            sumsq += reg.node[j].amplitude.squareSum();
-        }
-        double div = Math.sqrt(sumsq);
-        for (int j = 0; j < reg.size; ++j) {
-            reg.node[j].amplitude.setReal(
-                reg.node[j].amplitude.re() / div);
-            reg.node[j].amplitude.setImag(
-                reg.node[j].amplitude.im() / div);
-        }
-        
         //DEBUG
         System.out.format("AFTER diffuser reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
@@ -378,7 +365,7 @@ public class Grover2 {
             }
         }
         
-        // for probability, Measure.bmeasure sums inspects the 
+        // for probability, Measure.bmeasure inspects the 
         // probabilities for a bit position in all states,
         //     that is, sums up all probabilities in which bit is not set
         //     and if those are .lt. random number, the
