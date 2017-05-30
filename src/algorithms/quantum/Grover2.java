@@ -246,6 +246,10 @@ public class Grover2 {
                 double re = reg.node[i].amplitude.re() * Math.cos(rotation);
                 //double im = reg.node[i].amplitude.im() * Math.sin(rotation);
                 reg.node[i].amplitude.setReal(re);
+            
+                //DEBUG
+                System.out.format("AFTER grover nIter=%d phase flip\n", nIter);
+                qureg.quantum_print_qureg(reg);
             }
             
             bestMBits0 |= mbits0;
@@ -281,21 +285,7 @@ public class Grover2 {
                 reg.node[j].amplitude.setReal(2. * avg - a);
             }
             
-            
-            // renormalize...can postpone until loop is finished
-            double sumsq = 0;
-            for (int j = 0; j < reg.size; ++j) {
-                sumsq += reg.node[j].amplitude.squareSum();
-            }
-            double div = Math.sqrt(sumsq);
-            for (int j = 0; j < reg.size; ++j) {
-                reg.node[j].amplitude.setReal(
-                    reg.node[j].amplitude.re() / div);
-                reg.node[j].amplitude.setImag(
-                    reg.node[j].amplitude.im() / div);
-            }
-            
-            
+           
             //DEBUG
             System.out.format("AFTER grover nITer=%d\n", nIter);
             qureg.quantum_print_qureg(reg);
@@ -345,10 +335,31 @@ public class Grover2 {
             nIter++;
         }
         
+        
         //DEBUG
         System.out.format("AFTER diffuser reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
-                
+        
+         
+        /*
+        // renormalize...can postpone until loop is finished
+        double sumsq = 0;
+        for (int j = 0; j < reg.size; ++j) {
+            sumsq += reg.node[j].amplitude.squareSum();
+        }
+        double div = Math.sqrt(sumsq);
+        for (int j = 0; j < reg.size; ++j) {
+            reg.node[j].amplitude.setReal(
+                reg.node[j].amplitude.re() / div);
+            reg.node[j].amplitude.setImag(
+                reg.node[j].amplitude.im() / div);
+        }            
+        
+        //DEBUG
+        System.out.format("AFTER re0normalization reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+        */
+        
         Measure measure = new Measure();
         
         //TODO: revisit this for multiple answers

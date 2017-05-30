@@ -400,6 +400,8 @@ public class Gates {
                 tnot.setReal(0);
                 tnot.setImag(0);
 
+                //find state's node index for state where basis state is the
+                //   opposite of node[i]'s basis state
                 j = QuReg.quantum_get_state(
                     reg.node[i].state ^ (1L << target),  
                     reg);
@@ -751,7 +753,7 @@ public class Gates {
     }
 
     /**
-     * Apply a phase kick (== shift) by the angle GAMMA
+     * Apply a phase kick (== shift) by the angle GAMMA if target bit is set
      */
    public void quantum_phase_kick(int target, float gamma, QuantumReg reg) {
   
@@ -770,7 +772,8 @@ public class Gates {
     }
 
     /**
-     * Apply a conditional phase shift by PI / 2^(CONTROL - TARGET)
+     * Apply a conditional phase shift of PI / 2^(CONTROL - TARGET) if 
+     * control and target bits are set
      */
    public void quantum_cond_phase(int control, int target, QuantumReg reg) {
   
@@ -793,6 +796,10 @@ public class Gates {
     
     }
 
+   /**
+     * Apply a conditional phase shift of -PI / 2^(CONTROL - TARGET) if 
+     * control and target bits are set
+     */
    public void quantum_cond_phase_inv(int control, int target, QuantumReg reg) {
   
         int i;
@@ -811,6 +818,10 @@ public class Gates {
         decoherence.quantum_decohere(reg, rng, this);
     }
 
+   /**
+     * Apply a conditional phase shift of gamma if 
+     * control and target bits are set
+     */
    public void quantum_cond_phase_kick(int control, int target, float gamma, 
         QuantumReg reg) {
   
