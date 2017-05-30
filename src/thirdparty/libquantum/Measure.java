@@ -64,7 +64,7 @@ public class Measure {
      * measurement.
      * runtime complexity is O(reg.size)
      */
-    int quantum_bmeasure(int pos, QuantumReg reg, Random rng) {
+    public int quantum_bmeasure(int pos, QuantumReg reg, Random rng) {
   
         int i;
         int result = 0;

@@ -36,7 +36,19 @@ original file was grover.c: Implementation of Grover's search algorithm
 public class Grover2 {
 
     /**
-     * NOT READY FOR USE
+     * NOT READY FOR USE.
+     * 
+     * a version of grover's specific to the enclosed oracle where 
+     * f(x) is related to the bitstring of the node state
+     * and so is number, so that bitstring 'AND's find the partial
+     * matching state (the qubits within state that match those within 
+     * number) and that the partial matches are 'OR'ed to produce a
+     * best overall composition to the state, which is the list
+     * index.
+     * For extrapolation to other problems, the oracle function would 
+     * need to be rewritten, but still has to be formatted such that
+     * the result of f(x) is dependent upon the individual qubits
+     * wtihint the superposition.
      * 
      * @param number
      * @return 
@@ -193,25 +205,51 @@ public class Grover2 {
         
         i = rng.nextInt(reg.size);
         
-        long bestMBits = 0;
+        // track the best matching set bits and the true unset bits
+        long bestMBits0 = 0;
+        long bestMBits1 = 0;
+        
+        //TODO: replace with use of the API gates when logic is correct
         
         int nIter = 0;
         while (nIter < end) {
                         
             System.out.println("i=" + i);
             
+            long st = reg.node[i].state;
+            
             // U_w oracle
             //(2a) phase rotation by pi if in correct state
             
+            //TODO: revise for multiple entries having correct answer
+            
             // the oracle in this case, is the matching bits
-            long mbits = reg.node[i].state & N;
-            if (mbits > 0) {
-                System.out.println("matched bits =" + Long.toBinaryString(mbits));
+            // and index i equals the node[i].state
+            long mbits1 = st & N;
+            long mbits0 = 0;
+            for (int j = 0; j < width; ++j) {
+                long pos = 1L << j;
+                if ((N & pos) == 0 && ((st & pos) == 0)) {
+                    mbits0 |= pos;
+                }
+            }
+            
+            if (mbits0 > 0 || mbits1 > 0) {
+                
+                System.out.println(
+                    "matched 0s =" 
+                    + Long.toBinaryString(mbits0) +
+                    " matched set bits=" +
+                      Long.toBinaryString(mbits1));
+                
                 //cos(phi) + IMAGINARY * sin(phi)
                 double re = reg.node[i].amplitude.re() * Math.cos(rotation);
                 //double im = reg.node[i].amplitude.im() * Math.sin(rotation);
                 reg.node[i].amplitude.setReal(re);
             }
+            
+            bestMBits0 |= mbits0;
+            bestMBits1 |= mbits1;
             
             //|H⊗n|  |2|0^n> -I_n|  |H⊗n|
                         
@@ -236,15 +274,15 @@ public class Grover2 {
             avg /= (double)reg.size;
             System.out.println("avg=" + avg);
             
-            // need to change amplitudes by their difference from avg,
-            // but also need the sum of squared amplitudes to be 1
+            // change amplitudes by their difference from avg
             for (int j = 0; j < reg.size; ++j) {
                 double a = reg.node[j].amplitude.re();
                 // a = 2*avg - a
                 reg.node[j].amplitude.setReal(2. * avg - a);
             }
             
-            // renorm
+            /*
+            // renormalize...can postpone until loop is finished
             double sumsq = 0;
             for (int j = 0; j < reg.size; ++j) {
                 sumsq += reg.node[j].amplitude.squareSum();
@@ -256,19 +294,28 @@ public class Grover2 {
                 reg.node[j].amplitude.setImag(
                     reg.node[j].amplitude.im() / div);
             }
+            */
             
             //DEBUG
             System.out.format("AFTER grover nITer=%d\n", nIter);
             qureg.quantum_print_qureg(reg);
         
-            //TODO: combine mbits w/ bestMBits to create new
-            //   bestMBits
-            
-            // TODO: for choice of next index, base it on best mbits so far
-            // or if that is 0, flip all bits
-            i = rng.nextInt(reg.size);
+            // TODO: revisit this
+            // either randomly choose the next i
+            // OR build from best set bits
+            // i = rng.nextInt(reg.size);
+            i = 0;
+            // set all bits that are not known 0's?
+            for (int j = 0; j < width; ++j) {
+                long pos = 1L << j;
+                if (!((N & pos) == 0 && ((st & pos) == 0))) {
+                    i |= pos;
+                }
+            }
             
             /*
+            TODO: return to this after a look at selecting i and defining
+                  oracle
             (b) Apply the diffusion transform D which is
                 defined by the matrix D as follows:
         
@@ -298,10 +345,62 @@ public class Grover2 {
             nIter++;
         }
         
-        //NOTE: the above isn't correct yet.
-        //     just reading the first grover paper to impl what it
-        //     describes, and the 2nd and another that it references...
+        // renormalize
+        double sumsq = 0;
+        for (int j = 0; j < reg.size; ++j) {
+            sumsq += reg.node[j].amplitude.squareSum();
+        }
+        double div = Math.sqrt(sumsq);
+        for (int j = 0; j < reg.size; ++j) {
+            reg.node[j].amplitude.setReal(
+                reg.node[j].amplitude.re() / div);
+            reg.node[j].amplitude.setImag(
+                reg.node[j].amplitude.im() / div);
+        }
+        
+        //DEBUG
+        System.out.format("AFTER diffuser reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+                
+        Measure measure = new Measure();
+        
+        //TODO: revisit this for multiple answers
+        //      having same result.
+        long ans = 0;
+        for (int j = 0; j < width; ++j) {
+            long pos = 1L << j;
+            if ((bestMBits1 & pos) != 0) {
+                ans |= pos;
 
-        return 0;
+                measure.quantum_bmeasure(j, reg, rng);
+            } else if ((bestMBits0 & pos) != 0) {
+                measure.quantum_bmeasure(j, reg, rng);
+            }
+        }
+        
+        // for probability, Measure.bmeasure sums inspects the 
+        // probabilities for a bit position in all states,
+        //     that is, sums up all probabilities in which bit is not set
+        //     and if those are .lt. random number, the
+        //     bit is considered truly set.
+        
+        // the grover algorithm uses different "measurement"
+        
+        System.out.format("best answer=%d (%s)\n", ans, Long.toBinaryString(ans));
+        
+        //DEBUG
+        System.out.format("AFTER bmeasure reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+
+        
+        //NOTE: the above isn't finished yet.
+        //     just reading the first grover paper to impl what it
+        //     describes, and the 2nd and another that paper that the 
+        //     2nd references...
+        // but meanwhile, took a tangent
+        // to look at defining the oracle and i selection w.r.t. the algorithm
+        // runtime complexity
+        
+        return (int)ans;
     }
 }
