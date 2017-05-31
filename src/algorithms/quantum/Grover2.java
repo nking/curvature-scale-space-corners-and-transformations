@@ -1,7 +1,9 @@
 package algorithms.quantum;
 
+import algorithms.imageProcessing.FixedSizeSortedIntVector;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import java.util.Arrays;
 import java.util.Random;
 import thirdparty.libquantum.*;
 
@@ -162,7 +164,6 @@ public class Grover2 {
         
         /*
         from wikipedia:
-        
                    
                        ------------------------
                       /   diffuser              \
@@ -190,7 +191,11 @@ public class Grover2 {
         System.out.format("AFTER construction  reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
         
+        // figurative input list size = 2^N
+        
         //runtime complexity is O(reg.size * reg.width)
+        //                           2^N       N
+        //                        list size    N
         for (i = 0; i < reg.width; i++) {
             gates.quantum_hadamard(i, reg);
         }
@@ -199,11 +204,19 @@ public class Grover2 {
         System.out.format("AFTER 1st hadamard gates  reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
         
-        int end = (int) ((Math.PI / 4) * Math.sqrt(1 << reg.width));
+        // upper limit to number of iterations from:
+        //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
+        int end = (int)Math.ceil((Math.PI / 4) * Math.sqrt(1 << reg.width));
         
         System.out.format("Iterating %d times\n", end);
+       
+        //auxillary data structure that could be brought into the 
+        //   algorithm along with a replacement for Arrays.binarySearcy()
+        FixedSizeSortedIntVector prevIs = new FixedSizeSortedIntVector(end);
         
         i = rng.nextInt(reg.size);
+        
+        prevIs.add(i);
         
         // track the best matching set bits and the true unset bits
         long bestMBits0 = 0;
@@ -234,6 +247,11 @@ public class Grover2 {
                 }
             }
             
+            //NOTE: for this specific oracle of bit matching,
+            //   should consider that the inversion may need to
+            //   be performed for as many that match the
+            //   query N (bits set and unset)
+                        
             if (mbits0 > 0 || mbits1 > 0) {
                 
                 System.out.println(
@@ -256,7 +274,7 @@ public class Grover2 {
             bestMBits1 |= mbits1;
             
             //|H⊗n|  |2|0^n> -I_n|  |H⊗n|
-                        
+            
             //(2b) diffusion transform
             // determine the average amplitude (or keep a running calculation)
             // and then alter this amplitude by the negative of the difference.
@@ -290,18 +308,49 @@ public class Grover2 {
             System.out.format("AFTER grover nITer=%d\n", nIter);
             qureg.quantum_print_qureg(reg);
         
-            // TODO: revisit this
             // either randomly choose the next i
-            // OR build from best set bits
+            // OR build from best set bits.
             // i = rng.nextInt(reg.size);
-            i = 0;
-            // set all bits that are not known 0's?
-            for (int j = 0; j < width; ++j) {
-                long pos = 1L << j;
-                if (!((N & pos) == 0 && ((st & pos) == 0))) {
-                    i |= pos;
+            int i2 = 0;
+            if (st == N) {
+                // repeating for correct answer improves node probability
+                i2 = i;
+            } if (mbits1 > 0) {
+                // set i2 to composite of all set bits
+                for (int j = 0; j < width; ++j) {
+                    long pos = 1L << j;
+                    if ((N & pos) != 0 && ((mbits1 & pos) != 0)) {
+                        i2 |= pos;
+                    }
+                }
+                if (reg.node[i2].state != N &&
+                    Arrays.binarySearch(prevIs.getArray(), i2) > -1) {
+                   //set bits that are not known 0s
+                    for (int j = 0; j < width; ++j) {
+                        long pos = 1L << j;
+                        if (!((N & pos) == 0 && ((mbits0 & pos) != 0))) {
+                            i2 |= pos;
+                        }
+                    }
+                    // can assert that i2 not in previously tried i's
+                }
+                
+            } else {
+                // mbits1 == 0, that is no set bits are yet found
+                for (int j = 0; j < width; ++j) {
+                    long pos = 1L << j;
+                    i2 |= pos;
+                }
+                if (reg.node[i2].state != N &&
+                    Arrays.binarySearch(prevIs.getArray(), i2) > -1) {
+                    // all bits have been tried, so ans must be 0
+                    i2 = 0;
                 }
             }
+            i = i2;
+            prevIs.add(i);
+            
+            nIter++;
             
             /*
             TODO: return to this after a look at selecting i and defining
@@ -330,9 +379,7 @@ public class Grover2 {
                             the bitstring i and bitstring j (both of size n)
                             (bitwise dot product is '&')
             */
-            
-            
-            nIter++;
+                        
         }
         
         
@@ -369,10 +416,6 @@ public class Grover2 {
             long pos = 1L << j;
             if ((bestMBits1 & pos) != 0) {
                 ans |= pos;
-
-                measure.quantum_bmeasure(j, reg, rng);
-            } else if ((bestMBits0 & pos) != 0) {
-                measure.quantum_bmeasure(j, reg, rng);
             }
         }
         
@@ -381,15 +424,17 @@ public class Grover2 {
         //     that is, sums up all probabilities in which bit is not set
         //     and if those are .lt. random number, the
         //     bit is considered truly set.
-        
-        // the grover algorithm uses different "measurement"
-        
-        System.out.format("best answer=%d (%s)\n", ans, Long.toBinaryString(ans));
+                
+        measure.quantum_bmeasure((int)ans, reg, rng);
         
         //DEBUG
         System.out.format("AFTER bmeasure reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
 
+        
+        System.out.format("best answer=%d (%s) w/ prob=%f\n", ans, 
+            Long.toBinaryString(ans), reg.node[(int)ans].amplitude.squareSum());
+        
         
         //NOTE: the above isn't finished yet.
         //     just reading the first grover paper to impl what it

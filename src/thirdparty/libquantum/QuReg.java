@@ -240,7 +240,7 @@ public class QuReg {
      * Returns an empty quantum register of size N
      * with instantiated nodes.
      */
-    QuantumReg quantum_new_qureg_size(int n, int w) {
+    public QuantumReg quantum_new_qureg_size(int n, int w) {
         
         QuantumReg reg = new QuantumReg();
 
