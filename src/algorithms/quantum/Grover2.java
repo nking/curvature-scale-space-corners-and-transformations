@@ -418,14 +418,9 @@ public class Grover2 {
                 ans |= pos;
             }
         }
-                
-        //DEBUG
-        System.out.format("AFTER bmeasure reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
-
-        
-       // System.out.format("best answer=%d (%s) w/ prob=%f\n", ans, 
-       //     Long.toBinaryString(ans), reg.node[(int)ans].amplitude.squareSum());
+            
+        System.out.format("best answer=%d (%s) w/ prob=%f\n", ans, 
+            Long.toBinaryString(ans), reg.node[(int)ans].amplitude.squareSum());
         
         
         //NOTE: the above isn't finished yet.
