@@ -31,7 +31,7 @@ public class Measure {
      * Measure the contents of a quantum register
      */
     //MAX_UNSIGNED quantum_measure(QuantumReg reg, Random rng) {
-    long quantum_measure(QuantumReg reg, Random rng) {
+    public long quantum_measure(QuantumReg reg, Random rng) {
         
         double r;
         int i;

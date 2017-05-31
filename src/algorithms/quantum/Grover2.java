@@ -418,22 +418,14 @@ public class Grover2 {
                 ans |= pos;
             }
         }
-        
-        // for probability, Measure.bmeasure inspects the 
-        // probabilities for a bit position in all states,
-        //     that is, sums up all probabilities in which bit is not set
-        //     and if those are .lt. random number, the
-        //     bit is considered truly set.
                 
-        measure.quantum_bmeasure((int)ans, reg, rng);
-        
         //DEBUG
         System.out.format("AFTER bmeasure reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
 
         
-        System.out.format("best answer=%d (%s) w/ prob=%f\n", ans, 
-            Long.toBinaryString(ans), reg.node[(int)ans].amplitude.squareSum());
+       // System.out.format("best answer=%d (%s) w/ prob=%f\n", ans, 
+       //     Long.toBinaryString(ans), reg.node[(int)ans].amplitude.squareSum());
         
         
         //NOTE: the above isn't finished yet.
