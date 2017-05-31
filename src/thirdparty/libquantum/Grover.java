@@ -273,9 +273,7 @@ public class Grover {
 
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
-        // (NOTE: this is not necessary if not creating additional nodes as a
-        //    side effect of the hadamard gate below the hadamard block
-        //gates.quantum_sigma_x(reg.width, reg);
+        gates.quantum_sigma_x(reg.width, reg);
 
         //runtime complexity is O(reg.size * reg.width)
         for (i = 0; i < reg.width; i++) {
@@ -284,9 +282,7 @@ public class Grover {
 
         //this expands the register to next highest bitstring, for the
         // work space to hold the low bit integer states after inversion.
-        // (NOTE: this shouldn't be necessary because additional nodes are
-        // added if needed after oracle finds a match).
-        //gates.quantum_hadamard(reg.width, reg);
+        gates.quantum_hadamard(reg.width, reg);
 
         //DEBUG
         System.out.format("AFTER 1st hadamard gates  reg.size=%d\n", reg.size);
