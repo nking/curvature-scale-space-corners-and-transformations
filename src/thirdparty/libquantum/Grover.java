@@ -42,8 +42,6 @@ public class Grover {
                  ------|
 
                  Repeat U_w + diffuser O(sqrt(N)) times
-
-            also see tutorial at:
      */
     
     /**
@@ -258,6 +256,9 @@ public class Grover {
         int tmp = MiscMath.numberOfBits(N + 1);
         if (width < tmp) {
             width = tmp;
+        }
+        if (width < 2) {
+            width = 2;
         }
 
         System.out.format("N = %d, width=%d\n", N, width);

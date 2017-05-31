@@ -19,7 +19,6 @@ public class GroverTest extends TestCase {
         
         log.info("testRun");
                
-        // 011
         int number = 3;
         int nbits = 3;
                 
