@@ -27,7 +27,7 @@ public class GroverTest extends TestCase {
         
         for (int i = 0; i < nTests; ++i) {
             
-            Grover2 grover = new Grover2();
+            Grover grover = new Grover();
         
             grover.run(number, nbits);
         }        

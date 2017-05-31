@@ -30,9 +30,22 @@ import java.util.logging.Logger;
 
 public class Grover {
 
-    //TODO : add notes from
-    //        https://www.cs.cmu.edu/~odonnell/quantum15/lecture04.pdf
+    /*
+            from wikipedia:
 
+                           ------------------------
+                          /   diffuser              \
+                  _____   _____  ____________   _____
+    |0> -[H⊗n]---|     |--|H⊗n|--|2|0^n> -I_n|--|H⊗n|---- ...measure
+                 | U_w |  -----  ------------   ----
+    |1> -[H]-----|     |---------------------------------
+                 ------|
+
+                 Repeat U_w + diffuser O(sqrt(N)) times
+
+            also see tutorial at:
+     */
+    
     /**
      * 
      * runtime complexity is O(reg.size * reg.width),
@@ -43,7 +56,38 @@ public class Grover {
      */
     private void oracle(int query, QuantumReg reg, Gates gates) {
         int i;
+        
+        /*
+         function f(x)
+                == 1 when x satisifies search criteria, 
+                   that is, x == w
+                   |U_w|x> = -|x>
+                == 0 else is 0, that is, x != w
+                   |U_w|x> = |x>
 
+        // |x>|q> ----> (-1)^(f(x)) * |x>        
+        */
+        
+        /*
+        -- for each query bit: 
+              if query bit i is 0, flips that bit in all states
+        -- for each node state,
+              if bits 0 and 1 are set, 
+                  it flips the bit reg->width + 1
+        -- for each node state,
+              if bit reg->width + i is set, 
+                  it flips the bit reg->width
+        -- for each node.state (in reversed order): 
+               if bits i and reg->width + i are set, 
+                   it flips the bit reg.width + 1 + i
+        -- for each node state,
+               if bits 0 and 1 are set, 
+                  it flips the bit reg->width + 1
+        -- for each query bit:
+               if query bit i is 0, 
+                   flip bit i in all node states
+        */
+        
         //runtime complexity is O(reg.size * reg.width),
         // (because decoherence lambda is 0.0).
         for (i = 0; i < reg.width; i++) {
@@ -98,6 +142,9 @@ public class Grover {
     private void inversion(QuantumReg reg, Gates gates) {
         int i;
 
+        //|2|0^n> -I_n|
+        
+        
         //Flip the target bit of each basis state, i
         for (i = 0; i < reg.width; i++) {
             gates.quantum_sigma_x(i, reg);
@@ -141,16 +188,6 @@ public class Grover {
 
         int i;   
 
-        /*
-         function f(x)
-                == 1 when x satisifies search criteria, 
-                   that is, x == w
-                   |U_w|x> = -|x>
-                == 0 else is 0, that is, x != w
-                   |U_w|x> = |x>
-
-         */
-
         //unitary operator operating on two qubits, target and each i
         // |x>|q> ----> (-1)^(f(x)) * |x> 
         // (gives the found solutions negative signs)
@@ -162,7 +199,6 @@ public class Grover {
         qureg.quantum_print_qureg(reg);
 
 
-        // ---- the rest is the grover "diffuser" -----
         //   H⊗n   |2|0^n> -I_n|  H⊗n
 
 
@@ -237,30 +273,28 @@ public class Grover {
 
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
-        gates.quantum_sigma_x(reg.width, reg);
-
-        //DEBUG
-        System.out.format("AFTER 1st sigma_x  reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
+        // (NOTE: this is not necessary if not creating additional nodes as a
+        //    side effect of the hadamard gate below the hadamard block
+        //gates.quantum_sigma_x(reg.width, reg);
 
         //runtime complexity is O(reg.size * reg.width)
         for (i = 0; i < reg.width; i++) {
             gates.quantum_hadamard(i, reg);
         }
 
-        //this expands the register to next highest bitstring, flot the
-        // work space to hold the low bit integer states after inversion
-        gates.quantum_hadamard(reg.width, reg);
+        //this expands the register to next highest bitstring, for the
+        // work space to hold the low bit integer states after inversion.
+        // (NOTE: this shouldn't be necessary because additional nodes are
+        // added if needed after oracle finds a match).
+        //gates.quantum_hadamard(reg.width, reg);
 
         //DEBUG
         System.out.format("AFTER 1st hadamard gates  reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
 
 
-        // ---- now, have a prepared list of numbers of size
-        //      1 << width which have a state left shifted by width bits,
-        //      but the preparation is O(1<<width)
-
+        // upper limit to number of iterations from:
+        //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
         int end = (int) (Math.PI / 4 * Math.sqrt(1 << reg.width));
 
         System.out.format("Iterating %d times\n", end);
