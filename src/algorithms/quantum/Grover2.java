@@ -219,8 +219,9 @@ public class Grover2 {
         prevIs.add(i);
         
         // track the best matching set bits and the true unset bits
-        long bestMBits0 = 0;
-        long bestMBits1 = 0;
+        int bestMBits0 = 0;
+        int bestMBits1 = 0;
+        int found = -1;
         
         //TODO: replace with use of the API gates when logic is correct
         
@@ -229,7 +230,7 @@ public class Grover2 {
                         
             System.out.println("i=" + i);
             
-            long st = reg.node[i].state;
+            int st = (int)reg.node[i].state;
             
             // U_w oracle
             //(2a) phase rotation by pi if in correct state
@@ -238,8 +239,8 @@ public class Grover2 {
             
             // the oracle in this case, is the matching bits
             // and index i equals the node[i].state
-            long mbits1 = st & N;
-            long mbits0 = 0;
+            int mbits1 = st & N;
+            int mbits0 = 0;
             for (int j = 0; j < width; ++j) {
                 long pos = 1L << j;
                 if ((N & pos) == 0 && ((st & pos) == 0)) {
@@ -315,6 +316,7 @@ public class Grover2 {
             if (st == N) {
                 // repeating for correct answer improves node probability
                 i2 = i;
+                found = st;
             } if (mbits1 > 0) {
                 // set i2 to composite of all set bits
                 for (int j = 0; j < width; ++j) {
@@ -387,40 +389,23 @@ public class Grover2 {
         System.out.format("AFTER diffuser reg.size=%d\n", reg.size);
         qureg.quantum_print_qureg(reg);
         
-         
-        /*
-        // renormalize...can postpone until loop is finished
-        double sumsq = 0;
-        for (int j = 0; j < reg.size; ++j) {
-            sumsq += reg.node[j].amplitude.squareSum();
-        }
-        double div = Math.sqrt(sumsq);
-        for (int j = 0; j < reg.size; ++j) {
-            reg.node[j].amplitude.setReal(
-                reg.node[j].amplitude.re() / div);
-            reg.node[j].amplitude.setImag(
-                reg.node[j].amplitude.im() / div);
-        }            
-        
-        //DEBUG
-        System.out.format("AFTER re0normalization reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
-        */
         
         Measure measure = new Measure();
         
-        //TODO: revisit this for multiple answers
-        //      having same result.
-        long ans = 0;
-        for (int j = 0; j < width; ++j) {
-            long pos = 1L << j;
-            if ((bestMBits1 & pos) != 0) {
-                ans |= pos;
+        int ans = 0;
+        if (found > -1) {
+            ans = found;
+        } else {
+            for (int j = 0; j < width; ++j) {
+                int pos = 1 << j;
+                if ((bestMBits1 & pos) != 0) {
+                    ans |= pos;
+                }
             }
         }
             
         System.out.format("best answer=%d (%s) w/ prob=%f\n", ans, 
-            Long.toBinaryString(ans), reg.node[(int)ans].amplitude.squareSum());
+            Integer.toBinaryString(ans), reg.node[ans].amplitude.squareSum());
         
         
         //NOTE: the above isn't finished yet.
