@@ -221,6 +221,7 @@ public class Grover2 {
         // track the best matching set bits and the true unset bits
         int bestMBits0 = 0;
         int bestMBits1 = 0;
+        // if N is found, store the node index here:
         int found = -1;
         
         //TODO: replace with use of the API gates when logic is correct
@@ -234,9 +235,7 @@ public class Grover2 {
             
             // U_w oracle
             //(2a) phase rotation by pi if in correct state
-            
-            //TODO: revise for multiple entries having correct answer
-            
+                        
             // the oracle in this case, is the matching bits
             // and index i equals the node[i].state
             int mbits1 = st & N;
@@ -250,16 +249,16 @@ public class Grover2 {
             
             //NOTE: for this specific oracle of bit matching,
             //   should consider that the inversion may need to
-            //   be performed for as many that match the
-            //   query N (bits set and unset)
+            //   be performed as many times as there are bits that match the
+            //   query N (set and unset)
                         
             if (mbits0 > 0 || mbits1 > 0) {
                 
                 System.out.println(
                     "matched 0s =" 
-                    + Long.toBinaryString(mbits0) +
+                    + Integer.toBinaryString(mbits0) +
                     " matched set bits=" +
-                      Long.toBinaryString(mbits1));
+                      Integer.toBinaryString(mbits1));
                 
                 //cos(phi) + IMAGINARY * sin(phi)
                 double re = reg.node[i].amplitude.re() * Math.cos(rotation);
@@ -329,7 +328,7 @@ public class Grover2 {
                     Arrays.binarySearch(prevIs.getArray(), i2) > -1) {
                    //set bits that are not known 0s
                     for (int j = 0; j < width; ++j) {
-                        long pos = 1L << j;
+                        int pos = 1 << j;
                         if (!((N & pos) == 0 && ((mbits0 & pos) != 0))) {
                             i2 |= pos;
                         }
@@ -340,7 +339,7 @@ public class Grover2 {
             } else {
                 // mbits1 == 0, that is no set bits are yet found
                 for (int j = 0; j < width; ++j) {
-                    long pos = 1L << j;
+                    int pos = 1 << j;
                     i2 |= pos;
                 }
                 if (reg.node[i2].state != N &&
@@ -409,13 +408,13 @@ public class Grover2 {
         
         
         //NOTE: the above isn't finished yet.
-        //     just reading the first grover paper to impl what it
+        //     reading the first grover paper to impl what it
         //     describes, and the 2nd and another that paper that the 
         //     2nd references...
         // but meanwhile, took a tangent
         // to look at defining the oracle and i selection w.r.t. the algorithm
         // runtime complexity
         
-        return (int)ans;
+        return ans;
     }
 }
