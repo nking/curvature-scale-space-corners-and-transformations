@@ -42,7 +42,7 @@ public class QuReg {
         k32 = k32 >> (32 - width);
         return k32;
     }*/
-    static int quantum_hash64(long key, int width) {
+    public static int quantum_hash64(long key, int width) {
 
         //this will always be == key value unless allow key type to be long
         long k = (key & 0x7FFFFFFF) ^ (key >> 31);

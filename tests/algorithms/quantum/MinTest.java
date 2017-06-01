@@ -1,35 +1,82 @@
-package thirdparty.libquantum;
+package algorithms.quantum;
 
+import algorithms.misc.Misc;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.Random;
+import thirdparty.libquantum.*;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import algorithms.quantum.Grover2;
 
 /**
  *
  * @author nichole
  */
-public class GroverTest extends TestCase {
+public class MinTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public GroverTest() {
+    public MinTest() {
+    }
+    
+    public void estFnvRetry() {
+        
+        int length = 100000;//256;
+        
+        int n = 1000000;
+        
+        TIntObjectMap<TIntSet> idxVMap = new TIntObjectHashMap<TIntSet>();
+        
+        Min min = new Min();
+        
+        Random rng = Misc.getSecureRandom();
+        
+        int nCollisions = 0;
+        
+        for (int i = 0; i < n; ++i) {
+            int v = rng.nextInt(length);
+            int idx = min.hashToIndex(v, length);
+            assertTrue(idx < length);
+            assertTrue(idx >= 0);
+            if (idxVMap.containsKey(idx) && idxVMap.get(idx).contains(v)) {
+                nCollisions++;
+            }
+            TIntSet set = idxVMap.get(idx);
+            if (set == null) {
+                set = new TIntHashSet();
+                idxVMap.put(idx, set);
+            }
+            set.add(v);
+        }
+        
+        double max = 0.1 * n;
+        
+        System.out.println("nCollisons=" + nCollisions 
+            + " idxs.size=" + idxVMap.size() + " nC/N=" 
+            + ((double)nCollisions/n));
+        
+        //assertTrue(nCollisions < max);
     }
     
     public void testRun() {
         
         log.info("testRun");
-               
-        int number = 3;
+                       
         int nbits = 3;
-                
-        int nTests = 1;
-        
-        for (int i = 0; i < nTests; ++i) {
+         
+        Min min = new Min();
             
-            Grover grover = new Grover();
+        //int[] list = new int[]{0,1,2,3,4,5,6,7};
         
-            grover.run(number, nbits);
-        }        
+        int[] list = new int[]{1,2,3,0,1,4,2,7};
+        
+        int m = min.run(nbits, list);        
+    
+        System.out.println("min=" + m);
+        
+        assertEquals(3, m);
     }
     
 }
