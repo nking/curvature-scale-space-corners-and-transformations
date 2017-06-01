@@ -17,9 +17,15 @@ import thirdparty.libquantum.QuantumReg;
 <span class="fc" id="L17">public class Min {</span>
     
     /**
-     * find the index y such that list[y] is minimum.
-     * 
-     * 
+      find the index y such that list[y] is minimum.
+       
+      runtime complexity is roughly
+          (22.5 * Math.sqrt(list.length) + 
+          1.4 * Math.log(Math.log(list.length)))
+          times O(grover + list_filtering)
+           
+      where O(Grover) is O((2^width) * width).
+     
      * NOTE that the largest number in the list must be
      * .lte. integer.max_value - 2^width.
      * @param width largest bit length to use the register.
@@ -32,14 +38,14 @@ import thirdparty.libquantum.QuantumReg;
 
         int i;
         
-<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (width &lt; 2) {</span>
-<span class="nc" id="L36">            width = 2;</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (width &lt; 2) {</span>
+<span class="nc" id="L42">            width = 2;</span>
         }
 
-<span class="fc" id="L39">        System.out.format(&quot;list.length=%d, width=%d\n&quot;, list.length, width);</span>
+<span class="fc" id="L45">        System.out.format(&quot;list.length=%d, width=%d\n&quot;, list.length, width);</span>
         
-<span class="fc" id="L41">        double limit = 22.5 * Math.sqrt(list.length) + </span>
-<span class="fc" id="L42">            1.4 * Math.log(Math.log(list.length));</span>
+<span class="fc" id="L47">        double limit = 22.5 * Math.sqrt(list.length) + </span>
+<span class="fc" id="L48">            1.4 * Math.log(Math.log(list.length));</span>
         
         /*
         find the index y such that T[y] is minimum.
@@ -61,71 +67,71 @@ import thirdparty.libquantum.QuantumReg;
         (3) return y
         */
 
-<span class="fc" id="L64">        QuReg qureg = new QuReg();</span>
+<span class="fc" id="L70">        QuReg qureg = new QuReg();</span>
 
-<span class="fc" id="L66">        Grover grover = new Grover();</span>
+<span class="fc" id="L72">        Grover grover = new Grover();</span>
         
-<span class="fc" id="L68">        Random rng = Misc.getSecureRandom();</span>
+<span class="fc" id="L74">        Random rng = Misc.getSecureRandom();</span>
         
-<span class="fc" id="L70">        Measure measure = new Measure();</span>
+<span class="fc" id="L76">        Measure measure = new Measure();</span>
         
         QuantumReg reg;
         
         //a reverse hash to lookup index when given value.
-<span class="fc" id="L75">        int[] hash = createHash(list);</span>
+<span class="fc" id="L81">        int[] hash = createHash(list);</span>
         
-<span class="fc" id="L77">        int y = rng.nextInt(list.length);</span>
+<span class="fc" id="L83">        int y = rng.nextInt(list.length);</span>
         
-<span class="fc" id="L79">        int[] filtered = filter(list, y);</span>
+<span class="fc" id="L85">        int[] filtered = filter(list, y);</span>
         
         int srch, y2;
         int[] hash2;
         
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        for (int nIter = 0; nIter &lt; limit; ++nIter) {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        for (int nIter = 0; nIter &lt; limit; ++nIter) {</span>
            
-<span class="fc" id="L86">            System.out.println(&quot;current minIdx=&quot; + y);</span>
+<span class="fc" id="L92">            System.out.println(&quot;current minIdx=&quot; + y);</span>
             
-<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (filtered.length == 0) {</span>
-<span class="fc" id="L89">                break;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (filtered.length == 0) {</span>
+<span class="fc" id="L95">                break;</span>
             }
             
-<span class="fc" id="L92">            reg = grover.initializeRegister(qureg, filtered, width);</span>
+<span class="fc" id="L98">            reg = grover.initializeRegister(qureg, filtered, width);</span>
         
             /*
             choose srch uniformly at random among the nonnegative
                 integers smaller than list[y].
             */
-<span class="fc" id="L98">            srch = filtered[rng.nextInt(filtered.length)];</span>
+<span class="fc" id="L104">            srch = filtered[rng.nextInt(filtered.length)];</span>
             
-<span class="fc" id="L100">            grover.processInitialized(srch, reg, rng);</span>
+<span class="fc" id="L106">            grover.processInitialized(srch, reg, rng);</span>
        
             //DEBUG
-<span class="fc" id="L103">            System.out.format(&quot;AFTER process  reg.size=%d\n&quot;, reg.size);</span>
-<span class="fc" id="L104">            qureg.quantum_print_qureg(reg);</span>
+            //System.out.format(&quot;AFTER process  reg.size=%d\n&quot;, reg.size);
+            //qureg.quantum_print_qureg(reg);
 
-<span class="fc" id="L106">            measure.quantum_bmeasure(0, reg, rng);</span>
+<span class="fc" id="L112">            measure.quantum_bmeasure(0, reg, rng);</span>
             
             //DEBUG
-<span class="fc" id="L109">            System.out.format(&quot;AFTER measure  reg.size=%d\n&quot;, reg.size);</span>
-<span class="fc" id="L110">            qureg.quantum_print_qureg(reg);</span>
+            //System.out.format(&quot;AFTER measure  reg.size=%d\n&quot;, reg.size);
+            //qureg.quantum_print_qureg(reg);
 
-<span class="fc" id="L112">            int v = (int)reg.node[0].state;</span>
+<span class="fc" id="L118">            int v = (int)reg.node[0].state;</span>
         
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">            if (v &lt; list[y]) {</span>
-<span class="nc" id="L115">                y = getIndex(list, v, hash);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">            if (v &lt; list[y]) {</span>
+<span class="nc" id="L121">                y = getIndex(list, v, hash);</span>
             }
             //TODO: check this.
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            if (srch &lt; list[y]) {</span>
-<span class="fc" id="L119">                y = getIndex(list, srch, hash);</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">            if (srch &lt; list[y]) {</span>
+<span class="fc" id="L125">                y = getIndex(list, srch, hash);</span>
             }
             
-<span class="fc" id="L122">            hash2 = createHash(filtered);</span>
-<span class="fc" id="L123">            y2 = getIndex(filtered, list[y], hash2);</span>
-<span class="fc" id="L124">            filtered = filter(filtered, y2);</span>
+<span class="fc" id="L128">            hash2 = createHash(filtered);</span>
+<span class="fc" id="L129">            y2 = getIndex(filtered, list[y], hash2);</span>
+<span class="fc" id="L130">            filtered = filter(filtered, y2);</span>
                    
         }
         
-<span class="fc" id="L128">        return y;</span>
+<span class="fc" id="L134">        return y;</span>
     }
     
     /**
@@ -161,21 +167,21 @@ import thirdparty.libquantum.QuantumReg;
      */
     private int getIndex(final int[] list, final int value, int[] hash) {
         
-<span class="fc" id="L164">        int i, mark = 0;</span>
+<span class="fc" id="L170">        int i, mark = 0;</span>
 
-<span class="fc" id="L166">        i = hashToIndex(value, list.length);</span>
+<span class="fc" id="L172">        i = hashToIndex(value, list.length);</span>
         
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        while (hash[i] != 0) {</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">            if (list[hash[i] - 1] == value) {</span>
-<span class="fc" id="L170">                return hash[i] - 1;</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        while (hash[i] != -1) {</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">            if (list[hash[i] - 1] == value) {</span>
+<span class="fc" id="L176">                return hash[i] - 1;</span>
             }
-<span class="nc" id="L172">            i++;</span>
-<span class="nc bnc" id="L173" title="All 2 branches missed.">            if (i == list.length) {</span>
-<span class="nc" id="L174">                i = 0;</span>
+<span class="nc" id="L178">            i++;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">            if (i == list.length) {</span>
+<span class="nc" id="L180">                i = 0;</span>
             }
         }
 
-<span class="nc" id="L178">        return -1;</span>
+<span class="nc" id="L184">        return -1;</span>
     }
     
     /**
@@ -210,67 +216,70 @@ import thirdparty.libquantum.QuantumReg;
      */
     private int setValue(final int[] list, final int idx, int[] hash) {
         
-<span class="fc" id="L213">        int i, mark = 0;</span>
+<span class="fc" id="L219">        int i, mark = 0;</span>
 
-<span class="fc" id="L215">        i = hashToIndex(list[idx], list.length);</span>
+<span class="fc" id="L221">        i = hashToIndex(list[idx], list.length);</span>
         
-<span class="fc" id="L217">        int end = list.length;</span>
-<span class="fc bfc" id="L218" title="All 2 branches covered.">        while (hash[i] != 0) {</span>
-<span class="fc" id="L219">            i++;</span>
+<span class="fc" id="L223">        int end = list.length;</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        while (hash[i] != -1) {</span>
+<span class="fc" id="L225">            i++;</span>
             // if i is &gt; last index
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">            if (i == end) {</span>
-<span class="nc bnc" id="L222" title="All 2 branches missed.">                if (mark == 0) {</span>
-<span class="nc" id="L223">                    i = 0;</span>
-<span class="nc" id="L224">                    mark = 1;</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (i == end) {</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">                if (mark == 0) {</span>
+<span class="fc" id="L229">                    i = 0;</span>
+<span class="fc" id="L230">                    mark = 1;</span>
                 } else {
-<span class="nc" id="L226">                    StackTraceElement[] st = Thread.currentThread().getStackTrace();</span>
-<span class="nc bnc" id="L227" title="All 2 branches missed.">                    for (StackTraceElement s : st) {</span>
-<span class="nc" id="L228">                        System.out.println(s);</span>
+<span class="nc" id="L232">                    StackTraceElement[] st = Thread.currentThread().getStackTrace();</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                    for (StackTraceElement s : st) {</span>
+<span class="nc" id="L234">                        System.out.println(s);</span>
                     }
-<span class="nc" id="L230">                    throw new IllegalStateException(&quot;hash is full.  i=&quot; + i + </span>
+<span class="nc" id="L236">                    throw new IllegalStateException(&quot;hash is full.  i=&quot; + i + </span>
                          &quot; hash.lrngth=&quot; + end);
                 }
             }
         }
         
-<span class="fc" id="L236">        hash[i] = idx + 1;     </span>
+<span class="fc" id="L242">        hash[i] = idx + 1;     </span>
 
-<span class="fc" id="L238">        return i;</span>
+<span class="fc" id="L244">        return i;</span>
     }
     
     private int[] createHash(int[] list) {
         
-<span class="fc" id="L243">        int[] hash = new int[list.length];</span>
+<span class="fc" id="L249">        int[] hash = new int[list.length];</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        for (int i = 0; i &lt; list.length; ++i) {</span>
+<span class="fc" id="L251">            hash[i] = -1;</span>
+        }
         
-<span class="fc bfc" id="L245" title="All 2 branches covered.">        for (int i = 0; i &lt; list.length; ++i) {</span>
-<span class="fc" id="L246">            int hIdx = setValue(list, i, hash);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = 0; i &lt; list.length; ++i) {</span>
+<span class="fc" id="L255">            int hIdx = setValue(list, i, hash);</span>
         }
 
-<span class="fc" id="L249">        return hash;        </span>
+<span class="fc" id="L258">        return hash;        </span>
     }
 
     private int[] filter(int[] list, int threshIdx) {
          
-<span class="fc" id="L254">        int[] m = new int[list.length];</span>
+<span class="fc" id="L263">        int[] m = new int[list.length];</span>
         
-<span class="fc" id="L256">        int c = list[threshIdx];</span>
+<span class="fc" id="L265">        int c = list[threshIdx];</span>
         
         int i;
-<span class="fc" id="L259">        int j = 0;</span>
+<span class="fc" id="L268">        int j = 0;</span>
                 
-<span class="fc bfc" id="L261" title="All 2 branches covered.">        for (i = 0; i &lt; list.length; ++i) {</span>
-<span class="fc bfc" id="L262" title="All 2 branches covered.">            if (list[i] &lt; c) {</span>
-<span class="fc" id="L263">                m[i] = list[i];</span>
-<span class="fc" id="L264">                ++j;</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (i = 0; i &lt; list.length; ++i) {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            if (list[i] &lt; c) {</span>
+<span class="fc" id="L272">                m[i] = list[i];</span>
+<span class="fc" id="L273">                ++j;</span>
             }
         }
         
-<span class="fc" id="L268">        int[] out = new int[j];</span>
-<span class="fc bfc" id="L269" title="All 2 branches covered.">        for (i = 0; i &lt; j; ++i) {</span>
-<span class="fc" id="L270">            out[i] = m[i];</span>
+<span class="fc" id="L277">        int[] out = new int[j];</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        for (i = 0; i &lt; j; ++i) {</span>
+<span class="fc" id="L279">            out[i] = m[i];</span>
         }
         
-<span class="fc" id="L273">        return out;</span>
+<span class="fc" id="L282">        return out;</span>
     }
 
     /**
@@ -282,9 +291,52 @@ import thirdparty.libquantum.QuantumReg;
      */
     protected int hashToIndex(int value, int length) {
        
-        //TODO: replace the hash function with a method local to this class
-<span class="fc" id="L286">        return (Integer.valueOf(value).hashCode() &amp; 0x7fffffff) % length;</span>
+<span class="fc" id="L294">        return fnvRetry(value, length);</span>
     }
- 
+    
+    protected int fnvRetry(int value, int length) {
+        
+        // http://www.isthe.com/chongo/tech/comp/fnv/index.html#lazy-mod
+        
+        //#define TRUE_HASH_SIZE ((u_int32_t)50000) /* range top plus 1
+<span class="fc" id="L302">        int FNV_32_PRIME = 16777619;</span>
+        //int FNV1_32_INIT = 2166136261;
+<span class="fc" id="L304">        int FNV1_32_INIT = 1083068130; // which is 2166136261 &gt;&gt; 1</span>
+        //#define MAX_32BIT ((u_int32_t)0xffffffff) /* largest 32 bit unsigned value
+        //#define RETRY_LEVEL ((MAX_32BIT / TRUE_HASH_SIZE) * TRUE_HASH_SIZE)
+<span class="fc" id="L307">        int RETRY_LEVEL = (Integer.MAX_VALUE/length) * length;</span>
+        
+<span class="fc" id="L309">        int hash = fnv_31(value, FNV1_32_INIT);</span>
+        //System.out.println(&quot;hash=&quot; + hash);
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        while (hash &gt;= RETRY_LEVEL) {</span>
+<span class="nc" id="L312">            hash = (hash * FNV_32_PRIME) + FNV1_32_INIT;</span>
+            //System.out.println(&quot;  hash=&quot; + hash);
+        }
+        
+        //NOTE: forcing positive for use case
+<span class="fc" id="L317">        hash = (hash ^ (hash &gt;&gt; 31)) + (hash &gt;&gt;&gt; 31);</span>
+        
+<span class="fc" id="L319">        hash %= length;</span>
+        
+<span class="fc" id="L321">        return hash;</span>
+    }
+
+    private int fnv_31(int value, int FNV1_31_INIT) {
+
+        //http://www.isthe.com/chongo/src/fnv/hash_32.c
+       
+<span class="fc" id="L328">        int hval = FNV1_31_INIT;</span>
+        
+        //multiply by the 32 bit FNV magic prime mod 2^32
+        //if no opt: hval *= 0x01000193;//FNV_32_PRIME;
+        //else:
+<span class="fc" id="L333">        hval += (hval&lt;&lt;1) + (hval&lt;&lt;4) + (hval&lt;&lt;7) </span>
+            + (hval&lt;&lt;8) + (hval&lt;&lt;24);
+
+	    // xor the bottom with the current octet
+<span class="fc" id="L337">	    hval ^= value;</span>
+  
+<span class="fc" id="L339">        return hval;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

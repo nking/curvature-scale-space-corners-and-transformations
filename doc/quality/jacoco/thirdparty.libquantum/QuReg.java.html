@@ -91,10 +91,10 @@ Quantum register management
 <span class="fc" id="L91">        i = quantum_hash64(a, reg.hashw);</span>
         
 <span class="fc" id="L93">        int end = 1 &lt;&lt; reg.hashw;</span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">        while (reg.hash[i] != 0) {</span>
-<span class="fc" id="L95">            i++;</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        while (reg.hash[i] != 0) {</span>
+<span class="nc" id="L95">            i++;</span>
             // if i is &gt; last index
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">            if (i == end) {</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (i == end) {</span>
 <span class="nc bnc" id="L98" title="All 2 branches missed.">                if (mark == 0) {</span>
 <span class="nc" id="L99">                    i = 0;</span>
 <span class="nc" id="L100">                    mark = 1;</span>
