@@ -58,30 +58,33 @@ Quantum Error Correction.
 <span class="fc" id="L58">    }</span>
     
     /**
-     * Apply a controlled-not gate
+     * Apply a controlled-not gate.
+     * for each reg.state, 
+          Flip the target bit of a basis state if 
+          the control bit is set 
      */
-    void quantum_cnot(int control, int target, QuantumReg reg) {
+   public void quantum_cnot(int control, int target, QuantumReg reg) {
   
         int i;
-<span class="fc" id="L66">        int[] qec = new int[1];</span>
+<span class="fc" id="L69">        int[] qec = new int[1];</span>
 
-<span class="fc" id="L68">        quantum_qec_get_status(qec, null);</span>
+<span class="fc" id="L71">        quantum_qec_get_status(qec, null);</span>
         
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
-<span class="nc" id="L71">            quantum_cnot_ft(control, target, reg);</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
+<span class="nc" id="L74">            quantum_cnot_ft(control, target, reg);</span>
         } else {
             
-<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
                 // Flip the target bit of a basis state if 
                 //the control bit is set 
 
-<span class="fc bfc" id="L78" title="All 2 branches covered.">                if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
-<span class="fc" id="L79">                    reg.node[i].state ^= (1L &lt;&lt; target);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
+<span class="fc" id="L82">                    reg.node[i].state ^= (1L &lt;&lt; target);</span>
                 }
             }
-<span class="fc" id="L82">            decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="fc" id="L85">            decoherence.quantum_decohere(reg, rng, this);</span>
         }
-<span class="fc" id="L84">    }</span>
+<span class="fc" id="L87">    }</span>
 
     /**
      * Apply a toffoli (or controlled-controlled-not) gate.
@@ -90,34 +93,50 @@ Quantum Error Correction.
      * CCNOT(x, y,z) = (x, y, (x ∧ y) ⊕ z).
        &quot;From Reversible Logic Gates to Universal Quantum Bases&quot;
           by Bocharov and Svore
+           
+       From wikipedia
+          https://en.wikipedia.org/wiki/Toffoli_gate
+         
+       If the first two bits are set, it flips the third bit.
+            Truth table
+        INPUT	    OUTPUT
+        0 	0 	0   0   0   0 
+        0	0	1	0	0	1
+        0	1	0	0	1	0
+        0	1	1	0	1	1
+        1	0	0	1	0	0
+        1	0	1	1	0	1
+        1	1	0	1	1	1
+        1	1	1	1	1	0
      * &lt;/pre&gt;
-     * runtime complexity is O(reg.size)
+     * runtime complexity is O(reg.size * reg.width),
+       but decoherence could be improved for case where lambda==0
      */
-    void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
+   public void quantum_toffoli(int control1, int control2, int target, QuantumReg reg) {
 
         int i;
-<span class="fc" id="L99">        int[] qec = new int[1];</span>
+<span class="fc" id="L118">        int[] qec = new int[1];</span>
 
-<span class="fc" id="L101">        quantum_qec_get_status(qec, null);</span>
+<span class="fc" id="L120">        quantum_qec_get_status(qec, null);</span>
 
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
-<span class="nc" id="L104">            quantum_toffoli_ft(control1, control2, target, reg);</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
+<span class="nc" id="L123">            quantum_toffoli_ft(control1, control2, target, reg);</span>
         } else {
 
-<span class="fc bfc" id="L107" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
                 // Flip the target bit of a basis state if 
                 // both control bits are set 
 
-<span class="fc" id="L111">                long st = reg.node[i].state;</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">                if ((st &amp; (1L &lt;&lt; control1)) != 0) {</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">                    if ((st &amp; (1L &lt;&lt; control2)) != 0) {</span>
-<span class="fc" id="L114">                        reg.node[i].state ^= (1L &lt;&lt; target);</span>
+<span class="fc" id="L130">                long st = reg.node[i].state;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">                if ((st &amp; (1L &lt;&lt; control1)) != 0) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                    if ((st &amp; (1L &lt;&lt; control2)) != 0) {</span>
+<span class="fc" id="L133">                        reg.node[i].state ^= (1L &lt;&lt; target);</span>
                     }
                 }
             }
-<span class="fc" id="L118">            decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="fc" id="L137">            decoherence.quantum_decohere(reg, rng, this);</span>
         }
-<span class="fc" id="L120">    }</span>
+<span class="fc" id="L139">    }</span>
 
     /**
      * Apply an unbounded toffoli gate. This gate is not considered elementary
@@ -126,7 +145,7 @@ Quantum Error Correction.
      * The target is given in the last argument.
      */
     /*
-    void quantum_unbounded_toffoli(int controlling, QuantumReg reg, ...) {
+   public void quantum_unbounded_toffoli(int controlling, QuantumReg reg, ...) {
   
         va_list bits;
         int target;
@@ -169,128 +188,129 @@ Quantum Error Correction.
     */
 
     /**
-     * Apply a sigma_x (or not) gate which is a Pauli spin operation for 
-     * x axis.
+     * Apply a sigma_x (or not) gate which is a Pauli spin 
+     * operation for x axis.
+     * runtime complexity is O(reg.width * reg.size).
      */
-    void quantum_sigma_x(final int target, QuantumReg reg) {
+   public void quantum_sigma_x(final int target, QuantumReg reg) {
   
         int i;
-<span class="fc" id="L178">        int[] qec = new int[1];</span>
+<span class="fc" id="L198">        int[] qec = new int[1];</span>
 
-<span class="fc" id="L180">        quantum_qec_get_status(qec, null);</span>
+<span class="fc" id="L200">        quantum_qec_get_status(qec, null);</span>
 
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
             //System.out.println(&quot;NEXT sigma_x_ft&quot;);
-<span class="nc" id="L184">            quantum_sigma_x_ft(target, reg);</span>
+<span class="nc" id="L204">            quantum_sigma_x_ft(target, reg);</span>
         } else {
-<span class="fc bfc" id="L186" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
                 // Flip the target bit of each basis state 
-<span class="fc" id="L188">                reg.node[i].state ^= (1L &lt;&lt; target);</span>
+<span class="fc" id="L208">                reg.node[i].state ^= (1L &lt;&lt; target);</span>
             }
-<span class="fc" id="L190">            decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="fc" id="L210">            decoherence.quantum_decohere(reg, rng, this);</span>
         }
-<span class="fc" id="L192">    }</span>
+<span class="fc" id="L212">    }</span>
 
     /**
      * Apply a sigma_y gate which is a Pauli spin operation for the y axis.
      */
-    void quantum_sigma_y(int target, QuantumReg reg) {
+   public void quantum_sigma_y(int target, QuantumReg reg) {
   
         int i;
 
-<span class="nc bnc" id="L201" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
             // Flip the target bit of each basis state and 
             // multiply with 
             // +/- i 
 
-<span class="nc" id="L206">            long tmp1 = 1L &lt;&lt; target;</span>
-<span class="nc" id="L207">            reg.node[i].state ^= tmp1;</span>
+<span class="nc" id="L226">            long tmp1 = 1L &lt;&lt; target;</span>
+<span class="nc" id="L227">            reg.node[i].state ^= tmp1;</span>
 
-<span class="nc bnc" id="L209" title="All 2 branches missed.">            if ((reg.node[i].state &amp; tmp1) != 0) {</span>
-<span class="nc" id="L210">                double re = reg.node[i].amplitude.re();</span>
-<span class="nc" id="L211">                double im = reg.node[i].amplitude.im();</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if ((reg.node[i].state &amp; tmp1) != 0) {</span>
+<span class="nc" id="L230">                double re = reg.node[i].amplitude.re();</span>
+<span class="nc" id="L231">                double im = reg.node[i].amplitude.im();</span>
                 // new im = re * i (no sign change)
                 // new re = im * i (i*i == -1, so sign change)
-<span class="nc" id="L214">                reg.node[i].amplitude.setReal(-1 * im);</span>
-<span class="nc" id="L215">                reg.node[i].amplitude.setImag(re);</span>
-<span class="nc" id="L216">            } else {</span>
-<span class="nc" id="L217">                double re = reg.node[i].amplitude.re();</span>
-<span class="nc" id="L218">                double im = reg.node[i].amplitude.im();</span>
+<span class="nc" id="L234">                reg.node[i].amplitude.setReal(-1 * im);</span>
+<span class="nc" id="L235">                reg.node[i].amplitude.setImag(re);</span>
+<span class="nc" id="L236">            } else {</span>
+<span class="nc" id="L237">                double re = reg.node[i].amplitude.re();</span>
+<span class="nc" id="L238">                double im = reg.node[i].amplitude.im();</span>
                 // new im = re * -i (sign change)
                 // new re = im * -i (no sign change)
-<span class="nc" id="L221">                reg.node[i].amplitude.setReal(im);</span>
-<span class="nc" id="L222">                reg.node[i].amplitude.setImag(-1 * re);</span>
+<span class="nc" id="L241">                reg.node[i].amplitude.setReal(im);</span>
+<span class="nc" id="L242">                reg.node[i].amplitude.setImag(-1 * re);</span>
             }
         }
 
-<span class="nc" id="L226">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L227">    }</span>
+<span class="nc" id="L246">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L247">    }</span>
 
     /**
      * Apply a sigma_z gate which is a Pauli spin operation for the z axis.
      */
-    void quantum_sigma_z(int target, QuantumReg reg) {
+   public void quantum_sigma_z(int target, QuantumReg reg) {
         
         int i;
 
-<span class="nc bnc" id="L236" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
             // Multiply with -1 if the target bit is set 
 
-<span class="nc bnc" id="L239" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
-<span class="nc" id="L240">                reg.node[i].amplitude.times(-1);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
+<span class="nc" id="L260">                reg.node[i].amplitude.times(-1);</span>
             }
         }
-<span class="nc" id="L243">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L244">    }</span>
+<span class="nc" id="L263">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L264">    }</span>
 
     /**
      * Swap the first WIDTH bits of the quantum register. This is done
      * classically by renaming the bits, unless QEC is enabled.
      */
-    void quantum_swaptheleads(int width, QuantumReg reg) {
+   public void quantum_swaptheleads(int width, QuantumReg reg) {
         int i, j;
         int pat1, pat2;
-<span class="fc" id="L253">        int[] qec = new int[1];</span>
+<span class="fc" id="L273">        int[] qec = new int[1];</span>
         //MAX_UNSIGNED l;
         long l;
 
-<span class="fc" id="L257">        quantum_qec_get_status(qec, null);</span>
+<span class="fc" id="L277">        quantum_qec_get_status(qec, null);</span>
 
-<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
-<span class="nc bnc" id="L260" title="All 2 branches missed.">            for (i = 0; i &lt; width; i++) {</span>
-<span class="nc" id="L261">                quantum_cnot(i, width + i, reg);</span>
-<span class="nc" id="L262">                quantum_cnot(width + i, i, reg);</span>
-<span class="nc" id="L263">                quantum_cnot(i, width + i, reg);</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">        if (qec[0] != 0) {</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            for (i = 0; i &lt; width; i++) {</span>
+<span class="nc" id="L281">                quantum_cnot(i, width + i, reg);</span>
+<span class="nc" id="L282">                quantum_cnot(width + i, i, reg);</span>
+<span class="nc" id="L283">                quantum_cnot(i, width + i, reg);</span>
             }
         } else {
-<span class="fc bfc" id="L266" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
 
                 // calculate left bit pattern 
                 
                 // TODO: revisit c narrowing
-<span class="fc" id="L271">                pat1 = (int)(reg.node[i].state % (1L &lt;&lt; width));</span>
+<span class="fc" id="L291">                pat1 = (int)(reg.node[i].state % (1L &lt;&lt; width));</span>
                 
                 //calculate right but pattern 
-<span class="fc" id="L274">                pat2 = 0;</span>
+<span class="fc" id="L294">                pat2 = 0;</span>
 
-<span class="fc bfc" id="L276" title="All 2 branches covered.">                for (j = 0; j &lt; width; j++) {</span>
-<span class="fc" id="L277">                    pat2 += (reg.node[i].state &amp; (1L &lt;&lt; (width + j)));</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">                for (j = 0; j &lt; width; j++) {</span>
+<span class="fc" id="L297">                    pat2 += (reg.node[i].state &amp; (1L &lt;&lt; (width + j)));</span>
                 }
 
                 // construct the new basis state 
-<span class="fc" id="L281">                l = (reg.node[i].state - (pat1 + pat2));</span>
-<span class="fc" id="L282">                l += (pat1 &lt;&lt; width);</span>
-<span class="fc" id="L283">                l += (pat2 &gt;&gt; width);</span>
-<span class="fc" id="L284">                reg.node[i].state = l;</span>
+<span class="fc" id="L301">                l = (reg.node[i].state - (pat1 + pat2));</span>
+<span class="fc" id="L302">                l += (pat1 &lt;&lt; width);</span>
+<span class="fc" id="L303">                l += (pat2 &gt;&gt; width);</span>
+<span class="fc" id="L304">                reg.node[i].state = l;</span>
             }
         }
-<span class="fc" id="L287">    }</span>
+<span class="fc" id="L307">    }</span>
 
     /**
      * Swap WIDTH bits starting at WIDTH and 2*WIDTH+2 controlled by CONTROL.
      * runtime complexity is width * O(reg.size)
      */
-    void quantum_swaptheleads_omuln_controlled(int control, int width, 
+   public void quantum_swaptheleads_omuln_controlled(int control, int width, 
         QuantumReg reg) {
    
         int i;
@@ -300,515 +320,528 @@ Quantum Error Correction.
         // &quot;From Reversible Logic Gates to Universal Quantum Bases&quot;
         //    by Bocharov and Svore
         // SWAP = CNOT[1, 2]CNOT[2, 1]CNOT[1, 2]
-<span class="fc bfc" id="L303" title="All 2 branches covered.">        for (i = 0; i &lt; width; i++) {</span>
-<span class="fc" id="L304">            quantum_toffoli(control, width + i, 2 * width + i + 2, reg);</span>
-<span class="fc" id="L305">            quantum_toffoli(control, 2 * width + i + 2, width + i, reg);</span>
-<span class="fc" id="L306">            quantum_toffoli(control, width + i, 2 * width + i + 2, reg);</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">        for (i = 0; i &lt; width; i++) {</span>
+<span class="fc" id="L324">            quantum_toffoli(control, width + i, 2 * width + i + 2, reg);</span>
+<span class="fc" id="L325">            quantum_toffoli(control, 2 * width + i + 2, width + i, reg);</span>
+<span class="fc" id="L326">            quantum_toffoli(control, width + i, 2 * width + i + 2, reg);</span>
         }
-<span class="fc" id="L308">    }</span>
+<span class="fc" id="L328">    }</span>
 
     /**
      * Apply the 2x2 matrix M to the target bit. M should be unitary.
      
-     runtime complexity is O(reg.size), though that size might expand
-     int method.
+     runtime complexity is O(reg.size), though reg.size is possibly increased
+     and for the last decohere operation is
+     is O(reg.size * reg.width)
      */
-    void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
+   public void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
             
         int i, k;
-<span class="fc" id="L319">        int addsize = 0;</span>
+<span class="fc" id="L340">        int addsize = 0;</span>
         //COMPLEX_FLOAT t, tnot = 0;
-<span class="fc" id="L321">        ComplexModifiable t = null;</span>
-<span class="fc" id="L322">        ComplexModifiable tnot = new ComplexModifiable(0, 0);</span>
+<span class="fc" id="L342">        ComplexModifiable t = null;</span>
+<span class="fc" id="L343">        ComplexModifiable tnot = new ComplexModifiable(0, 0);</span>
         float limit;
         int[] done;
-<span class="fc" id="L325">        int j = 0;</span>
+<span class="fc" id="L346">        int j = 0;</span>
 
-<span class="pc bpc" id="L327" title="2 of 4 branches missed.">        if ((m.cols != 2) || (m.rows != 2)) {</span>
-<span class="nc" id="L328">            throw new IllegalArgumentException(&quot;n.cols must == 2 and &quot;</span>
+<span class="pc bpc" id="L348" title="2 of 4 branches missed.">        if ((m.cols != 2) || (m.rows != 2)) {</span>
+<span class="nc" id="L349">            throw new IllegalArgumentException(&quot;n.cols must == 2 and &quot;</span>
                 + &quot;m.rows must == 2&quot;);
         }
         
-<span class="pc bpc" id="L332" title="3 of 4 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
+<span class="pc bpc" id="L353" title="3 of 4 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
         
-<span class="pc bpc" id="L334" title="3 of 4 branches missed.">        assert(reg.hashw &gt;= 0);</span>
+<span class="pc bpc" id="L355" title="3 of 4 branches missed.">        assert(reg.hashw &gt;= 0);</span>
               
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">        if (reg.hashw &gt; 0) {</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">        if (reg.hashw &gt; 0) {</span>
                         
-<span class="fc" id="L338">            QuReg.quantum_reconstruct_hash(reg);</span>
+<span class="fc" id="L359">            QuReg.quantum_reconstruct_hash(reg);</span>
 
-<span class="fc" id="L340">            long shift = 1L &lt;&lt; target;</span>
+<span class="fc" id="L361">            long shifted = 1L &lt;&lt; target;</span>
             // calculate the number of basis states to be added 
-<span class="fc bfc" id="L342" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">            for (i = 0; i &lt; reg.size; i++) {</span>
                 // determine whether XORed basis state already exists 
-<span class="fc" id="L344">                long tst = reg.node[i].state ^ shift;</span>
-<span class="pc bpc" id="L345" title="1 of 2 branches missed.">                if (QuReg.quantum_get_state(tst, reg) == -1) {</span>
-<span class="fc" id="L346">                    addsize++;</span>
-                    
+<span class="fc" id="L365">                long tst = reg.node[i].state ^ shifted;</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">                if (QuReg.quantum_get_state(tst, reg) == -1) {</span>
+<span class="fc" id="L367">                    addsize++;</span>
                 }
             }
             
             // allocate memory for the new basis states 
-<span class="fc" id="L352">            int sz2 = reg.size + addsize;</span>
-<span class="pc bpc" id="L353" title="1 of 2 branches missed.">            if (reg.node.length != sz2) {</span>
-<span class="fc" id="L354">                reg.node = Arrays.copyOf(reg.node, sz2);</span>
-<span class="pc bpc" id="L355" title="3 of 4 branches missed.">                assert(sz2 == reg.node.length);</span>
+<span class="fc" id="L372">            int sz2 = reg.size + addsize;</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">            if (reg.node.length != sz2) {</span>
+<span class="fc" id="L374">                reg.node = Arrays.copyOf(reg.node, sz2);</span>
+<span class="pc bpc" id="L375" title="3 of 4 branches missed.">                assert(sz2 == reg.node.length);</span>
             }
 
-<span class="fc bfc" id="L358" title="All 2 branches covered.">            for (i = 0; i &lt; addsize; i++) {</span>
-<span class="fc" id="L359">                int idx2 = i + reg.size;</span>
-<span class="pc bpc" id="L360" title="1 of 2 branches missed.">                if (reg.node[idx2] == null) {</span>
-<span class="fc" id="L361">                    reg.node[idx2] = new QuantumRegNode();</span>
-<span class="fc" id="L362">                    reg.node[idx2].amplitude = new ComplexModifiable(0, 0);</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">            for (i = 0; i &lt; addsize; i++) {</span>
+<span class="fc" id="L379">                int idx2 = i + reg.size;</span>
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">                if (reg.node[idx2] == null) {</span>
+<span class="fc" id="L381">                    reg.node[idx2] = new QuantumRegNode();</span>
+<span class="fc" id="L382">                    reg.node[idx2].amplitude = new ComplexModifiable(0, 0);</span>
                 } else {
-<span class="nc" id="L364">                    reg.node[idx2].state = 0;</span>
-<span class="nc" id="L365">                    reg.node[idx2].amplitude.setReal(0);</span>
-<span class="nc" id="L366">                    reg.node[idx2].amplitude.setImag(0);</span>
+<span class="nc" id="L384">                    reg.node[idx2].state = 0;</span>
+<span class="nc" id="L385">                    reg.node[idx2].amplitude.setReal(0);</span>
+<span class="nc" id="L386">                    reg.node[idx2].amplitude.setImag(0);</span>
                 }
             }
         }
         
-<span class="fc" id="L371">        done = new int[reg.size + addsize];</span>
+<span class="fc" id="L391">        done = new int[reg.size + addsize];</span>
 
-<span class="fc" id="L373">        k = reg.size;</span>
+<span class="fc" id="L393">        k = reg.size;</span>
 
-<span class="fc" id="L375">        limit = (1.0f / (1L &lt;&lt; reg.width)) * epsilon;</span>
+<span class="fc" id="L395">        limit = (1.0f / (1L &lt;&lt; reg.width)) * epsilon;</span>
         
         // perform the actual matrix multiplication 
-<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="pc bpc" id="L379" title="1 of 2 branches missed.">            if (done[i] == 0) {</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">            if (done[i] == 0) {</span>
                 // determine if the target of the basis state is set
                 
-<span class="fc" id="L382">                int iset = (int)(reg.node[i].state &amp; (1L &lt;&lt; target));</span>
-<span class="fc" id="L383">                tnot.setReal(0);</span>
-<span class="fc" id="L384">                tnot.setImag(0);</span>
+<span class="fc" id="L402">                int iset = (int)(reg.node[i].state &amp; (1L &lt;&lt; target));</span>
+<span class="fc" id="L403">                tnot.setReal(0);</span>
+<span class="fc" id="L404">                tnot.setImag(0);</span>
 
-<span class="fc" id="L386">                j = QuReg.quantum_get_state(</span>
+                //find state's node index for state where basis state is the
+                //   opposite of node[i]'s basis state
+<span class="fc" id="L408">                j = QuReg.quantum_get_state(</span>
                     reg.node[i].state ^ (1L &lt;&lt; target),  
                     reg);
                 
-<span class="pc bpc" id="L390" title="1 of 2 branches missed.">                if (t == null) {</span>
-<span class="fc" id="L391">                    t = reg.node[i].amplitude.copy();</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">                if (t == null) {</span>
+<span class="fc" id="L413">                    t = reg.node[i].amplitude.copy();</span>
                 } else {
-<span class="nc" id="L393">                    t.resetTo(reg.node[i].amplitude);</span>
+<span class="fc" id="L415">                    t.resetTo(reg.node[i].amplitude);</span>
                 }
                 
-<span class="pc bpc" id="L396" title="1 of 2 branches missed.">                if (j &gt;= 0) {</span>
-<span class="nc" id="L397">                    tnot.resetTo(reg.node[j].amplitude);</span>
-                }
-                
-                
-<span class="fc bfc" id="L401" title="All 2 branches covered.">                if (iset != 0) {</span>
-<span class="fc" id="L402">                    ComplexModifiable t2 = m.t[2].copy();</span>
-<span class="fc" id="L403">                    t2.times(tnot);</span>
-<span class="fc" id="L404">                    ComplexModifiable t3 = m.t[3].copy();</span>
-<span class="fc" id="L405">                    t3.times(t);</span>
-<span class="fc" id="L406">                    t2.plus(t3);</span>
-<span class="fc" id="L407">                    reg.node[i].amplitude.resetTo(t2);</span>
-<span class="fc" id="L408">                } else {</span>
-<span class="fc" id="L409">                    ComplexModifiable t0 = m.t[0].copy();</span>
-<span class="fc" id="L410">                    t0.times(t);</span>
-<span class="fc" id="L411">                    ComplexModifiable t1 = m.t[1].copy();</span>
-<span class="fc" id="L412">                    t1.times(tnot);</span>
-<span class="fc" id="L413">                    t0.plus(t1);</span>
-<span class="fc" id="L414">                    reg.node[i].amplitude.resetTo(t0);</span>
+<span class="fc bfc" id="L418" title="All 2 branches covered.">                if (j &gt;= 0) {</span>
+<span class="fc" id="L419">                    tnot.resetTo(reg.node[j].amplitude);</span>
                 }
                 
                 
-<span class="pc bpc" id="L418" title="1 of 2 branches missed.">                if (j &gt;= 0) {</span>
+<span class="fc bfc" id="L423" title="All 2 branches covered.">                if (iset != 0) {</span>
+<span class="fc" id="L424">                    ComplexModifiable t2 = m.t[2].copy();</span>
+<span class="fc" id="L425">                    t2.times(tnot);</span>
+<span class="fc" id="L426">                    ComplexModifiable t3 = m.t[3].copy();</span>
+<span class="fc" id="L427">                    t3.times(t);</span>
+<span class="fc" id="L428">                    t2.plus(t3);</span>
+<span class="fc" id="L429">                    reg.node[i].amplitude.resetTo(t2);</span>
+<span class="fc" id="L430">                } else {</span>
+<span class="fc" id="L431">                    ComplexModifiable t0 = m.t[0].copy();</span>
+<span class="fc" id="L432">                    t0.times(t);</span>
+<span class="fc" id="L433">                    ComplexModifiable t1 = m.t[1].copy();</span>
+<span class="fc" id="L434">                    t1.times(tnot);</span>
+<span class="fc" id="L435">                    t0.plus(t1);</span>
+<span class="fc" id="L436">                    reg.node[i].amplitude.resetTo(t0);</span>
+                }
                 
-<span class="nc bnc" id="L420" title="All 2 branches missed.">                    if (iset != 0) {</span>
-<span class="nc" id="L421">                        ComplexModifiable t0 = m.t[0].copy();</span>
-<span class="nc" id="L422">                        t0.times(tnot);</span>
-<span class="nc" id="L423">                        ComplexModifiable t1 = m.t[1].copy();</span>
-<span class="nc" id="L424">                        t1.times(t);</span>
-<span class="nc" id="L425">                        t0.plus(t1);</span>
-<span class="nc" id="L426">                        reg.node[j].amplitude.resetTo(t0);</span>
-<span class="nc" id="L427">                    } else {</span>
-<span class="nc" id="L428">                        ComplexModifiable t2 = m.t[2].copy();</span>
-<span class="nc" id="L429">                        t2.times(t);</span>
-<span class="nc" id="L430">                        ComplexModifiable t3 = m.t[3].copy();</span>
-<span class="nc" id="L431">                        t3.times(tnot);</span>
-<span class="nc" id="L432">                        t2.plus(t3);</span>
-<span class="nc" id="L433">                        reg.node[j].amplitude.resetTo(t2);</span>
-<span class="nc" id="L434">                    }</span>
+                
+<span class="fc bfc" id="L440" title="All 2 branches covered.">                if (j &gt;= 0) {</span>
+                
+<span class="fc bfc" id="L442" title="All 2 branches covered.">                    if (iset != 0) {</span>
+<span class="fc" id="L443">                        ComplexModifiable t0 = m.t[0].copy();</span>
+<span class="fc" id="L444">                        t0.times(tnot);</span>
+<span class="fc" id="L445">                        ComplexModifiable t1 = m.t[1].copy();</span>
+<span class="fc" id="L446">                        t1.times(t);</span>
+<span class="fc" id="L447">                        t0.plus(t1);</span>
+<span class="fc" id="L448">                        reg.node[j].amplitude.resetTo(t0);</span>
+<span class="fc" id="L449">                    } else {</span>
+<span class="fc" id="L450">                        ComplexModifiable t2 = m.t[2].copy();</span>
+<span class="fc" id="L451">                        t2.times(t);</span>
+<span class="fc" id="L452">                        ComplexModifiable t3 = m.t[3].copy();</span>
+<span class="fc" id="L453">                        t3.times(tnot);</span>
+<span class="fc" id="L454">                        t2.plus(t3);</span>
+<span class="fc" id="L455">                        reg.node[j].amplitude.resetTo(t2);</span>
+<span class="fc" id="L456">                    }</span>
                                        
                 } else {
                     // new basis state will be created 
 
-<span class="pc bpc" id="L439" title="3 of 4 branches missed.">                    if (((float)m.t[1].squareSum() == 0) &amp;&amp; (iset != 0)) {</span>
-<span class="nc" id="L440">                        break;</span>
+<span class="pc bpc" id="L461" title="3 of 4 branches missed.">                    if (((float)m.t[1].squareSum() == 0) &amp;&amp; (iset != 0)) {</span>
+<span class="nc" id="L462">                        break;</span>
                     }
-<span class="pc bpc" id="L442" title="3 of 4 branches missed.">                    if (((float)m.t[2].squareSum() == 0) &amp;&amp; (iset == 0)) {</span>
-<span class="nc" id="L443">                        break;</span>
+<span class="pc bpc" id="L464" title="3 of 4 branches missed.">                    if (((float)m.t[2].squareSum() == 0) &amp;&amp; (iset == 0)) {</span>
+<span class="nc" id="L465">                        break;</span>
                     }
-<span class="fc" id="L445">                    reg.node[k].state = (reg.node[i].state ^ (1L &lt;&lt; target));</span>
+<span class="fc" id="L467">                    reg.node[k].state = (reg.node[i].state ^ (1L &lt;&lt; target));</span>
                     
-<span class="fc bfc" id="L447" title="All 2 branches covered.">                    if (iset != 0) {</span>
-<span class="fc" id="L448">                        reg.node[k].amplitude.resetTo(m.t[1]);</span>
-<span class="fc" id="L449">                        reg.node[k].amplitude.times(t);</span>
+<span class="fc bfc" id="L469" title="All 2 branches covered.">                    if (iset != 0) {</span>
+<span class="fc" id="L470">                        reg.node[k].amplitude.resetTo(m.t[1]);</span>
+<span class="fc" id="L471">                        reg.node[k].amplitude.times(t);</span>
                     } else {
-<span class="fc" id="L451">                        reg.node[k].amplitude.resetTo(m.t[2]);</span>
-<span class="fc" id="L452">                        reg.node[k].amplitude.times(t);</span>
+<span class="fc" id="L473">                        reg.node[k].amplitude.resetTo(m.t[2]);</span>
+<span class="fc" id="L474">                        reg.node[k].amplitude.times(t);</span>
                     }
                     
-<span class="fc" id="L455">                    k++;</span>
+<span class="fc" id="L477">                    k++;</span>
                 }
 
-<span class="pc bpc" id="L458" title="1 of 2 branches missed.">                if (j &gt;= 0) {</span>
-<span class="nc" id="L459">                    done[j] = 1;</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">                if (j &gt;= 0) {</span>
+<span class="fc" id="L481">                    done[j] = 1;</span>
                 }
             }
         }
-<span class="fc" id="L463">        reg.size += addsize;</span>
+<span class="fc" id="L485">        reg.size += addsize;</span>
         
-<span class="pc bpc" id="L465" title="3 of 4 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
+<span class="pc bpc" id="L487" title="3 of 4 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
         
         // remove basis states with extremely small amplitude 
-<span class="pc bpc" id="L468" title="1 of 2 branches missed.">        if (reg.hashw != 0) {</span>
-<span class="fc" id="L469">            int decsize = 0;</span>
-<span class="fc bfc" id="L470" title="All 2 branches covered.">            for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
-        
-<span class="pc bpc" id="L472" title="1 of 2 branches missed.">                if ((float)reg.node[i].amplitude.squareSum() &lt; limit) {</span>
-<span class="nc" id="L473">                    j++;</span>
-<span class="nc" id="L474">                    decsize++;</span>
-                
-<span class="pc bpc" id="L476" title="1 of 2 branches missed.">                } else if (j != 0) {</span>
-                    
-<span class="nc" id="L478">                    reg.node[i - j].state = reg.node[i].state;</span>
-<span class="nc" id="L479">                    reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);</span>
-                
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">        if (reg.hashw != 0) {</span>
+<span class="fc" id="L491">            int decsize = 0;</span>
+<span class="fc bfc" id="L492" title="All 2 branches covered.">            for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">                if ((float)reg.node[i].amplitude.squareSum() &lt; limit) {</span>
+<span class="fc" id="L494">                    j++;</span>
+<span class="fc" id="L495">                    decsize++;</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">                } else if (j != 0) {</span>
+<span class="fc" id="L497">                    reg.node[i - j].state = reg.node[i].state;</span>
+<span class="fc" id="L498">                    reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);</span>
                 }
             }
 
-<span class="pc bpc" id="L484" title="1 of 2 branches missed.">            if (decsize != 0) {</span>
-<span class="nc" id="L485">                reg.size -= decsize;</span>
-<span class="nc" id="L486">                int len1 = reg.node.length;</span>
-<span class="nc" id="L487">                reg.node = Arrays.copyOf(reg.node, reg.size);</span>
-<span class="nc bnc" id="L488" title="All 2 branches missed.">                for (int ii = len1; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L489">                    reg.node[ii] = new QuantumRegNode();</span>
-<span class="nc" id="L490">                    reg.node[ii].state = 0;</span>
-<span class="nc" id="L491">                    reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">            if (decsize != 0) {</span>
+<span class="fc" id="L503">                reg.size -= decsize;</span>
+<span class="fc" id="L504">                int len1 = reg.node.length;</span>
+<span class="fc" id="L505">                reg.node = Arrays.copyOf(reg.node, reg.size);</span>
+<span class="pc bpc" id="L506" title="1 of 2 branches missed.">                for (int ii = len1; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L507">                    reg.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L508">                    reg.node[ii].state = 0;</span>
+<span class="nc" id="L509">                    reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
                 }
             }
         }
         
-<span class="fc" id="L496">        decoherence.quantum_decohere(reg, rng, this);        </span>
-<span class="fc" id="L497">    }</span>
+        //runtime complexity is O(reg.size * reg.width)
+<span class="fc" id="L515">        decoherence.quantum_decohere(reg, rng, this);        </span>
+<span class="fc" id="L516">    }</span>
 
     /**
      * Apply the 4x4 matrix M to the bits TARGET1 and TARGET2. M should be
      * unitary. * Warning: code is mostly untested.
      */
-    void quantum_gate2(int target1, int target2, QuantumMatrix m,
+   public void quantum_gate2(int target1, int target2, QuantumMatrix m,
         QuantumReg reg) {
         
-<span class="nc bnc" id="L506" title="All 4 branches missed.">        if ((m.cols != 4) || (m.rows != 4)) {</span>
-<span class="nc" id="L507">            throw new IllegalArgumentException(&quot;m.cols must == 4 and &quot;</span>
+<span class="nc bnc" id="L525" title="All 4 branches missed.">        if ((m.cols != 4) || (m.rows != 4)) {</span>
+<span class="nc" id="L526">            throw new IllegalArgumentException(&quot;m.cols must == 4 and &quot;</span>
                 + &quot; m.rows must == 4&quot;);
         }
 
         int i, j, k, l;
-<span class="nc" id="L512">        int addsize = 0, decsize = 0;</span>
-<span class="nc" id="L513">        ComplexModifiable[] psi_sub = new ComplexModifiable[4];</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">        for (i = 0; i &lt; 4; ++i) {</span>
-<span class="nc" id="L515">            psi_sub[i] = new ComplexModifiable(0, 0);</span>
+<span class="nc" id="L531">        int addsize = 0, decsize = 0;</span>
+<span class="nc" id="L532">        ComplexModifiable[] psi_sub = new ComplexModifiable[4];</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">        for (i = 0; i &lt; 4; ++i) {</span>
+<span class="nc" id="L534">            psi_sub[i] = new ComplexModifiable(0, 0);</span>
         }
-<span class="nc" id="L517">        int[] base = new int[4];</span>
-<span class="nc" id="L518">        int[] bits = new int[2];</span>
+<span class="nc" id="L536">        int[] base = new int[4];</span>
+<span class="nc" id="L537">        int[] bits = new int[2];</span>
         float limit;
         int[] done;
 
         // Build hash table 
-<span class="nc" id="L523">        int end = (1 &lt;&lt; reg.hashw);</span>
-<span class="nc" id="L524">        Arrays.fill(reg.hash, 0, end, 0);</span>
+<span class="nc" id="L542">        int end = (1 &lt;&lt; reg.hashw);</span>
+<span class="nc" id="L543">        Arrays.fill(reg.hash, 0, end, 0);</span>
       
-<span class="nc bnc" id="L526" title="All 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
+<span class="nc bnc" id="L545" title="All 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
         
-<span class="nc bnc" id="L528" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc" id="L529">            QuReg.quantum_add_hash(reg.node[i].state, i, reg);</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L548">            QuReg.quantum_add_hash(reg.node[i].state, i, reg);</span>
         }
         
         // calculate the number of basis states to be added 
-<span class="nc bnc" id="L533" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L534" title="All 2 branches missed.">            if (QuReg.quantum_get_state(</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L553" title="All 2 branches missed.">            if (QuReg.quantum_get_state(</span>
                 reg.node[i].state ^ (1L &lt;&lt; target1), reg) == -1) {
-<span class="nc" id="L536">                addsize++;</span>
+<span class="nc" id="L555">                addsize++;</span>
             }
-<span class="nc bnc" id="L538" title="All 2 branches missed.">            if (QuReg.quantum_get_state(</span>
+<span class="nc bnc" id="L557" title="All 2 branches missed.">            if (QuReg.quantum_get_state(</span>
                 reg.node[i].state ^ (1L &lt;&lt; target2), reg) == -1) {
-<span class="nc" id="L540">                addsize++;</span>
+<span class="nc" id="L559">                addsize++;</span>
             }
         }
         // allocate memory for the new basis states 
 
-<span class="nc bnc" id="L545" title="All 2 branches missed.">        if (reg.node.length != (reg.size + addsize)) {</span>
-<span class="nc" id="L546">            reg.node = Arrays.copyOf(reg.node, reg.size + addsize);</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">        if (reg.node.length != (reg.size + addsize)) {</span>
+<span class="nc" id="L565">            reg.node = Arrays.copyOf(reg.node, reg.size + addsize);</span>
         }
 
-<span class="nc bnc" id="L549" title="All 2 branches missed.">        for (i = 0; i &lt; addsize; i++) {</span>
-<span class="nc" id="L550">            int idx2 = i + reg.size;</span>
-<span class="nc" id="L551">            reg.node[idx2] = new QuantumRegNode();</span>
-<span class="nc" id="L552">            reg.node[idx2].state = 0;</span>
-<span class="nc" id="L553">            reg.node[idx2].amplitude = new ComplexModifiable(0, 0);</span>
+<span class="nc bnc" id="L568" title="All 2 branches missed.">        for (i = 0; i &lt; addsize; i++) {</span>
+<span class="nc" id="L569">            int idx2 = i + reg.size;</span>
+<span class="nc" id="L570">            reg.node[idx2] = new QuantumRegNode();</span>
+<span class="nc" id="L571">            reg.node[idx2].state = 0;</span>
+<span class="nc" id="L572">            reg.node[idx2].amplitude = new ComplexModifiable(0, 0);</span>
         }
 
-<span class="nc" id="L556">        done = new int[reg.size + addsize];</span>
+<span class="nc" id="L575">        done = new int[reg.size + addsize];</span>
 
-<span class="nc" id="L558">        l = reg.size;</span>
+<span class="nc" id="L577">        l = reg.size;</span>
 
-<span class="nc" id="L560">        limit = (1.0f / (1L &lt;&lt; reg.width)) / 1000000;</span>
+<span class="nc" id="L579">        limit = (1.0f / (1L &lt;&lt; reg.width)) / 1000000;</span>
         
-<span class="nc" id="L562">        bits[0] = target1;</span>
-<span class="nc" id="L563">        bits[1] = target2;</span>
+<span class="nc" id="L581">        bits[0] = target1;</span>
+<span class="nc" id="L582">        bits[1] = target2;</span>
 
         // perform the actual matrix multiplication 
-<span class="nc bnc" id="L566" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L567" title="All 2 branches missed.">            if (done[i] == 0) {</span>
-<span class="nc" id="L568">                j = QuReg.quantum_bitmask(</span>
+<span class="nc bnc" id="L585" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">            if (done[i] == 0) {</span>
+<span class="nc" id="L587">                j = QuReg.quantum_bitmask(</span>
                     reg.node[i].state, 2, bits);
-<span class="nc" id="L570">                base[j] = i;</span>
-<span class="nc" id="L571">                long state = reg.node[i].state;</span>
-<span class="nc" id="L572">                long tmp2 = 1L &lt;&lt; target2;</span>
-<span class="nc" id="L573">                long tmp1 = 1L &lt;&lt; target1;</span>
-<span class="nc" id="L574">                base[j ^ 1] = QuReg.quantum_get_state(state ^ tmp2, reg);</span>
-<span class="nc" id="L575">                base[j ^ 2] = QuReg.quantum_get_state(state ^ tmp1, reg);</span>
-<span class="nc" id="L576">                base[j ^ 3] = QuReg.quantum_get_state(state ^ tmp1 ^ tmp2, reg);</span>
+<span class="nc" id="L589">                base[j] = i;</span>
+<span class="nc" id="L590">                long state = reg.node[i].state;</span>
+<span class="nc" id="L591">                long tmp2 = 1L &lt;&lt; target2;</span>
+<span class="nc" id="L592">                long tmp1 = 1L &lt;&lt; target1;</span>
+<span class="nc" id="L593">                base[j ^ 1] = QuReg.quantum_get_state(state ^ tmp2, reg);</span>
+<span class="nc" id="L594">                base[j ^ 2] = QuReg.quantum_get_state(state ^ tmp1, reg);</span>
+<span class="nc" id="L595">                base[j ^ 3] = QuReg.quantum_get_state(state ^ tmp1 ^ tmp2, reg);</span>
 
-<span class="nc bnc" id="L578" title="All 2 branches missed.">                for (j = 0; j &lt; 4; j++) {</span>
-<span class="nc bnc" id="L579" title="All 2 branches missed.">                    if (base[j] == -1) {</span>
-<span class="nc" id="L580">                        base[j] = l;</span>
+<span class="nc bnc" id="L597" title="All 2 branches missed.">                for (j = 0; j &lt; 4; j++) {</span>
+<span class="nc bnc" id="L598" title="All 2 branches missed.">                    if (base[j] == -1) {</span>
+<span class="nc" id="L599">                        base[j] = l;</span>
                         //		  reg-&gt;node[l].state = reg-&gt;node[i].state
-<span class="nc" id="L582">                        l++;</span>
+<span class="nc" id="L601">                        l++;</span>
                     }
-<span class="nc" id="L584">                    psi_sub[j].resetTo(reg.node[base[j]].amplitude);</span>
+<span class="nc" id="L603">                    psi_sub[j].resetTo(reg.node[base[j]].amplitude);</span>
                 }
 
-<span class="nc bnc" id="L587" title="All 2 branches missed.">                for (j = 0; j &lt; 4; j++) {</span>
-<span class="nc" id="L588">                    reg.node[base[j]].amplitude.setReal(0);</span>
-<span class="nc" id="L589">                    reg.node[base[j]].amplitude.setImag(0);</span>
-<span class="nc bnc" id="L590" title="All 2 branches missed.">                    for (k = 0; k &lt; 4; k++) {</span>
-<span class="nc" id="L591">                        ComplexModifiable tmp = Matrix.M(m, k, j).copy();</span>
-<span class="nc" id="L592">                        tmp.times(psi_sub[k]);</span>
-<span class="nc" id="L593">                        reg.node[base[j]].amplitude.plus(tmp);                        </span>
+<span class="nc bnc" id="L606" title="All 2 branches missed.">                for (j = 0; j &lt; 4; j++) {</span>
+<span class="nc" id="L607">                    reg.node[base[j]].amplitude.setReal(0);</span>
+<span class="nc" id="L608">                    reg.node[base[j]].amplitude.setImag(0);</span>
+<span class="nc bnc" id="L609" title="All 2 branches missed.">                    for (k = 0; k &lt; 4; k++) {</span>
+<span class="nc" id="L610">                        ComplexModifiable tmp = Matrix.M(m, k, j).copy();</span>
+<span class="nc" id="L611">                        tmp.times(psi_sub[k]);</span>
+<span class="nc" id="L612">                        reg.node[base[j]].amplitude.plus(tmp);                        </span>
                     }
 
-<span class="nc" id="L596">                    done[base[j]] = 1;</span>
+<span class="nc" id="L615">                    done[base[j]] = 1;</span>
                 }
             }
         }
-<span class="nc" id="L600">        reg.size += addsize;</span>
+<span class="nc" id="L619">        reg.size += addsize;</span>
 
         // remove basis states with extremely small amplitude 
-<span class="nc bnc" id="L603" title="All 2 branches missed.">        for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L604" title="All 2 branches missed.">            if (reg.node[i].amplitude.squareSum() &lt; limit) {</span>
-<span class="nc" id="L605">                j++;</span>
-<span class="nc" id="L606">                decsize++;</span>
-<span class="nc bnc" id="L607" title="All 2 branches missed.">            } else if (j != 0) {</span>
-<span class="nc" id="L608">                reg.node[i - j].state = reg.node[i].state;</span>
-<span class="nc" id="L609">                reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);</span>
+<span class="nc bnc" id="L622" title="All 2 branches missed.">        for (i = 0, j = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">            if (reg.node[i].amplitude.squareSum() &lt; limit) {</span>
+<span class="nc" id="L624">                j++;</span>
+<span class="nc" id="L625">                decsize++;</span>
+<span class="nc bnc" id="L626" title="All 2 branches missed.">            } else if (j != 0) {</span>
+<span class="nc" id="L627">                reg.node[i - j].state = reg.node[i].state;</span>
+<span class="nc" id="L628">                reg.node[i - j].amplitude.resetTo(reg.node[i].amplitude);</span>
             }
         }
 
-<span class="nc bnc" id="L613" title="All 2 branches missed.">        if (decsize != 0) {</span>
-<span class="nc" id="L614">            reg.size -= decsize;</span>
-<span class="nc bnc" id="L615" title="All 2 branches missed.">            if (reg.node.length != reg.size) {</span>
-<span class="nc" id="L616">                int len1 = reg.node.length;</span>
-<span class="nc" id="L617">                reg.node = Arrays.copyOf(reg.node, reg.size);</span>
-<span class="nc bnc" id="L618" title="All 2 branches missed.">                for (int ii = len1; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L619">                    reg.node[ii] = new QuantumRegNode();</span>
-<span class="nc" id="L620">                    reg.node[ii].state = 0;</span>
-<span class="nc" id="L621">                    reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
+<span class="nc bnc" id="L632" title="All 2 branches missed.">        if (decsize != 0) {</span>
+<span class="nc" id="L633">            reg.size -= decsize;</span>
+<span class="nc bnc" id="L634" title="All 2 branches missed.">            if (reg.node.length != reg.size) {</span>
+<span class="nc" id="L635">                int len1 = reg.node.length;</span>
+<span class="nc" id="L636">                reg.node = Arrays.copyOf(reg.node, reg.size);</span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">                for (int ii = len1; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L638">                    reg.node[ii] = new QuantumRegNode();</span>
+<span class="nc" id="L639">                    reg.node[ii].state = 0;</span>
+<span class="nc" id="L640">                    reg.node[ii].amplitude = new ComplexModifiable(0, 0);</span>
                 }
             }
         }
 
-<span class="nc" id="L626">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L627">    }</span>
+<span class="nc" id="L645">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L646">    }</span>
 
     /**
      * Apply a hadamard gate.
      * this is a generalized class of fourier transforms.
+     
+     runtime complexity is O(reg.size), though reg.size is possibly increased
+     and for the last decohere operation is
+     is O(reg.size * reg.width).
+    
      */
-    void quantum_hadamard(int target, QuantumReg reg) {
+   public void quantum_hadamard(int target, QuantumReg reg) {
   
-<span class="fc" id="L635">        Matrix matrix = new Matrix();</span>
+<span class="fc" id="L659">        Matrix matrix = new Matrix();</span>
         
-<span class="fc" id="L637">        QuantumMatrix m = matrix.quantum_new_matrix(2, 2);</span>
+<span class="fc" id="L661">        QuantumMatrix m = matrix.quantum_new_matrix(2, 2);</span>
 
-<span class="fc" id="L639">        double a = Math.sqrt(1.0 / 2.);</span>
-<span class="fc" id="L640">        m.t[0] = new ComplexModifiable(a, 0);</span>
-<span class="fc" id="L641">        m.t[1] = new ComplexModifiable(a, 0);</span>
-<span class="fc" id="L642">        m.t[2] = new ComplexModifiable(a, 0);</span>
-<span class="fc" id="L643">        m.t[3] = new ComplexModifiable(-a, 0);</span>
+<span class="fc" id="L663">        double a = Math.sqrt(1.0 / 2.);</span>
+<span class="fc" id="L664">        m.t[0] = new ComplexModifiable(a, 0);</span>
+<span class="fc" id="L665">        m.t[1] = new ComplexModifiable(a, 0);</span>
+<span class="fc" id="L666">        m.t[2] = new ComplexModifiable(a, 0);</span>
+<span class="fc" id="L667">        m.t[3] = new ComplexModifiable(-a, 0);</span>
 
-<span class="fc" id="L645">        quantum_gate1(target, m, reg);</span>
+<span class="fc" id="L669">        quantum_gate1(target, m, reg);</span>
 
-<span class="fc" id="L647">    }</span>
+<span class="fc" id="L671">    }</span>
 
     /**
      * Apply a walsh-hadamard transform
      */
-    void quantum_walsh(int width, QuantumReg reg) {
+   public void quantum_walsh(int width, QuantumReg reg) {
   
         int i;
 
-<span class="nc bnc" id="L656" title="All 2 branches missed.">        for (i = 0; i &lt; width; i++) {</span>
-<span class="nc" id="L657">            quantum_hadamard(i, reg);</span>
+<span class="nc bnc" id="L680" title="All 2 branches missed.">        for (i = 0; i &lt; width; i++) {</span>
+<span class="nc" id="L681">            quantum_hadamard(i, reg);</span>
         }
-<span class="nc" id="L659">    }</span>
+<span class="nc" id="L683">    }</span>
 
     /**
      * Apply a rotation about the x-axis by the angle GAMMA
      */
-    void quantum_r_x(int target, float gamma, QuantumReg reg) {
+   public void quantum_r_x(int target, float gamma, QuantumReg reg) {
   
-<span class="nc" id="L666">        Matrix matrix = new Matrix();</span>
+<span class="nc" id="L690">        Matrix matrix = new Matrix();</span>
         
-<span class="nc" id="L668">        QuantumMatrix m = matrix.quantum_new_matrix(2, 2);</span>
+<span class="nc" id="L692">        QuantumMatrix m = matrix.quantum_new_matrix(2, 2);</span>
 
-<span class="nc" id="L670">        m.t[0] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
-<span class="nc" id="L671">        m.t[1] = new ComplexModifiable(0, -Math.sin(gamma / 2));</span>
-<span class="nc" id="L672">        m.t[2] = new ComplexModifiable(0, -Math.sin(gamma / 2));</span>
-<span class="nc" id="L673">        m.t[3] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
+<span class="nc" id="L694">        m.t[0] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
+<span class="nc" id="L695">        m.t[1] = new ComplexModifiable(0, -Math.sin(gamma / 2));</span>
+<span class="nc" id="L696">        m.t[2] = new ComplexModifiable(0, -Math.sin(gamma / 2));</span>
+<span class="nc" id="L697">        m.t[3] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
 
-<span class="nc" id="L675">        quantum_gate1(target, m, reg);</span>
+<span class="nc" id="L699">        quantum_gate1(target, m, reg);</span>
 
-<span class="nc" id="L677">    }</span>
+<span class="nc" id="L701">    }</span>
 
     /**
      * Apply a rotation about the y-axis by the angle GAMMA
      */
-    void quantum_r_y(int target, float gamma, QuantumReg reg) {
+   public void quantum_r_y(int target, float gamma, QuantumReg reg) {
   
-<span class="nc" id="L684">        Matrix matrix = new Matrix();</span>
+<span class="nc" id="L708">        Matrix matrix = new Matrix();</span>
         
-<span class="nc" id="L686">        QuantumMatrix m = matrix.quantum_new_matrix(2, 2);</span>
-<span class="nc" id="L687">        m.t[0] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
-<span class="nc" id="L688">        m.t[1] = new ComplexModifiable(-Math.sin(gamma / 2), 0);</span>
-<span class="nc" id="L689">        m.t[2] = new ComplexModifiable(Math.sin(gamma / 2), 0);</span>
-<span class="nc" id="L690">        m.t[3] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
+<span class="nc" id="L710">        QuantumMatrix m = matrix.quantum_new_matrix(2, 2);</span>
+<span class="nc" id="L711">        m.t[0] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
+<span class="nc" id="L712">        m.t[1] = new ComplexModifiable(-Math.sin(gamma / 2), 0);</span>
+<span class="nc" id="L713">        m.t[2] = new ComplexModifiable(Math.sin(gamma / 2), 0);</span>
+<span class="nc" id="L714">        m.t[3] = new ComplexModifiable(Math.cos(gamma / 2), 0);</span>
 
-<span class="nc" id="L692">        quantum_gate1(target, m, reg);</span>
-<span class="nc" id="L693">    }</span>
+<span class="nc" id="L716">        quantum_gate1(target, m, reg);</span>
+<span class="nc" id="L717">    }</span>
 
     /**
      * Apply a rotation about the z-axis by the angle GAMMA
      */
-    void quantum_r_z(int target, float gamma, QuantumReg reg) {
+   public void quantum_r_z(int target, float gamma, QuantumReg reg) {
   
         int i;
         
         //return cos(phi) + IMAGINARY * sin(phi);
-<span class="nc" id="L703">        double angle = gamma / 2;</span>
-<span class="nc" id="L704">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
+<span class="nc" id="L727">        double angle = gamma / 2;</span>
+<span class="nc" id="L728">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
 
-<span class="nc bnc" id="L706" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L707" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
-<span class="nc" id="L708">                reg.node[i].amplitude.times(z);</span>
+<span class="nc bnc" id="L730" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L731" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
+<span class="nc" id="L732">                reg.node[i].amplitude.times(z);</span>
             } else {
-<span class="nc" id="L710">                reg.node[i].amplitude.divided(z);</span>
+<span class="nc" id="L734">                reg.node[i].amplitude.divided(z);</span>
             }
         }
 
-<span class="nc" id="L714">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L715">    }</span>
+<span class="nc" id="L738">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L739">    }</span>
 
     /**
      * Scale the phase of qubit
      */
-    void quantum_phase_scale(int target, float gamma, QuantumReg reg) {
+   public void quantum_phase_scale(int target, float gamma, QuantumReg reg) {
   
         int i;
         //return cos(phi) + IMAGINARY * sin(phi);
-<span class="nc" id="L724">        double angle = gamma;</span>
-<span class="nc" id="L725">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
+<span class="nc" id="L748">        double angle = gamma;</span>
+<span class="nc" id="L749">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
 
-<span class="nc bnc" id="L727" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc" id="L728">            reg.node[i].amplitude.times(z);</span>
+<span class="nc bnc" id="L751" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L752">            reg.node[i].amplitude.times(z);</span>
         }
 
-<span class="nc" id="L731">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L732">    }</span>
+<span class="nc" id="L755">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L756">    }</span>
 
     /**
-     * Apply a phase kick (== shift) by the angle GAMMA
+     * Apply a phase kick (== shift) by the angle GAMMA if target bit is set
      */
-    void quantum_phase_kick(int target, float gamma, QuantumReg reg) {
+   public void quantum_phase_kick(int target, float gamma, QuantumReg reg) {
   
         int i;
         //return cos(phi) + IMAGINARY * sin(phi);
-<span class="nc" id="L741">        double angle = gamma;</span>
-<span class="nc" id="L742">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
+<span class="nc" id="L765">        double angle = gamma;</span>
+<span class="nc" id="L766">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
 
-<span class="nc bnc" id="L744" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L745" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0){</span>
-<span class="nc" id="L746">                reg.node[i].amplitude.times(z);</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L769" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0){</span>
+<span class="nc" id="L770">                reg.node[i].amplitude.times(z);</span>
             }
         }
 
-<span class="nc" id="L750">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L751">    }</span>
-
-    /**
-     * Apply a conditional phase shift by PI / 2^(CONTROL - TARGET)
-     */
-    void quantum_cond_phase(int control, int target, QuantumReg reg) {
-  
-        int i;
-        
-        //return cos(phi) + IMAGINARY * sin(phi);
-<span class="nc" id="L761">        double angle = Math.PI / (1L &lt;&lt; (control - target));</span>
-<span class="nc" id="L762">        ComplexModifiable z </span>
-<span class="nc" id="L763">            = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
-        
-<span class="nc bnc" id="L765" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L766" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
-<span class="nc bnc" id="L767" title="All 2 branches missed.">                if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
-<span class="nc" id="L768">                    reg.node[i].amplitude.times(z);</span>
-                }
-            }
-        }
-
-<span class="nc" id="L773">        decoherence.quantum_decohere(reg, rng, this);</span>
-    
+<span class="nc" id="L774">        decoherence.quantum_decohere(reg, rng, this);</span>
 <span class="nc" id="L775">    }</span>
 
-    void quantum_cond_phase_inv(int control, int target, QuantumReg reg) {
+    /**
+     * Apply a conditional phase shift of PI / 2^(CONTROL - TARGET) if 
+     * control and target bits are set
+     */
+   public void quantum_cond_phase(int control, int target, QuantumReg reg) {
   
         int i;
+        
         //return cos(phi) + IMAGINARY * sin(phi);
-<span class="nc" id="L781">        double angle = -Math.PI / (1L &lt;&lt; (control - target));</span>
-<span class="nc" id="L782">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
-
-<span class="nc bnc" id="L784" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L785" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
-<span class="nc bnc" id="L786" title="All 2 branches missed.">                if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
-<span class="nc" id="L787">                    reg.node[i].amplitude.times(z);</span>
+<span class="nc" id="L786">        double angle = Math.PI / (1L &lt;&lt; (control - target));</span>
+<span class="nc" id="L787">        ComplexModifiable z </span>
+<span class="nc" id="L788">            = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
+        
+<span class="nc bnc" id="L790" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L791" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
+<span class="nc bnc" id="L792" title="All 2 branches missed.">                if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
+<span class="nc" id="L793">                    reg.node[i].amplitude.times(z);</span>
                 }
             }
         }
 
-<span class="nc" id="L792">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L793">    }</span>
+<span class="nc" id="L798">        decoherence.quantum_decohere(reg, rng, this);</span>
+    
+<span class="nc" id="L800">    }</span>
 
-    void quantum_cond_phase_kick(int control, int target, float gamma, 
+   /**
+     * Apply a conditional phase shift of -PI / 2^(CONTROL - TARGET) if 
+     * control and target bits are set
+     */
+   public void quantum_cond_phase_inv(int control, int target, QuantumReg reg) {
+  
+        int i;
+        //return cos(phi) + IMAGINARY * sin(phi);
+<span class="nc" id="L810">        double angle = -Math.PI / (1L &lt;&lt; (control - target));</span>
+<span class="nc" id="L811">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
+
+<span class="nc bnc" id="L813" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L814" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
+<span class="nc bnc" id="L815" title="All 2 branches missed.">                if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
+<span class="nc" id="L816">                    reg.node[i].amplitude.times(z);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L821">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L822">    }</span>
+
+   /**
+     * Apply a conditional phase shift of gamma if 
+     * control and target bits are set
+     */
+   public void quantum_cond_phase_kick(int control, int target, float gamma, 
         QuantumReg reg) {
   
         int i;
         //return cos(phi) + IMAGINARY * sin(phi);
-<span class="nc" id="L800">        double angle = gamma;</span>
-<span class="nc" id="L801">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
+<span class="nc" id="L833">        double angle = gamma;</span>
+<span class="nc" id="L834">        ComplexModifiable z = new ComplexModifiable(Math.cos(angle), Math.sin(angle));</span>
 
-<span class="nc bnc" id="L803" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L804" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
-<span class="nc bnc" id="L805" title="All 2 branches missed.">                if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
-<span class="nc" id="L806">                    reg.node[i].amplitude.times(z);</span>
+<span class="nc bnc" id="L836" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L837" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control)) != 0) {</span>
+<span class="nc bnc" id="L838" title="All 2 branches missed.">                if ((reg.node[i].state &amp; (1L &lt;&lt; target)) != 0) {</span>
+<span class="nc" id="L839">                    reg.node[i].amplitude.times(z);</span>
                 }
             }
         }
-<span class="nc" id="L810">        decoherence.quantum_decohere(reg, rng, this);</span>
-<span class="nc" id="L811">    }</span>
+<span class="nc" id="L843">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L844">    }</span>
 
     /**
      * Increase the gate counter by INC steps or reset it if INC .lt. 0. The
@@ -817,13 +850,13 @@ Quantum Error Correction.
     int quantum_gate_counter(int inc) {
         //static int counter = 0;
 
-<span class="pc bpc" id="L820" title="1 of 2 branches missed.">        if (inc &gt; 0) {</span>
-<span class="fc" id="L821">            counter += inc;</span>
-<span class="nc bnc" id="L822" title="All 2 branches missed.">        } else if (inc &lt; 0) {</span>
-<span class="nc" id="L823">            counter = 0;</span>
+<span class="pc bpc" id="L853" title="1 of 2 branches missed.">        if (inc &gt; 0) {</span>
+<span class="fc" id="L854">            counter += inc;</span>
+<span class="nc bnc" id="L855" title="All 2 branches missed.">        } else if (inc &lt; 0) {</span>
+<span class="nc" id="L856">            counter = 0;</span>
         }
 
-<span class="fc" id="L826">        return counter;</span>
+<span class="fc" id="L859">        return counter;</span>
     }
     
     // --------- QEC methods -------
@@ -831,104 +864,104 @@ Quantum Error Correction.
     /**
      * Change the status of the QEC.
      */
-    void quantum_qec_set_status(int stype, int swidth) {
-<span class="nc" id="L835">        type = stype;</span>
-<span class="nc" id="L836">        width = swidth;</span>
-<span class="nc" id="L837">    }</span>
+   public void quantum_qec_set_status(int stype, int swidth) {
+<span class="nc" id="L868">        type = stype;</span>
+<span class="nc" id="L869">        width = swidth;</span>
+<span class="nc" id="L870">    }</span>
 
     /**
      * Get the current QEC status
      */
-    void quantum_qec_get_status(int[] ptypeInOut, int[] pwidthInOut) {
+   public void quantum_qec_get_status(int[] ptypeInOut, int[] pwidthInOut) {
 
-<span class="pc bpc" id="L844" title="2 of 4 branches missed.">        if (ptypeInOut != null &amp;&amp; ptypeInOut.length &gt; 0) {</span>
-<span class="fc" id="L845">            ptypeInOut[0] = type;</span>
+<span class="pc bpc" id="L877" title="2 of 4 branches missed.">        if (ptypeInOut != null &amp;&amp; ptypeInOut.length &gt; 0) {</span>
+<span class="fc" id="L878">            ptypeInOut[0] = type;</span>
         }
-<span class="pc bpc" id="L847" title="3 of 4 branches missed.">        if (pwidthInOut != null &amp;&amp; pwidthInOut.length &gt; 0) {</span>
-<span class="nc" id="L848">            pwidthInOut[0] = width;</span>
+<span class="pc bpc" id="L880" title="3 of 4 branches missed.">        if (pwidthInOut != null &amp;&amp; pwidthInOut.length &gt; 0) {</span>
+<span class="nc" id="L881">            pwidthInOut[0] = width;</span>
         }
-<span class="fc" id="L850">    }</span>
+<span class="fc" id="L883">    }</span>
 
     /**
      * Encode a quantum register. All qubits up to SWIDTH are protected, the
      * rest is expanded with a repetition code.
      */
-    void quantum_qec_encode(int type, int width, QuantumReg reg) {
+   public void quantum_qec_encode(int type, int width, QuantumReg reg) {
         int i;
         float lambda;
 
-<span class="nc" id="L860">        lambda = decoherence.quantum_get_decoherence();</span>
+<span class="nc" id="L893">        lambda = decoherence.quantum_get_decoherence();</span>
 
-<span class="nc" id="L862">        decoherence.quantum_set_decoherence(0);</span>
+<span class="nc" id="L895">        decoherence.quantum_set_decoherence(0);</span>
 
-<span class="nc bnc" id="L864" title="All 2 branches missed.">        for (i = 0; i &lt; reg.width; i++) {</span>
-<span class="nc bnc" id="L865" title="All 2 branches missed.">            if (i == reg.width - 1) {</span>
-<span class="nc" id="L866">                decoherence.quantum_set_decoherence(lambda);</span>
+<span class="nc bnc" id="L897" title="All 2 branches missed.">        for (i = 0; i &lt; reg.width; i++) {</span>
+<span class="nc bnc" id="L898" title="All 2 branches missed.">            if (i == reg.width - 1) {</span>
+<span class="nc" id="L899">                decoherence.quantum_set_decoherence(lambda);</span>
             }
 
-<span class="nc bnc" id="L869" title="All 2 branches missed.">            if (i &lt; width) {</span>
-<span class="nc" id="L870">                quantum_hadamard(reg.width + i, reg);</span>
-<span class="nc" id="L871">                quantum_hadamard(2 * reg.width + i, reg);</span>
+<span class="nc bnc" id="L902" title="All 2 branches missed.">            if (i &lt; width) {</span>
+<span class="nc" id="L903">                quantum_hadamard(reg.width + i, reg);</span>
+<span class="nc" id="L904">                quantum_hadamard(2 * reg.width + i, reg);</span>
 
-<span class="nc" id="L873">                quantum_cnot(reg.width + i, i, reg);</span>
-<span class="nc" id="L874">                quantum_cnot(2 * reg.width + i, i, reg);</span>
+<span class="nc" id="L906">                quantum_cnot(reg.width + i, i, reg);</span>
+<span class="nc" id="L907">                quantum_cnot(2 * reg.width + i, i, reg);</span>
             } else {
-<span class="nc" id="L876">                quantum_cnot(i, reg.width + i, reg);</span>
-<span class="nc" id="L877">                quantum_cnot(i, 2 * reg.width + i, reg);</span>
+<span class="nc" id="L909">                quantum_cnot(i, reg.width + i, reg);</span>
+<span class="nc" id="L910">                quantum_cnot(i, 2 * reg.width + i, reg);</span>
             }
         }
 
-<span class="nc" id="L881">        quantum_qec_set_status(1, reg.width);</span>
-<span class="nc" id="L882">        reg.width *= 3;</span>
-<span class="nc" id="L883">    }</span>
+<span class="nc" id="L914">        quantum_qec_set_status(1, reg.width);</span>
+<span class="nc" id="L915">        reg.width *= 3;</span>
+<span class="nc" id="L916">    }</span>
 
     /**
      * Decode a quantum register and perform Quantum Error Correction on it
      */
-    void quantum_qec_decode(int type, int width, QuantumReg reg) {
+   public void quantum_qec_decode(int type, int width, QuantumReg reg) {
 
         int i, a, b;
         int swidth;
         float lambda;
 
-<span class="nc" id="L894">        lambda = decoherence.quantum_get_decoherence();</span>
+<span class="nc" id="L927">        lambda = decoherence.quantum_get_decoherence();</span>
 
-<span class="nc" id="L896">        decoherence.quantum_set_decoherence(0);</span>
+<span class="nc" id="L929">        decoherence.quantum_set_decoherence(0);</span>
 
-<span class="nc" id="L898">        swidth = reg.width / 3;</span>
+<span class="nc" id="L931">        swidth = reg.width / 3;</span>
 
-<span class="nc" id="L900">        quantum_qec_set_status(0, 0);</span>
+<span class="nc" id="L933">        quantum_qec_set_status(0, 0);</span>
 
-<span class="nc bnc" id="L902" title="All 2 branches missed.">        for (i = reg.width / 3 - 1; i &gt;= 0; i--) {</span>
-<span class="nc bnc" id="L903" title="All 2 branches missed.">            if (i == 0) {</span>
-<span class="nc" id="L904">                decoherence.quantum_set_decoherence(lambda);</span>
+<span class="nc bnc" id="L935" title="All 2 branches missed.">        for (i = reg.width / 3 - 1; i &gt;= 0; i--) {</span>
+<span class="nc bnc" id="L936" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L937">                decoherence.quantum_set_decoherence(lambda);</span>
             }
 
-<span class="nc bnc" id="L907" title="All 2 branches missed.">            if (i &lt; width) {</span>
-<span class="nc" id="L908">                quantum_cnot(2 * swidth + i, i, reg);</span>
-<span class="nc" id="L909">                quantum_cnot(swidth + i, i, reg);</span>
+<span class="nc bnc" id="L940" title="All 2 branches missed.">            if (i &lt; width) {</span>
+<span class="nc" id="L941">                quantum_cnot(2 * swidth + i, i, reg);</span>
+<span class="nc" id="L942">                quantum_cnot(swidth + i, i, reg);</span>
 
-<span class="nc" id="L911">                quantum_hadamard(2 * swidth + i, reg);</span>
-<span class="nc" id="L912">                quantum_hadamard(swidth + i, reg);</span>
+<span class="nc" id="L944">                quantum_hadamard(2 * swidth + i, reg);</span>
+<span class="nc" id="L945">                quantum_hadamard(swidth + i, reg);</span>
             } else {
-<span class="nc" id="L914">                quantum_cnot(i, 2 * swidth + i, reg);</span>
-<span class="nc" id="L915">                quantum_cnot(i, swidth + i, reg);</span>
+<span class="nc" id="L947">                quantum_cnot(i, 2 * swidth + i, reg);</span>
+<span class="nc" id="L948">                quantum_cnot(i, swidth + i, reg);</span>
             }
         }
         
-<span class="nc" id="L919">        Measure measure = new Measure();</span>
+<span class="nc" id="L952">        Measure measure = new Measure();</span>
 
-<span class="nc bnc" id="L921" title="All 2 branches missed.">        for (i = 1; i &lt;= swidth; i++) {</span>
-<span class="nc" id="L922">            a = measure.quantum_bmeasure(swidth, reg, rng);</span>
-<span class="nc" id="L923">            b = measure.quantum_bmeasure(2 * swidth - i, reg, rng);</span>
-<span class="nc bnc" id="L924" title="All 6 branches missed.">            if (a == 1 &amp;&amp; b == 1 &amp;&amp; i - 1 &lt; width) {</span>
-<span class="nc" id="L925">                quantum_sigma_z(i - 1, reg);</span>
+<span class="nc bnc" id="L954" title="All 2 branches missed.">        for (i = 1; i &lt;= swidth; i++) {</span>
+<span class="nc" id="L955">            a = measure.quantum_bmeasure(swidth, reg, rng);</span>
+<span class="nc" id="L956">            b = measure.quantum_bmeasure(2 * swidth - i, reg, rng);</span>
+<span class="nc bnc" id="L957" title="All 6 branches missed.">            if (a == 1 &amp;&amp; b == 1 &amp;&amp; i - 1 &lt; width) {</span>
+<span class="nc" id="L958">                quantum_sigma_z(i - 1, reg);</span>
             }
             /**
              * Z = HXH
              */
         }
-<span class="nc" id="L931">    }</span>
+<span class="nc" id="L964">    }</span>
 
     /**
      * Counter which can be used to apply QEC periodically
@@ -937,79 +970,79 @@ Quantum Error Correction.
 
         //static int counter = 0;
         //static int freq = (1 &lt;&lt; 30);
-<span class="nc bnc" id="L940" title="All 2 branches missed.">        if (inc &gt; 0) {</span>
-<span class="nc" id="L941">            counterQEC += inc;</span>
-<span class="nc bnc" id="L942" title="All 2 branches missed.">        } else if (inc &lt; 0) {</span>
-<span class="nc" id="L943">            counterQEC = 0;</span>
+<span class="nc bnc" id="L973" title="All 2 branches missed.">        if (inc &gt; 0) {</span>
+<span class="nc" id="L974">            counterQEC += inc;</span>
+<span class="nc bnc" id="L975" title="All 2 branches missed.">        } else if (inc &lt; 0) {</span>
+<span class="nc" id="L976">            counterQEC = 0;</span>
         }
 
-<span class="nc bnc" id="L946" title="All 2 branches missed.">        if (frequency &gt; 0) {</span>
-<span class="nc" id="L947">            freq = frequency;</span>
+<span class="nc bnc" id="L979" title="All 2 branches missed.">        if (frequency &gt; 0) {</span>
+<span class="nc" id="L980">            freq = frequency;</span>
         }
 
-<span class="nc bnc" id="L950" title="All 2 branches missed.">        if (counterQEC &gt;= freq) {</span>
-<span class="nc" id="L951">            counterQEC = 0;</span>
-<span class="nc" id="L952">            quantum_qec_decode(type, width, reg);</span>
-<span class="nc" id="L953">            quantum_qec_encode(type, width, reg);</span>
+<span class="nc bnc" id="L983" title="All 2 branches missed.">        if (counterQEC &gt;= freq) {</span>
+<span class="nc" id="L984">            counterQEC = 0;</span>
+<span class="nc" id="L985">            quantum_qec_decode(type, width, reg);</span>
+<span class="nc" id="L986">            quantum_qec_encode(type, width, reg);</span>
         }
 
-<span class="nc" id="L956">        return counterQEC;</span>
+<span class="nc" id="L989">        return counterQEC;</span>
     }
 
     /**
      * Fault-tolerant version of the NOT gate
      */
-    void quantum_sigma_x_ft(int target, QuantumReg reg) {
+   public void quantum_sigma_x_ft(int target, QuantumReg reg) {
         int tmp;
         float lambda;
 
-<span class="nc" id="L966">        tmp = type;</span>
-<span class="nc" id="L967">        type = 0;</span>
+<span class="nc" id="L999">        tmp = type;</span>
+<span class="nc" id="L1000">        type = 0;</span>
 
-<span class="nc" id="L969">        lambda = decoherence.quantum_get_decoherence();</span>
-<span class="nc" id="L970">        decoherence.quantum_set_decoherence(0);</span>
+<span class="nc" id="L1002">        lambda = decoherence.quantum_get_decoherence();</span>
+<span class="nc" id="L1003">        decoherence.quantum_set_decoherence(0);</span>
 
         // These operations can be performed simultaneously
-<span class="nc" id="L973">        quantum_sigma_x(target, reg);</span>
-<span class="nc" id="L974">        quantum_sigma_x(target + width, reg);</span>
-<span class="nc" id="L975">        decoherence.quantum_set_decoherence(lambda);</span>
-<span class="nc" id="L976">        quantum_sigma_x(target + 2 * width, reg);</span>
+<span class="nc" id="L1006">        quantum_sigma_x(target, reg);</span>
+<span class="nc" id="L1007">        quantum_sigma_x(target + width, reg);</span>
+<span class="nc" id="L1008">        decoherence.quantum_set_decoherence(lambda);</span>
+<span class="nc" id="L1009">        quantum_sigma_x(target + 2 * width, reg);</span>
 
-<span class="nc" id="L978">        quantum_qec_counter(1, 0, reg);</span>
+<span class="nc" id="L1011">        quantum_qec_counter(1, 0, reg);</span>
 
-<span class="nc" id="L980">        type = tmp;</span>
-<span class="nc" id="L981">    }</span>
+<span class="nc" id="L1013">        type = tmp;</span>
+<span class="nc" id="L1014">    }</span>
 
     /**
      * Fault-tolerant version of the Controlled NOT gate
      */
-    void quantum_cnot_ft(int control, int target, QuantumReg reg) {
+   public void quantum_cnot_ft(int control, int target, QuantumReg reg) {
         
         int tmp;
         float lambda;
 
-<span class="nc" id="L991">        tmp = type;</span>
-<span class="nc" id="L992">        type = 0;</span>
+<span class="nc" id="L1024">        tmp = type;</span>
+<span class="nc" id="L1025">        type = 0;</span>
         
         // These operations can be performed simultaneously
-<span class="nc" id="L995">        lambda = decoherence.quantum_get_decoherence();</span>
-<span class="nc" id="L996">        decoherence.quantum_set_decoherence(0);</span>
+<span class="nc" id="L1028">        lambda = decoherence.quantum_get_decoherence();</span>
+<span class="nc" id="L1029">        decoherence.quantum_set_decoherence(0);</span>
 
-<span class="nc" id="L998">        quantum_cnot(control, target, reg);</span>
-<span class="nc" id="L999">        quantum_cnot(control + width, target + width, reg);</span>
-<span class="nc" id="L1000">        decoherence.quantum_set_decoherence(lambda);</span>
-<span class="nc" id="L1001">        quantum_cnot(control + 2 * width, target + 2 * width, reg);</span>
+<span class="nc" id="L1031">        quantum_cnot(control, target, reg);</span>
+<span class="nc" id="L1032">        quantum_cnot(control + width, target + width, reg);</span>
+<span class="nc" id="L1033">        decoherence.quantum_set_decoherence(lambda);</span>
+<span class="nc" id="L1034">        quantum_cnot(control + 2 * width, target + 2 * width, reg);</span>
 
-<span class="nc" id="L1003">        quantum_qec_counter(1, 0, reg);</span>
+<span class="nc" id="L1036">        quantum_qec_counter(1, 0, reg);</span>
 
-<span class="nc" id="L1005">        type = tmp;</span>
+<span class="nc" id="L1038">        type = tmp;</span>
 
-<span class="nc" id="L1007">    }</span>
+<span class="nc" id="L1040">    }</span>
 
     /**
      * Fault-tolerant version of the Toffoli gate
      */
-    void quantum_toffoli_ft(int control1, int control2, int target, 
+   public void quantum_toffoli_ft(int control1, int control2, int target, 
         QuantumReg reg) {
 
         int i;
@@ -1017,47 +1050,47 @@ Quantum Error Correction.
         //MAX_UNSIGNED mask;
         long mask;
         
-<span class="nc" id="L1020">        mask = (1L &lt;&lt; target)</span>
+<span class="nc" id="L1053">        mask = (1L &lt;&lt; target)</span>
             + (1L &lt;&lt; (target + width))
             + (1L &lt;&lt; (target + 2 * width));
         
-<span class="nc" id="L1024">        System.out.println(&quot;toffoli_ft mask=&quot; + mask);</span>
+<span class="nc" id="L1057">        System.out.println(&quot;toffoli_ft mask=&quot; + mask);</span>
         
-<span class="nc bnc" id="L1026" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc" id="L1027">            c1 = 0;</span>
-<span class="nc" id="L1028">            c2 = 0;</span>
+<span class="nc bnc" id="L1059" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc" id="L1060">            c1 = 0;</span>
+<span class="nc" id="L1061">            c2 = 0;</span>
 
-<span class="nc bnc" id="L1030" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control1)) != 0) {</span>
-<span class="nc" id="L1031">                c1 = 1;</span>
+<span class="nc bnc" id="L1063" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; control1)) != 0) {</span>
+<span class="nc" id="L1064">                c1 = 1;</span>
             }
-<span class="nc bnc" id="L1033" title="All 2 branches missed.">            if ((reg.node[i].state</span>
+<span class="nc bnc" id="L1066" title="All 2 branches missed.">            if ((reg.node[i].state</span>
                 &amp; (1L &lt;&lt; (control1 + width))) != 0) {
-<span class="nc" id="L1035">                c1 ^= 1;</span>
+<span class="nc" id="L1068">                c1 ^= 1;</span>
             }
-<span class="nc bnc" id="L1037" title="All 2 branches missed.">            if ((reg.node[i].state</span>
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">            if ((reg.node[i].state</span>
                 &amp; (1L &lt;&lt; (control1 + 2 * width))) != 0) {
-<span class="nc" id="L1039">                c1 ^= 1;</span>
+<span class="nc" id="L1072">                c1 ^= 1;</span>
             }
 
-<span class="nc bnc" id="L1042" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; (control2))) != 0) {</span>
-<span class="nc" id="L1043">                c2 = 1;</span>
+<span class="nc bnc" id="L1075" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; (control2))) != 0) {</span>
+<span class="nc" id="L1076">                c2 = 1;</span>
             }
-<span class="nc bnc" id="L1045" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; (control2 + width))) != 0) {</span>
-<span class="nc" id="L1046">                c2 ^= 1;</span>
+<span class="nc bnc" id="L1078" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; (control2 + width))) != 0) {</span>
+<span class="nc" id="L1079">                c2 ^= 1;</span>
             }
-<span class="nc bnc" id="L1048" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; (control2 + 2 * width))) != 0) {</span>
-<span class="nc" id="L1049">                c2 ^= 1;</span>
+<span class="nc bnc" id="L1081" title="All 2 branches missed.">            if ((reg.node[i].state &amp; (1L &lt;&lt; (control2 + 2 * width))) != 0) {</span>
+<span class="nc" id="L1082">                c2 ^= 1;</span>
             }
 
-<span class="nc bnc" id="L1052" title="All 4 branches missed.">            if (c1 == 1 &amp;&amp; c2 == 1) {</span>
-<span class="nc" id="L1053">                reg.node[i].state = (reg.node[i].state ^ mask);</span>
+<span class="nc bnc" id="L1085" title="All 4 branches missed.">            if (c1 == 1 &amp;&amp; c2 == 1) {</span>
+<span class="nc" id="L1086">                reg.node[i].state = (reg.node[i].state ^ mask);</span>
             }
         }
 
-<span class="nc" id="L1057">        decoherence.quantum_decohere(reg, rng, this);</span>
+<span class="nc" id="L1090">        decoherence.quantum_decohere(reg, rng, this);</span>
 
-<span class="nc" id="L1059">        quantum_qec_counter(1, 0, reg);</span>
-<span class="nc" id="L1060">    }</span>
+<span class="nc" id="L1092">        quantum_qec_counter(1, 0, reg);</span>
+<span class="nc" id="L1093">    }</span>
     
     // ----- from expn.c, omuln.c, Multiplication modulo an integer N ----
     
@@ -1073,102 +1106,65 @@ Quantum Error Correction.
      * @param swidth
      * @param reg 
      */
-    void quantum_exp_mod_n(int N, int x, int width_input, int swidth, 
+   public void quantum_exp_mod_n(int N, int x, int width_input, int swidth, 
         QuantumReg reg) {
 
-<span class="pc bpc" id="L1079" title="1 of 2 branches missed.">        if (x == 0) {</span>
-<span class="nc" id="L1080">            throw new IllegalArgumentException(&quot;x cannot == 0&quot;);</span>
+<span class="pc bpc" id="L1112" title="1 of 2 branches missed.">        if (x == 0) {</span>
+<span class="nc" id="L1113">            throw new IllegalArgumentException(&quot;x cannot == 0&quot;);</span>
         }
         
         int i, j, f;
         
         //toggle bit '2 * width + 2' in each node state
-<span class="fc" id="L1086">        quantum_sigma_x(2 * swidth + 2, reg);</span>
+<span class="fc" id="L1119">        quantum_sigma_x(2 * swidth + 2, reg);</span>
  
-<span class="fc" id="L1088">        f = x % N;</span>
-<span class="fc" id="L1089">        int lastI = 1;</span>
-<span class="fc bfc" id="L1090" title="All 2 branches covered.">        for (i = 1; i &lt;= width_input; i++) {</span>
-<span class="fc" id="L1091">            f = x % N;			//compute</span>
-<span class="pc bpc" id="L1092" title="1 of 2 branches missed.">            for (j = lastI; j &lt; i; j++) {</span>
-<span class="nc" id="L1093">                f *= f;	//x^2^(i-1)</span>
-<span class="nc" id="L1094">                f = f % N;</span>
+<span class="fc" id="L1121">        f = x % N;</span>
+<span class="fc" id="L1122">        int lastI = 1;</span>
+<span class="fc bfc" id="L1123" title="All 2 branches covered.">        for (i = 1; i &lt;= width_input; i++) {</span>
+<span class="fc" id="L1124">            f = x % N;			//compute</span>
+<span class="pc bpc" id="L1125" title="1 of 2 branches missed.">            for (j = lastI; j &lt; i; j++) {</span>
+<span class="nc" id="L1126">                f *= f;	//x^2^(i-1)</span>
+<span class="nc" id="L1127">                f = f % N;</span>
             }
-<span class="fc" id="L1096">            lastI = i;</span>
+<span class="fc" id="L1129">            lastI = i;</span>
             //apply f mod N = f - floor(f / N) * N
-<span class="fc" id="L1098">            mul_mod_n(N, f, 3 * swidth + 1 + i, swidth, reg);</span>
+<span class="fc" id="L1131">            mul_mod_n(N, f, 3 * swidth + 1 + i, swidth, reg);</span>
         }
-<span class="fc" id="L1100">    }</span>
+<span class="fc" id="L1133">    }</span>
 
-    void emul(int a, int L, int width, QuantumReg reg){
+   public void emul(int a, int L, int width, QuantumReg reg){
 
 	    int i;
-<span class="fc bfc" id="L1105" title="All 2 branches covered.">        for (i = width - 1; i &gt;= 0; i--) {</span>
-<span class="fc bfc" id="L1106" title="All 2 branches covered.">            if (((a &gt;&gt; i) &amp; 1) != 0) {</span>
-<span class="fc" id="L1107">                quantum_toffoli(2 * width + 2, L, width + i, reg);</span>
+<span class="fc bfc" id="L1138" title="All 2 branches covered.">        for (i = width - 1; i &gt;= 0; i--) {</span>
+<span class="fc bfc" id="L1139" title="All 2 branches covered.">            if (((a &gt;&gt; i) &amp; 1) != 0) {</span>
+<span class="fc" id="L1140">                quantum_toffoli(2 * width + 2, L, width + i, reg);</span>
             }
         }
-<span class="fc" id="L1110">    }</span>
+<span class="fc" id="L1143">    }</span>
 
-    void muln(int N, int a, int ctl, int w, QuantumReg reg) {
-        //ctl tells, which bit is the external enable bit
-	
-        int i;
-<span class="fc" id="L1116">        int L = 2 * w + 1;</span>
-
-<span class="fc" id="L1118">        quantum_toffoli(ctl, 2 * w + 2, L, reg);</span>
-
-<span class="fc" id="L1120">        emul(a % N, L, w, reg);</span>
-        
-<span class="fc" id="L1122">        quantum_toffoli(ctl, 2 * w + 2, L, reg);</span>
-        
-<span class="fc bfc" id="L1124" title="All 2 branches covered.">        for (i = 1; i &lt; w; i++) {</span>
-        
-<span class="fc" id="L1126">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
-            
-<span class="fc" id="L1128">            add_mod_n(N, ((1 &lt;&lt; i) * a) % N, </span>
-                w, reg);
-           
-<span class="fc" id="L1131">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
-        
-        }
-<span class="fc" id="L1134">    }</span>
-
-    /**
-     * runtime complexity is w * O(reg.size)
-     * @param N
-     * @param a
-     * @param ctl
-     * @param w
-     * @param reg 
-     */
-    void muln_inv(int N, int a, int ctl, int w, QuantumReg reg){
-
+   public void muln(int N, int a, int ctl, int w, QuantumReg reg) {
         //ctl tells, which bit is the external enable bit
 	
         int i;
 <span class="fc" id="L1149">        int L = 2 * w + 1;</span>
 
-<span class="fc" id="L1151">        Classic classic = new Classic();</span>
+<span class="fc" id="L1151">        quantum_toffoli(ctl, 2 * w + 2, L, reg);</span>
+
+<span class="fc" id="L1153">        emul(a % N, L, w, reg);</span>
         
-<span class="fc" id="L1153">        a = classic.quantum_inverse_mod(N, a);</span>
- 
-<span class="fc bfc" id="L1155" title="All 2 branches covered.">        for (i = w - 1; i &gt; 0; i--) {</span>
-<span class="fc" id="L1156">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
-             
-<span class="fc" id="L1158">            add_mod_n(N, N - ((1 &lt;&lt; i) * a) % N, </span>
-                w, reg);           
+<span class="fc" id="L1155">        quantum_toffoli(ctl, 2 * w + 2, L, reg);</span>
+        
+<span class="fc bfc" id="L1157" title="All 2 branches covered.">        for (i = 1; i &lt; w; i++) {</span>
+        
+<span class="fc" id="L1159">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
             
-<span class="fc" id="L1161">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
- 
-        }
-          
-<span class="fc" id="L1165">        quantum_toffoli(ctl, 2 * w + 2, L, reg);</span>
-      
-<span class="fc" id="L1167">        emul(a % N, L, w, reg);</span>
-       
-<span class="fc" id="L1169">        quantum_toffoli(ctl, 2 * w + 2, L, reg);    </span>
+<span class="fc" id="L1161">            add_mod_n(N, ((1 &lt;&lt; i) * a) % N, </span>
+                w, reg);
+           
+<span class="fc" id="L1164">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
         
-<span class="fc" id="L1171">    }</span>
+        }
+<span class="fc" id="L1167">    }</span>
 
     /**
      * runtime complexity is w * O(reg.size)
@@ -1178,314 +1174,351 @@ Quantum Error Correction.
      * @param w
      * @param reg 
      */
-    void mul_mod_n(int N, int a, int ctl, int w, QuantumReg reg) {
+   public void muln_inv(int N, int a, int ctl, int w, QuantumReg reg){
+
+        //ctl tells, which bit is the external enable bit
+	
+        int i;
+<span class="fc" id="L1182">        int L = 2 * w + 1;</span>
+
+<span class="fc" id="L1184">        Classic classic = new Classic();</span>
+        
+<span class="fc" id="L1186">        a = classic.quantum_inverse_mod(N, a);</span>
+ 
+<span class="fc bfc" id="L1188" title="All 2 branches covered.">        for (i = w - 1; i &gt; 0; i--) {</span>
+<span class="fc" id="L1189">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
+             
+<span class="fc" id="L1191">            add_mod_n(N, N - ((1 &lt;&lt; i) * a) % N, </span>
+                w, reg);           
+            
+<span class="fc" id="L1194">            quantum_toffoli(ctl, 2 * w + 2 + i, L, reg);</span>
+ 
+        }
+          
+<span class="fc" id="L1198">        quantum_toffoli(ctl, 2 * w + 2, L, reg);</span>
+      
+<span class="fc" id="L1200">        emul(a % N, L, w, reg);</span>
+       
+<span class="fc" id="L1202">        quantum_toffoli(ctl, 2 * w + 2, L, reg);    </span>
+        
+<span class="fc" id="L1204">    }</span>
+
+    /**
+     * runtime complexity is w * O(reg.size)
+     * @param N
+     * @param a
+     * @param ctl
+     * @param w
+     * @param reg 
+     */
+   public void mul_mod_n(int N, int a, int ctl, int w, QuantumReg reg) {
         
         //runtime complexity is O(reg.size)
-<span class="fc" id="L1184">        muln(N, a, ctl, w, reg);</span>
+<span class="fc" id="L1217">        muln(N, a, ctl, w, reg);</span>
 
         //runtime complexity is w * O(reg.size)
-<span class="fc" id="L1187">        quantum_swaptheleads_omuln_controlled(ctl, w, reg);</span>
+<span class="fc" id="L1220">        quantum_swaptheleads_omuln_controlled(ctl, w, reg);</span>
         
         //runtime complexity is w * O(reg.size)
-<span class="fc" id="L1190">        muln_inv(N, a, ctl, w, reg);</span>
+<span class="fc" id="L1223">        muln_inv(N, a, ctl, w, reg);</span>
     
-<span class="fc" id="L1192">    }</span>
+<span class="fc" id="L1225">    }</span>
   
     // ------oaddn.c: Addition modulo an integer N ----
 
-<span class="fc" id="L1196">    private int num_regs = 4;</span>
+<span class="fc" id="L1229">    private int num_regs = 4;</span>
     
     /**
      * if bit &quot;compare&quot; - the global enable bit - is set, test_sums checks, if
      * the sum of the c-number and the q-number in register add_sum is greater
      * than n and sets the next lower bit to &quot;compare&quot;
      */
-    void test_sum(int compare, int w, QuantumReg reg) {
+   public void test_sum(int compare, int w, QuantumReg reg) {
         int i;
 
-<span class="fc bfc" id="L1206" title="All 2 branches covered.">        if ((compare &amp; (1L &lt;&lt; (w - 1))) != 0) {</span>
-<span class="fc" id="L1207">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
-<span class="fc" id="L1208">            quantum_sigma_x(2 * w - 1, reg);</span>
-<span class="fc" id="L1209">            quantum_cnot(2 * w - 1, 0, reg);</span>
+<span class="fc bfc" id="L1239" title="All 2 branches covered.">        if ((compare &amp; (1L &lt;&lt; (w - 1))) != 0) {</span>
+<span class="fc" id="L1240">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
+<span class="fc" id="L1241">            quantum_sigma_x(2 * w - 1, reg);</span>
+<span class="fc" id="L1242">            quantum_cnot(2 * w - 1, 0, reg);</span>
         } else {
-<span class="fc" id="L1211">            quantum_sigma_x(2 * w - 1, reg);</span>
-<span class="fc" id="L1212">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
+<span class="fc" id="L1244">            quantum_sigma_x(2 * w - 1, reg);</span>
+<span class="fc" id="L1245">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
         }
-<span class="fc bfc" id="L1214" title="All 2 branches covered.">        for (i = (w - 2); i &gt; 0; i--) {</span>
-<span class="fc bfc" id="L1215" title="All 2 branches covered.">            if ((compare &amp; (1 &lt;&lt; i)) != 0) {</span>
+<span class="fc bfc" id="L1247" title="All 2 branches covered.">        for (i = (w - 2); i &gt; 0; i--) {</span>
+<span class="fc bfc" id="L1248" title="All 2 branches covered.">            if ((compare &amp; (1 &lt;&lt; i)) != 0) {</span>
                 //is bit i set in compare?
-<span class="fc" id="L1217">                quantum_toffoli(i + 1, w + i, i, reg);</span>
-<span class="fc" id="L1218">                quantum_sigma_x(w + i, reg);</span>
-<span class="fc" id="L1219">                quantum_toffoli(i + 1, w + i, 0, reg);</span>
+<span class="fc" id="L1250">                quantum_toffoli(i + 1, w + i, i, reg);</span>
+<span class="fc" id="L1251">                quantum_sigma_x(w + i, reg);</span>
+<span class="fc" id="L1252">                quantum_toffoli(i + 1, w + i, 0, reg);</span>
             } else {
-<span class="fc" id="L1221">                quantum_sigma_x(w + i, reg);</span>
-<span class="fc" id="L1222">                quantum_toffoli(i + 1, w + i, i, reg);</span>
+<span class="fc" id="L1254">                quantum_sigma_x(w + i, reg);</span>
+<span class="fc" id="L1255">                quantum_toffoli(i + 1, w + i, i, reg);</span>
             }
         }
-<span class="fc bfc" id="L1225" title="All 2 branches covered.">        if ((compare &amp; 1) != 0) {</span>
-<span class="fc" id="L1226">            quantum_sigma_x(w, reg);</span>
-<span class="fc" id="L1227">            quantum_toffoli(w, 1, 0, reg);</span>
+<span class="fc bfc" id="L1258" title="All 2 branches covered.">        if ((compare &amp; 1) != 0) {</span>
+<span class="fc" id="L1259">            quantum_sigma_x(w, reg);</span>
+<span class="fc" id="L1260">            quantum_toffoli(w, 1, 0, reg);</span>
         }
-<span class="fc" id="L1229">        quantum_toffoli(2 * w + 1, 0, 2 * w, reg);//set output to 1 if enabled and b &lt; compare</span>
+<span class="fc" id="L1262">        quantum_toffoli(2 * w + 1, 0, 2 * w, reg);//set output to 1 if enabled and b &lt; compare</span>
 
-<span class="fc bfc" id="L1231" title="All 2 branches covered.">        if ((compare &amp; 1) != 0) {</span>
-<span class="fc" id="L1232">            quantum_toffoli(w, 1, 0, reg);</span>
-<span class="fc" id="L1233">            quantum_sigma_x(w, reg);</span>
+<span class="fc bfc" id="L1264" title="All 2 branches covered.">        if ((compare &amp; 1) != 0) {</span>
+<span class="fc" id="L1265">            quantum_toffoli(w, 1, 0, reg);</span>
+<span class="fc" id="L1266">            quantum_sigma_x(w, reg);</span>
         }
 
-<span class="fc bfc" id="L1236" title="All 2 branches covered.">        for (i = 1; i &lt;= (w - 2); i++) {</span>
-<span class="fc bfc" id="L1237" title="All 2 branches covered.">            if ((compare &amp; (1 &lt;&lt; i)) != 0) {</span>
+<span class="fc bfc" id="L1269" title="All 2 branches covered.">        for (i = 1; i &lt;= (w - 2); i++) {</span>
+<span class="fc bfc" id="L1270" title="All 2 branches covered.">            if ((compare &amp; (1 &lt;&lt; i)) != 0) {</span>
                 //is bit i set in compare?
-<span class="fc" id="L1239">                quantum_toffoli(i + 1, w + i, 0, reg);</span>
-<span class="fc" id="L1240">                quantum_sigma_x(w + i, reg);</span>
-<span class="fc" id="L1241">                quantum_toffoli(i + 1, w + i, i, reg);</span>
+<span class="fc" id="L1272">                quantum_toffoli(i + 1, w + i, 0, reg);</span>
+<span class="fc" id="L1273">                quantum_sigma_x(w + i, reg);</span>
+<span class="fc" id="L1274">                quantum_toffoli(i + 1, w + i, i, reg);</span>
             } else {
-<span class="fc" id="L1243">                quantum_toffoli(i + 1, w + i, i, reg);</span>
-<span class="fc" id="L1244">                quantum_sigma_x(w + i, reg);</span>
+<span class="fc" id="L1276">                quantum_toffoli(i + 1, w + i, i, reg);</span>
+<span class="fc" id="L1277">                quantum_sigma_x(w + i, reg);</span>
             }
         }
-<span class="fc bfc" id="L1247" title="All 2 branches covered.">        if ((compare &amp; (1 &lt;&lt; (w - 1))) != 0) {</span>
-<span class="fc" id="L1248">            quantum_cnot(2 * w - 1, 0, reg);</span>
-<span class="fc" id="L1249">            quantum_sigma_x(2 * w - 1, reg);</span>
-<span class="fc" id="L1250">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
+<span class="fc bfc" id="L1280" title="All 2 branches covered.">        if ((compare &amp; (1 &lt;&lt; (w - 1))) != 0) {</span>
+<span class="fc" id="L1281">            quantum_cnot(2 * w - 1, 0, reg);</span>
+<span class="fc" id="L1282">            quantum_sigma_x(2 * w - 1, reg);</span>
+<span class="fc" id="L1283">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
         } else {
-<span class="fc" id="L1252">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
-<span class="fc" id="L1253">            quantum_sigma_x(2 * w - 1, reg);</span>
+<span class="fc" id="L1285">            quantum_cnot(2 * w - 1, w - 1, reg);</span>
+<span class="fc" id="L1286">            quantum_sigma_x(2 * w - 1, reg);</span>
         }
 
-<span class="fc" id="L1256">    }</span>
+<span class="fc" id="L1289">    }</span>
 
     /**This is a semi-quantum fulladder. It adds to b_in
     a c-number. Carry-in bit is c_in and carry_out is
     c_out. xlt-l and L are enablebits. See documentation
     for further information
    */
-    void muxfa(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
+   public void muxfa(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
         int total, QuantumReg reg){
 
       //a,
 
-<span class="fc bfc" id="L1268" title="All 2 branches covered.">        if (a == 0) {//00</span>
-<span class="fc" id="L1269">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1270">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc bfc" id="L1301" title="All 2 branches covered.">        if (a == 0) {//00</span>
+<span class="fc" id="L1302">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1303">            quantum_cnot(b_in, c_in, reg);</span>
         }        
          
-<span class="fc bfc" id="L1273" title="All 2 branches covered.">        if (a == 3) {//11</span>
-<span class="fc" id="L1274">            quantum_toffoli(L, c_in, c_out, reg);</span>
-<span class="fc" id="L1275">            quantum_cnot(L, c_in, reg);</span>
-<span class="fc" id="L1276">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1277">            quantum_cnot(b_in, c_in, reg);          </span>
+<span class="fc bfc" id="L1306" title="All 2 branches covered.">        if (a == 3) {//11</span>
+<span class="fc" id="L1307">            quantum_toffoli(L, c_in, c_out, reg);</span>
+<span class="fc" id="L1308">            quantum_cnot(L, c_in, reg);</span>
+<span class="fc" id="L1309">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1310">            quantum_cnot(b_in, c_in, reg);          </span>
         }
         
-<span class="fc bfc" id="L1280" title="All 2 branches covered.">        if (a == 1) {//01</span>
-<span class="fc" id="L1281">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
-<span class="fc" id="L1282">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1283">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
-<span class="fc" id="L1284">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1285">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
-<span class="fc" id="L1286">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1287">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc bfc" id="L1313" title="All 2 branches covered.">        if (a == 1) {//01</span>
+<span class="fc" id="L1314">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc" id="L1315">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1316">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc" id="L1317">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1318">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="fc" id="L1319">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1320">            quantum_cnot(b_in, c_in, reg);</span>
         }
         
-<span class="fc bfc" id="L1290" title="All 2 branches covered.">        if (a == 2) {//10</span>
-<span class="fc" id="L1291">            quantum_sigma_x(xlt_l, reg);</span>
-<span class="fc" id="L1292">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
-<span class="fc" id="L1293">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1294">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
-<span class="fc" id="L1295">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1296">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
-<span class="fc" id="L1297">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1298">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1299">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc bfc" id="L1323" title="All 2 branches covered.">        if (a == 2) {//10</span>
+<span class="fc" id="L1324">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc" id="L1325">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc" id="L1326">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1327">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc" id="L1328">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1329">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="fc" id="L1330">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1331">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1332">            quantum_sigma_x(xlt_l, reg);</span>
         }
-<span class="fc" id="L1301">    }</span>
+<span class="fc" id="L1334">    }</span>
 
     /**
     * This is just the inverse operation of the semi-quantum fulladder
     */
-    void muxfa_inv(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
+   public void muxfa_inv(int a, int b_in, int c_in, int c_out, int xlt_l, int L, 
         int total, QuantumReg reg){
 
         //a,
 
-<span class="fc bfc" id="L1311" title="All 2 branches covered.">        if (a == 0) {//00</span>
-<span class="fc" id="L1312">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1313">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc bfc" id="L1344" title="All 2 branches covered.">        if (a == 0) {//00</span>
+<span class="fc" id="L1345">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1346">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
         }
 
-<span class="fc bfc" id="L1316" title="All 2 branches covered.">        if (a == 3) {//11</span>
-<span class="fc" id="L1317">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1318">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1319">            quantum_cnot(L, c_in, reg);</span>
-<span class="fc" id="L1320">            quantum_toffoli(L, c_in, c_out, reg);</span>
+<span class="fc bfc" id="L1349" title="All 2 branches covered.">        if (a == 3) {//11</span>
+<span class="fc" id="L1350">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1351">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1352">            quantum_cnot(L, c_in, reg);</span>
+<span class="fc" id="L1353">            quantum_toffoli(L, c_in, c_out, reg);</span>
         }
 
-<span class="fc bfc" id="L1323" title="All 2 branches covered.">        if (a == 1) {//01</span>
-<span class="fc" id="L1324">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1325">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1326">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
-<span class="fc" id="L1327">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1328">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
-<span class="fc" id="L1329">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1330">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc bfc" id="L1356" title="All 2 branches covered.">        if (a == 1) {//01</span>
+<span class="fc" id="L1357">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1358">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1359">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="fc" id="L1360">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1361">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc" id="L1362">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1363">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
         }
 
-<span class="fc bfc" id="L1333" title="All 2 branches covered.">        if (a == 2) {//10</span>
-<span class="fc" id="L1334">            quantum_sigma_x(xlt_l, reg);</span>
-<span class="fc" id="L1335">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1336">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1337">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
-<span class="fc" id="L1338">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1339">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
-<span class="fc" id="L1340">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
-<span class="fc" id="L1341">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
-<span class="fc" id="L1342">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc bfc" id="L1366" title="All 2 branches covered.">        if (a == 2) {//10</span>
+<span class="fc" id="L1367">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc" id="L1368">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1369">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1370">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="fc" id="L1371">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1372">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc" id="L1373">            quantum_toffoli(b_in, c_in, c_out, reg);</span>
+<span class="fc" id="L1374">            quantum_toffoli(L, xlt_l, b_in, reg);</span>
+<span class="fc" id="L1375">            quantum_sigma_x(xlt_l, reg);</span>
         }
-<span class="fc" id="L1344">    }</span>
+<span class="fc" id="L1377">    }</span>
 
     /**This is a semi-quantum halfadder. It adds to b_in
     a c-number. Carry-in bit is c_in and carry_out is
     not necessary. xlt-l and L are enablebits. See
     documentation for further information
     */
-    void muxha(int a, int b_in, int c_in, int xlt_l, int L, int total, QuantumReg reg) {
+   public void muxha(int a, int b_in, int c_in, int xlt_l, int L, int total, QuantumReg reg) {
 
         //a,
 
-<span class="fc bfc" id="L1355" title="All 2 branches covered.">        if (a == 0) {//00</span>
-<span class="fc" id="L1356">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc bfc" id="L1388" title="All 2 branches covered.">        if (a == 0) {//00</span>
+<span class="fc" id="L1389">            quantum_cnot(b_in, c_in, reg);</span>
         }
 
-<span class="fc bfc" id="L1359" title="All 2 branches covered.">        if (a == 3) {//11</span>
-<span class="fc" id="L1360">            quantum_cnot(L, c_in, reg);</span>
-<span class="fc" id="L1361">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc bfc" id="L1392" title="All 2 branches covered.">        if (a == 3) {//11</span>
+<span class="fc" id="L1393">            quantum_cnot(L, c_in, reg);</span>
+<span class="fc" id="L1394">            quantum_cnot(b_in, c_in, reg);</span>
         }
 
-<span class="pc bpc" id="L1364" title="1 of 2 branches missed.">        if (a == 1) {//01</span>
-<span class="nc" id="L1365">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
-<span class="nc" id="L1366">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="pc bpc" id="L1397" title="1 of 2 branches missed.">        if (a == 1) {//01</span>
+<span class="nc" id="L1398">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="nc" id="L1399">            quantum_cnot(b_in, c_in, reg);</span>
         }
 
-<span class="fc bfc" id="L1369" title="All 2 branches covered.">        if (a == 2) {//10</span>
-<span class="fc" id="L1370">            quantum_sigma_x(xlt_l, reg);</span>
-<span class="fc" id="L1371">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
-<span class="fc" id="L1372">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1373">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc bfc" id="L1402" title="All 2 branches covered.">        if (a == 2) {//10</span>
+<span class="fc" id="L1403">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc" id="L1404">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="fc" id="L1405">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1406">            quantum_sigma_x(xlt_l, reg);</span>
         }
-<span class="fc" id="L1375">    }</span>
+<span class="fc" id="L1408">    }</span>
 
     //just the inverse of the semi quantum-halfadder
-    void muxha_inv(int a, int b_in, int c_in, int xlt_l, int L, int total, 
+   public void muxha_inv(int a, int b_in, int c_in, int xlt_l, int L, int total, 
         QuantumReg reg){
 
         //a,
 
-<span class="fc bfc" id="L1383" title="All 2 branches covered.">        if (a == 0) {//00</span>
-<span class="fc" id="L1384">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc bfc" id="L1416" title="All 2 branches covered.">        if (a == 0) {//00</span>
+<span class="fc" id="L1417">            quantum_cnot(b_in, c_in, reg);</span>
         }
 
-<span class="fc bfc" id="L1387" title="All 2 branches covered.">        if (a == 3) {//11</span>
-<span class="fc" id="L1388">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1389">            quantum_cnot(L, c_in, reg);</span>
+<span class="fc bfc" id="L1420" title="All 2 branches covered.">        if (a == 3) {//11</span>
+<span class="fc" id="L1421">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1422">            quantum_cnot(L, c_in, reg);</span>
         }
 
-<span class="pc bpc" id="L1392" title="1 of 2 branches missed.">        if (a == 1) {//01</span>
-<span class="nc" id="L1393">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="nc" id="L1394">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="pc bpc" id="L1425" title="1 of 2 branches missed.">        if (a == 1) {//01</span>
+<span class="nc" id="L1426">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="nc" id="L1427">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
         }
 
-<span class="fc bfc" id="L1397" title="All 2 branches covered.">        if (a == 2) {//10</span>
-<span class="fc" id="L1398">            quantum_sigma_x(xlt_l, reg);</span>
-<span class="fc" id="L1399">            quantum_cnot(b_in, c_in, reg);</span>
-<span class="fc" id="L1400">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
-<span class="fc" id="L1401">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc bfc" id="L1430" title="All 2 branches covered.">        if (a == 2) {//10</span>
+<span class="fc" id="L1431">            quantum_sigma_x(xlt_l, reg);</span>
+<span class="fc" id="L1432">            quantum_cnot(b_in, c_in, reg);</span>
+<span class="fc" id="L1433">            quantum_toffoli(L, xlt_l, c_in, reg);</span>
+<span class="fc" id="L1434">            quantum_sigma_x(xlt_l, reg);</span>
         }
-<span class="fc" id="L1403">    }</span>
+<span class="fc" id="L1436">    }</span>
 
-    void madd(int a, int a_inv, int w, QuantumReg reg){
+   public void madd(int a, int a_inv, int w, QuantumReg reg){
     
 	    int i, j;
         int total;
-<span class="fc" id="L1409">        total = num_regs * w + 2;</span>
+<span class="fc" id="L1442">        total = num_regs * w + 2;</span>
 
-<span class="fc bfc" id="L1411" title="All 2 branches covered.">        for (i = 0; i &lt; w - 1; i++) {</span>
-<span class="fc bfc" id="L1412" title="All 2 branches covered.">            if (((1 &lt;&lt; i) &amp; a) != 0) {</span>
-<span class="fc" id="L1413">                j = 2;</span>
+<span class="fc bfc" id="L1444" title="All 2 branches covered.">        for (i = 0; i &lt; w - 1; i++) {</span>
+<span class="fc bfc" id="L1445" title="All 2 branches covered.">            if (((1 &lt;&lt; i) &amp; a) != 0) {</span>
+<span class="fc" id="L1446">                j = 2;</span>
             } else {
-<span class="fc" id="L1415">                j = 0;</span>
+<span class="fc" id="L1448">                j = 0;</span>
             }
-<span class="fc bfc" id="L1417" title="All 2 branches covered.">            if (((1 &lt;&lt; i) &amp; a_inv) != 0) {</span>
-<span class="fc" id="L1418">                j++;</span>
+<span class="fc bfc" id="L1450" title="All 2 branches covered.">            if (((1 &lt;&lt; i) &amp; a_inv) != 0) {</span>
+<span class="fc" id="L1451">                j++;</span>
             }
-<span class="fc" id="L1420">            muxfa(j, w + i, i, i + 1, 2 * w, 2 * w + 1, total, reg);</span>
+<span class="fc" id="L1453">            muxfa(j, w + i, i, i + 1, 2 * w, 2 * w + 1, total, reg);</span>
         }
-<span class="fc" id="L1422">        j = 0;</span>
-<span class="fc bfc" id="L1423" title="All 2 branches covered.">        if (((1 &lt;&lt; (w - 1)) &amp; a)  != 0) {</span>
-<span class="fc" id="L1424">            j = 2;</span>
+<span class="fc" id="L1455">        j = 0;</span>
+<span class="fc bfc" id="L1456" title="All 2 branches covered.">        if (((1 &lt;&lt; (w - 1)) &amp; a)  != 0) {</span>
+<span class="fc" id="L1457">            j = 2;</span>
         }
-<span class="fc bfc" id="L1426" title="All 2 branches covered.">        if (((1 &lt;&lt; (w - 1)) &amp; a_inv) != 0) {</span>
-<span class="fc" id="L1427">            j++;</span>
+<span class="fc bfc" id="L1459" title="All 2 branches covered.">        if (((1 &lt;&lt; (w - 1)) &amp; a_inv) != 0) {</span>
+<span class="fc" id="L1460">            j++;</span>
         }
-<span class="fc" id="L1429">        muxha(j, 2 * w - 1, w - 1, 2 * w, 2 * w + 1, total, reg);</span>
-<span class="fc" id="L1430">    }</span>
+<span class="fc" id="L1462">        muxha(j, 2 * w - 1, w - 1, 2 * w, 2 * w + 1, total, reg);</span>
+<span class="fc" id="L1463">    }</span>
 
-    void madd_inv(int a, int a_inv, int w, QuantumReg reg){
+   public void madd_inv(int a, int a_inv, int w, QuantumReg reg){
         
 	    int i, j;
         int total;
-<span class="fc" id="L1436">        total = num_regs * w + 2;</span>
-<span class="fc" id="L1437">        j = 0;</span>
+<span class="fc" id="L1469">        total = num_regs * w + 2;</span>
+<span class="fc" id="L1470">        j = 0;</span>
 
-<span class="fc bfc" id="L1439" title="All 2 branches covered.">        if (((1&lt;&lt;(w-1)) &amp; a) != 0) {</span>
-<span class="fc" id="L1440">            j = 2;</span>
+<span class="fc bfc" id="L1472" title="All 2 branches covered.">        if (((1&lt;&lt;(w-1)) &amp; a) != 0) {</span>
+<span class="fc" id="L1473">            j = 2;</span>
         }
-<span class="fc bfc" id="L1442" title="All 2 branches covered.">        if (((1&lt;&lt;(w-1)) &amp; a_inv) != 0) {</span>
-<span class="fc" id="L1443">            j++;</span>
+<span class="fc bfc" id="L1475" title="All 2 branches covered.">        if (((1&lt;&lt;(w-1)) &amp; a_inv) != 0) {</span>
+<span class="fc" id="L1476">            j++;</span>
         }
-<span class="fc" id="L1445">        muxha_inv(j, w - 1, 2 * w - 1, 2 * w, 2 * w + 1, total, reg);</span>
+<span class="fc" id="L1478">        muxha_inv(j, w - 1, 2 * w - 1, 2 * w, 2 * w + 1, total, reg);</span>
 
-<span class="fc bfc" id="L1447" title="All 2 branches covered.">        for (i = w - 2; i &gt;= 0; i--) {</span>
-<span class="fc bfc" id="L1448" title="All 2 branches covered.">            if (((1&lt;&lt;i) &amp; a) != 0) {</span>
-<span class="fc" id="L1449">                j = 2;</span>
+<span class="fc bfc" id="L1480" title="All 2 branches covered.">        for (i = w - 2; i &gt;= 0; i--) {</span>
+<span class="fc bfc" id="L1481" title="All 2 branches covered.">            if (((1&lt;&lt;i) &amp; a) != 0) {</span>
+<span class="fc" id="L1482">                j = 2;</span>
             } else {
-<span class="fc" id="L1451">                j = 0;</span>
+<span class="fc" id="L1484">                j = 0;</span>
             }
-<span class="fc bfc" id="L1453" title="All 2 branches covered.">            if (((1&lt;&lt;i) &amp; a_inv) != 0) {</span>
-<span class="fc" id="L1454">                j++;</span>
+<span class="fc bfc" id="L1486" title="All 2 branches covered.">            if (((1&lt;&lt;i) &amp; a_inv) != 0) {</span>
+<span class="fc" id="L1487">                j++;</span>
             }
-<span class="fc" id="L1456">            muxfa_inv(j, i, w + i, w + 1 + i, 2 * w, 2 * w + 1, total, reg);</span>
+<span class="fc" id="L1489">            muxfa_inv(j, i, w + i, w + 1 + i, 2 * w, 2 * w + 1, total, reg);</span>
         }
-<span class="fc" id="L1458">    }</span>
+<span class="fc" id="L1491">    }</span>
 
-    void addn(int N, int a, int w, QuantumReg reg){
+   public void addn(int N, int a, int w, QuantumReg reg){
 
         //add a to register reg (mod N)
 
-<span class="fc" id="L1464">	    test_sum(N - a, w, reg); //xlt N-a      </span>
+<span class="fc" id="L1497">	    test_sum(N - a, w, reg); //xlt N-a      </span>
         
-<span class="fc" id="L1466">        madd((1 &lt;&lt; w) + a - N, a, w, reg);//madd 2^K+a-N</span>
-<span class="fc" id="L1467">    }</span>
+<span class="fc" id="L1499">        madd((1 &lt;&lt; w) + a - N, a, w, reg);//madd 2^K+a-N</span>
+<span class="fc" id="L1500">    }</span>
 
-    void addn_inv(int N, int a, int w, QuantumReg reg){
+   public void addn_inv(int N, int a, int w, QuantumReg reg){
 
         //inverse of add a to register reg (mod N)
 
-<span class="fc" id="L1473">        quantum_cnot(2 * w + 1, 2 * w, reg);//Attention! cnot gate instead of not, as in description</span>
-<span class="fc" id="L1474">        madd_inv((1 &lt;&lt; w) - a, N - a, w, reg);//madd 2^K+(N-a)-N = 2^K-a</span>
+<span class="fc" id="L1506">        quantum_cnot(2 * w + 1, 2 * w, reg);//Attention! cnot gate instead of not, as in description</span>
+<span class="fc" id="L1507">        madd_inv((1 &lt;&lt; w) - a, N - a, w, reg);//madd 2^K+(N-a)-N = 2^K-a</span>
 
-<span class="fc" id="L1476">        quantum_swaptheleads(w, reg);</span>
+<span class="fc" id="L1509">        quantum_swaptheleads(w, reg);</span>
 
-<span class="fc" id="L1478">        test_sum(a, w, reg);</span>
-<span class="fc" id="L1479">    }</span>
+<span class="fc" id="L1511">        test_sum(a, w, reg);</span>
+<span class="fc" id="L1512">    }</span>
 
-    void add_mod_n(int N, int a, int w, QuantumReg reg){
+   public void add_mod_n(int N, int a, int w, QuantumReg reg){
         
         //add a to register reg (mod N) and clear the scratch bits
 
-<span class="fc" id="L1485">	    addn(N, a, w, reg);</span>
+<span class="fc" id="L1518">	    addn(N, a, w, reg);</span>
  
-<span class="fc" id="L1487">        addn_inv(N, a, w, reg);</span>
-<span class="fc" id="L1488">    }</span>
+<span class="fc" id="L1520">        addn_inv(N, a, w, reg);</span>
+<span class="fc" id="L1521">    }</span>
 
     // ------- quantum fourier transform ------    
     /**
@@ -1495,39 +1528,39 @@ Quantum Error Correction.
      * 
      * runtime complexity is log2(N) * (.lt. log2(N)) * 2^(log2(N))
      */
-    void quantum_qft(int w, QuantumReg reg) {
+   public void quantum_qft(int w, QuantumReg reg) {
         
         int i, j;
 
-<span class="fc" id="L1502">        System.out.format(&quot; quantum_qft nloop=%d\n&quot;, w);</span>
+<span class="fc" id="L1535">        System.out.format(&quot; quantum_qft nloop=%d\n&quot;, w);</span>
         
         //log2(N) * (&lt; log2(N)) * 2^(log2(N))
         
         //2^(log2(N))
-<span class="fc bfc" id="L1507" title="All 2 branches covered.">        for (i = w - 1; i &gt;= 0; i--) {</span>
-<span class="pc bpc" id="L1508" title="1 of 2 branches missed.">            for (j = w - 1; j &gt; i; j--) {</span>
-<span class="nc" id="L1509">                quantum_cond_phase(j, i, reg);</span>
+<span class="fc bfc" id="L1540" title="All 2 branches covered.">        for (i = w - 1; i &gt;= 0; i--) {</span>
+<span class="pc bpc" id="L1541" title="1 of 2 branches missed.">            for (j = w - 1; j &gt; i; j--) {</span>
+<span class="nc" id="L1542">                quantum_cond_phase(j, i, reg);</span>
             }
 
-<span class="fc" id="L1512">            System.out.format(&quot; ..%d&quot;, i);</span>
+<span class="fc" id="L1545">            System.out.format(&quot; ..%d&quot;, i);</span>
 
             //O(2^(log2(N)))
-<span class="fc" id="L1515">            quantum_hadamard(i, reg);</span>
+<span class="fc" id="L1548">            quantum_hadamard(i, reg);</span>
         }
-<span class="fc" id="L1517">        System.out.format(&quot;\n&quot;);        </span>
-<span class="fc" id="L1518">    }</span>
+<span class="fc" id="L1550">        System.out.format(&quot;\n&quot;);        </span>
+<span class="fc" id="L1551">    }</span>
 
-    void quantum_qft_inv(int w, QuantumReg reg) {
+   public void quantum_qft_inv(int w, QuantumReg reg) {
   
         int i, j;
 
-<span class="nc bnc" id="L1524" title="All 2 branches missed.">        for (i = 0; i &lt; w; i++) {</span>
-<span class="nc" id="L1525">            quantum_hadamard(i, reg);</span>
-<span class="nc bnc" id="L1526" title="All 2 branches missed.">            for (j = i + 1; j &lt; w; j++) {</span>
-<span class="nc" id="L1527">                quantum_cond_phase_inv(j, i, reg);</span>
+<span class="nc bnc" id="L1557" title="All 2 branches missed.">        for (i = 0; i &lt; w; i++) {</span>
+<span class="nc" id="L1558">            quantum_hadamard(i, reg);</span>
+<span class="nc bnc" id="L1559" title="All 2 branches missed.">            for (j = i + 1; j &lt; w; j++) {</span>
+<span class="nc" id="L1560">                quantum_cond_phase_inv(j, i, reg);</span>
             }
         }
-<span class="nc" id="L1530">    }</span>
+<span class="nc" id="L1563">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

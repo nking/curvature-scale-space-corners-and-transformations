@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Min.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.quantum</a> &gt; <span class="el_source">Min.java</span></div><h1>Min.java</h1><pre class="source lang-java linenums">package algorithms.quantum;
+
+import algorithms.misc.Misc;
+import java.util.Random;
+import thirdparty.libquantum.Grover;
+import thirdparty.libquantum.Measure;
+import thirdparty.libquantum.QuReg;
+import thirdparty.libquantum.QuantumReg;
+
+/**
+ * implementation of
+ * &quot;A quantum algorithm for finding the minimum&quot;
+ * by Durr and Hoyer
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L17">public class Min {</span>
+    
+    /**
+     * find the index y such that list[y] is minimum.
+     * 
+     * 
+     * NOTE that the largest number in the list must be
+     * .lte. integer.max_value - 2^width.
+     * @param width largest bit length to use the register.
+     * It should be the bit length of the largest expected number then add 1.
+     * NOTE that width must be .gte. 2.
+     * @param list a list of unordered numbers to search for number within
+     * @return 
+     */
+    public int run(int width, int[] list) {
+
+        int i;
+        
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (width &lt; 2) {</span>
+<span class="nc" id="L36">            width = 2;</span>
+        }
+
+<span class="fc" id="L39">        System.out.format(&quot;list.length=%d, width=%d\n&quot;, list.length, width);</span>
+        
+<span class="fc" id="L41">        double limit = 22.5 * Math.sqrt(list.length) + </span>
+<span class="fc" id="L42">            1.4 * Math.log(Math.log(list.length));</span>
+        
+        /*
+        find the index y such that T[y] is minimum.
+        
+        let N = T.length;
+        
+        (1) Choose threshold index 0 &lt;= y &lt;= N−1 uniformly at random
+        (2) Repeat the following and interrupt it when the
+            total running time is more than the limit.
+            Mark every item T[j] &lt; T[y]
+            Then go to stage 2(2c)
+          (a) initialize the memory as
+              summation over j of (1/sqrt(N)) * |j&gt;|y&gt;
+              where j are the indexes where T is &lt; T[y]
+          (b) apply Grover's quantum algorithm
+          (c) observe the first register:
+                let y' be the outcome. If T[y'] &lt; T[y], then set threshold
+                index y to y'
+        (3) return y
+        */
+
+<span class="fc" id="L64">        QuReg qureg = new QuReg();</span>
+
+<span class="fc" id="L66">        Grover grover = new Grover();</span>
+        
+<span class="fc" id="L68">        Random rng = Misc.getSecureRandom();</span>
+        
+<span class="fc" id="L70">        Measure measure = new Measure();</span>
+        
+        QuantumReg reg;
+        
+        //a reverse hash to lookup index when given value.
+<span class="fc" id="L75">        int[] hash = createHash(list);</span>
+        
+<span class="fc" id="L77">        int y = rng.nextInt(list.length);</span>
+        
+<span class="fc" id="L79">        int[] filtered = filter(list, y);</span>
+        
+        int srch, y2;
+        int[] hash2;
+        
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        for (int nIter = 0; nIter &lt; limit; ++nIter) {</span>
+           
+<span class="fc" id="L86">            System.out.println(&quot;current minIdx=&quot; + y);</span>
+            
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (filtered.length == 0) {</span>
+<span class="fc" id="L89">                break;</span>
+            }
+            
+<span class="fc" id="L92">            reg = grover.initializeRegister(qureg, filtered, width);</span>
+        
+            /*
+            choose srch uniformly at random among the nonnegative
+                integers smaller than list[y].
+            */
+<span class="fc" id="L98">            srch = filtered[rng.nextInt(filtered.length)];</span>
+            
+<span class="fc" id="L100">            grover.processInitialized(srch, reg, rng);</span>
+       
+            //DEBUG
+<span class="fc" id="L103">            System.out.format(&quot;AFTER process  reg.size=%d\n&quot;, reg.size);</span>
+<span class="fc" id="L104">            qureg.quantum_print_qureg(reg);</span>
+
+<span class="fc" id="L106">            measure.quantum_bmeasure(0, reg, rng);</span>
+            
+            //DEBUG
+<span class="fc" id="L109">            System.out.format(&quot;AFTER measure  reg.size=%d\n&quot;, reg.size);</span>
+<span class="fc" id="L110">            qureg.quantum_print_qureg(reg);</span>
+
+<span class="fc" id="L112">            int v = (int)reg.node[0].state;</span>
+        
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">            if (v &lt; list[y]) {</span>
+<span class="nc" id="L115">                y = getIndex(list, v, hash);</span>
+            }
+            //TODO: check this.
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            if (srch &lt; list[y]) {</span>
+<span class="fc" id="L119">                y = getIndex(list, srch, hash);</span>
+            }
+            
+<span class="fc" id="L122">            hash2 = createHash(filtered);</span>
+<span class="fc" id="L123">            y2 = getIndex(filtered, list[y], hash2);</span>
+<span class="fc" id="L124">            filtered = filter(filtered, y2);</span>
+                   
+        }
+        
+<span class="fc" id="L128">        return y;</span>
+    }
+    
+    /**
+     * get index of list from value using the hash.
+     * 
+     * This method is based upon a method from the libquantum library 
+     * file qureg.c which has copyright:
+     
+       Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+       This file is part of libquantum
+
+       libquantum is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published
+       by the Free Software Foundation; either version 3 of the License,
+       or (at your option) any later version.
+
+       libquantum is distributed in the hope that it will be useful, but
+       WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with libquantum; if not, write to the Free Software
+       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+       MA 02110-1301, USA
+     * 
+     * 
+     * @param list
+     * @param value
+     * @param hash 
+     * @return index of list where value is stored
+     */
+    private int getIndex(final int[] list, final int value, int[] hash) {
+        
+<span class="fc" id="L164">        int i, mark = 0;</span>
+
+<span class="fc" id="L166">        i = hashToIndex(value, list.length);</span>
+        
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        while (hash[i] != 0) {</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">            if (list[hash[i] - 1] == value) {</span>
+<span class="fc" id="L170">                return hash[i] - 1;</span>
+            }
+<span class="nc" id="L172">            i++;</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">            if (i == list.length) {</span>
+<span class="nc" id="L174">                i = 0;</span>
+            }
+        }
+
+<span class="nc" id="L178">        return -1;</span>
+    }
+    
+    /**
+     * set list[idx] into hash.
+     * 
+     * This method is based upon a method from the libquantum library 
+     * file qureg.c which has copyright:
+     
+       Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+       This file is part of libquantum
+
+       libquantum is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published
+       by the Free Software Foundation; either version 3 of the License,
+       or (at your option) any later version.
+
+       libquantum is distributed in the hope that it will be useful, but
+       WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with libquantum; if not, write to the Free Software
+       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+       MA 02110-1301, USA
+     * 
+     * @param list
+     * @param idx
+     * @param hash
+     * @return index of hash where list[idx] was stored
+     */
+    private int setValue(final int[] list, final int idx, int[] hash) {
+        
+<span class="fc" id="L213">        int i, mark = 0;</span>
+
+<span class="fc" id="L215">        i = hashToIndex(list[idx], list.length);</span>
+        
+<span class="fc" id="L217">        int end = list.length;</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        while (hash[i] != 0) {</span>
+<span class="fc" id="L219">            i++;</span>
+            // if i is &gt; last index
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">            if (i == end) {</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">                if (mark == 0) {</span>
+<span class="nc" id="L223">                    i = 0;</span>
+<span class="nc" id="L224">                    mark = 1;</span>
+                } else {
+<span class="nc" id="L226">                    StackTraceElement[] st = Thread.currentThread().getStackTrace();</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">                    for (StackTraceElement s : st) {</span>
+<span class="nc" id="L228">                        System.out.println(s);</span>
+                    }
+<span class="nc" id="L230">                    throw new IllegalStateException(&quot;hash is full.  i=&quot; + i + </span>
+                         &quot; hash.lrngth=&quot; + end);
+                }
+            }
+        }
+        
+<span class="fc" id="L236">        hash[i] = idx + 1;     </span>
+
+<span class="fc" id="L238">        return i;</span>
+    }
+    
+    private int[] createHash(int[] list) {
+        
+<span class="fc" id="L243">        int[] hash = new int[list.length];</span>
+        
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        for (int i = 0; i &lt; list.length; ++i) {</span>
+<span class="fc" id="L246">            int hIdx = setValue(list, i, hash);</span>
+        }
+
+<span class="fc" id="L249">        return hash;        </span>
+    }
+
+    private int[] filter(int[] list, int threshIdx) {
+         
+<span class="fc" id="L254">        int[] m = new int[list.length];</span>
+        
+<span class="fc" id="L256">        int c = list[threshIdx];</span>
+        
+        int i;
+<span class="fc" id="L259">        int j = 0;</span>
+                
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        for (i = 0; i &lt; list.length; ++i) {</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">            if (list[i] &lt; c) {</span>
+<span class="fc" id="L263">                m[i] = list[i];</span>
+<span class="fc" id="L264">                ++j;</span>
+            }
+        }
+        
+<span class="fc" id="L268">        int[] out = new int[j];</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">        for (i = 0; i &lt; j; ++i) {</span>
+<span class="fc" id="L270">            out[i] = m[i];</span>
+        }
+        
+<span class="fc" id="L273">        return out;</span>
+    }
+
+    /**
+     * return an index for the given value
+     * 
+     * @param value
+     * @param length size of the container in which the result is an index in
+     * @return 
+     */
+    protected int hashToIndex(int value, int length) {
+       
+        //TODO: replace the hash function with a method local to this class
+<span class="fc" id="L286">        return (Integer.valueOf(value).hashCode() &amp; 0x7fffffff) % length;</span>
+    }
+ 
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
