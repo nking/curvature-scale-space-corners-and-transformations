@@ -41,7 +41,7 @@ public class GroverTest extends TestCase {
         Grover grover = new Grover();
             
         int[] list = new int[]{0,1,2,3,4,5,6,7};
-        grover.run(number, list);
+        grover.run(number, nbits, list);
           
     }
     

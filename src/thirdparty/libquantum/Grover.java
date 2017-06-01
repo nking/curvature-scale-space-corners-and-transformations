@@ -360,10 +360,18 @@ public class Grover {
     }
     
     // ---- adding ability to find number within a list of numbers ----
+    
     /**
-     * runtime complexity is O(reg.size * reg.width) * nLoop
+     * runtime complexity for the search 
+     * is O(reg.size * reg.width) * nLoop
+     * (the preparation of the list, O(N), is ignored just as in the
+     * enumerated run method).
+     * NOTE that the width should be set to the most number of bits needed
+     * for any number in list. 
+     * NOTE also that the largest number in the list must be
+     * .lte. integer.max_value - 2^width.
      */
-    public int run(int number, int[] list) {
+    public int run(int number, int width, int[] list) {
 
         int i;
 
@@ -373,7 +381,10 @@ public class Grover {
 
         Gates gates = new Gates(rng);
 
-        int width = MiscMath.numberOfBits(N + 1);
+        int tmp = MiscMath.numberOfBits(N + 1);
+        if (width < tmp) {
+            width = tmp;
+        }
         if (width < 2) {
             width = 2;
         }
@@ -409,8 +420,6 @@ public class Grover {
         //  the extra set of nodes has state that is identical
         //  to first set except that it begins at 1<<width
         //  so it is shifted by width
-        //TODO: add to method comment the limits of values in the
-        //    list to avoid integer overflow
         int idx = list.length;
         int offset = 1 << width;
         
