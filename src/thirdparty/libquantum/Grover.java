@@ -244,6 +244,12 @@ public class Grover {
     }
 
     /** runtime complexity is O(reg.size * reg.width) * nLoop
+       (the runtime complexity of the preparation of the register 
+     * is ignored.  it is O(2^width)).
+     * Note that nLoop is (Math.PI / 4) * Math.sqrt(2^width)
+     * where width is (the bit length of number) + 1
+     * 
+     * @param number
     */
     public int run(int number) {
 
@@ -253,7 +259,15 @@ public class Grover {
     }
 
     /**
-     * runtime complexity is O(reg.size * reg.width) * nLoop
+     * runtime complexity is O(reg.size * reg.width) * nLoop.
+     * Note that nLoop is (Math.PI / 4) * Math.sqrt(2^width).
+     * (the runtime complexity of the preparation of the register 
+     * is ignored.  it is O(2^width)).
+     * 
+     * @param number
+     * @param width largest bit length to use in enumeration.
+     * NOTE that if it is less than the bitlength of number + 1,
+     * it will be increased to that.
      */
     public int run(int number, int width) {
 
@@ -364,8 +378,9 @@ public class Grover {
     /**
      * runtime complexity for the search 
      * is O(reg.size * reg.width) * nLoop
-     * (the preparation of the list, O(N), is ignored just as in the
-     * enumerated run method).
+     * (the runtime complexity of the preparation of the register for the list, 
+     * O(N), 
+     * is ignored just as in the enumerated run method).
      * NOTE that the width should be set to the most number of bits needed
      * for any number in list. 
      * NOTE also that the largest number in the list must be
