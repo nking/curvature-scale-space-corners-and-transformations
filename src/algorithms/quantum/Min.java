@@ -17,9 +17,15 @@ import thirdparty.libquantum.QuantumReg;
 public class Min {
     
     /**
-     * find the index y such that list[y] is minimum.
-     * 
-     * 
+      find the index y such that list[y] is minimum.
+       
+      runtime complexity is roughly
+          (22.5 * Math.sqrt(list.length) + 
+          1.4 * Math.log(Math.log(list.length)))
+          times O(grover + list_filtering)
+           
+      where O(Grover) is O((2^width) * width).
+     
      * NOTE that the largest number in the list must be
      * .lte. integer.max_value - 2^width.
      * @param width largest bit length to use the register.
@@ -100,14 +106,14 @@ public class Min {
             grover.processInitialized(srch, reg, rng);
        
             //DEBUG
-            System.out.format("AFTER process  reg.size=%d\n", reg.size);
-            qureg.quantum_print_qureg(reg);
+            //System.out.format("AFTER process  reg.size=%d\n", reg.size);
+            //qureg.quantum_print_qureg(reg);
 
             measure.quantum_bmeasure(0, reg, rng);
             
             //DEBUG
-            System.out.format("AFTER measure  reg.size=%d\n", reg.size);
-            qureg.quantum_print_qureg(reg);
+            //System.out.format("AFTER measure  reg.size=%d\n", reg.size);
+            //qureg.quantum_print_qureg(reg);
 
             int v = (int)reg.node[0].state;
         
@@ -284,38 +290,6 @@ public class Min {
        
         return fnvRetry(value, length);
     }
-    
-    //protected static int fnv321aInit = 0x811c9dc5;
-    //protected static int fnv32Prime = 0x01000193;
-
-    /**
-     * adapted fnv-32a hash
-     * 
-     * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
-     * 
-     * @param value
-     * @param length
-     * @return 
-     */
-    /*
-    protected int fnv(int value, int length) {
-
-        int hash = fnv321aInit;
-
-        // xor the bottom with the current octet.
-        hash ^= value;
-
-        // multiply by the 32 bit FNV magic prime mod 2^32
-        hash *= fnv32Prime;
-        
-        //NOTE: forcing positive for use case
-        hash = (hash ^ (hash >> 31)) + (hash >>> 31);
-        
-        hash %= length;
-        
-        return hash;
-    }
-    */
     
     protected int fnvRetry(int value, int length) {
         

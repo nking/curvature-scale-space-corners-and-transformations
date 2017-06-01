@@ -3,7 +3,6 @@ package thirdparty.libquantum;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import java.util.Random;
-import java.util.logging.Logger;
 
 /* grover.c: Implementation of Grover's search algorithm
 
@@ -204,9 +203,9 @@ public class Grover {
         oracle(target, reg, gates);
 
         //DEBUG
-        System.out.format("AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
-            target, reg.size, 1 << reg.hashw);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
+        //    target, reg.size, 1 << reg.hashw);
+        //qureg.quantum_print_qureg(reg);
 
 
         //   H⊗n   |2|0^n> -I_n|  H⊗n
@@ -218,18 +217,18 @@ public class Grover {
 
 
         //DEBUG
-        System.out.format("AFTER hadamard target=%d hadamard reg.size=%d\n", 
-            target, reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER hadamard target=%d hadamard reg.size=%d\n", 
+        //    target, reg.size);
+        //qureg.quantum_print_qureg(reg);
 
 
         inversion(reg, gates);
 
 
         //DEBUG
-        System.out.format("AFTER target=%d inversion reg.size=%d\n", 
-            target, reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER target=%d inversion reg.size=%d\n", 
+        //    target, reg.size);
+        //qureg.quantum_print_qureg(reg);
 
 
         for (i = 0; i < reg.width; i++) {
@@ -238,9 +237,9 @@ public class Grover {
 
 
         //DEBUG
-        System.out.format("AFTER target=%d 2nd hadamard  reg.size=%d\n", 
-            target, reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER target=%d 2nd hadamard  reg.size=%d\n", 
+        //    target, reg.size);
+        //qureg.quantum_print_qureg(reg);
     }
 
     /** runtime complexity is O(reg.size * reg.width) * nLoop
@@ -297,17 +296,17 @@ public class Grover {
         QuantumReg reg = qureg.quantum_new_qureg(0, width);
 
         //DEBUG
-        System.out.format("AFTER construction  reg.size=%d hash.length=%d\n", 
-            reg.size, 1 << reg.hashw);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER construction  reg.size=%d hash.length=%d\n", 
+        //    reg.size, 1 << reg.hashw);
+        //qureg.quantum_print_qureg(reg);
 
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
         gates.quantum_sigma_x(reg.width, reg);
 
         //DEBUG
-        System.out.format("AFTER sigma_x  reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER sigma_x  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
 
         //runtime complexity is O(reg.size * reg.width)
         for (i = 0; i < reg.width; i++) {
@@ -319,9 +318,9 @@ public class Grover {
         gates.quantum_hadamard(reg.width, reg);
 
         //DEBUG
-        System.out.format("AFTER 1st hadamard gates  reg.size=%d hash.length=%d\n", 
-            reg.size, 1 << reg.hashw);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER 1st hadamard gates  reg.size=%d hash.length=%d\n", 
+        //    reg.size, 1 << reg.hashw);
+        //qureg.quantum_print_qureg(reg);
 
         // upper limit to number of iterations from:
         //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
@@ -339,16 +338,16 @@ public class Grover {
 
 
         //DEBUG
-        System.out.format("AFTER grover  reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER grover  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
 
 
         gates.quantum_hadamard(reg.width, reg);
 
 
         //DEBUG
-        System.out.format("AFTER last hadamard  reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER last hadamard  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
 
 
         reg.width++;
@@ -524,8 +523,8 @@ public class Grover {
         QuReg qureg = new QuReg();
         
         //DEBUG
-        System.out.format("AFTER construction  reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER construction  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
 
         // upper limit to number of iterations from:
         //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
@@ -548,16 +547,16 @@ public class Grover {
 
 
         //DEBUG
-        System.out.format("AFTER grover  reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER grover  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
 
 
         gates.quantum_hadamard(reg.width, reg);
 
 
         //DEBUG
-        System.out.format("AFTER last hadamard  reg.size=%d\n", reg.size);
-        qureg.quantum_print_qureg(reg);
+        //System.out.format("AFTER last hadamard  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
 
         return 0;
     }
