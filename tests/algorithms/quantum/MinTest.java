@@ -21,13 +21,13 @@ public class MinTest extends TestCase {
     public MinTest() {
     }
     
-    public void estFnvRetry() {
+    public void testHashCode() {
         
         int length = 100000;//256;
         
         int n = 1000000;
         
-        TIntObjectMap<TIntSet> idxVMap = new TIntObjectHashMap<TIntSet>();
+        TIntObjectMap<TIntSet> idxVMap = new TIntObjectHashMap<TIntSet>(length);
         
         Min min = new Min();
         
@@ -50,14 +50,12 @@ public class MinTest extends TestCase {
             }
             set.add(v);
         }
-        
-        double max = 0.1 * n;
-        
+                
         System.out.println("nCollisons=" + nCollisions 
             + " idxs.size=" + idxVMap.size() + " nC/N=" 
             + ((double)nCollisions/n));
         
-        //assertTrue(nCollisions < max);
+        assertTrue(idxVMap.size() > 0.9*length);
     }
     
     public void testRun() {

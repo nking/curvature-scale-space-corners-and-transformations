@@ -282,8 +282,83 @@ public class Min {
      */
     protected int hashToIndex(int value, int length) {
        
-        //TODO: replace the hash function with a method local to this class
-        return (Integer.valueOf(value).hashCode() & 0x7fffffff) % length;
+        return fnvRetry(value, length);
     }
- 
+    
+    //protected static int fnv321aInit = 0x811c9dc5;
+    //protected static int fnv32Prime = 0x01000193;
+
+    /**
+     * adapted fnv-32a hash
+     * 
+     * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+     * 
+     * @param value
+     * @param length
+     * @return 
+     */
+    /*
+    protected int fnv(int value, int length) {
+
+        int hash = fnv321aInit;
+
+        // xor the bottom with the current octet.
+        hash ^= value;
+
+        // multiply by the 32 bit FNV magic prime mod 2^32
+        hash *= fnv32Prime;
+        
+        //NOTE: forcing positive for use case
+        hash = (hash ^ (hash >> 31)) + (hash >>> 31);
+        
+        hash %= length;
+        
+        return hash;
+    }
+    */
+    
+    protected int fnvRetry(int value, int length) {
+        
+        // http://www.isthe.com/chongo/tech/comp/fnv/index.html#lazy-mod
+        
+        //#define TRUE_HASH_SIZE ((u_int32_t)50000) /* range top plus 1
+        int FNV_32_PRIME = 16777619;
+        //int FNV1_32_INIT = 2166136261;
+        int FNV1_32_INIT = 1083068130; // which is 2166136261 >> 1
+        //#define MAX_32BIT ((u_int32_t)0xffffffff) /* largest 32 bit unsigned value
+        //#define RETRY_LEVEL ((MAX_32BIT / TRUE_HASH_SIZE) * TRUE_HASH_SIZE)
+        int RETRY_LEVEL = (Integer.MAX_VALUE/length) * length;
+        
+        int hash = fnv_31(value, FNV1_32_INIT);
+        //System.out.println("hash=" + hash);
+        while (hash >= RETRY_LEVEL) {
+            hash = (hash * FNV_32_PRIME) + FNV1_32_INIT;
+            //System.out.println("  hash=" + hash);
+        }
+        
+        //NOTE: forcing positive for use case
+        hash = (hash ^ (hash >> 31)) + (hash >>> 31);
+        
+        hash %= length;
+        
+        return hash;
+    }
+
+    private int fnv_31(int value, int FNV1_31_INIT) {
+
+        //http://www.isthe.com/chongo/src/fnv/hash_32.c
+       
+        int hval = FNV1_31_INIT;
+        
+        //multiply by the 32 bit FNV magic prime mod 2^32
+        //if no opt: hval *= 0x01000193;//FNV_32_PRIME;
+        //else:
+        hval += (hval<<1) + (hval<<4) + (hval<<7) 
+            + (hval<<8) + (hval<<24);
+
+	    // xor the bottom with the current octet
+	    hval ^= value;
+  
+        return hval;
+    }
 }
