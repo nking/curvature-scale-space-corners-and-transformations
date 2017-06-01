@@ -2,15 +2,7 @@ considering algorithms to implement:
    0: looking at bayesian optimization
    1: hybrid 
          as Tabu and Scatter
-   2: quantum random walk ?
-      impl following farhi et al.:
-         https://arxiv.org/pdf/0909.4766.pdf
-   4: monte carlo ?
-      QMC:
-         https://github.com/ezrasavard/qmc
-         https://github.com/hadsed/pathintegral-qmc
-         http://publications.lib.chalmers.se/records/fulltext/211259/211259.pdf
-      Metropolis:
+   2: Metropolis:
          http://introcs.cs.princeton.edu/java/98simulation/Metropolis.java.html
       http://introcs.cs.princeton.edu/java/98simulation/MarkovChain.java.html
       http://web.engr.illinois.edu/~bkclark/PIMCTutorial/tutorial.pdf

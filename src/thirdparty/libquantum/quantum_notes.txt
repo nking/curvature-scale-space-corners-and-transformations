@@ -369,3 +369,10 @@ the algorithm outline is:
           
     - "Quantum speed-up for unsupervised learning"
            by Aïmeur, Brassard, and Gambs 
+   ---------------
+    QMC:
+         https://arxiv.org/pdf/0909.4766.pdf
+         https://github.com/ezrasavard/qmc
+         https://github.com/hadsed/pathintegral-qmc
+         http://publications.lib.chalmers.se/records/fulltext/211259/211259.pdf
+

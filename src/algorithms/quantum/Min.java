@@ -171,7 +171,7 @@ public class Min {
 
         i = hashToIndex(value, list.length);
         
-        while (hash[i] != 0) {
+        while (hash[i] != -1) {
             if (list[hash[i] - 1] == value) {
                 return hash[i] - 1;
             }
@@ -221,7 +221,7 @@ public class Min {
         i = hashToIndex(list[idx], list.length);
         
         int end = list.length;
-        while (hash[i] != 0) {
+        while (hash[i] != -1) {
             i++;
             // if i is > last index
             if (i == end) {
@@ -247,6 +247,9 @@ public class Min {
     private int[] createHash(int[] list) {
         
         int[] hash = new int[list.length];
+        for (int i = 0; i < list.length; ++i) {
+            hash[i] = -1;
+        }
         
         for (int i = 0; i < list.length; ++i) {
             int hIdx = setValue(list, i, hash);
