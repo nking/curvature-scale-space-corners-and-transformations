@@ -4,7 +4,15 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import java.util.Random;
 
-/* grover.c: Implementation of Grover's search algorithm
+/* 
+An implementation of the grover search algorithm, 
+ported here to java from the libquantum file grover.c.
+The method calls have been adapted for re-use by
+other algorithms and methods to accept a list of
+numbers have been created.
+
+The file grover.c has copyright:
+Implementation of Grover's search algorithm
 
   Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
