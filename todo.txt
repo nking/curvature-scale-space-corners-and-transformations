@@ -1,20 +1,23 @@
-(1) healthy topics to impl at some point, probably now:
-   the PIM code is solving graph and path problems
-   -- maximal cliques and cover sets w/ SAT and/or QSO/SA
-   -- a little more about MCMC
--- looking at PIMC:
-    http://web.engr.illinois.edu/~bkclark/PIMCTutorial/tutorial.pdf
-   - Three examples of MCMC techniques include the 
-        Metropolis-Hastings algorithm, 
-        Simulated Annealing for global optimization, and the 
-        Gibbs sampler
+considering algorithms to implement:
+   0: looking at bayesian optimization
+   1: hybrid 
+         as Tabu and Scatter
+   2: quantum random walk ?
+      impl following farhi et al.:
+         https://arxiv.org/pdf/0909.4766.pdf
+   4: monte carlo ?
+      QMC:
+         https://github.com/ezrasavard/qmc
+         https://github.com/hadsed/pathintegral-qmc
+         http://publications.lib.chalmers.se/records/fulltext/211259/211259.pdf
+      Metropolis:
+         http://introcs.cs.princeton.edu/java/98simulation/Metropolis.java.html
+      http://introcs.cs.princeton.edu/java/98simulation/MarkovChain.java.html
+      http://web.engr.illinois.edu/~bkclark/PIMCTutorial/tutorial.pdf
+        https://arxiv.org/pdf/quant-ph/9607014.pdf
 
-
--- global search:
-   bayesian optimization.
-   see code listing section at:
-    http://www.cleveralgorithms.com/nature-inspired/probabilistic/boa.html
-   see https://github.com/fmfn/BayesianOptimization/blob/master/examples/usage.py
+consider pso:
+     https://github.com/CAChemE/stochastic-optimization
 
 (1) reading bishop 2006
     and looking at
@@ -23,7 +26,6 @@
     -- Conditional Random Fields
 
 (2) read the remote s ensing paper
-
 
 -- revisit the two-point correlation project to make improvements:
     -- use a disjoint forest in assigning points to clusters.
@@ -104,6 +106,8 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- finish the special topics reading
    -- add to it "Mastering the game of Go with 
       deep neural networks and tree search"
+2  --  https://openproceedings.org/2016/conf/edbt/paper-54.pdf
+   -- https://link.springer.com/chapter/10.1007%2F978-3-642-21887-3_28?LI=true
 
 -- no priority:
    for jni bindings of the c++ dlib library, would like to automate
