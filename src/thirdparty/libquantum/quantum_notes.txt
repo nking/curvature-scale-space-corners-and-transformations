@@ -375,4 +375,7 @@ the algorithm outline is:
          https://github.com/ezrasavard/qmc
          https://github.com/hadsed/pathintegral-qmc
          http://publications.lib.chalmers.se/records/fulltext/211259/211259.pdf
-
+   ------
+      http://www.illc.uva.nl/Research/Publications/Reports/MoL-2006-06.text.pdf
+   ------
+     http://fab.cba.mit.edu/classes/862.16/notes/computation/Barenco-1995.pdf

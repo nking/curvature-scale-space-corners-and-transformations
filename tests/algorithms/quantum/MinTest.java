@@ -6,7 +6,6 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.Random;
-import thirdparty.libquantum.*;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 

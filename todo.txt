@@ -2,6 +2,8 @@ considering algorithms to implement:
    0: looking at bayesian optimization
    1: hybrid 
          as Tabu and Scatter
+         related, but not TS+SS:
+              Addis and Leyffer (2006) 
    2: Metropolis:
          http://introcs.cs.princeton.edu/java/98simulation/Metropolis.java.html
       http://introcs.cs.princeton.edu/java/98simulation/MarkovChain.java.html
