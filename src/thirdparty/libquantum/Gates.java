@@ -58,7 +58,10 @@ public class Gates {
     }
     
     /**
-     * Apply a controlled-not gate
+     * Apply a controlled-not gate.
+     * for each reg.state, 
+          Flip the target bit of a basis state if 
+          the control bit is set 
      */
    public void quantum_cnot(int control, int target, QuantumReg reg) {
   

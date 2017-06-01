@@ -238,7 +238,7 @@ public class QuReg {
 
     /**
      * Returns an empty quantum register of size N
-     * with instantiated nodes.
+     * with instantiated nodes and hash.
      */
     public QuantumReg quantum_new_qureg_size(int n, int w) {
         
@@ -246,8 +246,6 @@ public class QuReg {
 
         reg.width = w;
         reg.size = n;
-        reg.hashw = 0;
-        reg.hash = null;
 
         // Allocate memory for n basis states 
         reg.node = new QuantumRegNode[n];
@@ -256,6 +254,12 @@ public class QuReg {
             reg.node[ii].state = 0;
             reg.node[ii].amplitude = new ComplexModifiable(0, 0);
         }
+        
+        reg.hashw = w + 2;
+        
+        // Allocate the hash table 
+        int nHash = 1 << reg.hashw;
+        reg.hash = new int[nHash];
         
         return reg;
     }

@@ -147,32 +147,44 @@ public class Grover {
         for (i = 0; i < reg.width; i++) {
             gates.quantum_sigma_x(i, reg);
         }
-
+       
         gates.quantum_hadamard(reg.width - 1, reg);
 
         if (reg.width == 3) {
+        
             gates.quantum_toffoli(0, 1, 2, reg);
+        
         } else {
+            
+            //If bits 0 and 1 are set, it flips the target bit.
             gates.quantum_toffoli(0, 1, reg.width + 1, reg);
 
             for (i = 1; i < reg.width - 1; i++) {
+                //If bits i and reg.width+i are set, it flips the target bit.
                 gates.quantum_toffoli(i, reg.width + i, reg.width + i + 1, reg);
             }
 
+            //for each reg.state, 
+            //   Flip the target bit of a basis state if 
+            //   the control bit is set
             gates.quantum_cnot(reg.width + i, reg.width - 1, reg);
 
             for (i = reg.width - 2; i > 0; i--) {
+                //If bits i and reg.width+i are set, it flips the target bit.
                 gates.quantum_toffoli(i, reg.width + i, reg.width + i + 1, reg);
             }
 
+            //If bits 0 and 1 are set, it flips the target bit.
             gates.quantum_toffoli(0, 1, reg.width + 1, reg);
         }
 
         gates.quantum_hadamard(reg.width - 1, reg);
-
+        
+        //Flip the target bit of each basis state, i
         for (i = 0; i < reg.width; i++) {
             gates.quantum_sigma_x(i, reg);
         }
+        
     }
 
     /**
@@ -192,8 +204,8 @@ public class Grover {
         oracle(target, reg, gates);
 
         //DEBUG
-        System.out.format("AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", target, 
-            reg.size, 1 << reg.hashw);
+        System.out.format("AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
+            target, reg.size, 1 << reg.hashw);
         qureg.quantum_print_qureg(reg);
 
 
@@ -206,7 +218,7 @@ public class Grover {
 
 
         //DEBUG
-        System.out.format("AFTER target=%d grove hadamard reg.size=%d\n", 
+        System.out.format("AFTER hadamard target=%d hadamard reg.size=%d\n", 
             target, reg.size);
         qureg.quantum_print_qureg(reg);
 
@@ -269,12 +281,17 @@ public class Grover {
         QuantumReg reg = qureg.quantum_new_qureg(0, width);
 
         //DEBUG
-        System.out.format("AFTER construction  reg.size=%d\n", reg.size);
+        System.out.format("AFTER construction  reg.size=%d hash.length=%d\n", 
+            reg.size, 1 << reg.hashw);
         qureg.quantum_print_qureg(reg);
 
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
         gates.quantum_sigma_x(reg.width, reg);
+
+        //DEBUG
+        System.out.format("AFTER sigma_x  reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
 
         //runtime complexity is O(reg.size * reg.width)
         for (i = 0; i < reg.width; i++) {
@@ -286,9 +303,136 @@ public class Grover {
         gates.quantum_hadamard(reg.width, reg);
 
         //DEBUG
-        System.out.format("AFTER 1st hadamard gates  reg.size=%d\n", reg.size);
+        System.out.format("AFTER 1st hadamard gates  reg.size=%d hash.length=%d\n", 
+            reg.size, 1 << reg.hashw);
         qureg.quantum_print_qureg(reg);
 
+        // upper limit to number of iterations from:
+        //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
+        int end = (int) (Math.PI / 4 * Math.sqrt(1 << reg.width));
+
+        System.out.format("Iterating %d times\n", end);
+
+        //runtime complexity is O(reg.size * reg.width) * nLoop
+        for (i = 1; i <= end; i++) {
+            
+            System.out.format("Iteration #%d\n", i);
+            
+            grover(N, reg, gates, qureg);
+        }
+
+
+        //DEBUG
+        System.out.format("AFTER grover  reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+
+
+        gates.quantum_hadamard(reg.width, reg);
+
+
+        //DEBUG
+        System.out.format("AFTER last hadamard  reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+
+
+        reg.width++;
+
+        Measure measure = new Measure();
+
+        // runtime complexity is O(reg.size)
+        measure.quantum_bmeasure(reg.width - 1, reg, rng);
+
+
+        //DEBUG
+        System.out.format("AFTER bmeasure reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+
+
+        for (i = 0; i < reg.size; i++) {
+            if (reg.node[i].state == N) {
+                System.out.format(
+                    "\nFound %d with a probability of %f\n\n", N,
+                    reg.node[i].amplitude.squareSum());
+            }
+        }
+
+        return 0;
+    }
+    
+    // ---- adding ability to find number within a list of numbers ----
+    /**
+     * runtime complexity is O(reg.size * reg.width) * nLoop
+     */
+    public int run(int number, int[] list) {
+
+        int i;
+
+        final int N = number;
+
+        Random rng = Misc.getSecureRandom();
+
+        Gates gates = new Gates(rng);
+
+        int width = MiscMath.numberOfBits(N + 1);
+        if (width < 2) {
+            width = 2;
+        }
+
+        System.out.format("N = %d, list.length=%d, width=%d\n", N, 
+            list.length, width);
+        
+        final int initSize = 2 * list.length;
+
+        QuReg qureg = new QuReg();
+
+        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width);
+
+        /*
+        handle list:
+        
+        need to initialize a register:
+           size = 2.*list.length
+        
+        each node has state == value in list
+        
+        an extra set of the states is needed if width != 3 so it's performed for all.
+        that extra set of states should have states starting
+           at the next power of 2 .gte. (1 << list.length).
+        
+        superposition is the implied result of the normalization
+           of all states such that sum of ampl^2 = 1
+        
+        then the rest of the algorithm should proceed in same manner.
+        */
+        
+        //  in the enumerated run method,
+        //  the extra set of nodes has state that is identical
+        //  to first set except that it begins at 1<<width
+        //  so it is shifted by width
+        //TODO: add to method comment the limits of values in the
+        //    list to avoid integer overflow
+        int idx = list.length;
+        int offset = 1 << width;
+        
+        double norm = 1./Math.sqrt(initSize);
+        for (i = 0; i < list.length; ++i) {
+            reg.node[i].state = list[i] + offset;
+            reg.node[i].amplitude.setReal(-norm);
+        }
+        
+        for (i = 0; i < list.length; ++i) {
+            reg.node[idx].state = list[i];
+            reg.node[idx].amplitude.setReal(norm);
+            idx++;
+        }
+        
+        //DEBUG
+        System.out.format("AFTER construction  reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+
+        //Flip the target bit of each basis state, reg.width
+        //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
+        //gates.quantum_sigma_x(reg.width, reg);
 
         // upper limit to number of iterations from:
         //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
