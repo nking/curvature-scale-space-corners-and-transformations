@@ -72,7 +72,7 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 
 -- consider implementing Tarjans latest paper (bipartite matching)
 
--- consider implementing the vanishing lines based upon MSER ellipses
+-- consider implementing vanishing lines based upon MSER ellipses
 
 -- consider making a version of normalized cuts that uses the spatial location
     of points too (lkeeping labeled regions contiguous)

@@ -379,3 +379,8 @@ the algorithm outline is:
       http://www.illc.uva.nl/Research/Publications/Reports/MoL-2006-06.text.pdf
    ------
      http://fab.cba.mit.edu/classes/862.16/notes/computation/Barenco-1995.pdf
+
+   ------
+      "Application of Hybrid Quantum Tabu Search with
+      Support Vector Regression (SVR) for Load Forecasting"
+      by Lee and Lin

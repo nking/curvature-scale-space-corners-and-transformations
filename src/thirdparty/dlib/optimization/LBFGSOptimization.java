@@ -1,6 +1,7 @@
 package thirdparty.dlib.optimization;
 
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.util.IFunction;
 import java.util.Arrays;
 
 /**
@@ -16,23 +17,6 @@ import java.util.Arrays;
  * @author nichole
  */
 public class LBFGSOptimization {
-  
-    // f is a function, that when given the coefficients,
-    //   returns the generated function
-    
-    // df is a function, that when given the coefficients and any
-    //   other arguments, returns the coefficient gradient
-    
-    public static interface IFunction {
-        
-        // evaluates the objective at this set of coefficients.
-        // e.g. could return chiSq
-        double f (double[] coeffs);
-        
-        // estimates the coeficient gradient by comparing the
-        //   data with the model
-        double[] der(double[] coeffs);
-    }
   
     public double findMin(LBFGSSearchStrategy searchStrategy,
         ObjectiveDeltaStopStrategy stopStrategy, 

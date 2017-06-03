@@ -1,5 +1,6 @@
 package thirdparty.dlib.optimization;
 
+import algorithms.util.IFunction;
 import java.util.Arrays;
 import junit.framework.TestCase;
 
@@ -240,7 +241,7 @@ public class LBFGSOptimizationTest extends TestCase {
         assertTrue(Math.abs(coeffs[1] - 2.) < 0.1);
     }
 
-    private static class Roth implements LBFGSOptimization.IFunction {
+    private static class Roth implements IFunction {
         
         public Roth() {}
 
@@ -297,7 +298,7 @@ public class LBFGSOptimizationTest extends TestCase {
 
     }
     
-    private static class Wood implements LBFGSOptimization.IFunction {
+    private static class Wood implements IFunction {
         
         public Wood() {}
 
@@ -361,7 +362,7 @@ public class LBFGSOptimizationTest extends TestCase {
 
     }
     
-    private static class Rosenbrock implements LBFGSOptimization.IFunction {
+    private static class Rosenbrock implements IFunction {
         
         public Rosenbrock() {}
 
@@ -390,7 +391,7 @@ public class LBFGSOptimizationTest extends TestCase {
         
     }
     
-    private static class SimpleAbs implements LBFGSOptimization.IFunction {
+    private static class SimpleAbs implements IFunction {
         
         public SimpleAbs() {}
 

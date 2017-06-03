@@ -1,7 +1,7 @@
 package thirdparty.dlib.optimization;
 
+import algorithms.util.IFunction;
 import java.util.Arrays;
-import thirdparty.dlib.optimization.LBFGSOptimization.IFunction;
 
 /**
  *
