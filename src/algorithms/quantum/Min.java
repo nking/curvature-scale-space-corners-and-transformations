@@ -8,6 +8,8 @@ import thirdparty.libquantum.QuReg;
 import thirdparty.libquantum.QuantumReg;
 
 /**
+ * NOT READY FOR USE.
+ * 
  * implementation of
  * "A quantum algorithm for finding the minimum"
  * by Durr and Hoyer
@@ -17,6 +19,7 @@ import thirdparty.libquantum.QuantumReg;
 public class Min {
     
     /**
+     NOT READY FOR USE.
      NOTE: editing is in progress regarding the input list handling.
      
       find the index y such that list[y] is minimum.
@@ -84,8 +87,12 @@ public class Min {
         still thinking about the the input list and filtering and that there
         will always be a state 0...
         
-        the paper suggestion of a marked list doesn't exactly make sense...
-        
+        the paper suggestion of a marked list doesn't exactly make sense to me
+        yet... would need to consider the eigenstates that contribute to the
+        state that one would like to filter out and those individually affect
+        other states...cannot reduce the amplitude of a specific state
+        without affecting other states representing superposition of some
+        of the same qubits...
         */
 
         QuReg qureg = new QuReg();

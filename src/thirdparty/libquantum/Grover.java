@@ -393,6 +393,8 @@ public class Grover {
      * a straight sequence of numbers from 0 up to a power of 2 is valid input for
      * the current logic (can be unordered).
      * 
+     *
+     * 
      * @param qureg
      * @param list
      * @param width
