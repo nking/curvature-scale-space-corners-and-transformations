@@ -390,8 +390,8 @@ public class Grover {
      * Note, that the register, as the possible states of superposition of
      * qubits, will have all possible permutation of the 
      * union of the set bits of the numbers in the list.
-     * a straight sequence of numbers up to a power of 2 is valid input for
-     * the current logic, starting at 0.
+     * a straight sequence of numbers from 0 up to a power of 2 is valid input for
+     * the current logic.
      * 
      * @param qureg
      * @param list
