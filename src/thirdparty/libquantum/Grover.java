@@ -388,10 +388,10 @@ public class Grover {
     /**
      * Initialize the register with a list of numbers.
      * Note, that the register, as the possible states of superposition of
-     * qubits, will have all possible permutation of the 
-     * union of the set bits of the numbers in the list.
+     * qubits, will have all possible permutation of the qubits up to the
+     * power of 2 or next higher power of 2 in the list.
      * a straight sequence of numbers from 0 up to a power of 2 is valid input for
-     * the current logic.
+     * the current logic (can be unordered).
      * 
      * @param qureg
      * @param list
@@ -446,7 +446,6 @@ public class Grover {
         
         return reg;
     }
-
     
     /**
      * runtime complexity for the search 

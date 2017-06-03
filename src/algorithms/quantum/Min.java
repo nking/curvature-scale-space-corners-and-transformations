@@ -17,6 +17,8 @@ import thirdparty.libquantum.QuantumReg;
 public class Min {
     
     /**
+     NOTE: editing is in progress regarding the input list handling.
+     
       find the index y such that list[y] is minimum.
        
       runtime complexity is roughly
@@ -28,6 +30,15 @@ public class Min {
      
      * NOTE that the largest number in the list must be
      * .lte. integer.max_value - 2^width.
+     * 
+     * Also note that the input list may need to be composed of valid input.
+     * still thinking about valid input to Grover's.
+     * The register, as the possible states of superposition of
+     * qubits, will have all possible permutation up to a power of 2 of
+     * numbers in the list.
+     * A straight sequence of numbers from 0 up to a power of 2 is valid input for
+     * the current logic (can be unordered).
+     * 
      * @param width largest bit length to use the register.
      * It should be the bit length of the largest expected number then add 1.
      * NOTE that width must be .gte. 2.
@@ -65,6 +76,16 @@ public class Min {
                 let y' be the outcome. If T[y'] < T[y], then set threshold
                 index y to y'
         (3) return y
+        
+        Note that each stage of initializing the register requires a valid
+        input list.
+        a valid list is most easily 0 to a power of 2,
+        but doing so requires reading the list again... 
+        still thinking about the the input list and filtering and that there
+        will always be a state 0...
+        
+        the paper suggestion of a marked list doesn't exactly make sense...
+        
         */
 
         QuReg qureg = new QuReg();
@@ -94,6 +115,9 @@ public class Min {
             if (filtered.length == 0) {
                 break;
             }
+            
+            //TODO: editing the handling of the input list to the register
+            //
             
             reg = grover.initializeRegister(qureg, filtered, width);
         
