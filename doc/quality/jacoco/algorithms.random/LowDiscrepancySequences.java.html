@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LowDiscrepancySequences.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.random</a> &gt; <span class="el_source">LowDiscrepancySequences.java</span></div><h1>LowDiscrepancySequences.java</h1><pre class="source lang-java linenums">package algorithms.random;
+
+/**
+ * LDS are quasi-random or sub-random sequences, 
+ * and are commonly used as a replacement of uniformly 
+ * distributed random numbers.
+ * 
+ * https://en.wikipedia.org/wiki/Low-discrepancy_sequence
+ * 
+ * D_N(x_1, ..., x_N) .lte. C*(((ln N)^s)/N)
+ *    where C is a const dep upon seq
+ * 
+ * Common LDS algorithms are
+ *  van der Corput, Halton, Sobol, and Tezuka
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L18">public class LowDiscrepancySequences {</span>
+    
+    /**
+     * caveat is correlated points for some specific
+     * primes.  TODO: add known corrections for bases
+     * which need them.
+     * @param index
+     * @param outputPair 
+     */
+    public void haltonPoint(int index, double[] outputPair) {
+        
+        // base 2 for x, base 3 for y
+<span class="nc" id="L30">        outputPair[0] = halton(index, 2);</span>
+<span class="nc" id="L31">        outputPair[1] = halton(index, 3);</span>
+<span class="nc" id="L32">    }</span>
+    
+    /**
+     * caveat is correlated points for some specific
+     * primes.  TODO: add known corrections for bases
+     * which need them.
+     * @param index
+     * @param base
+     * @return 
+     */
+    public double halton(int index, int base) {
+        
+<span class="fc" id="L44">        double f = 1;</span>
+<span class="fc" id="L45">        double r = 0;</span>
+        
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        while (index &gt; 0) {</span>
+<span class="fc" id="L48">            f /= (double)base;</span>
+<span class="fc" id="L49">            r += (f * (index % base));</span>
+<span class="fc" id="L50">            index = (index/base);</span>
+        }
+        
+<span class="fc" id="L53">        return r;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

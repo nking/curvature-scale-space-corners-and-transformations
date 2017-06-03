@@ -783,14 +783,14 @@ import java.util.logging.Logger;
             }
 <span class="fc" id="L784">            int idx1 = node1.index;</span>
                                 
-<span class="fc bfc" id="L786" title="All 2 branches covered.">            if (terminatingKeys.containsKey(idx1)) {</span>
-<span class="fc" id="L787">                continue;</span>
+<span class="pc bpc" id="L786" title="1 of 2 branches missed.">            if (terminatingKeys.containsKey(idx1)) {</span>
+<span class="nc" id="L787">                continue;</span>
 <span class="fc bfc" id="L788" title="All 4 branches covered.">            } else if (</span>
                 node1.pathPredecessor != null &amp;&amp;
                 node1.pathPredecessor instanceof RightNode &amp;&amp;
-<span class="fc bfc" id="L791" title="All 2 branches covered.">                terminatingKeys.containsKey(</span>
+<span class="pc bpc" id="L791" title="1 of 2 branches missed.">                terminatingKeys.containsKey(</span>
                 node1.pathPredecessor.index)) {
-<span class="fc" id="L793">                continue;</span>
+<span class="nc" id="L793">                continue;</span>
 <span class="fc bfc" id="L794" title="All 2 branches covered.">            } else if (node1.pathPredecessor != null) {</span>
 <span class="fc bfc" id="L795" title="All 2 branches covered.">                if (node1.pathPredecessor instanceof LeftNode &amp;&amp;</span>
 <span class="fc bfc" id="L796" title="All 2 branches covered.">                surplusForestKeys.containsKey(</span>
@@ -1463,8 +1463,8 @@ Matchings in G are integral flows in N_G
 <span class="fc" id="L1463">                                leftPriceIncreases.put(idx1, p1);</span>
                             }
 
-<span class="fc bfc" id="L1466" title="All 2 branches covered.">                            if (rF.getBackwardLinksRM().containsKey(idx2)</span>
-<span class="pc bpc" id="L1467" title="1 of 2 branches missed.">                                &amp;&amp; rF.getBackwardLinksRM().get(idx2) == idx1) {</span>
+<span class="pc bpc" id="L1466" title="1 of 2 branches missed.">                            if (rF.getBackwardLinksRM().containsKey(idx2)</span>
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">                                &amp;&amp; rF.getBackwardLinksRM().get(idx2) == idx1) {</span>
 
                                 // saturated link node1(left) &lt;-- node2(right)
 <span class="nc" id="L1470">                                l1 -= (lt - l2);</span>
@@ -1677,7 +1677,7 @@ Matchings in G are integral flows in N_G
 <span class="fc" id="L1677">            LeftNode xNode = surp.iterator().next();</span>
 <span class="fc" id="L1678">            surp.remove(xNode);</span>
 <span class="fc" id="L1679">            stack.add(xNode);</span>
-<span class="fc bfc" id="L1680" title="All 2 branches covered.">            B: while (!stack.isEmpty()) {</span>
+<span class="pc bpc" id="L1680" title="1 of 2 branches missed.">            B: while (!stack.isEmpty()) {</span>
 <span class="fc" id="L1681">                PathNode v = stack.peek();</span>
 <span class="fc" id="L1682">                log.fine(&quot;v=stack.top=&quot; + v.toString());</span>
 <span class="fc" id="L1683">                boolean isLeftNode = (v instanceof LeftNode);</span>
@@ -1685,7 +1685,7 @@ Matchings in G are integral flows in N_G
 <span class="pc bpc" id="L1685" title="1 of 4 branches missed.">                if (isLeftNode || isRightNode) {</span>
 <span class="fc" id="L1686">                    v.m = 1;</span>
                 }
-<span class="fc bfc" id="L1688" title="All 4 branches covered.">                if (isRightNode &amp;&amp; def.contains((RightNode)v)) {</span>
+<span class="pc bpc" id="L1688" title="1 of 4 branches missed.">                if (isRightNode &amp;&amp; def.contains((RightNode)v)) {</span>
                     // add all of stack to P as an augmenting Path
 <span class="fc" id="L1690">                    LinkedList&lt;PathNode&gt; augPath = new</span>
                         LinkedList&lt;PathNode&gt;();
@@ -1698,8 +1698,8 @@ Matchings in G are integral flows in N_G
                     continue A;
                 }
 <span class="fc" id="L1700">                Set&lt;PathNode&gt; set = pathLinksMap.get(v);</span>
-<span class="fc bfc" id="L1701" title="All 2 branches covered.">                if (set != null) {</span>
-<span class="fc bfc" id="L1702" title="All 2 branches covered.">                    while (!set.isEmpty()) {</span>
+<span class="pc bpc" id="L1701" title="1 of 2 branches missed.">                if (set != null) {</span>
+<span class="pc bpc" id="L1702" title="1 of 2 branches missed.">                    while (!set.isEmpty()) {</span>
 <span class="fc" id="L1703">                        PathNode w = set.iterator().next();</span>
 <span class="fc" id="L1704">                        set.remove(w);</span>
 <span class="fc" id="L1705">                        log.fine(&quot;stack.push w = &quot; + w.toString());</span>
@@ -1710,9 +1710,9 @@ Matchings in G are integral flows in N_G
 <span class="nc" id="L1710">                    }</span>
                 }
                 // do nothing with v
-<span class="fc" id="L1713">                stack.pop();</span>
-<span class="fc" id="L1714">            }</span>
-<span class="fc" id="L1715">        }</span>
+<span class="nc" id="L1713">                stack.pop();</span>
+<span class="nc" id="L1714">            }</span>
+<span class="nc" id="L1715">        }</span>
         
 <span class="fc" id="L1717">        return augPaths;</span>
     }
@@ -1877,7 +1877,7 @@ Matchings in G are integral flows in N_G
 <span class="nc bnc" id="L1877" title="All 2 branches missed.">                    surplus.contains(idx2)) {</span>
 <span class="nc" id="L1878">                    outputSurplus.add((LeftNode)node2);</span>
 <span class="pc bpc" id="L1879" title="1 of 2 branches missed.">                } else if (node2 instanceof RightNode &amp;&amp; </span>
-<span class="fc bfc" id="L1880" title="All 2 branches covered.">                    deficit.contains(idx2)) {</span>
+<span class="pc bpc" id="L1880" title="1 of 2 branches missed.">                    deficit.contains(idx2)) {</span>
 <span class="fc" id="L1881">                    outputDeficit.add((RightNode)node2);</span>
                 }
 <span class="fc" id="L1883">            }</span>

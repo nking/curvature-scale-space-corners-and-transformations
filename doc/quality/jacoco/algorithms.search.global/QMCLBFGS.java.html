@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>QMCLBFGS.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.search.global</a> &gt; <span class="el_source">QMCLBFGS.java</span></div><h1>QMCLBFGS.java</h1><pre class="source lang-java linenums">package algorithms.search.global;
+
+import algorithms.random.AFunction;
+import algorithms.random.QuasiMonteCarlo;
+import java.util.Arrays;
+import thirdparty.dlib.optimization.LBFGSOptimization;
+import thirdparty.dlib.optimization.LBFGSSearchStrategy;
+import thirdparty.dlib.optimization.ObjectiveDeltaStopStrategy;
+import thirdparty.fsu.random.QMCHaltonAdvanced;
+
+/**
+ * a global search to find the minimum of a given function within
+ * the bounds given.
+ * NRegions are sampled using Quasi Monte Carlo
+ * and each region is searched using local search LBFGs.
+ * 
+ * Note, there are a couple of other local search algorithms not yet 
+ * implemented here which should be better for functions that have many
+ * local minima, but LBFGS is a fast local search as it uses the
+ * gradient provide by the function, which can be the first derivative or
+ * a calculation using finite difference method.
+ * 
+ * Note that if one knows the function is convex, one can use LBFGS alone
+ * to find the global minimum.
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L28">public class QMCLBFGS {</span>
+
+    /**
+     * search for the minimum of function in nRegions within the bounds 
+     * using LBFGs and return the best
+     * result as coordinates and the y value.
+     * 
+     * @param function function and the derivative or gradient of the function.
+     * @param nRegions number of regions to sample over the boundary region
+     * and then search using LBFGS
+     * @param startBounds start of region to search in each dimension
+     * @param stopBounds stop of region to search in in each dimension
+     * @return an array of the coefficients for the minimum followed by
+     * the minimum.
+     */
+    public double[] search(AFunction function, int nRegions,
+        double[] startBounds, double[] stopBounds) {
+        
+<span class="fc" id="L46">        int nDim = function.getNumberOfCoeffs1();</span>
+        
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (nDim &lt; 1) {</span>
+<span class="nc" id="L49">            throw new IllegalArgumentException(&quot;nDim in function must be 1 or&quot;</span>
+                + &quot; larger&quot;);
+        } 
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (startBounds.length != stopBounds.length) {</span>
+<span class="nc" id="L53">            throw new IllegalArgumentException(&quot;bounds arrays must have same &quot;</span>
+                + &quot; length&quot;);
+        }
+        
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (startBounds.length != nDim) {</span>
+<span class="nc" id="L58">            throw new IllegalArgumentException(&quot;bounds arrays must have same &quot;</span>
+                + &quot; length as function number of dimensions&quot;);
+        }
+        
+        //output array for samples
+<span class="fc" id="L63">        double[] cache = new double[nDim];</span>
+        
+<span class="fc" id="L65">        double[] range = new double[nDim];</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int i = 0; i &lt; nDim; ++i) {</span>
+<span class="fc" id="L67">            double b0 = startBounds[i];</span>
+<span class="fc" id="L68">            double b1 = stopBounds[i];</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">            if (b1 &lt;= b0) {</span>
+<span class="nc" id="L70">                throw new IllegalArgumentException(&quot;stop bounds must be larger &quot;</span>
+                    + &quot; than start bounds&quot;);
+            }
+<span class="fc" id="L73">            range[i] = b1 - b0;</span>
+        }
+        
+<span class="fc" id="L76">        QuasiMonteCarlo qmc = new QuasiMonteCarlo();</span>
+        
+<span class="fc" id="L78">        double[] bestResults = new double[nDim];</span>
+<span class="fc" id="L79">        Arrays.fill(bestResults, Double.POSITIVE_INFINITY);</span>
+<span class="fc" id="L80">        double bestMin = Double.MAX_VALUE;</span>
+        
+<span class="fc" id="L82">        QMCHaltonAdvanced qmcA = qmc.initalize(nDim);</span>
+    
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 0; i &lt; nRegions; ++i) {</span>
+                    
+<span class="fc" id="L86">            qmcA.halton(cache);</span>
+            
+            // scale the sample to the bounds
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            for (int j = 0; j &lt; startBounds.length; ++j) {</span>
+<span class="fc" id="L90">                cache[j] = cache[j] + (cache[j] * range[j]);</span>
+            }
+            
+<span class="fc" id="L93">            System.out.println(&quot;input coeff=&quot; + Arrays.toString(cache));</span>
+            
+<span class="fc" id="L95">            LBFGSSearchStrategy searchStrategy = new LBFGSSearchStrategy(5);</span>
+<span class="fc" id="L96">            ObjectiveDeltaStopStrategy stopStrategy</span>
+                = new ObjectiveDeltaStopStrategy(1.e-5, 100);
+
+<span class="fc" id="L99">            double fLower = -10;</span>
+
+<span class="fc" id="L101">            LBFGSOptimization opt = new LBFGSOptimization();</span>
+<span class="fc" id="L102">            double min = opt.findMin(searchStrategy,</span>
+                stopStrategy, function, cache, fLower);
+
+<span class="fc" id="L105">            System.out.format(&quot;  i=%d min=%f r=%s\n&quot;, i, min,</span>
+<span class="fc" id="L106">                Arrays.toString(cache));</span>
+
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (min &lt; bestMin) {</span>
+<span class="fc" id="L109">                bestMin = min;</span>
+<span class="fc" id="L110">                System.arraycopy(cache, 0, bestResults, 0, cache.length);</span>
+            }
+        }
+        
+<span class="fc" id="L114">        bestResults = Arrays.copyOf(bestResults, bestResults.length + 1);</span>
+<span class="fc" id="L115">        bestResults[bestResults.length - 1] = bestMin;</span>
+        
+<span class="fc" id="L117">        return bestResults;</span>
+    }
+   
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
