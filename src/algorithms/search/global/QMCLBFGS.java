@@ -102,8 +102,8 @@ public class QMCLBFGS {
             double min = opt.findMin(searchStrategy,
                 stopStrategy, function, cache, fLower);
 
-            System.out.println("min=" + min + " \n   coeffs="
-                + Arrays.toString(cache));
+            System.out.format("  i=%d min=%f r=%s\n", i, min,
+                Arrays.toString(cache));
 
             if (min < bestMin) {
                 bestMin = min;

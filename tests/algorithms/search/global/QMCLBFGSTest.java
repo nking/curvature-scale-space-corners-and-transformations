@@ -65,14 +65,14 @@ public class QMCLBFGSTest extends TestCase {
             double sum = 0;
             for (int ii = 1; ii < d; ++ii) {
                 double xi = coeffs[ii];
-                sum += (xi*xi - 10 * Math.cos(2 * Math.PI * xi));
+                sum += (xi*xi - amplitude * Math.cos(2 * Math.PI * xi));
             }
-            sum += 10 * d;
+            sum += amplitude * d;
             return sum;
         }
 
         /**
-        finite difference method
+        finite difference method to calculate the local gradient.
         adapted from dlib optimization.h
         Copyright (C) 2008  Davis E. King (davis@dlib.net)
         License: Boost Software License   See LICENSE.txt for the full license.
