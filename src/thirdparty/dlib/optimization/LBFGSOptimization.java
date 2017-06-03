@@ -14,7 +14,6 @@ import java.util.Arrays;
  * the dlib project has copyright:
  * Copyright (C) 2008  Davis E. King (davis@dlib.net)
    License: Boost Software License   See LICENSE.txt for the full license.
- * @author nichole
  */
 public class LBFGSOptimization {
   

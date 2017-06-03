@@ -199,7 +199,7 @@ public class Helper {
         */
         private double[] derivative(double[] coeffs) {
         
-            System.out.println("a1  x.size=" + coeffs.length);
+            //System.out.println("a1  x.size=" + coeffs.length);
             
             int n = coeffs.length;
             
@@ -226,4 +226,5 @@ public class Helper {
             return der;
         }
     };
+    
 }

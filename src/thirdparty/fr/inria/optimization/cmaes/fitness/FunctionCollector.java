@@ -277,9 +277,10 @@ class Rastrigin extends AbstractObjectiveFunction {
         double fac;
         double res = 0;
         for (int i = 0; i < x.length; ++i) {
-            fac = Math.pow(axisratio,(i-1.)/(x.length-1.));
-            if (i == 0 && x[i] < 0)
+            fac = Math.pow(axisratio, (i-1.)/(x.length-1.));
+            if (i == 0 && x[i] < 0) {
                 fac *= 1.;
+            }
             res +=  fac * fac * x[i] * x[i]
                + amplitude * (1. - Math.cos(2.*Math.PI * fac * x[i])); 
         }
