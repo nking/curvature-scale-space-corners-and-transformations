@@ -385,6 +385,19 @@ public class Grover {
     // ---- adding ability to find number within a list of numbers for use 
     //      within the quantum min algorithm ----
     
+    /**
+     * Initialize the register with a list of numbers.
+     * Note, that the register, as the possible states of superposition of
+     * qubits, will have all possible permutation of the 
+     * union of the set bits of the numbers in the list.
+     * a straight sequence of numbers up to a power of 2 is valid input for
+     * the current logic, starting at 0.
+     * 
+     * @param qureg
+     * @param list
+     * @param width
+     * @return 
+     */
     public QuantumReg initializeRegister(QuReg qureg, int[] list,
         int width) {
         
