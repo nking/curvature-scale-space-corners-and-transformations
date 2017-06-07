@@ -154,8 +154,10 @@ public class Shor {
     }
     
     /**
-     * essentially, makes an array of bitstrings of size 2^width, 
-     * calculates factors of the moduli and applies them, then
+     * the storage of a superposition of qubits is into a bit string in a state
+     * and there are 2^width such states (all permutations of qubits).
+     * the algorithm initializes the register of states,
+     * calculates factors of the moduli of the state and applies them, then
        examines the bit spacings by applying
        conditional phase shifts and hadamard gates
        followed by several rounds of measurement
@@ -248,14 +250,13 @@ public class Shor {
         //           ~ log_2(N) * qr.size
         gates.quantum_exp_mod_n(N, x, width, swidth,  qr);
         
-        /*
         //log.info(
         System.out.println(
             "after exp_mod_n: "
             + "reg.size=" + qr.size
             + " hash.length=" + qr.hash.length);
         qureg.quantum_print_qureg(qr);
-        */
+        
         assert(qr.hash.length == (1 << qr.hashw));
      
         Measure measure = new Measure();

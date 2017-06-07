@@ -2877,4 +2877,379 @@ public class MiscMath {
         
         return y;
     }
+    
+    // ---- 32 bit hash methods ---
+    /**
+     * get index of list from value using the hash.
+     * 
+     * This method is based upon a method from the libquantum library 
+     * file qureg.c which has copyright:
+     
+       Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+       This file is part of libquantum
+
+       libquantum is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published
+       by the Free Software Foundation; either version 3 of the License,
+       or (at your option) any later version.
+
+       libquantum is distributed in the hope that it will be useful, but
+       WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with libquantum; if not, write to the Free Software
+       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+       MA 02110-1301, USA
+     * 
+     * =============
+     * 
+     * the hash is based on public domain FNV31
+     * http://www.isthe.com/chongo/src/fnv/hash_32.c
+     * 
+     * @param list
+     * @param value
+     * @param hash 
+     * @return index of list where value is stored
+     */
+    public static int getHashIndex(final int[] list, final int value, int[] hash) {
+        
+        int i, mark = 0;
+
+        i = hashToIndex(value, list.length);
+     
+        while (hash[i] != -1) {
+            if (list[hash[i]] == value) {
+                return hash[i];
+            }
+            i++;
+            if (i == list.length) {
+                i = 0;
+            }
+        }
+
+        return -1;
+    }
+    
+    /**
+     * get index of list from value using the hash.
+     * 
+     * This method is based upon a method from the libquantum library 
+     * file qureg.c which has copyright:
+     
+       Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+       This file is part of libquantum
+
+       libquantum is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published
+       by the Free Software Foundation; either version 3 of the License,
+       or (at your option) any later version.
+
+       libquantum is distributed in the hope that it will be useful, but
+       WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with libquantum; if not, write to the Free Software
+       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+       MA 02110-1301, USA
+     * 
+     * =============
+     * 
+     * the hash is based on public domain FNV31
+     * http://www.isthe.com/chongo/src/fnv/hash_32.c
+     * 
+     * =======
+     * NOTE: this method was made to only use primitives, for use with the
+     * quantum methods.
+     * 
+     * @param list
+     * @param value
+     * @param hash 
+     * @return index of list where value is stored
+     */
+    public static boolean hashContains(final int[] list, final int value, int[] hash) {
+        
+        int i, mark = 0;
+
+        i = hashToIndex(value, list.length);
+        
+        //hash[i] holds list idx;
+
+        int nStart = i;
+        
+        //TODO: this could be improved. worse case could be O(hash.length)
+        while (hash[i] != -1) {
+            if (list[hash[i]] == value) {
+                return true;
+            }
+            i++;
+            if (i == list.length) {
+                i = 0;
+            }
+            if (i == nStart) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+    
+    /**
+     * set list[idx] into hash.
+     * 
+     * This method is based upon a method from the libquantum library 
+     * file qureg.c which has copyright:
+     
+       Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+       This file is part of libquantum
+
+       libquantum is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published
+       by the Free Software Foundation; either version 3 of the License,
+       or (at your option) any later version.
+
+       libquantum is distributed in the hope that it will be useful, but
+       WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with libquantum; if not, write to the Free Software
+       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+       MA 02110-1301, USA
+     * 
+     * =============
+     * 
+     * the hash is based on public domain FNV31
+     * http://www.isthe.com/chongo/src/fnv/hash_32.c
+     * 
+     * @param value
+     * @param listLength length of array with values to hash (should be same size
+     * as hash)
+     * @param hash
+     * @return index of hash where list[idx] was stored
+     */
+    public static int getNextHashIndex(final int value, final int listLength, 
+        int[] hash) {
+        
+        int i, mark = 0;
+
+        i = hashToIndex(value, listLength);
+        
+        while (hash[i] != -1) {
+            i++;
+            // if i is > last index
+            if (i == listLength) {
+                if (mark == 0) {
+                    i = 0;
+                    mark = 1;
+                } else {
+                    StackTraceElement[] st = Thread.currentThread().getStackTrace();
+                    for (StackTraceElement s : st) {
+                        System.out.println(s);
+                    }
+                    throw new IllegalStateException("hash is full.  i=" + i + 
+                         " hash.lrngth=" + listLength);
+                }
+            }
+        }
+        
+        return i;
+    }
+    
+    /**
+     * set list[idx] into hash.
+     * 
+     * This method is based upon a method from the libquantum library 
+     * file qureg.c which has copyright:
+     
+       Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+
+       This file is part of libquantum
+
+       libquantum is free software; you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published
+       by the Free Software Foundation; either version 3 of the License,
+       or (at your option) any later version.
+
+       libquantum is distributed in the hope that it will be useful, but
+       WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with libquantum; if not, write to the Free Software
+       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+       MA 02110-1301, USA
+     * 
+     * =============
+     * 
+     * the hash is based on public domain FNV31
+     * http://www.isthe.com/chongo/src/fnv/hash_32.c
+     * 
+     * @param list
+     * @param idx
+     * @param hash
+     * @return index of hash where list[idx] was stored
+     */
+    public static int setHashValue(final int[] list, final int idx, int[] hash) {
+        
+        int i = getNextHashIndex(list[idx], list.length, hash);
+        
+        hash[i] = idx;     
+
+        return i;
+    }
+    
+    /**
+     * return an index for the given value
+     * 
+     * @param value
+     * @param length size of the container in which the result is an index in
+     * @return 
+     */
+    protected static int hashToIndex(int value, int length) {
+       
+        return fnvRetry(value, length);
+    }
+    
+    /**
+     * using a hash based on public domain FNV31
+     * http://www.isthe.com/chongo/src/fnv/hash_32.c
+     * @param value
+     * @param length length of the array value will be
+     * hashed to.  no index .geq. length will be returned.
+     * @return index from hashing value
+     */
+    protected static int fnvRetry(int value, int length) {
+
+        if (length == 0) {
+            throw new IllegalArgumentException("length must be >0");
+        }        
+        
+        //#define TRUE_HASH_SIZE ((u_int32_t)50000) /* range top plus 1
+        int FNV_32_PRIME = 16777619;
+        //int FNV1_32_INIT = 2166136261;
+        int FNV1_32_INIT = 1083068130; // which is 2166136261 >> 1
+        //#define MAX_32BIT ((u_int32_t)0xffffffff) /* largest 32 bit unsigned value
+        //#define RETRY_LEVEL ((MAX_32BIT / TRUE_HASH_SIZE) * TRUE_HASH_SIZE)
+        int RETRY_LEVEL = (Integer.MAX_VALUE/length) * length;
+        
+        int hash = fnv_31(value, FNV1_32_INIT);
+        //System.out.println("hash=" + hash);
+        while (hash >= RETRY_LEVEL) {
+            hash = (hash * FNV_32_PRIME) + FNV1_32_INIT;
+            //System.out.println("  hash=" + hash);
+        }
+        
+        //NOTE: forcing positive for use case
+        hash = (hash ^ (hash >> 31)) + (hash >>> 31);
+        
+        hash %= length;
+        
+        return hash;
+    }
+
+    /**
+     * using a hash based on public domain FNV31
+     * http://www.isthe.com/chongo/src/fnv/hash_32.c
+     * @param value
+     * @param FNV1_31_INIT
+     * @return 
+     */
+    private static int fnv_31(int value, int FNV1_31_INIT) {
+       
+        int hval = FNV1_31_INIT;
+        
+        //multiply by the 32 bit FNV magic prime mod 2^32
+        //if no opt: hval *= 0x01000193;//FNV_32_PRIME;
+        //else:
+        hval += (hval<<1) + (hval<<4) + (hval<<7) 
+            + (hval<<8) + (hval<<24);
+
+	    // xor the bottom with the current octet
+	    hval ^= value;
+  
+        return hval;
+    }
+    
+    /**
+     * for the setBits only, create permutations of the bits that are set, that
+     * is creating all combinations of number with just those bits being
+     * 0 or 1.
+     * @param setBits
+     * @return 
+     */
+    public static int[] permuteTheSetBits(int setBits) {
+        
+        int i;
+        int nBits = MiscMath.numberOfBits(setBits);
+        int nSetBits = 0;
+        int unsetBits = 0;        
+        
+        for (i = 0; i < nBits; ++i) {
+            if ((setBits & (1 << i)) != 0) {
+                nSetBits++;
+            } else {
+                unsetBits |= (1 << i);
+            }
+        }
+        
+        int listLen = (int)Math.pow(2, nSetBits);
+        int[] outputList = new int[listLen];
+       
+        int[] hash = new int[outputList.length];
+        for (i = 0; i < hash.length; ++i) {
+            hash[i] = -1;
+        }
+                 
+        int[] lastIdx = new int[]{-1};
+        
+        int number = setBits;
+                
+        permuteTheSetBits(outputList, hash, lastIdx, number, nSetBits, unsetBits);
+            
+        return outputList;
+    }
+
+    private static void permuteTheSetBits(int[] list, int[] hash, int[] lastIdx, int number, 
+        int hiIdx, int unsetBits) {
+    
+        storeIfUnique(list, hash, lastIdx, number);
+        
+        while ((hiIdx > -1) && ((unsetBits & (1 << hiIdx)) != 0)) {
+            hiIdx--;
+        }
+        if (hiIdx < 0) {
+            return;
+        }
+        
+        // recurse the 2 permutations of bit hiIdx
+        
+        permuteTheSetBits(list, hash, lastIdx, number, hiIdx - 1, unsetBits);
+        
+        // unset bit hiIdx
+        number &= ~(1 << hiIdx);
+        permuteTheSetBits(list, hash, lastIdx, number, hiIdx - 1, unsetBits);
+        
+    }
+
+    private static void storeIfUnique(int[] list, int[] hash, int[] lastIdx, int value) {
+        
+        if (!MiscMath.hashContains(list, value, hash)) {
+            lastIdx[0]++;
+            if (lastIdx[0] > (list.length - 1)) {
+                throw new IllegalStateException("index out of bounds");
+            }
+            list[lastIdx[0]] = value;
+            MiscMath.setHashValue(list, lastIdx[0], hash);
+        }
+    }
+    
 }

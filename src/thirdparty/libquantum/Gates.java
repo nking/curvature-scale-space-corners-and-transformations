@@ -333,6 +333,9 @@ public class Gates {
      runtime complexity is O(reg.size), though reg.size is possibly increased
      and for the last decohere operation is
      is O(reg.size * reg.width)
+     * @param target
+     * @param m
+     * @param reg
      */
    public void quantum_gate1(int target, QuantumMatrix m, QuantumReg reg) {
             
@@ -406,8 +409,7 @@ public class Gates {
                 //find state's node index for state where basis state is the
                 //   opposite of node[i]'s basis state
                 j = QuReg.quantum_get_state(
-                    reg.node[i].state ^ (1L << target),  
-                    reg);
+                    reg.node[i].state ^ (1L << target), reg);
                 
                 if (t == null) {
                     t = reg.node[i].amplitude.copy();
@@ -576,6 +578,7 @@ public class Gates {
 
         l = reg.size;
 
+        // amplitudes smaller than this are removed below
         limit = (1.0f / (1L << reg.width)) / 1000000;
         
         bits[0] = target1;

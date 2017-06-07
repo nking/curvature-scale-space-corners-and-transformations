@@ -1,5 +1,6 @@
 package thirdparty.libquantum;
 
+import algorithms.misc.ComplexModifiable;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import java.util.Random;
@@ -277,6 +278,7 @@ public class Grover {
      * @param width largest bit length to use in enumeration.
      * NOTE that if it is less than (the bit length of number) + 1,
      * it will be increased to that.
+     * @return 
      */
     public int run(int number, int width) {
 
@@ -297,7 +299,6 @@ public class Grover {
         }
 
         System.out.format("N = %d, width=%d\n", N, width);
-
 
         QuReg qureg = new QuReg();
 
@@ -390,20 +391,30 @@ public class Grover {
      * Note, that the register, as the possible states of superposition of
      * qubits, will have all possible permutation of the qubits up to the
      * power of 2 or next higher power of 2 in the list.
-     * a straight sequence of numbers from 0 up to a power of 2 is valid input for
-     * the current logic (can be unordered).
+     * A continuous sequence of numbers from 0 up to a power of 2 is valid 
+     * input for the current logic (can be unordered).
+     * A continuous sequence of numbers from a power of 2 up to a power of 2.
+     * is valid input.
+     * All combinations of the unique union of set bits of numbers is a valid
+     * input list (that is, each set bit as 0 then 1 in list of numbers).
      * 
+     */
+    
+    /**
+     * Initialize the register with a list of numbers as the eigenstate,
+     * superposition, and their amplitudes.
      *
-     * 
      * @param qureg
-     * @param list
+     * @param stateList
+     * @param amplList amplitudes associated with the eigenstate at same index
+     * in stateList
      * @param width
      * @return 
      */
-    public QuantumReg initializeRegister(QuReg qureg, int[] list,
-        int width) {
-        
-        final int initSize = 2 * list.length;
+    public QuantumReg initializeRegister(QuReg qureg, 
+        ComplexModifiable[] amplList, int[] stateList, int width) {
+      
+        final int initSize = 2 * amplList.length;
 
         QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width);
 
@@ -429,23 +440,140 @@ public class Grover {
         //  the extra set of nodes has state that is identical
         //  to first set except that it begins at 1<<width
         //  so it is shifted by width
-        int idx = list.length;
+        
+        int offset = 1 << width;
+        
+        int i;
+        double invSqrt = 1./Math.sqrt(2.);
+        
+        for (i = 0; i < amplList.length; ++i) {
+            reg.node[i].state = stateList[i] + offset;
+            reg.node[i].amplitude.resetTo(amplList[i]);
+            reg.node[i].amplitude.times(-invSqrt);
+        }
+        
+        int idx = amplList.length;
+        for (i = 0; i < amplList.length; ++i) {
+            reg.node[idx].state = stateList[i];
+            reg.node[idx].amplitude.resetTo(amplList[i]);
+            reg.node[idx].amplitude.times(invSqrt);
+            idx++;
+        }
+        
+        return reg;
+    }
+    
+    /**
+     * Initialize the register with a list of numbers as the eigenstate,
+     * superposition, and their amplitudes.
+     *
+     * @param qureg
+     * @param setBits
+     * @param width
+     * @return 
+     */
+    public QuantumReg initializeRegister(QuReg qureg,
+        int setBits, int width) {
+       
+        int nBits = MiscMath.numberOfBits(setBits);
+        
+        int i;
+        
+        int nSetBits = 0;
+        for (i = 0; i < nBits; ++i) {
+            if ((setBits & (1 << i)) != 0) {
+                nSetBits++;
+            }
+        }
+        
+        QuantumReg reg = qureg.quantum_new_qureg_size(
+            2*nSetBits, width);
+
+        int offset = 1 << width;
+        double norm = 1./Math.sqrt(2*nSetBits);  
+        int ii = 0;
+        for (i = 0; i < nBits; ++i) {
+            if ((setBits & (1 << i)) != 0) {
+                reg.node[ii].state = (1 << i) + width;
+                //reg.node[ii].state = i + offset;
+                reg.node[ii].amplitude.setReal(-norm);
+                ++ii;
+            }
+        }
+        for (i = 0; i < nBits; ++i) {
+            if ((setBits & (1 << i)) != 0) {
+                reg.node[ii].state = 1 << i;
+                //reg.node[ii].state = i;
+                reg.node[ii].amplitude.setReal(norm);
+                ++ii;
+            }
+        }
+                
+        //DEBUG
+        //System.out.format("initialized  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
+
+        return reg;
+    }
+    
+    /**
+     * Initialize the register with a list of numbers as the eigenstate,
+     * superposition, and their amplitudes.
+     *
+     * @param qureg
+     * @param setBits
+     * @param width
+     * @return 
+     */
+    private QuantumReg initializeRegister(QuReg qureg, int[] list, int width) {
+        
+        int listLen = list.length;
+        
+        final int initSize = 2 * listLen;
+
+        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width);
+
+        /*
+        handle list:
+        
+        need to initialize a register:
+           size = 2.*list.length
+        
+        each node has state == value in list
+        
+        an extra set of the states is needed if width != 3 so it's performed for all.
+        that extra set of states should have states starting
+           at the next power of 2 .gte. (1 << list.length).
+        
+        superposition is the implied result of the normalization
+           of all states such that sum of ampl^2 = 1
+        
+        then the rest of the algorithm should proceed in same manner.
+        */
+        
+        //  in the enumerated run method,
+        //  the extra set of nodes has state that is identical
+        //  to first set except that it begins at 1<<width
+        //  so it is shifted by width
+        
         int offset = 1 << width;
         
         int i;
         
-        double norm = 1./Math.sqrt(initSize);
+        double norm = 1./Math.sqrt(2*initSize);  
+        int ii = 0;
         for (i = 0; i < list.length; ++i) {
-            reg.node[i].state = list[i] + offset;
-            reg.node[i].amplitude.setReal(-norm);
+            //reg.node[ii].state = list[i] + width;
+            reg.node[ii].state = list[i] + offset;
+            reg.node[ii].amplitude.setReal(-norm);
+            ++ii;
         }
-        
         for (i = 0; i < list.length; ++i) {
-            reg.node[idx].state = list[i];
-            reg.node[idx].amplitude.setReal(norm);
-            idx++;
+            reg.node[ii].state = list[i];
+            reg.node[ii].amplitude.setReal(norm);
+            ++ii;
         }
-        
+       
         return reg;
     }
     
@@ -464,7 +592,8 @@ public class Grover {
      * @param width largest bit length to use in enumeration.
      * NOTE that if it is less than (the bit length of number) + 1,
      * it will be increased to that.
-     * @param list a list of unordered numbers to search for number within
+     * @param list a list of unordered numbers to search for number within.
+     * NOTE that the list must be valid input.
      * @return 
      */
     public int run(int number, int width, int[] list) {
@@ -510,10 +639,44 @@ public class Grover {
                 System.out.format(
                     "\nFound %d with a probability of %f\n\n", N,
                     reg.node[i].amplitude.squareSum());
+                return N;
             }
         }
 
-        return ret;
+        return -1;
+    }
+    
+    public int run(int number, int width, int setQuBits) {
+    
+        QuReg qureg = new QuReg();
+        QuantumReg reg = initializeRegister(qureg, setQuBits, width);
+        
+        Random rng = Misc.getSecureRandom();
+        
+        int ret = processInitialized(number, reg, rng);
+           
+        reg.width++;
+
+        Measure measure = new Measure();
+
+        // runtime complexity is O(reg.size)
+        measure.quantum_bmeasure(reg.width - 1, reg, rng);
+
+
+        //DEBUG
+        System.out.format("AFTER bmeasure reg.size=%d\n", reg.size);
+        qureg.quantum_print_qureg(reg);
+
+        for (int i = 0; i < reg.size; i++) {
+            if (reg.node[i].state == number) {
+                System.out.format(
+                    "\nFound %d with a probability of %f\n\n", number,
+                    reg.node[i].amplitude.squareSum());
+                return number;
+            }
+        }
+
+        return -1;
     }
     
     /**
@@ -582,4 +745,5 @@ public class Grover {
 
         return 0;
     }
+
 }
