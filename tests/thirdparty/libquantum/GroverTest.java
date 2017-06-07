@@ -91,9 +91,14 @@ public class GroverTest extends TestCase {
                 set.add(1 << i);
             }
         }
+        //int[] list = set.toArray(new int[set.size()]);
         
-        // (2*nBits) + 1
-        int width = 9;
+        int v = Integer.MAX_VALUE;
+        System.out.println("v=" + v );
+        v ^= (1 << 32);
+        System.out.println("hb=" + v );
+        
+        int width = 14;
         for (int i = 0; i < 10;++i) {
             int number = i;
         

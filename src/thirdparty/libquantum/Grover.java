@@ -311,6 +311,15 @@ public class Grover {
 
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
+        //Note that the high bits off of the register are flipped: 
+        //    011 -> 1011, but the quantum register would be too short for this,
+        //                 that is, the extra qubit is not available.
+        //                 it works in this language and paradigm because
+        //                 the integer data type is large enough to hold
+        //                 the high set bits that do not have qubits.
+        // TODO: look at details of handling
+        //       the logic within register.width including possibly
+        //       expanding that.
         gates.quantum_sigma_x(reg.width, reg);
 
         //DEBUG
@@ -395,9 +404,6 @@ public class Grover {
      * input for the current logic (can be unordered).
      * A continuous sequence of numbers from a power of 2 up to a power of 2.
      * is valid input.
-     * All combinations of the unique union of set bits of numbers is a valid
-     * input list (that is, each set bit as 0 then 1 in list of numbers).
-     * 
      */
     
     /**
@@ -494,8 +500,9 @@ public class Grover {
         int ii = 0;
         for (i = 0; i < nBits; ++i) {
             if ((setBits & (1 << i)) != 0) {
-                reg.node[ii].state = (1 << i) + width;
-                //reg.node[ii].state = i + offset;
+                //initializing with same state + highbit off of register
+                reg.node[ii].state = (1 << i) + offset;
+                //use negative amplitude
                 reg.node[ii].amplitude.setReal(-norm);
                 ++ii;
             }
@@ -503,7 +510,6 @@ public class Grover {
         for (i = 0; i < nBits; ++i) {
             if ((setBits & (1 << i)) != 0) {
                 reg.node[ii].state = 1 << i;
-                //reg.node[ii].state = i;
                 reg.node[ii].amplitude.setReal(norm);
                 ++ii;
             }
@@ -563,7 +569,6 @@ public class Grover {
         double norm = 1./Math.sqrt(2*initSize);  
         int ii = 0;
         for (i = 0; i < list.length; ++i) {
-            //reg.node[ii].state = list[i] + width;
             reg.node[ii].state = list[i] + offset;
             reg.node[ii].amplitude.setReal(-norm);
             ++ii;
