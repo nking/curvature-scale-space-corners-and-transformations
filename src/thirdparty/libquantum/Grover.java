@@ -112,10 +112,20 @@ public class Grover {
         // if bits 0 and 1 are set, it flips the bit reg->width + 1
         gates.quantum_toffoli(0, 1, width + 1, reg);
 
+        // NOTE: here, either need to add qubits to handle
+        // the toffoli gate target > width+1
+        // which means add it to the initialization of the
+        // register in the first place,
+        // OR, consider rewriting the logic
+        //int addQubits = width + 1;
+            
         for (i = 1; i < width; i++) {
             //for each node.state: 
             // if bits i and reg->width + i are set, 
             // it flips the bit reg->width + 1 + i
+                            
+            //NOTE: error here w/ target > width+1
+            
             gates.quantum_toffoli(i, width + i, width + i + 1, reg);
         }
 
@@ -128,6 +138,9 @@ public class Grover {
             //for each node.state: 
             // if bits i and reg->width + i are set, 
             // it flips the bit reg.width + 1 + i
+            
+            //NOTE: error here w/ target > width+1
+                
             gates.quantum_toffoli(i, width + i, width + i + 1, reg);
         }
 
@@ -221,7 +234,8 @@ public class Grover {
         oracle(target, reg, gates);
 
         if (debug) {//DEBUG
-            System.out.format("AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
+            System.out.format(
+                "AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
                 target, reg.size, 1 << reg.hashw);
             qureg.quantum_print_qureg(reg);
         }
@@ -232,18 +246,18 @@ public class Grover {
             gates.quantum_hadamard(i, reg);
         }
 
-
         if (debug) {//DEBUG
-            System.out.format("AFTER hadamard target=%d hadamard reg.size=%d\n", 
+            System.out.format(
+                "AFTER hadamard target=%d hadamard reg.size=%d\n", 
                 target, reg.size);
             qureg.quantum_print_qureg(reg);
         }
 
         inversion(reg, gates);
 
-
         if (debug) {//DEBUG
-            System.out.format("AFTER target=%d inversion reg.size=%d\n", 
+            System.out.format(
+                "AFTER target=%d inversion reg.size=%d\n", 
                 target, reg.size);
             qureg.quantum_print_qureg(reg);
         }
@@ -252,12 +266,12 @@ public class Grover {
             gates.quantum_hadamard(i, reg);
         }
 
-
         if (debug) {//DEBUG
             System.out.format("AFTER target=%d 2nd hadamard  reg.size=%d\n", 
                 target, reg.size);
             qureg.quantum_print_qureg(reg);
         }
+        
     }
 
     /** runtime complexity is O(reg.size * reg.width) * nLoop
