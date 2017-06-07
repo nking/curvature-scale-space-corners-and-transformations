@@ -37,6 +37,8 @@ Implementation of Grover's search algorithm
 */
 
 public class Grover {
+    
+    boolean debug = true;
 
     /*
             from wikipedia:
@@ -94,9 +96,12 @@ public class Grover {
                    flip bit i in all node states
         */
         
+        //int width = reg.width;
+        int width = reg.width - 1;
+        
         //runtime complexity is O(reg.size * reg.width),
         // (because decoherence lambda is 0.0).
-        for (i = 0; i < reg.width; i++) {
+        for (i = 0; i < width; i++) {
             //if query bit i is 0, flip bit i in all node states
             if ((query & (1 << i)) == 0) {
                 gates.quantum_sigma_x(i, reg);
@@ -105,39 +110,38 @@ public class Grover {
 
         //for each node.state: 
         // if bits 0 and 1 are set, it flips the bit reg->width + 1
-        gates.quantum_toffoli(0, 1, reg.width + 1, reg);
+        gates.quantum_toffoli(0, 1, width + 1, reg);
 
-        for (i = 1; i < reg.width; i++) {
+        for (i = 1; i < width; i++) {
             //for each node.state: 
             // if bits i and reg->width + i are set, 
             // it flips the bit reg->width + 1 + i
-            gates.quantum_toffoli(i, reg.width + i, reg.width + i + 1, reg);
+            gates.quantum_toffoli(i, width + i, width + i + 1, reg);
         }
 
         //for each node.state: 
         // if bit reg->width + i is set, 
         // it flips the bit reg->width
-        gates.quantum_cnot(reg.width + i, reg.width, reg);
+        gates.quantum_cnot(width + i, width, reg);
 
-        for (i = reg.width - 1; i > 0; i--) {
+        for (i = width - 1; i > 0; i--) {
             //for each node.state: 
             // if bits i and reg->width + i are set, 
             // it flips the bit reg.width + 1 + i
-            gates.quantum_toffoli(i, reg.width + i, reg.width + i + 1, reg);
+            gates.quantum_toffoli(i, width + i, width + i + 1, reg);
         }
 
         //for each node.state: 
         // if bits 0 and 1 are set, 
         // it flips the bit reg->width + 1
-        gates.quantum_toffoli(0, 1, reg.width + 1, reg);
+        gates.quantum_toffoli(0, 1, width + 1, reg);
 
-        for (i = 0; i < reg.width; i++) {
+        for (i = 0; i < width; i++) {
             //if query bit i is 0, flip bit i in all node states
             if ((query & (1 << i)) == 0) {
                 gates.quantum_sigma_x(i, reg);
             }
         }
-
     }
 
     /**
@@ -150,46 +154,48 @@ public class Grover {
 
         //|2|0^n> -I_n|
         
+        //int width = reg.width;
+        int width = reg.width - 1;
         
         //Flip the target bit of each basis state, i
-        for (i = 0; i < reg.width; i++) {
+        for (i = 0; i < width; i++) {
             gates.quantum_sigma_x(i, reg);
         }
        
-        gates.quantum_hadamard(reg.width - 1, reg);
+        gates.quantum_hadamard(width - 1, reg);
 
-        if (reg.width == 3) {
+        if (width == 3) {
         
             gates.quantum_toffoli(0, 1, 2, reg);
         
         } else {
             
             //If bits 0 and 1 are set, it flips the target bit.
-            gates.quantum_toffoli(0, 1, reg.width + 1, reg);
+            gates.quantum_toffoli(0, 1, width + 1, reg);
 
-            for (i = 1; i < reg.width - 1; i++) {
+            for (i = 1; i < width - 1; i++) {
                 //If bits i and reg.width+i are set, it flips the target bit.
-                gates.quantum_toffoli(i, reg.width + i, reg.width + i + 1, reg);
+                gates.quantum_toffoli(i, width + i, width + i + 1, reg);
             }
 
             //for each reg.state, 
             //   Flip the target bit of a basis state if 
             //   the control bit is set
-            gates.quantum_cnot(reg.width + i, reg.width - 1, reg);
+            gates.quantum_cnot(width + i, width - 1, reg);
 
-            for (i = reg.width - 2; i > 0; i--) {
+            for (i = width - 2; i > 0; i--) {
                 //If bits i and reg.width+i are set, it flips the target bit.
-                gates.quantum_toffoli(i, reg.width + i, reg.width + i + 1, reg);
+                gates.quantum_toffoli(i, width + i, width + i + 1, reg);
             }
 
             //If bits 0 and 1 are set, it flips the target bit.
-            gates.quantum_toffoli(0, 1, reg.width + 1, reg);
+            gates.quantum_toffoli(0, 1, width + 1, reg);
         }
 
-        gates.quantum_hadamard(reg.width - 1, reg);
+        gates.quantum_hadamard(width - 1, reg);
         
         //Flip the target bit of each basis state, i
-        for (i = 0; i < reg.width; i++) {
+        for (i = 0; i < width; i++) {
             gates.quantum_sigma_x(i, reg);
         }
         
@@ -203,52 +209,55 @@ public class Grover {
      * @param reg
      */
     private void grover(int target, QuantumReg reg, Gates gates, QuReg qureg) {
-
-        int i;   
+        
+        int i;  
+        
+        //int width = reg.width;
+        int width = reg.width - 1;
 
         //unitary operator operating on two qubits, target and each i
         // |x>|q> ----> (-1)^(f(x)) * |x> 
         // (gives the found solutions negative signs)
         oracle(target, reg, gates);
 
-        //DEBUG
-        //System.out.format("AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
-        //    target, reg.size, 1 << reg.hashw);
-        //qureg.quantum_print_qureg(reg);
-
+        if (debug) {//DEBUG
+            System.out.format("AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
+                target, reg.size, 1 << reg.hashw);
+            qureg.quantum_print_qureg(reg);
+        }
 
         //   H⊗n   |2|0^n> -I_n|  H⊗n
 
-
-        for (i = 0; i < reg.width; i++) {
+        for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, reg);
         }
 
 
-        //DEBUG
-        //System.out.format("AFTER hadamard target=%d hadamard reg.size=%d\n", 
-        //    target, reg.size);
-        //qureg.quantum_print_qureg(reg);
-
+        if (debug) {//DEBUG
+            System.out.format("AFTER hadamard target=%d hadamard reg.size=%d\n", 
+                target, reg.size);
+            qureg.quantum_print_qureg(reg);
+        }
 
         inversion(reg, gates);
 
 
-        //DEBUG
-        //System.out.format("AFTER target=%d inversion reg.size=%d\n", 
-        //    target, reg.size);
-        //qureg.quantum_print_qureg(reg);
+        if (debug) {//DEBUG
+            System.out.format("AFTER target=%d inversion reg.size=%d\n", 
+                target, reg.size);
+            qureg.quantum_print_qureg(reg);
+        }
 
-
-        for (i = 0; i < reg.width; i++) {
+        for (i = 0; i < width; i++) {
             gates.quantum_hadamard(i, reg);
         }
 
 
-        //DEBUG
-        //System.out.format("AFTER target=%d 2nd hadamard  reg.size=%d\n", 
-        //    target, reg.size);
-        //qureg.quantum_print_qureg(reg);
+        if (debug) {//DEBUG
+            System.out.format("AFTER target=%d 2nd hadamard  reg.size=%d\n", 
+                target, reg.size);
+            qureg.quantum_print_qureg(reg);
+        }
     }
 
     /** runtime complexity is O(reg.size * reg.width) * nLoop
@@ -304,45 +313,46 @@ public class Grover {
 
         QuantumReg reg = qureg.quantum_new_qureg(0, width);
 
-        //DEBUG
-        //System.out.format("AFTER construction  reg.size=%d hash.length=%d\n", 
-        //    reg.size, 1 << reg.hashw);
-        //qureg.quantum_print_qureg(reg);
-
+        if (debug) {//DEBUG
+            System.out.format(
+                "AFTER construction  reg.size=%d reg.width=%d hash.length=%d\n", 
+                reg.size, reg.width, 1 << reg.hashw);
+            qureg.quantum_print_qureg(reg);
+        }
+        
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
-        //Note that the high bits off of the register are flipped: 
-        //    011 -> 1011, but the quantum register would be too short for this,
-        //                 that is, the extra qubit is not available.
-        //                 it works in this language and paradigm because
-        //                 the integer data type is large enough to hold
-        //                 the high set bits that do not have qubits.
-        // TODO: look at details of handling
-        //       the logic within register.width including possibly
-        //       expanding that.
-        gates.quantum_sigma_x(reg.width, reg);
-
-        //DEBUG
-        //System.out.format("AFTER sigma_x  reg.size=%d\n", reg.size);
-        //qureg.quantum_print_qureg(reg);
+        qureg.quantum_addscratch(1, reg);
+        gates.quantum_sigma_x(width, reg);
+        
+        if (debug) {
+            //DEBUG
+            System.out.format("AFTER sigma_x  reg.size=%d reg.width=%d\n", 
+                reg.size, reg.width);
+            qureg.quantum_print_qureg(reg);
+        }
 
         //runtime complexity is O(reg.size * reg.width)
         for (i = 0; i < reg.width; i++) {
             gates.quantum_hadamard(i, reg);
         }
+        
+        if (debug) {//DEBUG
+            System.out.format(
+                "AFTER 1st hadamard gates  reg.size=%d reg.width=%d hash.length=%d\n", 
+                reg.size, reg.width, 1 << reg.hashw);
+            qureg.quantum_print_qureg(reg);
+        }
 
-        //this expands the register to next highest bitstring, for the
-        // work space to hold the low bit integer states after inversion.
-        gates.quantum_hadamard(reg.width, reg);
-
-        //DEBUG
-        //System.out.format("AFTER 1st hadamard gates  reg.size=%d hash.length=%d\n", 
-        //    reg.size, 1 << reg.hashw);
-        //qureg.quantum_print_qureg(reg);
+        if (debug) {//DEBUG
+            System.out.format("AFTER 2 1st hadamard gates  reg.size=%d reg.width=%d hash.length=%d\n", 
+                reg.size, reg.width, 1 << reg.hashw);
+            qureg.quantum_print_qureg(reg);
+        }
 
         // upper limit to number of iterations from:
         //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
-        int end = (int) (Math.PI / 4 * Math.sqrt(1 << reg.width));
+        int end = (int) (Math.PI / 4 * Math.sqrt(1 << width));
 
         System.out.format("Iterating %d times\n", end);
 
@@ -354,30 +364,34 @@ public class Grover {
             grover(N, reg, gates, qureg);
         }
 
+        if (debug) { //DEBUG
+            System.out.format(
+                "AFTER grover  reg.size=%d reg.width=%d\n", 
+                reg.size, reg.width);
+            qureg.quantum_print_qureg(reg);
+        }
+        
 
-        //DEBUG
-        //System.out.format("AFTER grover  reg.size=%d\n", reg.size);
-        //qureg.quantum_print_qureg(reg);
-
-
-        gates.quantum_hadamard(reg.width, reg);
-
-
-        //DEBUG
-        //System.out.format("AFTER last hadamard  reg.size=%d\n", reg.size);
-        //qureg.quantum_print_qureg(reg);
+        //gates.quantum_hadamard(reg.width, reg);
+        gates.quantum_hadamard(width, reg);
 
 
-        reg.width++;
-
+        if (debug) {//DEBUG//DEBUG
+            System.out.format(
+                "AFTER last hadamard  reg.size=%d reg.width=%d\n", 
+                reg.size, reg.width);
+            qureg.quantum_print_qureg(reg);
+        }
+        
         Measure measure = new Measure();
 
         // runtime complexity is O(reg.size)
         measure.quantum_bmeasure(reg.width - 1, reg, rng);
 
-
         //DEBUG
-        System.out.format("AFTER bmeasure reg.size=%d\n", reg.size);
+        System.out.format(
+            "AFTER bmeasure reg.size=%d reg.width=%d\n", 
+            reg.size, reg.width);
         qureg.quantum_print_qureg(reg);
 
 
