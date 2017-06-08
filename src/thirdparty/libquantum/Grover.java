@@ -67,6 +67,11 @@ public class Grover {
     private void oracle(int query, QuantumReg reg, Gates gates) {
         int i;
         
+        //TODO: need to either double the number of bits used in
+        //      initialization of the register to have those 
+        //      available here or need to adjust the algorithm
+        //      to have same results with closer to current number of bits.
+        
         /*
          function f(x)
                 == 1 when x satisifies search criteria, 
@@ -306,6 +311,30 @@ public class Grover {
                 //reg.node[i].state ^= (1 << width0);
                 
                 reg.node[i].amplitude.times(-1);
+            } else {
+                // wanting to unset all set bit so that subsequent
+                //   hadamard gate doesn't create a node with value
+                //   query when it's absent.
+                //   cycling from a power of 2 might be responsible.
+                // 
+                //  
+                // NOTE: adjustments to oracle1 to result in
+                //       a high bit set as a marker would be consistent
+                //       with the computational model.
+                //       then will use the highbit to unset bits
+                //       in the remaining states.
+                //       then the grover diffuser should work without 
+                //         a period of numbers adding a state not present
+                //         in the original number list.
+                
+                //NOTE, when have it working well with just one bit extra,
+                //   should be able to change the initialization of the
+                //   register to only include the original numbers.
+                //   the 2nd set shifted and with a negative value
+                //   should be unecessary and may more complex physics
+                //   to implement.  looks a little odd, but haven't
+                //   spent time on that yet...
+                
             }
         }
         
@@ -434,6 +463,25 @@ public class Grover {
                 target, reg.size);
             qureg.quantum_print_qureg(reg);
         }
+        
+        /*
+        NOTE: the diffusion filter H⊗n   |2|0^n> -I_n|  H⊗n
+            can end up falsely creating a number which is not
+            present in the initial list, 
+            but which is a cycle in the numbers,
+            that is an offset from a power of 2 that is == query.
+        
+            for example, a list with a 2 and 7 but no 5
+            resulted in changing the state of the 2 to 5
+            
+            looking at modifiying the oracle to use an extra high
+            bit to mark the matches (those which are currently 
+            the ones with width0 bit flipped)
+            and then use that in a gate to set all other
+            bits to 0 when high bit is not set.
+              that should avoid the cycling.
+        
+        */
         
     }
 
