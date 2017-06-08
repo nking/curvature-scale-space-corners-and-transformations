@@ -18,7 +18,7 @@ public class GroverTest extends TestCase {
     public GroverTest() {
     }
     
-    public void testRun() {
+    public void estRun() {
         
         log.info("testRun");
                
@@ -41,24 +41,36 @@ public class GroverTest extends TestCase {
                
         int number = 3;
         int nbits = 3;
-        //int[] list = new int[]{0,1,2,3,4,5,6,7};
-        //int[] list = new int[]{1,2,3,0,1,4,2,7};
+        int[] list;
+        int r;
+        //list = new int[]{0,1,2,3,4,5,6,7};
+        //list = new int[]{1,2,3,0,5,4,6,7};
+        list = new int[]{1,2,3,0,1,4,2,7};
          
         Grover grover = new Grover();
-            
-        // (2*nBits) + 4
-        nbits = 14;
-        int[] list = new int[]{1,2,3,4,11,14,12,17};
         
-        int r = grover.run(number, nbits, list);
+        nbits = 3;
+        
+        r = grover.run(number, nbits, list);
         System.out.println("search=" + number + " found=" + r);
         
         number = 5;
+        grover = new Grover();
         r = grover.run(number, nbits, list);
         System.out.println("search=" + number + " found=" + r);
+        
+        //number = 3;
+        //nbits = 5;
+        //list = new int[]{1,2,3,4,11,14,12,17};
+        //r = grover.run(number, nbits, list);
+        //System.out.println("search=" + number + " found=" + r);
+        number = 5;
+        //r = grover.run(number, nbits, list);
+        //System.out.println("search=" + number + " found=" + r);
+        
     }
     
-    public void testSetBits() {
+    public void estSetBits() {
         
         System.out.println("testSetBits");
         
@@ -74,13 +86,13 @@ public class GroverTest extends TestCase {
         /*
         qubits
         0000
-    [junit] 0001
-    [junit] 0100
-    [junit] 0101
-    [junit] 1000
-    [junit] 1001
-    [junit] 1100
-    [junit] 1101
+        0001
+        0100
+        0101
+        1000
+        1001
+        1100
+        1101
         */
         
         System.out.println("setBits=" + setBits);
@@ -107,6 +119,7 @@ public class GroverTest extends TestCase {
             Grover grover = new Grover();
                 
             int r = grover.run(number, width, setBits);
+            //int r = grover.run(number, width, list);
             
             System.out.println("number=" + number + " set=" +
                 (set.contains(number)) + " r=" + r);

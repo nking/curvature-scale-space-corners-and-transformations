@@ -138,6 +138,34 @@ public class QuReg {
     }
     
     /**
+     * Reset the hash table to size 2^(reg.width+2) and
+     * reconstruct it
+     */
+    public void quantum_expand_and_reconstruct_hash(QuantumReg reg) {
+  
+        int i;
+        
+        if (reg.size == 0) {
+            return;
+        }
+        
+        reg.hashw = reg.width + 2;
+
+        // Allocate the hash table 
+        int nHash = 1 << reg.hashw;
+        reg.hash = new int[nHash];
+
+        int end = 1 << reg.hashw;
+        Arrays.fill(reg.hash, 0, end, 0);
+   
+        assert(reg.node.length >= reg.size);
+        
+        for (i = 0; i < reg.size; i++) {
+            quantum_add_hash(reg.node[i].state, i, reg);
+        }
+    }
+    
+    /**
      * Return the reduced bitmask of a basis state
      */
     //static int quantum_bitmask(MAX_UNSIGNED a, int width, int  *bits) {

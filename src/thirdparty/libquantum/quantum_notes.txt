@@ -345,11 +345,9 @@ the algorithm outline is:
         "A quantum algorithm for finding the minimum"
            by Durr and Hoyer
 
-            T [i] = x,
-        
 -------
    misc notes:
-    -- could abstract the quantum register node and 
+    -- For Shor.java could abstract the quantum register node and 
           make a specialized class of it that uses
           a VeryLongBitString as the state variable,
           and then create methods for the specialized
@@ -384,3 +382,6 @@ the algorithm outline is:
       "Application of Hybrid Quantum Tabu Search with
       Support Vector Regression (SVR) for Load Forecasting"
       by Lee and Lin
+   ------
+   "Quantum algorithm for linear systems of equations"
+      by Harrow, Hassidim,and Lloyd
