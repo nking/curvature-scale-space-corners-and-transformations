@@ -258,12 +258,13 @@ public class Grover {
      * @param state (f(x) == 1 when x == state, else f(x) == 0)
      * @param reg
      */
-    private void oracle_(int query, QuantumReg reg, Gates gates) {
+    private void oracle2(int query, QuantumReg reg, Gates gates) {
         int i;
         
         /*
         TODO: can this be done with purely NAND gates and query
-           as unitary operations?
+        with fewer qubits?
+        a lecture suggests only need unitary operations
         */
 
         /*
@@ -367,48 +368,16 @@ public class Grover {
         }
         
         
-        /*
-        anything that is all 1's at this point is the found number.
-            -- iterate from 0 to reg.width-2
-               if bit is set, set high bit to 1, else 0
-               
-                   bit   high bit   wanted result to be put in high bit
-                    0        1       0
-                    1        1       1
-                    0        0       0
-                    1        0       0
-                 AND gate
+        // anything that is all 1's at this point is the found number.
+        // (all 1's except the high bit)
         
-            then, the matching entry if any will have high bit set
-               -- also need to unset bit width0 for all
-                 
-        
-        at end of entire method
-            iterate over all bits
-            if high bit is not set, unset bit
-            
-                 high bit   bit    target bit
-                    0        1       0
-                    0        0       0
-                    1        1       1
-                    1        0       0
-                 AND gate
-        
-        one problem is if the query is 0
-            so not quite right yet...
-        */
-        
-        /*
         // not reversible
+        // set high bit if all bits are set
         gates.quantum_ccand(0, 0, reg.width-1, reg);
         for (i = 1; i < reg.width-2; i++) {
             gates.quantum_ccand(i, reg.width-1, reg.width-1, reg);
         }
-        // not reversible
-        for (i = 0; i < reg.size; i++) {
-            reg.node[i].state  &= ~(1L << width0);
-        }
-        */
+        
         
         if (debug) {//DEBUG
             for (int ii = 0; ii < reg.size; ii++) {
@@ -463,6 +432,27 @@ public class Grover {
             }
         }
         
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+            
+        }
+        
+        
+        // not reversible
+        // unset the width0 bit
+        for (i = 0; i < reg.size; i++) {
+            reg.node[i].state  &= ~(1L << width0);
+        }
+       
+        
         if (debug) {//DEBUG
             for (int ii = 0; ii < reg.size; ii++) {
                 StringBuilder sb = sbs[ii];
@@ -476,111 +466,6 @@ public class Grover {
             System.out.println("END STATES");
             for (int ii = 0; ii < reg.size; ii++) {
                 System.out.println(sbs[ii]);
-            }
-        }
-    }   
-    
-    /**
-     * 
-     * runtime complexity is O(reg.size * reg.width),
-       (because decoherence lambda is 0.0).
-     * 
-     * @param state (f(x) == 1 when x == state, else f(x) == 0)
-     * @param reg
-     */
-    private void oracle2(int query, QuantumReg reg, Gates gates) {
-        int i;
-        
-        /*
-         function f(x)
-                == 1 when x satisifies search criteria, 
-                   that is, x == w
-                   |U_w|x> = -|x>
-                == 0 else is 0, that is, x != w
-                   |U_w|x> = |x>
-
-        // |x>|q> ----> (-1)^(f(x)) * |x>        
-        */
-        
-        //DEBUG
-        StringBuilder[] sbs = new StringBuilder[reg.size];
-        if (debug) {//DEBUG
-            for (i = 0; i < reg.size; i++) {
-                StringBuilder sb = new StringBuilder();
-                sbs[i] = sb;
-            }
-            for (i = 0; i < reg.size; i++) {
-                StringBuilder sb = sbs[i];
-                String str = Long.toBinaryString(reg.node[i].state);
-                while (str.length() < reg.width) {
-                    str = "0" + str;
-                }
-                sb.append(str).append("  ");
-            }
-            
-            System.out.println("STATES");
-            for (i = 0; i < reg.size; i++) {
-                System.out.println(sbs[i]);
-            }
-        }
-        
-        /*
-        TODO: review this for the computation model.
-        might need to be changed to single bit operations.
-        the libquantum code uses unitary operations, but the result
-        is that a state including the set bits but is not an exact query
-        match gets high bit set too.
-        wanting to set the highest bit if the state bits 0 through width0
-        are equal to query.
-        */
-        for (i = 0; i < reg.size; ++i) {
-            if ((reg.node[i].state & ~(1 << width0)) == query) {
-                // set the highest bit
-                //reg.node[i].state |= (1 << (reg.width - 1));
-                //toggle highest bit
-                //reg.node[i].state ^= (1 << width0);
-                
-                reg.node[i].amplitude.times(-1);
-            } else {
-                // wanting to unset all set bit so that subsequent
-                //   hadamard gate doesn't create a node with value
-                //   query when it's absent.
-                //   cycling from a power of 2 might be responsible.
-                // 
-                //  
-                // NOTE: adjustments to oracle1 to result in
-                //       a high bit set as a marker would be consistent
-                //       with the computational model.
-                //       then will use the highbit to unset bits
-                //       in the remaining states.
-                //       then the grover diffuser should work without 
-                //         a period of numbers adding a state not present
-                //         in the original number list.
-                
-                //NOTE, when have it working well with just one bit extra,
-                //   should be able to change the initialization of the
-                //   register to only include the original numbers.
-                //   the 2nd set shifted and with a negative value
-                //   should be unecessary and may be more complex physics
-                //   to implement.  looks a little odd, but haven't
-                //   spent time on that yet...
-                
-            }
-        }
-        
-        if (debug) {//DEBUG
-            for (i = 0; i < reg.size; i++) {
-                StringBuilder sb = sbs[i];
-                String str = Long.toBinaryString(reg.node[i].state);
-                while (str.length() < reg.width) {
-                    str = "0" + str;
-                }
-                sb.append(str).append("  ");
-            }
-            
-            System.out.println("END STATES");
-            for (i = 0; i < reg.size; i++) {
-                System.out.println(sbs[i]);
             }
         }
     }
@@ -653,7 +538,7 @@ public class Grover {
         //unitary operator operating on two qubits, target and each i
         // |x>|q> ----> (-1)^(f(x)) * |x> 
         // (gives the found solutions negative signs)
-        oracle_(target, reg, gates);
+        oracle(target, reg, gates);
 
         if (debug) {//DEBUG
             System.out.format(
@@ -693,25 +578,37 @@ public class Grover {
                 target, reg.size);
             qureg.quantum_print_qureg(reg);
         }
+       
+    }
+    
+    /**
+     * runtime complexity is O(reg.size * reg.width)  (because decoherence lambda is 0.0).
+     * 
+     * @param target 
+     *     (f(x) == 1 when x == target, else f(x) == 0)
+     * @param reg states with the high bit set are the found items
+     */
+    private void grover2(int target, QuantumReg reg, Gates gates, QuReg qureg) {
+               
+        // states with high bit set are the found states
+        oracle2(target, reg, gates);
+
+        if (debug) {//DEBUG
+            System.out.format(
+                "AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
+                target, reg.size, 1 << reg.hashw);
+            qureg.quantum_print_qureg(reg);
+        }
+
+        // TODO: amplify the state with high bit set
+        //       while conserving property sum squared ampl = 1
         
-        /*
-        NOTE: the diffusion filter H⊗n   |2|0^n> -I_n|  H⊗n
-            can end up falsely creating a number which is not
-            present in the initial list, 
-            but which is a cycle in the numbers,
-            that is an offset from a power of 2 that is == query.
-        
-            for example, a list with a 2 and 7 but no 5
-            resulted in changing the state of the 2 to 5
-            
-            looking at modifiying the oracle to use an extra high
-            bit to mark the matches (those which are currently 
-            the ones with width0 bit flipped)
-            and then use that in a gate to set all other
-            bits to 0 when high bit is not set.
-              that should avoid the cycling.
-        
-        */
+        // unset the highest bit
+        // not reversible
+        // unset the width0 bit
+        for (int i = 0; i < reg.size; i++) {
+            reg.node[i].state  &= ~(1L << (reg.width - 1));
+        }
         
     }
 
@@ -810,6 +707,14 @@ public class Grover {
             qureg.quantum_print_qureg(reg);
         }
 
+        return search(number, rng, gates, qureg, reg);
+    }
+    
+    private int search(int number, Random rng, Gates gates, QuReg qureg, 
+        QuantumReg reg) {
+        
+        int i;
+        
         // upper limit to number of iterations from:
         //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
         int end = (int) (Math.PI / 4 * Math.sqrt(1 << width0));
@@ -821,7 +726,7 @@ public class Grover {
             
             System.out.format("Iteration #%d\n", i);
             
-            grover(N, reg, gates, qureg);
+            grover(number, reg, gates, qureg);
         }
 
         if (debug) { //DEBUG
@@ -855,9 +760,9 @@ public class Grover {
 
 
         for (i = 0; i < reg.size; i++) {
-            if (reg.node[i].state == N) {
+            if (reg.node[i].state == number) {
                 System.out.format(
-                    "\nFound %d with a probability of %f\n\n", N,
+                    "\nFound %d with a probability of %f\n\n", number,
                     reg.node[i].amplitude.squareSum());
                 return number;
             }
@@ -901,18 +806,31 @@ public class Grover {
             width = 2;
         }
         width0 = width;
-
         
         QuReg qureg = new QuReg();
 
-        QuantumReg reg = initializeRegister(qureg, list);
-        
-        System.out.format("N = %d, list.length=%d, width0=%d reg.width=%d\n", N, 
-            list.length, width0, reg.width);
-        
         Random rng = Misc.getSecureRandom();
         
-        int ret = processInitialized(number, reg, rng);
+        int ret;
+        
+        if (true) {
+            
+            QuantumReg reg = initializeRegister(qureg, list);
+
+            System.out.format("N = %d, list.length=%d, width0=%d reg.width=%d\n", N, 
+                list.length, width0, reg.width);
+
+            ret = processInitialized(number, reg, rng);
+
+        } else {
+            
+            QuantumReg reg = initializeRegister2(qureg, list);
+
+            System.out.format("N = %d, list.length=%d, width0=%d reg.width=%d\n", N, 
+                list.length, width0, reg.width);
+
+            ret = processInitialized2(number, reg, rng);
+        }
         
         return ret;
     }
@@ -1063,6 +981,57 @@ public class Grover {
         
         int listLen = list.length;
         
+        final int initSize = 2 * listLen;
+
+        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);
+
+        reg.width++;
+        qureg.quantum_expand_and_reconstruct_hash(reg);
+        
+        //need to initialize a register to have the given states from list
+        //and a set of the same numbers but with negative amplitude and
+        //the next highest bit set, that is width + 1
+        //    rest of the algorithm should proceed in same manner.
+                
+        int offset = 1 << width0;
+        
+        int i;
+        
+        double norm = 1./Math.sqrt(initSize);  
+        for (i = 0; i < list.length; ++i) {
+            reg.node[i].state = list[i] + offset;
+            reg.node[i].amplitude.setReal(-norm);
+        }
+        int ii = list.length;
+        for (i = 0; i < list.length; ++i) {
+            reg.node[ii].state = list[i];
+            reg.node[ii].amplitude.setReal(norm);
+            ii++;
+        }
+        
+        if (debug) {//DEBUG
+            System.out.format("AFTER init reg.size=%d "
+                + " width0=%d reg.width=%d reg.hash.length=%d\n", reg.size,
+                width0, reg.width, (1 << reg.hashw));
+            qureg.quantum_print_qureg(reg);
+        }
+       
+        return reg;
+    }
+    
+    /**
+     * Initialize the register with a list of numbers as the eigenstate,
+     * superposition, and their amplitudes.
+     *
+     * @param qureg
+     * @param setBits
+     * @param width
+     * @return 
+     */
+    private QuantumReg initializeRegister2(QuReg qureg, int[] list) {
+        
+        int listLen = list.length;
+        
         final int initSize = listLen;
 
         QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);
@@ -1187,4 +1156,83 @@ public class Grover {
         return -1;
     }
 
+    /**
+     * runtime complexity for the processing 
+     * is O(reg.size * reg.width) * nLoop
+     * (the runtime complexity of the preparation of the register for the list, 
+     * O(N),
+     * is ignored just as in the enumerated run method).
+     * NOTE that the width should be set to the most number of bits needed
+     * for any number in list. 
+     * NOTE also that the largest number in the list must be
+     * .lte. integer.max_value - 2^width.
+     * NOTE that measurements of register reg are not taken.
+     * @param number a number to search for within the initialized register reg
+     * @param reg initialized register which holds nodes of state which are 
+     * searched and have amplitudes which when squared and summed over register 
+     * are equal to 1.
+     * @param rng
+     * @return
+     */
+    public int processInitialized2(int number, QuantumReg reg, Random rng) {
+        
+        int i;
+
+        final int N = number;
+
+        QuReg qureg = new QuReg();
+        
+        //DEBUG
+        //System.out.format("AFTER construction  reg.size=%d\n", reg.size);
+        //qureg.quantum_print_qureg(reg);
+
+        // upper limit to number of iterations from:
+        //"Tight Bounds on Quantum Searching" by Boyer, Brassard, Hoyer, and Tapp 
+        //  NOTE that if the number of times number will appear in list
+        //     is known ahead of time,
+        //     the term in the sqrt can be divided by that multiplicity.
+        int end = (int) (Math.PI / 4 * Math.sqrt(1 << width0));
+
+        System.out.format("Iterating %d times\n", end);
+
+        Gates gates = new Gates(rng);
+
+        //runtime complexity is O(reg.size * reg.width) * nLoop
+        for (i = 1; i <= end; i++) {
+            
+            System.out.format("Iteration #%d\n", i);
+            
+            grover2(N, reg, gates, qureg);
+        }
+
+        if (debug) { //DEBUG
+            System.out.format(
+                "AFTER grover  reg.size=%d reg.width=%d\n", 
+                reg.size, reg.width);
+            qureg.quantum_print_qureg(reg);
+        }
+        
+        Measure measure = new Measure();
+
+        // runtime complexity is O(reg.size)
+        measure.quantum_bmeasure(reg.width - 1, reg, rng);
+
+        //DEBUG
+        System.out.format(
+            "AFTER bmeasure reg.size=%d reg.width=%d\n", 
+            reg.size, reg.width);
+        qureg.quantum_print_qureg(reg);
+
+
+        for (i = 0; i < reg.size; i++) {
+            if (reg.node[i].state == N) {
+                System.out.format(
+                    "\nFound %d with a probability of %f\n\n", N,
+                    reg.node[i].amplitude.squareSum());
+                return number;
+            }
+        }
+
+        return -1;
+    }
 }

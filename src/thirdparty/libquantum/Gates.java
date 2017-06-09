@@ -1576,9 +1576,9 @@ public class Gates {
                     0        0       0
                     1        0       0
      
-     NOTE: added by Nichole. Presumably the universal and gate should be
+     NOTE: added by Nichole. Presumably the universal AND gate should be
      present on the computer.
-     * 
+    
      * @param control1
      * @param control2
      * @param target
