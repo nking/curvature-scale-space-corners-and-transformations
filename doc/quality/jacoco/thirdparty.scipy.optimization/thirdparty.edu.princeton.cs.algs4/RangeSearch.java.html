@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RangeSearch.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.edu.princeton.cs.algs4</a> &gt; <span class="el_source">RangeSearch.java</span></div><h1>RangeSearch.java</h1><pre class="source lang-java linenums">package thirdparty.edu.princeton.cs.algs4;
+
+/******************************************************************************
+adapted from http://algs4.cs.princeton.edu/92search/
+    copyright for authors Robert Sedgewick and Kevin Wayne
+    is GPLV3, http://algs4.cs.princeton.edu/faq/ 
+*
+* Compilation:  javac RangeSearch.java
+ *  Execution:    java RangeSearch &lt; words.txt
+ *  
+ *  Range search implemented using a randomized BST.
+ *  
+ *  % java RangeSearch &lt; words.txt
+ *  height:          33
+ *  size:            20068
+ *  min key:         a
+ *  max key:         zygote
+ *  integrity check: true
+ *
+ * [kevin, kfg]
+ *  key
+ *  keyboard
+ *  keyed
+ *  keyhole
+ *  keynote
+ *  keypunch
+ *  keys
+ *  keystone
+ *  keyword
+ *
+ *  [paste, pasty]
+ *  paste
+ *  pasteboard
+ *  pastel
+ *  pasteup
+ *  pastiche
+ *  pastime
+ *  pastor
+ *  pastoral
+ *  pastry
+ *  pasture
+ *  pasty
+ 
+ ******************************************************************************/
+
+<span class="fc" id="L46">public class RangeSearch&lt;Key extends Comparable&lt;Key&gt;, Value&gt;  {</span>
+
+    protected RangeSearchNode&lt;Key, Value&gt; root;   // root of the BST
+    
+    //BST helper node data type
+    protected class RangeSearchNode&lt;T, S&gt; {
+        T key;              // key
+        S val;              // associated data
+        RangeSearchNode&lt;T, S&gt; left, right;   // left and right subtrees
+        int N;              // node count of descendents
+
+        public RangeSearchNode(T key, S val) {
+            this.key = key;
+            this.val = val;
+            this.N = 1;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder(&quot;key=&quot;);
+            sb.append(key).append(&quot; n=&quot;).append(N)
+                .append(&quot; left=&quot;).append(left)
+                .append(&quot; right=&quot;).append(right)
+                .append(&quot; val=&quot;).append(val);
+            return sb.toString();
+        }
+    }
+    
+   /***************************************************************************
+    *  BST search
+    ***************************************************************************/
+
+    public boolean contains(Key key) {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        return (get(key) != null);</span>
+    }
+
+    // return value associated with the given key
+    // if no such value, return null
+    public Value get(Key key) {
+<span class="fc" id="L85">        return get(root, key);</span>
+    }
+
+    private Value get(RangeSearchNode&lt;Key, Value&gt; x, Key key) {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (x == null) return null;</span>
+<span class="fc" id="L90">        int cmp = key.compareTo(x.key);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if      (cmp == 0) return x.val;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        else if (cmp  &lt; 0) return get(x.left,  key);</span>
+<span class="fc" id="L93">        else               return get(x.right, key);</span>
+    }
+
+   /***************************************************************************
+    *  randomized insertion
+    ***************************************************************************/
+    /**
+     * insert interval, but if it intersects with an 
+     * interval already in tree, set the existing value
+     * to the given val, and return the previous value
+     * before the overwrite by val.  If null is returned
+     * from this method, then the insert succeeded,
+     * that is, there were no collisions.
+     * 
+     * @param key
+     * @param val
+     * @return the value that was replaced with given val
+     * if the Key intersected with another, preventing 
+     * an insert of Key, but updating existing with val.
+     * Note that the return is null when the insert
+     * succeeded.
+     */
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public Value put(Key key, Value val) {
+        
+        //to return whether insert was successful
+<span class="fc" id="L119">        Object[] replaced = new Object[1];</span>
+        
+<span class="fc" id="L121">        root = put(root, key, val, replaced);</span>
+        
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        return (replaced[0] == null) ? null : (Value)replaced[0];</span>
+        
+        //System.out.println(&quot;&lt;==root=&quot; + root);
+    }
+    
+    /**
+     * put key in map, and if compareVal is greater than or equal to the
+     * replaced value, re-insert the replaced value and return false, rlse
+     * the insert succeeded and returns true.
+     * @param &lt;Value2&gt;
+     * @param key
+     * @param val
+     * @return 
+     */
+    public &lt;Value2 extends Comparable&lt;Value&gt;&gt; boolean 
+        putIfLessThan(Key key, Value val, Value2 compareVal) {
+          
+        //if the insert replaced an object, this holds the value, then key
+<span class="fc" id="L141">        Object[] replaced = new Object[1];</span>
+<span class="fc" id="L142">        boolean[] inserted = new boolean[1];</span>
+        
+<span class="fc" id="L144">        root = putIfLessThan(root, key, val, compareVal, replaced, inserted);</span>
+        
+<span class="fc" id="L146">        return inserted[0];</span>
+        
+        //System.out.println(&quot;&lt;==root=&quot; + root);
+    }
+    
+    // make new node the root with uniform probability
+    @SuppressWarnings({&quot;unchecked&quot;})
+    private &lt;Value2 extends Comparable&lt;Value&gt;&gt; 
+        RangeSearchNode&lt;Key, Value&gt; 
+        putIfLessThan(RangeSearchNode&lt;Key, Value&gt; x, 
+        Key key, Value val, Value2 compareVal, Object[] replaced,
+        boolean[] inserted) {
+                    
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (x == null) {</span>
+<span class="fc" id="L160">            inserted[0] = true;</span>
+<span class="fc" id="L161">            return new RangeSearchNode&lt;Key, Value&gt;(key, val);</span>
+        }
+        
+<span class="fc" id="L164">        int cmp = key.compareTo(x.key);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (cmp == 0) {</span>
+<span class="fc" id="L166">            int cmpV = compareVal.compareTo(val);</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            if (cmpV &lt; 0) {</span>
+                // continue w/ insert
+<span class="nc" id="L169">                replaced[0] = x.val;</span>
+<span class="nc" id="L170">                x.val = val;</span>
+<span class="nc" id="L171">                inserted[0] = true;</span>
+            } else {
+<span class="fc" id="L173">                inserted[0] = false;</span>
+            }
+<span class="fc" id="L175">            return x;</span>
+        }
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) {</span>
+<span class="fc" id="L178">            return putRootIfLessThan(x, key, val, compareVal, replaced, inserted);</span>
+        }
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (cmp &lt; 0) {</span>
+<span class="fc" id="L181">            x.left  = putIfLessThan(x.left,  key, val, compareVal, replaced,</span>
+                inserted);
+        } else {
+<span class="fc" id="L184">            x.right = putIfLessThan(x.right, key, val, compareVal, replaced,</span>
+                inserted);
+        }
+        // (x.N)++;
+<span class="fc" id="L188">        fix(x);</span>
+<span class="fc" id="L189">        return x;</span>
+    }
+    
+    // make new node the root with uniform probability
+    private RangeSearchNode&lt;Key, Value&gt; put(RangeSearchNode&lt;Key, Value&gt; x, 
+        Key key, Value val, Object[] replaced) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (x == null) return new RangeSearchNode&lt;Key, Value&gt;(key, val);</span>
+<span class="fc" id="L196">        int cmp = key.compareTo(x.key);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (cmp == 0) {</span>
+<span class="fc" id="L198">            replaced[0] = x.val;</span>
+<span class="fc" id="L199">            x.val = val;</span>
+<span class="fc" id="L200">            return x;</span>
+        }
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) {</span>
+<span class="fc" id="L203">            return putRoot(x, key, val, replaced);</span>
+        }
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        if (cmp &lt; 0) {</span>
+<span class="fc" id="L206">            x.left  = put(x.left,  key, val, replaced);</span>
+        } else {
+<span class="fc" id="L208">            x.right = put(x.right, key, val, replaced);</span>
+        } 
+        // (x.N)++;
+<span class="fc" id="L211">        fix(x);</span>
+<span class="fc" id="L212">        return x;</span>
+    }
+
+    private &lt;Value2 extends Comparable&lt;Value&gt;&gt; 
+    RangeSearchNode&lt;Key, Value&gt; putRootIfLessThan(
+        RangeSearchNode&lt;Key, Value&gt; x, Key key, Value val, Value2 compareVal,
+        Object[] replaced, boolean[] inserted) {
+        
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (x == null) {</span>
+<span class="fc" id="L221">            inserted[0] = true;</span>
+<span class="fc" id="L222">            return new RangeSearchNode&lt;Key, Value&gt;(key, val);</span>
+        }
+        
+<span class="fc" id="L225">        int cmp = key.compareTo(x.key);</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        if (cmp == 0) {</span>
+<span class="fc" id="L227">            int cmpV = compareVal.compareTo(val);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">            if (cmpV &lt; 0) {</span>
+<span class="nc" id="L229">                replaced[0] = x.val;</span>
+<span class="nc" id="L230">                x.val = val;</span>
+<span class="nc" id="L231">                inserted[0] = true;</span>
+            } else {
+<span class="fc" id="L233">                inserted[0] = false;</span>
+            }
+<span class="fc" id="L235">            return x; </span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        } else if (cmp  &lt; 0) { </span>
+<span class="fc" id="L237">            x.left  = putRootIfLessThan(x.left,  key, val, compareVal, replaced,</span>
+                inserted); 
+<span class="fc" id="L239">            x = rotR(x); </span>
+        } else { 
+<span class="fc" id="L241">            x.right = putRootIfLessThan(x.right, key, val, compareVal, replaced,</span>
+                inserted); 
+<span class="fc" id="L243">            x = rotL(x); </span>
+        }
+<span class="fc" id="L245">        return x;</span>
+    }
+    
+    private RangeSearchNode&lt;Key, Value&gt; putRoot(
+        RangeSearchNode&lt;Key, Value&gt; x, Key key, Value val,
+        Object[] replaced) {
+        
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (x == null) return new RangeSearchNode&lt;Key, Value&gt;(key, val);</span>
+<span class="fc" id="L253">        int cmp = key.compareTo(x.key);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (cmp == 0) {</span>
+<span class="fc" id="L255">            replaced[0] = x.val;</span>
+<span class="fc" id="L256">            x.val = val;</span>
+<span class="fc" id="L257">            return x; </span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        } else if (cmp  &lt; 0) { </span>
+<span class="fc" id="L259">            x.left  = putRoot(x.left,  key, val, replaced); </span>
+<span class="fc" id="L260">            x = rotR(x); </span>
+        } else { 
+<span class="fc" id="L262">            x.right = putRoot(x.right, key, val, replaced); </span>
+<span class="fc" id="L263">            x = rotL(x); </span>
+        }
+<span class="fc" id="L265">        return x;</span>
+    }
+
+   /***************************************************************************
+    *  deletion
+    ***************************************************************************/
+    private RangeSearchNode&lt;Key, Value&gt; joinLR(RangeSearchNode&lt;Key, Value&gt; a, 
+        RangeSearchNode&lt;Key, Value&gt; b) { 
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        if (a == null) return b;</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (b == null) return a;</span>
+
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">        if (StdRandom.bernoulli((double) size(a) / (size(a) + size(b))))  {</span>
+<span class="nc" id="L277">            a.right = joinLR(a.right, b);</span>
+<span class="nc" id="L278">            fix(a);</span>
+<span class="nc" id="L279">            return a;</span>
+        } else {
+<span class="fc" id="L281">            b.left = joinLR(a, b.left);</span>
+<span class="fc" id="L282">            fix(b);</span>
+<span class="fc" id="L283">            return b;</span>
+        }
+    }
+
+    private RangeSearchNode&lt;Key, Value&gt; remove(RangeSearchNode&lt;Key, Value&gt; x, Key key) {
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (x == null) return null; </span>
+<span class="fc" id="L289">        int cmp = key.compareTo(x.key);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        if      (cmp == 0) x = joinLR(x.left, x.right);</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        else if (cmp  &lt; 0) x.left  = remove(x.left,  key);</span>
+<span class="fc" id="L292">        else               x.right = remove(x.right, key);</span>
+<span class="fc" id="L293">        fix(x);</span>
+<span class="fc" id="L294">        return x;</span>
+    }
+
+    // remove and return value associated with given key; if no such key, return null
+    public Value remove(Key key) {
+<span class="fc" id="L299">        Value val = get(key);</span>
+<span class="fc" id="L300">        root = remove(root, key);</span>
+<span class="fc" id="L301">        return val;</span>
+    }
+
+
+
+
+   /***************************************************************************
+    *  Range searching
+    ***************************************************************************/
+
+    // return all keys in given interval
+    public Iterable&lt;Key&gt; range(Key min, Key max) {
+<span class="nc" id="L313">        return range(new Interval&lt;Key&gt;(min, max));</span>
+    }
+    public Iterable&lt;Key&gt; range(Interval&lt;Key&gt; interval) { 
+<span class="nc" id="L316">        Queue&lt;Key&gt; list = new Queue&lt;Key&gt;();</span>
+<span class="nc" id="L317">        range(root, interval, list);</span>
+<span class="nc" id="L318">        return list;</span>
+    }
+
+    private void range(RangeSearchNode&lt;Key, Value&gt; x, Interval&lt;Key&gt; interval, 
+        Queue&lt;Key&gt; list) {
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        if (x == null) return;</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        if (!less(x.key, interval.min()))  range(x.left, interval, list);</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">        if (interval.contains(x.key))      list.enqueue(x.key);</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">        if (!less(interval.max(), x.key))  range(x.right, interval, list);</span>
+<span class="nc" id="L327">    }</span>
+
+
+
+   /***************************************************************************
+    *  Utility functions
+    ***************************************************************************/
+
+    // return the smallest key
+    public Key min() {
+<span class="nc" id="L337">        Key key = null;</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">        for (RangeSearchNode&lt;Key, Value&gt; x = root; x != null; x = x.left)</span>
+<span class="nc" id="L339">            key = x.key;</span>
+<span class="nc" id="L340">        return key;</span>
+    }
+    
+    // return the largest key
+    public Key max() {
+<span class="nc" id="L345">        Key key = null;</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        for (RangeSearchNode&lt;Key, Value&gt; x = root; x != null; x = x.right)</span>
+<span class="nc" id="L347">            key = x.key;</span>
+<span class="nc" id="L348">        return key;</span>
+    }
+
+
+   /***************************************************************************
+    *  useful binary tree functions
+    ***************************************************************************/
+
+    // return number of nodes in subtree rooted at x
+<span class="nc" id="L357">    public int size() { return size(root); }</span>
+    private int size(RangeSearchNode&lt;Key, Value&gt; x) { 
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        if (x == null) return 0;</span>
+<span class="fc" id="L360">        else           return x.N;</span>
+    }
+
+    // height of tree (empty tree height = 0)
+<span class="nc" id="L364">    public int height() { return height(root); }</span>
+    private int height(RangeSearchNode&lt;Key, Value&gt; x) {
+<span class="nc bnc" id="L366" title="All 2 branches missed.">        if (x == null) return 0;</span>
+<span class="nc" id="L367">        return 1 + Math.max(height(x.left), height(x.right));</span>
+    }
+
+
+   /***************************************************************************
+    *  helper BST functions
+    ***************************************************************************/
+
+    // fix subtree count field
+    private void fix(RangeSearchNode&lt;Key, Value&gt; x) {
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        if (x == null) return;                 // check needed for remove</span>
+<span class="fc" id="L378">        x.N = 1 + size(x.left) + size(x.right);</span>
+<span class="fc" id="L379">    }</span>
+
+    // right rotate
+    private RangeSearchNode&lt;Key, Value&gt; rotR(
+        RangeSearchNode&lt;Key, Value&gt; h) {
+<span class="fc" id="L384">        RangeSearchNode&lt;Key, Value&gt; x = h.left;</span>
+<span class="fc" id="L385">        h.left = x.right;</span>
+<span class="fc" id="L386">        x.right = h;</span>
+<span class="fc" id="L387">        fix(h);</span>
+<span class="fc" id="L388">        fix(x);</span>
+<span class="fc" id="L389">        return x;</span>
+    }
+
+    // left rotate
+    private RangeSearchNode&lt;Key, Value&gt; rotL(RangeSearchNode&lt;Key, Value&gt; h) {
+<span class="fc" id="L394">        RangeSearchNode&lt;Key, Value&gt; x = h.right;</span>
+<span class="fc" id="L395">        h.right = x.left;</span>
+<span class="fc" id="L396">        x.left = h;</span>
+<span class="fc" id="L397">        fix(h);</span>
+<span class="fc" id="L398">        fix(x);</span>
+<span class="fc" id="L399">        return x;</span>
+    }
+
+
+   /***************************************************************************
+    *  Debugging functions that test the integrity of the tree
+    ***************************************************************************/
+
+    // check integrity of subtree count fields
+<span class="nc bnc" id="L408" title="All 4 branches missed.">    public boolean check() { return checkCount() &amp;&amp; isBST(); }</span>
+
+    // check integrity of count fields
+<span class="nc" id="L411">    private boolean checkCount() { return checkCount(root); }</span>
+    private boolean checkCount(RangeSearchNode&lt;Key, Value&gt; x) {
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        if (x == null) return true;</span>
+<span class="nc bnc" id="L414" title="All 6 branches missed.">        return checkCount(x.left) &amp;&amp; checkCount(x.right) &amp;&amp; (x.N == 1 + size(x.left) + size(x.right));</span>
+    }
+
+
+    // does this tree satisfy the BST property?
+<span class="nc" id="L419">    private boolean isBST() { return isBST(root, min(), max()); }</span>
+
+    // are all the values in the BST rooted at x between min and max, and recursively?
+    private boolean isBST(RangeSearchNode&lt;Key, Value&gt; x, Key min, Key max) {
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        if (x == null) return true;</span>
+<span class="nc bnc" id="L424" title="All 4 branches missed.">        if (less(x.key, min) || less(max, x.key)) return false;</span>
+<span class="nc bnc" id="L425" title="All 4 branches missed.">        return isBST(x.left, min, x.key) &amp;&amp; isBST(x.right, x.key, max);</span>
+    } 
+
+
+
+   /***************************************************************************
+    *  helper comparison functions
+    ***************************************************************************/
+
+    private boolean less(Key k1, Key k2) {
+<span class="nc bnc" id="L435" title="All 2 branches missed.">        return k1.compareTo(k2) &lt; 0;</span>
+    }
+
+
+   /***************************************************************************
+    *  test client
+    ***************************************************************************/
+    public static void main(String[] args) {
+        /*
+        int N = 0;
+        RangeSearch&lt;String, Integer&gt; st = new RangeSearch&lt;String, Integer&gt;();
+        while (!StdIn.isEmpty()) {
+            String s = StdIn.readString();
+            st.put(s, N++);
+        }
+
+        StdOut.println(&quot;height:          &quot; + st.height());
+        StdOut.println(&quot;size:            &quot; + st.size());
+        StdOut.println(&quot;min key:         &quot; + st.min());
+        StdOut.println(&quot;max key:         &quot; + st.max());
+        StdOut.println(&quot;integrity check: &quot; + st.check());
+        StdOut.println();
+
+        StdOut.println(new Interval&lt;String&gt;(&quot;kevin&quot;, &quot;kfg&quot;));
+        Iterable&lt;String&gt; list = st.range(new Interval&lt;String&gt;(&quot;kevin&quot;, &quot;kfg&quot;));
+        for (String s : list)
+            StdOut.println(s + &quot; &quot; + st.get(s));
+        StdOut.println();
+
+        StdOut.println(new Interval&lt;String&gt;(&quot;paste&quot;, &quot;pasty&quot;));
+        list = st.range(new Interval&lt;String&gt;(&quot;paste&quot;, &quot;pasty&quot;));
+        for (String s : list)
+            StdOut.println(s);
+        StdOut.println();
+        */
+<span class="nc" id="L470">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>IntervalRangeSearch.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.edu.princeton.cs.algs4</a> &gt; <span class="el_source">IntervalRangeSearch.java</span></div><h1>IntervalRangeSearch.java</h1><pre class="source lang-java linenums">package thirdparty.edu.princeton.cs.algs4;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/******************************************************************************
+ A specialization of RangeSearch for an Interval parameterized type.
+  
+ NOTE that the intervals cannot overlap.  If a put of an interval
+ intersects with a key, the existing interval in the tree gets
+ the value of the new interval, but the key range does not
+ change.
+ 
+ @author nichole
+ 
+ * @param &lt;T&gt; the data type used in the Intervals
+ * @param &lt;Value&gt; the data type of the key associated with each
+ * tree interval.
+ ******************************************************************************/
+<span class="fc" id="L20">public class IntervalRangeSearch&lt;T extends Comparable&lt;T&gt;, Value&gt; extends</span>
+    RangeSearch&lt;Interval&lt;T&gt;, Value&gt; {
+    
+    public Queue&lt;Interval&lt;T&gt;&gt; range0(Interval&lt;T&gt; interval) {
+<span class="fc" id="L24">        Queue&lt;Interval&lt;T&gt;&gt; list = new Queue&lt;Interval&lt;T&gt;&gt;();</span>
+        //System.out.println(&quot;root=&quot; + root);
+        //System.out.println(&quot;srch interval=&quot; + interval);
+<span class="fc" id="L27">        range0(root, interval, list);</span>
+<span class="fc" id="L28">        return list;</span>
+    }
+    
+    public List&lt;Interval&lt;T&gt;&gt; getAllIntervals() {
+<span class="fc" id="L32">        List&lt;Interval&lt;T&gt;&gt; list = new ArrayList&lt;Interval&lt;T&gt;&gt;();</span>
+<span class="fc" id="L33">        IntervalRangeSearch.this.getAllIntervals(root, list);</span>
+<span class="fc" id="L34">        return list;</span>
+    }
+    
+    public void getAllIntervals(List&lt;Interval&lt;T&gt;&gt; outputIntervals, 
+        List&lt;Value&gt; outputValues) {
+<span class="fc" id="L39">        getAllIntervals(root, outputIntervals, outputValues);</span>
+<span class="fc" id="L40">    }</span>
+    
+    private void getAllIntervals(RangeSearchNode&lt;Interval&lt;T&gt;, Value&gt; x, 
+        List&lt;Interval&lt;T&gt;&gt; outputIntervals, List&lt;Value&gt; outputValues) {
+        
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (x == null) {</span>
+<span class="fc" id="L46">            return;</span>
+        }
+<span class="fc" id="L48">        outputIntervals.add(x.key);</span>
+<span class="fc" id="L49">        outputValues.add(x.val);</span>
+            
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (x.left != null) {</span>
+<span class="fc" id="L52">            getAllIntervals(x.left, outputIntervals, outputValues);</span>
+        }
+        
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (x.right != null) {</span>
+<span class="fc" id="L56">            getAllIntervals(x.right, outputIntervals, outputValues);</span>
+        }
+<span class="fc" id="L58">    }</span>
+    
+    private void getAllIntervals(RangeSearchNode&lt;Interval&lt;T&gt;, Value&gt; x, 
+        List&lt;Interval&lt;T&gt;&gt; list) {
+        
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L64">            return;</span>
+        }
+<span class="fc" id="L66">        list.add(x.key);</span>
+            
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (x.left != null) {</span>
+<span class="fc" id="L69">            getAllIntervals(x.left, list);</span>
+        }
+        
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (x.right != null) {</span>
+<span class="fc" id="L73">            getAllIntervals(x.right, list);</span>
+        }
+<span class="fc" id="L75">    }</span>
+    
+    private void range0(RangeSearchNode&lt;Interval&lt;T&gt;, Value&gt; x, 
+        Interval&lt;T&gt; interval, Queue&lt;Interval&lt;T&gt;&gt; list) {
+       
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (x == null) return;</span>
+       
+<span class="fc" id="L82">        boolean intersects = interval.intersects(x.key);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (intersects) {</span>
+<span class="fc" id="L84">            list.enqueue(x.key);</span>
+        }
+        
+        /*
+        interval has min max for search.
+        
+        tree has left as the larger keys
+        
+                     x
+              lft         rgt
+           lft  rgt     lft  rgt
+        
+        
+        or viewed by increasing values---&gt;
+               xmin--x--xmax smin
+              rgt         lft
+           rgt  lft     rgt  lft
+        */
+          
+        // if x.max &lt; interval.min
+        //   search lft
+        // if xmin &gt; interval.max
+        //   search rgt
+        
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">        if ((x.left != null) &amp;&amp; (intersects || </span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">            (x.key.max().compareTo(interval.min()) &lt; 1)) ) {</span>
+<span class="fc" id="L110">            range0(x.left, interval, list);</span>
+        }
+        
+<span class="pc bpc" id="L113" title="1 of 4 branches missed.">        if ((x.right != null) &amp;&amp; (intersects || </span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            (interval.max().compareTo(x.key.min()) &lt; 1))) {</span>
+<span class="fc" id="L115">            range0(x.right, interval, list);</span>
+        }
+<span class="fc" id="L117">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
