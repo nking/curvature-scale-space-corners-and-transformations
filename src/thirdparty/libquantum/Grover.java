@@ -258,6 +258,202 @@ public class Grover {
      * @param state (f(x) == 1 when x == state, else f(x) == 0)
      * @param reg
      */
+    private void oracle_(int query, QuantumReg reg, Gates gates) {
+        int i;
+        
+        /*
+        TODO: can this be done with purely NAND gates and query
+           as unitary operations?
+        */
+
+        /*
+         function f(x)
+                == 1 when x satisifies search criteria, 
+                   that is, x == w
+                   |U_w|x> = -|x>
+                == 0 else is 0, that is, x != w
+                   |U_w|x> = |x>
+
+        // |x>|q> ----> (-1)^(f(x)) * |x>        
+        */
+             
+        //DEBUG
+        StringBuilder[] sbs = new StringBuilder[reg.size];
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = new StringBuilder();
+                sbs[ii] = sb;
+            }
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+        }
+        
+        //runtime complexity is O(reg.size * reg.width),
+        // (because decoherence lambda is 0.0).
+        for (i = 0; i < width0; i++) {
+            //if query bit i is 0, flip bit i in all node states
+            if ((query & (1 << i)) == 0) {
+                gates.quantum_sigma_x(i, reg);
+            }
+        }
+        
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+        }
+
+        //for each node.state: 
+        // if bits 0 and 1 are set, it flips the bit reg->width + 1
+        gates.quantum_toffoli(0, 1, width0 + 1, reg);
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+        }
+        
+        for (i = 1; i < width0; i++) {
+            //for each node.state: 
+            // if bits i and reg->width + i are set, 
+            // it flips the bit reg->width + 1 + i
+           
+            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);
+        }
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+        }
+        
+        //for each node.state: 
+        // if bit reg->width + i is set, 
+        // it flips the bit reg->width
+        gates.quantum_cnot(width0 + i, width0, reg);
+        
+        /*
+        anything that is all 1's at this point is the found number.
+            -- iterate from 0 to reg.width-2
+               if bit is set, set high bit to 1, else 0
+               
+            then, the matching entry if any will have high bit set
+               -- also need to unset bit width0 for all
+        at end of entire method
+            iterate over all bits
+            if high bit is not set, unset bit
+            
+                 high bit   bit   wanted result
+                    0        1       0
+                    0        0       0
+                    1        1       1
+                    1        0       0
+                 NAND gate
+        
+        one problem is if the query is 0
+            so not quite right yet...
+        */
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append("*").append(str).append("  ");
+            }
+        }
+        
+        for (i = width0 - 1; i > 0; i--) {
+            //for each node.state: 
+            // if bits i and reg->width + i are set, 
+            // it flips the bit reg.width + 1 + i
+            
+            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);
+        }
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+        }
+        
+        //for each node.state: 
+        // if bits 0 and 1 are set, 
+        // it flips the bit reg->width + 1
+        gates.quantum_toffoli(0, 1, width0 + 1, reg);
+
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+        }
+        
+        for (i = 0; i < width0; i++) {
+            //if query bit i is 0, flip bit i in all node states
+            if ((query & (1 << i)) == 0) {
+                gates.quantum_sigma_x(i, reg);
+            }
+        }
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+            
+            System.out.println("END STATES");
+            for (int ii = 0; ii < reg.size; ii++) {
+                System.out.println(sbs[ii]);
+            }
+        }
+    }   
+    
+    /**
+     * 
+     * runtime complexity is O(reg.size * reg.width),
+       (because decoherence lambda is 0.0).
+     * 
+     * @param state (f(x) == 1 when x == state, else f(x) == 0)
+     * @param reg
+     */
     private void oracle2(int query, QuantumReg reg, Gates gates) {
         int i;
         
@@ -331,7 +527,7 @@ public class Grover {
                 //   should be able to change the initialization of the
                 //   register to only include the original numbers.
                 //   the 2nd set shifted and with a negative value
-                //   should be unecessary and may more complex physics
+                //   should be unecessary and may be more complex physics
                 //   to implement.  looks a little odd, but haven't
                 //   spent time on that yet...
                 
@@ -423,7 +619,7 @@ public class Grover {
         //unitary operator operating on two qubits, target and each i
         // |x>|q> ----> (-1)^(f(x)) * |x> 
         // (gives the found solutions negative signs)
-        oracle(target, reg, gates);
+        oracle_(target, reg, gates);
 
         if (debug) {//DEBUG
             System.out.format(
@@ -547,7 +743,8 @@ public class Grover {
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
         qureg.quantum_addscratch(1, reg);
-        reg.width += 1;
+        reg.width *= 2;
+        reg.width += 2;
         qureg.quantum_expand_and_reconstruct_hash(reg);
         gates.quantum_sigma_x(width0, reg);
         
@@ -730,7 +927,8 @@ public class Grover {
         final int initSize = 2 * amplList.length;
 
         QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);
-        reg.width += 1;
+        reg.width *= 2;
+        reg.width += 2;
         qureg.quantum_expand_and_reconstruct_hash(reg);
         
         //need to initialize a register to have the given states from list
@@ -785,7 +983,8 @@ public class Grover {
         QuantumReg reg = qureg.quantum_new_qureg_size(
             2*nSetBits, width0);
 
-        reg.width += 1;
+        reg.width *= 2;
+        reg.width += 2;
         qureg.quantum_expand_and_reconstruct_hash(reg);
         
         int offset = 1 << width0;
@@ -830,11 +1029,12 @@ public class Grover {
         
         int listLen = list.length;
         
-        final int initSize = 2 * listLen;
+        final int initSize = listLen;
 
         QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);
 
-        reg.width += 1;
+        reg.width *= 2;
+        reg.width += 2;
         qureg.quantum_expand_and_reconstruct_hash(reg);
         
         //need to initialize a register to have the given states from list
@@ -847,23 +1047,15 @@ public class Grover {
         int i;
         
         double norm = 1./Math.sqrt(initSize);  
-        int ii = 0;
         for (i = 0; i < list.length; ++i) {
-            reg.node[ii].state = list[i];
-            reg.node[ii].state |= offset;
-            reg.node[ii].amplitude.setReal(-norm);
-            ++ii;
-        }
-        for (i = 0; i < list.length; ++i) {
-            reg.node[ii].state = list[i];
-            reg.node[ii].amplitude.setReal(norm);
-            ++ii;
+            reg.node[i].state = list[i];
+            reg.node[i].amplitude.setReal(norm);
         }
         
         if (debug) {//DEBUG
             System.out.format("AFTER init reg.size=%d "
-                + "reg.width=%d reg.hash.length=%d\n", reg.size,
-                reg.width, (1 << reg.hashw));
+                + " width0=%d reg.width=%d reg.hash.length=%d\n", reg.size,
+                width0, reg.width, (1 << reg.hashw));
             qureg.quantum_print_qureg(reg);
         }
        
