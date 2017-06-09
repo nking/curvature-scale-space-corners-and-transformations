@@ -589,13 +589,15 @@ public class Grover {
      * @param reg states with the high bit set are the found items
      */
     private void grover2(int target, QuantumReg reg, Gates gates, QuReg qureg) {
-               
+             
+        int i;
+        
         // states with high bit set are the found states
         oracle2(target, reg, gates);
 
         if (debug) {//DEBUG
             System.out.format(
-                "AFTER oracle target=%d  reg.size=%d  hash.length=%d\n", 
+                "AFTER oracle2 target=%d  reg.size=%d  hash.length=%d\n", 
                 target, reg.size, 1 << reg.hashw);
             qureg.quantum_print_qureg(reg);
         }
@@ -646,14 +648,55 @@ public class Grover {
         // rotate by pi if high bit is set
         gates.quantum_phase_kick(reg.width - 1, Math.PI, reg);
         
-        // paused here
+        if (debug) {//DEBUG
+            System.out.format(
+                "AFTER oracle2 rotation target=%d  reg.size=%d  hash.length=%d\n", 
+                target, reg.size, 1 << reg.hashw);
+            qureg.quantum_print_qureg(reg);
+        }
         
         // unset the highest bit.
         // not reversible.
-        for (int i = 0; i < reg.size; i++) {
+        for (i = 0; i < reg.size; i++) {
             reg.node[i].state  &= ~(1L << (reg.width - 1));
         }
         
+        //paused
+        
+        // ==== editing below here =====
+        
+        //   H⊗n   |2|0^n> -I_n|  H⊗n
+
+        for (i = 0; i < width0; i++) {
+            gates.quantum_hadamard(i, reg);
+        }
+
+        if (debug) {//DEBUG
+            System.out.format(
+                "AFTER hadamard target=%d hadamard reg.size=%d\n", 
+                target, reg.size);
+            qureg.quantum_print_qureg(reg);
+        }
+
+        inversion(reg, gates);
+
+        if (debug) {//DEBUG
+            System.out.format(
+                "AFTER target=%d inversion reg.size=%d\n", 
+                target, reg.size);
+            qureg.quantum_print_qureg(reg);
+        }
+
+        for (i = 0; i < width0; i++) {
+            gates.quantum_hadamard(i, reg);
+        }
+
+        if (debug) {//DEBUG
+            System.out.format("AFTER target=%d 2nd hadamard  reg.size=%d\n", 
+                target, reg.size);
+            qureg.quantum_print_qureg(reg);
+        }
+       
     }
 
     /** runtime complexity is O(reg.size * reg.width) * nLoop
@@ -857,7 +900,7 @@ public class Grover {
         
         int ret;
         
-        if (true) {
+        if (false) {
             
             QuantumReg reg = initializeRegister(qureg, list);
 
@@ -1029,7 +1072,8 @@ public class Grover {
 
         QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);
 
-        reg.width++;
+        reg.width *= 2;
+        reg.width += 2;
         qureg.quantum_expand_and_reconstruct_hash(reg);
         
         //need to initialize a register to have the given states from list
@@ -1089,8 +1133,6 @@ public class Grover {
         //the next highest bit set, that is width + 1
         //    rest of the algorithm should proceed in same manner.
                 
-        int offset = 1 << width0;
-        
         int i;
         
         double norm = 1./Math.sqrt(initSize);  
@@ -1259,7 +1301,7 @@ public class Grover {
         Measure measure = new Measure();
 
         // runtime complexity is O(reg.size)
-        measure.quantum_bmeasure(reg.width - 1, reg, rng);
+        measure.quantum_bmeasure(width0, reg, rng);
 
         //DEBUG
         System.out.format(
