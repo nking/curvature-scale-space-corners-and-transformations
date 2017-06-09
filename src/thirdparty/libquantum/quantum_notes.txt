@@ -1,5 +1,8 @@
-Miscellaneous notes I gathered while porting libquantum
+Miscellaneous notes I gathered while porting libquantum 1.0.0
 to java and while looking into details of Shor's and Grover's algorithm.
+
+Note that libuantum 1.1.1 includes the ising model and lattice not 
+included here.
 
     
 libquantum contains mathematical methods for the paradigm of
