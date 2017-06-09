@@ -1,18 +1,19 @@
 considering algorithms to implement:
    0: looking at bayesian optimization
    1: hybrid 
+      considering these
           -- scatter
               https://www.researchgate.net/publication/228011098_The_Scatter_Search_Methodology
           -- tabu
               http://www.iro.umontreal.ca/~dift6751/paper_glover_ts_2.pdf
+          -- pso
+             https://github.com/CAChemE/stochastic-optimization
    2: Metropolis:
          http://introcs.cs.princeton.edu/java/98simulation/Metropolis.java.html
       http://introcs.cs.princeton.edu/java/98simulation/MarkovChain.java.html
       http://web.engr.illinois.edu/~bkclark/PIMCTutorial/tutorial.pdf
         https://arxiv.org/pdf/quant-ph/9607014.pdf
-
-consider pso:
-     https://github.com/CAChemE/stochastic-optimization
+      -- importance sampling
 
 (1) reading bishop 2006
     and looking at
@@ -103,6 +104,8 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
       deep neural networks and tree search"
 2  --  https://openproceedings.org/2016/conf/edbt/paper-54.pdf
    -- https://link.springer.com/chapter/10.1007%2F978-3-642-21887-3_28?LI=true
+   -- the go game playing paper referenced in quantum_notes.txt, espec. compared
+          to gobmk
 
 -- no priority:
    for jni bindings of the c++ dlib library, would like to automate
