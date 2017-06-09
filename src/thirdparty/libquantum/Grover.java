@@ -646,12 +646,15 @@ public class Grover {
         
         //TODO: implement this with gates.
         
+        /*
         double avg = 0;
-            for (int j = 0; j < reg.size; ++j) {
+        for (int j = 0; j < reg.size; ++j) {
             avg += reg.node[j].amplitude.re();
         }
         avg /= (double) reg.size;
-        System.out.println("avg=" + avg);
+        */
+        // NOTE: not knowing the avg from quantum methods, assume it:
+        double avg = 1./Math.sqrt(reg.size);
 
         // change amplitudes by their difference from avg
         for (int j = 0; j < reg.size; ++j) {
@@ -659,6 +662,7 @@ public class Grover {
             // a = 2*avg - a
             reg.node[j].amplitude.setReal(2. * avg - a);
         }
+        
         
         if (debug) {//DEBUG
             System.out.format(
