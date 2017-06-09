@@ -354,26 +354,60 @@ public class Grover {
         // it flips the bit reg->width
         gates.quantum_cnot(width0 + i, width0, reg);
         
+             
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append("*").append(str).append("  ");
+            }
+        }
+        
+        
         /*
         anything that is all 1's at this point is the found number.
             -- iterate from 0 to reg.width-2
                if bit is set, set high bit to 1, else 0
                
+                   bit   high bit   wanted result to be put in high bit
+                    0        1       0
+                    1        1       1
+                    0        0       0
+                    1        0       0
+                 AND gate
+        
             then, the matching entry if any will have high bit set
                -- also need to unset bit width0 for all
+                 
+        
         at end of entire method
             iterate over all bits
             if high bit is not set, unset bit
             
-                 high bit   bit   wanted result
+                 high bit   bit    target bit
                     0        1       0
                     0        0       0
                     1        1       1
                     1        0       0
-                 NAND gate
+                 AND gate
         
         one problem is if the query is 0
             so not quite right yet...
+        */
+        
+        /*
+        // not reversible
+        gates.quantum_ccand(0, 0, reg.width-1, reg);
+        for (i = 1; i < reg.width-2; i++) {
+            gates.quantum_ccand(i, reg.width-1, reg.width-1, reg);
+        }
+        // not reversible
+        for (i = 0; i < reg.size; i++) {
+            reg.node[i].state  &= ~(1L << width0);
+        }
         */
         
         if (debug) {//DEBUG

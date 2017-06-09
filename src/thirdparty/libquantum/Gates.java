@@ -1565,4 +1565,48 @@ public class Gates {
         }
     }
     
+   /**
+     * Apply an irreversible AND gate.
+     * 
+     *                 Truth table
+     * 
+                 control1 control2 target
+                    0        1       0
+                    1        1       1
+                    0        0       0
+                    1        0       0
+     
+     NOTE: added by Nichole. Presumably the universal and gate should be
+     present on the computer.
+     * 
+     * @param control1
+     * @param control2
+     * @param target
+     * @param reg
+   */
+   public void quantum_ccand(int control1, int control2, int target, 
+       QuantumReg reg) {
+  
+        int i;
+        int[] qec = new int[1];
+       
+        for (i = 0; i < reg.size; i++) {
+            // set the target bit of a basis state to 1
+            // if both control bits are set, else 0
+
+            long st = reg.node[i].state;
+            if ((st & (1L << control1)) != 0) {
+                if ((st & (1L << control2)) != 0) {
+                    reg.node[i].state |= (1L << target);
+                } else {
+                    reg.node[i].state &= ~(1L << target);
+                }
+            } else {
+                reg.node[i].state &= ~(1L << target);
+            }
+        }
+        
+        decoherence.quantum_decohere(reg, rng, this);
+    }
+
 }
