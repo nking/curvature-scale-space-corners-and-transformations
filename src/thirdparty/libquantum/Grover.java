@@ -10,7 +10,8 @@ An implementation of the grover search algorithm,
 ported here to java from the libquantum file grover.c.
 The method calls have been adapted for re-use by
 other algorithms and methods to accept a list of
-numbers have been created.
+numbers have been created and an alternate oracle
+and diffuser have been implemented by this project.
 
 The file grover.c has copyright:
 Implementation of Grover's search algorithm
@@ -38,7 +39,7 @@ Implementation of Grover's search algorithm
 
 public class Grover {
     
-    private boolean debug = true;
+    private boolean debug = false;
     
     private int width0 = 0;
 
@@ -763,7 +764,9 @@ public class Grover {
         //runtime complexity is O(reg.size * reg.width) * nLoop
         for (i = 1; i <= end; i++) {
             
-            System.out.format("Iteration #%d\n", i);
+            if (debug) {
+                System.out.format("Iteration #%d\n", i);
+            }
             
             grover(number, reg, gates, qureg);
         }
@@ -886,7 +889,7 @@ public class Grover {
         
         Random rng = Misc.getSecureRandom();
         
-        int ret = processInitialized(number, reg, rng);
+        int ret = processInitialized2(number, reg, rng);
         
         return ret;
     }
@@ -972,35 +975,26 @@ public class Grover {
         }
         
         QuantumReg reg = qureg.quantum_new_qureg_size(
-            2*nSetBits, width0);
+            nSetBits, width0);
 
         reg.width *= 2;
         reg.width += 2;
         qureg.quantum_expand_and_reconstruct_hash(reg);
         
-        int offset = 1 << width0;
-        double norm = 1./Math.sqrt(2*nSetBits);  
+        double norm = 1./Math.sqrt(nSetBits);  
         int ii = 0;
         for (i = 0; i < nBits; ++i) {
             if ((setBits & (1 << i)) != 0) {
                 //initializing with same state + highbit off of register
                 reg.node[ii].state = (1 << i);
-                reg.node[i].state |= offset;
-                //use negative amplitude
-                reg.node[ii].amplitude.setReal(-norm);
-                ++ii;
-            }
-        }
-        for (i = 0; i < nBits; ++i) {
-            if ((setBits & (1 << i)) != 0) {
-                reg.node[ii].state = 1 << i;
                 reg.node[ii].amplitude.setReal(norm);
                 ++ii;
             }
         }
                 
         if (debug) {//DEBUG
-            System.out.format("initialized  reg.size=%d\n", reg.size);
+            System.out.format("initialized  reg.size=%d reg.width=%d\n", 
+                reg.size, reg.width);
             qureg.quantum_print_qureg(reg);
         }
         
@@ -1147,7 +1141,9 @@ public class Grover {
         //runtime complexity is O(reg.size * reg.width) * nLoop
         for (i = 1; i <= end; i++) {
             
-            System.out.format("Iteration #%d\n", i);
+            if (debug) {
+                System.out.format("Iteration #%d\n", i);
+            }
             
             grover(N, reg, gates, qureg);
         }
@@ -1238,7 +1234,9 @@ public class Grover {
         //runtime complexity is O(reg.size * reg.width) * nLoop
         for (i = 1; i <= end; i++) {
             
-            System.out.format("Iteration #%d\n", i);
+            if (debug) {
+                System.out.format("Iteration #%d\n", i);
+            }
             
             grover2(N, reg, gates, qureg);
         }

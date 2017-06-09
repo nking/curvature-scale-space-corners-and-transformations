@@ -105,8 +105,6 @@ public class Classic {
 
         aInOut[0] = num;
         bInOut[0] = den;
-
-        return;
     }
 
     /**

@@ -1,5 +1,5 @@
 Miscellaneous notes I gathered while porting libquantum
-to java and while looking into details of Shor's algorithm.
+to java and while looking into details of Shor's and Grover's algorithm.
 
     
 libquantum contains mathematical methods for the paradigm of
@@ -241,9 +241,7 @@ in a Haystack" by Grover
                 |U_w|x> |y> ⊗ |x> |y⊗f(x)>
                  
                 
-                
                      circuit diagram 
-            
             
                        ------------------------
                       /   diffuser              \
