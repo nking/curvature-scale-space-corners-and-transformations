@@ -611,41 +611,8 @@ public class Grover {
             qureg.quantum_print_qureg(reg);
         }
 
-        // TODO: amplify the state with high bit set
-        //       while conserving property sum squared ampl = 1
-        
-        /*from "Quantum Mechanics helps in searching for a needle in a haystack"
-             by Grover
-        
-            (b) Apply the diffusion transform D which is
-                defined by the matrix D as follows:
-        
-                D_i_j = (2/N) if i != j 
-                and D_i_i = -1 + (2/N)
+        // amplify the state with high bit set       
                 
-                (D can be implemented as a product of 3 elementary
-                matrices as discussed in section 5).
-        
-                This diffusion transform, D, can be
-                implemented as 
-                   W R W, 
-                where R the
-                rotation matrix and W the Walsh-Hadamard
-                Transform Matrix are defined as follows:
-        
-                R_i_j = 0 if i!=j
-                R_i_i = 1 if i==0
-                R_i_i = -1 if i!=0
-              
-                W_i_j = (1<<(-n/2)) * (-1)^(i dot j)
-                     where i is the binary presentation of i
-                           i dot j is the is the bitwise dot product of
-                              the bitstring i and bitstring j (both of size n)
-                              (bitwise dot product is '&')
-        */
-        
-        //TODO: implement this with gates.
-        
         /*
         double avg = 0;
         for (int j = 0; j < reg.size; ++j) {
@@ -653,7 +620,11 @@ public class Grover {
         }
         avg /= (double) reg.size;
         */
-        // NOTE: not knowing the avg from quantum methods, assume it:
+        
+        // NOTE: not knowing the avg from quantum methods, assume it
+        //       to be the normalization
+        // NOTE: also, assuming that an amplifier is available and a
+        //       beam splitter or the equivalent
         double avg = 1./Math.sqrt(reg.size);
 
         // change amplitudes by their difference from avg
@@ -661,12 +632,20 @@ public class Grover {
             double a = reg.node[j].amplitude.re();
             // a = 2*avg - a
             reg.node[j].amplitude.setReal(2. * avg - a);
+            reg.node[j].amplitude.times(1./Math.sqrt(2.));
         }
         
+        if (debug) {//DEBUG
+            double sum = 0;
+            for (i = 0; i < reg.size; ++i) {
+                sum += reg.node[i].amplitude.squareSum();
+            }
+            System.out.println("sum of squares=" + sum);
+        }
         
         if (debug) {//DEBUG
             System.out.format(
-                "in grover AFTER WRW_ target=%d reg.size=%d reg.width=%d\n", 
+                "AFTER grover target=%d reg.size=%d reg.width=%d\n", 
                 target, reg.size, reg.width);
             qureg.quantum_print_qureg(reg);
         }
