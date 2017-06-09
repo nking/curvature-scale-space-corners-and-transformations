@@ -452,6 +452,15 @@ public class Grover {
             reg.node[i].state  &= ~(1L << width0);
         }
        
+        // rotate by pi if high bit is set
+        gates.quantum_phase_kick(reg.width - 1, Math.PI, reg);
+        
+        // unset the highest bit.
+        // not reversible.
+        for (i = 0; i < reg.size; i++) {
+            reg.node[i].state  &= ~(1L << (reg.width - 1));
+        }
+        
         
         if (debug) {//DEBUG
             for (int ii = 0; ii < reg.size; ii++) {
@@ -592,7 +601,7 @@ public class Grover {
              
         int i;
         
-        // states with high bit set are the found states
+        // matching state is rotated by PI
         oracle2(target, reg, gates);
 
         if (debug) {//DEBUG
@@ -608,18 +617,6 @@ public class Grover {
         /*from "Quantum Mechanics helps in searching for a needle in a haystack"
              by Grover
         
-        NOTE that each loop of this step increases the amplitude
-            in the desired state by O(1/sqrt(N))
-
-            (a) Let the system be in any state S:
-                In case C(S) = 1, rotate the phase by pi radians;
-                In case C(S) = 0, leave the system unaltered.
-        
-                This is a phase rotation transformation.
-                see sect 1.1
-        
-                --> if highbit is set, rotate phase by pi radians
-                
             (b) Apply the diffusion transform D which is
                 defined by the matrix D as follows:
         
@@ -630,7 +627,9 @@ public class Grover {
                 matrices as discussed in section 5).
         
                 This diffusion transform, D, can be
-                implemented as D R W, where R the
+                implemented as 
+                   W R W, 
+                where R the
                 rotation matrix and W the Walsh-Hadamard
                 Transform Matrix are defined as follows:
         
@@ -645,58 +644,28 @@ public class Grover {
                               (bitwise dot product is '&')
         */
         
-        // rotate by pi if high bit is set
-        gates.quantum_phase_kick(reg.width - 1, Math.PI, reg);
+        //TODO: implement this with gates.
+        
+        double avg = 0;
+            for (int j = 0; j < reg.size; ++j) {
+            avg += reg.node[j].amplitude.re();
+        }
+        avg /= (double) reg.size;
+        System.out.println("avg=" + avg);
+
+        // change amplitudes by their difference from avg
+        for (int j = 0; j < reg.size; ++j) {
+            double a = reg.node[j].amplitude.re();
+            // a = 2*avg - a
+            reg.node[j].amplitude.setReal(2. * avg - a);
+        }
         
         if (debug) {//DEBUG
             System.out.format(
-                "AFTER oracle2 rotation target=%d  reg.size=%d  hash.length=%d\n", 
-                target, reg.size, 1 << reg.hashw);
+                "in grover AFTER WRW_ target=%d reg.size=%d reg.width=%d\n", 
+                target, reg.size, reg.width);
             qureg.quantum_print_qureg(reg);
         }
-        
-        // unset the highest bit.
-        // not reversible.
-        for (i = 0; i < reg.size; i++) {
-            reg.node[i].state  &= ~(1L << (reg.width - 1));
-        }
-        
-        //paused
-        
-        // ==== editing below here =====
-        
-        //   H⊗n   |2|0^n> -I_n|  H⊗n
-
-        for (i = 0; i < width0; i++) {
-            gates.quantum_hadamard(i, reg);
-        }
-
-        if (debug) {//DEBUG
-            System.out.format(
-                "AFTER hadamard target=%d hadamard reg.size=%d\n", 
-                target, reg.size);
-            qureg.quantum_print_qureg(reg);
-        }
-
-        inversion(reg, gates);
-
-        if (debug) {//DEBUG
-            System.out.format(
-                "AFTER target=%d inversion reg.size=%d\n", 
-                target, reg.size);
-            qureg.quantum_print_qureg(reg);
-        }
-
-        for (i = 0; i < width0; i++) {
-            gates.quantum_hadamard(i, reg);
-        }
-
-        if (debug) {//DEBUG
-            System.out.format("AFTER target=%d 2nd hadamard  reg.size=%d\n", 
-                target, reg.size);
-            qureg.quantum_print_qureg(reg);
-        }
-       
     }
 
     /** runtime complexity is O(reg.size * reg.width) * nLoop
