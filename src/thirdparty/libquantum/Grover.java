@@ -603,9 +603,53 @@ public class Grover {
         // TODO: amplify the state with high bit set
         //       while conserving property sum squared ampl = 1
         
-        // unset the highest bit
-        // not reversible
-        // unset the width0 bit
+        /*from "Quantum Mechanics helps in searching for a needle in a haystack"
+             by Grover
+        
+        NOTE that each loop of this step increases the amplitude
+            in the desired state by O(1/sqrt(N))
+
+            (a) Let the system be in any state S:
+                In case C(S) = 1, rotate the phase by pi radians;
+                In case C(S) = 0, leave the system unaltered.
+        
+                This is a phase rotation transformation.
+                see sect 1.1
+        
+                --> if highbit is set, rotate phase by pi radians
+                
+            (b) Apply the diffusion transform D which is
+                defined by the matrix D as follows:
+        
+                D_i_j = (2/N) if i != j 
+                and D_i_i = -1 + (2/N)
+                
+                (D can be implemented as a product of 3 elementary
+                matrices as discussed in section 5).
+        
+                This diffusion transform, D, can be
+                implemented as D R W, where R the
+                rotation matrix and W the Walsh-Hadamard
+                Transform Matrix are defined as follows:
+        
+                R_i_j = 0 if i!=j
+                R_i_i = 1 if i==0
+                R_i_i = -1 if i!=0
+              
+                W_i_j = (1<<(-n/2)) * (-1)^(i dot j)
+                     where i is the binary presentation of i
+                           i dot j is the is the bitwise dot product of
+                              the bitstring i and bitstring j (both of size n)
+                              (bitwise dot product is '&')
+        */
+        
+        // rotate by pi if high bit is set
+        gates.quantum_phase_kick(reg.width - 1, Math.PI, reg);
+        
+        // paused here
+        
+        // unset the highest bit.
+        // not reversible.
         for (int i = 0; i < reg.size; i++) {
             reg.node[i].state  &= ~(1L << (reg.width - 1));
         }

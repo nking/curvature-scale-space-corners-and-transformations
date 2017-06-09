@@ -761,7 +761,7 @@ public class Gates {
     /**
      * Apply a phase kick (== shift) by the angle GAMMA if target bit is set
      */
-   public void quantum_phase_kick(int target, float gamma, QuantumReg reg) {
+   public void quantum_phase_kick(int target, double gamma, QuantumReg reg) {
   
         int i;
         //return cos(phi) + IMAGINARY * sin(phi);
