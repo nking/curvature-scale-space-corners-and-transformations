@@ -68,10 +68,9 @@ public class Grover {
     private void oracle(int query, QuantumReg reg, Gates gates) {
         int i;
         
-        //TODO: need to either double the number of bits used in
-        //      initialization of the register to have those 
-        //      available here or need to adjust the algorithm
-        //      to have same results with closer to current number of bits.
+        //NOTE: none of the quantum api methods has to check for unique
+        //   quantum numbers before making a change, that is they do not 
+        //   necessarily pauli exclusion principle,
         
         /*
          function f(x)
@@ -250,34 +249,108 @@ public class Grover {
             }
         }
     }   
+    
+    /*
+    private void oracle3(int query, QuantumReg reg, Gates gates) {
+        int i;
         
-    /**
-     * 
-     * runtime complexity is O(reg.size * reg.width),
-       (because decoherence lambda is 0.0).
-     * 
-     * @param state (f(x) == 1 when x == state, else f(x) == 0)
-     * @param reg
-     */
+        //NOTE: since none of the quantum api methods has to check for unique
+        //   quantum numbers before making a change, that is they do not 
+        //   necessarily obey the pauli exclusion principle, 
+        //   it should be just as valid to
+        //   use test and set bit operations alone rather than
+        //   purely test and toggle bit operations as nicely demonstrated
+        //   in oracle(...)
+        
+        //function f(x)
+        //       == 1 when x satisifies search criteria, 
+        //         that is, x == w
+        //         |U_w|x> = -|x>
+        //      == 0 else is 0, that is, x != w
+        //         |U_w|x> = |x>
+        //
+        // |x>|q> ----> (-1)^(f(x)) * |x>        
+             
+        //DEBUG
+        StringBuilder[] sbs = new StringBuilder[reg.size];
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = new StringBuilder();
+                sbs[ii] = sb;
+            }
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+        }
+        
+        // if 0 bit is same in query and state, set high bit
+        for (i = 0; i < reg.size; ++i) {
+            int qs = query & (1 << 0);
+            long vs = reg.node[i].state & (1 << 0);
+            if (((qs == 0) && (vs == 0)) || ((qs != 0) && (vs != 0))
+                ) {
+                reg.node[i].state  |= (1L << (reg.width - 1));
+            }
+        }
+        
+        // if high bit is set and query bit is same in query and state, 
+        // keep high bit else unset.
+        // NOTE: all of this conditional logic might not be available in
+        //  a gate
+        for (i = 0; i < reg.size; ++i) {
+            if ((reg.node[i].state  & (1L << (reg.width - 1))) != 0) {
+                int qs = query & (1 << 0);
+                long vs = reg.node[i].state & (1 << 0);
+                if (!(((qs == 0) && (vs == 0)) || ((qs != 0) && (vs != 0))
+                    )) {
+                    reg.node[i].state  &= ~(1L << (reg.width - 1));
+                }
+            }
+        }
+        
+        // rotate by pi if high bit is set
+        gates.quantum_phase_kick(reg.width - 1, Math.PI, reg);
+        
+        // unset the highest bit.
+        // not reversible.
+        for (i = 0; i < reg.size; i++) {
+            reg.node[i].state  &= ~(1L << (reg.width - 1));
+        }
+        
+        if (debug) {//DEBUG
+            for (int ii = 0; ii < reg.size; ii++) {
+                StringBuilder sb = sbs[ii];
+                String str = Long.toBinaryString(reg.node[ii].state);
+                while (str.length() < reg.width) {
+                    str = "0" + str;
+                }
+                sb.append(str).append("  ");
+            }
+            
+            System.out.println("END STATES");
+            for (int ii = 0; ii < reg.size; ii++) {
+                System.out.println(sbs[ii]);
+            }
+        }
+    }
+    */
+    
     private void oracle2(int query, QuantumReg reg, Gates gates) {
         int i;
         
-        /*
-        TODO: can this be done with purely NAND gates and query
-        with fewer qubits?
-        a lecture suggests only need unitary operations
-        */
-
-        /*
-         function f(x)
-                == 1 when x satisifies search criteria, 
-                   that is, x == w
-                   |U_w|x> = -|x>
-                == 0 else is 0, that is, x != w
-                   |U_w|x> = |x>
-
+        //function f(x)
+        //       == 1 when x satisifies search criteria, 
+        //         that is, x == w
+        //         |U_w|x> = -|x>
+        //      == 0 else is 0, that is, x != w
+        //         |U_w|x> = |x>
+        //
         // |x>|q> ----> (-1)^(f(x)) * |x>        
-        */
              
         //DEBUG
         StringBuilder[] sbs = new StringBuilder[reg.size];
@@ -446,6 +519,13 @@ public class Grover {
             
         }
         
+        //NOTE: since none of the quantum api methods has to check for unique
+        //   quantum numbers before making a change, that is they do not 
+        //   necessarily pauli exclusion principle, 
+        //   it should be just as valid to
+        //   use test and set pr clear bit operations rather than
+        //   purely test and toggle bit operations as nicely demonstrated
+        //   in oracle(...)
         
         // not reversible
         // unset the width0 bit
