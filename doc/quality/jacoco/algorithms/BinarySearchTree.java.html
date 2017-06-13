@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BinarySearchTree.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">BinarySearchTree.java</span></div><h1>BinarySearchTree.java</h1><pre class="source lang-java linenums">package algorithms;
+
+import algorithms.imageProcessing.HeapNode;
+import java.lang.reflect.Array;
+import java.util.Stack;
+
+/**
+   Binary Search Tree – has the property that for every node:
+       The left subtree contains only nodes that have a key less
+           than or equal to the node
+       The right subtree contains only nodes that have a key
+           greater than the node
+   The left and right subtrees are also binary search trees
+
+ use a Node with left, right and parent.
+ use a binary search method impl as: while loop rot != null: if (root.value 
+  .lt. value) root=root.getRight()...
+ 
+ adapted upon pseudocode from Cormen et al. Introduction to Algorithms.  added in-order, pre-order and post-order traversal methods too.
+ 
+ the delete method has been changed from the book.
+ 
+ Also note that the class can currently only hold unique keys.
+ 
+ * @author nichole
+ */
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">@SuppressWarnings({&quot;unchecked&quot;})</span>
+<span class="fc" id="L28">public class BinarySearchTree&lt;T extends HeapNode&gt; {</span>
+
+<span class="fc" id="L30">    protected int n = 0;</span>
+
+<span class="fc" id="L32">    protected T root = null;</span>
+
+    public T minimum() {
+<span class="fc" id="L35">        return minimum(root);</span>
+    }
+
+    protected T minimum(T x) {
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L40">            return null;</span>
+        }
+<span class="fc" id="L42">        T nd = x;</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        while (nd.getLeft() != null) {</span>
+<span class="fc" id="L44">            nd = (T) nd.getLeft();</span>
+        }
+<span class="fc" id="L46">        return nd;</span>
+    }
+
+    public T maximum() {
+<span class="fc" id="L50">        return maximum(root);</span>
+    }
+
+    protected T maximum(T x) {
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L55">            return null;</span>
+        }
+<span class="fc" id="L57">        T nd = x;</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        while (nd.getRight() != null) {</span>
+<span class="fc" id="L59">            nd = (T) nd.getRight();</span>
+        }
+<span class="fc" id="L61">        return nd;</span>
+    }
+
+    /**
+     * smallest element in the tree with key greater
+     * than x.key.
+     * @param x
+     * @return
+     */
+    public T successor(T x) {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (x.getRight() != null) {</span>
+<span class="fc" id="L72">            return minimum((T)x.getRight());</span>
+        }
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        T y = (x.getParent() != null) ? (T) x.getParent() : null;</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        while ((y != null) &amp;&amp;</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">            (y.getRight() != null &amp;&amp; x.equals(y.getRight()))) {</span>
+<span class="nc" id="L77">            x = y;</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            y = (y.getParent() != null) ? (T) y.getParent() : null;</span>
+        }
+<span class="fc" id="L80">        return y;</span>
+    }
+
+    /*
+     * the largest element in the tree with key smaller
+     * than x.key.
+     *
+     * a smaller number can either be a descendant to the left
+     * or a parent or the left descendants of a parent.
+     *
+     * This is not an efficient data structure for this operation
+     * so will not implement it for this.
+     *
+     * @param x
+     * @return
+     *
+    public T predecessor(T x) {
+        the smallest smaller than x could be the same
+        value key, so if found that, could stop the
+        search early.
+    }
+    */
+
+    public void insert(T z) {
+
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (root == null) {</span>
+<span class="fc" id="L106">            root = z;</span>
+<span class="fc" id="L107">            n++;</span>
+<span class="fc" id="L108">            return;</span>
+        }
+
+<span class="fc" id="L111">        T zParent = null;</span>
+<span class="fc" id="L112">        T x = root;</span>
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        while (x != null) {</span>
+<span class="fc" id="L115">            zParent = x;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">            if (z.getKey() &lt; x.getKey()) {</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                x = (x.getLeft() != null) ? (T) x.getLeft() : null;</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            } else if (z.getKey() == x.getKey()) {</span>
+<span class="nc" id="L119">                zParent = z;</span>
+<span class="nc" id="L120">                break;</span>
+            } else {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">                x = (x.getRight() != null) ? (T) x.getRight() : null;</span>
+            }
+        }
+<span class="fc" id="L125">        z.setParent(zParent);</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (zParent == null) {</span>
+<span class="nc" id="L127">            root = z;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        } else if (z.getKey() &lt; zParent.getKey()) {</span>
+<span class="fc" id="L129">            zParent.setLeft(z);</span>
+        } else {
+<span class="fc" id="L131">            zParent.setRight(z);</span>
+        }
+
+<span class="fc" id="L134">        n++;</span>
+<span class="fc" id="L135">    }</span>
+
+    public void delete(T z) {
+
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (z == null) {</span>
+<span class="nc" id="L140">            return;</span>
+        }
+
+<span class="fc bfc" id="L143" title="All 4 branches covered.">        if (z.getRight() == null &amp;&amp; z.getLeft() == null) {</span>
+
+            // handle case where z has no children
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            if (z.getParent() == null) {</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                if (root.equals(z)) {</span>
+<span class="nc" id="L148">                    root = null;</span>
+                } else {
+<span class="nc" id="L150">                    throw new IllegalStateException(&quot;z is not in tree&quot;);</span>
+                }
+
+            } else {
+
+<span class="fc" id="L155">                T parent = (T) z.getParent();</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="fc" id="L157">                    parent.setLeft(null);</span>
+                } else {
+<span class="nc bnc" id="L159" title="All 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="nc bnc" id="L160" title="All 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
+<span class="nc" id="L161">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
+                    }
+<span class="nc" id="L163">                    parent.setRight(null);</span>
+                }
+<span class="fc" id="L165">                z.setParent(null);</span>
+<span class="fc" id="L166">            }</span>
+
+<span class="fc bfc" id="L168" title="All 4 branches covered.">        } else if (z.getRight() != null &amp;&amp; z.getLeft() != null) {</span>
+            // z has 2 children
+            // replace z with its successor after removing successor
+            // from it's area
+
+<span class="fc" id="L173">            T y = successor(z);</span>
+
+<span class="fc" id="L175">            delete(y);</span>
+            
+            // replace z with y
+<span class="fc" id="L178">            n++;</span>
+
+            // assign the children of z to y
+<span class="fc" id="L181">            y.setLeft(z.getLeft());</span>
+<span class="fc" id="L182">            y.setRight(z.getRight());</span>
+<span class="fc" id="L183">            z.getLeft().setParent(y);</span>
+<span class="fc" id="L184">            z.getRight().setParent(y);</span>
+
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">            if (z.getParent() == null) {</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                if (root.equals(z)) {</span>
+<span class="nc" id="L188">                    root = y;</span>
+<span class="nc" id="L189">                    y.setParent(null);</span>
+                } else {
+<span class="nc" id="L191">                    throw new IllegalStateException(&quot;z is not in tree&quot;);</span>
+                }
+
+            } else {
+
+<span class="fc" id="L196">                T parent = (T) z.getParent();</span>
+<span class="pc bpc" id="L197" title="1 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="fc" id="L198">                    parent.setLeft(y);</span>
+                } else {
+<span class="pc bpc" id="L200" title="3 of 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="pc bpc" id="L201" title="2 of 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
+<span class="nc" id="L202">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
+                    }
+<span class="fc" id="L204">                    parent.setRight(y);</span>
+                }
+<span class="fc" id="L206">                y.setParent(parent);</span>
+            }
+
+<span class="fc" id="L209">        } else {</span>
+            // z has 1 child, so need to link parent to the child
+
+<span class="fc" id="L212">            T child = null;</span>
+
+<span class="fc bfc" id="L214" title="All 2 branches covered.">            if (z.getLeft() != null) {</span>
+<span class="fc" id="L215">                child = (T) z.getLeft();</span>
+            } else {
+<span class="fc" id="L217">                child = (T)z.getRight();</span>
+            }
+
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (z.getParent() == null) {</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">                if (root.equals(z)) {</span>
+<span class="fc" id="L222">                    root = child;</span>
+<span class="fc" id="L223">                    child.setParent(null);</span>
+                } else {
+<span class="nc" id="L225">                    throw new IllegalStateException(&quot;z is not in tree&quot;);</span>
+                }
+
+            } else {
+
+<span class="fc" id="L230">                T parent = (T) z.getParent();</span>
+<span class="fc bfc" id="L231" title="All 4 branches covered.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="fc" id="L232">                    parent.setLeft(child);</span>
+                } else {
+<span class="pc bpc" id="L234" title="3 of 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
+<span class="nc" id="L236">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
+                    }
+<span class="fc" id="L238">                    parent.setRight(child);</span>
+                }
+<span class="fc" id="L240">                child.setParent(parent);</span>
+            }
+        }
+
+<span class="fc" id="L244">        n--;</span>
+<span class="fc" id="L245">    }</span>
+
+    /**
+     * search for a node within the tree by its key.
+     * runtime complexity is O(h) where h is height of
+     * tree, which is usually lg_2(n)
+     * @param z
+     * @return
+     */
+    public T search(T z) {
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">        if (root == null) {</span>
+<span class="nc" id="L256">            return null;</span>
+        }
+<span class="fc" id="L258">        return search(root, z);</span>
+    }
+
+    private T search(T tn, T z) {
+<span class="fc" id="L262">        return search(tn, z.getKey());</span>
+    }
+    
+    private T search(T tn, long theKey) {
+<span class="fc bfc" id="L266" title="All 2 branches covered.">        while (tn != null) {</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">            if (theKey == tn.getKey()) {</span>
+<span class="fc" id="L268">                return tn;</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            } else if (theKey &lt; tn.getKey()) {</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">                tn = (tn.getLeft() != null) ? (T) tn.getLeft() : null;</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">            } else if (theKey &gt; tn.getKey()) {</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">                tn = (tn.getRight() != null) ? (T) tn.getRight() : null;</span>
+            }
+        }
+<span class="fc" id="L275">        return null;</span>
+    }
+    
+    /**
+     * search for a node within the tree for an exact match to the node.
+     * runtime complexity is O(h) where h is height of
+     * tree, which is usually lg_2(n)
+     * @param z
+     * @return
+     */
+    public T searchExact(T z) {
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (root == null) {</span>
+<span class="nc" id="L287">            return null;</span>
+        }
+<span class="nc" id="L289">        return searchExact(root, z);</span>
+    }
+
+    private T searchExact(T tn, T z) {
+        
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        while (tn != null) {</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">            if (tn.equals(z)) {</span>
+<span class="nc" id="L296">                return tn;</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            } else if (z.getKey() &lt; tn.getKey()) {</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">                tn = (tn.getLeft() != null) ? (T) tn.getLeft() : null;</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">            } else if (z.getKey() &gt; tn.getKey()) {</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">                tn = (tn.getRight() != null) ? (T) tn.getRight() : null;</span>
+            }
+        }
+<span class="nc" id="L303">        return null;</span>
+    }
+
+    private T getRoot(T nd) {
+<span class="nc bnc" id="L307" title="All 4 branches missed.">        while ((nd != null) &amp;&amp; (nd.getParent() != null)) {</span>
+<span class="nc" id="L308">            nd = (T) nd.getParent();</span>
+        }
+<span class="nc" id="L310">        return nd;</span>
+    }
+
+    public int getNumberOfNodes() {
+<span class="fc" id="L314">        return n;</span>
+    }
+
+    /**
+     * visit each node using pattern left subtree, root, right subtree
+     * in an iterative manner rather than invoking the method recursively.
+     * NOTE: this method also asserts for the binary search tree
+     * key consistency between parent and a child node as it traverses nodes.
+     */
+    @SuppressWarnings({&quot;rawtypes&quot;})
+    protected T[] getInOrderTraversalIterative(T node) {
+
+<span class="nc" id="L326">        Class cls = T.getType();</span>
+<span class="nc" id="L327">        T[] array = (T[]) Array.newInstance(cls, n);</span>
+<span class="nc" id="L328">        int count = 0;</span>
+
+<span class="nc" id="L330">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
+
+<span class="nc bnc" id="L332" title="All 4 branches missed.">        while (!stack.isEmpty() || (node != null)) {</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            if (node != null) {</span>
+
+<span class="nc" id="L335">                stack.push(node);</span>
+
+<span class="nc bnc" id="L337" title="All 2 branches missed.">                node = (node.getLeft() != null) ? (T) node.getLeft() : null;</span>
+
+            } else {
+
+<span class="nc" id="L341">                node = stack.pop();</span>
+
+<span class="nc" id="L343">                array[count] = node;</span>
+<span class="nc" id="L344">                count++;</span>
+
+                //System.out.println(node.key);
+
+<span class="nc bnc" id="L348" title="All 2 branches missed.">                node = (node.getRight() != null) ? (T) node.getRight() : null;</span>
+            }
+        }
+
+<span class="nc" id="L352">        return array;</span>
+    }
+
+    /**
+     * visit each node using pattern: root, left subtree, right subtree
+     * in an iterative manner rather than invoking the method recursively.
+     */
+    @SuppressWarnings({&quot;rawtypes&quot;})
+    protected T[] printPreOrderTraversalIterative(T node) {
+
+<span class="nc" id="L362">        Class cls = T.getType();</span>
+<span class="nc" id="L363">        T[] array = (T[]) Array.newInstance(cls, n);</span>
+<span class="nc" id="L364">        int count = 0;</span>
+
+<span class="nc" id="L366">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
+
+<span class="nc bnc" id="L368" title="All 4 branches missed.">        while (!stack.isEmpty() || (node != null)) {</span>
+            
+<span class="nc bnc" id="L370" title="All 2 branches missed.">            if (node != null) {</span>
+
+                {//DEBUG
+<span class="nc bnc" id="L373" title="All 2 branches missed.">                    if (node.getParent() != null) {</span>
+<span class="nc" id="L374">                        T parent = (T)node.getParent();</span>
+<span class="nc bnc" id="L375" title="All 4 branches missed.">                        if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(node)) {</span>
+<span class="nc bnc" id="L376" title="All 4 branches missed.">                            assert(node.getKey() &lt;= node.getParent().getKey());</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                        } else if (parent.getRight() != null) {</span>
+<span class="nc bnc" id="L378" title="All 4 branches missed.">                            assert(node.getParent().getKey() &lt;= node.getKey());</span>
+                        }
+                    }
+                }
+                
+<span class="nc" id="L383">                array[count] = node;</span>
+<span class="nc" id="L384">                count++;</span>
+                //System.out.println(node.key);
+
+<span class="nc" id="L387">                stack.push(node);</span>
+
+<span class="nc bnc" id="L389" title="All 2 branches missed.">                node = (node.getLeft() != null) ? (T)node.getLeft() : null;</span>
+
+            } else {
+
+<span class="nc" id="L393">                node = stack.pop();</span>
+
+<span class="nc bnc" id="L395" title="All 2 branches missed.">                node = (node.getRight() != null) ? (T)node.getRight() : null;</span>
+            }
+        }
+
+<span class="nc" id="L399">        return array;</span>
+    }
+
+    /**
+     * visit each node using pattern: left subtree, right subtree, root subtree
+     * in an iterative manner rather than invoking the method recursively.
+     */
+    @SuppressWarnings({&quot;rawtypes&quot;})
+    protected T[] printPostOrderTraversalIterative(T node) {
+
+<span class="nc" id="L409">        Class cls = T.getType();</span>
+<span class="nc" id="L410">        T[] array = (T[]) Array.newInstance(cls, n);</span>
+<span class="nc" id="L411">        int count = 0;</span>
+
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        if (node == null) {</span>
+<span class="nc" id="L414">            return array;</span>
+        }
+
+<span class="nc" id="L417">        Stack&lt;T&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L418">        Stack&lt;T&gt; stack2 = new Stack&lt;T&gt;();</span>
+<span class="nc" id="L419">        stack.push(node);</span>
+
+<span class="nc bnc" id="L421" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
+
+<span class="nc" id="L423">            node = stack.pop();</span>
+
+<span class="nc" id="L425">            stack2.push(node);</span>
+
+<span class="nc bnc" id="L427" title="All 2 branches missed.">            if (node.getLeft() != null) {</span>
+<span class="nc" id="L428">                stack.push((T)node.getLeft());</span>
+            }
+
+<span class="nc bnc" id="L431" title="All 2 branches missed.">            if (node.getRight() != null) {</span>
+<span class="nc" id="L432">                stack.push((T)node.getRight());</span>
+            }
+        }
+
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        while (!stack2.isEmpty()) {</span>
+
+<span class="nc" id="L438">            node = stack2.pop();</span>
+
+            //process(node);
+<span class="nc" id="L441">            array[count] = node;</span>
+<span class="nc" id="L442">            count++;</span>
+            //System.out.println(node.key);
+        }
+
+<span class="nc" id="L446">        return array;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
