@@ -2,7 +2,6 @@ package thirdparty.fsu.random;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import javax.swing.text.DateFormatter;
 
 /**
  * a quasi-monte carlo algorithm.
