@@ -2386,7 +2386,7 @@ public class QMCHaltonAdvanced {
         //
         //  Pick a random radius R.
         //
-        r = Math.pow((double) u[2], (double) (1.0 / 3.0));
+        r = Math.pow(u[2], (1.0 / 3.0));
 
         x[0] = r * Math.cos(theta) * Math.sin(phi);
         x[1] = r * Math.sin(theta) * Math.sin(phi);
