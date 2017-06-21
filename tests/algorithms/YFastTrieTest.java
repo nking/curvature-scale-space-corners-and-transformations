@@ -1,6 +1,5 @@
 package algorithms;
 
-import algorithms.imageProcessing.HeapNode;
 import thirdparty.ods.*;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -11,6 +10,7 @@ import java.util.Set;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  *
@@ -33,20 +33,11 @@ public class YFastTrieTest extends TestCase {
   
         System.out.println("add 2 0010");
         
-        HeapNode node2 = new HeapNode();
-        node2.setKey(2);
-        
-        HeapNode node3 = new HeapNode();
-        node3.setKey(3);
-        
-        HeapNode node4 = new HeapNode();
-        node4.setKey(4);
-        
-        HeapNode node5 = new HeapNode();
-        node5.setKey(5);
-        
-        HeapNode node6 = new HeapNode();
-        node6.setKey(6);
+        int node2 = 2;
+        int node3 = 3;
+        int node4 = 4;
+        int node5 = 5;
+        int node6 = 6;
         
         boolean added = bt.add(node2);
         assertTrue(added);
@@ -79,7 +70,7 @@ public class YFastTrieTest extends TestCase {
         assertEquals(node4, bt.find(node4));
         assertEquals(node5, bt.find(node5));
         
-        HeapNode next = bt.successor(node4);
+        int next = bt.successor(node4);
         assertEquals(node5, next);
         
         next = bt.successor(0);
@@ -94,7 +85,7 @@ public class YFastTrieTest extends TestCase {
         next = bt.successor(node4);
         assertEquals(node5, next);
         
-        HeapNode prev;
+        int prev;
        
         prev = bt.predecessor((1<<(w-1)) - 1);
         assertEquals(node5, prev);
@@ -112,14 +103,14 @@ public class YFastTrieTest extends TestCase {
         assertEquals(node2, prev);
         
         prev = bt.predecessor(node2);
-        assertNull(prev);
+        assertEquals(-1, prev);
         
         assertEquals(node2, bt.minimum());
         assertEquals(node5, bt.maximum());
         
         assertTrue(bt.remove(node3));
         assertEquals(3, bt.size());
-        assertNull(bt.find(node3));
+        assertEquals(-1, bt.find(node3));
         assertEquals(node2, bt.find(node2));
         assertEquals(node4, bt.find(node4));
         assertEquals(node5, bt.find(node5));
@@ -129,11 +120,11 @@ public class YFastTrieTest extends TestCase {
         assertEquals(node3, bt.find(node3));
         
         assertTrue(bt.remove(node5));
-        assertNull(bt.find(node5));
+        assertEquals(-1, bt.find(node5));
         
-        HeapNode node4r = bt.extractMaximum();
+        int node4r = bt.extractMaximum();
         assertEquals(node4, node4r);
-        assertNull(bt.find(node4));
+        assertEquals(-1, bt.find(node4));
         
         prev = bt.predecessor((1<<(w-1)) - 1);
         assertEquals(node3, prev);
@@ -141,9 +132,9 @@ public class YFastTrieTest extends TestCase {
         assertEquals(node2, bt.minimum());
         assertEquals(node3, bt.maximum());
         
-        HeapNode node2r = bt.extractMinimum();
+        int node2r = bt.extractMinimum();
         assertEquals(node2, node2r);
-        assertNull(bt.find(node2));
+        assertEquals(-1, bt.find(node2));
     }
         
     public void est1() throws Exception {
@@ -335,5 +326,59 @@ public class YFastTrieTest extends TestCase {
             }
         }
     }
+
+    /*
+    class I implements Integerizer<Integer> { 
+			public int intValue(Integer i) { return i; }
+		}
+		int n = 50;
+		YFastTrie<Integer> t = new YFastTrie<Integer>(new I());
+		Random rand = new Random(0);
+		System.out.println("Adding: ");
+		for (int i = 0; i < n; i++) {
+			int x = rand.nextInt(100*n);
+			System.out.print(x + ((i < n - 1) ? "," : ""));
+			t.add(x);
+			// t.checkIt();
+		}
+		System.out.println();
+		for (Pair<Integer> p : t.xft) {
+			System.out.print(p.x + ",");
+		}
+		System.out.println();
+		for (Pair<Integer> p : t.xft) {
+			System.out.print(p.t + ",");
+		}
+
+		System.out.println(t);
+		System.out.print("Searching: ");
+		for (int i = 0; i < n; i++) {
+			int x = rand.nextInt(100*n);
+			System.out.print(x + "=>" + t.find(x) + ",");
+		}
+		System.out.println();
+		System.out.println(t);
+		System.out.print("Removing: ");
+		for (int i = 0; i < n/2; i++) {
+			Integer x = t.find(rand.nextInt(100*n));
+			if (x != null) {
+				System.out.print(x + ((i < n/2-1) ? "," : ""));
+				System.out.flush();
+				t.remove(x);
+			}
+			// t.checkIt();
+		}
+		System.out.println();
+		System.out.println("Size = " + t.size());
+		System.out.println(t);
+		System.out.print("Searching: ");
+		for (int i = 0; i < n; i++) {
+			int x = rand.nextInt(100*n);
+			System.out.print(x + "=>" + t.find(x) + ",");
+		}
+		System.out.println();
+		System.out.println("done");
+    */
+    
     
 }

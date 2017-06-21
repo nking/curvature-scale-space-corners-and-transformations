@@ -1,12 +1,10 @@
 package algorithms;
 
 import algorithms.imageProcessing.HeapNode;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import thirdparty.ods.Integerizer;
@@ -15,22 +13,53 @@ import thirdparty.ods.XFastTrieNode;
 import thirdparty.ods.SSet;
 
 /**
- * NOTE: NOT READY FOR USE.  Until the red-black trees internally
- * are replaced by a data structure that has operations
- * faster than O(log_2(N_number_of_nodes)), the XFastTrie by itself
- * is a better choice (along with a supplemental hashmap to store
- * nodes).
+ * NOTE: NOT READY FOR USE.  
  * 
+ * from wikipedia
+ *     https://en.wikipedia.org/wiki/Y-fast_trie
+ *  
+ * a y-fast trie is a data structure for storing 
+ * integers from a bounded domain. It supports exact and predecessor 
+ * or successor queries in time O(log log M), using O(n) space, 
+ * where n is the number of stored values and M is the maximum 
+ * value in the domain. 
+ * The structure was proposed by Dan Willard in 1982[1] to decrease 
+ * the O(n log M) space used by an x-fast trie.
+   
+   The Y-Fast trie has the ordered associative array operations + successor and
+   predecessor.
+   
+   NOTE that the runtime complexities listed are not yet achieved.
+   The current operations are O(log(M/w)) where w is the length of the bitstring of M.
+   (to reduce the time to O(log log(M)) would require binSz = log(log(M))
+   which, being a small number, would mean many data structures would be needed).
+   (it would probably be better to dynamically split and add 
+   the binary search trees as needed and restrict that size to
+   log(log(M)).  A problem there is that split and insert into next might
+   need to cascade to next tree, etc).
+
+   Find(k): find the value associated with the given key.
+       runtime complexity is O(log log(M))
+   Successor(k): find the key/value pair with the smallest key larger than or 
+       equal to the given key.
+       runtime complexity is O(log log(M))
+   Predecessor(k): find the key/value pair with the largest key less than or 
+       equal to the given key.
+       runtime complexity is O(log log(M))
+   Insert(k, v): insert the given key/value pair.
+       runtime complexity is O(log log(M))
+   Delete(k): remove the key/value pair with the given key.
+       runtime complexity is O(log log(M))
+ 
  * Note, have not read the Willard paper yet, just a few online
- * lecture notes to implement this.  A couple suggest that the
- * performance of each red black tree is O(log_2(maxC)), but that
- * would require the partitions to be based on the number of points
- * in the maps and that would quickly be very many tree maps for
- * a large maxC (each with number of points being w).
+ * lecture notes to implement this.  
+ * 
+ * the performance of each binary search tree is at most O(log_2(maxC/w))
+ * where maxC is the maximum value to be stored.
  * 
  * @author nichole
  */
-public class YFastTrie implements SSet<HeapNode>{
+public class YFastTrie {
 
     /*    
     designing from browsing a few different lecture notes
@@ -89,10 +118,14 @@ YFastTrie
 
     private final XFastTrie<XFastTrieNode<Integer>, Integer> xft;
     
-    private final Map<Integer, HeapNode> xftReps = 
-        new HashMap<Integer, HeapNode>();
+    // key = bin index, value = repr value.
+    // each repr value is the minimum stored in the bin.
+    private final TIntIntMap xftReps = new TIntIntHashMap();
     
-    private final List<TreeMap<Integer, LinkedList<HeapNode>>> rbs;
+    // there are w items in rbs
+    // each list item is a sorted binary search tree of numbers in that bin.
+    //    the value is the tree holds the number of times that number is present.
+    private final List<TreeMap<Integer, Integer>> rbs;
     
     public YFastTrie(int wBits) {
         if (wBits < 32 && wBits > 1) {
@@ -102,16 +135,10 @@ YFastTrie
                 + " shoulw be greater than 1 and less than 32");
         }
         maxC = (1 << (w - 1)) - 1;
-        // NOTE: if change out TreeMap to a data structure that
-        //       is faster than O(w) and does not depend on N,
-        //       this may change, but for now, the number of bins
-        //       will be w.
-        //       the TreeMap operations for evenly distributed
-        //       data are currently then O(log_2(N/w)).
         binSz = (int)Math.ceil((float)maxC/(float)w);
-        rbs = new ArrayList<TreeMap<Integer, LinkedList<HeapNode>>>(w);
+        rbs = new ArrayList<TreeMap<Integer, Integer>>(w);
         for (int i = 0; i < w; ++i) {
-            rbs.add(new TreeMap<Integer, LinkedList<HeapNode>>());
+            rbs.add(new TreeMap<Integer, Integer>());
         }
         
         XFastTrieNode<Integer> clsNode = new XFastTrieNode<Integer>();
@@ -130,16 +157,10 @@ YFastTrie
         this.w = 32;
         
         maxC = (1 << (w - 1)) - 1;
-        // NOTE: if change out TreeMap to a data structure that
-        //       is faster than O(w) and does not depend on N,
-        //       this may change, but for now, the number of bins
-        //       will be w.
-        //       the TreeMap operations for evenly distributed
-        //       data are currently then O(log_2(N/w)).
         binSz = (int)Math.ceil((float)maxC/(float)w);
-        rbs = new ArrayList<TreeMap<Integer, LinkedList<HeapNode>>>(w);
+        rbs = new ArrayList<TreeMap<Integer, Integer>>(w);
         for (int i = 0; i < w; ++i) {
-            rbs.add(new TreeMap<Integer, LinkedList<HeapNode>>());
+            rbs.add(new TreeMap<Integer, Integer>());
         }
         
         XFastTrieNode<Integer> clsNode = new XFastTrieNode<Integer>();
@@ -158,25 +179,25 @@ YFastTrie
      * @param node
      * @param index 
      */
-    private void addToRBTree(HeapNode node, int index) {
+    private void addToRBTree(int node, int index) {
         
-        TreeMap<Integer, LinkedList<HeapNode>> map =
-            rbs.get(index);
+        TreeMap<Integer, Integer> map = rbs.get(index);
         
         assert(map != null);
         
-        Integer key = Integer.valueOf(Integer.valueOf((int)node.getKey()));
+        Integer key = Integer.valueOf(node);
         
         // O(log_2(N/w))
-        LinkedList<HeapNode> list = map.get(key);
+        Integer multiplicity = map.get(key);
     
-        if (list == null) {
-            list = new LinkedList<HeapNode>();
-            // O(log_2(N/w))
-            map.put(key, list);
+        if (multiplicity == null) {
+            multiplicity = Integer.valueOf(1);
+        } else {
+            multiplicity = Integer.valueOf(1 + multiplicity.intValue());
         }
         
-        list.add(node);
+        // O(log_2(N/w))
+        map.put(key, multiplicity);        
     }
     
     /**
@@ -184,27 +205,25 @@ YFastTrie
      * @param node
      * @param index 
      */
-    private boolean deleteFromRBTree(HeapNode node, int index) {
-        
-        TreeMap<Integer, LinkedList<HeapNode>> map =
-            rbs.get(index);
+    private boolean deleteFromRBTree(int node, int index) {
+                
+        TreeMap<Integer, Integer> map = rbs.get(index);
         
         assert(map != null);
         
-        Integer key = Integer.valueOf((int)node.getKey());
+        Integer key = Integer.valueOf(node);
 
         // O(log_2(N/w))
-        LinkedList<HeapNode> list = map.get(key);
+        Integer multiplicity = map.get(key);
     
-        if (list == null) {
+        if (multiplicity == null) {
             return false;
         }
         
-        //O(1)
-        list.remove(node);
-        
-        if (list.size() == 0) {
-            // O(log_2(N/w))
+        if (multiplicity.intValue() > 1) {
+            multiplicity = Integer.valueOf(multiplicity.intValue() - 1);
+        } else {
+            assert(multiplicity.intValue() == 1);
             map.remove(key);
         }
         
@@ -219,46 +238,34 @@ YFastTrie
      * and l is the number of levels in the prefix trie 
      * already filled with other entries.
      * 
-     * NOTE:
-     * For small maxC, the "Dial algorithm" has best insert and
-     * extractMin runtime complexities (O(1) and O(1), respectively).
-     * 
-     * For large N, the XFastTrie by itself (plus an external
-     * hashmao to store HeapNodes) is a better choice because
-     * the term O(w-l) will be smaller.
-     * 
-     * For mid to small N, the fibonacci heap has better insert and
-     * extractMin performance (O(1) and O(log_2(N)), respectively).
-     * 
-     * @param node a heap node with key >= 0 and having bit length 
+     * @param node a number >= 0 and having bit length 
      * less than or equal to w.
      * @return 
      */
-    @Override
-    public boolean add(HeapNode node) {
+    public boolean add(int node) {
 
-        if (node.getKey() < 0) {
-            throw new IllegalArgumentException("node.key must "
+        if (node < 0) {
+            throw new IllegalArgumentException("node must "
                 + "be greater than or equal to 0");
-        } else if (node.getKey() > maxC) {
+        } else if (node > maxC) {
             throw new IllegalArgumentException("node.key must "
                 + "be less than " + maxC);
         }
         
-        int index = (int)node.getKey()/binSz;
+        int index = node/binSz;
         
-        HeapNode existingRepr = xftReps.get(Integer.valueOf(index));
-        
-        if (existingRepr == null) {
+        int existingRepr = xftReps.get(index);
+                
+        if (!xftReps.containsKey(index)) {
             // insert is O(log_2(w)) + O(l-w)
-            xft.add(Integer.valueOf((int)node.getKey()));
-            xftReps.put(Integer.valueOf(index), node);
-        } else if (node.getKey() < existingRepr.getKey()) {
+            xft.add(Integer.valueOf(node));
+            xftReps.put(index, node);
+        } else if (node < existingRepr) {
             // delete is O(log_2(w)) + O(l-w)
             // insert is O(log_2(w)) + O(l-w)
-            xft.remove(Integer.valueOf((int)existingRepr.getKey()));
-            xft.add(Integer.valueOf((int)node.getKey()));
-            xftReps.put(Integer.valueOf(index), node);
+            xft.remove(Integer.valueOf(existingRepr));
+            xft.add(Integer.valueOf(node));
+            xftReps.put(index, node);
         }
         
         // O(log_2(N/w))
@@ -280,19 +287,18 @@ YFastTrie
      * @param node
      * @return 
      */
-    @Override
-    public boolean remove(HeapNode node) {
+    public boolean remove(int node) {
         
-        if (node.getKey() < 0) {
-            throw new IllegalArgumentException("node.key must "
+        if (node < 0) {
+            throw new IllegalArgumentException("node must "
                 + "be greater than or equal to 0");
-        } else if (node.getKey() > maxC) {
-            throw new IllegalArgumentException("node.key must "
+        } else if (node > maxC) {
+            throw new IllegalArgumentException("node must "
                 + "be less than " + maxC);
         }
         
-        int index = (int)node.getKey()/binSz;
-        
+        int index = node/binSz;
+                
         // O(log_2(N/w))
         boolean removed = deleteFromRBTree(node, index);
         
@@ -300,30 +306,41 @@ YFastTrie
             return false;
         }
         
-        TreeMap<Integer, LinkedList<HeapNode>> map =
-            rbs.get(index);
-        
-        HeapNode existingRepr = xftReps.get(Integer.valueOf(index));
-        
-        if (node.getKey() == existingRepr.getKey()) {
-            if (map.isEmpty()) {
-                // delete is O(log_2(w)) + O(w-l)
-                xft.remove(Integer.valueOf((int)existingRepr.getKey()));
-                xftReps.remove(Integer.valueOf(index));
-            } else {
-                // O(log_2(N/w))
-                Entry<Integer, LinkedList<HeapNode>> 
-                    entry = map.firstEntry();                
-                LinkedList<HeapNode> list = entry.getValue();
+        if (!xftReps.containsKey(index)) {
+            return false;
+        }
                 
-                HeapNode node2 = list.getFirst();
-                int key2 = (int)node2.getKey();
-                // delete is O(log_2(w)) + O(w-l)
-                // insert is O(log_2(w)) + O(w-l)
-                xft.remove(Integer.valueOf((int)existingRepr.getKey()));
-                xft.add(Integer.valueOf(key2));
-                xftReps.put(Integer.valueOf(index), node2); 
+        TreeMap<Integer, Integer> map = rbs.get(index);
+      
+        int existingRepr = xftReps.get(index);
+      
+        if (map.isEmpty()) {
+            // just deleted the last item so remove from rbs
+            // delete is O(log_2(w)) + O(w-l)
+            if (xftReps.containsKey(index)) {
+                xft.remove(Integer.valueOf(existingRepr));
+                xftReps.remove(index);
             }
+        } else if (node == existingRepr) {
+            
+            //existingRepr is maintained as the minimum in the bin,
+            //   so if a node w/ this value is removed and the multiplicity
+            //      was 1, need to assign a new repr
+            
+            // O(log_2(N/w))
+            Integer multiplicity = map.get(Integer.valueOf(node));
+    
+            if (multiplicity == null) {
+                // remove the current repr and assign a new one
+                // delete is O(log_2(w)) + O(w-l)
+                xft.remove(Integer.valueOf(existingRepr));
+                xftReps.remove(index);
+            
+                // O(log_2(N/w))
+                Entry<Integer, Integer> minEntry = map.firstEntry(); 
+                xft.add(minEntry.getKey());
+                xftReps.put(index, minEntry.getKey()); 
+            }            
         }
         
         n--;
@@ -336,74 +353,47 @@ YFastTrie
      * @param node
      * @return 
      */
-    @Override
-    public HeapNode find(HeapNode node) {
-        
-        //TODO: revist to improve runtimes
-        
-        if (node.getKey() < 0) {
-            throw new IllegalArgumentException("node.key must "
+    public int find(int node) {
+                
+        if (node < 0) {
+            throw new IllegalArgumentException("node must "
                 + "be greater than or equal to 0");
-        } else if (node.getKey() > maxC) {
-            throw new IllegalArgumentException("node.key must "
+        } else if (node > maxC) {
+            throw new IllegalArgumentException("node must "
                 + "be less than " + maxC);
         }
-        
-        int key = (int)node.getKey();
-        
-        int index = (int)node.getKey()/binSz;
                 
-        TreeMap<Integer, LinkedList<HeapNode>> map =
-            rbs.get(index);
+        int index = node/binSz;
+                
+        TreeMap<Integer, Integer> map = rbs.get(index);
         
         // O(log_2(N/w))
-        LinkedList<HeapNode> list = map.get(Integer.valueOf(key));
-        if (list == null) {
-            return null;
+        Integer multiplicity = map.get(Integer.valueOf(node));
+        if (multiplicity == null) {
+            return -1;
         }
         
-        return list.getFirst();
+        return node;
     }
 
     /**
      * runtime complexity is O(log_2(w)) + O(log_2(N/w)).
      * @param node
-     * @return 
+     * @return value preceding node, else -1 if there is not one
      */
-    @Override
-    public HeapNode predecessor(HeapNode node) {
+    public int predecessor(int node) {
     
-        if (node.getKey() < 0) {
-            throw new IllegalArgumentException("node.key must "
+        if (node < 0) {
+            throw new IllegalArgumentException("node must "
                 + "be greater than or equal to 0");
-        } else if (node.getKey() > maxC) {
-            throw new IllegalArgumentException("node.key must "
+        } else if (node > maxC) {
+            throw new IllegalArgumentException("node must "
                 + "be less than " + maxC);
         }
         
-        return predecessor((int)node.getKey());
-    }
-    
-    /**
-     * runtime complexity is O(log_2(w)) + O(log_2(N/w)).
-     * @param nodeKeyIdx
-     * @return 
-     */
-    public HeapNode predecessor(int nodeKeyIdx) {
-
-        //TODO: revisit to reduce runtime complexity
+        Integer nodeKey = Integer.valueOf(node);
         
-        if (nodeKeyIdx < 0) {
-            throw new IllegalArgumentException("node.key must "
-                + "be greater than or equal to 0");
-        } else if (nodeKeyIdx > maxC) {
-            throw new IllegalArgumentException("node.key must "
-                + "be less than " + maxC);
-        }
-        
-        Integer nodeKey = Integer.valueOf(nodeKeyIdx);
-        
-        int nodeIndex = nodeKeyIdx/binSz;
+        int nodeIndex = node/binSz;
         
         boolean isAMinimum = xft.find(nodeKey) != null;
         
@@ -413,270 +403,163 @@ YFastTrie
         */
         if (!isAMinimum && (rbs.get(nodeIndex).size() > 1)) {
         
-            TreeMap<Integer, LinkedList<HeapNode>> map =
-                rbs.get(nodeIndex);
+            TreeMap<Integer, Integer> map = rbs.get(nodeIndex);
           
             // O(log_2(N/w))
-            return map.lowerEntry(nodeKey).getValue().getFirst();
+            Entry<Integer, Integer> pred = map.lowerEntry(nodeKey);
+            if (pred == null) {
+                return -1;
+            }
+            
+            return pred.getKey().intValue();
         }
-        
+       
+        // else, predeccessor is in the closest bin < nodeIndex that has
+        //    items in it.
+                
         //O(log_2(w))
         Integer prev = xft.predecessor(nodeKey);
         if (prev == null) {
-            return null;
+            return -1;
         }
         
         int prev0Index = prev.intValue()/binSz;
             
-        TreeMap<Integer, LinkedList<HeapNode>> map =
-            rbs.get(prev0Index);
-          
-        // O(log_2(N/w))
-        Entry<Integer, LinkedList<HeapNode>> list =
-            map.lowerEntry(nodeKey);
+        TreeMap<Integer, Integer> map = rbs.get(prev0Index);
         
-        if (list == null) {
-            return null;
+        // O(log_2(N/w))
+        //Entry<Integer, Integer> lastItem = map.lowerEntry(nodeKey);
+        Entry<Integer, Integer> lastItem = map.lastEntry();
+               
+        if (lastItem == null) {
+            return -1;
         }
         
-        return list.getValue().getFirst();
+        return lastItem.getKey();
     }
     
-    @Override
-    public HeapNode successor(HeapNode node) {
+    public int successor(int node) {
                 
-        if (node.getKey() < 0) {
-            throw new IllegalArgumentException("node.key must "
+        if (node < 0) {
+            throw new IllegalArgumentException("node must "
                 + "be greater than or equal to 0");
-        } else if (node.getKey() > maxC) {
-            throw new IllegalArgumentException("node.key must "
+        } else if (node > maxC) {
+            throw new IllegalArgumentException("node must "
                 + "be less than " + maxC);
         }
         
-        return successor((int)node.getKey());
-    }
-
-    /**
-     * runtime complexity is roughly O(log_2(w)) + O(log_2(N/w))
-     * @param nodeKeyIdx
-     * @return 
-     */
-    public HeapNode successor(final int nodeKeyIdx) {
+        Integer nodeKey = Integer.valueOf(node);
         
-        if (nodeKeyIdx < 0) {
-            throw new IllegalArgumentException("node.key must "
-                + "be greater than or equal to 0");
-        } else if (nodeKeyIdx > maxC) {
-            throw new IllegalArgumentException("node.key must "
-                + "be less than " + maxC);
-        }
+        int nodeIndex = node/binSz;
         
-        Integer nodeKey = Integer.valueOf(nodeKeyIdx);
+        boolean isAMinimum = xft.find(nodeKey) != null;
         
-        // because the representatives are minima for their
-        // trees, the successor query to xft would not necessarily
-        // find the tree that node is in.
-        // 
-        // if node is the max within its tree,
-        //    then xft.successor is the successor
-        //    because its the minimim of next populated tree.
-        // else
-        //    the node's map size is > 1 and
-        //    the successor is learned from the query on the tree map.
- 
-        int nodeIndex = nodeKey.intValue()/binSz;
-        
-        HeapNode existingRepr = xftReps.get(Integer.valueOf(nodeIndex));
-
-        if ((existingRepr != null) &&
-            (existingRepr.getKey() == nodeKey.intValue()) &&
-            (rbs.get(nodeIndex).size() > 1)) {
+        if (isAMinimum) {
+            // if tree size > 1, the next key is the successor
+            // else, the xft sucessor to nodeIndex is the successor
             
-            // if map size is > 1, the answer is in this map
-            // they're in the same tree so the answer is too
+            TreeMap<Integer, Integer> nodeMap = rbs.get(nodeIndex);
             
-            TreeMap<Integer, LinkedList<HeapNode>> nodeMap =
-                rbs.get(nodeIndex);
-            
-            // O(log_2(N/w))
-            Entry<Integer, LinkedList<HeapNode>> entry 
-                = nodeMap.higherEntry(nodeKey);
-            
-            return entry.getValue().getFirst();
-        }
-        
-        Integer next0 = xft.successor(nodeKey);
-        
-        if (next0 == null) {
-            return null;
-        }
-        
-        int next0Index = next0.intValue()/binSz;
-        
-        // if nodeKey is the last that could be placed
-        // in it's bin, then the answer must be in the
-        // successor tree.
-       
-        Integer prev0 = xft.predecessor(nodeKey);
-        
-        if ((prev0 == null) ||
-            (nodeIndex == next0Index) ||
-            ((nodeKeyIdx % binSz) - 1 == 0) || (prev0 == null)
-            ) {
-            
-            // they're in the same tree so the answer is too
-            TreeMap<Integer, LinkedList<HeapNode>> nodeMap =
-                rbs.get(next0Index);
-            
-            // O(log_2(N/w))
-            Entry<Integer, LinkedList<HeapNode>> entry 
-                = nodeMap.higherEntry(nodeKey);
-            
-            if (entry == null) {
-                return null;
+            if (nodeMap.size() > 1) {
+                Entry<Integer, Integer> successor = nodeMap.higherEntry(nodeKey);
+                assert(successor != null);
+                return successor.getKey();
             }
             
-            return entry.getValue().getFirst();
-        }
-        
-        int prev0Index = prev0.intValue()/binSz;
-        
-        TreeMap<Integer, LinkedList<HeapNode>> nodeMap =
-            rbs.get(prev0Index);
+            //O(log_2(w))
+            Integer successorRepr = xft.successor(nodeKey);
+            if (successorRepr == null) {
+                return -1;
+            }
             
-        if (nodeMap.isEmpty()) {
-            return null;
+            // the successor representative is then the next value
+            return successorRepr;
         }
         
-        // O(log_2(N/w))
-        Entry<Integer, LinkedList<HeapNode>> entry 
-            = nodeMap.higherEntry(nodeKey);
-          
-        if (entry != null) {
-            return entry.getValue().getFirst();
+        // else, the node is not a repr
+        //   if there is a tree successor to the node, that is the successor
+        //   else, the xft successor to nodeIndex is the successor
+        
+        TreeMap<Integer, Integer> nodeMap = rbs.get(nodeIndex);
+            
+        Entry<Integer, Integer> sEntry = nodeMap.higherEntry(nodeKey);
+        
+        if (sEntry != null) {
+            return sEntry.getKey();
         }
-           
-        // else, must be in the successor tree if anywhere
-        nodeMap = rbs.get(next0Index);
-
-        // O(log_2(N/w))
-        entry = nodeMap.higherEntry(nodeKey);
-
-        if (entry == null) {
-            return null;
+        
+        //O(log_2(w))
+        Integer successorRepr = xft.successor(nodeKey);
+        if (successorRepr == null) {
+            return -1;
         }
 
-        return entry.getValue().getFirst();
+        // the successor representative is then the next value
+        return successorRepr;
     }
 
     /**
      * runtime complexity is O(log_2(w)) 
-     * @return 
+     * @return minimum, else -1 if empty
      */
-    @Override
-    public HeapNode minimum() {
+    public int minimum() {
         
-        //O(log_2(w))
-        Integer value = xft.minimum();
-                
-        if (value == null) {
-            // no nodes in trie, hence none in trees?
-            assert(xft.size() == 0);
-            return null;
+        if (xft.size() == 0) {
+            return -1;
         }
         
-        int index = value.intValue()/binSz;
+        //O(log_2(w))
+        Integer repr = xft.minimum();
         
-        HeapNode minNode = xftReps.get(index);
-        
-        return minNode;
+        assert(repr != null);
+       
+        return repr.intValue();
     }
 
     /**
      * runtime complexity is roughly O(log_2(w)) + O(log_2(N/w))
-     * @return 
+     * @return maximum, else -1 if empty
      */
-    @Override
-    public HeapNode maximum() {
+    public int maximum() {
         
-        //O(log_2(w))
-        Integer qIndex = xft.find(Integer.valueOf(maxC));
-        
-        if (qIndex != null) {
-
-            // the maximum in last map can be returned.
-            int nodeIndex = rbs.size() - 1;
-                
-            //TODO: if a treeMap.get() is faster than
-            // a treeMap.lastEntry, change these:
-            
-            TreeMap<Integer, LinkedList<HeapNode>> nodeMap =
-                rbs.get(nodeIndex);
-        
-            // O(log_2(N/w))
-            Entry<Integer, LinkedList<HeapNode>> entry =
-                nodeMap.lastEntry();
-        
-            return entry.getValue().getLast();
+        if (xft.size() == 0) {
+            return -1;
         }
         
-        // else, xft.predecessor finds the max tree
-        // then the last entry in it is the return
-        
         //O(log_2(w))
-        qIndex = xft.predecessor(Integer.valueOf(maxC));
+        Integer maxRepr = xft.maximum();
         
-        if (qIndex == null) {
-            // no entries in trie, hence none in trees?
-            assert(xft.size() == 0);
-            return null;
-        }
+        assert(maxRepr != null);
         
-        int index = qIndex.intValue()/binSz;
+        int index = maxRepr.intValue()/binSz;
         
-        TreeMap<Integer, LinkedList<HeapNode>> map =
-            rbs.get(index);
+        TreeMap<Integer, Integer> map = rbs.get(index);
+        
+        assert(map != null);
         
         // O(log_2(N/w))
-        Entry<Integer, LinkedList<HeapNode>> entry =
-            map.lastEntry();
+        Entry<Integer, Integer> lastItem = map.lastEntry();
         
-        return entry.getValue().getLast();
+        assert(lastItem != null);
+        
+        return lastItem.getKey();
     }
     
     /**
-     * runtime complexity is roughly
-     *    O(log_2(w)) + O(w-l) + O(log_2(N/w))
-     * where N is total number of nodes in the YFastTrie,
-     * w is the maximum value possible in bit length,
-     * and l is the number of levels in the prefix trie 
-     * already filled with other entries.
+     * TODO: calc runtime complexity again
      * 
-     * * NOTE:
-     * For small maxC, the "Dial algorithm" has best insert and
-     * extractMin runtime complexities (O(1) and O(1), respectively).
-     * 
-     * For large N, the XFastTrie by itself (plus an external
-     * hashmao to store HeapNodes) is a better result because
-     * the term O(w-l) will be smaller.
-     * 
-     * For mid to small N, the fibonacci heap has better insert and
-     * extractMin performance (O(1) and O(log_2(N)), respectively).
-     * 
-     * @return 
+     * @return minumum, else -1 if empty
      */
-    public HeapNode extractMinimum() {
+    public int extractMinimum() {
         
         //O(log_2(w))
-        HeapNode min = minimum();
+        int min = minimum();
 
-        if (min == null) {
+        if (min == -1) {
             assert(xft.size() == 0);
-            return null;
+            return -1;
         }
-        
-        //TODO: could combine these two operations to reduce a query
-        
+                
         //O(log_2(w)) + O(w-l) + O(log_2(N/w))
         remove(min);
         
@@ -684,27 +567,24 @@ YFastTrie
     }
     
     /**
-     * runtime complexity is roughly
-     *    O(log_2(w)) + O(w-l) + O(log_2(N/w))
-     * @return 
+     * TODO: calc runtime complexity again
+     * 
+     * @return maximum, else -1 if empty
      */
-    public HeapNode extractMaximum() {
+    public int extractMaximum() {
         
-        HeapNode max = maximum();
+        int max = maximum();
 
-        if (max == null) {
+        if (max == -1) {
             assert(xft.size() == 0);
-            return null;
+            return -1;
         }
-        
-        //TODO: could combine these two operations to reduce a query
-        
+                
         remove(max);
         
         return max;
     }
     
-    @Override
     public int size() {
         return n;
     }
