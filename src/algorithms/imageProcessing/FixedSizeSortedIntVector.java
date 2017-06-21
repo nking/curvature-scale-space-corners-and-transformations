@@ -42,6 +42,10 @@ public class FixedSizeSortedIntVector {
         a = new int[size];
 
     }
+    
+    public int getCapacity() {
+        return size;
+    }
 
     /**
      * add value to the fixed size sorted list (sorted by increasing value).
@@ -87,6 +91,21 @@ public class FixedSizeSortedIntVector {
         }
 
         return true;
+    }
+    
+    public int findIndexFor(int value) {
+        int idx = Arrays.binarySearch(a, 0, n, value);
+        if (idx < 0) {
+            //(-(insertion point) - 1)
+            idx *= -1;
+            idx--;
+        } else {
+            // in case there are more than one of same value, search prev
+            while ((idx - 1) > -1 && a[idx - 1] == value) {
+                idx--;
+            }
+        }
+        return idx;
     }
 
     /**
@@ -213,4 +232,32 @@ public class FixedSizeSortedIntVector {
         return Arrays.toString(a);
     }
 
+    /**
+     * Split this into a new instance containing all elements less than or
+     * equal to x and leave all elements greater than x in this instance
+     * runtime complexity is binary search + copy = O(n) where n is the
+     * number of items in this instance.
+     * @param x
+     * @return
+     */
+    public FixedSizeSortedIntVector split(int x) {
+
+        int idx = findIndexFor(x);
+
+        // copy: 0 : 1dx-1;  keep: idx : n-1
+        FixedSizeSortedIntVector vecL = new FixedSizeSortedIntVector(size);
+        int[] aL = vecL.getArray();
+
+        // copy 0:idx-1 to aL
+        System.arraycopy(a, 0, aL, 0, idx);
+        vecL.n = (idx + 1);
+        vecL.availSlot = vecL.n;
+
+        // move idx:n-1 up to 0 
+        System.arraycopy(a, idx, a, 0, n - idx);
+        n = n - idx;
+        availSlot = n;
+        
+        return vecL;
+    }
 }

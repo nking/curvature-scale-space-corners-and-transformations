@@ -1,5 +1,9 @@
 package algorithms.imageProcessing;
 
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -151,6 +155,78 @@ public class FixedSizeSortedIntVectorTest extends TestCase {
                     assertEquals(number2.intValue(), sVec.getValue(j));
                 }
             }
+        }
+    }
+    
+    public void testSplit() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.nanoTime();
+        //seed=1393807938003554000l;
+        sr.setSeed( seed );
+        
+        int n = 40;
+        int sz = 100;
+                
+        TIntSet set = new TIntHashSet();
+        
+        FixedSizeSortedIntVector sVec = new FixedSizeSortedIntVector(n);
+                
+        for (int i = 0; i < n; ++i) {
+            
+            int number = sr.nextInt(sz);
+            
+            while (set.contains(number)) {
+                number = sr.nextInt(sz);
+            }
+             
+            set.add(number);
+            
+            sVec.add(number);
+            
+            if (i >= sz) {
+                
+                TIntList sorted = new TIntArrayList(set);
+                sorted.sort();
+                sorted = sorted.subList(0, n);
+                
+                // compare contents
+                for (int j = 0; j < sorted.size(); ++j) {
+                    int number2 = sorted.get(j);
+                    assertEquals(number2, sVec.getValue(j));
+                }
+            }
+        }
+        
+        TIntList sorted = new TIntArrayList(set);
+        sorted.sort();
+        sorted = sorted.subList(0, n);
+        
+        assertEquals(n, sVec.size);
+        
+        //System.out.println("BEFORE: " + Arrays.toString(sVec.getArray()));
+        
+        int splitIdx = sorted.size()/3;
+        int split = sorted.get(splitIdx);
+        
+        FixedSizeSortedIntVector lower = sVec.split(split);
+        
+        //System.out.println("splitIdx=" + splitIdx + " split=" + split);
+        //System.out.println("lower.n=" + lower.getNumberOfItems());
+        //System.out.println("upper.n=" + sVec.getNumberOfItems());
+        
+        //System.out.println("LOWER: " + Arrays.toString(lower.getArray()));
+        //System.out.println("UPPER: " + Arrays.toString(sVec.getArray()));
+        
+        assertEquals(splitIdx + 1, lower.getNumberOfItems());
+        assertEquals(n - splitIdx, sVec.getNumberOfItems());
+        
+        for (int i = 0; i < splitIdx; ++i) {
+            assertEquals(sorted.get(i), lower.getValue(i));
+        }
+        for (int i = 0; i < sVec.getNumberOfItems(); ++i) {
+            int j = splitIdx + i;
+            assertEquals(sorted.get(j), sVec.getValue(i));
         }
     }
 }
