@@ -1,0 +1,19 @@
+from Starck...sparse image
+Sparse Image and Signal Processing, Second Edition
+
+browse:
+www.cosmostat.org/software.html. This link is on the book’s software page (www.SparseSignalRecipes.info)
+
+
+Texture-Cartoon Separation
+
+In this section, we focus on the same decomposition problem, that is, texture and natural (piecewise smooth) additive layers. In the rest of this section, we will essentially deal with locally periodic/oscillating textures. The core idea here is to choose two appropriate dictionaries, one known to sparsify the textured part and the second the cartoon part. Each dictionary will play the role of a discriminant, preferring the part of the image it is serving, while yielding nonsparse representations on the other content type. Then MCA is expected to lead to the proper separation, as it seeks the overall sparsest solution, and this should align with the sparse representation for each part.
+
+The DCT is appropriate for sparse representation of either smooth or locally periodic behaviors. Other dictionaries that could be considered are Gabor, brushlets, wavelet packets or wave atoms (Demanet and Ying 2007).
+
+8.6.1.2 Dictionaries for Piecewise Smooth Content: the Curvelet Transform
+As we have seen in Chapter 5, the curvelet transform enables the directional analysis of an image in different scales. This transform provides a near-optimal sparse representation of piecewise smooth () images away from contours. It is well suited for anisotropic structures and smooth curved edges. Other dictionaries that could be considered are wavelets, bandlets (Peyré and Mallat 2007) or shearlets (Labate et al. 2005).
+
+see the rest on
+   http://proquest.safaribooksonline.com.ezproxy.spl.org:2048/book/electrical-engineering/computer-engineering/9781316482018/firstchapter#X2ludGVybmFsX0h0bWxWaWV3P3htbGlkPTk3ODEzMTY0ODIwMTglMkZ4MTZfMjgwMDAwOF82X2h0bWwmcXVlcnk9
+

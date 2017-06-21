@@ -135,7 +135,36 @@ YFastTrie
                 + " shoulw be greater than 1 and less than 32");
         }
         maxC = (1 << (w - 1)) - 1;
-        binSz = (int)Math.ceil((float)maxC/(float)w);
+       
+        /*
+        LG binsize = (int)Math.ceil((float)maxC/(float)w);
+        MID binsize = 10
+        
+        w,     binsz,     n,             rt
+        31,    69273666,  31,            26.   LG
+        31,    5.0,       429496729.6,   2.32  MID
+        
+        10,    102,       10,            6.67  LG
+        10,    4.0,       256.0,         2.0   MID
+        
+        aiming for a runtime of about O(10) or better without increasing n too
+        much.
+        
+        alternatively, could keep n as large as possible within good
+        performance range, hence the binsz will be small, hence the
+        runtime will be small
+        */
+        
+        int tmpLg = (int)Math.ceil((float)maxC/(float)w);
+        if ((Math.log(tmpLg)/Math.log(2)) < 10) {
+            binSz = tmpLg;  
+        } else {
+            binSz = 1024;
+        }
+        
+        System.out.println("nBins=" + (maxC/binSz) + "  rt of ops=" +
+            (Math.log(tmpLg)/Math.log(2)));
+        
         rbs = new ArrayList<TreeMap<Integer, Integer>>(w);
         for (int i = 0; i < w; ++i) {
             rbs.add(new TreeMap<Integer, Integer>());
