@@ -183,7 +183,7 @@ YFastTrie
     
     public YFastTrie() {
         
-        this.w = 32;
+        this.w = 30;
         
         maxC = (1 << (w - 1)) - 1;
         binSz = (int)Math.ceil((float)maxC/(float)w);
