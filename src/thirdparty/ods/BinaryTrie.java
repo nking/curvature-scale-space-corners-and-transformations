@@ -26,7 +26,7 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 	protected static final int left = 0;
 	protected static final int right = 1;
 	
-	protected int w = 32;
+	protected int w = 30;
     protected final int maxC;
 	
 	/**
@@ -89,7 +89,7 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		r.jump = dummy;
 		this.it = it;
 		n = 0;
-        maxC = (1 << 31) - 1;
+        maxC = (1 << w) - 1;
 	}
 	
     /**
@@ -107,13 +107,13 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
      */
 	public BinaryTrie(S sampleNode, Integerizer<T> it,
         int maxNumBits) {
-        if (maxNumBits <= 32 && maxNumBits > 1) {
+        if (maxNumBits < 31 && maxNumBits > 1) {
             this.w = maxNumBits;
         } else {
             throw new IllegalStateException("maxNumBits "
-                + " should be greater than 1 and less than 33");
+                + " should be greater than 1 and less than 31");
         }
-        maxC = (1 << (w - 1)) - 1;
+        maxC = (1 << w) - 1;
 		this.sampleNode = sampleNode;
 		this.dummy = newNode();
 		dummy.child[prev] = dummy.child[next] = dummy;
