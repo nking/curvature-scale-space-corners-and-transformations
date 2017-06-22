@@ -136,6 +136,9 @@ YFastTrie
         }
         maxC = (1 << (w - 1)) - 1;
        
+        //TODO: fix error in changing binsz
+        //      - consider increasing the number of rb keys as needed
+        //        above w
         /*
         LG binsize = (int)Math.ceil((float)maxC/(float)w);
         MID binsize = 10
