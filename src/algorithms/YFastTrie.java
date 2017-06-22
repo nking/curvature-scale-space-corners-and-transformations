@@ -2,7 +2,12 @@ package algorithms;
 
 import algorithms.imageProcessing.HeapNode;
 import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -115,6 +120,8 @@ YFastTrie
     private final int maxC;
     
     private final int binSz;
+    
+    private int nBins;
 
     private final XFastTrie<XFastTrieNode<Integer>, Integer> xft;
     
@@ -125,20 +132,20 @@ YFastTrie
     // there are w items in rbs
     // each list item is a sorted binary search tree of numbers in that bin.
     //    the value is the tree holds the number of times that number is present.
-    private final List<TreeMap<Integer, Integer>> rbs;
-    
+    private final TIntObjectMap<TreeMap<Integer, Integer>> rbs;
+
+    private boolean chooseByN = true;
+
     public YFastTrie(int wBits) {
-        if (wBits < 32 && wBits > 1) {
+        
+        if (wBits < 31 && wBits > 1) {
             this.w = wBits;
         } else {
             throw new IllegalStateException("wBits "
                 + " shoulw be greater than 1 and less than 32");
         }
-        maxC = (1 << (w - 1)) - 1;
-       
-        //TODO: fix error in changing binsz
-        //      - consider increasing the number of rb keys as needed
-        //        above w
+        maxC = (1 << w) - 1;
+        
         /*
         LG binsize = (int)Math.ceil((float)maxC/(float)w);
         MID binsize = 10
@@ -155,24 +162,32 @@ YFastTrie
         
         alternatively, could keep n as large as possible within good
         performance range, hence the binsz will be small, hence the
-        runtime will be small
+        runtime will be small.
+        
+        n            TreeMaps
+        n * binSz    objects in TreeMaps
+        
+        heapsize: 100's or more MB
         */
         
-        int tmpLg = (int)Math.ceil((float)maxC/(float)w);
-        if ((Math.log(tmpLg)/Math.log(2)) < 10) {
-            binSz = tmpLg;  
+        if (chooseByN) {
+            binSz = chooseBinSizeByN();
         } else {
-            binSz = 1024;
+            int tmpLg = (int) Math.ceil((float) maxC / (float) w);
+            if ((Math.log(tmpLg) / Math.log(2)) < 10) {
+                binSz = tmpLg;
+            } else {
+                binSz = 1024;
+            }
         }
         
-        System.out.println("nBins=" + (maxC/binSz) + "  rt of ops=" +
-            (Math.log(tmpLg)/Math.log(2)));
+        nBins = (int)Math.ceil((float)maxC/(float)binSz);
+                
+        System.out.println("nBins=" + nBins + "  rt of ops=" +
+            (Math.log(binSz)/Math.log(2)));
         
-        rbs = new ArrayList<TreeMap<Integer, Integer>>(w);
-        for (int i = 0; i < w; ++i) {
-            rbs.add(new TreeMap<Integer, Integer>());
-        }
-        
+        rbs = new TIntObjectHashMap<TreeMap<Integer, Integer>>();
+         
         XFastTrieNode<Integer> clsNode = new XFastTrieNode<Integer>();
         Integerizer<Integer> it = new Integerizer<Integer>() {
             @Override
@@ -188,12 +203,25 @@ YFastTrie
         
         this.w = 30;
         
-        maxC = (1 << (w - 1)) - 1;
-        binSz = (int)Math.ceil((float)maxC/(float)w);
-        rbs = new ArrayList<TreeMap<Integer, Integer>>(w);
-        for (int i = 0; i < w; ++i) {
-            rbs.add(new TreeMap<Integer, Integer>());
+        maxC = (1 << w) - 1;
+        
+        if (chooseByN) {
+            binSz = chooseBinSizeByN();
+        } else {
+            int tmpLg = (int) Math.ceil((float) maxC / (float) w);
+            if ((Math.log(tmpLg) / Math.log(2)) < 10) {
+                binSz = tmpLg;
+            } else {
+                binSz = 1024;
+            }
         }
+        
+        nBins = (int)Math.ceil((float)maxC/(float)binSz);
+                
+        System.out.println("nBins=" + nBins + "  rt of ops=" +
+            (Math.log(binSz)/Math.log(2)));
+        
+        rbs = new TIntObjectHashMap<TreeMap<Integer, Integer>>();
         
         XFastTrieNode<Integer> clsNode = new XFastTrieNode<Integer>();
         Integerizer<Integer> it = new Integerizer<Integer>() {
@@ -205,6 +233,16 @@ YFastTrie
         
         xft = new XFastTrie<XFastTrieNode<Integer>, Integer>(clsNode, it, w);
     }
+    
+    private TreeMap<Integer, Integer> getTreeMap(int index) {
+        Integer key = Integer.valueOf(index);
+        TreeMap<Integer, Integer> map = rbs.get(key);
+        if (map == null) {
+            map = new TreeMap<Integer, Integer>();
+            rbs.put(key, map);
+        }
+        return map;
+    }
 
     /**
      * runtime complexity is roughly O(log_2(N/w))
@@ -213,7 +251,7 @@ YFastTrie
      */
     private void addToRBTree(int node, int index) {
         
-        TreeMap<Integer, Integer> map = rbs.get(index);
+        TreeMap<Integer, Integer> map = getTreeMap(index);
         
         assert(map != null);
         
@@ -239,7 +277,7 @@ YFastTrie
      */
     private boolean deleteFromRBTree(int node, int index) {
                 
-        TreeMap<Integer, Integer> map = rbs.get(index);
+        TreeMap<Integer, Integer> map = getTreeMap(index);
         
         assert(map != null);
         
@@ -281,7 +319,7 @@ YFastTrie
                 + "be greater than or equal to 0");
         } else if (node > maxC) {
             throw new IllegalArgumentException("node.key must "
-                + "be less than " + maxC);
+                + "be less than " + maxC + " node=" + node);
         }
         
         int index = node/binSz;
@@ -299,7 +337,7 @@ YFastTrie
             xft.add(Integer.valueOf(node));
             xftReps.put(index, node);
         }
-        
+                
         // O(log_2(N/w))
         addToRBTree(node, index);
         
@@ -341,8 +379,8 @@ YFastTrie
         if (!xftReps.containsKey(index)) {
             return false;
         }
-                
-        TreeMap<Integer, Integer> map = rbs.get(index);
+        
+        TreeMap<Integer, Integer> map = getTreeMap(index);
       
         int existingRepr = xftReps.get(index);
       
@@ -397,7 +435,7 @@ YFastTrie
                 
         int index = node/binSz;
                 
-        TreeMap<Integer, Integer> map = rbs.get(index);
+        TreeMap<Integer, Integer> map = getTreeMap(index);
         
         // O(log_2(N/w))
         Integer multiplicity = map.get(Integer.valueOf(node));
@@ -435,7 +473,7 @@ YFastTrie
         */
         if (!isAMinimum && (rbs.get(nodeIndex).size() > 1)) {
         
-            TreeMap<Integer, Integer> map = rbs.get(nodeIndex);
+            TreeMap<Integer, Integer> map = getTreeMap(nodeIndex);
           
             // O(log_2(N/w))
             Entry<Integer, Integer> pred = map.lowerEntry(nodeKey);
@@ -457,7 +495,7 @@ YFastTrie
         
         int prev0Index = prev.intValue()/binSz;
             
-        TreeMap<Integer, Integer> map = rbs.get(prev0Index);
+        TreeMap<Integer, Integer> map = getTreeMap(prev0Index);
         
         // O(log_2(N/w))
         //Entry<Integer, Integer> lastItem = map.lowerEntry(nodeKey);
@@ -490,7 +528,7 @@ YFastTrie
             // if tree size > 1, the next key is the successor
             // else, the xft sucessor to nodeIndex is the successor
             
-            TreeMap<Integer, Integer> nodeMap = rbs.get(nodeIndex);
+            TreeMap<Integer, Integer> nodeMap = getTreeMap(nodeIndex);
             
             if (nodeMap.size() > 1) {
                 Entry<Integer, Integer> successor = nodeMap.higherEntry(nodeKey);
@@ -512,7 +550,7 @@ YFastTrie
         //   if there is a tree successor to the node, that is the successor
         //   else, the xft successor to nodeIndex is the successor
         
-        TreeMap<Integer, Integer> nodeMap = rbs.get(nodeIndex);
+        TreeMap<Integer, Integer> nodeMap = getTreeMap(nodeIndex);
             
         Entry<Integer, Integer> sEntry = nodeMap.higherEntry(nodeKey);
         
@@ -565,7 +603,7 @@ YFastTrie
         
         int index = maxRepr.intValue()/binSz;
         
-        TreeMap<Integer, Integer> map = rbs.get(index);
+        TreeMap<Integer, Integer> map = getTreeMap(index);
         
         assert(map != null);
         
@@ -619,6 +657,57 @@ YFastTrie
     
     public int size() {
         return n;
+    }
+
+    private int chooseBinSizeByN() {
+        
+        long totalMemory = Runtime.getRuntime().totalMemory();
+        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+        long heapUsage = mbean.getHeapMemoryUsage().getUsed();
+        long avail = totalMemory - heapUsage;
+
+        long n = avail/32;
+        
+        // n = maxC/binsz
+        int bs = (int)(maxC/n);
+        
+        double rt = Math.log(bs)/Math.log(2);
+        
+        if (rt < 10) {
+            if (bs > 10) {
+                //this is the number of items, that is capacity, of each map
+                return bs;
+            }
+        }
+        
+        // else, fall back to using the default for rt = O(10)
+        
+        return (int)Math.ceil((float)maxC/(float)w);
+        
+        /*
+        LG binsize = (int)Math.ceil((float)maxC/(float)w);
+        MID binsize = 10
+        
+        w,     binsz,     n,             rt
+        31,    69273666,  31,            26.   LG
+        31,    5.0,       429496729.6,   2.32  MID
+        
+        10,    102,       10,            6.67  LG
+        10,    4.0,       256.0,         2.0   MID
+        
+        aiming for a runtime of about O(10) or better without increasing n too
+        much.
+        
+        alternatively, could keep n as large as possible within good
+        performance range, hence the binsz will be small, hence the
+        runtime will be small.
+        
+        n            TreeMaps
+        n * binSz    objects in TreeMaps
+        
+        heapsize: 100's or more MB
+        */
+        
     }
     
 }

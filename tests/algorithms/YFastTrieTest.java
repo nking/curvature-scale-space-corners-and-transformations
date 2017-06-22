@@ -469,7 +469,7 @@ public class YFastTrieTest extends TestCase {
         rng.setSeed(seed);
         System.out.println("test_random_large SEED=" + seed);
         
-        int n = 1000;
+        int n = 100000;
         
         int w = 30;
         
@@ -481,7 +481,7 @@ public class YFastTrieTest extends TestCase {
      
         for (int i = 0; i < n; ++i) {
             int v = rng.nextInt(maxC);
-            System.out.println("i=" + i + " v=" + v);
+            //System.out.println("i=" + i + " v=" + v);
             bt.add(v);
             list.add(v);
         }
