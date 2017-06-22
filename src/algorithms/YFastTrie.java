@@ -30,13 +30,8 @@ import thirdparty.ods.XFastTrieNode;
    predecessor.
    
    NOTE that the runtime complexities listed are not yet achieved.
-   The current operations are O(log(M/w)) where w is the length of the bitstring of M.
-   (to reduce the time to O(log log(M)) would require binSz = log(log(M))
-   which, being a small number, would mean many data structures would be needed).
-   (it would probably be better to dynamically split and add 
-   the binary search trees as needed and restrict that size to
-   log(log(M)).  A problem there is that split and insert into next might
-   need to cascade to next tree, etc).
+   The current operations depend upon settings, but should be 
+   constant runtime complexity .lte. O(10).
 
    Find(k): find the value associated with the given key.
        runtime complexity is O(log log(M))
@@ -240,7 +235,7 @@ YFastTrie
     }
 
     /**
-     * runtime complexity is roughly O(log_2(N/w))
+     * 
      * @param node
      * @param index 
      */
@@ -252,7 +247,6 @@ YFastTrie
         
         Integer key = Integer.valueOf(node);
         
-        // O(log_2(N/w))
         Integer multiplicity = map.get(key);
     
         if (multiplicity == null) {
@@ -261,12 +255,11 @@ YFastTrie
             multiplicity = Integer.valueOf(1 + multiplicity.intValue());
         }
         
-        // O(log_2(N/w))
         map.put(key, multiplicity);        
     }
     
     /**
-     * runtime complexity is roughly O(log_2(N/w))
+     * 
      * @param node
      * @param index 
      */
@@ -278,7 +271,6 @@ YFastTrie
         
         Integer key = Integer.valueOf(node);
 
-        // O(log_2(N/w))
         Integer multiplicity = map.get(key);
     
         if (multiplicity == null) {
@@ -336,7 +328,6 @@ YFastTrie
             xftReps.put(index, node);
         }
                 
-        // O(log_2(N/w))
         addToRBTree(node, index);
         
         n++;
@@ -345,12 +336,6 @@ YFastTrie
     }
 
     /**
-     * runtime complexity is roughly
-     *    O(log_2(w)) + O(w-l) + O(log_2(N/w))
-     * where N is total number of nodes in the YFastTrie,
-     * w is the maximum value possible in bit length,
-     * and l is the number of levels in the prefix trie 
-     * already filled with other entries.
      * 
      * @param node
      * @return 
@@ -367,7 +352,6 @@ YFastTrie
         
         int index = node/binSz;
                 
-        // O(log_2(N/w))
         boolean removed = deleteFromRBTree(node, index);
                 
         if (!removed) {
@@ -417,7 +401,6 @@ YFastTrie
     }
 
     /**
-     * runtime complexity is roughly O(log_2(N/w))
      * @param node
      * @return 
      */
@@ -435,7 +418,6 @@ YFastTrie
                 
         TreeMap<Integer, Integer> map = getTreeMap(index);
         
-        // O(log_2(N/w))
         Integer multiplicity = map.get(Integer.valueOf(node));
         if (multiplicity == null) {
             return -1;
@@ -445,7 +427,6 @@ YFastTrie
     }
 
     /**
-     * runtime complexity is O(log_2(w)) + O(log_2(N/w)).
      * @param node
      * @return value preceding node, else -1 if there is not one
      */
@@ -473,7 +454,6 @@ YFastTrie
         
             TreeMap<Integer, Integer> map = getTreeMap(nodeIndex);
           
-            // O(log_2(N/w))
             Entry<Integer, Integer> pred = map.lowerEntry(nodeKey);
             if (pred == null) {
                 return -1;
@@ -485,7 +465,6 @@ YFastTrie
         // else, predeccessor is in the closest bin < nodeIndex that has
         //    items in it.
                 
-        //O(log_2(w))
         Integer prev = xft.predecessor(nodeKey);
         if (prev == null) {
             return -1;
@@ -495,8 +474,6 @@ YFastTrie
             
         TreeMap<Integer, Integer> map = getTreeMap(prev0Index);
         
-        // O(log_2(N/w))
-        //Entry<Integer, Integer> lastItem = map.lowerEntry(nodeKey);
         Entry<Integer, Integer> lastItem = map.lastEntry();
                
         if (lastItem == null) {
@@ -534,7 +511,6 @@ YFastTrie
                 return successor.getKey();
             }
             
-            //O(log_2(w))
             Integer successorRepr = xft.successor(nodeKey);
             if (successorRepr == null) {
                 return -1;
@@ -556,7 +532,6 @@ YFastTrie
             return sEntry.getKey();
         }
         
-        //O(log_2(w))
         Integer successorRepr = xft.successor(nodeKey);
         if (successorRepr == null) {
             return -1;
@@ -576,7 +551,6 @@ YFastTrie
             return -1;
         }
         
-        //O(log_2(w))
         Integer repr = xft.minimum();
         
         assert(repr != null);
@@ -585,7 +559,6 @@ YFastTrie
     }
 
     /**
-     * runtime complexity is roughly O(log_2(w)) + O(log_2(N/w))
      * @return maximum, else -1 if empty
      */
     public int maximum() {
@@ -594,7 +567,6 @@ YFastTrie
             return -1;
         }
         
-        //O(log_2(w))
         Integer maxRepr = xft.maximum();
         
         assert(maxRepr != null);
@@ -605,7 +577,6 @@ YFastTrie
         
         assert(map != null);
         
-        // O(log_2(N/w))
         Entry<Integer, Integer> lastItem = map.lastEntry();
         
         assert(lastItem != null);
@@ -628,7 +599,6 @@ YFastTrie
             return -1;
         }
                 
-        //O(log_2(w)) + O(w-l) + O(log_2(N/w))
         remove(min);
         
         return min;
