@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -24,7 +25,7 @@ public class YFastTrieTest extends TestCase {
     public YFastTrieTest() {
     }
 
-    public void est00() {
+    public void test00() {
         
         System.out.println("test00");
         
@@ -140,7 +141,7 @@ public class YFastTrieTest extends TestCase {
         assertEquals(-1, bt.find(node2));
     }
        
-    public void est0() {
+    public void test0() {
         
         System.out.println("test0");
         
@@ -284,7 +285,7 @@ public class YFastTrieTest extends TestCase {
         assertEquals(3, bt.maximum());
     }
         
-    public void est1() throws Exception {
+    public void test1() throws Exception {
     
         System.out.println("test1");
         
@@ -465,7 +466,7 @@ public class YFastTrieTest extends TestCase {
         
         Random rng = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
-        seed = 1498089496315L;
+        //seed = 1498089496315L;
         rng.setSeed(seed);
         System.out.println("test_random_large SEED=" + seed);
         
@@ -495,6 +496,10 @@ public class YFastTrieTest extends TestCase {
             
             int bv = bt.extractMinimum();
             int v = list.get(i);
+            
+            assertTrue(bv != -1);
+            
+            //System.out.println("i=" + i + " v=" + v);
             
             assertEquals(v, bv);
             

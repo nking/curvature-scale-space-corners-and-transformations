@@ -1,21 +1,16 @@
 package algorithms;
 
-import algorithms.imageProcessing.HeapNode;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import thirdparty.ods.Integerizer;
 import thirdparty.ods.XFastTrie;
 import thirdparty.ods.XFastTrieNode;
-import thirdparty.ods.SSet;
 
 /**
  * NOTE: NOT READY FOR USE.  
@@ -234,7 +229,7 @@ YFastTrie
         xft = new XFastTrie<XFastTrieNode<Integer>, Integer>(clsNode, it, w);
     }
     
-    private TreeMap<Integer, Integer> getTreeMap(int index) {
+    protected TreeMap<Integer, Integer> getTreeMap(int index) {
         Integer key = Integer.valueOf(index);
         TreeMap<Integer, Integer> map = rbs.get(key);
         if (map == null) {
@@ -290,10 +285,13 @@ YFastTrie
             return false;
         }
         
-        if (multiplicity.intValue() > 1) {
+        if (multiplicity.intValue() > 0) {
             multiplicity = Integer.valueOf(multiplicity.intValue() - 1);
-        } else {
-            assert(multiplicity.intValue() == 1);
+            if (multiplicity.intValue() > 0) {
+                map.put(key, multiplicity);
+            }
+        }
+        if (multiplicity.intValue() == 0) {
             map.remove(key);
         }
         
@@ -371,7 +369,7 @@ YFastTrie
                 
         // O(log_2(N/w))
         boolean removed = deleteFromRBTree(node, index);
-        
+                
         if (!removed) {
             return false;
         }
@@ -710,4 +708,7 @@ YFastTrie
         
     }
     
+    protected int getBinSz() {
+        return binSz;
+    }
 }
