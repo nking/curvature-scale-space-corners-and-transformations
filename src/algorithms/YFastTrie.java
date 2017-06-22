@@ -13,7 +13,7 @@ import thirdparty.ods.XFastTrie;
 import thirdparty.ods.XFastTrieNode;
 
 /**
- * NOTE: NOT READY FOR USE.  
+ * NOTE: has not been tuned for best runtime complexity yet.  
  * 
  * from wikipedia
  *     https://en.wikipedia.org/wiki/Y-fast_trie
@@ -48,10 +48,7 @@ import thirdparty.ods.XFastTrieNode;
  
  * Note, have not read the Willard paper yet, just a few online
  * lecture notes to implement this.  
- * 
- * the performance of each binary search tree is at most O(log_2(maxC/w))
- * where maxC is the maximum value to be stored.
- * 
+ *  
  * @author nichole
  */
 public class YFastTrie {
