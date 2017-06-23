@@ -1,8 +1,10 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Histogram;
 import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertEquals;
 
 public class OtsuThresholdingTest extends TestCase {
     
@@ -181,4 +183,53 @@ public class OtsuThresholdingTest extends TestCase {
         }
     }
     
+    public void testHistogramInt() throws Exception {
+        
+        OtsuThresholding thrshFinder = new OtsuThresholding();
+        
+        GreyscaleImage img = new GreyscaleImage(16, 16);
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            img.setValue(i, i);
+        }
+        int[] h = thrshFinder.createHistogram(img, 0, 255, 256);        
+        for (int i = 0; i < 256; ++i) {
+            assertEquals(1, h[i]);
+        }
+        
+        img = new GreyscaleImage(16, 16);
+        img.fill(255);
+        h = thrshFinder.createHistogram(img, 0, 255, 256);
+        for (int i = 0; i < 256; ++i) {
+            if (i == 255) {
+                assertEquals(256, h[i]);
+            } else {
+                assertEquals(0, h[i]);
+            }
+        }
+        
+        img = new GreyscaleImage(16, 16);
+        img.fill(0);
+        h = thrshFinder.createHistogram(img, 0, 255, 256);
+        for (int i = 0; i < 256; ++i) {
+            if (i == 0) {
+                assertEquals(256, h[i]);
+            } else {
+                assertEquals(0, h[i]);
+            }
+        }
+        
+        // set 2 pixel values up to 256, e.g. {0,0, 2,2, 4,4, ...} 
+        img = new GreyscaleImage(16, 16);
+        for (int i = 0; i < img.getNPixels(); i += 2) {
+            img.setValue(i, i);
+            img.setValue(i + 1, i);
+        }
+        h = thrshFinder.createHistogram(img, 0, 255, 256);
+        for (int i = 0; i < img.getNPixels(); i += 2) {
+            assertEquals(2, h[i]);
+        }
+        for (int i = 1; i < img.getNPixels(); i += 2) {
+            assertEquals(0, h[i]);
+        }
+    }
 }

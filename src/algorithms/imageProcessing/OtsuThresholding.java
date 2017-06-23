@@ -5,6 +5,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -16,6 +17,67 @@ import java.util.Set;
  */
 public class OtsuThresholding {
    
+    /**
+     * 
+     * @param img
+     * @param minBin first bin's pixel value, inclusive
+     * @param maxBin last bin's pixel value, inclusive.
+     * @param nBins
+     * @return 
+     */
+    protected int[] createHistogram(GreyscaleImage img, int minBin, 
+        int maxBin, int nBins) {
+        
+        int[] h = new int[nBins];
+        
+        // (255 - 0 + 1)/256
+        int binWidth = (maxBin - minBin + 1)/nBins;
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            
+            int v = img.getValue(i);
+            
+            int binNumber = (v - minBin)/binWidth;
+            
+            //assert(binNumber >= 0);
+            //assert(binNumber < maxBin);
+            
+            h[binNumber]++;
+        }
+        
+        return h;
+    }
+    
+    /**
+     *
+     * @param pointValues
+     * @param minBin first bin's pixel value, inclusive
+     * @param maxBin last bin's pixel value, inclusive.
+     * @param nBins
+     * @return
+     */
+    public static int[] createHistogram(Map<PairInt, Integer> pointValues,
+        int minBin, int maxBin, int nBins) {
+
+        int[] h = new int[nBins];
+
+        // (255 - 0 + 1)/256
+        int binWidth = (maxBin - minBin + 1)/nBins;
+            
+        for (Entry<PairInt, Integer> entry : pointValues.entrySet()) {
+
+            int v = entry.getValue().intValue();
+
+            int binNumber = (v - minBin)/binWidth;
+
+            //assert(binNumber >= 0);
+            //assert(binNumber < maxBin);
+
+            h[binNumber]++;
+        }
+
+        return h;
+    }
     
     /**
      * find the binary threshold assuming the image is filled with values 
@@ -33,7 +95,7 @@ public class OtsuThresholding {
         
         int nPix = img.getNPixels();
         
-        int[] h = Histogram.createHistogram(img, 0, 255, 256);
+        int[] h = createHistogram(img, 0, 255, 256);
         
         return calculateBinaryThreshold256(h, nPix);
     }
@@ -54,7 +116,7 @@ public class OtsuThresholding {
         
         int nPix = pointValues.size();
         
-        int[] h = Histogram.createHistogram(pointValues, 0, 255, 256);
+        int[] h = createHistogram(pointValues, 0, 255, 256);
         
         return calculateBinaryThreshold256(h, nPix);
     }

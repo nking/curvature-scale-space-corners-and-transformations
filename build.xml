@@ -501,19 +501,16 @@
         </tstamp>
         
         <mkdir dir="${classes.dir}/tmp" />
-        <unjar src="${lib.dir}/com.climbwithyourfeet.clustering.jar" dest="${classes.dir}/tmp"/>
         <move file="${classes.dir}/tmp/LICENSE.txt" tofile="${classes.dir}/tmp/Clustering_LICENSE.txt"/>
-        <unjar src="${lib.dir}/trove4j-3.0.3.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/com.climbwithyourfeet.shared.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/com.climbwithyourfeet.clustering.jar" dest="${classes.dir}/tmp"/>
         
-        <!-- jfree needs the servlet jar -->
-        <unjar src="${lib.dir}/servlet-api-2.5.jar" dest="${classes.dir}/tmp"/>
-
         <jar destfile="${classes.dir}/scalespace_${TS}.jar" manifest="${jar.mf}">
             <fileset dir="${src.out.dir}" includes="**"/>
             <fileset dir="${resources.dir}" includes="*.html"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
-            <fileset dir="${lib.dir}" includes="TROVE4J_LICENSE.txt"/>
+            <fileset dir="${basedir}" includes="Clustering_LICENSE.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>
         
