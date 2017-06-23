@@ -20,6 +20,7 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PixelHelper;
 import algorithms.util.QuadInt;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
@@ -432,9 +433,10 @@ public class MSERMatcher {
         int w1 = pyrRGB1.get(0).get(0).getWidth();
         int h1 = pyrRGB1.get(0).get(0).getHeight();
         
-        Set<PairIntWithIndex> points2
-                = new HashSet<PairIntWithIndex>();
-        
+        // key=pixIdx , value = rIdx
+        TIntIntMap pixRIdxMap = new TIntIntHashMap();
+        PixelHelper ph = new PixelHelper();
+                
         TIntObjectIterator<FixedSizeSortedVector<Obj>> iter2
             = rIndexHOGMap.iterator();
 
@@ -472,25 +474,30 @@ public class MSERMatcher {
             int x = Math.round(scale1 * obj0.cr1.ellipseParams.xC);
             int y = Math.round(scale1 * obj0.cr1.ellipseParams.yC);
             
-            PairIntWithIndex pii = new PairIntWithIndex(x, y, rIdx);
-            points2.add(pii);
+            int pixIdx = ph.toPixelIndex(x, y, w0);
+            pixRIdxMap.put(pixIdx, rIdx);
         }
         
-        DTClusterFinder<PairIntWithIndex> cFinder
-            = new DTClusterFinder<PairIntWithIndex>(points2, w1 + 1, h1 + 1);
+        DTClusterFinder cFinder = new DTClusterFinder(
+            pixRIdxMap.keySet(), 
+            //w1 + 1, h1 + 1);
+            w0 + 1, h0 + 1);
         cFinder.setMinimumNumberInCluster(2);
         cFinder.setCriticalDensity(critDens);
         cFinder.setThreshholdFactor(1.0f);
         cFinder.findClusters();
+        List<TIntSet> groupList = cFinder.getGroups();
 
         //NOTE: may need to revise how to choose best region to keep.
-        for (int i = 0; i < cFinder.getNumberOfClusters(); ++i) {
-            Set<PairIntWithIndex> set = cFinder.getCluster(i);
+        for (int i = 0; i < groupList.size(); ++i) {
+            TIntSet groupPix = groupList.get(i);
             double minCost = Double.MAX_VALUE;
             int minCostRIdx = -1;
 
-            for (PairIntWithIndex pii : set) {
-                int rIdx = pii.getPixIndex();
+            TIntIterator iter3 = groupPix.iterator();
+            while (iter3.hasNext()) {
+                int pixIdx = iter3.next();
+                int rIdx = pixRIdxMap.get(pixIdx);
                 double cost = rIndexHOGMap.get(rIdx).getArray()[0].cost;
                 if (cost < minCost) {
                     minCost = cost;
@@ -498,8 +505,11 @@ public class MSERMatcher {
                 }
             }
             assert(minCostRIdx > -1);
-            for (PairIntWithIndex pii : set) {
-                int rIdx = pii.getPixIndex();
+            iter3 = groupPix.iterator();
+            while (iter3.hasNext()) {
+                int pixIdx = iter3.next();
+                int rIdx = pixRIdxMap.get(pixIdx);
+            
                 if (rIdx == minCostRIdx) {
                     continue;
                 }

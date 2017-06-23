@@ -27,6 +27,7 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
@@ -575,34 +576,44 @@ public class ObjectMatcher {
             System.out.println("before removing near mser, cRegions.n=" + 
                 cRegions.size());
             
-            Set<PairIntWithIndex> points2
-                = new HashSet<PairIntWithIndex>();
+            // clustering algorithm needs pixel indexes, but would like to
+            // track the cRegions indexes too
+            PixelHelper ph = new PixelHelper();
             
+            // key = pixIdx, value = rIdx
+            TIntIntMap pixRIdxMap = new TIntIntHashMap();
+             
             iter = cRegions.iterator();
             for (int i = 0; i < cRegions.size(); ++i) {
                 iter.advance();
                 int rIdx = iter.key();
                 RegionPoints cr = iter.value();
-                PairIntWithIndex pii = new PairIntWithIndex(
-                    cr.ellipseParams.xC, cr.ellipseParams.yC, rIdx);
-                points2.add(pii);
+                
+                int pixIdx = ph.toPixelIndex(
+                    cr.ellipseParams.xC, cr.ellipseParams.yC, gsImg.getWidth());
+                
+                pixRIdxMap.put(pixIdx, rIdx);
             }
             
-            DTClusterFinder<PairIntWithIndex> cFinder
-                = new DTClusterFinder<PairIntWithIndex>(points2,
+            DTClusterFinder cFinder = new DTClusterFinder(pixRIdxMap.keySet(),
                 gsImg.getWidth() + 1, gsImg.getHeight() + 1);
             cFinder.setMinimumNumberInCluster(2);
             cFinder.setCriticalDensity(critDens);
             cFinder.findClusters();
+            List<TIntSet> groupList = cFinder.getGroups();
 
             //NOTE: may need to revise how to choose best region to keep.
-            for (int i = 0; i < cFinder.getNumberOfClusters(); ++i) {
-                Set<PairIntWithIndex> set = cFinder.getCluster(i);
-                int maxSz = Integer.MIN_VALUE;
-                int maxSzIdx = -1;
+            for (int i = 0; i < groupList.size(); ++i) {
+                TIntSet groupPixs = groupList.get(i);
                 
-                for (PairIntWithIndex pii : set) {
-                    int rIdx = pii.getPixIndex();
+                int maxSz = Integer.MIN_VALUE;
+                int maxSzIdx = -1;                
+                
+                TIntIterator iter3 = groupPixs.iterator();
+                while (iter3.hasNext()) {
+                    int pixIdx = iter3.next();
+                    int rIdx = pixRIdxMap.get(pixIdx);
+                
                     int sz = calculateObjectSize(cRegions.get(rIdx));
                     if (sz > maxSz) {
                         maxSz = sz;
@@ -610,8 +621,10 @@ public class ObjectMatcher {
                     }
                 }
                 assert(maxSzIdx > -1);
-                for (PairIntWithIndex pii : set) {
-                    int rIdx = pii.getPixIndex();
+                iter3 = groupPixs.iterator();
+                while (iter3.hasNext()) {
+                    int pixIdx = iter3.next();
+                    int rIdx = pixRIdxMap.get(pixIdx);
                     if (rIdx == maxSzIdx) {
                         continue;
                     }

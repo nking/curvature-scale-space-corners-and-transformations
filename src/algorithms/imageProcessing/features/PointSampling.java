@@ -2,8 +2,12 @@ package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.PointPartitioner;
 import algorithms.compGeometry.PointPartitioner.Bounds;
+import algorithms.imageProcessing.DistanceTransform;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -584,21 +588,18 @@ public class PointSampling {
     private Map<PairInt, Integer> useDistanceTransform(Set<PairInt> points, 
         int w, int h, List<PairInt> seeds) {
              
-        com.climbwithyourfeet.clustering.DistanceTransform
-            <com.climbwithyourfeet.clustering.util.PairInt> dt = 
-            new com.climbwithyourfeet.clustering.DistanceTransform
-            <com.climbwithyourfeet.clustering.util.PairInt>();
+        DistanceTransform dt = new DistanceTransform();
         
-        Set<com.climbwithyourfeet.clustering.util.PairInt> seedPoints
-            = new HashSet<com.climbwithyourfeet.clustering.util.PairInt>();
+        PixelHelper ph = new PixelHelper();
+        
+        TIntSet seedPixs = new TIntHashSet();
         
         for (PairInt p : seeds) {
-            com.climbwithyourfeet.clustering.util.PairInt p2 = new
-                com.climbwithyourfeet.clustering.util.PairInt(p.getX(), p.getY());
-            seedPoints.add(p2);
+            int pixIdx = ph.toPixelIndex(p, w);
+            seedPixs.add(pixIdx);
         }
         
-        int[][] distances = dt.applyMeijsterEtAl(seedPoints, w, h);
+        int[][] distances = dt.applyMeijsterEtAl(seedPixs, w, h);
         
         Map<PairInt, Integer> distMap = new HashMap<PairInt, Integer>();
         for (PairInt p : points) {

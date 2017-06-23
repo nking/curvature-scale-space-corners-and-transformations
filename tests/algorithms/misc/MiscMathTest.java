@@ -6,8 +6,6 @@ import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 import algorithms.util.PolygonAndPointPlotter;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;

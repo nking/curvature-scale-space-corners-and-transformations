@@ -1,10 +1,12 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.util.PairInt;
+
 /**
  *
  * @author nichole
  */
-public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
+public class PairIntWithIndex extends PairInt {
 
     int pixIdx;
 
@@ -20,27 +22,26 @@ public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.Pair
     @Override
     public boolean equals(Object obj) {
 
-        if (!(obj instanceof com.climbwithyourfeet.clustering.util.PairInt)) {
+        if (!(obj instanceof PairInt)) {
             return false;
         }
 
-        com.climbwithyourfeet.clustering.util.PairInt other
-            = (com.climbwithyourfeet.clustering.util.PairInt) obj;
+        PairInt other = (PairInt) obj;
 
-        return (x == other.getX()) && (y == other.getY());
+        return (getX() == other.getX()) && (getY() == other.getY());
     }
 
     @Override
     public int hashCode() {
 
-        int hash = fnvHashCode(this.x, this.y);
+        int hash = fnvHashCode(getX(), getY());
 
         return hash;
     }
 
     @Override
-    public com.climbwithyourfeet.clustering.util.PairInt copy() {
-         return new PairIntWithIndex(x, y, pixIdx);
+    public PairInt copy() {
+         return new PairIntWithIndex(getX(), getY(), pixIdx);
     }
 
     @Override

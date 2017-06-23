@@ -11,12 +11,15 @@ import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
+import algorithms.util.PixelHelper;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -1056,8 +1059,9 @@ public class Canonicalizer {
         
         System.out.println("before spatial filter regions.n=" + regions.size());
 
-        Set<PairIntWithIndex> points2
-            = new HashSet<PairIntWithIndex>();
+        // index = pixIdx, value = rIdx
+        TIntIntMap pixRIdxMap = new TIntIntHashMap();
+        PixelHelper ph = new PixelHelper();
        
         TIntObjectMap<Canonicalizer.RegionGeometry> rgMap 
             = new TIntObjectHashMap<Canonicalizer.RegionGeometry>();
@@ -1073,30 +1077,34 @@ public class Canonicalizer {
                 continue;
             }
             
-            PairIntWithIndex pii = new PairIntWithIndex(rg.xC, rg.yC, rIdx);
-            points2.add(pii);
+            int pixIdx = ph.toPixelIndex(rg.xC, rg.yC, width);
+            pixRIdxMap.put(pixIdx, rIdx);
             
             rgMap.put(rIdx, rg);
         }
         
-        DTClusterFinder<PairIntWithIndex> cFinder
-            = new DTClusterFinder<PairIntWithIndex>(points2, width + 1, height + 1);
+        DTClusterFinder cFinder
+            = new DTClusterFinder(pixRIdxMap.keySet(), width + 1, height + 1);
         cFinder.setMinimumNumberInCluster(2);
         cFinder.setCriticalDensity(critDens);
         cFinder.findClusters();
-
+        List<TIntSet> groupList = cFinder.getGroups();
+        
         TIntList rm = new TIntArrayList();
         
         //NOTE: may need to revise how to choose best region to keep.
-        for (int i = 0; i < cFinder.getNumberOfClusters(); ++i) {
+        for (int i = 0; i < groupList.size(); ++i) {
             
-            Set<PairIntWithIndex> set = cFinder.getCluster(i);
+            TIntSet groupPixs = groupList.get(i);
             
             int maxArea = Integer.MIN_VALUE;
             int maxAreaIdx = -1;
-
-            for (PairIntWithIndex pii : set) {
-                int rIdx = pii.getPixIndex();
+            
+            TIntIterator iter3 = groupPixs.iterator();
+            while (iter3.hasNext()) {
+                int pixIdx = iter3.next();
+                int rIdx = pixRIdxMap.get(pixIdx);
+            
                 Canonicalizer.RegionGeometry rg = rgMap.get(rIdx);
                 if (rg == null) {
                     continue;
@@ -1110,8 +1118,10 @@ public class Canonicalizer {
                 }               
             }
             assert(maxAreaIdx > -1);
-            for (PairIntWithIndex pii : set) {
-                int rIdx = pii.getPixIndex();
+            iter3 = groupPixs.iterator();
+            while (iter3.hasNext()) {
+                int pixIdx = iter3.next();
+                int rIdx = pixRIdxMap.get(pixIdx);
                 if (rIdx == maxAreaIdx) {
                     continue;
                 }

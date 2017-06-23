@@ -18,7 +18,9 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -26,13 +28,10 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * class to search for textures within the noise
@@ -230,12 +229,16 @@ public class UnsupervisedTextureFinder {
         TIntList groupIndexList = new TIntArrayList();
         List<GroupPixelHSV> colors = new ArrayList<GroupPixelHSV>();
 
+        
+        int w = img.getWidth();
+        PixelHelper ph = new PixelHelper();
+            
         for (int i = 0; i < nGroups; ++i) {
             TIntList snIndexes = groupIndexes[i];
             if (snIndexes.size() == 0) {
                 continue;
             }
-            Set<PairIntWithIndex> points2 = new HashSet<PairIntWithIndex>();
+            TIntSet pixIdxs2 = new TIntHashSet();
             int maxX = Integer.MIN_VALUE;
             int maxY = Integer.MIN_VALUE;
             for (int j = 0; j < snIndexes.size(); ++j) {
@@ -243,7 +246,8 @@ public class UnsupervisedTextureFinder {
                 for (PairInt p : set) {
                     int x = p.getX();
                     int y = p.getY();
-                    points2.add(new PairIntWithIndex(x, y, points2.size()));
+                    int pixIdx = ph.toPixelIndex(p, w);
+                    pixIdxs2.add(pixIdx);
                     if (x > maxX) {
                         maxX = x;
                     }
@@ -253,29 +257,34 @@ public class UnsupervisedTextureFinder {
                 }
             }
 
-            DTClusterFinder<PairIntWithIndex> cFinder
-                = new DTClusterFinder<PairIntWithIndex>(points2,
-                    maxX + 1, maxY + 1);
+            DTClusterFinder cFinder = new DTClusterFinder(pixIdxs2,
+                    img.getHeight(), w);
 
             cFinder.setMinimumNumberInCluster(1);
             cFinder.calculateCriticalDensity();
             cFinder.findClusters();
-            final int n = cFinder.getNumberOfClusters();
+            List<TIntSet> groupList = cFinder.getGroups();
+            final int n = groupList.size();
 
             int maxN = Integer.MIN_VALUE;
             int maxNIdx = -1;
             for (int ii = 0; ii < n; ++ii) {
-                int sz = cFinder.getCluster(ii).size();
+                int sz = groupList.get(ii).size();
                 if (sz > maxN) {
                     maxN = sz;
                     maxNIdx = ii;
                 }
             }
             if (maxNIdx != -1) {
+                
+                int[] xy = new int[2];
 
                 Set<PairInt> set = new HashSet<PairInt>();
-                for (PairIntWithIndex p : cFinder.getCluster(maxNIdx)) {
-                    set.add(new PairInt(p.getX(), p.getY()));
+                TIntIterator iter3 = groupList.get(maxNIdx).iterator();
+                while (iter3.hasNext()) {
+                    int pixIdx = iter3.next();
+                    ph.toPixelCoords(pixIdx, w, xy);
+                    set.add(new PairInt(xy[0], xy[1]));
                 }
 
                 if (set.isEmpty()) {
