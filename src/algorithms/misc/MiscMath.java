@@ -10,7 +10,6 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.set.TIntSet;
@@ -1019,29 +1018,7 @@ public class MiscMath {
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
     public static int[] findMinMaxXY(Collection<PairInt> points) {
-        
-        int xMin = Integer.MAX_VALUE;
-        int xMax = Integer.MIN_VALUE;
-        int yMin = Integer.MAX_VALUE;
-        int yMax = Integer.MIN_VALUE;
-        
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            if (x < xMin) {
-                xMin = x;
-            }
-            if (y < yMin) {
-                yMin = y;
-            }
-            if (x > xMax) {
-                xMax = x;
-            }
-            if (y > yMax) {
-                yMax = y;
-            }
-        }
-        return new int[]{xMin, xMax, yMin, yMax};
+        return MiscMath0.findMinMaxXY(points);
     }
     
     /**
@@ -1051,33 +1028,7 @@ public class MiscMath {
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
     public static int[] findMinMaxXY(TIntSet pixelIdxs, int imgWidth) {
-        
-        int xMin = Integer.MAX_VALUE;
-        int xMax = Integer.MIN_VALUE;
-        int yMin = Integer.MAX_VALUE;
-        int yMax = Integer.MIN_VALUE;
-        
-        TIntIterator iter = pixelIdxs.iterator();
-        
-        while (iter.hasNext()) {
-            
-            int pixIdx = iter.next();
-            int y = pixIdx/imgWidth;
-            int x = pixIdx - (y * imgWidth);
-            if (x < xMin) {
-                xMin = x;
-            }
-            if (y < yMin) {
-                yMin = y;
-            }
-            if (x > xMax) {
-                xMax = x;
-            }
-            if (y > yMax) {
-                yMax = y;
-            }
-        }
-        return new int[]{xMin, xMax, yMin, yMax};
+        return MiscMath0.findMinMaxXY(pixelIdxs, imgWidth);
     }
     
     /**
@@ -1087,29 +1038,7 @@ public class MiscMath {
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
     public static int[] findMinMaxXY(PairIntArray points) {
-        
-        int xMin = Integer.MAX_VALUE;
-        int xMax = Integer.MIN_VALUE;
-        int yMin = Integer.MAX_VALUE;
-        int yMax = Integer.MIN_VALUE;
-        
-        for (int i = 0; i < points.getN(); ++i) {
-            int x = points.getX(i);
-            int y = points.getY(i);
-            if (x < xMin) {
-                xMin = x;
-            }
-            if (y < yMin) {
-                yMin = y;
-            }
-            if (x > xMax) {
-                xMax = x;
-            }
-            if (y > yMax) {
-                yMax = y;
-            }
-        }
-        return new int[]{xMin, xMax, yMin, yMax};
+        return MiscMath0.findMinMaxXY(points);
     }
     
     public int sign(int v) {

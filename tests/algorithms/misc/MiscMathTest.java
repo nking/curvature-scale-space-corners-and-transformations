@@ -850,26 +850,4 @@ public class MiscMathTest extends TestCase {
         assertTrue(Math.abs(1 - min) < 0.01);
     }
     
-    public void testFindMinMaxXY_4() {
-        
-        /*
-         2    #     #
-         1    #
-         0 #
-           0  1  2  3  
-        */
-        int w = 5;
-        TIntSet pixIdxs = new TIntHashSet();
-        pixIdxs.add((0 * w) + 0);
-        pixIdxs.add((1 * w) + 1);
-        pixIdxs.add((2 * w) + 1);
-        pixIdxs.add((2 * w) + 3);
-        
-        int[] minmaxXY = MiscMath.findMinMaxXY(pixIdxs, w);
-        
-        assertEquals(0, minmaxXY[0]);
-        assertEquals(3, minmaxXY[1]);
-        assertEquals(0, minmaxXY[2]);
-        assertEquals(2, minmaxXY[3]);
-    }
 }
