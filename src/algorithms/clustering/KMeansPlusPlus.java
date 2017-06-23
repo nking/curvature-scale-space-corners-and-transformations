@@ -531,7 +531,8 @@ public class KMeansPlusPlus {
             int v = values[pixIdx];
             
             TIntSet nearest = nn1d.findClosest(v);
-            assert(nearest == null && !nearest.isEmpty());
+            
+            assert(nearest != null && !nearest.isEmpty());
             
             int seedValue = nearest.iterator().next();
                         
