@@ -1,5 +1,6 @@
 package algorithms;
 
+import algorithms.misc.MiscSorter;
 import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
@@ -106,18 +107,7 @@ public class QuickSort {
     }
     
     public static void sortBy1stArg(int[] a, int[] b) {
-        
-        if (a == null) {
-            throw new IllegalArgumentException("a cannot be null");
-        }
-        if (b == null) {
-            throw new IllegalArgumentException("b cannot be null");
-        }
-        if (a.length != b.length) {
-            throw new IllegalArgumentException("a and b must be the same length");
-        }
-        
-        sortBy1stArg(a, b, 0, a.length - 1);
+        MiscSorter.sortBy1stArg(a, b);    
     }
     
     public static void sortByA(IntIntDouble[] abc) {
@@ -1206,47 +1196,7 @@ public class QuickSort {
      * @param idxHi 
      */
     public static void sortBy1stArg(int[] a, int[] b, int idxLo, int idxHi) {
-        
-        if (a == null) {
-            throw new IllegalArgumentException("a cannot be null");
-        }
-        if (a.length < 2) {
-            return;
-        }
-        if (idxLo < idxHi) {
-
-            int x = a[idxLo];
-            int store = idxLo;
-            int idxMid = idxHi + 1;
-
-            while (true) {
-                do {
-                    store++;     
-                } while ((store <= idxHi) && (a[store] < x));
-                do {
-                    idxMid--;
-                } while (a[idxMid] > x);
-                if (store > idxMid) {
-                    break;
-                }
-                int swap = a[store];
-                a[store] = a[idxMid];
-                a[idxMid] = swap;
-                int swap2 = b[store];
-                b[store] = b[idxMid];
-                b[idxMid] = swap2;
-            }
-            int swap = a[idxLo];
-            a[idxLo] = a[idxMid];
-            a[idxMid] = swap;
-            int swap2 = b[idxLo];
-            b[idxLo] = b[idxMid];
-            b[idxMid] = swap2;
-         
-            sortBy1stArg(a, b, idxLo, idxMid - 1);
-
-            sortBy1stArg(a, b, idxMid + 1, idxHi);
-        }
+        MiscSorter.sortBy1stArg(a, b, idxLo, idxHi); 
     }
     
     /**
