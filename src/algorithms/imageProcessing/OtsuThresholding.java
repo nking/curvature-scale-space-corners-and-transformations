@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.Histogram;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.HashSet;
