@@ -73,7 +73,7 @@ public class TriangleFunction {
         for (int row = 0; row < h; ++row) {
             for (int col = 0; col < w; ++col) {
                 int x0 = col - s;
-                int x2 = col + 2;
+                int x2 = col + s;
 
                 // choosing "continuity" for boundary corrections
                 if (x0 < 0) {
@@ -107,7 +107,7 @@ public class TriangleFunction {
         for (int col = 0; col < w; ++col) {
             for (int row = 0; row < h; ++row) {
                 int y0 = row - s;
-                int y2 = row + 2;
+                int y2 = row + s;
 
                 // choosing "continuity" for boundary corrections
                 if (y0 < 0) {
