@@ -1,7 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.Misc;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -11,12 +9,11 @@ import java.util.List;
 public class ATrousWaveletTransform {
 
     /**
-    Uses the first step of an A Trous wavelet transform, which is two 1D 
-    convolutions of a binomial kernel for sigma=1.
+    Uses the first step of an A Trous wavelet transform with B3Spline scaling.
     * @param input
      * @return 
     */
-    public GreyscaleImage smoothToSigmaOne(GreyscaleImage input) {
+    public GreyscaleImage smoothToLevel1B3Spline(GreyscaleImage input) {
         
         B3SplineFunction scalingFunction = new B3SplineFunction();
         
@@ -26,40 +23,11 @@ public class ATrousWaveletTransform {
     }
     
     /**
-    Uses the first step of an A Trous wavelet transform, which is two 1D 
-    convolutions of a binomial kernel for sigma=1.
-    * @param input
-     * @return 
-    */
-    public Image smoothToSigmaOne(Image input) {
-        
-        B3SplineFunction scalingFunction = new B3SplineFunction();
-        
-        GreyscaleImage[] smoothed = new GreyscaleImage[3];
-        smoothed[0] = input.copyRedToGreyscale();
-        smoothed[1] = input.copyGreenToGreyscale();
-        smoothed[2] = input.copyRedToGreyscale();
-        
-        for (int i = 0; i < 3; ++i) {
-            smoothed[i] = scalingFunction.calculate(smoothed[i]);
-        }
-        
-        Image out = input.createWithDimensions();
-        for (int i = 0; i < input.getNPixels(); ++i) {
-            out.setRGB(i, smoothed[0].getValue(i), 
-                smoothed[1].getValue(i), smoothed[2].getValue(i));
-        }
-        
-        return out;
-    }
-    
-    /**
-    Uses the first step of an A Trous wavelet transform, which is two 1D 
-    convolutions of a binomial kernel for sigma=0.707 (=sqrt(2)/2).
+    Uses the first step of an A Trous wavelet transform using triangle scaling.
      * @param input
      * @return 
     */
-    public GreyscaleImage smoothToSigmaZeroPointSevenOne(GreyscaleImage input) {
+    public GreyscaleImage smoothFirstLevelTriangle(GreyscaleImage input) {
         
         TriangleFunction scalingFunction = new TriangleFunction();
         
@@ -221,10 +189,6 @@ public class ATrousWaveletTransform {
      * <pre>
      * The method uses recursive convolution operations, including previous
        * result to make next.
-       * Each convolution uses two passes of one dimensional binomial kernels,
-       * starting with the equivalent of sigma=1.
-       * For each step, the equivalent resulting sigma is from 
-       * sigma^2 = sigma_1^2 + sigma_2^2.
        * 
        * This method takes an argument stopIter to indicate that only stopIter
        * number of iterations are needed.  For instance, to retrieve only the

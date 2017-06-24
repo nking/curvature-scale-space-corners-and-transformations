@@ -443,12 +443,12 @@ public class CannyEdgeColorAdaptive {
             SIGMA sigma = SIGMA.ONE;
             if (sigma.equals(SIGMA.ONE)) {
                 ATrousWaveletTransform at = new ATrousWaveletTransform();
-                GreyscaleImage smoothed = at.smoothToSigmaOne(input);
+                GreyscaleImage smoothed = at.smoothToLevel1B3Spline(input);
                 input.resetTo(smoothed);
                 approxProcessedSigma = 1;
             } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
                 ATrousWaveletTransform at = new ATrousWaveletTransform();
-                GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
+                GreyscaleImage smoothed = at.smoothFirstLevelTriangle(input);
                 input.resetTo(smoothed);
                 approxProcessedSigma = Math.sqrt(2.) / 2.;
             } else {
