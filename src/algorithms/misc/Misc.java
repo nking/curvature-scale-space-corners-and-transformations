@@ -15,17 +15,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * miscellaneous boiler plate code
@@ -279,17 +275,7 @@ public class Misc {
      * @return 
      */
     public static SecureRandom getSecureRandom() {
-        
-        SecureRandom sr = null;
-        
-        try {
-            sr = SecureRandom.getInstance("SHA1PRNG");
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(Misc.class.getName()).log(Level.SEVERE, null, ex);
-            sr = new SecureRandom();
-        }
-        
-        return sr;
+        return Misc0.getSecureRandom();
     }
     
     public static Set<PairInt> convertToCoords(GreyscaleImage img,

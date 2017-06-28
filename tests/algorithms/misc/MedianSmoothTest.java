@@ -182,54 +182,6 @@ public class MedianSmoothTest extends TestCase {
         
     }
     
-    public void testCalculate0() throws Exception {
-        
-        /*
-        k=3
-        curve=10 4's
-        expectedN = 10 - kPoints + 1
-        4 4 4 4 4 4 4 4 4 4
-            4 4 4 4 4 4 4 4
-            0 1 2 3 4 5 6 7
-        */
-        MedianSmooth interp = new MedianSmooth();
-        
-        int[] curveY = new int[]{4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
-        int kPoints = 3;
-        int[] result = interp.calculate(curveY, kPoints);
-                
-        int[] expected = new int[]{4, 4, 4, 4, 4, 4, 4, 4};
-        
-        assertTrue(result.length == expected.length);
-        
-        assertTrue(Arrays.equals(result, expected));
-        
-    }
-    
-    public void testCalculate1() throws Exception {
-        
-        /*
-        k=3
-        curve=10 4's
-        expectedN = 10 - kPoints + 1
-        2 3 4 3 2 4 4 4 4 4
-            3 3 3 3 4 4 4 4
-            0 1 2 3 4 5 6 7
-        */
-        MedianSmooth interp = new MedianSmooth();
-        
-        int[] curveY = new int[]{2, 3, 4, 3, 2, 4, 4, 4, 4, 4};
-        int kPoints = 3;
-        int[] result = interp.calculate(curveY, kPoints);
-                
-        int[] expected = new int[]{3, 3, 3, 3, 4, 4, 4, 4};
-        
-        assertTrue(result.length == expected.length);
-        
-        assertTrue(Arrays.equals(result, expected));
-        
-    }
-    
     public void testCalculate2() throws Exception {
         
         /*
@@ -304,25 +256,7 @@ public class MedianSmoothTest extends TestCase {
         }
         assertTrue(caughtException);
         
-        //------------------------------------
-        int[] curveY = null;
-        caughtException = false;
-        try {
-            int[] result = interp.calculate(curveY, kPoints);
-        } catch (Throwable t) {
-            caughtException = true;
-        }
-        assertTrue(caughtException);
         
-        //------------------------------------
-        curveY = new int[]{1, 2, 2};
-        caughtException = false;
-        try {
-            int[] result = interp.calculate(curveY, kPoints);
-        } catch (Throwable t) {
-            caughtException = true;
-        }
-        assertTrue(caughtException);
     }
     
     public void testMedianFilter2D() throws Exception {

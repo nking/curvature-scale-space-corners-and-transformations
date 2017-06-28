@@ -101,54 +101,6 @@ public class MedianSmooth {
     }
 
     /**
-     * calculate a running median of the k previous points of curveY.
-     * runtime complexity is O(k) + O(N*lg_2(k)) at most.
-     * @param curveY
-     * @param kPoints
-     * @return
-     */
-    public int[] calculate(int[] curveY, int kPoints) {
-
-        if (curveY == null) {
-            throw new IllegalArgumentException("curveY cannot be null");
-        }
-        if (curveY.length < kPoints) {
-            throw new IllegalArgumentException(
-            "curveY.length must be equal to or greater than kPoints");
-        }
-
-        int[] medians = new int[curveY.length - kPoints + 1];
-
-        SortedVector sVec = new SortedVector(kPoints);
-
-        // add the first k-1 to the list container
-        for (int i = 0; i < (kPoints - 1); i++) {
-            sVec.append(curveY[i]);
-        }
-        //O(k) + + (N)*lg2(k)
-        int median;
-
-        for (int i = (kPoints - 1); i < curveY.length; i++) {
-
-            // add the kth item to the list: O(log_2(k)) + < O(k)
-            // the list state is sorted at the end of the method.
-            sVec.insertIntoOpenSlot(curveY[i]);
-
-            //O(1)
-            median = sVec.getMedian();
-
-            int idx = i - kPoints + 1;
-
-            // remove the x[i - k + 1] item from sorted list : O(log_2(k))
-            sVec.remove(curveY[idx]);
-
-            medians[idx] = median;
-        }
-
-        return medians;
-    }
-
-    /**
      * calculate a running median of the k previous points of curve.
      * runtime complexity is O(N*k) at most.
      * @param curve
