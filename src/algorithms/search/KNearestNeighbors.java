@@ -3,7 +3,7 @@ package algorithms.search;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
-import algorithms.imageProcessing.FixedSizeSortedVector;
+import algorithms.FixedSizeSortedVector;
 import algorithms.util.PairFloat;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;

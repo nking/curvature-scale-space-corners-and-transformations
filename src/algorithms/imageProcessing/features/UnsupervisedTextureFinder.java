@@ -2,7 +2,7 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.FFTUtil;
-import algorithms.imageProcessing.FixedSizeSortedVector;
+import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.Image;

@@ -92,34 +92,11 @@ public class MiscMath {
     
     public static float findMax(float[][] img) {
         
-        float max = Float.NEGATIVE_INFINITY;
-        
-        for (int i = 0; i < img.length; ++i) {
-            for (int j = 0; j < img[i].length; ++j) {
-                float v = img[i][j];
-                if (v > max) {
-                    max = v;
-                }
-            }
-        }
-        
-        return max;
+        return MiscMath0.findMin(img);
     }
     
     public static int findMax(int[][] img) {
-        
-        int max = Integer.MIN_VALUE;
-        
-        for (int i = 0; i < img.length; ++i) {
-            for (int j = 0; j < img[i].length; ++j) {
-                int v = img[i][j];
-                if (v > max) {
-                    max = v;
-                }
-            }
-        }
-        
-        return max;
+        return MiscMath0.findMax(img);
     }
 
     public static int findMax(int[] a, int nIndexes) {
@@ -135,66 +112,21 @@ public class MiscMath {
 
     public static float findMin(float[][] img) {
         
-        float min = Float.MAX_VALUE;
-        
-        for (int i = 0; i < img.length; ++i) {
-            for (int j = 0; j < img[i].length; ++j) {
-                float v = img[i][j];
-                if (v < min) {
-                    min = v;
-                }
-            }
-        }
-        
-        return min;
+        return MiscMath0.findMin(img);
     }
     
     public static double findMin(double[][] img) {
         
-        double min = Double.MAX_VALUE;
-        
-        for (int i = 0; i < img.length; ++i) {
-            for (int j = 0; j < img[i].length; ++j) {
-                double v = img[i][j];
-                if (v < min) {
-                    min = v;
-                }
-            }
-        }
-        
-        return min;
+        return MiscMath0.findMin(img);
     }
     
     public static double findMax(double[][] img) {
         
-        double max = Double.MIN_VALUE;
-        
-        for (int i = 0; i < img.length; ++i) {
-            for (int j = 0; j < img[i].length; ++j) {
-                double v = img[i][j];
-                if (v > max) {
-                    max = v;
-                }
-            }
-        }
-        
-        return max;
+        return MiscMath0.findMax(img);
     }
     
     public static int findMin(int[][] img) {
-        
-        int min = Integer.MAX_VALUE;
-        
-        for (int i = 0; i < img.length; ++i) {
-            for (int j = 0; j < img[i].length; ++j) {
-                int v = img[i][j];
-                if (v < min) {
-                    min = v;
-                }
-            }
-        }
-        
-        return min;
+        return MiscMath0.findMin(img);
     }
 
     public static float findMin(float[] a) {

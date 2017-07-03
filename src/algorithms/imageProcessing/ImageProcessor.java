@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.FixedSizeSortedVector;
 import algorithms.MultiArrayMergeSort;
 import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
@@ -14,7 +15,6 @@ import algorithms.misc.ComplexModifiable;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.StatsInSlidingWindow;
 import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
@@ -5470,21 +5470,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * @return
      */
     public float[][] maximumFilter(float[][] img, int size) {
-
-        int nRows = img.length;
-        int nCols = img[0].length;
-
-        // return_value = out
-        float[][] out = new float[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            out[i] = new float[nCols];
-        }
-
-        // have adapted median window algorithm for this:
-        StatsInSlidingWindow maxWindow = new StatsInSlidingWindow();
-        maxWindow.calculateMaximum(img, out, size, size);
-
-        return out;
+        return Filters.maximumFilter(img, size);
     }
 
     /**

@@ -2,7 +2,7 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.connected.ConnectedPointsFinder;
-import algorithms.imageProcessing.FixedSizeSortedVector;
+import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
