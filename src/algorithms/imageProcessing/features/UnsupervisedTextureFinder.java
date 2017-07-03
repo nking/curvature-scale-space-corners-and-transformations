@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.ColorHistogram;
+import algorithms.imageProcessing.FFTUtil;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
@@ -451,6 +452,8 @@ public class UnsupervisedTextureFinder {
         TIntObjectMap<TexturePatchesAndResponse> groupPatches = 
             new TIntObjectHashMap<TexturePatchesAndResponse>();
         
+        FFTUtil fftUtil = new FFTUtil();
+        
         for (int i = 0; i < rList.size(); ++i) {
 
             Set<PairInt> set = rList.get(i);
@@ -467,7 +470,7 @@ public class UnsupervisedTextureFinder {
                 = imageProcessor.convolveWithKernel(fftImage, fftPattern);
 
             // ----- transform that to spatial domain ----
-            Complex[][] fComplex = imageProcessor.create2DFFT(
+            Complex[][] fComplex =  fftUtil.create2DFFT(
                 freqDomainImageTimesPattern, false, false);
 
             double[][] transformedReal = new double[nCols][];

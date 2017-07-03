@@ -1,23 +1,9 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Complex;
-import algorithms.misc.MedianSmooth;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 import thirdparty.ca.uol.aig.fftpack.Complex1D;
-import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
 
 /**
  *
@@ -64,9 +50,11 @@ public class ImageProcessor2Test extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
+        FFTUtil fftUtil = new FFTUtil();
+        
         // --- perform unnormalized fft transforms -----
-        Complex[][] ccTr1 = imageProcessor.create2DFFT(a, false, true);
-        Complex1D[] ccTr2 = imageProcessor.create2DFFT2(a2, false, true);  
+        Complex[][] ccTr1 = fftUtil.create2DFFT(a, false, true);
+        Complex1D[] ccTr2 = fftUtil.create2DFFT2(a2, false, true);  
         assertEquals(ccTr1.length, ccTr2.length);
         assertEquals(ccTr1[0].length, ccTr2[0].x.length);
         for (int row = 0; row < ccTr1.length; ++row) {
@@ -87,8 +75,8 @@ public class ImageProcessor2Test extends TestCase {
         double norm = a.length * a[0].length;
         
         // --- perform unnormalized inverse fft transforms -----
-        Complex[][] ccTrTr1 = imageProcessor.create2DFFT(ccTr1, false, false);
-        Complex1D[] ccTrTr2 = imageProcessor.create2DFFT2(ccTr2, false, false);
+        Complex[][] ccTrTr1 = fftUtil.create2DFFT(ccTr1, false, false);
+        Complex1D[] ccTrTr2 = fftUtil.create2DFFT2(ccTr2, false, false);
         for (int row = 0; row < ccTr1.length; ++row) {
             for (int col = 0; col < ccTr1[0].length; ++col) {
                 double r1 = ccTrTr1[row][col].re();
@@ -119,8 +107,8 @@ public class ImageProcessor2Test extends TestCase {
         }
         
         Complex[][] cc = imageProcessor.copyToComplex2D(img);
-        Complex[][] ccOut = imageProcessor.create2DFFT(cc, true, true);
-        Complex[][] ccOut2 = imageProcessor.create2DFFT(ccOut, true, false);
+        Complex[][] ccOut = fftUtil.create2DFFT(cc, true, true);
+        Complex[][] ccOut2 = fftUtil.create2DFFT(ccOut, true, false);
         
         for (int row = 0; row < ccTr1.length; ++row) {
             for (int col = 0; col < ccTr1[0].length; ++col) {
@@ -170,11 +158,13 @@ public class ImageProcessor2Test extends TestCase {
             a2[i].y[3] = 0;
         }
         
+        FFTUtil fftUtil = new FFTUtil();
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         
         // --- perform unnormalized fft transforms -----
-        Complex[][] ccTr1 = imageProcessor.create2DFFT(a, false, true);
-        Complex1D[] ccTr2 = imageProcessor.create2DFFT2(a2, false, true);  
+        Complex[][] ccTr1 = fftUtil.create2DFFT(a, false, true);
+        Complex1D[] ccTr2 = fftUtil.create2DFFT2(a2, false, true);  
         assertEquals(ccTr1.length, ccTr2.length);
         assertEquals(ccTr1[0].length, ccTr2[0].x.length);
         for (int row = 0; row < ccTr1.length; ++row) {
@@ -195,8 +185,8 @@ public class ImageProcessor2Test extends TestCase {
         double norm = a.length * a[0].length;
         
         // --- perform unnormalized inverse fft transforms -----
-        Complex[][] ccTrTr1 = imageProcessor.create2DFFT(ccTr1, false, false);
-        Complex1D[] ccTrTr2 = imageProcessor.create2DFFT2(ccTr2, false, false);
+        Complex[][] ccTrTr1 = fftUtil.create2DFFT(ccTr1, false, false);
+        Complex1D[] ccTrTr2 = fftUtil.create2DFFT2(ccTr2, false, false);
         for (int row = 0; row < ccTr1.length; ++row) {
             for (int col = 0; col < ccTr1[0].length; ++col) {
                 double r1 = ccTrTr1[row][col].re();
@@ -227,8 +217,8 @@ public class ImageProcessor2Test extends TestCase {
         }
         
         Complex[][] cc = imageProcessor.copyToComplex2D(img);
-        Complex[][] ccOut = imageProcessor.create2DFFT(cc, true, true);
-        Complex[][] ccOut2 = imageProcessor.create2DFFT(ccOut, true, false);
+        Complex[][] ccOut = fftUtil.create2DFFT(cc, true, true);
+        Complex[][] ccOut2 = fftUtil.create2DFFT(ccOut, true, false);
         
         for (int row = 0; row < ccTr1.length; ++row) {
             for (int col = 0; col < ccTr1[0].length; ++col) {
@@ -252,10 +242,12 @@ public class ImageProcessor2Test extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources(fileName);     
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
    
+        FFTUtil fftUtil = new FFTUtil();
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         Complex[][] cc = imageProcessor.copyToComplex2D(img);
-        Complex[][] ccOut = imageProcessor.create2DFFT(cc, true, true);
-        Complex[][] ccOut2 = imageProcessor.create2DFFT(ccOut, true, false);
+        Complex[][] ccOut = fftUtil.create2DFFT(cc, true, true);
+        Complex[][] ccOut2 = fftUtil.create2DFFT(ccOut, true, false);
                    
         for (int row = 0; row < ccOut.length; ++row) {
             for (int col = 0; col < ccOut[0].length; ++col) {

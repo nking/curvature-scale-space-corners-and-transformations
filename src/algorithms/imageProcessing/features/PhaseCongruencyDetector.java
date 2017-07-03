@@ -3,6 +3,7 @@ package algorithms.imageProcessing.features;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.AdaptiveThresholding;
 import algorithms.imageProcessing.DistanceTransform;
+import algorithms.imageProcessing.FFTUtil;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -565,7 +566,8 @@ public class PhaseCongruencyDetector {
             //  f = real(ifft2(IMF));
             // the functions used in other code are not normalized on fft,
             // but are by inverse fft so need a combined division here by nomr=nRows*nCols
-            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);
+            FFTUtil fftUtil = new FFTUtil();
+            Complex[][] fComplex = fftUtil.create2DFFT(capIMF, false, false);
 
             double norm = nRows * nCols;
 
@@ -578,7 +580,7 @@ public class PhaseCongruencyDetector {
                 }
             }
             // result needs to be divided by norm=nRows*nCols
-            Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);
+            Complex[][] h = fftUtil.create2DFFT(capIMFH, false, false);
 
             /*
             h1 = real(h);

@@ -1,9 +1,9 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.FFTUtil;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.LowPassFilter;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PolarFilterGrid;
 import algorithms.misc.Complex;
@@ -13,15 +13,8 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayWithColor;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Non-monogenic filter phase congruence edge detector.
@@ -276,6 +269,8 @@ public class PhaseCongruencyDetector2 {
                 maxAn[row] = new double[nCols];
             }
             
+            FFTUtil fftUtil = new FFTUtil();
+            
             for (int s = 0; s < nScale; ++s) {
                 
                 // Multiply radial and angular components to get filter
@@ -293,7 +288,7 @@ public class PhaseCongruencyDetector2 {
                     }
                 }
  
-                thisEO = imageProcessor.create2DFFT(thisEO, false, false);
+                thisEO = fftUtil.create2DFFT(thisEO, false, false);
                 double norm = 1./nRows * nCols;
                 for (int row = 0; row < nRows; ++row) {
                     for (int col = 0; col < nCols; ++col) {

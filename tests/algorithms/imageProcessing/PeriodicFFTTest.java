@@ -68,8 +68,10 @@ public class PeriodicFFTTest extends TestCase {
         if (displayImages)
         ImageDisplayer.displayImage("FFT of " + fileName, img1);
 
+        FFTUtil fftUtil = new FFTUtil();
+        
         // ---- inverse FFT -------
-        ccOut = imageProcessor.create2DFFT(ccOut, false);
+        ccOut = fftUtil.create2DFFT(ccOut, false);
         maxValue = Double.MIN_VALUE;
         for (int row = 0; row < nRows; row++) {
             for (int col = 0; col < nCols; col++) {

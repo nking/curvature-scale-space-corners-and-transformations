@@ -194,7 +194,9 @@ public class PeriodicFFT {
         
         //double normCofactor = 1./(2. * Math.PI);
         
-        Complex[][] capS = imageProcessor.create2DFFT(s, false, true);
+        FFTUtil fftUtil = new FFTUtil();
+        
+        Complex[][] capS = fftUtil.create2DFFT(s, false, true);
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 double denom;
@@ -235,7 +237,7 @@ public class PeriodicFFT {
             
             double postNorm = nRows * nCols;
             
-            Complex[][] lowerCaseS = imageProcessor.create2DFFT(capS, false, false);
+            Complex[][] lowerCaseS = fftUtil.create2DFFT(capS, false, false);
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
                     lowerCaseS[row][col] 

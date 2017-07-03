@@ -1081,12 +1081,8 @@ public class MiscMath {
      * @return 
      */
     public static int numberOfBits(int v) {
-        if (v < 0) {
-            v *= -1;
-        } else if (v == 0) {
-            return 1;
-        }
-        return 32 - Integer.numberOfLeadingZeros(v);
+        
+        return MiscMath0.numberOfBits(v);
     }
   
     /**
@@ -1110,22 +1106,11 @@ public class MiscMath {
      * @return 
      */
     public static int bitReverse(int v, int nBits) {
-
-        int r = v;
-                
-        int rev = 0;
-        for (int i = 0; i < nBits; i++) {
-            rev = (rev << 1) | (r & 1);
-            r >>= 1;
-        }
-        
-        return rev;
-        
+        return MiscMath0.bitReverse(v, nBits);
     }
     
     public static boolean isAPowerOf2(int n) {
-        // n XOR n-1
-        return ((n == 0) || ((n & (n - 1)) == 0));
+        return MiscMath0.isAPowerOf2(n);
     }
     
     /**
