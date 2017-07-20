@@ -19,8 +19,10 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -1060,7 +1062,7 @@ public class Canonicalizer {
         System.out.println("before spatial filter regions.n=" + regions.size());
 
         // index = pixIdx, value = rIdx
-        TIntIntMap pixRIdxMap = new TIntIntHashMap();
+        TLongIntMap pixRIdxMap = new TLongIntHashMap();
         PixelHelper ph = new PixelHelper();
        
         TIntObjectMap<Canonicalizer.RegionGeometry> rgMap 
@@ -1077,7 +1079,7 @@ public class Canonicalizer {
                 continue;
             }
             
-            int pixIdx = ph.toPixelIndex(rg.xC, rg.yC, width);
+            long pixIdx = ph.toPixelIndex(rg.xC, rg.yC, width);
             pixRIdxMap.put(pixIdx, rIdx);
             
             rgMap.put(rIdx, rg);

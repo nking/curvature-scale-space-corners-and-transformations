@@ -7,7 +7,9 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -592,10 +594,10 @@ public class PointSampling {
         
         PixelHelper ph = new PixelHelper();
         
-        TIntSet seedPixs = new TIntHashSet();
+        TLongSet seedPixs = new TLongHashSet();
         
         for (PairInt p : seeds) {
-            int pixIdx = ph.toPixelIndex(p, w);
+            long pixIdx = ph.toPixelIndex(p, w);
             seedPixs.add(pixIdx);
         }
         

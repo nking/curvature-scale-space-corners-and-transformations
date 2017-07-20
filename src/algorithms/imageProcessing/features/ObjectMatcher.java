@@ -38,9 +38,11 @@ import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -581,7 +583,7 @@ public class ObjectMatcher {
             PixelHelper ph = new PixelHelper();
             
             // key = pixIdx, value = rIdx
-            TIntIntMap pixRIdxMap = new TIntIntHashMap();
+            TLongIntMap pixRIdxMap = new TLongIntHashMap();
              
             iter = cRegions.iterator();
             for (int i = 0; i < cRegions.size(); ++i) {
@@ -589,13 +591,14 @@ public class ObjectMatcher {
                 int rIdx = iter.key();
                 RegionPoints cr = iter.value();
                 
-                int pixIdx = ph.toPixelIndex(
+                long pixIdx = ph.toPixelIndex(
                     cr.ellipseParams.xC, cr.ellipseParams.yC, gsImg.getWidth());
                 
                 pixRIdxMap.put(pixIdx, rIdx);
             }
             
-            DTClusterFinder cFinder = new DTClusterFinder(pixRIdxMap.keySet(),
+            DTClusterFinder cFinder = new DTClusterFinder(
+                pixRIdxMap.keySet(),
                 gsImg.getWidth() + 1, gsImg.getHeight() + 1);
             cFinder.setMinimumNumberInCluster(2);
             cFinder.setCriticalDensity(critDens);

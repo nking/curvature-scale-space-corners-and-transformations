@@ -22,17 +22,7 @@ public class MultiArrayMergeSort {
      * @param a2 array of points to apply a1 sorting to also
      */
     public static void sortBy1stArgThen2nd(float[] a1, float[] a2) {
-        if (a1 == null) {
-            throw new IllegalArgumentException("a1 cannot be null");
-        }
-        if (a2 == null) {
-            throw new IllegalArgumentException("a2 cannot be null");
-        }
-        if (a1.length != a2.length) {
-            throw new IllegalArgumentException(
-            "number of items in a1 must be the same as in a2");
-        }
-        sortBy1stArgThen2nd(a1, a2, 0, a1.length - 1);
+        MiscSorter.sortBy1stArgThen2nd(a1, a2);
     }
     
      /**
@@ -44,16 +34,6 @@ public class MultiArrayMergeSort {
      * @param a2 array of points to apply a1 sorting to also
      */
     public static void sortBy1stArg(float[] a1, float[] a2) {
-        if (a1 == null) {
-            throw new IllegalArgumentException("a1 cannot be null");
-        }
-        if (a2 == null) {
-            throw new IllegalArgumentException("a2 cannot be null");
-        }
-        if (a1.length != a2.length) {
-            throw new IllegalArgumentException(
-            "number of items in a1 must be the same as in a2");
-        }
         sortBy1stArg(a1, a2, 0, a1.length - 1);
     }
     
@@ -211,27 +191,7 @@ public class MultiArrayMergeSort {
         
         sortBy1stDescThen2ndAsc(a, b, c, 0, a.length - 1);
     }
-    
-    /**
-     * @param a1 array of points to be sorted
-     * @param a2 array of points to apply a1 sorting to also
-     * @param idxLo starting index of sorting of a1, inclusive
-     * @param idxHi stopping index of sorting of a1, inclusive
-     */
-    private static void sortBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, 
-        int idxHi) {
-
-        int indexMid = -1;
-
-        if (idxLo < idxHi) {
-
-            indexMid = (idxLo + idxHi) >> 1;
-            sortBy1stArgThen2nd(a1, a2, idxLo, indexMid);
-            sortBy1stArgThen2nd(a1, a2, indexMid + 1, idxHi);
-            mergeBy1stArgThen2nd(a1, a2, idxLo, indexMid, idxHi);
-        }
-    }
-    
+   
     /**
      * @param a1 array of points to be sorted
      * @param a2 array of points to apply a1 sorting to also
@@ -241,15 +201,7 @@ public class MultiArrayMergeSort {
     public static void sortBy1stArg(float[] a1, float[] a2, int idxLo, 
         int idxHi) {
 
-        int indexMid = -1;
-
-        if (idxLo < idxHi) {
-
-            indexMid = (idxLo + idxHi) >> 1;
-            sortBy1stArg(a1, a2, idxLo, indexMid);
-            sortBy1stArg(a1, a2, indexMid + 1, idxHi);
-            mergeBy1stArg(a1, a2, idxLo, indexMid, idxHi);
-        }
+        MiscSorter.sortBy1stArg(a1, a2, idxLo, idxHi);
     }
     
     /**
@@ -307,103 +259,6 @@ public class MultiArrayMergeSort {
             sortByYThenX(xy, idxLo, indexMid);
             sortByYThenX(xy, indexMid + 1, idxHi);
             mergeByYThenX(xy, idxLo, indexMid, idxHi);
-        }
-    }
-
-    private static void mergeBy1stArgThen2nd(float[] a1, float[] a2, int idxLo, 
-        int idxMid, int idxHi) {
-
-        int nLeft = idxMid - idxLo + 1;
-        int nRight = idxHi - idxMid;
-
-        float[] a2Left = new float[nLeft + 1];
-        float[] a1Left = new float[nLeft + 1];
-
-        float[] a2Right = new float[nRight + 1];
-        float[] a1Right = new float[nRight + 1];
-
-        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
-        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
-        
-        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
-        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
-        
-        a2Left[nLeft] = Float.MAX_VALUE;
-        a1Left[nLeft] = Float.MAX_VALUE;
-        a2Right[nRight] = Float.MAX_VALUE;
-        a1Right[nRight] = Float.MAX_VALUE;
-
-        int leftPos = 0;
-        int rightPos = 0;
-
-        for (int k = idxLo; k <= idxHi; k++) {
-            float l = a1Left[leftPos];
-            float r = a1Right[rightPos];
-
-            if (l == r) {
-                float lx = a2Left[leftPos];
-                float rx = a2Right[rightPos];
-
-                if (lx <= rx) {
-                    a2[k] = a2Left[leftPos];
-                    a1[k] = a1Left[leftPos];
-                    leftPos++;
-                } else {
-                    a2[k] = a2Right[rightPos];
-                    a1[k] = a1Right[rightPos];
-                    rightPos++;
-                }
-            } else if (l < r) {
-                a2[k] = a2Left[leftPos];
-                a1[k] = a1Left[leftPos];
-                leftPos++;
-            } else {
-                a2[k] = a2Right[rightPos];
-                a1[k] = a1Right[rightPos];
-                rightPos++;
-            }
-        }
-    }
-    
-    private static void mergeBy1stArg(float[] a1, float[] a2, int idxLo, 
-        int idxMid, int idxHi) {
-
-        int nLeft = idxMid - idxLo + 1;
-        int nRight = idxHi - idxMid;
-
-        float[] a2Left = new float[nLeft + 1];
-        float[] a1Left = new float[nLeft + 1];
-
-        float[] a2Right = new float[nRight + 1];
-        float[] a1Right = new float[nRight + 1];
-
-        System.arraycopy(a1, idxLo, a1Left, 0, nLeft);
-        System.arraycopy(a2, idxLo, a2Left, 0, nLeft);
-        
-        System.arraycopy(a1, idxMid + 1, a1Right, 0, nRight);
-        System.arraycopy(a2, idxMid + 1, a2Right, 0, nRight);
-        
-        a2Left[nLeft] = Float.MAX_VALUE;
-        a1Left[nLeft] = Float.MAX_VALUE;
-        a2Right[nRight] = Float.MAX_VALUE;
-        a1Right[nRight] = Float.MAX_VALUE;
-
-        int leftPos = 0;
-        int rightPos = 0;
-
-        for (int k = idxLo; k <= idxHi; k++) {
-            float l = a1Left[leftPos];
-            float r = a1Right[rightPos];
-
-            if (l <= r) {
-                a2[k] = a2Left[leftPos];
-                a1[k] = a1Left[leftPos];
-                leftPos++;
-            } else {
-                a2[k] = a2Right[rightPos];
-                a1[k] = a1Right[rightPos];
-                rightPos++;
-            }
         }
     }
     

@@ -28,7 +28,9 @@ import algorithms.util.PixelHelper;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -917,10 +919,10 @@ public class PhaseCongruencyDetector {
             PixelHelper ph = new PixelHelper();
             int[] xy = new int[2];
             int w = nCols;
-            TIntSet pixIdxs = new TIntHashSet();
+            TLongSet pixIdxs = new TLongHashSet();
             
             for (PairInt p : noisePoints) {
-                int pixIdx = ph.toPixelIndex(p, w);
+                long pixIdx = ph.toPixelIndex(p, w);
                 pixIdxs.add(pixIdx);
             }
                         

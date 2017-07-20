@@ -1,13 +1,10 @@
 package algorithms.compGeometry;
 
-import algorithms.compGeometry.voronoi.VoronoiFortunesSweep;
-import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
-import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
+import thirdparty.voronoi.VoronoiFortunesSweep;
+import thirdparty.voronoi.VoronoiFortunesSweep.*;
 import algorithms.imageProcessing.BresenhamsLine;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
-import algorithms.imageProcessing.SpurRemover;
-import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.MiscMath;
 import algorithms.mst.PrimsMST;
 import algorithms.search.NearestNeighbor2D;

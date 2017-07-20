@@ -28,7 +28,9 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -239,7 +241,7 @@ public class UnsupervisedTextureFinder {
             if (snIndexes.size() == 0) {
                 continue;
             }
-            TIntSet pixIdxs2 = new TIntHashSet();
+            TLongSet pixIdxs2 = new TLongHashSet();
             int maxX = Integer.MIN_VALUE;
             int maxY = Integer.MIN_VALUE;
             for (int j = 0; j < snIndexes.size(); ++j) {
@@ -247,7 +249,7 @@ public class UnsupervisedTextureFinder {
                 for (PairInt p : set) {
                     int x = p.getX();
                     int y = p.getY();
-                    int pixIdx = ph.toPixelIndex(p, w);
+                    long pixIdx = ph.toPixelIndex(p, w);
                     pixIdxs2.add(pixIdx);
                     if (x > maxX) {
                         maxX = x;

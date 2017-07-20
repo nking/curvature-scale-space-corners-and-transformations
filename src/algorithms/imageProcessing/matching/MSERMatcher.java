@@ -27,8 +27,10 @@ import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -434,7 +436,7 @@ public class MSERMatcher {
         int h1 = pyrRGB1.get(0).get(0).getHeight();
         
         // key=pixIdx , value = rIdx
-        TIntIntMap pixRIdxMap = new TIntIntHashMap();
+        TLongIntMap pixRIdxMap = new TLongIntHashMap();
         PixelHelper ph = new PixelHelper();
                 
         TIntObjectIterator<FixedSizeSortedVector<Obj>> iter2
@@ -474,7 +476,7 @@ public class MSERMatcher {
             int x = Math.round(scale1 * obj0.cr1.ellipseParams.xC);
             int y = Math.round(scale1 * obj0.cr1.ellipseParams.yC);
             
-            int pixIdx = ph.toPixelIndex(x, y, w0);
+            long pixIdx = ph.toPixelIndex(x, y, w0);
             pixRIdxMap.put(pixIdx, rIdx);
         }
         
