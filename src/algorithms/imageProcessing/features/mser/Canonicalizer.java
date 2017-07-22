@@ -12,9 +12,10 @@ import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
 import algorithms.util.PixelHelper;
-import com.climbwithyourfeet.clustering.DTClusterFinder;
+import com.climbwithyourfeet.clustering.ClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
@@ -24,6 +25,7 @@ import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1056,7 +1058,7 @@ public class Canonicalizer {
         }
     }
      
-    public static void filterBySpatialProximity(float critDens, 
+    public static void filterBySpatialProximity(float critSep, 
         List<Region> regions, int width, int height) {
         
         System.out.println("before spatial filter regions.n=" + regions.size());
@@ -1085,26 +1087,29 @@ public class Canonicalizer {
             rgMap.put(rIdx, rg);
         }
         
-        DTClusterFinder cFinder
-            = new DTClusterFinder(pixRIdxMap.keySet(), width + 1, height + 1);
+        int sep = Math.round(critSep);
+        
+        ClusterFinder cFinder
+            = new ClusterFinder(pixRIdxMap.keySet(), width, height);
         cFinder.setMinimumNumberInCluster(2);
-        cFinder.setCriticalDensity(critDens);
+        cFinder.setThreshholdFactor(1.f);
+        cFinder.setBackgroundSeparation(sep, sep);
         cFinder.findClusters();
-        List<TIntSet> groupList = cFinder.getGroups();
+        List<TLongSet> groupList = cFinder.getGroups();
         
         TIntList rm = new TIntArrayList();
         
         //NOTE: may need to revise how to choose best region to keep.
         for (int i = 0; i < groupList.size(); ++i) {
             
-            TIntSet groupPixs = groupList.get(i);
+            TLongSet groupPixs = groupList.get(i);
             
             int maxArea = Integer.MIN_VALUE;
             int maxAreaIdx = -1;
             
-            TIntIterator iter3 = groupPixs.iterator();
+            TLongIterator iter3 = groupPixs.iterator();
             while (iter3.hasNext()) {
-                int pixIdx = iter3.next();
+                long pixIdx = iter3.next();
                 int rIdx = pixRIdxMap.get(pixIdx);
             
                 Canonicalizer.RegionGeometry rg = rgMap.get(rIdx);
@@ -1122,7 +1127,7 @@ public class Canonicalizer {
             assert(maxAreaIdx > -1);
             iter3 = groupPixs.iterator();
             while (iter3.hasNext()) {
-                int pixIdx = iter3.next();
+                long pixIdx = iter3.next();
                 int rIdx = pixRIdxMap.get(pixIdx);
                 if (rIdx == maxAreaIdx) {
                     continue;

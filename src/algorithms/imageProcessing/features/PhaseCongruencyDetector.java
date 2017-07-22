@@ -25,8 +25,9 @@ import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
-import com.climbwithyourfeet.clustering.DTClusterFinder;
+import com.climbwithyourfeet.clustering.ClusterFinder;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -926,25 +927,26 @@ public class PhaseCongruencyDetector {
                 pixIdxs.add(pixIdx);
             }
                         
-            DTClusterFinder cFinder = new DTClusterFinder(pixIdxs,
-                nRows + 1, nCols + 1);
+            ClusterFinder cFinder = new ClusterFinder(pixIdxs,
+                nRows, nCols);
             //cFinder.setToDebug();
+            cFinder.setThreshholdFactor(1.f);
             cFinder.setMinimumNumberInCluster(1);
-            cFinder.calculateCriticalDensity();
+            cFinder.calculateBackgroundSeparation();
             cFinder.findClusters();
-            List<TIntSet> groupList = cFinder.getGroups();
+            List<TLongSet> groupList = cFinder.getGroups();
             final int n = groupList.size();
 
             float[] clusterSizes = new float[n];
             Image dbg = new Image(nCols, nRows);
             for (int i = 0; i < n; ++i) {
-                TIntSet groupPixs = groupList.get(i);
+                TLongSet groupPixs = groupList.get(i);
                 clusterSizes[i] = groupPixs.size();
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 
-                TIntIterator iter3 = groupPixs.iterator();
+                TLongIterator iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
-                    int pixIdx = iter3.next();
+                    long pixIdx = iter3.next();
                     ph.toPixelCoords(pixIdx, w, xy);
                     
                     ImageIOHelper.addPointToImage(xy[1], xy[0], dbg,
@@ -985,16 +987,16 @@ public class PhaseCongruencyDetector {
             int[] indexes = new int[n];
             int count = 0;
             for (int i = 0; i < n; ++i) {
-                TIntSet groupPixs = groupList.get(i);
+                TLongSet groupPixs = groupList.get(i);
                 if (groupPixs.size() > sizeLimit) {
                     continue;
                 }
                 int sumD = 0;
                 int countD = 0;
                 
-                TIntIterator iter3 = groupPixs.iterator();
+                TLongIterator iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
-                    int pixIdx = iter3.next();
+                    long pixIdx = iter3.next();
                     ph.toPixelCoords(pixIdx, w, xy);
                     if (noisePoints.contains(new PairInt(xy[0], xy[1])) 
                         && dt[xy[0]][xy[1]] > 0) {
@@ -1051,12 +1053,12 @@ public class PhaseCongruencyDetector {
                 int idx = indexes[i];
                 int[] clr = ImageIOHelper.getNextRGB(i);
                 
-                TIntSet groupPixs = groupList.get(idx);
+                TLongSet groupPixs = groupList.get(idx);
                 
                 Set<PairInt> set2 = new HashSet<PairInt>();
-                TIntIterator iter3 = groupPixs.iterator();
+                TLongIterator iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
-                    int pixIdx = iter3.next();
+                    long pixIdx = iter3.next();
                     ph.toPixelCoords(pixIdx, w, xy);
                 
                     ImageIOHelper.addPointToImage(xy[1], xy[0], dbg0,

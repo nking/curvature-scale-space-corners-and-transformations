@@ -20,9 +20,10 @@ import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
-import com.climbwithyourfeet.clustering.DTClusterFinder;
+import com.climbwithyourfeet.clustering.ClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -260,13 +261,13 @@ public class UnsupervisedTextureFinder {
                 }
             }
 
-            DTClusterFinder cFinder = new DTClusterFinder(pixIdxs2,
-                    img.getHeight(), w);
-
+            ClusterFinder cFinder = new ClusterFinder(pixIdxs2,
+                img.getHeight(), w);
+            cFinder.setThreshholdFactor(1.f);
             cFinder.setMinimumNumberInCluster(1);
-            cFinder.calculateCriticalDensity();
+            cFinder.calculateBackgroundSeparation();
             cFinder.findClusters();
-            List<TIntSet> groupList = cFinder.getGroups();
+            List<TLongSet> groupList = cFinder.getGroups();
             final int n = groupList.size();
 
             int maxN = Integer.MIN_VALUE;
@@ -283,9 +284,9 @@ public class UnsupervisedTextureFinder {
                 int[] xy = new int[2];
 
                 Set<PairInt> set = new HashSet<PairInt>();
-                TIntIterator iter3 = groupList.get(maxNIdx).iterator();
+                TLongIterator iter3 = groupList.get(maxNIdx).iterator();
                 while (iter3.hasNext()) {
-                    int pixIdx = iter3.next();
+                    long pixIdx = iter3.next();
                     ph.toPixelCoords(pixIdx, w, xy);
                     set.add(new PairInt(xy[0], xy[1]));
                 }
@@ -294,11 +295,11 @@ public class UnsupervisedTextureFinder {
                     continue;
                 }
 
-                // 2 points within this distnce
-                float critDist = 1.f / cFinder.getCriticalDensity();
+                int critSep = Math.round(cFinder.getBackgroundSeparationHolder()
+                    .getXBackgroundSeparation());
 
                 //critDists.add(critDist);
-                int patchWidth = Math.round(critDist / 2.f);
+                int patchWidth = critSep;
                 if ((patchWidth & 1) == 0) {
                     patchWidth++;
                 }

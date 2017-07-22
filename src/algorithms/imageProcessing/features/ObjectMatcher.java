@@ -28,10 +28,11 @@ import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
-import com.climbwithyourfeet.clustering.DTClusterFinder;
+import com.climbwithyourfeet.clustering.ClusterFinder;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
@@ -45,6 +46,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -573,7 +575,7 @@ public class ObjectMatcher {
         //when multiple regions are centered within a spatial limit,
         //  choose one and remove the others
         if (false) {
-            float critDens = 2.f/15.f;
+            int critSep = 15;
             
             System.out.println("before removing near mser, cRegions.n=" + 
                 cRegions.size());
@@ -597,24 +599,24 @@ public class ObjectMatcher {
                 pixRIdxMap.put(pixIdx, rIdx);
             }
             
-            DTClusterFinder cFinder = new DTClusterFinder(
-                pixRIdxMap.keySet(),
-                gsImg.getWidth() + 1, gsImg.getHeight() + 1);
+            ClusterFinder cFinder = new ClusterFinder(pixRIdxMap.keySet(),
+                gsImg.getWidth(), gsImg.getHeight());
+            cFinder.setThreshholdFactor(1.f);
             cFinder.setMinimumNumberInCluster(2);
-            cFinder.setCriticalDensity(critDens);
+            cFinder.setBackgroundSeparation(critSep, critSep);
             cFinder.findClusters();
-            List<TIntSet> groupList = cFinder.getGroups();
+            List<TLongSet> groupList = cFinder.getGroups();
 
             //NOTE: may need to revise how to choose best region to keep.
             for (int i = 0; i < groupList.size(); ++i) {
-                TIntSet groupPixs = groupList.get(i);
+                TLongSet groupPixs = groupList.get(i);
                 
                 int maxSz = Integer.MIN_VALUE;
                 int maxSzIdx = -1;                
                 
-                TIntIterator iter3 = groupPixs.iterator();
+                TLongIterator iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
-                    int pixIdx = iter3.next();
+                    long pixIdx = iter3.next();
                     int rIdx = pixRIdxMap.get(pixIdx);
                 
                     int sz = calculateObjectSize(cRegions.get(rIdx));
@@ -626,7 +628,7 @@ public class ObjectMatcher {
                 assert(maxSzIdx > -1);
                 iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
-                    int pixIdx = iter3.next();
+                    long pixIdx = iter3.next();
                     int rIdx = pixRIdxMap.get(pixIdx);
                     if (rIdx == maxSzIdx) {
                         continue;
@@ -1240,11 +1242,11 @@ public class ObjectMatcher {
             //gsImg1, luvTheta1, 
             clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
                 
-        float critDens = 2.f/10.f;
-        Canonicalizer.filterBySpatialProximity(critDens, regionsComb0, 
+        int critSep = 10;
+        Canonicalizer.filterBySpatialProximity(critSep, regionsComb0, 
             img0Trimmed.getWidth(), img0Trimmed.getHeight());
         
-        Canonicalizer.filterBySpatialProximity(critDens, regionsComb1, 
+        Canonicalizer.filterBySpatialProximity(critSep, regionsComb1, 
             img1.getWidth(), img1.getHeight());
         
         List<List<GreyscaleImage>> pyrRGB0 = imageProcessor.buildColorPyramid(

@@ -22,7 +22,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PixelHelper;
 import algorithms.util.QuadInt;
-import com.climbwithyourfeet.clustering.DTClusterFinder;
+import com.climbwithyourfeet.clustering.ClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
@@ -422,103 +422,6 @@ public class MSERMatcher {
         double f0 = 1. - ((double) count / area0);
         
         return new double[]{sum, f0, f1, count};
-    }
-
-    private void filterBySpatialProximity(float critDens,
-        TIntObjectMap<FixedSizeSortedVector<Obj>> rIndexHOGMap, 
-        List<List<GreyscaleImage>> pyrRGB0, List<List<GreyscaleImage>> pyrRGB1) {
-                
-        System.out.println("before spatial filter rIndexes=" + rIndexHOGMap.size());
-         
-        int w0 = pyrRGB0.get(0).get(0).getWidth();
-        int h0 = pyrRGB0.get(0).get(0).getHeight();
-        int w1 = pyrRGB1.get(0).get(0).getWidth();
-        int h1 = pyrRGB1.get(0).get(0).getHeight();
-        
-        // key=pixIdx , value = rIdx
-        TLongIntMap pixRIdxMap = new TLongIntHashMap();
-        PixelHelper ph = new PixelHelper();
-                
-        TIntObjectIterator<FixedSizeSortedVector<Obj>> iter2
-            = rIndexHOGMap.iterator();
-
-        for (int i3 = 0; i3 < rIndexHOGMap.size(); ++i3) {
-
-            iter2.advance();
-
-            int rIdx = iter2.key();
-            FixedSizeSortedVector<Obj> vec = iter2.value();
-
-            int n = vec.getNumberOfItems();
-            if (n == 0) {
-                continue;
-            }
-
-            Obj obj0 = vec.getArray()[0];
-
-            int imgIdx0 = obj0.imgIdx0;
-            int imgIdx1 = obj0.imgIdx1;
-
-            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
-            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
-
-            float scale0, scale1;
-            {
-                int w0_i = gsI0.getWidth();
-                int h0_i = gsI0.getHeight();
-                scale0 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;
-
-                int w1_i = gsI1.getWidth();
-                int h1_i = gsI1.getHeight();
-                scale1 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;
-            }
-            
-            int x = Math.round(scale1 * obj0.cr1.ellipseParams.xC);
-            int y = Math.round(scale1 * obj0.cr1.ellipseParams.yC);
-            
-            long pixIdx = ph.toPixelIndex(x, y, w0);
-            pixRIdxMap.put(pixIdx, rIdx);
-        }
-        
-        DTClusterFinder cFinder = new DTClusterFinder(
-            pixRIdxMap.keySet(), 
-            //w1 + 1, h1 + 1);
-            w0 + 1, h0 + 1);
-        cFinder.setMinimumNumberInCluster(2);
-        cFinder.setCriticalDensity(critDens);
-        cFinder.setThreshholdFactor(1.0f);
-        cFinder.findClusters();
-        List<TIntSet> groupList = cFinder.getGroups();
-
-        //NOTE: may need to revise how to choose best region to keep.
-        for (int i = 0; i < groupList.size(); ++i) {
-            TIntSet groupPix = groupList.get(i);
-            double minCost = Double.MAX_VALUE;
-            int minCostRIdx = -1;
-
-            TIntIterator iter3 = groupPix.iterator();
-            while (iter3.hasNext()) {
-                int pixIdx = iter3.next();
-                int rIdx = pixRIdxMap.get(pixIdx);
-                double cost = rIndexHOGMap.get(rIdx).getArray()[0].cost;
-                if (cost < minCost) {
-                    minCost = cost;
-                    minCostRIdx = rIdx;
-                }
-            }
-            assert(minCostRIdx > -1);
-            iter3 = groupPix.iterator();
-            while (iter3.hasNext()) {
-                int pixIdx = iter3.next();
-                int rIdx = pixRIdxMap.get(pixIdx);
-            
-                if (rIdx == minCostRIdx) {
-                    continue;
-                }
-                rIndexHOGMap.remove(rIdx);
-            }
-        }
-        System.out.println("after spatial filter rIndexes=" + rIndexHOGMap.size());
     }
 
     private HOGs getOrCreate(TIntObjectMap<HOGs> hogsMap, GreyscaleImage gs, 
