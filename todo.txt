@@ -1,18 +1,96 @@
-(1) reading bishop 2006
+- fix the canny adaptive line thinning.  it looks like the wrong
+  direction is sometimes used.
+- several algorithms need repair after changes in classes they use
+
+-- add and thoroughly test new errors method for HOGS
+   -- add visualization of the HOG orientations
+   -- impl the new comparison score
+   -- improve or make a new HOGS object matcher (keep MSER)
+   -- 
+
+-- for the android statues matching,
+   next consider steps:
+    - find the mser regions to compare
+    - use convolutional neural networks for the matching
+      after considering how to use HOGs and invariance
+      of transformations...
+-- 
+  https://github.com/mnielsen/neural-networks-and-deep-learning.git
+
+-- also, review some of the architectures for 
+   hashing, that is compare pros and cons compared to
+   open addressing for example
+
+-- additional reading on convolution networks, and look for
+   any that are using monogenic filters to improve the runtime complexity.
+   http://arxiv.org/abs/1311.2901
+
+-- after next round of object matching improvements,
+    consider datasets from benchmark challenge:
+    https://en.wikipedia.org/wiki/ImageNet_Large_Scale_Visual_Recognition_Challenge
+    mentioned in:
+        https://en.wikipedia.org/wiki/Convolutional_neural_network
+        where there is brief discussion of difficulties in
+        object recognition
+
+-- to explore current market parts, make 2 computers from
+   scratch using stores like Fry's and NewEgg
+   - (1) an economy model like I always get
+   - (2) a high end model with large amount of memory using the ram that
+         doesn't overheat (more expensive)
+         and large amount of storage.
+         -- look into ideal number and kinds of L1 and L2 caches for the
+            architecture.
+         -- monitors
+-- Neural networks:
+   -- optimization:
+      http://neuralnetworksanddeeplearning.com/chap3.html
+      https://github.com/jaberg/hyperopt
+      (Bergstra and Bengio 2012)
+
+   -- alternative to minimize cost function instead of stochastic
+      gradient descent is LBFGS.
+
+
+-- revist the event server search :
+    -- there should be more modenr datasets to use
+        and should be able to choose other than
+        the perceptron.
+        -- some of the loading of data could be imrpved too
+-- do exercises for Fig 4.11, pg 220 of Bishop 2006
+-- http://www.gaussianprocess.org/gpml/code/matlab/doc/
+   and tensorflow
+     https://github.com/NervanaSystems/neon
+     https://en.wikipedia.org/wiki/Theano_(software)
+     https://en.wikipedia.org/wiki/Torch_(machine_learning)
+
+-- impl iterative reweighted least squares
+
+
+-- for the smoothing of the separation curve,
+   could retry knn, that is use same pyramidal,
+   but without re-sampling AND divide each range
+   by h to include volume, making the curve density.
+     see bishop 2006, chap 2.5
+
+-- update the documentation on the shared and two-point-correlation
+   sites.
+   -- add to the two-point-correl a todo to improvements for dataset size
+      and as always, fitting for cluster association.
+      holding off on some of that because adding dimensional ability will
+      change how these are done.
+   -- since voronoi is N log N, might be interesting to look at some of the
+      metrics.   the kNN is already doing so, so could 
+        use it to explore
+
+ (1) reading bishop 2006
     and looking at
     http://www.gaussianprocess.org/gpml/code/matlab/doc/
     and tensorflow
     -- Conditional Random Fields
+    -- variational Bayes and expectation propagation
 
-(2) read the remote s ensing paper
-
--- revisit the two-point correlation project to make improvements:
-    -- use a disjoint forest in assigning points to clusters.
-       (see ConnectedPointsFinder.java)
-    -- consider kernel smoothing on the distance transform results
-       before histograms (replace gaussian kernel w/ binomial approx)
-    -- refine density calculation separate logic for the 2 cases of 
-       having background points and not
+(2) read the remote sensing paper
 
 -- consider making a greyscale MSEREdges
 
@@ -28,7 +106,7 @@
 
 -- interesting:
    solving the transformations between 2 images
-   when have most the camera matrix, except focal length.
+   when have most of the camera matrix except focal length.
 
    http://www.vis.uky.edu/~stewe/publications/stewenius_05_cvpr_focal.pdf
 
@@ -53,7 +131,8 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- low priority: improve the auxillary methods in the partial shape matchers
     to calculate cost when given correspondence.
 
--- consider implementing multi-level buckets
+-- add use of YFastTrie to the min heap class w/ a check for 
+     memory available.
 
 -- consider implementing Tarjans latest paper (bipartite matching)
 
@@ -65,7 +144,7 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- consider implementing a mean shift algorithm
 
 -- fix the ransac iterator estimate that has a limit of
-    1790
+    (1790?)
 
 -- read more on "Simultaneous Localization and Mapping, or SLAM"
      
@@ -94,7 +173,7 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 -- priority is implement when needed:
    considering algorithms to implement:
    0: looking at bayesian optimization
-   1: hybrid 
+   1: hybrid global search
       considering these
           -- scatter
               https://www.researchgate.net/publication/228011098_The_Scatter_Search_Methodology
@@ -139,4 +218,5 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
             project to maven build system)
      cannot easily test on all platforms at this time, so will leave this
      as a todo target for the interesting details, but essentially no
+G
      expected priority.
