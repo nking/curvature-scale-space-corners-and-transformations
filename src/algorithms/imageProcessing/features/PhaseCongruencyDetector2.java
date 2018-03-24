@@ -58,6 +58,12 @@ public class PhaseCongruencyDetector2 {
     
     final private static double epsilon = 1E-4;
 
+    private boolean debug = false;
+    
+    public void setToDebug() {
+        debug = true;
+    }
+    
     /**
      * an edge detector based upon the principal moments of phase congruency 
      * to create an edge operator that is highly localized and has responses 
@@ -508,11 +514,15 @@ public class PhaseCongruencyDetector2 {
                     }
                 }
             }
-            MiscDebug.writeImage(thinnedImg, "_thinned_" + or + "_"); 
-            MiscDebug.writeImage(pcImg, "_pc_" + or + "_");        
+            if (debug) {
+                MiscDebug.writeImage(thinnedImg, "_thinned_" + or + "_"); 
+                MiscDebug.writeImage(pcImg, "_pc_" + or + "_");
+            }
         }
-        MiscDebug.writeImage(combinedPCImg, "_pc_combined_"); 
-        MiscDebug.writeImage(combinedThinnedImg, "_thinned_combined_"); 
+        if (debug) {
+            MiscDebug.writeImage(combinedPCImg, "_pc_combined_"); 
+            MiscDebug.writeImage(combinedThinnedImg, "_thinned_combined_"); 
+        }
         
         long t1 = System.currentTimeMillis();
         

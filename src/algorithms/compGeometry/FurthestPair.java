@@ -44,7 +44,7 @@ public class FurthestPair {
         GrahamScan scan = new GrahamScan();
         
         try {
-            
+            //O(n lg n)
             scan.computeHull(x, y);
             
         } catch (GrahamScanTooFewPointsException ex) {

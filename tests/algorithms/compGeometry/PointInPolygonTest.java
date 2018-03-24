@@ -90,6 +90,9 @@ public class PointInPolygonTest extends TestCase {
          (15, 5)
          (5, 15)
         */
+        
+        PointInPolygon2 instance2 = new PointInPolygon2(xPoly, yPoly);
+        
         PointInPolygon instance = new PointInPolygon();
         for (int i = 0; i < testPointsX.length; i++) {
             float testPointX = testPointsX[i];
@@ -98,6 +101,15 @@ public class PointInPolygonTest extends TestCase {
             boolean result = instance.isInSimpleCurve(testPointX, testPointY, 
                 xPoly, yPoly, xPoly.length);
 
+            //System.out.println("  result=" + result + " expect=" + expected[i]);
+            assertTrue(result == expected[i]);
+            
+            
+            result = instance2.isOutsideMaxRadius(testPointX, testPointY);
+            //System.out.println("  result=" + result + " expect=" + expected[i]);
+            assertTrue(result == expected[i]);
+            
+            result = instance2.isOutsideBoundingBox(testPointX, testPointY);
             //System.out.println("  result=" + result + " expect=" + expected[i]);
             assertTrue(result == expected[i]);
         }

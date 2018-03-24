@@ -10,8 +10,8 @@ import java.util.Set;
  * Builds an unmodifiable data structure to make finding member points within
  * a distance of a location faster than O(N^2).
  * 
- * The runtime complexity is O(N*lg2(N)) for the constructor
- * and for search is O(lg2(N)) + small number of scans surrounding the nearest x.
+ * The runtime complexity is O(N*lg2(N)) for the constructor and for search is 
+ * O(lg2(N)) + small number of scans surrounding the nearest x.
  * 
  * @author nichole
  */

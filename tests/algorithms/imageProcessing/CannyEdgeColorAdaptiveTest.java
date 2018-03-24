@@ -20,7 +20,7 @@ public class CannyEdgeColorAdaptiveTest extends TestCase {
 
         //30, 7
         //for (int i = 30; i < 31; ++i) {
-        for (int i = 0; i < 37; ++i) {
+        for (int i = 0; i < 38; ++i) {
 
             switch(i) {
                 case 0: {
@@ -164,6 +164,10 @@ public class CannyEdgeColorAdaptiveTest extends TestCase {
                     break;
                 }
                 case 35: {
+                    fileName1 = "lena.jpg";
+                    break;
+                }
+                case 36: {
                     fileName1 = "checkerboard_01.jpg";
                     break;
                 }

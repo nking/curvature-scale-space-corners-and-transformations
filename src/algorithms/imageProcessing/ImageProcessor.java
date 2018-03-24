@@ -3798,14 +3798,19 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         int[] c2 = new int[]{-1, 0, 0,   0, -1, -1, 0, -1};
         int[] d2 = new int[]{0,  1, 1,   1, 1,  0};
 
+        int maxValue = img.getMax();
+        int nBits = 1 + (int)Math.ceil(Math.log(maxValue)/Math.log(2));
+        if (nBits > 31) {
+            nBits = 31;
+        }
+        
         /*
             - - -        - -
               +        + + -
             + + +      + +
         */
         PairInt[][] neighborCoordOffsets
-            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
-            0, 0);
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(0, 0);
 
         int w = img.getWidth();
         int h = img.getHeight();
@@ -3844,7 +3849,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                     // to try to make it more symmetric, collecting all
                     // nullable pixels and counting the set neighbors,
                     // then revisiting by order of fewest set neighbors
-                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n, nBits);
 
                     for (int x = 1; x < (img.getWidth() - 1); ++x) {
                         for (int y = 1; y < (img.getHeight() - 1); ++y) {
@@ -3928,6 +3933,12 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         int[] c2 = new int[]{-1, 0, 0, 0, -1, -1, 0, -1};
         int[] d2 = new int[]{0, 1, 1, 1, 1, 0};
 
+        int maxValue = Math.max(imageWidth, imageHeight);
+        int nBits = 1 + (int)Math.ceil(Math.log(maxValue)/Math.log(2));
+        if (nBits > 31) {
+            nBits = 31;
+        }
+        
         /*
             - - -        - -
               +        + + -
@@ -3974,7 +3985,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                     // to try to make it more symmetric, collecting all
                     // nullable pixels and counting the set neighbors,
                     // then revisiting by order of fewest set neighbors
-                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n, nBits);
 
                     for (PairInt p : points) {
                         int x = p.getX();
@@ -4050,6 +4061,12 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         int[] c2 = new int[]{-1, 0, 0, 0, -1, -1, 0, -1};
         int[] d2 = new int[]{0, 1, 1, 1, 1, 0};
 
+        int maxValue = Math.max(imageWidth, imageHeight);
+        int nBits = 1 + (int)Math.ceil(Math.log(maxValue)/Math.log(2));
+        if (nBits > 31) {
+            nBits = 31;
+        }
+        
         /*
             - - -        - -
               +        + + -
@@ -4092,7 +4109,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                     // to try to make it more symmetric, collecting all
                     // nullable pixels and counting the set neighbors,
                     // then revisiting by order of fewest set neighbors
-                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
+                    MinHeapForRT2012 heap = new MinHeapForRT2012(9, n, nBits);
 
                     TIntIterator iter = pixIdxs.iterator();
                     while (iter.hasNext()) {
@@ -4702,6 +4719,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             throw new IllegalArgumentException("img values must be"
                 + " >= 0 and maximum must be > 0");
         }
+        
+        blur(img, SIGMA.ONE);
 
         int nRows = img.getHeight();
         int nCols = img.getWidth();

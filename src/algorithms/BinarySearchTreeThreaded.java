@@ -9,7 +9,7 @@ import java.util.Map;
  * Building upon the BinarySearchTree by adding
  * double threading.
  * 
- * adapted from the follwoing: 
+ * adapted from the following: 
  * http://adtinfo.org/libavl.html/TBST-Data-Types.html
  * The GNU libavl 2.0.2 has the following license:
  * http://adtinfo.org/libavl.html/Code-License.html

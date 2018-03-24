@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 
 /**
  * finds a maximum matching in a bipartite graph.
- * Note that the graph does not hae edge weights.
+ * Note that the graph does not have edge weights.
  * 
  * useful reading is Cormen et al. "Introduction to Algorithms"
  * pseudocode of Hopcroft-Karp.
@@ -17,7 +17,8 @@ import java.util.logging.Logger;
  * and
  * http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
 
- * The runtime complexity is O(sqrt(V) * E).
+ * The runtime complexity is O(sqrt(V) * E) where V is the number of vertexes
+ * and E is the number of Edges.
  * 
  * @author nichole
  */
@@ -29,23 +30,21 @@ public class HopcroftKarp {
     G is a directed bipartite graph (V, E) where V is composed
     of left L and right R.
     
-    a path is a sequence of edges.
-    an augmenting path in the matching M starts at an unmatched L
-    and ends at an unmatched vertex in R and in between alternates
-    between matched and unmatched edges, (members of E and E-M).
-    an augmenting path can be composed of only two vertices and the
-    edge between them.
+    A path is a sequence of edges.
+    An augmenting path in the matching M starts at an unmatched L and ends at 
+    an unmatched vertex in R and in between alternates between matched and 
+    unmatched edges, (members of E and E-M).  An augmenting path can be composed 
+    of only two vertices and the edge between them.
     
     The shortest augmenting path has the fewest number of edges in it.
     
-    And the symmetric difference of 2 sets is the points that are 
-    not in the intersection, but are in the union of them.
+    And the symmetric difference of 2 sets is the points that are not in the 
+    intersection, but are in the union of them.
     For example, sym diff of {1, 2, 3} and {3, 4} is {1, 2, 4}.
     http://en.wikipedia.org/wiki/Symmetric_difference
     
-    if M is a matching within G and P is an augmenting path,
-    then the symmetric difference of M with P is a matching
-    of size |M| + 1.
+    If M is a matching within G and P is an augmenting path, then the symmetric 
+    difference of M with P is a matching of size |M| + 1.
     
     input G
     
@@ -61,7 +60,6 @@ public class HopcroftKarp {
     finding the vertex-disjoint shortest paths,
     using the pattern of single BFS followed by DFS, per L vertex
         (see wikipedia).
-    
     */
     
     /**
@@ -74,7 +72,7 @@ public class HopcroftKarp {
       http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
       which uses the unlicense:
       http://github.com/indy256/codelibrary/blob/master/UNLICENSE
-     
+     * @param g     
      * @return matching from perspective int[uIndex] = vIndex
      */
     public int[] hopcroftKarpV0(GraphWithoutWeights g) {
@@ -88,7 +86,7 @@ public class HopcroftKarp {
         Arrays.fill(match21, -1);
         
         // forward matching indexes, opposite mapping of match21
-		int[] match12 = new int[n1];
+	int[] match12 = new int[n1];
         Arrays.fill(match12, -1);
         
         for (int res = 0; ; ) {
@@ -120,8 +118,9 @@ public class HopcroftKarp {
      * @param match21
      * @param dist 
      */
-    private void bfs(GraphWithoutWeights g, int[] match12,
-        int[] match21, int[] dist) {
+    private void bfs(GraphWithoutWeights g, int[] match12, int[] match21, 
+            int[] dist) {
+        
         Arrays.fill(dist, -1);
         int n1 = g.getNLeft();
         int[] Q = new int[n1];
@@ -141,8 +140,7 @@ public class HopcroftKarp {
             TIntIterator iter = neighbors.iterator();
             while (iter.hasNext()) {
                 int vIdx = iter.next();
-                log.fine(String.format(
-                    "bfs visiting (%d, %d)", u1, vIdx));
+                log.fine(String.format("bfs visiting (%d, %d)", u1, vIdx));
                 int u2 = match21[vIdx];
                 if (u2 > -1 && dist[u2] < 0) {
                     dist[u2] = dist[u1] + 1;

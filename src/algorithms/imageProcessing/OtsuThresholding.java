@@ -79,7 +79,7 @@ public class OtsuThresholding {
     }
     
     /**
-     * find the binary threshold assuming the image is filled with values 
+     * Find the binary threshold assuming the image is filled with values 
      * between 0 and 255, inclusive.
      * 
      * The implementation follows the one dimensional code from wikipedia
@@ -321,7 +321,7 @@ public class OtsuThresholding {
      * @param nBins the number of bins to use when calculating the inner
      * threshold.  for example, a greyscale image with range 0 to 255 and
      * nBins = 256 would be the finest grain histogram for that data.
-     */
+    */
     public double calculateBinaryThreshold2D(double[][] img, int nBins) {
         
         int w = img.length;

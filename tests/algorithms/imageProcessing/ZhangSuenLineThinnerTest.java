@@ -74,7 +74,7 @@ public class ZhangSuenLineThinnerTest extends TestCase {
         
         for (int r = 0; r < image.length; r++) {
             
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             
             for (int c = 0; c < image[r].toCharArray().length; c++) {
                 
@@ -121,27 +121,39 @@ public class ZhangSuenLineThinnerTest extends TestCase {
         for (int i = 0; i < image.length; ++i) {
             String line = image[i];
             for (int j = 0; j < line.length(); ++j) {
-                if (line.charAt(j) != ' ') {
+                if (line.charAt(j) == '#') {
                     img.setValue(i, j, 255);
                 }
             }
         }
         
+        printImage(img);
+        
         TransformationParameters params = new TransformationParameters();
+        params.setScale(1);
+        params.setTranslationX(0);
+        params.setTranslationY(0);
+        params.setOriginX(0);
+        params.setOriginY(0);
+        
         params.setRotationInDegrees(270);
         params.setTranslationX(img.getHeight());
+        
+        //params.setRotationInDegrees(180);
+        //params.setTranslationX(img.getWidth());
+        //params.setTranslationY(img.getHeight());
+        
         Transformer transformer = new Transformer();
         img = transformer.applyTransformation(img, params, 
-            img.getHeight(), img.getWidth());
+                img.getHeight(), img.getWidth());
+        //        img.getWidth(), img.getHeight());
  
         ImageProcessor imageProcessor = new ImageProcessor();
         
         imageProcessor.applyThinning(img);
         
-        for (int r = 0; r < img.getHeight(); r++) {
-            
-            StringBuffer sb = new StringBuffer();
-            
+        for (int r = (img.getHeight() - 1); r > -1; r--) {
+            StringBuilder sb = new StringBuilder();            
             for (int c = 0; c < img.getWidth(); c++) {
                 int v = img.getValue(c, r);                
                 if (v != 0) {
@@ -150,9 +162,22 @@ public class ZhangSuenLineThinnerTest extends TestCase {
                     sb.append(" ");
                 }
             }
-            
             System.out.println(sb.toString());
         }
     }
    
+    private void printImage(GreyscaleImage img) {
+        for (int r = (img.getHeight() - 1); r > -1; r--) {
+            StringBuilder sb = new StringBuilder();
+            for (int c = 0; c < img.getWidth(); c++) {
+                int v = img.getValue(c, r);                
+                if (v != 0) {
+                    sb.append("#");
+                } else {
+                    sb.append(" ");
+                }
+            }
+            System.out.println(sb.toString());
+        }
+    }
 }

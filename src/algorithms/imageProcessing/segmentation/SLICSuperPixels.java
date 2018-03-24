@@ -576,6 +576,12 @@ public class SLICSuperPixels {
         int h = img.getHeight();
         int n = img.getNPixels();
 
+        int maxValue = Math.max(w, h);
+        int nBits = 1 + (int)Math.ceil(Math.log(maxValue)/Math.log(2));
+        if (nBits > 31) {
+            nBits = 31;
+        }
+        
         //System.out.println("assign " + unassignedSet.size() + " out of "
         //    + n + " pixels");
         
@@ -598,7 +604,7 @@ public class SLICSuperPixels {
         // using a min heap whose priority is to set the nodes
         //    which have the largest number of assigned neighbors.
         //    nAssigned=8 -> key=8-nAssigned = 0.
-        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);
+        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n, nBits);
 
         // a map of nodes for the unassigned pixels
         TIntObjectMap<HeapNode> unAMap = new TIntObjectHashMap<HeapNode>();

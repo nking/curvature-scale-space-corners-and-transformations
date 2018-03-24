@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * customized DAG for the Watershed class to store the connections between
- * a pixel and it's lower intensity neighbors, ordered by steepness.
+ * a pixel and its lower intensity neighbors, ordered by steepness.
  * 
  * Unused functions have been removed, for example, the nodes do not store
  * incoming connections.

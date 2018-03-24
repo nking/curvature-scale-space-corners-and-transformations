@@ -8,7 +8,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class OtsuThresholdingTest extends TestCase {
     
-    public void estCalculateBinaryThreshold256() throws Exception {
+    public void testCalculateBinaryThreshold256() throws Exception {
         
         String[] fileNames = new String[]{
             "android_statues_01.jpg",
@@ -63,22 +63,11 @@ public class OtsuThresholdingTest extends TestCase {
         
             OtsuThresholding thrshFinder = new OtsuThresholding();
             
-            int thrsh0 = thrshFinder.calculateBinaryThreshold256(gsImg0);
-            thrshFinder.applyMultiLevelThreshold256(gsImg, 2);
-           
-            assertTrue(thrsh0 > 0);
-            assertTrue(thrsh0 < 255);
+            int nLevels = 3;
             
-            for (int i = 0; i < gsImg0.getNPixels(); ++i) {
-                if (gsImg0.getValue(i) > thrsh0) {
-                    gsImg0.setValue(i, 255);
-                } else {
-                    gsImg0.setValue(i, 0);
-                }
-            }
+            thrshFinder.applyMultiLevelThreshold256(gsImg, nLevels);
             
-            MiscDebug.writeImage(gsImg0, "_oneD_" + fileNameRoot);
-            MiscDebug.writeImage(gsImg, "_twoD_" + fileNameRoot);
+            MiscDebug.writeImage(gsImg, "_adaptive_n3_" + fileNameRoot);
         }
     }
     
@@ -144,27 +133,27 @@ public class OtsuThresholdingTest extends TestCase {
         
             OtsuThresholding thrshFinder = new OtsuThresholding();
             
-            double thrsh0 = thrshFinder.calculateBinaryThreshold2D(imgD0,
+            double thrsh2D256 = thrshFinder.calculateBinaryThreshold2D(imgD0,
                 256);
            
-            double thrsh1 = thrshFinder.calculateBinaryThreshold256(img);
+            double thrsh1D256 = thrshFinder.calculateBinaryThreshold256(img);
             
-            assertTrue(thrsh0 > 0);
-            assertTrue(thrsh0 < 255);
+            assertTrue(thrsh2D256 > 0);
+            assertTrue(thrsh2D256 < 255);
             
-            assertTrue(thrsh1 > 0);
-            assertTrue(thrsh1 < 255);
+            assertTrue(thrsh1D256 > 0);
+            assertTrue(thrsh1D256 < 255);
             
             double[][] imgDCp = imageProcessor.copy(imgD0);
             GreyscaleImage img1 = img.copyImage();
             
             for (int i = 0; i < img.getNPixels(); ++i) {
-                if (img.getValue(i) > thrsh0) {
+                if (img.getValue(i) > thrsh2D256) {
                     img.setValue(i, 255);
                 } else {
                     img.setValue(i, 0);
                 }
-                if (img.getValue(i) > thrsh1) {
+                if (img.getValue(i) > thrsh1D256) {
                     img1.setValue(i, 255);
                 } else {
                     img1.setValue(i, 0);
@@ -180,6 +169,9 @@ public class OtsuThresholdingTest extends TestCase {
             
             MiscDebug.writeImage(imgDCp, "img_adap_thrsh_" + fileNameRoot
                 + ".png");
+            
+            System.out.format("thresh 2D 256=%.3f, thresh 1D 256 = %.3f\n", 
+                    (float)thrsh2D256, (float)thrsh1D256);
         }
     }
     

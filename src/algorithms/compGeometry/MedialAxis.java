@@ -8,7 +8,6 @@ import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.misc.MiscMath;
 import algorithms.mst.PrimsMST;
 import algorithms.search.NearestNeighbor2D;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import gnu.trove.iterator.TIntIterator;

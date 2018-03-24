@@ -9,9 +9,6 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import thirdparty.HungarianAlgorithm;
@@ -27,7 +24,6 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     
     public MinCostUnbalancedAssignment3Test() {
     }
-    
     
     public void test00() {
         
@@ -227,7 +223,6 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             + " m.size=" + m.size());
 
         assertEquals(nExpected, m.size());
-
         assertNotNull(bipartite.getFinalFlowNetwork());       
     
         } catch(Throwable t) {
@@ -410,8 +405,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         return cost;
     }
     
-    private Graph getTestGraph2(int size, int maxCost, 
-        SecureRandom sr) throws NoSuchAlgorithmException {
+    private Graph getTestGraph2(int size, int maxCost, SecureRandom sr) throws 
+            NoSuchAlgorithmException {
         
         /*
         - graph of size n for both sets
@@ -433,8 +428,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         return g;
     }
     
-    private Graph getTestGraph3(SecureRandom sr,
-        int size, int maxCost) throws NoSuchAlgorithmException {
+    private Graph getTestGraph3(SecureRandom sr, int size, int maxCost) 
+            throws NoSuchAlgorithmException {
         
         /*
         - graph of size n for both sets

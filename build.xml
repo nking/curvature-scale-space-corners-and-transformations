@@ -50,20 +50,15 @@
     <property name="compile.deprecation" value="true"/>
     <property name="compile.target"      value="1.8"/>
 
-    <!-- build all targets -->
-    <!--<target name="all" depends="prepare,clean,compile,compileTests,runTests" />
-    -->
-
     <!-- print usage: prints all targets -->
     <target name="listTargets" description="prints all targets in this any file">
         <echo message="listTargets:                prints all targets in this ant file"/>
-        <echo message="all:                        clean+compile+ear"/>
         <echo message="prepare:                    prepare directories"/>
         <echo message="clean:                      deletes old classes, logs, build, and javadocs"/>
         <echo message="compile:                    compile source files"/>
         <echo message="compileTests:               compile test files"/>
         <echo message="runTests:                   run tests"/>
-        <echo message="runTest:                    run test with -Dtest=fqn of test"/>
+        <echo message="runTest:                    run test with -Dtest=fully qualified name of test"/>
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
     	<echo message="runCoverage:                run code coverage tools (requires env.JACOCO_HOME)"/>
         <echo message="runDependency               run dependency analysis on packages (requires graphviz and jdepend)"/>
@@ -494,7 +489,7 @@
     
     <target name="package" depends="clean,compile">
         <record name="${logfile}" append="yes" loglevel="debug"/>
-        <echo message="making jar of class files. output is dist/scalespace.jar" />
+        <echo message="making jar of class files. output is in dist/scalespace.jar" />
         
         <tstamp>
             <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>

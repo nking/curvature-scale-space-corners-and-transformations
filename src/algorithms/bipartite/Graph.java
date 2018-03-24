@@ -5,11 +5,9 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
 /**
- * class to hold a bipartite weighted graph.  Note that
- * source and sink nodes are created and edges from 
- * the source to left vertexes are created and assigned
- * a cost of zero
- * and edges from the right vertexes to the sink node
+ * class to hold a bipartite weighted graph.  Note that source and sink nodes 
+ * are created and edges from the source to left vertexes are created and 
+ * assigned a cost of zero and edges from the right vertexes to the sink node
  * are created and assigned a cost of zero.
  * @author nichole
  */
@@ -139,8 +137,7 @@ public class Graph {
     Graph copyToCreateSourceSink() {
     
         if (sourceNode == -1) {
-            Graph g = new Graph(nLeft, nRight, edgeWeights,
-                true);
+            Graph g = new Graph(nLeft, nRight, edgeWeights, true);
             return g;
         }
     

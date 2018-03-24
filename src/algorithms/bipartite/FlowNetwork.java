@@ -33,7 +33,7 @@ public class FlowNetwork {
         
      If allows for conditions which are not integral, one uses
      linear programming terms to replace the term slackness
-     with "proper"ness on properties f and p where p is prices.
+     with "proper"ness on properties f and p where f is flow and p is prices.
      - a node has a per unit price.
      - adopting the cost to dispose of a unit as the model p_d(v)
      - (the dispose cost is equal with opposite sign to acquire cost)
@@ -52,9 +52,9 @@ public class FlowNetwork {
      - cost and net flow are related as:
      cp(f) = summation over arcs in flow network
      f(v,w) * cp(v,w)
-     = summation over arcs in flow network
+         = summation over arcs in flow network
      f(v,w) * (c(v,w) − pd(v) + pd(w))
-     = c(f) − |f| * pd(⊢) − pd(⊣)
+         = c(f) − |f| * pd(⊢) − pd(⊣)
      note that the value |f| is the total flow out of the
      source ⊢ and into the sink ⊣, 
      while flow is conserved at all other nodes.
@@ -104,8 +104,10 @@ public class FlowNetwork {
      */
     private final float[] pRight;
 
+    // the maximum cost
     private int maxC = Integer.MIN_VALUE;
     
+    // the minimum cost
     private int minC = Integer.MAX_VALUE;
 
     /** forward arcs only in the flow graph

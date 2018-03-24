@@ -61,6 +61,7 @@ public class SubsetChooser {
 
         count = 1;
 
+        // n!/(k!(n-k)!)
         np = MiscMath.computeNDivKTimesNMinusKExact(n, k);
 
         if (n < 64) {
@@ -75,11 +76,9 @@ public class SubsetChooser {
             
         } else {
             
-            /*
-            x = BigInteger.ONE;
-            x = x.shiftLeft(k);
-            x = x.subtract(BigInteger.ONE);
-            */
+            // x = BigInteger.ONE;
+            // x = x.shiftLeft(k);
+            // x = x.subtract(BigInteger.ONE);
             byte[] val = MiscMath.writeToBigEndianBytes((1L << k) - 1);
             x = new BigInteger(val);
             
@@ -162,7 +161,7 @@ public class SubsetChooser {
      */
     private long nextSubset64(long x0) {
 
-        long y = x0 & -x0;  // = the least significant one bit of x
+        long y = x0 & -x0;  // = the least significant one bit of x0
         long c = x0 + y;
 
         x0 = c + (((c ^ x0) / y) >> 2);

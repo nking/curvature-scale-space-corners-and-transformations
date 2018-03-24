@@ -132,11 +132,7 @@ public class HoughTransform {
             double ct = cosineMap.get(theta).doubleValue();
             double st = sineMap.get(theta).doubleValue();
 
-            double r = (x * ct) + (y * st);
-
-            if (r < 0) {
-                r *= -1;
-            }
+            double r = Math.sqrt(Math.pow((x * ct), 2) + Math.pow((y * st), 2));
 
             PairInt p = new PairInt(tInt, (int)Math.round(r));
 
@@ -159,7 +155,7 @@ public class HoughTransform {
      * @param theta360
      * @return 
      */
-    public Map<PairInt, PairInt> calculatehHoughTransforms(
+    public Map<PairInt, PairInt> calculateHoughTransforms(
         Set<PairInt> points, GreyscaleImage theta360) {
         
         // theta is 0 to 360
@@ -185,11 +181,7 @@ public class HoughTransform {
             double ct = cosineMap.get(theta).doubleValue();
             double st = sineMap.get(theta).doubleValue();
 
-            double r = (x * ct) + (y * st);
-
-            if (r < 0) {
-                r *= -1;
-            }
+            double r = Math.sqrt(Math.pow((x * ct), 2) + Math.pow((y * st), 2));
 
             PairInt pTR = new PairInt(t, (int) Math.round(r));
 
@@ -207,7 +199,7 @@ public class HoughTransform {
      * inclusive.
      * @return 
      */
-    public Map<PairInt, PairInt> calculatehHoughTransforms(
+    public Map<PairInt, PairInt> calculateHoughTransforms(
         TIntList xCoords, TIntList yCoords, TIntList theta) {
         
         if (xCoords.size() == yCoords.size() || xCoords.size() == 
@@ -232,11 +224,7 @@ public class HoughTransform {
             double ct = cosineMap.get(th).doubleValue();
             double st = sineMap.get(th).doubleValue();
 
-            double r = (x * ct) + (y * st);
-
-            if (r < 0) {
-                r *= -1;
-            }
+            double r = Math.sqrt(Math.pow((x * ct), 2) + Math.pow((y * st), 2));
 
             PairInt pTR = new PairInt(t, (int) Math.round(r));
 

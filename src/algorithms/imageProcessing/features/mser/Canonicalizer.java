@@ -1119,6 +1119,11 @@ public class Canonicalizer {
                 //double area = rg.major * rg.minor;
                 int area = regions.get(rIdx).accX.size();
                 
+                //if (rg.xC > 73 && rg.xC < 85 && rg.yC > 49 && rg.yC < 65) {
+                //    System.out.format("(%d, %d) minor=%.3f major=%.3f area=%\n", 
+                //        rg.xC, rg.yC, (float)rg.minor, (float)rg.major, area);
+                //}
+                
                 if (area > maxArea) {
                     maxArea = area;
                     maxAreaIdx = rIdx;

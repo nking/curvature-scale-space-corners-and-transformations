@@ -206,7 +206,7 @@ public class ImageSegmentation {
         }
     }
 
-     /**
+    /**
      * create segmented image by creating edges with phase congruence,
      * then using the edge color properties to form clusters and seeds
      * of regions to grow, then using color histograms to further merge
@@ -214,7 +214,7 @@ public class ImageSegmentation {
      * The algorithm follows the general outline given by
      * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
-     *
+      
      * NOTE: parameters in this algorithm are sensitive to
      * the PSF.
      *
@@ -223,7 +223,7 @@ public class ImageSegmentation {
      *
      * @param input
      * @return
-     */
+    */
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
         String debugTag) {
         

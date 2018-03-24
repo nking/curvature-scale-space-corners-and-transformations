@@ -20,7 +20,7 @@ public class PeriodicFFTTest extends TestCase {
         super(testName);
     }
     
-    public void estFFT2D() throws Exception {
+    public void testFFT2D() throws Exception {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         

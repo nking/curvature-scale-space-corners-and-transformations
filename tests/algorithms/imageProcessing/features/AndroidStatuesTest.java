@@ -1,10 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptiveDeltaE2000;
-import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -12,7 +9,6 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
-import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
@@ -168,6 +164,7 @@ public class AndroidStatuesTest extends TestCase {
                 settings.setToUseLargerPyramid1();
                 
                 ObjectMatcher objMatcher = new ObjectMatcher();
+                objMatcher.setToDebug();
                 
                 if (debug) {
                     objMatcher.setToDebug();  
@@ -338,8 +335,8 @@ public class AndroidStatuesTest extends TestCase {
     public void testObjectFinder() throws Exception {
         boolean debug = true;
         runMatcher_gingerbreadman(debug);
-        runMatcher_icecream(debug);
-        runMatcher_cupcake(debug);
+    //    runMatcher_icecream(debug);
+    //    runMatcher_cupcake(debug);
     }
 
     public void runMatcher_icecream(boolean debug) throws Exception {

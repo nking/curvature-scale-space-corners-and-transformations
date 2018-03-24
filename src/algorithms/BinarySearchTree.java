@@ -16,7 +16,8 @@ import java.util.Stack;
  use a binary search method impl as: while loop rot != null: if (root.value 
   .lt. value) root=root.getRight()...
  
- adapted upon pseudocode from Cormen et al. Introduction to Algorithms.  added in-order, pre-order and post-order traversal methods too.
+ adapted upon pseudocode from Cormen et al. Introduction to Algorithms.  
+ added in-order, pre-order and post-order traversal methods.
  
  the delete method has been changed from the book.
  

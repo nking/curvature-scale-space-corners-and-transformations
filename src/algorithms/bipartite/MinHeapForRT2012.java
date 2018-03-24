@@ -1,7 +1,10 @@
 package algorithms.bipartite;
 
+import algorithms.YFastTrie;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.util.logging.Logger;
 
 /**
@@ -38,7 +41,7 @@ public class MinHeapForRT2012 {
     
     private final FibonacciHeapWrapper heap1;
 
-    private final XFastTrieWrapper heap2;
+    private final YFastTrieWrapper heap2;
     
     void printLastKnownMinMax() {
         log.fine("min=" + lastKnownMinKey0
@@ -61,12 +64,18 @@ public class MinHeapForRT2012 {
      * If capacity is higher than 46300, then the approxN is used to 
      * decide between an XFastTrie and a FibonacciHeap.
      * 
-     * TODO: implement a multi-level bucket such as Cherkassky, Goldberg,
-     * and Silverstein 1999 or Raman 1996 which has a faster extractMin
-     * than a Fibonacci Heap.
      */
-    public MinHeapForRT2012(int capacity, int approxN) {
-                
+    public MinHeapForRT2012(int capacity, int approxN, int maxNumberOfBits) {
+
+        //use yfasttrie if theres enough memory        
+        long totalMemory = Runtime.getRuntime().totalMemory();
+        MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+        long heapUsage = mbean.getHeapMemoryUsage().getUsed();
+        long avail = totalMemory - heapUsage;
+
+        long[] yftEstimate = YFastTrie.estimateSizeOnHeap(capacity, 
+                maxNumberOfBits);
+        
         if (capacity < 46300) {
         
             // the 1 level Dial algorithm has O(1) inserts and
@@ -81,15 +90,13 @@ public class MinHeapForRT2012 {
 
             log.fine("useDial=true cap=" + capacity + " approxN=" + approxN);
             
-        } else if (approxN > ((1<<(6-1))-1)) {
+        } else if (yftEstimate[1] < avail) {
             // wanting the base of the prefix tree to be filled
-            // to improve performance.   for larger N and
-            // this range of maxC the XFastTrie has better extractMin.
-            // could reduce the conditional to '5' instead of '6' 
+            // to improve performance.   for larger N
             
             algorithm = 2;
             
-            heap2 = new XFastTrieWrapper(capacity);
+            heap2 = new YFastTrieWrapper(capacity);
             
             heap0 = null;
             

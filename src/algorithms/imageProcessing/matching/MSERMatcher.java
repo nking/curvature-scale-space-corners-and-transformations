@@ -654,6 +654,8 @@ public class MSERMatcher {
         List<List<GreyscaleImage>> pyrRGB1, List<GreyscaleImage> pyrPT1, 
         TIntObjectMap<Canonicalizer.RegionPoints> regionPoints1, 
         String debugLabel) {
+    
+        //TODO: paused edits here to make a better HOGS statistical comparison method
         
         TIntObjectMap<HOGs> hogsMap0 = new TIntObjectHashMap<HOGs>();
         TIntObjectMap<HCPT> hcptMap0 = new TIntObjectHashMap<HCPT>();

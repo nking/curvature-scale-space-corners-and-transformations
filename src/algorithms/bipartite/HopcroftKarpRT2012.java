@@ -37,17 +37,30 @@ public class HopcroftKarpRT2012 {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
+    private final int maxNumberOfBitsInWeight;
+    
+    public HopcroftKarpRT2012() {
+        this.maxNumberOfBitsInWeight = 31;
+    }
+    
+    public HopcroftKarpRT2012(int maxNumberOfBitsInWeight) {
+        if (maxNumberOfBitsInWeight > 31 ||  maxNumberOfBitsInWeight < 2) {
+            throw new IllegalArgumentException(
+                "maxNumberOfBitsInWeight must be between 2 and 31, inclusive");
+        }
+        this.maxNumberOfBitsInWeight = maxNumberOfBitsInWeight;
+    }
+    
     /**
-     * NOT READY FOR USE.
-     runtime complexity O(m * sqrt(s)) where m is number of edges
-     and s is the size of the matching whose target size
-     may be less than the maximum matchable.
-     * It needs an implementation of "multi-level buckets"
-     * to reduce the minHeap's extractMin and should possibly
-     * be refactored to use primitives.
-     * @param g
-     * @return 
-     */
+     NOT READY FOR USE.
+     runtime complexity O(m * sqrt(s)) where m is number of edges and s is the 
+     size of the matching whose target size may be less than the maximum 
+     matchable.  It needs an implementation of "multi-level buckets" to reduce 
+     the minHeap's extractMin and should possibly be refactored to use 
+     primitives.
+     @param g
+     @return 
+    */
     public TIntIntMap findMaxMatching(Graph g, int s) {
     
         TIntIntMap m = new TIntIntHashMap();
@@ -62,7 +75,7 @@ public class HopcroftKarpRT2012 {
         // looking at the number of edges with more than
         // one connection.
         int lambda = estimateLambda(rM);
-                
+
         while (true) {
                         
             boolean augmented = buildForestAndAugment(rM, lambda);
@@ -166,8 +179,8 @@ public class HopcroftKarpRT2012 {
     }
 
     /**
-     * find augmenting paths of minimal length.
-     * by building the shortest path forest.
+     * find augmenting paths of minimal length by building the shortest path 
+     * forest.
      * 
      * implementing section 3.4, pg 22 of Ramshaw and Tarjan 2012.
      * 
@@ -181,13 +194,12 @@ public class HopcroftKarpRT2012 {
      * @param lambda the length to use for a counting sort of
      * augmenting path lengths
      */
-    protected boolean buildForestAndAugment(
-        final ResidualDigraph rM, int lambda) {
+    protected boolean buildForestAndAugment(final ResidualDigraph rM, int lambda) {
       
         Forest forest = new Forest(lambda);
         
         MinHeapForRT2012 heap = new MinHeapForRT2012(4, 
-            rM.countOfForwardBipartiteLinks());
+            rM.countOfForwardBipartiteLinks(), maxNumberOfBitsInWeight);
         
         /*
         this class is invoked as the first step in a

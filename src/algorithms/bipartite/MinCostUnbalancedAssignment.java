@@ -750,9 +750,14 @@ public class MinCostUnbalancedAssignment {
         // sparsely populated holder for the 
         // DoubleLinkedCircularList trees
         Forest forest = new Forest(lambda);
+        
+        int nBitsC = 1 + (int)Math.ceil(Math.log(gFlow.getMaxC())/Math.log(2));
+        if (nBitsC > 31) {
+            nBitsC = 31;
+        }
      
         MinHeapForRT2012 minHeap = new MinHeapForRT2012(lambda,
-            rF.countOfForwardBipartiteLinks());
+            rF.countOfForwardBipartiteLinks(), nBitsC);
            
         PathNodes pathNodes = gFlow.getPathNodes();
      

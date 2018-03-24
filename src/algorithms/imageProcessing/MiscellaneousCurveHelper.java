@@ -14,12 +14,9 @@ import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import no.uib.cipr.matrix.Matrix;
-import no.uib.cipr.matrix.MatrixEntry;
 
 /**
  *
@@ -855,6 +852,35 @@ public class MiscellaneousCurveHelper {
     }
 
     public double[] calculateXYCentroids(float[] x, float[] y) {
+
+        if (x == null) {
+            throw new IllegalArgumentException("x cannot be null");
+        }
+        if (y == null) {
+            throw new IllegalArgumentException("y cannot be null");
+        }
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("x and y must be same length");
+        }
+
+        double xc = 0;
+        double yc = 0;
+
+        for (int i = 0; i < x.length; i++) {
+
+            xc += x[i];
+
+            yc += y[i];
+        }
+
+        xc /= (double)(x.length);
+
+        yc /= (double)(x.length);
+
+        return new double[]{xc, yc};
+    }
+    
+    public double[] calculateXYCentroids(int[] x, int[] y) {
 
         if (x == null) {
             throw new IllegalArgumentException("x cannot be null");

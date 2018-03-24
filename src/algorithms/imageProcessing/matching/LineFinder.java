@@ -1,9 +1,7 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedColumnTable;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -806,6 +804,7 @@ public class LineFinder {
         return q;
     }
     
+    @SuppressWarnings({"fallthrough"})
     private PairIntArray createLine4(int n1) {
 
         /*

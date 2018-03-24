@@ -1,10 +1,8 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayWithColor;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -12,8 +10,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import no.uib.cipr.matrix.DenseMatrix;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -333,6 +329,12 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         float[] x = new float[]{1, 9, 9, 1};
         float[] y = new float[]{1, 1, 5, 5};
         cenXY = helper.calculateXYCentroids(x, y);
+        assertTrue(cenXY[0] == 5.0);
+        assertTrue(cenXY[1] == 3.0);
+        
+        int[] x2 = new int[]{1, 9, 9, 1};
+        int[] y2 = new int[]{1, 1, 5, 5};
+        cenXY = helper.calculateXYCentroids(x2, y2);
         assertTrue(cenXY[0] == 5.0);
         assertTrue(cenXY[1] == 3.0);
         

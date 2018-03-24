@@ -5,13 +5,9 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.features.UnsupervisedTextureFinder.TexturePatchesAndResponse;
 import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
-import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayList;
-import java.util.List;
 import junit.framework.TestCase;
 
 /**
@@ -29,8 +25,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
            // "blox.gif", "lab.gif", "house.gif", "seattle.jpg", "merton_college_I_001.jpg",
            // "susan-in_plus.png", "lena.jpg",
            // "campus_010.jpg",
-            "android_statues_01.jpg",
-            "android_statues_02.jpg", "android_statues_03.jpg", "android_statues_04.jpg"
+            "android_statues_01.jpg", "android_statues_02.jpg", 
+            "android_statues_03.jpg", "android_statues_04.jpg"
         };
 
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -65,9 +61,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             }
             MiscDebug.writeImage(out, "_thinned_" + fileName + "_");
             MiscDebug.writeImage(out2, "_pc_thinned_" + fileName + "_");
-            MiscDebug.writeImage(pcImg, "_pc_" + fileName + "_");
-
-            
+            MiscDebug.writeImage(pcImg, "_pc_" + fileName + "_");    
         }
     }
 

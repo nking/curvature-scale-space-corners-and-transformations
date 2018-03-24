@@ -311,6 +311,8 @@ public class ObjectMatcher {
         } else {
             regionsT = mser.findRegions(luvTheta, thrPt);
         
+            int[] xyCen = new int[2];
+            
             // filter to remove all w/ variation > 0
             for (int type = 0; type < 2; ++type) {
                 List<Region> list = regionsT.get(type);
@@ -319,7 +321,13 @@ public class ObjectMatcher {
                     if ((type == 1) && r.getVariation() > 0.001) {
                         list.remove(i);
                     } else if ((type == 0) && r.getVariation() == 0.0) {
-                        list.remove(i);
+                        //r.calculateXYCentroid(xyCen, gsImg.getWidth(), 
+                        //    gsImg.getHeight());
+                       // list.remove(i);
+                        
+//variation;  First and second moments of the region 
+//            (x, y, x^2, xy, y^2)
+//0;        1255, 941, 105035, 78724, 59043
                     }
                 }
             }
@@ -1242,7 +1250,7 @@ public class ObjectMatcher {
             //gsImg1, luvTheta1, 
             clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
                 
-        int critSep = 10;
+        int critSep = 5;
         Canonicalizer.filterBySpatialProximity(critSep, regionsComb0, 
             img0Trimmed.getWidth(), img0Trimmed.getHeight());
         

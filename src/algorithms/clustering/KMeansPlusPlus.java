@@ -253,8 +253,7 @@ public class KMeansPlusPlus {
      * @param imgSeedIndexes
      * @return
      */
-    protected boolean calculateVarianceFromSeedCenters(
-        final int[] values,
+    protected boolean calculateVarianceFromSeedCenters(final int[] values,
         int[] seed, int[] imgSeedIndexes) {
 
         if (lastImgSeedIndexes == null) {
