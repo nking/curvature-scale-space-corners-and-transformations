@@ -89,7 +89,7 @@ public class PointInPolygon2 {
         this.yPolygon = null;
         
         MiscellaneousCurveHelper mch = new MiscellaneousCurveHelper();
-        xyCentroid = mch.calculateXYCentroids(xPolygon, yPolygon);
+        xyCentroid = mch.calculateXYCentroids(xPolygonF, yPolygonF);
         
         xyMinMax = new double[]{
             Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE
