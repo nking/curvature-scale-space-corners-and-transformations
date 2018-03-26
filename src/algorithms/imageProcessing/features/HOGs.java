@@ -85,7 +85,7 @@ import java.util.List;
 
    Comparison of block feature is then a histogram intersection,
    where normally 0 is no intersection, hence maximally different,
-   and an intersection equal to the max value is maximally sgimilar.
+   and an intersection equal to the max value is maximally similar.
    (see the method ColorHistogram.intersection, but here, the normalization
    will already have been applied instead of determined in the method).
 
@@ -101,6 +101,8 @@ import java.util.List;
 */
 public class HOGs {
 
+    private static float eps = 0.000001f;
+    
     // 9 is default
     private final int nAngleBins;
 
@@ -120,7 +122,7 @@ public class HOGs {
 
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
-    // g 8.4 million pix, roughly 2900 X 2900
+    // e.g. 8.4 million pix, roughly 2900 X 2900
 
     public HOGs(GreyscaleImage rgb) {
 
@@ -136,6 +138,18 @@ public class HOGs {
     public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim) {
 
         nAngleBins = 9;
+        N_PIX_PER_CELL_DIM = nPixPerCellDim;
+        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
+        w = rgb.getWidth();
+        h = rgb.getHeight();
+
+        gHists = init(rgb);
+    }
+    
+    public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim,
+            int nAngleBins) {
+
+        this.nAngleBins = nAngleBins;
         N_PIX_PER_CELL_DIM = nPixPerCellDim;
         N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
         w = rgb.getWidth();
@@ -287,7 +301,7 @@ public class HOGs {
 
         blockTotal /= (double)cells.size();
 
-        double norm = 1./Math.sqrt(blockTotal + 0.0001);
+        double norm = 1./Math.sqrt(blockTotal + eps);
 
         float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255.f;
@@ -329,6 +343,8 @@ public class HOGs {
      *
      * Note that an orientation of 90 is a unit vector from x,y=0,0 to
      * x,y=0,1.
+     * 
+     * Note also that you may want to try the rotation of oppossite direction.
      *
      * @param histA
      * @param orientationA
@@ -390,6 +406,7 @@ public class HOGs {
             } else if (idxB > (nBins - 1 )) {
                 idxB -= nBins;
             }
+            
 
             float yA = histA[idxA];
             float yB = histB[idxB];
@@ -401,25 +418,33 @@ public class HOGs {
             //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
         }
 
-        float d = Math.min(sumA, sumB);
-        float sim = (d == 0.f) ? 0 : sum/d;
+        float d = eps + Math.min(sumA, sumB);
+        float sim = sum/d;
 
         return sim;
     }
-
+    
     /**
-     * TODO: this will hold a comparison method and return a score or cost and
-           a relevant error parameter usable between comparison results.
-     
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     *
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     *
      * @param histA
      * @param orientationA
      * @param histB
      * @param orientationB
-     * @return the SSD normalized by max possible value over
-     * feature definition, and the maxValue
+     * @return difference, error
      */
-    /*
-    public float[] a(int[] histA, int orientationA, int[] histB,
+    public float[] diff(int[] histA, int orientationA, int[] histB,
         int orientationB) {
 
         if ((histA.length != histB.length)) {
@@ -437,15 +462,68 @@ public class HOGs {
         }
         if (orientationB == 180) {
             orientationB = 0;
-        } 
+        }
 
-        two histograms a and b
-        each bin contents should add to the output cost or score, even
-          if both histograms have 0's in those bins.
-        if both have 0's in the same post-shifted bin,
-           that is a 100 percent match.
-        if there is a 200 and 150 respectively in same bin for a, b
-           then match is (200-50)/200
+        int nBins = histA.length;
+
+        int binWidth = 180/nBins;
+
+        int shiftA = (orientationA - 90)/binWidth;
+        int shiftB = (orientationB - 90)/binWidth;
+
+        /*
+        histograms are already normalized
+
+        K(a,b) =
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+
+        double sumDiff = 0;
+        
+        double err = 0;
+        for (int j = 0; j < nBins; ++j) {
+
+            int idxA = j + shiftA;
+            if (idxA < 0) {
+                idxA += nBins;
+            } else if (idxA > (nBins - 1 )) {
+                idxA -= nBins;
+            }
+
+            int idxB = j + shiftB;
+            if (idxB < 0) {
+                idxB += nBins;
+            } else if (idxB > (nBins - 1 )) {
+                idxB -= nBins;
+            }
+
+            float yA = histA[idxA];
+            float yB = histB[idxB];
+
+            float maxValue = Math.max(yA, yB) + eps;
+            
+            float diff = (yA - yB)/maxValue;
+            
+            //sumDiff += (diff * diff);
+            sumDiff += Math.abs(diff);
+            
+            err += 1./(maxValue * maxValue);
+        }
+        
+        sumDiff /= (double)nBins;
+        
+        //sumDiff = Math.sqrt(sumDiff);
+        
+        err = Math.sqrt(err/(double)nBins);
+        
+        return new float[]{(float)sumDiff, (float)err};
+    }
+    
+    /*
+    two histograms a and b
+        
         but, the errors are needed to know if the results are significant.
         if a and b have few to no other counts in other
            bins, can see that the errors should be large and the
@@ -485,8 +563,7 @@ public class HOGs {
                (1/0)^2 = inf
 
      still considering examples ...
-
-    }*/
+    */
 
     private int sumCounts(int[] hist) {
 
@@ -578,14 +655,14 @@ public class HOGs {
 
             // average of all indexes
 
-             double[] angles = new double[maxIdxs.size()];
-             for (int i = 0; i < maxIdxs.size(); ++i) {
-                 angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);
-             }
+            double[] angles = new double[maxIdxs.size()];
+            for (int i = 0; i < maxIdxs.size(); ++i) {
+                angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);
+            }
 
-             double angleAvg =
-                 AngleUtil.calculateAverageWithQuadrantCorrections(
-                     angles, false);
+            double angleAvg =
+                AngleUtil.calculateAverageWithQuadrantCorrections(
+                    angles, false);
 
             return (int)Math.round(angleAvg);
         }

@@ -1283,6 +1283,7 @@ public class ObjectMatcher {
         // anything without it mughr be removable.
         // use of this feature should be a Setting option.
 
+        /*
         if (debug) {
             int[] xyCen = new int[2];
             Image im0Cp, im1Cp;
@@ -1313,6 +1314,7 @@ public class ObjectMatcher {
             MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
                 + "_regions_1_");
         }
+        */
         
         TIntObjectMap<RegionPoints> regionPoints0 =
             canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));

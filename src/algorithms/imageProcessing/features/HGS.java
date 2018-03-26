@@ -20,6 +20,8 @@ import java.util.List;
 */
 public class HGS {
    
+    private static float eps = 0.000001f;
+    
     private final int nBins;
     
     private final int N_PIX_PER_CELL_DIM;
@@ -158,7 +160,7 @@ public class HGS {
         
         blockTotal /= (double)cells.size();
         
-        double norm = 1./Math.sqrt(blockTotal + 0.0001);
+        double norm = 1./Math.sqrt(blockTotal + eps);
                 
         float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;
@@ -298,7 +300,7 @@ public class HGS {
      * @return 
      */
     public float intersection(int[] histA, int[] histB) {
-        
+       
         if ((histA.length != histB.length)) {
             throw new IllegalArgumentException(
                 "histA and histB must be same dimensions");
@@ -332,7 +334,9 @@ public class HGS {
             //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
         }
         
-        float sim = sum / (Math.min(sumA, sumB));
+        float d = eps + Math.min(sumA, sumB);
+        
+        float sim = sum/d;
         
         return sim;
     }
@@ -382,6 +386,7 @@ public class HGS {
         
         float maxValue = Math.max(MiscMath.findMax(histA), 
             MiscMath.findMax(histB));
+        maxValue += eps;
         
         sumDiff = Math.sqrt(sumDiff)/maxValue;
         
