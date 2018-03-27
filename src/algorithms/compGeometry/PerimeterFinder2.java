@@ -7,6 +7,7 @@ import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PixelHelper;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
@@ -130,8 +131,7 @@ public class PerimeterFinder2 {
         for (int i = startX; i <= stopX; ++i) {
             for (int j = startY; j <= stopY; ++j) {
                 PairInt p = new PairInt(i, j);
-                if (!contiguousPoints.contains(p) && 
-                    !surrounding.contains(p)) {
+                if (!contiguousPoints.contains(p) && !surrounding.contains(p)) {
                     embedded.add(p);
                 }
             }
@@ -186,8 +186,7 @@ public class PerimeterFinder2 {
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
-                if (x2 < startX || y2 < startY || x2 > stopX ||
-                    y2 > stopY) {
+                if (x2 < startX || y2 < startY || x2 > stopX || y2 > stopY) {
                     continue;
                 }
                 PairInt p2 = new PairInt(x2, y2);
@@ -212,8 +211,7 @@ public class PerimeterFinder2 {
         for (int i = startX; i <= stopX; ++i) {
             for (int j = startY; j <= stopY; ++j) {
                 PairInt p = new PairInt(i, j);
-                if (!contiguousPoints.contains(p) && 
-                    !surrounding.contains(p)) {
+                if (!contiguousPoints.contains(p) && !surrounding.contains(p)) {
                     outputEmbedded.add(p);
                 }
             }
@@ -308,6 +306,8 @@ public class PerimeterFinder2 {
             stack.add(new PairInt(stopX, j));
         }
         
+        PixelHelper ph = new PixelHelper();
+        
         TIntSet visited = new TIntHashSet();
         TIntSet surrounding = new TIntHashSet();
         int[] dxs = Misc.dx4;
@@ -316,7 +316,7 @@ public class PerimeterFinder2 {
             PairInt s = stack.pop();
             int x = s.getX();
             int y = s.getY();
-            int pixIdx = (y * imgWidth) + x;
+            int pixIdx = (int)ph.toPixelIndex(x, y, imgWidth);
             if (visited.contains(pixIdx)) {
                 continue;
             }
@@ -325,8 +325,7 @@ public class PerimeterFinder2 {
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
-                if (x2 < startX || y2 < startY || x2 > stopX ||
-                    y2 > stopY) {
+                if (x2 < startX || y2 < startY || x2 > stopX || y2 > stopY) {
                     continue;
                 }
                 int pixIdx2 = (y2 * imgWidth) + x2;
@@ -350,9 +349,8 @@ public class PerimeterFinder2 {
         stopY--;
         for (int i = startX; i <= stopX; ++i) {
             for (int j = startY; j <= stopY; ++j) {
-                int pixIdx = (j * imgWidth) + i;
-                if (!contiguousPoints.contains(pixIdx) && 
-                    !surrounding.contains(pixIdx)) {
+                int pixIdx = (int)ph.toPixelIndex(i, j, imgWidth);
+                if (!contiguousPoints.contains(pixIdx) && !surrounding.contains(pixIdx)) {
                     outputEmbedded.add(pixIdx);
                 }
             }
@@ -995,6 +993,7 @@ public class PerimeterFinder2 {
     
     private void debug(TIntSet contiguousShapePoints,
         PairIntArray output, int imgWidth) {
+        PixelHelper ph = new PixelHelper();
         try {
 
             int[] xPolygon = null;
@@ -1018,12 +1017,14 @@ public class PerimeterFinder2 {
             n = contiguousShapePoints.size();
             xp = new int[n];
             yp = new int[n];
+            int[] xyout = new int[2];
             int i = 0;
             TIntIterator iter = contiguousShapePoints.iterator();
             while (iter.hasNext()) {
                 int pixIdx = iter.next();
-                yp[i] = pixIdx/imgWidth;
-                xp[i] = pixIdx - (yp[i] * imgWidth);
+                ph.toPixelCoords(pixIdx, imgWidth, xyout);
+                yp[i] = xyout[1];
+                xp[i] = xyout[0];
                 ++i;
             }
             plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
@@ -1107,6 +1108,8 @@ public class PerimeterFinder2 {
             int[] xp, yp;
             int n, count;
 
+            PixelHelper ph = new PixelHelper();
+            
             n = output.getN();
             xp = new int[n];
             yp = new int[n];
@@ -1120,12 +1123,15 @@ public class PerimeterFinder2 {
             n = boundary.size();
             xp = new int[n];
             yp = new int[n];
+            int[] xyout = new int[2];
             int i = 0;
             TIntIterator iter = boundary.iterator();
             while (iter.hasNext()) {
                 int pixIdx = iter.next();
-                yp[i] = pixIdx/imgWidth;
-                xp[i] = pixIdx - (yp[i] * imgWidth);
+                ph.toPixelCoords(pixIdx, imgWidth, xyout);
+                yp[i] = xyout[1];
+                xp[i] = xyout[0];
+                
                 ++i;
             }
             plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
@@ -1138,8 +1144,9 @@ public class PerimeterFinder2 {
             iter = boundary.iterator();
             while (iter.hasNext()) {
                 int pixIdx = iter.next();
-                yp[i] = pixIdx/imgWidth;
-                xp[i] = pixIdx - (yp[i] * imgWidth);
+                ph.toPixelCoords(pixIdx, imgWidth, xyout);
+                yp[i] = xyout[1];
+                xp[i] = xyout[0];
                 ++i;
             }
             plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],
@@ -1361,12 +1368,14 @@ public class PerimeterFinder2 {
         
         int minPX = -1;
         int minPY = -1;
-        
+        PixelHelper ph = new PixelHelper();
+        int[] xyout = new int[2];
         TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
             int pixIdx = iter.next();
-            int y = pixIdx/imgWidth;
-            int x = pixIdx - (y * imgWidth);
+            ph.toPixelCoords(pixIdx, imgWidth, xyout);
+            int y = xyout[1];
+            int x = xyout[0];                
             if (minPX == -1) {
                 minPX = x;
                 minPY = y;
@@ -1432,14 +1441,18 @@ public class PerimeterFinder2 {
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         
+        PixelHelper ph = new PixelHelper();
+        int[] xyout = new int[2];
+        
         for (int i = 0; i < n; ++i) {
             
             int pixIdx = pixIdxs[i];
             
             out[i] = new VeryLongBitString(n);
                   
-            int y = pixIdx/imgWidth;
-            int x = pixIdx - (y * imgWidth);
+            ph.toPixelCoords(pixIdx, imgWidth, xyout);
+            int y = xyout[1];
+            int x = xyout[0];
                         
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
@@ -1546,13 +1559,16 @@ public class PerimeterFinder2 {
     public PairIntArray extractOrderedBorder(TIntSet contiguousPoints, 
         int imgWidth, int imgHeight) throws Exception {
        
+        PixelHelper ph = new PixelHelper();
+        int[] xyout = new int[2];
         if (contiguousPoints.size() < 4) {
             PairIntArray output = new PairIntArray(contiguousPoints.size());
             TIntIterator iter = contiguousPoints.iterator();
             while (iter.hasNext()) {
                 int pixIdx = iter.next();
-                int y = pixIdx/imgWidth;
-                int x = pixIdx - (y * imgWidth);
+                ph.toPixelCoords(pixIdx, imgWidth, xyout);
+                int y = xyout[1];
+                int x = xyout[0];
                 output.add(x, y);
             }
             return output;
@@ -1574,6 +1590,9 @@ public class PerimeterFinder2 {
      
     public PairIntArray orderTheBoundary(TIntSet boundary, int imgWidth, 
         int imgHeight) throws Exception {
+        
+        PixelHelper ph = new PixelHelper();
+        int[] xyout = new int[2];
         
         /*
         the algorithm finds the leftmost and smallest xy point in the boundary, 
@@ -1618,8 +1637,10 @@ public class PerimeterFinder2 {
                 
         int currPix = findSmallestXY(remaining, imgWidth);
         remaining.remove(currPix);
-        int currY = currPix/imgWidth;
-        int currX = currPix - (currY * imgWidth);
+        ph.toPixelCoords(currPix, imgWidth, xyout);
+        int currY = xyout[1];
+        int currX = xyout[0];
+        
         orderedOutput.add(currX, currY);
         junctions.remove(pointIndexes.get(currPix));
         
@@ -1655,8 +1676,9 @@ public class PerimeterFinder2 {
                 if (!remaining.contains(pixIdx2)) {
                     continue;
                 }
-                int y2 = pixIdx2/imgWidth;
-                int x2 = pixIdx2 - (y2 * imgWidth);
+                ph.toPixelCoords(pixIdx2, imgWidth, xyout);
+                int y2 = xyout[1];
+                int x2 = xyout[0];        
                 assert(!(prevX == x2 && prevY == y2));
                 double angle = LinesAndAngles.calcClockwiseAngle(
                     prevX, prevY, x2, y2, x, y);
@@ -1737,7 +1759,7 @@ public class PerimeterFinder2 {
             prevPixY = currY;
             currX = minPX;
             currY = minPY;
-            currPix = (currY * imgWidth) + currX;
+            currPix = (int)ph.toPixelIndex(currX, currY, imgWidth);
             
             outIdx = orderedOutput.getN();
             
@@ -1785,9 +1807,8 @@ public class PerimeterFinder2 {
               
                         assert(diffX <= 1 && diffY <= 1);
                         
-                        int pixIdx2 = (y2 * imgWidth) + x2;
-                        
-                        assert(nbrsSet.contains(pixIdx2));
+                        //int pixIdx2 = (int)ph.toPixelIndex(x2, y2, imgWidth);
+                        //assert(nbrsSet.contains(pixIdx2));
                         
                         orderedOutput.insert(ii, nbrX, nbrY);
                         

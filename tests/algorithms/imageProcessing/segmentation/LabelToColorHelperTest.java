@@ -66,17 +66,51 @@ public class LabelToColorHelperTest extends TestCase {
         Image img = new Image(w, h);
         int[] labels = new int[img.getNPixels()];
         
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                int label = 0;
-                if (i == 2 || i == 3) {
-                    label = 1;
-                }
-                int pixIdx = img.getInternalIndex(i, j);
-                labels[pixIdx] = label;
-                img.setRGB(i, j, label, label, label);
-            }
-        }
+        int pixIdx, label;
+        label = 0;
+        pixIdx = img.getInternalIndex(0, 0);
+        labels[pixIdx] = label;
+        img.setRGB(0, 0, label, label, label);
+        
+        pixIdx = img.getInternalIndex(0, 1);
+        labels[pixIdx] = label;
+        img.setRGB(0, 1, label, label, label);
+                
+        pixIdx = img.getInternalIndex(1, 0);
+        labels[pixIdx] = label;
+        img.setRGB(1, 0, label, label, label);
+        
+        pixIdx = img.getInternalIndex(1, 1);
+        labels[pixIdx] = label;
+        img.setRGB(1, 1, label, label, label);
+        
+        label = 1;
+        pixIdx = img.getInternalIndex(2, 0);
+        labels[pixIdx] = label;
+        img.setRGB(2, 0, label, label, label);
+        pixIdx = img.getInternalIndex(2, 1);
+        labels[pixIdx] = label;
+        img.setRGB(2, 1, label, label, label);
+        pixIdx = img.getInternalIndex(3, 0);
+        labels[pixIdx] = label;
+        img.setRGB(3, 0, label, label, label);
+        pixIdx = img.getInternalIndex(3, 1);
+        labels[pixIdx] = label;
+        img.setRGB(3, 1, label, label, label);
+        
+        label = 2;
+        pixIdx = img.getInternalIndex(4, 0);
+        labels[pixIdx] = label;
+        img.setRGB(4, 0, label, label, label);
+        pixIdx = img.getInternalIndex(4, 1);
+        labels[pixIdx] = label;
+        img.setRGB(4, 1, label, label, label);
+        pixIdx = img.getInternalIndex(5, 0);
+        labels[pixIdx] = label;
+        img.setRGB(5, 0, label, label, label);
+        pixIdx = img.getInternalIndex(5, 1);
+        labels[pixIdx] = label;
+        img.setRGB(5, 1, label, label, label);
         
         List<Set<PairInt>> list = LabelToColorHelper
             .extractContiguousLabelPoints(img, labels);

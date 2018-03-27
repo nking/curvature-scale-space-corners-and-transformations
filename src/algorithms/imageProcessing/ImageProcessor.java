@@ -15,6 +15,7 @@ import algorithms.misc.ComplexModifiable;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.util.PixelHelper;
 import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
 import algorithms.util.VeryLongBitString;
@@ -5168,12 +5169,15 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
 
     public Set<PairInt> convertIndexesToPoints(TIntSet pixIdxs, int width) {
+        PixelHelper ph = new PixelHelper();
+        int[] xyout = new int[2];      
         Set<PairInt> set = new HashSet<PairInt>();
         TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
             int pixIdx = iter.next();
-            int y = pixIdx/width;
-            int x = pixIdx - (pixIdx * width);
+            ph.toPixelCoords(pixIdx, width, xyout);
+            int y = xyout[1];
+            int x = xyout[0];
             set.add(new PairInt(x, y));
         }
         return set;

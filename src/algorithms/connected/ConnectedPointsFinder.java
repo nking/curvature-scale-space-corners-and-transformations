@@ -3,6 +3,8 @@ package algorithms.connected;
 import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.misc.Misc;
+import algorithms.util.PixelHelper;
+import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
@@ -30,8 +32,11 @@ public class ConnectedPointsFinder {
     
     private final DisjointSet2Helper disjointSetHelper;
     
-    // key = pixIdx, value = disjoint set node with key pixIdx
-    private final TIntObjectMap<DisjointSet2Node<Integer>> pixNodes;
+    // key = groupIdx, value = disjoint set node with key pixIdx
+    private final TIntObjectMap<DisjointSet2Node<Integer>> groupNodes;
+    
+    // key = pixIdx, value = groupIdx
+    private final TIntIntMap pixToGroups = new TIntIntHashMap();
 
     protected boolean notValue = false;
     
@@ -43,7 +48,7 @@ public class ConnectedPointsFinder {
     /**
      * a list to hold each group as an item.
      */
-    protected List<TIntSet> groupList = null;
+    protected List<TIntSet> groupList = new ArrayList<TIntSet>();
     
     protected int minimumNumberInCluster = 3;
     
@@ -60,7 +65,7 @@ public class ConnectedPointsFinder {
         
         imgHeight = imageHeight;
         
-        pixNodes = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
+        groupNodes = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
     
         disjointSetHelper = new DisjointSet2Helper();
     }
@@ -110,6 +115,9 @@ public class ConnectedPointsFinder {
             dxs = Misc.dx8;
             dys = Misc.dy8;
         }
+    
+        PixelHelper ph = new PixelHelper();
+        int[] xyout = new int[2];
         
         TIntSet visited = new TIntHashSet();
         
@@ -122,8 +130,10 @@ public class ConnectedPointsFinder {
                 continue;
             }
             
-            int uY = uPoint/imgWidth;
-            int uX = uPoint - (uY * imgWidth);
+            ph.toPixelCoords(uPoint, imgWidth, xyout);
+            
+            int uY = xyout[1];
+            int uX = xyout[0];
                         
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
@@ -132,12 +142,11 @@ public class ConnectedPointsFinder {
                 int vX = uX + dxs[i];
                 int vY = uY + dys[i];
                 
-                if (vX < 0 || vY < 0 || (vX >= (imgWidth - 1))
-                    || (vY >= (imgHeight - 1))) {
+                if (vX < 0 || vY < 0 || (vX >= imgWidth) || (vY >= imgHeight)) {
                     continue;
                 }
             
-                int vPoint = (vY * imgWidth) + vX;
+                int vPoint = (int)ph.toPixelIndex(vX, vY, imgWidth);
 
                 if (vPoint == uPoint) {
                     continue;
@@ -146,6 +155,8 @@ public class ConnectedPointsFinder {
                 if (!pixIdxs.contains(vPoint)) {
                     continue;
                 }
+                
+                //System.out.format("(%d,%d) (%d,%d)\n", uX, uY, vX, vY);
 
                 processPair(uPoint, vPoint);
             }
@@ -163,26 +174,36 @@ public class ConnectedPointsFinder {
   
     protected void processPair(int uPoint, int vPoint) {
         
-        DisjointSet2Node<Integer> uNode = pixNodes.get(uPoint); 
-        DisjointSet2Node<Integer> uParentNode 
-            = disjointSetHelper.findSet(uNode);
+        int uGroupId = pixToGroups.get(uPoint);
+        
+        int vGroupId = pixToGroups.get(vPoint);
+        
+        if (uGroupId == vGroupId) {
+            return;
+        }
+        
+        DisjointSet2Node<Integer> uNode = groupNodes.get(uGroupId); 
+        DisjointSet2Node<Integer> uParentNode = disjointSetHelper.findSet(uNode);
         assert(uParentNode != null);
         
-        int uGroupId = uParentNode.getMember().intValue();
-
-        DisjointSet2Node<Integer> vNode = pixNodes.get(vPoint); 
-        DisjointSet2Node<Integer> vParentNode 
-            = disjointSetHelper.findSet(vNode);
+        DisjointSet2Node<Integer> vNode = groupNodes.get(vGroupId); 
+        DisjointSet2Node<Integer> vParentNode = disjointSetHelper.findSet(vNode);
         assert(vParentNode != null);
-        
-        int vGroupId = vParentNode.getMember().intValue();
         
         DisjointSet2Node<Integer> merged = 
             disjointSetHelper.union(uParentNode, vParentNode);
         
-        pixNodes.put(uGroupId, merged);
+        int mergedGroupId = merged.getMember().intValue();
         
-        pixNodes.put(vGroupId, merged);
+        if (mergedGroupId == uGroupId) {
+            groupNodes.put(uGroupId, merged);
+            pixToGroups.put(vGroupId, mergedGroupId);
+            groupNodes.remove(vGroupId);
+        } else {
+            groupNodes.put(vGroupId, merged);
+            pixToGroups.put(uGroupId, mergedGroupId);
+            groupNodes.remove(uGroupId);
+        }
     }
 
     public List<TIntSet> getGroupMembershipList() {
@@ -198,49 +219,43 @@ public class ConnectedPointsFinder {
      */
     protected void prune() {
         
-        // key = repr node index, value = set of pixels w/ repr
+        // key = groupIdx, value = set of pixels w/ group
         TIntObjectMap<TIntSet> map = new TIntObjectHashMap<TIntSet>();
         
+        TIntIntIterator iter0 = pixToGroups.iterator();
+        
+        for (int i = 0; i < pixToGroups.size(); ++i) {
+            iter0.advance();
+            int pixIdx = iter0.key();
+            int groupIdx = iter0.value();
+            TIntSet gSet = map.get(groupIdx);
+            if (gSet == null) {
+                gSet = new TIntHashSet();
+                map.put(groupIdx, gSet);
+            }
+            gSet.add(pixIdx);
+        }
+        
         TIntObjectIterator<DisjointSet2Node<Integer>> iter =
-            pixNodes.iterator();
-        for (int i = 0; i < pixNodes.size(); ++i) {
+            groupNodes.iterator();
+        
+        groupList.clear();
+        
+        for (int i = 0; i < groupNodes.size(); ++i) {
             
             iter.advance();
             
-            int pixIdx = iter.key();
+            int groupIdx = iter.key();
             DisjointSet2Node<Integer> node = iter.value();
-            
-            DisjointSet2Node<Integer> repr = disjointSetHelper.findSet(node);
-            
-            int reprIdx = repr.getMember().intValue();
-            
-            TIntSet set = map.get(reprIdx);
-            if (set == null) {
-                set = new TIntHashSet();
-                map.put(reprIdx, set);
-            }
-            set.add(pixIdx);
-        }
-        
-        log.finest("number of groups before prune=" + map.size());
-        
-        // rewrite the above into a list
-        List<TIntSet> groups = new ArrayList<TIntSet>();
-        
-        TIntObjectIterator<TIntSet> iter2 = map.iterator();
-        for (int i = 0; i < map.size(); ++i) {
-            iter2.advance();
                         
-            TIntSet idxs = iter2.value();
+            TIntSet gSet = map.get(groupIdx);
+            assert(gSet != null);
             
-            if (idxs.size() >= minimumNumberInCluster) {
-                groups.add(idxs);
-            }
+            groupList.add(gSet);            
         }
         
-        this.groupList = groups;
-        
-        log.finest("number of groups after prune=" + groups.size());
+        groupNodes.clear();
+        pixToGroups.clear();        
     }
     
     public TIntIntMap createPointIndexMap() {
@@ -288,7 +303,8 @@ public class ConnectedPointsFinder {
 
     private void initMap(TIntSet pixIdxs) {
         
-        pixNodes.clear();
+        groupNodes.clear();
+        pixToGroups.clear();
         
         TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
@@ -301,7 +317,9 @@ public class ConnectedPointsFinder {
                 disjointSetHelper.makeSet(
                     new DisjointSet2Node<Integer>(index));
             
-            pixNodes.put(pixIdx, pNode);
+            groupNodes.put(pixIdx, pNode);
+            
+            pixToGroups.put(pixIdx, pixIdx);
         }
     }
     

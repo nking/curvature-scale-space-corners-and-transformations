@@ -90,6 +90,8 @@ public class LabelToColorHelper {
                 labels[pixIdx] = i;
                 assert(img.getCol(pixIdx) < img.getWidth());
                 assert(img.getRow(pixIdx) < img.getHeight());
+                assert(img.getCol(pixIdx) > -1);
+                assert(img.getRow(pixIdx) > -1);
             }
         }
         
@@ -136,6 +138,8 @@ public class LabelToColorHelper {
             
             iter.advance();
             
+            int label = iter.key();
+            
             Set<PairInt> set = iter.value();
             TIntSet pixSet = imageProcessor.convertPointsToIndexes(set, img.getWidth());
             
@@ -144,10 +148,11 @@ public class LabelToColorHelper {
             // setting is for 4 neighbors
             finder.setMinimumNumberInCluster(1);
             finder.findConnectedPointGroups(pixSet);
-            for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
+            int n = finder.getNumberOfGroups();
+            for (int j = 0; j < n; ++j) {
                 TIntSet pixGroup = finder.getXY(j);
-                Set<PairInt> group = imageProcessor.convertIndexesToPoints(pixSet, 
-                    img.getWidth());
+                Set<PairInt> group = imageProcessor.convertIndexesToPoints(
+                    pixGroup, img.getWidth());
                 out.add(group);
             }
         }
