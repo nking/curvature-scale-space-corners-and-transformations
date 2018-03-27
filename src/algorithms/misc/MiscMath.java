@@ -92,7 +92,7 @@ public class MiscMath {
     
     public static float findMax(float[][] img) {
         
-        return MiscMath0.findMin(img);
+        return MiscMath0.findMax(img);
     }
     
     public static int findMax(int[][] img) {
