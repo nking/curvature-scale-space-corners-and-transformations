@@ -108,17 +108,11 @@ public class ConnectedPointsFinder {
     
         PixelHelper ph = new PixelHelper();
         int[] xyout = new int[2];
-        
-        TIntSet visited = new TIntHashSet();
-        
+                
         TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
 
             int uPoint = iter.next();
-            
-            if (visited.contains(uPoint)) {
-                continue;
-            }
             
             ph.toPixelCoords(uPoint, imgWidth, xyout);
             
@@ -126,6 +120,8 @@ public class ConnectedPointsFinder {
             int uX = xyout[0];
                         
             //(1 + frac)*O(N) where frac is the fraction added back to stack
+            
+            boolean found = false;
             
             for (int i = 0; i < dxs.length; ++i) {
                 
@@ -138,10 +134,6 @@ public class ConnectedPointsFinder {
             
                 int vPoint = (int)ph.toPixelIndex(vX, vY, imgWidth);
 
-                if (vPoint == uPoint) {
-                    continue;
-                }
-
                 if (!pixIdxs.contains(vPoint)) {
                     continue;
                 }
@@ -149,9 +141,12 @@ public class ConnectedPointsFinder {
                 //System.out.format("(%d,%d) (%d,%d)\n", uX, uY, vX, vY);
 
                 processPair(uPoint, vPoint);
+                
+                found = true;
             }
-            
-            visited.add(uPoint);
+            if (!found && minimumNumberInCluster == 1) {
+                process(uPoint);
+            }  
         }
     }
     
@@ -187,12 +182,14 @@ public class ConnectedPointsFinder {
             TIntSet set = groupPixIdxsMap.get(groupIdx);
             set.add(uPoint);
             pixGroupMap.put(uPoint, groupIdx);
+            groupPixIdxsMap.put(groupIdx, set);
         } else if (vGroupIdx == -1) {
             // add v to the uGroup
             groupIdx = uGroupIdx;
             TIntSet set = groupPixIdxsMap.get(groupIdx);
             set.add(vPoint);
             pixGroupMap.put(vPoint, groupIdx);
+            groupPixIdxsMap.put(groupIdx, set);
         } else if (uGroupIdx != -1 && vGroupIdx != -1) {
             if (uGroupIdx == vGroupIdx) {
                 return;
@@ -221,6 +218,27 @@ public class ConnectedPointsFinder {
             }
         }
     }
+    
+    protected void process(int uPoint) {
+        
+        int uGroupIdx = pixGroupMap.containsKey(uPoint) ?
+            pixGroupMap.get(uPoint) : -1;
+        
+        //System.out.format("u=%d sz=%d\n", uGroupIdx, groupPixIdxsMap.size());
+        
+        if (uGroupIdx == -1) {
+            TIntSet set = new TIntHashSet();
+            set.add(uPoint);
+            int groupIdx = pixGroupMap.size();
+            pixGroupMap.put(uPoint, groupIdx);
+            groupPixIdxsMap.put(groupIdx, set);
+        } else {
+            // merge the two
+            TIntSet uSet = groupPixIdxsMap.get(uGroupIdx);
+            uSet.add(uPoint);
+            pixGroupMap.put(uPoint, uGroupIdx);
+        }
+    }
 
     public List<TIntSet> getGroupMembershipList() {
         return groupList;
@@ -244,12 +262,14 @@ public class ConnectedPointsFinder {
             
             iter2.advance();
             
-            int reprIdx = iter2.key();
-            TIntSet pixIdxs =iter2.value();
+            int gIdx = iter2.key();
+            TIntSet pixIdxs = iter2.value();
             
             assert(pixIdxs != null);
             
-            groupList.add(pixIdxs);            
+            if (pixIdxs.size() >= minimumNumberInCluster) {
+                groupList.add(pixIdxs);            
+            }
         }
         
         groupPixIdxsMap.clear();

@@ -202,7 +202,9 @@ public class ConnectedValuesFinder {
             
             int uY = xyout[1];
             int uX = xyout[0];
-                                    
+              
+            boolean found = false;
+            
             for (int i = 0; i < dxs.length; ++i) {
                 
                 int vX = uX + dxs[i];
@@ -228,7 +230,12 @@ public class ConnectedValuesFinder {
                 }
 
                 processPair(uPoint, vPoint);
-            }            
+                
+                found = true;
+            }
+            if (!found && minimumNumberInCluster == 1) {
+                process(uPoint);
+            }
         }
     }
     
@@ -299,6 +306,27 @@ public class ConnectedValuesFinder {
         }
     }
 
+    protected void process(int uPoint) {
+        
+        int uGroupIdx = pixGroupMap.containsKey(uPoint) ?
+            pixGroupMap.get(uPoint) : -1;
+        
+        //System.out.format("u=%d sz=%d\n", uGroupIdx, groupPixIdxsMap.size());
+        
+        if (uGroupIdx == -1) {
+            TIntSet set = new TIntHashSet();
+            set.add(uPoint);
+            int groupIdx = pixGroupMap.size();
+            pixGroupMap.put(uPoint, groupIdx);
+            groupPixIdxsMap.put(groupIdx, set);
+        } else {
+            // merge the two
+            TIntSet uSet = groupPixIdxsMap.get(uGroupIdx);
+            uSet.add(uPoint);
+            pixGroupMap.put(uPoint, uGroupIdx);
+        }
+    }
+
     public List<TIntSet> getGroupMembershipList() {
         return groupList;
     }
@@ -322,11 +350,13 @@ public class ConnectedValuesFinder {
             iter2.advance();
             
             int reprIdx = iter2.key();
-            TIntSet pixIdxs =iter2.value();
+            TIntSet pixIdxs = iter2.value();
             
             assert(pixIdxs != null);
             
-            groupList.add(pixIdxs);            
+            if (pixIdxs.size() >= minimumNumberInCluster) {
+                groupList.add(pixIdxs);            
+            }            
         }
         
         groupPixIdxsMap.clear();
