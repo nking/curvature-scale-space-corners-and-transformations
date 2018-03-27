@@ -1,21 +1,18 @@
-- fix the canny adaptive line thinning.  it looks like the wrong
-  direction is sometimes used.
-- several algorithms need repair after changes in classes they use
+-- write tests for the hogs comparisons
+   -- the images rotated by 90 should result in perfect matches
+      so find why not.
+-- improve the msermatcher or create new one that does not use
+   color filters, just color edges when bounding the mser blobs
+-- https://github.com/mnielsen/neural-networks-and-deep-learning.git
+-- after next round of object matching improvements,
+    consider datasets from benchmark challenge:
+    https://en.wikipedia.org/wiki/ImageNet_Large_Scale_Visual_Recognition_Challenge
+    mentioned in:
+        https://en.wikipedia.org/wiki/Convolutional_neural_network
+        where there is brief discussion of difficulties in
+        object recognition
 
--- add and thoroughly test new errors method for HOGS
-   -- add visualization of the HOG orientations
-   -- impl the new comparison score
-   -- improve or make a new HOGS object matcher (keep MSER)
-   -- 
-
--- for the android statues matching,
-   next consider steps:
-    - find the mser regions to compare
-    - use convolutional neural networks for the matching
-      after considering how to use HOGs and invariance
-      of transformations...
--- 
-  https://github.com/mnielsen/neural-networks-and-deep-learning.git
+-- check on canny adaptive edges and the phase congruency.
 
 -- also, review some of the architectures for 
    hashing, that is compare pros and cons compared to
@@ -25,23 +22,6 @@
    any that are using monogenic filters to improve the runtime complexity.
    http://arxiv.org/abs/1311.2901
 
--- after next round of object matching improvements,
-    consider datasets from benchmark challenge:
-    https://en.wikipedia.org/wiki/ImageNet_Large_Scale_Visual_Recognition_Challenge
-    mentioned in:
-        https://en.wikipedia.org/wiki/Convolutional_neural_network
-        where there is brief discussion of difficulties in
-        object recognition
-
--- to explore current market parts, make 2 computers from
-   scratch using stores like Fry's and NewEgg
-   - (1) an economy model like I always get
-   - (2) a high end model with large amount of memory using the ram that
-         doesn't overheat (more expensive)
-         and large amount of storage.
-         -- look into ideal number and kinds of L1 and L2 caches for the
-            architecture.
-         -- monitors
 -- Neural networks:
    -- optimization:
       http://neuralnetworksanddeeplearning.com/chap3.html
