@@ -1,15 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PointInPolygon.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">PointInPolygon.java</span></div><h1>PointInPolygon.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PointInPolygon.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">PointInPolygon.java</span></div><h1>PointInPolygon.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
 
 import algorithms.misc.MiscMath;
-import algorithms.util.PairFloat;
-import algorithms.util.PairInt;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * test whether a point is within a polygon.
@@ -23,10 +14,10 @@ import java.util.Set;
  */
 public class PointInPolygon {
 
-<span class="fc" id="L26">    public PointInPolygon() {</span>
-<span class="fc" id="L27">    }</span>
+<span class="fc" id="L17">    public PointInPolygon() {</span>
+<span class="fc" id="L18">    }</span>
 
-<span class="fc" id="L29">    float eps = 0.00001f;</span>
+<span class="fc" id="L20">    float eps = 0.00001f;</span>
 
     /**
      * given a polygon (xPolygon, yPolygon) that has the same start and end
@@ -44,55 +35,55 @@ public class PointInPolygon {
     public boolean isInSimpleCurve(int xPt, int yPt, int[] xPolygon,
         int[] yPolygon, int nPolygonPoints) {
         
-<span class="fc" id="L47">        int xMax = MiscMath.findMax(xPolygon, nPolygonPoints) + 1;</span>
+<span class="fc" id="L38">        int xMax = MiscMath.findMax(xPolygon, nPolygonPoints) + 1;</span>
         
-<span class="fc" id="L49">        int n2 = 0;</span>
-<span class="fc" id="L50">        int n3 = 0;</span>
-<span class="fc" id="L51">        int n0 = 0;</span>
+<span class="fc" id="L40">        int n2 = 0;</span>
+<span class="fc" id="L41">        int n3 = 0;</span>
+<span class="fc" id="L42">        int n0 = 0;</span>
         
-<span class="fc" id="L53">        int sumIntersectingRays = 0;</span>
+<span class="fc" id="L44">        int sumIntersectingRays = 0;</span>
         
-<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (int i = 0; i &lt; (nPolygonPoints - 1); i++) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (int i = 0; i &lt; (nPolygonPoints - 1); i++) {</span>
             
-<span class="fc" id="L57">            int x2 = xPolygon[i];</span>
-<span class="fc" id="L58">            int y2 = yPolygon[i];</span>
-<span class="fc" id="L59">            int x3 = xPolygon[i + 1];</span>
-<span class="fc" id="L60">            int y3 = yPolygon[i + 1];</span>
+<span class="fc" id="L48">            int x2 = xPolygon[i];</span>
+<span class="fc" id="L49">            int y2 = yPolygon[i];</span>
+<span class="fc" id="L50">            int x3 = xPolygon[i + 1];</span>
+<span class="fc" id="L51">            int y3 = yPolygon[i + 1];</span>
             
-<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (LinesAndAngles.pointIsInLine(xPt, yPt, x2, y2, x3, y3)) {</span>
-<span class="fc" id="L63">                return true;</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            if (LinesAndAngles.pointIsInLine(xPt, yPt, x2, y2, x3, y3)) {</span>
+<span class="fc" id="L54">                return true;</span>
             } 
             
-<span class="fc" id="L66">            boolean intersects =</span>
-<span class="fc" id="L67">                LinesAndAngles.linesIntersect(xPt, yPt, xMax, yPt,</span>
+<span class="fc" id="L57">            boolean intersects =</span>
+<span class="fc" id="L58">                LinesAndAngles.linesIntersect(xPt, yPt, xMax, yPt,</span>
                 x2, y2, x3, y3);
             
-<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (intersects) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (intersects) {</span>
                 // avoid counting intersection with a vertex twice
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">                if (yPt != y3) {</span>
-<span class="fc" id="L73">                    sumIntersectingRays++;</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                if (yPt != y3) {</span>
+<span class="fc" id="L64">                    sumIntersectingRays++;</span>
                 }
                 
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                if (yPt == y2) {</span>
-<span class="nc" id="L77">                    n2++;</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                if (yPt == y2) {</span>
+<span class="nc" id="L68">                    n2++;</span>
                 } 
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">                if (yPt == y3) {</span>
-<span class="nc" id="L80">                    n3++;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                if (yPt == y3) {</span>
+<span class="nc" id="L71">                    n3++;</span>
                 }
-<span class="pc bpc" id="L82" title="2 of 4 branches missed.">                if ((yPt != y2) &amp;&amp; (yPt != y3)) {</span>
-<span class="fc" id="L83">                    n0++;</span>
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">                if ((yPt != y2) &amp;&amp; (yPt != y3)) {</span>
+<span class="fc" id="L74">                    n0++;</span>
                 }
             }
         }
         
-<span class="fc bfc" id="L88" title="All 2 branches covered.">        boolean odd = ((sumIntersectingRays &amp; 1) == 1);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        boolean odd = ((sumIntersectingRays &amp; 1) == 1);</span>
         
         // for complex concave and convex curves:
-<span class="pc bpc" id="L91" title="4 of 8 branches missed.">        if (!odd &amp;&amp; ((n0 &amp; 1) == 0) &amp;&amp; ((n2 &amp; 1) == 1) &amp;&amp; ((n3 &amp; 1) == 1) ) {</span>
-<span class="nc" id="L92">            odd = true;</span>
+<span class="pc bpc" id="L82" title="4 of 8 branches missed.">        if (!odd &amp;&amp; ((n0 &amp; 1) == 0) &amp;&amp; ((n2 &amp; 1) == 1) &amp;&amp; ((n3 &amp; 1) == 1) ) {</span>
+<span class="nc" id="L83">            odd = true;</span>
         }
         
-<span class="fc" id="L95">        return odd;</span>
+<span class="fc" id="L86">        return odd;</span>
     }
     
     /**
@@ -111,55 +102,55 @@ public class PointInPolygon {
     public boolean isInSimpleCurve(float xPt, float yPt, float[] xPolygon,
         float[] yPolygon, int nPolygonPoints) {
         
-<span class="fc" id="L114">        float xMax = MiscMath.findMax(xPolygon, nPolygonPoints) + 1;</span>
+<span class="fc" id="L105">        float xMax = MiscMath.findMax(xPolygon, nPolygonPoints) + 1;</span>
         
-<span class="fc" id="L116">        int sumIntersectingRays = 0;</span>
+<span class="fc" id="L107">        int sumIntersectingRays = 0;</span>
         
-<span class="fc" id="L118">        int n2 = 0;</span>
-<span class="fc" id="L119">        int n3 = 0;</span>
-<span class="fc" id="L120">        int n0 = 0;</span>
+<span class="fc" id="L109">        int n2 = 0;</span>
+<span class="fc" id="L110">        int n3 = 0;</span>
+<span class="fc" id="L111">        int n0 = 0;</span>
                 
-<span class="fc bfc" id="L122" title="All 2 branches covered.">        for (int i = 0; i &lt; (nPolygonPoints - 1); i++) {</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (int i = 0; i &lt; (nPolygonPoints - 1); i++) {</span>
             
-<span class="fc" id="L124">            float x2 = xPolygon[i];</span>
-<span class="fc" id="L125">            float y2 = yPolygon[i];</span>
-<span class="fc" id="L126">            float x3 = xPolygon[i + 1];</span>
-<span class="fc" id="L127">            float y3 = yPolygon[i + 1];</span>
+<span class="fc" id="L115">            float x2 = xPolygon[i];</span>
+<span class="fc" id="L116">            float y2 = yPolygon[i];</span>
+<span class="fc" id="L117">            float x3 = xPolygon[i + 1];</span>
+<span class="fc" id="L118">            float y3 = yPolygon[i + 1];</span>
             
-<span class="fc bfc" id="L129" title="All 2 branches covered.">            if (LinesAndAngles.pointIsInLine(xPt, yPt, x2, y2, x3, y3)) {</span>
-<span class="fc" id="L130">                return true;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (LinesAndAngles.pointIsInLine(xPt, yPt, x2, y2, x3, y3)) {</span>
+<span class="fc" id="L121">                return true;</span>
             }
             
-<span class="fc" id="L133">            boolean intersects =</span>
-<span class="fc" id="L134">                LinesAndAngles.linesIntersect(xPt, yPt, xMax, yPt,</span>
+<span class="fc" id="L124">            boolean intersects =</span>
+<span class="fc" id="L125">                LinesAndAngles.linesIntersect(xPt, yPt, xMax, yPt,</span>
                 x2, y2, x3, y3);
             
-<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (intersects) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (intersects) {</span>
                 // avoid counting intersection with a vertex twice
-<span class="fc bfc" id="L139" title="All 2 branches covered.">                if (yPt != y3) {</span>
-<span class="fc" id="L140">                    sumIntersectingRays++;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                if (yPt != y3) {</span>
+<span class="fc" id="L131">                    sumIntersectingRays++;</span>
                 }
                 
-<span class="fc bfc" id="L143" title="All 2 branches covered.">                if (yPt == y2) {</span>
-<span class="fc" id="L144">                    n2++;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                if (yPt == y2) {</span>
+<span class="fc" id="L135">                    n2++;</span>
                 } 
-<span class="fc bfc" id="L146" title="All 2 branches covered.">                if (yPt == y3) {</span>
-<span class="fc" id="L147">                    n3++;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">                if (yPt == y3) {</span>
+<span class="fc" id="L138">                    n3++;</span>
                 }
-<span class="fc bfc" id="L149" title="All 4 branches covered.">                if ((yPt != y2) &amp;&amp; (yPt != y3)) {</span>
-<span class="fc" id="L150">                    n0++;</span>
+<span class="fc bfc" id="L140" title="All 4 branches covered.">                if ((yPt != y2) &amp;&amp; (yPt != y3)) {</span>
+<span class="fc" id="L141">                    n0++;</span>
                 }
             }
         }
                 
-<span class="fc bfc" id="L155" title="All 2 branches covered.">        boolean odd = ((sumIntersectingRays &amp; 1) == 1);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        boolean odd = ((sumIntersectingRays &amp; 1) == 1);</span>
         
-<span class="pc bpc" id="L157" title="4 of 8 branches missed.">        if (!odd &amp;&amp; ((n0 &amp; 1) == 0) &amp;&amp; ((n2 &amp; 1) == 1) &amp;&amp; ((n3 &amp; 1) == 1) ) {</span>
-<span class="nc" id="L158">            odd = true;</span>
+<span class="pc bpc" id="L148" title="4 of 8 branches missed.">        if (!odd &amp;&amp; ((n0 &amp; 1) == 0) &amp;&amp; ((n2 &amp; 1) == 1) &amp;&amp; ((n3 &amp; 1) == 1) ) {</span>
+<span class="nc" id="L149">            odd = true;</span>
         }
         
-<span class="fc" id="L161">        return odd;</span>
+<span class="fc" id="L152">        return odd;</span>
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

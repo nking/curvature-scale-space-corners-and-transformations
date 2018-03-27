@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GroupPixelHSV.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GroupPixelHSV.java</span></div><h1>GroupPixelHSV.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GroupPixelHSV.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GroupPixelHSV.java</span></div><h1>GroupPixelHSV.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import java.awt.Color;
@@ -21,66 +21,66 @@ public class GroupPixelHSV {
     
     private GroupPixelCIELAB rgbAndCIEClrs;
 
-<span class="fc" id="L24">    public GroupPixelHSV() {</span>
-<span class="fc" id="L25">    }</span>
+<span class="nc" id="L24">    public GroupPixelHSV() {</span>
+<span class="nc" id="L25">    }</span>
 
     public void calculateColors(final Set&lt;PairInt&gt; points, ImageExt colorImage) {
         
-<span class="fc" id="L29">        GroupPixelCIELAB rgb = new GroupPixelCIELAB(points, colorImage);</span>
-<span class="fc" id="L30">        rgbAndCIEClrs = rgb ;</span>
+<span class="nc" id="L29">        GroupPixelCIELAB rgb = new GroupPixelCIELAB(points, colorImage);</span>
+<span class="nc" id="L30">        rgbAndCIEClrs = rgb ;</span>
         
-<span class="fc" id="L32">        float[] hsvAvg = new float[3];</span>
-<span class="fc" id="L33">        Color.RGBtoHSB(Math.round(rgb.getAvgRed()), </span>
-<span class="fc" id="L34">            Math.round(rgb.getAvgGreen()), </span>
-<span class="fc" id="L35">            Math.round(rgb.getAvgBlue()), hsvAvg);</span>
+<span class="nc" id="L32">        float[] hsvAvg = new float[3];</span>
+<span class="nc" id="L33">        Color.RGBtoHSB(Math.round(rgb.getAvgRed()), </span>
+<span class="nc" id="L34">            Math.round(rgb.getAvgGreen()), </span>
+<span class="nc" id="L35">            Math.round(rgb.getAvgBlue()), hsvAvg);</span>
         
-<span class="fc" id="L37">        this.nPoints = points.size();</span>
-<span class="fc" id="L38">        this.avgH = hsvAvg[0];</span>
-<span class="fc" id="L39">        this.avgS = hsvAvg[1];</span>
-<span class="fc" id="L40">        this.avgV = hsvAvg[2];</span>
+<span class="nc" id="L37">        this.nPoints = points.size();</span>
+<span class="nc" id="L38">        this.avgH = hsvAvg[0];</span>
+<span class="nc" id="L39">        this.avgS = hsvAvg[1];</span>
+<span class="nc" id="L40">        this.avgV = hsvAvg[2];</span>
         
-<span class="fc" id="L42">        float[] hsv = new float[3];</span>
-<span class="fc" id="L43">        double sumH = 0;</span>
-<span class="fc" id="L44">        double sumS = 0;</span>
-<span class="fc" id="L45">        double sumV = 0;</span>
-<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="nc" id="L42">        float[] hsv = new float[3];</span>
+<span class="nc" id="L43">        double sumH = 0;</span>
+<span class="nc" id="L44">        double sumS = 0;</span>
+<span class="nc" id="L45">        double sumV = 0;</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (PairInt p : points) {</span>
             
-<span class="fc" id="L48">            int x = p.getX();</span>
-<span class="fc" id="L49">            int y = p.getY();</span>
+<span class="nc" id="L48">            int x = p.getX();</span>
+<span class="nc" id="L49">            int y = p.getY();</span>
             
-<span class="fc" id="L51">            float diffH = colorImage.getHue(x, y) - hsvAvg[0];</span>
-<span class="fc" id="L52">            float diffS = colorImage.getSaturation(x, y) - hsvAvg[1];</span>
-<span class="fc" id="L53">            float diffV = colorImage.getBrightness(x, y) - hsvAvg[2];</span>
+<span class="nc" id="L51">            float diffH = colorImage.getHue(x, y) - hsvAvg[0];</span>
+<span class="nc" id="L52">            float diffS = colorImage.getSaturation(x, y) - hsvAvg[1];</span>
+<span class="nc" id="L53">            float diffV = colorImage.getBrightness(x, y) - hsvAvg[2];</span>
             
-<span class="fc" id="L55">            sumH += (diffH * diffH);</span>
-<span class="fc" id="L56">            sumS += (diffS * diffS);</span>
-<span class="fc" id="L57">            sumV += (diffV * diffV);</span>
-<span class="fc" id="L58">        }</span>
+<span class="nc" id="L55">            sumH += (diffH * diffH);</span>
+<span class="nc" id="L56">            sumS += (diffS * diffS);</span>
+<span class="nc" id="L57">            sumV += (diffV * diffV);</span>
+<span class="nc" id="L58">        }</span>
         
-<span class="fc" id="L60">        this.stdDevH = (float)Math.sqrt(sumH/(nPoints - 1.));</span>
-<span class="fc" id="L61">        this.stdDevS = (float)Math.sqrt(sumS/(nPoints - 1.));</span>
-<span class="fc" id="L62">        this.stdDevV = (float)Math.sqrt(sumV/(nPoints - 1.));</span>
-<span class="fc" id="L63">    }</span>
+<span class="nc" id="L60">        this.stdDevH = (float)Math.sqrt(sumH/(nPoints - 1.));</span>
+<span class="nc" id="L61">        this.stdDevS = (float)Math.sqrt(sumS/(nPoints - 1.));</span>
+<span class="nc" id="L62">        this.stdDevV = (float)Math.sqrt(sumV/(nPoints - 1.));</span>
+<span class="nc" id="L63">    }</span>
 
     /**
      * @return the avgH
      */
     public float getAvgH() {
-<span class="fc" id="L69">        return avgH;</span>
+<span class="nc" id="L69">        return avgH;</span>
     }
 
     /**
      * @return the avgS
      */
     public float getAvgS() {
-<span class="fc" id="L76">        return avgS;</span>
+<span class="nc" id="L76">        return avgS;</span>
     }
 
     /**
      * @return the avgV
      */
     public float getAvgV() {
-<span class="fc" id="L83">        return avgV;</span>
+<span class="nc" id="L83">        return avgV;</span>
     }
 
     /**
@@ -94,64 +94,64 @@ public class GroupPixelHSV {
      * @return the stdDevH
      */
     public float getStdDevH() {
-<span class="fc" id="L97">        return stdDevH;</span>
+<span class="nc" id="L97">        return stdDevH;</span>
     }
 
     /**
      * @return the stdDevS
      */
     public float getStdDevS() {
-<span class="fc" id="L104">        return stdDevS;</span>
+<span class="nc" id="L104">        return stdDevS;</span>
     }
 
     /**
      * @return the stdDevV
      */
     public float getStdDevV() {
-<span class="fc" id="L111">        return stdDevV;</span>
+<span class="nc" id="L111">        return stdDevV;</span>
     }
    
      /**
      * @return the avgL
      */
     public float getAvgL() {
-<span class="fc" id="L118">        return rgbAndCIEClrs.getAvgL();</span>
+<span class="nc" id="L118">        return rgbAndCIEClrs.getAvgL();</span>
     }
 
     /**
      * @return the stdDevL
      */
     public float getStdDevL() {
-<span class="fc" id="L125">        return rgbAndCIEClrs.getStdDevL();</span>
+<span class="nc" id="L125">        return rgbAndCIEClrs.getStdDevL();</span>
     }
 
     /**
      * @return the avgA
      */
     public float getAvgA() {
-<span class="fc" id="L132">        return rgbAndCIEClrs.getAvgA();</span>
+<span class="nc" id="L132">        return rgbAndCIEClrs.getAvgA();</span>
     }
 
     /**
      * @return the stdDevA
      */
     public float getStdDevA() {
-<span class="fc" id="L139">        return rgbAndCIEClrs.getStdDevA();</span>
+<span class="nc" id="L139">        return rgbAndCIEClrs.getStdDevA();</span>
     }
 
     /**
      * @return the avgB
      */
     public float getAvgB() {
-<span class="fc" id="L146">        return rgbAndCIEClrs.getAvgB();</span>
+<span class="nc" id="L146">        return rgbAndCIEClrs.getAvgB();</span>
     }
 
     /**
      * @return the stdDevB
      */
     public float getStdDevB() {
-<span class="fc" id="L153">        return rgbAndCIEClrs.getStdDevB();</span>
+<span class="nc" id="L153">        return rgbAndCIEClrs.getStdDevB();</span>
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

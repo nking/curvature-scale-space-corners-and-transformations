@@ -335,8 +335,8 @@ public class AndroidStatuesTest extends TestCase {
     public void testObjectFinder() throws Exception {
         boolean debug = true;
         runMatcher_gingerbreadman(debug);
-    //    runMatcher_icecream(debug);
-    //    runMatcher_cupcake(debug);
+        runMatcher_icecream(debug);
+        runMatcher_cupcake(debug);
     }
 
     public void runMatcher_icecream(boolean debug) throws Exception {

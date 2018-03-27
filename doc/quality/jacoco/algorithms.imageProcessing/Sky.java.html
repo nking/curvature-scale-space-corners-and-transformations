@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Sky.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Sky.java</span></div><h1>Sky.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Sky.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Sky.java</span></div><h1>Sky.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.mser.MSEREdges;
@@ -667,7 +667,7 @@ public class Sky {
                         
                         // prefer those without any purple if exist
 <span class="fc bfc" id="L669" title="All 2 branches covered.">                        boolean doNotSet = maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="pc bpc" id="L670" title="1 of 4 branches missed.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
+<span class="fc bfc" id="L670" title="All 4 branches covered.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
                             norm[5] &gt; 0;
                         
 <span class="fc bfc" id="L673" title="All 2 branches covered.">                        if (!doNotSet) {</span>
@@ -675,10 +675,10 @@ public class Sky {
 <span class="fc" id="L675">                            maxAvgIdx = idx;</span>
                         }
                         
-<span class="pc bpc" id="L678" title="1 of 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="pc bpc" id="L679" title="1 of 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
-<span class="fc" id="L680">                        maxAvgIfBlue = avg;</span>
-<span class="fc" id="L681">                        maxAvgIdx = idx;</span>
+<span class="pc bpc" id="L678" title="3 of 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
+<span class="nc bnc" id="L679" title="All 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
+<span class="nc" id="L680">                        maxAvgIfBlue = avg;</span>
+<span class="nc" id="L681">                        maxAvgIdx = idx;</span>
                     }
                 }
 <span class="fc" id="L684">            }</span>
@@ -802,12 +802,12 @@ public class Sky {
 <span class="fc" id="L802">                            float intersection = clrHist.intersection(hist, rHist);</span>
 <span class="fc" id="L803">                            System.out.println(&quot; inter=&quot; + intersection + &quot; &quot;</span>
 <span class="fc" id="L804">                                + Arrays.toString(hist));</span>
-<span class="pc bpc" id="L805" title="1 of 2 branches missed.">                            if (intersection &gt; 0.5) {</span>
-<span class="nc" id="L806">                                keep = false;</span>
-<span class="nc" id="L807">                                break;</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">                            if (intersection &gt; 0.5) {</span>
+<span class="fc" id="L806">                                keep = false;</span>
+<span class="fc" id="L807">                                break;</span>
                             }
                         }
-<span class="pc bpc" id="L810" title="1 of 2 branches missed.">                        if (keep) {</span>
+<span class="fc bfc" id="L810" title="All 2 branches covered.">                        if (keep) {</span>
 <span class="fc" id="L811">                            filtered.add(idx);</span>
                         }
 <span class="fc" id="L813">                    }</span>
@@ -857,4 +857,4 @@ public class Sky {
         }
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

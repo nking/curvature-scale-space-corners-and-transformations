@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageSegmentation.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageSegmentation.java</span></div><h1>ImageSegmentation.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ImageSegmentation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageSegmentation.java</span></div><h1>ImageSegmentation.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
@@ -206,7 +206,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L206">        }</span>
 <span class="fc" id="L207">    }</span>
 
-     /**
+    /**
      * create segmented image by creating edges with phase congruence,
      * then using the edge color properties to form clusters and seeds
      * of regions to grow, then using color histograms to further merge
@@ -214,7 +214,7 @@ import java.util.logging.Logger;
      * The algorithm follows the general outline given by
      * Jie and Peng-fei 2003, &quot;Natural Color Image Segmentation&quot;,
        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
-     *
+      
      * NOTE: parameters in this algorithm are sensitive to
      * the PSF.
      *
@@ -223,7 +223,7 @@ import java.util.logging.Logger;
      *
      * @param input
      * @return
-     */
+    */
     public List&lt;Set&lt;PairInt&gt;&gt; createColorEdgeSegmentation(ImageExt input,
         String debugTag) {
         
@@ -2286,4 +2286,4 @@ import java.util.logging.Logger;
 <span class="fc" id="L2286">    }</span>
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

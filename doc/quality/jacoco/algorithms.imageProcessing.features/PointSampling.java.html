@@ -1,9 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PointSampling.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">PointSampling.java</span></div><h1>PointSampling.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PointSampling.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">PointSampling.java</span></div><h1>PointSampling.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.PointPartitioner;
 import algorithms.compGeometry.PointPartitioner.Bounds;
+import algorithms.imageProcessing.DistanceTransform;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,7 +24,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="fc" id="L21">public class PointSampling {</span>
+<span class="fc" id="L27">public class PointSampling {</span>
     
     /**
      * NOT READY FOR USE YET.  The results are not uniform yet - there are
@@ -33,8 +39,8 @@ import java.util.Set;
     public void choose7RandomPoints(PointValueDistr pv, Random sr, 
         Set&lt;BigInteger&gt; alreadySelected, List&lt;PairInt&gt; outputPoints) {
         
-<span class="fc" id="L36">        chooseKRandomPoints(pv, sr, alreadySelected, outputPoints, 7);</span>
-<span class="fc" id="L37">    }</span>
+<span class="fc" id="L42">        chooseKRandomPoints(pv, sr, alreadySelected, outputPoints, 7);</span>
+<span class="fc" id="L43">    }</span>
     
     // keeping this private until have tested range of values for k.
     // needs to be correct for k=7
@@ -85,32 +91,32 @@ import java.util.Set;
         */
         
         // a bitvector in the reference frame of pv.points
-<span class="fc" id="L88">        BigInteger randomlyChosen = randomlyChooseKBitNumber(pv, sr, k);</span>
+<span class="fc" id="L94">        BigInteger randomlyChosen = randomlyChooseKBitNumber(pv, sr, k);</span>
         
-<span class="fc bfc" id="L90" title="All 2 branches covered.">        while (alreadySelected.contains(randomlyChosen)) {</span>
-<span class="fc" id="L91">            randomlyChosen = randomlyChooseKBitNumber(pv, sr, k);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        while (alreadySelected.contains(randomlyChosen)) {</span>
+<span class="fc" id="L97">            randomlyChosen = randomlyChooseKBitNumber(pv, sr, k);</span>
         }
         
-<span class="fc" id="L94">        alreadySelected.add(randomlyChosen);</span>
+<span class="fc" id="L100">        alreadySelected.add(randomlyChosen);</span>
         
         // read off the set bits in randomlyChosen to get the pairints from pv
         
-<span class="fc" id="L98">        outputPoints.clear();</span>
+<span class="fc" id="L104">        outputPoints.clear();</span>
         
-<span class="fc" id="L100">        int bitLength = randomlyChosen.bitLength();</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        for (int i = (bitLength - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L106">        int bitLength = randomlyChosen.bitLength();</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        for (int i = (bitLength - 1); i &gt; -1; --i) {</span>
             
-<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (randomlyChosen.testBit(i)) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (randomlyChosen.testBit(i)) {</span>
                                
-<span class="fc" id="L105">                PairInt p = pv.getPoints()[i];</span>
+<span class="fc" id="L111">                PairInt p = pv.getPoints()[i];</span>
                 
-<span class="fc" id="L107">                outputPoints.add(p);</span>
+<span class="fc" id="L113">                outputPoints.add(p);</span>
             }
-<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (outputPoints.size() == k) {</span>
-<span class="fc" id="L110">                break;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (outputPoints.size() == k) {</span>
+<span class="fc" id="L116">                break;</span>
             }
         }
-<span class="fc" id="L113">    }</span>
+<span class="fc" id="L119">    }</span>
     
     /**
      * randomly choose a k bit number that is a bit vector that has set bits
@@ -129,14 +135,14 @@ import java.util.Set;
      */
     BigInteger randomlyChooseKBitNumber(PointValueDistr pv, Random sr, int k) {
         
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (k != 7) {</span>
-<span class="nc" id="L133">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (k != 7) {</span>
+<span class="nc" id="L139">            throw new IllegalArgumentException(</span>
             &quot;algorithm is currently only tested for k=7&quot;);
         }
         
-<span class="fc" id="L137">        int nPoints = pv.getPoints().length;</span>
+<span class="fc" id="L143">        int nPoints = pv.getPoints().length;</span>
         
-<span class="fc" id="L139">        int minBitsValue = (1 &lt;&lt; k) - 1;</span>
+<span class="fc" id="L145">        int minBitsValue = (1 &lt;&lt; k) - 1;</span>
         
         /*
         wanting to choose 7 values from range 0 to nCumulativeValues using one 
@@ -158,12 +164,12 @@ import java.util.Set;
         lower number to arrive at 7 bits set, etc.
         */
                 
-<span class="fc" id="L161">        BigInteger maxCumulativeIndex = pv.getMaxValue();</span>
+<span class="fc" id="L167">        BigInteger maxCumulativeIndex = pv.getMaxValue();</span>
                 
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (maxCumulativeIndex.bitLength() &gt; 31) {</span>
-<span class="nc" id="L164">            throw new ArithmeticException(&quot;result does not fit within an int&quot;);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (maxCumulativeIndex.bitLength() &gt; 31) {</span>
+<span class="nc" id="L170">            throw new ArithmeticException(&quot;result does not fit within an int&quot;);</span>
         }
-<span class="fc" id="L166">        int vMax = maxCumulativeIndex.intValue();</span>
+<span class="fc" id="L172">        int vMax = maxCumulativeIndex.intValue();</span>
         
         // --- randomly choose a number between 0 and 2^nBits. ---
         
@@ -172,88 +178,88 @@ import java.util.Set;
         // working around that by randomly selecting nBits, then using
         // the random from BigInteger or Random.
         
-<span class="fc" id="L175">        int nBits = sr.nextInt(vMax - k) + k;</span>
-<span class="fc" id="L176">        BigInteger randomlyChosen = new BigInteger(nBits, sr);</span>
+<span class="fc" id="L181">        int nBits = sr.nextInt(vMax - k) + k;</span>
+<span class="fc" id="L182">        BigInteger randomlyChosen = new BigInteger(nBits, sr);</span>
         
-<span class="fc" id="L178">        int bitLength = randomlyChosen.bitLength();</span>
+<span class="fc" id="L184">        int bitLength = randomlyChosen.bitLength();</span>
         
         //System.out.println(&quot;before: &quot; + randomlyChosen.toString(2));
         
         // --- create a bitstring in the reference frame of pv.points ---
-<span class="fc" id="L183">        BigInteger rc0 = BigInteger.ZERO;</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">        for (int i = 0; i &lt; bitLength; ++i) {</span>
+<span class="fc" id="L189">        BigInteger rc0 = BigInteger.ZERO;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int i = 0; i &lt; bitLength; ++i) {</span>
             
-<span class="fc bfc" id="L186" title="All 2 branches covered.">            if (randomlyChosen.testBit(i)) {</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">            if (randomlyChosen.testBit(i)) {</span>
                 
-<span class="fc" id="L188">                int oIdx = pv.getPointsIndexForCumulativeValue(</span>
-<span class="fc" id="L189">                    new BigInteger(MiscMath.writeToBigEndianBytes(i)));</span>
+<span class="fc" id="L194">                int oIdx = pv.getPointsIndexForCumulativeValue(</span>
+<span class="fc" id="L195">                    new BigInteger(MiscMath.writeToBigEndianBytes(i)));</span>
           
-<span class="fc" id="L191">                rc0 = rc0.setBit(oIdx);</span>
+<span class="fc" id="L197">                rc0 = rc0.setBit(oIdx);</span>
             }
         }
         
-<span class="fc" id="L195">        randomlyChosen = rc0;</span>
+<span class="fc" id="L201">        randomlyChosen = rc0;</span>
                 
-<span class="fc" id="L197">        bitLength = randomlyChosen.bitLength();</span>
+<span class="fc" id="L203">        bitLength = randomlyChosen.bitLength();</span>
         
-<span class="fc" id="L199">        int bitCount = randomlyChosen.bitCount();</span>
+<span class="fc" id="L205">        int bitCount = randomlyChosen.bitCount();</span>
         
-<span class="fc bfc" id="L201" title="All 2 branches covered.">        if (bitCount &gt; k) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        if (bitCount &gt; k) {</span>
             
             //keep the top k bits
                         
-<span class="fc" id="L205">            BigInteger sum = BigInteger.ZERO;</span>
-<span class="fc" id="L206">            int c = 0;</span>
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">            for (int j = (bitLength - 1); j &gt; -1; --j) {</span>
-<span class="fc bfc" id="L208" title="All 2 branches covered.">                if (randomlyChosen.testBit(j)) {</span>
-<span class="fc" id="L209">                    BigInteger c2 = BigInteger.ONE;</span>
-<span class="fc" id="L210">                    c2 = c2.shiftLeft(j);</span>
-<span class="fc" id="L211">                    sum = sum.add(c2);</span>
-<span class="fc" id="L212">                    c++;</span>
-<span class="fc bfc" id="L213" title="All 2 branches covered.">                    if (c == k) {</span>
-<span class="fc" id="L214">                        break;</span>
+<span class="fc" id="L211">            BigInteger sum = BigInteger.ZERO;</span>
+<span class="fc" id="L212">            int c = 0;</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">            for (int j = (bitLength - 1); j &gt; -1; --j) {</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">                if (randomlyChosen.testBit(j)) {</span>
+<span class="fc" id="L215">                    BigInteger c2 = BigInteger.ONE;</span>
+<span class="fc" id="L216">                    c2 = c2.shiftLeft(j);</span>
+<span class="fc" id="L217">                    sum = sum.add(c2);</span>
+<span class="fc" id="L218">                    c++;</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">                    if (c == k) {</span>
+<span class="fc" id="L220">                        break;</span>
                     }
                 }
             }
             
-<span class="fc" id="L219">            randomlyChosen = sum;</span>
+<span class="fc" id="L225">            randomlyChosen = sum;</span>
                         
-<span class="fc bfc" id="L221" title="All 2 branches covered.">        } else if (bitCount &lt; k) {</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        } else if (bitCount &lt; k) {</span>
 
-<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (bitLength &lt;= k) {</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (bitLength &lt;= k) {</span>
                 
-<span class="fc" id="L225">                randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(minBitsValue));</span>
+<span class="fc" id="L231">                randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(minBitsValue));</span>
                 
             } else {
                 
                 // plus one because unsetting a '1' and need to replace it, then 
                 // setting '0's below it
-<span class="fc" id="L231">                int nBitsToSet = k + 1 - bitCount;</span>
+<span class="fc" id="L237">                int nBitsToSet = k + 1 - bitCount;</span>
 
                 // flip the low 0's to 1's and flip the next left 1 to 0
                 
-<span class="fc" id="L235">                bitLength = randomlyChosen.bitLength();</span>
-<span class="fc" id="L236">                int c = 0;</span>
-<span class="fc" id="L237">                int last = 0;</span>
-<span class="pc bpc" id="L238" title="1 of 2 branches missed.">                for (int j = 0; j &lt; bitLength; ++j) {</span>
-<span class="fc bfc" id="L239" title="All 2 branches covered.">                    if (!randomlyChosen.testBit(j)) {</span>
-<span class="fc" id="L240">                        randomlyChosen = randomlyChosen.setBit(j);</span>
-<span class="fc" id="L241">                        c++;</span>
-<span class="fc" id="L242">                        last = j;</span>
+<span class="fc" id="L241">                bitLength = randomlyChosen.bitLength();</span>
+<span class="fc" id="L242">                int c = 0;</span>
+<span class="fc" id="L243">                int last = 0;</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">                for (int j = 0; j &lt; bitLength; ++j) {</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">                    if (!randomlyChosen.testBit(j)) {</span>
+<span class="fc" id="L246">                        randomlyChosen = randomlyChosen.setBit(j);</span>
+<span class="fc" id="L247">                        c++;</span>
+<span class="fc" id="L248">                        last = j;</span>
                     }
-<span class="fc bfc" id="L244" title="All 2 branches covered.">                    if (c == nBitsToSet) {</span>
-<span class="fc" id="L245">                        break;</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">                    if (c == nBitsToSet) {</span>
+<span class="fc" id="L251">                        break;</span>
                     }
                 }
                 
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">                for (int j = (last + 1); j &lt; bitLength; ++j) {</span>
-<span class="fc bfc" id="L250" title="All 2 branches covered.">                    if (randomlyChosen.testBit(j)) {</span>
-<span class="fc bfc" id="L251" title="All 2 branches covered.">                        if (j != (bitLength - 1)) {</span>
-<span class="fc" id="L252">                            randomlyChosen = randomlyChosen.clearBit(j);</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">                for (int j = (last + 1); j &lt; bitLength; ++j) {</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">                    if (randomlyChosen.testBit(j)) {</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">                        if (j != (bitLength - 1)) {</span>
+<span class="fc" id="L258">                            randomlyChosen = randomlyChosen.clearBit(j);</span>
                         } else {
-<span class="fc" id="L254">                            randomlyChosen = randomlyChosen.clearBit(last);</span>
+<span class="fc" id="L260">                            randomlyChosen = randomlyChosen.clearBit(last);</span>
                         }
-<span class="fc" id="L256">                        break;</span>
+<span class="fc" id="L262">                        break;</span>
                     }
                 }                
             }
@@ -261,7 +267,7 @@ import java.util.Set;
 
         //System.out.println(&quot;after:  &quot; + randomlyChosen.toString(2) + &quot;\n&quot;);
         
-<span class="fc" id="L264">        return randomlyChosen;</span>
+<span class="fc" id="L270">        return randomlyChosen;</span>
     }
     
     /**
@@ -281,12 +287,12 @@ import java.util.Set;
      */
     BigInteger randomlyChooseKBitNumber(int nIndexes, Random sr, int k) {
         
-<span class="pc bpc" id="L284" title="1 of 2 branches missed.">        if (k != 7) {</span>
-<span class="nc" id="L285">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        if (k != 7) {</span>
+<span class="nc" id="L291">            throw new IllegalArgumentException(</span>
             &quot;algorithm is currently only tested for k=7&quot;);
         }
         
-<span class="fc" id="L289">        int minBitsValue = (1 &lt;&lt; k) - 1;</span>
+<span class="fc" id="L295">        int minBitsValue = (1 &lt;&lt; k) - 1;</span>
         
         /*
         wanting to choose 7 values from range 0 to nIndexes using one 
@@ -310,71 +316,71 @@ import java.util.Set;
         // working around that by randomly selecting nBits, then using
         // the random from BigInteger or Random.
         
-<span class="fc" id="L313">        int nBits = sr.nextInt(nIndexes - k) + k;</span>
-<span class="fc" id="L314">        BigInteger randomlyChosen = new BigInteger(nBits, sr);</span>
+<span class="fc" id="L319">        int nBits = sr.nextInt(nIndexes - k) + k;</span>
+<span class="fc" id="L320">        BigInteger randomlyChosen = new BigInteger(nBits, sr);</span>
        
         //System.out.println(&quot;before: &quot; + randomlyChosen.toString(2));
           
-<span class="fc" id="L318">        int bitLength = randomlyChosen.bitLength();</span>
+<span class="fc" id="L324">        int bitLength = randomlyChosen.bitLength();</span>
         
-<span class="fc" id="L320">        int bitCount = randomlyChosen.bitCount();</span>
+<span class="fc" id="L326">        int bitCount = randomlyChosen.bitCount();</span>
         
-<span class="fc bfc" id="L322" title="All 2 branches covered.">        if (bitCount &gt; k) {</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        if (bitCount &gt; k) {</span>
             
             //keep the top k bits
             
-<span class="fc" id="L326">            BigInteger sum = BigInteger.ZERO;</span>
-<span class="fc" id="L327">            int c = 0;</span>
-<span class="pc bpc" id="L328" title="1 of 2 branches missed.">            for (int j = (bitLength - 1); j &gt; -1; --j) {</span>
-<span class="fc bfc" id="L329" title="All 2 branches covered.">                if (randomlyChosen.testBit(j)) {</span>
-<span class="fc" id="L330">                    BigInteger c2 = BigInteger.ONE;</span>
-<span class="fc" id="L331">                    c2 = c2.shiftLeft(j);</span>
-<span class="fc" id="L332">                    sum = sum.add(c2);</span>
-<span class="fc" id="L333">                    c++;</span>
-<span class="fc bfc" id="L334" title="All 2 branches covered.">                    if (c == k) {</span>
-<span class="fc" id="L335">                        break;</span>
+<span class="fc" id="L332">            BigInteger sum = BigInteger.ZERO;</span>
+<span class="fc" id="L333">            int c = 0;</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">            for (int j = (bitLength - 1); j &gt; -1; --j) {</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">                if (randomlyChosen.testBit(j)) {</span>
+<span class="fc" id="L336">                    BigInteger c2 = BigInteger.ONE;</span>
+<span class="fc" id="L337">                    c2 = c2.shiftLeft(j);</span>
+<span class="fc" id="L338">                    sum = sum.add(c2);</span>
+<span class="fc" id="L339">                    c++;</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">                    if (c == k) {</span>
+<span class="fc" id="L341">                        break;</span>
                     }
                 }
             }
 
-<span class="fc" id="L340">            randomlyChosen = sum;</span>
+<span class="fc" id="L346">            randomlyChosen = sum;</span>
                         
-<span class="fc bfc" id="L342" title="All 2 branches covered.">        } else if (bitCount &lt; k) {</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">        } else if (bitCount &lt; k) {</span>
 
-<span class="fc bfc" id="L344" title="All 2 branches covered.">            if (bitLength &lt;= k) {</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">            if (bitLength &lt;= k) {</span>
                 
-<span class="fc" id="L346">                randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(minBitsValue));</span>
+<span class="fc" id="L352">                randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(minBitsValue));</span>
                 
             } else {
                 
                 // plus one because unsetting a '1' and need to replace it, then 
                 // setting '0's below it
-<span class="fc" id="L352">                int nBitsToSet = k + 1 - bitCount;</span>
+<span class="fc" id="L358">                int nBitsToSet = k + 1 - bitCount;</span>
 
                 // flip the low 0's to 1's and flip the next left 1 to 0
                 
-<span class="fc" id="L356">                bitLength = randomlyChosen.bitLength();</span>
-<span class="fc" id="L357">                int c = 0;</span>
-<span class="fc" id="L358">                int last = 0;</span>
-<span class="pc bpc" id="L359" title="1 of 2 branches missed.">                for (int j = 0; j &lt; bitLength; ++j) {</span>
-<span class="fc bfc" id="L360" title="All 2 branches covered.">                    if (!randomlyChosen.testBit(j)) {</span>
-<span class="fc" id="L361">                        randomlyChosen = randomlyChosen.setBit(j);</span>
-<span class="fc" id="L362">                        c++;</span>
-<span class="fc" id="L363">                        last = j;</span>
+<span class="fc" id="L362">                bitLength = randomlyChosen.bitLength();</span>
+<span class="fc" id="L363">                int c = 0;</span>
+<span class="fc" id="L364">                int last = 0;</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">                for (int j = 0; j &lt; bitLength; ++j) {</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">                    if (!randomlyChosen.testBit(j)) {</span>
+<span class="fc" id="L367">                        randomlyChosen = randomlyChosen.setBit(j);</span>
+<span class="fc" id="L368">                        c++;</span>
+<span class="fc" id="L369">                        last = j;</span>
                     }
-<span class="fc bfc" id="L365" title="All 2 branches covered.">                    if (c == nBitsToSet) {</span>
-<span class="fc" id="L366">                        break;</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">                    if (c == nBitsToSet) {</span>
+<span class="fc" id="L372">                        break;</span>
                     }
                 }
                 
-<span class="pc bpc" id="L370" title="1 of 2 branches missed.">                for (int j = (last + 1); j &lt; bitLength; ++j) {</span>
-<span class="fc bfc" id="L371" title="All 2 branches covered.">                    if (randomlyChosen.testBit(j)) {</span>
-<span class="fc bfc" id="L372" title="All 2 branches covered.">                        if (j != (bitLength - 1)) {</span>
-<span class="fc" id="L373">                            randomlyChosen = randomlyChosen.clearBit(j);</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">                for (int j = (last + 1); j &lt; bitLength; ++j) {</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">                    if (randomlyChosen.testBit(j)) {</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">                        if (j != (bitLength - 1)) {</span>
+<span class="fc" id="L379">                            randomlyChosen = randomlyChosen.clearBit(j);</span>
                         } else {
-<span class="fc" id="L375">                            randomlyChosen = randomlyChosen.clearBit(last);</span>
+<span class="fc" id="L381">                            randomlyChosen = randomlyChosen.clearBit(last);</span>
                         }
-<span class="fc" id="L377">                        break;</span>
+<span class="fc" id="L383">                        break;</span>
                     }
                 }                
             }
@@ -382,7 +388,7 @@ import java.util.Set;
 
         //System.out.println(&quot;after:  &quot; + randomlyChosen.toString(2) + &quot;\n&quot;);
         
-<span class="fc" id="L385">        return randomlyChosen;</span>
+<span class="fc" id="L391">        return randomlyChosen;</span>
     }
     
     /**
@@ -400,7 +406,7 @@ import java.util.Set;
     public PointValueDistr createSpatialInvDistBasedValues(Set&lt;PairInt&gt; points, 
         int numCellsPerDimensions) {
         
-<span class="nc" id="L403">        return createSpatialDistBasedValues(points, numCellsPerDimensions, true);</span>
+<span class="nc" id="L409">        return createSpatialDistBasedValues(points, numCellsPerDimensions, true);</span>
     }
     
     /**
@@ -418,7 +424,7 @@ import java.util.Set;
     public PointValueDistr createSpatialDistBasedValues(Set&lt;PairInt&gt; points, 
         int numCellsPerDimensions) {
         
-<span class="fc" id="L421">        return createSpatialDistBasedValues(points, numCellsPerDimensions, false);</span>
+<span class="fc" id="L427">        return createSpatialDistBasedValues(points, numCellsPerDimensions, false);</span>
     }
     
     /**
@@ -437,114 +443,114 @@ import java.util.Set;
     protected PointValueDistr createSpatialDistBasedValues(Set&lt;PairInt&gt; points, 
         int numCellsPerDimensions, boolean inverse) {
         
-<span class="pc bpc" id="L440" title="1 of 2 branches missed.">        if (numCellsPerDimensions &lt; 1) {</span>
-<span class="nc" id="L441">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">        if (numCellsPerDimensions &lt; 1) {</span>
+<span class="nc" id="L447">            throw new IllegalArgumentException(</span>
                 &quot;numCellsPerDimensions must be &gt; 0&quot;);
         }
         
-<span class="fc" id="L445">        PointPartitioner pp = new PointPartitioner();</span>
+<span class="fc" id="L451">        PointPartitioner pp = new PointPartitioner();</span>
         
-<span class="fc" id="L447">        List&lt;Bounds&gt; bounds = pp.findCells(numCellsPerDimensions, points);</span>
+<span class="fc" id="L453">        List&lt;Bounds&gt; bounds = pp.findCells(numCellsPerDimensions, points);</span>
         
-<span class="fc" id="L449">        int[] maxXY = findMaxXAndY(bounds);</span>
+<span class="fc" id="L455">        int[] maxXY = findMaxXAndY(bounds);</span>
         
-<span class="fc" id="L451">        List&lt;PairInt&gt; seeds = centers(bounds);</span>
+<span class="fc" id="L457">        List&lt;PairInt&gt; seeds = centers(bounds);</span>
         
-<span class="fc" id="L453">        int w = maxXY[0] + 1;</span>
-<span class="fc" id="L454">        int h = maxXY[1] + 1;</span>
+<span class="fc" id="L459">        int w = maxXY[0] + 1;</span>
+<span class="fc" id="L460">        int h = maxXY[1] + 1;</span>
         
         // when n_points * log_2(n_points) is less than n_pixels, prefer
         // vornoi instead of distance transform to find cells then calculate 
         // distance of points to seeds.  TODO: impl vornoi fortunes.
         
-<span class="fc" id="L460">        Map&lt;PairInt, Integer&gt; pointDistMap = useDistanceTransform(points, w, h, </span>
+<span class="fc" id="L466">        Map&lt;PairInt, Integer&gt; pointDistMap = useDistanceTransform(points, w, h, </span>
             seeds);
         
-<span class="fc" id="L463">        int maxDist = Integer.MIN_VALUE;</span>
-<span class="pc bpc" id="L464" title="1 of 2 branches missed.">        if (inverse) {</span>
-<span class="nc bnc" id="L465" title="All 2 branches missed.">            for (Entry&lt;PairInt, Integer&gt; entry : pointDistMap.entrySet()) {</span>
-<span class="nc" id="L466">                int dist = entry.getValue().intValue();</span>
-<span class="nc bnc" id="L467" title="All 2 branches missed.">                if (dist &gt; maxDist) {</span>
-<span class="nc" id="L468">                    maxDist = dist;</span>
+<span class="fc" id="L469">        int maxDist = Integer.MIN_VALUE;</span>
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">        if (inverse) {</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">            for (Entry&lt;PairInt, Integer&gt; entry : pointDistMap.entrySet()) {</span>
+<span class="nc" id="L472">                int dist = entry.getValue().intValue();</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">                if (dist &gt; maxDist) {</span>
+<span class="nc" id="L474">                    maxDist = dist;</span>
                 }
-<span class="nc" id="L470">            }</span>
+<span class="nc" id="L476">            }</span>
         }
         
-<span class="fc" id="L473">        int n = pointDistMap.size();</span>
+<span class="fc" id="L479">        int n = pointDistMap.size();</span>
         
-<span class="fc" id="L475">        BigInteger[] cumulativeCount = new BigInteger[pointDistMap.size()];</span>
-<span class="fc" id="L476">        PairInt[] pointsArray = new PairInt[pointDistMap.size()];</span>
+<span class="fc" id="L481">        BigInteger[] cumulativeCount = new BigInteger[pointDistMap.size()];</span>
+<span class="fc" id="L482">        PairInt[] pointsArray = new PairInt[pointDistMap.size()];</span>
         
-<span class="fc" id="L478">        int count = 0;</span>
-<span class="fc" id="L479">        BigInteger prev = null;</span>
-<span class="fc bfc" id="L480" title="All 2 branches covered.">        for (Entry&lt;PairInt, Integer&gt; entry : pointDistMap.entrySet()) {</span>
+<span class="fc" id="L484">        int count = 0;</span>
+<span class="fc" id="L485">        BigInteger prev = null;</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">        for (Entry&lt;PairInt, Integer&gt; entry : pointDistMap.entrySet()) {</span>
             
-<span class="fc" id="L482">            int value = entry.getValue().intValue();</span>
-<span class="pc bpc" id="L483" title="1 of 2 branches missed.">            if (inverse) {</span>
-<span class="nc" id="L484">                value = maxDist + 1 - value;</span>
+<span class="fc" id="L488">            int value = entry.getValue().intValue();</span>
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">            if (inverse) {</span>
+<span class="nc" id="L490">                value = maxDist + 1 - value;</span>
             }
             
-<span class="fc" id="L487">            pointsArray[count] = entry.getKey();</span>
-<span class="fc bfc" id="L488" title="All 2 branches covered.">            if (prev == null) {</span>
-<span class="fc" id="L489">                prev = BigInteger.ZERO;</span>
+<span class="fc" id="L493">            pointsArray[count] = entry.getKey();</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">            if (prev == null) {</span>
+<span class="fc" id="L495">                prev = BigInteger.ZERO;</span>
             }
             
-<span class="fc" id="L492">            BigInteger current = new BigInteger(MiscMath.writeToBigEndianBytes(value));</span>
+<span class="fc" id="L498">            BigInteger current = new BigInteger(MiscMath.writeToBigEndianBytes(value));</span>
             
-<span class="fc" id="L494">            cumulativeCount[count] = prev.add(current);</span>
+<span class="fc" id="L500">            cumulativeCount[count] = prev.add(current);</span>
             
-<span class="fc" id="L496">            prev = cumulativeCount[count];</span>
+<span class="fc" id="L502">            prev = cumulativeCount[count];</span>
             
-<span class="fc" id="L498">            count++;</span>
-<span class="fc" id="L499">        }</span>
+<span class="fc" id="L504">            count++;</span>
+<span class="fc" id="L505">        }</span>
         
-<span class="fc" id="L501">        PointValueDistr pv = new PointValueDistr(prev, pointsArray, cumulativeCount);</span>
+<span class="fc" id="L507">        PointValueDistr pv = new PointValueDistr(prev, pointsArray, cumulativeCount);</span>
         
-<span class="fc" id="L503">        return pv;</span>
+<span class="fc" id="L509">        return pv;</span>
     }
     
     protected List&lt;PairInt&gt; centers(List&lt;Bounds&gt; bounds) {
         
-<span class="fc" id="L508">        List&lt;PairInt&gt; centers = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L514">        List&lt;PairInt&gt; centers = new ArrayList&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L510" title="All 2 branches covered.">        for (Bounds b : bounds) {</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">        for (Bounds b : bounds) {</span>
             
-<span class="fc" id="L512">            float avgX = (b.lowerLeft.getX() + b.lowerRight.getX() </span>
-<span class="fc" id="L513">                + b.upperLeft.getX() + b.upperRight.getX())/4.f;</span>
+<span class="fc" id="L518">            float avgX = (b.lowerLeft.getX() + b.lowerRight.getX() </span>
+<span class="fc" id="L519">                + b.upperLeft.getX() + b.upperRight.getX())/4.f;</span>
             
-<span class="fc" id="L515">            float avgY = (b.lowerLeft.getY() + b.lowerRight.getY() </span>
-<span class="fc" id="L516">                + b.upperLeft.getY() + b.upperRight.getY())/4.f;</span>
+<span class="fc" id="L521">            float avgY = (b.lowerLeft.getY() + b.lowerRight.getY() </span>
+<span class="fc" id="L522">                + b.upperLeft.getY() + b.upperRight.getY())/4.f;</span>
             
-<span class="fc" id="L518">            PairInt p = new PairInt(Math.round(avgX), Math.round(avgY));</span>
+<span class="fc" id="L524">            PairInt p = new PairInt(Math.round(avgX), Math.round(avgY));</span>
             
-<span class="fc" id="L520">            centers.add(p);</span>
-<span class="fc" id="L521">        }</span>
+<span class="fc" id="L526">            centers.add(p);</span>
+<span class="fc" id="L527">        }</span>
         
-<span class="fc" id="L523">        return centers;</span>
+<span class="fc" id="L529">        return centers;</span>
     }
 
     private int[] findMaxXAndY(List&lt;Bounds&gt; bounds) {
         
-<span class="fc" id="L528">        int maxX = Integer.MIN_VALUE;</span>
+<span class="fc" id="L534">        int maxX = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L530">        int maxY = Integer.MIN_VALUE;</span>
+<span class="fc" id="L536">        int maxY = Integer.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L532" title="All 2 branches covered.">        for (Bounds b : bounds) {</span>
-<span class="fc bfc" id="L533" title="All 2 branches covered.">            if (b.lowerRight.getX() &gt; maxX) {</span>
-<span class="fc" id="L534">                maxX = b.lowerRight.getX();</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">        for (Bounds b : bounds) {</span>
+<span class="fc bfc" id="L539" title="All 2 branches covered.">            if (b.lowerRight.getX() &gt; maxX) {</span>
+<span class="fc" id="L540">                maxX = b.lowerRight.getX();</span>
             }
-<span class="pc bpc" id="L536" title="1 of 2 branches missed.">            if (b.upperRight.getX() &gt; maxX) {</span>
-<span class="nc" id="L537">                maxX = b.upperRight.getX();</span>
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">            if (b.upperRight.getX() &gt; maxX) {</span>
+<span class="nc" id="L543">                maxX = b.upperRight.getX();</span>
             }
-<span class="fc bfc" id="L539" title="All 2 branches covered.">            if (b.upperLeft.getY() &gt; maxY) {</span>
-<span class="fc" id="L540">                maxY = b.upperLeft.getY();</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">            if (b.upperLeft.getY() &gt; maxY) {</span>
+<span class="fc" id="L546">                maxY = b.upperLeft.getY();</span>
             }
-<span class="pc bpc" id="L542" title="1 of 2 branches missed.">            if (b.upperRight.getY() &gt; maxY) {</span>
-<span class="nc" id="L543">                maxY = b.upperRight.getY();</span>
+<span class="pc bpc" id="L548" title="1 of 2 branches missed.">            if (b.upperRight.getY() &gt; maxY) {</span>
+<span class="nc" id="L549">                maxY = b.upperRight.getY();</span>
             }
-<span class="fc" id="L545">        }</span>
+<span class="fc" id="L551">        }</span>
         
-<span class="fc" id="L547">        return new int[]{maxX, maxY};</span>
+<span class="fc" id="L553">        return new int[]{maxX, maxY};</span>
     }
 
     /**
@@ -584,31 +590,28 @@ import java.util.Set;
     private Map&lt;PairInt, Integer&gt; useDistanceTransform(Set&lt;PairInt&gt; points, 
         int w, int h, List&lt;PairInt&gt; seeds) {
              
-        com.climbwithyourfeet.clustering.DistanceTransform
-<span class="fc" id="L588">            &lt;com.climbwithyourfeet.clustering.util.PairInt&gt; dt = </span>
-            new com.climbwithyourfeet.clustering.DistanceTransform
-            &lt;com.climbwithyourfeet.clustering.util.PairInt&gt;();
+<span class="fc" id="L593">        DistanceTransform dt = new DistanceTransform();</span>
         
-<span class="fc" id="L592">        Set&lt;com.climbwithyourfeet.clustering.util.PairInt&gt; seedPoints</span>
-            = new HashSet&lt;com.climbwithyourfeet.clustering.util.PairInt&gt;();
+<span class="fc" id="L595">        PixelHelper ph = new PixelHelper();</span>
         
-<span class="fc bfc" id="L595" title="All 2 branches covered.">        for (PairInt p : seeds) {</span>
-<span class="fc" id="L596">            com.climbwithyourfeet.clustering.util.PairInt p2 = new</span>
-<span class="fc" id="L597">                com.climbwithyourfeet.clustering.util.PairInt(p.getX(), p.getY());</span>
-<span class="fc" id="L598">            seedPoints.add(p2);</span>
-<span class="fc" id="L599">        }</span>
+<span class="fc" id="L597">        TLongSet seedPixs = new TLongHashSet();</span>
         
-<span class="fc" id="L601">        int[][] distances = dt.applyMeijsterEtAl(seedPoints, w, h);</span>
+<span class="fc bfc" id="L599" title="All 2 branches covered.">        for (PairInt p : seeds) {</span>
+<span class="fc" id="L600">            long pixIdx = ph.toPixelIndex(p, w);</span>
+<span class="fc" id="L601">            seedPixs.add(pixIdx);</span>
+<span class="fc" id="L602">        }</span>
         
-<span class="fc" id="L603">        Map&lt;PairInt, Integer&gt; distMap = new HashMap&lt;PairInt, Integer&gt;();</span>
-<span class="fc bfc" id="L604" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L605">            int distSq = distances[p.getX()][p.getY()];</span>
-<span class="fc" id="L606">            Integer dist = Integer.valueOf((int)Math.round(Math.sqrt(distSq)));</span>
-<span class="fc" id="L607">            distMap.put(p, dist);</span>
-<span class="fc" id="L608">        }</span>
+<span class="fc" id="L604">        int[][] distances = dt.applyMeijsterEtAl(seedPixs, w, h);</span>
         
-<span class="fc" id="L610">        return distMap;</span>
+<span class="fc" id="L606">        Map&lt;PairInt, Integer&gt; distMap = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L608">            int distSq = distances[p.getX()][p.getY()];</span>
+<span class="fc" id="L609">            Integer dist = Integer.valueOf((int)Math.round(Math.sqrt(distSq)));</span>
+<span class="fc" id="L610">            distMap.put(p, dist);</span>
+<span class="fc" id="L611">        }</span>
+        
+<span class="fc" id="L613">        return distMap;</span>
     }    
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

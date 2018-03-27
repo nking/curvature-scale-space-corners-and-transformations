@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>YFastTrieWrapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.bipartite</a> &gt; <span class="el_source">YFastTrieWrapper.java</span></div><h1>YFastTrieWrapper.java</h1><pre class="source lang-java linenums">package algorithms.bipartite;
+
+import algorithms.YFastTrie;
+import algorithms.imageProcessing.HeapNode;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * a wrapper for the YFastTrie to provide methods of a minimum
+ * heap that can handle more than one node of the same key.
+ * @author nichole
+ */
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class YFastTrieWrapper {</span>
+
+    private final int w;
+    
+    private final int maxC;
+    
+    private final YFastTrie yft;
+    
+<span class="fc" id="L22">    private final TIntObjectHashMap&lt;Set&lt;HeapNode&gt;&gt; map =</span>
+        new TIntObjectHashMap&lt;Set&lt;HeapNode&gt;&gt;();
+    
+<span class="fc" id="L25">    private long lastKnownMinKey = 0;</span>
+<span class="fc" id="L26">    private long lastKnownMaxKey = -1;</span>
+        
+<span class="fc" id="L28">    private int n = 0;</span>
+    
+<span class="fc" id="L30">    public YFastTrieWrapper(int maxC) {</span>
+            
+<span class="fc" id="L32">        w = 1 + (int)Math.ceil(Math.log(maxC)/Math.log(2));</span>
+        
+<span class="fc" id="L34">        this.maxC = maxC;</span>
+        
+<span class="fc" id="L36">        yft = new YFastTrie(w);</span>
+        
+<span class="fc" id="L38">    }</span>
+    
+    public int getW() {
+<span class="nc" id="L41">        return w;</span>
+    }
+    
+    /**
+     * runtime complexity for best case is O(1) when there
+     * is already a similar key in the XFastTrie, else is
+     * is O(log_2(w)) + O(w-l)
+     * where w is the number of
+     * bits set in the constructor
+     * and l is the prefix tree already filled leading
+     * up to the value x.  The performance of the XFastTrie
+     * increases when more nodes are in it (can see that in the
+     * l term).
+     * @param node 
+     */
+    public void insert(HeapNode node) {
+        
+<span class="fc" id="L58">        int keyIdx = (int)node.getKey();</span>
+        
+<span class="fc" id="L60">        Set&lt;HeapNode&gt; set = map.get(keyIdx);</span>
+        
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (set == null) {</span>
+<span class="fc" id="L63">            Integer key = Integer.valueOf(keyIdx);</span>
+            // O(log_2(w)) + O(w-l)
+<span class="fc" id="L65">            boolean added = yft.add(key);</span>
+<span class="pc bpc" id="L66" title="3 of 4 branches missed.">            assert(added);</span>
+            
+<span class="fc" id="L68">            set = new HashSet&lt;HeapNode&gt;();</span>
+<span class="fc" id="L69">            map.put(keyIdx, set);</span>
+        }
+        
+        //O(1)
+<span class="fc" id="L73">        set.add(node);</span>
+        
+<span class="fc" id="L75">        n++;</span>
+        
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (keyIdx &lt; lastKnownMinKey) {</span>
+<span class="nc" id="L78">            lastKnownMinKey = keyIdx;</span>
+        }
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (keyIdx &gt; lastKnownMaxKey) {</span>
+<span class="fc" id="L81">            lastKnownMaxKey = keyIdx;</span>
+        }
+<span class="fc" id="L83">    }</span>
+    
+    /**
+     * runtime complexity for best case is O(1) when there
+     * is already a similar key in the XFastTrie, else is
+     * is O(log_2(w)) + O(w-l)
+     * where w is the number of
+     * bits set in the constructor
+     * and l is the prefix tree already filled leading
+     * up to the value x.  The performance of the XFastTrie
+     * increases when more nodes are in it (can see that in the
+     * l term).
+     * @param node 
+     */
+    public void decreaseKey(HeapNode node, long key2) {
+
+<span class="fc" id="L99">        int keyIdx = (int)node.getKey();</span>
+                
+<span class="fc" id="L101">        Set&lt;HeapNode&gt; set0 = map.get(keyIdx);</span>
+        
+<span class="pc bpc" id="L103" title="3 of 4 branches missed.">        assert(set0 != null);</span>
+        
+<span class="fc" id="L105">        set0.remove(node);</span>
+        
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (set0.size() == 0) {</span>
+<span class="fc" id="L108">            boolean removed = yft.remove(Integer.valueOf(keyIdx));</span>
+<span class="pc bpc" id="L109" title="3 of 4 branches missed.">            assert(removed);</span>
+<span class="fc" id="L110">            map.remove(keyIdx);</span>
+        }
+                        
+<span class="fc" id="L113">        node.setKey(key2);</span>
+        
+<span class="fc" id="L115">        Integer index2 = Integer.valueOf((int)key2);</span>
+        
+<span class="fc" id="L117">        Set&lt;HeapNode&gt; set2 = map.get((int)key2);</span>
+         
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (set2 == null) {</span>
+<span class="fc" id="L120">            boolean added = yft.add(index2);</span>
+<span class="pc bpc" id="L121" title="3 of 4 branches missed.">            assert(added);</span>
+            
+<span class="fc" id="L123">            set2 = new HashSet&lt;HeapNode&gt;();</span>
+<span class="fc" id="L124">            map.put((int)key2, set2);</span>
+        }
+        
+<span class="fc" id="L127">        set2.add(node);</span>
+     
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (key2 &lt; lastKnownMinKey) {</span>
+<span class="nc" id="L130">            lastKnownMinKey = key2;</span>
+        }
+<span class="fc" id="L132">    }</span>
+    
+    /**
+     * runtime complexity for best case is O(1) when there
+     * is already a similar key in the XFastTrie, else is
+     * is O(log_2(w)) + O(w-l)
+     * where w is the number of
+     * bits set in the constructor
+     * and l is the prefix tree already filled leading
+     * up to the value x.  The performance of the XFastTrie
+     * increases when more nodes are in it (can see that in the
+     * l term).
+     * @return node 
+     */
+    public HeapNode extractMin() {
+        
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (n == 0) {</span>
+<span class="nc" id="L149">            return null;</span>
+        }
+     
+<span class="fc" id="L152">        Integer key = yft.minimum();</span>
+        
+<span class="fc" id="L154">        Set&lt;HeapNode&gt; set = map.get(key.intValue());</span>
+        
+<span class="fc" id="L156">        HeapNode node = set.iterator().next();</span>
+<span class="fc" id="L157">        set.remove(node);</span>
+        
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (set.isEmpty()) {</span>
+<span class="fc" id="L160">            map.remove(key.intValue());</span>
+<span class="fc" id="L161">            yft.remove(key);</span>
+        }
+       
+<span class="fc" id="L164">        lastKnownMinKey = key.intValue();</span>
+<span class="fc" id="L165">        n--;</span>
+        
+<span class="fc" id="L167">        return node;</span>
+    }
+    
+    public long getNumberOfNodes() {
+<span class="nc" id="L171">        return n;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

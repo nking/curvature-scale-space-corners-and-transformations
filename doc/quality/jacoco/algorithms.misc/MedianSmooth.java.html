@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MedianSmooth.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">MedianSmooth.java</span></div><h1>MedianSmooth.java</h1><pre class="source lang-java linenums">package algorithms.misc;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MedianSmooth.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.misc</a> &gt; <span class="el_source">MedianSmooth.java</span></div><h1>MedianSmooth.java</h1><pre class="source lang-java linenums">package algorithms.misc;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairIntArray;
@@ -101,54 +101,6 @@ import java.util.Arrays;
     }
 
     /**
-     * calculate a running median of the k previous points of curveY.
-     * runtime complexity is O(k) + O(N*lg_2(k)) at most.
-     * @param curveY
-     * @param kPoints
-     * @return
-     */
-    public int[] calculate(int[] curveY, int kPoints) {
-
-<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (curveY == null) {</span>
-<span class="fc" id="L113">            throw new IllegalArgumentException(&quot;curveY cannot be null&quot;);</span>
-        }
-<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (curveY.length &lt; kPoints) {</span>
-<span class="fc" id="L116">            throw new IllegalArgumentException(</span>
-            &quot;curveY.length must be equal to or greater than kPoints&quot;);
-        }
-
-<span class="fc" id="L120">        int[] medians = new int[curveY.length - kPoints + 1];</span>
-
-<span class="fc" id="L122">        SortedVector sVec = new SortedVector(kPoints);</span>
-
-        // add the first k-1 to the list container
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (int i = 0; i &lt; (kPoints - 1); i++) {</span>
-<span class="fc" id="L126">            sVec.append(curveY[i]);</span>
-        }
-        //O(k) + + (N)*lg2(k)
-        int median;
-
-<span class="fc bfc" id="L131" title="All 2 branches covered.">        for (int i = (kPoints - 1); i &lt; curveY.length; i++) {</span>
-
-            // add the kth item to the list: O(log_2(k)) + &lt; O(k)
-            // the list state is sorted at the end of the method.
-<span class="fc" id="L135">            sVec.insertIntoOpenSlot(curveY[i]);</span>
-
-            //O(1)
-<span class="fc" id="L138">            median = sVec.getMedian();</span>
-
-<span class="fc" id="L140">            int idx = i - kPoints + 1;</span>
-
-            // remove the x[i - k + 1] item from sorted list : O(log_2(k))
-<span class="fc" id="L143">            sVec.remove(curveY[idx]);</span>
-
-<span class="fc" id="L145">            medians[idx] = median;</span>
-        }
-
-<span class="fc" id="L148">        return medians;</span>
-    }
-
-    /**
      * calculate a running median of the k previous points of curve.
      * runtime complexity is O(N*k) at most.
      * @param curve
@@ -157,54 +109,54 @@ import java.util.Arrays;
      */
     public PairIntArray calculate(PairIntArray curve, int kPoints) {
 
-<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (curve == null) {</span>
-<span class="fc" id="L161">            throw new IllegalArgumentException(&quot;curve cannot be null&quot;);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (curve == null) {</span>
+<span class="fc" id="L113">            throw new IllegalArgumentException(&quot;curve cannot be null&quot;);</span>
         }
-<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (curve.getN() &lt; kPoints) {</span>
-<span class="fc" id="L164">            throw new IllegalArgumentException(</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (curve.getN() &lt; kPoints) {</span>
+<span class="fc" id="L116">            throw new IllegalArgumentException(</span>
             &quot;curve length must be equal to or greater than kPoints&quot;);
         }
 
-<span class="fc" id="L168">        PairIntArray medians = new PairIntArray(curve.getN() - kPoints + 1);</span>
+<span class="fc" id="L120">        PairIntArray medians = new PairIntArray(curve.getN() - kPoints + 1);</span>
 
-<span class="fc" id="L170">        SortedVector sVec = new SortedVector(kPoints);</span>
+<span class="fc" id="L122">        SortedVector sVec = new SortedVector(kPoints);</span>
 
-<span class="fc" id="L172">        long xSum = 0;</span>
+<span class="fc" id="L124">        long xSum = 0;</span>
 
         // add the first k-1 to the list container
-<span class="fc bfc" id="L175" title="All 2 branches covered.">        for (int i = 0; i &lt; (kPoints - 1); ++i) {</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (int i = 0; i &lt; (kPoints - 1); ++i) {</span>
 
-<span class="fc" id="L177">            sVec.append(curve.getY(i));</span>
+<span class="fc" id="L129">            sVec.append(curve.getY(i));</span>
 
-<span class="fc" id="L179">            xSum += curve.getX(i);</span>
+<span class="fc" id="L131">            xSum += curve.getX(i);</span>
         }
 
         int median;
 
-<span class="fc bfc" id="L184" title="All 2 branches covered.">        for (int i = (kPoints - 1); i &lt; curve.getN(); ++i) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (int i = (kPoints - 1); i &lt; curve.getN(); ++i) {</span>
 
             // add the kth item to the list: O(log_2(k)) + &lt; O(k)
             // the list state is sorted at the end of the method.
-<span class="fc" id="L188">            sVec.insertIntoOpenSlot(curve.getY(i));</span>
+<span class="fc" id="L140">            sVec.insertIntoOpenSlot(curve.getY(i));</span>
 
             //O(1)
-<span class="fc" id="L191">            median = sVec.getMedian();</span>
+<span class="fc" id="L143">            median = sVec.getMedian();</span>
 
-<span class="fc" id="L193">            int idx = i - kPoints + 1;</span>
+<span class="fc" id="L145">            int idx = i - kPoints + 1;</span>
 
             // remove the x[i - k + 1] item from sorted list : O(log_2(k))
-<span class="fc" id="L196">            sVec.remove(curve.getY(idx));</span>
+<span class="fc" id="L148">            sVec.remove(curve.getY(idx));</span>
 
             //TODO: can be improved if know that the points are evenly sampled
-<span class="fc" id="L199">            xSum += curve.getX(i);</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">            if (idx &gt; 0) {</span>
-<span class="fc" id="L201">                xSum -= curve.getX(idx - 1);</span>
+<span class="fc" id="L151">            xSum += curve.getX(i);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (idx &gt; 0) {</span>
+<span class="fc" id="L153">                xSum -= curve.getX(idx - 1);</span>
             }
 
-<span class="fc" id="L204">            medians.add((int)(xSum/kPoints), median);</span>
+<span class="fc" id="L156">            medians.add((int)(xSum/kPoints), median);</span>
         }
 
-<span class="fc" id="L207">        return medians;</span>
+<span class="fc" id="L159">        return medians;</span>
     }
 
     /**
@@ -396,4 +348,4 @@ import java.util.Arrays;
         }
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SLICSuperPixelsGS.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.segmentation</a> &gt; <span class="el_source">SLICSuperPixelsGS.java</span></div><h1>SLICSuperPixelsGS.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.segmentation;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SLICSuperPixelsGS.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.segmentation</a> &gt; <span class="el_source">SLICSuperPixelsGS.java</span></div><h1>SLICSuperPixelsGS.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.segmentation;
 
 import algorithms.QuickSort;
 import algorithms.bipartite.MinHeapForRT2012;
@@ -518,178 +518,184 @@ import java.util.logging.Logger;
 <span class="nc" id="L518">        int h = img.getHeight();</span>
 <span class="nc" id="L519">        int n = img.getNPixels();</span>
 
+<span class="nc" id="L521">        int maxValue = Math.max(w, h);</span>
+<span class="nc" id="L522">        int nBits = 1 + (int)Math.ceil(Math.log(maxValue)/Math.log(2));</span>
+<span class="nc bnc" id="L523" title="All 2 branches missed.">        if (nBits &gt; 31) {</span>
+<span class="nc" id="L524">            nBits = 31;</span>
+        }
+        
         //System.out.println(&quot;assign &quot; + unassignedSet.size() + &quot; out of &quot;
         //    + n + &quot; pixels&quot;);
         
         // key = pixel index of unassigned, value = adj pixels that are assigned
-<span class="nc" id="L525">        TIntObjectMap&lt;TIntSet&gt; adjAssignedMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
+<span class="nc" id="L531">        TIntObjectMap&lt;TIntSet&gt; adjAssignedMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
         
         // key = pixel index of unassigned, value = adj pixels that are unassigned
-<span class="nc" id="L528">        TIntObjectMap&lt;TIntSet&gt; adjUnassignedMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
+<span class="nc" id="L534">        TIntObjectMap&lt;TIntSet&gt; adjUnassignedMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
 
-<span class="nc" id="L530">        int[] dxs = Misc.dx8;</span>
-<span class="nc" id="L531">        int[] dys = Misc.dy8;</span>
+<span class="nc" id="L536">        int[] dxs = Misc.dx8;</span>
+<span class="nc" id="L537">        int[] dys = Misc.dy8;</span>
 
-<span class="nc" id="L533">        TIntIterator iter = unassignedSet.iterator();</span>
-<span class="nc bnc" id="L534" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L535">            int pixIdx = iter.next();</span>
-<span class="nc" id="L536">            addNeighborLabelsForPoint(labels, adjAssignedMap, </span>
+<span class="nc" id="L539">        TIntIterator iter = unassignedSet.iterator();</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L541">            int pixIdx = iter.next();</span>
+<span class="nc" id="L542">            addNeighborLabelsForPoint(labels, adjAssignedMap, </span>
                 adjUnassignedMap, pixIdx, dxs, dys);
-<span class="nc" id="L538">        }</span>
+<span class="nc" id="L544">        }</span>
         
         // using a min heap whose priority is to set the nodes
         //    which have the largest number of assigned neighbors.
         //    nAssigned=8 -&gt; key=8-nAssigned = 0.
-<span class="nc" id="L543">        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n);</span>
+<span class="nc" id="L549">        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n, nBits);</span>
 
         // a map of nodes for the unassigned pixels
-<span class="nc" id="L546">        TIntObjectMap&lt;HeapNode&gt; unAMap = new TIntObjectHashMap&lt;HeapNode&gt;();</span>
+<span class="nc" id="L552">        TIntObjectMap&lt;HeapNode&gt; unAMap = new TIntObjectHashMap&lt;HeapNode&gt;();</span>
         
-<span class="nc" id="L548">        iter = unassignedSet.iterator();</span>
-<span class="nc bnc" id="L549" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L554">        iter = unassignedSet.iterator();</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
             
-<span class="nc" id="L551">            int pixIdx = iter.next();</span>
+<span class="nc" id="L557">            int pixIdx = iter.next();</span>
             
-<span class="nc" id="L553">            TIntSet neighbors = adjAssignedMap.get(pixIdx);</span>
-<span class="nc bnc" id="L554" title="All 4 branches missed.">            assert(neighbors != null);</span>
+<span class="nc" id="L559">            TIntSet neighbors = adjAssignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L560" title="All 4 branches missed.">            assert(neighbors != null);</span>
             
-<span class="nc" id="L556">            int nNeigbhors = neighbors.size();</span>
+<span class="nc" id="L562">            int nNeigbhors = neighbors.size();</span>
             
-<span class="nc" id="L558">            long key = 8 - nNeigbhors;</span>
-<span class="nc" id="L559">            HeapNode node = new HeapNode(key);</span>
-<span class="nc" id="L560">            node.setData(Integer.valueOf(pixIdx));</span>
+<span class="nc" id="L564">            long key = 8 - nNeigbhors;</span>
+<span class="nc" id="L565">            HeapNode node = new HeapNode(key);</span>
+<span class="nc" id="L566">            node.setData(Integer.valueOf(pixIdx));</span>
             
-<span class="nc" id="L562">            unAMap.put(pixIdx, node);</span>
+<span class="nc" id="L568">            unAMap.put(pixIdx, node);</span>
             
-<span class="nc" id="L564">            heap.insert(node);</span>
-<span class="nc" id="L565">        }</span>
+<span class="nc" id="L570">            heap.insert(node);</span>
+<span class="nc" id="L571">        }</span>
         
-<span class="nc bnc" id="L567" title="All 4 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
+<span class="nc bnc" id="L573" title="All 4 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
         
-<span class="nc bnc" id="L569" title="All 2 branches missed.">        while (heap.getNumberOfNodes() &gt; 0) {</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        while (heap.getNumberOfNodes() &gt; 0) {</span>
                         
-<span class="nc" id="L571">            HeapNode node = heap.extractMin();</span>
+<span class="nc" id="L577">            HeapNode node = heap.extractMin();</span>
             
-<span class="nc bnc" id="L573" title="All 4 branches missed.">            assert(node != null);</span>
+<span class="nc bnc" id="L579" title="All 4 branches missed.">            assert(node != null);</span>
             
-<span class="nc" id="L575">            int pixIdx = ((Integer)node.getData()).intValue();</span>
+<span class="nc" id="L581">            int pixIdx = ((Integer)node.getData()).intValue();</span>
             
-<span class="nc" id="L577">            TIntSet adjAssigned = adjAssignedMap.get(pixIdx);</span>
-<span class="nc bnc" id="L578" title="All 2 branches missed.">            if (adjAssigned.isEmpty()) {</span>
-<span class="nc" id="L579">                System.out.println(&quot;priority=&quot; + node.getKey()</span>
+<span class="nc" id="L583">            TIntSet adjAssigned = adjAssignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">            if (adjAssigned.isEmpty()) {</span>
+<span class="nc" id="L585">                System.out.println(&quot;priority=&quot; + node.getKey()</span>
                    + &quot; nUnassigned remaining=&quot; + 
-<span class="nc" id="L581">                    adjAssignedMap.size() + &quot; heap.n=&quot; +</span>
-<span class="nc" id="L582">                    heap.getNumberOfNodes());</span>
+<span class="nc" id="L587">                    adjAssignedMap.size() + &quot; heap.n=&quot; +</span>
+<span class="nc" id="L588">                    heap.getNumberOfNodes());</span>
             }
-<span class="nc bnc" id="L584" title="All 4 branches missed.">            assert(!adjAssigned.isEmpty());</span>
+<span class="nc bnc" id="L590" title="All 4 branches missed.">            assert(!adjAssigned.isEmpty());</span>
         
-<span class="nc" id="L586">            int y1 = pixIdx/w;</span>
-<span class="nc" id="L587">            int x1 = pixIdx - (y1 * w);</span>
+<span class="nc" id="L592">            int y1 = pixIdx/w;</span>
+<span class="nc" id="L593">            int x1 = pixIdx - (y1 * w);</span>
             
-<span class="nc" id="L589">            double minD = Double.MAX_VALUE;</span>
-<span class="nc" id="L590">            int minLabel2 = -1;</span>
+<span class="nc" id="L595">            double minD = Double.MAX_VALUE;</span>
+<span class="nc" id="L596">            int minLabel2 = -1;</span>
 
-<span class="nc" id="L592">            TIntIterator iter2 = adjAssigned.iterator();</span>
-<span class="nc bnc" id="L593" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
-<span class="nc" id="L594">                int pixIdx2 = iter2.next();</span>
-<span class="nc" id="L595">                int label2 = labels[pixIdx2];</span>
+<span class="nc" id="L598">            TIntIterator iter2 = adjAssigned.iterator();</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L600">                int pixIdx2 = iter2.next();</span>
+<span class="nc" id="L601">                int label2 = labels[pixIdx2];</span>
                 
-<span class="nc" id="L597">                double dist = calcDist(seedDescriptors[label2],</span>
-<span class="nc" id="L598">                    img.getValue(x1, y1), x1, y1);</span>
+<span class="nc" id="L603">                double dist = calcDist(seedDescriptors[label2],</span>
+<span class="nc" id="L604">                    img.getValue(x1, y1), x1, y1);</span>
                 
-<span class="nc bnc" id="L600" title="All 2 branches missed.">                if (dist &lt; minD) {</span>
-<span class="nc" id="L601">                    minD = dist;</span>
-<span class="nc" id="L602">                    minLabel2 = label2;</span>
+<span class="nc bnc" id="L606" title="All 2 branches missed.">                if (dist &lt; minD) {</span>
+<span class="nc" id="L607">                    minD = dist;</span>
+<span class="nc" id="L608">                    minLabel2 = label2;</span>
                 }
-<span class="nc" id="L604">            }</span>
+<span class="nc" id="L610">            }</span>
             
-<span class="nc" id="L606">            labels[pixIdx] = minLabel2;</span>
-<span class="nc" id="L607">            distances[pixIdx] = minD;</span>
+<span class="nc" id="L612">            labels[pixIdx] = minLabel2;</span>
+<span class="nc" id="L613">            distances[pixIdx] = minD;</span>
             
-<span class="nc" id="L609">            adjAssignedMap.remove(pixIdx);</span>
+<span class="nc" id="L615">            adjAssignedMap.remove(pixIdx);</span>
             
-<span class="nc" id="L611">            unAMap.remove(pixIdx);</span>
+<span class="nc" id="L617">            unAMap.remove(pixIdx);</span>
             
             // update the adjacent unassigned pixels and their keys in heap.
             // these pixels are not in adjLabels.
-<span class="nc" id="L615">            TIntSet adjUnassigned = adjUnassignedMap.get(pixIdx);</span>
-<span class="nc bnc" id="L616" title="All 2 branches missed.">            if (adjUnassigned == null) {</span>
-<span class="nc" id="L617">                continue;</span>
+<span class="nc" id="L621">            TIntSet adjUnassigned = adjUnassignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L622" title="All 2 branches missed.">            if (adjUnassigned == null) {</span>
+<span class="nc" id="L623">                continue;</span>
             }
-<span class="nc" id="L619">            adjUnassignedMap.remove(pixIdx);</span>
+<span class="nc" id="L625">            adjUnassignedMap.remove(pixIdx);</span>
             
-<span class="nc" id="L621">            iter2 = adjUnassigned.iterator();</span>
-<span class="nc bnc" id="L622" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L627">            iter2 = adjUnassigned.iterator();</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
                 
                 // this is an unassigned pixel
-<span class="nc" id="L625">                int pixIdx2 = iter2.next();</span>
-<span class="nc bnc" id="L626" title="All 4 branches missed.">                assert(pixIdx != pixIdx2);</span>
+<span class="nc" id="L631">                int pixIdx2 = iter2.next();</span>
+<span class="nc bnc" id="L632" title="All 4 branches missed.">                assert(pixIdx != pixIdx2);</span>
                 
                 // pixIdx should be in it's adj unassigned and then removed
-<span class="nc" id="L629">                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);</span>
-<span class="nc bnc" id="L630" title="All 4 branches missed.">                assert(adj2 != null);</span>
-<span class="nc" id="L631">                boolean rmvd = adj2.remove(pixIdx);</span>
-<span class="nc bnc" id="L632" title="All 4 branches missed.">                assert(rmvd);</span>
+<span class="nc" id="L635">                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);</span>
+<span class="nc bnc" id="L636" title="All 4 branches missed.">                assert(adj2 != null);</span>
+<span class="nc" id="L637">                boolean rmvd = adj2.remove(pixIdx);</span>
+<span class="nc bnc" id="L638" title="All 4 branches missed.">                assert(rmvd);</span>
                 
                 // add pixIdx to it's assigned pixels
-<span class="nc" id="L635">                adj2 = adjAssignedMap.get(pixIdx2);</span>
-<span class="nc bnc" id="L636" title="All 4 branches missed.">                assert(adj2 != null);</span>
-<span class="nc" id="L637">                adj2.add(pixIdx);</span>
+<span class="nc" id="L641">                adj2 = adjAssignedMap.get(pixIdx2);</span>
+<span class="nc bnc" id="L642" title="All 4 branches missed.">                assert(adj2 != null);</span>
+<span class="nc" id="L643">                adj2.add(pixIdx);</span>
 
-<span class="nc" id="L639">                HeapNode node2 = unAMap.get(pixIdx2);</span>
-<span class="nc bnc" id="L640" title="All 4 branches missed.">                assert(node2 != null);</span>
-<span class="nc" id="L641">                long key2 = 8 - adj2.size();</span>
-<span class="nc bnc" id="L642" title="All 4 branches missed.">                assert(key2 &gt; -1);</span>
-<span class="nc bnc" id="L643" title="All 2 branches missed.">                if (key2 &lt; node2.getKey()) {</span>
-<span class="nc" id="L644">                    heap.decreaseKey(node2, key2);</span>
+<span class="nc" id="L645">                HeapNode node2 = unAMap.get(pixIdx2);</span>
+<span class="nc bnc" id="L646" title="All 4 branches missed.">                assert(node2 != null);</span>
+<span class="nc" id="L647">                long key2 = 8 - adj2.size();</span>
+<span class="nc bnc" id="L648" title="All 4 branches missed.">                assert(key2 &gt; -1);</span>
+<span class="nc bnc" id="L649" title="All 2 branches missed.">                if (key2 &lt; node2.getKey()) {</span>
+<span class="nc" id="L650">                    heap.decreaseKey(node2, key2);</span>
                 }
-<span class="nc" id="L646">            }</span>
-<span class="nc" id="L647">        }</span>
+<span class="nc" id="L652">            }</span>
+<span class="nc" id="L653">        }</span>
 
-<span class="nc bnc" id="L649" title="All 4 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
-<span class="nc" id="L650">    }</span>
+<span class="nc bnc" id="L655" title="All 4 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
+<span class="nc" id="L656">    }</span>
 
     private void addNeighborLabelsForPoint(int[] labels,
         TIntObjectMap&lt;TIntSet&gt; adjAssignedMap, 
         TIntObjectMap&lt;TIntSet&gt; adjUnassignedMap,
         int pixIdx, int[] dxs, int[] dys) {
 
-<span class="nc" id="L657">        int w = img.getWidth();</span>
-<span class="nc" id="L658">        int h = img.getHeight();</span>
+<span class="nc" id="L663">        int w = img.getWidth();</span>
+<span class="nc" id="L664">        int h = img.getHeight();</span>
 
-<span class="nc" id="L660">        TIntSet adjLabels = adjAssignedMap.get(pixIdx);</span>
-<span class="nc" id="L661">        TIntSet adjULabels = adjUnassignedMap.get(pixIdx);</span>
-<span class="nc bnc" id="L662" title="All 2 branches missed.">        if (adjLabels == null) {</span>
-<span class="nc bnc" id="L663" title="All 4 branches missed.">            assert(adjULabels == null);</span>
+<span class="nc" id="L666">        TIntSet adjLabels = adjAssignedMap.get(pixIdx);</span>
+<span class="nc" id="L667">        TIntSet adjULabels = adjUnassignedMap.get(pixIdx);</span>
+<span class="nc bnc" id="L668" title="All 2 branches missed.">        if (adjLabels == null) {</span>
+<span class="nc bnc" id="L669" title="All 4 branches missed.">            assert(adjULabels == null);</span>
             
-<span class="nc" id="L665">            adjLabels = new TIntHashSet();</span>
-<span class="nc" id="L666">            adjAssignedMap.put(pixIdx, adjLabels);</span>
+<span class="nc" id="L671">            adjLabels = new TIntHashSet();</span>
+<span class="nc" id="L672">            adjAssignedMap.put(pixIdx, adjLabels);</span>
             
-<span class="nc" id="L668">            adjULabels = new TIntHashSet();</span>
-<span class="nc" id="L669">            adjUnassignedMap.put(pixIdx, adjULabels);</span>
+<span class="nc" id="L674">            adjULabels = new TIntHashSet();</span>
+<span class="nc" id="L675">            adjUnassignedMap.put(pixIdx, adjULabels);</span>
         }
         
-<span class="nc" id="L672">        int j = pixIdx/w;</span>
-<span class="nc" id="L673">        int i = pixIdx - (j * w);</span>
+<span class="nc" id="L678">        int j = pixIdx/w;</span>
+<span class="nc" id="L679">        int i = pixIdx - (j * w);</span>
 
-<span class="nc bnc" id="L675" title="All 2 branches missed.">        for (int m = 0; m &lt; dxs.length; ++m) {</span>
-<span class="nc" id="L676">            int x2 = i + dxs[m];</span>
-<span class="nc" id="L677">            int y2 = j + dys[m];</span>
-<span class="nc bnc" id="L678" title="All 8 branches missed.">            if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L679">                continue;</span>
+<span class="nc bnc" id="L681" title="All 2 branches missed.">        for (int m = 0; m &lt; dxs.length; ++m) {</span>
+<span class="nc" id="L682">            int x2 = i + dxs[m];</span>
+<span class="nc" id="L683">            int y2 = j + dys[m];</span>
+<span class="nc bnc" id="L684" title="All 8 branches missed.">            if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L685">                continue;</span>
             }
-<span class="nc" id="L681">            int pixIdx2 = (y2 * w) + x2;</span>
-<span class="nc bnc" id="L682" title="All 2 branches missed.">            if (labels[pixIdx2] == -1) {</span>
-<span class="nc" id="L683">                adjULabels.add(pixIdx2);</span>
+<span class="nc" id="L687">            int pixIdx2 = (y2 * w) + x2;</span>
+<span class="nc bnc" id="L688" title="All 2 branches missed.">            if (labels[pixIdx2] == -1) {</span>
+<span class="nc" id="L689">                adjULabels.add(pixIdx2);</span>
             } else {
-<span class="nc" id="L685">                adjLabels.add(pixIdx2);</span>
+<span class="nc" id="L691">                adjLabels.add(pixIdx2);</span>
             }
         }
-<span class="nc" id="L688">    }</span>
+<span class="nc" id="L694">    }</span>
 
     public int[] getLabels() {
-<span class="nc" id="L691">        return labels;</span>
+<span class="nc" id="L697">        return labels;</span>
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

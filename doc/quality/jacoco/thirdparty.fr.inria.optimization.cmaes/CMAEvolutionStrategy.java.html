@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMAEvolutionStrategy.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.fr.inria.optimization.cmaes</a> &gt; <span class="el_source">CMAEvolutionStrategy.java</span></div><h1>CMAEvolutionStrategy.java</h1><pre class="source lang-java linenums">package thirdparty.fr.inria.optimization.cmaes;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CMAEvolutionStrategy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">thirdparty.fr.inria.optimization.cmaes</a> &gt; <span class="el_source">CMAEvolutionStrategy.java</span></div><h1>CMAEvolutionStrategy.java</h1><pre class="source lang-java linenums">package thirdparty.fr.inria.optimization.cmaes;
 
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
@@ -2616,7 +2616,7 @@ Proceedings&lt;/I&gt;, pp. 296-305, Springer.
      *  
      * @see #writeToDefaultFiles() */
     public void writeToDefaultFiles(int flgForce) {
-<span class="pc bpc" id="L2619" title="2 of 4 branches missed.">        if (flgForce &gt; 0 &amp;&amp; countiter != citerlastwritten) </span>
+<span class="pc bpc" id="L2619" title="1 of 4 branches missed.">        if (flgForce &gt; 0 &amp;&amp; countiter != citerlastwritten) </span>
 <span class="fc" id="L2620">            citerlastwritten = -1; // force writing if something new is there</span>
 <span class="pc bpc" id="L2621" title="1 of 2 branches missed.">        if (flgForce &gt;= 2)</span>
 <span class="nc" id="L2622">            citerlastwritten = -1; // force writing </span>
@@ -2634,8 +2634,8 @@ Proceedings&lt;/I&gt;, pp. 296-305, Springer.
 <span class="fc bfc" id="L2634" title="All 2 branches covered.">        if (citerlastwritten &gt;= 0) { // negative value forces writing</span>
 <span class="pc bpc" id="L2635" title="1 of 2 branches missed.">            if (state &lt; 1)</span>
 <span class="nc" id="L2636">                return;</span>
-<span class="pc bpc" id="L2637" title="1 of 2 branches missed.">            if (countiter == citerlastwritten)</span>
-<span class="nc" id="L2638">                return; </span>
+<span class="fc bfc" id="L2637" title="All 2 branches covered.">            if (countiter == citerlastwritten)</span>
+<span class="fc" id="L2638">                return; </span>
 <span class="pc bpc" id="L2639" title="1 of 2 branches missed.">            if (options.maxTimeFractionForWriteToDefaultFiles &lt;= 0)</span>
 <span class="nc" id="L2640">                return;</span>
 <span class="pc bpc" id="L2641" title="1 of 6 branches missed.">            if (countiter &gt; 4 &amp;&amp; stopConditions.index == 0  // has no effect if stopCondition.test() was not called</span>
@@ -2745,4 +2745,4 @@ class IntDouble implements Comparator&lt;IntDouble&gt; {
 <span class="nc" id="L2745">        return false;</span>
     }
 } // IntDouble
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

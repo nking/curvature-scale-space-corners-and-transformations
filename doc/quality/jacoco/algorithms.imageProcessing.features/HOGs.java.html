@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HOGs.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">HOGs.java</span></div><h1>HOGs.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HOGs.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">HOGs.java</span></div><h1>HOGs.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
@@ -85,7 +85,7 @@ import java.util.List;
 
    Comparison of block feature is then a histogram intersection,
    where normally 0 is no intersection, hence maximally different,
-   and an intersection equal to the max value is maximally sgimilar.
+   and an intersection equal to the max value is maximally similar.
    (see the method ColorHistogram.intersection, but here, the normalization
    will already have been applied instead of determined in the method).
 
@@ -101,6 +101,8 @@ import java.util.List;
 */
 public class HOGs {
 
+<span class="fc" id="L104">    private static float eps = 0.000001f;</span>
+    
     // 9 is default
     private final int nAngleBins;
 
@@ -116,94 +118,106 @@ public class HOGs {
     private final int w;
     private final int h;
 
-<span class="pc" id="L119">    private boolean debug = false;</span>
+<span class="pc" id="L121">    private boolean debug = false;</span>
 
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
-    // g 8.4 million pix, roughly 2900 X 2900
+    // e.g. 8.4 million pix, roughly 2900 X 2900
 
-<span class="nc" id="L125">    public HOGs(GreyscaleImage rgb) {</span>
+<span class="nc" id="L127">    public HOGs(GreyscaleImage rgb) {</span>
 
-<span class="nc" id="L127">        nAngleBins = 9;</span>
-<span class="nc" id="L128">        N_PIX_PER_CELL_DIM = 4;</span>
-<span class="nc" id="L129">        N_CELLS_PER_BLOCK_DIM = 2;</span>
-<span class="nc" id="L130">        w = rgb.getWidth();</span>
-<span class="nc" id="L131">        h = rgb.getHeight();</span>
+<span class="nc" id="L129">        nAngleBins = 9;</span>
+<span class="nc" id="L130">        N_PIX_PER_CELL_DIM = 4;</span>
+<span class="nc" id="L131">        N_CELLS_PER_BLOCK_DIM = 2;</span>
+<span class="nc" id="L132">        w = rgb.getWidth();</span>
+<span class="nc" id="L133">        h = rgb.getHeight();</span>
 
-<span class="nc" id="L133">        gHists = init(rgb);</span>
-<span class="nc" id="L134">    }</span>
+<span class="nc" id="L135">        gHists = init(rgb);</span>
+<span class="nc" id="L136">    }</span>
 
-<span class="fc" id="L136">    public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim) {</span>
+<span class="fc" id="L138">    public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim) {</span>
 
-<span class="fc" id="L138">        nAngleBins = 9;</span>
-<span class="fc" id="L139">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
-<span class="fc" id="L140">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
-<span class="fc" id="L141">        w = rgb.getWidth();</span>
-<span class="fc" id="L142">        h = rgb.getHeight();</span>
+<span class="fc" id="L140">        nAngleBins = 9;</span>
+<span class="fc" id="L141">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
+<span class="fc" id="L142">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
+<span class="fc" id="L143">        w = rgb.getWidth();</span>
+<span class="fc" id="L144">        h = rgb.getHeight();</span>
 
-<span class="fc" id="L144">        gHists = init(rgb);</span>
-<span class="fc" id="L145">    }</span>
+<span class="fc" id="L146">        gHists = init(rgb);</span>
+<span class="fc" id="L147">    }</span>
+    
+    public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim,
+<span class="fc" id="L150">            int nAngleBins) {</span>
 
-<span class="nc" id="L147">    public HOGs(GreyscaleImage gradientXY, GreyscaleImage theta) {</span>
+<span class="fc" id="L152">        this.nAngleBins = nAngleBins;</span>
+<span class="fc" id="L153">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
+<span class="fc" id="L154">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
+<span class="fc" id="L155">        w = rgb.getWidth();</span>
+<span class="fc" id="L156">        h = rgb.getHeight();</span>
 
-<span class="nc" id="L149">        nAngleBins = 9;</span>
-<span class="nc" id="L150">        N_PIX_PER_CELL_DIM = 4;</span>
-<span class="nc" id="L151">        N_CELLS_PER_BLOCK_DIM = 2;</span>
-<span class="nc" id="L152">        w = gradientXY.getWidth();</span>
-<span class="nc" id="L153">        h = gradientXY.getHeight();</span>
+<span class="fc" id="L158">        gHists = init(rgb);</span>
+<span class="fc" id="L159">    }</span>
 
-<span class="nc" id="L155">        gHists = init(gradientXY, theta);</span>
-<span class="nc" id="L156">    }</span>
+<span class="nc" id="L161">    public HOGs(GreyscaleImage gradientXY, GreyscaleImage theta) {</span>
+
+<span class="nc" id="L163">        nAngleBins = 9;</span>
+<span class="nc" id="L164">        N_PIX_PER_CELL_DIM = 4;</span>
+<span class="nc" id="L165">        N_CELLS_PER_BLOCK_DIM = 2;</span>
+<span class="nc" id="L166">        w = gradientXY.getWidth();</span>
+<span class="nc" id="L167">        h = gradientXY.getHeight();</span>
+
+<span class="nc" id="L169">        gHists = init(gradientXY, theta);</span>
+<span class="nc" id="L170">    }</span>
 
     public void setToDebug() {
-<span class="nc" id="L159">        debug = true;</span>
-<span class="nc" id="L160">    }</span>
+<span class="nc" id="L173">        debug = true;</span>
+<span class="nc" id="L174">    }</span>
 
     private int[][] init(GreyscaleImage rgb) {
 
-<span class="fc" id="L164">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L178">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
         // instead of sobel, using 1st deriv
-<span class="fc" id="L167">        GreyscaleImage[] gXgY = imageProcessor.createGradients(rgb);</span>
+<span class="fc" id="L181">        GreyscaleImage[] gXgY = imageProcessor.createGradients(rgb);</span>
 
-<span class="fc" id="L169">        GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);</span>
+<span class="fc" id="L183">        GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);</span>
 
-<span class="fc" id="L171">        GreyscaleImage gXY = </span>
-<span class="fc" id="L172">            imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);</span>
+<span class="fc" id="L185">        GreyscaleImage gXY = </span>
+<span class="fc" id="L186">            imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);</span>
 
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L175">            algorithms.misc.MiscDebug.writeImage(gXgY[0], &quot;_gX_&quot;);</span>
-<span class="nc" id="L176">            algorithms.misc.MiscDebug.writeImage(gXgY[1], &quot;_gY_&quot;);</span>
-<span class="nc" id="L177">            algorithms.misc.MiscDebug.writeImage(gXY, &quot;_gXY_&quot;);</span>
-<span class="nc" id="L178">            algorithms.misc.MiscDebug.writeImage(theta, &quot;_theta_&quot;);</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L189">            algorithms.misc.MiscDebug.writeImage(gXgY[0], &quot;_gX_&quot;);</span>
+<span class="nc" id="L190">            algorithms.misc.MiscDebug.writeImage(gXgY[1], &quot;_gY_&quot;);</span>
+<span class="nc" id="L191">            algorithms.misc.MiscDebug.writeImage(gXY, &quot;_gXY_&quot;);</span>
+<span class="nc" id="L192">            algorithms.misc.MiscDebug.writeImage(theta, &quot;_theta_&quot;);</span>
         }
 
-<span class="fc" id="L181">        return init(gXY, theta);</span>
+<span class="fc" id="L195">        return init(gXY, theta);</span>
     }
 
     private int[][] init(GreyscaleImage gradientXY, GreyscaleImage theta) {
 
-<span class="pc bpc" id="L186" title="2 of 4 branches missed.">        if (w != gradientXY.getWidth() || h != gradientXY.getHeight()) {</span>
-<span class="nc" id="L187">            throw new IllegalArgumentException(&quot;gradient and theta must be same size&quot;);</span>
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">        if (w != gradientXY.getWidth() || h != gradientXY.getHeight()) {</span>
+<span class="nc" id="L201">            throw new IllegalArgumentException(&quot;gradient and theta must be same size&quot;);</span>
         }
 
-<span class="pc bpc" id="L190" title="2 of 4 branches missed.">        if (w != theta.getWidth() || h != theta.getHeight()) {</span>
-<span class="nc" id="L191">            throw new IllegalArgumentException(&quot;gradient and theta must be same size&quot;);</span>
+<span class="pc bpc" id="L204" title="2 of 4 branches missed.">        if (w != theta.getWidth() || h != theta.getHeight()) {</span>
+<span class="nc" id="L205">            throw new IllegalArgumentException(&quot;gradient and theta must be same size&quot;);</span>
         }
 
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L195">            algorithms.misc.MiscDebug.writeImage(gradientXY, &quot;_gXY_&quot;);</span>
-<span class="nc" id="L196">            algorithms.misc.MiscDebug.writeImage(theta, &quot;_theta_&quot;);</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L209">            algorithms.misc.MiscDebug.writeImage(gradientXY, &quot;_gXY_&quot;);</span>
+<span class="nc" id="L210">            algorithms.misc.MiscDebug.writeImage(theta, &quot;_theta_&quot;);</span>
         }
 
-<span class="fc" id="L199">        GradientIntegralHistograms gh = new GradientIntegralHistograms();</span>
+<span class="fc" id="L213">        GradientIntegralHistograms gh = new GradientIntegralHistograms();</span>
 
-<span class="fc" id="L201">        int[][] histograms = gh.createHistograms(gradientXY, theta, nAngleBins);</span>
+<span class="fc" id="L215">        int[][] histograms = gh.createHistograms(gradientXY, theta, nAngleBins);</span>
 
         //apply a windowed sum across the integral image
-<span class="fc" id="L204">        gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L218">        gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);</span>
 
-<span class="fc" id="L206">        return histograms;</span>
+<span class="fc" id="L220">        return histograms;</span>
     }
 
     /**
@@ -226,12 +240,12 @@ public class HOGs {
      */
     public void extractFeature(int x, int y, int[] outHist) {
 
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (outHist.length != nAngleBins) {</span>
-<span class="nc" id="L230">            throw new IllegalArgumentException(&quot;outHist.length != nAngleBins&quot;);</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (outHist.length != nAngleBins) {</span>
+<span class="nc" id="L244">            throw new IllegalArgumentException(&quot;outHist.length != nAngleBins&quot;);</span>
         }
 
-<span class="pc bpc" id="L233" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
-<span class="nc" id="L234">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+<span class="pc bpc" id="L247" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L248">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
                 + &quot;original image&quot;);
         }
 
@@ -239,70 +253,70 @@ public class HOGs {
         //   the summary of histogram counts over all cells
         //   is used to normaliza each cell by that sum.
 
-<span class="fc" id="L242">        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;</span>
+<span class="fc" id="L256">        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;</span>
 
-<span class="fc" id="L244">        double blockTotal = 0;</span>
+<span class="fc" id="L258">        double blockTotal = 0;</span>
 
-<span class="fc" id="L246">        List&lt;OneDIntArray&gt; cells = new ArrayList&lt;OneDIntArray&gt;(nH);</span>
+<span class="fc" id="L260">        List&lt;OneDIntArray&gt; cells = new ArrayList&lt;OneDIntArray&gt;(nH);</span>
 
-<span class="fc bfc" id="L248" title="All 2 branches covered.">        for (int cX = 0; cX &lt; N_CELLS_PER_BLOCK_DIM; ++cX) {</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (int cX = 0; cX &lt; N_CELLS_PER_BLOCK_DIM; ++cX) {</span>
 
-<span class="fc" id="L250">            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;</span>
+<span class="fc" id="L264">            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;</span>
 
-<span class="fc" id="L252">            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L266">            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);</span>
 
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">            if ((x2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
-<span class="nc" id="L255">                break;</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">            } else if (x2 &lt; 0) {</span>
-<span class="nc" id="L257">                x2 = 0;</span>
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">            } else if (x2 &gt;= w) {</span>
-<span class="nc" id="L259">                break;</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">            if ((x2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="nc" id="L269">                break;</span>
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">            } else if (x2 &lt; 0) {</span>
+<span class="nc" id="L271">                x2 = 0;</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">            } else if (x2 &gt;= w) {</span>
+<span class="nc" id="L273">                break;</span>
             }
 
-<span class="fc bfc" id="L262" title="All 2 branches covered.">            for (int cY = 0; cY &lt; N_CELLS_PER_BLOCK_DIM; ++cY) {</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">            for (int cY = 0; cY &lt; N_CELLS_PER_BLOCK_DIM; ++cY) {</span>
 
-<span class="fc" id="L264">                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;</span>
+<span class="fc" id="L278">                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;</span>
 
-<span class="fc" id="L266">                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L280">                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);</span>
 
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">                if ((y2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
-<span class="nc" id="L269">                    break;</span>
-<span class="pc bpc" id="L270" title="1 of 2 branches missed.">                } else if (y2 &lt; 0) {</span>
-<span class="nc" id="L271">                    y2 = 0;</span>
-<span class="pc bpc" id="L272" title="1 of 2 branches missed.">                } else if (y2 &gt;= h) {</span>
-<span class="nc" id="L273">                    break;</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">                if ((y2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="nc" id="L283">                    break;</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">                } else if (y2 &lt; 0) {</span>
+<span class="nc" id="L285">                    y2 = 0;</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">                } else if (y2 &gt;= h) {</span>
+<span class="nc" id="L287">                    break;</span>
                 }
 
-<span class="fc" id="L276">                int pixIdx = (y2 * w) + x2;</span>
+<span class="fc" id="L290">                int pixIdx = (y2 * w) + x2;</span>
 
-<span class="fc" id="L278">                int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);</span>
+<span class="fc" id="L292">                int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);</span>
 
-<span class="fc" id="L280">                cells.add(new OneDIntArray(out));</span>
+<span class="fc" id="L294">                cells.add(new OneDIntArray(out));</span>
 
-<span class="fc" id="L282">                int t = sumCounts(out);</span>
+<span class="fc" id="L296">                int t = sumCounts(out);</span>
 
-<span class="fc" id="L284">                blockTotal += (t * t);</span>
+<span class="fc" id="L298">                blockTotal += (t * t);</span>
             }
         }
 
-<span class="fc" id="L288">        blockTotal /= (double)cells.size();</span>
+<span class="fc" id="L302">        blockTotal /= (double)cells.size();</span>
 
-<span class="fc" id="L290">        double norm = 1./Math.sqrt(blockTotal + 0.0001);</span>
+<span class="fc" id="L304">        double norm = 1./Math.sqrt(blockTotal + eps);</span>
 
-<span class="fc" id="L292">        float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *</span>
+<span class="fc" id="L306">        float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *</span>
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255.f;
 
-<span class="fc" id="L295">        norm *= maxBlock;</span>
+<span class="fc" id="L309">        norm *= maxBlock;</span>
 
-<span class="fc" id="L297">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
+<span class="fc" id="L311">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
 
-<span class="fc bfc" id="L299" title="All 2 branches covered.">        for (int i = 0; i &lt; cells.size(); ++i) {</span>
-<span class="fc" id="L300">            int[] a = cells.get(i).a;</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">            for (int j = 0; j &lt; a.length; ++j) {</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int i = 0; i &lt; cells.size(); ++i) {</span>
+<span class="fc" id="L314">            int[] a = cells.get(i).a;</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            for (int j = 0; j &lt; a.length; ++j) {</span>
                 //v /= Math.sqrt(blockTotal + 0.0001);
-<span class="fc" id="L303">                a[j] = (int)Math.round(norm * a[j]);</span>
+<span class="fc" id="L317">                a[j] = (int)Math.round(norm * a[j]);</span>
             }
-<span class="fc" id="L305">            add(outHist, a);</span>
+<span class="fc" id="L319">            add(outHist, a);</span>
         }
 
         /*
@@ -314,7 +328,7 @@ public class HOGs {
           -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
                                       *
         */
-<span class="fc" id="L317">    }</span>
+<span class="fc" id="L331">    }</span>
 
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
@@ -329,6 +343,8 @@ public class HOGs {
      *
      * Note that an orientation of 90 is a unit vector from x,y=0,0 to
      * x,y=0,1.
+     * 
+     * Note also that you may want to try the rotation of oppossite direction.
      *
      * @param histA
      * @param orientationA
@@ -339,29 +355,29 @@ public class HOGs {
     public float intersection(int[] histA, int orientationA, int[] histB,
         int orientationB) {
 
-<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
-<span class="nc" id="L343">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L358" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
+<span class="nc" id="L359">            throw new IllegalArgumentException(</span>
                 &quot;histA and histB must be same dimensions&quot;);
         }
 
-<span class="pc bpc" id="L347" title="4 of 8 branches missed.">        if (orientationA &lt; 0 || orientationA &gt; 180 || orientationB &lt; 0 ||</span>
+<span class="pc bpc" id="L363" title="4 of 8 branches missed.">        if (orientationA &lt; 0 || orientationA &gt; 180 || orientationB &lt; 0 ||</span>
             orientationB &gt; 180) {
-<span class="nc" id="L349">            throw new IllegalArgumentException(&quot;orientations must be in range 0 to 180,&quot;</span>
+<span class="nc" id="L365">            throw new IllegalArgumentException(&quot;orientations must be in range 0 to 180,&quot;</span>
                 + &quot;  inclusive,  or!=&quot; + orientationA + &quot; orB=&quot; + orientationB);
         }
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">        if (orientationA == 180) {</span>
-<span class="nc" id="L353">            orientationA = 0;</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">        if (orientationA == 180) {</span>
+<span class="nc" id="L369">            orientationA = 0;</span>
         }
-<span class="fc bfc" id="L355" title="All 2 branches covered.">        if (orientationB == 180) {</span>
-<span class="fc" id="L356">            orientationB = 0;</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">        if (orientationB == 180) {</span>
+<span class="fc" id="L372">            orientationB = 0;</span>
         }
 
-<span class="fc" id="L359">        int nBins = histA.length;</span>
+<span class="fc" id="L375">        int nBins = histA.length;</span>
 
-<span class="fc" id="L361">        int binWidth = 180/nBins;</span>
+<span class="fc" id="L377">        int binWidth = 180/nBins;</span>
 
-<span class="fc" id="L363">        int shiftA = (orientationA - 90)/binWidth;</span>
-<span class="fc" id="L364">        int shiftB = (orientationB - 90)/binWidth;</span>
+<span class="fc" id="L379">        int shiftA = (orientationA - 90)/binWidth;</span>
+<span class="fc" id="L380">        int shiftB = (orientationB - 90)/binWidth;</span>
 
         /*
         histograms are already normalized
@@ -372,80 +388,142 @@ public class HOGs {
             (min(summation_over_i(a_i), summation_over_i(b_i))
         */
 
-<span class="fc" id="L375">        float sum = 0;</span>
-<span class="fc" id="L376">        float sumA = 0;</span>
-<span class="fc" id="L377">        float sumB = 0;</span>
-<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+<span class="fc" id="L391">        float sum = 0;</span>
+<span class="fc" id="L392">        float sumA = 0;</span>
+<span class="fc" id="L393">        float sumB = 0;</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
 
-<span class="fc" id="L380">            int idxA = j + shiftA;</span>
-<span class="fc bfc" id="L381" title="All 2 branches covered.">            if (idxA &lt; 0) {</span>
-<span class="fc" id="L382">                idxA += nBins;</span>
-<span class="fc bfc" id="L383" title="All 2 branches covered.">            } else if (idxA &gt; (nBins - 1 )) {</span>
-<span class="fc" id="L384">                idxA -= nBins;</span>
+<span class="fc" id="L396">            int idxA = j + shiftA;</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">            if (idxA &lt; 0) {</span>
+<span class="fc" id="L398">                idxA += nBins;</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">            } else if (idxA &gt; (nBins - 1 )) {</span>
+<span class="fc" id="L400">                idxA -= nBins;</span>
             }
 
-<span class="fc" id="L387">            int idxB = j + shiftB;</span>
-<span class="fc bfc" id="L388" title="All 2 branches covered.">            if (idxB &lt; 0) {</span>
-<span class="fc" id="L389">                idxB += nBins;</span>
-<span class="fc bfc" id="L390" title="All 2 branches covered.">            } else if (idxB &gt; (nBins - 1 )) {</span>
-<span class="fc" id="L391">                idxB -= nBins;</span>
+<span class="fc" id="L403">            int idxB = j + shiftB;</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">            if (idxB &lt; 0) {</span>
+<span class="fc" id="L405">                idxB += nBins;</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">            } else if (idxB &gt; (nBins - 1 )) {</span>
+<span class="fc" id="L407">                idxB -= nBins;</span>
             }
+            
 
-<span class="fc" id="L394">            float yA = histA[idxA];</span>
-<span class="fc" id="L395">            float yB = histB[idxB];</span>
+<span class="fc" id="L411">            float yA = histA[idxA];</span>
+<span class="fc" id="L412">            float yB = histB[idxB];</span>
 
-<span class="fc" id="L397">            sum += Math.min(yA, yB);</span>
-<span class="fc" id="L398">            sumA += yA;</span>
-<span class="fc" id="L399">            sumB += yB;</span>
+<span class="fc" id="L414">            sum += Math.min(yA, yB);</span>
+<span class="fc" id="L415">            sumA += yA;</span>
+<span class="fc" id="L416">            sumB += yB;</span>
 
             //System.out.println(&quot; &quot; + yA + &quot; -- &quot; + yB + &quot; sum=&quot;+sum + &quot;, &quot; + sumA + &quot;,&quot; + sumB);
         }
 
-<span class="fc" id="L404">        float d = Math.min(sumA, sumB);</span>
-<span class="fc bfc" id="L405" title="All 2 branches covered.">        float sim = (d == 0.f) ? 0 : sum/d;</span>
+<span class="fc" id="L421">        float d = eps + Math.min(sumA, sumB);</span>
+<span class="fc" id="L422">        float sim = sum/d;</span>
 
-<span class="fc" id="L407">        return sim;</span>
+<span class="fc" id="L424">        return sim;</span>
     }
-
+    
     /**
-     * TODO: this will hold a comparison method and return a score or cost and
-           a relevant error parameter usable between comparison results.
-     
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     *
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     *
      * @param histA
      * @param orientationA
      * @param histB
      * @param orientationB
-     * @return the SSD normalized by max possible value over
-     * feature definition, and the maxValue
+     * @return difference, error
      */
-    /*
-    public float[] a(int[] histA, int orientationA, int[] histB,
+    public float[] diff(int[] histA, int orientationA, int[] histB,
         int orientationB) {
 
-        if ((histA.length != histB.length)) {
-            throw new IllegalArgumentException(
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
+<span class="nc" id="L451">            throw new IllegalArgumentException(</span>
                 &quot;histA and histB must be same dimensions&quot;);
         }
 
-        if (orientationA &lt; 0 || orientationA &gt; 180 || orientationB &lt; 0 ||
+<span class="pc bpc" id="L455" title="4 of 8 branches missed.">        if (orientationA &lt; 0 || orientationA &gt; 180 || orientationB &lt; 0 ||</span>
             orientationB &gt; 180) {
-            throw new IllegalArgumentException(&quot;orientations must be in range 0 to 180,&quot;
+<span class="nc" id="L457">            throw new IllegalArgumentException(&quot;orientations must be in range 0 to 180,&quot;</span>
                 + &quot;  inclusive,  or!=&quot; + orientationA + &quot; orB=&quot; + orientationB);
         }
-        if (orientationA == 180) {
-            orientationA = 0;
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">        if (orientationA == 180) {</span>
+<span class="nc" id="L461">            orientationA = 0;</span>
         }
-        if (orientationB == 180) {
-            orientationB = 0;
-        } 
+<span class="pc bpc" id="L463" title="1 of 2 branches missed.">        if (orientationB == 180) {</span>
+<span class="nc" id="L464">            orientationB = 0;</span>
+        }
 
-        two histograms a and b
-        each bin contents should add to the output cost or score, even
-          if both histograms have 0's in those bins.
-        if both have 0's in the same post-shifted bin,
-           that is a 100 percent match.
-        if there is a 200 and 150 respectively in same bin for a, b
-           then match is (200-50)/200
+<span class="fc" id="L467">        int nBins = histA.length;</span>
+
+<span class="fc" id="L469">        int binWidth = 180/nBins;</span>
+
+<span class="fc" id="L471">        int shiftA = (orientationA - 90)/binWidth;</span>
+<span class="fc" id="L472">        int shiftB = (orientationB - 90)/binWidth;</span>
+
+        /*
+        histograms are already normalized
+
+        K(a,b) =
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+
+<span class="fc" id="L483">        double sumDiff = 0;</span>
+        
+<span class="fc" id="L485">        double err = 0;</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+
+<span class="fc" id="L488">            int idxA = j + shiftA;</span>
+<span class="fc bfc" id="L489" title="All 2 branches covered.">            if (idxA &lt; 0) {</span>
+<span class="fc" id="L490">                idxA += nBins;</span>
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">            } else if (idxA &gt; (nBins - 1 )) {</span>
+<span class="nc" id="L492">                idxA -= nBins;</span>
+            }
+
+<span class="fc" id="L495">            int idxB = j + shiftB;</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">            if (idxB &lt; 0) {</span>
+<span class="fc" id="L497">                idxB += nBins;</span>
+<span class="pc bpc" id="L498" title="1 of 2 branches missed.">            } else if (idxB &gt; (nBins - 1 )) {</span>
+<span class="nc" id="L499">                idxB -= nBins;</span>
+            }
+
+<span class="fc" id="L502">            float yA = histA[idxA];</span>
+<span class="fc" id="L503">            float yB = histB[idxB];</span>
+
+<span class="fc" id="L505">            float maxValue = Math.max(yA, yB) + eps;</span>
+            
+<span class="fc" id="L507">            float diff = (yA - yB)/maxValue;</span>
+            
+            //sumDiff += (diff * diff);
+<span class="fc" id="L510">            sumDiff += Math.abs(diff);</span>
+            
+<span class="fc" id="L512">            err += 1./(maxValue * maxValue);</span>
+        }
+        
+<span class="fc" id="L515">        sumDiff /= (double)nBins;</span>
+        
+        //sumDiff = Math.sqrt(sumDiff);
+        
+<span class="fc" id="L519">        err = Math.sqrt(err);</span>
+        
+<span class="fc" id="L521">        return new float[]{(float)sumDiff, (float)err};</span>
+    }
+    
+    /*
+    two histograms a and b
+        
         but, the errors are needed to know if the results are significant.
         if a and b have few to no other counts in other
            bins, can see that the errors should be large and the
@@ -485,33 +563,32 @@ public class HOGs {
                (1/0)^2 = inf
 
      still considering examples ...
-
-    }*/
+    */
 
     private int sumCounts(int[] hist) {
 
-<span class="fc" id="L493">        int sum = 0;</span>
-<span class="fc bfc" id="L494" title="All 2 branches covered.">        for (int v : hist) {</span>
-<span class="fc" id="L495">            sum += v;</span>
+<span class="fc" id="L570">        int sum = 0;</span>
+<span class="fc bfc" id="L571" title="All 2 branches covered.">        for (int v : hist) {</span>
+<span class="fc" id="L572">            sum += v;</span>
         }
 
-<span class="fc" id="L498">        return sum;</span>
+<span class="fc" id="L575">        return sum;</span>
     }
 
     private void add(int[] addTo, int[] addFrom) {
-<span class="fc bfc" id="L502" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
-<span class="fc" id="L503">            addTo[i] += addFrom[i];</span>
+<span class="fc bfc" id="L579" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
+<span class="fc" id="L580">            addTo[i] += addFrom[i];</span>
         }
-<span class="fc" id="L505">    }</span>
+<span class="fc" id="L582">    }</span>
 
     private void add(long[] addTo, int[] addFrom) {
-<span class="fc bfc" id="L508" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
-<span class="fc" id="L509">            addTo[i] += addFrom[i];</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
+<span class="fc" id="L586">            addTo[i] += addFrom[i];</span>
         }
-<span class="fc" id="L511">    }</span>
+<span class="fc" id="L588">    }</span>
 
     public int getNumberOfBins() {
-<span class="fc" id="L514">        return nAngleBins;</span>
+<span class="fc" id="L591">        return nAngleBins;</span>
     }
 
     /**
@@ -522,116 +599,116 @@ public class HOGs {
      */
     public int calculateDominantOrientation(Collection&lt;PairInt&gt; xy) {
 
-<span class="nc" id="L525">        long[] combined = new long[nAngleBins];</span>
+<span class="nc" id="L602">        long[] combined = new long[nAngleBins];</span>
 
-<span class="nc bnc" id="L527" title="All 2 branches missed.">        for (PairInt p : xy) {</span>
-<span class="nc" id="L528">            int pixIdx = (p.getY() * w) + p.getX();</span>
-<span class="nc" id="L529">            add(combined, gHists[pixIdx]);</span>
-<span class="nc" id="L530">        }</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">        for (PairInt p : xy) {</span>
+<span class="nc" id="L605">            int pixIdx = (p.getY() * w) + p.getX();</span>
+<span class="nc" id="L606">            add(combined, gHists[pixIdx]);</span>
+<span class="nc" id="L607">        }</span>
 
-<span class="nc" id="L532">        TIntList maxIdxs = new TIntArrayList();</span>
-<span class="nc" id="L533">        long maxValue = Long.MIN_VALUE;</span>
-<span class="nc bnc" id="L534" title="All 2 branches missed.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
-<span class="nc" id="L535">            long v = combined[i];</span>
-<span class="nc bnc" id="L536" title="All 2 branches missed.">            if (v &gt; maxValue) {</span>
-<span class="nc" id="L537">                maxIdxs.clear();</span>
-<span class="nc" id="L538">                maxIdxs.add(i);</span>
-<span class="nc" id="L539">                maxValue = v;</span>
-<span class="nc bnc" id="L540" title="All 2 branches missed.">            } else if (v == maxValue) {</span>
-<span class="nc" id="L541">                maxIdxs.add(i);</span>
+<span class="nc" id="L609">        TIntList maxIdxs = new TIntArrayList();</span>
+<span class="nc" id="L610">        long maxValue = Long.MIN_VALUE;</span>
+<span class="nc bnc" id="L611" title="All 2 branches missed.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
+<span class="nc" id="L612">            long v = combined[i];</span>
+<span class="nc bnc" id="L613" title="All 2 branches missed.">            if (v &gt; maxValue) {</span>
+<span class="nc" id="L614">                maxIdxs.clear();</span>
+<span class="nc" id="L615">                maxIdxs.add(i);</span>
+<span class="nc" id="L616">                maxValue = v;</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">            } else if (v == maxValue) {</span>
+<span class="nc" id="L618">                maxIdxs.add(i);</span>
             }
         }
 
-<span class="nc" id="L545">        int binWidth = 180 / nAngleBins;</span>
+<span class="nc" id="L622">        int binWidth = 180 / nAngleBins;</span>
 
         //TODO: revise to fit max peak using neighboring bins
-<span class="nc bnc" id="L548" title="All 2 branches missed.">        if (maxIdxs.size() == 1) {</span>
-<span class="nc" id="L549">            return Math.round((maxIdxs.get(0) + 0.5f) * binWidth);</span>
+<span class="nc bnc" id="L625" title="All 2 branches missed.">        if (maxIdxs.size() == 1) {</span>
+<span class="nc" id="L626">            return Math.round((maxIdxs.get(0) + 0.5f) * binWidth);</span>
         }
 
         //TODO: revise this
-<span class="nc bnc" id="L553" title="All 2 branches missed.">        if (maxIdxs.size() == 2) {</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">        if (maxIdxs.size() == 2) {</span>
 
             // min of average with and without a wraparound phase
-<span class="nc" id="L556">            float ang0 = (maxIdxs.get(0) + 0.5f) * binWidth;</span>
-<span class="nc" id="L557">            float ang1 = (maxIdxs.get(1) + 0.5f) * binWidth;</span>
+<span class="nc" id="L633">            float ang0 = (maxIdxs.get(0) + 0.5f) * binWidth;</span>
+<span class="nc" id="L634">            float ang1 = (maxIdxs.get(1) + 0.5f) * binWidth;</span>
 
-<span class="nc bnc" id="L559" title="All 2 branches missed.">            if (ang0 &lt; ang1) {</span>
-<span class="nc" id="L560">                float diff0 = 360 + ang0 - ang1;</span>
-<span class="nc" id="L561">                float diff1 = ang1 - ang0;</span>
-<span class="nc bnc" id="L562" title="All 2 branches missed.">                if (diff0 &lt; diff1) {</span>
-<span class="nc" id="L563">                    return Math.round(0.5f * (360 + ang0 + ang1));</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">            if (ang0 &lt; ang1) {</span>
+<span class="nc" id="L637">                float diff0 = 360 + ang0 - ang1;</span>
+<span class="nc" id="L638">                float diff1 = ang1 - ang0;</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">                if (diff0 &lt; diff1) {</span>
+<span class="nc" id="L640">                    return Math.round(0.5f * (360 + ang0 + ang1));</span>
                 }
 
-<span class="nc" id="L566">                return Math.round(0.5f * (ang0 + ang1));</span>
+<span class="nc" id="L643">                return Math.round(0.5f * (ang0 + ang1));</span>
             }
 
-<span class="nc" id="L569">            float diff0 = 360 + ang1 - ang0;</span>
-<span class="nc" id="L570">            float diff1 = ang0 - ang1;</span>
-<span class="nc bnc" id="L571" title="All 2 branches missed.">            if (diff0 &lt; diff1) {</span>
-<span class="nc" id="L572">                return Math.round(0.5f * (360 + ang1 + ang0));</span>
+<span class="nc" id="L646">            float diff0 = 360 + ang1 - ang0;</span>
+<span class="nc" id="L647">            float diff1 = ang0 - ang1;</span>
+<span class="nc bnc" id="L648" title="All 2 branches missed.">            if (diff0 &lt; diff1) {</span>
+<span class="nc" id="L649">                return Math.round(0.5f * (360 + ang1 + ang0));</span>
             }
 
-<span class="nc" id="L575">            return Math.round(0.5f * (ang0 + ang1));</span>
+<span class="nc" id="L652">            return Math.round(0.5f * (ang0 + ang1));</span>
 
         } else {
 
             // average of all indexes
 
-<span class="nc" id="L581">             double[] angles = new double[maxIdxs.size()];</span>
-<span class="nc bnc" id="L582" title="All 2 branches missed.">             for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
-<span class="nc" id="L583">                 angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);</span>
-             }
+<span class="nc" id="L658">            double[] angles = new double[maxIdxs.size()];</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">            for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
+<span class="nc" id="L660">                angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);</span>
+            }
 
-<span class="nc" id="L586">             double angleAvg =</span>
-<span class="nc" id="L587">                 AngleUtil.calculateAverageWithQuadrantCorrections(</span>
-                     angles, false);
+<span class="nc" id="L663">            double angleAvg =</span>
+<span class="nc" id="L664">                AngleUtil.calculateAverageWithQuadrantCorrections(</span>
+                    angles, false);
 
-<span class="nc" id="L590">            return (int)Math.round(angleAvg);</span>
+<span class="nc" id="L667">            return (int)Math.round(angleAvg);</span>
         }
     }
 
     public TIntSet calculateDominantOrientations(Collection&lt;PairInt&gt; xy) {
 
-<span class="fc" id="L596">        long[] combined = new long[nAngleBins];</span>
+<span class="fc" id="L673">        long[] combined = new long[nAngleBins];</span>
 
-<span class="fc bfc" id="L598" title="All 2 branches covered.">        for (PairInt p : xy) {</span>
-<span class="fc" id="L599">            int pixIdx = (p.getY() * w) + p.getX();</span>
-<span class="fc" id="L600">            add(combined, gHists[pixIdx]);</span>
-<span class="fc" id="L601">        }</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">        for (PairInt p : xy) {</span>
+<span class="fc" id="L676">            int pixIdx = (p.getY() * w) + p.getX();</span>
+<span class="fc" id="L677">            add(combined, gHists[pixIdx]);</span>
+<span class="fc" id="L678">        }</span>
 
-<span class="fc" id="L603">        int maxIdx = MiscMath.findYMaxIndex(combined);</span>
+<span class="fc" id="L680">        int maxIdx = MiscMath.findYMaxIndex(combined);</span>
 
-<span class="pc bpc" id="L605" title="1 of 2 branches missed.">        if (maxIdx == -1) {</span>
-<span class="nc" id="L606">            throw new IllegalArgumentException(&quot;histogram is full of &quot;</span>
+<span class="pc bpc" id="L682" title="1 of 2 branches missed.">        if (maxIdx == -1) {</span>
+<span class="nc" id="L683">            throw new IllegalArgumentException(&quot;histogram is full of &quot;</span>
                 + &quot; min value longs&quot;);
         }
 
         // if any bins have values within 80% of max, add to maxIdxs
-<span class="fc" id="L611">        TIntList maxIdxs = new TIntArrayList();</span>
+<span class="fc" id="L688">        TIntList maxIdxs = new TIntArrayList();</span>
 
-<span class="fc" id="L613">        long max = combined[maxIdx];</span>
-<span class="fc" id="L614">        double limit = 0.8 * max;</span>
+<span class="fc" id="L690">        long max = combined[maxIdx];</span>
+<span class="fc" id="L691">        double limit = 0.8 * max;</span>
 
-<span class="fc bfc" id="L616" title="All 2 branches covered.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
-<span class="fc" id="L617">            long v = combined[i];</span>
-<span class="fc bfc" id="L618" title="All 2 branches covered.">            if (v &gt;= limit) {</span>
-<span class="fc" id="L619">                maxIdxs.add(i);</span>
+<span class="fc bfc" id="L693" title="All 2 branches covered.">        for (int i = 0; i &lt; combined.length; ++i) {</span>
+<span class="fc" id="L694">            long v = combined[i];</span>
+<span class="fc bfc" id="L695" title="All 2 branches covered.">            if (v &gt;= limit) {</span>
+<span class="fc" id="L696">                maxIdxs.add(i);</span>
             }
         }
 
-<span class="fc" id="L623">        int binWidth = 180 / nAngleBins;</span>
+<span class="fc" id="L700">        int binWidth = 180 / nAngleBins;</span>
 
-<span class="fc" id="L625">        TIntSet orientations = new TIntHashSet();</span>
+<span class="fc" id="L702">        TIntSet orientations = new TIntHashSet();</span>
 
-<span class="fc bfc" id="L627" title="All 2 branches covered.">        for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
-<span class="fc" id="L628">            int idx = maxIdxs.get(i);</span>
-<span class="fc" id="L629">            int angle = Math.round((maxIdxs.get(i) + 0.5f) * binWidth);</span>
-<span class="fc" id="L630">            orientations.add(angle);</span>
+<span class="fc bfc" id="L704" title="All 2 branches covered.">        for (int i = 0; i &lt; maxIdxs.size(); ++i) {</span>
+<span class="fc" id="L705">            int idx = maxIdxs.get(i);</span>
+<span class="fc" id="L706">            int angle = Math.round((maxIdxs.get(i) + 0.5f) * binWidth);</span>
+<span class="fc" id="L707">            orientations.add(angle);</span>
         }
 
-<span class="fc" id="L633">        return orientations;</span>
+<span class="fc" id="L710">        return orientations;</span>
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

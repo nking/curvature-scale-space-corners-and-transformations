@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ColorHistogram.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ColorHistogram.java</span></div><h1>ColorHistogram.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ColorHistogram.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ColorHistogram.java</span></div><h1>ColorHistogram.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
@@ -429,33 +429,33 @@ import java.util.Set;
      */
     public void chiSquaredSum(int[][] hist0, int[][] hist1, float[] output) {
         
-<span class="pc bpc" id="L432" title="1 of 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
 <span class="nc" id="L433">            throw new IllegalArgumentException(</span>
                 &quot;hist0 and hist1 must be same dimensions&quot;);
         }
-<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (output.length != hist0.length) {</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        if (output.length != hist0.length) {</span>
 <span class="nc" id="L437">            throw new IllegalArgumentException(&quot;output must be same length as &quot;</span>
                 + &quot; hist0 first dimension&quot;);
         }
-<span class="fc bfc" id="L440" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="pc bpc" id="L441" title="1 of 2 branches missed.">            if ((hist0[i].length != hist1[i].length)) {</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="nc bnc" id="L441" title="All 2 branches missed.">            if ((hist0[i].length != hist1[i].length)) {</span>
 <span class="nc" id="L442">                throw new IllegalArgumentException(</span>
                     &quot;hist0 and hist1 must be same dimensions&quot;);
             }
         }
         
         //1/2 times sum over all bins of : (h1 - h2)^2/(h1 + h2)
-<span class="fc bfc" id="L448" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="fc bfc" id="L449" title="All 2 branches covered.">            for (int k = 0; k &lt; hist0[i].length; ++k) {</span>
-<span class="fc" id="L450">                float diff = hist0[i][k] - hist1[i][k];</span>
-<span class="fc" id="L451">                float add = hist0[i][k] + hist1[i][k];</span>
-<span class="fc bfc" id="L452" title="All 2 branches covered.">                if (add &gt; 0) {</span>
-<span class="fc" id="L453">                    output[i] += (diff * diff)/add;</span>
+<span class="nc bnc" id="L448" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">            for (int k = 0; k &lt; hist0[i].length; ++k) {</span>
+<span class="nc" id="L450">                float diff = hist0[i][k] - hist1[i][k];</span>
+<span class="nc" id="L451">                float add = hist0[i][k] + hist1[i][k];</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">                if (add &gt; 0) {</span>
+<span class="nc" id="L453">                    output[i] += (diff * diff)/add;</span>
                 }
             }
-<span class="fc" id="L456">            output[i] *= 0.5;</span>
+<span class="nc" id="L456">            output[i] *= 0.5;</span>
         }        
-<span class="fc" id="L458">    }</span>
+<span class="nc" id="L458">    }</span>
 
     public int[][] histogramRGB(ImageExt img, Set&lt;PairInt&gt; points) {
         
@@ -879,4 +879,4 @@ import java.util.Set;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

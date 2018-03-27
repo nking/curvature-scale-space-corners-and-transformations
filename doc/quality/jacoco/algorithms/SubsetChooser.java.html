@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SubsetChooser.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">SubsetChooser.java</span></div><h1>SubsetChooser.java</h1><pre class="source lang-java linenums">package algorithms;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubsetChooser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">SubsetChooser.java</span></div><h1>SubsetChooser.java</h1><pre class="source lang-java linenums">package algorithms;
 
 import algorithms.misc.MiscMath;
 import java.math.BigInteger;
@@ -61,35 +61,34 @@ public class SubsetChooser {
 
 <span class="fc" id="L62">        count = 1;</span>
 
-<span class="fc" id="L64">        np = MiscMath.computeNDivKTimesNMinusKExact(n, k);</span>
+        // n!/(k!(n-k)!)
+<span class="fc" id="L65">        np = MiscMath.computeNDivKTimesNMinusKExact(n, k);</span>
 
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (n &lt; 64) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (n &lt; 64) {</span>
             
-<span class="fc" id="L68">            highBit64 = 1L &lt;&lt; n;</span>
+<span class="fc" id="L69">            highBit64 = 1L &lt;&lt; n;</span>
 
-<span class="fc" id="L70">            x64 = (1L &lt;&lt; k) - 1;</span>
+<span class="fc" id="L71">            x64 = (1L &lt;&lt; k) - 1;</span>
 
-<span class="fc" id="L72">            x = null;</span>
+<span class="fc" id="L73">            x = null;</span>
             
-<span class="fc" id="L74">            highBit = null;</span>
+<span class="fc" id="L75">            highBit = null;</span>
             
         } else {
             
-            /*
-            x = BigInteger.ONE;
-            x = x.shiftLeft(k);
-            x = x.subtract(BigInteger.ONE);
-            */
-<span class="fc" id="L83">            byte[] val = MiscMath.writeToBigEndianBytes((1L &lt;&lt; k) - 1);</span>
-<span class="fc" id="L84">            x = new BigInteger(val);</span>
+            // x = BigInteger.ONE;
+            // x = x.shiftLeft(k);
+            // x = x.subtract(BigInteger.ONE);
+<span class="fc" id="L82">            byte[] val = MiscMath.writeToBigEndianBytes((1L &lt;&lt; k) - 1);</span>
+<span class="fc" id="L83">            x = new BigInteger(val);</span>
             
-<span class="fc" id="L86">            BigInteger hb = BigInteger.ONE;</span>
-<span class="fc" id="L87">            highBit = hb.shiftLeft(n);  </span>
+<span class="fc" id="L85">            BigInteger hb = BigInteger.ONE;</span>
+<span class="fc" id="L86">            highBit = hb.shiftLeft(n);  </span>
             
-<span class="fc" id="L89">            highBit64 = Long.MAX_VALUE;</span>
-<span class="fc" id="L90">            x64 = Long.MAX_VALUE;</span>
+<span class="fc" id="L88">            highBit64 = Long.MAX_VALUE;</span>
+<span class="fc" id="L89">            x64 = Long.MAX_VALUE;</span>
         }
-<span class="fc" id="L92">    }</span>
+<span class="fc" id="L91">    }</span>
 
     /**
      * given a constructed array, populates it with the next selected subset
@@ -100,35 +99,35 @@ public class SubsetChooser {
      */
     public int getNextSubset(int[] outputIndexes) {
 
-<span class="pc bpc" id="L103" title="2 of 4 branches missed.">        if (outputIndexes == null || outputIndexes.length != k) {</span>
-<span class="nc" id="L104">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L102" title="2 of 4 branches missed.">        if (outputIndexes == null || outputIndexes.length != k) {</span>
+<span class="nc" id="L103">            throw new IllegalArgumentException(</span>
                 &quot;outputIndexes cannot be null and has to be size k&quot;);
         }
         
-<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (n &lt; 64) {</span>
-<span class="fc" id="L109">            return getNextSubset64(outputIndexes);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (n &lt; 64) {</span>
+<span class="fc" id="L108">            return getNextSubset64(outputIndexes);</span>
         } else {
-<span class="fc" id="L111">            return getNextSubsetBigInteger(outputIndexes);</span>
+<span class="fc" id="L110">            return getNextSubsetBigInteger(outputIndexes);</span>
         }
         
     }
     
     protected int getNextSubsetBigInteger(int[] outputIndexes) {
 
-<span class="pc bpc" id="L118" title="2 of 4 branches missed.">        if (outputIndexes == null || outputIndexes.length != k) {</span>
-<span class="nc" id="L119">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L117" title="2 of 4 branches missed.">        if (outputIndexes == null || outputIndexes.length != k) {</span>
+<span class="nc" id="L118">            throw new IllegalArgumentException(</span>
                 &quot;outputIndexes cannot be null and has to be size k&quot;);
         }
         
-<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (count &gt; np) {</span>
-<span class="fc" id="L124">            return -1;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (count &gt; np) {</span>
+<span class="fc" id="L123">            return -1;</span>
         }
 
-<span class="fc" id="L127">        int nValues = selectBigInteger(outputIndexes);</span>
+<span class="fc" id="L126">        int nValues = selectBigInteger(outputIndexes);</span>
 
-<span class="fc" id="L129">        x = nextSubsetBigInteger(x);</span>
+<span class="fc" id="L128">        x = nextSubsetBigInteger(x);</span>
 
-<span class="fc" id="L131">        return nValues;</span>
+<span class="fc" id="L130">        return nValues;</span>
     }
     
     /**
@@ -140,20 +139,20 @@ public class SubsetChooser {
      */
     protected int getNextSubset64(int[] outputIndexes) {
 
-<span class="pc bpc" id="L143" title="2 of 4 branches missed.">        if (outputIndexes == null || outputIndexes.length != k) {</span>
-<span class="nc" id="L144">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">        if (outputIndexes == null || outputIndexes.length != k) {</span>
+<span class="nc" id="L143">            throw new IllegalArgumentException(</span>
                 &quot;outputIndexes cannot be null and has to be size k&quot;);
         }
 
-<span class="fc bfc" id="L148" title="All 2 branches covered.">        if (count &gt; np) {</span>
-<span class="fc" id="L149">            return -1;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (count &gt; np) {</span>
+<span class="fc" id="L148">            return -1;</span>
         }
 
-<span class="fc" id="L152">        int nValues = select64(outputIndexes);</span>
+<span class="fc" id="L151">        int nValues = select64(outputIndexes);</span>
 
-<span class="fc" id="L154">        x64 = nextSubset64(x64);</span>
+<span class="fc" id="L153">        x64 = nextSubset64(x64);</span>
 
-<span class="fc" id="L156">        return nValues;</span>
+<span class="fc" id="L155">        return nValues;</span>
     }
 
     /**
@@ -162,14 +161,14 @@ public class SubsetChooser {
      */
     private long nextSubset64(long x0) {
 
-<span class="fc" id="L165">        long y = x0 &amp; -x0;  // = the least significant one bit of x</span>
-<span class="fc" id="L166">        long c = x0 + y;</span>
+<span class="fc" id="L164">        long y = x0 &amp; -x0;  // = the least significant one bit of x0</span>
+<span class="fc" id="L165">        long c = x0 + y;</span>
 
-<span class="fc" id="L168">        x0 = c + (((c ^ x0) / y) &gt;&gt; 2);</span>
+<span class="fc" id="L167">        x0 = c + (((c ^ x0) / y) &gt;&gt; 2);</span>
 
-<span class="fc" id="L170">        count++;</span>
+<span class="fc" id="L169">        count++;</span>
 
-<span class="fc" id="L172">        return x0;</span>
+<span class="fc" id="L171">        return x0;</span>
     }
 
     /**
@@ -178,17 +177,17 @@ public class SubsetChooser {
      */
     private BigInteger nextSubsetBigInteger(BigInteger x0) {
 
-<span class="fc" id="L181">        BigInteger y = x0.and(x0.negate()); // = the least significant one bit of x</span>
-<span class="fc" id="L182">        BigInteger c = x0.add(y);</span>
+<span class="fc" id="L180">        BigInteger y = x0.and(x0.negate()); // = the least significant one bit of x</span>
+<span class="fc" id="L181">        BigInteger c = x0.add(y);</span>
         
         //x0 = c + (((c ^ x0) / y) &gt;&gt; 2);
-<span class="fc" id="L185">        BigInteger tmp = c.xor(x0).divide(y).shiftRight(2);</span>
+<span class="fc" id="L184">        BigInteger tmp = c.xor(x0).divide(y).shiftRight(2);</span>
         
-<span class="fc" id="L187">        x0 = c.add(tmp);</span>
+<span class="fc" id="L186">        x0 = c.add(tmp);</span>
 
-<span class="fc" id="L189">        count++;</span>
+<span class="fc" id="L188">        count++;</span>
 
-<span class="fc" id="L191">        return x0;</span>
+<span class="fc" id="L190">        return x0;</span>
     }
 
     protected int select64(int[] selected) {
@@ -203,20 +202,20 @@ public class SubsetChooser {
         System.out.format(&quot;%d\t%10s\n&quot;, x, str);
         */
 
-<span class="fc" id="L206">        int nBits = 0;</span>
-<span class="fc" id="L207">        int nOneBits = 0;</span>
-<span class="fc" id="L208">        long xp = x64;</span>
-<span class="fc bfc" id="L209" title="All 2 branches covered.">        while (xp &gt; 0) {</span>
-<span class="fc bfc" id="L210" title="All 2 branches covered.">            if ((xp &amp; 1) == 1) {</span>
-<span class="fc" id="L211">                int idx2 = n - 1 - nBits;</span>
-<span class="fc" id="L212">                selected[nOneBits] = idx2;</span>
-<span class="fc" id="L213">                nOneBits++;</span>
+<span class="fc" id="L205">        int nBits = 0;</span>
+<span class="fc" id="L206">        int nOneBits = 0;</span>
+<span class="fc" id="L207">        long xp = x64;</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        while (xp &gt; 0) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            if ((xp &amp; 1) == 1) {</span>
+<span class="fc" id="L210">                int idx2 = n - 1 - nBits;</span>
+<span class="fc" id="L211">                selected[nOneBits] = idx2;</span>
+<span class="fc" id="L212">                nOneBits++;</span>
             }
-<span class="fc" id="L215">            xp = xp &gt;&gt; 1;</span>
-<span class="fc" id="L216">            nBits++;</span>
+<span class="fc" id="L214">            xp = xp &gt;&gt; 1;</span>
+<span class="fc" id="L215">            nBits++;</span>
         }
 
-<span class="fc" id="L219">        return nOneBits;</span>
+<span class="fc" id="L218">        return nOneBits;</span>
     }
 
     protected int selectBigInteger(int[] selected) {
@@ -231,20 +230,20 @@ public class SubsetChooser {
         System.out.format(&quot;%d\t%10s\n&quot;, x, str);
         */
 
-<span class="fc" id="L234">        int nBits = 0;</span>
-<span class="fc" id="L235">        int nOneBits = 0;</span>
-<span class="fc" id="L236">        BigInteger xp = new BigInteger(x.toByteArray());</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">        while (xp.compareTo(BigInteger.ZERO) &gt; 0) {</span>
-<span class="fc bfc" id="L238" title="All 2 branches covered.">            if (xp.and(BigInteger.ONE).equals(BigInteger.ONE)) {</span>
-<span class="fc" id="L239">                int idx2 = n - 1 - nBits;</span>
-<span class="fc" id="L240">                selected[nOneBits] = idx2;</span>
-<span class="fc" id="L241">                nOneBits++;</span>
+<span class="fc" id="L233">        int nBits = 0;</span>
+<span class="fc" id="L234">        int nOneBits = 0;</span>
+<span class="fc" id="L235">        BigInteger xp = new BigInteger(x.toByteArray());</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        while (xp.compareTo(BigInteger.ZERO) &gt; 0) {</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">            if (xp.and(BigInteger.ONE).equals(BigInteger.ONE)) {</span>
+<span class="fc" id="L238">                int idx2 = n - 1 - nBits;</span>
+<span class="fc" id="L239">                selected[nOneBits] = idx2;</span>
+<span class="fc" id="L240">                nOneBits++;</span>
             }
-<span class="fc" id="L243">            xp = xp.shiftRight(1);</span>
-<span class="fc" id="L244">            nBits++;</span>
+<span class="fc" id="L242">            xp = xp.shiftRight(1);</span>
+<span class="fc" id="L243">            nBits++;</span>
         }
 
-<span class="fc" id="L247">        return nOneBits;</span>
+<span class="fc" id="L246">        return nOneBits;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

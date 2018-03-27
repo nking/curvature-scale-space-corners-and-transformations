@@ -1,9 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LineFinder.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">LineFinder.java</span></div><h1>LineFinder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LineFinder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">LineFinder.java</span></div><h1>LineFinder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
 
-import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedColumnTable;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -48,37 +46,37 @@ Also, the summed table of the chord differences is only along columns.
 
 @author nichole
 */
-<span class="pc bpc" id="L51" title="1 of 2 branches missed.">public class LineFinder {</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">public class LineFinder {</span>
 
     /**
       dp is the set distance between sampling points.
       The authors of the paper use 3 as an example.
     */
-<span class="fc" id="L57">    protected int dp = 1;</span>
+<span class="fc" id="L55">    protected int dp = 1;</span>
 
     // 10 degrees is 0.1745 radians
     // for a fit to a horizontal or vertical line only, 
     // consider 1E-7
-<span class="fc" id="L62">    private float thresh = 0.17f;//0.3f;      </span>
+<span class="fc" id="L60">    private float thresh = 0.17f;//0.3f;      </span>
     
     // this one is a rough limit to the total chord diff
     // sum over a found line segment.
-<span class="fc" id="L66">    private float thresh3 = 3;//10;</span>
+<span class="fc" id="L64">    private float thresh3 = 3;//10;</span>
 
     //NOTE: for staircase roofs like house_color.png has, 
     //   increasing thresh to 0.4 and thresh3 to 15 finds the
     //   remaining lines
     
-<span class="fc" id="L72">    private int minLength = 10;</span>
+<span class="fc" id="L70">    private int minLength = 10;</span>
     
-<span class="fc" id="L74">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L72">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="fc" id="L76">    private boolean debug = false;</span>
+<span class="fc" id="L74">    private boolean debug = false;</span>
 
-<span class="fc" id="L78">    private int lastCol = -1;</span>
-<span class="fc" id="L79">    private int lastRow = -1;</span>
+<span class="fc" id="L76">    private int lastCol = -1;</span>
+<span class="fc" id="L77">    private int lastRow = -1;</span>
     
-<span class="fc" id="L81">    private boolean useHighResolution = false;</span>
+<span class="fc" id="L79">    private boolean useHighResolution = false;</span>
     
     /**
      * this option reduces the thresholds and compares the curves to up
@@ -104,8 +102,8 @@ Also, the summed table of the chord differences is only along columns.
      * @param t
      */
     public void _overrideToThreshold(float t) {
-<span class="fc" id="L107">        this.thresh = t;</span>
-<span class="fc" id="L108">    }</span>
+<span class="fc" id="L105">        this.thresh = t;</span>
+<span class="fc" id="L106">    }</span>
     
     /**
       change the limit of the total chord difference
@@ -117,8 +115,8 @@ Also, the summed table of the chord differences is only along columns.
      * @param t 
      */
     public void _overrideToTotalThreshold(float t) {
-<span class="fc" id="L120">        thresh3 = t;</span>
-<span class="fc" id="L121">    }</span>
+<span class="fc" id="L118">        thresh3 = t;</span>
+<span class="fc" id="L119">    }</span>
     
     /**
      * set the minimum line length to length.  Note that the
@@ -128,11 +126,11 @@ Also, the summed table of the chord differences is only along columns.
      * @param length 
      */
     public void overrideMinimumLineLength(int length) {
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (length &lt; 2) {</span>
-<span class="nc" id="L132">            throw new IllegalArgumentException(&quot;length must be &gt;= 2&quot;);</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (length &lt; 2) {</span>
+<span class="nc" id="L130">            throw new IllegalArgumentException(&quot;length must be &gt;= 2&quot;);</span>
         }
-<span class="fc" id="L134">        this.minLength = length;</span>
-<span class="fc" id="L135">    }</span>
+<span class="fc" id="L132">        this.minLength = length;</span>
+<span class="fc" id="L133">    }</span>
 
     /**
      * override the sampling distance along the boundary which is by default
@@ -142,8 +140,8 @@ Also, the summed table of the chord differences is only along columns.
      * @param d
      */
     public void overrideSamplingDistance(int d) {
-<span class="nc" id="L145">        this.dp = d;</span>
-<span class="nc" id="L146">    }</span>
+<span class="nc" id="L143">        this.dp = d;</span>
+<span class="nc" id="L144">    }</span>
     
     /**
      * if this is set, vertical lines found at polar radius 0 and width from
@@ -151,14 +149,14 @@ Also, the summed table of the chord differences is only along columns.
      * and height from origin.
      */
     public void setToRemoveBorderLines(int lastColumn, int lastRow) {
-<span class="nc" id="L154">        this.lastCol = lastColumn;</span>
-<span class="nc" id="L155">        this.lastRow = lastRow;</span>
-<span class="nc" id="L156">    }</span>
+<span class="nc" id="L152">        this.lastCol = lastColumn;</span>
+<span class="nc" id="L153">        this.lastRow = lastRow;</span>
+<span class="nc" id="L154">    }</span>
 
     public void setToDebug() {
-<span class="nc" id="L159">        debug = true;</span>
-<span class="nc" id="L160">        log.setLevel(Level.FINE);</span>
-<span class="nc" id="L161">    }</span>
+<span class="nc" id="L157">        debug = true;</span>
+<span class="nc" id="L158">        log.setLevel(Level.FINE);</span>
+<span class="nc" id="L159">    }</span>
 
     /**
       NOT READY FOR USE... still testing...
@@ -195,62 +193,62 @@ Also, the summed table of the chord differences is only along columns.
     */
     public LineResult match(PairIntArray p) {
 
-<span class="fc" id="L198">        log.fine(&quot;p.n=&quot; + p.getN());</span>
+<span class="fc" id="L196">        log.fine(&quot;p.n=&quot; + p.getN());</span>
 
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (p.getN() &lt; 2) {</span>
-<span class="nc" id="L201">            throw new IllegalArgumentException(&quot;p must &quot;</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">        if (p.getN() &lt; 2) {</span>
+<span class="nc" id="L199">            throw new IllegalArgumentException(&quot;p must &quot;</span>
             + &quot; have at least dp*2 points = &quot; + (dp * 2));
         }
 
-<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (dp == 1) {</span>
-<span class="fc" id="L206">            return match0(p);</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (dp == 1) {</span>
+<span class="fc" id="L204">            return match0(p);</span>
         }
 
-<span class="nc" id="L209">        PairIntArray pSub = new PairIntArray(p.getN()/dp);</span>
+<span class="nc" id="L207">        PairIntArray pSub = new PairIntArray(p.getN()/dp);</span>
 
-<span class="nc bnc" id="L211" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); i += dp) {</span>
-<span class="nc" id="L212">            pSub.add(p.getX(i), p.getY(i));</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); i += dp) {</span>
+<span class="nc" id="L210">            pSub.add(p.getX(i), p.getY(i));</span>
         }
 
-<span class="nc" id="L215">        log.fine(&quot;pSub.n=&quot; + pSub.getN());</span>
+<span class="nc" id="L213">        log.fine(&quot;pSub.n=&quot; + pSub.getN());</span>
 
-<span class="nc" id="L217">        LineResult rSub = match0(pSub);</span>
+<span class="nc" id="L215">        LineResult rSub = match0(pSub);</span>
 
-<span class="nc bnc" id="L219" title="All 2 branches missed.">        if (rSub == null) {</span>
-<span class="nc" id="L220">            return null;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (rSub == null) {</span>
+<span class="nc" id="L218">            return null;</span>
         }
 
         // -- put results back into frame of p --
 
-<span class="nc" id="L225">        LineResult r = new LineResult();</span>
+<span class="nc" id="L223">        LineResult r = new LineResult();</span>
 
-<span class="nc" id="L227">        List&lt;PairInt&gt; lr = rSub.getLineIndexRanges();</span>
+<span class="nc" id="L225">        List&lt;PairInt&gt; lr = rSub.getLineIndexRanges();</span>
 
-<span class="nc bnc" id="L229" title="All 2 branches missed.">        for (int i = 0; i &lt; lr.size(); ++i) {</span>
-<span class="nc" id="L230">            PairInt startStop = lr.get(i);</span>
-<span class="nc" id="L231">            int len = startStop.getY() - startStop.getX() + 1;</span>
-<span class="nc" id="L232">            len *= dp;</span>
-<span class="nc" id="L233">            int x = startStop.getX() * dp;</span>
-<span class="nc" id="L234">            int y = x + len - 1;</span>
-<span class="nc" id="L235">            r.addLineRange(new PairInt(x, y));</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        for (int i = 0; i &lt; lr.size(); ++i) {</span>
+<span class="nc" id="L228">            PairInt startStop = lr.get(i);</span>
+<span class="nc" id="L229">            int len = startStop.getY() - startStop.getX() + 1;</span>
+<span class="nc" id="L230">            len *= dp;</span>
+<span class="nc" id="L231">            int x = startStop.getX() * dp;</span>
+<span class="nc" id="L232">            int y = x + len - 1;</span>
+<span class="nc" id="L233">            r.addLineRange(new PairInt(x, y));</span>
         }
 
-<span class="nc" id="L238">        return r;</span>
+<span class="nc" id="L236">        return r;</span>
     }
 
     private LineResult match0(PairIntArray p) {
 
-<span class="pc bpc" id="L243" title="2 of 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
-<span class="nc" id="L244">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
+<span class="pc bpc" id="L241" title="2 of 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
+<span class="nc" id="L242">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
                 + &quot;least 2 points&quot;);
         }
 
         // --- make difference matrix ---
 
         //md[0:n1-1][0:n1-1]
-<span class="fc" id="L251">        int n1 = p.getN();</span>
+<span class="fc" id="L249">        int n1 = p.getN();</span>
         
-<span class="fc" id="L253">        int sz = MiscMath.calculateObjectSize(p);</span>
+<span class="fc" id="L251">        int sz = MiscMath.calculateObjectSize(p);</span>
         
         // ---- read the difference matrix to find minimum cost assignments ----
         
@@ -272,145 +270,145 @@ Also, the summed table of the chord differences is only along columns.
               in the interval tree
         */
 
-<span class="fc" id="L275">        IntervalRangeSearch&lt;Integer, Integer&gt; rangeSearch = search(p);</span>
+<span class="fc" id="L273">        IntervalRangeSearch&lt;Integer, Integer&gt; rangeSearch = search(p);</span>
 
         // merge the results with the combined if they do not clash
         // read out the intervals and if all are matched or nearly all, break
         // ---- retrieve the intervals from range tree, trimming to unique -----
-<span class="fc" id="L280">        List&lt;Interval&lt;Integer&gt;&gt; list = rangeSearch.getAllIntervals();</span>
+<span class="fc" id="L278">        List&lt;Interval&lt;Integer&gt;&gt; list = rangeSearch.getAllIntervals();</span>
 
-<span class="pc bpc" id="L282" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L283">            System.out.println(&quot;nIntervals=&quot; + list.size());</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L281">            System.out.println(&quot;nIntervals=&quot; + list.size());</span>
         }
 
-<span class="fc" id="L286">        int nMatched = 0;</span>
+<span class="fc" id="L284">        int nMatched = 0;</span>
 
-<span class="fc" id="L288">        TIntSet existing = new TIntHashSet();</span>
-<span class="fc" id="L289">        TIntSet junctions = new TIntHashSet();</span>
+<span class="fc" id="L286">        TIntSet existing = new TIntHashSet();</span>
+<span class="fc" id="L287">        TIntSet junctions = new TIntHashSet();</span>
 
-<span class="fc" id="L291">        LineResult result = new LineResult();</span>
+<span class="fc" id="L289">        LineResult result = new LineResult();</span>
         
         int start, stop;
         
-<span class="fc bfc" id="L295" title="All 2 branches covered.">        for (Interval&lt;Integer&gt; interval2 : list) {</span>
-<span class="pc bpc" id="L296" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L297">                System.out.println(&quot;interval2=&quot; + interval2);</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        for (Interval&lt;Integer&gt; interval2 : list) {</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L295">                System.out.println(&quot;interval2=&quot; + interval2);</span>
             }
             // correct for the interval start being +1
-<span class="fc" id="L300">            start = interval2.min() - 1;</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">            if (existing.contains(start)) {</span>
-<span class="fc" id="L302">                junctions.add(start);</span>
-<span class="fc" id="L303">    System.out.println(&quot;junction: &quot; + p.getX(start) + &quot; , &quot; + p.getY(start));</span>
-<span class="fc" id="L304">                start++;</span>
+<span class="fc" id="L298">            start = interval2.min() - 1;</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">            if (existing.contains(start)) {</span>
+<span class="fc" id="L300">                junctions.add(start);</span>
+<span class="fc" id="L301">    System.out.println(&quot;junction: &quot; + p.getX(start) + &quot; , &quot; + p.getY(start));</span>
+<span class="fc" id="L302">                start++;</span>
             }
-<span class="fc" id="L306">            stop = interval2.max();</span>
-<span class="fc bfc" id="L307" title="All 2 branches covered.">            if (existing.contains(stop)) {</span>
-<span class="fc" id="L308">                junctions.add(stop);</span>
-<span class="fc" id="L309">    System.out.println(&quot;junction: &quot; + p.getX(stop) + &quot; , &quot; + p.getY(stop));</span>
-<span class="fc" id="L310">                stop--;</span>
+<span class="fc" id="L304">            stop = interval2.max();</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">            if (existing.contains(stop)) {</span>
+<span class="fc" id="L306">                junctions.add(stop);</span>
+<span class="fc" id="L307">    System.out.println(&quot;junction: &quot; + p.getX(stop) + &quot; , &quot; + p.getY(stop));</span>
+<span class="fc" id="L308">                stop--;</span>
             }
-<span class="pc bpc" id="L312" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L313">                System.out.println(&quot;*** final: &quot; + </span>
-<span class="nc" id="L314">                    String.format(&quot; (%d,%d) to (%d,%d) &quot;,</span>
-<span class="nc" id="L315">                    p.getX(interval2.min()),</span>
-<span class="nc" id="L316">                    p.getY(interval2.min()),</span>
-<span class="nc" id="L317">                    p.getX(interval2.max()),</span>
-<span class="nc" id="L318">                    p.getY(interval2.max()))</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L311">                System.out.println(&quot;*** final: &quot; + </span>
+<span class="nc" id="L312">                    String.format(&quot; (%d,%d) to (%d,%d) &quot;,</span>
+<span class="nc" id="L313">                    p.getX(interval2.min()),</span>
+<span class="nc" id="L314">                    p.getY(interval2.min()),</span>
+<span class="nc" id="L315">                    p.getX(interval2.max()),</span>
+<span class="nc" id="L316">                    p.getY(interval2.max()))</span>
                     + &quot; similar to? &quot; + 
-<span class="nc" id="L320">                    String.format(&quot; (%d,%d) to (%d,%d) &quot;,</span>
-<span class="nc" id="L321">                    p.getX(start), p.getY(start),</span>
-<span class="nc" id="L322">                    p.getX(stop), p.getY(stop))</span>
+<span class="nc" id="L318">                    String.format(&quot; (%d,%d) to (%d,%d) &quot;,</span>
+<span class="nc" id="L319">                    p.getX(start), p.getY(start),</span>
+<span class="nc" id="L320">                    p.getX(stop), p.getY(stop))</span>
                 );
             }
-<span class="fc" id="L325">            PairInt s = new PairInt(start, stop);</span>
-<span class="fc" id="L326">            result.addLineRange(s);</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">            for (int i = start; i &lt;= stop; ++i) {</span>
-<span class="fc" id="L328">                existing.add(i);</span>
-<span class="fc" id="L329">                nMatched++;</span>
+<span class="fc" id="L323">            PairInt s = new PairInt(start, stop);</span>
+<span class="fc" id="L324">            result.addLineRange(s);</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">            for (int i = start; i &lt;= stop; ++i) {</span>
+<span class="fc" id="L326">                existing.add(i);</span>
+<span class="fc" id="L327">                nMatched++;</span>
             }
-<span class="fc" id="L331">        }</span>
+<span class="fc" id="L329">        }</span>
 
         //System.out.println(&quot;nRanges=&quot; + result.lineIndexRanges.size());
         
-<span class="fc" id="L335">        result.junctionIndexes = junctions;</span>
+<span class="fc" id="L333">        result.junctionIndexes = junctions;</span>
 
-<span class="fc" id="L337">        return result;</span>
+<span class="fc" id="L335">        return result;</span>
     }
     
     private IntervalRangeSearch&lt;Integer, Integer&gt; search(PairIntArray p) {
         
-<span class="fc" id="L342">        TwoDFloatArray[] mds = createSummedDifferences(p);</span>
+<span class="fc" id="L340">        TwoDFloatArray[] mds = createSummedDifferences(p);</span>
       
         // key = map size at put, value = interval
-<span class="fc" id="L345">        TIntObjectMap&lt;Interval&lt;Integer&gt;&gt; intervalMap =</span>
+<span class="fc" id="L343">        TIntObjectMap&lt;Interval&lt;Integer&gt;&gt; intervalMap =</span>
             new TIntObjectHashMap&lt;Interval&lt;Integer&gt;&gt;();
 
         // key = key of intervalMap.  item = chord diff sum
-<span class="fc" id="L349">        TIntFloatMap chordMap = new TIntFloatHashMap();</span>
+<span class="fc" id="L347">        TIntFloatMap chordMap = new TIntFloatHashMap();</span>
 
         // storing the interval of consecutive indexes, each below threshold,
         //   and storing as the value, the key to entry in intervalMap
-<span class="fc" id="L353">        IntervalRangeSearch&lt;Integer, Integer&gt; rangeSearch =</span>
+<span class="fc" id="L351">        IntervalRangeSearch&lt;Integer, Integer&gt; rangeSearch =</span>
             new IntervalRangeSearch&lt;Integer, Integer&gt;();
         
-<span class="fc" id="L356">        Interval&lt;Integer&gt; interval = null;</span>
+<span class="fc" id="L354">        Interval&lt;Integer&gt; interval = null;</span>
 
-<span class="fc" id="L358">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L356">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L360">        double maxChordSum = Double.MIN_VALUE;</span>
+<span class="fc" id="L358">        double maxChordSum = Double.MIN_VALUE;</span>
 
-<span class="fc" id="L362">        float[] outC = new float[2];</span>
+<span class="fc" id="L360">        float[] outC = new float[2];</span>
         int stop, start;
-<span class="fc" id="L364">        int mdLen = mds[0].a[0].length;</span>
+<span class="fc" id="L362">        int mdLen = mds[0].a[0].length;</span>
         
-<span class="fc" id="L366">        SummedColumnTable smt = new SummedColumnTable();</span>
+<span class="fc" id="L364">        SummedColumnTable smt = new SummedColumnTable();</span>
         
-<span class="fc bfc" id="L368" title="All 2 branches covered.">        for (int a2i = 0; a2i &lt; mds.length; ++a2i) {</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">        for (int a2i = 0; a2i &lt; mds.length; ++a2i) {</span>
             
-<span class="fc" id="L370">            float[][] md = mds[a2i].a;</span>
+<span class="fc" id="L368">            float[][] md = mds[a2i].a;</span>
             
-<span class="fc bfc" id="L372" title="All 2 branches covered.">            for (int jRange = (mdLen - 1); jRange &gt;= minLength; --jRange) {</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">            for (int jRange = (mdLen - 1); jRange &gt;= minLength; --jRange) {</span>
 
-<span class="fc bfc" id="L374" title="All 2 branches covered.">                for (int i = 0; i &lt; md.length; ++i) {</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">                for (int i = 0; i &lt; md.length; ++i) {</span>
 
-<span class="fc bfc" id="L376" title="All 2 branches covered.">                    for (int j = 0; j &lt; mdLen; j += jRange) {</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">                    for (int j = 0; j &lt; mdLen; j += jRange) {</span>
 
-<span class="fc" id="L378">                        stop = j + jRange;</span>
-<span class="fc bfc" id="L379" title="All 2 branches covered.">                        if (stop &gt; (mdLen - 1)) {</span>
-<span class="fc" id="L380">                            stop = mdLen - 1;</span>
+<span class="fc" id="L376">                        stop = j + jRange;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">                        if (stop &gt; (mdLen - 1)) {</span>
+<span class="fc" id="L378">                            stop = mdLen - 1;</span>
                         }
                         
-<span class="fc" id="L383">                        int x0 = p.getX(j);</span>
-<span class="fc" id="L384">                        int y0 = p.getY(j);</span>
-<span class="fc" id="L385">                        int x1 = p.getX(stop);</span>
-<span class="fc" id="L386">                        int y1 = p.getY(stop);</span>
-<span class="pc bpc" id="L387" title="1 of 2 branches missed.">                        if (lastCol &gt; -1) {</span>
-<span class="nc bnc" id="L388" title="All 16 branches missed.">                            if ((x0 &lt; 3) || (x0 &gt; (lastCol - 3)) || </span>
+<span class="fc" id="L381">                        int x0 = p.getX(j);</span>
+<span class="fc" id="L382">                        int y0 = p.getY(j);</span>
+<span class="fc" id="L383">                        int x1 = p.getX(stop);</span>
+<span class="fc" id="L384">                        int y1 = p.getY(stop);</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">                        if (lastCol &gt; -1) {</span>
+<span class="nc bnc" id="L386" title="All 16 branches missed.">                            if ((x0 &lt; 3) || (x0 &gt; (lastCol - 3)) || </span>
                                 (y0 &lt; 3) || (y0 &gt; (lastRow - 3)) ||
                                 (x1 &lt; 3) || (x1 &gt; (lastCol - 3)) ||
                                 (y1 &lt; 3) || (y1 &gt; (lastRow - 3))) {
-<span class="nc" id="L392">                                continue;</span>
+<span class="nc" id="L390">                                continue;</span>
                             }
                         }
 
-<span class="fc" id="L396">                        smt.extractWindowInColumn(md, j, stop, i, outC);</span>
+<span class="fc" id="L394">                        smt.extractWindowInColumn(md, j, stop, i, outC);</span>
 
-<span class="pc bpc" id="L398" title="1 of 2 branches missed.">                        if (outC[1] &lt; 1) {</span>
-<span class="nc" id="L399">                            continue;</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">                        if (outC[1] &lt; 1) {</span>
+<span class="nc" id="L397">                            continue;</span>
                         }
                         
-<span class="fc" id="L402">                        float d = outC[0]/outC[1];</span>
+<span class="fc" id="L400">                        float d = outC[0]/outC[1];</span>
         
-<span class="pc bpc" id="L404" title="1 of 2 branches missed.">                        if (debug) {</span>
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">                        if (debug) {</span>
                             //System.out.println(String.format(
                             //&quot;len=%d i=%d d=%.2f&quot;, (stop - j + 1), i, d));
                         }
 
-<span class="pc bpc" id="L409" title="1 of 4 branches missed.">                        if (d &gt; thresh || outC[0] &gt; thresh3) {</span>
-<span class="nc" id="L410">                            continue;</span>
+<span class="pc bpc" id="L407" title="1 of 4 branches missed.">                        if (d &gt; thresh || outC[0] &gt; thresh3) {</span>
+<span class="nc" id="L408">                            continue;</span>
                         }
-<span class="fc bfc" id="L412" title="All 2 branches covered.">                        if (d &gt; maxChordSum) {</span>
-<span class="fc" id="L413">                            maxChordSum = d;</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">                        if (d &gt; maxChordSum) {</span>
+<span class="fc" id="L411">                            maxChordSum = d;</span>
                         }
 
                         // to prevent two intersecting lines from being merged
@@ -418,73 +416,73 @@ Also, the summed table of the chord differences is only along columns.
                         // index higher, and correct for it later.
                         // also, not storing single index matches
 
-<span class="fc" id="L421">                        start = j + 1;</span>
-<span class="fc bfc" id="L422" title="All 2 branches covered.">                        if (start &gt; (mdLen - 1)) {</span>
-<span class="fc" id="L423">                            start = (mdLen - 1);</span>
+<span class="fc" id="L419">                        start = j + 1;</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">                        if (start &gt; (mdLen - 1)) {</span>
+<span class="fc" id="L421">                            start = (mdLen - 1);</span>
                         }
 
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">                        if (stop &lt; start) {</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">                        if (stop &lt; start) {</span>
                             // do not store single index matches
-<span class="nc" id="L428">                            continue;</span>
+<span class="nc" id="L426">                            continue;</span>
                         }
                         
-<span class="fc" id="L431">                        x0 = p.getX(start);</span>
-<span class="fc" id="L432">                        y0 = p.getY(start);</span>
+<span class="fc" id="L429">                        x0 = p.getX(start);</span>
+<span class="fc" id="L430">                        y0 = p.getY(start);</span>
 
-<span class="fc" id="L434">                        int ni = stop - start + 2;</span>
-<span class="fc bfc" id="L435" title="All 2 branches covered.">                        if (ni &lt; minLength) {</span>
-<span class="fc" id="L436">                            continue;</span>
+<span class="fc" id="L432">                        int ni = stop - start + 2;</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">                        if (ni &lt; minLength) {</span>
+<span class="fc" id="L434">                            continue;</span>
                         }
 
-<span class="fc" id="L439">                        interval =  new Interval&lt;Integer&gt;(start, stop);</span>
-<span class="fc" id="L440">                        PairInt s = new PairInt(start, stop);</span>
-<span class="fc bfc" id="L441" title="All 2 branches covered.">                        if (added.contains(s)) {</span>
-<span class="fc" id="L442">                            continue;</span>
+<span class="fc" id="L437">                        interval =  new Interval&lt;Integer&gt;(start, stop);</span>
+<span class="fc" id="L438">                        PairInt s = new PairInt(start, stop);</span>
+<span class="fc bfc" id="L439" title="All 2 branches covered.">                        if (added.contains(s)) {</span>
+<span class="fc" id="L440">                            continue;</span>
                         }
                         
-<span class="fc" id="L445">                        int sz = intervalMap.size();</span>
-<span class="fc" id="L446">                        Integer szI = Integer.valueOf(sz);</span>
+<span class="fc" id="L443">                        int sz = intervalMap.size();</span>
+<span class="fc" id="L444">                        Integer szI = Integer.valueOf(sz);</span>
 
                         // store it in range search
-<span class="fc" id="L449">                        Integer existing = rangeSearch.put(interval, szI);</span>
+<span class="fc" id="L447">                        Integer existing = rangeSearch.put(interval, szI);</span>
 
                         // store current interval in associated maps
-<span class="fc" id="L452">                        intervalMap.put(szI, interval);</span>
-<span class="fc" id="L453">                        chordMap.put(sz, d);</span>
-<span class="fc" id="L454">                        added.add(s);</span>
+<span class="fc" id="L450">                        intervalMap.put(szI, interval);</span>
+<span class="fc" id="L451">                        chordMap.put(sz, d);</span>
+<span class="fc" id="L452">                        added.add(s);</span>
 
-<span class="pc bpc" id="L456" title="1 of 2 branches missed.">                        if (debug) {</span>
-<span class="nc" id="L457">                            float avgN = (float)(maxChordSum * outC[1]);</span>
-<span class="nc" id="L458">                            System.out.println(&quot;  adding &quot; + interval </span>
-<span class="nc" id="L459">                                + String.format(</span>
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">                        if (debug) {</span>
+<span class="nc" id="L455">                            float avgN = (float)(maxChordSum * outC[1]);</span>
+<span class="nc" id="L456">                            System.out.println(&quot;  adding &quot; + interval </span>
+<span class="nc" id="L457">                                + String.format(</span>
                                 &quot; d=%.2f (%d,%d) (%d,%d)  cs=%.2f avg*N=%.2f&quot;, 
-<span class="nc" id="L461">                                d, x0, y0, x1, y1, outC[0], avgN));</span>
+<span class="nc" id="L459">                                d, x0, y0, x1, y1, outC[0], avgN));</span>
                         }
 
-<span class="fc bfc" id="L464" title="All 2 branches covered.">                        if (existing != null) {</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">                        if (existing != null) {</span>
                             // clashes with existing, so make sure the lowest cost
                             // remains in range tree
-<span class="fc" id="L467">                            Interval&lt;Integer&gt; comp = intervalMap.get(existing);</span>
+<span class="fc" id="L465">                            Interval&lt;Integer&gt; comp = intervalMap.get(existing);</span>
                             
-<span class="fc" id="L469">                            double compChord = chordMap.get(existing.intValue());</span>
-<span class="fc" id="L470">                            int nc = comp.max().intValue() - comp.min().intValue() + 2;</span>
+<span class="fc" id="L467">                            double compChord = chordMap.get(existing.intValue());</span>
+<span class="fc" id="L468">                            int nc = comp.max().intValue() - comp.min().intValue() + 2;</span>
 
-<span class="fc" id="L472">                            double compSD = calcSalukDist(compChord, maxChordSum,</span>
+<span class="fc" id="L470">                            double compSD = calcSalukDist(compChord, maxChordSum,</span>
                                 nc, md.length);
 
-<span class="fc" id="L475">                            double currentSD = calcSalukDist(d, maxChordSum,</span>
+<span class="fc" id="L473">                            double currentSD = calcSalukDist(d, maxChordSum,</span>
                                 ni, md.length);
 
-<span class="fc bfc" id="L478" title="All 2 branches covered.">                            if (compSD &lt; currentSD) {</span>
-<span class="fc" id="L479">                                Integer rmvd0 = rangeSearch.remove(interval);</span>
-<span class="pc bpc" id="L480" title="3 of 4 branches missed.">                                assert(rmvd0 != null);</span>
+<span class="fc bfc" id="L476" title="All 2 branches covered.">                            if (compSD &lt; currentSD) {</span>
+<span class="fc" id="L477">                                Integer rmvd0 = rangeSearch.remove(interval);</span>
+<span class="pc bpc" id="L478" title="3 of 4 branches missed.">                                assert(rmvd0 != null);</span>
                                 //re-insert existing interval
-<span class="fc" id="L482">                                Integer rmvd = rangeSearch.put(comp, existing);</span>
-<span class="pc bpc" id="L483" title="1 of 2 branches missed.">                                if (rmvd != null) {</span>
-<span class="nc bnc" id="L484" title="All 2 branches missed.">                                    if (debug) {</span>
-<span class="nc" id="L485">                                        System.out.println(&quot;  conflict w. removal. &quot; </span>
+<span class="fc" id="L480">                                Integer rmvd = rangeSearch.put(comp, existing);</span>
+<span class="pc bpc" id="L481" title="1 of 2 branches missed.">                                if (rmvd != null) {</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">                                    if (debug) {</span>
+<span class="nc" id="L483">                                        System.out.println(&quot;  conflict w. removal. &quot; </span>
                                             + &quot; re-ins existing=&quot; + comp +
-<span class="nc" id="L487">                                            &quot;  but removed=&quot; + intervalMap.get(rmvd));</span>
+<span class="nc" id="L485">                                            &quot;  but removed=&quot; + intervalMap.get(rmvd));</span>
                                     }
                                 }
                             }
@@ -494,7 +492,7 @@ Also, the summed table of the chord differences is only along columns.
             } // end jRange
         }
         
-<span class="fc" id="L497">        return rangeSearch;</span>
+<span class="fc" id="L495">        return rangeSearch;</span>
     }
 
     /**
@@ -526,22 +524,22 @@ Also, the summed table of the chord differences is only along columns.
         improve the runtime in that case in this alternate code).
         */
         
-<span class="fc" id="L529">        int n1 = a1.length;</span>
+<span class="fc" id="L527">        int n1 = a1.length;</span>
 
         //log.fine(&quot;a2:&quot;);
-<span class="fc" id="L532">        float[][] a2 = null;</span>
-<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        if (lineIndex == 0) {</span>
-<span class="fc" id="L534">            a2 = createLineDescriptorMatrix(n1);</span>
-<span class="nc bnc" id="L535" title="All 2 branches missed.">        } else if (lineIndex == 1) {</span>
+<span class="fc" id="L530">        float[][] a2 = null;</span>
+<span class="pc bpc" id="L531" title="1 of 2 branches missed.">        if (lineIndex == 0) {</span>
+<span class="fc" id="L532">            a2 = createLineDescriptorMatrix(n1);</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">        } else if (lineIndex == 1) {</span>
             // line pattern: 2 horiz, up one level, then 2 horiz...
             //     - -
             // - -
-<span class="nc" id="L539">            PairIntArray q = createLine2(n1);</span>
-<span class="nc" id="L540">            a2 = createDescriptorMatrix(q, n1);</span>
-<span class="nc bnc" id="L541" title="All 2 branches missed.">        } else if (lineIndex == 2) {</span>
+<span class="nc" id="L537">            PairIntArray q = createLine2(n1);</span>
+<span class="nc" id="L538">            a2 = createDescriptorMatrix(q, n1);</span>
+<span class="nc bnc" id="L539" title="All 2 branches missed.">        } else if (lineIndex == 2) {</span>
             // line pattern: 3 horiz, up one level, then 3 horiz...
-<span class="nc" id="L543">            PairIntArray q = createLine4(n1);</span>
-<span class="nc" id="L544">            a2 = createDescriptorMatrix(q, n1);</span>
+<span class="nc" id="L541">            PairIntArray q = createLine4(n1);</span>
+<span class="nc" id="L542">            a2 = createDescriptorMatrix(q, n1);</span>
         }
         
         /*
@@ -552,32 +550,32 @@ Also, the summed table of the chord differences is only along columns.
         */
 
         // --- make difference matrices ---
-<span class="fc" id="L555">        int n2 = n1;</span>
-<span class="fc" id="L556">        float[][] md = copy(a2);</span>
+<span class="fc" id="L553">        int n2 = n1;</span>
+<span class="fc" id="L554">        float[][] md = copy(a2);</span>
         // NOTE: absolute values are stored.
         //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
-<span class="fc" id="L559">        md = subtract(a1, md);</span>
+<span class="fc" id="L557">        md = subtract(a1, md);</span>
 
-<span class="pc bpc" id="L561" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L559" title="1 of 2 branches missed.">        if (debug) {</span>
             //print(&quot;a1&quot;, a1);
             //print(&quot;a2&quot;, a2);
             //print(&quot;diff matrix&quot;, md);
         }
 
-<span class="fc" id="L567">        return md;</span>
+<span class="fc" id="L565">        return md;</span>
     }
 
     protected float[][] createLineDescriptorMatrix(int n) {
 
-<span class="fc" id="L572">        float[][] a = new float[n][];</span>
-<span class="fc bfc" id="L573" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L574">            a[i] = new float[n];</span>
-<span class="fc" id="L575">            Arrays.fill(a[i], (float)Math.PI);</span>
+<span class="fc" id="L570">        float[][] a = new float[n][];</span>
+<span class="fc bfc" id="L571" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L572">            a[i] = new float[n];</span>
+<span class="fc" id="L573">            Arrays.fill(a[i], (float)Math.PI);</span>
             // diagonal is zero
-<span class="fc" id="L577">            a[i][i] = 0;</span>
+<span class="fc" id="L575">            a[i][i] = 0;</span>
         }
 
-<span class="fc" id="L580">        return a;</span>
+<span class="fc" id="L578">        return a;</span>
     }
 
     /**
@@ -608,11 +606,11 @@ Also, the summed table of the chord differences is only along columns.
     */
     protected float[][] createDescriptorMatrix(PairIntArray p, int n) {
 
-<span class="fc" id="L611">        int dp1 = 1;</span>
+<span class="fc" id="L609">        int dp1 = 1;</span>
 
-<span class="fc" id="L613">        float[][] a = new float[n][];</span>
-<span class="fc bfc" id="L614" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L615">            a[i] = new float[n];</span>
+<span class="fc" id="L611">        float[][] a = new float[n][];</span>
+<span class="fc bfc" id="L612" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L613">            a[i] = new float[n];</span>
         }
 
         /*
@@ -621,85 +619,85 @@ Also, the summed table of the chord differences is only along columns.
                   P2
         */
 
-<span class="fc" id="L624">        log.fine(&quot;n=&quot; + n);</span>
+<span class="fc" id="L622">        log.fine(&quot;n=&quot; + n);</span>
 
-<span class="fc bfc" id="L626" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; n; ++i1) {</span>
-<span class="fc" id="L627">            int start = i1 + 1 + dp1;</span>
-<span class="fc bfc" id="L628" title="All 2 branches covered.">            for (int ii = start; ii &lt; (start + n - 1 - dp1); ++ii) {</span>
-<span class="fc" id="L629">                int i2 = ii;</span>
+<span class="fc bfc" id="L624" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; n; ++i1) {</span>
+<span class="fc" id="L625">            int start = i1 + 1 + dp1;</span>
+<span class="fc bfc" id="L626" title="All 2 branches covered.">            for (int ii = start; ii &lt; (start + n - 1 - dp1); ++ii) {</span>
+<span class="fc" id="L627">                int i2 = ii;</span>
 
-<span class="fc" id="L631">                int imid = i2 - dp1;</span>
+<span class="fc" id="L629">                int imid = i2 - dp1;</span>
                 // wrap around
-<span class="fc bfc" id="L633" title="All 2 branches covered.">                if (imid &gt; (n - 1)) {</span>
-<span class="fc" id="L634">                    imid -= n;</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">                if (imid &gt; (n - 1)) {</span>
+<span class="fc" id="L632">                    imid -= n;</span>
                 }
 
                 // wrap around
-<span class="fc bfc" id="L638" title="All 2 branches covered.">                if (i2 &gt; (n - 1)) {</span>
-<span class="fc" id="L639">                    i2 -= n;</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">                if (i2 &gt; (n - 1)) {</span>
+<span class="fc" id="L637">                    i2 -= n;</span>
                 }
                 
                 //log.fine(&quot;i1=&quot; + i1 + &quot; imid=&quot; + imid + &quot; i2=&quot; + i2);
 
                 double 
                     //angleA = LinesAndAngles.calcClockwiseAngle(
-<span class="fc" id="L646">                    angleA = LinesAndAngles.calcAngle(</span>
-<span class="fc" id="L647">                    p.getX(i1), p.getY(i1),</span>
-<span class="fc" id="L648">                    p.getX(i2), p.getY(i2),</span>
-<span class="fc" id="L649">                    p.getX(imid), p.getY(imid)</span>
+<span class="fc" id="L644">                    angleA = LinesAndAngles.calcAngle(</span>
+<span class="fc" id="L645">                    p.getX(i1), p.getY(i1),</span>
+<span class="fc" id="L646">                    p.getX(i2), p.getY(i2),</span>
+<span class="fc" id="L647">                    p.getX(imid), p.getY(imid)</span>
                 );
 
                 // TODO revisit this
-<span class="pc bpc" id="L653" title="1 of 2 branches missed.">                if (Double.isNaN(angleA)) {</span>
-<span class="nc bnc" id="L654" title="All 4 branches missed.">                    if (i2 &lt; i1 &amp;&amp; i1 &lt; imid) {</span>
+<span class="pc bpc" id="L651" title="1 of 2 branches missed.">                if (Double.isNaN(angleA)) {</span>
+<span class="nc bnc" id="L652" title="All 4 branches missed.">                    if (i2 &lt; i1 &amp;&amp; i1 &lt; imid) {</span>
                         //angleA = LinesAndAngles.calcClockwiseAngle(
-<span class="nc" id="L656">                        angleA = LinesAndAngles.calcAngle(    </span>
-<span class="nc" id="L657">                            p.getX(i2), p.getY(i2),</span>
-<span class="nc" id="L658">                            p.getX(i1), p.getY(i1),</span>
-<span class="nc" id="L659">                            p.getX(imid), p.getY(imid));</span>
-<span class="nc bnc" id="L660" title="All 2 branches missed.">                        if (Double.isNaN(angleA)) {</span>
+<span class="nc" id="L654">                        angleA = LinesAndAngles.calcAngle(    </span>
+<span class="nc" id="L655">                            p.getX(i2), p.getY(i2),</span>
+<span class="nc" id="L656">                            p.getX(i1), p.getY(i1),</span>
+<span class="nc" id="L657">                            p.getX(imid), p.getY(imid));</span>
+<span class="nc bnc" id="L658" title="All 2 branches missed.">                        if (Double.isNaN(angleA)) {</span>
                             //angleA = LinesAndAngles.calcClockwiseAngle(
-<span class="nc" id="L662">                            angleA = LinesAndAngles.calcAngle(</span>
-<span class="nc" id="L663">                                p.getX(i2), p.getY(i2),</span>
-<span class="nc" id="L664">                                p.getX(i1), p.getY(i1),</span>
-<span class="nc" id="L665">                                p.getX(imid), p.getY(imid));</span>
+<span class="nc" id="L660">                            angleA = LinesAndAngles.calcAngle(</span>
+<span class="nc" id="L661">                                p.getX(i2), p.getY(i2),</span>
+<span class="nc" id="L662">                                p.getX(i1), p.getY(i1),</span>
+<span class="nc" id="L663">                                p.getX(imid), p.getY(imid));</span>
                         }
                     } else {
-<span class="nc" id="L668">                        System.out.println(</span>
+<span class="nc" id="L666">                        System.out.println(</span>
                         &quot;SKIP i1=&quot; + i1 + &quot; imid=&quot; + imid + &quot; i2=&quot; + i2);
-<span class="nc" id="L670">                        continue;</span>
+<span class="nc" id="L668">                        continue;</span>
                     }
                 }
 
                 //System.out.println(&quot;i1=&quot; + i1 + &quot; imid=&quot; + imid + &quot; i2=&quot; + i2 +
                 //    &quot;  angleA=&quot; + angleA);
           
-<span class="fc" id="L677">                a[i1][i2] = (float)angleA;</span>
+<span class="fc" id="L675">                a[i1][i2] = (float)angleA;</span>
 
-<span class="fc bfc" id="L679" title="All 2 branches covered.">                if (i2 == (i1 + 2)) {</span>
+<span class="fc bfc" id="L677" title="All 2 branches covered.">                if (i2 == (i1 + 2)) {</span>
                     // fill in missing point, assume same value
-<span class="pc bpc" id="L681" title="1 of 2 branches missed.">                    if (a[i1][i2] == a[i1][ii]) {</span>
-<span class="fc" id="L682">                        a[i1][i1 + 1] = a[i1][i2];</span>
+<span class="pc bpc" id="L679" title="1 of 2 branches missed.">                    if (a[i1][i2] == a[i1][ii]) {</span>
+<span class="fc" id="L680">                        a[i1][i1 + 1] = a[i1][i2];</span>
                     }
                 }
             }
         }
 
-<span class="fc" id="L688">        return a;</span>
+<span class="fc" id="L686">        return a;</span>
     }
     
     protected int distanceSqEucl(int x1, int y1, int x2, int y2) {
-<span class="nc" id="L692">        int diffX = x1 - x2;</span>
-<span class="nc" id="L693">        int diffY = y1 - y2;</span>
-<span class="nc" id="L694">        return (diffX * diffX + diffY * diffY);</span>
+<span class="nc" id="L690">        int diffX = x1 - x2;</span>
+<span class="nc" id="L691">        int diffY = y1 - y2;</span>
+<span class="nc" id="L692">        return (diffX * diffX + diffY * diffY);</span>
     }
 
     private float[][] copy(float[][] a) {
-<span class="fc" id="L698">        float[][] a2 = new float[a.length][];</span>
-<span class="fc bfc" id="L699" title="All 2 branches covered.">        for (int i = 0; i &lt; a2.length; ++i) {</span>
-<span class="fc" id="L700">            a2[i] = Arrays.copyOf(a[i], a[i].length);</span>
+<span class="fc" id="L696">        float[][] a2 = new float[a.length][];</span>
+<span class="fc bfc" id="L697" title="All 2 branches covered.">        for (int i = 0; i &lt; a2.length; ++i) {</span>
+<span class="fc" id="L698">            a2[i] = Arrays.copyOf(a[i], a[i].length);</span>
         }
-<span class="fc" id="L702">        return a2;</span>
+<span class="fc" id="L700">        return a2;</span>
     }
 
     /**
@@ -728,59 +726,59 @@ Also, the summed table of the chord differences is only along columns.
         subtracting only the MXM portion
         */
 
-<span class="pc bpc" id="L731" title="3 of 4 branches missed.">        assert(a1.length == a1[0].length);</span>
-<span class="pc bpc" id="L732" title="3 of 4 branches missed.">        assert(a2.length == a2[0].length);</span>
+<span class="pc bpc" id="L729" title="3 of 4 branches missed.">        assert(a1.length == a1[0].length);</span>
+<span class="pc bpc" id="L730" title="3 of 4 branches missed.">        assert(a2.length == a2[0].length);</span>
 
-<span class="fc" id="L734">        int n1 = a1.length;</span>
-<span class="fc" id="L735">        int n2 = a2.length;</span>
+<span class="fc" id="L732">        int n1 = a1.length;</span>
+<span class="fc" id="L733">        int n2 = a2.length;</span>
 
-<span class="pc bpc" id="L737" title="3 of 4 branches missed.">        assert(n1 &lt;= n2);</span>
+<span class="pc bpc" id="L735" title="3 of 4 branches missed.">        assert(n1 &lt;= n2);</span>
 
-<span class="fc" id="L739">        float[][] output = new float[n1][];</span>
-<span class="fc bfc" id="L740" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="fc" id="L741">            output[i] = new float[n1];</span>
-<span class="fc bfc" id="L742" title="All 2 branches covered.">            for (int j = 0; j &lt; n1; ++j) {</span>
-<span class="fc" id="L743">                float v = a1[i][j] - a2[i][j];</span>
-<span class="fc bfc" id="L744" title="All 2 branches covered.">                if (v &lt; 0) {</span>
-<span class="fc" id="L745">                    v *= -1;</span>
+<span class="fc" id="L737">        float[][] output = new float[n1][];</span>
+<span class="fc bfc" id="L738" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="fc" id="L739">            output[i] = new float[n1];</span>
+<span class="fc bfc" id="L740" title="All 2 branches covered.">            for (int j = 0; j &lt; n1; ++j) {</span>
+<span class="fc" id="L741">                float v = a1[i][j] - a2[i][j];</span>
+<span class="fc bfc" id="L742" title="All 2 branches covered.">                if (v &lt; 0) {</span>
+<span class="fc" id="L743">                    v *= -1;</span>
                 }
-<span class="fc" id="L747">                output[i][j] = v;</span>
+<span class="fc" id="L745">                output[i][j] = v;</span>
             }
         }
 
-<span class="fc" id="L751">        return output;</span>
+<span class="fc" id="L749">        return output;</span>
     }
 
     private void print(String label, float[][][] a) {
-<span class="nc bnc" id="L755" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L756">            print(label + &quot; off &quot; + i, a[i]);</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L754">            print(label + &quot; off &quot; + i, a[i]);</span>
         }
-<span class="nc" id="L758">    }</span>
+<span class="nc" id="L756">    }</span>
 
     private void print(String label, float[][] a) {
 
-<span class="nc" id="L762">        StringBuilder sb = new StringBuilder(label);</span>
-<span class="nc" id="L763">        sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L760">        StringBuilder sb = new StringBuilder(label);</span>
+<span class="nc" id="L761">        sb.append(&quot;\n&quot;);</span>
 
-<span class="nc bnc" id="L765" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L766">            sb.append(String.format(&quot;row %3d: &quot;, i));</span>
-<span class="nc bnc" id="L767" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc" id="L768">                sb.append(String.format(&quot; %.2f,&quot;, a[i][j]));</span>
+<span class="nc bnc" id="L763" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L764">            sb.append(String.format(&quot;row %3d: &quot;, i));</span>
+<span class="nc bnc" id="L765" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc" id="L766">                sb.append(String.format(&quot; %.2f,&quot;, a[i][j]));</span>
             }
-<span class="nc" id="L770">            log.fine(sb.toString());</span>
-<span class="nc" id="L771">            System.out.println(sb.toString());</span>
-<span class="nc" id="L772">            sb.delete(0, sb.length());</span>
+<span class="nc" id="L768">            log.fine(sb.toString());</span>
+<span class="nc" id="L769">            System.out.println(sb.toString());</span>
+<span class="nc" id="L770">            sb.delete(0, sb.length());</span>
         }
-<span class="nc" id="L774">    }</span>
+<span class="nc" id="L772">    }</span>
 
     private double calcSalukDist(double compChord, double maxChord,
         int length, int maxLength) {
 
         //NOTE: compChord is the (chordSum/length)
         
-<span class="fc" id="L781">        double d = compChord/maxChord;</span>
-<span class="fc" id="L782">        double f = 1. - ((double)length/(double)maxLength);</span>
-<span class="fc" id="L783">        return f*f + d*d;</span>
+<span class="fc" id="L779">        double d = compChord/maxChord;</span>
+<span class="fc" id="L780">        double f = 1. - ((double)length/(double)maxLength);</span>
+<span class="fc" id="L781">        return f*f + d*d;</span>
     }
 
     @SuppressWarnings({&quot;fallthrough&quot;})
@@ -790,42 +788,43 @@ Also, the summed table of the chord differences is only along columns.
             - -
         - - 
         */
-<span class="nc" id="L793">        PairIntArray q = new PairIntArray(n1);</span>
-<span class="nc" id="L794">        int prevX = 0;</span>
-<span class="nc" id="L795">        int prevY = 0;</span>
-<span class="nc bnc" id="L796" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L797" title="All 2 branches missed.">            switch (i % 2) {</span>
+<span class="nc" id="L791">        PairIntArray q = new PairIntArray(n1);</span>
+<span class="nc" id="L792">        int prevX = 0;</span>
+<span class="nc" id="L793">        int prevY = 0;</span>
+<span class="nc bnc" id="L794" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L795" title="All 2 branches missed.">            switch (i % 2) {</span>
                 case 0:
-<span class="nc" id="L799">                    prevY++;</span>
+<span class="nc" id="L797">                    prevY++;</span>
                 default:
-<span class="nc" id="L801">                    prevX++;</span>
+<span class="nc" id="L799">                    prevX++;</span>
                     break;
             }
-<span class="nc" id="L804">            q.add(prevX, prevY);</span>
+<span class="nc" id="L802">            q.add(prevX, prevY);</span>
         }
-<span class="nc" id="L806">        return q;</span>
+<span class="nc" id="L804">        return q;</span>
     }
     
+    @SuppressWarnings({&quot;fallthrough&quot;})
     private PairIntArray createLine4(int n1) {
 
         /*
               - - -
         - - - 
         */
-<span class="nc" id="L815">        PairIntArray q = new PairIntArray(n1);</span>
-<span class="nc" id="L816">        int prevX = 0;</span>
-<span class="nc" id="L817">        int prevY = 0;</span>
-<span class="nc bnc" id="L818" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L819" title="All 2 branches missed.">            switch (i % 3) {</span>
+<span class="nc" id="L814">        PairIntArray q = new PairIntArray(n1);</span>
+<span class="nc" id="L815">        int prevX = 0;</span>
+<span class="nc" id="L816">        int prevY = 0;</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L818" title="All 2 branches missed.">            switch (i % 3) {</span>
                 case 0:
-<span class="nc" id="L821">                    prevY++;</span>
+<span class="nc" id="L820">                    prevY++;</span>
                 default:
-<span class="nc" id="L823">                    prevX++;</span>
+<span class="nc" id="L822">                    prevX++;</span>
                     break;
             }
-<span class="nc" id="L826">            q.add(prevX, prevY);</span>
+<span class="nc" id="L825">            q.add(prevX, prevY);</span>
         }
-<span class="nc" id="L828">        return q;</span>
+<span class="nc" id="L827">        return q;</span>
     }
 
     private PairIntArray createLine3(int n1) {
@@ -835,40 +834,40 @@ Also, the summed table of the chord differences is only along columns.
           - -
         - 
         */
-<span class="nc" id="L838">        PairIntArray q = createLine2(n1);</span>
-<span class="nc" id="L839">        q.rotateLeft(-1);</span>
-<span class="nc" id="L840">        return q;</span>
+<span class="nc" id="L837">        PairIntArray q = createLine2(n1);</span>
+<span class="nc" id="L838">        q.rotateLeft(-1);</span>
+<span class="nc" id="L839">        return q;</span>
     }
     
     private PairIntArray createLine5(int n1) {
-<span class="nc" id="L844">        PairIntArray q = createLine4(n1);</span>
-<span class="nc" id="L845">        q.rotateLeft(-1);</span>
-<span class="nc" id="L846">        return q;</span>
+<span class="nc" id="L843">        PairIntArray q = createLine4(n1);</span>
+<span class="nc" id="L844">        q.rotateLeft(-1);</span>
+<span class="nc" id="L845">        return q;</span>
     }
     
     private PairIntArray createLine6(int n1) {
-<span class="nc" id="L850">        PairIntArray q = createLine4(n1);</span>
-<span class="nc" id="L851">        q.rotateLeft(-2);</span>
-<span class="nc" id="L852">        return q;</span>
+<span class="nc" id="L849">        PairIntArray q = createLine4(n1);</span>
+<span class="nc" id="L850">        q.rotateLeft(-2);</span>
+<span class="nc" id="L851">        return q;</span>
     }
 
     private TwoDFloatArray[] createSummedDifferences(PairIntArray p) {
         
         //log.fine(&quot;a1:&quot;);
-<span class="fc" id="L858">        float[][] a1 = createDescriptorMatrix(p, p.getN());</span>
+<span class="fc" id="L857">        float[][] a1 = createDescriptorMatrix(p, p.getN());</span>
 
-<span class="fc" id="L860">        int na2 = 1;//3;</span>
+<span class="fc" id="L859">        int na2 = 1;//3;</span>
         
-<span class="fc" id="L862">        TwoDFloatArray[] mds = new TwoDFloatArray[na2];</span>
+<span class="fc" id="L861">        TwoDFloatArray[] mds = new TwoDFloatArray[na2];</span>
         
-<span class="fc bfc" id="L864" title="All 2 branches covered.">        for (int a2i = 0; a2i &lt; na2; ++a2i) {</span>
-<span class="fc" id="L865">            float[][] md = createDifferenceMatrices(a1, a2i);</span>
+<span class="fc bfc" id="L863" title="All 2 branches covered.">        for (int a2i = 0; a2i &lt; na2; ++a2i) {</span>
+<span class="fc" id="L864">            float[][] md = createDifferenceMatrices(a1, a2i);</span>
             //convert to summed column table
-<span class="fc" id="L867">            SummedColumnTable smt = new SummedColumnTable();</span>
-<span class="fc" id="L868">            mds[a2i] = new TwoDFloatArray(smt.create(md));</span>
+<span class="fc" id="L866">            SummedColumnTable smt = new SummedColumnTable();</span>
+<span class="fc" id="L867">            mds[a2i] = new TwoDFloatArray(smt.create(md));</span>
         }      
         
-<span class="fc" id="L871">        return mds;</span>
+<span class="fc" id="L870">        return mds;</span>
     }
 
     public static class LineResult {
@@ -894,4 +893,4 @@ Also, the summed table of the chord differences is only along columns.
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

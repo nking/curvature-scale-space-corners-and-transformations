@@ -1,71 +1,39 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ATrousWaveletTransform.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ATrousWaveletTransform.java</span></div><h1>ATrousWaveletTransform.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ATrousWaveletTransform.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ATrousWaveletTransform.java</span></div><h1>ATrousWaveletTransform.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
-import algorithms.misc.Misc;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  *
  * @author nichole
  */
-<span class="pc bpc" id="L11" title="1 of 2 branches missed.">public class ATrousWaveletTransform {</span>
+<span class="pc bpc" id="L9" title="1 of 2 branches missed.">public class ATrousWaveletTransform {</span>
 
     /**
-    Uses the first step of an A Trous wavelet transform, which is two 1D 
-    convolutions of a binomial kernel for sigma=1.
+    Uses the first step of an A Trous wavelet transform with B3Spline scaling.
     * @param input
      * @return 
     */
-    public GreyscaleImage smoothToSigmaOne(GreyscaleImage input) {
+    public GreyscaleImage smoothToLevel1B3Spline(GreyscaleImage input) {
         
-<span class="fc" id="L21">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
+<span class="fc" id="L18">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
         
-<span class="fc" id="L23">        GreyscaleImage smoothed = scalingFunction.calculate(input);</span>
+<span class="fc" id="L20">        GreyscaleImage smoothed = scalingFunction.calculate(input);</span>
         
-<span class="fc" id="L25">        return smoothed;</span>
+<span class="fc" id="L22">        return smoothed;</span>
     }
     
     /**
-    Uses the first step of an A Trous wavelet transform, which is two 1D 
-    convolutions of a binomial kernel for sigma=1.
-    * @param input
-     * @return 
-    */
-    public Image smoothToSigmaOne(Image input) {
-        
-<span class="nc" id="L36">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
-        
-<span class="nc" id="L38">        GreyscaleImage[] smoothed = new GreyscaleImage[3];</span>
-<span class="nc" id="L39">        smoothed[0] = input.copyRedToGreyscale();</span>
-<span class="nc" id="L40">        smoothed[1] = input.copyGreenToGreyscale();</span>
-<span class="nc" id="L41">        smoothed[2] = input.copyRedToGreyscale();</span>
-        
-<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L44">            smoothed[i] = scalingFunction.calculate(smoothed[i]);</span>
-        }
-        
-<span class="nc" id="L47">        Image out = input.createWithDimensions();</span>
-<span class="nc bnc" id="L48" title="All 2 branches missed.">        for (int i = 0; i &lt; input.getNPixels(); ++i) {</span>
-<span class="nc" id="L49">            out.setRGB(i, smoothed[0].getValue(i), </span>
-<span class="nc" id="L50">                smoothed[1].getValue(i), smoothed[2].getValue(i));</span>
-        }
-        
-<span class="nc" id="L53">        return out;</span>
-    }
-    
-    /**
-    Uses the first step of an A Trous wavelet transform, which is two 1D 
-    convolutions of a binomial kernel for sigma=0.707 (=sqrt(2)/2).
+    Uses the first step of an A Trous wavelet transform using triangle scaling.
      * @param input
      * @return 
     */
-    public GreyscaleImage smoothToSigmaZeroPointSevenOne(GreyscaleImage input) {
+    public GreyscaleImage smoothFirstLevelTriangle(GreyscaleImage input) {
         
-<span class="fc" id="L64">        TriangleFunction scalingFunction = new TriangleFunction();</span>
+<span class="fc" id="L32">        TriangleFunction scalingFunction = new TriangleFunction();</span>
         
-<span class="fc" id="L66">        GreyscaleImage smoothed = scalingFunction.calculateNextLevel(input, 0);</span>
+<span class="fc" id="L34">        GreyscaleImage smoothed = scalingFunction.calculateNextLevel(input, 0);</span>
         
-<span class="fc" id="L68">        return smoothed;</span>
+<span class="fc" id="L36">        return smoothed;</span>
     }
 
     /**
@@ -76,24 +44,24 @@ import java.util.List;
     */
     public Image smoothToSigmaZeroPointSevenOne(Image input) {
         
-<span class="nc" id="L79">        TriangleFunction scalingFunction = new TriangleFunction();</span>
+<span class="nc" id="L47">        TriangleFunction scalingFunction = new TriangleFunction();</span>
              
-<span class="nc" id="L81">        GreyscaleImage[] smoothed = new GreyscaleImage[3];</span>
-<span class="nc" id="L82">        smoothed[0] = input.copyRedToGreyscale();</span>
-<span class="nc" id="L83">        smoothed[1] = input.copyGreenToGreyscale();</span>
-<span class="nc" id="L84">        smoothed[2] = input.copyRedToGreyscale();</span>
+<span class="nc" id="L49">        GreyscaleImage[] smoothed = new GreyscaleImage[3];</span>
+<span class="nc" id="L50">        smoothed[0] = input.copyRedToGreyscale();</span>
+<span class="nc" id="L51">        smoothed[1] = input.copyGreenToGreyscale();</span>
+<span class="nc" id="L52">        smoothed[2] = input.copyRedToGreyscale();</span>
         
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L87">            smoothed[i] = scalingFunction.calculateNextLevel(smoothed[i], 0);</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L55">            smoothed[i] = scalingFunction.calculateNextLevel(smoothed[i], 0);</span>
         }
         
-<span class="nc" id="L90">        Image out = input.createWithDimensions();</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        for (int i = 0; i &lt; input.getNPixels(); ++i) {</span>
-<span class="nc" id="L92">            out.setRGB(i, smoothed[0].getValue(i), </span>
-<span class="nc" id="L93">                smoothed[1].getValue(i), smoothed[2].getValue(i));</span>
+<span class="nc" id="L58">        Image out = input.createWithDimensions();</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        for (int i = 0; i &lt; input.getNPixels(); ++i) {</span>
+<span class="nc" id="L60">            out.setRGB(i, smoothed[0].getValue(i), </span>
+<span class="nc" id="L61">                smoothed[1].getValue(i), smoothed[2].getValue(i));</span>
         }
         
-<span class="nc" id="L96">        return out;        </span>
+<span class="nc" id="L64">        return out;        </span>
     }
     
     /**
@@ -127,30 +95,30 @@ import java.util.List;
     public void calculateWithTriangleScalingFunction(GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="fc" id="L130">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L98">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L132">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L100">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
 
-<span class="fc" id="L134">        TriangleFunction scalingFunction = new TriangleFunction();</span>
+<span class="fc" id="L102">        TriangleFunction scalingFunction = new TriangleFunction();</span>
         
-<span class="fc" id="L136">        outputTransformed.add(input.copyToSignedImage());</span>
+<span class="fc" id="L104">        outputTransformed.add(input.copyToSignedImage());</span>
         
-<span class="fc" id="L138">        outputCoeff.add(input.createSignedWithDimensions());</span>
+<span class="fc" id="L106">        outputCoeff.add(input.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
             
-<span class="fc" id="L142">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L110">            GreyscaleImage cJ = outputTransformed.get(j);</span>
  
-<span class="fc" id="L144">            GreyscaleImage cJPlus1 = scalingFunction.calculateNextLevel(cJ, j);</span>
+<span class="fc" id="L112">            GreyscaleImage cJPlus1 = scalingFunction.calculateNextLevel(cJ, j);</span>
            
-<span class="fc" id="L146">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L114">            outputTransformed.add(cJPlus1);</span>
             
             // c_(j,k) − c_(j+1,k)
-<span class="fc" id="L149">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);//scalingFunction.subtractLevels(cJ, j);</span>
+<span class="fc" id="L117">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);//scalingFunction.subtractLevels(cJ, j);</span>
           
-<span class="fc" id="L151">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L119">            outputCoeff.add(wJPlus1);</span>
         }
-<span class="fc" id="L153">    }</span>
+<span class="fc" id="L121">    }</span>
 
     /**
      * The a trous algorithm is a fast implementation of a wavelet transform 
@@ -184,31 +152,31 @@ import java.util.List;
     public void calculateWithB3SplineScalingFunction(GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="fc" id="L187">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L155">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L189">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L157">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
 
-<span class="fc" id="L191">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
+<span class="fc" id="L159">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
         
-<span class="fc" id="L193">        outputTransformed.add(input.copyToSignedImage());</span>
+<span class="fc" id="L161">        outputTransformed.add(input.copyToSignedImage());</span>
         
-<span class="fc" id="L195">        outputCoeff.add(input.createSignedWithDimensions());</span>
+<span class="fc" id="L163">        outputCoeff.add(input.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
             
-<span class="fc" id="L199">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L167">            GreyscaleImage cJ = outputTransformed.get(j);</span>
  
-<span class="fc" id="L201">            GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);</span>
+<span class="fc" id="L169">            GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);</span>
            
-<span class="fc" id="L203">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L171">            outputTransformed.add(cJPlus1);</span>
             
             // c_(j,k) − c_(j+1,k)
-<span class="fc" id="L206">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
+<span class="fc" id="L174">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
             
-<span class="fc" id="L208">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L176">            outputCoeff.add(wJPlus1);</span>
         }
         
-<span class="fc" id="L211">    }</span>
+<span class="fc" id="L179">    }</span>
     
     /**
      * The a trous algorithm is a fast implementation of a wavelet transform 
@@ -221,10 +189,6 @@ import java.util.List;
      * &lt;pre&gt;
      * The method uses recursive convolution operations, including previous
        * result to make next.
-       * Each convolution uses two passes of one dimensional binomial kernels,
-       * starting with the equivalent of sigma=1.
-       * For each step, the equivalent resulting sigma is from 
-       * sigma^2 = sigma_1^2 + sigma_2^2.
        * 
        * This method takes an argument stopIter to indicate that only stopIter
        * number of iterations are needed.  For instance, to retrieve only the
@@ -240,35 +204,35 @@ import java.util.List;
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff,
         int stopIter) {
 
-<span class="fc" id="L243">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L207">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L245">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L209">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
 
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        if (nr &gt; stopIter) {</span>
-<span class="fc" id="L248">            nr = stopIter;</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (nr &gt; stopIter) {</span>
+<span class="fc" id="L212">            nr = stopIter;</span>
         }
         
-<span class="fc" id="L251">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
+<span class="fc" id="L215">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
         
-<span class="fc" id="L253">        outputTransformed.add(input.copyToSignedImage());</span>
+<span class="fc" id="L217">        outputTransformed.add(input.copyToSignedImage());</span>
         
-<span class="fc" id="L255">        outputCoeff.add(input.createSignedWithDimensions());</span>
+<span class="fc" id="L219">        outputCoeff.add(input.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L257" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
             
-<span class="fc" id="L259">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L223">            GreyscaleImage cJ = outputTransformed.get(j);</span>
  
-<span class="fc" id="L261">            GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);</span>
+<span class="fc" id="L225">            GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);</span>
            
-<span class="fc" id="L263">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L227">            outputTransformed.add(cJPlus1);</span>
             
             // c_(j,k) − c_(j+1,k)
-<span class="fc" id="L266">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
+<span class="fc" id="L230">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
             
-<span class="fc" id="L268">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L232">            outputCoeff.add(wJPlus1);</span>
         }
         
-<span class="fc" id="L271">    }</span>
+<span class="fc" id="L235">    }</span>
    
     /**
      * same as calculateWithB3SplineScalingFunction except that it uses a 2-D
@@ -281,45 +245,45 @@ import java.util.List;
     void calculateWithB3SplineScalingFunction2(GreyscaleImage input,
         List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
 
-<span class="fc" id="L284">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+<span class="fc" id="L248">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
 
-<span class="fc" id="L286">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+<span class="fc" id="L250">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
 
-<span class="fc" id="L288">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
+<span class="fc" id="L252">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
         
-<span class="fc" id="L290">        outputTransformed.add(input.copyToSignedImage());</span>
+<span class="fc" id="L254">        outputTransformed.add(input.copyToSignedImage());</span>
         
-<span class="fc" id="L292">        outputCoeff.add(input.createSignedWithDimensions());</span>
+<span class="fc" id="L256">        outputCoeff.add(input.createSignedWithDimensions());</span>
 
-<span class="fc bfc" id="L294" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
             
-<span class="fc" id="L296">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+<span class="fc" id="L260">            GreyscaleImage cJ = outputTransformed.get(j);</span>
  
-<span class="fc" id="L298">            GreyscaleImage cJPlus1 = scalingFunction.calculate2D(cJ);</span>
+<span class="fc" id="L262">            GreyscaleImage cJPlus1 = scalingFunction.calculate2D(cJ);</span>
            
-<span class="fc" id="L300">            outputTransformed.add(cJPlus1);</span>
+<span class="fc" id="L264">            outputTransformed.add(cJPlus1);</span>
             
             // c_(j,k) − c_(j+1,k)
-<span class="fc" id="L303">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
+<span class="fc" id="L267">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
             
-<span class="fc" id="L305">            outputCoeff.add(wJPlus1);</span>
+<span class="fc" id="L269">            outputCoeff.add(wJPlus1);</span>
         }
         
-<span class="fc" id="L308">    }</span>
+<span class="fc" id="L272">    }</span>
 
     public GreyscaleImage reconstruct(GreyscaleImage c0, 
         List&lt;GreyscaleImage&gt; mmCoeff) {
 
-<span class="fc" id="L313">        int nr = mmCoeff.size();</span>
+<span class="fc" id="L277">        int nr = mmCoeff.size();</span>
 
-<span class="fc" id="L315">        GreyscaleImage output = c0.copyToFullRangeIntImage();</span>
+<span class="fc" id="L279">        GreyscaleImage output = c0.copyToFullRangeIntImage();</span>
 
-<span class="fc bfc" id="L317" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
            
-<span class="fc" id="L319">            output = output.add(mmCoeff.get(j));</span>
+<span class="fc" id="L283">            output = output.add(mmCoeff.get(j));</span>
         }
 
-<span class="fc" id="L322">        return output;</span>
+<span class="fc" id="L286">        return output;</span>
     }
     
     /**
@@ -362,43 +326,43 @@ import java.util.List;
     private double estimateLocalNoise(GreyscaleImage img, int pixIdx, int xOffset, 
         int yOffset) {
         
-<span class="nc" id="L365">        int w = img.getWidth();</span>
-<span class="nc" id="L366">        int h = img.getHeight();</span>
+<span class="nc" id="L329">        int w = img.getWidth();</span>
+<span class="nc" id="L330">        int h = img.getHeight();</span>
         
-<span class="nc" id="L368">        int x = img.getCol(pixIdx);</span>
-<span class="nc" id="L369">        int y = img.getRow(pixIdx);</span>
+<span class="nc" id="L332">        int x = img.getCol(pixIdx);</span>
+<span class="nc" id="L333">        int y = img.getRow(pixIdx);</span>
         
-<span class="nc" id="L371">        int count = 0;</span>
-<span class="nc" id="L372">        double diff = 0;</span>
+<span class="nc" id="L335">        int count = 0;</span>
+<span class="nc" id="L336">        double diff = 0;</span>
         // iterate within window to find first pixel
-<span class="nc bnc" id="L374" title="All 2 branches missed.">        for (int dx = -2; dx &lt;= 2; ++dx) {</span>
-<span class="nc" id="L375">            int x1 = x + dx;</span>
-<span class="nc bnc" id="L376" title="All 4 branches missed.">            if (x1 &lt; 0 || x1 &gt; (w - 1)) {</span>
-<span class="nc" id="L377">                continue;</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">        for (int dx = -2; dx &lt;= 2; ++dx) {</span>
+<span class="nc" id="L339">            int x1 = x + dx;</span>
+<span class="nc bnc" id="L340" title="All 4 branches missed.">            if (x1 &lt; 0 || x1 &gt; (w - 1)) {</span>
+<span class="nc" id="L341">                continue;</span>
             }
-<span class="nc bnc" id="L379" title="All 2 branches missed.">            for (int dy = -2; dy &lt;= 2; ++dy) {</span>
-<span class="nc" id="L380">                int y1 = y + dy;</span>
-<span class="nc bnc" id="L381" title="All 4 branches missed.">                if (y1 &lt; 0 || y1 &gt; (h - 1)) {</span>
-<span class="nc" id="L382">                    continue;</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">            for (int dy = -2; dy &lt;= 2; ++dy) {</span>
+<span class="nc" id="L344">                int y1 = y + dy;</span>
+<span class="nc bnc" id="L345" title="All 4 branches missed.">                if (y1 &lt; 0 || y1 &gt; (h - 1)) {</span>
+<span class="nc" id="L346">                    continue;</span>
                 }
                                 
-<span class="nc" id="L385">                int x2 = x1 + xOffset;</span>
-<span class="nc" id="L386">                int y2 = y1 + yOffset;</span>
-<span class="nc bnc" id="L387" title="All 8 branches missed.">                if ((x2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &lt; 0) ||</span>
+<span class="nc" id="L349">                int x2 = x1 + xOffset;</span>
+<span class="nc" id="L350">                int y2 = y1 + yOffset;</span>
+<span class="nc bnc" id="L351" title="All 8 branches missed.">                if ((x2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &lt; 0) ||</span>
                     (y2 &gt; (h - 1))) {
-<span class="nc" id="L389">                    continue;</span>
+<span class="nc" id="L353">                    continue;</span>
                 }
                                 
-<span class="nc" id="L392">                diff += Math.abs(img.getValue(x1, y1) - img.getValue(x2, y2));</span>
+<span class="nc" id="L356">                diff += Math.abs(img.getValue(x1, y1) - img.getValue(x2, y2));</span>
                 
-<span class="nc" id="L394">                count++;</span>
+<span class="nc" id="L358">                count++;</span>
             }
         }
-<span class="nc bnc" id="L397" title="All 4 branches missed.">        assert(count &gt; 0);</span>
+<span class="nc bnc" id="L361" title="All 4 branches missed.">        assert(count &gt; 0);</span>
         
-<span class="nc" id="L399">        diff /= (double)count;</span>
+<span class="nc" id="L363">        diff /= (double)count;</span>
         
-<span class="nc" id="L401">        return diff;</span>
+<span class="nc" id="L365">        return diff;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

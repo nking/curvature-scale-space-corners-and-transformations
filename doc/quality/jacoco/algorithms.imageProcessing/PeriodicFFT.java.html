@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PeriodicFFT.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">PeriodicFFT.java</span></div><h1>PeriodicFFT.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PeriodicFFT.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">PeriodicFFT.java</span></div><h1>PeriodicFFT.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
 import algorithms.misc.MiscMath;
@@ -194,16 +194,18 @@ import java.util.Arrays;
         
         //double normCofactor = 1./(2. * Math.PI);
         
-<span class="fc" id="L197">        Complex[][] capS = imageProcessor.create2DFFT(s, false, true);</span>
-<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc bfc" id="L199" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L197">        FFTUtil fftUtil = new FFTUtil();</span>
+        
+<span class="fc" id="L199">        Complex[][] capS = fftUtil.create2DFFT(s, false, true);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
                 double denom;
-<span class="fc bfc" id="L201" title="All 4 branches covered.">                if (col == 0 &amp;&amp; row == 0) {</span>
-<span class="fc" id="L202">                    denom = 1;</span>
+<span class="fc bfc" id="L203" title="All 4 branches covered.">                if (col == 0 &amp;&amp; row == 0) {</span>
+<span class="fc" id="L204">                    denom = 1;</span>
                 } else {
-<span class="fc" id="L204">                    denom = 1./(2. * (2. - Math.cos(cx[row][col]) - Math.cos(cy[row][col])));</span>
+<span class="fc" id="L206">                    denom = 1./(2. * (2. - Math.cos(cx[row][col]) - Math.cos(cy[row][col])));</span>
                 }
-<span class="fc" id="L206">                capS[row][col] = capS[row][col].times(denom);</span>
+<span class="fc" id="L208">                capS[row][col] = capS[row][col].times(denom);</span>
             }
         }
         
@@ -211,150 +213,150 @@ import java.util.Arrays;
         % The (1,1) element of the filter will be 0 so S(1,1) may be Inf or NaN
         S(1,1) = 0;          % Enforce 0 mean 
         */
-<span class="fc" id="L214">        capS[0][0] = new Complex(0, 0);</span>
+<span class="fc" id="L216">        capS[0][0] = new Complex(0, 0);</span>
         
         /*
         P = fft2(im) - S;    % FFT of periodic component
         */
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
         // using notation a[row][col]
-<span class="fc" id="L221">        Complex[][] capP = imageProcessor.create2DFFTWithSwapMajor(img, false, true);</span>
-<span class="pc bpc" id="L222" title="3 of 4 branches missed.">        assert(capP.length == capS.length);</span>
-<span class="pc bpc" id="L223" title="3 of 4 branches missed.">        assert(capP[0].length == capS[0].length);</span>
-<span class="fc bfc" id="L224" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc bfc" id="L225" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="fc" id="L226">                Complex v0 = capP[row][col];</span>
-<span class="fc" id="L227">                Complex s0 = capS[row][col];</span>
-<span class="fc" id="L228">                capP[row][col] = v0.minus(s0);</span>
+<span class="fc" id="L223">        Complex[][] capP = imageProcessor.create2DFFTWithSwapMajor(img, false, true);</span>
+<span class="pc bpc" id="L224" title="3 of 4 branches missed.">        assert(capP.length == capS.length);</span>
+<span class="pc bpc" id="L225" title="3 of 4 branches missed.">        assert(capP[0].length == capS[0].length);</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L228">                Complex v0 = capP[row][col];</span>
+<span class="fc" id="L229">                Complex s0 = capS[row][col];</span>
+<span class="fc" id="L230">                capP[row][col] = v0.minus(s0);</span>
             }
         }
         
-<span class="fc bfc" id="L232" title="All 2 branches covered.">        if (computeSpatial) {</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        if (computeSpatial) {</span>
             //s = real(ifft2(S)); 
             //p = im - s;
             
-<span class="fc" id="L236">            double postNorm = nRows * nCols;</span>
+<span class="fc" id="L238">            double postNorm = nRows * nCols;</span>
             
-<span class="fc" id="L238">            Complex[][] lowerCaseS = imageProcessor.create2DFFT(capS, false, false);</span>
-<span class="fc bfc" id="L239" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="fc" id="L241">                    lowerCaseS[row][col] </span>
-<span class="fc" id="L242">                        = new Complex(lowerCaseS[row][col].re()/postNorm, 0);</span>
+<span class="fc" id="L240">            Complex[][] lowerCaseS = fftUtil.create2DFFT(capS, false, false);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L243">                    lowerCaseS[row][col] </span>
+<span class="fc" id="L244">                        = new Complex(lowerCaseS[row][col].re()/postNorm, 0);</span>
                 }
             }
 
-<span class="fc" id="L246">            Complex[][] lowerCaseP = new Complex[lowerCaseS.length][];</span>
-<span class="fc bfc" id="L247" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc" id="L248">                lowerCaseP[row] = new Complex[nCols];</span>
-<span class="fc bfc" id="L249" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="fc" id="L250">                    lowerCaseP[row][col] = new Complex(</span>
-<span class="fc" id="L251">                        img.getValue(col, row) - lowerCaseS[row][col].re(), 0);</span>
+<span class="fc" id="L248">            Complex[][] lowerCaseP = new Complex[lowerCaseS.length][];</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc" id="L250">                lowerCaseP[row] = new Complex[nCols];</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L252">                    lowerCaseP[row][col] = new Complex(</span>
+<span class="fc" id="L253">                        img.getValue(col, row) - lowerCaseS[row][col].re(), 0);</span>
                 }
             }
             
-<span class="fc" id="L255">            return new Complex[][][]{capS, capP, lowerCaseS, lowerCaseP};</span>
+<span class="fc" id="L257">            return new Complex[][][]{capS, capP, lowerCaseS, lowerCaseP};</span>
         }
         
-<span class="fc" id="L258">        return new Complex[][][]{capS, capP};</span>
+<span class="fc" id="L260">        return new Complex[][][]{capS, capP};</span>
     }
     
     private void DEBUG(Complex[][] tmp, String label) {
        
         try {
-<span class="nc" id="L264">            algorithms.util.PolygonAndPointPlotter plotter</span>
+<span class="nc" id="L266">            algorithms.util.PolygonAndPointPlotter plotter</span>
                 = new algorithms.util.PolygonAndPointPlotter();
 
-<span class="nc" id="L267">            int nc = tmp[0].length;</span>
-<span class="nc" id="L268">            int nr = tmp.length;</span>
+<span class="nc" id="L269">            int nc = tmp[0].length;</span>
+<span class="nc" id="L270">            int nr = tmp.length;</span>
 
-<span class="nc" id="L270">            float[] x = new float[nc];</span>
-<span class="nc bnc" id="L271" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L272">                x[ii] = ii;</span>
+<span class="nc" id="L272">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L274">                x[ii] = ii;</span>
             }
-<span class="nc" id="L274">            float[] y = new float[nc];</span>
-<span class="nc" id="L275">            float[] xPolygon = null;</span>
-<span class="nc" id="L276">            float[] yPolygon = null;</span>
+<span class="nc" id="L276">            float[] y = new float[nc];</span>
+<span class="nc" id="L277">            float[] xPolygon = null;</span>
+<span class="nc" id="L278">            float[] yPolygon = null;</span>
 
             // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
-<span class="nc bnc" id="L279" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
-<span class="nc" id="L280">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
-<span class="nc bnc" id="L281" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L282">                    y[ii] = (float) tmp[rowNumber][ii].re();</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L282">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L284">                    y[ii] = (float) tmp[rowNumber][ii].re();</span>
                 }
-<span class="nc" id="L284">                float minY = MiscMath.findMin(y);</span>
-<span class="nc" id="L285">                float maxY = MiscMath.findMax(y);</span>
-<span class="nc" id="L286">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+<span class="nc" id="L286">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L287">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L288">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
                     yPolygon, label + &quot; row=&quot; + rowNumber + &quot; REAL&quot;);
             }
-<span class="nc" id="L289">            float[] x2 = new float[nr];</span>
-<span class="nc bnc" id="L290" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nr; ++ii) {</span>
-<span class="nc" id="L291">                x2[ii] = ii;</span>
+<span class="nc" id="L291">            float[] x2 = new float[nr];</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nr; ++ii) {</span>
+<span class="nc" id="L293">                x2[ii] = ii;</span>
             }
-<span class="nc" id="L293">            float[] y2 = new float[nr];</span>
+<span class="nc" id="L295">            float[] y2 = new float[nr];</span>
             // plot cols 0.25*nCols, 0.5*nCols, and 0.75*nCols
-<span class="nc bnc" id="L295" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
-<span class="nc" id="L296">                int colNumber = (int) (((float) nf) * 0.25f * nc);</span>
-<span class="nc bnc" id="L297" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nr; ++ii) {</span>
-<span class="nc" id="L298">                    y2[ii] = (float) tmp[ii][colNumber].re();</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L298">                int colNumber = (int) (((float) nf) * 0.25f * nc);</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nr; ++ii) {</span>
+<span class="nc" id="L300">                    y2[ii] = (float) tmp[ii][colNumber].re();</span>
                 }
-<span class="nc" id="L300">                float minY = MiscMath.findMin(y2);</span>
-<span class="nc" id="L301">                float maxY = MiscMath.findMax(y2);</span>
-<span class="nc" id="L302">                plotter.addPlot(-1, nr + 1, minY, maxY, x2, y2, xPolygon,</span>
+<span class="nc" id="L302">                float minY = MiscMath.findMin(y2);</span>
+<span class="nc" id="L303">                float maxY = MiscMath.findMax(y2);</span>
+<span class="nc" id="L304">                plotter.addPlot(-1, nr + 1, minY, maxY, x2, y2, xPolygon,</span>
                     yPolygon, label + &quot; col=&quot; + colNumber + &quot; REAL&quot;);
             }
             
             // do same for complex
-<span class="nc bnc" id="L307" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
-<span class="nc" id="L308">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
-<span class="nc bnc" id="L309" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L310">                    y[ii] = (float) tmp[rowNumber][ii].im();</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L310">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L312">                    y[ii] = (float) tmp[rowNumber][ii].im();</span>
                 }
-<span class="nc" id="L312">                float minY = MiscMath.findMin(y);</span>
-<span class="nc" id="L313">                float maxY = MiscMath.findMax(y);</span>
-<span class="nc" id="L314">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+<span class="nc" id="L314">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L315">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L316">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
                     yPolygon, label + &quot; row=&quot; + rowNumber + &quot; IMAGINARY&quot;);
             }
             
-<span class="nc" id="L318">            plotter.writeFile();</span>
-<span class="nc" id="L319">        } catch (Exception e) {</span>
-<span class="nc" id="L320">            int z = 1;</span>
-<span class="nc" id="L321">        }</span>
-<span class="nc" id="L322">        int z = 1;</span>
-<span class="nc" id="L323">    }</span>
+<span class="nc" id="L320">            plotter.writeFile();</span>
+<span class="nc" id="L321">        } catch (Exception e) {</span>
+<span class="nc" id="L322">            int z = 1;</span>
+<span class="nc" id="L323">        }</span>
+<span class="nc" id="L324">        int z = 1;</span>
+<span class="nc" id="L325">    }</span>
     
     private void DEBUG(double[][] tmp, String label) {
        
         try {
-<span class="nc" id="L328">            algorithms.util.PolygonAndPointPlotter plotter</span>
+<span class="nc" id="L330">            algorithms.util.PolygonAndPointPlotter plotter</span>
                 = new algorithms.util.PolygonAndPointPlotter();
 
-<span class="nc" id="L331">            int nc = tmp[0].length;</span>
-<span class="nc" id="L332">            int nr = tmp.length;</span>
+<span class="nc" id="L333">            int nc = tmp[0].length;</span>
+<span class="nc" id="L334">            int nr = tmp.length;</span>
 
-<span class="nc" id="L334">            float[] x = new float[nc];</span>
-<span class="nc bnc" id="L335" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L336">                x[ii] = ii;</span>
+<span class="nc" id="L336">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L338">                x[ii] = ii;</span>
             }
-<span class="nc" id="L338">            float[] y = new float[nc];</span>
-<span class="nc" id="L339">            float[] xPolygon = null;</span>
-<span class="nc" id="L340">            float[] yPolygon = null;</span>
+<span class="nc" id="L340">            float[] y = new float[nc];</span>
+<span class="nc" id="L341">            float[] xPolygon = null;</span>
+<span class="nc" id="L342">            float[] yPolygon = null;</span>
 
             // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
-<span class="nc bnc" id="L343" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
-<span class="nc" id="L344">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
-<span class="nc bnc" id="L345" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L346">                    y[ii] = (float) tmp[rowNumber][ii];</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L346">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L348">                    y[ii] = (float) tmp[rowNumber][ii];</span>
                 }
-<span class="nc" id="L348">                float minY = MiscMath.findMin(y);</span>
-<span class="nc" id="L349">                float maxY = MiscMath.findMax(y);</span>
-<span class="nc" id="L350">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+<span class="nc" id="L350">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L351">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L352">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
                     yPolygon, label + &quot; row=&quot; + rowNumber);
             }
-<span class="nc" id="L353">            plotter.writeFile();</span>
-<span class="nc" id="L354">        } catch (Exception e) {</span>
-<span class="nc" id="L355">        }</span>
-<span class="nc" id="L356">        int z = 1;</span>
-<span class="nc" id="L357">    }</span>
+<span class="nc" id="L355">            plotter.writeFile();</span>
+<span class="nc" id="L356">        } catch (Exception e) {</span>
+<span class="nc" id="L357">        }</span>
+<span class="nc" id="L358">        int z = 1;</span>
+<span class="nc" id="L359">    }</span>
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

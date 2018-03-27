@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FilterGrid.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">FilterGrid.java</span></div><h1>FilterGrid.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FilterGrid.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">FilterGrid.java</span></div><h1>FilterGrid.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 /**
  * adapted from
@@ -97,15 +97,15 @@
         }
         
 <span class="fc" id="L99">        double[] u2Range = new double[nRows];</span>
-<span class="fc bfc" id="L100" title="All 2 branches covered.">        if ((nRows &amp; 1) == 1) {</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if ((nRows &amp; 1) == 1) {</span>
             //u2range = [-(rows-1)/2:(rows-1)/2]/(rows-1);
             //if nRows=3, this becomes [-1, 0, 1] --&gt; [-0.5, 0, 0.5]
-<span class="fc" id="L103">            u2Range[0] = -(nRows-1)/2.;</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">            for (int i = 1; i &lt; nRows; ++i) {</span>
-<span class="fc" id="L105">                u2Range[i] = u2Range[0] + i;</span>
+<span class="nc" id="L103">            u2Range[0] = -(nRows-1)/2.;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            for (int i = 1; i &lt; nRows; ++i) {</span>
+<span class="nc" id="L105">                u2Range[i] = u2Range[0] + i;</span>
             }
-<span class="fc bfc" id="L107" title="All 2 branches covered.">            for (int i = 0; i &lt; nRows; ++i) {</span>
-<span class="fc" id="L108">                u2Range[i] /= (nRows - 1.);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="nc" id="L108">                u2Range[i] /= (nRows - 1.);</span>
             }            
         } else {
             //u2range = [-rows/2:(rows/2-1)]/rows; 
@@ -192,4 +192,4 @@
         
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>VanishingPoints.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">VanishingPoints.java</span></div><h1>VanishingPoints.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VanishingPoints.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">VanishingPoints.java</span></div><h1>VanishingPoints.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.matching.LinesFinder;
@@ -15,7 +15,6 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -36,124 +35,124 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L39" title="All 2 branches missed.">public class VanishingPoints {</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">public class VanishingPoints {</span>
         
-<span class="nc" id="L41">    private boolean debug = false;</span>
+<span class="nc" id="L40">    private boolean debug = false;</span>
     
     /*
     key = segment idx,
        value = line endpoints and vanishing point
     */
-<span class="nc" id="L47">    private TIntObjectMap&lt;QuadInt&gt; vanishingLines =</span>
+<span class="nc" id="L46">    private TIntObjectMap&lt;QuadInt&gt; vanishingLines =</span>
         new TIntObjectHashMap&lt;QuadInt&gt;();
     
     public PairInt[] points;
     
     public void setToDebug() {
-<span class="nc" id="L53">        debug = true;</span>
-<span class="nc" id="L54">    }</span>
-<span class="nc" id="L55">public Image dbgImg = null;    </span>
+<span class="nc" id="L52">        debug = true;</span>
+<span class="nc" id="L53">    }</span>
+<span class="nc" id="L54">public Image dbgImg = null;    </span>
     public void find(List&lt;Set&lt;PairInt&gt;&gt; listOfContigousLabels,
         int imageWidth, int imageHeight) {
         
-<span class="nc" id="L59">        LinesFinder finder = new LinesFinder();</span>
-<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L61">            finder.setToDebug();</span>
+<span class="nc" id="L58">        LinesFinder finder = new LinesFinder();</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L60">            finder.setToDebug();</span>
         }
         
-<span class="nc" id="L64">        finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);</span>
-<span class="nc" id="L65">        finder.find(listOfContigousLabels);</span>
-<span class="nc" id="L66">        finder.groupWithinTolerance();</span>
+<span class="nc" id="L63">        finder.setToRemoveBorderLines(imageWidth - 1, imageHeight - 1);</span>
+<span class="nc" id="L64">        finder.find(listOfContigousLabels);</span>
+<span class="nc" id="L65">        finder.groupWithinTolerance();</span>
 
-<span class="nc" id="L68">        finder.sortOrderedLists();</span>
+<span class="nc" id="L67">        finder.sortOrderedLists();</span>
         
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (dbgImg != null) {</span>
-<span class="nc" id="L71">            finder.debugDraw(dbgImg);</span>
-<span class="nc" id="L72">            MiscDebug.writeImage(dbgImg, &quot;_all_&quot; + MiscDebug.getCurrentTimeFormatted());</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (dbgImg != null) {</span>
+<span class="nc" id="L70">            finder.debugDraw(dbgImg);</span>
+<span class="nc" id="L71">            MiscDebug.writeImage(dbgImg, &quot;_all_&quot; + MiscDebug.getCurrentTimeFormatted());</span>
         }
     
-<span class="nc" id="L75">        List&lt;PairInt&gt; orderedTRList = finder.getOrderedTRList();</span>
-<span class="nc" id="L76">        List&lt;TIntList&gt; orderedTRXYIndexes = finder.getOrderedTRXYIndexes();</span>
-<span class="nc" id="L77">        TIntList xs = finder.getXs();</span>
-<span class="nc" id="L78">        TIntList ys = finder.getYs();</span>
+<span class="nc" id="L74">        List&lt;PairInt&gt; orderedTRList = finder.getOrderedTRList();</span>
+<span class="nc" id="L75">        List&lt;TIntList&gt; orderedTRXYIndexes = finder.getOrderedTRXYIndexes();</span>
+<span class="nc" id="L76">        TIntList xs = finder.getXs();</span>
+<span class="nc" id="L77">        TIntList ys = finder.getYs();</span>
 
         // key = point, value = segmented cell index
-<span class="nc" id="L81">        TObjectIntMap&lt;PairInt&gt; pointSegmentedIndexMap = </span>
+<span class="nc" id="L80">        TObjectIntMap&lt;PairInt&gt; pointSegmentedIndexMap = </span>
             new TObjectIntHashMap&lt;PairInt&gt;();
-<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfContigousLabels.size(); ++i) {</span>
-<span class="nc" id="L84">            Set&lt;PairInt&gt; set = listOfContigousLabels.get(i);</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">            for (PairInt p : set) {</span>
-<span class="nc" id="L86">                pointSegmentedIndexMap.put(p, i);</span>
-<span class="nc" id="L87">            }</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfContigousLabels.size(); ++i) {</span>
+<span class="nc" id="L83">            Set&lt;PairInt&gt; set = listOfContigousLabels.get(i);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            for (PairInt p : set) {</span>
+<span class="nc" id="L85">                pointSegmentedIndexMap.put(p, i);</span>
+<span class="nc" id="L86">            }</span>
         }
         
         // key = point, value = ordered tr index
-<span class="nc" id="L91">        TObjectIntMap&lt;PairInt&gt; pointTRIndexMap = </span>
+<span class="nc" id="L90">        TObjectIntMap&lt;PairInt&gt; pointTRIndexMap = </span>
             new TObjectIntHashMap&lt;PairInt&gt;();
-<span class="nc bnc" id="L93" title="All 2 branches missed.">        for (int i = 0; i &lt; orderedTRXYIndexes.size(); ++i) {</span>
-<span class="nc" id="L94">            TIntList idxs = orderedTRXYIndexes.get(i);</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">            for (int j = 0; j &lt; idxs.size(); ++j) {</span>
-<span class="nc" id="L96">                int x = xs.get(j);</span>
-<span class="nc" id="L97">                int y = ys.get(j);</span>
-<span class="nc" id="L98">                pointTRIndexMap.put(new PairInt(x, y), i);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        for (int i = 0; i &lt; orderedTRXYIndexes.size(); ++i) {</span>
+<span class="nc" id="L93">            TIntList idxs = orderedTRXYIndexes.get(i);</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            for (int j = 0; j &lt; idxs.size(); ++j) {</span>
+<span class="nc" id="L95">                int x = xs.get(j);</span>
+<span class="nc" id="L96">                int y = ys.get(j);</span>
+<span class="nc" id="L97">                pointTRIndexMap.put(new PairInt(x, y), i);</span>
             }
         }
         
         // key = segmented cell index, value = ordered TR index
-<span class="nc" id="L103">        TIntObjectMap&lt;TIntList&gt; segmentedLineIndexes = </span>
+<span class="nc" id="L102">        TIntObjectMap&lt;TIntList&gt; segmentedLineIndexes = </span>
             new TIntObjectHashMap&lt;TIntList&gt;();
-<span class="nc bnc" id="L105" title="All 2 branches missed.">        for (int i = 0; i &lt; xs.size(); ++i) {</span>
-<span class="nc" id="L106">            PairInt p = new PairInt(xs.get(i), ys.get(i));</span>
-<span class="nc bnc" id="L107" title="All 4 branches missed.">            assert(pointSegmentedIndexMap.containsKey(p));</span>
-<span class="nc" id="L108">            int segIdx = pointSegmentedIndexMap.get(p);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (int i = 0; i &lt; xs.size(); ++i) {</span>
+<span class="nc" id="L105">            PairInt p = new PairInt(xs.get(i), ys.get(i));</span>
+<span class="nc bnc" id="L106" title="All 4 branches missed.">            assert(pointSegmentedIndexMap.containsKey(p));</span>
+<span class="nc" id="L107">            int segIdx = pointSegmentedIndexMap.get(p);</span>
             
-<span class="nc" id="L110">            TIntList idxs = segmentedLineIndexes.get(segIdx);</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (idxs == null) {</span>
-<span class="nc" id="L112">                idxs = new TIntArrayList();</span>
-<span class="nc" id="L113">                segmentedLineIndexes.put(segIdx, idxs);</span>
+<span class="nc" id="L109">            TIntList idxs = segmentedLineIndexes.get(segIdx);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (idxs == null) {</span>
+<span class="nc" id="L111">                idxs = new TIntArrayList();</span>
+<span class="nc" id="L112">                segmentedLineIndexes.put(segIdx, idxs);</span>
             }
-<span class="nc" id="L115">            int trIdx = pointTRIndexMap.get(p);</span>
-<span class="nc" id="L116">            idxs.add(trIdx);            </span>
+<span class="nc" id="L114">            int trIdx = pointTRIndexMap.get(p);</span>
+<span class="nc" id="L115">            idxs.add(trIdx);            </span>
         }
                 
-<span class="nc" id="L119">        TIntObjectIterator&lt;TIntList&gt; iter = segmentedLineIndexes.iterator();</span>
-<span class="nc bnc" id="L120" title="All 2 branches missed.">        for (int i = 0; i &lt; segmentedLineIndexes.size(); ++i) {</span>
-<span class="nc" id="L121">            iter.advance();</span>
-<span class="nc" id="L122">            int segIdx = iter.key();</span>
-<span class="nc" id="L123">            TIntList trIdxs = iter.value();</span>
+<span class="nc" id="L118">        TIntObjectIterator&lt;TIntList&gt; iter = segmentedLineIndexes.iterator();</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        for (int i = 0; i &lt; segmentedLineIndexes.size(); ++i) {</span>
+<span class="nc" id="L120">            iter.advance();</span>
+<span class="nc" id="L121">            int segIdx = iter.key();</span>
+<span class="nc" id="L122">            TIntList trIdxs = iter.value();</span>
             
-<span class="nc" id="L125">            TIntSet uniqueT = new TIntHashSet();</span>
-<span class="nc" id="L126">            List&lt;PairInt&gt; trs = new ArrayList&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">            for (int j = 0; j &lt; trIdxs.size(); ++j) {</span>
-<span class="nc" id="L128">                int trIdx = trIdxs.get(j);                </span>
-<span class="nc" id="L129">                PairInt tr = orderedTRList.get(trIdx);</span>
+<span class="nc" id="L124">            TIntSet uniqueT = new TIntHashSet();</span>
+<span class="nc" id="L125">            List&lt;PairInt&gt; trs = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            for (int j = 0; j &lt; trIdxs.size(); ++j) {</span>
+<span class="nc" id="L127">                int trIdx = trIdxs.get(j);                </span>
+<span class="nc" id="L128">                PairInt tr = orderedTRList.get(trIdx);</span>
                 
-<span class="nc bnc" id="L131" title="All 2 branches missed.">                if (uniqueT.contains(tr.getX())) {</span>
-<span class="nc" id="L132">                    continue;</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">                if (uniqueT.contains(tr.getX())) {</span>
+<span class="nc" id="L131">                    continue;</span>
                 }
-<span class="nc" id="L134">                uniqueT.add(tr.getX());</span>
-<span class="nc" id="L135">                trs.add(tr);</span>
+<span class="nc" id="L133">                uniqueT.add(tr.getX());</span>
+<span class="nc" id="L134">                trs.add(tr);</span>
             }
-<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (!trs.isEmpty()) {</span>
-<span class="nc bnc" id="L138" title="All 2 branches missed.">                for (int j = 0; j &lt; trs.size(); ++j) {</span>
-<span class="nc" id="L139">                    PairInt tr = trs.get(j);</span>
-<span class="nc" id="L140">                    int[] endpoints = LinesAndAngles.calcPolarLineEndPoints(</span>
-<span class="nc" id="L141">                        tr.getX(), tr.getY(), imageWidth, imageWidth);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            if (!trs.isEmpty()) {</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                for (int j = 0; j &lt; trs.size(); ++j) {</span>
+<span class="nc" id="L138">                    PairInt tr = trs.get(j);</span>
+<span class="nc" id="L139">                    int[] endpoints = LinesAndAngles.calcPolarLineEndPoints(</span>
+<span class="nc" id="L140">                        tr.getX(), tr.getY(), imageWidth, imageWidth);</span>
                     
-<span class="nc" id="L143">                    vanishingLines.put(segIdx, </span>
+<span class="nc" id="L142">                    vanishingLines.put(segIdx, </span>
                         new QuadInt(endpoints[0], endpoints[1],
                         endpoints[2], endpoints[3]));
                 }
             }
         }        
     
-<span class="nc" id="L150">    }</span>
+<span class="nc" id="L149">    }</span>
 
     /**
      * @return the vanishingLines
      */
     public TIntObjectMap&lt;QuadInt&gt; getVanishingLines() {
-<span class="nc" id="L156">        return vanishingLines;</span>
+<span class="nc" id="L155">        return vanishingLines;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

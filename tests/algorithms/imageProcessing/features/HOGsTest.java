@@ -2,10 +2,8 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
 import java.io.IOException;
@@ -153,6 +151,10 @@ public class HOGsTest extends TestCase {
     }
  
     public void test1() throws IOException {
+        
+        boolean useImg1 = true;
+        boolean useImg2 = true;
+        
         /* 
         226,160
         196:256, 190:130
@@ -164,6 +166,11 @@ public class HOGsTest extends TestCase {
         int xc2 = 226;
         int yc2 = 102;
         
+        int N_PIX_PER_CELL_DIM = 3;    //1;  3;
+        int N_CELLS_PER_BLOCK_DIM = 3; //10; 3;
+        int angle = 20;
+        int nBins = 180/angle;
+          
         Transformer transformer = new Transformer();
         TransformationParameters params = new TransformationParameters();
         params.setRotationInDegrees(90);
@@ -177,104 +184,135 @@ public class HOGsTest extends TestCase {
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
         
-        GreyscaleImage img1 = img.subImage(xc1, yc1, w, h);
-        GreyscaleImage img2 = img.subImage(xc2, yc2, w, h);
-            
-        params.setTranslationX(0);
-        params.setTranslationY(img1.getWidth() - 1);
-        GreyscaleImage img1_rot = transformer.applyTransformation(img1, params, 
-            img1.getHeight(), img1.getWidth());
+        GreyscaleImage img1 = null;
+        GreyscaleImage img1_rot = null;
+        GreyscaleImage img2 = null;
+        GreyscaleImage img2_rot = null;
+        HOGs hogs1 = null;
+        HOGs hogs1_rot = null;
+        HOGs hogs2 = null;
+        HOGs hogs2_rot = null;
+        int[] feature1 = null;
+        int[] feature1_rot = null;
+        int[] feature2 = null;
+        int[] feature2_rot = null;
         
-        params.setTranslationX(0);
-        params.setTranslationY(img2.getWidth() - 1);
-        GreyscaleImage img2_rot = transformer.applyTransformation(img2, params, 
-            img2.getHeight(), img2.getWidth());
+        int orientation1 = -1;
+        int orientation1_rot = -1;
+        int orientation2 = -1;
+        int orientation2_rot = -1;
+        float intersection_1 = -1;
+        float intersection_2 = -1;
+        float intersection_false_1 = -1;
+        float intersection_false_2 = -1;
+        float intersection_false_3 = -1;
+        float intersection_false_4 = -1;
+        float[] ssd_1 = null;
+        float[] ssd_2 = null;
+        float[] ssd_false_1 = null;
+        float[] ssd_false_2 = null;
+        float[] ssd_false_3 = null;
+        float[] ssd_false_4 = null;
+        
+        if (useImg1) {
+            img1 = img.subImage(xc1, yc1, w, h);    
+            
+            params.setTranslationX(0);
+            params.setTranslationY(img1.getWidth() - 1);
+            img1_rot = transformer.applyTransformation(img1, params, 
+                img1.getHeight(), img1.getWidth());
+        }
+        
+        if (useImg2) {
+            img2 = img.subImage(xc2, yc2, w, h);
+            params.setTranslationX(0);
+            params.setTranslationY(img2.getWidth() - 1);
+            img2_rot = transformer.applyTransformation(img2, params, 
+                img2.getHeight(), img2.getWidth());
+        }
         
         //MiscDebug.writeImage(img1, "img1");
         //MiscDebug.writeImage(img1_rot, "img1_rot");
         //MiscDebug.writeImage(img2, "img2");
         //MiscDebug.writeImage(img2_rot, "img2_rot");
         
-        int nPixPerCellDimH = 10;
-        int angle = 20;
-        int nBins = 180/angle;
+        if (useImg1) {
+            
+            hogs1 = new HOGs(img1, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            hogs1_rot = new HOGs(img1_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            feature1 = new int[nBins];
+            hogs1.extractFeature((w/2) - 1, (h/2) - 1, feature1);
+            feature1_rot = new int[nBins];
+            hogs1_rot.extractFeature(w/2, h/2, feature1_rot);
+            
+            System.out.println(Arrays.toString(feature1));
+            System.out.println(Arrays.toString(feature1_rot));
         
-        HOGs hogs1 = new HOGs(img1, 1, nPixPerCellDimH, nBins);
-        HOGs hogs1_rot = new HOGs(img1_rot, 1, nPixPerCellDimH, nBins);
+            orientation1 = MiscMath.findYMaxIndex(feature1) * angle + (angle/2);
+            orientation1_rot = MiscMath.findYMaxIndex(feature1_rot) * angle + (angle/2);
         
-        HOGs hogs2 = new HOGs(img2, 1, nPixPerCellDimH, nBins);
-        HOGs hogs2_rot = new HOGs(img2_rot, 1, nPixPerCellDimH, nBins);
-        
-        
-        int[] feature1 = new int[nBins];
-        hogs1.extractFeature(w/2, h/2, feature1);
-        int[] feature1_rot = new int[nBins];
-        hogs1_rot.extractFeature(w/2, h/2, feature1_rot);
-        
-        int[] feature2 = new int[nBins];
-        hogs2.extractFeature(w/2, h/2, feature2);
-        int[] feature2_rot = new int[nBins];
-        hogs2_rot.extractFeature(w/2, h/2, feature2_rot);
-        
-        System.out.println(Arrays.toString(feature1));
-        System.out.println(Arrays.toString(feature1_rot));
-        System.out.println(Arrays.toString(feature2));
-        System.out.println(Arrays.toString(feature2_rot));
-        
-        int orientation1 = MiscMath.findYMaxIndex(feature1) * angle + (angle/2);
-        int orientation1_rot = MiscMath.findYMaxIndex(feature1_rot) * angle + (angle/2);
-        int orientation2 = MiscMath.findYMaxIndex(feature2) * angle + (angle/2);
-        int orientation2_rot = MiscMath.findYMaxIndex(feature2_rot) * angle + (angle/2);
-        
-        // ===============================
-        float intersection_1 = hogs1.intersection(feature1, orientation1, 
+            intersection_1 = hogs1.intersection(feature1, orientation1, 
             feature1_rot, orientation1_rot);
         
-        float intersection_2 = hogs2.intersection(feature2, orientation2, 
-            feature2_rot, orientation2_rot);
+            ssd_1 = hogs1.diff(feature1, orientation1, feature1_rot, orientation1_rot);
+            
+            System.out.format("ang1=%d ang1rot90=%d\n", orientation1, orientation1_rot);
         
-        float intersection_false_1 = hogs1.intersection(feature1, orientation1, 
-            feature2, orientation2);
+            System.out.format("intersection1=%.3f\n", intersection_1);
         
-        float intersection_false_2 = hogs1.intersection(feature1, orientation1, 
-            feature2_rot, orientation2_rot);
+            System.out.format("ssd1=%.3f(%.3f)\n", ssd_1[0], ssd_1[1]);
+        }
         
-        float intersection_false_3 = hogs1_rot.intersection(feature1_rot, orientation1_rot, 
-            feature2, orientation2);
+        if (useImg2) {
+            hogs2 = new HOGs(img2, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            hogs2_rot = new HOGs(img2_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            feature2 = new int[nBins];
+            hogs2.extractFeature(w/2, h/2, feature2);
+            feature2_rot = new int[nBins];
+            hogs2_rot.extractFeature(w/2, h/2, feature2_rot);
+            System.out.println(Arrays.toString(feature2));
+            System.out.println(Arrays.toString(feature2_rot));
         
-        float intersection_false_4 = hogs1_rot.intersection(feature1_rot, orientation1_rot, 
-            feature2_rot, orientation2_rot);
+            orientation2 = MiscMath.findYMaxIndex(feature2) * angle + (angle/2);
+            orientation2_rot = MiscMath.findYMaxIndex(feature2_rot) * angle + (angle/2);
         
-        System.out.format("ang1=%d ang1rot90=%d   ang2=%d ang2rot90=%d\n",
-                orientation1, orientation1_rot, orientation2, orientation2_rot);
+            intersection_2 = hogs2.intersection(feature2, orientation2, 
+                feature2_rot, orientation2_rot);
         
-        System.out.format("intersection1=%.3f intersection2=%.3f\n",
-                intersection_1, intersection_2);
+            ssd_2 = hogs2.diff(feature2, orientation2, feature2_rot, orientation2_rot);
         
-        System.out.format("false intersections=%.3f, %.3f, %.3f, %.3f\n",
+            System.out.format("ang2=%d ang2rot90=%d\n", orientation2, orientation2_rot);
+        
+            System.out.format("intersection2=%.3f\n", intersection_2);
+        
+            System.out.format("ssd2=%.3f(%.3f)\n", ssd_2[0], ssd_2[1]);
+        }
+        
+        if (useImg1 && useImg2) {
+            
+            intersection_false_1 = hogs1.intersection(feature1, orientation1,
+                    feature2, orientation2);
+            intersection_false_2 = hogs1.intersection(feature1, orientation1,
+                    feature2_rot, orientation2_rot);
+            intersection_false_3 = hogs1_rot.intersection(feature1_rot, orientation1_rot,
+                    feature2, orientation2);
+            intersection_false_4 = hogs1_rot.intersection(feature1_rot, orientation1_rot,
+                    feature2_rot, orientation2_rot);
+
+            ssd_false_1 = hogs1.diff(feature1, orientation1, feature2, orientation2);
+            ssd_false_2 = hogs1.diff(feature1, orientation1, feature2_rot, orientation2_rot);
+            ssd_false_3 = hogs1_rot.diff(feature1_rot, orientation1_rot, feature2, orientation2);
+            ssd_false_4 = hogs1_rot.diff(feature1_rot, orientation1_rot, feature2_rot, orientation2_rot);
+
+            System.out.format("false intersection=%.3f, %.3f, %.3f, %.3f\n",
                 intersection_false_1, intersection_false_2,
                 intersection_false_3, intersection_false_4);
-        
-        // ===============================
-        float[] ssd_1 = hogs1.diff(feature1, orientation1, feature1_rot, orientation1_rot);
-        
-        float[] ssd_2 = hogs2.diff(feature2, orientation2, feature2_rot, orientation2_rot);
-        
-        float[] ssd_false_1 = hogs1.diff(feature1, orientation1, feature2, orientation2);
-        
-        float[] ssd_false_2 = hogs1.diff(feature1, orientation1, feature2_rot, orientation2_rot);
-        
-        float[] ssd_false_3 = hogs1_rot.diff(feature1_rot, orientation1_rot, feature2, orientation2);
-        
-        float[] ssd_false_4 = hogs1_rot.diff(feature1_rot, orientation1_rot, feature2_rot, orientation2_rot);
-        
-        System.out.format("ssd1=%.3f(%.3f) ssd2=%.3f(%.3f)\n", 
-                ssd_1[0], ssd_1[1], ssd_2[0], ssd_2[1]);
-        
-        System.out.format("false ssds=%.3f(%.3f), %.3f(%.3f), %.3f(%.3f), %.3f(%.3f)\n",
-                ssd_false_1[0], ssd_false_1[1],
-                ssd_false_2[0], ssd_false_2[1],
-                ssd_false_3[0], ssd_false_3[1],
-                ssd_false_4[0], ssd_false_4[1]);
+            
+            System.out.format("false ssds=%.3f(%.3f), %.3f(%.3f), %.3f(%.3f), %.3f(%.3f)\n",
+                    ssd_false_1[0], ssd_false_1[1],
+                    ssd_false_2[0], ssd_false_2[1],
+                    ssd_false_3[0], ssd_false_3[1],
+                    ssd_false_4[0], ssd_false_4[1]);
+        }
     }
 }

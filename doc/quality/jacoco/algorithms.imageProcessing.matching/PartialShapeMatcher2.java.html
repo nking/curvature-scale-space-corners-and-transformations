@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PartialShapeMatcher2.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">PartialShapeMatcher2.java</span></div><h1>PartialShapeMatcher2.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PartialShapeMatcher2.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">PartialShapeMatcher2.java</span></div><h1>PartialShapeMatcher2.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
@@ -1315,15 +1315,15 @@ based upon algorithm in paper
 <span class="fc bfc" id="L1315" title="All 2 branches covered.">        if (outputLeftXY.getN() &lt; matchedLeftXY.getN()) {</span>
 <span class="fc" id="L1316">            int nOut = outputLeftXY.getN();</span>
 <span class="fc" id="L1317">            TIntSet present = new TIntHashSet();</span>
-<span class="pc bpc" id="L1318" title="1 of 2 branches missed.">            for (int i = 0; i &lt; nOut; ++i) {</span>
-<span class="nc" id="L1319">                PairInt p1 = new PairInt(outputLeftXY.getX(i),</span>
-<span class="nc" id="L1320">                    outputLeftXY.getY(i));</span>
-<span class="nc" id="L1321">                int lIdx = pPointIndexMap.get(p1);</span>
-<span class="nc" id="L1322">                present.add(lIdx);</span>
+<span class="fc bfc" id="L1318" title="All 2 branches covered.">            for (int i = 0; i &lt; nOut; ++i) {</span>
+<span class="fc" id="L1319">                PairInt p1 = new PairInt(outputLeftXY.getX(i),</span>
+<span class="fc" id="L1320">                    outputLeftXY.getY(i));</span>
+<span class="fc" id="L1321">                int lIdx = pPointIndexMap.get(p1);</span>
+<span class="fc" id="L1322">                present.add(lIdx);</span>
             }
             // remove best indexes not in final output
 <span class="fc bfc" id="L1325" title="All 2 branches covered.">            for (int ii = (n - 1); ii &gt; -1; --ii) {</span>
-<span class="pc bpc" id="L1326" title="1 of 2 branches missed.">                if (!present.contains(ii)) {</span>
+<span class="fc bfc" id="L1326" title="All 2 branches covered.">                if (!present.contains(ii)) {</span>
 <span class="fc" id="L1327">                    best.idx1s.removeAt(ii);</span>
 <span class="fc" id="L1328">                    best.idx2s.removeAt(ii);</span>
                 }
@@ -2456,4 +2456,4 @@ based upon algorithm in paper
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

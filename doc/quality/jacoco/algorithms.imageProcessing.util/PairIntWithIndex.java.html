@@ -1,56 +1,57 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PairIntWithIndex.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">PairIntWithIndex.java</span></div><h1>PairIntWithIndex.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PairIntWithIndex.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">PairIntWithIndex.java</span></div><h1>PairIntWithIndex.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
+
+import algorithms.util.PairInt;
 
 /**
  *
  * @author nichole
  */
-public class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
+public class PairIntWithIndex extends PairInt {
 
     int pixIdx;
 
     public PairIntWithIndex(int xPoint, int yPoint, int thePixIndex) {
-<span class="fc" id="L12">        super(xPoint, yPoint);</span>
-<span class="fc" id="L13">        pixIdx = thePixIndex;</span>
-<span class="fc" id="L14">    }</span>
+<span class="fc" id="L14">        super(xPoint, yPoint);</span>
+<span class="fc" id="L15">        pixIdx = thePixIndex;</span>
+<span class="fc" id="L16">    }</span>
     
     public int getPixIndex() {
-<span class="fc" id="L17">        return pixIdx;</span>
+<span class="fc" id="L19">        return pixIdx;</span>
     }
 
     @Override
     public boolean equals(Object obj) {
 
-<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (!(obj instanceof com.climbwithyourfeet.clustering.util.PairInt)) {</span>
-<span class="nc" id="L24">            return false;</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (!(obj instanceof PairInt)) {</span>
+<span class="nc" id="L26">            return false;</span>
         }
 
-<span class="fc" id="L27">        com.climbwithyourfeet.clustering.util.PairInt other</span>
-            = (com.climbwithyourfeet.clustering.util.PairInt) obj;
+<span class="fc" id="L29">        PairInt other = (PairInt) obj;</span>
 
-<span class="pc bpc" id="L30" title="2 of 4 branches missed.">        return (x == other.getX()) &amp;&amp; (y == other.getY());</span>
+<span class="pc bpc" id="L31" title="2 of 4 branches missed.">        return (getX() == other.getX()) &amp;&amp; (getY() == other.getY());</span>
     }
 
     @Override
     public int hashCode() {
 
-<span class="fc" id="L36">        int hash = fnvHashCode(this.x, this.y);</span>
+<span class="fc" id="L37">        int hash = fnvHashCode(getX(), getY());</span>
 
-<span class="fc" id="L38">        return hash;</span>
+<span class="fc" id="L39">        return hash;</span>
     }
 
     @Override
-    public com.climbwithyourfeet.clustering.util.PairInt copy() {
-<span class="fc" id="L43">         return new PairIntWithIndex(x, y, pixIdx);</span>
+    public PairInt copy() {
+<span class="fc" id="L44">         return new PairIntWithIndex(getX(), getY(), pixIdx);</span>
     }
 
     @Override
     public String toString() {
 
-<span class="nc" id="L49">        StringBuilder sb = new StringBuilder(super.toString());</span>
-<span class="nc" id="L50">        sb.append(&quot; pixIdx=&quot;).append(Integer.toString(pixIdx));</span>
+<span class="nc" id="L50">        StringBuilder sb = new StringBuilder(super.toString());</span>
+<span class="nc" id="L51">        sb.append(&quot; pixIdx=&quot;).append(Integer.toString(pixIdx));</span>
 
-<span class="nc" id="L52">        return sb.toString();</span>
+<span class="nc" id="L53">        return sb.toString();</span>
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

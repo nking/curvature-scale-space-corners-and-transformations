@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TriangleFunction.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TriangleFunction.java</span></div><h1>TriangleFunction.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TriangleFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">TriangleFunction.java</span></div><h1>TriangleFunction.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 /**
  * @author nichole
@@ -73,7 +73,7 @@
 <span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int row = 0; row &lt; h; ++row) {</span>
 <span class="fc bfc" id="L74" title="All 2 branches covered.">            for (int col = 0; col &lt; w; ++col) {</span>
 <span class="fc" id="L75">                int x0 = col - s;</span>
-<span class="fc" id="L76">                int x2 = col + 2;</span>
+<span class="fc" id="L76">                int x2 = col + s;</span>
 
                 // choosing &quot;continuity&quot; for boundary corrections
 <span class="fc bfc" id="L79" title="All 2 branches covered.">                if (x0 &lt; 0) {</span>
@@ -107,7 +107,7 @@
 <span class="fc bfc" id="L107" title="All 2 branches covered.">        for (int col = 0; col &lt; w; ++col) {</span>
 <span class="fc bfc" id="L108" title="All 2 branches covered.">            for (int row = 0; row &lt; h; ++row) {</span>
 <span class="fc" id="L109">                int y0 = row - s;</span>
-<span class="fc" id="L110">                int y2 = row + 2;</span>
+<span class="fc" id="L110">                int y2 = row + s;</span>
 
                 // choosing &quot;continuity&quot; for boundary corrections
 <span class="fc bfc" id="L113" title="All 2 branches covered.">                if (y0 &lt; 0) {</span>
@@ -140,4 +140,4 @@
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GradientIntegralHistograms.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">GradientIntegralHistograms.java</span></div><h1>GradientIntegralHistograms.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GradientIntegralHistograms.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">GradientIntegralHistograms.java</span></div><h1>GradientIntegralHistograms.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.*;
 import java.util.Arrays;
@@ -161,24 +161,24 @@ public class GradientIntegralHistograms {
         
 <span class="fc bfc" id="L162" title="All 4 branches covered.">        if (dx == 0 &amp;&amp; dy == 0) {</span>
 <span class="fc bfc" id="L163" title="All 2 branches covered.">            if (stopX == 0) {</span>
-<span class="fc bfc" id="L164" title="All 2 branches covered.">                if (stopY == 0) {</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">                if (stopY == 0) {</span>
 <span class="fc" id="L165">                    outputN[0] = 1;</span>
 <span class="fc" id="L166">                    System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                         output, 0, output.length);
 <span class="fc" id="L168">                    return;</span>
                 }
-<span class="fc" id="L170">                outputN[0] = 1;</span>
-<span class="fc" id="L171">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="nc" id="L170">                outputN[0] = 1;</span>
+<span class="nc" id="L171">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);
-<span class="fc" id="L173">                subtract(output, histograms[getPixIdx(stopX, stopY - 1, w)]);</span>
-<span class="fc" id="L174">                return;</span>
-<span class="fc bfc" id="L175" title="All 2 branches covered.">            } else if (stopY == 0) {</span>
+<span class="nc" id="L173">                subtract(output, histograms[getPixIdx(stopX, stopY - 1, w)]);</span>
+<span class="nc" id="L174">                return;</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">            } else if (stopY == 0) {</span>
                 //stopX == 0 &amp;&amp; stopY == 0 has been handles in previous block
-<span class="fc" id="L177">                outputN[0] = 1;</span>
-<span class="fc" id="L178">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="nc" id="L177">                outputN[0] = 1;</span>
+<span class="nc" id="L178">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);
-<span class="fc" id="L180">                subtract(output, histograms[getPixIdx(stopX - 1, stopY, w)]);</span>
-<span class="fc" id="L181">                return;</span>
+<span class="nc" id="L180">                subtract(output, histograms[getPixIdx(stopX - 1, stopY, w)]);</span>
+<span class="nc" id="L181">                return;</span>
             } else {
                 // stopX &gt; 0
 <span class="fc" id="L184">                outputN[0] = 1;</span>
@@ -253,9 +253,9 @@ public class GradientIntegralHistograms {
         // a centered window sum
 <span class="fc" id="L254">        int r = N_PIX_PER_CELL_DIM &gt;&gt; 1;</span>
         int r0, r1;
-<span class="fc bfc" id="L256" title="All 2 branches covered.">        if (r == 0) {</span>
-<span class="fc" id="L257">            r0 = 0;</span>
-<span class="fc" id="L258">            r1 = 0;</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        if (r == 0) {</span>
+<span class="nc" id="L257">            r0 = 0;</span>
+<span class="nc" id="L258">            r1 = 0;</span>
 <span class="fc bfc" id="L259" title="All 2 branches covered.">        } else if ((N_PIX_PER_CELL_DIM &amp; 1) == 1) {</span>
 <span class="fc" id="L260">            r0 = -r;</span>
 <span class="fc" id="L261">            r1 = r;</span>
@@ -327,4 +327,4 @@ public class GradientIntegralHistograms {
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
