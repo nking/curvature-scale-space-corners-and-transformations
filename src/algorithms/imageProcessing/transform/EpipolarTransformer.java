@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.matching.ErrorType;
@@ -10,7 +9,6 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +17,6 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.Matrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 
@@ -155,6 +152,8 @@ import no.uib.cipr.matrix.SVD;
 public class EpipolarTransformer {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
+    
+    private static double eps = 1e-12;
 
     /**
      * calculate the fundamental matrix for the given matched left and
@@ -421,7 +420,7 @@ public class EpipolarTransformer {
                 MatrixUtil.multiply(t1Transpose,
                     MatrixUtil.multiply(solution, t2));
 
-            double s = 1./denormFundamentalMatrix.get(2, 2);
+            double s = 1./(denormFundamentalMatrix.get(2, 2) + eps);
             MatrixUtil.multiply(denormFundamentalMatrix, s);
 
             denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
@@ -863,7 +862,7 @@ public class EpipolarTransformer {
             MatrixUtil.multiply(t1Transpose,
                 MatrixUtil.multiply(normalizedFundamentalMatrix, t2));
 
-        double factor = 1./denormFundamentalMatrix.get(2, 2);
+        double factor = 1./(denormFundamentalMatrix.get(2, 2) + eps);
         MatrixUtil.multiply(denormFundamentalMatrix, factor);
 
         return denormFundamentalMatrix;
@@ -1880,9 +1879,9 @@ public class EpipolarTransformer {
         assert(p2.numColumns() == n);
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < n; ++col) {
-                double v = p1.get(row, col)/x1.get(row, col);
+                double v = p1.get(row, col)/(x1.get(row, col) + eps);
                 p1.set(row, col, v);
-                v = p2.get(row, col)/x2.get(row, col);
+                v = p2.get(row, col)/(x2.get(row, col) + eps);
                 p2.set(row, col, v);
             }
         }
@@ -1909,7 +1908,7 @@ public class EpipolarTransformer {
                 - p1.get(1, i) * fm.get(2, 1) - fm.get(2, 2);
             g1.set(2, i, v);
             g2.set(3, i, v);
-        }        
+        }
         
         // nData X 1        
         double[] magG1 = sumMult(g1, g1);
@@ -1927,7 +1926,11 @@ public class EpipolarTransformer {
         for (int i = 0; i < n; ++i) {
             double v1 = magG1G2[i];
             double v2 = magG1[i] * magG2[i];
-            double v = v1/v2;
+            double v = v1/(v2 + eps);
+            if (!(v < 1.)) {
+                System.out.format("v1=%.3f, v2=%.3f, v=%.3f\n", 
+                        (float)v1, (float)v2, (float)v);
+            }
             assert(v < 1.);
             alpha[i] = Math.acos(v);
         }
@@ -1951,8 +1954,8 @@ public class EpipolarTransformer {
         List<Double> outputDistances = new ArrayList<Double>();
         
         for (int i = 0; i < n; ++i) {
-            double d1 = alg[0].get(i, 0)/magG1[i];
-            double d2 = alg[1].get(i, 1)/magG2[i];
+            double d1 = alg[0].get(i, 0)/(magG1[i] + eps);
+            double d2 = alg[1].get(i, 1)/(magG2[i] + eps);
             double d = (
                 (d1 * d1) + (d2 * d2) 
                 - (2. * d1 * d2 * Math.cos(alpha[i])/Math.sin(alpha[i])));
