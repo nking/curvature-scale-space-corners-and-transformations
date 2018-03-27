@@ -919,11 +919,12 @@ public class PhaseCongruencyDetector {
 
             PixelHelper ph = new PixelHelper();
             int[] xy = new int[2];
-            int w = nCols;
+            //int w = nCols;
+            int h = nRows;
             TLongSet pixIdxs = new TLongHashSet();
             
             for (PairInt p : noisePoints) {
-                long pixIdx = ph.toPixelIndex(p, w);
+                long pixIdx = ph.toPixelIndex(p, h);
                 pixIdxs.add(pixIdx);
             }
                         
@@ -947,7 +948,7 @@ public class PhaseCongruencyDetector {
                 TLongIterator iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
                     long pixIdx = iter3.next();
-                    ph.toPixelCoords(pixIdx, w, xy);
+                    ph.toPixelCoords(pixIdx, h, xy);
                     
                     ImageIOHelper.addPointToImage(xy[1], xy[0], dbg,
                         1, clr[0], clr[1], clr[2]);
@@ -997,10 +998,10 @@ public class PhaseCongruencyDetector {
                 TLongIterator iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
                     long pixIdx = iter3.next();
-                    ph.toPixelCoords(pixIdx, w, xy);
-                    if (noisePoints.contains(new PairInt(xy[0], xy[1])) 
-                        && dt[xy[0]][xy[1]] > 0) {
-                        sumD += dt[xy[0]][xy[1]];
+                    ph.toPixelCoords(pixIdx, h, xy);
+                    if (noisePoints.contains(new PairInt(xy[1], xy[0])) 
+                        && dt[xy[1]][xy[0]] > 0) {
+                        sumD += dt[xy[1]][xy[0]];
                         countD++;
                     }
                 }
@@ -1037,10 +1038,9 @@ public class PhaseCongruencyDetector {
             }
 
             int end = 100;
-            if (dist.length < end) {
+            if (end > dist.length) {
                 end = dist.length;
             }
-            System.out.println("dist[0]=" + dist[0] + " dist[end-1]=" + dist[end-1]);
 
             int np = 0;
 
@@ -1059,7 +1059,7 @@ public class PhaseCongruencyDetector {
                 TLongIterator iter3 = groupPixs.iterator();
                 while (iter3.hasNext()) {
                     long pixIdx = iter3.next();
-                    ph.toPixelCoords(pixIdx, w, xy);
+                    ph.toPixelCoords(pixIdx, h, xy);
                 
                     ImageIOHelper.addPointToImage(xy[1], xy[0], dbg0,
                         1, clr[0], clr[1], clr[2]);
