@@ -118,7 +118,7 @@ public class HOGs {
     private final int w;
     private final int h;
 
-    private boolean debug = false;
+    private boolean debug = true;
 
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
@@ -300,8 +300,9 @@ public class HOGs {
         }
 
         blockTotal /= (double)cells.size();
-
-        double norm = 1./Math.sqrt(blockTotal + eps);
+        blockTotal = Math.sqrt(blockTotal);
+        
+        double norm = 1./(blockTotal + eps);
 
         float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255.f;
@@ -407,7 +408,6 @@ public class HOGs {
                 idxB -= nBins;
             }
             
-
             float yA = histA[idxA];
             float yB = histB[idxB];
 
@@ -703,11 +703,27 @@ public class HOGs {
 
         for (int i = 0; i < maxIdxs.size(); ++i) {
             int idx = maxIdxs.get(i);
-            int angle = Math.round((maxIdxs.get(i) + 0.5f) * binWidth);
+            int angle = Math.round((idx + 0.5f) * binWidth);
             orientations.add(angle);
         }
 
         return orientations;
     }
 
+    public void _printHistograms() {
+        for (int i = 0; i < gHists.length; ++i) {
+            int[] gh0 = gHists[i];
+            if (hasNonZeroes(gh0)) {
+                System.out.format("%d) %s\n", i, Arrays.toString(gh0));
+            }
+        }
+    }
+    private boolean hasNonZeroes(int[] a) {
+        for (int b : a) {
+            if (b != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

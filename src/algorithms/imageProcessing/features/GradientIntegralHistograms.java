@@ -29,7 +29,8 @@ public class GradientIntegralHistograms {
      * @param gradient
      * @param theta
      * @param nBins
-     * @return 
+     * @return 2D histogram with first dimension being the pixel index and 
+     * 2nd dimension being the angle based histogram for the pixel.
      */
     public int[][] createHistograms(GreyscaleImage gradient,  
         GreyscaleImage theta, int nBins) {

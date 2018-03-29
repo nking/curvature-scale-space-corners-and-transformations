@@ -32,7 +32,8 @@ public class PolarThetaIntegralHistograms {
     /**
      * runtime complexity is O(N_pixels).
      * 
-     * @param img greyscale image
+     * @param img greyscale image where intensity is polar angles of the X,Y 
+     * chromaticity
      * @param nBins
      * @return 
      */

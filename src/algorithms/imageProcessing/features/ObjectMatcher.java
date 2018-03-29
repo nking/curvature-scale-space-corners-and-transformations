@@ -333,7 +333,7 @@ public class ObjectMatcher {
             }
         }
         
-        /* 
+        /*
         if (debug){
             long ts = MiscDebug.getCurrentTimeFormatted();
             int[] xyCen = new int[2];
@@ -349,7 +349,7 @@ public class ObjectMatcher {
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imCp, debugLabel + "_regions_gs_"+ type + "_" + ts);
+                MiscDebug.writeImage(imCp, debugLabel + "__regions_gs_"+ type + "_" + ts);
             }
             
             for (int type = 0; type < 2; ++type) {
@@ -365,10 +365,10 @@ public class ObjectMatcher {
                     //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
                     //    + " variation=" + r.getVariation());
                 }
-                MiscDebug.writeImage(imCp, debugLabel + "_regions_pt_"+ type + "_" + ts);
+                MiscDebug.writeImage(imCp, debugLabel + "__regions_pt_"+ type + "_" + ts);
             }
         }
-       */
+        */
  
         List<Region> combined = new ArrayList<Region>();
         
@@ -1064,6 +1064,8 @@ public class ObjectMatcher {
         private boolean useShapeFinder = false;
 
         private boolean findVanishingPoints = false;
+        
+        private boolean useColorFilter = true;
 
         private String lbl = "";
         
@@ -1145,6 +1147,12 @@ public class ObjectMatcher {
             return findVanishingPoints;
         }
 
+        public void setToExcludeColorFilter() {
+            useColorFilter = false;
+        }
+        public boolean useColorFilter() {
+            return useColorFilter;
+        }
     }
 
     /**
@@ -1187,6 +1195,12 @@ public class ObjectMatcher {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
+        /*
+        convert the image to cie luv and then calculate polar angle of u and v
+        around 0 in degrees (a.k.a. the "H" of LCH color space, but with
+        the 1976 CIE LAB which is LUV).
+        If maxV of 360, returns full value image,
+        */
         GreyscaleImage luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
         GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
         imageProcessor.singlePixelFilter(luvTheta0);
@@ -1238,6 +1252,7 @@ public class ObjectMatcher {
         if (debug) {            
             //MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
             //MiscDebug.writeImage(luvTheta0, "_luv_mask_");
+            //MiscDebug.writeImage(luvTheta1, "_luv_srch_");
             
             //MiscDebug.writeImage(tmp00, "_gs_enhanced_0_");
             //MiscDebug.writeImage(tmp01, "_luv_enhanced_0_");
@@ -1250,7 +1265,7 @@ public class ObjectMatcher {
             //gsImg1, luvTheta1, 
             clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
                 
-        int critSep = 5;
+        int critSep = 1;//5;
         Canonicalizer.filterBySpatialProximity(critSep, regionsComb0, 
             img0Trimmed.getWidth(), img0Trimmed.getHeight());
         
@@ -1269,10 +1284,10 @@ public class ObjectMatcher {
         List<GreyscaleImage> pyrPT1 = imageProcessor.buildPyramid(
             luvTheta1, settings.useLargerPyramid1);
        
-       // applyWindowedMean(pyrRGB0, 1);
-        //applyWindowedMean(pyrRGB1, 1);
-        //applyWindowedMean2(pyrPT0, 1);
-        //applyWindowedMean2(pyrPT1, 1);
+        //// applyWindowedMean(pyrRGB0, 1);
+        ////applyWindowedMean(pyrRGB1, 1);
+        ////applyWindowedMean2(pyrPT0, 1);
+        ////applyWindowedMean2(pyrPT1, 1);
         
         Canonicalizer canonicalizer = new Canonicalizer();
 
@@ -1298,7 +1313,7 @@ public class ObjectMatcher {
                     1, 255, 0, 0);
             }
             MiscDebug.writeImage(im0Cp, "_" + settings.getDebugLabel() + 
-                "_regions_0_");
+                "___regions_0_");
 
             im1Cp = img1.copyImage();
             n9 = regionsComb1.size();
@@ -1312,7 +1327,7 @@ public class ObjectMatcher {
             //    System.out.println("regIdx1=" + i + " x="+xyCen[0] + " y=" + xyCen[1]);
             }
             MiscDebug.writeImage(im1Cp, "_" + settings.getDebugLabel() 
-                + "_regions_1_");
+                + "___regions_1_");
         }
         */
         
@@ -1323,9 +1338,11 @@ public class ObjectMatcher {
             canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
   
         // filter by color hist of hsv, cielab and CIECH
-        filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, 
-            regionPoints1);
-
+        if (settings.useColorFilter()) {
+            filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, 
+                regionPoints1);
+        }
+        
         //NOTE: not sure this is the best approach, but wanting to keep the 
         //   template shapes as 1 full shape and then the 2 largest 
         //   parts of it to allow a finer fragmented search.
@@ -1408,11 +1425,9 @@ public class ObjectMatcher {
             matcher.setToDebug();
         }
         
-        List<CorrespondenceList> corList 
-            = matcher.matchObject0(
+        List<CorrespondenceList> corList = matcher.matchObject0(
             pyrRGB0, pyrPT0, regionPoints0,
-            pyrRGB1,  pyrPT1, regionPoints1,
-            settings.getDebugLabel());
+            pyrRGB1, pyrPT1, regionPoints1, settings.getDebugLabel());
         
         if (corList == null) {
             return null;

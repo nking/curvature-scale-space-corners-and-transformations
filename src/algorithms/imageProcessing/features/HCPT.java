@@ -14,6 +14,7 @@ import java.util.List;
  * The algorithm is similar to those mentioned in HOGs.java except
  * that the histograms below have bins of color space and the added
  * units are "1" unit of the pixel color.
+ * TODO: The differencing methods also take into account wrap around for the axis.
  
   @author nichole
 */
@@ -153,9 +154,10 @@ public class HCPT {
         }
         
         blockTotal /= (double)cells.size();
+        blockTotal = Math.sqrt(blockTotal);
         
-        double norm = 1./Math.sqrt(blockTotal + eps);
-                
+        double norm = 1./(blockTotal + eps);
+        
         float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;
    
@@ -219,7 +221,7 @@ public class HCPT {
              /
             (min(summation_over_i(a_i), summation_over_i(b_i))
         */
-            
+                
         float sum = 0;
         float sumA = 0;
         float sumB = 0;

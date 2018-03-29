@@ -159,8 +159,8 @@ public class HGS {
         }
         
         blockTotal /= (double)cells.size();
-        
-        double norm = 1./Math.sqrt(blockTotal + eps);
+        blockTotal = Math.sqrt(blockTotal);
+        double norm = 1./(blockTotal + eps);
                 
         float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;

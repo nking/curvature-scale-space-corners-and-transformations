@@ -240,8 +240,13 @@ public class HOGsTest extends TestCase {
             
             hogs1 = new HOGs(img1, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
             hogs1_rot = new HOGs(img1_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            
+            //hogs1._printHistograms();
+            //System.out.println("ROTATED: " + img1.getWidth() + "," + img1.getHeight());
+            //hogs1_rot._printHistograms();
+            
             feature1 = new int[nBins];
-            hogs1.extractFeature((w/2) - 1, (h/2) - 1, feature1);
+            hogs1.extractFeature((w/2), (h/2), feature1);
             feature1_rot = new int[nBins];
             hogs1_rot.extractFeature(w/2, h/2, feature1_rot);
             
