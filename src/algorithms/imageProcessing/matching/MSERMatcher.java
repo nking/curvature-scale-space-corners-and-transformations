@@ -730,8 +730,8 @@ public class MSERMatcher {
                 scale0);
 
             FixedSizeSortedVector<Obj> bestPerOctave =
-                new FixedSizeSortedVector<Obj>(100, Obj.class);
-                //new FixedSizeSortedVector<Obj>(1, Obj.class);
+                //new FixedSizeSortedVector<Obj>(100, Obj.class);
+                new FixedSizeSortedVector<Obj>(1, Obj.class);
             
             for (int imgIdx1 = 0; imgIdx1 < n1; ++imgIdx1) {
 
