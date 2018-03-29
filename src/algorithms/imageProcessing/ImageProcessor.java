@@ -973,12 +973,14 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 }
 
                 double radians = Math.atan2(gY, gX);
-
+                assert(radians >= 0. && radians <= 2.*Math.PI);
+                
                 int theta = (int)(radians * 180./Math.PI);
                 if (theta == 180) {
                     theta = 0;
                 }
-
+                assert(theta >= 0 && theta < 180);
+                
                 output.setValue(i, j, theta);
 
             }
