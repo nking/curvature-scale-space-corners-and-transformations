@@ -1212,22 +1212,30 @@ public class ObjectMatcher {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
+        mask(img0Trimmed, shape0Trimmed);
+        CMODE clrMode = determineColorMode(img0Trimmed, shape0Trimmed);
+        
         /*
         convert the image to cie luv and then calculate polar angle of u and v
         around 0 in degrees (a.k.a. the "H" of LCH color space, but with
         the 1976 CIE LAB which is LUV).
         If maxV of 360, returns full value image,
         */
-        GreyscaleImage luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
-        GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
+        GreyscaleImage luvTheta0;
+        GreyscaleImage luvTheta1;
+        if (clrMode.equals(CMODE.WHITE)) {
+            luvTheta0 = imageProcessor.createCIELUVTheta_WideRangeLightness(img0Trimmed, 255);
+            luvTheta1 = imageProcessor.createCIELUVTheta_WideRangeLightness(img1, 255);
+        } else {
+            luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
+            //GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
+            luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
+        }
+        
         imageProcessor.singlePixelFilter(luvTheta0);
         imageProcessor.singlePixelFilter(luvTheta1);
 
-        mask(img0Trimmed, shape0Trimmed);
         mask(luvTheta0, shape0Trimmed);
-
-        CMODE clrMode = determineColorMode(img0Trimmed, shape0Trimmed);
-        
         CMODE ptMode = determinePolarThetaMode(luvTheta0, shape0Trimmed);
         
         // ----- create the cRegions for a masked image pyramid of img 0 ====
