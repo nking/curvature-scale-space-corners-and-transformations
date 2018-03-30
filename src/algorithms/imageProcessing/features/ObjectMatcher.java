@@ -1067,6 +1067,9 @@ public class ObjectMatcher {
         
         private boolean useColorFilter = true;
 
+        // if set to false, only uses the greyscale HOGS and fraction of whole for cosr
+        private boolean useChromaticityHOGS = true;
+        
         private String lbl = "";
         
         /**
@@ -1152,6 +1155,20 @@ public class ObjectMatcher {
         }
         public boolean useColorFilter() {
             return useColorFilter;
+        }
+
+        /**
+         * @return the useChromaticityHOGS
+         */
+        public boolean isUseChromaticityHOGS() {
+            return useChromaticityHOGS;
+        }
+
+        /**
+         * @param useChromaticityHOGS the useChromaticityHOGS to set
+         */
+        public void setUseChromaticityHOGS(boolean useChromaticityHOGS) {
+            this.useChromaticityHOGS = useChromaticityHOGS;
         }
     }
 
@@ -1251,8 +1268,8 @@ public class ObjectMatcher {
         
         if (debug) {            
             //MiscDebug.writeImage(img0Trimmed, "_shape0_mask_");
-            //MiscDebug.writeImage(luvTheta0, "_luv_mask_");
-            //MiscDebug.writeImage(luvTheta1, "_luv_srch_");
+            MiscDebug.writeImage(luvTheta0, "_luv_mask_" + ts);
+            MiscDebug.writeImage(luvTheta1, "_luv_srch_" + ts);
             
             //MiscDebug.writeImage(tmp00, "_gs_enhanced_0_");
             //MiscDebug.writeImage(tmp01, "_luv_enhanced_0_");
@@ -1427,7 +1444,7 @@ public class ObjectMatcher {
         
         List<CorrespondenceList> corList = matcher.matchObject0(
             pyrRGB0, pyrPT0, regionPoints0,
-            pyrRGB1, pyrPT1, regionPoints1, settings.getDebugLabel());
+            pyrRGB1, pyrPT1, regionPoints1, settings);
         
         if (corList == null) {
             return null;
