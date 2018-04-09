@@ -21,7 +21,7 @@ public class GradientIntegralHistogramsTest extends TestCase {
         GreyscaleImage g = new GreyscaleImage(2, 2);
         GreyscaleImage t = new GreyscaleImage(2, 2);
         
-        g.setValue(0, 0, 10);  t.setValue(0, 0, 30);  
+        g.setValue(0, 0, 10);  t.setValue(0, 0, 20);  
         g.setValue(0, 1, 220); t.setValue(0, 1, 90); 
         g.setValue(1, 0, 100); t.setValue(1, 0, 130); 
         g.setValue(1, 1, 10);  t.setValue(1, 1, 170); 
@@ -44,7 +44,8 @@ public class GradientIntegralHistogramsTest extends TestCase {
         //     10      220   100   10
         //  0  1  2  3  4  5  6  7  8 
         
-        assertEquals(10, outHist[1]);
+        assertEquals(5, outHist[0]);
+        assertEquals(5, outHist[1]);
         assertEquals(220, outHist[4]);
         assertEquals(100, outHist[6]);
         assertEquals(10, outHist[8]);
@@ -54,7 +55,8 @@ public class GradientIntegralHistogramsTest extends TestCase {
         //  0  1  2  3  4  5  6  7  8 
         gh.extractWindow(histograms, 0, 1, 0, 0, w, h, outHist, outN);
         
-        assertEquals(10, outHist[1]);
+        assertEquals(5, outHist[0]);
+        assertEquals(5, outHist[1]);
         assertEquals(0, outHist[4]);
         assertEquals(100, outHist[6]);
         assertEquals(0, outHist[8]);
@@ -70,7 +72,8 @@ public class GradientIntegralHistogramsTest extends TestCase {
         g.setValue(1, 0, 100); t.setValue(1, 0, 130); 
         g.setValue(1, 1, 10);  t.setValue(1, 1, 170); 
         */
-        assertEquals(10, outHist[1]);
+        assertEquals(5, outHist[0]);
+        assertEquals(5, outHist[1]);
         assertEquals(220, outHist[4]);
         assertEquals(0, outHist[6]);
         assertEquals(0, outHist[8]);
@@ -83,7 +86,8 @@ public class GradientIntegralHistogramsTest extends TestCase {
         g.setValue(1, 0, 100); t.setValue(1, 0, 130); 
         g.setValue(1, 1, 10);  t.setValue(1, 1, 170); 
         */
-        assertEquals(10, outHist[1]);
+        assertEquals(5, outHist[0]);
+        assertEquals(5, outHist[1]);
         assertEquals(0, outHist[4]);
         assertEquals(0, outHist[6]);
         assertEquals(0, outHist[8]);
@@ -113,7 +117,14 @@ public class GradientIntegralHistogramsTest extends TestCase {
         GreyscaleImage g = new GreyscaleImage(2, 3);
         GreyscaleImage t = new GreyscaleImage(2, 3);
         
-        g.setValue(0, 0, 10);  t.setValue(0, 0, 30);  
+        /*
+        binWidth = 20
+        
+          10   30   50  70   90   110  130  150  170
+        0   20   40   60   80  100  120  140  160  180
+        */
+        
+        g.setValue(0, 0, 10);  t.setValue(0, 0, 20);  
         g.setValue(0, 1, 220); t.setValue(0, 1, 90); 
         g.setValue(1, 0, 100); t.setValue(1, 0, 130); 
         g.setValue(1, 1, 10);  t.setValue(1, 1, 170); 
@@ -144,7 +155,8 @@ public class GradientIntegralHistogramsTest extends TestCase {
               10      220   100    10
            0  1  2  3  4  5  6  7  8 
         */
-        assertEquals(20, outHist[1]);
+        assertEquals(5, outHist[0]);
+        assertEquals(15, outHist[1]);
         assertEquals(225 + 220, outHist[4]);
         assertEquals(100, outHist[6]);
         assertEquals(10, outHist[8]);

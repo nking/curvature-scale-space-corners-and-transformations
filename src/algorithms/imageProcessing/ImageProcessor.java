@@ -1009,21 +1009,21 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
      * </pre>
      *
-     * @param convolvedX
-     * @param convolvedY
+     * @param gradientX
+     * @param gradientY
      * @return
      */
-    public GreyscaleImage computeTheta180(final GreyscaleImage convolvedX,
-        final GreyscaleImage convolvedY) {
+    public GreyscaleImage computeTheta180(final GreyscaleImage gradientX,
+        final GreyscaleImage gradientY) {
 
-        GreyscaleImage output = convolvedX.createWithDimensions();
+        GreyscaleImage output = gradientX.createWithDimensions();
 
-        for (int i = 0; i < convolvedX.getWidth(); i++) {
-            for (int j = 0; j < convolvedX.getHeight(); j++) {
+        for (int i = 0; i < gradientX.getWidth(); i++) {
+            for (int j = 0; j < gradientX.getHeight(); j++) {
 
-                double gX = convolvedX.getValue(i, j);
+                double gX = gradientX.getValue(i, j);
 
-                double gY = convolvedY.getValue(i, j);
+                double gY = gradientY.getValue(i, j);
 
                 if (gY < 0) {
                     gX *= -1;
@@ -1040,7 +1040,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 assert(theta >= 0 && theta < 180);
                 
                 output.setValue(i, j, theta);
-
             }
         }
 

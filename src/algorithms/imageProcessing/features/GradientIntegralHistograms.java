@@ -46,14 +46,23 @@ public class GradientIntegralHistograms {
         
         int binWidth = 180/nBins;
         
+        /*
+        NOTE: have changed to place the counts into the 2 bins that the angle is closest
+        to, that is, a binlinear interpolation of the contribution to theta.
+        */
+        
         int[][] out = new int[nPix][];
+        
+        double b, f0, f1;
+        double halfBinWidth = binWidth/2.;
+        int pixIdx, t, b0, b1, c0, v, v0, v1;
         
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
                 
-                int pixIdx = gradient.getInternalIndex(x, y);
+                pixIdx = gradient.getInternalIndex(x, y);
                 
-                int t = theta.getValue(pixIdx);
+                t = theta.getValue(pixIdx);
                  
                 if (t < 0 || t > 180) {
                     throw new IllegalArgumentException("theta values muse be "
@@ -62,19 +71,36 @@ public class GradientIntegralHistograms {
                 if (t == 180) {
                     t = 0;
                 }
+                v = gradient.getValue(pixIdx);
                 
-                int bin = t/binWidth;
-                if (bin >= nBins) {
-                    bin = nBins - 1;
+                b = (double)t/binWidth;
+                b0 = (int)b;
+                c0 = (int)(((double)b0 * binWidth) + halfBinWidth);
+                
+                f1 = Math.abs((double)(c0 - t)/binWidth);
+                f0 = 1. - f1;
+                
+                if (t == c0) {
+                    // t is centered in bin
+                    b1 = b0;
+                } else if (t < c0) {
+                    b1 = b0 - 1;
+                    if (b1 < 0) {
+                        b1 = nBins - 1;
+                    }
+                } else {
+                    b1 = b0 + 1;
+                    if (b1 == nBins) {
+                        b1 = 0;
+                    }
                 }
-                
-                int v = gradient.getValue(pixIdx);
-               
+                               
                 if (pixIdx == 0) {
                     
                     out[pixIdx] = new int[nBins];
                     
-                    out[pixIdx][bin] += v;
+                    out[pixIdx][b0] += (f0 * v);
+                    out[pixIdx][b1] += (f1 * v);
                     
                 } else if (x > 0 && y > 0) {
                     
@@ -84,7 +110,8 @@ public class GradientIntegralHistograms {
                     
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
                                         
-                    out[pixIdx][bin] += v;
+                    out[pixIdx][b0] += (f0 * v);
+                    out[pixIdx][b1] += (f1 * v);
                     
                     // add bin, add pixIdxB and subtract pixIdxLB
                     add(out[pixIdx], out[pixIdxB]);
@@ -95,7 +122,9 @@ public class GradientIntegralHistograms {
                     int pixIdxL = gradient.getInternalIndex(x - 1, y);
                                    
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
-                    out[pixIdx][bin] += v;
+                    
+                    out[pixIdx][b0] += (f0 * v);
+                    out[pixIdx][b1] += (f1 * v);
                 
                 } else if (y > 0) {
                 
@@ -103,7 +132,8 @@ public class GradientIntegralHistograms {
                                     
                     out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);
                     
-                    out[pixIdx][bin] += v;
+                    out[pixIdx][b0] += (f0 * v);
+                    out[pixIdx][b1] += (f1 * v);
                 }
             }
         }

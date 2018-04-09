@@ -178,7 +178,7 @@ public class HOGs {
         ImageProcessor imageProcessor = new ImageProcessor();
 
         // instead of sobel, using 1st deriv
-        GreyscaleImage[] gXgY = imageProcessor.createGradients(rgb);
+        GreyscaleImage[] gXgY = imageProcessor.createCentralDifferenceGradients(rgb);
 
         GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
 
@@ -251,7 +251,7 @@ public class HOGs {
 
         // uses the block normalization recomended by Dalal & Triggs,
         //   the summary of histogram counts over all cells
-        //   is used to normaliza each cell by that sum.
+        //   is used to normalize each cell by that sum.
 
         int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
 
