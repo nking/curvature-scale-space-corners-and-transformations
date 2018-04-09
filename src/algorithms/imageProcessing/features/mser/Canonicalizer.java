@@ -298,6 +298,7 @@ public class Canonicalizer {
                 cRegion.hogOrientation = or;
                 
                 if (output.containsKey(rIdx)) {
+                    cRegion.dataIdx = addIdx;
                     output.put(addIdx, cRegion);
                     addIdx++;
                 } else {
