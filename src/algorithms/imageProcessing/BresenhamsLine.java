@@ -54,6 +54,40 @@ public class BresenhamsLine {
      * @param y1
      * @param x2
      * @param y2
+     * @param gapLength number of pixels for a dashed line.
+     * @param output
+     */
+    public static void createLinePoints(int x1, int y1,
+        int x2, int y2, int gapLength, Set<PairInt> output) {
+    
+        List<PairInt> output0 = new ArrayList<PairInt>();
+        
+        createLinePoints(x1, y1, x2, y2, output0);
+        
+        output.addAll(output0);
+        
+        int j = 0;
+        for (int i = gapLength; i < output0.size(); ++i) {
+            if (j < gapLength) {
+                output.remove(output0.get(i));
+            }
+            j++;
+            if (j > (2*gapLength)) {
+                j = 0;
+            }
+        }
+    }
+    
+    /**
+     * calculate points in the line between (x1, y1)
+     * and (x2, y2), inclusive, and add them to output
+     * using Bresenham's algorithm.
+     * The code is adapted from 
+     * http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
      * @param output
      */
     public static void createLinePoints(int x1, int y1,

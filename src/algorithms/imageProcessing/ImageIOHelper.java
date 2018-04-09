@@ -1161,6 +1161,56 @@ public class ImageIOHelper {
      * draw lines from points at index i to index i+1 in the requested color
      * onto the input.
      * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void drawLineInImage(int x1, int y1, 
+        int x2, int y2, Image input, int nExtraForDot, int gapLength,
+        int rClr, int gClr, int bClr) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        Set<PairInt> output = new HashSet<PairInt>();
+        
+        BresenhamsLine.createLinePoints(x1, y1, x2, y2, gapLength,
+            output);
+        
+        for (PairInt p : output) {
+
+            int x = p.getX();
+            int y = p.getY();
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); 
+                dx++) {
+
+                int xx = x + dx;
+
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
+                        continue;
+                    }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
+                }
+            }
+        }
+    }
+    
+    /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
      * @param xVertexes
      * @param yVertexes
      * @param input

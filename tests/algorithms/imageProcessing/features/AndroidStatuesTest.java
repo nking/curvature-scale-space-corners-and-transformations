@@ -54,8 +54,8 @@ public class AndroidStatuesTest extends TestCase {
     
     public void testObjectFinder() throws Exception {
         boolean debug = true;
-        runMatcher_gingerbreadman(debug);
-        runMatcher_icecream(debug);
+        //runMatcher_gingerbreadman(debug);
+        //runMatcher_icecream(debug);
         runMatcher_cupcake(debug);
     }
 
@@ -184,8 +184,8 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames1 = new String[]{
             "android_statues_01.jpg",   //  <== NOT found, needs segmentation
-            "android_statues_02.jpg", //  
-            "android_statues_04.jpg"
+        //    "android_statues_02.jpg", //  
+        //    "android_statues_04.jpg"
         };
         
         /*  ROUGH COORDS
@@ -225,6 +225,13 @@ public class AndroidStatuesTest extends TestCase {
             String filePath1 = ResourceFinder.findFileInTestResources(
                 fileName1);
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
+            
+            if (fileName1.equals("android_statues_01.jpg")) {
+                //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
+                img = (ImageExt) img.copySubImage(0, img.getWidth()/5, 0, img.getHeight());
+            } else if (fileName1.equals("android_statues_02.jpg")) {
+                
+            }
 
             long ts = MiscDebug.getCurrentTimeFormatted();
 
@@ -281,7 +288,7 @@ public class AndroidStatuesTest extends TestCase {
         };
         
         String[] fileNames1 = new String[]{
-           "android_statues_01.jpg",  
+            "android_statues_01.jpg",  
             "android_statues_02.jpg",
             "android_statues_04.jpg", // descr are fine
         };
@@ -362,36 +369,8 @@ public class AndroidStatuesTest extends TestCase {
                 objMatcher.setToDebug();
             }
             
-            CorrespondenceList cor = objMatcher
-                //.findObject11(
-                .findObject12(
-                    imgs0[0], shape0, img, settings);
-
-            long t1 = System.currentTimeMillis();
-            System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
-
-            if (cor == null) {
-                continue;
-            }
+            _run_matcher(imgs0, shape0, img, fileName1Root, debug, 0, fIdx);
             
-            CorrespondencePlotter plotter = new CorrespondencePlotter(
-                imgs0[1], img.copyImage());            
-            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
-                PairInt p1 = cor.getPoints1().get(ii);
-                PairInt p2 = cor.getPoints2().get(ii);
-
-                //System.out.println("orb matched: " + p1 + " " + p2);
-                //if (p2.getX() > 160)
-                plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
-                    p2.getX(), p2.getY(), 0);
-            }
-
-            plotter.writeImage("_orb_corres_final_" + 
-                "_icecream_" + fileName1Root);
-            System.out.println(cor.getPoints1().size() + 
-                " matches " + fileName1Root + " test3");
-            //MiscDebug.writeImage(img11, "_orb_matched_" + str
-            //    + "_" + fileName1Root);
         }
     }
     
@@ -1148,7 +1127,6 @@ public class AndroidStatuesTest extends TestCase {
 
         settings.setToUseLargerPyramid0();
         settings.setToUseLargerPyramid1();
-        settings.setUseChromaticityHOGS(true);
 
         ObjectMatcher objMatcher = new ObjectMatcher();
         objMatcher.setToDebug();
@@ -1162,19 +1140,20 @@ public class AndroidStatuesTest extends TestCase {
 
         long t0 = System.currentTimeMillis();
         
-        CorrespondenceList cor 
+        List<CorrespondenceList> corresList 
             //= objMatcher.findObject11(
             = objMatcher.findObject12(imgs0[0], shape0, img, settings);
 
         long t1 = System.currentTimeMillis();
         System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
 
-        if (cor == null) {
+        if (corresList == null || corresList.isEmpty()) {
             return;
         }
 
         CorrespondencePlotter plotter = new CorrespondencePlotter(
-            imgs0[1].copyImage(), img.copyImage());            
+            imgs0[1].copyImage(), img.copyImage()); 
+        CorrespondenceList cor = corresList.get(0);
         for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
             PairInt p1 = cor.getPoints1().get(ii);
             PairInt p2 = cor.getPoints2().get(ii);
@@ -1183,6 +1162,19 @@ public class AndroidStatuesTest extends TestCase {
             //if (p2.getX() > 160)
             plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
                 p2.getX(), p2.getY(), 0);
+        }
+        
+        if (corresList.size() > 1) {
+            cor = corresList.get(1);
+            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
+                PairInt p1 = cor.getPoints1().get(ii);
+                PairInt p2 = cor.getPoints2().get(ii);
+
+                //System.out.println("orb matched: " + p1 + " " + p2);
+                //if (p2.getX() > 160)
+                plotter.drawDashedLine(p1.getX(), p1.getY(),
+                    p2.getX(), p2.getY(), 255, 200, 200, 0, 15);
+            }
         }
 
         plotter.writeImage("_orb_corres_final_" + 
@@ -1191,41 +1183,6 @@ public class AndroidStatuesTest extends TestCase {
             " matches " + fileName1Root);
         //MiscDebug.writeImage(img11, "_orb_matched_" + str
         //    + "_" + fileName1Root);
-
-        if (true) {
-            return;
-        }
-        
-        // ============================================================
-        // -------- solve without the chromaticity HOGS -----------
-        settings.setUseChromaticityHOGS(false);
-
-        t0 = System.currentTimeMillis();
-
-        cor = objMatcher.findObject12(imgs0[0], shape0, img, settings);
-
-        t1 = System.currentTimeMillis();
-        System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
-
-        if (cor == null) {
-            return;
-        }
-
-        plotter = new CorrespondencePlotter(imgs0[1].copyImage(), img.copyImage());            
-        for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
-            PairInt p1 = cor.getPoints1().get(ii);
-            PairInt p2 = cor.getPoints2().get(ii);
-
-            //System.out.println("orb matched: " + p1 + " " + p2);
-            //if (p2.getX() > 160)
-            plotter.drawLineInAlternatingColors(p1.getX(), p1.getY(), 
-                p2.getX(), p2.getY(), 0);
-        }
-
-        plotter.writeImage("_orb_corres_final_no_chr_" + 
-            "_gbman_" + fileName1Root + "_" + fn0);
-        System.out.println(cor.getPoints1().size() + 
-            " matches " + fileName1Root);
     }
   
 }
