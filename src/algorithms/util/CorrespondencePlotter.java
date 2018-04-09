@@ -138,6 +138,21 @@ public class CorrespondencePlotter {
             comb, nExtraForDot, r, g, b);
     }
     
+    public void drawDashedLine(int x1, int y1, int x2, int y2,
+        int r, int g, int b, int nExtraForDot, int gapLength) {
+        
+        x1 += xOffset1;
+        y1 += yOffset1;
+        
+        x2 += xOffset2;
+        y2 += yOffset2;
+        
+        prevClr++;
+                
+        ImageIOHelper.drawLineInImage(x1, y1, x2, y2, 
+            comb, nExtraForDot, gapLength, r, g, b);
+    }
+    
     public String writeImage(String fileSuffix) throws IOException {
         
          String dirPath = ResourceFinder.findDirectory("bin");
