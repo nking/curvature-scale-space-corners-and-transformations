@@ -102,6 +102,64 @@ public class ImageProcessor {
 
         return new GreyscaleImage[]{gX, gY};
     }
+    
+    /**
+     * apply a 1D first deriv gaussian sigma=0.5 convolution)
+     * and return gradients in X and y. note the image may contain
+     * negative values.
+     * @param input
+     * @return
+     */
+    public GreyscaleImage[] createCentralDifferenceGradients(GreyscaleImage input) {
+
+        //[1 0 -1]
+        GreyscaleImage gX = input.copyToFullRangeIntImage();
+        
+        GreyscaleImage gY = input.copyToFullRangeIntImage();
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+     
+        int v0, v1;
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {                
+                if (i > 0 && (i + 1) < w) {
+                    //gx[i][j] = img[i-1][j] - img[i+1][j]
+                    v0 = input.getValue(i - 1, j);
+                    v1 = input.getValue(i + 1, j);
+                    gX.setValue(i, j, (v1 - v0));
+                } else if (i == 0) {
+                    // handle boundaries
+                    v0 = input.getValue(0, j);
+                    v1 = input.getValue(1, j);
+                    gX.setValue(0, j, (v1 - v0));
+                } else {
+                    // handle boundaries
+                    v0 = input.getValue(i - 1, j);
+                    v1 = input.getValue(w - 1, j);
+                    gX.setValue(i, j, (v1 - v0));
+                }
+                if (j > 0 && (j + 1) < h) {
+                    //gy[i][j] = img[i][j-1] - img[i][j+1]
+                    v0 = input.getValue(i, j - 1);
+                    v1 = input.getValue(i, j + 1);
+                    gY.setValue(i, j, (v1 - v0));
+                } else if (j == 0) {
+                    // handle boundaries
+                    v0 = input.getValue(i, 0);
+                    v1 = input.getValue(i, 1);
+                    gY.setValue(i, j, (v1 - v0));
+                } else {
+                    // handle boundaries
+                    v0 = input.getValue(i, j - 1);
+                    v1 = input.getValue(i, h - 1);
+                    gY.setValue(i, j, (v1 - v0));
+                }
+            }
+        }
+        
+        return new GreyscaleImage[]{gX, gY};
+    }
 
     public void applySobelKernel(GreyscaleImage input) {
 
@@ -6045,11 +6103,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 int g = img.getG(i, j);
                 int b = img.getB(i, j);
 
-                /*
-                CIE standard illuminant D50, [0.9642, 1.0000, 0.8251]. 
-                Simulates warm daylight at sunrise or sunset with correlated 
-                color temperature of 5003 K. Also known as horizon light.
-                */                        
                 float[] lma = cieC.rgbToPolarCIELUV(r, g, b, xd, yd, zd);
 
                 double t = lma[2];

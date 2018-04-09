@@ -25,7 +25,35 @@ public class ImageProcessorTest extends TestCase {
     public ImageProcessorTest(String testName) {
         super(testName);
     }
-
+    
+    public void testreateCentralDifferenceGradients() {
+        
+        GreyscaleImage input = new GreyscaleImage(10, 10);
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                input.setValue(i, j, i);
+            }
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage[] gXgYs = 
+                imageProcessor.createCentralDifferenceGradients(input);
+        
+        int v, v0, v1;
+        for (int i = 1; i < input.getWidth() - 1; i++) {
+            for (int j = 1; j < input.getHeight() - 1; j++) {
+                v = gXgYs[0].getValue(i, j);
+                v0 = input.getValue(i - 1, j);
+                v1 = input.getValue(i + 1, j);
+                assertEquals(v1 - v0, v);
+                v = gXgYs[1].getValue(i, j);
+                v0 = input.getValue(i, j - 1);
+                v1 = input.getValue(i, j + 1);
+                assertEquals(v1 - v0, v);
+            }
+        }
+    }
+    
     public void testCreateEmptyImg() {
                 
         Image input = new Image(10, 10);
