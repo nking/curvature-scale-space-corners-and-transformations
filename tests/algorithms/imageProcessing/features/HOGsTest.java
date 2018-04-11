@@ -175,8 +175,9 @@ public class HOGsTest extends TestCase {
         //int N_CELLS_PER_BLOCK_DIM = 2;
         int N_PIX_PER_CELL_DIM = 3;    //1;  3;
         int N_CELLS_PER_BLOCK_DIM = 3; //10; 3;
-        int angle = 20;
-        int nBins = 180/angle;
+        //int angle = 20;
+        int nBins = 9;//180/angle;
+        float angle = 180.f/nBins;
           
         Transformer transformer = new Transformer();
         TransformationParameters params = new TransformationParameters();
@@ -288,8 +289,8 @@ public class HOGsTest extends TestCase {
             System.out.println(Arrays.toString(block1));
             System.out.println(Arrays.toString(block1_rot));
         
-            orientation1 = MiscMath.findYMaxIndex(block1) * angle + (angle/2);
-            orientation1_rot = MiscMath.findYMaxIndex(block1_rot) * angle + (angle/2);
+            orientation1 = (int)(MiscMath.findYMaxIndex(block1) * angle + (angle/2));
+            orientation1_rot = (int)(MiscMath.findYMaxIndex(block1_rot) * angle + (angle/2));
         
             intersection_1 = hogs1.intersection(block1, orientation1, 
             block1_rot, orientation1_rot);
@@ -316,8 +317,8 @@ public class HOGsTest extends TestCase {
             System.out.println(Arrays.toString(block2));
             System.out.println(Arrays.toString(block2_rot));
         
-            orientation2 = MiscMath.findYMaxIndex(block2) * angle + (angle/2);
-            orientation2_rot = MiscMath.findYMaxIndex(block2_rot) * angle + (angle/2);
+            orientation2 = (int)(MiscMath.findYMaxIndex(block2) * angle + (angle/2));
+            orientation2_rot = (int)(MiscMath.findYMaxIndex(block2_rot) * angle + (angle/2));
         
             intersection_2 = hogs2.intersection(block2, orientation2, 
                 block2_rot, orientation2_rot);
