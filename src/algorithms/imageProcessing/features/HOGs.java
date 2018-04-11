@@ -215,7 +215,9 @@ public class HOGs {
 
         int[][] histograms = gh.createHistograms(gradientXY, theta, nAngleBins);
 
-        //apply a windowed sum across the integral image
+        //apply a windowed sum across the integral image.
+        // result is that at each pixel is a histogram holding the sum of histograms
+        //    from the surrounding N_PIX_PER_CELL_DIM window. 
         gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);
 
         return histograms;
@@ -624,15 +626,14 @@ public class HOGs {
             float yB = histB[idxB];
 
             float maxValue = Math.max(yA, yB) + eps;
-                        
-            float diff = (yA - yB)/maxValue;
+
+            float diff = Math.abs((yA - yB)/maxValue);
             
             //sumDiff += (diff * diff);
-            sumDiff += Math.abs(diff);
-   
+            sumDiff += diff;
+
             //      already squared
-            err += Math.abs(diff/maxValue);
-            //err += Math.min(yA, yB)/maxValue;
+            err += (diff/maxValue);
         }
         
         sumDiff /= (double)nBins;
@@ -895,4 +896,11 @@ public class HOGs {
         }
         return false;
     }
+    
+    int[] extractHistogram(int x, int y) {
+        int pixIdx = (y * w) + x;
+        int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
+        return out;
+    }
+    
 }
