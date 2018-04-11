@@ -44,7 +44,7 @@ public class GradientIntegralHistograms {
         
         int nPix = gradient.getNPixels();
         
-        int binWidth = 180/nBins;
+        float binWidth = 180.f/nBins;
         
         /*
         NOTE: have changed to place the counts into the 2 bins that the angle is closest
@@ -262,6 +262,8 @@ public class GradientIntegralHistograms {
     /**
      * apply a windowed sum across the gradient integral histogram image,
      * where the window size is N_PIX_PER_CELL_DIM.
+     * The result is an image of histograms, where each histogram represents
+     * the integration over the surrounding N_PIX_PER_CELL_DIM window.
      *  
      * @param histograms
      * @param w
