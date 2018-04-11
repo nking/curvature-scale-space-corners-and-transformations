@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  CAVEAT: small amount of testing done, not yet throughly tested.
@@ -238,7 +239,7 @@ public class HOGs {
      * @param y
      * @param outHist
      */
-    public void extractFeature(int x, int y, int[] outHist) {
+    public void extractBlock(int x, int y, int[] outHist) {
 
         if (outHist.length != nAngleBins) {
             throw new IllegalArgumentException("outHist.length != nAngleBins");
@@ -295,17 +296,20 @@ public class HOGs {
 
                 int t = sumCounts(out);
 
-                blockTotal += (t * t);
+                blockTotal += (t * t);                
             }
         }
 
-        blockTotal /= (double)cells.size();
-        blockTotal = Math.sqrt(blockTotal);
+        if (!cells.isEmpty()) {
+            blockTotal /= (double)cells.size();
+            blockTotal = Math.sqrt(blockTotal);
+        }
         
         double norm = 1./(blockTotal + eps);
 
-        float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
-            (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255.f;
+        float maxBlock = 255.f * cells.size();
+            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
+            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
 
         norm *= maxBlock;
 
@@ -331,6 +335,123 @@ public class HOGs {
         */
     }
 
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * Extract the blocks within the feature, add and normalize them and place
+     * the result in the output array.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * Each block is extracted with "extractBlock" which is normalized by its 
+     * own sum, then the sum of the blocks is used here to normalize the
+     * feature.
+     * 
+     * @param xCenter
+     * @param yCenter
+     * @param detectorWidth
+     * @param detectorHeight
+     * @return outHist
+     */
+    public int[] extractFeature(int xCenter, int yCenter, int detectorWidth,
+        int detectorHeight) {
+        
+        int hw = detectorWidth/2;
+        int hh = detectorHeight/2;
+
+        if ((xCenter - hw) < 0 || (yCenter - hh) < 0 
+            || (xCenter + hw) >= w || (yCenter + hh) >= h) {
+            throw new IllegalArgumentException("out of bounds of "
+                + "original image");
+        }
+        
+        int hc = N_PIX_PER_CELL_DIM/2;
+        
+        /*        
+                          xc,yc            
+             |         |         |         |
+        */
+        int nX0 = (hw - hc)/N_PIX_PER_CELL_DIM;
+        int startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);
+        if (startX < hc) {
+            nX0 = (xCenter - hc)/N_PIX_PER_CELL_DIM;
+            startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);
+        }
+        int nX1 = (hw - hc)/N_PIX_PER_CELL_DIM;
+        int stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);
+        if (stopX >= (this.w - hc)) {
+            nX1 = (w - 1 - xCenter - hc)/N_PIX_PER_CELL_DIM;
+            stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);
+        }
+        int nY0 = (hh - hc)/N_PIX_PER_CELL_DIM;
+        int startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);
+        if (startY < hc) {
+            nY0 = (yCenter - hc)/N_PIX_PER_CELL_DIM;
+            startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);
+        }
+        int nY1 = (hh - hc)/N_PIX_PER_CELL_DIM;
+        int stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);
+        if (stopY >= (this.h - hc)) {
+            nY1 = (h - 1 - yCenter - hc)/N_PIX_PER_CELL_DIM;
+            stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);
+        }
+        
+        //System.out.println(" startX=" + startX + " stopX=" + stopX
+        //    + " startY=" + startY + " stopY=" + stopY
+        //    + " HC=" + hc
+        //);
+        
+        int nH = (nX0 + nX1 + 1) * (nY0 + nY1 + 1) * nAngleBins;
+        
+        int[] tmp = new int[nAngleBins];
+        int[] out = new int[nH];
+        
+        int count = 0;
+        double blockTotal = 0;
+                
+        // scan forward by 1 cell
+        for (int x = startX; x <= stopX; x += N_PIX_PER_CELL_DIM) {
+            for (int y = startY; y <= stopY; y += N_PIX_PER_CELL_DIM) {
+                
+                extractBlock(x, y, tmp);
+                
+                System.arraycopy(tmp, 0, out, count * nAngleBins, nAngleBins);
+                
+                double t = sumCounts(tmp);
+                blockTotal += (t * t);               
+                count++;                
+            }
+        }
+        
+        //System.out.println("NH=" + nH + " count=" + count + " blockTotal=" + blockTotal);
+        
+        // normalize over detector
+        if (count > 0) {
+            blockTotal = Math.sqrt(blockTotal/(double)count);
+        }
+        
+        double norm = 1./(blockTotal + eps);
+
+        float maxBlock = 255.f * count;
+            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
+            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
+
+        norm *= maxBlock;
+        
+        assert(!Double.isNaN(norm));
+
+        for (int i = 0; i < out.length; ++i) {
+            out[i] *= norm;
+            assert(out[i] >= 0);
+        }
+
+        return out;
+    }
+    
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      *
@@ -503,67 +624,115 @@ public class HOGs {
             float yB = histB[idxB];
 
             float maxValue = Math.max(yA, yB) + eps;
-            
+                        
             float diff = (yA - yB)/maxValue;
             
             //sumDiff += (diff * diff);
             sumDiff += Math.abs(diff);
-            
-            err += 1./(maxValue * maxValue);
+   
+            //      already squared
+            err += Math.abs(diff/maxValue);
+            //err += Math.min(yA, yB)/maxValue;
         }
         
         sumDiff /= (double)nBins;
         
         //sumDiff = Math.sqrt(sumDiff);
         
+        err /= (double)nBins;
         err = Math.sqrt(err);
         
         return new float[]{(float)sumDiff, (float)err};
     }
     
-    /*
-    two histograms a and b
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     *
+     * Note that because the feature contains spatially ordered concatenation of
+     * histograms, the registration of featureA and featureB to the same 
+     * orientation must be done before this method (more specifically, before
+     * extraction to features).
+     *      *
+     * @param featureA
+     * @param featureB
+     * @return
+     */
+    public float intersectionOfFeatures(int[] featureA, int[] featureB) {
+
+        if ((featureA.length != featureB.length)) {
+            throw new IllegalArgumentException(
+                "featureA and featureB must be same dimensions");
+        }
         
-        but, the errors are needed to know if the results are significant.
-        if a and b have few to no other counts in other
-           bins, can see that the errors should be large and the
-           100% match of 0 to 0 is not very significant.
-        and if a and b both have large number of counts in other bins,
-           can see that a match of 0 to 0 is signficant.
+        int[] tmpA = new int[nAngleBins];
+        int[] tmpB = new int[nAngleBins];
+        
+        float t;
+        double sum = 0;
+        for (int j = 0; j < featureA.length; j += nAngleBins) {
+            System.arraycopy(featureA, j, tmpA, 0, nAngleBins);
+            System.arraycopy(featureB, j, tmpB, 0, nAngleBins);
+            t = intersection(tmpA, 0, tmpB, 0);
+            //System.out.println("    inter=" + t);
+            sum += (t * t);
+        }
 
-       so the errors depend upon the total counts (and those add in quadrature).
-       that might need to estimated from the bin with the maximum amount of counts
-          instead of all bins, because a single bin with 4*V number of counts
-          would indicate that empty bins are signifcant more than that 4*V total
-          distributed over 4 bins would.
-          --> so an error determined from the maximum of bin counts is needed.
-       but an error or threshold transformed to a number that can be used to
-           evaluate the significance of the final score or cost would be best
+        sum /= (double)(featureA.length/nAngleBins);
+        sum = Math.sqrt(sum);
 
-      max value possible for cell size=1, pix block=6 
-          = 6 * 6 * 255
-      but, the feature has been normalized by the block total and max value
-      so need to use the max bin value
+        return (float)sum;
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * calculate the difference of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     *
+     * Note that because the feature contains spatially ordered concatenation of
+     * histograms, the registration of featureA and featureB to the same 
+     * orientation must be done before this method (more specifically, before
+     * extraction to features).
+     *      *
+     * @param featureA
+     * @param featureB
+     * @return
+     */
+    public float[] diffOfFeatures(int[] featureA, int[] featureB) {
 
-      0  0  0  200 0
-      0  0  0   50 0
-               150/200=0.75
-               similarity=1-.75=.25 + other similarity = .25 + 4
-               (1/200)^2 = 2.5E-5 
+        if ((featureA.length != featureB.length)) {
+            throw new IllegalArgumentException(
+                "featureA and featureB must be same dimensions");
+        }
+        
+        int[] tmpA = new int[nAngleBins];
+        int[] tmpB = new int[nAngleBins];
+        
+        float[] t;
+        double sum = 0;
+        double sumSqErr = 0;
+        for (int j = 0; j < featureA.length; j += nAngleBins) {
+            System.arraycopy(featureA, j, tmpA, 0, nAngleBins);
+            System.arraycopy(featureB, j, tmpB, 0, nAngleBins);
+            t = diff(tmpA, 0, tmpB, 0);
+            //System.out.println("    inter=" + t);
+            sum += t[0];
+            sumSqErr += (t[1] * t[1]);
+        }
 
-      0 50 50  50 50
-      0  0  0  50  0
-               0/50=0.0
-               similarity=1 + other = 1 + 1
-               (1/50)^2 = 4.E-4 
+        sum /= (double)(featureA.length/nAngleBins);
+        //sum = Math.sqrt(sum);
+        
+        sumSqErr /= (double)(featureA.length/nAngleBins);
+        sumSqErr = Math.sqrt(sumSqErr);
 
-      0  0  0   0  0
-      0  0  0   0  0
-               similarity = 5
-               (1/0)^2 = inf
-
-     still considering examples ...
-    */
+        return new float[]{(float)sum, (float)sumSqErr};
+    }
 
     private int sumCounts(int[] hist) {
 
