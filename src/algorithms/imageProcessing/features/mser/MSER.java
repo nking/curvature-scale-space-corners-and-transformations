@@ -618,10 +618,12 @@ public class MSER {
             minArea = 0.01;
         } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {
             minArea = 0.001;
+            //NOTE: temporary edit...might change
+            minDiversity = 0.995;
         } else {
             minArea = 0.0005;
         }
-
+        
         MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, 
             minDiversity, false);
 
