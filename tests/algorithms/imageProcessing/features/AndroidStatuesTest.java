@@ -54,8 +54,8 @@ public class AndroidStatuesTest extends TestCase {
     
     public void testObjectFinder() throws Exception {
         boolean debug = true;
-        //runMatcher_gingerbreadman(debug);
-        //runMatcher_icecream(debug);
+        runMatcher_gingerbreadman(debug);
+        runMatcher_icecream(debug);
         runMatcher_cupcake(debug);
     }
 
@@ -184,8 +184,8 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames1 = new String[]{
             "android_statues_01.jpg",   //  <== NOT found, needs segmentation
-        //    "android_statues_02.jpg", //  
-        //    "android_statues_04.jpg"
+            "android_statues_02.jpg", //  
+            "android_statues_04.jpg"
         };
         
         /*  ROUGH COORDS

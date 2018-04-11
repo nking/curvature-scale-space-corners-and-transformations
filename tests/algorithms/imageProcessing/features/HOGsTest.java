@@ -176,7 +176,7 @@ public class HOGsTest extends TestCase {
         int N_PIX_PER_CELL_DIM = 3;    //1;  3;
         int N_CELLS_PER_BLOCK_DIM = 3; //10; 3;
         //int angle = 20;
-        int nBins = 9;//180/angle;
+        int nBins = 8;//180/angle;
         float angle = 180.f/nBins;
           
         Transformer transformer = new Transformer();
@@ -284,7 +284,7 @@ public class HOGsTest extends TestCase {
             block1 = new int[nBins];
             hogs1.extractBlock((w/2), (h/2), block1);
             block1_rot = new int[nBins];
-            hogs1_rot.extractBlock(w/2, h/2, block1_rot);
+            hogs1_rot.extractBlock(w/2, (h/2)-1, block1_rot);
             
             System.out.println(Arrays.toString(block1));
             System.out.println(Arrays.toString(block1_rot));
@@ -293,7 +293,7 @@ public class HOGsTest extends TestCase {
             orientation1_rot = (int)(MiscMath.findYMaxIndex(block1_rot) * angle + (angle/2));
         
             intersection_1 = hogs1.intersection(block1, orientation1, 
-            block1_rot, orientation1_rot);
+                block1_rot, orientation1_rot);
         
             ssd_1 = hogs1.diff(block1, orientation1, block1_rot, orientation1_rot);
             
@@ -304,7 +304,7 @@ public class HOGsTest extends TestCase {
             System.out.format("ssd1=%.3f(%.3f)\n", ssd_1[0], ssd_1[1]);
         
             feature1 = hogs1.extractFeature(w/2, h/2, dw, dh);
-            feature1_rot = hogs1_rot.extractFeature(w/2, h/2, dw, dh);
+            feature1_rot = hogs1_rot.extractFeature(w/2, (h/2)-1, dw, dh);
         }
         
         if (useImg2) {
@@ -313,7 +313,7 @@ public class HOGsTest extends TestCase {
             block2 = new int[nBins];
             hogs2.extractBlock(w/2, h/2, block2);
             block2_rot = new int[nBins];
-            hogs2_rot.extractBlock(w/2, h/2, block2_rot);
+            hogs2_rot.extractBlock(w/2, (h/2)-1, block2_rot);
             System.out.println(Arrays.toString(block2));
             System.out.println(Arrays.toString(block2_rot));
         
@@ -332,7 +332,7 @@ public class HOGsTest extends TestCase {
             System.out.format("ssd2=%.3f(%.3f)\n", ssd_2[0], ssd_2[1]);
         
             feature2 = hogs2.extractFeature(w/2, h/2, dw, dh);
-            feature2_rot = hogs2_rot.extractFeature(w/2, h/2, dw, dh);
+            feature2_rot = hogs2_rot.extractFeature(w/2, (h/2)-1, dw, dh);
         }
         
         //hogs3 = new HOGs(img3, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);

@@ -468,7 +468,7 @@ public class ORBMatcher {
             if (or1 < 0) {
                 or1 += 180;
             }
-            hogs1.extractFeature(keypoints1.get(i).getX(), 
+            hogs1.extractBlock(keypoints1.get(i).getX(), 
                 keypoints1.get(i).getY(), h1);
             
             for (int j = 0; j < n2; ++j) {
@@ -479,7 +479,7 @@ public class ORBMatcher {
                 if (or2 < 0) {
                     or2 += 180;
                 }
-                hogs2.extractFeature(keypoints2.get(j).getX(), 
+                hogs2.extractBlock(keypoints2.get(j).getX(), 
                     keypoints2.get(j).getY(), h2);
                 
                 float intersection = hogs1.intersection(h1, or1, h2, or2);

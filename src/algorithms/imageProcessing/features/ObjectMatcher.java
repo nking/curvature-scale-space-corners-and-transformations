@@ -348,6 +348,9 @@ public class ObjectMatcher {
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
+                    
+                    //r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
+                    //System.out.println("r=" + r.toString() + " " + Arrays.toString(xyCen));
                 }
                 MiscDebug.writeImage(imCp, debugLabel + "__regions_gs_"+ type + "_" + ts);
             }
@@ -835,6 +838,8 @@ public class ObjectMatcher {
 
         ColorHistogram clrHist = new ColorHistogram();
 
+        float upperLimit = 0.27f;// 0.33f;
+        
         // make the template histograms from the first scale only
         int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);
         int[][] template_ch_LAB = clrHist.histogramCIELAB(img0, shape0);
@@ -852,17 +857,17 @@ public class ObjectMatcher {
             
             int[][] ch = clrHist.histogramHSV(img1, r.points);
             float intersection = clrHist.intersection(template_ch_HSV, ch);
-            if (intersection < 0.33) {
+            if (intersection < upperLimit) {
                 rmSet.add(rIdx);
             } else {
                 ch = clrHist.histogramCIELAB(img1, r.points);
                 intersection = clrHist.intersection(template_ch_LAB, ch);
-                if (intersection < 0.33) {
+                if (intersection < upperLimit) {
                     rmSet.add(rIdx);
                 } else {
                     int[] tHist1 = clrHist.histogramCIECH64(img1, r.points);
                     intersection = clrHist.intersection(tHist, tHist1);
-                    if (intersection < 0.33f) {
+                    if (intersection < upperLimit) {
                         rmSet.add(rIdx);
                     }
                 }
@@ -1066,10 +1071,7 @@ public class ObjectMatcher {
         private boolean findVanishingPoints = false;
         
         private boolean useColorFilter = true;
-
-        // if set to false, only uses the greyscale HOGS and fraction of whole for cosr
-        private boolean useChromaticityHOGS = true;
-        
+ 
         private String lbl = "";
         
         /**
@@ -1156,20 +1158,6 @@ public class ObjectMatcher {
         public boolean useColorFilter() {
             return useColorFilter;
         }
-
-        /**
-         * @return the useChromaticityHOGS
-         */
-        public boolean isUseChromaticityHOGS() {
-            return useChromaticityHOGS;
-        }
-
-        /**
-         * @param useChromaticityHOGS the useChromaticityHOGS to set
-         */
-        public void setUseChromaticityHOGS(boolean useChromaticityHOGS) {
-            this.useChromaticityHOGS = useChromaticityHOGS;
-        }
     }
 
     /**
@@ -1177,7 +1165,7 @@ public class ObjectMatcher {
      * shape color.  the extremes black and white can be used to limit
      * the regions created.
      */
-    private enum CMODE {
+    public static enum CMODE {
         WHITE, BLACK, OTHER
     }
     
@@ -1191,7 +1179,7 @@ public class ObjectMatcher {
      * @param settings for the method
      * @return
      */
-    public CorrespondenceList findObject12(ImageExt img0, Set<PairInt> shape0,
+    public List<CorrespondenceList> findObject12(ImageExt img0, Set<PairInt> shape0,
         ImageExt img1, Settings settings) {
 
         long ts = 0;
@@ -1457,18 +1445,20 @@ public class ObjectMatcher {
         if (corList == null) {
             return null;
         }
-        
+                
         // apply offsets for having trimmed image 0
-        CorrespondenceList topC = corList.get(0);
-        for (int i = 0; i < topC.getPoints1().size(); ++i) {
-            PairInt p = topC.getPoints1().get(i);
-            int x = p.getX();
-            int y = p.getY();
-            p.setX(x + img0Trim.getXOffset());
-            p.setY(y + img0Trim.getYOffset());
+        for (int i0 = 0; i0 < corList.size(); ++i0) {
+            CorrespondenceList topC = corList.get(i0);
+            for (int i = 0; i < topC.getPoints1().size(); ++i) {
+                PairInt p = topC.getPoints1().get(i);
+                int x = p.getX();
+                int y = p.getY();
+                p.setX(x + img0Trim.getXOffset());
+                p.setY(y + img0Trim.getYOffset());
+            }
         }
 
-        return topC;
+        return corList;
     }
     
     private float[] calcStats(TFloatList densities, TIntList nInGroup) {
