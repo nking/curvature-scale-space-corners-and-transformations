@@ -332,25 +332,25 @@ import java.util.List;
     public float[] rgbToPolarCIELUV(int r, int g, int b, float Xn, float Yn,
         float Zn) {
 
-<span class="nc bnc" id="L335" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L336">            return new float[]{0, 0, 0};</span>
+<span class="pc bpc" id="L335" title="2 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="fc" id="L336">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="nc" id="L339">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="fc" id="L339">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
 
-<span class="nc" id="L341">        float[] luv = cieXYZToCIELUV(xyz, Xn, Yn, Zn);</span>
+<span class="fc" id="L341">        float[] luv = cieXYZToCIELUV(xyz, Xn, Yn, Zn);</span>
 
-<span class="nc" id="L343">        double t = Math.atan2(luv[2], luv[1]);</span>
-<span class="nc" id="L344">        t *= (180. / Math.PI);</span>
-<span class="nc bnc" id="L345" title="All 2 branches missed.">        if (t &lt; 0) {</span>
-<span class="nc" id="L346">            t += 360;</span>
-<span class="nc bnc" id="L347" title="All 2 branches missed.">        } else if (t &gt; 359) {</span>
+<span class="fc" id="L343">        double t = Math.atan2(luv[2], luv[1]);</span>
+<span class="fc" id="L344">        t *= (180. / Math.PI);</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        if (t &lt; 0) {</span>
+<span class="fc" id="L346">            t += 360;</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        } else if (t &gt; 359) {</span>
 <span class="nc" id="L348">            t -= 360;</span>
         }
 
-<span class="nc" id="L351">        double m = Math.sqrt(luv[1]*luv[1] + luv[2]*luv[2]);</span>
+<span class="fc" id="L351">        double m = Math.sqrt(luv[1]*luv[1] + luv[2]*luv[2]);</span>
 
-<span class="nc" id="L353">        return new float[]{luv[0], (float)m, (float)t};</span>
+<span class="fc" id="L353">        return new float[]{luv[0], (float)m, (float)t};</span>
     }
 
     /**

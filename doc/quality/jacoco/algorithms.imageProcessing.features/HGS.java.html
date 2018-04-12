@@ -124,12 +124,12 @@ public class HGS {
         
 <span class="fc" id="L125">            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);</span>
             
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">            if ((x2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
-<span class="nc" id="L128">                break;</span>
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            } else if (x2 &lt; 0) {</span>
-<span class="nc" id="L130">                x2 = 0;</span>
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">            } else if (x2 &gt;= w) {</span>
-<span class="nc" id="L132">                break;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            if ((x2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="fc" id="L128">                break;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            } else if (x2 &lt; 0) {</span>
+<span class="fc" id="L130">                x2 = 0;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            } else if (x2 &gt;= w) {</span>
+<span class="fc" id="L132">                break;</span>
             }
             
 <span class="fc bfc" id="L135" title="All 2 branches covered.">            for (int cY = 0; cY &lt; N_CELLS_PER_BLOCK_DIM; ++cY) {</span>
@@ -138,12 +138,12 @@ public class HGS {
                 
 <span class="fc" id="L139">                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);</span>
 
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">                if ((y2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
-<span class="nc" id="L142">                    break;</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                } else if (y2 &lt; 0) {</span>
-<span class="nc" id="L144">                    y2 = 0;</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">                } else if (y2 &gt;= h) {</span>
-<span class="nc" id="L146">                    break;</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                if ((y2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="fc" id="L142">                    break;</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">                } else if (y2 &lt; 0) {</span>
+<span class="fc" id="L144">                    y2 = 0;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                } else if (y2 &gt;= h) {</span>
+<span class="fc" id="L146">                    break;</span>
                 }
                                 
 <span class="fc" id="L149">                int pixIdx = (y2 * w) + x2;</span>
@@ -159,8 +159,8 @@ public class HGS {
         }
         
 <span class="fc" id="L161">        blockTotal /= (double)cells.size();</span>
-        
-<span class="fc" id="L163">        double norm = 1./Math.sqrt(blockTotal + eps);</span>
+<span class="fc" id="L162">        blockTotal = Math.sqrt(blockTotal);</span>
+<span class="fc" id="L163">        double norm = 1./(blockTotal + eps);</span>
                 
 <span class="fc" id="L165">        float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *</span>
             (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;

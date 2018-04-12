@@ -1161,6 +1161,56 @@ import javax.imageio.stream.ImageInputStream;
      * draw lines from points at index i to index i+1 in the requested color
      * onto the input.
      * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void drawLineInImage(int x1, int y1, 
+        int x2, int y2, Image input, int nExtraForDot, int gapLength,
+        int rClr, int gClr, int bClr) {
+        
+<span class="fc" id="L1178">        int w = input.getWidth();</span>
+<span class="fc" id="L1179">        int h = input.getHeight();</span>
+
+<span class="fc" id="L1181">        Set&lt;PairInt&gt; output = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L1183">        BresenhamsLine.createLinePoints(x1, y1, x2, y2, gapLength,</span>
+            output);
+        
+<span class="fc bfc" id="L1186" title="All 2 branches covered.">        for (PairInt p : output) {</span>
+
+<span class="fc" id="L1188">            int x = p.getX();</span>
+<span class="fc" id="L1189">            int y = p.getY();</span>
+            
+<span class="fc bfc" id="L1191" title="All 2 branches covered.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); </span>
+<span class="fc" id="L1192">                dx++) {</span>
+
+<span class="fc" id="L1194">                int xx = x + dx;</span>
+
+<span class="pc bpc" id="L1196" title="2 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1197">                    continue;</span>
+                }
+<span class="fc bfc" id="L1199" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L1200">                    int yy = y + dy;</span>
+<span class="pc bpc" id="L1201" title="2 of 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1202">                        continue;</span>
+                    }
+<span class="fc" id="L1204">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+                }
+            }
+<span class="fc" id="L1207">        }</span>
+<span class="fc" id="L1208">    }</span>
+    
+    /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
      * @param xVertexes
      * @param yVertexes
      * @param input
@@ -1172,38 +1222,38 @@ import javax.imageio.stream.ImageInputStream;
     public static void addCurveToImage(int[] xVertexes, int[] yVertexes, 
         Image input, int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L1175" title="All 6 branches missed.">        if (xVertexes == null || yVertexes == null || input == null) {</span>
-<span class="nc" id="L1176">            return;</span>
+<span class="nc bnc" id="L1225" title="All 6 branches missed.">        if (xVertexes == null || yVertexes == null || input == null) {</span>
+<span class="nc" id="L1226">            return;</span>
         }
-<span class="nc bnc" id="L1178" title="All 2 branches missed.">        if (xVertexes.length != yVertexes.length) {</span>
-<span class="nc" id="L1179">            return;</span>
+<span class="nc bnc" id="L1228" title="All 2 branches missed.">        if (xVertexes.length != yVertexes.length) {</span>
+<span class="nc" id="L1229">            return;</span>
         }
         
-<span class="nc" id="L1182">        int w = input.getWidth();</span>
-<span class="nc" id="L1183">        int h = input.getHeight();</span>
+<span class="nc" id="L1232">        int w = input.getWidth();</span>
+<span class="nc" id="L1233">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L1185" title="All 2 branches missed.">        for (int i = 0; i &lt; xVertexes.length; i++) {</span>
+<span class="nc bnc" id="L1235" title="All 2 branches missed.">        for (int i = 0; i &lt; xVertexes.length; i++) {</span>
             
-<span class="nc" id="L1187">            int x = xVertexes[i];</span>
-<span class="nc" id="L1188">            int y = yVertexes[i];</span>
+<span class="nc" id="L1237">            int x = xVertexes[i];</span>
+<span class="nc" id="L1238">            int y = yVertexes[i];</span>
             
-<span class="nc bnc" id="L1190" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc bnc" id="L1240" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 
-<span class="nc" id="L1192">                int xx = x + dx;</span>
+<span class="nc" id="L1242">                int xx = x + dx;</span>
 
-<span class="nc bnc" id="L1194" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1195">                    continue;</span>
+<span class="nc bnc" id="L1244" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1245">                    continue;</span>
                 }
-<span class="nc bnc" id="L1197" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1198">                    int yy = y + dy;</span>
-<span class="nc bnc" id="L1199" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1200">                        continue;</span>
+<span class="nc bnc" id="L1247" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1248">                    int yy = y + dy;</span>
+<span class="nc bnc" id="L1249" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1250">                        continue;</span>
                     }
-<span class="nc" id="L1202">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L1252">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
         }
-<span class="nc" id="L1206">    }</span>
+<span class="nc" id="L1256">    }</span>
     
     /**
      * draw the edge over the image using the given rgb colors and the size
@@ -1219,34 +1269,34 @@ import javax.imageio.stream.ImageInputStream;
     public static void addCurveToImage(PairFloatArray edge, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L1222" title="All 4 branches missed.">        if (edge == null || input == null) {</span>
-<span class="nc" id="L1223">            return;</span>
+<span class="nc bnc" id="L1272" title="All 4 branches missed.">        if (edge == null || input == null) {</span>
+<span class="nc" id="L1273">            return;</span>
         }
         
-<span class="nc" id="L1226">        int w = input.getWidth();</span>
-<span class="nc" id="L1227">        int h = input.getHeight();</span>
+<span class="nc" id="L1276">        int w = input.getWidth();</span>
+<span class="nc" id="L1277">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L1229" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
-<span class="nc" id="L1230">            int x = Math.round(edge.getX(i));</span>
-<span class="nc" id="L1231">            int y = Math.round(edge.getY(i));</span>
+<span class="nc bnc" id="L1279" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
+<span class="nc" id="L1280">            int x = Math.round(edge.getX(i));</span>
+<span class="nc" id="L1281">            int y = Math.round(edge.getY(i));</span>
             
-<span class="nc bnc" id="L1233" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc bnc" id="L1283" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
                 
-<span class="nc" id="L1235">                int xx = x + dx;</span>
+<span class="nc" id="L1285">                int xx = x + dx;</span>
                 
-<span class="nc bnc" id="L1237" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1238">                    continue;</span>
+<span class="nc bnc" id="L1287" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1288">                    continue;</span>
                 }
-<span class="nc bnc" id="L1240" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1241">                    int yy = y + dy;</span>
-<span class="nc bnc" id="L1242" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1243">                        continue;</span>
+<span class="nc bnc" id="L1290" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1291">                    int yy = y + dy;</span>
+<span class="nc bnc" id="L1292" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1293">                        continue;</span>
                     }
-<span class="nc" id="L1245">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L1295">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
         }
-<span class="nc" id="L1249">    }</span>
+<span class="nc" id="L1299">    }</span>
     
     /**
      * draw the point over the image using the given rgb colors and the size
@@ -1263,25 +1313,25 @@ import javax.imageio.stream.ImageInputStream;
     public static void addPointToImage(int x, int y, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="fc" id="L1266">        int w = input.getWidth();</span>
-<span class="fc" id="L1267">        int h = input.getHeight();</span>
+<span class="fc" id="L1316">        int w = input.getWidth();</span>
+<span class="fc" id="L1317">        int h = input.getHeight();</span>
         
-<span class="fc bfc" id="L1269" title="All 2 branches covered.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="fc bfc" id="L1319" title="All 2 branches covered.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 
-<span class="fc" id="L1271">            int xx = x + dx;</span>
+<span class="fc" id="L1321">            int xx = x + dx;</span>
 
-<span class="pc bpc" id="L1273" title="1 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1274">                continue;</span>
+<span class="pc bpc" id="L1323" title="1 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1324">                continue;</span>
             }
-<span class="fc bfc" id="L1276" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="fc" id="L1277">                int yy = y + dy;</span>
-<span class="pc bpc" id="L1278" title="1 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1279">                    continue;</span>
+<span class="fc bfc" id="L1326" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L1327">                int yy = y + dy;</span>
+<span class="pc bpc" id="L1328" title="1 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1329">                    continue;</span>
                 }
-<span class="fc" id="L1281">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="fc" id="L1331">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
             }
         }
-<span class="fc" id="L1284">    }</span>
+<span class="fc" id="L1334">    }</span>
     /**
      * draw the point over the image using the given rgb colors and the size
      * of the dot beyond 1 pixel.
@@ -1295,25 +1345,25 @@ import javax.imageio.stream.ImageInputStream;
     public static void addPointToImage(int x, int y, Image input, 
         int nExtraForDot, int rgbClr) {
         
-<span class="nc" id="L1298">        int w = input.getWidth();</span>
-<span class="nc" id="L1299">        int h = input.getHeight();</span>
+<span class="nc" id="L1348">        int w = input.getWidth();</span>
+<span class="nc" id="L1349">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L1301" title="All 2 branches missed.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc bnc" id="L1351" title="All 2 branches missed.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 
-<span class="nc" id="L1303">            int xx = x + dx;</span>
+<span class="nc" id="L1353">            int xx = x + dx;</span>
 
-<span class="nc bnc" id="L1305" title="All 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1306">                continue;</span>
+<span class="nc bnc" id="L1355" title="All 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1356">                continue;</span>
             }
-<span class="nc bnc" id="L1308" title="All 2 branches missed.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1309">                int yy = y + dy;</span>
-<span class="nc bnc" id="L1310" title="All 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1311">                    continue;</span>
+<span class="nc bnc" id="L1358" title="All 2 branches missed.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1359">                int yy = y + dy;</span>
+<span class="nc bnc" id="L1360" title="All 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1361">                    continue;</span>
                 }
-<span class="nc" id="L1313">                input.setRGB(xx, yy, rgbClr);</span>
+<span class="nc" id="L1363">                input.setRGB(xx, yy, rgbClr);</span>
             }
         }
-<span class="nc" id="L1316">    }</span>
+<span class="nc" id="L1366">    }</span>
     
     /**
      * draw the point over the image using the given rgb colors and the size
@@ -1330,25 +1380,25 @@ import javax.imageio.stream.ImageInputStream;
     public static void addPointToImage(float x, float y, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="fc" id="L1333">        int w = input.getWidth();</span>
-<span class="fc" id="L1334">        int h = input.getHeight();</span>
+<span class="fc" id="L1383">        int w = input.getWidth();</span>
+<span class="fc" id="L1384">        int h = input.getHeight();</span>
         
-<span class="fc bfc" id="L1336" title="All 2 branches covered.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="fc bfc" id="L1386" title="All 2 branches covered.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 
-<span class="fc" id="L1338">            int xx = Math.round(x + dx);</span>
+<span class="fc" id="L1388">            int xx = Math.round(x + dx);</span>
 
-<span class="pc bpc" id="L1340" title="2 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1341">                continue;</span>
+<span class="pc bpc" id="L1390" title="2 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1391">                continue;</span>
             }
-<span class="fc bfc" id="L1343" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="fc" id="L1344">                int yy = Math.round(y + dy);</span>
-<span class="pc bpc" id="L1345" title="2 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1346">                    continue;</span>
+<span class="fc bfc" id="L1393" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L1394">                int yy = Math.round(y + dy);</span>
+<span class="pc bpc" id="L1395" title="2 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1396">                    continue;</span>
                 }
-<span class="fc" id="L1348">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="fc" id="L1398">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
             }
         }
-<span class="fc" id="L1351">    }</span>
+<span class="fc" id="L1401">    }</span>
     
     /**
      * draw the edge over the image using the given rgb colors and the size
@@ -1367,176 +1417,126 @@ import javax.imageio.stream.ImageInputStream;
         final int nPointsInEdge, Image input, int nExtraForDot, int rClr, 
         int gClr, int bClr) {
         
-<span class="nc bnc" id="L1370" title="All 4 branches missed.">        if (edgeX == null || edgeY == null) {</span>
-<span class="nc" id="L1371">            return;</span>
+<span class="nc bnc" id="L1420" title="All 4 branches missed.">        if (edgeX == null || edgeY == null) {</span>
+<span class="nc" id="L1421">            return;</span>
         }
-<span class="nc bnc" id="L1373" title="All 2 branches missed.">        if (edgeX.length != edgeY.length) {</span>
-<span class="nc" id="L1374">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1423" title="All 2 branches missed.">        if (edgeX.length != edgeY.length) {</span>
+<span class="nc" id="L1424">            throw new IllegalArgumentException(</span>
                 &quot;edgeX and edgeY should be same length&quot;);
         }
         
-<span class="nc" id="L1378">        int w = input.getWidth();</span>
-<span class="nc" id="L1379">        int h = input.getHeight();</span>
+<span class="nc" id="L1428">        int w = input.getWidth();</span>
+<span class="nc" id="L1429">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L1381" title="All 2 branches missed.">        for (int i = 0; i &lt; nPointsInEdge; i++) {</span>
+<span class="nc bnc" id="L1431" title="All 2 branches missed.">        for (int i = 0; i &lt; nPointsInEdge; i++) {</span>
             
-<span class="nc" id="L1383">            int x = edgeX[i];</span>
-<span class="nc" id="L1384">            int y = edgeY[i];</span>
+<span class="nc" id="L1433">            int x = edgeX[i];</span>
+<span class="nc" id="L1434">            int y = edgeY[i];</span>
             
-<span class="nc bnc" id="L1386" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc bnc" id="L1436" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
                 
-<span class="nc" id="L1388">                int xx = x + dx;</span>
+<span class="nc" id="L1438">                int xx = x + dx;</span>
                 
-<span class="nc bnc" id="L1390" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1391">                    continue;</span>
+<span class="nc bnc" id="L1440" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1441">                    continue;</span>
                 }
-<span class="nc bnc" id="L1393" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1394">                    int yy = y + dy;</span>
-<span class="nc bnc" id="L1395" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1396">                        continue;</span>
+<span class="nc bnc" id="L1443" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1444">                    int yy = y + dy;</span>
+<span class="nc bnc" id="L1445" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1446">                        continue;</span>
                     }
-<span class="nc" id="L1398">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L1448">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
         }
-<span class="nc" id="L1402">    }</span>
+<span class="nc" id="L1452">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         PairIntArray[] curves, String fileName, boolean writeImage, 
         Image input) throws IOException {
         
-<span class="nc bnc" id="L1408" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1409">            return;</span>
+<span class="nc bnc" id="L1458" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1459">            return;</span>
         }
-<span class="nc bnc" id="L1411" title="All 2 branches missed.">        if (fileName == null) {</span>
-<span class="nc" id="L1412">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
-        }
-        
-<span class="nc" id="L1415">        List&lt;PairIntArray&gt; c = new ArrayList&lt;PairIntArray&gt;();</span>
-        
-<span class="nc bnc" id="L1417" title="All 2 branches missed.">        for (PairIntArray a : curves) {</span>
-<span class="nc" id="L1418">            c.add(a);</span>
+<span class="nc bnc" id="L1461" title="All 2 branches missed.">        if (fileName == null) {</span>
+<span class="nc" id="L1462">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L1421">        addAlternatingColorCurvesToImage(c, fileName, writeImage, input);</span>
-<span class="nc" id="L1422">    }</span>
+<span class="nc" id="L1465">        List&lt;PairIntArray&gt; c = new ArrayList&lt;PairIntArray&gt;();</span>
+        
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">        for (PairIntArray a : curves) {</span>
+<span class="nc" id="L1468">            c.add(a);</span>
+        }
+        
+<span class="nc" id="L1471">        addAlternatingColorCurvesToImage(c, fileName, writeImage, input);</span>
+<span class="nc" id="L1472">    }</span>
     
     public static void addAlternatingColorLabelsToRegion(Image img, int[] labels) {
     
-<span class="fc" id="L1426">        int nPixels = img.getNPixels();</span>
+<span class="fc" id="L1476">        int nPixels = img.getNPixels();</span>
         
-<span class="pc bpc" id="L1428" title="1 of 2 branches missed.">        if (labels.length != nPixels) {</span>
-<span class="nc" id="L1429">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1478" title="1 of 2 branches missed.">        if (labels.length != nPixels) {</span>
+<span class="nc" id="L1479">            throw new IllegalArgumentException(</span>
                 &quot;labels.length should == img.nPixels&quot;);
         }
         
-<span class="fc" id="L1433">        Map&lt;Integer, Integer&gt; labelColorMap = new HashMap&lt;Integer, Integer&gt;();</span>
+<span class="fc" id="L1483">        Map&lt;Integer, Integer&gt; labelColorMap = new HashMap&lt;Integer, Integer&gt;();</span>
         
-<span class="fc" id="L1435">        int count = 0;</span>
+<span class="fc" id="L1485">        int count = 0;</span>
         
-<span class="fc bfc" id="L1437" title="All 2 branches covered.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
+<span class="fc bfc" id="L1487" title="All 2 branches covered.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
             
-<span class="fc" id="L1439">            int label = labels[i];</span>
+<span class="fc" id="L1489">            int label = labels[i];</span>
             
-<span class="fc" id="L1441">            Integer key = Integer.valueOf(label);            </span>
+<span class="fc" id="L1491">            Integer key = Integer.valueOf(label);            </span>
             
-<span class="fc" id="L1443">            Integer clr = labelColorMap.get(key);</span>
+<span class="fc" id="L1493">            Integer clr = labelColorMap.get(key);</span>
             
-<span class="fc bfc" id="L1445" title="All 2 branches covered.">            if (clr == null) {</span>
+<span class="fc bfc" id="L1495" title="All 2 branches covered.">            if (clr == null) {</span>
                                 
-<span class="fc" id="L1447">                clr = Integer.valueOf(getNextColorRGB(count));</span>
+<span class="fc" id="L1497">                clr = Integer.valueOf(getNextColorRGB(count));</span>
                 
-<span class="fc" id="L1449">                labelColorMap.put(key, clr);</span>
-<span class="fc" id="L1450">                count++;</span>
+<span class="fc" id="L1499">                labelColorMap.put(key, clr);</span>
+<span class="fc" id="L1500">                count++;</span>
             }
             
-<span class="fc" id="L1453">            img.setRGB(img.getCol(i), img.getRow(i), clr);</span>
+<span class="fc" id="L1503">            img.setRGB(img.getCol(i), img.getRow(i), clr);</span>
         }
-<span class="fc" id="L1455">    }</span>
+<span class="fc" id="L1505">    }</span>
     
     public static void addAlternatingColorLabelsToRegion(
         Image img, TIntObjectMap&lt;TIntSet&gt; labelsMap) {
                     
-<span class="nc" id="L1460">        TIntObjectIterator&lt;TIntSet&gt; iter = labelsMap.iterator();</span>
-<span class="nc bnc" id="L1461" title="All 2 branches missed.">        for (int i = 0; i &lt; labelsMap.size(); ++i) {</span>
+<span class="nc" id="L1510">        TIntObjectIterator&lt;TIntSet&gt; iter = labelsMap.iterator();</span>
+<span class="nc bnc" id="L1511" title="All 2 branches missed.">        for (int i = 0; i &lt; labelsMap.size(); ++i) {</span>
 
-<span class="nc" id="L1463">            iter.advance();</span>
+<span class="nc" id="L1513">            iter.advance();</span>
             
-<span class="nc" id="L1465">            int clr = getNextColorRGB(i);</span>
+<span class="nc" id="L1515">            int clr = getNextColorRGB(i);</span>
             
-<span class="nc" id="L1467">            TIntSet indexes = iter.value();</span>
-<span class="nc" id="L1468">            TIntIterator iter2 = indexes.iterator();</span>
-<span class="nc bnc" id="L1469" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
-<span class="nc" id="L1470">                int pixIdx = iter2.next();</span>
-<span class="nc" id="L1471">                img.setRGB(img.getCol(pixIdx), </span>
-<span class="nc" id="L1472">                    img.getRow(pixIdx), clr);</span>
-<span class="nc" id="L1473">            }</span>
+<span class="nc" id="L1517">            TIntSet indexes = iter.value();</span>
+<span class="nc" id="L1518">            TIntIterator iter2 = indexes.iterator();</span>
+<span class="nc bnc" id="L1519" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L1520">                int pixIdx = iter2.next();</span>
+<span class="nc" id="L1521">                img.setRGB(img.getCol(pixIdx), </span>
+<span class="nc" id="L1522">                    img.getRow(pixIdx), clr);</span>
+<span class="nc" id="L1523">            }</span>
         }
-<span class="nc" id="L1475">    }</span>
+<span class="nc" id="L1525">    }</span>
     
     public static void addAlternatingColorPointsToImages(
         Map&lt;PairInt, List&lt;PairInt&gt;&gt; points, Image imgCp1, 
         Image imgCp2, int nExtraForDot) {
         
-<span class="nc" id="L1481">        int w1 = imgCp1.getWidth();</span>
-<span class="nc" id="L1482">        int h1 = imgCp1.getHeight();</span>
-<span class="nc" id="L1483">        int w2 = imgCp2.getWidth();</span>
-<span class="nc" id="L1484">        int h2 = imgCp2.getHeight();</span>
+<span class="nc" id="L1531">        int w1 = imgCp1.getWidth();</span>
+<span class="nc" id="L1532">        int h1 = imgCp1.getHeight();</span>
+<span class="nc" id="L1533">        int w2 = imgCp2.getWidth();</span>
+<span class="nc" id="L1534">        int h2 = imgCp2.getHeight();</span>
         
-<span class="nc" id="L1486">        int count = 0;</span>
-<span class="nc bnc" id="L1487" title="All 2 branches missed.">        for (Entry&lt;PairInt, List&lt;PairInt&gt;&gt; entry : points.entrySet()) {</span>
-<span class="nc" id="L1488">            int clr = getNextColorRGB(count);</span>
-<span class="nc" id="L1489">            PairInt p1 = entry.getKey();</span>
-<span class="nc" id="L1490">            int x1 = p1.getX();</span>
-<span class="nc" id="L1491">            int y1 = p1.getY();</span>
-<span class="nc bnc" id="L1492" title="All 2 branches missed.">            for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L1493">                int xx1 = x1 + dx;</span>
-<span class="nc bnc" id="L1494" title="All 4 branches missed.">                if ((xx1 &lt; 0) || (xx1 &gt; (w1 - 1))) {</span>
-<span class="nc" id="L1495">                    continue;</span>
-                }
-<span class="nc bnc" id="L1497" title="All 2 branches missed.">                for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1498">                    int yy1 = y1 + dy;</span>
-<span class="nc bnc" id="L1499" title="All 4 branches missed.">                    if ((yy1 &lt; 0) || (yy1 &gt; (h1 - 1))) {</span>
-<span class="nc" id="L1500">                        continue;</span>
-                    }
-<span class="nc" id="L1502">                    imgCp1.setRGB(xx1, yy1, clr);</span>
-                }
-            }                    
-<span class="nc bnc" id="L1505" title="All 2 branches missed.">            for (PairInt p2 : entry.getValue()) {</span>
-<span class="nc" id="L1506">                int x2 = p2.getX();</span>
-<span class="nc" id="L1507">                int y2 = p2.getY();</span>
-<span class="nc bnc" id="L1508" title="All 2 branches missed.">                for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L1509">                    int xx2 = x2 + dx;</span>
-<span class="nc bnc" id="L1510" title="All 4 branches missed.">                    if ((xx2 &lt; 0) || (xx2 &gt; (w2 - 1))) {</span>
-<span class="nc" id="L1511">                        continue;</span>
-                    }
-<span class="nc bnc" id="L1513" title="All 2 branches missed.">                    for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1514">                        int yy2 = y2 + dy;</span>
-<span class="nc bnc" id="L1515" title="All 4 branches missed.">                        if ((yy2 &lt; 0) || (yy2 &gt; (h2 - 1))) {</span>
-<span class="nc" id="L1516">                            continue;</span>
-                        }
-<span class="nc" id="L1518">                        imgCp2.setRGB(xx2, yy2, clr);</span>
-                    }
-                }
-<span class="nc" id="L1521">            }</span>
-<span class="nc" id="L1522">            count++;</span>
-<span class="nc" id="L1523">        }</span>
-<span class="nc" id="L1524">    }</span>
-    
-    public static void addAlternatingColorPointsToImages(
-        List&lt;FeatureComparisonStat&gt; stats, Image imgCp1, 
-        Image imgCp2, int nExtraForDot) {
-        
-<span class="nc" id="L1530">        int w1 = imgCp1.getWidth();</span>
-<span class="nc" id="L1531">        int h1 = imgCp1.getHeight();</span>
-<span class="nc" id="L1532">        int w2 = imgCp2.getWidth();</span>
-<span class="nc" id="L1533">        int h2 = imgCp2.getHeight();</span>
-        
-<span class="nc" id="L1535">        int count = 0;</span>
-<span class="nc bnc" id="L1536" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
-<span class="nc" id="L1537">            int clr = getNextColorRGB(count);</span>
-<span class="nc" id="L1538">            PairInt p1 = stat.getImg1Point();</span>
-<span class="nc" id="L1539">            PairInt p2 = stat.getImg2Point();</span>
+<span class="nc" id="L1536">        int count = 0;</span>
+<span class="nc bnc" id="L1537" title="All 2 branches missed.">        for (Entry&lt;PairInt, List&lt;PairInt&gt;&gt; entry : points.entrySet()) {</span>
+<span class="nc" id="L1538">            int clr = getNextColorRGB(count);</span>
+<span class="nc" id="L1539">            PairInt p1 = entry.getKey();</span>
 <span class="nc" id="L1540">            int x1 = p1.getX();</span>
 <span class="nc" id="L1541">            int y1 = p1.getY();</span>
 <span class="nc bnc" id="L1542" title="All 2 branches missed.">            for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
@@ -1552,114 +1552,164 @@ import javax.imageio.stream.ImageInputStream;
 <span class="nc" id="L1552">                    imgCp1.setRGB(xx1, yy1, clr);</span>
                 }
             }                    
-<span class="nc" id="L1555">            int x2 = p2.getX();</span>
-<span class="nc" id="L1556">            int y2 = p2.getY();</span>
-<span class="nc bnc" id="L1557" title="All 2 branches missed.">            for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L1558">                int xx2 = x2 + dx;</span>
-<span class="nc bnc" id="L1559" title="All 4 branches missed.">                if ((xx2 &lt; 0) || (xx2 &gt; (w2 - 1))) {</span>
-<span class="nc" id="L1560">                    continue;</span>
-                }
-<span class="nc bnc" id="L1562" title="All 2 branches missed.">                for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1563">                    int yy2 = y2 + dy;</span>
-<span class="nc bnc" id="L1564" title="All 4 branches missed.">                    if ((yy2 &lt; 0) || (yy2 &gt; (h2 - 1))) {</span>
-<span class="nc" id="L1565">                        continue;</span>
+<span class="nc bnc" id="L1555" title="All 2 branches missed.">            for (PairInt p2 : entry.getValue()) {</span>
+<span class="nc" id="L1556">                int x2 = p2.getX();</span>
+<span class="nc" id="L1557">                int y2 = p2.getY();</span>
+<span class="nc bnc" id="L1558" title="All 2 branches missed.">                for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L1559">                    int xx2 = x2 + dx;</span>
+<span class="nc bnc" id="L1560" title="All 4 branches missed.">                    if ((xx2 &lt; 0) || (xx2 &gt; (w2 - 1))) {</span>
+<span class="nc" id="L1561">                        continue;</span>
                     }
-<span class="nc" id="L1567">                    imgCp2.setRGB(xx2, yy2, clr);</span>
+<span class="nc bnc" id="L1563" title="All 2 branches missed.">                    for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1564">                        int yy2 = y2 + dy;</span>
+<span class="nc bnc" id="L1565" title="All 4 branches missed.">                        if ((yy2 &lt; 0) || (yy2 &gt; (h2 - 1))) {</span>
+<span class="nc" id="L1566">                            continue;</span>
+                        }
+<span class="nc" id="L1568">                        imgCp2.setRGB(xx2, yy2, clr);</span>
+                    }
+                }
+<span class="nc" id="L1571">            }</span>
+<span class="nc" id="L1572">            count++;</span>
+<span class="nc" id="L1573">        }</span>
+<span class="nc" id="L1574">    }</span>
+    
+    public static void addAlternatingColorPointsToImages(
+        List&lt;FeatureComparisonStat&gt; stats, Image imgCp1, 
+        Image imgCp2, int nExtraForDot) {
+        
+<span class="nc" id="L1580">        int w1 = imgCp1.getWidth();</span>
+<span class="nc" id="L1581">        int h1 = imgCp1.getHeight();</span>
+<span class="nc" id="L1582">        int w2 = imgCp2.getWidth();</span>
+<span class="nc" id="L1583">        int h2 = imgCp2.getHeight();</span>
+        
+<span class="nc" id="L1585">        int count = 0;</span>
+<span class="nc bnc" id="L1586" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="nc" id="L1587">            int clr = getNextColorRGB(count);</span>
+<span class="nc" id="L1588">            PairInt p1 = stat.getImg1Point();</span>
+<span class="nc" id="L1589">            PairInt p2 = stat.getImg2Point();</span>
+<span class="nc" id="L1590">            int x1 = p1.getX();</span>
+<span class="nc" id="L1591">            int y1 = p1.getY();</span>
+<span class="nc bnc" id="L1592" title="All 2 branches missed.">            for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L1593">                int xx1 = x1 + dx;</span>
+<span class="nc bnc" id="L1594" title="All 4 branches missed.">                if ((xx1 &lt; 0) || (xx1 &gt; (w1 - 1))) {</span>
+<span class="nc" id="L1595">                    continue;</span>
+                }
+<span class="nc bnc" id="L1597" title="All 2 branches missed.">                for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1598">                    int yy1 = y1 + dy;</span>
+<span class="nc bnc" id="L1599" title="All 4 branches missed.">                    if ((yy1 &lt; 0) || (yy1 &gt; (h1 - 1))) {</span>
+<span class="nc" id="L1600">                        continue;</span>
+                    }
+<span class="nc" id="L1602">                    imgCp1.setRGB(xx1, yy1, clr);</span>
+                }
+            }                    
+<span class="nc" id="L1605">            int x2 = p2.getX();</span>
+<span class="nc" id="L1606">            int y2 = p2.getY();</span>
+<span class="nc bnc" id="L1607" title="All 2 branches missed.">            for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L1608">                int xx2 = x2 + dx;</span>
+<span class="nc bnc" id="L1609" title="All 4 branches missed.">                if ((xx2 &lt; 0) || (xx2 &gt; (w2 - 1))) {</span>
+<span class="nc" id="L1610">                    continue;</span>
+                }
+<span class="nc bnc" id="L1612" title="All 2 branches missed.">                for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1613">                    int yy2 = y2 + dy;</span>
+<span class="nc bnc" id="L1614" title="All 4 branches missed.">                    if ((yy2 &lt; 0) || (yy2 &gt; (h2 - 1))) {</span>
+<span class="nc" id="L1615">                        continue;</span>
+                    }
+<span class="nc" id="L1617">                    imgCp2.setRGB(xx2, yy2, clr);</span>
                 }
             }
-<span class="nc" id="L1570">            count++;</span>
-<span class="nc" id="L1571">        }</span>
-<span class="nc" id="L1572">    }</span>
+<span class="nc" id="L1620">            count++;</span>
+<span class="nc" id="L1621">        }</span>
+<span class="nc" id="L1622">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, Image input, int nExtraForDot) {
         
-<span class="pc bpc" id="L1577" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1578">            return;</span>
+<span class="pc bpc" id="L1627" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1628">            return;</span>
         }
         
-<span class="fc" id="L1581">        addAlternatingColorCurvesToImage(</span>
-<span class="fc" id="L1582">            curves.toArray(new PairIntArray[curves.size()]),</span>
+<span class="fc" id="L1631">        addAlternatingColorCurvesToImage(</span>
+<span class="fc" id="L1632">            curves.toArray(new PairIntArray[curves.size()]),</span>
             input, nExtraForDot);
-<span class="fc" id="L1584">    }</span>
+<span class="fc" id="L1634">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, Image input, int xOffset, int yOffset,
         int nExtraForDot) {
         
-<span class="nc bnc" id="L1590" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1591">            return;</span>
+<span class="nc bnc" id="L1640" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1641">            return;</span>
         }
         
-<span class="nc bnc" id="L1594" title="All 6 branches missed.">        if (curves == null || input == null || curves.isEmpty()) {</span>
-<span class="nc" id="L1595">            return;</span>
+<span class="nc bnc" id="L1644" title="All 6 branches missed.">        if (curves == null || input == null || curves.isEmpty()) {</span>
+<span class="nc" id="L1645">            return;</span>
         }
                 
-<span class="nc" id="L1598">        int clr = 0;</span>
-<span class="nc" id="L1599">        int w = input.getWidth();</span>
-<span class="nc" id="L1600">        int h = input.getHeight();</span>
+<span class="nc" id="L1648">        int clr = 0;</span>
+<span class="nc" id="L1649">        int w = input.getWidth();</span>
+<span class="nc" id="L1650">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L1602" title="All 2 branches missed.">        for (int i = 0; i &lt; curves.size(); i++) {</span>
+<span class="nc bnc" id="L1652" title="All 2 branches missed.">        for (int i = 0; i &lt; curves.size(); i++) {</span>
             
-<span class="nc" id="L1604">            PairIntArray edge = curves.get(i);</span>
+<span class="nc" id="L1654">            PairIntArray edge = curves.get(i);</span>
             
-<span class="nc" id="L1606">            int c = getNextColorRGB(clr);</span>
+<span class="nc" id="L1656">            int c = getNextColorRGB(clr);</span>
             
-<span class="nc bnc" id="L1608" title="All 2 branches missed.">            for (int ii = 0; ii &lt; edge.getN(); ii++) {</span>
+<span class="nc bnc" id="L1658" title="All 2 branches missed.">            for (int ii = 0; ii &lt; edge.getN(); ii++) {</span>
                 
-<span class="nc" id="L1610">                int col = edge.getX(ii) + xOffset;</span>
-<span class="nc" id="L1611">                int row = edge.getY(ii) + yOffset;</span>
+<span class="nc" id="L1660">                int col = edge.getX(ii) + xOffset;</span>
+<span class="nc" id="L1661">                int row = edge.getY(ii) + yOffset;</span>
                 
-<span class="nc bnc" id="L1613" title="All 2 branches missed.">                for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L1614">                    int xx = col + dx;</span>
-<span class="nc bnc" id="L1615" title="All 4 branches missed.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1616">                        continue;</span>
+<span class="nc bnc" id="L1663" title="All 2 branches missed.">                for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L1664">                    int xx = col + dx;</span>
+<span class="nc bnc" id="L1665" title="All 4 branches missed.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1666">                        continue;</span>
                     }
-<span class="nc bnc" id="L1618" title="All 2 branches missed.">                    for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1619">                        int yy = row + dy;</span>
-<span class="nc bnc" id="L1620" title="All 4 branches missed.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1621">                            continue;</span>
+<span class="nc bnc" id="L1668" title="All 2 branches missed.">                    for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L1669">                        int yy = row + dy;</span>
+<span class="nc bnc" id="L1670" title="All 4 branches missed.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1671">                            continue;</span>
                         }
-<span class="nc" id="L1623">                        input.setRGB(xx, yy, c);</span>
+<span class="nc" id="L1673">                        input.setRGB(xx, yy, c);</span>
                     }
                 }                
             }
-<span class="nc" id="L1627">            clr++;</span>
+<span class="nc" id="L1677">            clr++;</span>
         }
-<span class="nc" id="L1629">    }</span>
+<span class="nc" id="L1679">    }</span>
     
     public static void addAlternatingColorCurvesToImage2(
         List&lt;PairIntArray&gt; curves, Image input, int nExtraForDot) {
         
-<span class="nc bnc" id="L1634" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1635">            return;</span>
+<span class="nc bnc" id="L1684" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1685">            return;</span>
         }
         
-<span class="nc" id="L1638">        addAlternatingColorCurvesToImage(</span>
-<span class="nc" id="L1639">            curves.toArray(new PairIntArray[curves.size()]),</span>
+<span class="nc" id="L1688">        addAlternatingColorCurvesToImage(</span>
+<span class="nc" id="L1689">            curves.toArray(new PairIntArray[curves.size()]),</span>
             input, nExtraForDot);
-<span class="nc" id="L1641">    }</span>
+<span class="nc" id="L1691">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, Image input) {
         
-<span class="pc bpc" id="L1646" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1647">            return;</span>
+<span class="pc bpc" id="L1696" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1697">            return;</span>
         }
         
-<span class="fc" id="L1650">        addAlternatingColorCurvesToImage(</span>
-<span class="fc" id="L1651">            curves.toArray(new PairIntArray[curves.size()]),</span>
+<span class="fc" id="L1700">        addAlternatingColorCurvesToImage(</span>
+<span class="fc" id="L1701">            curves.toArray(new PairIntArray[curves.size()]),</span>
             input, 1);
-<span class="fc" id="L1653">    }</span>
+<span class="fc" id="L1703">    }</span>
     
     public static int getNextColorRGB(int count) {
         
-<span class="fc" id="L1657">        int[] c = getNextRGB(count);</span>
+<span class="fc" id="L1707">        int[] c = getNextRGB(count);</span>
         
-<span class="fc" id="L1659">        int rgb = (((c[0] &amp; 0x0ff) &lt;&lt; 16) | ((c[1] &amp; 0x0ff) &lt;&lt; 8) | </span>
+<span class="fc" id="L1709">        int rgb = (((c[0] &amp; 0x0ff) &lt;&lt; 16) | ((c[1] &amp; 0x0ff) &lt;&lt; 8) | </span>
             (c[2] &amp; 0x0ff));
         
-<span class="fc" id="L1662">        return rgb;</span>
+<span class="fc" id="L1712">        return rgb;</span>
     }
     
     /*
@@ -1669,7 +1719,7 @@ import javax.imageio.stream.ImageInputStream;
     public static int[] getNextRGB(int count) {
         
         //http://godsnotwheregodsnot.blogspot.ru/2013/11/kmeans-color-quantization-seeding.html
-<span class="fc" id="L1672">        String[] indexcolors = new String[]{</span>
+<span class="fc" id="L1722">        String[] indexcolors = new String[]{</span>
             &quot;FFFF00&quot;, &quot;1CE6FF&quot;, &quot;FF34FF&quot;, &quot;FF4A46&quot;, &quot;008941&quot;, &quot;006FA6&quot;, &quot;A30059&quot;,
             &quot;FFDBE5&quot;, &quot;7A4900&quot;, &quot;0000A6&quot;, &quot;63FFAC&quot;, &quot;B79762&quot;, &quot;004D43&quot;, &quot;8FB0FF&quot;, &quot;997D87&quot;,
             &quot;5A0007&quot;, &quot;809693&quot;, &quot;FEFFE6&quot;, &quot;1B4400&quot;, &quot;4FC601&quot;, &quot;3B5DFF&quot;, &quot;4A3B53&quot;, &quot;FF2F80&quot;,
@@ -1706,352 +1756,352 @@ import javax.imageio.stream.ImageInputStream;
             &quot;252F99&quot;, &quot;00CCFF&quot;, &quot;674E60&quot;, &quot;FC009C&quot;, &quot;92896B&quot;
         };
         
-<span class="fc" id="L1709">        int n = indexcolors.length - 1;</span>
+<span class="fc" id="L1759">        int n = indexcolors.length - 1;</span>
         
-<span class="pc bpc" id="L1711" title="1 of 2 branches missed.">        if (count &lt; 0) {</span>
-<span class="nc" id="L1712">            count = 0;</span>
+<span class="pc bpc" id="L1761" title="1 of 2 branches missed.">        if (count &lt; 0) {</span>
+<span class="nc" id="L1762">            count = 0;</span>
         } else {
-<span class="fc" id="L1714">            count = count % n;</span>
+<span class="fc" id="L1764">            count = count % n;</span>
         }
     
-<span class="fc" id="L1717">        String str = indexcolors[count];</span>
+<span class="fc" id="L1767">        String str = indexcolors[count];</span>
         
-<span class="fc" id="L1719">        int rgb = Integer.parseInt(str, 16);</span>
-<span class="fc" id="L1720">        int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L1721">        int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L1722">        int b = rgb &amp; 0xFF;</span>
+<span class="fc" id="L1769">        int rgb = Integer.parseInt(str, 16);</span>
+<span class="fc" id="L1770">        int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L1771">        int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L1772">        int b = rgb &amp; 0xFF;</span>
                 
-<span class="fc" id="L1724">        return new int[]{r, g, b};</span>
+<span class="fc" id="L1774">        return new int[]{r, g, b};</span>
     }
     
     public static void addAlternatingColorCurvesToImage(
         PairIntArray[] curves, Image input) {
         
-<span class="nc bnc" id="L1730" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1731">            return;</span>
+<span class="nc bnc" id="L1780" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1781">            return;</span>
         }
         
-<span class="nc" id="L1734">        int nExtraForDot = 1;</span>
+<span class="nc" id="L1784">        int nExtraForDot = 1;</span>
         
-<span class="nc" id="L1736">        addAlternatingColorCurvesToImage(curves, input, nExtraForDot);</span>
-<span class="nc" id="L1737">    }</span>
+<span class="nc" id="L1786">        addAlternatingColorCurvesToImage(curves, input, nExtraForDot);</span>
+<span class="nc" id="L1787">    }</span>
     
     public static void addAlternatingColorCurvesToImage(
         PairIntArray[] curves, Image input, int nExtraForDot) {
         
-<span class="pc bpc" id="L1742" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1743">            return;</span>
+<span class="pc bpc" id="L1792" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1793">            return;</span>
         }
                 
-<span class="fc" id="L1746">        int clr = 0;</span>
-<span class="fc" id="L1747">        int w = input.getWidth();</span>
-<span class="fc" id="L1748">        int h = input.getHeight();</span>
+<span class="fc" id="L1796">        int clr = 0;</span>
+<span class="fc" id="L1797">        int w = input.getWidth();</span>
+<span class="fc" id="L1798">        int h = input.getHeight();</span>
         
-<span class="fc bfc" id="L1750" title="All 2 branches covered.">        for (int i = 0; i &lt; curves.length; i++) {</span>
+<span class="fc bfc" id="L1800" title="All 2 branches covered.">        for (int i = 0; i &lt; curves.length; i++) {</span>
             
-<span class="fc" id="L1752">            PairIntArray edge = curves[i];</span>
+<span class="fc" id="L1802">            PairIntArray edge = curves[i];</span>
             
-<span class="fc" id="L1754">            int c = getNextColorRGB(clr);</span>
+<span class="fc" id="L1804">            int c = getNextColorRGB(clr);</span>
             
-<span class="fc bfc" id="L1756" title="All 2 branches covered.">            for (int ii = 0; ii &lt; edge.getN(); ii++) {</span>
+<span class="fc bfc" id="L1806" title="All 2 branches covered.">            for (int ii = 0; ii &lt; edge.getN(); ii++) {</span>
                 
-<span class="fc" id="L1758">                int col = edge.getX(ii);</span>
-<span class="fc" id="L1759">                int row = edge.getY(ii);</span>
+<span class="fc" id="L1808">                int col = edge.getX(ii);</span>
+<span class="fc" id="L1809">                int row = edge.getY(ii);</span>
                 
-<span class="fc bfc" id="L1761" title="All 2 branches covered.">                for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="fc" id="L1762">                    int xx = col + dx;</span>
-<span class="fc bfc" id="L1763" title="All 4 branches covered.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="fc" id="L1764">                        continue;</span>
+<span class="fc bfc" id="L1811" title="All 2 branches covered.">                for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="fc" id="L1812">                    int xx = col + dx;</span>
+<span class="fc bfc" id="L1813" title="All 4 branches covered.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="fc" id="L1814">                        continue;</span>
                     }
-<span class="fc bfc" id="L1766" title="All 2 branches covered.">                    for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="fc" id="L1767">                        int yy = row + dy;</span>
-<span class="fc bfc" id="L1768" title="All 4 branches covered.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="fc" id="L1769">                            continue;</span>
+<span class="fc bfc" id="L1816" title="All 2 branches covered.">                    for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L1817">                        int yy = row + dy;</span>
+<span class="fc bfc" id="L1818" title="All 4 branches covered.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc" id="L1819">                            continue;</span>
                         }
-<span class="fc" id="L1771">                        input.setRGB(xx, yy, c);</span>
+<span class="fc" id="L1821">                        input.setRGB(xx, yy, c);</span>
                     }
                 }                
             }
-<span class="fc" id="L1775">            clr++;</span>
+<span class="fc" id="L1825">            clr++;</span>
         }
-<span class="fc" id="L1777">    }</span>
+<span class="fc" id="L1827">    }</span>
     
     public static void addAlternatingColorPointSetsToImage(
         List&lt;Set&lt;PairInt&gt;&gt; pointSets, int xOffset, int yOffset, 
         int nExtraForDot, Image input) {
         
-<span class="pc bpc" id="L1783" title="2 of 4 branches missed.">        if (pointSets == null || input == null) {</span>
-<span class="nc" id="L1784">            return;</span>
+<span class="pc bpc" id="L1833" title="2 of 4 branches missed.">        if (pointSets == null || input == null) {</span>
+<span class="nc" id="L1834">            return;</span>
         }
                 
-<span class="fc bfc" id="L1787" title="All 2 branches covered.">        for (int i = 0; i &lt; pointSets.size(); i++) {</span>
+<span class="fc bfc" id="L1837" title="All 2 branches covered.">        for (int i = 0; i &lt; pointSets.size(); i++) {</span>
             
-<span class="fc" id="L1789">            Set&lt;PairInt&gt; points = pointSets.get(i);</span>
+<span class="fc" id="L1839">            Set&lt;PairInt&gt; points = pointSets.get(i);</span>
             
-<span class="fc" id="L1791">            int[] c = getNextRGB(i);</span>
+<span class="fc" id="L1841">            int[] c = getNextRGB(i);</span>
             
-<span class="fc" id="L1793">            addToImage(points, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);</span>
+<span class="fc" id="L1843">            addToImage(points, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);</span>
         }
-<span class="fc" id="L1795">    }</span>
+<span class="fc" id="L1845">    }</span>
     
     public static void addAlternatingColorPointSetsToImage2(
         List&lt;TIntSet&gt; pointSets, int xOffset, int yOffset, 
         int nExtraForDot, Image input) {
         
-<span class="pc bpc" id="L1801" title="2 of 4 branches missed.">        if (pointSets == null || input == null) {</span>
-<span class="nc" id="L1802">            return;</span>
+<span class="pc bpc" id="L1851" title="2 of 4 branches missed.">        if (pointSets == null || input == null) {</span>
+<span class="nc" id="L1852">            return;</span>
         }
                 
-<span class="fc bfc" id="L1805" title="All 2 branches covered.">        for (int i = 0; i &lt; pointSets.size(); i++) {</span>
+<span class="fc bfc" id="L1855" title="All 2 branches covered.">        for (int i = 0; i &lt; pointSets.size(); i++) {</span>
             
-<span class="fc" id="L1807">            TIntSet pIdxs = pointSets.get(i);</span>
+<span class="fc" id="L1857">            TIntSet pIdxs = pointSets.get(i);</span>
             
-<span class="fc" id="L1809">            int[] c = getNextRGB(i);</span>
+<span class="fc" id="L1859">            int[] c = getNextRGB(i);</span>
             
-<span class="fc" id="L1811">            addToImage(pIdxs, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);</span>
+<span class="fc" id="L1861">            addToImage(pIdxs, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);</span>
         }
-<span class="fc" id="L1813">    }</span>
+<span class="fc" id="L1863">    }</span>
     
     public static &lt;T extends Collection&lt;PairInt&gt;&gt; void addToImage(
         T points, int xOffsetToApply, int yOffsetToApply, Image input) {
         
-<span class="nc bnc" id="L1818" title="All 4 branches missed.">        if (points == null || input == null) {</span>
-<span class="nc" id="L1819">            return;</span>
+<span class="nc bnc" id="L1868" title="All 4 branches missed.">        if (points == null || input == null) {</span>
+<span class="nc" id="L1869">            return;</span>
         }
         
-<span class="nc" id="L1822">        int w = input.getWidth();</span>
-<span class="nc" id="L1823">        int h = input.getHeight();</span>
+<span class="nc" id="L1872">        int w = input.getWidth();</span>
+<span class="nc" id="L1873">        int h = input.getHeight();</span>
         
-<span class="nc" id="L1825">        int c = Color.BLUE.getRGB();</span>
+<span class="nc" id="L1875">        int c = Color.BLUE.getRGB();</span>
           
-<span class="nc bnc" id="L1827" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L1877" title="All 2 branches missed.">        for (PairInt p : points) {</span>
 
-<span class="nc" id="L1829">            int col = p.getX() + xOffsetToApply;</span>
-<span class="nc" id="L1830">            int row = p.getY() + yOffsetToApply;</span>
+<span class="nc" id="L1879">            int col = p.getX() + xOffsetToApply;</span>
+<span class="nc" id="L1880">            int row = p.getY() + yOffsetToApply;</span>
 
-<span class="nc bnc" id="L1832" title="All 8 branches missed.">            if ((col &lt; 0) || (row &lt; 0) || (col &gt; (w - 1)) || (row &gt; (h - 1))) {</span>
-<span class="nc" id="L1833">                continue;</span>
+<span class="nc bnc" id="L1882" title="All 8 branches missed.">            if ((col &lt; 0) || (row &lt; 0) || (col &gt; (w - 1)) || (row &gt; (h - 1))) {</span>
+<span class="nc" id="L1883">                continue;</span>
             }
 
-<span class="nc" id="L1836">            input.setRGB(col, row, c);</span>
-<span class="nc" id="L1837">        }</span>
-<span class="nc" id="L1838">    }</span>
+<span class="nc" id="L1886">            input.setRGB(col, row, c);</span>
+<span class="nc" id="L1887">        }</span>
+<span class="nc" id="L1888">    }</span>
     
     public static &lt;T extends Collection&lt;PairInt&gt;&gt; void addToImage(
         T points, int xOffsetToApply, 
         int yOffsetToApply, Image input, int rClr, int gClr, int bClr) throws 
         IOException {
         
-<span class="nc bnc" id="L1845" title="All 4 branches missed.">        if (points == null || input == null) {</span>
-<span class="nc" id="L1846">            return;</span>
+<span class="nc bnc" id="L1895" title="All 4 branches missed.">        if (points == null || input == null) {</span>
+<span class="nc" id="L1896">            return;</span>
         }
         
-<span class="nc" id="L1849">        int w = input.getWidth();</span>
-<span class="nc" id="L1850">        int h = input.getHeight();</span>
+<span class="nc" id="L1899">        int w = input.getWidth();</span>
+<span class="nc" id="L1900">        int h = input.getHeight();</span>
                   
-<span class="nc bnc" id="L1852" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L1902" title="All 2 branches missed.">        for (PairInt p : points) {</span>
 
-<span class="nc" id="L1854">            int col = p.getX() + xOffsetToApply;</span>
-<span class="nc" id="L1855">            int row = p.getY() + yOffsetToApply;</span>
+<span class="nc" id="L1904">            int col = p.getX() + xOffsetToApply;</span>
+<span class="nc" id="L1905">            int row = p.getY() + yOffsetToApply;</span>
             
-<span class="nc bnc" id="L1857" title="All 8 branches missed.">            if ((col &lt; 0) || (row &lt; 0) || (col &gt; (w - 1)) || (row &gt; (h - 1))) {</span>
-<span class="nc" id="L1858">                continue;</span>
+<span class="nc bnc" id="L1907" title="All 8 branches missed.">            if ((col &lt; 0) || (row &lt; 0) || (col &gt; (w - 1)) || (row &gt; (h - 1))) {</span>
+<span class="nc" id="L1908">                continue;</span>
             }
 
-<span class="nc" id="L1861">            input.setRGB(col, row, rClr, gClr, bClr);</span>
-<span class="nc" id="L1862">        }</span>
-<span class="nc" id="L1863">    }</span>
+<span class="nc" id="L1911">            input.setRGB(col, row, rClr, gClr, bClr);</span>
+<span class="nc" id="L1912">        }</span>
+<span class="nc" id="L1913">    }</span>
     
     public static &lt;T extends Collection&lt;PairInt&gt;&gt; void addToImage(
         T points, int xOffsetToApply, 
         int yOffsetToApply, Image input, int nExtraForDot,
         int rClr, int gClr, int bClr) {
         
-<span class="pc bpc" id="L1870" title="2 of 4 branches missed.">        if (points == null || input == null) {</span>
-<span class="nc" id="L1871">            return;</span>
+<span class="pc bpc" id="L1920" title="2 of 4 branches missed.">        if (points == null || input == null) {</span>
+<span class="nc" id="L1921">            return;</span>
         }
         
-<span class="fc" id="L1874">        int w = input.getWidth();</span>
-<span class="fc" id="L1875">        int h = input.getHeight();</span>
+<span class="fc" id="L1924">        int w = input.getWidth();</span>
+<span class="fc" id="L1925">        int h = input.getHeight();</span>
                   
-<span class="fc bfc" id="L1877" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L1927" title="All 2 branches covered.">        for (PairInt p : points) {</span>
 
-<span class="fc" id="L1879">            int x = p.getX() + xOffsetToApply;</span>
-<span class="fc" id="L1880">            int y = p.getY() + yOffsetToApply;</span>
+<span class="fc" id="L1929">            int x = p.getX() + xOffsetToApply;</span>
+<span class="fc" id="L1930">            int y = p.getY() + yOffsetToApply;</span>
             
-<span class="fc bfc" id="L1882" title="All 2 branches covered.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
-<span class="fc" id="L1883">                int xx = x + dx;</span>
-<span class="fc bfc" id="L1884" title="All 4 branches covered.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="fc" id="L1885">                    continue;</span>
+<span class="fc bfc" id="L1932" title="All 2 branches covered.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
+<span class="fc" id="L1933">                int xx = x + dx;</span>
+<span class="fc bfc" id="L1934" title="All 4 branches covered.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="fc" id="L1935">                    continue;</span>
                 }
-<span class="fc bfc" id="L1887" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="fc" id="L1888">                    int yy = y + dy;</span>
-<span class="fc bfc" id="L1889" title="All 4 branches covered.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="fc" id="L1890">                        continue;</span>
+<span class="fc bfc" id="L1937" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L1938">                    int yy = y + dy;</span>
+<span class="fc bfc" id="L1939" title="All 4 branches covered.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc" id="L1940">                        continue;</span>
                     }
-<span class="fc" id="L1892">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="fc" id="L1942">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
-<span class="fc" id="L1895">        }</span>
-<span class="fc" id="L1896">    }</span>
+<span class="fc" id="L1945">        }</span>
+<span class="fc" id="L1946">    }</span>
 
     public static void addToImage(
         TIntSet pIdxs, int xOffsetToApply, 
         int yOffsetToApply, Image input, int nExtraForDot,
         int rClr, int gClr, int bClr) {
         
-<span class="pc bpc" id="L1903" title="2 of 4 branches missed.">        if (pIdxs == null || input == null) {</span>
-<span class="nc" id="L1904">            return;</span>
+<span class="pc bpc" id="L1953" title="2 of 4 branches missed.">        if (pIdxs == null || input == null) {</span>
+<span class="nc" id="L1954">            return;</span>
         }
         
-<span class="fc" id="L1907">        int w = input.getWidth();</span>
-<span class="fc" id="L1908">        int h = input.getHeight();</span>
+<span class="fc" id="L1957">        int w = input.getWidth();</span>
+<span class="fc" id="L1958">        int h = input.getHeight();</span>
              
-<span class="fc" id="L1910">        TIntIterator iter = pIdxs.iterator();</span>
-<span class="fc bfc" id="L1911" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L1912">            int pixIdx = iter.next();</span>
-<span class="fc" id="L1913">            int y = pixIdx/w;</span>
-<span class="fc" id="L1914">            int x = pixIdx - (y * w);</span>
-<span class="fc" id="L1915">            x += xOffsetToApply;</span>
-<span class="fc" id="L1916">            y += yOffsetToApply;</span>
+<span class="fc" id="L1960">        TIntIterator iter = pIdxs.iterator();</span>
+<span class="fc bfc" id="L1961" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L1962">            int pixIdx = iter.next();</span>
+<span class="fc" id="L1963">            int y = pixIdx/w;</span>
+<span class="fc" id="L1964">            int x = pixIdx - (y * w);</span>
+<span class="fc" id="L1965">            x += xOffsetToApply;</span>
+<span class="fc" id="L1966">            y += yOffsetToApply;</span>
             
-<span class="fc bfc" id="L1918" title="All 2 branches covered.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
-<span class="fc" id="L1919">                int xx = x + dx;</span>
-<span class="pc bpc" id="L1920" title="2 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1921">                    continue;</span>
+<span class="fc bfc" id="L1968" title="All 2 branches covered.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
+<span class="fc" id="L1969">                int xx = x + dx;</span>
+<span class="pc bpc" id="L1970" title="2 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1971">                    continue;</span>
                 }
-<span class="fc bfc" id="L1923" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="fc" id="L1924">                    int yy = y + dy;</span>
-<span class="pc bpc" id="L1925" title="2 of 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1926">                        continue;</span>
+<span class="fc bfc" id="L1973" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L1974">                    int yy = y + dy;</span>
+<span class="pc bpc" id="L1975" title="2 of 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1976">                        continue;</span>
                     }
-<span class="fc" id="L1928">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="fc" id="L1978">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
-<span class="fc" id="L1931">        }</span>
-<span class="fc" id="L1932">    }</span>
+<span class="fc" id="L1981">        }</span>
+<span class="fc" id="L1982">    }</span>
 
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, String fileName, boolean writeImage, 
         Image input) throws IOException {
         
-<span class="nc bnc" id="L1938" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
-<span class="nc" id="L1939">            return;</span>
+<span class="nc bnc" id="L1988" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="nc" id="L1989">            return;</span>
         }
-<span class="nc bnc" id="L1941" title="All 2 branches missed.">        if (fileName == null) {</span>
-<span class="nc" id="L1942">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
+<span class="nc bnc" id="L1991" title="All 2 branches missed.">        if (fileName == null) {</span>
+<span class="nc" id="L1992">            throw new IllegalArgumentException(&quot;fileName cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L1945">        addAlternatingColorCurvesToImage(curves, input);</span>
+<span class="nc" id="L1995">        addAlternatingColorCurvesToImage(curves, input);</span>
        
-<span class="nc bnc" id="L1947" title="All 2 branches missed.">        if (!writeImage) {</span>
-<span class="nc" id="L1948">            return;</span>
+<span class="nc bnc" id="L1997" title="All 2 branches missed.">        if (!writeImage) {</span>
+<span class="nc" id="L1998">            return;</span>
         }
         
         try {
-<span class="nc" id="L1952">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="nc" id="L1953">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + fileName, input);</span>
-<span class="nc" id="L1954">        } catch (IOException ex) {</span>
-<span class="nc" id="L1955">            Logger.getLogger(ImageIOHelper.class.getName()).severe(</span>
-<span class="nc" id="L1956">                &quot;ERROR: l446&quot; + ex.getMessage());</span>
-<span class="nc" id="L1957">        }</span>
-<span class="nc" id="L1958">    }</span>
+<span class="nc" id="L2002">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L2003">            ImageIOHelper.writeOutputImage(dirPath + &quot;/&quot; + fileName, input);</span>
+<span class="nc" id="L2004">        } catch (IOException ex) {</span>
+<span class="nc" id="L2005">            Logger.getLogger(ImageIOHelper.class.getName()).severe(</span>
+<span class="nc" id="L2006">                &quot;ERROR: l446&quot; + ex.getMessage());</span>
+<span class="nc" id="L2007">        }</span>
+<span class="nc" id="L2008">    }</span>
 
     public static void addCurveToImage(ScaleSpaceCurve curve, Image input, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L1963" title="All 4 branches missed.">        if (curve == null || input == null) {</span>
-<span class="nc" id="L1964">            return;</span>
+<span class="nc bnc" id="L2013" title="All 4 branches missed.">        if (curve == null || input == null) {</span>
+<span class="nc" id="L2014">            return;</span>
         }
         
-<span class="nc" id="L1967">        int w = input.getWidth();</span>
-<span class="nc" id="L1968">        int h = input.getHeight();</span>
+<span class="nc" id="L2017">        int w = input.getWidth();</span>
+<span class="nc" id="L2018">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L1970" title="All 2 branches missed.">        for (int i = 0; i &lt; curve.getSize(); i++) {</span>
-<span class="nc" id="L1971">            int x = Math.round(curve.getX(i));</span>
-<span class="nc" id="L1972">            int y = Math.round(curve.getY(i));</span>
+<span class="nc bnc" id="L2020" title="All 2 branches missed.">        for (int i = 0; i &lt; curve.getSize(); i++) {</span>
+<span class="nc" id="L2021">            int x = Math.round(curve.getX(i));</span>
+<span class="nc" id="L2022">            int y = Math.round(curve.getY(i));</span>
             
-<span class="nc bnc" id="L1974" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
-<span class="nc" id="L1975">                int xx = x + dx;</span>
-<span class="nc bnc" id="L1976" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1977">                    continue;</span>
+<span class="nc bnc" id="L2024" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
+<span class="nc" id="L2025">                int xx = x + dx;</span>
+<span class="nc bnc" id="L2026" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L2027">                    continue;</span>
                 }
-<span class="nc bnc" id="L1979" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L1980">                    int yy = y + dy;</span>
-<span class="nc bnc" id="L1981" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1982">                        continue;</span>
+<span class="nc bnc" id="L2029" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L2030">                    int yy = y + dy;</span>
+<span class="nc bnc" id="L2031" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L2032">                        continue;</span>
                     }
-<span class="nc" id="L1984">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L2034">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
         }
-<span class="nc" id="L1988">    }</span>
+<span class="nc" id="L2038">    }</span>
 
     public static void addToImage(float[] xP, float[] yP, 
         int xOffsetToApply, int yOffsetToApply, Image input,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L1994" title="All 6 branches missed.">        if (xP == null || yP == null || input == null) {</span>
-<span class="nc" id="L1995">            return;</span>
+<span class="nc bnc" id="L2044" title="All 6 branches missed.">        if (xP == null || yP == null || input == null) {</span>
+<span class="nc" id="L2045">            return;</span>
         }
         
-<span class="nc" id="L1998">        int w = input.getWidth();</span>
-<span class="nc" id="L1999">        int h = input.getHeight();</span>
+<span class="nc" id="L2048">        int w = input.getWidth();</span>
+<span class="nc" id="L2049">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L2001" title="All 2 branches missed.">        for (int i = 0; i &lt; xP.length; i++) {</span>
+<span class="nc bnc" id="L2051" title="All 2 branches missed.">        for (int i = 0; i &lt; xP.length; i++) {</span>
             
-<span class="nc" id="L2003">            int x = Math.round(xP[i]) + xOffsetToApply;</span>
+<span class="nc" id="L2053">            int x = Math.round(xP[i]) + xOffsetToApply;</span>
             
-<span class="nc" id="L2005">            int y = Math.round(yP[i]) + yOffsetToApply;</span>
+<span class="nc" id="L2055">            int y = Math.round(yP[i]) + yOffsetToApply;</span>
             
-<span class="nc bnc" id="L2007" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
-<span class="nc" id="L2008">                int xx = x + dx;</span>
-<span class="nc bnc" id="L2009" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L2010">                    continue;</span>
+<span class="nc bnc" id="L2057" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
+<span class="nc" id="L2058">                int xx = x + dx;</span>
+<span class="nc bnc" id="L2059" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L2060">                    continue;</span>
                 }
-<span class="nc bnc" id="L2012" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L2013">                    int yy = y + dy;</span>
-<span class="nc bnc" id="L2014" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L2015">                        continue;</span>
+<span class="nc bnc" id="L2062" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L2063">                    int yy = y + dy;</span>
+<span class="nc bnc" id="L2064" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L2065">                        continue;</span>
                     }
-<span class="nc" id="L2017">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L2067">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
         }
-<span class="nc" id="L2021">    }</span>
+<span class="nc" id="L2071">    }</span>
     
     public static void addToImage(int[] xP, int[] yP, 
         int xOffsetToApply, int yOffsetToApply, Image input,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L2027" title="All 6 branches missed.">        if (xP == null || yP == null || input == null) {</span>
-<span class="nc" id="L2028">            return;</span>
+<span class="nc bnc" id="L2077" title="All 6 branches missed.">        if (xP == null || yP == null || input == null) {</span>
+<span class="nc" id="L2078">            return;</span>
         }
         
-<span class="nc" id="L2031">        int w = input.getWidth();</span>
-<span class="nc" id="L2032">        int h = input.getHeight();</span>
+<span class="nc" id="L2081">        int w = input.getWidth();</span>
+<span class="nc" id="L2082">        int h = input.getHeight();</span>
         
-<span class="nc bnc" id="L2034" title="All 2 branches missed.">        for (int i = 0; i &lt; xP.length; i++) {</span>
+<span class="nc bnc" id="L2084" title="All 2 branches missed.">        for (int i = 0; i &lt; xP.length; i++) {</span>
             
-<span class="nc" id="L2036">            int x = xP[i] + xOffsetToApply;</span>
+<span class="nc" id="L2086">            int x = xP[i] + xOffsetToApply;</span>
             
-<span class="nc" id="L2038">            int y = yP[i] + yOffsetToApply;</span>
+<span class="nc" id="L2088">            int y = yP[i] + yOffsetToApply;</span>
             
-<span class="nc bnc" id="L2040" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L2041">                int xx = x + dx;</span>
-<span class="nc bnc" id="L2042" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L2043">                    continue;</span>
+<span class="nc bnc" id="L2090" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L2091">                int xx = x + dx;</span>
+<span class="nc bnc" id="L2092" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L2093">                    continue;</span>
                 }
-<span class="nc bnc" id="L2045" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L2046">                    int yy = y + dy;</span>
-<span class="nc bnc" id="L2047" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L2048">                        continue;</span>
+<span class="nc bnc" id="L2095" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="nc" id="L2096">                    int yy = y + dy;</span>
+<span class="nc bnc" id="L2097" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L2098">                        continue;</span>
                     }
-<span class="nc" id="L2050">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="nc" id="L2100">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
         }
-<span class="nc" id="L2054">    }</span>
+<span class="nc" id="L2104">    }</span>
     
     /**
      * given data, apply a factor and offset to put it in range 0 to 255 and
@@ -2061,16 +2111,16 @@ import javax.imageio.stream.ImageInputStream;
      */
     public static GreyscaleImage scaleToImgRange(double[][] data) {
         
-<span class="nc" id="L2064">        double maxValue = Double.MIN_VALUE;</span>
-<span class="nc" id="L2065">        double minValue = Double.MAX_VALUE;</span>
-<span class="nc bnc" id="L2066" title="All 2 branches missed.">        for (int i = 0; i &lt; data.length; ++i) {</span>
-<span class="nc bnc" id="L2067" title="All 2 branches missed.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
-<span class="nc" id="L2068">                double v = data[i][j];</span>
-<span class="nc bnc" id="L2069" title="All 2 branches missed.">                if (v &lt; minValue) {</span>
-<span class="nc" id="L2070">                    minValue = v;</span>
+<span class="nc" id="L2114">        double maxValue = Double.MIN_VALUE;</span>
+<span class="nc" id="L2115">        double minValue = Double.MAX_VALUE;</span>
+<span class="nc bnc" id="L2116" title="All 2 branches missed.">        for (int i = 0; i &lt; data.length; ++i) {</span>
+<span class="nc bnc" id="L2117" title="All 2 branches missed.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
+<span class="nc" id="L2118">                double v = data[i][j];</span>
+<span class="nc bnc" id="L2119" title="All 2 branches missed.">                if (v &lt; minValue) {</span>
+<span class="nc" id="L2120">                    minValue = v;</span>
                 }
-<span class="nc bnc" id="L2072" title="All 2 branches missed.">                if (v &gt; maxValue) {</span>
-<span class="nc" id="L2073">                    maxValue = v;</span>
+<span class="nc bnc" id="L2122" title="All 2 branches missed.">                if (v &gt; maxValue) {</span>
+<span class="nc" id="L2123">                    maxValue = v;</span>
                 }
             }
         }
@@ -2083,20 +2133,20 @@ import javax.imageio.stream.ImageInputStream;
         (10*25.5)-(10*25.5) = 0
         (20*25.5)-(10*25.5) = 255
         */
-<span class="nc" id="L2086">        double factor = 255./(maxValue - minValue);</span>
-<span class="nc" id="L2087">        double zp = minValue * factor;</span>
+<span class="nc" id="L2136">        double factor = 255./(maxValue - minValue);</span>
+<span class="nc" id="L2137">        double zp = minValue * factor;</span>
         
-<span class="nc" id="L2089">        GreyscaleImage img = new GreyscaleImage(data.length, data[0].length);</span>
+<span class="nc" id="L2139">        GreyscaleImage img = new GreyscaleImage(data.length, data[0].length);</span>
         
-<span class="nc bnc" id="L2091" title="All 2 branches missed.">        for (int i = 0; i &lt; data.length; ++i) {</span>
-<span class="nc bnc" id="L2092" title="All 2 branches missed.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
-<span class="nc" id="L2093">                double v = data[i][j];</span>
-<span class="nc" id="L2094">                int vs = (int)Math.round((v * factor) - zp);</span>
-<span class="nc" id="L2095">                img.setValue(i, j, vs);</span>
+<span class="nc bnc" id="L2141" title="All 2 branches missed.">        for (int i = 0; i &lt; data.length; ++i) {</span>
+<span class="nc bnc" id="L2142" title="All 2 branches missed.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
+<span class="nc" id="L2143">                double v = data[i][j];</span>
+<span class="nc" id="L2144">                int vs = (int)Math.round((v * factor) - zp);</span>
+<span class="nc" id="L2145">                img.setValue(i, j, vs);</span>
             }
         }
         
-<span class="nc" id="L2099">        return img;</span>
+<span class="nc" id="L2149">        return img;</span>
     }
     
     /**
@@ -2107,16 +2157,16 @@ import javax.imageio.stream.ImageInputStream;
      */
     public static GreyscaleImage scaleToImgRange(int[][] data) {
         
-<span class="fc" id="L2110">        int maxValue = Integer.MIN_VALUE;</span>
-<span class="fc" id="L2111">        int minValue = Integer.MAX_VALUE;</span>
-<span class="fc bfc" id="L2112" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; ++i) {</span>
-<span class="fc bfc" id="L2113" title="All 2 branches covered.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
-<span class="fc" id="L2114">                int v = data[i][j];</span>
-<span class="fc bfc" id="L2115" title="All 2 branches covered.">                if (v &lt; minValue) {</span>
-<span class="fc" id="L2116">                    minValue = v;</span>
+<span class="fc" id="L2160">        int maxValue = Integer.MIN_VALUE;</span>
+<span class="fc" id="L2161">        int minValue = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L2162" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; ++i) {</span>
+<span class="fc bfc" id="L2163" title="All 2 branches covered.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
+<span class="fc" id="L2164">                int v = data[i][j];</span>
+<span class="fc bfc" id="L2165" title="All 2 branches covered.">                if (v &lt; minValue) {</span>
+<span class="fc" id="L2166">                    minValue = v;</span>
                 }
-<span class="fc bfc" id="L2118" title="All 2 branches covered.">                if (v &gt; maxValue) {</span>
-<span class="fc" id="L2119">                    maxValue = v;</span>
+<span class="fc bfc" id="L2168" title="All 2 branches covered.">                if (v &gt; maxValue) {</span>
+<span class="fc" id="L2169">                    maxValue = v;</span>
                 }
             }
         }
@@ -2129,20 +2179,20 @@ import javax.imageio.stream.ImageInputStream;
         (10*25.5)-(10*25.5) = 0
         (20*25.5)-(10*25.5) = 255
         */
-<span class="fc" id="L2132">        double factor = 255./(double)(maxValue - minValue);</span>
-<span class="fc" id="L2133">        double zp = minValue * factor;</span>
+<span class="fc" id="L2182">        double factor = 255./(double)(maxValue - minValue);</span>
+<span class="fc" id="L2183">        double zp = minValue * factor;</span>
         
-<span class="fc" id="L2135">        GreyscaleImage img = new GreyscaleImage(data.length, data[0].length);</span>
+<span class="fc" id="L2185">        GreyscaleImage img = new GreyscaleImage(data.length, data[0].length);</span>
         
-<span class="fc bfc" id="L2137" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; ++i) {</span>
-<span class="fc bfc" id="L2138" title="All 2 branches covered.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
-<span class="fc" id="L2139">                int v = data[i][j];</span>
-<span class="fc" id="L2140">                int vs = (int)Math.round((v * factor) - zp);</span>
-<span class="fc" id="L2141">                img.setValue(i, j, vs);</span>
+<span class="fc bfc" id="L2187" title="All 2 branches covered.">        for (int i = 0; i &lt; data.length; ++i) {</span>
+<span class="fc bfc" id="L2188" title="All 2 branches covered.">            for (int j = 0; j &lt; data[i].length; ++j) {</span>
+<span class="fc" id="L2189">                int v = data[i][j];</span>
+<span class="fc" id="L2190">                int vs = (int)Math.round((v * factor) - zp);</span>
+<span class="fc" id="L2191">                img.setValue(i, j, vs);</span>
             }
         }
         
-<span class="fc" id="L2145">        return img;</span>
+<span class="fc" id="L2195">        return img;</span>
     }
 
     public static void addAlternatingColorContoursToImage(
@@ -2151,9 +2201,9 @@ import javax.imageio.stream.ImageInputStream;
         
         //StringBuilder sb = new StringBuilder();
         
-<span class="nc bnc" id="L2154" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); i++) {</span>
+<span class="nc bnc" id="L2204" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); i++) {</span>
             
-<span class="nc" id="L2156">            CurvatureScaleSpaceContour cssC = contours.get(i);</span>
+<span class="nc" id="L2206">            CurvatureScaleSpaceContour cssC = contours.get(i);</span>
             
             /*sb.append(&quot;[&quot;).append(Integer.toString(i))
                 .append(&quot;] t=&quot;)
@@ -2162,73 +2212,73 @@ import javax.imageio.stream.ImageInputStream;
                 .append(Float.toString(cssC.getPeakSigma()))
                 .append(&quot; &quot;);*/
             
-<span class="nc" id="L2165">            int[] c = getNextRGB(i);</span>
+<span class="nc" id="L2215">            int[] c = getNextRGB(i);</span>
             
-<span class="nc" id="L2167">            addContoursToImage(cssC, img, xOffset, yOffset, nExtraForDot, </span>
+<span class="nc" id="L2217">            addContoursToImage(cssC, img, xOffset, yOffset, nExtraForDot, </span>
                 c[0], c[1], c[2]);
         }
         
         //Logger.getLogger(ImageIOHelper.class.getName()).info(sb.toString());
-<span class="nc" id="L2172">    }</span>
+<span class="nc" id="L2222">    }</span>
 
     public static void addAlternatingColorCornerRegionsToImage(
         List&lt;CornerRegion&gt; regions, Image img, 
         int xOffset, int yOffset, int nExtraForDot) {
         
-<span class="nc bnc" id="L2178" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); i++) {</span>
+<span class="nc bnc" id="L2228" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); i++) {</span>
             
-<span class="nc" id="L2180">            CornerRegion br = regions.get(i);</span>
+<span class="nc" id="L2230">            CornerRegion br = regions.get(i);</span>
             
-<span class="nc" id="L2182">            int[] c = getNextRGB(i);</span>
+<span class="nc" id="L2232">            int[] c = getNextRGB(i);</span>
 
-<span class="nc" id="L2184">            int x = br.getX()[br.getKMaxIdx()];</span>
-<span class="nc" id="L2185">            int y = br.getY()[br.getKMaxIdx()];</span>
+<span class="nc" id="L2234">            int x = br.getX()[br.getKMaxIdx()];</span>
+<span class="nc" id="L2235">            int y = br.getY()[br.getKMaxIdx()];</span>
             
-<span class="nc" id="L2187">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
+<span class="nc" id="L2237">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
                 c[0], c[1], c[2]);
         }
-<span class="nc" id="L2190">    }</span>
+<span class="nc" id="L2240">    }</span>
     
     public static &lt;T extends CornerRegion&gt; void 
         addAlternatingColorCornerRegionListsToImage(
         List&lt;List&lt;T&gt;&gt; regions, Image img, int xOffset, int yOffset, 
             int nExtraForDot) {
         
-<span class="nc bnc" id="L2197" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); i++) {</span>
+<span class="nc bnc" id="L2247" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); i++) {</span>
             
-<span class="nc" id="L2199">            List&lt;T&gt; corners = regions.get(i);</span>
+<span class="nc" id="L2249">            List&lt;T&gt; corners = regions.get(i);</span>
             
-<span class="nc" id="L2201">            int[] c = getNextRGB(i);</span>
+<span class="nc" id="L2251">            int[] c = getNextRGB(i);</span>
             
-<span class="nc" id="L2203">            addCornerRegionsToImage(corners, img, xOffset, yOffset, </span>
+<span class="nc" id="L2253">            addCornerRegionsToImage(corners, img, xOffset, yOffset, </span>
                 nExtraForDot, c[0], c[1], c[2]);
         }
-<span class="nc" id="L2206">    }</span>
+<span class="nc" id="L2256">    }</span>
     
     public static void addCornerRegionsToImage(Collection&lt;CornerRegion&gt; regions,
         Image img, int xOffset, int yOffset, int nExtraForDot) {
 
-<span class="nc bnc" id="L2211" title="All 2 branches missed.">        for (CornerRegion br : regions) {</span>
+<span class="nc bnc" id="L2261" title="All 2 branches missed.">        for (CornerRegion br : regions) {</span>
 
-<span class="nc" id="L2213">            int x = br.getX()[br.getKMaxIdx()];</span>
-<span class="nc" id="L2214">            int y = br.getY()[br.getKMaxIdx()];</span>
+<span class="nc" id="L2263">            int x = br.getX()[br.getKMaxIdx()];</span>
+<span class="nc" id="L2264">            int y = br.getY()[br.getKMaxIdx()];</span>
 
-<span class="nc" id="L2216">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 255, 0, 0);</span>
-<span class="nc" id="L2217">        }</span>
-<span class="nc" id="L2218">    }</span>
+<span class="nc" id="L2266">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 255, 0, 0);</span>
+<span class="nc" id="L2267">        }</span>
+<span class="nc" id="L2268">    }</span>
     
     public static &lt;T extends CornerRegion&gt; void addCornerRegionsToImage(
         Collection&lt;T&gt; regions, Image img, int xOffset, int yOffset, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L2224" title="All 2 branches missed.">        for (T br : regions ) {</span>
+<span class="nc bnc" id="L2274" title="All 2 branches missed.">        for (T br : regions ) {</span>
             
-<span class="nc" id="L2226">            int x = br.getX()[br.getKMaxIdx()];</span>
-<span class="nc" id="L2227">            int y = br.getY()[br.getKMaxIdx()];</span>
+<span class="nc" id="L2276">            int x = br.getX()[br.getKMaxIdx()];</span>
+<span class="nc" id="L2277">            int y = br.getY()[br.getKMaxIdx()];</span>
             
-<span class="nc" id="L2229">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
+<span class="nc" id="L2279">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
                 rClr, gClr, bClr);
-<span class="nc" id="L2231">        }</span>
-<span class="nc" id="L2232">    }</span>
+<span class="nc" id="L2281">        }</span>
+<span class="nc" id="L2282">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

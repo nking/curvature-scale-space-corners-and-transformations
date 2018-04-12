@@ -32,76 +32,77 @@ public class PolarThetaIntegralHistograms {
     /**
      * runtime complexity is O(N_pixels).
      * 
-     * @param img greyscale image
+     * @param img greyscale image where intensity is polar angles of the X,Y 
+     * chromaticity
      * @param nBins
      * @return 
      */
     public int[][] createHistograms(GreyscaleImage img, int nBins) {
 
-<span class="fc" id="L41">        int w = img.getWidth();</span>
-<span class="fc" id="L42">        int h = img.getHeight();</span>
-<span class="fc" id="L43">        int nPix = img.getNPixels();</span>
+<span class="fc" id="L42">        int w = img.getWidth();</span>
+<span class="fc" id="L43">        int h = img.getHeight();</span>
+<span class="fc" id="L44">        int nPix = img.getNPixels();</span>
         
-<span class="fc" id="L45">        int binWidth = 256/nBins;</span>
+<span class="fc" id="L46">        int binWidth = 256/nBins;</span>
         
-<span class="fc" id="L47">        int[][] out = new int[nPix][];</span>
+<span class="fc" id="L48">        int[][] out = new int[nPix][];</span>
         
-<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L50" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
                 
-<span class="fc" id="L52">                int pixIdx = img.getInternalIndex(x, y);</span>
+<span class="fc" id="L53">                int pixIdx = img.getInternalIndex(x, y);</span>
                 
-<span class="fc" id="L54">                int v = img.getValue(pixIdx);</span>
+<span class="fc" id="L55">                int v = img.getValue(pixIdx);</span>
                  
-<span class="pc bpc" id="L56" title="2 of 4 branches missed.">                if (v &lt; 0 || v &gt; 255) {</span>
-<span class="nc" id="L57">                    throw new IllegalArgumentException(&quot;img values muse be &quot;</span>
+<span class="pc bpc" id="L57" title="2 of 4 branches missed.">                if (v &lt; 0 || v &gt; 255) {</span>
+<span class="nc" id="L58">                    throw new IllegalArgumentException(&quot;img values muse be &quot;</span>
                         + &quot;between 1 and 255, inclusive&quot;);
                 }
                 
-<span class="fc" id="L61">                int bin = v/binWidth;</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">                if (bin &gt;= nBins) {</span>
-<span class="fc" id="L63">                    bin = nBins - 1;</span>
+<span class="fc" id="L62">                int bin = v/binWidth;</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                if (bin &gt;= nBins) {</span>
+<span class="fc" id="L64">                    bin = nBins - 1;</span>
                 }
                                
-<span class="fc bfc" id="L66" title="All 2 branches covered.">                if (pixIdx == 0) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                if (pixIdx == 0) {</span>
                     
-<span class="fc" id="L68">                    out[pixIdx] = new int[nBins];</span>
+<span class="fc" id="L69">                    out[pixIdx] = new int[nBins];</span>
                     
-<span class="fc" id="L70">                    out[pixIdx][bin]++;</span>
+<span class="fc" id="L71">                    out[pixIdx][bin]++;</span>
                     
-<span class="fc bfc" id="L72" title="All 4 branches covered.">                } else if (x &gt; 0 &amp;&amp; y &gt; 0) {</span>
+<span class="fc bfc" id="L73" title="All 4 branches covered.">                } else if (x &gt; 0 &amp;&amp; y &gt; 0) {</span>
                     
-<span class="fc" id="L74">                    int pixIdxL = img.getInternalIndex(x - 1, y);</span>
-<span class="fc" id="L75">                    int pixIdxB = img.getInternalIndex(x, y - 1);</span>
-<span class="fc" id="L76">                    int pixIdxLB = img.getInternalIndex(x - 1, y - 1);</span>
+<span class="fc" id="L75">                    int pixIdxL = img.getInternalIndex(x - 1, y);</span>
+<span class="fc" id="L76">                    int pixIdxB = img.getInternalIndex(x, y - 1);</span>
+<span class="fc" id="L77">                    int pixIdxLB = img.getInternalIndex(x - 1, y - 1);</span>
                     
-<span class="fc" id="L78">                    out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);</span>
+<span class="fc" id="L79">                    out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);</span>
                                         
-<span class="fc" id="L80">                    out[pixIdx][bin]++;</span>
+<span class="fc" id="L81">                    out[pixIdx][bin]++;</span>
                     
                     // add bin, add pixIdxB and subtract pixIdxLB
-<span class="fc" id="L83">                    add(out[pixIdx], out[pixIdxB]);</span>
-<span class="fc" id="L84">                    subtract(out[pixIdx], out[pixIdxLB]);</span>
+<span class="fc" id="L84">                    add(out[pixIdx], out[pixIdxB]);</span>
+<span class="fc" id="L85">                    subtract(out[pixIdx], out[pixIdxLB]);</span>
                     
-<span class="fc bfc" id="L86" title="All 2 branches covered.">                } else if (x &gt; 0) {</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                } else if (x &gt; 0) {</span>
                     
-<span class="fc" id="L88">                    int pixIdxL = img.getInternalIndex(x - 1, y);</span>
+<span class="fc" id="L89">                    int pixIdxL = img.getInternalIndex(x - 1, y);</span>
                                    
-<span class="fc" id="L90">                    out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);</span>
-<span class="fc" id="L91">                    out[pixIdx][bin]++;</span>
+<span class="fc" id="L91">                    out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);</span>
+<span class="fc" id="L92">                    out[pixIdx][bin]++;</span>
                 
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">                } else if (y &gt; 0) {</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">                } else if (y &gt; 0) {</span>
                 
-<span class="fc" id="L95">                    int pixIdxB = img.getInternalIndex(x, y - 1);</span>
+<span class="fc" id="L96">                    int pixIdxB = img.getInternalIndex(x, y - 1);</span>
                                     
-<span class="fc" id="L97">                    out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);</span>
+<span class="fc" id="L98">                    out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);</span>
                     
-<span class="fc" id="L99">                    out[pixIdx][bin]++;</span>
+<span class="fc" id="L100">                    out[pixIdx][bin]++;</span>
                 }
             }
         }
 
-<span class="fc" id="L104">        return out;</span>
+<span class="fc" id="L105">        return out;</span>
     }
     
     /**
@@ -119,106 +120,106 @@ public class PolarThetaIntegralHistograms {
         int startY, int stopY, int w, int h, 
         int output[], int[] outputN) {
 
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (output.length != histograms[0].length) {</span>
-<span class="nc" id="L123">            throw new IllegalArgumentException(&quot;output.length must == nThetaBins&quot;);</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (output.length != histograms[0].length) {</span>
+<span class="nc" id="L124">            throw new IllegalArgumentException(&quot;output.length must == nThetaBins&quot;);</span>
         }
         
-<span class="pc bpc" id="L126" title="2 of 4 branches missed.">        if (stopX &lt; startX || stopY &lt; startY) {</span>
-<span class="nc" id="L127">            throw new IllegalArgumentException(&quot;stopX must be &gt;= startX and &quot;</span>
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">        if (stopX &lt; startX || stopY &lt; startY) {</span>
+<span class="nc" id="L128">            throw new IllegalArgumentException(&quot;stopX must be &gt;= startX and &quot;</span>
                 + &quot;stopY &gt;= startY&quot;);
         }
         
         int dx, dy;
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (startX &gt; -1) {</span>
-<span class="fc" id="L133">            dx = stopX - startX;</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (startX &gt; -1) {</span>
+<span class="fc" id="L134">            dx = stopX - startX;</span>
         } else {
-<span class="nc" id="L135">            dx = stopX;</span>
+<span class="nc" id="L136">            dx = stopX;</span>
         }
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (startY &gt; -1) {</span>
-<span class="fc" id="L138">            dy = stopY - startY;</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (startY &gt; -1) {</span>
+<span class="fc" id="L139">            dy = stopY - startY;</span>
         } else {
-<span class="nc" id="L140">            dy = stopY;</span>
+<span class="nc" id="L141">            dy = stopY;</span>
         }
         
-<span class="fc bfc" id="L143" title="All 4 branches covered.">        if (dx &gt; 0 &amp;&amp; dy &gt; 0) {</span>
-<span class="pc bpc" id="L144" title="2 of 8 branches missed.">            if ((startX &gt; 0) &amp;&amp; (stopX &lt; w) &amp;&amp; (startY &gt; 0) &amp;&amp; (stopY &lt; h)) {</span>
-<span class="fc" id="L145">                int nPix = (dx + 1) * (dy + 1);</span>
-<span class="fc" id="L146">                outputN[0] = nPix;</span>
-<span class="fc" id="L147">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="fc bfc" id="L144" title="All 4 branches covered.">        if (dx &gt; 0 &amp;&amp; dy &gt; 0) {</span>
+<span class="pc bpc" id="L145" title="2 of 8 branches missed.">            if ((startX &gt; 0) &amp;&amp; (stopX &lt; w) &amp;&amp; (startY &gt; 0) &amp;&amp; (stopY &lt; h)) {</span>
+<span class="fc" id="L146">                int nPix = (dx + 1) * (dy + 1);</span>
+<span class="fc" id="L147">                outputN[0] = nPix;</span>
+<span class="fc" id="L148">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);
-<span class="fc" id="L149">                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);</span>
-<span class="fc" id="L150">                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);</span>
-<span class="fc" id="L151">                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);</span>
-<span class="fc" id="L152">                return;</span>
+<span class="fc" id="L150">                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);</span>
+<span class="fc" id="L151">                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);</span>
+<span class="fc" id="L152">                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);</span>
+<span class="fc" id="L153">                return;</span>
             }
         }
         
-<span class="fc bfc" id="L156" title="All 4 branches covered.">        if (dx == 0 &amp;&amp; dy == 0) {</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">            if (stopX == 0) {</span>
-<span class="pc bpc" id="L158" title="1 of 2 branches missed.">                if (stopY == 0) {</span>
-<span class="fc" id="L159">                    outputN[0] = 1;</span>
-<span class="fc" id="L160">                    System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="fc bfc" id="L157" title="All 4 branches covered.">        if (dx == 0 &amp;&amp; dy == 0) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            if (stopX == 0) {</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">                if (stopY == 0) {</span>
+<span class="fc" id="L160">                    outputN[0] = 1;</span>
+<span class="fc" id="L161">                    System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                         output, 0, output.length);
-<span class="fc" id="L162">                    return;</span>
+<span class="fc" id="L163">                    return;</span>
                 }
-<span class="nc" id="L164">                outputN[0] = 1;</span>
-<span class="nc" id="L165">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="nc" id="L165">                outputN[0] = 1;</span>
+<span class="nc" id="L166">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);
-<span class="nc" id="L167">                subtract(output, histograms[getPixIdx(stopX, stopY - 1, w)]);</span>
-<span class="nc" id="L168">                return;</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">            } else if (stopY == 0) {</span>
+<span class="nc" id="L168">                subtract(output, histograms[getPixIdx(stopX, stopY - 1, w)]);</span>
+<span class="nc" id="L169">                return;</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">            } else if (stopY == 0) {</span>
                 //stopX == 0 &amp;&amp; stopY == 0 has been handles in previous block
-<span class="nc" id="L171">                outputN[0] = 1;</span>
-<span class="nc" id="L172">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="nc" id="L172">                outputN[0] = 1;</span>
+<span class="nc" id="L173">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);
-<span class="nc" id="L174">                subtract(output, histograms[getPixIdx(stopX - 1, stopY, w)]);</span>
-<span class="nc" id="L175">                return;</span>
+<span class="nc" id="L175">                subtract(output, histograms[getPixIdx(stopX - 1, stopY, w)]);</span>
+<span class="nc" id="L176">                return;</span>
             } else {
                 // stopX &gt; 0
-<span class="fc" id="L178">                outputN[0] = 1;</span>
-<span class="fc" id="L179">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="fc" id="L179">                outputN[0] = 1;</span>
+<span class="fc" id="L180">                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);
-<span class="fc" id="L181">                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);</span>
-<span class="fc" id="L182">                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);</span>
-<span class="fc" id="L183">                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);</span>
-<span class="fc" id="L184">                return;</span>
+<span class="fc" id="L182">                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);</span>
+<span class="fc" id="L183">                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);</span>
+<span class="fc" id="L184">                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);</span>
+<span class="fc" id="L185">                return;</span>
             }
             //System.out.println(&quot; --&gt; startX=&quot; + startX +
             //    &quot; stopX=&quot; + stopX + &quot; startY=&quot; + startY + &quot; stopY=&quot; + stopY);            
         }
         
-<span class="pc bpc" id="L190" title="1 of 4 branches missed.">        if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
-<span class="nc" id="L191">            int nPix = (dx + 1) * (dy + 1);</span>
-<span class="nc" id="L192">            outputN[0] = nPix;</span>
-<span class="nc" id="L193">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="pc bpc" id="L191" title="1 of 4 branches missed.">        if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
+<span class="nc" id="L192">            int nPix = (dx + 1) * (dy + 1);</span>
+<span class="nc" id="L193">            outputN[0] = nPix;</span>
+<span class="nc" id="L194">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                 output, 0, output.length);
-<span class="nc" id="L195">            subtract(output, histograms[getPixIdx(startX, stopY, w)]);</span>
-<span class="nc" id="L196">            subtract(output, histograms[getPixIdx(stopX, startY, w)]);</span>
-<span class="nc" id="L197">            add(output, histograms[getPixIdx(startX, startY, w)]);</span>
-<span class="nc" id="L198">            return;</span>
-<span class="fc bfc" id="L199" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
+<span class="nc" id="L196">            subtract(output, histograms[getPixIdx(startX, stopY, w)]);</span>
+<span class="nc" id="L197">            subtract(output, histograms[getPixIdx(stopX, startY, w)]);</span>
+<span class="nc" id="L198">            add(output, histograms[getPixIdx(startX, startY, w)]);</span>
+<span class="nc" id="L199">            return;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
             // startY is &lt; 0
-<span class="fc" id="L201">            int nPix = (dx + 1) * (stopY + 1);</span>
-<span class="fc" id="L202">            outputN[0] = nPix;</span>
-<span class="fc" id="L203">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="fc" id="L202">            int nPix = (dx + 1) * (stopY + 1);</span>
+<span class="fc" id="L203">            outputN[0] = nPix;</span>
+<span class="fc" id="L204">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                 output, 0, output.length);
-<span class="fc" id="L205">            subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);</span>
-<span class="fc" id="L206">            return;</span>
-<span class="fc bfc" id="L207" title="All 2 branches covered.">        } else if (startY &gt; 0) {</span>
+<span class="fc" id="L206">            subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);</span>
+<span class="fc" id="L207">            return;</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        } else if (startY &gt; 0) {</span>
             // startX &lt; 0
-<span class="fc" id="L209">            int nPix = (stopX + 1) * (dy + 1);</span>
-<span class="fc" id="L210">            outputN[0] = nPix;</span>
-<span class="fc" id="L211">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="fc" id="L210">            int nPix = (stopX + 1) * (dy + 1);</span>
+<span class="fc" id="L211">            outputN[0] = nPix;</span>
+<span class="fc" id="L212">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                 output, 0, output.length);
-<span class="fc" id="L213">            subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);</span>
-<span class="fc" id="L214">            return;</span>
+<span class="fc" id="L214">            subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);</span>
+<span class="fc" id="L215">            return;</span>
         } else {
             // startX &lt; 0 &amp;&amp; startY &lt; 0
-<span class="fc" id="L217">            int nPix = (stopX + 1) * (stopY + 1);</span>
-<span class="fc" id="L218">            outputN[0] = nPix;</span>
-<span class="fc" id="L219">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
+<span class="fc" id="L218">            int nPix = (stopX + 1) * (stopY + 1);</span>
+<span class="fc" id="L219">            outputN[0] = nPix;</span>
+<span class="fc" id="L220">            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, </span>
                 output, 0, output.length);
-<span class="fc" id="L221">            return;</span>
+<span class="fc" id="L222">            return;</span>
         }
     }
     
@@ -234,90 +235,90 @@ public class PolarThetaIntegralHistograms {
     public void applyWindowedSum(int[][] histograms, int w, int h, 
         int N_PIX_PER_CELL_DIM) {
         
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (N_PIX_PER_CELL_DIM &lt; 1) {</span>
-<span class="nc" id="L238">            throw new IllegalArgumentException(&quot;N_PIX_PER_CELL_DIM must be &gt;= 1&quot;);</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">        if (N_PIX_PER_CELL_DIM &lt; 1) {</span>
+<span class="nc" id="L239">            throw new IllegalArgumentException(&quot;N_PIX_PER_CELL_DIM must be &gt;= 1&quot;);</span>
         }
         
-<span class="fc" id="L241">        int nBins = histograms[0].length;</span>
+<span class="fc" id="L242">        int nBins = histograms[0].length;</span>
                 
-<span class="fc" id="L243">        int[][] img2 = new int[w * h][];</span>
+<span class="fc" id="L244">        int[][] img2 = new int[w * h][];</span>
         
-<span class="fc" id="L245">        int[] outN = new int[1];</span>
+<span class="fc" id="L246">        int[] outN = new int[1];</span>
         
         // a centered window sum
-<span class="fc" id="L248">        int r = N_PIX_PER_CELL_DIM &gt;&gt; 1;</span>
+<span class="fc" id="L249">        int r = N_PIX_PER_CELL_DIM &gt;&gt; 1;</span>
         int r0, r1;
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">        if (r == 0) {</span>
-<span class="nc" id="L251">            r0 = 0;</span>
-<span class="nc" id="L252">            r1 = 0;</span>
-<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        } else if ((N_PIX_PER_CELL_DIM &amp; 1) == 1) {</span>
-<span class="nc" id="L254">            r0 = -r;</span>
-<span class="nc" id="L255">            r1 = r;</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">        if (r == 0) {</span>
+<span class="nc" id="L252">            r0 = 0;</span>
+<span class="nc" id="L253">            r1 = 0;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        } else if ((N_PIX_PER_CELL_DIM &amp; 1) == 1) {</span>
+<span class="fc" id="L255">            r0 = -r;</span>
+<span class="fc" id="L256">            r1 = r;</span>
         } else {
-<span class="fc" id="L257">            r0 = -r;</span>
-<span class="fc" id="L258">            r1 = r - 1;</span>
+<span class="fc" id="L258">            r0 = -r;</span>
+<span class="fc" id="L259">            r1 = r - 1;</span>
         }
                         
         // extract the summed area of each dxd window centered on x,y
-<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
             
-<span class="fc" id="L264">            int x2 = x + r0;</span>
-<span class="fc" id="L265">            int x3 = x + r1;</span>
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">            if (x3 &lt; 0) {</span>
-<span class="nc" id="L267">                continue;</span>
-<span class="fc bfc" id="L268" title="All 2 branches covered.">            } else if (x2 &lt; 0) {</span>
-<span class="fc" id="L269">                x2 = 0;</span>
-<span class="pc bpc" id="L270" title="1 of 2 branches missed.">            } else if (x2 &gt;= w) {</span>
-<span class="nc" id="L271">                break;</span>
+<span class="fc" id="L265">            int x2 = x + r0;</span>
+<span class="fc" id="L266">            int x3 = x + r1;</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">            if (x3 &lt; 0) {</span>
+<span class="nc" id="L268">                continue;</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">            } else if (x2 &lt; 0) {</span>
+<span class="fc" id="L270">                x2 = 0;</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">            } else if (x2 &gt;= w) {</span>
+<span class="nc" id="L272">                break;</span>
             }
-<span class="fc bfc" id="L273" title="All 2 branches covered.">            if (x3 &gt; (w - 1)) {</span>
-<span class="fc" id="L274">                x3 = w - 1;</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">            if (x3 &gt; (w - 1)) {</span>
+<span class="fc" id="L275">                x3 = w - 1;</span>
             }
 
-<span class="fc bfc" id="L277" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
                 
-<span class="fc" id="L279">                int y2 = y + r0;</span>
-<span class="fc" id="L280">                int y3 = y + r1;</span>
-<span class="pc bpc" id="L281" title="1 of 2 branches missed.">                if (y3 &lt; 0) {</span>
-<span class="nc" id="L282">                    continue;</span>
-<span class="fc bfc" id="L283" title="All 2 branches covered.">                } else if (y2 &lt; 0) {</span>
-<span class="fc" id="L284">                    y2 = 0;</span>
-<span class="pc bpc" id="L285" title="1 of 2 branches missed.">                } else if (y2 &gt;= h) {</span>
-<span class="nc" id="L286">                    break;</span>
+<span class="fc" id="L280">                int y2 = y + r0;</span>
+<span class="fc" id="L281">                int y3 = y + r1;</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">                if (y3 &lt; 0) {</span>
+<span class="nc" id="L283">                    continue;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">                } else if (y2 &lt; 0) {</span>
+<span class="fc" id="L285">                    y2 = 0;</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">                } else if (y2 &gt;= h) {</span>
+<span class="nc" id="L287">                    break;</span>
                 }
-<span class="fc bfc" id="L288" title="All 2 branches covered.">                if (y3 &gt; (h - 1)) {</span>
-<span class="fc" id="L289">                    y3 = h - 1;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">                if (y3 &gt; (h - 1)) {</span>
+<span class="fc" id="L290">                    y3 = h - 1;</span>
                 }
                                 
-<span class="fc" id="L292">                int pixIdx = (y * w) + x;</span>
+<span class="fc" id="L293">                int pixIdx = (y * w) + x;</span>
 
-<span class="fc" id="L294">                int[] out = new int[nBins];</span>
+<span class="fc" id="L295">                int[] out = new int[nBins];</span>
 
-<span class="fc" id="L296">                extractWindow(histograms, x2, x3, y2, y3, w, h, out, outN);</span>
+<span class="fc" id="L297">                extractWindow(histograms, x2, x3, y2, y3, w, h, out, outN);</span>
                                 
-<span class="fc" id="L298">                img2[pixIdx] = out;</span>
+<span class="fc" id="L299">                img2[pixIdx] = out;</span>
             }
         }
         
-<span class="fc bfc" id="L302" title="All 2 branches covered.">        for (int i = 0; i &lt; histograms.length; ++i) {</span>
-<span class="fc" id="L303">            System.arraycopy(img2[i], 0, histograms[i], 0, nBins);</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        for (int i = 0; i &lt; histograms.length; ++i) {</span>
+<span class="fc" id="L304">            System.arraycopy(img2[i], 0, histograms[i], 0, nBins);</span>
         }
-<span class="fc" id="L305">    }</span>
+<span class="fc" id="L306">    }</span>
     
     protected void add(int[] addTo, int[] addFrom) {
-<span class="fc bfc" id="L308" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
-<span class="fc" id="L309">            addTo[i] += addFrom[i];</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        for (int i = 0; i &lt; addTo.length; ++i) {</span>
+<span class="fc" id="L310">            addTo[i] += addFrom[i];</span>
         }
-<span class="fc" id="L311">    }</span>
+<span class="fc" id="L312">    }</span>
         
     protected void subtract(int[] subtractFrom, int[] subtract) {
-<span class="fc bfc" id="L314" title="All 2 branches covered.">        for (int i = 0; i &lt; subtractFrom.length; ++i) {</span>
-<span class="fc" id="L315">            subtractFrom[i] -= subtract[i];</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">        for (int i = 0; i &lt; subtractFrom.length; ++i) {</span>
+<span class="fc" id="L316">            subtractFrom[i] -= subtract[i];</span>
         }
-<span class="fc" id="L317">    }</span>
+<span class="fc" id="L318">    }</span>
     
     protected int getPixIdx(int col, int row, int w) {
-<span class="fc" id="L320">        return (row * w) + col;</span>
+<span class="fc" id="L321">        return (row * w) + col;</span>
     }
     
 }

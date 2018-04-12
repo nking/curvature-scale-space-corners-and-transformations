@@ -54,48 +54,82 @@ import java.util.Set;
      * @param y1
      * @param x2
      * @param y2
+     * @param gapLength number of pixels for a dashed line.
+     * @param output
+     */
+    public static void createLinePoints(int x1, int y1,
+        int x2, int y2, int gapLength, Set&lt;PairInt&gt; output) {
+    
+<span class="fc" id="L63">        List&lt;PairInt&gt; output0 = new ArrayList&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L65">        createLinePoints(x1, y1, x2, y2, output0);</span>
+        
+<span class="fc" id="L67">        output.addAll(output0);</span>
+        
+<span class="fc" id="L69">        int j = 0;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = gapLength; i &lt; output0.size(); ++i) {</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            if (j &lt; gapLength) {</span>
+<span class="fc" id="L72">                output.remove(output0.get(i));</span>
+            }
+<span class="fc" id="L74">            j++;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            if (j &gt; (2*gapLength)) {</span>
+<span class="fc" id="L76">                j = 0;</span>
+            }
+        }
+<span class="fc" id="L79">    }</span>
+    
+    /**
+     * calculate points in the line between (x1, y1)
+     * and (x2, y2), inclusive, and add them to output
+     * using Bresenham's algorithm.
+     * The code is adapted from 
+     * http://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Java
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
      * @param output
      */
     public static void createLinePoints(int x1, int y1,
         int x2, int y2, List&lt;PairInt&gt; output) {
         
         // delta of exact value and rounded value of the dependant variable
-<span class="fc" id="L63">        int d = 0;</span>
+<span class="fc" id="L97">        int d = 0;</span>
  
-<span class="fc" id="L65">        int dy = Math.abs(y2 - y1);</span>
-<span class="fc" id="L66">        int dx = Math.abs(x2 - x1);</span>
+<span class="fc" id="L99">        int dy = Math.abs(y2 - y1);</span>
+<span class="fc" id="L100">        int dx = Math.abs(x2 - x1);</span>
  
-<span class="fc" id="L68">        int dy2 = (dy &lt;&lt; 1); // slope scaling factors to avoid floating</span>
-<span class="fc" id="L69">        int dx2 = (dx &lt;&lt; 1); // point</span>
+<span class="fc" id="L102">        int dy2 = (dy &lt;&lt; 1); // slope scaling factors to avoid floating</span>
+<span class="fc" id="L103">        int dx2 = (dx &lt;&lt; 1); // point</span>
  
-<span class="fc bfc" id="L71" title="All 2 branches covered.">        int ix = x1 &lt; x2 ? 1 : -1; // increment direction</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        int iy = y1 &lt; y2 ? 1 : -1;</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        int ix = x1 &lt; x2 ? 1 : -1; // increment direction</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        int iy = y1 &lt; y2 ? 1 : -1;</span>
  
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (dy &lt;= dx) {</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (dy &lt;= dx) {</span>
             for (;;) {
-<span class="fc" id="L76">                output.add(new PairInt(x1, y1));</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (x1 == x2)</span>
-<span class="fc" id="L78">                    break;</span>
-<span class="fc" id="L79">                x1 += ix;</span>
-<span class="fc" id="L80">                d += dy2;</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">                if (d &gt; dx) {</span>
-<span class="fc" id="L82">                    y1 += iy;</span>
-<span class="fc" id="L83">                    d -= dx2;</span>
+<span class="fc" id="L110">                output.add(new PairInt(x1, y1));</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                if (x1 == x2)</span>
+<span class="fc" id="L112">                    break;</span>
+<span class="fc" id="L113">                x1 += ix;</span>
+<span class="fc" id="L114">                d += dy2;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">                if (d &gt; dx) {</span>
+<span class="fc" id="L116">                    y1 += iy;</span>
+<span class="fc" id="L117">                    d -= dx2;</span>
                 }
             }
         } else {
             for (;;) {
-<span class="fc" id="L88">                output.add(new PairInt(x1, y1));</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">                if (y1 == y2)</span>
-<span class="fc" id="L90">                    break;</span>
-<span class="fc" id="L91">                y1 += iy;</span>
-<span class="fc" id="L92">                d += dx2;</span>
-<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (d &gt; dy) {</span>
-<span class="fc" id="L94">                    x1 += ix;</span>
-<span class="fc" id="L95">                    d -= dy2;</span>
+<span class="fc" id="L122">                output.add(new PairInt(x1, y1));</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                if (y1 == y2)</span>
+<span class="fc" id="L124">                    break;</span>
+<span class="fc" id="L125">                y1 += iy;</span>
+<span class="fc" id="L126">                d += dx2;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">                if (d &gt; dy) {</span>
+<span class="fc" id="L128">                    x1 += ix;</span>
+<span class="fc" id="L129">                    d -= dy2;</span>
                 }
             }
         }
-<span class="fc" id="L99">    }</span>
+<span class="fc" id="L133">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

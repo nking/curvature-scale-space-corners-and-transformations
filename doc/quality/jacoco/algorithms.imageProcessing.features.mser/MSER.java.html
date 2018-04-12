@@ -618,33 +618,35 @@ public class MSER {
 <span class="nc" id="L618">            minArea = 0.01;</span>
 <span class="pc bpc" id="L619" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
 <span class="fc" id="L620">            minArea = 0.001;</span>
+            //NOTE: temporary edit...might change
+<span class="fc" id="L622">            minDiversity = 0.995;</span>
         } else {
-<span class="nc" id="L622">            minArea = 0.0005;</span>
+<span class="nc" id="L624">            minArea = 0.0005;</span>
         }
-
-<span class="fc" id="L625">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+        
+<span class="fc" id="L627">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, false);
 
-<span class="fc" id="L628">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
+<span class="fc" id="L630">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
    
         // Invert the pixel values
-<span class="fc bfc" id="L631" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
-<span class="fc" id="L632">            greyscale[i] = ~greyscale[i];</span>
-<span class="pc bpc" id="L633" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
-<span class="fc" id="L634">                greyscale[i] += 256;</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
+<span class="fc" id="L634">            greyscale[i] = ~greyscale[i];</span>
+<span class="pc bpc" id="L635" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
+<span class="fc" id="L636">                greyscale[i] += 256;</span>
             }
         }
 
-<span class="fc" id="L638">        mser4.operator(greyscale, width, height, regions);</span>
+<span class="fc" id="L640">        mser4.operator(greyscale, width, height, regions);</span>
 
-<span class="fc" id="L640">        long stop = System.currentTimeMillis();</span>
+<span class="fc" id="L642">        long stop = System.currentTimeMillis();</span>
 
         //System.out.println(
         //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
         //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
         //    + ((stop - start) / 1000) + &quot;s.&quot;);
 
-<span class="fc" id="L647">        return regions;</span>
+<span class="fc" id="L649">        return regions;</span>
     }
     
     /**
@@ -680,37 +682,37 @@ public class MSER {
         double minDiversity) {
 
         // Extract MSER
-<span class="fc" id="L683">        long start = System.currentTimeMillis();</span>
+<span class="fc" id="L685">        long start = System.currentTimeMillis();</span>
 
-<span class="fc" id="L685">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+<span class="fc" id="L687">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, true);
-<span class="fc" id="L687">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+<span class="fc" id="L689">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, false);
 
-<span class="fc" id="L690">        List&lt;List&lt;Region&gt;&gt; regions = new ArrayList&lt;List&lt;Region&gt;&gt;(2);</span>
-<span class="fc" id="L691">        regions.add(new ArrayList&lt;Region&gt;());</span>
-<span class="fc" id="L692">        regions.add(new ArrayList&lt;Region&gt;());</span>
+<span class="fc" id="L692">        List&lt;List&lt;Region&gt;&gt; regions = new ArrayList&lt;List&lt;Region&gt;&gt;(2);</span>
+<span class="fc" id="L693">        regions.add(new ArrayList&lt;Region&gt;());</span>
+<span class="fc" id="L694">        regions.add(new ArrayList&lt;Region&gt;());</span>
 
-<span class="fc" id="L694">        mser8.operator(greyscale, width, height, regions.get(0));</span>
+<span class="fc" id="L696">        mser8.operator(greyscale, width, height, regions.get(0));</span>
    
         // Invert the pixel values
-<span class="fc bfc" id="L697" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
-<span class="fc" id="L698">            greyscale[i] = ~greyscale[i];</span>
-<span class="pc bpc" id="L699" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
-<span class="fc" id="L700">                greyscale[i] += 256;</span>
+<span class="fc bfc" id="L699" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
+<span class="fc" id="L700">            greyscale[i] = ~greyscale[i];</span>
+<span class="pc bpc" id="L701" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
+<span class="fc" id="L702">                greyscale[i] += 256;</span>
             }
         }
 
-<span class="fc" id="L704">        mser4.operator(greyscale, width, height, regions.get(1));</span>
+<span class="fc" id="L706">        mser4.operator(greyscale, width, height, regions.get(1));</span>
 
-<span class="fc" id="L706">        long stop = System.currentTimeMillis();</span>
+<span class="fc" id="L708">        long stop = System.currentTimeMillis();</span>
 
         //System.out.println(
         //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
         //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
         //    + ((stop - start) / 1000) + &quot;s.&quot;);
 
-<span class="fc" id="L713">        return regions;</span>
+<span class="fc" id="L715">        return regions;</span>
     }
 }
 

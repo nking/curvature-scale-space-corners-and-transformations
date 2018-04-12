@@ -459,9 +459,9 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
             
 <span class="fc" id="L460">            double cost = nCutCost(mask, d, w);</span>
             
-<span class="fc bfc" id="L462" title="All 2 branches covered.">            if (Double.isNaN(cost)) {</span>
+<span class="pc bpc" id="L462" title="1 of 2 branches missed.">            if (Double.isNaN(cost)) {</span>
                 // happens when mask has all same values
-<span class="fc" id="L464">                break;</span>
+<span class="nc" id="L464">                break;</span>
             }
             
 <span class="fc" id="L467">            log.fine(&quot;cut.length=&quot; + mask.length + &quot; cost=&quot; + cost + </span>

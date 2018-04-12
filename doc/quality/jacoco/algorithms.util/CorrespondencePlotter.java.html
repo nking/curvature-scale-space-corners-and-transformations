@@ -138,16 +138,31 @@ public class CorrespondencePlotter {
             comb, nExtraForDot, r, g, b);
 <span class="nc" id="L139">    }</span>
     
+    public void drawDashedLine(int x1, int y1, int x2, int y2,
+        int r, int g, int b, int nExtraForDot, int gapLength) {
+        
+<span class="fc" id="L144">        x1 += xOffset1;</span>
+<span class="fc" id="L145">        y1 += yOffset1;</span>
+        
+<span class="fc" id="L147">        x2 += xOffset2;</span>
+<span class="fc" id="L148">        y2 += yOffset2;</span>
+        
+<span class="fc" id="L150">        prevClr++;</span>
+                
+<span class="fc" id="L152">        ImageIOHelper.drawLineInImage(x1, y1, x2, y2, </span>
+            comb, nExtraForDot, gapLength, r, g, b);
+<span class="fc" id="L154">    }</span>
+    
     public String writeImage(String fileSuffix) throws IOException {
         
-<span class="fc" id="L143">         String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L158">         String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
             
-<span class="fc" id="L145">         String filePath = dirPath + &quot;/img&quot; + fileSuffix </span>
+<span class="fc" id="L160">         String filePath = dirPath + &quot;/img&quot; + fileSuffix </span>
              + &quot;.png&quot;;
             
-<span class="fc" id="L148">         ImageIOHelper.writeOutputImage(filePath, comb);</span>
+<span class="fc" id="L163">         ImageIOHelper.writeOutputImage(filePath, comb);</span>
          
-<span class="fc" id="L150">         return filePath;</span>
+<span class="fc" id="L165">         return filePath;</span>
     }
    
 }
