@@ -1,42 +1,3 @@
--- for the luv chromaticity image,
-   -- may need to change the settings for shades of white?
-      -- see the template icecream and the search image icecreams.
-      Note that a better solution would involve using an illumination
-      model (D65, iD75, Incandescant, etc)
-
--- read papers on using neural networks with labeling and consider
-   making a small example here for this
-   -- e.g. Score the window with a linear SVM classifier
-           Perform non-maxima suppression to remove overlapping detections with lower scores.
-   -- https://github.com/mnielsen/neural-networks-and-deep-learning.git
--- after next round of object matching improvements,
-    consider datasets from benchmark challenge:
-    https://en.wikipedia.org/wiki/ImageNet_Large_Scale_Visual_Recognition_Challenge
-    mentioned in:
-        https://en.wikipedia.org/wiki/Convolutional_neural_network
-        where there is brief discussion of difficulties in
-        object recognition
-
--- mseredges on lab fast and correct?           
--- check on canny adaptive edges and the phase congruency.
-
--- also, review some of the architectures for 
-   hashing, that is compare pros and cons compared to
-   open addressing for example
-
--- additional reading on convolution networks, and look for
-   any that are using monogenic filters to improve the runtime complexity.
-   http://arxiv.org/abs/1311.2901
-
--- to explore current market parts, make 2 computers from
-   scratch using stores like Fry's and NewEgg
-   - (1) an economy model like I always get
-   - (2) a high end model with large amount of memory using the ram that
-         doesn't overheat (more expensive)
-         and large amount of storage.
-         -- look into ideal number and kinds of L1 and L2 caches for the
-            architecture.
-         -- monitors
 -- Neural networks:
    -- optimization:
       http://neuralnetworksanddeeplearning.com/chap3.html
@@ -46,12 +7,6 @@
    -- alternative to minimize cost function instead of stochastic
       gradient descent is LBFGS.
 
-
--- revist the event server search :
-    -- there should be more modenr datasets to use
-        and should be able to choose other than
-        the perceptron.
-        -- some of the loading of data could be imrpved too
 -- do exercises for Fig 4.11, pg 220 of Bishop 2006
 -- http://www.gaussianprocess.org/gpml/code/matlab/doc/
    and tensorflow
@@ -60,7 +15,6 @@
      https://en.wikipedia.org/wiki/Torch_(machine_learning)
 
 -- impl iterative reweighted least squares
-
 
 -- for the smoothing of the separation curve,
    could retry knn, that is use same pyramidal,
