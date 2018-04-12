@@ -165,7 +165,8 @@ public class AndroidStatuesTest extends TestCase {
                 MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
                 */
                 
-                _run_matcher(imgs0, shape0, img, fileName1Root, debug, fn0, fIdx);
+                _run_matcher(imgs0, shape0, img, fileName1Root, debug, fn0, fIdx,
+                    "gbman_" + fIdx);
             }
         }
     }
@@ -259,7 +260,8 @@ public class AndroidStatuesTest extends TestCase {
             //theta1 = imageProcessor.createCIELABTheta(img, 255);
             //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         
-            _run_matcher(imgs0, shape0, img, fileName1Root, debug, 0, fIdx);
+            _run_matcher(imgs0, shape0, img, fileName1Root, debug, 0, fIdx,
+                "cupcake_" + fIdx);
         }
     }
     
@@ -357,19 +359,9 @@ public class AndroidStatuesTest extends TestCase {
             //MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
             //theta1 = imageProcessor.createCIELUVTheta(img, 255);
             //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
-        
-            Settings settings = new Settings();
-            settings.setToUseLargerPyramid0();
-            settings.setToUseLargerPyramid1();
-            settings.setDebugLabel("icec_" + fIdx);
             
-            ObjectMatcher objMatcher = new ObjectMatcher();
-            
-            if (debug) {
-                objMatcher.setToDebug();
-            }
-            
-            _run_matcher(imgs0, shape0, img, fileName1Root, debug, 0, fIdx);
+            _run_matcher(imgs0, shape0, img, fileName1Root, debug, 0, fIdx, 
+                "icec_" + fIdx);
             
         }
     }
@@ -1121,7 +1113,7 @@ public class AndroidStatuesTest extends TestCase {
 
     private void _run_matcher(ImageExt[] imgs0, Set<PairInt> shape0, 
         ImageExt img, String fileName1Root, boolean debug,
-        int fn0, int fIdx) throws IOException {
+        int fn0, int fIdx, String debugLabel) throws IOException {
         
         Settings settings = new Settings();
 
@@ -1133,7 +1125,7 @@ public class AndroidStatuesTest extends TestCase {
 
         if (debug) {
             objMatcher.setToDebug();  
-            settings.setDebugLabel("gbm_" + fIdx);
+            settings.setDebugLabel(debugLabel);
         }
 
         //settings.setToExcludeColorFilter();
@@ -1178,7 +1170,7 @@ public class AndroidStatuesTest extends TestCase {
         }
 
         plotter.writeImage("_orb_corres_final_" + 
-            "_gbman_" + fileName1Root + "_" + fn0);
+            debugLabel + fileName1Root + "_" + fn0);
         System.out.println(cor.getPoints1().size() + 
             " matches " + fileName1Root);
         //MiscDebug.writeImage(img11, "_orb_matched_" + str

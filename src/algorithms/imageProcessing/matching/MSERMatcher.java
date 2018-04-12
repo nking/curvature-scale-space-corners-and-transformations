@@ -369,7 +369,7 @@ public class MSERMatcher {
         return imageProcessor.convertIndexesToPoints(
             finder.getXY(maxIdx), width);
     }
-
+    
     //double[]{intersection, f0, f1, count};
     private double[] sumHOGCost2(HOGs hogs0, CRegion cr0, 
         HOGs hogs1, CRegion cr1) {
@@ -385,7 +385,7 @@ public class MSERMatcher {
         
         int[] h0 = new int[hogs0.getNumberOfBins()];
         int[] h1 = new int[h0.length];
-        
+            
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
@@ -427,6 +427,70 @@ public class MSERMatcher {
         double f0 = 1. - ((double) count / area0);
         
         return new double[]{sum, f0, f1, count};
+    }
+
+    //double[]{intersection, f0, f1, count};
+    private double[] sumHOGCost3(HOGs hogs0, CRegion cr0, 
+        HOGs hogs1, CRegion cr1) {
+        
+        int orientation0 = cr0.hogOrientation;
+            
+        int orientation1 = cr1.hogOrientation;
+        
+        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+
+        double sum = 0;
+        double sumErrSq = 0;
+        int count = 0;
+        
+        int[] h0 = new int[hogs0.getNumberOfBins()];
+        int[] h1 = new int[h0.length];
+            
+        float[] diffAndErr;
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same
+        //  keys
+        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
+
+            PairInt pOffset0 = entry0.getKey();
+
+            PairInt xy1 = offsetMap1.get(pOffset0);
+
+            if (xy1 == null) {
+                continue;
+            }
+
+            PairInt xy0 = entry0.getValue();
+
+            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);
+
+            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);
+
+            // 1.0 is perfect similarity
+            diffAndErr = hogs0.diff(h0, orientation0, h1, orientation1);
+            
+            sum += diffAndErr[0];
+            sumErrSq += (diffAndErr[1] * diffAndErr[1]);
+            
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+
+        sum /= (double)count;
+        
+        sumErrSq /= (double)count;
+        sumErrSq = Math.sqrt(sumErrSq);
+        
+        double area1 = cr1.offsetsToOrigCoords.size();
+        double f1 = 1. - ((double) count / area1);
+        
+        double area0 = cr0.offsetsToOrigCoords.size();
+        double f0 = 1. - ((double) count / area0);
+        
+        return new double[]{sum, f0, f1, count, sumErrSq};
     }
 
     private HOGs getOrCreate(TIntObjectMap<HOGs> hogsMap, GreyscaleImage gs, 
@@ -822,13 +886,24 @@ public class MSERMatcher {
                             continue;
                         }
 
-                        //double[]{intersection, f0, f1, count};
-                        double[] hogCosts = sumHOGCost2(hogs0, cr0, hogs1, cr1);
-
-                        if (hogCosts == null) {
-                            continue;
+                        double[] hogCosts;
+                        float hogCost;
+                        
+                        if (false) {// use intersection    
+                            //double[]{intersection, f0, f1, count};
+                            hogCosts = sumHOGCost2(hogs0, cr0, hogs1, cr1);
+                            if (hogCosts == null) {
+                                continue;
+                            }
+                            hogCost = 1.f - (float) hogCosts[0];
+                        } else {// use mean difference    
+                            //double[]{diff, f0, f1, count, error};
+                            hogCosts = sumHOGCost3(hogs0, cr0, hogs1, cr1);
+                            if (hogCosts == null) {
+                                continue;
+                            }
+                            hogCost = (float)hogCosts[0];
                         }
-                        float hogCost = 1.f - (float) hogCosts[0];
                         
                         // 1 - fraction of whole (is coverage expressed as a cost)
                         double f0 = Math.max(0, hogCosts[1]);
@@ -885,7 +960,7 @@ public class MSERMatcher {
                         
                         added = bestPerOctave.add(obj);
                         
-                        if (debug) {
+                        /*if (debug) {
                             double cost2 = (float) Math.sqrt(
                                 obj.costs[0]*obj.costs[0] +
                                 obj.costs[1]*obj.costs[1] +
@@ -899,8 +974,8 @@ public class MSERMatcher {
                             (float) obj.costs[0], (float) obj.costs[1], (float) obj.costs[2], 
                             obj.cr0.offsetsToOrigCoords.size(),
                             (float)cost2
-                        );
-                        }
+                            );
+                        }*/
                     }
                 }
             } // end over dataset1 octaves
@@ -1062,32 +1137,14 @@ public class MSERMatcher {
         if (debug) {
             System.out.println("looking for smallest hogs cost:");
         }
-        double eps = 0.03;
-        List<Obj> bestOverall = new ArrayList<Obj>(bestOverallA.getNumberOfItems());
-        Obj objA = bestOverallA.getArray()[0];
-        if (bestOverallA.getNumberOfItems() > 1) {
-            for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
-                
-                Obj objB = bestOverallA.getArray()[i];
-                
-                _debugPrint(objB, pyrRGB0.get(objB.imgIdx0).get(1), 
-                    pyrRGB1.get(objB.imgIdx1).get(1), w0, h0, w1, h1,
-                    settings.getDebugLabel());
-                
-                if (objB.costs[0] < (objA.costs[0] + eps)) {
-                    objA = objB;
-                } else {
-                    break;
-                }
-            }
-        }
-        bestOverall.add(objA);
+        
+        List<Obj> bestOverall = new ArrayList<Obj>(bestOverallA.getNumberOfItems());        
         for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
             Obj objB = bestOverallA.getArray()[i];
-            if (!objA.equals(objB)) {
-                bestOverall.add(objB);
-            }
+            bestOverall.add(objB);
         }
+        
+        Set<PairInt> pairs = new HashSet<PairInt>();
         
         // storing top 5 of r1 matches
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
@@ -1097,6 +1154,11 @@ public class MSERMatcher {
             List<QuadInt> qs = new ArrayList<QuadInt>();
             
             Obj obj = bestOverall.get(i);
+            
+            PairInt pair = new PairInt(obj.r0Idx, obj.r1Idx);
+            if (!pairs.add(pair)) {
+                continue;
+            }
             
             int imgIdx0 = obj.imgIdx0;
             int imgIdx1 = obj.imgIdx1;
