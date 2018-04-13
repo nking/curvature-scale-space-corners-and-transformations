@@ -2,6 +2,7 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
@@ -875,7 +876,20 @@ public class HOGs {
             int angle = Math.round((idx + 0.5f) * binWidth);
             orientations.add(angle);
         }
-
+        
+        /*
+        //NOTE: adding an orientation for the center of points
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        PairInt xyCen = ch.calculateXYCentroids2(xy);
+        if (xy.contains(xyCen)) {
+            int pixIdx = (xyCen.getY() * w) + xyCen.getX();
+            maxIdx = MiscMath.findYMaxIndex(gHists[pixIdx]);
+            if (maxIdx > -1) {
+                int angle = Math.round((maxIdx + 0.5f) * binWidth);
+                orientations.add(angle);
+            }
+        }*/
+        
         return orientations;
     }
 
