@@ -1,3 +1,7 @@
+-- add a wrapper for the object matcher to handle the image binning
+   and pre-processing present in the tests with
+   documentation 
+
 -- Neural networks:
    -- optimization:
       http://neuralnetworksanddeeplearning.com/chap3.html
@@ -22,16 +26,6 @@
    by h to include volume, making the curve density.
      see bishop 2006, chap 2.5
 
--- update the documentation on the shared and two-point-correlation
-   sites.
-   -- add to the two-point-correl a todo to improvements for dataset size
-      and as always, fitting for cluster association.
-      holding off on some of that because adding dimensional ability will
-      change how these are done.
-   -- since voronoi is N log N, might be interesting to look at some of the
-      metrics.   the kNN is already doing so, so could 
-        use it to explore
-
  (1) reading bishop 2006
     and looking at
     http://www.gaussianprocess.org/gpml/code/matlab/doc/
@@ -50,8 +44,6 @@
 
 -- consider implementing a 3-view transformation solver
    ...trifocal tensor
-
--- finish the new HOGs comparison method
 
 -- interesting:
    solving the transformations between 2 images
@@ -79,9 +71,6 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 
 -- low priority: improve the auxillary methods in the partial shape matchers
     to calculate cost when given correspondence.
-
--- add use of YFastTrie to the min heap class w/ a check for 
-     memory available.
 
 -- consider implementing Tarjans latest paper (bipartite matching)
 
