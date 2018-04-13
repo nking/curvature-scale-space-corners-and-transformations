@@ -448,6 +448,10 @@ public class MSERMatcher {
             
         float[] diffAndErr;
         
+        //NOTE: the coordinate set block could be changed to not visit
+        //   every point, but to instead use a spacing of the HOG cell length
+        //   which is what Dala & Trigg recommend for their detector windows.
+        
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys

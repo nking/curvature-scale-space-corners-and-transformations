@@ -9,6 +9,7 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
+import algorithms.imageProcessing.matching.ObjectMatcherWrapper;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
@@ -61,12 +62,6 @@ public class AndroidStatuesTest extends TestCase {
 
     public void runMatcher_gingerbreadman(boolean debug) throws Exception {
 
-        int maxDimension = 256;//512;
-        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-
         String[] fileNames0 = new String[]{
         //    "android_statues_03_sz1",
             "android_statues_03_sz3"
@@ -97,95 +92,51 @@ public class AndroidStatuesTest extends TestCase {
         andr04 (scale 95/46 = 2.1   2:0
            196, 87
         */
-        
+          
         int fn0 = 0;
         for (String fileNameRoot0 : fileNames0) {               
             fn0++;
+           
+            String filePathMask0 = ResourceFinder
+                .findFileInTestResources(fileNameRoot0 + "_mask.png");
+            String filePath0 = ResourceFinder
+                .findFileInTestResources(fileNameRoot0 + ".jpg");
+          
             for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {               
         
                 String fileName1 = fileNames1[fIdx];
+                                
+                String debugLabel = "gbman_" + fIdx + "_" + fn0;
                 
-                long t0 = System.currentTimeMillis();
-                
-                Set<PairInt> shape0 = new HashSet<PairInt>();
+                ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
 
-                // to compare to "android_statues_01.jpg",
-                //    set this to '2'
-                int binFactor0 = 1;
-               
-                // 1st image is color image, 2nd is masked color image
-                // 218 X 163... full size is 1280 X 960
-                ImageExt[] imgs0 = maskAndBin(fileNameRoot0, 
-                    binFactor0, shape0);
-                int nShape0_0 = shape0.size();
-               
-                System.out.println("shape0 nPts=" + nShape0_0);
-                
-                
-                String fileName1Root = fileName1.substring(0, 
-                    fileName1.lastIndexOf("."));
-                String filePath1 = ResourceFinder.findFileInTestResources(
-                    fileName1);
-                ImageExt img = ImageIOHelper.readImageExt(filePath1);
-        
-                // template img size is 218  163
-                //img = (ImageExt) imageProcessor.bilinearDownSampling(
-                //    img, 218, 163, 0, 255);
-                
-                long ts = MiscDebug.getCurrentTimeFormatted();
-                
-                int w1 = img.getWidth();
-                int h1 = img.getHeight();
-        
-                /*
-                int binFactor1 = (int) Math.ceil(Math.max(
-                    (float) w1 / maxDimension,
-                    (float) h1 / maxDimension));
-                */
-                int binFactor1 = (int) Math.ceil(Math.max(
-                    (float) w1 / maxDimension,
-                    (float) h1 / maxDimension));
-                        
-                img = imageProcessor.binImage(img, binFactor1);
-               
-                int w = img.getWidth();
-                int h = img.getHeight();
+                String filePath1
+                    = ResourceFinder.findFileInTestResources(fileName1);
 
-                /*RANSACAlgorithmIterations nsIter = new
-                    RANSACAlgorithmIterations();
-                long nnn = nsIter.estimateNIterFor99PercentConfidence(
-                    300, 7, 20./300.);
-                System.out.println("99 percent nIter for RANSAC=" 
-                    + nnn);*/
-        
-                /*
-                GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
-                MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
-                theta1 = imageProcessor.createCIELUVTheta(img, 255);
-                MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
-                */
-                
-                _run_matcher(imgs0, shape0, img, fileName1Root, debug, fn0, fIdx,
-                    "gbman_" + fIdx);
+                List<CorrespondenceList> corresList = omw.find(filePath0, 
+                    filePathMask0, filePath1, debugLabel);
+
+                if (corresList == null || corresList.isEmpty()) {
+                    return;
+                }
+                       
+                plotCorrespondence(corresList, 
+                    omw.getTemplateImage()[1].copyToImageExt(),
+                    omw.getSearchImage().copyToImageExt(),
+                    debugLabel);
             }
         }
     }
 
     public void runMatcher_cupcake(boolean debug) throws Exception {
         
-        int maxDimension = 256;//512;
-        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-
         String[] fileNames0 = new String[]{
             "android_statues_04.jpg", 
             "android_statues_04_cupcake_mask.png"};
 
         String[] fileNames1 = new String[]{
-            "android_statues_01.jpg",   //  <== NOT found, needs segmentation
-            "android_statues_02.jpg", //  
+            "android_statues_01.jpg",
+            "android_statues_02.jpg",  
             "android_statues_04.jpg"
         };
         
@@ -206,23 +157,13 @@ public class AndroidStatuesTest extends TestCase {
          92, 74                   91, 103                
         */
         
+        String filePath0 = ResourceFinder.findFileInTestResources(fileNames0[0]);
+        String filePath0Mask = ResourceFinder.findFileInTestResources(fileNames0[1]);
+        
         for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {
             
             String fileName1 = fileNames1[fIdx];             
 
-            long t0 = System.currentTimeMillis();
-
-            Set<PairInt> shape0 = new HashSet<PairInt>();
-
-            ImageExt[] imgs0 = maskAndBin2(fileNames0, 
-                maxDimension, shape0);
-            int nShape0_0 = shape0.size();
-
-            System.out.println("shape0 nPts=" + nShape0_0);
-
-
-            String fileName1Root = fileName1.substring(0, 
-                fileName1.lastIndexOf("."));
             String filePath1 = ResourceFinder.findFileInTestResources(
                 fileName1);
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
@@ -234,56 +175,26 @@ public class AndroidStatuesTest extends TestCase {
                 
             }
 
-            long ts = MiscDebug.getCurrentTimeFormatted();
+            String debugLabel = "cupcake_" + fIdx;
+                
+            ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
 
-            int w1 = img.getWidth();
-            int h1 = img.getHeight();
+            List<CorrespondenceList> corresList = omw.find(filePath0, 
+                filePath0Mask, filePath1, debugLabel);
 
-            int binFactor1 = (int) Math.ceil(Math.max(
-                (float) w1 / maxDimension,
-                (float) h1 / maxDimension));
+            if (corresList == null || corresList.isEmpty()) {
+                return;
+            }
 
-            img = imageProcessor.binImage(img, binFactor1);
-
-            int w = img.getWidth();
-            int h = img.getHeight();
-
-            /*RANSACAlgorithmIterations nsIter = new
-                RANSACAlgorithmIterations();
-            long nnn = nsIter.estimateNIterFor99PercentConfidence(
-                300, 7, 20./300.);
-            System.out.println("99 percent nIter for RANSAC=" 
-                + nnn);*/
-
-            //GreyscaleImage theta1 = imageProcessor.createCIELABTheta(imgs0[0], 255);
-            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
-            //theta1 = imageProcessor.createCIELABTheta(img, 255);
-            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
-        
-            _run_matcher(imgs0, shape0, img, fileName1Root, debug, 0, fIdx,
-                "cupcake_" + fIdx);
+            plotCorrespondence(corresList, 
+                omw.getTemplateImage()[1].copyToImageExt(),
+                omw.getSearchImage().copyToImageExt(),
+                debugLabel);
         }
     }
     
     public void runMatcher_icecream(boolean debug) throws Exception {
 
-        int maxDimension = 256;//512;
-        SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-
-        /*
-        TODO: to match this:
-           -- may need to use a later cielab for the polar theta image 
-              for color space with corrections for neutral hues..
-              colors close to white
-           -- may need to define limits based upon segmentation,
-              and/or return top results.
-              the shapefinder requires good segmentation so need to look at
-              the super pixels to see that the cupcake boundary is actually
-              findable in the first place.
-        */
         String[] fileNames0 = new String[]{
             "android_statues_04.jpg",
             "android_statues_04_icecream_mask.png",
@@ -311,57 +222,39 @@ public class AndroidStatuesTest extends TestCase {
                                  153, 96
         */
 
-        //paused here.  handle 02 first.  orientation problem!
-
+        String filePath0 = ResourceFinder.findFileInTestResources(fileNames0[0]);
+        String filePath0Mask = ResourceFinder.findFileInTestResources(fileNames0[1]);
+        
         for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {               
 
             String fileName1 = fileNames1[fIdx];
             
-            long t0 = System.currentTimeMillis();
-
-            Set<PairInt> shape0 = new HashSet<PairInt>();
-
-            ImageExt[] imgs0 = maskAndBin2(fileNames0, 
-                maxDimension, shape0);
-            int nShape0_0 = shape0.size();
-
-            System.out.println("shape0 nPts=" + nShape0_0);
-
-
-            String fileName1Root = fileName1.substring(0, 
-                fileName1.lastIndexOf("."));
             String filePath1 = ResourceFinder.findFileInTestResources(
                 fileName1);
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
-
-            long ts = MiscDebug.getCurrentTimeFormatted();
-
-            int w1 = img.getWidth();
-            int h1 = img.getHeight();
-
-            int binFactor1 = (int) Math.ceil(Math.max(
-                (float) w1 / maxDimension,
-                (float) h1 / maxDimension));
-
-            img = imageProcessor.binImage(img, binFactor1);
-
-            int w = img.getWidth();
-            int h = img.getHeight();
-
-            /*RANSACAlgorithmIterations nsIter = new
-                RANSACAlgorithmIterations();
-            long nnn = nsIter.estimateNIterFor99PercentConfidence(
-                300, 7, 20./300.);
-            System.out.println("99 percent nIter for RANSAC=" 
-                + nnn);*/
-
-            //GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
-            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
-            //theta1 = imageProcessor.createCIELUVTheta(img, 255);
-            //MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
             
-            _run_matcher(imgs0, shape0, img, fileName1Root, debug, 0, fIdx, 
-                "icec_" + fIdx);
+            if (fileName1.equals("android_statues_01.jpg")) {
+                //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
+                img = (ImageExt) img.copySubImage(0, img.getWidth()/5, 0, img.getHeight());
+            } else if (fileName1.equals("android_statues_02.jpg")) {
+                
+            }
+
+            String debugLabel = "icecream_" + fIdx;
+                
+            ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
+
+            List<CorrespondenceList> corresList = omw.find(filePath0, 
+                filePath0Mask, filePath1, debugLabel);
+
+            if (corresList == null || corresList.isEmpty()) {
+                return;
+            }
+
+            plotCorrespondence(corresList, 
+                omw.getTemplateImage()[1].copyToImageExt(),
+                omw.getSearchImage().copyToImageExt(),
+                debugLabel);
             
         }
     }
@@ -663,42 +556,6 @@ public class AndroidStatuesTest extends TestCase {
         return labels3;
     }
 
-    private ImageExt[] maskAndBin(String fileNamePrefix, int binFactor,
-        Set<PairInt> outputShape) throws IOException, Exception {
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        String fileNameMask0 = fileNamePrefix + "_mask.png";
-        String filePathMask0 = ResourceFinder
-            .findFileInTestResources(fileNameMask0);
-        ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
-
-        String fileName0 = fileNamePrefix + ".jpg";
-        String filePath0 = ResourceFinder
-            .findFileInTestResources(fileName0);
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-    
-        if (binFactor != 1) {
-            img0 = imageProcessor.binImage(img0, binFactor);
-            imgMask0 = imageProcessor.binImage(imgMask0, binFactor);
-        }
-        
-        ImageExt img0Masked = img0.copyToImageExt();
-        
-        assertEquals(imgMask0.getNPixels(), img0.getNPixels());
-
-        for (int i = 0; i < imgMask0.getNPixels(); ++i) {
-            if (imgMask0.getR(i) == 0) {
-                img0Masked.setRGB(i, 0, 0, 0);
-            } else {
-                outputShape.add(new PairInt(imgMask0.getCol(i), imgMask0.getRow(i)));
-            }
-        }
-        //MiscDebug.writeImage(img0Masked, "_MASKED");
-   
-        return new ImageExt[]{img0, img0Masked};
-    }
-
     public void estMatching() throws Exception {
 
         String fileName1, fileName2;
@@ -965,47 +822,6 @@ public class AndroidStatuesTest extends TestCase {
 
         plot.writeFile(fn);
     }
-
-    private ImageExt[] maskAndBin2(String[] fileNames, 
-        int maxDimension, Set<PairInt> outputShape) throws IOException {
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        String fileNameMask0 = fileNames[1];
-        String filePathMask0 = ResourceFinder
-            .findFileInTestResources(fileNameMask0);
-        ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
-
-        String fileName0 = fileNames[0];
-        String filePath0 = ResourceFinder
-            .findFileInTestResources(fileName0);
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-    
-        int w0 = img0.getWidth();
-        int h0 = img0.getHeight();
-
-        int binFactor0 = (int) Math.ceil(Math.max(
-             (float) w0 / maxDimension,
-             (float) h0 / maxDimension));
-        
-        img0 = imageProcessor.binImage(img0, binFactor0);
-        imgMask0 = imageProcessor.binImage(imgMask0, binFactor0);
-        
-        ImageExt img0Masked = img0.copyToImageExt();
-        
-        assertEquals(imgMask0.getNPixels(), img0.getNPixels());
-
-        for (int i = 0; i < imgMask0.getNPixels(); ++i) {
-            if (imgMask0.getR(i) == 0) {
-                img0Masked.setRGB(i, 0, 0, 0);
-            } else {
-                outputShape.add(new PairInt(imgMask0.getCol(i), 
-                    imgMask0.getRow(i)));
-            }
-        }
-   
-        return new ImageExt[]{img0, img0Masked};
-    }
     
     private List<Set<PairInt>> extractNonZeros(ImageExt[] imgs) {
         
@@ -1111,40 +927,14 @@ public class AndroidStatuesTest extends TestCase {
         return out;
     }
 
-    private void _run_matcher(ImageExt[] imgs0, Set<PairInt> shape0, 
-        ImageExt img, String fileName1Root, boolean debug,
-        int fn0, int fIdx, String debugLabel) throws IOException {
+    private void plotCorrespondence(List<CorrespondenceList> corresList, 
+       ImageExt templateImage, ImageExt searchImage, 
+       String debugLabel) throws IOException {
         
-        Settings settings = new Settings();
-
-        settings.setToUseLargerPyramid0();
-        settings.setToUseLargerPyramid1();
-
-        ObjectMatcher objMatcher = new ObjectMatcher();
-        objMatcher.setToDebug();
-
-        if (debug) {
-            objMatcher.setToDebug();  
-            settings.setDebugLabel(debugLabel);
-        }
-
         //settings.setToExcludeColorFilter();
 
-        long t0 = System.currentTimeMillis();
-        
-        List<CorrespondenceList> corresList 
-            //= objMatcher.findObject11(
-            = objMatcher.findObject12(imgs0[0], shape0, img, settings);
-
-        long t1 = System.currentTimeMillis();
-        System.out.println("matching took " + ((t1 - t0)/1000.) + " sec");
-
-        if (corresList == null || corresList.isEmpty()) {
-            return;
-        }
-
-        CorrespondencePlotter plotter = new CorrespondencePlotter(
-            imgs0[1].copyImage(), img.copyImage()); 
+        CorrespondencePlotter plotter = new CorrespondencePlotter(templateImage,
+            searchImage); 
         CorrespondenceList cor = corresList.get(0);
         for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
             PairInt p1 = cor.getPoints1().get(ii);
@@ -1170,9 +960,9 @@ public class AndroidStatuesTest extends TestCase {
         }
 
         plotter.writeImage("_orb_corres_final_" + 
-            debugLabel + fileName1Root + "_" + fn0);
+            debugLabel);
         System.out.println(cor.getPoints1().size() + 
-            " matches " + fileName1Root);
+            " matches " + debugLabel);
         //MiscDebug.writeImage(img11, "_orb_matched_" + str
         //    + "_" + fileName1Root);
     }
