@@ -787,7 +787,7 @@ public class MSERMatcher {
         int w1 = pyrPT1.get(0).getWidth();
         int h1 = pyrPT1.get(0).getHeight();
         
-        float sizeFactor = 2;//1.2f;
+        float sizeFactor = 1.2f;//2;//1.2f;
 
         FixedSizeSortedVector<Obj> bestOverallA =
             //new FixedSizeSortedVector<Obj>(100, Obj.class);

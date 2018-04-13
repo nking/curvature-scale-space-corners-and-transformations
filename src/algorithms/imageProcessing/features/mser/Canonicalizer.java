@@ -876,9 +876,8 @@ public class Canonicalizer {
         return output;
     }
 
-    public static Map<PairInt, PairInt> createOffsetToOrigMap(
-        int x, int y, PairIntArray xy, int imgWidth, int imgHeight,
-        double orientation) {
+    public static Map<PairInt, PairInt> createOffsetToOrigMap(int x, int y, 
+        PairIntArray xy, int imgWidth, int imgHeight, double orientation) {
         
         fillInEllipse(xy);
 

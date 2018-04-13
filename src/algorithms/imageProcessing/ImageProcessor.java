@@ -5791,12 +5791,14 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         if (output.size() == 1) {
             return output;
         }
+        
+        float factor = 1.2f;//1.5f;
 
         List<GreyscaleImage> output2 = new ArrayList<GreyscaleImage>();
 
         // add an image in between each after output[2]
         for (int i = 0; i < output.size() - 1; ++i) {
-            output2.add(mt.decimateImage(output.get(i), 1.5f, 0, 255));
+            output2.add(mt.decimateImage(output.get(i), factor, 0, 255));
         }
 
         output.addAll(output2);
