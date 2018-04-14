@@ -35,10 +35,6 @@ public class ObjectMatcherWrapper {
    
         Set<PairInt> shape0 = new HashSet<PairInt>();
 
-        // to compare to "android_statues_01.jpg",
-        //    set this to '2'
-        int binFactor0 = 1;
- 
         ImageExt[] imgs0 = maskAndBin2(templateFilePath, templateMaskFilePath,
             shape0);
             
@@ -49,13 +45,20 @@ public class ObjectMatcherWrapper {
         Set<PairInt> shape0,
         String searchFilePath, String debugLabel) throws IOException {
         
+        ImageExt img = ImageIOHelper.readImageExt(searchFilePath);
+        
+        return find(binnedTemplateAndMask, shape0, img, debugLabel);
+    }
+    
+    public List<CorrespondenceList> find(ImageExt[] binnedTemplateAndMask, 
+        Set<PairInt> shape0, ImageExt searchImage, String debugLabel) throws IOException {
+        
         int nShape0_0 = shape0.size();
 
         System.out.println("shape0 nPts=" + nShape0_0);
 
         //String filePath1 = 
         //    ResourceFinder.findFileInTestResources(searchFilePath);
-        ImageExt img = ImageIOHelper.readImageExt(searchFilePath);
         
         // template img size is 218  163
         //img = (ImageExt) imageProcessor.bilinearDownSampling(
@@ -63,8 +66,8 @@ public class ObjectMatcherWrapper {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
 
-        int w1 = img.getWidth();
-        int h1 = img.getHeight();
+        int w1 = searchImage.getWidth();
+        int h1 = searchImage.getHeight();
 
         /*
         int binFactor1 = (int) Math.ceil(Math.max(
@@ -77,7 +80,7 @@ public class ObjectMatcherWrapper {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
-        img = imageProcessor.binImage(img, binFactor1);
+        searchImage = imageProcessor.binImage(searchImage, binFactor1);
 
         /*
         GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
@@ -86,7 +89,7 @@ public class ObjectMatcherWrapper {
         MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
         */
         
-        return _run_matcher(binnedTemplateAndMask, shape0, img, debugLabel);
+        return _run_matcher(binnedTemplateAndMask, shape0, searchImage, debugLabel);
     }
    
     private List<CorrespondenceList> _run_matcher(ImageExt[] imgs0, Set<PairInt> shape0, 
@@ -121,7 +124,7 @@ public class ObjectMatcherWrapper {
         return corresList;
     }
     
-    private ImageExt[] maskAndBin2(String templateFilePath,
+    public ImageExt[] maskAndBin2(String templateFilePath,
         String templateMaskFilePath, Set<PairInt> outputShape) throws 
         IOException {
         

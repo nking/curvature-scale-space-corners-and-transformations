@@ -1378,7 +1378,7 @@ public class MSERMatcher {
             hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);
 
             // 1.0 is perfect similarity
-            diffAndErr = hcpt0.diff(h0, orientation0, h1, orientation1);
+            diffAndErr = hcpt0.diff(h0, h1);
             
             sum += diffAndErr[0];
             sumErrSq += (diffAndErr[1] * diffAndErr[1]);
@@ -1389,7 +1389,7 @@ public class MSERMatcher {
             hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);
 
             // 1.0 is perfect similarity
-            diffAndErr = hgs0.diff(h0, orientation0, h1, orientation1);
+            diffAndErr = hgs0.diff(h0, h1);
             
             sum += diffAndErr[0];
             sumErrSq += (diffAndErr[1] * diffAndErr[1]);

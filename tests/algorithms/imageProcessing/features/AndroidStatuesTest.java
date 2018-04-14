@@ -179,8 +179,13 @@ public class AndroidStatuesTest extends TestCase {
                 
             ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
 
-            List<CorrespondenceList> corresList = omw.find(filePath0, 
-                filePath0Mask, filePath1, debugLabel);
+            Set<PairInt> shape0 = new HashSet<PairInt>();
+
+            ImageExt[] imgs0 = omw.maskAndBin2(filePath0, filePath0Mask,
+                shape0);
+        
+            List<CorrespondenceList> corresList = omw.find(imgs0, shape0, img, 
+                debugLabel);
 
             if (corresList == null || corresList.isEmpty()) {
                 return;
