@@ -92,7 +92,7 @@ public class HCPT {
      * @param y
      * @param outHist 
      */
-    public void extractFeature(int x, int y, int[] outHist) {
+    public void extractBlock(int x, int y, int[] outHist) {
                 
         if (outHist.length != nBins) {
             throw new IllegalArgumentException("outHist.length != nBins");
@@ -262,38 +262,74 @@ public class HCPT {
      * @param histB
      * @return 
      */
-    public float ssd(int[] histA, int[] histB) {
-        
+    public float[] diff(int[] histA, int orientationA, int[] histB,
+        int orientationB) {
+
         if ((histA.length != histB.length)) {
             throw new IllegalArgumentException(
                 "histA and histB must be same dimensions");
         }
+
+        if (orientationA < 0 || orientationA > 180 || orientationB < 0 ||
+            orientationB > 180) {
+            throw new IllegalArgumentException("orientations must be in range 0 to 180,"
+                + "  inclusive,  or!=" + orientationA + " orB=" + orientationB);
+        }
+        if (orientationA == 180) {
+            orientationA = 0;
+        }
+        if (orientationB == 180) {
+            orientationB = 0;
+        }
+
+        int nBins = histA.length;
+
+        int binWidth = 180/nBins;
+
+        int shiftA = (orientationA - 90)/binWidth;
+        int shiftB = (orientationB - 90)/binWidth;
         
         double sumDiff = 0;
-        
-        int nBins = histA.length;
-        
-        int binWidth = 256/nBins;
-        
+        double err = 0;
+                        
         for (int j = 0; j < nBins; ++j) {
             
-            float yA = histA[j];
-            float yB = histB[j];
+            int idxA = j + shiftA;
+            if (idxA < 0) {
+                idxA += nBins;
+            } else if (idxA > (nBins - 1 )) {
+                idxA -= nBins;
+            }
+
+            int idxB = j + shiftB;
+            if (idxB < 0) {
+                idxB += nBins;
+            } else if (idxB > (nBins - 1 )) {
+                idxB -= nBins;
+            }
+
+            float yA = histA[idxA];
+            float yB = histB[idxB];
             
-            float diff = yA - yB;
+            float maxValue = Math.max(yA, yB) + eps;
+
+            float diff = Math.abs((yA - yB)/maxValue);
             
-            sumDiff += (diff * diff);            
+            //sumDiff += (diff * diff);
+            sumDiff += diff;
+
+            //      already squared
+            err += (diff/maxValue);           
         }
         
         sumDiff /= (double)nBins;
-        
-        float maxValue = Math.max(MiscMath.findMax(histA), 
-            MiscMath.findMax(histB));
-        maxValue += eps;
-        
-        sumDiff = Math.sqrt(sumDiff)/maxValue;
-        
-        return (float)sumDiff;
+
+        //sumDiff = Math.sqrt(sumDiff);
+
+        err /= (double)nBins;
+        err = Math.sqrt(err);
+
+        return new float[]{(float)sumDiff, (float)err};
     }
 
     private int sumCounts(int[] hist) {

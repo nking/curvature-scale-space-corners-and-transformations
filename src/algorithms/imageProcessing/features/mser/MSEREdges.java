@@ -1955,7 +1955,7 @@ public class MSEREdges {
             int pixIdx = iter.next();
             int y = pixIdx/gsImg.getWidth();
             int x = pixIdx - (y * gsImg.getWidth());
-            hgs0.extractFeature2(x, y, h0);
+            hgs0.extractBlock2(x, y, h0);
         }
         return h0;
     }

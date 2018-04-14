@@ -59,10 +59,10 @@ public class HCPTTest extends TestCase {
         HCPT hgs1 = new HCPT(pt1, 1, cellSize, nBins);
          
         int[] feature0 = new int[nBins];
-        hgs0.extractFeature(93, 110, feature0);
+        hgs0.extractBlock(93, 110, feature0);
         
         int[] feature1 = new int[nBins];
-        hgs1.extractFeature(57, 65, feature1);
+        hgs1.extractBlock(57, 65, feature1);
         
         System.out.println("0=" + Arrays.toString(feature0));
         System.out.println("1=" + Arrays.toString(feature1));
@@ -76,7 +76,7 @@ public class HCPTTest extends TestCase {
    
         
         feature1 = new int[nBins];
-        hgs1.extractFeature(177, 59, feature1);
+        hgs1.extractBlock(177, 59, feature1);
         intersection01 = hgs0.intersection(feature0, feature1);
         System.out.println("intersection 0:1=" + intersection01);
         assertTrue(intersection01 < 0.2);
@@ -84,18 +84,18 @@ public class HCPTTest extends TestCase {
         //-----
         
         feature0 = new int[nBins];
-        hgs0.extractFeature(153, 91, feature0);
+        hgs0.extractBlock(153, 91, feature0);
         
         feature1 = new int[nBins];
-        hgs1.extractFeature(110, 55, feature1);
+        hgs1.extractBlock(110, 55, feature1);
         intersection01 = hgs0.intersection(feature0, feature1);
         System.out.println("intersection 0:1=" + intersection01);
         
         feature0 = new int[nBins];
-        hgs0.extractFeature(158, 107, feature0);
+        hgs0.extractBlock(158, 107, feature0);
         
         feature1 = new int[nBins];
-        hgs1.extractFeature(118, 71, feature1);
+        hgs1.extractBlock(118, 71, feature1);
         intersection01 = hgs0.intersection(feature0, feature1);
         System.out.println("intersection 0:1=" + intersection01);
         

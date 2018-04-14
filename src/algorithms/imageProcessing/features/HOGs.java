@@ -877,7 +877,6 @@ public class HOGs {
             orientations.add(angle);
         }
         
-        /*
         //NOTE: adding an orientation for the center of points
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
         PairInt xyCen = ch.calculateXYCentroids2(xy);
@@ -888,7 +887,7 @@ public class HOGs {
                 int angle = Math.round((maxIdx + 0.5f) * binWidth);
                 orientations.add(angle);
             }
-        }*/
+        }
         
         return orientations;
     }

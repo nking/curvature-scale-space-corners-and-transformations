@@ -924,12 +924,19 @@ public class MSERMatcher {
                         obj.nMatched = (int) hogCosts[3];
                         
                         double cost;
-                  
-                        //double[]{sumA, f, count}
-                        double[] costs2 = sumCost2(hcpt0, hgs0, cr0, scale0, 
-                            hcpt1, hgs1, cr1, scale1);
-                        double hcptHgsCost = 1.f - costs2[0];
-
+                        double[] costs2;
+                        double hcptHgsCost;
+                        if (false) {
+                            //double[]{sumA, f, count}
+                            costs2 = sumCost2(hcpt0, hgs0, cr0, scale0, 
+                                hcpt1, hgs1, cr1, scale1);
+                            hcptHgsCost = 1.f - costs2[0];
+                        } else {
+                            costs2 = sumCost3(hcpt0, hgs0, cr0, 
+                                hcpt1, hgs1, cr1);
+                            hcptHgsCost = costs2[0];
+                        }
+                        
                         cost = (float) Math.sqrt(
                             2. * hogCost * hogCost
                             + 2. * f * f
@@ -998,44 +1005,23 @@ public class MSERMatcher {
                 //String str1 = String.format("angles=(%d,%d) s=(%.1f,%.1f)", 
                 //    or0, or1, scale0, scale1);
 
-                /*
-                this needs more testing, but a small number of tests suggest that
-                the current cost estimate above and
-                the cost2 estimate below, almost always give the same top result,
-                and when they don't, the one with the smallest octave index
-                (== the largest image) should be chosen.
-                */
-                
                 double cost2 = (float) Math.sqrt(
                     obj0.costs[0]*obj0.costs[0] +
                     obj0.costs[1]*obj0.costs[1] +
                     obj0.costs[2]*obj0.costs[2]
                 );
-                
-                /*
-                System.out.format(
- "%s octave %d %d] %d (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f] %s n=%d c2=%.3f\n",
-                    debugLabel, imgIdx0, imgIdx1, k, 
-                    Math.round(scale1 * obj0.cr1.ellipseParams.xC),
-                    Math.round(scale1 * obj0.cr1.ellipseParams.yC),
-                    (float) obj0.cost,
-                    Math.round(scale0 * obj0.cr0.ellipseParams.xC),
-                    Math.round(scale0 * obj0.cr0.ellipseParams.yC), 
-                    (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[2], 
-                    str1,
-                    obj0.cr0.offsetsToOrigCoords.size(),
-                    (float)cost2
-                );
-                */
                                 
                 bestOverallA.add(obj0);
             }
         }
-        
+         
         System.out.println("r1 points size = " + regionPoints1.size()
             + " r1 map size filtered = " + rIndexHOGMap1.size());
 
         if (debug) {
+        //if (true) {
+            
+            Map<QuadInt, Obj> bestMap = new HashMap<QuadInt, Obj>();
             
             // re-ordering the best for each rIdx1:
             FixedSizeSortedVector<Obj> tmp1 = new FixedSizeSortedVector<Obj>(
@@ -1103,18 +1089,31 @@ public class MSERMatcher {
                     or0, or1, obj0.cr0.hogOrientation, 
                     obj0.cr1.hogOrientation);
 
+                int x1 = Math.round(scale01 * obj0.cr1.ellipseParams.xC);
+                int y1 = Math.round(scale01 * obj0.cr1.ellipseParams.yC);
+                int x0 = Math.round(scale00 * obj0.cr0.ellipseParams.xC);
+                int y0 = Math.round(scale00 * obj0.cr0.ellipseParams.yC);
+                
                 sb2.append(String.format(
  "2] r1 %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
                     settings.getDebugLabel(), i, 
-                    Math.round(scale01 * obj0.cr1.ellipseParams.xC),
-                    Math.round(scale01 * obj0.cr1.ellipseParams.yC),
-                    (float) obj0.cost,
-                    Math.round(scale00 * obj0.cr0.ellipseParams.xC),
-                    Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,
+                    x1, y1,
+                    (float) obj0.cost, x0, y0, lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
                     (float) obj0.costs[2], 
                     str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
+                
+                QuadInt q = new QuadInt(x0, y0, x1, y1);
+                Obj obj = bestMap.get(q);
+                if (obj != null) {
+                    if (obj0.compareTo(obj) < 0) {
+                        bestMap.put(q, obj0);
+                    }
+                } else {
+                    bestMap.put(q, obj0);
+                }
+                
                 /*
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
@@ -1127,6 +1126,11 @@ public class MSERMatcher {
                 */
             }
             System.out.println(sb2.toString());
+            
+        //    bestOverallA = new FixedSizeSortedVector<Obj>(5, Obj.class);
+        //    for (Entry<QuadInt, Obj> entry : bestMap.entrySet()) {
+        //        bestOverallA.add(entry.getValue());
+        //    }
         }
         
         if (bestOverallA.getNumberOfItems() == 0) {
@@ -1295,17 +1299,17 @@ public class MSERMatcher {
 
             PairInt xy0 = entry0.getValue();
 
-            hcpt0.extractFeature(xy0.getX(), xy0.getY(), h0);
+            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);
 
-            hcpt1.extractFeature(xy1.getX(), xy1.getY(), h1);
+            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);
 
             float intersection = hcpt0.intersection(h0, h1);
             
             sumA += (intersection * intersection);
             
-            hgs0.extractFeature(xy0.getX(), xy0.getY(), h0);
+            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);
 
-            hgs1.extractFeature(xy1.getX(), xy1.getY(), h1);
+            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);
 
             intersection = hgs0.intersection(h0, h1);
             
@@ -1317,7 +1321,7 @@ public class MSERMatcher {
             return null;
         }
 
-        sumA /= (double)count;
+        sumA /= (2.*count);
 
         sumA = Math.sqrt(sumA);
                 
@@ -1329,5 +1333,84 @@ public class MSERMatcher {
         double f = 1. - ((double) count / area);
 
         return new double[]{sumA, f, count};            
+    }
+    
+    //double[]{intersection, f0, f1, count};
+    private double[] sumCost3(HCPT hcpt0, HGS hgs0, CRegion cr0, 
+        HCPT hcpt1, HGS hgs1, CRegion cr1) {
+        
+        int orientation0 = cr0.hogOrientation;
+            
+        int orientation1 = cr1.hogOrientation;
+        
+        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+
+        double sum = 0;
+        double sumErrSq = 0;
+        int count = 0;
+        
+        int[] h0 = new int[hcpt0.getNumberOfBins()];
+        int[] h1 = new int[h0.length];
+            
+        float[] diffAndErr;
+        
+        //NOTE: the coordinate set block could be changed to not visit
+        //   every point, but to instead use a spacing of the HOG cell length
+        //   which is what Dala & Trigg recommend for their detector windows.
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same
+        //  keys
+        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
+
+            PairInt pOffset0 = entry0.getKey();
+
+            PairInt xy1 = offsetMap1.get(pOffset0);
+
+            if (xy1 == null) {
+                continue;
+            }
+
+            PairInt xy0 = entry0.getValue();
+
+            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);
+
+            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);
+
+            // 1.0 is perfect similarity
+            diffAndErr = hcpt0.diff(h0, orientation0, h1, orientation1);
+            
+            sum += diffAndErr[0];
+            sumErrSq += (diffAndErr[1] * diffAndErr[1]);
+            
+            
+            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);
+
+            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);
+
+            // 1.0 is perfect similarity
+            diffAndErr = hgs0.diff(h0, orientation0, h1, orientation1);
+            
+            sum += diffAndErr[0];
+            sumErrSq += (diffAndErr[1] * diffAndErr[1]);
+            
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+
+        sum /= (2.*count);
+        
+        sumErrSq /= (2.*count);
+        sumErrSq = Math.sqrt(sumErrSq);
+        
+        double area1 = cr1.offsetsToOrigCoords.size();
+        double f1 = 1. - ((double) count / area1);
+        
+        double area0 = cr0.offsetsToOrigCoords.size();
+        double f0 = 1. - ((double) count / area0);
+        
+        return new double[]{sum, f0, f1, count, sumErrSq};
     }
 }
