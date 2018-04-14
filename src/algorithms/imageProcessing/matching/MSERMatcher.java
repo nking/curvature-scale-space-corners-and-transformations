@@ -926,7 +926,7 @@ public class MSERMatcher {
                         double cost;
                         double[] costs2;
                         double hcptHgsCost;
-                        if (false) {
+                        if (true) {
                             //double[]{sumA, f, count}
                             costs2 = sumCost2(hcpt0, hgs0, cr0, scale0, 
                                 hcpt1, hgs1, cr1, scale1);

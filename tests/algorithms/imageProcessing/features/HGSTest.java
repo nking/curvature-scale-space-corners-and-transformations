@@ -17,92 +17,11 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class HCPTTest extends TestCase {
+public class HGSTest extends TestCase {
     
-    public HCPTTest() {
+    public HGSTest() {
     }
 
-    public void est0() throws IOException {
-        
-        int cellSize = 16;
-        int nBins = 12;
-        int maxDimension = 256;
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        String filePath0 = ResourceFinder.findFileInTestResources(
-            "android_statues_04.jpg");
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
-        int w0 = img0.getWidth();
-        int h0 = img0.getHeight();
-        int binFactor0 = (int) Math.ceil(Math.max(
-            (float) w0 / maxDimension,
-            (float) h0 / maxDimension));
-        img0 = imageProcessor.binImage(img0, binFactor0);
-        GreyscaleImage pt0 = imageProcessor.createCIELUVTheta(img0, 255);
-        
-        //MiscDebug.writeImage(pt0, "_lab0_");
-        
-        String filePath1 = ResourceFinder.findFileInTestResources(
-            "android_statues_02.jpg");
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-        int w1 = img1.getWidth();
-        int h1 = img1.getHeight();
-        int binFactor1 = (int) Math.ceil(Math.max(
-            (float) w1 / maxDimension,
-            (float) h1 / maxDimension));
-        img1 = imageProcessor.binImage(img1, binFactor1);
-        GreyscaleImage pt1 = imageProcessor.createCIELUVTheta(img1, 255);
-        
-        //MiscDebug.writeImage(pt1, "_lab1_");
-        
-        HCPT hgs0 = new HCPT(pt0, 1, cellSize, nBins);
-        
-        HCPT hgs1 = new HCPT(pt1, 1, cellSize, nBins);
-         
-        int[] feature0 = new int[nBins];
-        hgs0.extractBlock(93, 110, feature0);
-        
-        int[] feature1 = new int[nBins];
-        hgs1.extractBlock(57, 65, feature1);
-        
-        System.out.println("0=" + Arrays.toString(feature0));
-        System.out.println("1=" + Arrays.toString(feature1));
-                
-        float intersection01 = hgs0.intersection(feature0, feature1);
-       
-        System.out.println("intersection 0:1=" + intersection01);
-                
-        // 0 and 1 should be similar
-        assertTrue(intersection01 > 0.5);
-   
-        
-        feature1 = new int[nBins];
-        hgs1.extractBlock(177, 59, feature1);
-        intersection01 = hgs0.intersection(feature0, feature1);
-        System.out.println("intersection 0:1=" + intersection01);
-        assertTrue(intersection01 < 0.2);
-        
-        //-----
-        
-        feature0 = new int[nBins];
-        hgs0.extractBlock(153, 91, feature0);
-        
-        feature1 = new int[nBins];
-        hgs1.extractBlock(110, 55, feature1);
-        intersection01 = hgs0.intersection(feature0, feature1);
-        System.out.println("intersection 0:1=" + intersection01);
-        
-        feature0 = new int[nBins];
-        hgs0.extractBlock(158, 107, feature0);
-        
-        feature1 = new int[nBins];
-        hgs1.extractBlock(118, 71, feature1);
-        intersection01 = hgs0.intersection(feature0, feature1);
-        System.out.println("intersection 0:1=" + intersection01);
-        
-    }
-    
     public void test1() throws IOException {
         
         boolean useImg1 = true;
@@ -150,13 +69,13 @@ public class HCPTTest extends TestCase {
         GreyscaleImage img4 = null;
         GreyscaleImage img5 = null;
         
-        HCPT hogs1 = null;
-        HCPT hogs1_rot = null;
-        HCPT hogs2 = null;
-        HCPT hogs2_rot = null;
+        HGS hogs1 = null;
+        HGS hogs1_rot = null;
+        HGS hogs2 = null;
+        HGS hogs2_rot = null;
         //HOGs hogs3 = null;
-        HCPT hogs4 = null;
-        HCPT hogs5 = null;
+        HGS hogs4 = null;
+        HGS hogs5 = null;
         
         int[] block1 = null;
         int[] block1_rot = null;
@@ -220,8 +139,8 @@ public class HCPTTest extends TestCase {
         
         if (useImg1) {
             
-            hogs1 = new HCPT(img1, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
-            hogs1_rot = new HCPT(img1_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            hogs1 = new HGS(img1, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            hogs1_rot = new HGS(img1_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
             
             //hogs1._printHistograms();
             //System.out.println("ROTATED: " + img1.getWidth() + "," + img1.getHeight());
@@ -249,8 +168,8 @@ public class HCPTTest extends TestCase {
         }
         
         if (useImg2) {
-            hogs2 = new HCPT(img2, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
-            hogs2_rot = new HCPT(img2_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            hogs2 = new HGS(img2, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+            hogs2_rot = new HGS(img2_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
             block2 = new int[nBins];
             hogs2.extractBlock(w/2, h/2, block2);
             block2_rot = new int[nBins];
@@ -273,9 +192,9 @@ public class HCPTTest extends TestCase {
         
         //hogs3 = new HOGs(img3, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
         //feature3 = hogs3.extractFeature(w/2, h/2, dw, dh);
-        hogs4 = new HCPT(img4, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+        hogs4 = new HGS(img4, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
         feature4 = hogs4.extractFeature(w/2, h/2, dw, dh);
-        hogs5 = new HCPT(img5, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
+        hogs5 = new HGS(img5, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
         feature5 = hogs5.extractFeature(w/2, h/2, dw, dh);
         
         if (useImg1 && useImg2) {

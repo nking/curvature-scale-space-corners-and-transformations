@@ -381,6 +381,174 @@ public class HGS {
         return new float[]{(float)sumDiff, (float)err};
     }
 
+    public int[] extractFeature(int xCenter, int yCenter, int detectorWidth,
+        int detectorHeight) {
+        
+        int hw = detectorWidth/2;
+        int hh = detectorHeight/2;
+
+        if ((xCenter - hw) < 0 || (yCenter - hh) < 0 
+            || (xCenter + hw) >= w || (yCenter + hh) >= h) {
+            throw new IllegalArgumentException("out of bounds of "
+                + "original image");
+        }
+        
+        int hc = N_PIX_PER_CELL_DIM/2;
+        
+        /*        
+                          xc,yc            
+             |         |         |         |
+        */
+        int nX0 = (hw - hc)/N_PIX_PER_CELL_DIM;
+        int startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);
+        if (startX < hc) {
+            nX0 = (xCenter - hc)/N_PIX_PER_CELL_DIM;
+            startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);
+        }
+        int nX1 = (hw - hc)/N_PIX_PER_CELL_DIM;
+        int stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);
+        if (stopX >= (this.w - hc)) {
+            nX1 = (w - 1 - xCenter - hc)/N_PIX_PER_CELL_DIM;
+            stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);
+        }
+        int nY0 = (hh - hc)/N_PIX_PER_CELL_DIM;
+        int startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);
+        if (startY < hc) {
+            nY0 = (yCenter - hc)/N_PIX_PER_CELL_DIM;
+            startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);
+        }
+        int nY1 = (hh - hc)/N_PIX_PER_CELL_DIM;
+        int stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);
+        if (stopY >= (this.h - hc)) {
+            nY1 = (h - 1 - yCenter - hc)/N_PIX_PER_CELL_DIM;
+            stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);
+        }
+        
+        //System.out.println(" startX=" + startX + " stopX=" + stopX
+        //    + " startY=" + startY + " stopY=" + stopY
+        //    + " HC=" + hc
+        //);
+        
+        int nH = (nX0 + nX1 + 1) * (nY0 + nY1 + 1) * nBins;
+        
+        int[] tmp = new int[nBins];
+        int[] out = new int[nH];
+        
+        int count = 0;
+        double blockTotal = 0;
+                
+        // scan forward by 1 cell
+        for (int x = startX; x <= stopX; x += N_PIX_PER_CELL_DIM) {
+            for (int y = startY; y <= stopY; y += N_PIX_PER_CELL_DIM) {
+                
+                extractBlock(x, y, tmp);
+                
+                System.arraycopy(tmp, 0, out, count * nBins, nBins);
+                
+                double t = sumCounts(tmp);
+                blockTotal += (t * t);               
+                count++;                
+            }
+        }
+        
+        //System.out.println("NH=" + nH + " count=" + count + " blockTotal=" + blockTotal);
+        
+        // normalize over detector
+        if (count > 0) {
+            blockTotal = Math.sqrt(blockTotal/(double)count);
+        }
+        
+        double norm = 1./(blockTotal + eps);
+
+        float maxBlock = 255.f * count;
+            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
+            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
+
+        norm *= maxBlock;
+        
+        assert(!Double.isNaN(norm));
+
+        for (int i = 0; i < out.length; ++i) {
+            out[i] *= norm;
+            assert(out[i] >= 0);
+        }
+
+        return out;
+    }
+    
+    public float intersectionOfFeatures(int[] featureA, int[] featureB) {
+
+        if ((featureA.length != featureB.length)) {
+            throw new IllegalArgumentException(
+                "featureA and featureB must be same dimensions");
+        }
+        
+        int[] tmpA = new int[nBins];
+        int[] tmpB = new int[nBins];
+        
+        float t;
+        double sum = 0;
+        for (int j = 0; j < featureA.length; j += nBins) {
+            System.arraycopy(featureA, j, tmpA, 0, nBins);
+            System.arraycopy(featureB, j, tmpB, 0, nBins);
+            t = intersection(tmpA, tmpB);
+            //System.out.println("    inter=" + t);
+            sum += (t * t);
+        }
+
+        sum /= (double)(featureA.length/nBins);
+        sum = Math.sqrt(sum);
+
+        return (float)sum;
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * calculate the difference of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     *
+     * Note that because the feature contains spatially ordered concatenation of
+     * histograms, the registration of featureA and featureB to the same 
+     * orientation must be done before this method (more specifically, before
+     * extraction to features).
+     *      *
+     * @param featureA
+     * @param featureB
+     * @return
+     */
+    public float[] diffOfFeatures(int[] featureA, int[] featureB) {
+
+        if ((featureA.length != featureB.length)) {
+            throw new IllegalArgumentException(
+                "featureA and featureB must be same dimensions");
+        }
+        
+        int[] tmpA = new int[nBins];
+        int[] tmpB = new int[nBins];
+        
+        float[] t;
+        double sum = 0;
+        double sumSqErr = 0;
+        for (int j = 0; j < featureA.length; j += nBins) {
+            System.arraycopy(featureA, j, tmpA, 0, nBins);
+            System.arraycopy(featureB, j, tmpB, 0, nBins);
+            t = diff(tmpA, tmpB);
+            //System.out.println("    inter=" + t);
+            sum += t[0];
+            sumSqErr += (t[1] * t[1]);
+        }
+
+        sum /= (double)(featureA.length/nBins);
+        //sum = Math.sqrt(sum);
+        
+        sumSqErr /= (double)(featureA.length/nBins);
+        sumSqErr = Math.sqrt(sumSqErr);
+
+        return new float[]{(float)sum, (float)sumSqErr};
+    }
+    
     private int sumCounts(int[] hist) {
         
         int sum = 0;
