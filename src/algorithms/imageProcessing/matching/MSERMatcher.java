@@ -591,25 +591,6 @@ public class MSERMatcher {
     }
     */  
 
-    private class Obj2 implements Comparable<Obj2> {
-        Obj obj;
-        public Obj2(Obj obj) {
-            this.obj = obj;
-        }
-        @Override
-        public int compareTo(Obj2 other) {
-            double c0 = Math.sqrt(this.obj.costs[0]*this.obj.costs[0] +
-                this.obj.costs[1]*this.obj.costs[1]);
-            double c1 = Math.sqrt(other.obj.costs[0]*other.obj.costs[0] +
-                other.obj.costs[1]*other.obj.costs[1]);
-            if (c0 < c1) {
-                return -1;
-            } else if (c0 > c1) {
-                return 1;
-            }
-            return 0;
-        }
-    }
     private class Obj implements Comparable<Obj>{
         CRegion cr0;
         CRegion cr1;
@@ -926,15 +907,21 @@ public class MSERMatcher {
                         double cost;
                         double[] costs2;
                         double hcptHgsCost;
+                        double hcptCost;
+                        double hgsCost;
+                       
                         if (true) {
-                            //double[]{sumA, f, count}
-                            costs2 = sumCost2(hcpt0, hgs0, cr0, scale0, 
-                                hcpt1, hgs1, cr1, scale1);
-                            hcptHgsCost = 1.f - costs2[0];
+                            //double[]{combIntersection, f0, f1, 
+                            //    intersectionHCPT, intersectionHGS, count}
+                            costs2 = sumCost2(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
+                            hcptHgsCost = 1.f - costs2[3];//costs2[0];
+                            hcptCost = 1.f - costs2[3];
+                            hgsCost = 1.f - costs2[4];
                         } else {
-                            costs2 = sumCost3(hcpt0, hgs0, cr0, 
-                                hcpt1, hgs1, cr1);
-                            hcptHgsCost = costs2[0];
+                            costs2 = sumCost3(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
+                            hcptHgsCost = costs2[3];//costs2[0];
+                            hcptCost = costs2[3];
+                            hgsCost = costs2[4];
                         }
                         
                         cost = (float) Math.sqrt(
@@ -943,7 +930,7 @@ public class MSERMatcher {
                             + hcptHgsCost * hcptHgsCost
                         );
                         obj.costs = new double[]{
-                            hogCost, f, hcptHgsCost
+                            hogCost, f, hcptHgsCost, f0, f1, hcptCost, hgsCost
                         };
                         
                         obj.cost = cost;
@@ -1094,13 +1081,16 @@ public class MSERMatcher {
                 int x0 = Math.round(scale00 * obj0.cr0.ellipseParams.xC);
                 int y0 = Math.round(scale00 * obj0.cr0.ellipseParams.yC);
                 
+                //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
+                
                 sb2.append(String.format(
- "2] r1 %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n",
+ "2] r1 %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] %s n=%d\n",
                     settings.getDebugLabel(), i, 
                     x1, y1,
                     (float) obj0.cost, x0, y0, lbl,
                     (float) obj0.costs[0], (float) obj0.costs[1], 
-                    (float) obj0.costs[2], 
+                    (float) obj0.costs[2], (float) obj0.costs[3], 
+                    (float) obj0.costs[4], (float) obj0.costs[5], (float) obj0.costs[6],
                     str1, obj0.cr0.offsetsToOrigCoords.size()
                 ));
                 
@@ -1199,14 +1189,16 @@ public class MSERMatcher {
             out.add(cor);
             
             if (debug) {
+                //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
                 String lbl = "_" + obj.imgIdx0 + "_" + obj.imgIdx1 + "_"
                     + obj.r0Idx + "_" + obj.r1Idx;
                 System.out.format(
-                    "final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] n=%d\n",
+                    "final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
                     settings.getDebugLabel(), i, x1, y1,
                     (float) obj.cost, x0, y0, lbl,
                     (float) obj.costs[0], (float) obj.costs[1],
-                    (float) obj.costs[2],
+                    (float) obj.costs[2], (float) obj.costs[3],
+                    (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],
                     obj.cr0.offsetsToOrigCoords.size()
                 );               
             }
@@ -1245,17 +1237,19 @@ public class MSERMatcher {
             String str1 = String.format("angles=(%d,%d ; %d,%d)",
                     or0, or1, obj.cr0.hogOrientation, obj.cr1.hogOrientation);
 
+            //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
             sb2.append(String.format(
-                    "  %s (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d",
-                    debugLabel,
-                    Math.round(scale01 * obj.cr1.ellipseParams.xC),
-                    Math.round(scale01 * obj.cr1.ellipseParams.yC),
-                    (float) obj.cost,
-                    Math.round(scale00 * obj.cr0.ellipseParams.xC),
-                    Math.round(scale00 * obj.cr0.ellipseParams.yC), lbl,
-                    (float) obj.costs[0], (float) obj.costs[1],
-                    (float) obj.costs[2],
-                    str1, obj.cr0.offsetsToOrigCoords.size()
+                "  %s (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] %s n=%d",
+                debugLabel,
+                Math.round(scale01 * obj.cr1.ellipseParams.xC),
+                Math.round(scale01 * obj.cr1.ellipseParams.yC),
+                (float) obj.cost,
+                Math.round(scale00 * obj.cr0.ellipseParams.xC),
+                Math.round(scale00 * obj.cr0.ellipseParams.yC), lbl,
+                (float) obj.costs[0], (float) obj.costs[1],
+                (float) obj.costs[2], (float) obj.costs[3],
+                (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],
+                str1, obj.cr0.offsetsToOrigCoords.size()
             ));
             /*
                     Image im0 = gsI0.copyToColorGreyscale();
@@ -1272,13 +1266,15 @@ public class MSERMatcher {
                 
     }
     
-    //double[]{sumA, f, count}
-    private double[] sumCost2(HCPT hcpt0, HGS hgs0, CRegion cr0, float scale0, 
-        HCPT hcpt1, HGS hgs1, CRegion cr1, float scale1) {
+    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count}
+    private double[] sumCost2(HCPT hcpt0, HGS hgs0, CRegion cr0, 
+        HCPT hcpt1, HGS hgs1, CRegion cr1) {
         
         Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
 
-        double sumA = 0;
+        double sumCombined = 0;
+        double sumHCPT = 0;
+        double sumHGS = 0;
         int count = 0;
         
         int[] h0 = new int[hcpt0.getNumberOfBins()];
@@ -1305,7 +1301,8 @@ public class MSERMatcher {
 
             float intersection = hcpt0.intersection(h0, h1);
             
-            sumA += (intersection * intersection);
+            sumCombined += (intersection * intersection);
+            sumHCPT += (intersection * intersection);
             
             hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);
 
@@ -1313,7 +1310,8 @@ public class MSERMatcher {
 
             intersection = hgs0.intersection(h0, h1);
             
-            sumA += (intersection * intersection);
+            sumCombined += (intersection * intersection);
+            sumHGS += (intersection * intersection);
 
             count++;
         }
@@ -1321,21 +1319,25 @@ public class MSERMatcher {
             return null;
         }
 
-        sumA /= (2.*count);
-
-        sumA = Math.sqrt(sumA);
-                
-        //NOTE: this may need revision.  now assuming that all invoker's 
-        // have one object in cRegions0, hence, need to scale fraction
-        // of whole so all are in same reference frame
-        double area = cr0.offsetsToOrigCoords.size();
+        sumCombined /= (2.*count);
+        sumCombined = Math.sqrt(sumCombined);
         
-        double f = 1. - ((double) count / area);
-
-        return new double[]{sumA, f, count};            
+        sumHCPT /= (double)count;
+        sumHCPT = Math.sqrt(sumHCPT);
+        
+        sumHGS /= (double)count;
+        sumHGS = Math.sqrt(sumHGS);
+                     
+        double area1 = cr1.offsetsToOrigCoords.size();
+        double f1 = 1. - ((double) count / area1);
+        
+        double area0 = cr0.offsetsToOrigCoords.size();
+        double f0 = 1. - ((double) count / area0);
+        
+        return new double[]{sumCombined, f0, f1, sumHCPT, sumHGS, count};            
     }
     
-    //double[]{intersection, f0, f1, count};
+    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count};
     private double[] sumCost3(HCPT hcpt0, HGS hgs0, CRegion cr0, 
         HCPT hcpt1, HGS hgs1, CRegion cr1) {
         
@@ -1346,6 +1348,8 @@ public class MSERMatcher {
         Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
 
         double sum = 0;
+        double sumHCPT = 0;
+        double sumHGS = 0;
         double sumErrSq = 0;
         int count = 0;
         
@@ -1381,6 +1385,7 @@ public class MSERMatcher {
             diffAndErr = hcpt0.diff(h0, h1);
             
             sum += diffAndErr[0];
+            sumHCPT += diffAndErr[0];
             sumErrSq += (diffAndErr[1] * diffAndErr[1]);
             
             
@@ -1392,6 +1397,7 @@ public class MSERMatcher {
             diffAndErr = hgs0.diff(h0, h1);
             
             sum += diffAndErr[0];
+            sumHGS += diffAndErr[0];
             sumErrSq += (diffAndErr[1] * diffAndErr[1]);
             
             count++;
@@ -1401,6 +1407,8 @@ public class MSERMatcher {
         }
 
         sum /= (2.*count);
+        sumHCPT /= (double)count;
+        sumHGS /= (double)count;
         
         sumErrSq /= (2.*count);
         sumErrSq = Math.sqrt(sumErrSq);
