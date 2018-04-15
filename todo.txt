@@ -1,7 +1,3 @@
--- add a wrapper for the object matcher to handle the image binning
-   and pre-processing present in the tests with
-   documentation 
-
 -- Neural networks:
    -- optimization:
       http://neuralnetworksanddeeplearning.com/chap3.html
