@@ -1439,7 +1439,7 @@ public class ObjectMatcher {
         }
         
         List<CorrespondenceList> corList = matcher.matchObject0(
-            pyrRGB0, pyrPT0, regionPoints0,
+            clrMode, pyrRGB0, pyrPT0, regionPoints0,
             pyrRGB1, pyrPT1, regionPoints1, settings);
         
         if (corList == null) {

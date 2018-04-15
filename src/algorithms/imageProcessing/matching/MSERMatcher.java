@@ -11,11 +11,13 @@ import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HGS;
 import algorithms.imageProcessing.features.HOGs;
+import algorithms.imageProcessing.features.ObjectMatcher;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -720,6 +722,7 @@ public class MSERMatcher {
      * @return 
      */
     public List<CorrespondenceList> matchObject0(
+        ObjectMatcher.CMODE clrMode0,
         List<List<GreyscaleImage>> pyrRGB0, List<GreyscaleImage> pyrPT0, 
         TIntObjectMap<Canonicalizer.RegionPoints> regionPoints0, 
         List<List<GreyscaleImage>> pyrRGB1, List<GreyscaleImage> pyrPT1, 
@@ -771,7 +774,7 @@ public class MSERMatcher {
         int h0 = pyrPT0.get(0).getHeight();
         int w1 = pyrPT1.get(0).getWidth();
         int h1 = pyrPT1.get(0).getHeight();
-        
+              
         float sizeFactor = 1.2f;//2;//1.2f;
 
         FixedSizeSortedVector<Obj> bestOverallA =
@@ -914,12 +917,20 @@ public class MSERMatcher {
                             //double[]{combIntersection, f0, f1, 
                             //    intersectionHCPT, intersectionHGS, count}
                             costs2 = sumCost2(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
-                            hcptHgsCost = 1.f - costs2[3];//costs2[0];
+                            if (clrMode0.equals(ObjectMatcher.CMODE.WHITE)) {
+                                hcptHgsCost = 1.f - costs2[0];
+                            } else {
+                                hcptHgsCost = 1.f - costs2[3];
+                            }
                             hcptCost = 1.f - costs2[3];
                             hgsCost = 1.f - costs2[4];
                         } else {
                             costs2 = sumCost3(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
-                            hcptHgsCost = costs2[3];//costs2[0];
+                            if (clrMode0.equals(ObjectMatcher.CMODE.WHITE)) {
+                                hcptHgsCost = costs2[0];
+                            } else {
+                                hcptHgsCost = costs2[3];
+                            }
                             hcptCost = costs2[3];
                             hgsCost = costs2[4];
                         }
@@ -958,22 +969,26 @@ public class MSERMatcher {
                         
                         added = bestPerOctave.add(obj);
                         
-                        /*if (debug) {
+                        if (debug) {
                             double cost2 = (float) Math.sqrt(
                                 obj.costs[0]*obj.costs[0] +
                                 obj.costs[1]*obj.costs[1] +
                                 obj.costs[2]*obj.costs[2]
                             );
-                            System.out.format("%s octave %d %d] (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f] n=%d c2=%.3f\n",
+                            System.out.format(
+                            "%s octave %d %d] (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d c2=%.3f\n",
                             settings.getDebugLabel(), pyrIdx0, pyrIdx1,
                             x1, y1, (float) obj.cost,
                             Math.round(scale0 * obj.cr0.ellipseParams.xC),
                             Math.round(scale0 * obj.cr0.ellipseParams.yC), 
-                            (float) obj.costs[0], (float) obj.costs[1], (float) obj.costs[2], 
+                            (float) obj.costs[0], (float) obj.costs[1], 
+                            (float) obj.costs[2], (float) obj.costs[3], 
+                            (float) obj.costs[4], (float) obj.costs[5], 
+                            (float) obj.costs[6], 
                             obj.cr0.offsetsToOrigCoords.size(),
                             (float)cost2
                             );
-                        }*/
+                        }
                     }
                 }
             } // end over dataset1 octaves
