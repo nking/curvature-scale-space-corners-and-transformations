@@ -251,10 +251,10 @@ adapted from http://algs4.cs.princeton.edu/92search/
         
 <span class="fc bfc" id="L252" title="All 2 branches covered.">        if (x == null) return new RangeSearchNode&lt;Key, Value&gt;(key, val);</span>
 <span class="fc" id="L253">        int cmp = key.compareTo(x.key);</span>
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (cmp == 0) {</span>
-<span class="nc" id="L255">            replaced[0] = x.val;</span>
-<span class="nc" id="L256">            x.val = val;</span>
-<span class="nc" id="L257">            return x; </span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (cmp == 0) {</span>
+<span class="fc" id="L255">            replaced[0] = x.val;</span>
+<span class="fc" id="L256">            x.val = val;</span>
+<span class="fc" id="L257">            return x; </span>
 <span class="fc bfc" id="L258" title="All 2 branches covered.">        } else if (cmp  &lt; 0) { </span>
 <span class="fc" id="L259">            x.left  = putRoot(x.left,  key, val, replaced); </span>
 <span class="fc" id="L260">            x = rotR(x); </span>

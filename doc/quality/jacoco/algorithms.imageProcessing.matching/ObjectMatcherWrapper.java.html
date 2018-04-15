@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ObjectMatcherWrapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">ObjectMatcherWrapper.java</span></div><h1>ObjectMatcherWrapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.features.CorrespondenceList;
+import algorithms.imageProcessing.features.ObjectMatcher;
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * A class to pre-process images in order to use the ObjectMatcher
+ * within a rough range of resolution.
+ * The class currently expects color images.
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">public class ObjectMatcherWrapper {</span>
+    
+<span class="fc" id="L26">    private int maxDimension = 256;</span>
+<span class="fc" id="L27">    private SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;</span>
+
+<span class="fc" id="L29">    private ImageExt[] templateImage = null;</span>
+<span class="fc" id="L30">    private ImageExt searchImage = null;</span>
+    
+    public List&lt;CorrespondenceList&gt; find(String templateFilePath,
+        String templateMaskFilePath,
+        String searchFilePath, String debugLabel) throws Exception {
+   
+<span class="fc" id="L36">        Set&lt;PairInt&gt; shape0 = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc" id="L38">        ImageExt[] imgs0 = maskAndBin2(templateFilePath, templateMaskFilePath,</span>
+            shape0);
+            
+<span class="fc" id="L41">        return find(imgs0, shape0, searchFilePath, debugLabel);</span>
+    }
+    
+    public List&lt;CorrespondenceList&gt; find(ImageExt[] binnedTemplateAndMask, 
+        Set&lt;PairInt&gt; shape0,
+        String searchFilePath, String debugLabel) throws IOException {
+        
+<span class="fc" id="L48">        ImageExt img = ImageIOHelper.readImageExt(searchFilePath);</span>
+        
+<span class="fc" id="L50">        return find(binnedTemplateAndMask, shape0, img, debugLabel);</span>
+    }
+    
+    public List&lt;CorrespondenceList&gt; find(ImageExt[] binnedTemplateAndMask, 
+        Set&lt;PairInt&gt; shape0, ImageExt searchImage, String debugLabel) throws IOException {
+        
+<span class="fc" id="L56">        int nShape0_0 = shape0.size();</span>
+
+<span class="fc" id="L58">        System.out.println(&quot;shape0 nPts=&quot; + nShape0_0);</span>
+
+        //String filePath1 = 
+        //    ResourceFinder.findFileInTestResources(searchFilePath);
+        
+        // template img size is 218  163
+        //img = (ImageExt) imageProcessor.bilinearDownSampling(
+        //    img, 218, 163, 0, 255);
+
+<span class="fc" id="L67">        long ts = MiscDebug.getCurrentTimeFormatted();</span>
+
+<span class="fc" id="L69">        int w1 = searchImage.getWidth();</span>
+<span class="fc" id="L70">        int h1 = searchImage.getHeight();</span>
+
+        /*
+        int binFactor1 = (int) Math.ceil(Math.max(
+            (float) w1 / maxDimension,
+            (float) h1 / maxDimension));
+        */
+<span class="fc" id="L77">        int binFactor1 = (int) Math.ceil(Math.max(</span>
+            (float) w1 / maxDimension,
+            (float) h1 / maxDimension));
+
+<span class="fc" id="L81">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L83">        searchImage = imageProcessor.binImage(searchImage, binFactor1);</span>
+
+        /*
+        GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
+        MiscDebug.writeImage(theta1, fileName1Root + &quot;_theta_0&quot;);
+        theta1 = imageProcessor.createCIELUVTheta(img, 255);
+        MiscDebug.writeImage(theta1, fileName1Root + &quot;_theta_1&quot;);
+        */
+        
+<span class="fc" id="L92">        return _run_matcher(binnedTemplateAndMask, shape0, searchImage, debugLabel);</span>
+    }
+   
+    private List&lt;CorrespondenceList&gt; _run_matcher(ImageExt[] imgs0, Set&lt;PairInt&gt; shape0, 
+        ImageExt img, String debugLabel) throws IOException {
+        
+<span class="fc" id="L98">        this.templateImage = imgs0;</span>
+<span class="fc" id="L99">        this.searchImage = img;</span>
+
+<span class="fc" id="L101">        ObjectMatcher.Settings settings = new ObjectMatcher.Settings();</span>
+<span class="fc" id="L102">        settings.setToUseLargerPyramid0();</span>
+<span class="fc" id="L103">        settings.setToUseLargerPyramid1();</span>
+
+<span class="fc" id="L105">        ObjectMatcher objMatcher = new ObjectMatcher();</span>
+<span class="fc" id="L106">        objMatcher.setToDebug();</span>
+
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (debugLabel != null) {</span>
+<span class="fc" id="L109">            objMatcher.setToDebug();  </span>
+<span class="fc" id="L110">            settings.setDebugLabel(debugLabel);</span>
+        }
+
+        //settings.setToExcludeColorFilter();
+
+<span class="fc" id="L115">        long t0 = System.currentTimeMillis();</span>
+        
+<span class="fc" id="L117">        List&lt;CorrespondenceList&gt; corresList </span>
+            //= objMatcher.findObject11(
+<span class="fc" id="L119">            = objMatcher.findObject12(imgs0[0], shape0, img, settings);</span>
+
+<span class="fc" id="L121">        long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L122">        System.out.println(&quot;matching took &quot; + ((t1 - t0)/1000.) + &quot; sec&quot;);</span>
+
+<span class="fc" id="L124">        return corresList;</span>
+    }
+    
+    public ImageExt[] maskAndBin2(String templateFilePath,
+        String templateMaskFilePath, Set&lt;PairInt&gt; outputShape) throws 
+        IOException {
+        
+<span class="fc" id="L131">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+        //String fileNameMask0 = fileNames[1];
+        //String filePathMask0 = ResourceFinder
+        //    .findFileInTestResources(fileNameMask0);
+<span class="fc" id="L136">        ImageExt imgMask0 = ImageIOHelper.readImageExt(templateMaskFilePath);</span>
+
+        //String fileName0 = fileNames[0];
+        //String filePath0 = ResourceFinder
+        //    .findFileInTestResources(fileName0);
+<span class="fc" id="L141">        ImageExt img0 = ImageIOHelper.readImageExt(templateFilePath);</span>
+    
+<span class="fc" id="L143">        int w0 = img0.getWidth();</span>
+<span class="fc" id="L144">        int h0 = img0.getHeight();</span>
+
+<span class="fc" id="L146">        int binFactor0 = (int) Math.ceil(Math.max(</span>
+             (float) w0 / maxDimension,
+             (float) h0 / maxDimension));
+        
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (binFactor0 != 1) {</span>
+<span class="fc" id="L151">            img0 = imageProcessor.binImage(img0, binFactor0);</span>
+<span class="fc" id="L152">            imgMask0 = imageProcessor.binImage(imgMask0, binFactor0);</span>
+        }
+        
+<span class="fc" id="L155">        ImageExt img0Masked = img0.copyToImageExt();</span>
+                
+<span class="pc bpc" id="L157" title="3 of 4 branches missed.">        assert(imgMask0.getNPixels() == img0.getNPixels());</span>
+
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (int i = 0; i &lt; imgMask0.getNPixels(); ++i) {</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            if (imgMask0.getR(i) == 0) {</span>
+<span class="fc" id="L161">                img0Masked.setRGB(i, 0, 0, 0);</span>
+            } else {
+<span class="fc" id="L163">                outputShape.add(new PairInt(imgMask0.getCol(i), </span>
+<span class="fc" id="L164">                    imgMask0.getRow(i)));</span>
+            }
+        }
+   
+<span class="fc" id="L168">        return new ImageExt[]{img0, img0Masked};</span>
+    }
+
+    /**
+     * @return the templateImage
+     */
+    public ImageExt[] getTemplateImage() {
+<span class="fc" id="L175">        return templateImage;</span>
+    }
+
+    /**
+     * @return the searchImage
+     */
+    public ImageExt getSearchImage() {
+<span class="fc" id="L182">        return searchImage;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

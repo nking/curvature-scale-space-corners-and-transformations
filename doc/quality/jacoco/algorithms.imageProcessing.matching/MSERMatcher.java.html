@@ -11,11 +11,13 @@ import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HGS;
 import algorithms.imageProcessing.features.HOGs;
+import algorithms.imageProcessing.features.ObjectMatcher;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -46,243 +48,243 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">public class MSERMatcher {</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">public class MSERMatcher {</span>
 
-<span class="fc" id="L51">    private boolean debug = false;</span>
+<span class="fc" id="L53">    private boolean debug = false;</span>
     
-<span class="fc" id="L53">    private int N_PIX_PER_CELL_DIM = 3;</span>
-<span class="fc" id="L54">    private int N_CELLS_PER_BLOCK_DIM = 3;</span>
+<span class="fc" id="L55">    private int N_PIX_PER_CELL_DIM = 3;</span>
+<span class="fc" id="L56">    private int N_CELLS_PER_BLOCK_DIM = 3;</span>
 
     public void setToDebug() {
-<span class="fc" id="L57">        debug = true;</span>
-<span class="fc" id="L58">    }</span>
+<span class="fc" id="L59">        debug = true;</span>
+<span class="fc" id="L60">    }</span>
 
     private TIntObjectMap&lt;CRegion&gt; getOrCreate(
         TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csrs,
         int imgIdx, GreyscaleImage rgb, float scale) {
 
-<span class="fc" id="L64">        TIntObjectMap&lt;CRegion&gt; csrMap = csrs.get(imgIdx);</span>
-<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (csrMap != null) {</span>
-<span class="fc" id="L66">            return csrMap;</span>
+<span class="fc" id="L66">        TIntObjectMap&lt;CRegion&gt; csrMap = csrs.get(imgIdx);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (csrMap != null) {</span>
+<span class="fc" id="L68">            return csrMap;</span>
         }
-<span class="fc" id="L68">        csrMap = new TIntObjectHashMap&lt;CRegion&gt;();</span>
-<span class="fc" id="L69">        csrs.put(imgIdx, csrMap);</span>
+<span class="fc" id="L70">        csrMap = new TIntObjectHashMap&lt;CRegion&gt;();</span>
+<span class="fc" id="L71">        csrs.put(imgIdx, csrMap);</span>
 
-<span class="fc" id="L71">        TIntObjectMap&lt;CRegion&gt; csrMap0 = csrs.get(0);</span>
+<span class="fc" id="L73">        TIntObjectMap&lt;CRegion&gt; csrMap0 = csrs.get(0);</span>
 
-<span class="fc" id="L73">        int w = rgb.getWidth();</span>
-<span class="fc" id="L74">        int h = rgb.getHeight();</span>
+<span class="fc" id="L75">        int w = rgb.getWidth();</span>
+<span class="fc" id="L76">        int h = rgb.getHeight();</span>
 
-<span class="fc" id="L76">        TIntObjectIterator&lt;CRegion&gt; iter = csrMap0.iterator();</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; csrMap0.size(); ++i) {</span>
-<span class="fc" id="L78">            iter.advance();</span>
-<span class="fc" id="L79">            int idx = iter.key();</span>
-<span class="fc" id="L80">            CRegion csr = iter.value();</span>
+<span class="fc" id="L78">        TIntObjectIterator&lt;CRegion&gt; iter = csrMap0.iterator();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (int i = 0; i &lt; csrMap0.size(); ++i) {</span>
+<span class="fc" id="L80">            iter.advance();</span>
+<span class="fc" id="L81">            int idx = iter.key();</span>
+<span class="fc" id="L82">            CRegion csr = iter.value();</span>
 
-<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (csr.offsetsToOrigCoords.size() &lt; 9) {</span>
-<span class="fc" id="L83">                continue;</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            if (csr.offsetsToOrigCoords.size() &lt; 9) {</span>
+<span class="fc" id="L85">                continue;</span>
             }
 
             // these are in scale of individual octave (not full reference frame)
-<span class="fc" id="L87">            Set&lt;PairInt&gt; scaledSet = extractScaledPts(csr, w, h, scale);</span>
+<span class="fc" id="L89">            Set&lt;PairInt&gt; scaledSet = extractScaledPts(csr, w, h, scale);</span>
 
-<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (scaledSet.size() &lt; 9) {</span>
-<span class="fc" id="L90">                continue;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (scaledSet.size() &lt; 9) {</span>
+<span class="fc" id="L92">                continue;</span>
             }
 
-<span class="fc" id="L93">            PairIntArray xy = new PairIntArray();</span>
+<span class="fc" id="L95">            PairIntArray xy = new PairIntArray();</span>
 
-<span class="fc" id="L95">            Region r = new Region();</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">            for (PairInt pl : scaledSet) {</span>
-<span class="fc" id="L97">                r.accumulate(pl.getX(), pl.getY());</span>
-<span class="fc" id="L98">                xy.add(pl.getX(), pl.getY());</span>
-<span class="fc" id="L99">            }</span>
+<span class="fc" id="L97">            Region r = new Region();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            for (PairInt pl : scaledSet) {</span>
+<span class="fc" id="L99">                r.accumulate(pl.getX(), pl.getY());</span>
+<span class="fc" id="L100">                xy.add(pl.getX(), pl.getY());</span>
+<span class="fc" id="L101">            }</span>
 
-<span class="fc" id="L101">            int[] xyCen = new int[2];</span>
-<span class="fc" id="L102">            r.calculateXYCentroid(xyCen, w, h);</span>
-<span class="fc" id="L103">            int x = xyCen[0];</span>
-<span class="fc" id="L104">            int y = xyCen[1];</span>
-<span class="pc bpc" id="L105" title="5 of 6 branches missed.">            assert(x &gt;= 0 &amp;&amp; x &lt; w);</span>
-<span class="pc bpc" id="L106" title="5 of 6 branches missed.">            assert(y &gt;= 0 &amp;&amp; y &lt; h);</span>
-<span class="fc" id="L107">            double[] m = r.calcParamTransCoeff();</span>
+<span class="fc" id="L103">            int[] xyCen = new int[2];</span>
+<span class="fc" id="L104">            r.calculateXYCentroid(xyCen, w, h);</span>
+<span class="fc" id="L105">            int x = xyCen[0];</span>
+<span class="fc" id="L106">            int y = xyCen[1];</span>
+<span class="pc bpc" id="L107" title="5 of 6 branches missed.">            assert(x &gt;= 0 &amp;&amp; x &lt; w);</span>
+<span class="pc bpc" id="L108" title="5 of 6 branches missed.">            assert(y &gt;= 0 &amp;&amp; y &lt; h);</span>
+<span class="fc" id="L109">            double[] m = r.calcParamTransCoeff();</span>
 
-<span class="fc" id="L109">            double angle = Math.atan(m[0]/m[2]);</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">            if (angle &lt; 0) {</span>
-<span class="fc" id="L111">                angle += Math.PI;</span>
+<span class="fc" id="L111">            double angle = Math.atan(m[0]/m[2]);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (angle &lt; 0) {</span>
+<span class="fc" id="L113">                angle += Math.PI;</span>
             }
 
-<span class="fc" id="L114">            double major = 2. * m[4];</span>
-<span class="fc" id="L115">            double minor = 2. * m[5];</span>
+<span class="fc" id="L116">            double major = 2. * m[4];</span>
+<span class="fc" id="L117">            double minor = 2. * m[5];</span>
 
-<span class="fc" id="L117">            double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="pc bpc" id="L118" title="3 of 4 branches missed.">            assert(!Double.isNaN(ecc));</span>
+<span class="fc" id="L119">            double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="pc bpc" id="L120" title="3 of 4 branches missed.">            assert(!Double.isNaN(ecc));</span>
 
-<span class="fc" id="L120">            Map&lt;PairInt, PairInt&gt; offsetMap = Canonicalizer.createOffsetToOrigMap(</span>
+<span class="fc" id="L122">            Map&lt;PairInt, PairInt&gt; offsetMap = Canonicalizer.createOffsetToOrigMap(</span>
                 x, y, xy, w, h, angle);
 
-<span class="fc" id="L123">            double autocorrel = Canonicalizer.calcAutoCorrel(rgb, x, y, offsetMap);</span>
+<span class="fc" id="L125">            double autocorrel = Canonicalizer.calcAutoCorrel(rgb, x, y, offsetMap);</span>
 
-<span class="fc" id="L125">            CRegion csRegion = new CRegion();</span>
-<span class="fc" id="L126">            csRegion.ellipseParams.orientation = angle;</span>
-<span class="fc" id="L127">            csRegion.ellipseParams.eccentricity = ecc;</span>
-<span class="fc" id="L128">            csRegion.ellipseParams.major = major;</span>
-<span class="fc" id="L129">            csRegion.ellipseParams.minor = minor;</span>
-<span class="fc" id="L130">            csRegion.ellipseParams.xC = x;</span>
-<span class="fc" id="L131">            csRegion.ellipseParams.yC = y;</span>
-<span class="fc" id="L132">            csRegion.offsetsToOrigCoords = offsetMap;</span>
-<span class="fc" id="L133">            csRegion.autocorrel = Math.sqrt(autocorrel)/255.;</span>
-<span class="fc" id="L134">            csRegion.labels.addAll(csr.labels);</span>
-<span class="fc" id="L135">            csRegion.dataIdx = idx;</span>
+<span class="fc" id="L127">            CRegion csRegion = new CRegion();</span>
+<span class="fc" id="L128">            csRegion.ellipseParams.orientation = angle;</span>
+<span class="fc" id="L129">            csRegion.ellipseParams.eccentricity = ecc;</span>
+<span class="fc" id="L130">            csRegion.ellipseParams.major = major;</span>
+<span class="fc" id="L131">            csRegion.ellipseParams.minor = minor;</span>
+<span class="fc" id="L132">            csRegion.ellipseParams.xC = x;</span>
+<span class="fc" id="L133">            csRegion.ellipseParams.yC = y;</span>
+<span class="fc" id="L134">            csRegion.offsetsToOrigCoords = offsetMap;</span>
+<span class="fc" id="L135">            csRegion.autocorrel = Math.sqrt(autocorrel)/255.;</span>
+<span class="fc" id="L136">            csRegion.labels.addAll(csr.labels);</span>
+<span class="fc" id="L137">            csRegion.dataIdx = idx;</span>
                 
-<span class="fc" id="L137">            csrMap.put(idx, csRegion);</span>
+<span class="fc" id="L139">            csrMap.put(idx, csRegion);</span>
         }
 
-<span class="fc" id="L140">        return csrMap;</span>
+<span class="fc" id="L142">        return csrMap;</span>
     }
 
     private GreyscaleImage combineImages(List&lt;GreyscaleImage&gt; rgb) {
 
-<span class="fc" id="L145">        GreyscaleImage r = rgb.get(0);</span>
-<span class="fc" id="L146">        GreyscaleImage g = rgb.get(1);</span>
-<span class="fc" id="L147">        GreyscaleImage b = rgb.get(2);</span>
+<span class="fc" id="L147">        GreyscaleImage r = rgb.get(0);</span>
+<span class="fc" id="L148">        GreyscaleImage g = rgb.get(1);</span>
+<span class="fc" id="L149">        GreyscaleImage b = rgb.get(2);</span>
 
-<span class="pc bpc" id="L149" title="2 of 4 branches missed.">        if (r.getWidth() != g.getWidth() || r.getWidth() != b.getWidth() ||</span>
-<span class="pc bpc" id="L150" title="2 of 4 branches missed.">            r.getHeight() != g.getHeight() || r.getHeight() != b.getHeight()) {</span>
-<span class="nc" id="L151">            throw new IllegalArgumentException(&quot;r, g, and b must have same&quot;</span>
+<span class="pc bpc" id="L151" title="2 of 4 branches missed.">        if (r.getWidth() != g.getWidth() || r.getWidth() != b.getWidth() ||</span>
+<span class="pc bpc" id="L152" title="2 of 4 branches missed.">            r.getHeight() != g.getHeight() || r.getHeight() != b.getHeight()) {</span>
+<span class="nc" id="L153">            throw new IllegalArgumentException(&quot;r, g, and b must have same&quot;</span>
                 + &quot; width and height&quot;);
         }
 
-<span class="fc" id="L155">        int w = r.getWidth();</span>
-<span class="fc" id="L156">        int h = r.getHeight();</span>
+<span class="fc" id="L157">        int w = r.getWidth();</span>
+<span class="fc" id="L158">        int h = r.getHeight();</span>
 
-<span class="fc" id="L158">        GreyscaleImage comb = new GreyscaleImage(w, h, r.getType());</span>
+<span class="fc" id="L160">        GreyscaleImage comb = new GreyscaleImage(w, h, r.getType());</span>
 
-<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int i = 0; i &lt; r.getNPixels(); ++i) {</span>
-<span class="fc" id="L161">            float v0 = r.getValue(i);</span>
-<span class="fc" id="L162">            float v1 = g.getValue(i);</span>
-<span class="fc" id="L163">            float v2 = b.getValue(i);</span>
-<span class="fc" id="L164">            float avg = (v0 + v1 + v2)/3.f;</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (int i = 0; i &lt; r.getNPixels(); ++i) {</span>
+<span class="fc" id="L163">            float v0 = r.getValue(i);</span>
+<span class="fc" id="L164">            float v1 = g.getValue(i);</span>
+<span class="fc" id="L165">            float v2 = b.getValue(i);</span>
+<span class="fc" id="L166">            float avg = (v0 + v1 + v2)/3.f;</span>
 
-<span class="fc" id="L166">            comb.setValue(i, Math.round(avg));</span>
+<span class="fc" id="L168">            comb.setValue(i, Math.round(avg));</span>
         }
 
-<span class="fc" id="L169">        return comb;</span>
+<span class="fc" id="L171">        return comb;</span>
     }
 
     private Set&lt;PairInt&gt; extractScaledPts(CRegion csr, int w, int h,
         float scale) {
 
-<span class="fc" id="L175">        Set&lt;PairInt&gt; scaledSet = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry : csr.offsetsToOrigCoords.entrySet()) {</span>
+<span class="fc" id="L177">        Set&lt;PairInt&gt; scaledSet = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry : csr.offsetsToOrigCoords.entrySet()) {</span>
 
-<span class="fc" id="L178">            PairInt p = entry.getValue();</span>
+<span class="fc" id="L180">            PairInt p = entry.getValue();</span>
 
-<span class="fc" id="L180">            int xScaled = Math.round((float) p.getX() / scale);</span>
-<span class="fc" id="L181">            int yScaled = Math.round((float) p.getY() / scale);</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            if (xScaled == -1) {</span>
-<span class="nc" id="L183">                xScaled = 0;</span>
+<span class="fc" id="L182">            int xScaled = Math.round((float) p.getX() / scale);</span>
+<span class="fc" id="L183">            int yScaled = Math.round((float) p.getY() / scale);</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">            if (xScaled == -1) {</span>
+<span class="nc" id="L185">                xScaled = 0;</span>
             }
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">            if (yScaled == -1) {</span>
-<span class="nc" id="L186">                yScaled = 0;</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            if (yScaled == -1) {</span>
+<span class="nc" id="L188">                yScaled = 0;</span>
             }
-<span class="fc bfc" id="L188" title="All 2 branches covered.">            if (xScaled == w) {</span>
-<span class="fc" id="L189">                xScaled = w - 1;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (xScaled == w) {</span>
+<span class="fc" id="L191">                xScaled = w - 1;</span>
             }
-<span class="fc bfc" id="L191" title="All 2 branches covered.">            if (yScaled == h) {</span>
-<span class="fc" id="L192">                yScaled = h - 1;</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            if (yScaled == h) {</span>
+<span class="fc" id="L194">                yScaled = h - 1;</span>
             }
-<span class="fc" id="L194">            PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
+<span class="fc" id="L196">            PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
 
-<span class="fc" id="L196">            scaledSet.add(pOrigScaled);</span>
-<span class="fc" id="L197">        }</span>
+<span class="fc" id="L198">            scaledSet.add(pOrigScaled);</span>
+<span class="fc" id="L199">        }</span>
 
-<span class="fc" id="L199">        return scaledSet;</span>
+<span class="fc" id="L201">        return scaledSet;</span>
     }
 
     private Set&lt;PairInt&gt; extractScaledPts(RegionPoints csr, int w, int h,
         float scale) {
 
-<span class="nc" id="L205">        Set&lt;PairInt&gt; scaledSet = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">        for (PairInt p : csr.points) {</span>
+<span class="nc" id="L207">        Set&lt;PairInt&gt; scaledSet = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        for (PairInt p : csr.points) {</span>
 
-<span class="nc" id="L208">            int xScaled = Math.round((float) p.getX() / scale);</span>
-<span class="nc" id="L209">            int yScaled = Math.round((float) p.getY() / scale);</span>
-<span class="nc bnc" id="L210" title="All 2 branches missed.">            if (xScaled == -1) {</span>
-<span class="nc" id="L211">                xScaled = 0;</span>
+<span class="nc" id="L210">            int xScaled = Math.round((float) p.getX() / scale);</span>
+<span class="nc" id="L211">            int yScaled = Math.round((float) p.getY() / scale);</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (xScaled == -1) {</span>
+<span class="nc" id="L213">                xScaled = 0;</span>
             }
-<span class="nc bnc" id="L213" title="All 2 branches missed.">            if (yScaled == -1) {</span>
-<span class="nc" id="L214">                yScaled = 0;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            if (yScaled == -1) {</span>
+<span class="nc" id="L216">                yScaled = 0;</span>
             }
-<span class="nc bnc" id="L216" title="All 2 branches missed.">            if (xScaled == w) {</span>
-<span class="nc" id="L217">                xScaled = w - 1;</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            if (xScaled == w) {</span>
+<span class="nc" id="L219">                xScaled = w - 1;</span>
             }
-<span class="nc bnc" id="L219" title="All 2 branches missed.">            if (yScaled == h) {</span>
-<span class="nc" id="L220">                yScaled = h - 1;</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            if (yScaled == h) {</span>
+<span class="nc" id="L222">                yScaled = h - 1;</span>
             }
-<span class="nc" id="L222">            PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
+<span class="nc" id="L224">            PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
 
-<span class="nc" id="L224">            scaledSet.add(pOrigScaled);</span>
-<span class="nc" id="L225">        }</span>
+<span class="nc" id="L226">            scaledSet.add(pOrigScaled);</span>
+<span class="nc" id="L227">        }</span>
 
-<span class="nc" id="L227">        return scaledSet;</span>
+<span class="nc" id="L229">        return scaledSet;</span>
     }
    
     private TIntIntMap calculateLabelSizes(List&lt;Set&lt;PairInt&gt;&gt; sets) {
     
-<span class="nc" id="L232">        TIntIntMap map = new TIntIntHashMap();</span>
-<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int i = 0; i &lt; sets.size(); ++i) {</span>
-<span class="nc" id="L234">            int sz = MiscMath.calculateObjectSize(sets.get(i));</span>
-<span class="nc" id="L235">            map.put(i, sz);</span>
+<span class="nc" id="L234">        TIntIntMap map = new TIntIntHashMap();</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">        for (int i = 0; i &lt; sets.size(); ++i) {</span>
+<span class="nc" id="L236">            int sz = MiscMath.calculateObjectSize(sets.get(i));</span>
+<span class="nc" id="L237">            map.put(i, sz);</span>
         }
-<span class="nc" id="L237">        return map;</span>
+<span class="nc" id="L239">        return map;</span>
     }
 
     
     private int calculateObjectSize(Collection&lt;PairInt&gt; values) {
 
-<span class="nc" id="L243">        int[] minMaxXY = MiscMath.findMinMaxXY(values);</span>
-<span class="nc" id="L244">        int diffX = minMaxXY[1] - minMaxXY[0];</span>
-<span class="nc" id="L245">        int diffY = minMaxXY[3] - minMaxXY[2];</span>
-<span class="nc" id="L246">        double xy = Math.sqrt(diffX * diffX + diffY * diffY);</span>
+<span class="nc" id="L245">        int[] minMaxXY = MiscMath.findMinMaxXY(values);</span>
+<span class="nc" id="L246">        int diffX = minMaxXY[1] - minMaxXY[0];</span>
+<span class="nc" id="L247">        int diffY = minMaxXY[3] - minMaxXY[2];</span>
+<span class="nc" id="L248">        double xy = Math.sqrt(diffX * diffX + diffY * diffY);</span>
         
-<span class="nc" id="L248">        return (int)Math.round(xy);</span>
+<span class="nc" id="L250">        return (int)Math.round(xy);</span>
     }
     
     private int calculateObjectSizeByAvgDist(int x, int y, 
         Collection&lt;PairInt&gt; values) {
 
-<span class="fc" id="L254">        int sumD = 0;</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        for (PairInt p : values) {</span>
-<span class="fc" id="L256">            int diffX = p.getX() - x;</span>
-<span class="fc" id="L257">            int diffY = p.getY() - y;</span>
-<span class="fc" id="L258">            sumD += (diffX * diffX + diffY * diffY);</span>
-<span class="fc" id="L259">        }</span>
-<span class="fc" id="L260">        sumD = (int)Math.ceil(Math.sqrt((double)sumD/(double)values.size()));</span>
+<span class="fc" id="L256">        int sumD = 0;</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        for (PairInt p : values) {</span>
+<span class="fc" id="L258">            int diffX = p.getX() - x;</span>
+<span class="fc" id="L259">            int diffY = p.getY() - y;</span>
+<span class="fc" id="L260">            sumD += (diffX * diffX + diffY * diffY);</span>
+<span class="fc" id="L261">        }</span>
+<span class="fc" id="L262">        sumD = (int)Math.ceil(Math.sqrt((double)sumD/(double)values.size()));</span>
         
-<span class="fc" id="L262">        return sumD;</span>
+<span class="fc" id="L264">        return sumD;</span>
     }
 
     private void debugPrint3(List&lt;List&lt;Obj&gt;&gt; list, GreyscaleImage img0, 
         GreyscaleImage img1, float scale0, float scale1, String lbl) {
         
-<span class="nc bnc" id="L268" title="All 2 branches missed.">        for (int i = 0; i &lt; list.size(); ++i) {</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        for (int i = 0; i &lt; list.size(); ++i) {</span>
             
-<span class="nc" id="L270">            List&lt;Obj&gt; objs = list.get(i);</span>
+<span class="nc" id="L272">            List&lt;Obj&gt; objs = list.get(i);</span>
             
-<span class="nc" id="L272">            Image im0 = img0.copyToColorGreyscale();</span>
-<span class="nc" id="L273">            Image im1 = img1.copyToColorGreyscale();</span>
+<span class="nc" id="L274">            Image im0 = img0.copyToColorGreyscale();</span>
+<span class="nc" id="L275">            Image im1 = img1.copyToColorGreyscale();</span>
             
-<span class="nc bnc" id="L275" title="All 2 branches missed.">            for (int j = 0; j &lt; objs.size(); ++j) {</span>
-<span class="nc" id="L276">                int[] clr = ImageIOHelper.getNextRGB(j);</span>
-<span class="nc" id="L277">                Obj obj = objs.get(j);</span>
-<span class="nc" id="L278">                obj.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);</span>
-<span class="nc" id="L279">                obj.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">            for (int j = 0; j &lt; objs.size(); ++j) {</span>
+<span class="nc" id="L278">                int[] clr = ImageIOHelper.getNextRGB(j);</span>
+<span class="nc" id="L279">                Obj obj = objs.get(j);</span>
+<span class="nc" id="L280">                obj.cr0.drawEachPixel(im0, 0, clr[0], clr[1], clr[2]);</span>
+<span class="nc" id="L281">                obj.cr1.drawEachPixel(im1, 0, clr[0], clr[1], clr[2]);</span>
             }
             
-<span class="nc" id="L282">            MiscDebug.writeImage(im0, lbl + &quot;__0__&quot; + i);</span>
-<span class="nc" id="L283">            MiscDebug.writeImage(im1, lbl + &quot;__1__&quot; + i);</span>
+<span class="nc" id="L284">            MiscDebug.writeImage(im0, lbl + &quot;__0__&quot; + i);</span>
+<span class="nc" id="L285">            MiscDebug.writeImage(im1, lbl + &quot;__1__&quot; + i);</span>
         }
-<span class="nc" id="L285">    }</span>
+<span class="nc" id="L287">    }</span>
 
     //chordDiffSum, nMatches, p.n
     private double[] partialShapeCost(Obj obj, 
@@ -292,263 +294,267 @@ import java.util.Set;
         GreyscaleImage gsI0, GreyscaleImage gsI1) {
         
         // TODO: use caching if keep this method
-<span class="nc" id="L295">        Set&lt;PairInt&gt; set0 = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L296">        TIntIterator iter = obj.cr0.labels.iterator();</span>
-<span class="nc bnc" id="L297" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L298">            int label = iter.next();</span>
-<span class="nc" id="L299">            Set&lt;PairInt&gt; s0 = labeledSets0.get(label);</span>
-<span class="nc bnc" id="L300" title="All 2 branches missed.">            for (PairInt p : s0) {</span>
-<span class="nc" id="L301">                int x = Math.round((float)p.getX() / scale0);</span>
-<span class="nc" id="L302">                int y = Math.round((float)p.getY() / scale0);</span>
-<span class="nc" id="L303">                set0.add(new PairInt(x, y));</span>
-<span class="nc" id="L304">            }</span>
-<span class="nc" id="L305">        }</span>
+<span class="nc" id="L297">        Set&lt;PairInt&gt; set0 = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L298">        TIntIterator iter = obj.cr0.labels.iterator();</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L300">            int label = iter.next();</span>
+<span class="nc" id="L301">            Set&lt;PairInt&gt; s0 = labeledSets0.get(label);</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">            for (PairInt p : s0) {</span>
+<span class="nc" id="L303">                int x = Math.round((float)p.getX() / scale0);</span>
+<span class="nc" id="L304">                int y = Math.round((float)p.getY() / scale0);</span>
+<span class="nc" id="L305">                set0.add(new PairInt(x, y));</span>
+<span class="nc" id="L306">            }</span>
+<span class="nc" id="L307">        }</span>
         
-<span class="nc" id="L307">        set0 = reduceToContiguous(set0, gsI0.getWidth(), gsI0.getHeight());</span>
+<span class="nc" id="L309">        set0 = reduceToContiguous(set0, gsI0.getWidth(), gsI0.getHeight());</span>
         
-<span class="nc" id="L309">        Set&lt;PairInt&gt; set1 = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L310">        iter = obj.cr1.labels.iterator();</span>
-<span class="nc bnc" id="L311" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L312">            int label = iter.next();</span>
-<span class="nc" id="L313">            Set&lt;PairInt&gt; s0 = labeledSets1.get(label);</span>
-<span class="nc bnc" id="L314" title="All 2 branches missed.">            for (PairInt p : s0) {</span>
-<span class="nc" id="L315">                int x = Math.round((float)p.getX() / scale1);</span>
-<span class="nc" id="L316">                int y = Math.round((float)p.getY() / scale1);</span>
-<span class="nc" id="L317">                set1.add(new PairInt(x, y));</span>
-<span class="nc" id="L318">            }</span>
-<span class="nc" id="L319">        }</span>
+<span class="nc" id="L311">        Set&lt;PairInt&gt; set1 = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L312">        iter = obj.cr1.labels.iterator();</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L314">            int label = iter.next();</span>
+<span class="nc" id="L315">            Set&lt;PairInt&gt; s0 = labeledSets1.get(label);</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">            for (PairInt p : s0) {</span>
+<span class="nc" id="L317">                int x = Math.round((float)p.getX() / scale1);</span>
+<span class="nc" id="L318">                int y = Math.round((float)p.getY() / scale1);</span>
+<span class="nc" id="L319">                set1.add(new PairInt(x, y));</span>
+<span class="nc" id="L320">            }</span>
+<span class="nc" id="L321">        }</span>
         
-<span class="nc" id="L321">        set1 = reduceToContiguous(set1, gsI1.getWidth(), gsI1.getHeight());</span>
+<span class="nc" id="L323">        set1 = reduceToContiguous(set1, gsI1.getWidth(), gsI1.getHeight());</span>
         
-<span class="nc" id="L323">        PerimeterFinder2 finder = new PerimeterFinder2();</span>
-<span class="nc" id="L324">        PairIntArray p = finder.extractOrderedBorder(set0);</span>
-<span class="nc" id="L325">        PairIntArray q = finder.extractOrderedBorder(set1);</span>
+<span class="nc" id="L325">        PerimeterFinder2 finder = new PerimeterFinder2();</span>
+<span class="nc" id="L326">        PairIntArray p = finder.extractOrderedBorder(set0);</span>
+<span class="nc" id="L327">        PairIntArray q = finder.extractOrderedBorder(set1);</span>
     
-<span class="nc" id="L327">        int dp = 1;</span>
-<span class="nc bnc" id="L328" title="All 4 branches missed.">        if (p.getN() &gt; 500 || q.getN() &gt; 500) {</span>
-<span class="nc" id="L329">            int dn = Math.max(p.getN(), q.getN());</span>
-<span class="nc" id="L330">            dp += Math.ceil((float)dn/500.f);</span>
+<span class="nc" id="L329">        int dp = 1;</span>
+<span class="nc bnc" id="L330" title="All 4 branches missed.">        if (p.getN() &gt; 500 || q.getN() &gt; 500) {</span>
+<span class="nc" id="L331">            int dn = Math.max(p.getN(), q.getN());</span>
+<span class="nc" id="L332">            dp += Math.ceil((float)dn/500.f);</span>
         }
         
-<span class="nc" id="L333">        PartialShapeMatcher2 matcher = new PartialShapeMatcher2();</span>
-<span class="nc" id="L334">        matcher.overrideSamplingDistance(dp);</span>
-<span class="nc" id="L335">        matcher.setToUseEuclidean();</span>
-<span class="nc" id="L336">        matcher.setToRemoveOutliers();</span>
-<span class="nc" id="L337">        PartialShapeMatcher2.Result result = matcher.match(p, q);</span>
+<span class="nc" id="L335">        PartialShapeMatcher2 matcher = new PartialShapeMatcher2();</span>
+<span class="nc" id="L336">        matcher.overrideSamplingDistance(dp);</span>
+<span class="nc" id="L337">        matcher.setToUseEuclidean();</span>
+<span class="nc" id="L338">        matcher.setToRemoveOutliers();</span>
+<span class="nc" id="L339">        PartialShapeMatcher2.Result result = matcher.match(p, q);</span>
 
-<span class="nc" id="L339">        double[] out = new double[] {</span>
-<span class="nc" id="L340">            result.chordDiffSum, result.getNumberOfMatches(), p.getN()</span>
+<span class="nc" id="L341">        double[] out = new double[] {</span>
+<span class="nc" id="L342">            result.chordDiffSum, result.getNumberOfMatches(), p.getN()</span>
         };
 
-<span class="nc" id="L343">        return out;        </span>
+<span class="nc" id="L345">        return out;        </span>
     }
 
     private Set&lt;PairInt&gt; reduceToContiguous(Set&lt;PairInt&gt; set, int width,
         int height) {
         
         //TODO: convert user of this method to pixels indexes
-<span class="nc" id="L350">        ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="nc" id="L351">        TIntSet pixSet = imageProcessor.convertPointsToIndexes(set, width);</span>
+<span class="nc" id="L352">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L353">        TIntSet pixSet = imageProcessor.convertPointsToIndexes(set, width);</span>
         
-<span class="nc" id="L353">        ConnectedPointsFinder finder = new ConnectedPointsFinder(width, height);        </span>
-<span class="nc" id="L354">        finder.setMinimumNumberInCluster(1);</span>
-<span class="nc" id="L355">        finder.findConnectedPointGroups(pixSet);</span>
-<span class="nc bnc" id="L356" title="All 2 branches missed.">        if (finder.getNumberOfGroups() == 1) {</span>
-<span class="nc" id="L357">            return new HashSet&lt;PairInt&gt;(set);</span>
+<span class="nc" id="L355">        ConnectedPointsFinder finder = new ConnectedPointsFinder(width, height);        </span>
+<span class="nc" id="L356">        finder.setMinimumNumberInCluster(1);</span>
+<span class="nc" id="L357">        finder.findConnectedPointGroups(pixSet);</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (finder.getNumberOfGroups() == 1) {</span>
+<span class="nc" id="L359">            return new HashSet&lt;PairInt&gt;(set);</span>
         }
         
-<span class="nc" id="L360">        int maxIdx = -1;</span>
-<span class="nc" id="L361">        int nMax = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L362" title="All 2 branches missed.">        for (int i = 0; i &lt; finder.getNumberOfGroups(); ++i) {</span>
-<span class="nc" id="L363">            int n = finder.getNumberofGroupMembers(i);</span>
-<span class="nc bnc" id="L364" title="All 2 branches missed.">            if (n &gt; nMax) {</span>
-<span class="nc" id="L365">                nMax = n;</span>
-<span class="nc" id="L366">                maxIdx = i;</span>
+<span class="nc" id="L362">        int maxIdx = -1;</span>
+<span class="nc" id="L363">        int nMax = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">        for (int i = 0; i &lt; finder.getNumberOfGroups(); ++i) {</span>
+<span class="nc" id="L365">            int n = finder.getNumberofGroupMembers(i);</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">            if (n &gt; nMax) {</span>
+<span class="nc" id="L367">                nMax = n;</span>
+<span class="nc" id="L368">                maxIdx = i;</span>
             }
         }
-<span class="nc" id="L369">        return imageProcessor.convertIndexesToPoints(</span>
-<span class="nc" id="L370">            finder.getXY(maxIdx), width);</span>
+<span class="nc" id="L371">        return imageProcessor.convertIndexesToPoints(</span>
+<span class="nc" id="L372">            finder.getXY(maxIdx), width);</span>
     }
     
     //double[]{intersection, f0, f1, count};
     private double[] sumHOGCost2(HOGs hogs0, CRegion cr0, 
         HOGs hogs1, CRegion cr1) {
         
-<span class="nc" id="L377">        int orientation0 = cr0.hogOrientation;</span>
+<span class="nc" id="L379">        int orientation0 = cr0.hogOrientation;</span>
             
-<span class="nc" id="L379">        int orientation1 = cr1.hogOrientation;</span>
+<span class="nc" id="L381">        int orientation1 = cr1.hogOrientation;</span>
         
-<span class="nc" id="L381">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
+<span class="nc" id="L383">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
 
-<span class="nc" id="L383">        double sum = 0;</span>
-<span class="nc" id="L384">        int count = 0;</span>
+<span class="nc" id="L385">        double sum = 0;</span>
+<span class="nc" id="L386">        int count = 0;</span>
         
-<span class="nc" id="L386">        int[] h0 = new int[hogs0.getNumberOfBins()];</span>
-<span class="nc" id="L387">        int[] h1 = new int[h0.length];</span>
+<span class="nc" id="L388">        int[] h0 = new int[hogs0.getNumberOfBins()];</span>
+<span class="nc" id="L389">        int[] h1 = new int[h0.length];</span>
             
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
-<span class="nc bnc" id="L392" title="All 2 branches missed.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
 
-<span class="nc" id="L394">            PairInt pOffset0 = entry0.getKey();</span>
+<span class="nc" id="L396">            PairInt pOffset0 = entry0.getKey();</span>
 
-<span class="nc" id="L396">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
+<span class="nc" id="L398">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
 
-<span class="nc bnc" id="L398" title="All 2 branches missed.">            if (xy1 == null) {</span>
-<span class="nc" id="L399">                continue;</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">            if (xy1 == null) {</span>
+<span class="nc" id="L401">                continue;</span>
             }
 
-<span class="nc" id="L402">            PairInt xy0 = entry0.getValue();</span>
+<span class="nc" id="L404">            PairInt xy0 = entry0.getValue();</span>
 
-<span class="nc" id="L404">            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
+<span class="nc" id="L406">            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
 
-<span class="nc" id="L406">            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
+<span class="nc" id="L408">            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
 
             // 1.0 is perfect similarity
-<span class="nc" id="L409">            float intersection = hogs0.intersection(h0, orientation0, </span>
+<span class="nc" id="L411">            float intersection = hogs0.intersection(h0, orientation0, </span>
                 h1, orientation1);
             
-<span class="nc" id="L412">            sum += (intersection * intersection);</span>
+<span class="nc" id="L414">            sum += (intersection * intersection);</span>
 
-<span class="nc" id="L414">            count++;</span>
-<span class="nc" id="L415">        }</span>
-<span class="nc bnc" id="L416" title="All 2 branches missed.">        if (count == 0) {</span>
-<span class="nc" id="L417">            return null;</span>
+<span class="nc" id="L416">            count++;</span>
+<span class="nc" id="L417">        }</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L419">            return null;</span>
         }
 
-<span class="nc" id="L420">        sum /= (double)count;</span>
-<span class="nc" id="L421">        sum = Math.sqrt(sum);</span>
+<span class="nc" id="L422">        sum /= (double)count;</span>
+<span class="nc" id="L423">        sum = Math.sqrt(sum);</span>
         
-<span class="nc" id="L423">        double area1 = cr1.offsetsToOrigCoords.size();</span>
-<span class="nc" id="L424">        double f1 = 1. - ((double) count / area1);</span>
+<span class="nc" id="L425">        double area1 = cr1.offsetsToOrigCoords.size();</span>
+<span class="nc" id="L426">        double f1 = 1. - ((double) count / area1);</span>
         
-<span class="nc" id="L426">        double area0 = cr0.offsetsToOrigCoords.size();</span>
-<span class="nc" id="L427">        double f0 = 1. - ((double) count / area0);</span>
+<span class="nc" id="L428">        double area0 = cr0.offsetsToOrigCoords.size();</span>
+<span class="nc" id="L429">        double f0 = 1. - ((double) count / area0);</span>
         
-<span class="nc" id="L429">        return new double[]{sum, f0, f1, count};</span>
+<span class="nc" id="L431">        return new double[]{sum, f0, f1, count};</span>
     }
 
     //double[]{intersection, f0, f1, count};
     private double[] sumHOGCost3(HOGs hogs0, CRegion cr0, 
         HOGs hogs1, CRegion cr1) {
         
-<span class="fc" id="L436">        int orientation0 = cr0.hogOrientation;</span>
+<span class="fc" id="L438">        int orientation0 = cr0.hogOrientation;</span>
             
-<span class="fc" id="L438">        int orientation1 = cr1.hogOrientation;</span>
+<span class="fc" id="L440">        int orientation1 = cr1.hogOrientation;</span>
         
-<span class="fc" id="L440">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
+<span class="fc" id="L442">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
 
-<span class="fc" id="L442">        double sum = 0;</span>
-<span class="fc" id="L443">        double sumErrSq = 0;</span>
-<span class="fc" id="L444">        int count = 0;</span>
+<span class="fc" id="L444">        double sum = 0;</span>
+<span class="fc" id="L445">        double sumErrSq = 0;</span>
+<span class="fc" id="L446">        int count = 0;</span>
         
-<span class="fc" id="L446">        int[] h0 = new int[hogs0.getNumberOfBins()];</span>
-<span class="fc" id="L447">        int[] h1 = new int[h0.length];</span>
+<span class="fc" id="L448">        int[] h0 = new int[hogs0.getNumberOfBins()];</span>
+<span class="fc" id="L449">        int[] h1 = new int[h0.length];</span>
             
         float[] diffAndErr;
+        
+        //NOTE: the coordinate set block could be changed to not visit
+        //   every point, but to instead use a spacing of the HOG cell length
+        //   which is what Dala &amp; Trigg recommend for their detector windows.
         
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
-<span class="fc bfc" id="L454" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
 
-<span class="fc" id="L456">            PairInt pOffset0 = entry0.getKey();</span>
+<span class="fc" id="L462">            PairInt pOffset0 = entry0.getKey();</span>
 
-<span class="fc" id="L458">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
+<span class="fc" id="L464">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
 
-<span class="fc bfc" id="L460" title="All 2 branches covered.">            if (xy1 == null) {</span>
-<span class="fc" id="L461">                continue;</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">            if (xy1 == null) {</span>
+<span class="fc" id="L467">                continue;</span>
             }
 
-<span class="fc" id="L464">            PairInt xy0 = entry0.getValue();</span>
+<span class="fc" id="L470">            PairInt xy0 = entry0.getValue();</span>
 
-<span class="fc" id="L466">            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
+<span class="fc" id="L472">            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
 
-<span class="fc" id="L468">            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
+<span class="fc" id="L474">            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
 
             // 1.0 is perfect similarity
-<span class="fc" id="L471">            diffAndErr = hogs0.diff(h0, orientation0, h1, orientation1);</span>
+<span class="fc" id="L477">            diffAndErr = hogs0.diff(h0, orientation0, h1, orientation1);</span>
             
-<span class="fc" id="L473">            sum += diffAndErr[0];</span>
-<span class="fc" id="L474">            sumErrSq += (diffAndErr[1] * diffAndErr[1]);</span>
+<span class="fc" id="L479">            sum += diffAndErr[0];</span>
+<span class="fc" id="L480">            sumErrSq += (diffAndErr[1] * diffAndErr[1]);</span>
             
-<span class="fc" id="L476">            count++;</span>
-<span class="fc" id="L477">        }</span>
-<span class="fc bfc" id="L478" title="All 2 branches covered.">        if (count == 0) {</span>
-<span class="fc" id="L479">            return null;</span>
+<span class="fc" id="L482">            count++;</span>
+<span class="fc" id="L483">        }</span>
+<span class="pc bpc" id="L484" title="1 of 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L485">            return null;</span>
         }
 
-<span class="fc" id="L482">        sum /= (double)count;</span>
+<span class="fc" id="L488">        sum /= (double)count;</span>
         
-<span class="fc" id="L484">        sumErrSq /= (double)count;</span>
-<span class="fc" id="L485">        sumErrSq = Math.sqrt(sumErrSq);</span>
+<span class="fc" id="L490">        sumErrSq /= (double)count;</span>
+<span class="fc" id="L491">        sumErrSq = Math.sqrt(sumErrSq);</span>
         
-<span class="fc" id="L487">        double area1 = cr1.offsetsToOrigCoords.size();</span>
-<span class="fc" id="L488">        double f1 = 1. - ((double) count / area1);</span>
+<span class="fc" id="L493">        double area1 = cr1.offsetsToOrigCoords.size();</span>
+<span class="fc" id="L494">        double f1 = 1. - ((double) count / area1);</span>
         
-<span class="fc" id="L490">        double area0 = cr0.offsetsToOrigCoords.size();</span>
-<span class="fc" id="L491">        double f0 = 1. - ((double) count / area0);</span>
+<span class="fc" id="L496">        double area0 = cr0.offsetsToOrigCoords.size();</span>
+<span class="fc" id="L497">        double f0 = 1. - ((double) count / area0);</span>
         
-<span class="fc" id="L493">        return new double[]{sum, f0, f1, count, sumErrSq};</span>
+<span class="fc" id="L499">        return new double[]{sum, f0, f1, count, sumErrSq};</span>
     }
 
     private HOGs getOrCreate(TIntObjectMap&lt;HOGs&gt; hogsMap, GreyscaleImage gs, 
         int idx) {
         
-<span class="fc" id="L499">        HOGs hogs = hogsMap.get(idx);</span>
-<span class="fc bfc" id="L500" title="All 2 branches covered.">        if (hogs != null) {</span>
-<span class="fc" id="L501">            return hogs;</span>
+<span class="fc" id="L505">        HOGs hogs = hogsMap.get(idx);</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">        if (hogs != null) {</span>
+<span class="fc" id="L507">            return hogs;</span>
         }
-<span class="fc" id="L503">        hogs = new HOGs(gs, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM);</span>
+<span class="fc" id="L509">        hogs = new HOGs(gs, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM);</span>
         
-<span class="fc" id="L505">        hogsMap.put(idx, hogs);</span>
+<span class="fc" id="L511">        hogsMap.put(idx, hogs);</span>
         
-<span class="fc" id="L507">        return hogs;</span>
+<span class="fc" id="L513">        return hogs;</span>
     }
 
     private HCPT getOrCreate2(TIntObjectMap&lt;HCPT&gt; hcptMap, GreyscaleImage pt, 
         int idx) {
         
-<span class="fc" id="L513">        HCPT hcpt = hcptMap.get(idx);</span>
-<span class="fc bfc" id="L514" title="All 2 branches covered.">        if (hcpt != null) {</span>
-<span class="fc" id="L515">            return hcpt;</span>
+<span class="fc" id="L519">        HCPT hcpt = hcptMap.get(idx);</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">        if (hcpt != null) {</span>
+<span class="fc" id="L521">            return hcpt;</span>
         }
-<span class="fc" id="L517">        hcpt = new HCPT(pt, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);</span>
+<span class="fc" id="L523">        hcpt = new HCPT(pt, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);</span>
         
-<span class="fc" id="L519">        hcptMap.put(idx, hcpt);</span>
+<span class="fc" id="L525">        hcptMap.put(idx, hcpt);</span>
         
-<span class="fc" id="L521">        return hcpt;</span>
+<span class="fc" id="L527">        return hcpt;</span>
     }
 
     private HGS getOrCreate3(TIntObjectMap&lt;HGS&gt; hgsMap, GreyscaleImage img, 
         int idx) {
         
-<span class="fc" id="L527">        HGS hgs = hgsMap.get(idx);</span>
-<span class="fc bfc" id="L528" title="All 2 branches covered.">        if (hgs != null) {</span>
-<span class="fc" id="L529">            return hgs;</span>
+<span class="fc" id="L533">        HGS hgs = hgsMap.get(idx);</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">        if (hgs != null) {</span>
+<span class="fc" id="L535">            return hgs;</span>
         }
-<span class="fc" id="L531">        hgs = new HGS(img, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);</span>
+<span class="fc" id="L537">        hgs = new HGS(img, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);</span>
         
-<span class="fc" id="L533">        hgsMap.put(idx, hgs);</span>
+<span class="fc" id="L539">        hgsMap.put(idx, hgs);</span>
         
-<span class="fc" id="L535">        return hgs;</span>
+<span class="fc" id="L541">        return hgs;</span>
     }
     
     private void calculateDominantOrientations(
         TIntObjectMap&lt;RegionPoints&gt; regionPoints, HOGs hogs) {
 
-<span class="fc" id="L541">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
-<span class="fc bfc" id="L542" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
-<span class="fc" id="L543">            iter.advance();</span>
+<span class="fc" id="L547">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
+<span class="fc" id="L549">            iter.advance();</span>
             
-<span class="fc" id="L545">            RegionPoints r = iter.value();</span>
+<span class="fc" id="L551">            RegionPoints r = iter.value();</span>
             
-<span class="fc" id="L547">            TIntSet orientations = hogs.calculateDominantOrientations(r.points);</span>
+<span class="fc" id="L553">            TIntSet orientations = hogs.calculateDominantOrientations(r.points);</span>
         
-<span class="fc" id="L549">            r.hogOrientations.addAll(orientations);</span>
+<span class="fc" id="L555">            r.hogOrientations.addAll(orientations);</span>
         }
-<span class="fc" id="L551">    }</span>
+<span class="fc" id="L557">    }</span>
 
     /* NOTE: recalculating this worsens the solutions.
     Using the MSER originally determined ellipse parameters has better
@@ -587,25 +593,6 @@ import java.util.Set;
     }
     */  
 
-    private class Obj2 implements Comparable&lt;Obj2&gt; {
-        Obj obj;
-        public Obj2(Obj obj) {
-            this.obj = obj;
-        }
-        @Override
-        public int compareTo(Obj2 other) {
-            double c0 = Math.sqrt(this.obj.costs[0]*this.obj.costs[0] +
-                this.obj.costs[1]*this.obj.costs[1]);
-            double c1 = Math.sqrt(other.obj.costs[0]*other.obj.costs[0] +
-                other.obj.costs[1]*other.obj.costs[1]);
-            if (c0 &lt; c1) {
-                return -1;
-            } else if (c0 &gt; c1) {
-                return 1;
-            }
-            return 0;
-        }
-    }
     private class Obj implements Comparable&lt;Obj&gt;{
         CRegion cr0;
         CRegion cr1;
@@ -648,48 +635,48 @@ import java.util.Set;
     }
 
     public static int distance(PairInt p1, PairInt p2) {
-<span class="nc" id="L651">        int diffX = p1.getX() - p2.getX();</span>
-<span class="nc" id="L652">        int diffY = p1.getY() - p2.getY();</span>
-<span class="nc" id="L653">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
+<span class="nc" id="L638">        int diffX = p1.getX() - p2.getX();</span>
+<span class="nc" id="L639">        int diffY = p1.getY() - p2.getY();</span>
+<span class="nc" id="L640">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
     }
 
     public static int distance(float x0, float y0, float x1, float y1) {
-<span class="nc" id="L657">        float diffX = x0 - x1;</span>
-<span class="nc" id="L658">        float diffY = y0 - y1;</span>
-<span class="nc" id="L659">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
+<span class="nc" id="L644">        float diffX = x0 - x1;</span>
+<span class="nc" id="L645">        float diffY = y0 - y1;</span>
+<span class="nc" id="L646">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
     }
 
     private void debugPrint2(TIntObjectMap&lt;CRegion&gt; cRegions,
         List&lt;GreyscaleImage&gt; rgb, String label) {
 
-<span class="nc" id="L665">        Image img1 = rgb.get(1).copyToColorGreyscale();</span>
+<span class="nc" id="L652">        Image img1 = rgb.get(1).copyToColorGreyscale();</span>
 
-<span class="nc" id="L667">        Image img2 = rgb.get(1).copyToColorGreyscale();</span>
+<span class="nc" id="L654">        Image img2 = rgb.get(1).copyToColorGreyscale();</span>
 
-<span class="nc" id="L669">        TIntObjectIterator&lt;CRegion&gt; iter = cRegions.iterator();</span>
+<span class="nc" id="L656">        TIntObjectIterator&lt;CRegion&gt; iter = cRegions.iterator();</span>
 
-<span class="nc" id="L671">        int nExtraDot = 0;</span>
+<span class="nc" id="L658">        int nExtraDot = 0;</span>
 
-<span class="nc bnc" id="L673" title="All 2 branches missed.">        for (int ii = 0; ii &lt; cRegions.size(); ++ii) {</span>
-<span class="nc" id="L674">            iter.advance();</span>
+<span class="nc bnc" id="L660" title="All 2 branches missed.">        for (int ii = 0; ii &lt; cRegions.size(); ++ii) {</span>
+<span class="nc" id="L661">            iter.advance();</span>
 
-<span class="nc" id="L676">            int idx = iter.key();</span>
+<span class="nc" id="L663">            int idx = iter.key();</span>
 
-<span class="nc" id="L678">            CRegion cr = iter.value();</span>
+<span class="nc" id="L665">            CRegion cr = iter.value();</span>
 
-<span class="nc" id="L680">            int[] clr = ImageIOHelper.getNextRGB(ii);</span>
+<span class="nc" id="L667">            int[] clr = ImageIOHelper.getNextRGB(ii);</span>
 
-<span class="nc" id="L682">            cr.draw(img1, nExtraDot, clr[0], clr[1], clr[2]);</span>
+<span class="nc" id="L669">            cr.draw(img1, nExtraDot, clr[0], clr[1], clr[2]);</span>
 
-<span class="nc" id="L684">            cr.drawEachPixel(img2, nExtraDot, clr[0], clr[1], clr[2]);</span>
+<span class="nc" id="L671">            cr.drawEachPixel(img2, nExtraDot, clr[0], clr[1], clr[2]);</span>
         }
 
-<span class="nc" id="L687">        MiscDebug.writeImage(img1, label + &quot;_&quot; + &quot;_csrs_&quot;);</span>
+<span class="nc" id="L674">        MiscDebug.writeImage(img1, label + &quot;_&quot; + &quot;_csrs_&quot;);</span>
 
-<span class="nc" id="L689">        MiscDebug.writeImage(img2, label + &quot;_&quot; + &quot;_csrs_pix_&quot;);</span>
+<span class="nc" id="L676">        MiscDebug.writeImage(img2, label + &quot;_&quot; + &quot;_csrs_pix_&quot;);</span>
 
-<span class="nc" id="L691">        System.out.println(cRegions.size() + &quot; labeled regions for &quot; + label);</span>
-<span class="nc" id="L692">    }</span>
+<span class="nc" id="L678">        System.out.println(cRegions.size() + &quot; labeled regions for &quot; + label);</span>
+<span class="nc" id="L679">    }</span>
 
     /**
      * This method is a work in progress.  
@@ -735,121 +722,122 @@ import java.util.Set;
      * @return 
      */
     public List&lt;CorrespondenceList&gt; matchObject0(
+        ObjectMatcher.CMODE clrMode0,
         List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB0, List&lt;GreyscaleImage&gt; pyrPT0, 
         TIntObjectMap&lt;Canonicalizer.RegionPoints&gt; regionPoints0, 
         List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB1, List&lt;GreyscaleImage&gt; pyrPT1, 
         TIntObjectMap&lt;Canonicalizer.RegionPoints&gt; regionPoints1, 
         Settings settings) {
             
-<span class="fc" id="L744">        TIntObjectMap&lt;HOGs&gt; hogsMap0 = new TIntObjectHashMap&lt;HOGs&gt;();</span>
-<span class="fc" id="L745">        TIntObjectMap&lt;HOGs&gt; hogsMap1 = new TIntObjectHashMap&lt;HOGs&gt;();</span>
+<span class="fc" id="L732">        TIntObjectMap&lt;HOGs&gt; hogsMap0 = new TIntObjectHashMap&lt;HOGs&gt;();</span>
+<span class="fc" id="L733">        TIntObjectMap&lt;HOGs&gt; hogsMap1 = new TIntObjectHashMap&lt;HOGs&gt;();</span>
         
-<span class="fc" id="L747">        TIntObjectMap&lt;HCPT&gt; hcptMap0 = new TIntObjectHashMap&lt;HCPT&gt;();</span>
-<span class="fc" id="L748">        TIntObjectMap&lt;HGS&gt; hgsMap0 = new TIntObjectHashMap&lt;HGS&gt;();</span>
-<span class="fc" id="L749">        TIntObjectMap&lt;HCPT&gt; hcptMap1 = new TIntObjectHashMap&lt;HCPT&gt;();</span>
-<span class="fc" id="L750">        TIntObjectMap&lt;HGS&gt; hgsMap1 = new TIntObjectHashMap&lt;HGS&gt;();</span>
+<span class="fc" id="L735">        TIntObjectMap&lt;HCPT&gt; hcptMap0 = new TIntObjectHashMap&lt;HCPT&gt;();</span>
+<span class="fc" id="L736">        TIntObjectMap&lt;HGS&gt; hgsMap0 = new TIntObjectHashMap&lt;HGS&gt;();</span>
+<span class="fc" id="L737">        TIntObjectMap&lt;HCPT&gt; hcptMap1 = new TIntObjectHashMap&lt;HCPT&gt;();</span>
+<span class="fc" id="L738">        TIntObjectMap&lt;HGS&gt; hgsMap1 = new TIntObjectHashMap&lt;HGS&gt;();</span>
 
         // use hogs to calculate the dominant orientations
-<span class="fc" id="L753">        calculateDominantOrientations(regionPoints0, </span>
-<span class="fc" id="L754">            getOrCreate(hogsMap0, combineImages(pyrRGB0.get(0)), 0));</span>
+<span class="fc" id="L741">        calculateDominantOrientations(regionPoints0, </span>
+<span class="fc" id="L742">            getOrCreate(hogsMap0, combineImages(pyrRGB0.get(0)), 0));</span>
         
-<span class="fc" id="L756">        calculateDominantOrientations(regionPoints1, </span>
-<span class="fc" id="L757">            getOrCreate(hogsMap1, combineImages(pyrRGB1.get(0)), 0));</span>
+<span class="fc" id="L744">        calculateDominantOrientations(regionPoints1, </span>
+<span class="fc" id="L745">            getOrCreate(hogsMap1, combineImages(pyrRGB1.get(0)), 0));</span>
         
-<span class="fc" id="L759">        Canonicalizer canonicalizer = new Canonicalizer();</span>
+<span class="fc" id="L747">        Canonicalizer canonicalizer = new Canonicalizer();</span>
         
         // create the CRegion objects which have the rotated points and 
         //    offsets in them
-<span class="fc" id="L763">        TIntObjectMap&lt;CRegion&gt; cRegions0 = canonicalizer.canonicalizeRegions4(</span>
-<span class="fc" id="L764">            regionPoints0, pyrRGB0.get(0).get(1));</span>
+<span class="fc" id="L751">        TIntObjectMap&lt;CRegion&gt; cRegions0 = canonicalizer.canonicalizeRegions4(</span>
+<span class="fc" id="L752">            regionPoints0, pyrRGB0.get(0).get(1));</span>
         
-<span class="fc" id="L766">        TIntObjectMap&lt;CRegion&gt; cRegions1 = canonicalizer.canonicalizeRegions4(</span>
-<span class="fc" id="L767">            regionPoints1, pyrRGB1.get(0).get(1));</span>
+<span class="fc" id="L754">        TIntObjectMap&lt;CRegion&gt; cRegions1 = canonicalizer.canonicalizeRegions4(</span>
+<span class="fc" id="L755">            regionPoints1, pyrRGB1.get(0).get(1));</span>
                 
         // populated on demand, some are skipped for large size differences
-<span class="fc" id="L770">        TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csr0</span>
+<span class="fc" id="L758">        TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csr0</span>
             = new TIntObjectHashMap&lt;TIntObjectMap&lt;CRegion&gt;&gt;();
-<span class="fc" id="L772">        csr0.put(0, cRegions0);</span>
+<span class="fc" id="L760">        csr0.put(0, cRegions0);</span>
 
-<span class="fc" id="L774">        TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csr1</span>
+<span class="fc" id="L762">        TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csr1</span>
             = new TIntObjectHashMap&lt;TIntObjectMap&lt;CRegion&gt;&gt;();
-<span class="fc" id="L776">        csr1.put(0, cRegions1);</span>
+<span class="fc" id="L764">        csr1.put(0, cRegions1);</span>
 
         // key = region index, value = Obj w/ cost being hog intersection
-<span class="fc" id="L779">        TIntObjectMap&lt;FixedSizeSortedVector&lt;Obj&gt;&gt; rIndexHOGMap1</span>
+<span class="fc" id="L767">        TIntObjectMap&lt;FixedSizeSortedVector&lt;Obj&gt;&gt; rIndexHOGMap1</span>
             = new TIntObjectHashMap&lt;FixedSizeSortedVector&lt;Obj&gt;&gt;();
         
-<span class="fc" id="L782">        int n0 = pyrPT0.size();</span>
-<span class="fc" id="L783">        int n1 = pyrPT1.size();</span>
+<span class="fc" id="L770">        int n0 = pyrPT0.size();</span>
+<span class="fc" id="L771">        int n1 = pyrPT1.size();</span>
 
-<span class="fc" id="L785">        int w0 = pyrPT0.get(0).getWidth();</span>
-<span class="fc" id="L786">        int h0 = pyrPT0.get(0).getHeight();</span>
-<span class="fc" id="L787">        int w1 = pyrPT1.get(0).getWidth();</span>
-<span class="fc" id="L788">        int h1 = pyrPT1.get(0).getHeight();</span>
-        
-<span class="fc" id="L790">        float sizeFactor = 2;//1.2f;</span>
+<span class="fc" id="L773">        int w0 = pyrPT0.get(0).getWidth();</span>
+<span class="fc" id="L774">        int h0 = pyrPT0.get(0).getHeight();</span>
+<span class="fc" id="L775">        int w1 = pyrPT1.get(0).getWidth();</span>
+<span class="fc" id="L776">        int h1 = pyrPT1.get(0).getHeight();</span>
+              
+<span class="fc" id="L778">        float sizeFactor = 1.2f;//2;//1.2f;</span>
 
-<span class="fc" id="L792">        FixedSizeSortedVector&lt;Obj&gt; bestOverallA =</span>
+<span class="fc" id="L780">        FixedSizeSortedVector&lt;Obj&gt; bestOverallA =</span>
             //new FixedSizeSortedVector&lt;Obj&gt;(100, Obj.class);
             new FixedSizeSortedVector&lt;Obj&gt;(n0, Obj.class);
                         
-<span class="fc bfc" id="L796" title="All 2 branches covered.">        for (int pyrIdx0 = 0; pyrIdx0 &lt; n0; ++pyrIdx0) {</span>
+<span class="fc bfc" id="L784" title="All 2 branches covered.">        for (int pyrIdx0 = 0; pyrIdx0 &lt; n0; ++pyrIdx0) {</span>
 
-<span class="fc" id="L798">            GreyscaleImage gsI0 = combineImages(pyrRGB0.get(pyrIdx0));</span>
-<span class="fc" id="L799">            GreyscaleImage ptI0 = pyrPT0.get(pyrIdx0);</span>
+<span class="fc" id="L786">            GreyscaleImage gsI0 = combineImages(pyrRGB0.get(pyrIdx0));</span>
+<span class="fc" id="L787">            GreyscaleImage ptI0 = pyrPT0.get(pyrIdx0);</span>
 
-<span class="fc" id="L801">            int w0_i = ptI0.getWidth();</span>
-<span class="fc" id="L802">            int h0_i = ptI0.getHeight();</span>
-<span class="fc" id="L803">            float scale0 = (((float) w0 / (float) w0_i)</span>
+<span class="fc" id="L789">            int w0_i = ptI0.getWidth();</span>
+<span class="fc" id="L790">            int h0_i = ptI0.getHeight();</span>
+<span class="fc" id="L791">            float scale0 = (((float) w0 / (float) w0_i)</span>
                 + ((float) h0 / (float) h0_i)) / 2.f;
 
-<span class="fc" id="L806">            HOGs hogs0 = getOrCreate(hogsMap0, gsI0, pyrIdx0);</span>
+<span class="fc" id="L794">            HOGs hogs0 = getOrCreate(hogsMap0, gsI0, pyrIdx0);</span>
 
-<span class="fc" id="L808">            HCPT hcpt0 = getOrCreate2(hcptMap0, ptI0, pyrIdx0);</span>
-<span class="fc" id="L809">            HGS hgs0 = getOrCreate3(hgsMap0, gsI0, pyrIdx0);</span>
+<span class="fc" id="L796">            HCPT hcpt0 = getOrCreate2(hcptMap0, ptI0, pyrIdx0);</span>
+<span class="fc" id="L797">            HGS hgs0 = getOrCreate3(hgsMap0, gsI0, pyrIdx0);</span>
             
-<span class="fc" id="L811">            TIntObjectMap&lt;CRegion&gt; regions0 = getOrCreate(csr0, pyrIdx0, gsI0,</span>
+<span class="fc" id="L799">            TIntObjectMap&lt;CRegion&gt; regions0 = getOrCreate(csr0, pyrIdx0, gsI0,</span>
                 scale0);
  
-<span class="fc" id="L814">            FixedSizeSortedVector&lt;Obj&gt; bestPerOctave =</span>
+<span class="fc" id="L802">            FixedSizeSortedVector&lt;Obj&gt; bestPerOctave =</span>
                 //new FixedSizeSortedVector&lt;Obj&gt;(100, Obj.class);
                 new FixedSizeSortedVector&lt;Obj&gt;(1, Obj.class);
             
-<span class="fc bfc" id="L818" title="All 2 branches covered.">            for (int pyrIdx1 = 0; pyrIdx1 &lt; n1; ++pyrIdx1) {</span>
+<span class="fc bfc" id="L806" title="All 2 branches covered.">            for (int pyrIdx1 = 0; pyrIdx1 &lt; n1; ++pyrIdx1) {</span>
 
-<span class="fc" id="L820">                GreyscaleImage gsI1 = combineImages(pyrRGB1.get(pyrIdx1));</span>
-<span class="fc" id="L821">                GreyscaleImage ptI1 = pyrPT1.get(pyrIdx1);</span>
+<span class="fc" id="L808">                GreyscaleImage gsI1 = combineImages(pyrRGB1.get(pyrIdx1));</span>
+<span class="fc" id="L809">                GreyscaleImage ptI1 = pyrPT1.get(pyrIdx1);</span>
 
-<span class="fc" id="L823">                int w1_i = ptI1.getWidth();</span>
-<span class="fc" id="L824">                int h1_i = ptI1.getHeight();</span>
-<span class="fc" id="L825">                float scale1 = (((float) w1 / (float) w1_i)</span>
+<span class="fc" id="L811">                int w1_i = ptI1.getWidth();</span>
+<span class="fc" id="L812">                int h1_i = ptI1.getHeight();</span>
+<span class="fc" id="L813">                float scale1 = (((float) w1 / (float) w1_i)</span>
                     + ((float) h1 / (float) h1_i)) / 2.f;
 
-<span class="fc" id="L828">                TIntObjectMap&lt;CRegion&gt; regions1 = getOrCreate(csr1, pyrIdx1,</span>
+<span class="fc" id="L816">                TIntObjectMap&lt;CRegion&gt; regions1 = getOrCreate(csr1, pyrIdx1,</span>
                     gsI1, scale1);
 
-<span class="fc" id="L831">                HOGs hogs1 = getOrCreate(hogsMap1, gsI1, pyrIdx1);</span>
-<span class="fc" id="L832">                HCPT hcpt1 = getOrCreate2(hcptMap1, ptI1, pyrIdx1);</span>
-<span class="fc" id="L833">                HGS hgs1 = getOrCreate3(hgsMap1, gsI1, pyrIdx1);</span>
+<span class="fc" id="L819">                HOGs hogs1 = getOrCreate(hogsMap1, gsI1, pyrIdx1);</span>
+<span class="fc" id="L820">                HCPT hcpt1 = getOrCreate2(hcptMap1, ptI1, pyrIdx1);</span>
+<span class="fc" id="L821">                HGS hgs1 = getOrCreate3(hgsMap1, gsI1, pyrIdx1);</span>
                 
-<span class="fc" id="L835">                TIntObjectIterator&lt;CRegion&gt; iter0 = regions0.iterator();</span>
-<span class="fc bfc" id="L836" title="All 2 branches covered.">                for (int i0 = 0; i0 &lt; regions0.size(); ++i0) {</span>
+<span class="fc" id="L823">                TIntObjectIterator&lt;CRegion&gt; iter0 = regions0.iterator();</span>
+<span class="fc bfc" id="L824" title="All 2 branches covered.">                for (int i0 = 0; i0 &lt; regions0.size(); ++i0) {</span>
                     
-<span class="fc" id="L838">                    iter0.advance();</span>
+<span class="fc" id="L826">                    iter0.advance();</span>
                     
-<span class="fc" id="L840">                    int rIdx0 = iter0.key();</span>
+<span class="fc" id="L828">                    int rIdx0 = iter0.key();</span>
                     
-<span class="fc" id="L842">                    CRegion cr0 = iter0.value();</span>
+<span class="fc" id="L830">                    CRegion cr0 = iter0.value();</span>
       
-<span class="fc" id="L844">                    int sz0 = calculateObjectSizeByAvgDist(</span>
+<span class="fc" id="L832">                    int sz0 = calculateObjectSizeByAvgDist(</span>
                         cr0.ellipseParams.xC, cr0.ellipseParams.yC,
-<span class="fc" id="L846">                        cr0.offsetsToOrigCoords.values());</span>
+<span class="fc" id="L834">                        cr0.offsetsToOrigCoords.values());</span>
                     
                     //int area0_full = csr0.get(0).get(rIdx0).offsetsToOrigCoords.size();
-<span class="fc" id="L849">                    TIntObjectIterator&lt;CRegion&gt; iter1 = regions1.iterator();</span>
-<span class="fc bfc" id="L850" title="All 2 branches covered.">                    for (int i1 = 0; i1 &lt; regions1.size(); ++i1) {</span>
+<span class="fc" id="L837">                    TIntObjectIterator&lt;CRegion&gt; iter1 = regions1.iterator();</span>
+<span class="fc bfc" id="L838" title="All 2 branches covered.">                    for (int i1 = 0; i1 &lt; regions1.size(); ++i1) {</span>
                         
-<span class="fc" id="L852">                        iter1.advance();</span>
+<span class="fc" id="L840">                        iter1.advance();</span>
                         
                         // because these regions were made w/ hog orientations,
                         // there may be multiple regions with the same 
@@ -857,12 +845,12 @@ import java.util.Set;
                         // a different rIdx1 here.
                         // so cr.dataIdx is used below for the identity to keep
                         // the best match for the cr.dataIdx (== original rIdx)
-<span class="fc" id="L860">                        int rIdx1 = iter1.key();</span>
-<span class="fc" id="L861">                        CRegion cr1 = iter1.value();</span>
+<span class="fc" id="L848">                        int rIdx1 = iter1.key();</span>
+<span class="fc" id="L849">                        CRegion cr1 = iter1.value();</span>
 
-<span class="fc" id="L863">                        int sz1 = calculateObjectSizeByAvgDist(</span>
+<span class="fc" id="L851">                        int sz1 = calculateObjectSizeByAvgDist(</span>
                             cr1.ellipseParams.xC, cr1.ellipseParams.yC,
-<span class="fc" id="L865">                            cr1.offsetsToOrigCoords.values());</span>
+<span class="fc" id="L853">                            cr1.offsetsToOrigCoords.values());</span>
 
                         /*
                         int xp0 = -1; int yp0 = -1; int xp1 = -1; int yp1 = -1;
@@ -876,14 +864,14 @@ import java.util.Set;
                         }*/
                         
                         // size filter
-<span class="fc bfc" id="L879" title="All 8 branches covered.">                        if ((sz1 &gt; sz0 &amp;&amp; ((sz1 / sz0) &gt; sizeFactor))</span>
+<span class="fc bfc" id="L867" title="All 8 branches covered.">                        if ((sz1 &gt; sz0 &amp;&amp; ((sz1 / sz0) &gt; sizeFactor))</span>
                             || (sz0 &gt; sz1 &amp;&amp; ((sz0 / sz1) &gt; sizeFactor))) {
                             
                             //System.out.format(
                             //    &quot;  REMOVING (%d,%d) where sz0=%d sz1=%d\n&quot;,
                             //    xp1, yp1, sz0, sz1);
                             
-<span class="fc" id="L886">                            continue;</span>
+<span class="fc" id="L874">                            continue;</span>
                         }
 
                         double[] hogCosts;
@@ -898,50 +886,71 @@ import java.util.Set;
                             hogCost = 1.f - (float) hogCosts[0];
                         } else {// use mean difference    
                             //double[]{diff, f0, f1, count, error};
-<span class="fc" id="L901">                            hogCosts = sumHOGCost3(hogs0, cr0, hogs1, cr1);</span>
-<span class="fc bfc" id="L902" title="All 2 branches covered.">                            if (hogCosts == null) {</span>
-<span class="fc" id="L903">                                continue;</span>
+<span class="fc" id="L889">                            hogCosts = sumHOGCost3(hogs0, cr0, hogs1, cr1);</span>
+<span class="pc bpc" id="L890" title="1 of 2 branches missed.">                            if (hogCosts == null) {</span>
+<span class="nc" id="L891">                                continue;</span>
                             }
-<span class="fc" id="L905">                            hogCost = (float)hogCosts[0];</span>
+<span class="fc" id="L893">                            hogCost = (float)hogCosts[0];</span>
                         }
                         
                         // 1 - fraction of whole (is coverage expressed as a cost)
-<span class="fc" id="L909">                        double f0 = Math.max(0, hogCosts[1]);</span>
-<span class="fc" id="L910">                        double f1 = Math.max(0, hogCosts[2]);</span>
-<span class="fc" id="L911">                        double f = (f0 + f1)/2;</span>
+<span class="fc" id="L897">                        double f0 = Math.max(0, hogCosts[1]);</span>
+<span class="fc" id="L898">                        double f1 = Math.max(0, hogCosts[2]);</span>
+<span class="fc" id="L899">                        double f = (f0 + f1)/2;</span>
                         
-<span class="fc" id="L913">                        Obj obj = new Obj();</span>
-<span class="fc" id="L914">                        obj.cr0 = cr0;</span>
-<span class="fc" id="L915">                        obj.cr1 = cr1;</span>
-<span class="fc" id="L916">                        obj.r0Idx = rIdx0;</span>
-<span class="fc" id="L917">                        obj.r1Idx = rIdx1;</span>
-<span class="fc" id="L918">                        obj.imgIdx0 = pyrIdx0;</span>
-<span class="fc" id="L919">                        obj.imgIdx1 = pyrIdx1;</span>
-<span class="fc" id="L920">                        obj.nMatched = (int) hogCosts[3];</span>
+<span class="fc" id="L901">                        Obj obj = new Obj();</span>
+<span class="fc" id="L902">                        obj.cr0 = cr0;</span>
+<span class="fc" id="L903">                        obj.cr1 = cr1;</span>
+<span class="fc" id="L904">                        obj.r0Idx = rIdx0;</span>
+<span class="fc" id="L905">                        obj.r1Idx = rIdx1;</span>
+<span class="fc" id="L906">                        obj.imgIdx0 = pyrIdx0;</span>
+<span class="fc" id="L907">                        obj.imgIdx1 = pyrIdx1;</span>
+<span class="fc" id="L908">                        obj.nMatched = (int) hogCosts[3];</span>
                         
                         double cost;
-                  
-                        //double[]{sumA, f, count}
-<span class="fc" id="L925">                        double[] costs2 = sumCost2(hcpt0, hgs0, cr0, scale0, </span>
-                            hcpt1, hgs1, cr1, scale1);
-<span class="fc" id="L927">                        double hcptHgsCost = 1.f - costs2[0];</span>
-
-<span class="fc" id="L929">                        cost = (float) Math.sqrt(</span>
+                        double[] costs2;
+                        double hcptHgsCost;
+                        double hcptCost;
+                        double hgsCost;
+                       
+                        if (true) {
+                            //double[]{combIntersection, f0, f1, 
+                            //    intersectionHCPT, intersectionHGS, count}
+<span class="fc" id="L919">                            costs2 = sumCost2(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);</span>
+<span class="fc bfc" id="L920" title="All 2 branches covered.">                            if (clrMode0.equals(ObjectMatcher.CMODE.WHITE)) {</span>
+<span class="fc" id="L921">                                hcptHgsCost = 1.f - costs2[0];</span>
+                            } else {
+<span class="fc" id="L923">                                hcptHgsCost = 1.f - costs2[3];</span>
+                            }
+<span class="fc" id="L925">                            hcptCost = 1.f - costs2[3];</span>
+<span class="fc" id="L926">                            hgsCost = 1.f - costs2[4];</span>
+                        } else {
+                            costs2 = sumCost3(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
+                            if (clrMode0.equals(ObjectMatcher.CMODE.WHITE)) {
+                                hcptHgsCost = costs2[0];
+                            } else {
+                                hcptHgsCost = costs2[3];
+                            }
+                            hcptCost = costs2[3];
+                            hgsCost = costs2[4];
+                        }
+                        
+<span class="fc" id="L938">                        cost = (float) Math.sqrt(</span>
                             2. * hogCost * hogCost
                             + 2. * f * f
                             + hcptHgsCost * hcptHgsCost
                         );
-<span class="fc" id="L934">                        obj.costs = new double[]{</span>
-                            hogCost, f, hcptHgsCost
+<span class="fc" id="L943">                        obj.costs = new double[]{</span>
+                            hogCost, f, hcptHgsCost, f0, f1, hcptCost, hgsCost
                         };
                         
-<span class="fc" id="L938">                        obj.cost = cost;</span>
-<span class="fc" id="L939">                        obj.f = f;</span>
+<span class="fc" id="L947">                        obj.cost = cost;</span>
+<span class="fc" id="L948">                        obj.f = f;</span>
 
-<span class="fc" id="L941">                        int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
-<span class="fc" id="L942">                        int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
-<span class="fc" id="L943">                        int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
-<span class="fc" id="L944">                        int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
+<span class="fc" id="L950">                        int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
+<span class="fc" id="L951">                        int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
+<span class="fc" id="L952">                        int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
+<span class="fc" id="L953">                        int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
                         
                         //NOTE: may need to consider the best match
                         //  for each rIdx, that is, consider multiple 
@@ -949,168 +958,167 @@ import java.util.Set;
                         //  the best orienation for a region only
                         
                         // add to r1 map (which is actually cr.dataIdx)
-<span class="fc" id="L952">                        FixedSizeSortedVector&lt;Obj&gt; objVec = rIndexHOGMap1.get(</span>
+<span class="fc" id="L961">                        FixedSizeSortedVector&lt;Obj&gt; objVec = rIndexHOGMap1.get(</span>
                             cr1.dataIdx);
-<span class="fc bfc" id="L954" title="All 2 branches covered.">                        if (objVec == null) {</span>
-<span class="fc" id="L955">                            objVec = new FixedSizeSortedVector&lt;Obj&gt;(</span>
+<span class="fc bfc" id="L963" title="All 2 branches covered.">                        if (objVec == null) {</span>
+<span class="fc" id="L964">                            objVec = new FixedSizeSortedVector&lt;Obj&gt;(</span>
                                 n0, Obj.class);
-<span class="fc" id="L957">                            rIndexHOGMap1.put(cr1.dataIdx, objVec);</span>
+<span class="fc" id="L966">                            rIndexHOGMap1.put(cr1.dataIdx, objVec);</span>
                         }
-<span class="fc" id="L959">                        boolean added = objVec.add(obj);</span>
+<span class="fc" id="L968">                        boolean added = objVec.add(obj);</span>
                         
-<span class="fc" id="L961">                        added = bestPerOctave.add(obj);</span>
+<span class="fc" id="L970">                        added = bestPerOctave.add(obj);</span>
                         
-                        /*if (debug) {
-                            double cost2 = (float) Math.sqrt(
+<span class="pc bpc" id="L972" title="1 of 2 branches missed.">                        if (debug) {</span>
+<span class="fc" id="L973">                            double cost2 = (float) Math.sqrt(</span>
                                 obj.costs[0]*obj.costs[0] +
                                 obj.costs[1]*obj.costs[1] +
                                 obj.costs[2]*obj.costs[2]
                             );
-                            System.out.format(&quot;%s octave %d %d] (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f] n=%d c2=%.3f\n&quot;,
-                            settings.getDebugLabel(), pyrIdx0, pyrIdx1,
-                            x1, y1, (float) obj.cost,
-                            Math.round(scale0 * obj.cr0.ellipseParams.xC),
-                            Math.round(scale0 * obj.cr0.ellipseParams.yC), 
-                            (float) obj.costs[0], (float) obj.costs[1], (float) obj.costs[2], 
-                            obj.cr0.offsetsToOrigCoords.size(),
-                            (float)cost2
+<span class="fc" id="L978">                            System.out.format(</span>
+                            &quot;%s octave %d %d] (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d c2=%.3f\n&quot;,
+<span class="fc" id="L980">                            settings.getDebugLabel(), pyrIdx0, pyrIdx1,</span>
+<span class="fc" id="L981">                            x1, y1, (float) obj.cost,</span>
+<span class="fc" id="L982">                            Math.round(scale0 * obj.cr0.ellipseParams.xC),</span>
+<span class="fc" id="L983">                            Math.round(scale0 * obj.cr0.ellipseParams.yC), </span>
+<span class="fc" id="L984">                            (float) obj.costs[0], (float) obj.costs[1], </span>
+<span class="fc" id="L985">                            (float) obj.costs[2], (float) obj.costs[3], </span>
+<span class="fc" id="L986">                            (float) obj.costs[4], (float) obj.costs[5], </span>
+<span class="fc" id="L987">                            (float) obj.costs[6], </span>
+<span class="fc" id="L988">                            obj.cr0.offsetsToOrigCoords.size(),</span>
+<span class="fc" id="L989">                            (float)cost2</span>
                             );
-                        }*/
+                        }
                     }
                 }
             } // end over dataset1 octaves
             
             // temporarily print the best of each octave0 to look at 
             //    scale biases
-<span class="fc bfc" id="L985" title="All 2 branches covered.">            for (int k = 0; k &lt; bestPerOctave.getNumberOfItems(); ++k) {</span>
-<span class="fc" id="L986">                Obj obj0 = bestPerOctave.getArray()[k];</span>
-<span class="fc" id="L987">                int imgIdx1 = obj0.imgIdx1;</span>
-<span class="fc" id="L988">                GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
-<span class="fc" id="L989">                int w1_i = gsI1.getWidth();</span>
-<span class="fc" id="L990">                int h1_i = gsI1.getHeight();</span>
-<span class="fc" id="L991">                float scale1 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;</span>
-<span class="fc" id="L992">                int or0 = obj0.cr0.hogOrientation;</span>
-<span class="fc" id="L993">                int or1 = obj0.cr1.hogOrientation;</span>
+<span class="fc bfc" id="L998" title="All 2 branches covered.">            for (int k = 0; k &lt; bestPerOctave.getNumberOfItems(); ++k) {</span>
+<span class="fc" id="L999">                Obj obj0 = bestPerOctave.getArray()[k];</span>
+<span class="fc" id="L1000">                int imgIdx1 = obj0.imgIdx1;</span>
+<span class="fc" id="L1001">                GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
+<span class="fc" id="L1002">                int w1_i = gsI1.getWidth();</span>
+<span class="fc" id="L1003">                int h1_i = gsI1.getHeight();</span>
+<span class="fc" id="L1004">                float scale1 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;</span>
+<span class="fc" id="L1005">                int or0 = obj0.cr0.hogOrientation;</span>
+<span class="fc" id="L1006">                int or1 = obj0.cr1.hogOrientation;</span>
                 //String str1 = String.format(&quot;angles=(%d,%d) s=(%.1f,%.1f)&quot;, 
                 //    or0, or1, scale0, scale1);
 
-                /*
-                this needs more testing, but a small number of tests suggest that
-                the current cost estimate above and
-                the cost2 estimate below, almost always give the same top result,
-                and when they don't, the one with the smallest octave index
-                (== the largest image) should be chosen.
-                */
-                
-<span class="fc" id="L1005">                double cost2 = (float) Math.sqrt(</span>
+<span class="fc" id="L1010">                double cost2 = (float) Math.sqrt(</span>
                     obj0.costs[0]*obj0.costs[0] +
                     obj0.costs[1]*obj0.costs[1] +
                     obj0.costs[2]*obj0.costs[2]
                 );
-                
-                /*
-                System.out.format(
- &quot;%s octave %d %d] %d (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f] %s n=%d c2=%.3f\n&quot;,
-                    debugLabel, imgIdx0, imgIdx1, k, 
-                    Math.round(scale1 * obj0.cr1.ellipseParams.xC),
-                    Math.round(scale1 * obj0.cr1.ellipseParams.yC),
-                    (float) obj0.cost,
-                    Math.round(scale0 * obj0.cr0.ellipseParams.xC),
-                    Math.round(scale0 * obj0.cr0.ellipseParams.yC), 
-                    (float) obj0.costs[0], (float) obj0.costs[1], (float) obj0.costs[2], 
-                    str1,
-                    obj0.cr0.offsetsToOrigCoords.size(),
-                    (float)cost2
-                );
-                */
                                 
-<span class="fc" id="L1027">                bestOverallA.add(obj0);</span>
+<span class="fc" id="L1016">                bestOverallA.add(obj0);</span>
             }
         }
-        
-<span class="fc" id="L1031">        System.out.println(&quot;r1 points size = &quot; + regionPoints1.size()</span>
-<span class="fc" id="L1032">            + &quot; r1 map size filtered = &quot; + rIndexHOGMap1.size());</span>
+         
+<span class="fc" id="L1020">        System.out.println(&quot;r1 points size = &quot; + regionPoints1.size()</span>
+<span class="fc" id="L1021">            + &quot; r1 map size filtered = &quot; + rIndexHOGMap1.size());</span>
 
-<span class="pc bpc" id="L1034" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L1023" title="1 of 2 branches missed.">        if (debug) {</span>
+        //if (true) {
+            
+<span class="fc" id="L1026">            Map&lt;QuadInt, Obj&gt; bestMap = new HashMap&lt;QuadInt, Obj&gt;();</span>
             
             // re-ordering the best for each rIdx1:
-<span class="fc" id="L1037">            FixedSizeSortedVector&lt;Obj&gt; tmp1 = new FixedSizeSortedVector&lt;Obj&gt;(</span>
+<span class="fc" id="L1029">            FixedSizeSortedVector&lt;Obj&gt; tmp1 = new FixedSizeSortedVector&lt;Obj&gt;(</span>
                 //rIndexHOGMap.size(), 
                 5, Obj.class);
 
             // --- print out phog based rankings -----
             // printing range of hog values for a region1
-<span class="fc" id="L1043">            TIntObjectIterator&lt;FixedSizeSortedVector&lt;Obj&gt;&gt; iter2 = rIndexHOGMap1.iterator();</span>
+<span class="fc" id="L1035">            TIntObjectIterator&lt;FixedSizeSortedVector&lt;Obj&gt;&gt; iter2 = rIndexHOGMap1.iterator();</span>
 
-<span class="fc" id="L1045">            StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L1037">            StringBuilder sb = new StringBuilder();</span>
 
-<span class="fc bfc" id="L1047" title="All 2 branches covered.">            for (int i3 = 0; i3 &lt; rIndexHOGMap1.size(); ++i3) {</span>
+<span class="fc bfc" id="L1039" title="All 2 branches covered.">            for (int i3 = 0; i3 &lt; rIndexHOGMap1.size(); ++i3) {</span>
 
-<span class="fc" id="L1049">                iter2.advance();</span>
+<span class="fc" id="L1041">                iter2.advance();</span>
 
                 //int rIdx = iter2.key();
-<span class="fc" id="L1052">                FixedSizeSortedVector&lt;Obj&gt; vec = iter2.value();</span>
+<span class="fc" id="L1044">                FixedSizeSortedVector&lt;Obj&gt; vec = iter2.value();</span>
 
-<span class="fc" id="L1054">                int n = vec.getNumberOfItems();</span>
-<span class="pc bpc" id="L1055" title="1 of 2 branches missed.">                if (n == 0) {</span>
-<span class="nc" id="L1056">                    continue;</span>
+<span class="fc" id="L1046">                int n = vec.getNumberOfItems();</span>
+<span class="pc bpc" id="L1047" title="1 of 2 branches missed.">                if (n == 0) {</span>
+<span class="nc" id="L1048">                    continue;</span>
                 }
 
-<span class="fc" id="L1059">                Obj obj0 = vec.getArray()[0];</span>
+<span class="fc" id="L1051">                Obj obj0 = vec.getArray()[0];</span>
 
-<span class="fc" id="L1061">                tmp1.add(obj0);</span>
+<span class="fc" id="L1053">                tmp1.add(obj0);</span>
             }
 
-<span class="fc" id="L1064">            System.out.println(sb.toString());</span>
+<span class="fc" id="L1056">            System.out.println(sb.toString());</span>
 
-<span class="fc" id="L1066">            StringBuilder sb2 = new StringBuilder();</span>
+<span class="fc" id="L1058">            StringBuilder sb2 = new StringBuilder();</span>
 
-<span class="fc bfc" id="L1068" title="All 2 branches covered.">            for (int i = 0; i &lt; tmp1.getNumberOfItems(); ++i) {</span>
+<span class="fc bfc" id="L1060" title="All 2 branches covered.">            for (int i = 0; i &lt; tmp1.getNumberOfItems(); ++i) {</span>
 
-<span class="fc" id="L1070">                Obj obj0 = tmp1.getArray()[i];</span>
+<span class="fc" id="L1062">                Obj obj0 = tmp1.getArray()[i];</span>
 
-<span class="fc" id="L1072">                int imgIdx0 = obj0.imgIdx0;</span>
-<span class="fc" id="L1073">                int imgIdx1 = obj0.imgIdx1;</span>
+<span class="fc" id="L1064">                int imgIdx0 = obj0.imgIdx0;</span>
+<span class="fc" id="L1065">                int imgIdx1 = obj0.imgIdx1;</span>
 
-<span class="fc" id="L1075">                GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);</span>
-<span class="fc" id="L1076">                GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
+<span class="fc" id="L1067">                GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);</span>
+<span class="fc" id="L1068">                GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
 
                 float scale00, scale01;
                 {
-<span class="fc" id="L1080">                    int w0_i = gsI0.getWidth();</span>
-<span class="fc" id="L1081">                    int h0_i = gsI0.getHeight();</span>
-<span class="fc" id="L1082">                    scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;</span>
+<span class="fc" id="L1072">                    int w0_i = gsI0.getWidth();</span>
+<span class="fc" id="L1073">                    int h0_i = gsI0.getHeight();</span>
+<span class="fc" id="L1074">                    scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;</span>
 
-<span class="fc" id="L1084">                    int w1_i = gsI1.getWidth();</span>
-<span class="fc" id="L1085">                    int h1_i = gsI1.getHeight();</span>
-<span class="fc" id="L1086">                    scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;</span>
+<span class="fc" id="L1076">                    int w1_i = gsI1.getWidth();</span>
+<span class="fc" id="L1077">                    int h1_i = gsI1.getHeight();</span>
+<span class="fc" id="L1078">                    scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;</span>
                 }
 
-<span class="fc" id="L1089">                String lbl = &quot;_&quot; + obj0.imgIdx0 + &quot;_&quot; + obj0.imgIdx1 + &quot;_&quot;</span>
+<span class="fc" id="L1081">                String lbl = &quot;_&quot; + obj0.imgIdx0 + &quot;_&quot; + obj0.imgIdx1 + &quot;_&quot;</span>
                     + obj0.r0Idx + &quot;_&quot; + obj0.r1Idx;
 
-<span class="fc" id="L1092">                int or0 = (int) Math.round(</span>
+<span class="fc" id="L1084">                int or0 = (int) Math.round(</span>
                     obj0.cr0.ellipseParams.orientation * 180. / Math.PI);
 
-<span class="fc" id="L1095">                int or1 = (int) Math.round(</span>
+<span class="fc" id="L1087">                int or1 = (int) Math.round(</span>
                     obj0.cr1.ellipseParams.orientation * 180. / Math.PI);
 
-<span class="fc" id="L1098">                String str1 = String.format(&quot;angles=(%d,%d ; %d,%d)&quot;,</span>
-<span class="fc" id="L1099">                    or0, or1, obj0.cr0.hogOrientation, </span>
-<span class="fc" id="L1100">                    obj0.cr1.hogOrientation);</span>
+<span class="fc" id="L1090">                String str1 = String.format(&quot;angles=(%d,%d ; %d,%d)&quot;,</span>
+<span class="fc" id="L1091">                    or0, or1, obj0.cr0.hogOrientation, </span>
+<span class="fc" id="L1092">                    obj0.cr1.hogOrientation);</span>
 
-<span class="fc" id="L1102">                sb2.append(String.format(</span>
- &quot;2] r1 %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d\n&quot;,
-<span class="fc" id="L1104">                    settings.getDebugLabel(), i, </span>
-<span class="fc" id="L1105">                    Math.round(scale01 * obj0.cr1.ellipseParams.xC),</span>
-<span class="fc" id="L1106">                    Math.round(scale01 * obj0.cr1.ellipseParams.yC),</span>
-<span class="fc" id="L1107">                    (float) obj0.cost,</span>
-<span class="fc" id="L1108">                    Math.round(scale00 * obj0.cr0.ellipseParams.xC),</span>
-<span class="fc" id="L1109">                    Math.round(scale00 * obj0.cr0.ellipseParams.yC), lbl,</span>
-<span class="fc" id="L1110">                    (float) obj0.costs[0], (float) obj0.costs[1], </span>
-<span class="fc" id="L1111">                    (float) obj0.costs[2], </span>
-<span class="fc" id="L1112">                    str1, obj0.cr0.offsetsToOrigCoords.size()</span>
+<span class="fc" id="L1094">                int x1 = Math.round(scale01 * obj0.cr1.ellipseParams.xC);</span>
+<span class="fc" id="L1095">                int y1 = Math.round(scale01 * obj0.cr1.ellipseParams.yC);</span>
+<span class="fc" id="L1096">                int x0 = Math.round(scale00 * obj0.cr0.ellipseParams.xC);</span>
+<span class="fc" id="L1097">                int y0 = Math.round(scale00 * obj0.cr0.ellipseParams.yC);</span>
+                
+                //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
+                
+<span class="fc" id="L1101">                sb2.append(String.format(</span>
+ &quot;2] r1 %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] %s n=%d\n&quot;,
+<span class="fc" id="L1103">                    settings.getDebugLabel(), i, </span>
+<span class="fc" id="L1104">                    x1, y1,</span>
+<span class="fc" id="L1105">                    (float) obj0.cost, x0, y0, lbl,</span>
+<span class="fc" id="L1106">                    (float) obj0.costs[0], (float) obj0.costs[1], </span>
+<span class="fc" id="L1107">                    (float) obj0.costs[2], (float) obj0.costs[3], </span>
+<span class="fc" id="L1108">                    (float) obj0.costs[4], (float) obj0.costs[5], (float) obj0.costs[6],</span>
+<span class="fc" id="L1109">                    str1, obj0.cr0.offsetsToOrigCoords.size()</span>
                 ));
+                
+<span class="fc" id="L1112">                QuadInt q = new QuadInt(x0, y0, x1, y1);</span>
+<span class="fc" id="L1113">                Obj obj = bestMap.get(q);</span>
+<span class="fc bfc" id="L1114" title="All 2 branches covered.">                if (obj != null) {</span>
+<span class="pc bpc" id="L1115" title="1 of 2 branches missed.">                    if (obj0.compareTo(obj) &lt; 0) {</span>
+<span class="nc" id="L1116">                        bestMap.put(q, obj0);</span>
+                    }
+                } else {
+<span class="fc" id="L1119">                    bestMap.put(q, obj0);</span>
+                }
+                
                 /*
                 Image im0 = gsI0.copyToColorGreyscale();
                 Image im1 = gsI1.copyToColorGreyscale();
@@ -1122,11 +1130,16 @@ import java.util.Set;
                 MiscDebug.writeImage(im1, debugLabel + &quot;_&quot; + lbl);
                 */
             }
-<span class="fc" id="L1125">            System.out.println(sb2.toString());</span>
+<span class="fc" id="L1133">            System.out.println(sb2.toString());</span>
+            
+        //    bestOverallA = new FixedSizeSortedVector&lt;Obj&gt;(5, Obj.class);
+        //    for (Entry&lt;QuadInt, Obj&gt; entry : bestMap.entrySet()) {
+        //        bestOverallA.add(entry.getValue());
+        //    }
         }
         
-<span class="pc bpc" id="L1128" title="1 of 2 branches missed.">        if (bestOverallA.getNumberOfItems() == 0) {</span>
-<span class="nc" id="L1129">            return null;</span>
+<span class="pc bpc" id="L1141" title="1 of 2 branches missed.">        if (bestOverallA.getNumberOfItems() == 0) {</span>
+<span class="nc" id="L1142">            return null;</span>
         }
         
         /*
@@ -1134,120 +1147,124 @@ import java.util.Set;
         a few tests suggest that the correct answer is to order by cost,
         then walk down the array if hogs cost is lower for 2nd best
         */
-<span class="pc bpc" id="L1137" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L1138">            System.out.println(&quot;looking for smallest hogs cost:&quot;);</span>
+<span class="pc bpc" id="L1150" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L1151">            System.out.println(&quot;looking for smallest hogs cost:&quot;);</span>
         }
         
-<span class="fc" id="L1141">        List&lt;Obj&gt; bestOverall = new ArrayList&lt;Obj&gt;(bestOverallA.getNumberOfItems());        </span>
-<span class="fc bfc" id="L1142" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverallA.getNumberOfItems(); ++i) {</span>
-<span class="fc" id="L1143">            Obj objB = bestOverallA.getArray()[i];</span>
-<span class="fc" id="L1144">            bestOverall.add(objB);</span>
+<span class="fc" id="L1154">        List&lt;Obj&gt; bestOverall = new ArrayList&lt;Obj&gt;(bestOverallA.getNumberOfItems());        </span>
+<span class="fc bfc" id="L1155" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverallA.getNumberOfItems(); ++i) {</span>
+<span class="fc" id="L1156">            Obj objB = bestOverallA.getArray()[i];</span>
+<span class="fc" id="L1157">            bestOverall.add(objB);</span>
         }
         
-<span class="fc" id="L1147">        Set&lt;PairInt&gt; pairs = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1160">        Set&lt;PairInt&gt; pairs = new HashSet&lt;PairInt&gt;();</span>
         
         // storing top 5 of r1 matches
-<span class="fc" id="L1150">        List&lt;CorrespondenceList&gt; out = new ArrayList&lt;CorrespondenceList&gt;();</span>
+<span class="fc" id="L1163">        List&lt;CorrespondenceList&gt; out = new ArrayList&lt;CorrespondenceList&gt;();</span>
         
-<span class="fc bfc" id="L1152" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverall.size(); ++i) {</span>
+<span class="fc bfc" id="L1165" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverall.size(); ++i) {</span>
             
-<span class="fc" id="L1154">            List&lt;QuadInt&gt; qs = new ArrayList&lt;QuadInt&gt;();</span>
+<span class="fc" id="L1167">            List&lt;QuadInt&gt; qs = new ArrayList&lt;QuadInt&gt;();</span>
             
-<span class="fc" id="L1156">            Obj obj = bestOverall.get(i);</span>
+<span class="fc" id="L1169">            Obj obj = bestOverall.get(i);</span>
             
-<span class="fc" id="L1158">            PairInt pair = new PairInt(obj.r0Idx, obj.r1Idx);</span>
-<span class="fc bfc" id="L1159" title="All 2 branches covered.">            if (!pairs.add(pair)) {</span>
-<span class="fc" id="L1160">                continue;</span>
+<span class="fc" id="L1171">            PairInt pair = new PairInt(obj.r0Idx, obj.r1Idx);</span>
+<span class="fc bfc" id="L1172" title="All 2 branches covered.">            if (!pairs.add(pair)) {</span>
+<span class="fc" id="L1173">                continue;</span>
             }
             
-<span class="fc" id="L1163">            int imgIdx0 = obj.imgIdx0;</span>
-<span class="fc" id="L1164">            int imgIdx1 = obj.imgIdx1;</span>
+<span class="fc" id="L1176">            int imgIdx0 = obj.imgIdx0;</span>
+<span class="fc" id="L1177">            int imgIdx1 = obj.imgIdx1;</span>
             
-<span class="fc" id="L1166">            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);</span>
-<span class="fc" id="L1167">            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
+<span class="fc" id="L1179">            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);</span>
+<span class="fc" id="L1180">            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
             
             float scale0, scale1;
             {
-<span class="fc" id="L1171">                int w0_i = gsI0.getWidth();</span>
-<span class="fc" id="L1172">                int h0_i = gsI0.getHeight();</span>
-<span class="fc" id="L1173">                scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;</span>
+<span class="fc" id="L1184">                int w0_i = gsI0.getWidth();</span>
+<span class="fc" id="L1185">                int h0_i = gsI0.getHeight();</span>
+<span class="fc" id="L1186">                scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;</span>
                 
-<span class="fc" id="L1175">                int w1_i = gsI1.getWidth();</span>
-<span class="fc" id="L1176">                int h1_i = gsI1.getHeight();</span>
-<span class="fc" id="L1177">                scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;                </span>
+<span class="fc" id="L1188">                int w1_i = gsI1.getWidth();</span>
+<span class="fc" id="L1189">                int h1_i = gsI1.getHeight();</span>
+<span class="fc" id="L1190">                scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;                </span>
             }
             
             // NOTE: for now, just mser centers,
             // but should fill out more than this, including centroid of points
             
-<span class="fc" id="L1183">            int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
-<span class="fc" id="L1184">            int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
-<span class="fc" id="L1185">            int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
-<span class="fc" id="L1186">            int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
-<span class="fc" id="L1187">            QuadInt q = new QuadInt(x0, y0, x1, y1);</span>
-<span class="fc" id="L1188">            qs.add(q);</span>
+<span class="fc" id="L1196">            int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
+<span class="fc" id="L1197">            int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
+<span class="fc" id="L1198">            int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
+<span class="fc" id="L1199">            int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
+<span class="fc" id="L1200">            QuadInt q = new QuadInt(x0, y0, x1, y1);</span>
+<span class="fc" id="L1201">            qs.add(q);</span>
             
-<span class="fc" id="L1190">            CorrespondenceList cor = new CorrespondenceList(qs);</span>
-<span class="fc" id="L1191">            out.add(cor);</span>
+<span class="fc" id="L1203">            CorrespondenceList cor = new CorrespondenceList(qs);</span>
+<span class="fc" id="L1204">            out.add(cor);</span>
             
-<span class="pc bpc" id="L1193" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="fc" id="L1194">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
+<span class="pc bpc" id="L1206" title="1 of 2 branches missed.">            if (debug) {</span>
+                //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
+<span class="fc" id="L1208">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
                     + obj.r0Idx + &quot;_&quot; + obj.r1Idx;
-<span class="fc" id="L1196">                System.out.format(</span>
-                    &quot;final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] n=%d\n&quot;,
-<span class="fc" id="L1198">                    settings.getDebugLabel(), i, x1, y1,</span>
-<span class="fc" id="L1199">                    (float) obj.cost, x0, y0, lbl,</span>
-<span class="fc" id="L1200">                    (float) obj.costs[0], (float) obj.costs[1],</span>
-<span class="fc" id="L1201">                    (float) obj.costs[2],</span>
-<span class="fc" id="L1202">                    obj.cr0.offsetsToOrigCoords.size()</span>
+<span class="fc" id="L1210">                System.out.format(</span>
+                    &quot;final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
+<span class="fc" id="L1212">                    settings.getDebugLabel(), i, x1, y1,</span>
+<span class="fc" id="L1213">                    (float) obj.cost, x0, y0, lbl,</span>
+<span class="fc" id="L1214">                    (float) obj.costs[0], (float) obj.costs[1],</span>
+<span class="fc" id="L1215">                    (float) obj.costs[2], (float) obj.costs[3],</span>
+<span class="fc" id="L1216">                    (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],</span>
+<span class="fc" id="L1217">                    obj.cr0.offsetsToOrigCoords.size()</span>
                 );               
             }
         }
 
-<span class="fc" id="L1207">        return out;</span>
+<span class="fc" id="L1222">        return out;</span>
     }
     
     private void _debugPrint(Obj obj, GreyscaleImage gsI0, GreyscaleImage gsI1,
         int w0, int h0, int w1, int h1, String debugLabel) {
         
-<span class="nc bnc" id="L1213" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc bnc" id="L1228" title="All 2 branches missed.">        if (debug) {</span>
                 
-<span class="nc" id="L1215">            StringBuilder sb2 = new StringBuilder();</span>
+<span class="nc" id="L1230">            StringBuilder sb2 = new StringBuilder();</span>
 
             float scale00, scale01;
             {
-<span class="nc" id="L1219">                int w0_i = gsI0.getWidth();</span>
-<span class="nc" id="L1220">                int h0_i = gsI0.getHeight();</span>
-<span class="nc" id="L1221">                scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;</span>
+<span class="nc" id="L1234">                int w0_i = gsI0.getWidth();</span>
+<span class="nc" id="L1235">                int h0_i = gsI0.getHeight();</span>
+<span class="nc" id="L1236">                scale00 = (((float) w0 / (float) w0_i) + ((float) h0 / (float) h0_i)) / 2.f;</span>
 
-<span class="nc" id="L1223">                int w1_i = gsI1.getWidth();</span>
-<span class="nc" id="L1224">                int h1_i = gsI1.getHeight();</span>
-<span class="nc" id="L1225">                scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;</span>
+<span class="nc" id="L1238">                int w1_i = gsI1.getWidth();</span>
+<span class="nc" id="L1239">                int h1_i = gsI1.getHeight();</span>
+<span class="nc" id="L1240">                scale01 = (((float) w1 / (float) w1_i) + ((float) h1 / (float) h1_i)) / 2.f;</span>
             }
 
-<span class="nc" id="L1228">            String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
+<span class="nc" id="L1243">            String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
                     + obj.r0Idx + &quot;_&quot; + obj.r1Idx;
 
-<span class="nc" id="L1231">            int or0 = (int) Math.round(</span>
+<span class="nc" id="L1246">            int or0 = (int) Math.round(</span>
                     obj.cr0.ellipseParams.orientation * 180. / Math.PI);
 
-<span class="nc" id="L1234">            int or1 = (int) Math.round(</span>
+<span class="nc" id="L1249">            int or1 = (int) Math.round(</span>
                     obj.cr1.ellipseParams.orientation * 180. / Math.PI);
 
-<span class="nc" id="L1237">            String str1 = String.format(&quot;angles=(%d,%d ; %d,%d)&quot;,</span>
-<span class="nc" id="L1238">                    or0, or1, obj.cr0.hogOrientation, obj.cr1.hogOrientation);</span>
+<span class="nc" id="L1252">            String str1 = String.format(&quot;angles=(%d,%d ; %d,%d)&quot;,</span>
+<span class="nc" id="L1253">                    or0, or1, obj.cr0.hogOrientation, obj.cr1.hogOrientation);</span>
 
-<span class="nc" id="L1240">            sb2.append(String.format(</span>
-                    &quot;  %s (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f] %s n=%d&quot;,
-                    debugLabel,
-<span class="nc" id="L1243">                    Math.round(scale01 * obj.cr1.ellipseParams.xC),</span>
-<span class="nc" id="L1244">                    Math.round(scale01 * obj.cr1.ellipseParams.yC),</span>
-<span class="nc" id="L1245">                    (float) obj.cost,</span>
-<span class="nc" id="L1246">                    Math.round(scale00 * obj.cr0.ellipseParams.xC),</span>
-<span class="nc" id="L1247">                    Math.round(scale00 * obj.cr0.ellipseParams.yC), lbl,</span>
-<span class="nc" id="L1248">                    (float) obj.costs[0], (float) obj.costs[1],</span>
-<span class="nc" id="L1249">                    (float) obj.costs[2],</span>
-<span class="nc" id="L1250">                    str1, obj.cr0.offsetsToOrigCoords.size()</span>
+            //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
+<span class="nc" id="L1256">            sb2.append(String.format(</span>
+                &quot;  %s (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] %s n=%d&quot;,
+                debugLabel,
+<span class="nc" id="L1259">                Math.round(scale01 * obj.cr1.ellipseParams.xC),</span>
+<span class="nc" id="L1260">                Math.round(scale01 * obj.cr1.ellipseParams.yC),</span>
+<span class="nc" id="L1261">                (float) obj.cost,</span>
+<span class="nc" id="L1262">                Math.round(scale00 * obj.cr0.ellipseParams.xC),</span>
+<span class="nc" id="L1263">                Math.round(scale00 * obj.cr0.ellipseParams.yC), lbl,</span>
+<span class="nc" id="L1264">                (float) obj.costs[0], (float) obj.costs[1],</span>
+<span class="nc" id="L1265">                (float) obj.costs[2], (float) obj.costs[3],</span>
+<span class="nc" id="L1266">                (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],</span>
+<span class="nc" id="L1267">                str1, obj.cr0.offsetsToOrigCoords.size()</span>
             ));
             /*
                     Image im0 = gsI0.copyToColorGreyscale();
@@ -1259,72 +1276,165 @@ import java.util.Set;
                     MiscDebug.writeImage(im0, debugLabel + &quot;_&quot; + lbl);
                     MiscDebug.writeImage(im1, debugLabel + &quot;_&quot; + lbl);
              */
-<span class="nc" id="L1262">            System.out.println(sb2.toString());</span>
+<span class="nc" id="L1279">            System.out.println(sb2.toString());</span>
         }
                 
-<span class="nc" id="L1265">    }</span>
+<span class="nc" id="L1282">    }</span>
     
-    //double[]{sumA, f, count}
-    private double[] sumCost2(HCPT hcpt0, HGS hgs0, CRegion cr0, float scale0, 
-        HCPT hcpt1, HGS hgs1, CRegion cr1, float scale1) {
+    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count}
+    private double[] sumCost2(HCPT hcpt0, HGS hgs0, CRegion cr0, 
+        HCPT hcpt1, HGS hgs1, CRegion cr1) {
         
-<span class="fc" id="L1271">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
+<span class="fc" id="L1288">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
 
-<span class="fc" id="L1273">        double sumA = 0;</span>
-<span class="fc" id="L1274">        int count = 0;</span>
+<span class="fc" id="L1290">        double sumCombined = 0;</span>
+<span class="fc" id="L1291">        double sumHCPT = 0;</span>
+<span class="fc" id="L1292">        double sumHGS = 0;</span>
+<span class="fc" id="L1293">        int count = 0;</span>
         
-<span class="fc" id="L1276">        int[] h0 = new int[hcpt0.getNumberOfBins()];</span>
-<span class="fc" id="L1277">        int[] h1 = new int[h0.length];</span>
+<span class="fc" id="L1295">        int[] h0 = new int[hcpt0.getNumberOfBins()];</span>
+<span class="fc" id="L1296">        int[] h1 = new int[h0.length];</span>
         
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
-<span class="fc bfc" id="L1282" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
+<span class="fc bfc" id="L1301" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
 
-<span class="fc" id="L1284">            PairInt pOffset0 = entry0.getKey();</span>
+<span class="fc" id="L1303">            PairInt pOffset0 = entry0.getKey();</span>
 
-<span class="fc" id="L1286">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
+<span class="fc" id="L1305">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
 
-<span class="fc bfc" id="L1288" title="All 2 branches covered.">            if (xy1 == null) {</span>
-<span class="fc" id="L1289">                continue;</span>
+<span class="fc bfc" id="L1307" title="All 2 branches covered.">            if (xy1 == null) {</span>
+<span class="fc" id="L1308">                continue;</span>
             }
 
-<span class="fc" id="L1292">            PairInt xy0 = entry0.getValue();</span>
+<span class="fc" id="L1311">            PairInt xy0 = entry0.getValue();</span>
 
-<span class="fc" id="L1294">            hcpt0.extractFeature(xy0.getX(), xy0.getY(), h0);</span>
+<span class="fc" id="L1313">            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
 
-<span class="fc" id="L1296">            hcpt1.extractFeature(xy1.getX(), xy1.getY(), h1);</span>
+<span class="fc" id="L1315">            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
 
-<span class="fc" id="L1298">            float intersection = hcpt0.intersection(h0, h1);</span>
+<span class="fc" id="L1317">            float intersection = hcpt0.intersection(h0, h1);</span>
             
-<span class="fc" id="L1300">            sumA += (intersection * intersection);</span>
+<span class="fc" id="L1319">            sumCombined += (intersection * intersection);</span>
+<span class="fc" id="L1320">            sumHCPT += (intersection * intersection);</span>
             
-<span class="fc" id="L1302">            hgs0.extractFeature(xy0.getX(), xy0.getY(), h0);</span>
+<span class="fc" id="L1322">            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
 
-<span class="fc" id="L1304">            hgs1.extractFeature(xy1.getX(), xy1.getY(), h1);</span>
+<span class="fc" id="L1324">            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
 
-<span class="fc" id="L1306">            intersection = hgs0.intersection(h0, h1);</span>
+<span class="fc" id="L1326">            intersection = hgs0.intersection(h0, h1);</span>
             
-<span class="fc" id="L1308">            sumA += (intersection * intersection);</span>
+<span class="fc" id="L1328">            sumCombined += (intersection * intersection);</span>
+<span class="fc" id="L1329">            sumHGS += (intersection * intersection);</span>
 
-<span class="fc" id="L1310">            count++;</span>
-<span class="fc" id="L1311">        }</span>
-<span class="pc bpc" id="L1312" title="1 of 2 branches missed.">        if (count == 0) {</span>
-<span class="nc" id="L1313">            return null;</span>
+<span class="fc" id="L1331">            count++;</span>
+<span class="fc" id="L1332">        }</span>
+<span class="pc bpc" id="L1333" title="1 of 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L1334">            return null;</span>
         }
 
-<span class="fc" id="L1316">        sumA /= (double)count;</span>
-
-<span class="fc" id="L1318">        sumA = Math.sqrt(sumA);</span>
-                
-        //NOTE: this may need revision.  now assuming that all invoker's 
-        // have one object in cRegions0, hence, need to scale fraction
-        // of whole so all are in same reference frame
-<span class="fc" id="L1323">        double area = cr0.offsetsToOrigCoords.size();</span>
+<span class="fc" id="L1337">        sumCombined /= (2.*count);</span>
+<span class="fc" id="L1338">        sumCombined = Math.sqrt(sumCombined);</span>
         
-<span class="fc" id="L1325">        double f = 1. - ((double) count / area);</span>
+<span class="fc" id="L1340">        sumHCPT /= (double)count;</span>
+<span class="fc" id="L1341">        sumHCPT = Math.sqrt(sumHCPT);</span>
+        
+<span class="fc" id="L1343">        sumHGS /= (double)count;</span>
+<span class="fc" id="L1344">        sumHGS = Math.sqrt(sumHGS);</span>
+                     
+<span class="fc" id="L1346">        double area1 = cr1.offsetsToOrigCoords.size();</span>
+<span class="fc" id="L1347">        double f1 = 1. - ((double) count / area1);</span>
+        
+<span class="fc" id="L1349">        double area0 = cr0.offsetsToOrigCoords.size();</span>
+<span class="fc" id="L1350">        double f0 = 1. - ((double) count / area0);</span>
+        
+<span class="fc" id="L1352">        return new double[]{sumCombined, f0, f1, sumHCPT, sumHGS, count};            </span>
+    }
+    
+    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count};
+    private double[] sumCost3(HCPT hcpt0, HGS hgs0, CRegion cr0, 
+        HCPT hcpt1, HGS hgs1, CRegion cr1) {
+        
+<span class="nc" id="L1359">        int orientation0 = cr0.hogOrientation;</span>
+            
+<span class="nc" id="L1361">        int orientation1 = cr1.hogOrientation;</span>
+        
+<span class="nc" id="L1363">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
 
-<span class="fc" id="L1327">        return new double[]{sumA, f, count};            </span>
+<span class="nc" id="L1365">        double sum = 0;</span>
+<span class="nc" id="L1366">        double sumHCPT = 0;</span>
+<span class="nc" id="L1367">        double sumHGS = 0;</span>
+<span class="nc" id="L1368">        double sumErrSq = 0;</span>
+<span class="nc" id="L1369">        int count = 0;</span>
+        
+<span class="nc" id="L1371">        int[] h0 = new int[hcpt0.getNumberOfBins()];</span>
+<span class="nc" id="L1372">        int[] h1 = new int[h0.length];</span>
+            
+        float[] diffAndErr;
+        
+        //NOTE: the coordinate set block could be changed to not visit
+        //   every point, but to instead use a spacing of the HOG cell length
+        //   which is what Dala &amp; Trigg recommend for their detector windows.
+        
+        // key = transformed offsets, value = coords in image ref frame,
+        // so, can compare dataset0 and dataset1 points with same
+        //  keys
+<span class="nc bnc" id="L1383" title="All 2 branches missed.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
+
+<span class="nc" id="L1385">            PairInt pOffset0 = entry0.getKey();</span>
+
+<span class="nc" id="L1387">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
+
+<span class="nc bnc" id="L1389" title="All 2 branches missed.">            if (xy1 == null) {</span>
+<span class="nc" id="L1390">                continue;</span>
+            }
+
+<span class="nc" id="L1393">            PairInt xy0 = entry0.getValue();</span>
+
+<span class="nc" id="L1395">            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
+
+<span class="nc" id="L1397">            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
+
+            // 1.0 is perfect similarity
+<span class="nc" id="L1400">            diffAndErr = hcpt0.diff(h0, h1);</span>
+            
+<span class="nc" id="L1402">            sum += diffAndErr[0];</span>
+<span class="nc" id="L1403">            sumHCPT += diffAndErr[0];</span>
+<span class="nc" id="L1404">            sumErrSq += (diffAndErr[1] * diffAndErr[1]);</span>
+            
+            
+<span class="nc" id="L1407">            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
+
+<span class="nc" id="L1409">            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
+
+            // 1.0 is perfect similarity
+<span class="nc" id="L1412">            diffAndErr = hgs0.diff(h0, h1);</span>
+            
+<span class="nc" id="L1414">            sum += diffAndErr[0];</span>
+<span class="nc" id="L1415">            sumHGS += diffAndErr[0];</span>
+<span class="nc" id="L1416">            sumErrSq += (diffAndErr[1] * diffAndErr[1]);</span>
+            
+<span class="nc" id="L1418">            count++;</span>
+<span class="nc" id="L1419">        }</span>
+<span class="nc bnc" id="L1420" title="All 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L1421">            return null;</span>
+        }
+
+<span class="nc" id="L1424">        sum /= (2.*count);</span>
+<span class="nc" id="L1425">        sumHCPT /= (double)count;</span>
+<span class="nc" id="L1426">        sumHGS /= (double)count;</span>
+        
+<span class="nc" id="L1428">        sumErrSq /= (2.*count);</span>
+<span class="nc" id="L1429">        sumErrSq = Math.sqrt(sumErrSq);</span>
+        
+<span class="nc" id="L1431">        double area1 = cr1.offsetsToOrigCoords.size();</span>
+<span class="nc" id="L1432">        double f1 = 1. - ((double) count / area1);</span>
+        
+<span class="nc" id="L1434">        double area0 = cr0.offsetsToOrigCoords.size();</span>
+<span class="nc" id="L1435">        double f0 = 1. - ((double) count / area0);</span>
+        
+<span class="nc" id="L1437">        return new double[]{sum, f0, f1, count, sumErrSq};</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
