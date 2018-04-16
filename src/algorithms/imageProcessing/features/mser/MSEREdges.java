@@ -66,6 +66,10 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
  *
  * NOTE that the default mode may change to the low contrast settings.
  *
+ * Also note that their are fixed parameters tailored for the input images
+ * scaled to 256 X 256, especially for the use of merging
+ * (see int[] mszs = ...).
+ * 
  * @author nichole
  */
 public class MSEREdges {
@@ -202,8 +206,7 @@ public class MSEREdges {
 
         long ts1 = System.currentTimeMillis();
 
-        System.out.format("%.3f sec for merge\n",
-            (((float)ts1 - ts0)/1000.f));
+        System.out.format("%.3f sec for merge\n", (((float)ts1 - ts0)/1000.f));
         
         if (debug) {
             printEdges();
@@ -554,7 +557,7 @@ public class MSEREdges {
 
     /**
      * moderate merging of the labeled regions is performed
-     * to remove noisey edges.  Note that the color filters
+     * to remove noisy edges.  Note that the color filters
      * may need to be revised with more testing.
      *
      */
@@ -580,7 +583,7 @@ public class MSEREdges {
         }
 
         HGS hgs = new HGS(cannyEdges, 1, 6, 12);
-
+        
         TIntObjectMap<GroupPixelHSV2> clrs = new TIntObjectHashMap<GroupPixelHSV2>();
 
         int w = gsImg.getWidth();
@@ -1540,7 +1543,8 @@ public class MSEREdges {
         //    preserve some of the low SNR object boundaries
         //    such as the gingerbread man in the test image android_statues_01
         //    downsampled to size near 256 pixels per dimension.
-        int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18, 24};
+        //int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18, 24};
+        int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18};
 
         for (int msz : mszs) {
 
@@ -1595,6 +1599,14 @@ public class MSEREdges {
                     edgeList.add(outerBorder);
                 }
             }
+            
+            /*
+            if (debug) {
+                Image tmp = clrImg.copyImage();
+                ImageIOHelper.addAlternatingColorPointSetsToImage2(
+                    labeledSets, 0, 0, 0, tmp);
+                MiscDebug.writeImage(tmp, "_" + ts + "_dbg_" + msz);
+            }*/
         }
 
         if (debug) {
