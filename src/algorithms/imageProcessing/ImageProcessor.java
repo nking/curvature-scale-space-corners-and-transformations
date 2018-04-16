@@ -6092,9 +6092,9 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         double ts = (double)maxV/(double)359;
 
-        float xd = 0.96808f;
-        float yd = 0.997f;
-        float zd = 0.88351f;
+        float xd = 96.808f;
+        float yd = 99.7f;
+        float zd = 88.351f;
         int n = img.getNPixels();
         int v;
         for (int i = 0; i < w; ++i) {
