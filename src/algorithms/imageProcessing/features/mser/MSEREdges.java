@@ -7,10 +7,12 @@ import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.connected.ConnectedPointsFinder;
+import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.GroupPixelHSV;
 import algorithms.imageProcessing.GroupPixelHSV2;
+import algorithms.imageProcessing.GroupPixelLUVWideRangeLightness;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
@@ -27,6 +29,7 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
@@ -43,7 +46,9 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTree;
@@ -1495,6 +1500,8 @@ public class MSEREdges {
         int h = clrImg.getHeight();
 
         float[][] hsvs = new float[labeledSets.size()][];
+        
+        float[][] luvws = new float[labeledSets.size()][];
 
         int[] labels = new int[clrImg.getNPixels()];
         Arrays.fill(labels, -1);
@@ -1513,6 +1520,10 @@ public class MSEREdges {
             hsv.calculateColors(set, clrImg);
             hsvs[label] = new float[]{hsv.getAvgH(), hsv.getAvgS(),
                 hsv.getAvgV()};
+            
+            GroupPixelLUVWideRangeLightness luv = new GroupPixelLUVWideRangeLightness();
+            luv.calculateColors(set, clrImg);
+            luvws[label] = luv.getAvgLUV();
         }
 
         TIntSet unassignedSet = new TIntHashSet();
@@ -1529,7 +1540,9 @@ public class MSEREdges {
             MiscDebug.writeImage(tmp, "_" + ts + "_before_assigned_");
         }
 
-        assignTheUnassigned(labeledSets, labels, hsvs, unassignedSet);
+        //TODO: editing
+        _assignTheUnassigned(labeledSets, labels, luvws, unassignedSet);
+        //assignTheUnassigned(labeledSets, labels, hsvs, unassignedSet);
 
         if (debug) {
             Image tmp = clrImg.copyImage();
@@ -1600,13 +1613,13 @@ public class MSEREdges {
                 }
             }
             
-            /*
+            
             if (debug) {
                 Image tmp = clrImg.copyImage();
                 ImageIOHelper.addAlternatingColorPointSetsToImage2(
                     labeledSets, 0, 0, 0, tmp);
                 MiscDebug.writeImage(tmp, "_" + ts + "_dbg_" + msz);
-            }*/
+            }
         }
 
         if (debug) {
@@ -1726,6 +1739,14 @@ public class MSEREdges {
         float[] lab2 = null;
         float[] lab = new float[3];
         
+        
+        //DEBUG
+        PixelHelper ph = new PixelHelper();
+        int[] xyTmp = new int[2];
+        int[] xyTmp2 = new int[2];
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        
         while (heap.getNumberOfNodes() > 0) {
                         
             HeapNode node = heap.extractMin();
@@ -1734,7 +1755,215 @@ public class MSEREdges {
             
             int pixIdx = ((Integer)node.getData()).intValue();
             
+ Map<PairInt, List<Float>> dbgLUVs2 = null;
+ Map<PairInt, Float> _dbgLUVs2 = null;
+ ph.toPixelCoords(pixIdx, w, xyTmp);
+ List<Float> dbgLUVs1 = null;
+ if ((xyTmp[0] == 41 && xyTmp[1] == 6) || (xyTmp[0] == 40 && xyTmp[1] == 5)
+     || (xyTmp[0] == 40 && xyTmp[1] == 6)
+     ) {
+     dbgLUVs2 = new HashMap<PairInt, List<Float>>();
+     _dbgLUVs2 = new HashMap<PairInt, Float>();
+     dbgLUVs1 = new ArrayList<Float>();
+     float[] tmp = cieC.rgbToCIELUV_WideRangeLightness(
+         clrImg.getR(pixIdx), clrImg.getG(pixIdx), clrImg.getB(pixIdx));
+     for (float t : tmp) {
+         dbgLUVs1.add(new Float(t));
+     }
+     int z = 0;
+ }
+ 
             clrImg.getHSB(pixIdx, lab);
+
+            TIntSet adjAssigned = adjAssignedMap.get(pixIdx);
+            if (adjAssigned.isEmpty()) {
+                System.out.println("priority=" + node.getKey()
+                   + " nUnassigned remaining=" + 
+                    adjAssignedMap.size() + " heap.n=" +
+                    heap.getNumberOfNodes());
+            }
+            assert(!adjAssigned.isEmpty());
+            
+            double minD = Double.MAX_VALUE;
+            int minLabel2 = -1;
+            int minDBGPIXIDX2 = -1;
+
+            TIntIterator iter2 = adjAssigned.iterator();
+            while (iter2.hasNext()) {
+                int pixIdx2 = iter2.next();
+                int label2 = labels[pixIdx2];
+                lab2 = hsvs[label2];
+                
+                double diffSum = 0;
+                for (int i = 0; i < 3; ++i) {
+                    float diff = lab[i] - lab2[i];
+                    diffSum += (diff * diff);
+                }
+
+                if (diffSum < minD) {
+                    minD = diffSum;
+                    minLabel2 = label2;
+                    minDBGPIXIDX2 = pixIdx2;
+                }
+                
+if (dbgLUVs2 != null) {
+List<Float> dbg2 = new ArrayList<Float>();
+float[] tmp = cieC.rgbToCIELUV_WideRangeLightness(
+    clrImg.getR(pixIdx2), clrImg.getG(pixIdx2), clrImg.getB(pixIdx2));
+for (float t : tmp) {
+    dbg2.add(new Float(t));
+}
+//diff should be fraction...max min values
+ph.toPixelCoords(pixIdx2, w, xyTmp2);
+dbgLUVs2.put(new PairInt(xyTmp2[0], xyTmp2[1]), dbg2);
+_dbgLUVs2.put(new PairInt(xyTmp2[0], xyTmp2[1]), 
+    cieC.calcNormalizedDifferenceLUV_WideRangeLightness(
+        clrImg.getR(pixIdx), clrImg.getG(pixIdx), clrImg.getB(pixIdx),
+        clrImg.getR(pixIdx2), clrImg.getG(pixIdx2), clrImg.getB(pixIdx2)
+    ));
+System.out.println("pixIdx2=" + pixIdx2 + " xy=" + Arrays.toString(xyTmp2));
+}
+
+            }
+            
+if (dbgLUVs2 != null) {   
+    int z = 0;
+}
+
+            labels[pixIdx] = minLabel2;
+     
+            adjAssignedMap.remove(pixIdx);
+            
+            unAMap.remove(pixIdx);
+            
+            // update the adjacent unassigned pixels and their keys in heap.
+            // these pixels are not in adjLabels.
+            TIntSet adjUnassigned = adjUnassignedMap.get(pixIdx);
+            if (adjUnassigned == null) {
+                continue;
+            }
+            adjUnassignedMap.remove(pixIdx);
+            
+            iter2 = adjUnassigned.iterator();
+            while (iter2.hasNext()) {
+                
+                // this is an unassigned pixel
+                int pixIdx2 = iter2.next();
+                assert(pixIdx != pixIdx2);
+                
+                // pixIdx should be in it's adj unassigned and then removed
+                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);
+                assert(adj2 != null);
+                boolean rmvd = adj2.remove(pixIdx);
+                assert(rmvd);
+                
+                // add pixIdx to it's assigned pixels
+                adj2 = adjAssignedMap.get(pixIdx2);
+                assert(adj2 != null);
+                adj2.add(pixIdx);
+
+                HeapNode node2 = unAMap.get(pixIdx2);
+                assert(node2 != null);
+                long key2 = 8 - adj2.size();
+                assert(key2 > -1);
+                if (key2 < node2.getKey()) {
+                    heap.decreaseKey(node2, key2);
+                }
+            }
+        }
+
+        assert(adjAssignedMap.isEmpty());
+
+        iter = unassignedSet.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int label = labels[pixIdx];
+            contiguous.get(label).add(pixIdx);
+        }
+    }
+    
+    private void _assignTheUnassigned(List<TIntSet> contiguous,
+        int[] labels, float[][] luvws, TIntSet unassignedSet) {
+
+        int w = clrImg.getWidth();
+        int h = clrImg.getHeight();
+        int n = clrImg.getNPixels();
+
+        int maxValue = Math.max(w, h);
+        int nBits = 1 + (int)Math.ceil(Math.log(maxValue)/Math.log(2));
+        if (nBits > 31) {
+            nBits = 31;
+        }
+        
+        //System.out.println("assign " + unassignedSet.size() + " out of "
+        //    + n + " pixels");
+        
+        // key = pixel index of unassigned, value = adj pixels that are assigned
+        TIntObjectMap<TIntSet> adjAssignedMap = new TIntObjectHashMap<TIntSet>();
+        
+        // key = pixel index of unassigned, value = adj pixels that are unassigned
+        TIntObjectMap<TIntSet> adjUnassignedMap = new TIntObjectHashMap<TIntSet>();
+
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+
+        TIntIterator iter = unassignedSet.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            addNeighborLabelsForPoint(labels, adjAssignedMap, 
+                adjUnassignedMap, pixIdx, dxs, dys);
+        }
+        
+        // using a min heap whose priority is to set the nodes
+        //    which have the largest number of assigned neighbors.
+        //    nAssigned=8 -> key=8-nAssigned = 0.
+        MinHeapForRT2012 heap = new MinHeapForRT2012(9, n, nBits);
+
+        // a map of nodes for the unassigned pixels
+        TIntObjectMap<HeapNode> unAMap = new TIntObjectHashMap<HeapNode>();
+        
+        iter = unassignedSet.iterator();
+        while (iter.hasNext()) {
+            
+            int pixIdx = iter.next();
+            
+            TIntSet neighbors = adjAssignedMap.get(pixIdx);
+            assert(neighbors != null);
+            
+            int nNeigbhors = neighbors.size();
+            
+            long key = 8 - nNeigbhors;
+            HeapNode node = new HeapNode(key);
+            node.setData(Integer.valueOf(pixIdx));
+            
+            unAMap.put(pixIdx, node);
+            
+            heap.insert(node);
+        }
+        
+        assert(unassignedSet.size() == heap.getNumberOfNodes());
+        
+        float[] luv2 = null;
+        float[] luv = new float[3];
+        
+        
+        //DEBUG
+        PixelHelper ph = new PixelHelper();
+        int[] xyTmp = new int[2];
+        int[] xyTmp2 = new int[2];
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        
+        while (heap.getNumberOfNodes() > 0) {
+                        
+            HeapNode node = heap.extractMin();
+            
+            assert(node != null);
+            
+            int pixIdx = ((Integer)node.getData()).intValue();
+            
+            luv = cieC.rgbToCIELUV_WideRangeLightness(
+                clrImg.getR(pixIdx), clrImg.getG(pixIdx), clrImg.getB(pixIdx));
 
             TIntSet adjAssigned = adjAssignedMap.get(pixIdx);
             if (adjAssigned.isEmpty()) {
@@ -1752,11 +1981,11 @@ public class MSEREdges {
             while (iter2.hasNext()) {
                 int pixIdx2 = iter2.next();
                 int label2 = labels[pixIdx2];
-                lab2 = hsvs[label2];
+                luv2 = luvws[label2];
                 
                 double diffSum = 0;
                 for (int i = 0; i < 3; ++i) {
-                    float diff = lab[i] - lab2[i];
+                    float diff = cieC.calcNormalizedDifferenceLUV_WideRangeLightness(luv, luv2);
                     diffSum += (diff * diff);
                 }
 
@@ -1765,9 +1994,9 @@ public class MSEREdges {
                     minLabel2 = label2;
                 }
             }
-            
-            labels[pixIdx] = minLabel2;
 
+            labels[pixIdx] = minLabel2;
+     
             adjAssignedMap.remove(pixIdx);
             
             unAMap.remove(pixIdx);
