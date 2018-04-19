@@ -6,6 +6,7 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
+import algorithms.util.OneDLongArray;
 import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -337,6 +338,120 @@ public class HOGs {
         */
     }
 
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param x
+     * @param y
+     * @param outHist
+     */
+    public void extractBlock(int x, int y, long[] outHist) {
+
+        if (outHist.length != nAngleBins) {
+            throw new IllegalArgumentException("outHist.length != nAngleBins");
+        }
+
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+            throw new IllegalArgumentException("x or y is out of bounds of "
+                + "original image");
+        }
+
+        // uses the block normalization recomended by Dalal & Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normalize each cell by that sum.
+
+        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
+
+        double blockTotal = 0;
+
+        List<OneDLongArray> cells = new ArrayList<OneDLongArray>(nH);
+
+        for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
+
+            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
+
+            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
+
+            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+                break;
+            } else if (x2 < 0) {
+                x2 = 0;
+            } else if (x2 >= w) {
+                break;
+            }
+
+            for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
+
+                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
+
+                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
+
+                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+                    break;
+                } else if (y2 < 0) {
+                    y2 = 0;
+                } else if (y2 >= h) {
+                    break;
+                }
+
+                int pixIdx = (y2 * w) + x2;
+
+                long[] out = copyHist(pixIdx);
+
+                cells.add(new OneDLongArray(out));
+
+                long t = sumCounts(out);
+
+                blockTotal += (t * t);                
+            }
+        }
+
+        if (!cells.isEmpty()) {
+            blockTotal /= (double)cells.size();
+            blockTotal = Math.sqrt(blockTotal);
+        }
+        
+        double norm = 1./(blockTotal + eps);
+
+        float maxBlock = 255.f * cells.size();
+            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
+            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
+
+        norm *= maxBlock;
+
+        Arrays.fill(outHist, 0, outHist.length, 0);
+
+        for (int i = 0; i < cells.size(); ++i) {
+            long[] a = cells.get(i).a;
+            for (int j = 0; j < a.length; ++j) {
+                //v /= Math.sqrt(blockTotal + 0.0001);
+                a[j] = (long)Math.round(norm * a[j]);
+            }
+            add(outHist, a);
+        }
+
+        /*
+        part of a block of 3 X 3 cells
+
+           2        2        2        2
+           1        1        1        1
+           0        0        0        0
+          -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
+                                      *
+        */
+    }
+    
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      *
@@ -699,7 +814,7 @@ public class HOGs {
      * histograms, the registration of featureA and featureB to the same 
      * orientation must be done before this method (more specifically, before
      * extraction to features).
-     *      *
+     *
      * @param featureA
      * @param featureB
      * @return
@@ -744,14 +859,30 @@ public class HOGs {
 
         return sum;
     }
+    
+    public static long sumCounts(long[] hist) {
 
-    private void add(int[] addTo, int[] addFrom) {
+        long sum = 0;
+        for (long v : hist) {
+            sum += v;
+        }
+
+        return sum;
+    }
+
+    public static void add(int[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
         }
     }
 
-    private void add(long[] addTo, int[] addFrom) {
+    public static void add(long[] addTo, int[] addFrom) {
+        for (int i = 0; i < addTo.length; ++i) {
+            addTo[i] += addFrom[i];
+        }
+    }
+    
+    public static void add(long[] addTo, long[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
         }
@@ -914,5 +1045,21 @@ public class HOGs {
         int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
         return out;
     }
+
+    private long[] copyHist(int pixIdx) {
+        int[] a = gHists[pixIdx];
+        long[] out = new long[a.length];
+        for (int i = 0; i < a.length; ++i) {
+            out[i] = a[i];
+        }
+        return out;
+    }
     
+    public int getImageWidth() {
+        return w;
+    }
+    public int getImageHeight() {
+        return h;
+    }
+
 }
