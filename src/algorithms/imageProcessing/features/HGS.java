@@ -375,8 +375,8 @@ public class HGS {
 
         //sumDiff = Math.sqrt(sumDiff);
 
-        err /= (double)nBins;
         err = Math.sqrt(err);
+        err /= (double)nBins;
 
         return new float[]{(float)sumDiff, (float)err};
     }
@@ -543,6 +543,7 @@ public class HGS {
         sum /= (double)(featureA.length/nBins);
         //sum = Math.sqrt(sum);
         
+        //TODO: check normalization by nBins here
         sumSqErr /= (double)(featureA.length/nBins);
         sumSqErr = Math.sqrt(sumSqErr);
 

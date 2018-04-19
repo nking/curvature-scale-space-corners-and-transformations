@@ -24,9 +24,8 @@ public class PatchUtil {
     private final int imgW;
     private final int imgH;
     
-    private double sumErrSq = 0;
+    private double err = 0;
     
-    // this is sqrt(squared sum of totals/count)
     private double blockTotals = 0;
     
     public PatchUtil(int imageWidth, int imageHeight, int nBins) {
@@ -101,6 +100,7 @@ public class PatchUtil {
             maxValue += eps;
             
             tmpBlockTotals += tmpSum;
+            tmpSum /= tmp.length; 
             tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));
         }
         
@@ -117,11 +117,93 @@ public class PatchUtil {
         
         mult(h, norm);
         
-        this.sumErrSq *= this.sumErrSq;
-        this.sumErrSq *= c0;
-        this.sumErrSq += tmpSumErrSq;
-        this.sumErrSq /= (double)c1;
-        this.sumErrSq = Math.sqrt(sumErrSq);
+        //TODO: examine the order of divide by count and sqrt
+        this.err *= this.err;
+        this.err *= c0;
+        this.err += tmpSumErrSq;
+        this.err /= (double)c1;
+        this.err = Math.sqrt(err);
+    }
+    
+    /**
+     * calculate the intersection of the histograms. histograms that are
+     * identical have a result of 1.0 and histograms that are completely
+     * different have a result of 0.
+     * 
+     * @param other
+     * @return 
+     */
+    public double intersection(PatchUtil other) {
+        
+        if ((h.length != other.h.length)) {
+            throw new IllegalArgumentException(
+                "h and other.h must be same dimensions");
+        }
+        
+        int nBins = h.length;
+
+        double sum = 0;
+        double sumA = 0;
+        double sumB = 0;
+        for (int j = 0; j < nBins; ++j) {
+
+            long yA = h[j];
+            long yB = other.h[j];
+
+            sum += Math.min(yA, yB);
+            sumA += yA;
+            sumB += yB;
+
+            //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
+        }
+
+        double d = eps + Math.min(sumA, sumB);
+        double sim = sum/d;
+
+        return sim;
+    }
+    
+    /**
+     * calculate the difference of the histograms. histograms that are
+     * identical have a result of 0.0 and histograms that are completely
+     * different have a result of 1.
+     * 
+     * @param other
+     * @return 
+     */
+    public double[] diff(PatchUtil other) {
+        
+        if ((h.length != other.h.length)) {
+            throw new IllegalArgumentException(
+                "h and other.h must be same dimensions");
+        }
+        
+        int nBins = h.length;
+
+        double tmpSumDiff = 0;
+        double tmpErr = 0;
+        
+        for (int j = 0; j < nBins; ++j) {
+
+            long yA = h[j];
+            long yB = other.h[j];
+
+            float maxValue = Math.max(yA, yB) + eps;
+
+            float diff = Math.abs((yA - yB)/maxValue);
+            
+            tmpSumDiff += diff;
+
+            //      already squared
+            tmpErr += (diff/maxValue);
+        }
+        
+        tmpSumDiff /= (double)nBins;
+                
+        tmpErr = Math.sqrt(tmpErr);
+        tmpErr /= (double)nBins;
+        
+        return new double[]{tmpSumDiff, tmpErr};
     }
     
     private void mult(long[] a, double factor) {
@@ -143,7 +225,7 @@ public class PatchUtil {
     }
    
     public double getAvgErr() {
-        return Math.sqrt(sumErrSq);
+        return Math.sqrt(err);
     }
     
     public long[] getHistogram() {
