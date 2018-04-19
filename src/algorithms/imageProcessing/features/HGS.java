@@ -4,6 +4,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.IntegralHistograms;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
+import algorithms.util.OneDLongArray;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -85,9 +86,7 @@ public class HGS {
         return histograms;  
     }
 
-    /**
-     * NOT READY FOR USE
-     * 
+    /**     * 
      * extract the block surrounding the feature.
      * the number of pixels in a cell and the number of cells in block were set during
      * construction.
@@ -171,6 +170,110 @@ public class HGS {
         
         for (int i = 0; i < cells.size(); ++i) {
             int[] a = cells.get(i).a;
+            for (int j = 0; j < a.length; ++j) {
+                //v /= Math.sqrt(blockTotal + 0.0001);
+                a[j] = (int)Math.round(norm * a[j]);
+            } 
+            add(outHist, a);
+        }
+        
+        /*        
+        part of a block of 3 X 3 cells
+        
+           2        2        2        2
+           1        1        1        1
+           0        0        0        0
+          -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
+                                      *
+        */        
+    }
+    
+    /**
+     * NOT READY FOR USE
+     * 
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in block were set during
+     * construction.
+     * This uses the block normalization of Dalal & Triggs.
+     * 
+     * @param x
+     * @param y
+     * @param outHist 
+     */
+    public void extractBlock(int x, int y, long[] outHist) {
+                
+        if (outHist.length != nBins) {
+            throw new IllegalArgumentException("outHist.length != nBins");
+        }
+
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+            throw new IllegalArgumentException("x or y is out of bounds of "
+                + "original image");
+        }
+        
+        // uses the block normalization recomended by Dalal & Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normaliza each cell by that sum.
+        
+        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
+
+        double blockTotal = 0;        
+                
+        List<OneDLongArray> cells = new ArrayList<OneDLongArray>(nH);
+        
+        for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
+            
+            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
+        
+            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
+            
+            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+                break;
+            } else if (x2 < 0) {
+                x2 = 0;
+            } else if (x2 >= w) {
+                break;
+            }
+            
+            for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
+                    
+                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
+                
+                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
+
+                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+                    break;
+                } else if (y2 < 0) {
+                    y2 = 0;
+                } else if (y2 >= h) {
+                    break;
+                }
+                                
+                int pixIdx = (y2 * w) + x2;
+                
+                long[] out = copyHist(pixIdx);
+
+                cells.add(new OneDLongArray(out));
+            
+                long t = sumCounts(out);
+                
+                blockTotal += (t * t);
+            }
+        }
+        
+        blockTotal /= (double)cells.size();
+        blockTotal = Math.sqrt(blockTotal);
+        double norm = 1./(blockTotal + eps);
+                
+        float maxBlock = (N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
+            (N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM) * 255,f;
+   
+        norm *= maxBlock;
+        
+        Arrays.fill(outHist, 0, outHist.length, 0);
+        
+        for (int i = 0; i < cells.size(); ++i) {
+            long[] a = cells.get(i).a;
             for (int j = 0; j < a.length; ++j) {
                 //v /= Math.sqrt(blockTotal + 0.0001);
                 a[j] = (int)Math.round(norm * a[j]);
@@ -560,6 +663,16 @@ public class HGS {
         return sum;
     }
      
+    private long sumCounts(long[] hist) {
+        
+        long sum = 0;
+        for (long v : hist) {
+            sum += v;
+        }
+        
+        return sum;
+    }
+    
     private void add(int[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
@@ -572,8 +685,31 @@ public class HGS {
         }
     }
     
+    private void add(long[] addTo, long[] addFrom) {
+        for (int i = 0; i < addTo.length; ++i) {
+            addTo[i] += addFrom[i];
+        }
+    }
+    
+    private long[] copyHist(int pixIdx) {
+        int[] a = gHists[pixIdx];
+        long[] out = new long[a.length];
+        for (int i = 0; i < a.length; ++i) {
+            out[i] = a[i];
+        }
+        return out;
+    }
+    
     public int getNumberOfBins() {
         return nBins;
+    }
+
+    public int getImageWidth() {
+        return w;
+    }
+
+    public int getImageHeight() {
+        return h;
     }
 
 }

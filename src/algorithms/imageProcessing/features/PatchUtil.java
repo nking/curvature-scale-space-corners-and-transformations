@@ -125,6 +125,186 @@ public class PatchUtil {
         this.err = Math.sqrt(err);
     }
     
+    public void add(TIntSet addPixelIndexes, HCPT hcpt) {
+        
+        if (hcpt.getNumberOfBins() != h.length) {
+            throw new IllegalArgumentException(
+               "hog number of bins differs the expected");
+        }
+        if (hcpt.getImageWidth() != imgW) {
+            throw new IllegalArgumentException(
+               "hog image width differs the expected");
+        }
+        if (hcpt.getImageHeight() != imgH) {
+            throw new IllegalArgumentException(
+               "hog image height differs the expected");
+        }
+        if (addPixelIndexes.isEmpty()) {
+            return;
+        }
+        
+        int c0 = pixIdxs.size();
+        
+        // to keep adding to block totals, square and factor by count again
+        double tmpBlockTotals = blockTotals;
+        if (blockTotals > 0) {
+                   
+            double norm = 255.f/(blockTotals + eps);
+
+            div(h, norm);
+        }
+        
+        long tmpSum = 0;
+        long tmpSumErrSq = 0;
+        double maxValue;
+        
+        long[] tmp = new long[h.length];
+        
+        int[] xy = new int[2];
+        PixelHelper ph = new PixelHelper();
+        
+        //TODO: correct to use a scan by cell size pattern
+        TIntIterator iter = addPixelIndexes.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            if (pixIdxs.contains(pixIdx)) {
+                continue;
+            }
+            pixIdxs.add(pixIdx);
+            
+            ph.toPixelCoords(pixIdx, imgW, xy);
+            
+            hcpt.extractBlock(xy[0], xy[1], tmp);
+           
+            HOGs.add(h, tmp);
+                   
+            tmpSum = 0;
+            maxValue = Double.NEGATIVE_INFINITY;
+            for (int j = 0; j < tmp.length; ++j) {
+                tmpSum += tmp[j];
+                if (tmp[j] > maxValue) {
+                    maxValue = tmp[j];
+                } 
+            }
+            
+            maxValue += eps;
+            
+            tmpBlockTotals += tmpSum;
+            tmpSum /= tmp.length; 
+            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));
+        }
+        
+        int nAdded = pixIdxs.size() - c0;
+        int c1 = pixIdxs.size();
+        
+        if (c1 > 0) {
+            this.blockTotals = tmpBlockTotals;
+        }  
+        
+        double norm = 1./(blockTotals + eps);
+        float maxBlock = 255.f;
+        norm *= maxBlock;
+        
+        mult(h, norm);
+        
+        //TODO: examine the order of divide by count and sqrt
+        this.err *= this.err;
+        this.err *= c0;
+        this.err += tmpSumErrSq;
+        this.err /= (double)c1;
+        this.err = Math.sqrt(err);
+    }
+    
+    public void add(TIntSet addPixelIndexes, HGS hgs) {
+        
+        if (hgs.getNumberOfBins() != h.length) {
+            throw new IllegalArgumentException(
+               "hog number of bins differs the expected");
+        }
+        if (hgs.getImageWidth() != imgW) {
+            throw new IllegalArgumentException(
+               "hog image width differs the expected");
+        }
+        if (hgs.getImageHeight() != imgH) {
+            throw new IllegalArgumentException(
+               "hog image height differs the expected");
+        }
+        if (addPixelIndexes.isEmpty()) {
+            return;
+        }
+        
+        int c0 = pixIdxs.size();
+        
+        // to keep adding to block totals, square and factor by count again
+        double tmpBlockTotals = blockTotals;
+        if (blockTotals > 0) {
+                   
+            double norm = 255.f/(blockTotals + eps);
+
+            div(h, norm);
+        }
+        
+        long tmpSum = 0;
+        long tmpSumErrSq = 0;
+        double maxValue;
+        
+        long[] tmp = new long[h.length];
+        
+        int[] xy = new int[2];
+        PixelHelper ph = new PixelHelper();
+        
+        //TODO: correct to use a scan by cell size pattern
+        TIntIterator iter = addPixelIndexes.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            if (pixIdxs.contains(pixIdx)) {
+                continue;
+            }
+            pixIdxs.add(pixIdx);
+            
+            ph.toPixelCoords(pixIdx, imgW, xy);
+            
+            hgs.extractBlock(xy[0], xy[1], tmp);
+           
+            HOGs.add(h, tmp);
+                   
+            tmpSum = 0;
+            maxValue = Double.NEGATIVE_INFINITY;
+            for (int j = 0; j < tmp.length; ++j) {
+                tmpSum += tmp[j];
+                if (tmp[j] > maxValue) {
+                    maxValue = tmp[j];
+                } 
+            }
+            
+            maxValue += eps;
+            
+            tmpBlockTotals += tmpSum;
+            tmpSum /= tmp.length; 
+            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));
+        }
+        
+        int nAdded = pixIdxs.size() - c0;
+        int c1 = pixIdxs.size();
+        
+        if (c1 > 0) {
+            this.blockTotals = tmpBlockTotals;
+        }  
+        
+        double norm = 1./(blockTotals + eps);
+        float maxBlock = 255.f;
+        norm *= maxBlock;
+        
+        mult(h, norm);
+        
+        //TODO: examine the order of divide by count and sqrt
+        this.err *= this.err;
+        this.err *= c0;
+        this.err += tmpSumErrSq;
+        this.err /= (double)c1;
+        this.err = Math.sqrt(err);
+    }
+    
     /**
      * calculate the intersection of the histograms. histograms that are
      * identical have a result of 1.0 and histograms that are completely
