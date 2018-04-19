@@ -822,6 +822,8 @@ public class MSEREdges {
         GreyscaleImage luvImg = 
             imageProcessor.createCIELUVTheta_WideRangeLightness(clrImg, 255);
         
+        float intersectionLimit = 0.7f;
+        
         int nCellsPerDim = 1;
         int nPixPerCellDim = 6;
         int nBins = 12;
@@ -944,8 +946,8 @@ public class MSEREdges {
                     xy2.getX(), xy2.getY(), cmodeLUV2.name(), cmode2.name(),
                     inter0, inter1, inter2
                 );
-                float limit = 0.6f;
-                if (inter0 < limit || inter1 < limit || inter2 < limit) {
+                
+                if (inter0 < intersectionLimit || inter1 < intersectionLimit || inter2 < intersectionLimit) {
                     System.out.format("\n");
                     continue;
                 }
