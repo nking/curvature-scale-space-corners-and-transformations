@@ -21,9 +21,9 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 0; i < 1; ++i) {
+        //for (int i = 11; i < 12; ++i) {
         //for (int i = 25; i < 26; ++i) {
-        //for (int i = 5; i < 6; ++i) {
+        //for (int i = 2; i < 3; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {
@@ -193,6 +193,9 @@ public class MSEREdgesTest extends TestCase {
                 (float) h1 / maxDimension));
 
             img = imageProcessor.binImage(img, binFactor1);
+       //     img = (ImageExt) img.copySubImage(
+       //         img.getWidth()/3, 2*img.getWidth()/3, 
+       //         img.getHeight()/3, 2*img.getHeight()/3);
             //MiscDebug.writeImage(img, "_"  + fileName1Root);
                 
             MSEREdges mserE = new MSEREdges(img);

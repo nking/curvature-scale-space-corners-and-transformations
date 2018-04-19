@@ -1,9 +1,12 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * carries the current integrated histogram from a region of
@@ -410,5 +413,22 @@ public class PatchUtil {
     
     public long[] getHistogram() {
         return h;
+    }
+    
+    public TIntSet getPixelIndexes() {
+        return pixIdxs;
+    }
+    
+    public Set<PairInt> getPixelSet() {
+        PixelHelper ph = new PixelHelper();
+        int[] xy = new int[2];
+        Set<PairInt> set = new HashSet<PairInt>();
+        TIntIterator iter = pixIdxs.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            ph.toPixelCoords(pixIdx, imgW, xy);
+            set.add(new PairInt(xy[0], xy[1]));
+        }
+        return set;
     }
 }

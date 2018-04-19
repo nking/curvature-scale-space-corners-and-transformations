@@ -4,7 +4,6 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
 import java.io.IOException;

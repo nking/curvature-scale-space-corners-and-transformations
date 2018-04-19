@@ -432,8 +432,8 @@ public class MSERMatcher {
     }
 
     //double[]{intersection, f0, f1, count};
-    private double[] sumHOGCost3(HOGs hogs0, CRegion cr0, 
-        HOGs hogs1, CRegion cr1) {
+    private double[] sumHOGCost3(HOGs hogs0, CRegion cr0, HOGs hogs1, 
+        CRegion cr1) {
         
         int orientation0 = cr0.hogOrientation;
             
@@ -722,7 +722,7 @@ public class MSERMatcher {
      * @return 
      */
     public List<CorrespondenceList> matchObject0(
-        ObjectMatcher.CMODE clrMode0,
+        CMODE clrMode0,
         List<List<GreyscaleImage>> pyrRGB0, List<GreyscaleImage> pyrPT0, 
         TIntObjectMap<Canonicalizer.RegionPoints> regionPoints0, 
         List<List<GreyscaleImage>> pyrRGB1, List<GreyscaleImage> pyrPT1, 
@@ -917,7 +917,7 @@ public class MSERMatcher {
                             //double[]{combIntersection, f0, f1, 
                             //    intersectionHCPT, intersectionHGS, count}
                             costs2 = sumCost2(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
-                            if (clrMode0.equals(ObjectMatcher.CMODE.WHITE)) {
+                            if (clrMode0.equals(CMODE.WHITE)) {
                                 hcptHgsCost = 1.f - costs2[0];
                             } else {
                                 hcptHgsCost = 1.f - costs2[3];
@@ -926,7 +926,7 @@ public class MSERMatcher {
                             hgsCost = 1.f - costs2[4];
                         } else {
                             costs2 = sumCost3(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
-                            if (clrMode0.equals(ObjectMatcher.CMODE.WHITE)) {
+                            if (clrMode0.equals(CMODE.WHITE)) {
                                 hcptHgsCost = costs2[0];
                             } else {
                                 hcptHgsCost = costs2[3];

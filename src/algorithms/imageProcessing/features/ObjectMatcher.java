@@ -19,6 +19,7 @@ import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.imageProcessing.matching.CMODE;
 import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.util.GroupAverageColors;
@@ -785,43 +786,6 @@ public class ObjectMatcher {
         }
     }
 
-    private CMODE determineColorMode(ImageExt img, Set<PairInt> set) {
-
-        GroupAverageColors clrs = new GroupAverageColors(img, set);
-        
-        int limit1 = 150;
-        int limit2 = 55;
-        if (clrs.getR() >= limit1 && clrs.getG() >= limit1 &&
-            clrs.getB() >= limit1) {
-            return CMODE.WHITE;
-        } else if (clrs.getR() <= limit2 && clrs.getG() <= limit2 &&
-            clrs.getB() <= limit2) {
-            return CMODE.BLACK;
-        } else {
-            return CMODE.OTHER;
-        }
-    }
-
-    private CMODE determinePolarThetaMode(GreyscaleImage luvTheta, 
-        Set<PairInt> points) {
-    
-        double avg = 0;
-        for (PairInt p : points) {
-            avg += luvTheta.getValue(p);
-        }
-        avg /= (double)points.size();
-        
-        int limit1 = 220;
-        int limit2 = 25;
-        if (avg >= limit1) {
-            return CMODE.WHITE;
-        } else if (avg <= limit2) {
-            return CMODE.BLACK;
-        } else {
-            return CMODE.OTHER;
-        }
-    }
-
     private int calculateObjectSize(RegionPoints region) {
         int[] minMaxXY = MiscMath.findMinMaxXY(region.points);
         int diffX = minMaxXY[1] - minMaxXY[0];
@@ -1159,15 +1123,6 @@ public class ObjectMatcher {
             return useColorFilter;
         }
     }
-
-    /**
-     * descriptions black, white, or other used in describing the template
-     * shape color.  the extremes black and white can be used to limit
-     * the regions created.
-     */
-    public static enum CMODE {
-        WHITE, BLACK, OTHER
-    }
     
     /**
      * NOT READY FOR USE
@@ -1179,8 +1134,8 @@ public class ObjectMatcher {
      * @param settings for the method
      * @return
      */
-    public List<CorrespondenceList> findObject12(ImageExt img0, Set<PairInt> shape0,
-        ImageExt img1, Settings settings) {
+    public List<CorrespondenceList> findObject12(ImageExt img0, 
+        Set<PairInt> shape0, ImageExt img1, Settings settings) {
 
         long ts = 0;
         if (debug) {
@@ -1201,7 +1156,7 @@ public class ObjectMatcher {
         ImageProcessor imageProcessor = new ImageProcessor();
 
         mask(img0Trimmed, shape0Trimmed);
-        CMODE clrMode = determineColorMode(img0Trimmed, shape0Trimmed);
+        CMODE clrMode = CMODE.determineColorMode(img0Trimmed, shape0Trimmed);
         
         /*
         convert the image to cie luv and then calculate polar angle of u and v
@@ -1224,7 +1179,7 @@ public class ObjectMatcher {
         imageProcessor.singlePixelFilter(luvTheta1);
 
         mask(luvTheta0, shape0Trimmed);
-        CMODE ptMode = determinePolarThetaMode(luvTheta0, shape0Trimmed);
+        CMODE ptMode = CMODE.determinePolarThetaMode(luvTheta0, shape0Trimmed);
         
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         
