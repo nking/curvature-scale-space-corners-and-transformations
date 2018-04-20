@@ -823,6 +823,7 @@ public class MSEREdges {
             imageProcessor.createCIELUVTheta_WideRangeLightness(clrImg, 255);
         
         float intersectionLimit = 0.7f;
+        float intersectionLimit1 = 0.65f;
         
         int nCellsPerDim = 1;
         int nPixPerCellDim = 6;
@@ -888,184 +889,193 @@ public class MSEREdges {
         }
         
         int mCount = 0;
-        
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            
-            int label = indexes[i];
-           
-            VeryLongBitString adjLabels = adjMap.get(label);
-            if (adjLabels == null || adjLabels.getNSetBits() == 0) {
-                continue;
-            }
-            
-            // subtr edges from sets
-            TIntSet set1 = new TIntHashSet(labeledSets.get(label));
-            set1.removeAll(edgeList.get(label));
-            
-            PairInt xy1 = centroidsMap.get(label);
-       
-            List<PatchUtil> pList1 = clrs.get(label);
-            
-            Set<PairInt> points1 = pList1.get(0).getPixelSet();
-            CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(luvImg, points1);
-            CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
+        int eCount = 0;
 
-            /*
-            GroupPixelHSV2 clr1 = clrs.get(label);
-            int[] hgs1H = getRegionHistogram(hgs, set1);
-            // 0=other, 1=black, 2=white
-            int clrMode1 = isBlack(clr1) ? 1 : (isWhite(clr1) ? 2 : 0);
-            */
+        do {    
+            eCount = 0;
             
-            int[] adjBits = adjLabels.getSetBits();
-            for (int label2 : adjBits) {
-                
-                if (!clrs.containsKey(label2)) {
+            for (int i = 0; i < labeledSets.size(); ++i) {
+
+                int label = indexes[i];
+
+                VeryLongBitString adjLabels = adjMap.get(label);
+                if (adjLabels == null || adjLabels.getNSetBits() == 0) {
                     continue;
                 }
-                
-                PairInt xy2 = centroidsMap.get(label2);
-                
+
                 // subtr edges from sets
-                TIntSet set2 = new TIntHashSet(labeledSets.get(label2));
-                //set2.removeAll(edgeList.get(label2));
-                
-                List<PatchUtil> pList2 = clrs.get(label2);
-                
-                Set<PairInt> points2 = pList2.get(0).getPixelSet();
-                CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(luvImg, points2);
-                CMODE cmode2 = CMODE.determineColorMode(clrImg, points2);
-            
-                //DEBUG
-                float inter0 = (float)pList1.get(0).intersection(pList2.get(0));
-                float inter1 = (float)pList1.get(1).intersection(pList2.get(1));
-                float inter2 = (float)pList1.get(2).intersection(pList2.get(2));
-                System.out.format(
-                    "(%d,%d) %s %s : (%d,%d) %s %s intersection=%.3f,%.3f,%.3f", 
-                    xy1.getX(), xy1.getY(), cmodeLUV1.name(), cmode1.name(),
-                    xy2.getX(), xy2.getY(), cmodeLUV2.name(), cmode2.name(),
-                    inter0, inter1, inter2
-                );
-                
-                if (inter0 < intersectionLimit || inter1 < intersectionLimit || inter2 < intersectionLimit) {
-                    System.out.format("\n");
-                    continue;
-                }
-                
+                TIntSet set1 = new TIntHashSet(labeledSets.get(label));
+                set1.removeAll(edgeList.get(label));
+
+                PairInt xy1 = centroidsMap.get(label);
+
+                List<PatchUtil> pList1 = clrs.get(label);
+
+                Set<PairInt> points1 = pList1.get(0).getPixelSet();
+                CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(luvImg, points1);
+                CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
+
                 /*
-                boolean skip = false;
-                for (int j = 0; j < pList1.size(); ++j) {
-                    if (pList1.get(j).intersection(pList2.get(j)) < 0.5) {
-                        // different so do not merge
-                        skip = true;
-                        break;
-                    }
-                }
-                if (skip) {
-                    continue;
-                }*/
-                
-                /*
-                GroupPixelHSV2 clr2 = clrs.get(label2);
-                
-                int[] hgs2H = getRegionHistogram(hgs, set2);
-                float hsvDiff = clr1.calculateDifference(clr2);
-                float rgbDiff = clr1.calculateRGBDifference(clr2);
-                float hgsInter = hgs.intersection(hgs1H, hgs2H);
+                GroupPixelHSV2 clr1 = clrs.get(label);
+                int[] hgs1H = getRegionHistogram(hgs, set1);
                 // 0=other, 1=black, 2=white
-                int clrMode2 = isBlack(clr2) ? 1 : (isWhite(clr2) ? 2 : 0);
-            
-                if (clrMode1 == 0 && clrMode2 == 0) {
-                    if (hsvDiff > 0.09 || hgsInter < 0.89 || rgbDiff > 0.1) {
-                        continue;
-                    }
-                } else if (clrMode1 == 1 && clrMode2 == 1) {
-                    if (hgsInter < 0.8 || rgbDiff > 0.08) {
-                        continue;
-                    }
-                } else if (clrMode1 == 2 && clrMode2 == 2) {
-                    //whiteish
-                    if (hgsInter < 0.8 || rgbDiff > 0.08) {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-                clr1.add(clr2);
-                clrs.remove(label2);
+                int clrMode1 = isBlack(clr1) ? 1 : (isWhite(clr1) ? 2 : 0);
                 */
-                
-                //System.out.println("  merging");
-                
-                // -- merge the adjacent into the current label ---
-                
-                pList1.get(0).add(set2, hogs);
-                pList1.get(1).add(set2, hcpt);
-                pList1.get(2).add(set2, hgs);
-                
-                clrs.remove(label2);
-                
-                // not updating the pointIndexMap because not using it here
-                
-                /*
-                label :  label2, label3, label4, ...
-                         becomes
-                         label
-                */
-                
-                adjLabels.clearBit(label2);
-                
-                VeryLongBitString adjLabels2 = adjMap.get(label2);
-                adjLabels2.clearBit(label);
-                int[] setBits2 = adjLabels2.getSetBits();
-                for (int label2Adj : setBits2) {
-                    VeryLongBitString adjLabel2Adj = adjMap.get(label2Adj);
-                    if (adjLabel2Adj == null) {
-                        adjLabels2.clearBit(label2Adj);
+
+                int[] adjBits = adjLabels.getSetBits();
+                for (int label2 : adjBits) {
+
+                    if (!clrs.containsKey(label2)) {
                         continue;
                     }
-                    adjLabel2Adj.clearBit(label2);
-                    adjLabel2Adj.setBit(label);
-                }
-                
-                VeryLongBitString union = adjLabels.or(adjLabels2);
-                adjMap.put(label, union);
-                adjLabels = union;
-                adjMap.remove(label2);
-                
-                labeledSets.get(label).addAll(labeledSets.get(label2));
-                edgeList.get(label).addAll(edgeList.get(label2));
-                labeledSets.get(label2).clear();
-                edgeList.get(label2).clear();
-                                
-                // subtr edges from sets
-                set1 = new TIntHashSet(labeledSets.get(label));
-                //set1.removeAll(edgeList.get(label));
-            
-                //clrHist.add2To1(hgs1H, hgs2H);
-            
-                // debug
-                if (false && debug) {
-                    Image tmp = clrImg.copyImage();
-                    ImageIOHelper.addAlternatingColorPointSetsToImage2(
-                        labeledSets, 0, 0, 0, tmp);
-                    String t = Integer.toString(mCount);
-                    while (t.length() < 5) {
-                        t = "0" + t;
+
+                    PairInt xy2 = centroidsMap.get(label2);
+
+                    // subtr edges from sets
+                    TIntSet set2 = new TIntHashSet(labeledSets.get(label2));
+                    //set2.removeAll(edgeList.get(label2));
+
+                    List<PatchUtil> pList2 = clrs.get(label2);
+
+                    Set<PairInt> points2 = pList2.get(0).getPixelSet();
+                    CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(luvImg, points2);
+                    CMODE cmode2 = CMODE.determineColorMode(clrImg, points2);
+
+                    //DEBUG
+                    float inter0 = (float)pList1.get(0).intersection(pList2.get(0));
+                    float inter1 = (float)pList1.get(1).intersection(pList2.get(1));
+                    float inter2 = (float)pList1.get(2).intersection(pList2.get(2));
+                    System.out.format(
+                        "(%d,%d) %s %s : (%d,%d) %s %s intersection=%.3f,%.3f,%.3f", 
+                        xy1.getX(), xy1.getY(), 
+                        cmodeLUV1.name(), cmode1.name(),
+                        xy2.getX(), xy2.getY(), 
+                        cmodeLUV2.name(), cmode2.name(),
+                        inter0, inter1, inter2
+                    );
+
+                    if (inter0 < intersectionLimit || inter1 < intersectionLimit1 
+                        || inter2 < intersectionLimit) {
+                        System.out.format("\n");
+                        continue;
                     }
-                    t = t + "_" + xy1.toString() + "_" + xy2.toString();
-                    MiscDebug.writeImage(tmp, "_" + ts + "_merging_" + t);
+
+                    /*
+                    boolean skip = false;
+                    for (int j = 0; j < pList1.size(); ++j) {
+                        if (pList1.get(j).intersection(pList2.get(j)) < 0.5) {
+                            // different so do not merge
+                            skip = true;
+                            break;
+                        }
+                    }
+                    if (skip) {
+                        continue;
+                    }*/
+
+                    /*
+                    GroupPixelHSV2 clr2 = clrs.get(label2);
+
+                    int[] hgs2H = getRegionHistogram(hgs, set2);
+                    float hsvDiff = clr1.calculateDifference(clr2);
+                    float rgbDiff = clr1.calculateRGBDifference(clr2);
+                    float hgsInter = hgs.intersection(hgs1H, hgs2H);
+                    // 0=other, 1=black, 2=white
+                    int clrMode2 = isBlack(clr2) ? 1 : (isWhite(clr2) ? 2 : 0);
+
+                    if (clrMode1 == 0 && clrMode2 == 0) {
+                        if (hsvDiff > 0.09 || hgsInter < 0.89 || rgbDiff > 0.1) {
+                            continue;
+                        }
+                    } else if (clrMode1 == 1 && clrMode2 == 1) {
+                        if (hgsInter < 0.8 || rgbDiff > 0.08) {
+                            continue;
+                        }
+                    } else if (clrMode1 == 2 && clrMode2 == 2) {
+                        //whiteish
+                        if (hgsInter < 0.8 || rgbDiff > 0.08) {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                    clr1.add(clr2);
+                    clrs.remove(label2);
+                    */
+
+                    //System.out.println("  merging");
+
+                    // -- merge the adjacent into the current label ---
+
+                    pList1.get(0).add(set2, hogs);
+                    pList1.get(1).add(set2, hcpt);
+                    pList1.get(2).add(set2, hgs);
+
+                    clrs.remove(label2);
+
+                    // not updating the pointIndexMap because not using it here
+
+                    /*
+                    label :  label2, label3, label4, ...
+                             becomes
+                             label
+                    */
+
+                    adjLabels.clearBit(label2);
+
+                    VeryLongBitString adjLabels2 = adjMap.get(label2);
+                    adjLabels2.clearBit(label);
+                    int[] setBits2 = adjLabels2.getSetBits();
+                    for (int label2Adj : setBits2) {
+                        VeryLongBitString adjLabel2Adj = adjMap.get(label2Adj);
+                        if (adjLabel2Adj == null) {
+                            adjLabels2.clearBit(label2Adj);
+                            continue;
+                        }
+                        adjLabel2Adj.clearBit(label2);
+                        adjLabel2Adj.setBit(label);
+                    }
+
+                    VeryLongBitString union = adjLabels.or(adjLabels2);
+                    adjMap.put(label, union);
+                    adjLabels = union;
+                    adjMap.remove(label2);
+
+                    labeledSets.get(label).addAll(labeledSets.get(label2));
+                    edgeList.get(label).addAll(edgeList.get(label2));
+                    labeledSets.get(label2).clear();
+                    edgeList.get(label2).clear();
+
+                    // subtr edges from sets
+                    set1 = new TIntHashSet(labeledSets.get(label));
+                    //set1.removeAll(edgeList.get(label));
+
+                    //clrHist.add2To1(hgs1H, hgs2H);
+
+                    // debug
+                    if (debug) {
+                        Image tmp = clrImg.copyImage();
+                        ImageIOHelper.addAlternatingColorPointSetsToImage2(
+                            labeledSets, 0, 0, 0, tmp);
+                        String t = Integer.toString(mCount);
+                        while (t.length() < 5) {
+                            t = "0" + t;
+                        }
+                        t = t + "_" + xy1.toString() + "_" + xy2.toString();
+                        MiscDebug.writeImage(tmp, "_" + ts + "_merging_" + t);
+                    }
+
+                    int[] xyCen = ch.calculateRoundedXYCentroids(set1, w);
+                    xy1 = new PairInt(xyCen[0], xyCen[1]);
+                    centroidsMap.put(label, xy1);
+
+                    System.out.format(" ==> (%d,%d)\n", xy1.getX(), xy1.getY());
+                    mCount++;
+                    eCount++;
                 }
-                
-                int[] xyCen = ch.calculateRoundedXYCentroids(set1, w);
-                xy1 = new PairInt(xyCen[0], xyCen[1]);
-                centroidsMap.put(label, xy1);
-                
-                System.out.format(" ==> (%d,%d)\n", xy1.getX(), xy1.getY());
-                mCount++;
+
             }
-            
-        }
+        } while (eCount > 0);
         
         // remove empty labeledSets
         for (int i = (labeledSets.size() - 1); i > -1; --i) {
@@ -1853,7 +1863,7 @@ public class MSEREdges {
         //    such as the gingerbread man in the test image android_statues_01
         //    downsampled to size near 256 pixels per dimension.
         //int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18, 24};
-        int[] mszs = new int[]{minGroupSize, 4, 6, 12, 18};
+        int[] mszs = new int[]{minGroupSize, 4, 6};
 
         float[][] hsvs;
         
