@@ -565,8 +565,8 @@ public class MSEREdges {
     }
     
     private void mergeRegions() {
-        //mergeRegionsWithHGSRGBHSV();
         mergeRegionsWithHOGsHCPTHGS();
+        //mergeRegionsWithHGSRGBHSV();
     }
 
     /**
@@ -824,6 +824,7 @@ public class MSEREdges {
         
         float intersectionLimit = 0.7f;
         float intersectionLimit1 = 0.65f;
+        float intersectionLimit1H = 0.8f;
         
         int nCellsPerDim = 1;
         int nPixPerCellDim = 6;
@@ -915,13 +916,6 @@ public class MSEREdges {
                 CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(luvImg, points1);
                 CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
 
-                /*
-                GroupPixelHSV2 clr1 = clrs.get(label);
-                int[] hgs1H = getRegionHistogram(hgs, set1);
-                // 0=other, 1=black, 2=white
-                int clrMode1 = isBlack(clr1) ? 1 : (isWhite(clr1) ? 2 : 0);
-                */
-
                 int[] adjBits = adjLabels.getSetBits();
                 for (int label2 : adjBits) {
 
@@ -933,7 +927,7 @@ public class MSEREdges {
 
                     // subtr edges from sets
                     TIntSet set2 = new TIntHashSet(labeledSets.get(label2));
-                    //set2.removeAll(edgeList.get(label2));
+                    set2.removeAll(edgeList.get(label2));
 
                     List<PatchUtil> pList2 = clrs.get(label2);
 
@@ -953,57 +947,12 @@ public class MSEREdges {
                         cmodeLUV2.name(), cmode2.name(),
                         inter0, inter1, inter2
                     );
-
+                    
                     if (inter0 < intersectionLimit || inter1 < intersectionLimit1 
                         || inter2 < intersectionLimit) {
                         System.out.format("\n");
                         continue;
                     }
-
-                    /*
-                    boolean skip = false;
-                    for (int j = 0; j < pList1.size(); ++j) {
-                        if (pList1.get(j).intersection(pList2.get(j)) < 0.5) {
-                            // different so do not merge
-                            skip = true;
-                            break;
-                        }
-                    }
-                    if (skip) {
-                        continue;
-                    }*/
-
-                    /*
-                    GroupPixelHSV2 clr2 = clrs.get(label2);
-
-                    int[] hgs2H = getRegionHistogram(hgs, set2);
-                    float hsvDiff = clr1.calculateDifference(clr2);
-                    float rgbDiff = clr1.calculateRGBDifference(clr2);
-                    float hgsInter = hgs.intersection(hgs1H, hgs2H);
-                    // 0=other, 1=black, 2=white
-                    int clrMode2 = isBlack(clr2) ? 1 : (isWhite(clr2) ? 2 : 0);
-
-                    if (clrMode1 == 0 && clrMode2 == 0) {
-                        if (hsvDiff > 0.09 || hgsInter < 0.89 || rgbDiff > 0.1) {
-                            continue;
-                        }
-                    } else if (clrMode1 == 1 && clrMode2 == 1) {
-                        if (hgsInter < 0.8 || rgbDiff > 0.08) {
-                            continue;
-                        }
-                    } else if (clrMode1 == 2 && clrMode2 == 2) {
-                        //whiteish
-                        if (hgsInter < 0.8 || rgbDiff > 0.08) {
-                            continue;
-                        }
-                    } else {
-                        continue;
-                    }
-                    clr1.add(clr2);
-                    clrs.remove(label2);
-                    */
-
-                    //System.out.println("  merging");
 
                     // -- merge the adjacent into the current label ---
 
@@ -1014,12 +963,6 @@ public class MSEREdges {
                     clrs.remove(label2);
 
                     // not updating the pointIndexMap because not using it here
-
-                    /*
-                    label :  label2, label3, label4, ...
-                             becomes
-                             label
-                    */
 
                     adjLabels.clearBit(label2);
 
@@ -1048,12 +991,10 @@ public class MSEREdges {
 
                     // subtr edges from sets
                     set1 = new TIntHashSet(labeledSets.get(label));
-                    //set1.removeAll(edgeList.get(label));
-
-                    //clrHist.add2To1(hgs1H, hgs2H);
+                    set1.removeAll(edgeList.get(label));
 
                     // debug
-                    if (debug) {
+                    if (false && debug) {
                         Image tmp = clrImg.copyImage();
                         ImageIOHelper.addAlternatingColorPointSetsToImage2(
                             labeledSets, 0, 0, 0, tmp);
