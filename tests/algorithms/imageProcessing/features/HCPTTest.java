@@ -39,7 +39,8 @@ public class HCPTTest extends TestCase {
             (float) w0 / maxDimension,
             (float) h0 / maxDimension));
         img0 = imageProcessor.binImage(img0, binFactor0);
-        GreyscaleImage pt0 = imageProcessor.createCIELUVTheta(img0, 255);
+        GreyscaleImage pt0 = imageProcessor
+            .createCIELUVTheta_WideRangeLightness(img0, 255);
         
         //MiscDebug.writeImage(pt0, "_lab0_");
         
@@ -52,7 +53,8 @@ public class HCPTTest extends TestCase {
             (float) w1 / maxDimension,
             (float) h1 / maxDimension));
         img1 = imageProcessor.binImage(img1, binFactor1);
-        GreyscaleImage pt1 = imageProcessor.createCIELUVTheta(img1, 255);
+        GreyscaleImage pt1 = imageProcessor
+            .createCIELUVTheta_WideRangeLightness(img1, 255);
         
         //MiscDebug.writeImage(pt1, "_lab1_");
         

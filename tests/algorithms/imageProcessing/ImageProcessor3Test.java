@@ -39,7 +39,8 @@ public class ImageProcessor3Test extends TestCase {
         img = imageProcessor.binImage(img, binFactor1);
 
         imageProcessor = new ImageProcessor();
-        GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(img, 255);
+        GreyscaleImage theta1 = imageProcessor
+            .createCIELUVTheta_WideRangeLightness(img, 255);
         //MiscDebug.writeImage(theta1,  "_theta_"  + fileName1Root);
         
         imageProcessor.singlePixelFilter(theta1);

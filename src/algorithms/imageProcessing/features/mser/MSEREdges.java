@@ -136,15 +136,16 @@ public class MSEREdges {
     private EdgeFilterProducts edgeProducts = null;
 
     private long ts = 0;
+    
+    private static int thetaShift = 60;
 
     private STATE state = null;
 
     public MSEREdges(Image img) {
 
-        ImageProcessor imageProcesor = new ImageProcessor();
-
+        ImageProcessor imageProcessor = new ImageProcessor();
         this.gsImg = img.copyToGreyscale2();
-        this.ptImg = imageProcesor.createCIELUVTheta(img, 255);
+        this.ptImg = imageProcessor.createCIELUVTheta_WideRangeLightness(img, 255);
         this.clrImg = img.copyToImageExt();
 
         //to correct for wrap around effects in ptImg, making a copy
@@ -153,7 +154,7 @@ public class MSEREdges {
         //   around from 255 to 0, but perceived as different can be
         //   found by comparing these two image's results, though
         //   there may be faster ways to achieve this.
-        this.ptImgShifted = copyAndShift(ptImg, 60);
+        this.ptImgShifted = copyAndShift(ptImg, thetaShift);
 
         state = STATE.INITIALIZED;
     }
@@ -179,9 +180,11 @@ public class MSEREdges {
                 + "edges once");
         }
 
-        if (debug) {
+        /*if (debug) {
             MiscDebug.writeImage(ptImg, "_" + ts + "_polartheta");
-        }
+            MiscDebug.writeImage(gsImg, "_" + ts + "_greyscale");
+            MiscDebug.writeImage(ptImgShifted, "_" + ts + "_polartheta_shifted");
+        }*/
 
         extractRegions();
 
@@ -236,7 +239,8 @@ public class MSEREdges {
 
         List<List<Region>> ptShiftedRegions = extractMSERRegions(
             ptImgShifted, Threshold.DEFAULT);
-
+            
+        //_debugOrigRegions(ptRegions.get(0), "__0");
         //_debugOrigRegions(ptShiftedRegions.get(0), "_shifted_0");
         //_debugOrigRegions(ptShiftedRegions.get(1), "_shifted_1");
 
@@ -290,13 +294,14 @@ public class MSEREdges {
             boolean hadWrapAroundArtifacts = false;
             for (int i = (list.size() - 1); i > -1; --i) {
                 Region r = list.get(i);
-
+                //System.out.println(i + ") r=" + r.toString());
                 if ((type == 1)
                     //&& r.getVariation() > 0.001) {
                     && r.getVariation() > 2) {
                     list.remove(i);
                 } else if ((type == 0)
                     //&& r.getVariation() == 0.0) {
+                    && r.getVariation() != 0.0
                     && r.getVariation() < 2) {
                     list.remove(i);
                 } else {
@@ -321,6 +326,7 @@ public class MSEREdges {
                     }
                 }
             }
+            System.out.println("hadWrapAroundArtifacts=" + hadWrapAroundArtifacts);
             if (hadWrapAroundArtifacts) {
                 // excluded level < 25.
                 //   so shift by +60 and any region found w level approx 60
@@ -330,24 +336,23 @@ public class MSEREdges {
                 List<Region> list2 = ptShiftedRegions.get(type);
                 for (int i = (list2.size() - 1); i > -1; --i) {
                     Region r = list2.get(i);
-
                     if ((type == 1)
                         //&& r.getVariation() > 0.001) {
                         && r.getVariation() > 2) {
                         list2.remove(i);
                     } else if ((type == 0)
-                        //&& r.getVariation() == 0.0) {
+                        && r.getVariation() != 0.0
                         && r.getVariation() < 2) {
                         list2.remove(i);
                     } else {
                         //TODO: consider checking whether this already exists in
                         //   the list
-                        if (Math.abs(r.level_ - 60) < 20) {
-                            r.level_ += 60;
+                        if (Math.abs(r.level_ - thetaShift) < 20) {
+                            r.level_ += thetaShift;
                             list.add(r);
                             //System.out.format("  add shifted x,y=%d,%d level=%d\n",
-                            // (int)(r.moments_[0]/r.area_),
-                            // (int)(r.moments_[1]/r.area_), r.level_);
+                            //   (int)(r.moments_[0]/r.area_),
+                            //   (int)(r.moments_[1]/r.area_), r.level_);
                         }
                         //TODO: consider adding other regions in list2
                         //   as long as level is > 25 and < 230
@@ -557,246 +562,8 @@ public class MSEREdges {
         MiscDebug.writeImage(im, "_" + ts + "_sets_");
     }
 
-    private class OneDFloatArray {
-        float[] a;
-        public OneDFloatArray(float[] a) {
-            this.a = a;
-        }
-    }
-    
     private void mergeRegions() {
         mergeRegionsWithHOGsHCPTHGS();
-        //mergeRegionsWithHGSRGBHSV();
-    }
-
-    /**
-     * moderate merging of the labeled regions is performed
-     * to remove noisy edges.  Note that the color filters
-     * may need to be revised with more testing.
-     *
-     */
-    private void mergeRegionsWithHGSRGBHSV() {
-
-        /*
-        The use of gradient histograms as texture in this method was inspired by
-        HOGs in general and by Alpert, Galun, Basri et al. (2007).
-        */
-
-        //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
-        if (!state.equals(STATE.EDGES_EXTRACTED)) {
-            throw new IllegalStateException("error in algorithm.  expecting"
-                + " edges were extracted.");
-        }
-
-        assert(labeledSets != null);
-        assert(edgeList != null);
-        assert(labeledSets.size() == edgeList.size());
-
-        if (sobelScores == null) {
-            sobelScores = createSobelScores();
-        }
-
-        HGS hgs = new HGS(cannyEdges, 1, 6, 12);
-        
-        TIntObjectMap<GroupPixelHSV2> clrs = new TIntObjectHashMap<GroupPixelHSV2>();
-
-        int w = gsImg.getWidth();
-        int h = gsImg.getHeight();
-
-        for (int label = 0; label < labeledSets.size(); ++label) {
-            TIntSet set = new TIntHashSet(labeledSets.get(label));
-            set.removeAll(edgeList.get(label));
-            GroupPixelHSV2 hsv = new GroupPixelHSV2();
-            hsv.calculateColors(set, clrImg);
-            clrs.put(label, hsv);
-        }
-      
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        int[] sizes = new int[labeledSets.size()];
-        int[] indexes = new int[sizes.length];
-        
-        TIntIntMap pointIndexMap = new TIntIntHashMap();
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            TIntSet pixIdxs = labeledSets.get(i);
-            TIntIterator iter = pixIdxs.iterator();
-            while (iter.hasNext()) {
-                int pixIdx = iter.next();
-                pointIndexMap.put(pixIdx, i);
-            }
-            sizes[i] = pixIdxs.size();
-            indexes[i] = i;
-        }
-        
-        QuickSort.sortBy1stArg(sizes, indexes);
-        
-        // -- making adjacency map using edgeList ---
-        TIntObjectMap<VeryLongBitString> adjMap = imageProcessor
-            .createAdjacencyMap(pointIndexMap, edgeList, w, h);
-
-        ColorHistogram clrHist = new ColorHistogram();
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-
-        //DEBUG: needed just for logging
-        TIntObjectMap<PairInt> centroidsMap = new TIntObjectHashMap<PairInt>();
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            TIntSet pixIdxs = labeledSets.get(i);
-            int[] xyCen = ch.calculateRoundedXYCentroids(pixIdxs, w);
-            centroidsMap.put(i, new PairInt(xyCen[0], xyCen[1]));
-        }
-        
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            
-            int label = indexes[i];
-           
-            VeryLongBitString adjLabels = adjMap.get(label);
-            if (adjLabels == null || adjLabels.getNSetBits() == 0) {
-                continue;
-            }
-            
-            PairInt xy1 = centroidsMap.get(label);
-            GroupPixelHSV2 clr1 = clrs.get(label);
-            
-            // subtr edges from sets
-            TIntSet set1 = new TIntHashSet(labeledSets.get(label));
-            set1.removeAll(edgeList.get(label));
-            
-            int[] hgs1H = getRegionHistogram(hgs, set1);
-
-            // 0=other, 1=black, 2=white
-            int clrMode1 = isBlack(clr1) ? 1 :
-                (isWhite(clr1) ? 2 : 0);
-            
-            int[] adjBits = adjLabels.getSetBits();
-            for (int label2 : adjBits) {
-                
-                if (!clrs.containsKey(label2)) {
-                    continue;
-                }
-                
-                PairInt xy2 = centroidsMap.get(label2);
-                GroupPixelHSV2 clr2 = clrs.get(label2);
-                
-                // subtr edges from sets
-                TIntSet set2 = new TIntHashSet(labeledSets.get(label2));
-                set2.removeAll(edgeList.get(label2));
-                
-                int[] hgs2H = getRegionHistogram(hgs, set2);
-            
-                float hsvDiff = clr1.calculateDifference(clr2);
-                float rgbDiff = clr1.calculateRGBDifference(clr2);
-                float hgsInter = hgs.intersection(hgs1H, hgs2H);
-
-                // 0=other, 1=black, 2=white
-                int clrMode2 = isBlack(clr2) ? 1 :
-                    (isWhite(clr2) ? 2 : 0);
-            
-                //System.out.format(
-                //    "%s to %s : clr1M=%d clr2M=%d "
-                //    + " hsvDiff=%.3f rgbDiff=%.3f hgsI=%.3f\n",
-                //    xy1.toString(), xy2.toString(), 
-                //    clrMode1, clrMode2, hsvDiff, rgbDiff, hgsInter);
-            
-                if (clrMode1 == 0 && clrMode2 == 0) {
-                    if (hsvDiff > 0.09 || hgsInter < 0.89 || rgbDiff > 0.1) {
-                        continue;
-                    }
-                } else if (clrMode1 == 1 && clrMode2 == 1) {
-                    if (hgsInter < 0.8 || rgbDiff > 0.08) {
-                        continue;
-                    }
-                } else if (clrMode1 == 2 && clrMode2 == 2) {
-                    //whiteish
-                    if (hgsInter < 0.8 || rgbDiff > 0.08) {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-                
-                //System.out.println("  merging");
-                
-                // -- merge the adjacent into the current label ---
-                
-                clr1.add(clr2);
-                clrs.remove(label2);
-
-                // not updating the pointIndexMap because not using it here
-                
-                /*
-                label :  label2, label3, label4, ...
-                         becomes
-                         label
-                */
-                
-                adjLabels.clearBit(label2);
-                
-                VeryLongBitString adjLabels2 = adjMap.get(label2);
-                adjLabels2.clearBit(label);
-                int[] setBits2 = adjLabels2.getSetBits();
-                for (int label2Adj : setBits2) {
-                    VeryLongBitString adjLabel2Adj = adjMap.get(label2Adj);
-                    if (adjLabel2Adj == null) {
-                        adjLabels2.clearBit(label2Adj);
-                        continue;
-                    }
-                    adjLabel2Adj.clearBit(label2);
-                    adjLabel2Adj.setBit(label);
-                }
-                
-                VeryLongBitString union = adjLabels.or(adjLabels2);
-                adjMap.put(label, union);
-                adjLabels = union;
-                adjMap.remove(label2);
-                
-                labeledSets.get(label).addAll(labeledSets.get(label2));
-                edgeList.get(label).addAll(edgeList.get(label2));
-                labeledSets.get(label2).clear();
-                edgeList.get(label2).clear();
-                                
-                // subtr edges from sets
-                set1 = new TIntHashSet(labeledSets.get(label));
-                set1.removeAll(edgeList.get(label));
-            
-                clrHist.add2To1(hgs1H, hgs2H);
-            
-                // debug
-                int[] xyCen = ch.calculateRoundedXYCentroids(set1, w);
-                xy1 = new PairInt(xyCen[0], xyCen[1]);
-                centroidsMap.put(label, xy1);
-                
-            }
-        }
-        
-        // remove empty labeledSets
-        for (int i = (labeledSets.size() - 1); i > -1; --i) {
-            TIntSet set = labeledSets.get(i);
-            if (set.isEmpty()) {
-                labeledSets.remove(i);
-            }
-        }
-        
-        PerimeterFinder2 finder2 = new PerimeterFinder2();
-        
-        edgeList.clear();
-        
-        // redo the edgeList since the merged sets have embedded edges
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            TIntSet set = labeledSets.get(i);
-            TIntSet embedded = new TIntHashSet();
-            TIntSet outerBorder = new TIntHashSet();
-            finder2.extractBorder2(set, embedded, outerBorder, w);
-            edgeList.add(outerBorder);
-        }
-        assert(edgeList.size() == labeledSets.size());
-        
-        if (debug) {
-            Image imgCp = clrImg.copyImage();
-            ImageIOHelper.addAlternatingColorCurvesToImage3(edgeList,
-                imgCp, 0);
-            MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
-        }
     }
 
     private void mergeRegionsWithHOGsHCPTHGS() {
@@ -811,27 +578,18 @@ public class MSEREdges {
         assert(edgeList != null);
         assert(labeledSets.size() == edgeList.size());
 
-        if (sobelScores == null) {
-            // these are actually CannyEdgeColorAdaptive
-            sobelScores = createSobelScores();
-        }
-
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        //DEBUG.  replace ptImg with this if keep this method
-        GreyscaleImage luvImg = 
-            imageProcessor.createCIELUVTheta_WideRangeLightness(clrImg, 255);
-        
-        float intersectionLimit = 0.7f;
+        float intersectionLimit = 0.65f;//0.7f;
         float intersectionLimit1 = 0.65f;
-        float intersectionLimit1H = 0.8f;
+        //float intersectionLimit1H = 0.8f;
         
         int nCellsPerDim = 1;
         int nPixPerCellDim = 6;
-        int nBins = 12;
+        int nBins = 9;
         
         HOGs hogs = new HOGs(gsImg, nCellsPerDim, nPixPerCellDim, nBins);
-        HCPT hcpt = new HCPT(luvImg, nCellsPerDim, nPixPerCellDim, nBins);
+        HCPT hcpt = new HCPT(ptImg, nCellsPerDim, nPixPerCellDim, nBins);
         HGS hgs = new HGS(gsImg, nCellsPerDim, nPixPerCellDim, nBins);
         
         // integrating the histograms over the regions to be compared for merging
@@ -913,7 +671,7 @@ public class MSEREdges {
                 List<PatchUtil> pList1 = clrs.get(label);
 
                 Set<PairInt> points1 = pList1.get(0).getPixelSet();
-                CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(luvImg, points1);
+                CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(ptImg, points1);
                 CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
 
                 int[] adjBits = adjLabels.getSetBits();
@@ -932,7 +690,7 @@ public class MSEREdges {
                     List<PatchUtil> pList2 = clrs.get(label2);
 
                     Set<PairInt> points2 = pList2.get(0).getPixelSet();
-                    CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(luvImg, points2);
+                    CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(ptImg, points2);
                     CMODE cmode2 = CMODE.determineColorMode(clrImg, points2);
 
                     //DEBUG
@@ -1164,8 +922,8 @@ public class MSEREdges {
                 } else {
                     //TODO: consider checking whether this already exists in
                     //   the list
-                    if (Math.abs(r.level_ - 60) < 20) {
-                        r.level_ += 60;
+                    if (Math.abs(r.level_ - thetaShift) < 20) {
+                        r.level_ += thetaShift;
                         pt0Regions.add(r);
                         //System.out.format("  add shifted x,y=%d,%d level=%d\n",
                         // (int)(r.moments_[0]/r.area_),
@@ -1733,7 +1491,7 @@ public class MSEREdges {
             }
         }
         allEdgePoints.addAll(addRmvd);
-//editing above
+
         if (debug) {
             Image tmp = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmp, 0, 255, 0, 0);
@@ -1871,13 +1629,13 @@ public class MSEREdges {
                 }
             }
             
-            
+            /*
             if (debug) {
                 Image tmp = clrImg.copyImage();
                 ImageIOHelper.addAlternatingColorPointSetsToImage2(
                     labeledSets, 0, 0, 0, tmp);
                 MiscDebug.writeImage(tmp, "_" + ts + "_dbg_" + msz);
-            }
+            }*/
         }
 
         if (debug) {
@@ -2012,24 +1770,6 @@ public class MSEREdges {
             assert(node != null);
             
             int pixIdx = ((Integer)node.getData()).intValue();
-            
- Map<PairInt, List<Float>> dbgLUVs2 = null;
- Map<PairInt, Float> _dbgLUVs2 = null;
- ph.toPixelCoords(pixIdx, w, xyTmp);
- List<Float> dbgLUVs1 = null;
- if ((xyTmp[0] == 41 && xyTmp[1] == 6) || (xyTmp[0] == 40 && xyTmp[1] == 5)
-     || (xyTmp[0] == 40 && xyTmp[1] == 6)
-     ) {
-     dbgLUVs2 = new HashMap<PairInt, List<Float>>();
-     _dbgLUVs2 = new HashMap<PairInt, Float>();
-     dbgLUVs1 = new ArrayList<Float>();
-     float[] tmp = cieC.rgbToCIELUV_WideRangeLightness(
-         clrImg.getR(pixIdx), clrImg.getG(pixIdx), clrImg.getB(pixIdx));
-     for (float t : tmp) {
-         dbgLUVs1.add(new Float(t));
-     }
-     int z = 0;
- }
  
             clrImg.getHSB(pixIdx, lab);
 
@@ -2063,30 +1803,7 @@ public class MSEREdges {
                     minLabel2 = label2;
                     minDBGPIXIDX2 = pixIdx2;
                 }
-                
-if (dbgLUVs2 != null) {
-List<Float> dbg2 = new ArrayList<Float>();
-float[] tmp = cieC.rgbToCIELUV_WideRangeLightness(
-    clrImg.getR(pixIdx2), clrImg.getG(pixIdx2), clrImg.getB(pixIdx2));
-for (float t : tmp) {
-    dbg2.add(new Float(t));
-}
-//diff should be fraction...max min values
-ph.toPixelCoords(pixIdx2, w, xyTmp2);
-dbgLUVs2.put(new PairInt(xyTmp2[0], xyTmp2[1]), dbg2);
-_dbgLUVs2.put(new PairInt(xyTmp2[0], xyTmp2[1]), 
-    cieC.calcNormalizedDifferenceLUV_WideRangeLightness(
-        clrImg.getR(pixIdx), clrImg.getG(pixIdx), clrImg.getB(pixIdx),
-        clrImg.getR(pixIdx2), clrImg.getG(pixIdx2), clrImg.getB(pixIdx2)
-    ));
-System.out.println("pixIdx2=" + pixIdx2 + " xy=" + Arrays.toString(xyTmp2));
-}
-
             }
-            
-if (dbgLUVs2 != null) {   
-    int z = 0;
-}
 
             labels[pixIdx] = minLabel2;
      
@@ -2404,36 +2121,6 @@ if (dbgLUVs2 != null) {
         return new double[]{sum, outputMatched.size()};
     }
 
-    private boolean similarExists(Region rToCheck, List<RegionGeometry> listSRG) {
-
-        int w = ptImg.getWidth();
-        int h = ptImg.getHeight();
-
-        RegionGeometry rg0 = Canonicalizer.calculateEllipseParams(rToCheck, w, h);
-        float orientation0 = (float)(
-            rg0.orientation * 180./Math.PI);
-
-        for (int i1 = 0; i1 < listSRG.size(); ++i1) {
-            RegionGeometry rg1 = listSRG.get(i1);
-            float orientation1 = (float)(
-                rg1.orientation * 180./Math.PI);
-
-            float diffOr = AngleUtil.getAngleDifference(orientation0,
-                orientation1);
-
-            if ((Math.abs(rg0.xC - rg1.xC) > 5) ||
-                (Math.abs(rg0.yC - rg1.yC) > 5) ||
-                (Math.abs(rg0.minor - rg1.minor) > 5) ||
-                (Math.abs(rg0.major - rg1.major) > 5) ||
-                (Math.abs(diffOr) > 5)
-                ) {
-                continue;
-            }
-            return true;
-        }
-        return false;
-    }
-
     private int calcAvg(GreyscaleImage img, TIntSet pixIdxs) {
 
         double sum = 0;
@@ -2446,39 +2133,7 @@ if (dbgLUVs2 != null) {
 
         return (int)Math.round(sum);
     }
-
-    private int[] getRegionHistogram(HGS hgs0, TIntSet pIdxs) {
-        int[] h0 = new int[hgs0.getNumberOfBins()];
-        TIntIterator iter = pIdxs.iterator();
-        while (iter.hasNext()) {
-            int pixIdx = iter.next();
-            int y = pixIdx/gsImg.getWidth();
-            int x = pixIdx - (y * gsImg.getWidth());
-            hgs0.extractBlock2(x, y, h0);
-        }
-        return h0;
-    }
     
-    private boolean isBlack(GroupPixelHSV2 hsv) {
-
-        if (hsv.getAvgV() >= 0.2) {
-            //System.out.println("brightness=" + hsv.getAvgV());
-            return false;
-        }
-
-        return hsv.isGrey(12);
-    }
-
-    private boolean isWhite(GroupPixelHSV2 hsv) {
-
-        if (hsv.getAvgV() < 0.625) {
-            //System.out.println("brightness=" + hsv.getAvgV());
-            return false;
-        }
-
-        return hsv.isGrey(12);
-    }
-
     // the values are sorted
     private TIntObjectMap<TIntList> findEndpoints(
         TIntSet unmatchedPoints,
@@ -2528,22 +2183,6 @@ if (dbgLUVs2 != null) {
         }
         
         return umEPIdxMap;
-    }
-
-    private double distance(int pixIdx0, int pixIdx1, int width) {
-
-        int y0 = pixIdx0/width;
-        int x0 = pixIdx0 - (y0 * width);
-
-        int y1 = pixIdx1/width;
-        int x1 = pixIdx1 - (y1 * width);
-
-        int diffX = x0 - x1;
-        int diffY = y0 - y1;
-
-        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
-
-        return dist;
     }
     
     private List<List<TIntSet>> extractontiguousSegments(

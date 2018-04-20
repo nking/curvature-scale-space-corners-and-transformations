@@ -21,7 +21,7 @@ public class MSEREdges2Test extends TestCase {
 
         String fileName1 = "";
         
-        //for (int i = 1; i < 2; ++i) {
+        //for (int i = 3; i < 4; ++i) {
         for (int i = 0; i < 11; ++i) {
 
             switch(i) {

@@ -25,7 +25,8 @@ public class ImageProcessor6Test extends TestCase {
         ImageExt img0 = ImageIOHelper.readImageExt(filePath);
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage ptImg = imageProcessor.createCIELUVTheta(img0, 255);
+        GreyscaleImage ptImg = imageProcessor
+            .createCIELUVTheta_WideRangeLightness(img0, 255);
         /*
         for (int y = 10; y < 11; y+=2) {
             for (int x = 0; x < img0.getWidth(); x+=2) {
@@ -54,7 +55,8 @@ public class ImageProcessor6Test extends TestCase {
         img0.setRGB(5, 3, 210, 10, 10);
         img0.setRGB(5, 4, 250, 10, 10);
    
-        ptImg = imageProcessor.createCIELUVTheta(img0, 255);
+        ptImg = imageProcessor
+            .createCIELUVTheta_WideRangeLightness(img0, 255);
         
         assertEquals(ptImg.getValue(1, 1), ptImg.getValue(1, 2));
         assertEquals(ptImg.getValue(1, 1), ptImg.getValue(1, 3));

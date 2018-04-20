@@ -81,13 +81,6 @@ public class ObjectMatcherWrapper {
         ImageProcessor imageProcessor = new ImageProcessor();
 
         searchImage = imageProcessor.binImage(searchImage, binFactor1);
-
-        /*
-        GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
-        MiscDebug.writeImage(theta1, fileName1Root + "_theta_0");
-        theta1 = imageProcessor.createCIELUVTheta(img, 255);
-        MiscDebug.writeImage(theta1, fileName1Root + "_theta_1");
-        */
         
         return _run_matcher(binnedTemplateAndMask, shape0, searchImage, debugLabel);
     }

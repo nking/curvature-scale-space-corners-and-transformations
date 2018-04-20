@@ -1170,9 +1170,8 @@ public class ObjectMatcher {
             luvTheta0 = imageProcessor.createCIELUVTheta_WideRangeLightness(img0Trimmed, 255);
             luvTheta1 = imageProcessor.createCIELUVTheta_WideRangeLightness(img1, 255);
         } else {
-            luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
-            //GreyscaleImage luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
-            luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
+            luvTheta0 = imageProcessor.createCIELUVTheta_WideRangeLightness(img0Trimmed, 255);
+            luvTheta1 = imageProcessor.createCIELUVTheta_WideRangeLightness(img1, 255);
         }
         
         imageProcessor.singlePixelFilter(luvTheta0);
