@@ -939,18 +939,18 @@ public class MSEREdges {
                     float inter0 = (float)pList1.get(0).intersection(pList2.get(0));
                     float inter1 = (float)pList1.get(1).intersection(pList2.get(1));
                     float inter2 = (float)pList1.get(2).intersection(pList2.get(2));
-                    System.out.format(
+                    /*System.out.format(
                         "(%d,%d) %s %s : (%d,%d) %s %s intersection=%.3f,%.3f,%.3f", 
                         xy1.getX(), xy1.getY(), 
                         cmodeLUV1.name(), cmode1.name(),
                         xy2.getX(), xy2.getY(), 
                         cmodeLUV2.name(), cmode2.name(),
                         inter0, inter1, inter2
-                    );
+                    );*/
                     
                     if (inter0 < intersectionLimit || inter1 < intersectionLimit1 
                         || inter2 < intersectionLimit) {
-                        System.out.format("\n");
+                        //System.out.format("\n");
                         continue;
                     }
 
@@ -1010,7 +1010,7 @@ public class MSEREdges {
                     xy1 = new PairInt(xyCen[0], xyCen[1]);
                     centroidsMap.put(label, xy1);
 
-                    System.out.format(" ==> (%d,%d)\n", xy1.getX(), xy1.getY());
+                    //System.out.format(" ==> (%d,%d)\n", xy1.getX(), xy1.getY());
                     mCount++;
                     eCount++;
                 }
@@ -1264,13 +1264,14 @@ public class MSEREdges {
                 eh.getOrientation() * 180./Math.PI);
             double ecc = eh.getEccentricity();
 
+            /*
             System.out.format(
                 "OUTER (%d,%d) or=%.3f ecc=%.3f  stdvV=%.3f n=%d\n",
                 eh.getXYCenter()[0], eh.getXYCenter()[1],
                 (float)eh.getOrientation(),
                 (float)eh.getEccentricity(), hsvs.get(i).getStdDevV(),
                 rs.get(i).accX.size()
-            );
+            );*/
 
             TIntList idx2s = new TIntArrayList();
             TDoubleList dirs = new TDoubleArrayList();
@@ -1320,6 +1321,7 @@ public class MSEREdges {
 
                 //System.out.println("     " + Arrays.toString(ep));
 
+                /*
                 System.out.format(
                     "     (%d,%d) or=%.3f ecc=%.3f atan2=%.3f "
                         + "isWithin=%b,%b,%b,%b  stdvV=%.3f n=%d\n",
@@ -1328,7 +1330,7 @@ public class MSEREdges {
                     (float)eh2.getEccentricity(), (float)atan2,
                     t0, t1, t2, t3, hsvs.get(idx2).getStdDevV(),
                     rs.get(idx2).accX.size()
-                );
+                );*/
 
                 if (nTrue < 2) {
                     continue;
@@ -1626,6 +1628,13 @@ public class MSEREdges {
 //MiscDebug.writeImage(tmpImg, "_r_" + rListIdx);
 
             if (doNotAdd) {
+                
+//Image tmpImg = sobelScores.copyToColorGreyscale();
+//ImageIOHelper.addCurveToImage(border2, tmpImg, 0, 255, 0, 0);
+//MiscDebug.writeImage(tmpImg, "_r_" + rListIdx);
+//System.out.println("rListIdx=" + rListIdx + " matchFraction=" + matchFraction
+//+ " (int)scoreAndMatch[1]=" + (int)scoreAndMatch[1]);
+
                 unusedRegionBounds.add(border2);
                 continue;
             }
@@ -1724,7 +1733,7 @@ public class MSEREdges {
             }
         }
         allEdgePoints.addAll(addRmvd);
-
+//editing above
         if (debug) {
             Image tmp = clrImg.copyToGreyscale2().copyToColorGreyscale();
             ImageIOHelper.addCurveToImage(allEdgePoints, tmp, 0, 255, 0, 0);
