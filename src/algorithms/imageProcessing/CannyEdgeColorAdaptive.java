@@ -723,26 +723,24 @@ public class CannyEdgeColorAdaptive {
         
         protected EdgeFilterProducts createGradient(final GreyscaleImage img) {
 
-            GreyscaleImage gX, gY, g, theta;
+            GreyscaleImage g, theta;
 
             ImageProcessor imageProcessor = new ImageProcessor();
 
-            gX = getGradientX1D(img);
+            GreyscaleImage[] gXgY = imageProcessor.createCentralDifferenceGradients(img);
 
-            gY = getGradientY1D(img);
-
-            g = imageProcessor.combineConvolvedImages(gX, gY);
+            g = imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
 
             // the theta is in range 0 to 180
-            theta = imageProcessor.computeTheta180(gX, gY);
+            theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
 
             if (debug) {
                 // when replace the aspect library, put these renders in the
                 //   equivalent replacement
                 long ts = MiscDebug.getCurrentTimeFormatted();
                 MiscDebug.writeImage(theta, "_theta_" + ts);
-                MiscDebug.writeImage(gX, "_gX_" + ts);
-                MiscDebug.writeImage(gY, "_gY_" + ts);
+                MiscDebug.writeImage(gXgY[0], "_gX_" + ts);
+                MiscDebug.writeImage(gXgY[1], "_gY_" + ts);
                 /*
             int x = 37; int y = 163;
             System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
@@ -751,8 +749,8 @@ public class CannyEdgeColorAdaptive {
             }
 
             EdgeFilterProducts efp = new EdgeFilterProducts();
-            efp.setGradientX(gX);
-            efp.setGradientY(gY);
+            efp.setGradientX(gXgY[0]);
+            efp.setGradientY(gXgY[1]);
             efp.setGradientXY(g);
             efp.setTheta(theta);
 
@@ -761,18 +759,16 @@ public class CannyEdgeColorAdaptive {
         
         protected EdgeFilterProducts createGradientForLineMode(final GreyscaleImage img) {
 
-            GreyscaleImage gX, gY, g, theta;
+            GreyscaleImage g, theta;
 
             ImageProcessor imageProcessor = new ImageProcessor();
 
-            gX = img.copyImage();
+            GreyscaleImage[] gXgY = imageProcessor.createCentralDifferenceGradients(img);
 
-            gY = img.copyImage();
-
-            g = img.copyImage();
+            g = imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
 
             // the theta is in range 0 to 180
-            theta = imageProcessor.computeTheta180(gX, gY);
+            theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
 
             if (debug) {
                 // when replace the aspect library, put these renders in the
@@ -781,8 +777,8 @@ public class CannyEdgeColorAdaptive {
                 GreyscaleImage tmp = g.copyImage();
                 MiscDebug.writeImage(tmp, "_gXY_" + ts);
                 MiscDebug.writeImage(theta, "_theta_" + ts);
-                MiscDebug.writeImage(gX, "_gX_" + ts);
-                MiscDebug.writeImage(gY, "_gY_" + ts);
+                MiscDebug.writeImage(gXgY[0], "_gX_" + ts);
+                MiscDebug.writeImage(gXgY[1], "_gY_" + ts);
                 /*
             int x = 37; int y = 163;
             System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
@@ -791,8 +787,8 @@ public class CannyEdgeColorAdaptive {
             }
 
             EdgeFilterProducts efp = new EdgeFilterProducts();
-            efp.setGradientX(gX);
-            efp.setGradientY(gY);
+            efp.setGradientX(gXgY[0]);
+            efp.setGradientY(gXgY[1]);
             efp.setGradientXY(g);
             efp.setTheta(theta);
 
