@@ -100,34 +100,34 @@ public class RainbowFinder {
 <span class="fc" id="L100">        TIntList arcIdxs = findLargeArc(listOfSetBits0, listOfSets0, hists0, </span>
             rgs0, img);
         
-<span class="pc bpc" id="L103" title="1 of 4 branches missed.">        if (arcIdxs == null || arcIdxs.isEmpty()) {</span>
+<span class="pc bpc" id="L103" title="3 of 4 branches missed.">        if (arcIdxs == null || arcIdxs.isEmpty()) {</span>
 <span class="fc" id="L104">            return null;</span>
         }
             
         // if have found a large arc in the positive image, search for 
         //    adjacent arcs in the negative regions
 
-<span class="fc" id="L110">        Set&lt;PairInt&gt; arcPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int j = 0; j &lt; arcIdxs.size(); ++j) {</span>
-<span class="fc" id="L112">            arcPoints.addAll(listOfSets0.get(arcIdxs.get(j)));</span>
+<span class="nc" id="L110">        Set&lt;PairInt&gt; arcPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        for (int j = 0; j &lt; arcIdxs.size(); ++j) {</span>
+<span class="nc" id="L112">            arcPoints.addAll(listOfSets0.get(arcIdxs.get(j)));</span>
         }
 
-<span class="fc" id="L115">        NearestNeighbor2D nn = new NearestNeighbor2D(arcPoints, </span>
-<span class="fc" id="L116">            img.getWidth(), img.getHeight());</span>
+<span class="nc" id="L115">        NearestNeighbor2D nn = new NearestNeighbor2D(arcPoints, </span>
+<span class="nc" id="L116">            img.getWidth(), img.getHeight());</span>
 
-<span class="fc" id="L118">        int[] negativeIdxs = findAdjacent(nn, listOfSets1, rgs1);</span>
+<span class="nc" id="L118">        int[] negativeIdxs = findAdjacent(nn, listOfSets1, rgs1);</span>
 
-<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (negativeIdxs != null) {</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int idx1 : negativeIdxs) {</span>
-<span class="fc" id="L122">                arcPoints.addAll(listOfSets1.get(idx1));</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (negativeIdxs != null) {</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            for (int idx1 : negativeIdxs) {</span>
+<span class="nc" id="L122">                arcPoints.addAll(listOfSets1.get(idx1));</span>
             }
 
-<span class="fc" id="L125">            Arrays.sort(negativeIdxs);</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">            for (int j = (negativeIdxs.length - 1); j &gt; -1; --j) {</span>
-<span class="fc" id="L127">                int idx = negativeIdxs[j];</span>
-<span class="fc" id="L128">                listOfSets1.remove(idx);</span>
-<span class="fc" id="L129">                rgs1.remove(idx);</span>
-<span class="fc" id="L130">                hists1.remove(idx);</span>
+<span class="nc" id="L125">            Arrays.sort(negativeIdxs);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            for (int j = (negativeIdxs.length - 1); j &gt; -1; --j) {</span>
+<span class="nc" id="L127">                int idx = negativeIdxs[j];</span>
+<span class="nc" id="L128">                listOfSets1.remove(idx);</span>
+<span class="nc" id="L129">                rgs1.remove(idx);</span>
+<span class="nc" id="L130">                hists1.remove(idx);</span>
             }                
         }
 
@@ -140,53 +140,53 @@ public class RainbowFinder {
          4:  blue = 107 - 192
          5:  purple = 193 - 255
         */
-<span class="fc" id="L143">        int[] ptCH = ColorHistogram.createPTHistogram(mserEdges.getPtImg(), </span>
+<span class="nc" id="L143">        int[] ptCH = ColorHistogram.createPTHistogram(mserEdges.getPtImg(), </span>
             arcPoints);
         
-<span class="fc" id="L146">        float[] normalizedHist = new float[ptCH.length];</span>
-<span class="fc" id="L147">        int tot = 0;</span>
-<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int c : ptCH) {</span>
-<span class="fc" id="L149">            tot += c;</span>
+<span class="nc" id="L146">        float[] normalizedHist = new float[ptCH.length];</span>
+<span class="nc" id="L147">        int tot = 0;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        for (int c : ptCH) {</span>
+<span class="nc" id="L149">            tot += c;</span>
         }
-<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (int j = 0; j &lt; ptCH.length; ++j) {</span>
-<span class="fc" id="L152">            normalizedHist[j] = (float)ptCH[j]/(float)tot;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        for (int j = 0; j &lt; ptCH.length; ++j) {</span>
+<span class="nc" id="L152">            normalizedHist[j] = (float)ptCH[j]/(float)tot;</span>
         }
         
-<span class="fc" id="L155">        System.out.println(&quot;rainbow? &quot; + Arrays.toString(ptCH) + </span>
-<span class="fc" id="L156">            &quot;\n   &quot; + Arrays.toString(normalizedHist));</span>
+<span class="nc" id="L155">        System.out.println(&quot;rainbow? &quot; + Arrays.toString(ptCH) + </span>
+<span class="nc" id="L156">            &quot;\n   &quot; + Arrays.toString(normalizedHist));</span>
         
-<span class="pc bpc" id="L158" title="1 of 4 branches missed.">        boolean dark = normalizedHist[0] &gt; 0.1 </span>
+<span class="nc bnc" id="L158" title="All 4 branches missed.">        boolean dark = normalizedHist[0] &gt; 0.1 </span>
             &amp;&amp; normalizedHist[1] &gt; 0.1;
-<span class="pc bpc" id="L160" title="1 of 6 branches missed.">        boolean bright = normalizedHist[1] &gt; 0.01</span>
+<span class="nc bnc" id="L160" title="All 6 branches missed.">        boolean bright = normalizedHist[1] &gt; 0.01</span>
             &amp;&amp; normalizedHist[3] &gt; 0.01 
             &amp;&amp; normalizedHist[4] &gt; 0.01;
         
-<span class="fc bfc" id="L164" title="All 4 branches covered.">        if (!dark &amp;&amp; !bright) {</span>
-<span class="fc" id="L165">            return null;</span>
+<span class="nc bnc" id="L164" title="All 4 branches missed.">        if (!dark &amp;&amp; !bright) {</span>
+<span class="nc" id="L165">            return null;</span>
         }
         
-<span class="fc" id="L168">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
-<span class="fc" id="L169">        double[] xyCenter = ch.calculateXYCentroids(arcPoints);</span>
-<span class="fc" id="L170">        int x = (int)Math.round(xyCenter[0]);</span>
-<span class="fc" id="L171">        int y = (int)Math.round(xyCenter[1]);</span>
+<span class="nc" id="L168">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L169">        double[] xyCenter = ch.calculateXYCentroids(arcPoints);</span>
+<span class="nc" id="L170">        int x = (int)Math.round(xyCenter[0]);</span>
+<span class="nc" id="L171">        int y = (int)Math.round(xyCenter[1]);</span>
 
-<span class="fc" id="L173">        SkyObject obj = new SkyObject();</span>
-<span class="fc" id="L174">        obj.points = arcPoints;</span>
-<span class="fc" id="L175">        obj.xyCenter = new int[]{x, y};</span>
-<span class="fc" id="L176">        output.add(obj);</span>
+<span class="nc" id="L173">        SkyObject obj = new SkyObject();</span>
+<span class="nc" id="L174">        obj.points = arcPoints;</span>
+<span class="nc" id="L175">        obj.xyCenter = new int[]{x, y};</span>
+<span class="nc" id="L176">        output.add(obj);</span>
 
-<span class="fc" id="L178">        arcIdxs.sort();</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (int j = (arcIdxs.size() - 1); j &gt; -1; --j) {</span>
-<span class="fc" id="L180">            int arcIdx = arcIdxs.get(j);</span>
+<span class="nc" id="L178">        arcIdxs.sort();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        for (int j = (arcIdxs.size() - 1); j &gt; -1; --j) {</span>
+<span class="nc" id="L180">            int arcIdx = arcIdxs.get(j);</span>
             //System.out.println(&quot;removing &quot; + 
             //    rgs0.get(arcIdx).xC + &quot;, &quot; + rgs0.get(arcIdx).yC);
-<span class="fc" id="L183">            listOfSets0.remove(arcIdx);</span>
-<span class="fc" id="L184">            listOfSetBits0.remove(arcIdx);</span>
-<span class="fc" id="L185">            hists0.remove(arcIdx);</span>
-<span class="fc" id="L186">            rgs0.remove(arcIdx);</span>
+<span class="nc" id="L183">            listOfSets0.remove(arcIdx);</span>
+<span class="nc" id="L184">            listOfSetBits0.remove(arcIdx);</span>
+<span class="nc" id="L185">            hists0.remove(arcIdx);</span>
+<span class="nc" id="L186">            rgs0.remove(arcIdx);</span>
         }
 
-<span class="fc" id="L189">        return output;</span>
+<span class="nc" id="L189">        return output;</span>
     }
     
     /*
@@ -1014,50 +1014,50 @@ public class RainbowFinder {
                             + &quot; rg.coeff=&quot; + Arrays.toString(rg0.m)
                         );*/
 
-<span class="fc bfc" id="L1017" title="All 2 branches covered.">                        if (resid &lt; 5) {</span>
+<span class="pc bpc" id="L1017" title="1 of 2 branches missed.">                        if (resid &lt; 5) {</span>
                             
-<span class="fc" id="L1019">                            TIntSet chk = new TIntHashSet(subsetIdxs);</span>
+<span class="nc" id="L1019">                            TIntSet chk = new TIntHashSet(subsetIdxs);</span>
                             
                             // since we have a polynomial now,
                             // look for other regions that may fit on the arc
-<span class="fc bfc" id="L1023" title="All 2 branches covered.">                            for (int j = i - 1; j &gt; -1; --j) {</span>
-<span class="fc" id="L1024">                                int idx1 = indexes[j];</span>
-<span class="fc bfc" id="L1025" title="All 2 branches covered.">                                if (chk.contains(idx1)) {</span>
-<span class="fc" id="L1026">                                    continue;</span>
+<span class="nc bnc" id="L1023" title="All 2 branches missed.">                            for (int j = i - 1; j &gt; -1; --j) {</span>
+<span class="nc" id="L1024">                                int idx1 = indexes[j];</span>
+<span class="nc bnc" id="L1025" title="All 2 branches missed.">                                if (chk.contains(idx1)) {</span>
+<span class="nc" id="L1026">                                    continue;</span>
                                 }
                                      
-<span class="fc" id="L1029">                                Set&lt;PairInt&gt; chkSet = listOfSets.get(idx1);</span>
+<span class="nc" id="L1029">                                Set&lt;PairInt&gt; chkSet = listOfSets.get(idx1);</span>
                                 
-<span class="fc" id="L1031">                                ParabolaLeastSquares polyFitter2 = polyFitter0.copy();</span>
-<span class="fc" id="L1032">                                polyFitter2.accumulate(chkSet);</span>
+<span class="nc" id="L1031">                                ParabolaLeastSquares polyFitter2 = polyFitter0.copy();</span>
+<span class="nc" id="L1032">                                polyFitter2.accumulate(chkSet);</span>
                                 
-<span class="fc" id="L1034">                                float[] coeff2 = polyFitter2.solve();</span>
+<span class="nc" id="L1034">                                float[] coeff2 = polyFitter2.solve();</span>
                                 
-<span class="fc" id="L1036">                                Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;(set);</span>
-<span class="fc" id="L1037">                                tmp.addAll(chkSet);</span>
+<span class="nc" id="L1036">                                Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;(set);</span>
+<span class="nc" id="L1037">                                tmp.addAll(chkSet);</span>
                                 
-<span class="fc" id="L1039">                                double resid2 = ParabolaLeastSquares.calcResiduals(coeff2, </span>
+<span class="nc" id="L1039">                                double resid2 = ParabolaLeastSquares.calcResiduals(coeff2, </span>
                                     tmp);
                                 
                                 //System.out.println(&quot;check &quot; + &quot; x=&quot; + 
                                 //    rgs0.get(idx1).xC + &quot; y=&quot; +
                                 //    rgs0.get(idx1).yC + &quot; resid=&quot; + resid2);
                                 
-<span class="fc bfc" id="L1046" title="All 2 branches covered.">                                if (resid2 &gt; 5) {</span>
-<span class="fc" id="L1047">                                    continue;</span>
+<span class="nc bnc" id="L1046" title="All 2 branches missed.">                                if (resid2 &gt; 5) {</span>
+<span class="nc" id="L1047">                                    continue;</span>
                                 }
                         
-<span class="fc" id="L1050">                                RegionGeometry chkRg = rgs0.get(idx1);</span>
+<span class="nc" id="L1050">                                RegionGeometry chkRg = rgs0.get(idx1);</span>
                                 
                                 //System.out.println(&quot;check &quot; + &quot; x=&quot; + chkRg.xC + &quot; y=&quot; +
                                 //    chkRg.yC + &quot; resid=&quot; + resid2);
                             
-<span class="fc" id="L1055">                                subsetIdxs.add(idx1);</span>
+<span class="nc" id="L1055">                                subsetIdxs.add(idx1);</span>
                                 //set.addAll(chkSet);
                             }
                             
-<span class="fc" id="L1059">                            subsetIdxs.add(idx0);</span>
-<span class="fc" id="L1060">                            return subsetIdxs;</span>
+<span class="nc" id="L1059">                            subsetIdxs.add(idx0);</span>
+<span class="nc" id="L1060">                            return subsetIdxs;</span>
                         }
                     }
                 }
@@ -1085,43 +1085,43 @@ public class RainbowFinder {
     private int[] findAdjacent(NearestNeighbor2D nn, 
         List&lt;Set&lt;PairInt&gt;&gt; listOfSets, List&lt;RegionGeometry&gt; rgs) {
 
-<span class="fc" id="L1088">        TIntList idxs2 = new TIntArrayList();</span>
-<span class="fc bfc" id="L1089" title="All 2 branches covered.">        for (int i = 0; i &lt; listOfSets.size(); ++i) {</span>
+<span class="nc" id="L1088">        TIntList idxs2 = new TIntArrayList();</span>
+<span class="nc bnc" id="L1089" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfSets.size(); ++i) {</span>
             
-<span class="fc" id="L1091">            Set&lt;PairInt&gt; set = listOfSets.get(i);</span>
-<span class="fc" id="L1092">            RegionGeometry rg = rgs.get(i);</span>
+<span class="nc" id="L1091">            Set&lt;PairInt&gt; set = listOfSets.get(i);</span>
+<span class="nc" id="L1092">            RegionGeometry rg = rgs.get(i);</span>
             
-<span class="fc" id="L1094">            int n = set.size();</span>
-<span class="fc" id="L1095">            int nAdj = 0;</span>
+<span class="nc" id="L1094">            int n = set.size();</span>
+<span class="nc" id="L1095">            int nAdj = 0;</span>
             
-<span class="fc" id="L1097">            int d = 5;</span>
-<span class="fc" id="L1098">            int m = 2 * (int)Math.round(rg.minor);</span>
+<span class="nc" id="L1097">            int d = 5;</span>
+<span class="nc" id="L1098">            int m = 2 * (int)Math.round(rg.minor);</span>
             
-<span class="fc bfc" id="L1100" title="All 2 branches covered.">            for (PairInt p : set) {</span>
-<span class="fc" id="L1101">                Set&lt;PairInt&gt; nearest = nn.findClosest(p.getX(), p.getY(), d);</span>
-<span class="pc bpc" id="L1102" title="1 of 4 branches missed.">                if (nearest != null &amp;&amp; !nearest.isEmpty()) {</span>
-<span class="fc" id="L1103">                    nAdj++;</span>
+<span class="nc bnc" id="L1100" title="All 2 branches missed.">            for (PairInt p : set) {</span>
+<span class="nc" id="L1101">                Set&lt;PairInt&gt; nearest = nn.findClosest(p.getX(), p.getY(), d);</span>
+<span class="nc bnc" id="L1102" title="All 4 branches missed.">                if (nearest != null &amp;&amp; !nearest.isEmpty()) {</span>
+<span class="nc" id="L1103">                    nAdj++;</span>
                 }
-<span class="fc" id="L1105">            }</span>
-<span class="fc bfc" id="L1106" title="All 2 branches covered.">            if (nAdj &gt; 0) {</span>
-<span class="fc" id="L1107">                float f = ((float)d)/(float)m;</span>
-<span class="fc bfc" id="L1108" title="All 2 branches covered.">                if (f &gt; 1) {</span>
-<span class="fc" id="L1109">                    f = 1;</span>
+<span class="nc" id="L1105">            }</span>
+<span class="nc bnc" id="L1106" title="All 2 branches missed.">            if (nAdj &gt; 0) {</span>
+<span class="nc" id="L1107">                float f = ((float)d)/(float)m;</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">                if (f &gt; 1) {</span>
+<span class="nc" id="L1109">                    f = 1;</span>
                 }
                 //System.out.println(&quot;nAdj=&quot; + nAdj 
                 //    + &quot; f*n=&quot; + (f*n) + &quot; setx=&quot; + rg.xC + &quot; y=&quot; + rg.yC
                 //    + &quot; n=&quot; + n);
-<span class="fc bfc" id="L1114" title="All 2 branches covered.">                if (nAdj &gt;= (f*n)) {</span>
-<span class="fc" id="L1115">                    idxs2.add(i);</span>
+<span class="nc bnc" id="L1114" title="All 2 branches missed.">                if (nAdj &gt;= (f*n)) {</span>
+<span class="nc" id="L1115">                    idxs2.add(i);</span>
                 }
             }
         }
         
-<span class="fc bfc" id="L1120" title="All 2 branches covered.">        if (idxs2.isEmpty()) {</span>
-<span class="fc" id="L1121">            return null;</span>
+<span class="nc bnc" id="L1120" title="All 2 branches missed.">        if (idxs2.isEmpty()) {</span>
+<span class="nc" id="L1121">            return null;</span>
         }
         
-<span class="fc" id="L1124">        return idxs2.toArray(new int[idxs2.size()]);</span>
+<span class="nc" id="L1124">        return idxs2.toArray(new int[idxs2.size()]);</span>
     }
     
     private TIntList findBestCombination(int[] idxs, 

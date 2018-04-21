@@ -180,16 +180,16 @@ public class GroupPixelHSV2 {
      */
     public void add(final GroupPixelHSV2 other) {
         
-<span class="fc" id="L183">        sumR += other.sumR;</span>
-<span class="fc" id="L184">        sumG += other.sumG;</span>
-<span class="fc" id="L185">        sumB += other.sumB;</span>
+<span class="nc" id="L183">        sumR += other.sumR;</span>
+<span class="nc" id="L184">        sumG += other.sumG;</span>
+<span class="nc" id="L185">        sumB += other.sumB;</span>
 
-<span class="fc" id="L187">        sumH += other.sumH;</span>
-<span class="fc" id="L188">        sumS += other.sumS;</span>
-<span class="fc" id="L189">        sumV += other.sumV;</span>
+<span class="nc" id="L187">        sumH += other.sumH;</span>
+<span class="nc" id="L188">        sumS += other.sumS;</span>
+<span class="nc" id="L189">        sumV += other.sumV;</span>
                 
-<span class="fc" id="L191">        nPoints += other.nPoints;</span>
-<span class="fc" id="L192">    }</span>
+<span class="nc" id="L191">        nPoints += other.nPoints;</span>
+<span class="nc" id="L192">    }</span>
     
     public void addPoint(final PairInt point, ImageExt img) {
                             
@@ -243,21 +243,21 @@ public class GroupPixelHSV2 {
      * @return the avgR
      */
     public float getAvgR() {
-<span class="fc" id="L246">        return (float)(sumR/(double)nPoints);</span>
+<span class="nc" id="L246">        return (float)(sumR/(double)nPoints);</span>
     }
     
     /**
      * @return the avgG
      */
     public float getAvgG() {
-<span class="fc" id="L253">        return (float)(sumG/(double)nPoints);</span>
+<span class="nc" id="L253">        return (float)(sumG/(double)nPoints);</span>
     }
 
     /**
      * @return the avgB
      */
     public float getAvgB() {
-<span class="fc" id="L260">        return (float)(sumB/(double)nPoints);</span>
+<span class="nc" id="L260">        return (float)(sumB/(double)nPoints);</span>
     }
     
     /**
@@ -269,13 +269,13 @@ public class GroupPixelHSV2 {
 
     public float calculateDifference(GroupPixelHSV2 hsv2) {
 
-<span class="fc" id="L272">        float sumDiff = Math.abs(getAvgH() - hsv2.getAvgH()) +</span>
-<span class="fc" id="L273">            Math.abs(getAvgS() - hsv2.getAvgS()) + </span>
-<span class="fc" id="L274">            Math.abs(getAvgV() - hsv2.getAvgV());</span>
+<span class="nc" id="L272">        float sumDiff = Math.abs(getAvgH() - hsv2.getAvgH()) +</span>
+<span class="nc" id="L273">            Math.abs(getAvgS() - hsv2.getAvgS()) + </span>
+<span class="nc" id="L274">            Math.abs(getAvgV() - hsv2.getAvgV());</span>
     
-<span class="fc" id="L276">        sumDiff /= 3.f;</span>
+<span class="nc" id="L276">        sumDiff /= 3.f;</span>
         
-<span class="fc" id="L278">        return sumDiff;</span>
+<span class="nc" id="L278">        return sumDiff;</span>
     }
     
     public float[] calculateDifferences(GroupPixelHSV2 hsv2) {
@@ -295,13 +295,13 @@ public class GroupPixelHSV2 {
      */
     public float calculateRGBDifference(GroupPixelHSV2 hsv2) {
 
-<span class="fc" id="L298">        float sumDiff = Math.abs(getAvgR() - hsv2.getAvgR()) +</span>
-<span class="fc" id="L299">            Math.abs(getAvgG() - hsv2.getAvgG()) + </span>
-<span class="fc" id="L300">            Math.abs(getAvgB() - hsv2.getAvgB());</span>
+<span class="nc" id="L298">        float sumDiff = Math.abs(getAvgR() - hsv2.getAvgR()) +</span>
+<span class="nc" id="L299">            Math.abs(getAvgG() - hsv2.getAvgG()) + </span>
+<span class="nc" id="L300">            Math.abs(getAvgB() - hsv2.getAvgB());</span>
     
-<span class="fc" id="L302">        sumDiff /= (255.f * 3.f);</span>
+<span class="nc" id="L302">        sumDiff /= (255.f * 3.f);</span>
         
-<span class="fc" id="L304">        return sumDiff;</span>
+<span class="nc" id="L304">        return sumDiff;</span>
     }
     
     /**
@@ -325,12 +325,12 @@ public class GroupPixelHSV2 {
     
     public boolean isGrey(int limit) {
         
-<span class="fc" id="L328">        int r = Math.round(getAvgR());</span>
-<span class="fc" id="L329">        int g = Math.round(getAvgG());</span>
-<span class="fc" id="L330">        int b = Math.round(getAvgB());</span>
+<span class="nc" id="L328">        int r = Math.round(getAvgR());</span>
+<span class="nc" id="L329">        int g = Math.round(getAvgG());</span>
+<span class="nc" id="L330">        int b = Math.round(getAvgB());</span>
         
         // looking at whether color is grey
-<span class="fc" id="L333">        int avgRGB = (r + g + b)/3;</span>
+<span class="nc" id="L333">        int avgRGB = (r + g + b)/3;</span>
         
         /*
         System.out.format(&quot;    -&gt; (%d,%d,%d) %d,%d,%d\n&quot;,
@@ -340,13 +340,13 @@ public class GroupPixelHSV2 {
             (Math.abs(b - avgRGB)));
         */
         
-<span class="fc bfc" id="L343" title="All 2 branches covered.">        if ((Math.abs(r - avgRGB) &lt; limit) &amp;&amp;</span>
-<span class="fc bfc" id="L344" title="All 2 branches covered.">            (Math.abs(g - avgRGB) &lt; limit) &amp;&amp;</span>
-<span class="fc bfc" id="L345" title="All 2 branches covered.">            (Math.abs(b - avgRGB) &lt; limit)) {</span>
-<span class="fc" id="L346">            return true;</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">        if ((Math.abs(r - avgRGB) &lt; limit) &amp;&amp;</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">            (Math.abs(g - avgRGB) &lt; limit) &amp;&amp;</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            (Math.abs(b - avgRGB) &lt; limit)) {</span>
+<span class="nc" id="L346">            return true;</span>
         }
         
-<span class="fc" id="L349">        return false;</span>
+<span class="nc" id="L349">        return false;</span>
     }
 
     public boolean isGreen() {

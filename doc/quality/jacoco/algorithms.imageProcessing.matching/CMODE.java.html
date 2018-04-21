@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CMODE.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">CMODE.java</span></div><h1>CMODE.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.util.GroupAverageColors;
+import algorithms.util.PairInt;
+import java.util.Set;
+
+/**
+ * descriptions black, white, or other used in describing the template
+     * shape color.  the extremes black and white can be used to limit
+     * the regions created.
+ * @author nichole
+ */
+<span class="pc" id="L15">public enum CMODE {</span>
+<span class="fc" id="L16">    WHITE, BLACK, OTHER;</span>
+    
+    public static CMODE determineColorMode(ImageExt img, Set&lt;PairInt&gt; set) {
+
+<span class="fc" id="L20">        GroupAverageColors clrs = new GroupAverageColors(img, set);</span>
+        
+<span class="fc" id="L22">        int limit1 = 150;</span>
+<span class="fc" id="L23">        int limit2 = 55;</span>
+<span class="fc bfc" id="L24" title="All 4 branches covered.">        if (clrs.getR() &gt;= limit1 &amp;&amp; clrs.getG() &gt;= limit1 &amp;&amp;</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">            clrs.getB() &gt;= limit1) {</span>
+<span class="fc" id="L26">            return CMODE.WHITE;</span>
+<span class="fc bfc" id="L27" title="All 4 branches covered.">        } else if (clrs.getR() &lt;= limit2 &amp;&amp; clrs.getG() &lt;= limit2 &amp;&amp;</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            clrs.getB() &lt;= limit2) {</span>
+<span class="fc" id="L29">            return CMODE.BLACK;</span>
+        } else {
+<span class="fc" id="L31">            return CMODE.OTHER;</span>
+        }
+    }
+
+    public static CMODE determinePolarThetaMode(GreyscaleImage luvTheta, 
+        Set&lt;PairInt&gt; points) {
+    
+<span class="fc" id="L38">        double avg = 0;</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L40">            avg += luvTheta.getValue(p);</span>
+<span class="fc" id="L41">        }</span>
+<span class="fc" id="L42">        avg /= (double)points.size();</span>
+        
+<span class="fc" id="L44">        int limit1 = 220;</span>
+<span class="fc" id="L45">        int limit2 = 25;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (avg &gt;= limit1) {</span>
+<span class="fc" id="L47">            return CMODE.WHITE;</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        } else if (avg &lt;= limit2) {</span>
+<span class="fc" id="L49">            return CMODE.BLACK;</span>
+        } else {
+<span class="fc" id="L51">            return CMODE.OTHER;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

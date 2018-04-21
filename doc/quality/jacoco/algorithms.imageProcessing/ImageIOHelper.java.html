@@ -1325,8 +1325,8 @@ import javax.imageio.stream.ImageInputStream;
             }
 <span class="fc bfc" id="L1326" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1327">                int yy = y + dy;</span>
-<span class="pc bpc" id="L1328" title="1 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1329">                    continue;</span>
+<span class="fc bfc" id="L1328" title="All 4 branches covered.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc" id="L1329">                    continue;</span>
                 }
 <span class="fc" id="L1331">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
             }

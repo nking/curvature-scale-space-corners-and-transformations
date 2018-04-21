@@ -80,10 +80,10 @@ import java.util.Set;
 <span class="fc" id="L80">    }</span>
     
     public void add2To1(int[] hist1, int[] hist2) {
-<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (int i = 0; i &lt; hist1.length; ++i) {</span>
-<span class="fc" id="L84">            hist1[i] += hist2[i];</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (int i = 0; i &lt; hist1.length; ++i) {</span>
+<span class="nc" id="L84">            hist1[i] += hist2[i];</span>
         }
-<span class="fc" id="L86">    }</span>
+<span class="nc" id="L86">    }</span>
     
     /**
      * histogram of 16 bins each of CIE LAB colors where the bins
@@ -856,26 +856,26 @@ import java.util.Set;
          5:  purple = 193 - 255
         */
         
-<span class="fc" id="L859">        int[] hist = new int[6];</span>
+<span class="nc" id="L859">        int[] hist = new int[6];</span>
 
-<span class="fc bfc" id="L861" title="All 2 branches covered.">        for (PairInt p : labeledSet) {</span>
-<span class="fc" id="L862">            int v = ptImg.getValue(p);</span>
-<span class="fc bfc" id="L863" title="All 2 branches covered.">            if (v &lt; 19) {</span>
-<span class="fc" id="L864">                hist[0]++;</span>
-<span class="fc bfc" id="L865" title="All 2 branches covered.">            } else if (v &lt; 41) {</span>
-<span class="fc" id="L866">                hist[1]++;</span>
-<span class="fc bfc" id="L867" title="All 2 branches covered.">            } else if (v &lt; 61) {</span>
-<span class="fc" id="L868">                hist[2]++;</span>
-<span class="fc bfc" id="L869" title="All 2 branches covered.">            } else if (v &lt; 107) {</span>
-<span class="fc" id="L870">                hist[3]++;</span>
-<span class="fc bfc" id="L871" title="All 2 branches covered.">            } else if (v &lt; 193) {</span>
-<span class="fc" id="L872">                hist[4]++;</span>
+<span class="nc bnc" id="L861" title="All 2 branches missed.">        for (PairInt p : labeledSet) {</span>
+<span class="nc" id="L862">            int v = ptImg.getValue(p);</span>
+<span class="nc bnc" id="L863" title="All 2 branches missed.">            if (v &lt; 19) {</span>
+<span class="nc" id="L864">                hist[0]++;</span>
+<span class="nc bnc" id="L865" title="All 2 branches missed.">            } else if (v &lt; 41) {</span>
+<span class="nc" id="L866">                hist[1]++;</span>
+<span class="nc bnc" id="L867" title="All 2 branches missed.">            } else if (v &lt; 61) {</span>
+<span class="nc" id="L868">                hist[2]++;</span>
+<span class="nc bnc" id="L869" title="All 2 branches missed.">            } else if (v &lt; 107) {</span>
+<span class="nc" id="L870">                hist[3]++;</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">            } else if (v &lt; 193) {</span>
+<span class="nc" id="L872">                hist[4]++;</span>
             } else {
-<span class="fc" id="L874">                hist[5]++;</span>
+<span class="nc" id="L874">                hist[5]++;</span>
             }
-<span class="fc" id="L876">        }</span>
+<span class="nc" id="L876">        }</span>
         
-<span class="fc" id="L878">        return hist;</span>
+<span class="nc" id="L878">        return hist;</span>
     }
 
 }

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CIEChromaticity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CIEChromaticity.java</span></div><h1>CIEChromaticity.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.misc.MiscMath;
-import algorithms.util.ArrayPair;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +15,7 @@ import java.util.List;
  *
  * @author nichole
  */
-<span class="fc" id="L19">public class CIEChromaticity {</span>
+<span class="fc" id="L18">public class CIEChromaticity {</span>
 
     /**
      * the offset from (0.35, 0.35) considered &quot;white&quot;
@@ -38,26 +37,26 @@ import java.util.List;
      */
     public float[] rgbToXYChromaticity(int r, int g, int b) {
 
-<span class="fc bfc" id="L41" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="fc bfc" id="L40" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
             // not really defined on the diagram since chromaticity is color
             // without intensity.  since all 0's is the lack of all color
             // will return 0,0, but it's N/A
-<span class="fc" id="L45">            return new float[]{0, 0};</span>
+<span class="fc" id="L44">            return new float[]{0, 0};</span>
         }
 
-<span class="fc" id="L48">        float[] capXYZ = rgbToCIEXYZ(r, g, b);</span>
+<span class="fc" id="L47">        float[] capXYZ = rgbToCIEXYZ(r, g, b);</span>
 
-<span class="fc" id="L50">        float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];</span>
+<span class="fc" id="L49">        float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];</span>
 
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (zz == 0.f) {</span>
-<span class="nc" id="L53">            return new float[]{0, 0};</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (zz == 0.f) {</span>
+<span class="nc" id="L52">            return new float[]{0, 0};</span>
         }
 
-<span class="fc" id="L56">        float x = capXYZ[0]/zz;</span>
+<span class="fc" id="L55">        float x = capXYZ[0]/zz;</span>
 
-<span class="fc" id="L58">        float y = capXYZ[1]/zz;</span>
+<span class="fc" id="L57">        float y = capXYZ[1]/zz;</span>
 
-<span class="fc" id="L60">        return new float[]{x, y};</span>
+<span class="fc" id="L59">        return new float[]{x, y};</span>
     }
 
     /**
@@ -76,14 +75,14 @@ import java.util.List;
      */
     public float[] _rgbToXYChromaticity(int r, int g, int b) {
 
-<span class="nc bnc" id="L79" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc bnc" id="L78" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
             // not really defined on the diagram since chromaticity is color
             // without intensity.  since all 0's is the lack of all color
             // will return 0,0, but it's N/A
-<span class="nc" id="L83">            return new float[]{0, 0};</span>
+<span class="nc" id="L82">            return new float[]{0, 0};</span>
         }
         
-<span class="nc" id="L86">        return _rgbToXYChromaticity((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="nc" id="L85">        return _rgbToXYChromaticity((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
     }
 
     /**
@@ -102,30 +101,30 @@ import java.util.List;
      */
     public float[] _rgbToXYChromaticity(float r, float g, float b) {
 
-<span class="nc bnc" id="L105" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc bnc" id="L104" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
             // not really defined on the diagram since chromaticity is color
             // without intensity.  since all 0's is the lack of all color
             // will return 0,0, but it's N/A
-<span class="nc" id="L109">            return new float[]{0, 0};</span>
+<span class="nc" id="L108">            return new float[]{0, 0};</span>
         }
 
-<span class="nc" id="L112">        float[] capXYZ = _rgbToCIEXYZ(r, g, b);</span>
+<span class="nc" id="L111">        float[] capXYZ = _rgbToCIEXYZ(r, g, b);</span>
 
-<span class="nc" id="L114">        float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];</span>
+<span class="nc" id="L113">        float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];</span>
 
-<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (zz == 0.f) {</span>
-<span class="nc" id="L117">            return new float[]{0, 0};</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (zz == 0.f) {</span>
+<span class="nc" id="L116">            return new float[]{0, 0};</span>
         }
 
-<span class="nc" id="L120">        float x = capXYZ[0]/zz;</span>
+<span class="nc" id="L119">        float x = capXYZ[0]/zz;</span>
 
-<span class="nc" id="L122">        float y = capXYZ[1]/zz;</span>
+<span class="nc" id="L121">        float y = capXYZ[1]/zz;</span>
 
-<span class="nc" id="L124">        return new float[]{x, y};</span>
+<span class="nc" id="L123">        return new float[]{x, y};</span>
     }
 
     // NOTE: not thread safe:
-<span class="fc" id="L128">    private float[] cieXYTmpHolder = new float[3];</span>
+<span class="fc" id="L127">    private float[] cieXYTmpHolder = new float[3];</span>
     /**
      * convert from CIE XYZ 1931, to CIE XY chromaticity 1931.
      *
@@ -142,28 +141,28 @@ import java.util.List;
      */
     public void rgbToXYChromaticity(int r, int g, int b, float[] outputcieXY) {
 
-<span class="nc bnc" id="L145" title="All 4 branches missed.">        if (outputcieXY == null || outputcieXY.length != 2) {</span>
-<span class="nc" id="L146">            throw new IllegalArgumentException(&quot;outputcieXY must be length 2&quot;);</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">        if (outputcieXY == null || outputcieXY.length != 2) {</span>
+<span class="nc" id="L145">            throw new IllegalArgumentException(&quot;outputcieXY must be length 2&quot;);</span>
         }
 
-<span class="nc bnc" id="L149" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc bnc" id="L148" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
             // not really defined on the diagram since chromaticity is color
             // without intensity.  since all 0's is the lack of all color
             // will return 0,0, but it's N/A
-<span class="nc" id="L153">            outputcieXY[0] = 0;</span>
-<span class="nc" id="L154">            outputcieXY[1] = 0;</span>
-<span class="nc" id="L155">            return;</span>
+<span class="nc" id="L152">            outputcieXY[0] = 0;</span>
+<span class="nc" id="L153">            outputcieXY[1] = 0;</span>
+<span class="nc" id="L154">            return;</span>
         }
 
-<span class="nc" id="L158">        rgbToCIEXYZ(r, g, b, cieXYTmpHolder);</span>
+<span class="nc" id="L157">        rgbToCIEXYZ(r, g, b, cieXYTmpHolder);</span>
 
-<span class="nc" id="L160">        float x = cieXYTmpHolder[0]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);</span>
+<span class="nc" id="L159">        float x = cieXYTmpHolder[0]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);</span>
 
-<span class="nc" id="L162">        float y = cieXYTmpHolder[1]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);</span>
+<span class="nc" id="L161">        float y = cieXYTmpHolder[1]/(cieXYTmpHolder[0] + cieXYTmpHolder[1] + cieXYTmpHolder[2]);</span>
 
-<span class="nc" id="L164">        outputcieXY[0] = x;</span>
-<span class="nc" id="L165">        outputcieXY[1] = y;</span>
-<span class="nc" id="L166">    }</span>
+<span class="nc" id="L163">        outputcieXY[0] = x;</span>
+<span class="nc" id="L164">        outputcieXY[1] = y;</span>
+<span class="nc" id="L165">    }</span>
 
     /**
      * convert rgb to CIE LAB.
@@ -185,18 +184,18 @@ import java.util.List;
      */
     public float[] rgbToCIELAB(int r, int g, int b) {
 
-<span class="pc bpc" id="L188" title="6 of 12 branches missed.">        if (r &lt; 0 || r &gt; 255 || g &lt; 0 || g &gt; 255 || b &lt; 0 || b &gt; 255) {</span>
-<span class="nc" id="L189">            throw new IllegalArgumentException(&quot;r, g, and b must be 0 to 255&quot;);</span>
+<span class="pc bpc" id="L187" title="6 of 12 branches missed.">        if (r &lt; 0 || r &gt; 255 || g &lt; 0 || g &gt; 255 || b &lt; 0 || b &gt; 255) {</span>
+<span class="nc" id="L188">            throw new IllegalArgumentException(&quot;r, g, and b must be 0 to 255&quot;);</span>
         }
-<span class="pc bpc" id="L191" title="2 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="fc" id="L192">            return new float[]{0, 0, 0};</span>
+<span class="pc bpc" id="L190" title="2 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="fc" id="L191">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="fc" id="L195">        float[] a = _rgbToCIEXYZ(r, g, b);</span>
+<span class="fc" id="L194">        float[] a = _rgbToCIEXYZ(r, g, b);</span>
 
-<span class="fc" id="L197">        a = cieXYZToCIELAB(a);</span>
+<span class="fc" id="L196">        a = cieXYZToCIELAB(a);</span>
         
-<span class="fc" id="L199">        return a;</span>
+<span class="fc" id="L198">        return a;</span>
     }
 
     /**
@@ -217,15 +216,15 @@ import java.util.List;
      */
     public float[] rgbToCIELAB1931(int r, int g, int b) {
 
-<span class="pc bpc" id="L220" title="5 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L221">            return new float[]{0, 0, 0};</span>
+<span class="pc bpc" id="L219" title="5 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc" id="L220">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="fc" id="L224">        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="fc" id="L223">        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
 
-<span class="fc" id="L226">        a = cieXYZToCIELAB(a);</span>
+<span class="fc" id="L225">        a = cieXYZToCIELAB(a);</span>
 
-<span class="fc" id="L228">        return a;</span>
+<span class="fc" id="L227">        return a;</span>
     }
 
     /**
@@ -246,15 +245,15 @@ import java.util.List;
      */
     public float[] rgbToCIELCH(int r, int g, int b) {
 
-<span class="pc bpc" id="L249" title="5 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L250">            return new float[]{0, 0, 0};</span>
+<span class="pc bpc" id="L248" title="5 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc" id="L249">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="fc" id="L253">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="fc" id="L252">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
 
-<span class="fc" id="L255">        float[] lch = cieXYZToCIELCH(xyz);</span>
+<span class="fc" id="L254">        float[] lch = cieXYZToCIELCH(xyz);</span>
 
-<span class="fc" id="L257">        return lch;</span>
+<span class="fc" id="L256">        return lch;</span>
     }
 
     /**
@@ -277,9 +276,9 @@ import java.util.List;
         magnitude, m:  sqrt(2) * 183.8 = 260
         angle,     a:  0 to 359
      * &lt;/pre&gt;
-     * @param r
-     * @param g
-     * @param b
+     * @param r in range 0 to 255, inclusive
+     * @param g in range 0 to 255, inclusive
+     * @param b in range 0 to 255, inclusive
      * @return luv[0], (float)m, (float)t where
      * the first item is luminosity, the
      * second is the magnitude of the color, that
@@ -288,25 +287,25 @@ import java.util.List;
      */
     public float[] rgbToPolarCIELUV(int r, int g, int b) {
 
-<span class="fc bfc" id="L291" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="fc" id="L292">            return new float[]{0, 0, 0};</span>
+<span class="fc bfc" id="L290" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="fc" id="L291">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="fc" id="L295">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="fc" id="L294">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
 
-<span class="fc" id="L297">        float[] luv = cieXYZToCIELUV(xyz);</span>
+<span class="fc" id="L296">        float[] luv = cieXYZToCIELUV(xyz);</span>
 
-<span class="fc" id="L299">        double t = Math.atan2(luv[2], luv[1]);</span>
-<span class="fc" id="L300">        t *= (180. / Math.PI);</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">        if (t &lt; 0) {</span>
-<span class="fc" id="L302">            t += 360;</span>
-<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        } else if (t &gt; 359) {</span>
-<span class="nc" id="L304">            t -= 360;</span>
+<span class="fc" id="L298">        double t = Math.atan2(luv[2], luv[1]);</span>
+<span class="fc" id="L299">        t *= (180. / Math.PI);</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (t &lt; 0) {</span>
+<span class="fc" id="L301">            t += 360;</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">        } else if (t &gt; 359) {</span>
+<span class="nc" id="L303">            t -= 360;</span>
         }
 
-<span class="fc" id="L307">        double m = Math.sqrt(luv[1]*luv[1] + luv[2]*luv[2]);</span>
+<span class="fc" id="L306">        double m = Math.sqrt(luv[1]*luv[1] + luv[2]*luv[2]);</span>
 
-<span class="fc" id="L309">        return new float[]{luv[0], (float)m, (float)t};</span>
+<span class="fc" id="L308">        return new float[]{luv[0], (float)m, (float)t};</span>
     }
 
     /**
@@ -332,25 +331,77 @@ import java.util.List;
     public float[] rgbToPolarCIELUV(int r, int g, int b, float Xn, float Yn,
         float Zn) {
 
-<span class="pc bpc" id="L335" title="2 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="fc" id="L336">            return new float[]{0, 0, 0};</span>
+<span class="fc bfc" id="L334" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="fc" id="L335">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="fc" id="L339">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="fc" id="L338">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
 
-<span class="fc" id="L341">        float[] luv = cieXYZToCIELUV(xyz, Xn, Yn, Zn);</span>
+<span class="fc" id="L340">        float[] luv = cieXYZToCIELUV(xyz, Xn, Yn, Zn);</span>
 
-<span class="fc" id="L343">        double t = Math.atan2(luv[2], luv[1]);</span>
-<span class="fc" id="L344">        t *= (180. / Math.PI);</span>
-<span class="fc bfc" id="L345" title="All 2 branches covered.">        if (t &lt; 0) {</span>
-<span class="fc" id="L346">            t += 360;</span>
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        } else if (t &gt; 359) {</span>
-<span class="nc" id="L348">            t -= 360;</span>
+<span class="fc" id="L342">        double t = Math.atan2(luv[2], luv[1]);</span>
+<span class="fc" id="L343">        t *= (180. / Math.PI);</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        if (t &lt; 0) {</span>
+<span class="fc" id="L345">            t += 360;</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        } else if (t &gt; 359) {</span>
+<span class="nc" id="L347">            t -= 360;</span>
         }
 
-<span class="fc" id="L351">        double m = Math.sqrt(luv[1]*luv[1] + luv[2]*luv[2]);</span>
+<span class="fc" id="L350">        double m = Math.sqrt(luv[1]*luv[1] + luv[2]*luv[2]);</span>
 
-<span class="fc" id="L353">        return new float[]{luv[0], (float)m, (float)t};</span>
+<span class="fc" id="L352">        return new float[]{luv[0], (float)m, (float)t};</span>
+    }
+    
+    /**
+     * convert rgb to CIELUV. CIE 1976 (L*, u*, v*) 
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
+     *
+     * uses standard illuminant &quot;wide range lightness&quot;.
+     * Wide-range Lightness data were generated by Fairchild et al., 
+     * who conducted two different experiments to scale lightness above and 
+     * below diffuse white (CIE * L = 100 ). 
+     * In the Scaling Lightness Experiment 1 (SL1) they used a luminance
+       range from 156 to 2 3692cd m with 2 842 Y cd m n = 
+       (Yn represents the luminance of reference white) 
+      whereas in the Scaling Lightness Experiment 2 (SL2) the
+      luminance range was extended from 0 to 2 7432cd m with 2 997 Y cd m n = . 
+     The SL2 data set was used to drive the adapted lightness ( z J ) 
+     formula of the proposed color space (see later) while the SL1 data set was 
+     used as a test data set. Each of the sets includes 19 samples. 
+
+     * https://www.osapublishing.org/DirectPDFAccess/B810E9AE-C7C9-E594-C72DC7FBE1424F0A_368272/oe-25-13-15131.pdf?da=1&amp;id=368272&amp;seq=0&amp;mobile=no
+     * 
+     * SL2 Training D65/2° (x,y,z)=968.08 997 883.51 
+     * L_a=199 
+     * C=0.69. N_C=1, F=1 
+     * 
+     * range of return values is:
+     * L       0 to 104.8
+     * u   -99.9 to 176.8
+     * v  -150.0 to 95.0
+     * 
+     * @param r in range 0 to 255, inclusive
+     * @param g in range 0 to 255, inclusive
+     * @param b in range 0 to 255, inclusive
+     * @return
+     */
+    public float[] rgbToCIELUV_WideRangeLightness(int r, int g, int b) {
+
+<span class="fc bfc" id="L392" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="fc" id="L393">            return new float[]{0, 0, 0};</span>
+        }
+        
+<span class="fc" id="L396">        float Xn = 96.808f;//0.96808f;</span>
+<span class="fc" id="L397">        float Yn = 99.7f;//0.997f;</span>
+<span class="fc" id="L398">        float Zn = 88.35f;//0.88351f;</span>
+        
+<span class="fc" id="L400">        float[] xyz = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+
+<span class="fc" id="L402">        float[] luv = cieXYZToCIELUV(xyz, Xn, Yn, Zn);</span>
+
+<span class="fc" id="L404">        return luv;</span>
     }
 
     /**
@@ -377,15 +428,15 @@ import java.util.List;
      */
     public float[] rgbToCIELUV(int r, int g, int b) {
 
-<span class="pc bpc" id="L380" title="3 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L381">            return new float[]{0, 0, 0};</span>
+<span class="pc bpc" id="L431" title="3 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc" id="L432">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="fc" id="L384">        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="fc" id="L435">        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
 
-<span class="fc" id="L386">        a = cieXYZToCIELUV(a);</span>
+<span class="fc" id="L437">        a = cieXYZToCIELUV(a);</span>
 
-<span class="fc" id="L388">        return a;</span>
+<span class="fc" id="L439">        return a;</span>
     }
 
     /**
@@ -434,15 +485,15 @@ import java.util.List;
     public float[] rgbToCIELUV(int r, int g, int b,
         float Xn, float Yn, float Zn) {
 
-<span class="nc bnc" id="L437" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L438">            return new float[]{0, 0, 0};</span>
+<span class="nc bnc" id="L488" title="All 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc" id="L489">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="nc" id="L441">        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="nc" id="L492">        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
 
-<span class="nc" id="L443">        a = cieXYZToCIELUV(a, Xn, Yn, Zn);</span>
+<span class="nc" id="L494">        a = cieXYZToCIELUV(a, Xn, Yn, Zn);</span>
 
-<span class="nc" id="L445">        return a;</span>
+<span class="nc" id="L496">        return a;</span>
     }
 
     /**
@@ -467,13 +518,13 @@ import java.util.List;
         0.0139 0.097  0.7139
         */
 
-<span class="fc" id="L470">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
+<span class="fc" id="L521">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
 
-<span class="fc" id="L472">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
+<span class="fc" id="L523">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
 
-<span class="fc" id="L474">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
+<span class="fc" id="L525">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
 
-<span class="fc" id="L476">        return new float[]{capX, capY, capZ};</span>
+<span class="fc" id="L527">        return new float[]{capX, capY, capZ};</span>
     }
 
     /**
@@ -493,11 +544,11 @@ import java.util.List;
      */
     public float[] _rgbToCIEXYZ(int r, int g, int b) {
 
-<span class="pc bpc" id="L496" title="5 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L497">            return new float[]{0, 0, 0};</span>
+<span class="pc bpc" id="L547" title="5 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc" id="L548">            return new float[]{0, 0, 0};</span>
         }
         
-<span class="fc" id="L500">        return _rgbToCIEXYZ((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
+<span class="fc" id="L551">        return _rgbToCIEXYZ((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>
     }
 
     /**
@@ -527,13 +578,13 @@ import java.util.List;
         0.0139 0.097  0.7139
         */
 
-<span class="fc" id="L530">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
+<span class="fc" id="L581">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
 
-<span class="fc" id="L532">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
+<span class="fc" id="L583">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
 
-<span class="fc" id="L534">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
+<span class="fc" id="L585">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
 
-<span class="fc" id="L536">        return new float[]{capX, capY, capZ};</span>
+<span class="fc" id="L587">        return new float[]{capX, capY, capZ};</span>
     }
 
     /**
@@ -552,45 +603,45 @@ import java.util.List;
      */
     public float[] _rgbToCIEXYZ2(float r, float g, float b) {
 
-<span class="pc bpc" id="L555" title="1 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L556">            return new float[]{0, 0, 0};</span>
+<span class="pc bpc" id="L606" title="1 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="nc" id="L607">            return new float[]{0, 0, 0};</span>
         }
         
         //http://www.easyrgb.com/index.php?X=MATH&amp;H=02#text2
 
-<span class="fc" id="L561">        float fR = 0;</span>
-<span class="fc" id="L562">        float fG = 0;</span>
-<span class="fc" id="L563">        float fB = 0;</span>
-<span class="fc bfc" id="L564" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L612">        float fR = 0;</span>
+<span class="fc" id="L613">        float fG = 0;</span>
+<span class="fc" id="L614">        float fB = 0;</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
             double d;
-<span class="fc bfc" id="L566" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc" id="L567">                d = r;</span>
-<span class="fc bfc" id="L568" title="All 2 branches covered.">            } else if (i == 1) {</span>
-<span class="fc" id="L569">                d = g;</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L618">                d = r;</span>
+<span class="fc bfc" id="L619" title="All 2 branches covered.">            } else if (i == 1) {</span>
+<span class="fc" id="L620">                d = g;</span>
             } else {
-<span class="fc" id="L571">                d = b;</span>
+<span class="fc" id="L622">                d = b;</span>
             }
             double f;
-<span class="fc bfc" id="L574" title="All 2 branches covered.">            if (d &gt; 0.04045) {</span>
-<span class="fc" id="L575">                f = Math.pow(d + 0.055/1.055, 2.4);</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">            if (d &gt; 0.04045) {</span>
+<span class="fc" id="L626">                f = Math.pow(d + 0.055/1.055, 2.4);</span>
             } else {
-<span class="fc" id="L577">                f = d/12.92;</span>
+<span class="fc" id="L628">                f = d/12.92;</span>
             }
-<span class="fc" id="L579">            f *= 100.f;</span>
-<span class="fc bfc" id="L580" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc" id="L581">                fR = (float)f;</span>
-<span class="fc bfc" id="L582" title="All 2 branches covered.">            } else if (i == 1) {</span>
-<span class="fc" id="L583">                fG = (float)f;</span>
+<span class="fc" id="L630">            f *= 100.f;</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L632">                fR = (float)f;</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">            } else if (i == 1) {</span>
+<span class="fc" id="L634">                fG = (float)f;</span>
             } else {
-<span class="fc" id="L585">                fB = (float)f;</span>
+<span class="fc" id="L636">                fB = (float)f;</span>
             }
         }
 
-<span class="fc" id="L589">        float capX = fR * 0.4124f + fG * 0.3576f + fB * 0.1805f;</span>
-<span class="fc" id="L590">        float capY = fR * 0.2126f + fG * 0.7152f + fB * 0.0722f;</span>
-<span class="fc" id="L591">        float capZ = fR * 0.0193f + fG * 0.1192f + fB * 0.9505f;</span>
+<span class="fc" id="L640">        float capX = fR * 0.4124f + fG * 0.3576f + fB * 0.1805f;</span>
+<span class="fc" id="L641">        float capY = fR * 0.2126f + fG * 0.7152f + fB * 0.0722f;</span>
+<span class="fc" id="L642">        float capZ = fR * 0.0193f + fG * 0.1192f + fB * 0.9505f;</span>
 
-<span class="fc" id="L593">        return new float[]{capX, capY, capZ};</span>
+<span class="fc" id="L644">        return new float[]{capX, capY, capZ};</span>
     }
 
     /**
@@ -630,11 +681,11 @@ import java.util.List;
         ranges from...many intresting databases with relevant data...
         */
 
-<span class="fc" id="L633">        float Xn = 95.047f;</span>
-<span class="fc" id="L634">        float Yn = 100.0f;</span>
-<span class="fc" id="L635">        float Zn = 108.883f;</span>
+<span class="fc" id="L684">        float Xn = 95.047f;</span>
+<span class="fc" id="L685">        float Yn = 100.0f;</span>
+<span class="fc" id="L686">        float Zn = 108.883f;</span>
 
-<span class="fc" id="L637">        return cieXYZToCIELAB(cieXYZ, Xn, Yn, Zn);</span>
+<span class="fc" id="L688">        return cieXYZToCIELAB(cieXYZ, Xn, Yn, Zn);</span>
     }
 
     /**
@@ -670,23 +721,23 @@ import java.util.List;
         ranges from...many intresting databases with relevant data...
         */
 
-<span class="fc" id="L673">        float Xn = 95.047f;</span>
-<span class="fc" id="L674">        float Yn = 100.0f;</span>
-<span class="fc" id="L675">        float Zn = 108.883f;</span>
+<span class="fc" id="L724">        float Xn = 95.047f;</span>
+<span class="fc" id="L725">        float Yn = 100.0f;</span>
+<span class="fc" id="L726">        float Zn = 108.883f;</span>
 
-<span class="fc" id="L677">        float[] lab = cieXYZToCIELAB(cieXYZ, Xn, Yn, Zn);</span>
+<span class="fc" id="L728">        float[] lab = cieXYZToCIELAB(cieXYZ, Xn, Yn, Zn);</span>
 
-<span class="fc" id="L679">        double t = Math.atan2(lab[2], lab[1]);</span>
-<span class="fc" id="L680">        t *= (180. / Math.PI);</span>
-<span class="fc bfc" id="L681" title="All 2 branches covered.">        if (t &lt; 0) {</span>
-<span class="fc" id="L682">            t += 360;</span>
-<span class="pc bpc" id="L683" title="1 of 2 branches missed.">        } else if (t &gt; 359) {</span>
-<span class="nc" id="L684">            t -= 360;</span>
+<span class="fc" id="L730">        double t = Math.atan2(lab[2], lab[1]);</span>
+<span class="fc" id="L731">        t *= (180. / Math.PI);</span>
+<span class="fc bfc" id="L732" title="All 2 branches covered.">        if (t &lt; 0) {</span>
+<span class="fc" id="L733">            t += 360;</span>
+<span class="pc bpc" id="L734" title="1 of 2 branches missed.">        } else if (t &gt; 359) {</span>
+<span class="nc" id="L735">            t -= 360;</span>
         }
 
-<span class="fc" id="L687">        double m = Math.sqrt(lab[1]*lab[1] + lab[2]*lab[2]);</span>
+<span class="fc" id="L738">        double m = Math.sqrt(lab[1]*lab[1] + lab[2]*lab[2]);</span>
 
-<span class="fc" id="L689">        return new float[]{lab[0], (float)m, (float)t};</span>
+<span class="fc" id="L740">        return new float[]{lab[0], (float)m, (float)t};</span>
     }
 
     /**
@@ -721,11 +772,11 @@ import java.util.List;
         ranges from...many intresting databases with relevant data...
         */
 
-<span class="fc" id="L724">        float Xn = 95.047f;</span>
-<span class="fc" id="L725">        float Yn = 100.0f;</span>
-<span class="fc" id="L726">        float Zn = 108.883f;</span>
+<span class="fc" id="L775">        float Xn = 95.047f;</span>
+<span class="fc" id="L776">        float Yn = 100.0f;</span>
+<span class="fc" id="L777">        float Zn = 108.883f;</span>
 
-<span class="fc" id="L728">        return cieXYZToCIELUV(cieXYZ, Xn, Yn, Zn);</span>
+<span class="fc" id="L779">        return cieXYZToCIELUV(cieXYZ, Xn, Yn, Zn);</span>
     }
 
     /**
@@ -744,34 +795,34 @@ import java.util.List;
      */
     public float[] cieXYZToCIELUV(float[] cieXYZ, float Xn, float Yn, float Zn) {
 
-<span class="fc" id="L747">        float[] lab = cieXYZToCIELAB(cieXYZ, Xn, Yn, Zn);</span>
+<span class="fc" id="L798">        float[] lab = cieXYZToCIELAB(cieXYZ, Xn, Yn, Zn);</span>
 
-<span class="pc bpc" id="L749" title="5 of 6 branches missed.">        if (lab[0] == 0 &amp;&amp; lab[1] == 0 &amp;&amp; lab[2] == 0) {</span>
-<span class="nc" id="L750">            return lab;</span>
+<span class="pc bpc" id="L800" title="5 of 6 branches missed.">        if (lab[0] == 0 &amp;&amp; lab[1] == 0 &amp;&amp; lab[2] == 0) {</span>
+<span class="nc" id="L801">            return lab;</span>
         }
         
-<span class="fc" id="L753">        float u = (4.f * cieXYZ[0]) /</span>
+<span class="fc" id="L804">        float u = (4.f * cieXYZ[0]) /</span>
             (cieXYZ[0] + (15.f * cieXYZ[1]) + (3.f * cieXYZ[2]));
 
-<span class="fc" id="L756">        float v = (9.f * cieXYZ[1]) /</span>
+<span class="fc" id="L807">        float v = (9.f * cieXYZ[1]) /</span>
             (cieXYZ[0] + (15.f * cieXYZ[1]) + (3.f * cieXYZ[2]));
 
-<span class="fc" id="L759">        float y = cieXYZ[1]/100.f;</span>
+<span class="fc" id="L810">        float y = cieXYZ[1]/100.f;</span>
 
-<span class="fc bfc" id="L761" title="All 2 branches covered.">        if (y &gt; 0.008856) {</span>
-<span class="fc" id="L762">            y = (float)Math.pow(y, 1./3.);</span>
+<span class="fc bfc" id="L812" title="All 2 branches covered.">        if (y &gt; 0.008856) {</span>
+<span class="fc" id="L813">            y = (float)Math.pow(y, 1./3.);</span>
         } else {
-<span class="fc" id="L764">            y = (7.787f * y) + (16.f / 116.f);</span>
+<span class="fc" id="L815">            y = (7.787f * y) + (16.f / 116.f);</span>
         }
 
-<span class="fc" id="L767">        float Un = (4.f * Xn) / (Xn + (15.f * Yn) + (3.f * Zn));</span>
-<span class="fc" id="L768">        float Vn = (9.f * Yn) / (Xn + (15.f * Yn) + (3.f * Zn));</span>
+<span class="fc" id="L818">        float Un = (4.f * Xn) / (Xn + (15.f * Yn) + (3.f * Zn));</span>
+<span class="fc" id="L819">        float Vn = (9.f * Yn) / (Xn + (15.f * Yn) + (3.f * Zn));</span>
 
-<span class="fc" id="L770">        float cieL = (116.f * y) - 16.f;</span>
-<span class="fc" id="L771">        float cieU = 13.f * cieL * (u - Un);</span>
-<span class="fc" id="L772">        float cieV = 13.f * cieL * (v - Vn);</span>
+<span class="fc" id="L821">        float cieL = (116.f * y) - 16.f;</span>
+<span class="fc" id="L822">        float cieU = 13.f * cieL * (u - Un);</span>
+<span class="fc" id="L823">        float cieV = 13.f * cieL * (v - Vn);</span>
 
-<span class="fc" id="L774">        return new float[] {cieL, cieU, cieV};</span>
+<span class="fc" id="L825">        return new float[] {cieL, cieU, cieV};</span>
     }
 
     /**
@@ -795,44 +846,44 @@ import java.util.List;
      */
     public float[] cieXYZToCIELAB(float[] cieXYZ, float Xn, float Yn, float Zn) {
 
-<span class="fc" id="L798">        float xDiv = cieXYZ[0]/Xn;</span>
-<span class="fc" id="L799">        float yDiv = cieXYZ[1]/Yn;</span>
-<span class="fc" id="L800">        float zDiv = cieXYZ[2]/Zn;</span>
+<span class="fc" id="L849">        float xDiv = cieXYZ[0]/Xn;</span>
+<span class="fc" id="L850">        float yDiv = cieXYZ[1]/Yn;</span>
+<span class="fc" id="L851">        float zDiv = cieXYZ[2]/Zn;</span>
 
-<span class="fc" id="L802">        double deltaSq = (6./29.)*(6./29.);</span>
-<span class="fc" id="L803">        double deltaCubed = deltaSq * (6./29.);</span>
-<span class="fc" id="L804">        float fX = 0;</span>
-<span class="fc" id="L805">        float fY = 0;</span>
-<span class="fc" id="L806">        float fZ = 0;</span>
-<span class="fc bfc" id="L807" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L853">        double deltaSq = (6./29.)*(6./29.);</span>
+<span class="fc" id="L854">        double deltaCubed = deltaSq * (6./29.);</span>
+<span class="fc" id="L855">        float fX = 0;</span>
+<span class="fc" id="L856">        float fY = 0;</span>
+<span class="fc" id="L857">        float fZ = 0;</span>
+<span class="fc bfc" id="L858" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
             double d;
-<span class="fc bfc" id="L809" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc" id="L810">                d = xDiv;</span>
-<span class="fc bfc" id="L811" title="All 2 branches covered.">            } else if (i == 1) {</span>
-<span class="fc" id="L812">                d = yDiv;</span>
+<span class="fc bfc" id="L860" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L861">                d = xDiv;</span>
+<span class="fc bfc" id="L862" title="All 2 branches covered.">            } else if (i == 1) {</span>
+<span class="fc" id="L863">                d = yDiv;</span>
             } else {
-<span class="fc" id="L814">                d = zDiv;</span>
+<span class="fc" id="L865">                d = zDiv;</span>
             }
             double f;
-<span class="fc bfc" id="L817" title="All 2 branches covered.">            if (d &gt; deltaCubed) {</span>
-<span class="fc" id="L818">                f = Math.pow(d, 1./3.);</span>
+<span class="fc bfc" id="L868" title="All 2 branches covered.">            if (d &gt; deltaCubed) {</span>
+<span class="fc" id="L869">                f = Math.pow(d, 1./3.);</span>
             } else {
-<span class="fc" id="L820">                f = (d/(3.*deltaSq)) + (4./29.);</span>
+<span class="fc" id="L871">                f = (d/(3.*deltaSq)) + (4./29.);</span>
             }
-<span class="fc bfc" id="L822" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc" id="L823">                fX = (float)f;</span>
-<span class="fc bfc" id="L824" title="All 2 branches covered.">            } else if (i == 1) {</span>
-<span class="fc" id="L825">                fY = (float)f;</span>
+<span class="fc bfc" id="L873" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L874">                fX = (float)f;</span>
+<span class="fc bfc" id="L875" title="All 2 branches covered.">            } else if (i == 1) {</span>
+<span class="fc" id="L876">                fY = (float)f;</span>
             } else {
-<span class="fc" id="L827">                fZ = (float)f;</span>
+<span class="fc" id="L878">                fZ = (float)f;</span>
             }
         }
 
-<span class="fc" id="L831">        float ell = (116.f * fY) - 16.f;</span>
-<span class="fc" id="L832">        float a = 500.f * (fX - fY);</span>
-<span class="fc" id="L833">        float b = 200.f * (fY - fZ);</span>
+<span class="fc" id="L882">        float ell = (116.f * fY) - 16.f;</span>
+<span class="fc" id="L883">        float a = 500.f * (fX - fY);</span>
+<span class="fc" id="L884">        float b = 200.f * (fY - fZ);</span>
 
-<span class="fc" id="L835">        return new float[]{ell, a, b};</span>
+<span class="fc" id="L886">        return new float[]{ell, a, b};</span>
     }
 
     /**
@@ -848,12 +899,12 @@ import java.util.List;
      */
     public double calcDeltaECIE76(float[] cieLAB1, float[] cieLAB2) {
 
-<span class="nc" id="L851">        double eAB = Math.sqrt(</span>
+<span class="nc" id="L902">        double eAB = Math.sqrt(</span>
             ((cieLAB2[0] - cieLAB1[0])*(cieLAB2[0] - cieLAB1[0])) +
             ((cieLAB2[1] - cieLAB1[1])*(cieLAB2[1] - cieLAB1[1])) +
             ((cieLAB2[2] - cieLAB1[2])*(cieLAB2[2] - cieLAB1[2])));
 
-<span class="nc" id="L856">        return eAB;</span>
+<span class="nc" id="L907">        return eAB;</span>
     }
 
     /**
@@ -871,7 +922,7 @@ import java.util.List;
      */
     public double calcDeltaECIE94(float[] cieLAB1, float[] cieLAB2) {
 
-<span class="nc" id="L874">        return calcDeltaECIE94(cieLAB1[0], cieLAB1[1], cieLAB1[2], cieLAB2[0],</span>
+<span class="nc" id="L925">        return calcDeltaECIE94(cieLAB1[0], cieLAB1[1], cieLAB1[2], cieLAB2[0],</span>
             cieLAB2[1], cieLAB2[2]);
 
     }
@@ -891,48 +942,48 @@ import java.util.List;
         float ell2, float a2, float b2) {
 
         // use graphic arts or textiles approx for K's
-<span class="nc" id="L894">        boolean useGA = true;</span>
+<span class="nc" id="L945">        boolean useGA = true;</span>
         double kL, K1, K2;
-<span class="nc bnc" id="L896" title="All 2 branches missed.">        if (useGA) {</span>
-<span class="nc" id="L897">            kL = 1;</span>
-<span class="nc" id="L898">            K1 = 0.045;</span>
-<span class="nc" id="L899">            K2 = 0.015;</span>
+<span class="nc bnc" id="L947" title="All 2 branches missed.">        if (useGA) {</span>
+<span class="nc" id="L948">            kL = 1;</span>
+<span class="nc" id="L949">            K1 = 0.045;</span>
+<span class="nc" id="L950">            K2 = 0.015;</span>
         } else {
-<span class="nc" id="L901">            kL = 2;</span>
-<span class="nc" id="L902">            K1 = 0.048;</span>
-<span class="nc" id="L903">            K2 = 0.014;</span>
+<span class="nc" id="L952">            kL = 2;</span>
+<span class="nc" id="L953">            K1 = 0.048;</span>
+<span class="nc" id="L954">            K2 = 0.014;</span>
         }
 
-<span class="nc" id="L906">        float deltaEll = ell1 - ell2;</span>
-<span class="nc" id="L907">        double deltaA = a1 - a2;</span>
-<span class="nc" id="L908">        double deltaB = b1 - b2;</span>
+<span class="nc" id="L957">        float deltaEll = ell1 - ell2;</span>
+<span class="nc" id="L958">        double deltaA = a1 - a2;</span>
+<span class="nc" id="L959">        double deltaB = b1 - b2;</span>
 
-<span class="nc" id="L910">        double cA1 = Math.sqrt((a1*a1) + (b1*b1));</span>
-<span class="nc" id="L911">        double cA2 = Math.sqrt((a2*a2) + (b2*b2));</span>
-<span class="nc" id="L912">        double deltaCab = cA1 - cA2;</span>
+<span class="nc" id="L961">        double cA1 = Math.sqrt((a1*a1) + (b1*b1));</span>
+<span class="nc" id="L962">        double cA2 = Math.sqrt((a2*a2) + (b2*b2));</span>
+<span class="nc" id="L963">        double deltaCab = cA1 - cA2;</span>
 
-<span class="nc" id="L914">        double aa = (deltaA*deltaA) + (deltaB*deltaB) - (deltaCab*deltaCab);</span>
+<span class="nc" id="L965">        double aa = (deltaA*deltaA) + (deltaB*deltaB) - (deltaCab*deltaCab);</span>
         double deltaHab;
-<span class="nc bnc" id="L916" title="All 2 branches missed.">        if (aa &lt; 1E-10) {</span>
-<span class="nc" id="L917">            deltaHab = 0;</span>
+<span class="nc bnc" id="L967" title="All 2 branches missed.">        if (aa &lt; 1E-10) {</span>
+<span class="nc" id="L968">            deltaHab = 0;</span>
         } else {
-<span class="nc" id="L919">            deltaHab = Math.sqrt(aa);</span>
+<span class="nc" id="L970">            deltaHab = Math.sqrt(aa);</span>
         }
 
-<span class="nc" id="L922">        double sL = 1;</span>
-<span class="nc" id="L923">        double sC = 1 + (K1*cA1);</span>
-<span class="nc" id="L924">        double sH = 1 + (K2*cA1);</span>
+<span class="nc" id="L973">        double sL = 1;</span>
+<span class="nc" id="L974">        double sC = 1 + (K1*cA1);</span>
+<span class="nc" id="L975">        double sH = 1 + (K2*cA1);</span>
 
-<span class="nc" id="L926">        double t1 = deltaEll/(kL * sL);</span>
-<span class="nc" id="L927">        t1 *= t1;</span>
-<span class="nc" id="L928">        double t2 = deltaCab/sC;</span>
-<span class="nc" id="L929">        t2 *= t2;</span>
-<span class="nc" id="L930">        double t3 = deltaHab/sH;</span>
-<span class="nc" id="L931">        t3 *= t3;</span>
+<span class="nc" id="L977">        double t1 = deltaEll/(kL * sL);</span>
+<span class="nc" id="L978">        t1 *= t1;</span>
+<span class="nc" id="L979">        double t2 = deltaCab/sC;</span>
+<span class="nc" id="L980">        t2 *= t2;</span>
+<span class="nc" id="L981">        double t3 = deltaHab/sH;</span>
+<span class="nc" id="L982">        t3 *= t3;</span>
 
-<span class="nc" id="L933">        double e94 = Math.sqrt(t1 + t2 + t3);</span>
+<span class="nc" id="L984">        double e94 = Math.sqrt(t1 + t2 + t3);</span>
 
-<span class="nc" id="L935">        return e94;</span>
+<span class="nc" id="L986">        return e94;</span>
     }
 
     /**
@@ -960,7 +1011,7 @@ import java.util.List;
      */
     public double calcDeltaECIE2000(float[] lab1, float[] lab2) {
 
-<span class="fc" id="L963">        return calcDeltaECIE2000(lab1[0], lab1[1], lab1[2], lab2[0], lab2[1],</span>
+<span class="fc" id="L1014">        return calcDeltaECIE2000(lab1[0], lab1[1], lab1[2], lab2[0], lab2[1],</span>
             lab2[2]);
     }
 
@@ -989,55 +1040,55 @@ import java.util.List;
     public double calcDeltaECIE2000(float L1, float a1, float b1,
         float L2, float a2, float b2) {
 
-<span class="fc" id="L992">        double Lmean = (L1 + L2) / 2.0;</span>
-<span class="fc" id="L993">		double C1 =  Math.sqrt(a1*a1 + b1*b1);</span>
-<span class="fc" id="L994">		double C2 =  Math.sqrt(a2*a2 + b2*b2);</span>
-<span class="fc" id="L995">		double Cmean = (C1 + C2) / 2.0;</span>
+<span class="fc" id="L1043">        double Lmean = (L1 + L2) / 2.0;</span>
+<span class="fc" id="L1044">		double C1 =  Math.sqrt(a1*a1 + b1*b1);</span>
+<span class="fc" id="L1045">		double C2 =  Math.sqrt(a2*a2 + b2*b2);</span>
+<span class="fc" id="L1046">		double Cmean = (C1 + C2) / 2.0;</span>
 
-<span class="fc" id="L997">        double pow7 = Math.pow(Cmean, 7);</span>
-<span class="fc" id="L998">        double pow257 =  Math.pow(25, 7);</span>
+<span class="fc" id="L1048">        double pow7 = Math.pow(Cmean, 7);</span>
+<span class="fc" id="L1049">        double pow257 =  Math.pow(25, 7);</span>
 
-<span class="fc" id="L1000">		double G =  (1. - Math.sqrt(pow7/(pow7 + pow257)))/2.;</span>
-<span class="fc" id="L1001">		double a1prime = a1 * (1. + G);</span>
-<span class="fc" id="L1002">		double a2prime = a2 * (1. + G);</span>
+<span class="fc" id="L1051">		double G =  (1. - Math.sqrt(pow7/(pow7 + pow257)))/2.;</span>
+<span class="fc" id="L1052">		double a1prime = a1 * (1. + G);</span>
+<span class="fc" id="L1053">		double a2prime = a2 * (1. + G);</span>
 
-<span class="fc" id="L1004">		double C1prime =  Math.sqrt(a1prime*a1prime + b1*b1);</span>
-<span class="fc" id="L1005">		double C2prime =  Math.sqrt(a2prime*a2prime + b2*b2);</span>
-<span class="fc" id="L1006">		double Cmeanprime = (C1prime + C2prime) / 2;</span>
+<span class="fc" id="L1055">		double C1prime =  Math.sqrt(a1prime*a1prime + b1*b1);</span>
+<span class="fc" id="L1056">		double C2prime =  Math.sqrt(a2prime*a2prime + b2*b2);</span>
+<span class="fc" id="L1057">		double Cmeanprime = (C1prime + C2prime) / 2;</span>
 
-<span class="fc bfc" id="L1008" title="All 2 branches covered.">		double h1prime =  Math.atan2(b1, a1prime) + 2*Math.PI * (Math.atan2(b1, a1prime)&lt;0 ? 1 : 0);</span>
-<span class="fc bfc" id="L1009" title="All 2 branches covered.">		double h2prime =  Math.atan2(b2, a2prime) + 2*Math.PI * (Math.atan2(b2, a2prime)&lt;0 ? 1 : 0);</span>
-<span class="fc bfc" id="L1010" title="All 2 branches covered.">		double Hmeanprime =  ((Math.abs(h1prime - h2prime) &gt; Math.PI) ? (h1prime + h2prime + 2*Math.PI) / 2 : (h1prime + h2prime) / 2);</span>
+<span class="fc bfc" id="L1059" title="All 2 branches covered.">		double h1prime =  Math.atan2(b1, a1prime) + 2*Math.PI * (Math.atan2(b1, a1prime)&lt;0 ? 1 : 0);</span>
+<span class="fc bfc" id="L1060" title="All 2 branches covered.">		double h2prime =  Math.atan2(b2, a2prime) + 2*Math.PI * (Math.atan2(b2, a2prime)&lt;0 ? 1 : 0);</span>
+<span class="fc bfc" id="L1061" title="All 2 branches covered.">		double Hmeanprime =  ((Math.abs(h1prime - h2prime) &gt; Math.PI) ? (h1prime + h2prime + 2*Math.PI) / 2 : (h1prime + h2prime) / 2);</span>
 
-<span class="fc" id="L1012">		double T =  1.0 - 0.17 * Math.cos(Hmeanprime - Math.PI/6.0) + 0.24 * Math.cos(2*Hmeanprime)</span>
-<span class="fc" id="L1013">            + 0.32 * Math.cos(3*Hmeanprime + Math.PI/30) - 0.2 * Math.cos(4*Hmeanprime - 21*Math.PI/60);</span>
+<span class="fc" id="L1063">		double T =  1.0 - 0.17 * Math.cos(Hmeanprime - Math.PI/6.0) + 0.24 * Math.cos(2*Hmeanprime)</span>
+<span class="fc" id="L1064">            + 0.32 * Math.cos(3*Hmeanprime + Math.PI/30) - 0.2 * Math.cos(4*Hmeanprime - 21*Math.PI/60);</span>
 
-<span class="fc bfc" id="L1015" title="All 4 branches covered.">		double deltahprime =  ((Math.abs(h1prime - h2prime) &lt;= Math.PI) ? h2prime - h1prime :</span>
+<span class="fc bfc" id="L1066" title="All 4 branches covered.">		double deltahprime =  ((Math.abs(h1prime - h2prime) &lt;= Math.PI) ? h2prime - h1prime :</span>
             (h2prime &lt;= h1prime) ? h2prime - h1prime + 2*Math.PI : h2prime - h1prime - 2*Math.PI);
 
-<span class="fc" id="L1018">		double deltaLprime = L2 - L1;</span>
-<span class="fc" id="L1019">		double deltaCprime = C2prime - C1prime;</span>
-<span class="fc" id="L1020">		double deltaHprime =  2.0 * Math.sqrt(C1prime*C2prime) * Math.sin(deltahprime / 2.0);</span>
-<span class="fc" id="L1021">		double SL =  1.0 + ( (0.015*(Lmean - 50)*(Lmean - 50)) / (Math.sqrt( 20 + (Lmean - 50)*(Lmean - 50) )) );</span>
-<span class="fc" id="L1022">		double SC =  1.0 + 0.045 * Cmeanprime;</span>
-<span class="fc" id="L1023">		double SH =  1.0 + 0.015 * Cmeanprime * T;</span>
+<span class="fc" id="L1069">		double deltaLprime = L2 - L1;</span>
+<span class="fc" id="L1070">		double deltaCprime = C2prime - C1prime;</span>
+<span class="fc" id="L1071">		double deltaHprime =  2.0 * Math.sqrt(C1prime*C2prime) * Math.sin(deltahprime / 2.0);</span>
+<span class="fc" id="L1072">		double SL =  1.0 + ( (0.015*(Lmean - 50)*(Lmean - 50)) / (Math.sqrt( 20 + (Lmean - 50)*(Lmean - 50) )) );</span>
+<span class="fc" id="L1073">		double SC =  1.0 + 0.045 * Cmeanprime;</span>
+<span class="fc" id="L1074">		double SH =  1.0 + 0.015 * Cmeanprime * T;</span>
 
-<span class="fc" id="L1025">		double deltaTheta =  (30 * Math.PI / 180) * Math.exp(-((180/Math.PI*Hmeanprime-275)/25)*((180/Math.PI*Hmeanprime-275)/25));</span>
-<span class="fc" id="L1026">		double RC =  (2 * Math.sqrt(Math.pow(Cmeanprime, 7) / (Math.pow(Cmeanprime, 7) + Math.pow(25, 7))));</span>
-<span class="fc" id="L1027">		double RT =  (-RC * Math.sin(2 * deltaTheta));</span>
+<span class="fc" id="L1076">		double deltaTheta =  (30 * Math.PI / 180) * Math.exp(-((180/Math.PI*Hmeanprime-275)/25)*((180/Math.PI*Hmeanprime-275)/25));</span>
+<span class="fc" id="L1077">		double RC =  (2 * Math.sqrt(Math.pow(Cmeanprime, 7) / (Math.pow(Cmeanprime, 7) + Math.pow(25, 7))));</span>
+<span class="fc" id="L1078">		double RT =  (-RC * Math.sin(2 * deltaTheta));</span>
 
-<span class="fc" id="L1029">		double KL = 1;</span>
-<span class="fc" id="L1030">		double KC = 1;</span>
-<span class="fc" id="L1031">		double KH = 1;</span>
+<span class="fc" id="L1080">		double KL = 1;</span>
+<span class="fc" id="L1081">		double KC = 1;</span>
+<span class="fc" id="L1082">		double KH = 1;</span>
 
-<span class="fc" id="L1033">		double deltaE = Math.sqrt(</span>
+<span class="fc" id="L1084">		double deltaE = Math.sqrt(</span>
 				((deltaLprime/(KL*SL)) * (deltaLprime/(KL*SL))) +
 				((deltaCprime/(KC*SC)) * (deltaCprime/(KC*SC))) +
 				((deltaHprime/(KH*SH)) * (deltaHprime/(KH*SH))) +
 				(RT * (deltaCprime/(KC*SC)) * (deltaHprime/(KH*SH)))
 				);
 
-<span class="fc" id="L1040">		return deltaE;</span>
+<span class="fc" id="L1091">		return deltaE;</span>
     }
 
     /**
@@ -1053,8 +1104,8 @@ import java.util.List;
      */
     public void rgbToCIEXYZ(int r, int g, int b, float[] outputCIEXYZ) {
 
-<span class="nc bnc" id="L1056" title="All 4 branches missed.">        if (outputCIEXYZ == null || outputCIEXYZ.length != 3) {</span>
-<span class="nc" id="L1057">            throw new IllegalArgumentException(&quot;outputCIEXYZ has to be length 3&quot;);</span>
+<span class="nc bnc" id="L1107" title="All 4 branches missed.">        if (outputCIEXYZ == null || outputCIEXYZ.length != 3) {</span>
+<span class="nc" id="L1108">            throw new IllegalArgumentException(&quot;outputCIEXYZ has to be length 3&quot;);</span>
         }
 
         /*
@@ -1063,16 +1114,16 @@ import java.util.List;
             | Z |    0.17697  | 0.00     0.01      0.99     |   | B |
         */
 
-<span class="nc" id="L1066">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
+<span class="nc" id="L1117">        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;</span>
 
-<span class="nc" id="L1068">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
+<span class="nc" id="L1119">        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;</span>
 
-<span class="nc" id="L1070">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
+<span class="nc" id="L1121">        float capZ = (0.01f * g + 0.99f * b)/0.17697f;</span>
 
-<span class="nc" id="L1072">        outputCIEXYZ[0] = capX;</span>
-<span class="nc" id="L1073">        outputCIEXYZ[1] = capY;</span>
-<span class="nc" id="L1074">        outputCIEXYZ[2] = capZ;</span>
-<span class="nc" id="L1075">    }</span>
+<span class="nc" id="L1123">        outputCIEXYZ[0] = capX;</span>
+<span class="nc" id="L1124">        outputCIEXYZ[1] = capY;</span>
+<span class="nc" id="L1125">        outputCIEXYZ[2] = capZ;</span>
+<span class="nc" id="L1126">    }</span>
 
     /**
      * convert CIE XYZ (1931) to rgb.
@@ -1092,50 +1143,50 @@ import java.util.List;
             | B |   |  0.00092090 -0.0025498  0.17860  |   | Z |
         */
 
-<span class="nc" id="L1095">        float capR = (0.41847f * cieX +  -0.15866f * cieY + -0.082835f * cieZ);</span>
+<span class="nc" id="L1146">        float capR = (0.41847f * cieX +  -0.15866f * cieY + -0.082835f * cieZ);</span>
 
-<span class="nc" id="L1097">        float capG = (-0.091169f * cieX +  0.25243f * cieY + 0.015708f * cieZ);</span>
+<span class="nc" id="L1148">        float capG = (-0.091169f * cieX +  0.25243f * cieY + 0.015708f * cieZ);</span>
 
-<span class="nc" id="L1099">        float capB = (0.00092090f * cieX +  -0.0025498f * cieY + 0.17860f * cieZ);</span>
+<span class="nc" id="L1150">        float capB = (0.00092090f * cieX +  -0.0025498f * cieY + 0.17860f * cieZ);</span>
 
-<span class="nc" id="L1101">        return new int[]{(int)capR, (int)capG, (int)capB};</span>
+<span class="nc" id="L1152">        return new int[]{(int)capR, (int)capG, (int)capB};</span>
     }
 
     public List&lt;Double&gt; calcAvgAndStdDevXY(int[] r, int[] g, int[] b) {
 
-<span class="nc" id="L1106">        double xSum = 0;</span>
-<span class="nc" id="L1107">        double ySum = 0;</span>
-<span class="nc" id="L1108">        float[] x = new float[r.length];</span>
-<span class="nc" id="L1109">        float[] y = new float[r.length];</span>
-<span class="nc bnc" id="L1110" title="All 2 branches missed.">        for (int i = 0; i &lt; r.length; i++) {</span>
-<span class="nc" id="L1111">            float[] xy = rgbToXYChromaticity(r[i], g[i], b[i]);</span>
-<span class="nc" id="L1112">            x[i] = xy[0];</span>
-<span class="nc" id="L1113">            y[i] = xy[1];</span>
-<span class="nc" id="L1114">            xSum += xy[0];</span>
-<span class="nc" id="L1115">            ySum += xy[1];</span>
-<span class="nc" id="L1116">            i++;</span>
+<span class="nc" id="L1157">        double xSum = 0;</span>
+<span class="nc" id="L1158">        double ySum = 0;</span>
+<span class="nc" id="L1159">        float[] x = new float[r.length];</span>
+<span class="nc" id="L1160">        float[] y = new float[r.length];</span>
+<span class="nc bnc" id="L1161" title="All 2 branches missed.">        for (int i = 0; i &lt; r.length; i++) {</span>
+<span class="nc" id="L1162">            float[] xy = rgbToXYChromaticity(r[i], g[i], b[i]);</span>
+<span class="nc" id="L1163">            x[i] = xy[0];</span>
+<span class="nc" id="L1164">            y[i] = xy[1];</span>
+<span class="nc" id="L1165">            xSum += xy[0];</span>
+<span class="nc" id="L1166">            ySum += xy[1];</span>
+<span class="nc" id="L1167">            i++;</span>
         }
-<span class="nc" id="L1118">        double avgX = xSum/(double)r.length;</span>
-<span class="nc" id="L1119">        double avgY = ySum/(double)r.length;</span>
+<span class="nc" id="L1169">        double avgX = xSum/(double)r.length;</span>
+<span class="nc" id="L1170">        double avgY = ySum/(double)r.length;</span>
 
-<span class="nc" id="L1121">        xSum = 0;</span>
-<span class="nc" id="L1122">        ySum = 0;</span>
-<span class="nc bnc" id="L1123" title="All 2 branches missed.">        for (int i = 0; i &lt; r.length; i++) {</span>
-<span class="nc" id="L1124">            double diffX = x[i] - avgX;</span>
-<span class="nc" id="L1125">            double diffY = y[i] - avgY;</span>
-<span class="nc" id="L1126">            xSum += (diffX * diffX);</span>
-<span class="nc" id="L1127">            ySum += (diffY * diffY);</span>
+<span class="nc" id="L1172">        xSum = 0;</span>
+<span class="nc" id="L1173">        ySum = 0;</span>
+<span class="nc bnc" id="L1174" title="All 2 branches missed.">        for (int i = 0; i &lt; r.length; i++) {</span>
+<span class="nc" id="L1175">            double diffX = x[i] - avgX;</span>
+<span class="nc" id="L1176">            double diffY = y[i] - avgY;</span>
+<span class="nc" id="L1177">            xSum += (diffX * diffX);</span>
+<span class="nc" id="L1178">            ySum += (diffY * diffY);</span>
         }
-<span class="nc" id="L1129">        double stDevX = Math.sqrt(xSum/((double)r.length - 1));</span>
-<span class="nc" id="L1130">        double stDevY = Math.sqrt(ySum/((double)r.length - 1));</span>
+<span class="nc" id="L1180">        double stDevX = Math.sqrt(xSum/((double)r.length - 1));</span>
+<span class="nc" id="L1181">        double stDevY = Math.sqrt(ySum/((double)r.length - 1));</span>
 
-<span class="nc" id="L1132">        List&lt;Double&gt; list = new ArrayList&lt;Double&gt;();</span>
-<span class="nc" id="L1133">        list.add(Double.valueOf(avgX));</span>
-<span class="nc" id="L1134">        list.add(Double.valueOf(avgY));</span>
-<span class="nc" id="L1135">        list.add(Double.valueOf(stDevX));</span>
-<span class="nc" id="L1136">        list.add(Double.valueOf(stDevY));</span>
+<span class="nc" id="L1183">        List&lt;Double&gt; list = new ArrayList&lt;Double&gt;();</span>
+<span class="nc" id="L1184">        list.add(Double.valueOf(avgX));</span>
+<span class="nc" id="L1185">        list.add(Double.valueOf(avgY));</span>
+<span class="nc" id="L1186">        list.add(Double.valueOf(stDevX));</span>
+<span class="nc" id="L1187">        list.add(Double.valueOf(stDevY));</span>
 
-<span class="nc" id="L1138">        return list;</span>
+<span class="nc" id="L1189">        return list;</span>
     }
 
     /**
@@ -1147,11 +1198,11 @@ import java.util.List;
      */
     public boolean isWhite(float cieX, float cieY) {
 
-<span class="nc" id="L1150">        double diffX = Math.abs(cieX - 0.35);</span>
+<span class="nc" id="L1201">        double diffX = Math.abs(cieX - 0.35);</span>
 
-<span class="nc" id="L1152">        double diffY = Math.abs(cieY - 0.35);</span>
+<span class="nc" id="L1203">        double diffY = Math.abs(cieY - 0.35);</span>
 
-<span class="nc bnc" id="L1154" title="All 4 branches missed.">        return ((diffX &lt;= deltaWhite) &amp;&amp; (diffY &lt;= deltaWhite));</span>
+<span class="nc bnc" id="L1205" title="All 4 branches missed.">        return ((diffX &lt;= deltaWhite) &amp;&amp; (diffY &lt;= deltaWhite));</span>
     }
 
     /**
@@ -1165,13 +1216,13 @@ import java.util.List;
      */
     public boolean isWhite2(float cieX, float cieY) {
 
-<span class="nc" id="L1168">        double diffX = Math.abs(cieX - 0.35);</span>
+<span class="nc" id="L1219">        double diffX = Math.abs(cieX - 0.35);</span>
 
-<span class="nc" id="L1170">        double diffY = Math.abs(cieY - 0.35);</span>
+<span class="nc" id="L1221">        double diffY = Math.abs(cieY - 0.35);</span>
 
-<span class="nc" id="L1172">        double delta = 2.*(0.1/7.);</span>
+<span class="nc" id="L1223">        double delta = 2.*(0.1/7.);</span>
 
-<span class="nc bnc" id="L1174" title="All 4 branches missed.">        return ((diffX &lt;= delta) &amp;&amp; (diffY &lt;= delta));</span>
+<span class="nc bnc" id="L1225" title="All 4 branches missed.">        return ((diffX &lt;= delta) &amp;&amp; (diffY &lt;= delta));</span>
     }
 
     /**
@@ -1198,24 +1249,24 @@ import java.util.List;
      */
     public double calculateXYTheta(float cieX, float cieY) {
 
-<span class="nc bnc" id="L1201" title="All 2 branches missed.">        if (cieX == 0.35) {</span>
-<span class="nc bnc" id="L1202" title="All 2 branches missed.">            if (cieY &gt; (0.35 + deltaWhite)) {</span>
-<span class="nc" id="L1203">                return Math.PI/2.;</span>
-<span class="nc bnc" id="L1204" title="All 2 branches missed.">            } else if (cieY &lt; (0.35 - deltaWhite)) {</span>
-<span class="nc" id="L1205">                return 1.5 * Math.PI;</span>
+<span class="nc bnc" id="L1252" title="All 2 branches missed.">        if (cieX == 0.35) {</span>
+<span class="nc bnc" id="L1253" title="All 2 branches missed.">            if (cieY &gt; (0.35 + deltaWhite)) {</span>
+<span class="nc" id="L1254">                return Math.PI/2.;</span>
+<span class="nc bnc" id="L1255" title="All 2 branches missed.">            } else if (cieY &lt; (0.35 - deltaWhite)) {</span>
+<span class="nc" id="L1256">                return 1.5 * Math.PI;</span>
             } else {
                 // this should have been found as white to avoid use here
-<span class="nc" id="L1208">                return -1;</span>
+<span class="nc" id="L1259">                return -1;</span>
             }
         }
 
-<span class="nc" id="L1212">        double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);</span>
+<span class="nc" id="L1263">        double theta = MiscMath.calculatePolarTheta(cieX - 0.35f, cieY - 0.35f);</span>
 
-<span class="nc" id="L1214">        return theta;</span>
+<span class="nc" id="L1265">        return theta;</span>
     }
 
-<span class="fc" id="L1217">    private static double wd = Math.sqrt(Math.pow((0.425 - 0.275), 2) +</span>
-<span class="fc" id="L1218">        Math.pow((0.3875 - 0.2625), 2));</span>
+<span class="fc" id="L1268">    private static double wd = Math.sqrt(Math.pow((0.425 - 0.275), 2) +</span>
+<span class="fc" id="L1269">        Math.pow((0.3875 - 0.2625), 2));</span>
 
     /**
      * Is within the bounds of large white central region in the CIE 1931 xy
@@ -1245,12 +1296,12 @@ import java.util.List;
                  --------------------------------
                   sqrt( (x2-x1)^2 + (y2-y1)^2) )
         */
-<span class="nc" id="L1248">        double numer = Math.abs((0.425 - 0.275) * (0.2625 - cieY)</span>
+<span class="nc" id="L1299">        double numer = Math.abs((0.425 - 0.275) * (0.2625 - cieY)</span>
             - (0.275 - cieX) * (0.3875 - 0.2625));
 
-<span class="nc" id="L1251">        double dist = numer/wd;</span>
+<span class="nc" id="L1302">        double dist = numer/wd;</span>
 
-<span class="nc bnc" id="L1253" title="All 2 branches missed.">        return (dist &lt;= 0.03333);//(dist &lt;= 0.075);</span>
+<span class="nc bnc" id="L1304" title="All 2 branches missed.">        return (dist &lt;= 0.03333);//(dist &lt;= 0.075);</span>
     }
 
     /**
@@ -1271,20 +1322,126 @@ import java.util.List;
         * b* -113 to 99
         */
         
-<span class="nc" id="L1274">        float diff1 = Math.abs(ell1 - ell2)/104.5f;</span>
-<span class="nc" id="L1275">        float diff2 = Math.abs(a1 - a2)/(103f + 190f);</span>
-<span class="nc" id="L1276">        float diff3 = Math.abs(b1 - b2)/(99f + 113.f);</span>
+<span class="nc" id="L1325">        float diff1 = Math.abs(ell1 - ell2)/104.5f;</span>
+<span class="nc" id="L1326">        float diff2 = Math.abs(a1 - a2)/(103f + 190f);</span>
+<span class="nc" id="L1327">        float diff3 = Math.abs(b1 - b2)/(99f + 113.f);</span>
         
-<span class="nc" id="L1278">        return (diff1 + diff2 + diff3)/3.f;</span>
+<span class="nc" id="L1329">        return (diff1 + diff2 + diff3)/3.f;</span>
     }
     
     /**
-     * calculate the difference in L, U, V 1976 between between the two sets and
+     * calculate the difference in L, U, V 1976 WideRangeLightness
+     * between between the two sets and
      * normalize the values to a sum of &quot;1&quot; using the range of values
-     * possible from the use of a standard illuminant, D65.
+     * possible.
      * 
+     * * uses standard illuminant &quot;wide range lightness&quot;.
+     * Wide-range Lightness data were generated by Fairchild et al., 
+     * who conducted two different experiments to scale lightness above and 
+     * below diffuse white (CIE * L = 100 ). 
+     * In the Scaling Lightness Experiment 1 (SL1) they used a luminance
+       range from 156 to 2 3692cd m with 2 842 Y cd m n = 
+       (Yn represents the luminance of reference white) 
+      whereas in the Scaling Lightness Experiment 2 (SL2) the
+      luminance range was extended from 0 to 2 7432cd m with 2 997 Y cd m n = . 
+     The SL2 data set was used to drive the adapted lightness ( z J ) 
+     formula of the proposed color space (see later) while the SL1 data set was 
+     used as a test data set. Each of the sets includes 19 samples. 
+
+     * https://www.osapublishing.org/DirectPDFAccess/B810E9AE-C7C9-E594-C72DC7FBE1424F0A_368272/oe-25-13-15131.pdf?da=1&amp;id=368272&amp;seq=0&amp;mobile=no
+     * 
+     * SL2 Training D65/2° (x,y,z)=968.08 997 883.51 
+     * L_a=199 
+     * C=0.69. N_C=1, F=1 
+     *
      * @return 
      */
+    public float calcNormalizedDifferenceLUV_WideRangeLightness(
+        int r1, int g1, int b1, int r2, int g2, int b2) {
+       
+<span class="nc" id="L1362">        float[] luv1 = rgbToCIELUV_WideRangeLightness(r1, g1, b1);</span>
+<span class="nc" id="L1363">        float[] luv2 = rgbToCIELUV_WideRangeLightness(r2, g2, b2);</span>
+        
+<span class="nc" id="L1365">        return calcNormalizedDifferenceLUV_WideRangeLightness(luv1, luv2);</span>
+    }
+    
+    /**
+     * calculate the difference in L, U, V 1976 WideRangeLightness
+     * between between the two sets and
+     * normalize the values to a sum of &quot;1&quot; using the range of values
+     * possible.
+     * 
+     * * uses standard illuminant &quot;wide range lightness&quot;.
+     * Wide-range Lightness data were generated by Fairchild et al., 
+     * who conducted two different experiments to scale lightness above and 
+     * below diffuse white (CIE * L = 100 ). 
+     * In the Scaling Lightness Experiment 1 (SL1) they used a luminance
+       range from 156 to 2 3692cd m with 2 842 Y cd m n = 
+       (Yn represents the luminance of reference white) 
+      whereas in the Scaling Lightness Experiment 2 (SL2) the
+      luminance range was extended from 0 to 2 7432cd m with 2 997 Y cd m n = . 
+     The SL2 data set was used to drive the adapted lightness ( z J ) 
+     formula of the proposed color space (see later) while the SL1 data set was 
+     used as a test data set. Each of the sets includes 19 samples. 
+
+     * https://www.osapublishing.org/DirectPDFAccess/B810E9AE-C7C9-E594-C72DC7FBE1424F0A_368272/oe-25-13-15131.pdf?da=1&amp;id=368272&amp;seq=0&amp;mobile=no
+     * 
+     * SL2 Training D65/2° (x,y,z)=968.08 997 883.51 
+     * L_a=199 
+     * C=0.69. N_C=1, F=1 
+     *
+     * @return 
+     */
+    public float calcNormalizedDifferenceLUV_WideRangeLightness(
+        float[] luv1, int r2, int g2, int b2) {
+       
+<span class="nc" id="L1398">        float[] luv2 = rgbToCIELUV_WideRangeLightness(r2, g2, b2);</span>
+         
+<span class="nc" id="L1400">        return calcNormalizedDifferenceLUV_WideRangeLightness(luv1, luv2);</span>
+    }
+    
+    /**
+     * calculate the difference in L, U, V 1976 WideRangeLightness
+     * between between the two sets and
+     * normalize the values to a sum of &quot;1&quot; using the range of values
+     * possible.
+     * 
+     * * uses standard illuminant &quot;wide range lightness&quot;.
+     * Wide-range Lightness data were generated by Fairchild et al., 
+     * who conducted two different experiments to scale lightness above and 
+     * below diffuse white (CIE * L = 100 ). 
+     * In the Scaling Lightness Experiment 1 (SL1) they used a luminance
+       range from 156 to 2 3692cd m with 2 842 Y cd m n = 
+       (Yn represents the luminance of reference white) 
+      whereas in the Scaling Lightness Experiment 2 (SL2) the
+      luminance range was extended from 0 to 2 7432cd m with 2 997 Y cd m n = . 
+     The SL2 data set was used to drive the adapted lightness ( z J ) 
+     formula of the proposed color space (see later) while the SL1 data set was 
+     used as a test data set. Each of the sets includes 19 samples. 
+
+     * https://www.osapublishing.org/DirectPDFAccess/B810E9AE-C7C9-E594-C72DC7FBE1424F0A_368272/oe-25-13-15131.pdf?da=1&amp;id=368272&amp;seq=0&amp;mobile=no
+     * 
+     * SL2 Training D65/2° (x,y,z)=968.08 997 883.51 
+     * L_a=199 
+     * C=0.69. N_C=1, F=1 
+     *
+     * @return 
+     */
+    public float calcNormalizedDifferenceLUV_WideRangeLightness(
+        float[] luv1, float[] luv2) {
+       
+        /*
+        * L       0 to 104.8
+        * u   -99.9 to 176.8
+        * v  -150.0 to 95.0
+        */        
+<span class="fc" id="L1438">        float diff1 = Math.abs(luv1[0] - luv2[1])/104.8f;</span>
+<span class="fc" id="L1439">        float diff2 = Math.abs(luv1[1] - luv2[1])/(176.8f + 99.9f);</span>
+<span class="fc" id="L1440">        float diff3 = Math.abs(luv1[2] - luv2[2])/(95.0f + 150.0f);</span>
+        
+<span class="fc" id="L1442">        return (diff1 + diff2 + diff3)/3.f;</span>
+    }
+    
     public float calcNormalizedDifferenceLUV(float ell1, float u1, float v1,
         float ell2, float u2, float v2) {
        
@@ -1296,11 +1453,11 @@ import java.util.List;
         * v  -141.4 to 112.3
         */
         
-<span class="nc" id="L1299">        float diff1 = Math.abs(ell1 - ell2)/104.5f;</span>
-<span class="nc" id="L1300">        float diff2 = Math.abs(u1 - u2)/(183.8f + 86.9f);</span>
-<span class="nc" id="L1301">        float diff3 = Math.abs(v1 - v2)/(112.3f + 141.4f);</span>
+<span class="nc" id="L1456">        float diff1 = Math.abs(ell1 - ell2)/104.5f;</span>
+<span class="nc" id="L1457">        float diff2 = Math.abs(u1 - u2)/(183.8f + 86.9f);</span>
+<span class="nc" id="L1458">        float diff3 = Math.abs(v1 - v2)/(112.3f + 141.4f);</span>
         
-<span class="nc" id="L1303">        return (diff1 + diff2 + diff3)/3.f;</span>
+<span class="nc" id="L1460">        return (diff1 + diff2 + diff3)/3.f;</span>
     }
     
 }

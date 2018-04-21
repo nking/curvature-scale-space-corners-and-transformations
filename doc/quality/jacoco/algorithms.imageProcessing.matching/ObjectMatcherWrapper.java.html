@@ -81,105 +81,98 @@ import java.util.Set;
 <span class="fc" id="L81">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
 <span class="fc" id="L83">        searchImage = imageProcessor.binImage(searchImage, binFactor1);</span>
-
-        /*
-        GreyscaleImage theta1 = imageProcessor.createCIELUVTheta(imgs0[0], 255);
-        MiscDebug.writeImage(theta1, fileName1Root + &quot;_theta_0&quot;);
-        theta1 = imageProcessor.createCIELUVTheta(img, 255);
-        MiscDebug.writeImage(theta1, fileName1Root + &quot;_theta_1&quot;);
-        */
         
-<span class="fc" id="L92">        return _run_matcher(binnedTemplateAndMask, shape0, searchImage, debugLabel);</span>
+<span class="fc" id="L85">        return _run_matcher(binnedTemplateAndMask, shape0, searchImage, debugLabel);</span>
     }
    
     private List&lt;CorrespondenceList&gt; _run_matcher(ImageExt[] imgs0, Set&lt;PairInt&gt; shape0, 
         ImageExt img, String debugLabel) throws IOException {
         
-<span class="fc" id="L98">        this.templateImage = imgs0;</span>
-<span class="fc" id="L99">        this.searchImage = img;</span>
+<span class="fc" id="L91">        this.templateImage = imgs0;</span>
+<span class="fc" id="L92">        this.searchImage = img;</span>
 
-<span class="fc" id="L101">        ObjectMatcher.Settings settings = new ObjectMatcher.Settings();</span>
-<span class="fc" id="L102">        settings.setToUseLargerPyramid0();</span>
-<span class="fc" id="L103">        settings.setToUseLargerPyramid1();</span>
+<span class="fc" id="L94">        ObjectMatcher.Settings settings = new ObjectMatcher.Settings();</span>
+<span class="fc" id="L95">        settings.setToUseLargerPyramid0();</span>
+<span class="fc" id="L96">        settings.setToUseLargerPyramid1();</span>
 
-<span class="fc" id="L105">        ObjectMatcher objMatcher = new ObjectMatcher();</span>
-<span class="fc" id="L106">        objMatcher.setToDebug();</span>
+<span class="fc" id="L98">        ObjectMatcher objMatcher = new ObjectMatcher();</span>
+<span class="fc" id="L99">        objMatcher.setToDebug();</span>
 
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (debugLabel != null) {</span>
-<span class="fc" id="L109">            objMatcher.setToDebug();  </span>
-<span class="fc" id="L110">            settings.setDebugLabel(debugLabel);</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (debugLabel != null) {</span>
+<span class="fc" id="L102">            objMatcher.setToDebug();  </span>
+<span class="fc" id="L103">            settings.setDebugLabel(debugLabel);</span>
         }
 
         //settings.setToExcludeColorFilter();
 
-<span class="fc" id="L115">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L108">        long t0 = System.currentTimeMillis();</span>
         
-<span class="fc" id="L117">        List&lt;CorrespondenceList&gt; corresList </span>
+<span class="fc" id="L110">        List&lt;CorrespondenceList&gt; corresList </span>
             //= objMatcher.findObject11(
-<span class="fc" id="L119">            = objMatcher.findObject12(imgs0[0], shape0, img, settings);</span>
+<span class="fc" id="L112">            = objMatcher.findObject12(imgs0[0], shape0, img, settings);</span>
 
-<span class="fc" id="L121">        long t1 = System.currentTimeMillis();</span>
-<span class="fc" id="L122">        System.out.println(&quot;matching took &quot; + ((t1 - t0)/1000.) + &quot; sec&quot;);</span>
+<span class="fc" id="L114">        long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L115">        System.out.println(&quot;matching took &quot; + ((t1 - t0)/1000.) + &quot; sec&quot;);</span>
 
-<span class="fc" id="L124">        return corresList;</span>
+<span class="fc" id="L117">        return corresList;</span>
     }
     
     public ImageExt[] maskAndBin2(String templateFilePath,
         String templateMaskFilePath, Set&lt;PairInt&gt; outputShape) throws 
         IOException {
         
-<span class="fc" id="L131">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L124">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
         //String fileNameMask0 = fileNames[1];
         //String filePathMask0 = ResourceFinder
         //    .findFileInTestResources(fileNameMask0);
-<span class="fc" id="L136">        ImageExt imgMask0 = ImageIOHelper.readImageExt(templateMaskFilePath);</span>
+<span class="fc" id="L129">        ImageExt imgMask0 = ImageIOHelper.readImageExt(templateMaskFilePath);</span>
 
         //String fileName0 = fileNames[0];
         //String filePath0 = ResourceFinder
         //    .findFileInTestResources(fileName0);
-<span class="fc" id="L141">        ImageExt img0 = ImageIOHelper.readImageExt(templateFilePath);</span>
+<span class="fc" id="L134">        ImageExt img0 = ImageIOHelper.readImageExt(templateFilePath);</span>
     
-<span class="fc" id="L143">        int w0 = img0.getWidth();</span>
-<span class="fc" id="L144">        int h0 = img0.getHeight();</span>
+<span class="fc" id="L136">        int w0 = img0.getWidth();</span>
+<span class="fc" id="L137">        int h0 = img0.getHeight();</span>
 
-<span class="fc" id="L146">        int binFactor0 = (int) Math.ceil(Math.max(</span>
+<span class="fc" id="L139">        int binFactor0 = (int) Math.ceil(Math.max(</span>
              (float) w0 / maxDimension,
              (float) h0 / maxDimension));
         
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (binFactor0 != 1) {</span>
-<span class="fc" id="L151">            img0 = imageProcessor.binImage(img0, binFactor0);</span>
-<span class="fc" id="L152">            imgMask0 = imageProcessor.binImage(imgMask0, binFactor0);</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (binFactor0 != 1) {</span>
+<span class="fc" id="L144">            img0 = imageProcessor.binImage(img0, binFactor0);</span>
+<span class="fc" id="L145">            imgMask0 = imageProcessor.binImage(imgMask0, binFactor0);</span>
         }
         
-<span class="fc" id="L155">        ImageExt img0Masked = img0.copyToImageExt();</span>
+<span class="fc" id="L148">        ImageExt img0Masked = img0.copyToImageExt();</span>
                 
-<span class="pc bpc" id="L157" title="3 of 4 branches missed.">        assert(imgMask0.getNPixels() == img0.getNPixels());</span>
+<span class="pc bpc" id="L150" title="3 of 4 branches missed.">        assert(imgMask0.getNPixels() == img0.getNPixels());</span>
 
-<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (int i = 0; i &lt; imgMask0.getNPixels(); ++i) {</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">            if (imgMask0.getR(i) == 0) {</span>
-<span class="fc" id="L161">                img0Masked.setRGB(i, 0, 0, 0);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = 0; i &lt; imgMask0.getNPixels(); ++i) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            if (imgMask0.getR(i) == 0) {</span>
+<span class="fc" id="L154">                img0Masked.setRGB(i, 0, 0, 0);</span>
             } else {
-<span class="fc" id="L163">                outputShape.add(new PairInt(imgMask0.getCol(i), </span>
-<span class="fc" id="L164">                    imgMask0.getRow(i)));</span>
+<span class="fc" id="L156">                outputShape.add(new PairInt(imgMask0.getCol(i), </span>
+<span class="fc" id="L157">                    imgMask0.getRow(i)));</span>
             }
         }
    
-<span class="fc" id="L168">        return new ImageExt[]{img0, img0Masked};</span>
+<span class="fc" id="L161">        return new ImageExt[]{img0, img0Masked};</span>
     }
 
     /**
      * @return the templateImage
      */
     public ImageExt[] getTemplateImage() {
-<span class="fc" id="L175">        return templateImage;</span>
+<span class="fc" id="L168">        return templateImage;</span>
     }
 
     /**
      * @return the searchImage
      */
     public ImageExt getSearchImage() {
-<span class="fc" id="L182">        return searchImage;</span>
+<span class="fc" id="L175">        return searchImage;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -607,46 +607,46 @@ public class MSER {
     public List&lt;Region&gt; findRegionsNeg(int[] greyscale, int width,
         int height, Threshold threshold) {
         
-<span class="fc" id="L610">        int delta = 2;</span>
+<span class="nc" id="L610">        int delta = 2;</span>
         double minArea;
-<span class="fc" id="L612">        double maxArea = 0.25;//0.1;</span>
-<span class="fc" id="L613">        double maxVariation = 0.5;</span>
-<span class="fc" id="L614">        double minDiversity = 0.5;</span>
-<span class="fc bfc" id="L615" title="All 2 branches covered.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
-<span class="fc" id="L616">            minArea = 0.1;</span>
-<span class="pc bpc" id="L617" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
+<span class="nc" id="L612">        double maxArea = 0.25;//0.1;</span>
+<span class="nc" id="L613">        double maxVariation = 0.5;</span>
+<span class="nc" id="L614">        double minDiversity = 0.5;</span>
+<span class="nc bnc" id="L615" title="All 2 branches missed.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
+<span class="nc" id="L616">            minArea = 0.1;</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
 <span class="nc" id="L618">            minArea = 0.01;</span>
-<span class="pc bpc" id="L619" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
-<span class="fc" id="L620">            minArea = 0.001;</span>
+<span class="nc bnc" id="L619" title="All 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
+<span class="nc" id="L620">            minArea = 0.001;</span>
             //NOTE: temporary edit...might change
-<span class="fc" id="L622">            minDiversity = 0.995;</span>
+<span class="nc" id="L622">            minDiversity = 0.995;</span>
         } else {
 <span class="nc" id="L624">            minArea = 0.0005;</span>
         }
         
-<span class="fc" id="L627">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+<span class="nc" id="L627">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, false);
 
-<span class="fc" id="L630">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
+<span class="nc" id="L630">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
    
         // Invert the pixel values
-<span class="fc bfc" id="L633" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
-<span class="fc" id="L634">            greyscale[i] = ~greyscale[i];</span>
-<span class="pc bpc" id="L635" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
-<span class="fc" id="L636">                greyscale[i] += 256;</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">        for (int i = 0; i &lt; width * height; ++i) {</span>
+<span class="nc" id="L634">            greyscale[i] = ~greyscale[i];</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
+<span class="nc" id="L636">                greyscale[i] += 256;</span>
             }
         }
 
-<span class="fc" id="L640">        mser4.operator(greyscale, width, height, regions);</span>
+<span class="nc" id="L640">        mser4.operator(greyscale, width, height, regions);</span>
 
-<span class="fc" id="L642">        long stop = System.currentTimeMillis();</span>
+<span class="nc" id="L642">        long stop = System.currentTimeMillis();</span>
 
         //System.out.println(
         //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
         //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
         //    + ((stop - start) / 1000) + &quot;s.&quot;);
 
-<span class="fc" id="L649">        return regions;</span>
+<span class="nc" id="L649">        return regions;</span>
     }
     
     /**

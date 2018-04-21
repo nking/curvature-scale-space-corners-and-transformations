@@ -667,16 +667,16 @@ public class Sky {
                         
                         // prefer those without any purple if exist
 <span class="fc bfc" id="L669" title="All 2 branches covered.">                        boolean doNotSet = maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="fc bfc" id="L670" title="All 4 branches covered.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
+<span class="pc bpc" id="L670" title="2 of 4 branches missed.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
                             norm[5] &gt; 0;
                         
-<span class="fc bfc" id="L673" title="All 2 branches covered.">                        if (!doNotSet) {</span>
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">                        if (!doNotSet) {</span>
 <span class="fc" id="L674">                            maxAvgIfBlue = avg;</span>
 <span class="fc" id="L675">                            maxAvgIdx = idx;</span>
                         }
                         
-<span class="pc bpc" id="L678" title="3 of 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="nc bnc" id="L679" title="All 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
+<span class="pc bpc" id="L678" title="1 of 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
+<span class="pc bpc" id="L679" title="1 of 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
 <span class="nc" id="L680">                        maxAvgIfBlue = avg;</span>
 <span class="nc" id="L681">                        maxAvgIdx = idx;</span>
                     }
@@ -802,12 +802,12 @@ public class Sky {
 <span class="fc" id="L802">                            float intersection = clrHist.intersection(hist, rHist);</span>
 <span class="fc" id="L803">                            System.out.println(&quot; inter=&quot; + intersection + &quot; &quot;</span>
 <span class="fc" id="L804">                                + Arrays.toString(hist));</span>
-<span class="fc bfc" id="L805" title="All 2 branches covered.">                            if (intersection &gt; 0.5) {</span>
-<span class="fc" id="L806">                                keep = false;</span>
-<span class="fc" id="L807">                                break;</span>
+<span class="pc bpc" id="L805" title="1 of 2 branches missed.">                            if (intersection &gt; 0.5) {</span>
+<span class="nc" id="L806">                                keep = false;</span>
+<span class="nc" id="L807">                                break;</span>
                             }
                         }
-<span class="fc bfc" id="L810" title="All 2 branches covered.">                        if (keep) {</span>
+<span class="pc bpc" id="L810" title="1 of 2 branches missed.">                        if (keep) {</span>
 <span class="fc" id="L811">                            filtered.add(idx);</span>
                         }
 <span class="fc" id="L813">                    }</span>
@@ -835,8 +835,8 @@ public class Sky {
 
 <span class="fc bfc" id="L836" title="All 2 branches covered.">        if (sun != null) {</span>
 <span class="fc" id="L837">            sky.add(sun);</span>
-<span class="pc bpc" id="L838" title="1 of 4 branches missed.">        } else if (rbs != null &amp;&amp; !rbs.isEmpty()) {</span>
-<span class="fc" id="L839">            sky.addAll(rbs);</span>
+<span class="pc bpc" id="L838" title="3 of 4 branches missed.">        } else if (rbs != null &amp;&amp; !rbs.isEmpty()) {</span>
+<span class="nc" id="L839">            sky.addAll(rbs);</span>
         }
 <span class="fc" id="L841">        return sky;</span>
     }

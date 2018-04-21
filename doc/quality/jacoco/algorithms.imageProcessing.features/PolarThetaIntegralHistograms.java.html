@@ -251,12 +251,12 @@ public class PolarThetaIntegralHistograms {
 <span class="pc bpc" id="L251" title="1 of 2 branches missed.">        if (r == 0) {</span>
 <span class="nc" id="L252">            r0 = 0;</span>
 <span class="nc" id="L253">            r1 = 0;</span>
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        } else if ((N_PIX_PER_CELL_DIM &amp; 1) == 1) {</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        } else if ((N_PIX_PER_CELL_DIM &amp; 1) == 1) {</span>
 <span class="fc" id="L255">            r0 = -r;</span>
 <span class="fc" id="L256">            r1 = r;</span>
         } else {
-<span class="nc" id="L258">            r0 = -r;</span>
-<span class="nc" id="L259">            r1 = r - 1;</span>
+<span class="fc" id="L258">            r0 = -r;</span>
+<span class="fc" id="L259">            r1 = r - 1;</span>
         }
                         
         // extract the summed area of each dxd window centered on x,y

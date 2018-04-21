@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GroupPixelLUVWideRangeLightness.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">GroupPixelLUVWideRangeLightness.java</span></div><h1>GroupPixelLUVWideRangeLightness.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import java.util.Set;
+
+/**
+ *
+ * @author nichole
+ */
+public class GroupPixelLUVWideRangeLightness {
+    
+    private float[] avgLUV;
+    private long avgR;
+    private long avgG;
+    private long avgB;
+    private int nPoints;
+    
+<span class="fc" id="L20">    public GroupPixelLUVWideRangeLightness() {</span>
+<span class="fc" id="L21">    }</span>
+
+    /**
+     * resets the internal sums to 0 and sets them with calculated HSB
+     * of points.
+     * 
+     * @param points
+     * @param img 
+     */
+    public void calculateColors(final Set&lt;PairInt&gt; points, ImageExt img) {
+                
+<span class="nc" id="L32">        nPoints = 0;</span>
+<span class="nc" id="L33">        avgR = 0;</span>
+<span class="nc" id="L34">        avgG = 0;</span>
+<span class="nc" id="L35">        avgB = 0;</span>
+        
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+            
+<span class="nc" id="L39">            int pixIdx = img.getInternalIndex(p);</span>
+            
+<span class="nc" id="L41">            avgR += img.getR(pixIdx);</span>
+<span class="nc" id="L42">            avgG += img.getG(pixIdx);</span>
+<span class="nc" id="L43">            avgB += img.getB(pixIdx);</span>
+<span class="nc" id="L44">        }</span>
+                
+<span class="nc" id="L46">        nPoints = points.size();</span>
+        
+<span class="nc" id="L48">        avgR /= nPoints;</span>
+<span class="nc" id="L49">        avgG /= nPoints;</span>
+<span class="nc" id="L50">        avgB /= nPoints;</span>
+        
+<span class="nc" id="L52">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L53">        avgLUV = cieC.rgbToCIELUV_WideRangeLightness((int)getAvgR(), (int)getAvgG(), (int)getAvgB());</span>
+<span class="nc" id="L54">    }</span>
+    
+    /**
+     * resets the internal sums to 0 and sets them with calculated HSB
+     * of points.
+     * 
+     * @param pIdxs pixel indexes
+     * @param img 
+     */
+    public void calculateColors(final TIntSet pIdxs, ImageExt img) {
+        
+<span class="fc" id="L65">        nPoints = 0;</span>
+<span class="fc" id="L66">        avgR = 0;</span>
+<span class="fc" id="L67">        avgG = 0;</span>
+<span class="fc" id="L68">        avgB = 0;</span>
+        
+<span class="fc" id="L70">        TIntIterator iter = pIdxs.iterator();</span>
+        
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+            
+<span class="fc" id="L74">            int pixIdx = iter.next();</span>
+            
+<span class="fc" id="L76">            avgR += img.getR(pixIdx);</span>
+<span class="fc" id="L77">            avgG += img.getG(pixIdx);</span>
+<span class="fc" id="L78">            avgB += img.getB(pixIdx);</span>
+<span class="fc" id="L79">        }</span>
+                
+<span class="fc" id="L81">        nPoints = pIdxs.size();</span>
+        
+<span class="fc" id="L83">        avgR /= nPoints;</span>
+<span class="fc" id="L84">        avgG /= nPoints;</span>
+<span class="fc" id="L85">        avgB /= nPoints;</span>
+        
+<span class="fc" id="L87">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L88">        avgLUV = cieC.rgbToCIELUV_WideRangeLightness((int)getAvgR(), (int)getAvgG(), (int)getAvgB());</span>
+<span class="fc" id="L89">    }</span>
+    
+    /**
+     * adds the calculated LUV of points to the current instance sums.
+     * 
+     * @param points
+     * @param img 
+     */
+    public void add(final Set&lt;PairInt&gt; points, ImageExt img) {
+        
+<span class="nc" id="L99">        avgR *= nPoints;</span>
+<span class="nc" id="L100">        avgG *= nPoints;</span>
+<span class="nc" id="L101">        avgB *= nPoints;</span>
+        
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+            
+<span class="nc" id="L105">            int pixIdx = img.getInternalIndex(p);</span>
+            
+<span class="nc" id="L107">            avgR += img.getR(pixIdx);</span>
+<span class="nc" id="L108">            avgG += img.getG(pixIdx);</span>
+<span class="nc" id="L109">            avgB += img.getB(pixIdx);</span>
+<span class="nc" id="L110">        }</span>
+                
+<span class="nc" id="L112">        nPoints += points.size();</span>
+        
+<span class="nc" id="L114">        avgR /= nPoints;</span>
+<span class="nc" id="L115">        avgG /= nPoints;</span>
+<span class="nc" id="L116">        avgB /= nPoints;</span>
+        
+<span class="nc" id="L118">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L119">        avgLUV = cieC.rgbToCIELUV_WideRangeLightness((int)getAvgR(), (int)getAvgG(), (int)getAvgB());</span>
+<span class="nc" id="L120">    }</span>
+    
+    /**
+     * adds the calculated HSB of points to the current instance sums.
+     * 
+     * @param pIdxs pixel indexes
+     * @param img 
+     */
+    public void add(final TIntSet pIdxs, ImageExt img) {
+        
+<span class="nc" id="L130">        avgR *= nPoints;</span>
+<span class="nc" id="L131">        avgG *= nPoints;</span>
+<span class="nc" id="L132">        avgB *= nPoints;</span>
+        
+<span class="nc" id="L134">        TIntIterator iter = pIdxs.iterator();</span>
+        
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+            
+<span class="nc" id="L138">            int pixIdx = iter.next();</span>
+            
+<span class="nc" id="L140">            avgR += img.getR(pixIdx);</span>
+<span class="nc" id="L141">            avgG += img.getG(pixIdx);</span>
+<span class="nc" id="L142">            avgB += img.getB(pixIdx);</span>
+<span class="nc" id="L143">        }</span>
+                
+<span class="nc" id="L145">        nPoints += pIdxs.size();</span>
+        
+<span class="nc" id="L147">        avgR /= nPoints;</span>
+<span class="nc" id="L148">        avgG /= nPoints;</span>
+<span class="nc" id="L149">        avgB /= nPoints;</span>
+        
+<span class="nc" id="L151">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L152">        avgLUV = cieC.rgbToCIELUV_WideRangeLightness((int)getAvgR(), (int)getAvgG(), (int)getAvgB());</span>
+<span class="nc" id="L153">    }</span>
+    
+    /**
+     * adds the calculated HSB of points to the current instance sums.
+     * 
+     * @param other 
+     */
+    public void add(final GroupPixelLUVWideRangeLightness other) {
+        
+<span class="nc" id="L162">        avgR *= nPoints;</span>
+<span class="nc" id="L163">        avgG *= nPoints;</span>
+<span class="nc" id="L164">        avgB *= nPoints;</span>
+        
+<span class="nc" id="L166">        avgR += other.getAvgR();</span>
+<span class="nc" id="L167">        avgG += other.getAvgG();</span>
+<span class="nc" id="L168">        avgB += other.getAvgB();</span>
+
+<span class="nc" id="L170">        nPoints += other.nPoints;</span>
+        
+<span class="nc" id="L172">        avgR /= nPoints;</span>
+<span class="nc" id="L173">        avgG /= nPoints;</span>
+<span class="nc" id="L174">        avgB /= nPoints;</span>
+        
+<span class="nc" id="L176">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L177">        avgLUV = cieC.rgbToCIELUV_WideRangeLightness((int)getAvgR(), (int)getAvgG(), (int)getAvgB());</span>
+<span class="nc" id="L178">    }</span>
+    
+    public void addPoint(final PairInt point, ImageExt img) {
+                            
+<span class="nc" id="L182">        int pixIdx = img.getInternalIndex(point);</span>
+
+<span class="nc" id="L184">        addPoint(pixIdx, img);</span>
+<span class="nc" id="L185">    }</span>
+    
+    public void addPoint(final int pixIdx, ImageExt img) {
+        
+<span class="nc" id="L189">        avgR *= nPoints;</span>
+<span class="nc" id="L190">        avgG *= nPoints;</span>
+<span class="nc" id="L191">        avgB *= nPoints;</span>
+        
+<span class="nc" id="L193">        avgR += img.getR(pixIdx);</span>
+<span class="nc" id="L194">        avgG += img.getG(pixIdx);</span>
+<span class="nc" id="L195">        avgB += img.getB(pixIdx);</span>
+                
+<span class="nc" id="L197">        nPoints++;</span>
+        
+<span class="nc" id="L199">        avgR /= nPoints;</span>
+<span class="nc" id="L200">        avgG /= nPoints;</span>
+<span class="nc" id="L201">        avgB /= nPoints;</span>
+        
+<span class="nc" id="L203">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L204">        avgLUV = cieC.rgbToCIELUV_WideRangeLightness((int)getAvgR(), (int)getAvgG(), (int)getAvgB());</span>
+        
+<span class="nc" id="L206">    }</span>
+
+    /**
+     * @return the nPoints
+     */
+    public int getNPoints() {
+<span class="nc" id="L212">        return nPoints;</span>
+    }
+    
+    public float[] getAvgLUV() {
+<span class="fc" id="L216">        return avgLUV;</span>
+    }
+
+    public float calculateDifference(GroupPixelLUVWideRangeLightness luv2) {
+
+<span class="nc" id="L221">        CIEChromaticity cieC = new CIEChromaticity();</span>
+        
+<span class="nc" id="L223">        float diff = cieC.calcNormalizedDifferenceLUV_WideRangeLightness(avgLUV, </span>
+<span class="nc" id="L224">            luv2.getAvgLUV());</span>
+        
+<span class="nc" id="L226">        return diff;</span>
+    }
+   
+    /**
+     * values are normalized from 0 to 255 to 0.f to 1.f
+     * @param luv2
+     * @return 
+     */
+    public float calculateRGBDifference(GroupPixelLUVWideRangeLightness luv2) {
+
+<span class="nc" id="L236">        float sumDiff = Math.abs(getAvgR() - luv2.getAvgR()) +</span>
+<span class="nc" id="L237">            Math.abs(getAvgG() - luv2.getAvgG()) + </span>
+<span class="nc" id="L238">            Math.abs(getAvgB() - luv2.getAvgB());</span>
+    
+<span class="nc" id="L240">        sumDiff /= (255.f * 3.f);</span>
+        
+<span class="nc" id="L242">        return sumDiff;</span>
+    }
+    
+    /**
+     * values are normalized from 0 to 255 to 0.f to 1.f
+     * @param luv2
+     * @return 
+     */
+    public float[] calculateRGBDifferences(GroupPixelLUVWideRangeLightness luv2) {
+
+<span class="nc" id="L252">        float[] a = new float[]{</span>
+<span class="nc" id="L253">            Math.abs(getAvgR() - luv2.getAvgR()),</span>
+<span class="nc" id="L254">            Math.abs(getAvgG() - luv2.getAvgG()), </span>
+<span class="nc" id="L255">            Math.abs(getAvgB() - luv2.getAvgB())};</span>
+        
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L258">            a[i] /= 255.f;</span>
+        }
+        
+<span class="nc" id="L261">        return a;</span>
+    }
+
+    /**
+     * @return the avgR
+     */
+    public long getAvgR() {
+<span class="fc" id="L268">        return avgR;</span>
+    }
+
+    /**
+     * @return the avgG
+     */
+    public long getAvgG() {
+<span class="fc" id="L275">        return avgG;</span>
+    }
+
+    /**
+     * @return the avgB
+     */
+    public long getAvgB() {
+<span class="fc" id="L282">        return avgB;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
