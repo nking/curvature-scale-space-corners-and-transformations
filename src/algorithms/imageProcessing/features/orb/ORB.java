@@ -379,7 +379,7 @@ public class ORB {
             MedianTransform mt = new MedianTransform();
             mt.multiscalePyramidalMedianTransform2(img, output, dl);
         } else {
-           output = imageProcessor.buildPyramid2(img, dl, nPyramidB);
+           output = imageProcessor.buildPyramid2(img, dl);
         }
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();

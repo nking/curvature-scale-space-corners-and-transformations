@@ -120,7 +120,7 @@ public class HOGs {
     private final int w;
     private final int h;
 
-    private boolean debug = true;
+    private boolean debug = false;
 
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.

@@ -1044,7 +1044,7 @@ public class MSEREdges {
                 EllipseHelper eh2 = ehs.get(idx2);
                 float orientation2 = (float)(
                     eh2.getOrientation() * 180./Math.PI);
-
+//TODO: revisit 
                 float diffOr = AngleUtil.getAngleDifference(orientation,
                     orientation2);
 

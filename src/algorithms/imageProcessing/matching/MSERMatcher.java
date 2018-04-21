@@ -877,7 +877,7 @@ public class MSERMatcher {
                         double[] hogCosts;
                         float hogCost;
                         
-                        if (false) {// use intersection    
+                        if (true) {// use intersection    
                             //double[]{intersection, f0, f1, count};
                             hogCosts = sumHOGCost2(hogs0, cr0, hogs1, cr1);
                             if (hogCosts == null) {
@@ -969,7 +969,7 @@ public class MSERMatcher {
                         
                         added = bestPerOctave.add(obj);
                         
-                        if (debug) {
+                        if (false && debug) {
                             double cost2 = (float) Math.sqrt(
                                 obj.costs[0]*obj.costs[0] +
                                 obj.costs[1]*obj.costs[1] +
