@@ -582,50 +582,6 @@ public class ImageSegmentation {
         }
     }
 
-    private void removeIsolatedPixels(GreyscaleImage img, int pixValue,
-        int pixNullValue, boolean use8Neighbors) {
-
-        int[] dxs, dys;
-        if (use8Neighbors) {
-            dxs = Misc.dx8;
-            dys = Misc.dy8;
-        } else {
-            dxs = Misc.dx4;
-            dys = Misc.dy4;
-        }
-
-        int w = img.getWidth();
-        int h = img.getHeight();
-
-        for (int x = 0; x < w; ++x) {
-            for (int y = 0; y < h; ++y) {
-                int v = img.getValue(x, y);
-                if (v != pixValue) {
-                    continue;
-                }
-                int count = 0;
-                int nSame = 0;
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) ||
-                        (y2 > (h - 1))) {
-                        continue;
-                    }
-                    count++;
-                    int v2 = img.getValue(x2, y2);
-                    if (v2 == pixValue) {
-                        nSame++;
-                        break;
-                    }
-                }
-                if (nSame == 0) {
-                    img.setValue(x, y, pixNullValue);
-                }
-            }
-        }
-    }
-
     private void mergeEdges(List<Set<PairInt>> clusterPoints,
         float[][] clusterDescriptors, int clrSpace, double tColor,
         List<Integer> edgeIndexes) {
@@ -2204,16 +2160,6 @@ public class ImageSegmentation {
         }
 
         return false;
-    }
-
-    private int[][] copy(int[][] a) {
-
-        int[][] b = new int[a.length][];
-        for (int i = 0; i < b.length; ++i) {
-            b[i] = Arrays.copyOf(a[i], a[i].length);
-        }
-
-        return b;
     }
 
     private boolean assertShortEdgesAreEmpty(List<Integer> indexes,
