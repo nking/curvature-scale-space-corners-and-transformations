@@ -114,6 +114,8 @@ public class AndroidStatuesTest extends TestCase {
 
                 List<CorrespondenceList> corresList = omw.find(filePath0, 
                     filePathMask0, filePath1, debugLabel);
+                
+                //omw.setToDebug();
 
                 if (corresList == null || corresList.isEmpty()) {
                     return;
@@ -959,7 +961,7 @@ public class AndroidStatuesTest extends TestCase {
                 //System.out.println("orb matched: " + p1 + " " + p2);
                 //if (p2.getX() > 160)
                 plotter.drawDashedLine(p1.getX(), p1.getY(),
-                    p2.getX(), p2.getY(), 255, 200, 200, 1, 7);
+                    p2.getX(), p2.getY(), 255, 200, 200, 0, 7);
             }
         }
 

@@ -8,42 +8,25 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.TrimmedImage;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
-import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
-import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.MSER;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.matching.CMODE;
 import algorithms.imageProcessing.matching.MSERMatcher;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import algorithms.util.PixelHelper;
-import com.climbwithyourfeet.clustering.ClusterFinder;
-import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TLongIntMap;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TLongIntHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
-import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,82 +55,6 @@ public class ObjectMatcher {
         debug = true;
     }
 
-    private void debugPrint(List<TIntObjectMap<CRegion>> cRegionsList,
-        List<List<GreyscaleImage>> pyr, String label) {
-
-        for (int j = 0; j < pyr.size(); ++j) {
-
-            Image img1 = pyr.get(j).get(0).copyToColorGreyscale();
-
-            TIntObjectMap<CRegion> crMap = cRegionsList.get(j);
-            TIntObjectIterator<CRegion> iter = crMap.iterator();
-
-            int nExtraDot = 0;
-
-            for (int ii = 0; ii < crMap.size(); ++ii) {
-                iter.advance();
-
-                int idx = iter.key();
-
-                CRegion cr = iter.value();
-
-                int[] clr = ImageIOHelper.getNextRGB(ii);
-
-                cr.draw(img1, nExtraDot, clr[0], clr[1], clr[2]);
-            }
-
-            MiscDebug.writeImage(img1, label + "_" + j + "_crs_");
-        }
-    }
-
-    private void debugPrint2(TIntObjectMap<CRegion> cRegions,
-        List<GreyscaleImage> rgb, String label) {
-
-        Image img1 = rgb.get(1).copyToColorGreyscale();
-
-        TIntObjectIterator<CRegion> iter = cRegions.iterator();
-
-        int nExtraDot = 0;
-
-        for (int ii = 0; ii < cRegions.size(); ++ii) {
-            iter.advance();
-
-            int idx = iter.key();
-
-            CRegion cr = iter.value();
-
-            int[] clr = ImageIOHelper.getNextRGB(ii);
-
-            cr.draw(img1, nExtraDot, clr[0], clr[1], clr[2]);
-        }
-
-        MiscDebug.writeImage(img1, label + "_" + "_crs_");
-    }
-    
-    private void debugPrint2(TIntObjectMap<CRegion> cRegions,
-        GreyscaleImage gs, String label) {
-
-        Image img1 = gs.copyToColorGreyscale();
-
-        TIntObjectIterator<CRegion> iter = cRegions.iterator();
-
-        int nExtraDot = 0;
-
-        for (int ii = 0; ii < cRegions.size(); ++ii) {
-            iter.advance();
-
-            int idx = iter.key();
-
-            CRegion cr = iter.value();
-
-            int[] clr = ImageIOHelper.getNextRGB(ii);
-            cr.drawEachPixel(img1, nExtraDot, clr[0], clr[1], clr[2]);
-            cr.draw(img1, nExtraDot, clr[0], clr[1], clr[2]);
-        }
-
-        MiscDebug.writeImage(img1, label + "_" + "_crs_");
-    }
-
     private void filterCloseToBounds2(List<Region> regions,
         int width, int height, int border) {
 
@@ -159,24 +66,6 @@ public class ObjectMatcher {
                 (xy[0] >= (width - border)) ||
                 (xy[1] >= (height - border))) {
                 regions.remove(i);
-            }
-        }
-    }
-
-    private void filterCloseToBounds(List<List<Region>> regions,
-        int width, int height, int border) {
-
-        int[] xy = new int[2];
-        for (int rIdx = 0; rIdx < 2; ++rIdx) {
-            List<Region> list = regions.get(rIdx);
-            for (int i = (list.size() - 1); i > -1; --i) {
-                Region r = list.get(i);
-                r.calculateXYCentroid(xy, width, height);
-                if (xy[0] < border || xy[1] < border ||
-                    (xy[0] >= (width - border)) ||
-                    (xy[1] >= (height - border))) {
-                    list.remove(i);
-                }
             }
         }
     }
@@ -232,30 +121,6 @@ public class ObjectMatcher {
         }
     }
 
-    private List<Region> combine(List<List<Region>> regions, int w, int h) {
-
-        int[] xy = new int[2];
-
-        Set<PairInt> centers = new HashSet<PairInt>();
-
-        List<Region> combined = new ArrayList<Region>();
-        for (List<Region> list : regions) {
-            for (Region r : list) {
-                r.calculateXYCentroid(xy, w, h);
-                PairInt p = new PairInt(Math.round(xy[0]),
-                    Math.round(xy[1]));
-                if (centers.contains(p)) {
-                    continue;
-                }
-                centers.add(p);
-                combined.add(r);
-            }
-        }
-
-        //TODO: consider a filter for a minimum separation
-        return combined;
-    }
-
     private List<Region> createCombinedMSERRegions(GreyscaleImage gsImg,
         GreyscaleImage luvTheta, CMODE clrMode, CMODE ptMode,
         boolean fewerMSER, String debugLabel) {
@@ -274,8 +139,10 @@ public class ObjectMatcher {
             thrPt = Threshold.DEFAULT;
         }
         
-        System.out.println(debugLabel + "  clrMode=" + clrMode.name() 
-            + " ptMode=" + ptMode.name());
+        if (debug) {
+            System.out.println(debugLabel + "  clrMode=" + clrMode.name() 
+                + " ptMode=" + ptMode.name());
+        }
         
         if (clrMode.equals(CMODE.WHITE)) {
             int[] gsA = MSER.readIntoArray(gsImg);
@@ -389,268 +256,6 @@ public class ObjectMatcher {
         return combined;
     }
 
-    private void mergeRegionsAndSegmentation(List<Set<PairInt>> labeledSets, 
-        TIntObjectMap<RegionPoints> cRegions, GreyscaleImage gsImg, 
-        GreyscaleImage luvTheta, boolean replaceWithLabels) {
-
-        TObjectIntMap<PairInt> pointLabelMap = new TObjectIntHashMap<PairInt>();
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            for (PairInt p : labeledSets.get(i)) {
-                pointLabelMap.put(p, i);
-            }
-        }
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
-        TIntSet skipRegions = new TIntHashSet();
-        
-        TIntObjectIterator<RegionPoints> iter = cRegions.iterator();
-        for (int i = 0; i < cRegions.size(); ++i) {
-            iter.advance();
-            
-            int rIdx = iter.key();
-            RegionPoints cr = iter.value();
-            
-            //System.out.println("cr xy=" + cr.ellipseParams.xC + "," + 
-            //    cr.ellipseParams.yC + ")");
-            
-            int nLabeled = 0;
-           
-            // for the purpose of removing a labeled region that does not
-            // belong in the points, need to store the points keys
-            // associated w/ a label for each cRegion in order to remove them
-            TIntObjectMap<Set<PairInt>> labelPointKeys 
-                = new TIntObjectHashMap<Set<PairInt>>();
-            
-            // only used if replace is true
-            TIntSet rmLabel = new TIntHashSet();
-            
-            Set<PairInt> rmPoints = new HashSet<PairInt>();
-            
-            //key=label, nPoints in label
-            TIntIntMap labelInRegion = new TIntIntHashMap();
-            for (PairInt p : cr.points) {
-                
-                if (!pointLabelMap.containsKey(p)) {
-                    rmPoints.add(p);
-                    continue;
-                }
-                
-                int label = pointLabelMap.get(p);
-                if (labelInRegion.containsKey(label)) {
-                    labelInRegion.put(label, labelInRegion.get(label) + 1);
-                } else {
-                    labelInRegion.put(label, 1);
-                }
-                
-                Set<PairInt> pointKeys = labelPointKeys.get(label);
-                if (pointKeys == null) {
-                    pointKeys = new HashSet<PairInt>();
-                    labelPointKeys.put(label, pointKeys);
-                }
-                pointKeys.add(p);
-                
-                nLabeled++;
-            }
-            cr.points.removeAll(rmPoints);
-            
-            // calculate percentage of cr covered by label
-            //   and percentage of label inside cr
-            //   and percentage of cr unassigned.
-        
-            float nInRegion = cr.points.size();
-            
-            float fUnassigned = (nInRegion - (float)nLabeled)/nInRegion;
-            if (fUnassigned > 0.3333) {
-                // missing a labeled region which was removed
-                System.out.println("fraction unassigned=" + fUnassigned);
-                skipRegions.add(rIdx);
-                break;
-            }
-            
-            //Image tmp = gsImg.copyToColorGreyscale();
-            
-            // for each label within, if any is a large portion of 
-            //   cr, and yet a small portion of its labeled region,
-            //   exclude this region
-            TIntIntIterator iter2 = labelInRegion.iterator();
-            for (int j = 0; j < labelInRegion.size(); ++j) {
-                iter2.advance();
-                int label = iter2.key();
-                int count = iter2.value();
-                
-                int nTotInLabel = labeledSets.get(label).size();
-                
-                float fOutside = 1.f - ((float)count/(float)nTotInLabel);
-                
-                float fRegion = (float)count/nInRegion;
-                
-                PairInt labelXY = ch.calculateXYCentroids2(labeledSets.get(label));
-                
-                /*
-                System.out.println("frcReg=" + fRegion +
-                    " frcLblOut=" + fOutside +
-                    " frcUnasnd=" + fUnassigned + 
-                    " n=" + (int)nInRegion +
-                    " cr.x,y=" + cr.ellipseParams.xC + "," + cr.ellipseParams.yC + 
-                    " lbl.xy=" + labelXY + " rIdx=" + rIdx);
-                */
-                
-                //int[] clr = ImageIOHelper.getNextRGB(j);
-                //Set<PairInt> set = labeledSets.get(label);
-                //ImageIOHelper.addCurveToImage(set, tmp, 0, clr[0], clr[1], clr[2]);
-               
-                //TODO: this needs revision...it is resolution (and scale) sensitive
-                if (//(nInRegion < 100 && fOutside > 0.45) || 
-                    (nInRegion >= 100 && fOutside > 0.16)) {
-                    //System.out.println("removing label cen=" + labelXY + 
-                    //    " nInRegion=" + nInRegion + " fOutside=" + fOutside + 
-                    //    " from region(" + cr.ellipseParams.xC + "," +
-                    //    cr.ellipseParams.yC + ")");
-                    //// remove the offset points from the cRegion's offsets
-                    for (PairInt rm : labelPointKeys.get(label)) {
-                        cr.points.remove(rm);
-                    }
-                    rmLabel.add(label);
-                } else {
-                   // int[] clr = ImageIOHelper.getNextRGB(j);
-                   // Set<PairInt> set = labeledSets.get(label);
-                   // ImageIOHelper.addCurveToImage(set, tmp, 0, clr[0], clr[1], clr[2]);
-                }
-                
-                //TODO: if not replacing, consider moving boundary inward to nearest segmentation
-                //   bounds and then trimming labels external to the new
-                //   moved boundary
-                
-            }
-                    
-            if (cr.points.isEmpty()) {
-                //System.out.println("removing empty region " + rIdx);
-                skipRegions.add(rIdx);
-                continue;
-            }
-            
-            if (!rmLabel.isEmpty()) {
-                TIntIterator iter0 = rmLabel.iterator();
-                while (iter0.hasNext()) {
-                    int label = iter0.next();
-                    Set<PairInt> pts = labelPointKeys.get(label);
-                    cr.points.removeAll(pts);
-                    labelInRegion.remove(label);
-                }
-            }
-            
-            if (replaceWithLabels) {
-                cr.points.clear();
-                iter2 = labelInRegion.iterator();
-                for (int j = 0; j < labelInRegion.size(); ++j) {
-                    iter2.advance();
-                    int label = iter2.key();
-                    cr.points.addAll(labeledSets.get(label));
-                }
-                // re-calc center and orientation.  tests show this does not
-                //  improve final matches
-                /*
-                Region tmp = new Region();
-                for (PairInt pt : cr.points) {
-                    tmp.accumulate(pt.getX(), pt.getY());
-                }
-                cr.ellipseParams = Canonicalizer.calculateEllipseParams(tmp,
-                    gsImg.getWidth(), gsImg.getHeight());
-                */
-            }
-            
-            /*
-            String lbl = Integer.toString(rIdx);
-            if (lbl.length() < 4) {
-                lbl = "0" + lbl;
-            } 
-            MiscDebug.writeImage(tmp, "_" + lbl);
-            */
-        
-        } // end loop over regions
-        
-        System.out.println("nRegions=" + cRegions.size() + " removing=" +
-            skipRegions.size());
-        
-        // remove skipSet
-        TIntIterator iter2 = skipRegions.iterator();
-        while (iter2.hasNext()) {
-            int rmIdx = iter2.next();
-            cRegions.remove(rmIdx);
-        }
-
-        //when multiple regions are centered within a spatial limit,
-        //  choose one and remove the others
-        if (false) {
-            int critSep = 15;
-            
-            System.out.println("before removing near mser, cRegions.n=" + 
-                cRegions.size());
-            
-            // clustering algorithm needs pixel indexes, but would like to
-            // track the cRegions indexes too
-            PixelHelper ph = new PixelHelper();
-            
-            // key = pixIdx, value = rIdx
-            TLongIntMap pixRIdxMap = new TLongIntHashMap();
-             
-            iter = cRegions.iterator();
-            for (int i = 0; i < cRegions.size(); ++i) {
-                iter.advance();
-                int rIdx = iter.key();
-                RegionPoints cr = iter.value();
-                
-                long pixIdx = ph.toPixelIndex(
-                    cr.ellipseParams.xC, cr.ellipseParams.yC, gsImg.getWidth());
-                
-                pixRIdxMap.put(pixIdx, rIdx);
-            }
-            
-            ClusterFinder cFinder = new ClusterFinder(pixRIdxMap.keySet(),
-                gsImg.getWidth(), gsImg.getHeight());
-            cFinder.setThreshholdFactor(1.f);
-            cFinder.setMinimumNumberInCluster(2);
-            cFinder.setBackgroundSeparation(critSep, critSep);
-            cFinder.findClusters();
-            List<TLongSet> groupList = cFinder.getGroups();
-
-            //NOTE: may need to revise how to choose best region to keep.
-            for (int i = 0; i < groupList.size(); ++i) {
-                TLongSet groupPixs = groupList.get(i);
-                
-                int maxSz = Integer.MIN_VALUE;
-                int maxSzIdx = -1;                
-                
-                TLongIterator iter3 = groupPixs.iterator();
-                while (iter3.hasNext()) {
-                    long pixIdx = iter3.next();
-                    int rIdx = pixRIdxMap.get(pixIdx);
-                
-                    int sz = calculateObjectSize(cRegions.get(rIdx));
-                    if (sz > maxSz) {
-                        maxSz = sz;
-                        maxSzIdx = rIdx;
-                    }
-                }
-                assert(maxSzIdx > -1);
-                iter3 = groupPixs.iterator();
-                while (iter3.hasNext()) {
-                    long pixIdx = iter3.next();
-                    int rIdx = pixRIdxMap.get(pixIdx);
-                    if (rIdx == maxSzIdx) {
-                        continue;
-                    }
-                    cRegions.remove(rIdx);
-                }
-            }
-            
-            System.out.println("after removing near mser, cRegions.n=" + 
-                cRegions.size());
-        }
-        
-    }
-
     private void applyWindowedMean(List<List<GreyscaleImage>> pyr, int halfDimension) {
 
         SummedAreaTable sumTable = new SummedAreaTable();
@@ -721,76 +326,6 @@ public class ObjectMatcher {
         return rp;
     }
     
-    private void createAWholeRegion(TIntObjectMap<RegionPoints> regionPoints, 
-        Set<PairInt> shape, GreyscaleImage rgb) {
-        
-        int n = regionPoints.size();
-        
-        RegionPoints rp = createARegion(shape, rgb.getWidth(), rgb.getHeight());
-      
-        regionPoints.put(n, rp);
-    }
-
-    private void createForLabels(List<Set<PairInt>> labeledSets, 
-        TIntObjectMap<CRegion> regions, int imageWidth, int imageHeight) {
-
-        int ns = labeledSets.size();
-        TIntSet labels = new TIntHashSet();
-        for (int i = 0; i < ns; ++i) {
-            labels.add(i);
-        }
-        
-        int idxMax = Integer.MIN_VALUE;
-        TIntObjectIterator<CRegion> iter = regions.iterator();
-        for (int i = 0; i < regions.size(); ++i) {
-            iter.advance();
-            int rIdx = iter.key();
-            CRegion r = iter.value();
-        
-            if (rIdx > idxMax) {
-                idxMax = rIdx;
-            }
-            
-            if (r.labels.size() == 1) {
-                labels.remove(r.labels.iterator().next());
-            }
-        }
-        
-        // for labels, make CRegion structures and add to map
-        TIntIterator iter2 = labels.iterator();
-        while (iter2.hasNext()) {
-            int label = iter2.next();
-            
-            Set<PairInt> set = labeledSets.get(label);
-            
-            RegionPoints rp = createARegion(set, imageWidth, imageHeight);
-            
-            RegionGeometry ep = rp.ellipseParams;
-            
-            Map<PairInt, PairInt> offsetToOrigMap = 
-                Canonicalizer.createOffsetToOrigMap(
-                ep.xC, ep.yC, Misc.convertWithoutOrder(set), 
-                imageWidth, imageHeight, ep.orientation);
-
-            CRegion cRegion = new CRegion();
-            cRegion.ellipseParams = ep;
-            cRegion.offsetsToOrigCoords = offsetToOrigMap;
-               
-            idxMax++;
-            
-            regions.put(idxMax, cRegion);
-        }
-    }
-
-    private int calculateObjectSize(RegionPoints region) {
-        int[] minMaxXY = MiscMath.findMinMaxXY(region.points);
-        int diffX = minMaxXY[1] - minMaxXY[0];
-        int diffY = minMaxXY[3] - minMaxXY[2];
-        double xy = Math.sqrt(diffX * diffX + diffY * diffY);
-        
-        return (int)Math.round(xy);
-    }
-
     private void filterByColorHistograms(ImageExt img0, Set<PairInt> shape0, 
         ImageExt img1, TIntObjectMap<RegionPoints> regions1) {
         
@@ -1160,7 +695,7 @@ public class ObjectMatcher {
         the 1976 CIE LAB which is LUV).
         If maxV of 360, returns full value image,
         */
-        System.out.println("template clrMode=" + clrMode.name());
+        //System.out.println("template clrMode=" + clrMode.name());
         GreyscaleImage luvTheta0;
         GreyscaleImage luvTheta1;
         if (clrMode.equals(CMODE.WHITE)) {
@@ -1412,43 +947,4 @@ public class ObjectMatcher {
         return corList;
     }
     
-    private float[] calcStats(TFloatList densities, TIntList nInGroup) {
-
-        //average, stdDv, min, max
-
-        // using the number in group to form weights
-        float nSum = 0;
-        for (int i = 0; i < densities.size(); ++i) {
-            nSum += nInGroup.get(i);
-        }
-
-        TFloatList weights = new TFloatArrayList();
-        float totW = 0;
-        for (int i = 0; i < densities.size(); ++i) {
-            float w = (float)nInGroup.get(i)/nSum;
-            //System.out.println(" w=" + w + " n=" + nInGroup.get(i));
-            weights.add(w);
-            totW += w;
-        }
-        //System.out.println("totW=" + totW);
-        assert(Math.abs(totW - 1.f) < 0.01f);
-
-        double avgDens = 0;
-        for (int i = 0; i < densities.size(); ++i) {
-            float d = densities.get(i) * weights.get(i);
-            avgDens += d;
-        }
-
-        double stDev = 0;
-        for (int i = 0; i < densities.size(); ++i) {
-            double diff = densities.get(i) - avgDens;
-            stDev += (diff * diff);
-        }
-        stDev = Math.sqrt(stDev/((float) densities.size() - 1));
-
-        //average, stdDv, min, max
-        return new float[]{(float)avgDens, (float)stDev, densities.min(),
-            densities.max()};
-    }
-
 }

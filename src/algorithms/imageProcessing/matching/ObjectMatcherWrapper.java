@@ -8,7 +8,6 @@ import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.ObjectMatcher;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
-import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +27,12 @@ public class ObjectMatcherWrapper {
 
     private ImageExt[] templateImage = null;
     private ImageExt searchImage = null;
+    
+    private boolean debug = false;
+    
+    public void setToDebug() {
+        debug = true;
+    }
     
     public List<CorrespondenceList> find(String templateFilePath,
         String templateMaskFilePath,
@@ -96,10 +101,11 @@ public class ObjectMatcherWrapper {
         settings.setToUseLargerPyramid1();
 
         ObjectMatcher objMatcher = new ObjectMatcher();
-        objMatcher.setToDebug();
 
-        if (debugLabel != null) {
-            objMatcher.setToDebug();  
+        if (debug) {
+            objMatcher.setToDebug();
+        }
+        if (debugLabel != null) {  
             settings.setDebugLabel(debugLabel);
         }
 
