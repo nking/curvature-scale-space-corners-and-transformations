@@ -17,7 +17,7 @@ public class MSEREdgesWrapper {
     
     private boolean debug = false;
     
-    public MSEREdges mergeAndExtractEdges(ImageExt img) {
+    public MSEREdges extractAndMergeEdges(ImageExt img) {
         
         img = binImage(img);
         
@@ -27,7 +27,7 @@ public class MSEREdgesWrapper {
             mse.setToDebug();
         }
         
-        mse.mergeAndExtractEdges();
+        mse.extractAndMergeEdges();
         
         return mse;
     }
@@ -53,8 +53,7 @@ public class MSEREdgesWrapper {
     
     private ImageExt binImage(ImageExt img) {
         
-        int w = img.getWidth();
-        
+        int w = img.getWidth();        
         int h = img.getHeight();
 
         binFactor = (int) Math.ceil(Math.max((float) w / maxDimension,

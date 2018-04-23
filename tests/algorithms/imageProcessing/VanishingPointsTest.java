@@ -224,7 +224,7 @@ System.out.println("index i=" + i);
             img = imageProcessor.binImage(img, binFactor1);
 
             MSEREdges mserEdges = new MSEREdges(img);
-            mserEdges.mergeAndExtractEdges();
+            mserEdges.extractAndMergeEdges();
             List<TIntSet> pointSets = mserEdges.getLabeledSets();
             List<Set<PairInt>> contigSets = new ArrayList<Set<PairInt>>(pointSets.size());
             for (TIntSet set : pointSets) {

@@ -128,7 +128,7 @@ public final class CurvatureScaleSpaceImageMaker {
                 
             } else {
                 MSEREdges mserEdges = new MSEREdges(img);
-                mserEdges.mergeAndExtractEdges();
+                mserEdges.extractAndMergeEdges();
                 List<TIntSet> edgeSets = mserEdges.getEdges();
             
                 PerimeterFinder2 finder2 = new PerimeterFinder2();

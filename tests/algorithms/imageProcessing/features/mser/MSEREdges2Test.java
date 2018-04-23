@@ -82,7 +82,7 @@ public class MSEREdges2Test extends TestCase {
 
             MSEREdgesWrapper msew = new MSEREdgesWrapper();
                 
-            MSEREdges mserE = msew.mergeAndExtractEdges(img);
+            MSEREdges mserE = msew.extractAndMergeEdges(img);
             
             List<TIntSet> edgeList = mserE.getEdges();
             Image im = mserE.getGsImg().copyToColorGreyscale();

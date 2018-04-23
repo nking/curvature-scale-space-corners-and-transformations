@@ -182,7 +182,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         int h = originalImg.getHeight();
 
         MSEREdges mserEdges = new MSEREdges(this.originalImg);
-        mserEdges.mergeAndExtractEdges();
+        mserEdges.extractAndMergeEdges();
         this.filterProducts = mserEdges.getEdgeFilterProducts();
         List<TIntSet> edgeSets = mserEdges.getEdges();
         

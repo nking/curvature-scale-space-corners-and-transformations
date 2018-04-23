@@ -85,7 +85,7 @@ public class MSEREdges {
     extractEdges:
         -- uses PerimeterFinder2 extract the outer boundaries from each mser
            region points, and the same for the contiguous embedded regions.
-    mergeAndExtractEdges
+           extractAndMergeEdges
         -- merges adjacent regions by similarity of color (and maybe texture in future)
         -- extracts edges using PerimeterFinder2 just as above
 
@@ -136,7 +136,7 @@ public class MSEREdges {
     private STATE state = null;
 
     public MSEREdges(Image img) {
-
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         this.gsImg = img.copyToGreyscale2();
         this.ptImg = imageProcessor.createCIELUVTheta_WideRangeLightness(img, 255);
@@ -165,7 +165,7 @@ public class MSEREdges {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
-
+        
         /*if (debug) {
             MiscDebug.writeImage(ptImg, "_" + ts + "_polartheta");
             MiscDebug.writeImage(gsImg, "_" + ts + "_greyscale");
@@ -188,27 +188,29 @@ public class MSEREdges {
      * merge regions and then extract edges.  this method is most useful when
      * setToLowerContrast() has been invoked before.
      */
-    public void mergeAndExtractEdges() {
+    public void extractAndMergeEdges() {
 
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
         if (!state.equals(STATE.INITIALIZED)) {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
-
+        
+        long t0 = System.currentTimeMillis();
+        
         extractEdges();
-
-        long ts0 = System.currentTimeMillis();
 
         mergeRegions();
 
-        long ts1 = System.currentTimeMillis();
+        long t1 = System.currentTimeMillis();
 
-        System.out.format("%.3f sec for merge\n", (((float)ts1 - ts0)/1000.f));
+        System.out.format("%.3f sec for extractAndMerge\n", 
+            ((float)(t1 - t0)/1000.f));
         
         if (debug) {
             printEdges();
         }
+        
     }
 
     private void extractRegions() {
@@ -218,6 +220,8 @@ public class MSEREdges {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
+        
+        long t0 = System.currentTimeMillis();
 
         List<List<Region>> gsRegions = extractMSERRegions(gsImg, Threshold.LESS_SENSITIVE);
 
@@ -400,6 +404,10 @@ public class MSEREdges {
         }
 
         state = STATE.REGIONS_EXTRACTED;
+        
+        long t1 = System.currentTimeMillis();
+        
+        System.out.println("extractRegions runtime=" + ((t1 - t0)/1000) + " sec");
     }
 
     private List<List<Region>> extractMSERRegions(GreyscaleImage img,
@@ -499,11 +507,11 @@ public class MSEREdges {
                 + "edges once");
         }
         
-        long ts0 = System.currentTimeMillis();
+        long t0 = System.currentTimeMillis();
 
         TIntSet boundaries = combineBoundaries();
 
-        long ts1 = System.currentTimeMillis();
+        long t1 = System.currentTimeMillis();
 
         // populate this.edgeList and this.labeledSets
         populateEdgeLists(boundaries);
@@ -519,12 +527,17 @@ public class MSEREdges {
         
         thinTheBoundaries(2);
 
-        long ts2 = System.currentTimeMillis();
+        long t2 = System.currentTimeMillis();
 
         System.out.format(
-            "%.3f sec for boundary extr, "
-                + " %.3f sec for reassigning and labels\n",
-            ((float)(ts1 - ts0)/1000.f), ((float)(ts2 - ts1_2)/1000.f)
+            "%.3f sec for extractBoundaries ("
+                + "\n  %.3f sec for combineBoundaries,"
+                + "\n  %.3f sec for populateEdgeLists," 
+                + "\n  %.3f sec for thinTheBoundaries)\n",
+            ((float)(t2 - t0)/1000.f), 
+            ((float)(t1 - t0)/1000.f),
+            ((float)(ts1_2 - t1)/1000.f),
+            ((float)(t2 - ts1_2)/1000.f)
         );
 
         state = STATE.EDGES_EXTRACTED;
@@ -559,6 +572,8 @@ public class MSEREdges {
             throw new IllegalStateException("error in algorithm.  expecting"
                 + " edges were extracted.");
         }
+        
+        long t0 = System.currentTimeMillis();
 
         assert(labeledSets != null);
         assert(getEdgeList() != null);
@@ -790,6 +805,11 @@ public class MSEREdges {
                 imgCp, 0);
             MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
         }
+        
+        long t1 = System.currentTimeMillis();
+
+        System.out.format("%.3f sec for mergeRegions\n", 
+            ((float)(t1 - t0)/1000.f));
     }
     
     /**
@@ -1199,7 +1219,7 @@ public class MSEREdges {
 
     /**
      * get labeled sets of points separated by the edges.
-     * Note that the method returns null unless mergeAndExtractEdges was
+     * Note that the method returns null unless extractAndMergeEdges was
      * already used.
      * @return
      */
