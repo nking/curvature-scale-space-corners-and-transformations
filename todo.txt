@@ -1,3 +1,6 @@
+-- consider a penalty for the search object having far larger size than the template
+   to counter the small false cost.
+
 -- Neural networks:
    -- optimization:
       http://neuralnetworksanddeeplearning.com/chap3.html

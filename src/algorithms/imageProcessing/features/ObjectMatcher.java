@@ -8,7 +8,6 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.TrimmedImage;
@@ -21,9 +20,6 @@ import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.matching.CMODE;
 import algorithms.imageProcessing.matching.MSERMatcher;
-import algorithms.imageProcessing.segmentation.LabelToColorHelper;
-import algorithms.imageProcessing.util.GroupAverageColors;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -1164,14 +1160,15 @@ public class ObjectMatcher {
         the 1976 CIE LAB which is LUV).
         If maxV of 360, returns full value image,
         */
+        System.out.println("template clrMode=" + clrMode.name());
         GreyscaleImage luvTheta0;
         GreyscaleImage luvTheta1;
         if (clrMode.equals(CMODE.WHITE)) {
             luvTheta0 = imageProcessor.createCIELUVTheta_WideRangeLightness(img0Trimmed, 255);
             luvTheta1 = imageProcessor.createCIELUVTheta_WideRangeLightness(img1, 255);
         } else {
-            luvTheta0 = imageProcessor.createCIELUVTheta_WideRangeLightness(img0Trimmed, 255);
-            luvTheta1 = imageProcessor.createCIELUVTheta_WideRangeLightness(img1, 255);
+            luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);
+            luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);
         }
         
         imageProcessor.singlePixelFilter(luvTheta0);

@@ -11,32 +11,27 @@ import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HGS;
 import algorithms.imageProcessing.features.HOGs;
-import algorithms.imageProcessing.features.ObjectMatcher;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.Region;
-import algorithms.imageProcessing.util.GroupAverageColors;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PixelHelper;
 import algorithms.util.QuadInt;
-import com.climbwithyourfeet.clustering.ClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -553,6 +548,30 @@ public class MSERMatcher {
             TIntSet orientations = hogs.calculateDominantOrientations(r.points);
         
             r.hogOrientations.addAll(orientations);
+        }
+    }
+
+    private int getLargestArea(TIntObjectMap<CRegion> regions) {
+        int area = Integer.MIN_VALUE;    
+    
+        TIntObjectIterator<CRegion> iter = regions.iterator();
+        for (int i = 0; i < regions.size(); ++i) {
+            iter.advance();
+            CRegion cr = iter.value();
+            int n = cr.offsetsToOrigCoords.size();
+            if (n > area) {
+                area = n;
+            }
+        }
+        return area;
+    }
+
+    private static class CountComparator implements Comparator<Obj> {
+        public CountComparator() {
+        }
+        @Override
+        public int compare(Obj o1, Obj o2) {
+            return -1*Integer.compare(o1.nMatched, o2.nMatched);
         }
     }
 
@@ -1159,7 +1178,8 @@ public class MSERMatcher {
         
         Set<PairInt> pairs = new HashSet<PairInt>();
         
-        // storing top 5 of r1 matches
+        Collections.sort(bestOverall, new CountComparator());
+        
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
         
         for (int i = 0; i < bestOverall.size(); ++i) {
