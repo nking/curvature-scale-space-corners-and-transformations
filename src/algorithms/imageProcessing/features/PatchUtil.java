@@ -89,7 +89,7 @@ public class PatchUtil {
             
             hogs.extractBlock(xy[0], xy[1], tmp);
            
-            hogs.add(h, tmp);
+            HOGs.add(h, tmp);
                    
             tmpSum = 0;
             maxValue = Double.NEGATIVE_INFINITY;

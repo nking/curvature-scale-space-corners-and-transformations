@@ -21,8 +21,6 @@ public class MSEREdgesTest extends TestCase {
 
     public void test0() throws Exception {
 
-        int maxDimension = 256;//512;
-
         String fileName1 = "";
 
         //for (int i = 11; i < 12; ++i) {
@@ -187,27 +185,12 @@ public class MSEREdgesTest extends TestCase {
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
-            ImageProcessor imageProcessor = new ImageProcessor();
-
-            int w1 = img.getWidth();
-            int h1 = img.getHeight();
-
-            int binFactor1 = (int) Math.ceil(Math.max(
-                (float) w1 / maxDimension,
-                (float) h1 / maxDimension));
-
-            img = imageProcessor.binImage(img, binFactor1);
-       //     img = (ImageExt) img.copySubImage(
-       //         img.getWidth()/3, 2*img.getWidth()/3, 
-       //         img.getHeight()/3, 2*img.getHeight()/3);
-            //MiscDebug.writeImage(img, "_"  + fileName1Root);
+            MSEREdgesWrapper msew = new MSEREdgesWrapper();
                 
-            MSEREdges mserE = new MSEREdges(img);
-            //mserE.setToDebug();
-            mserE.mergeAndExtractEdges();
+            MSEREdges mserE = msew.mergeAndExtractEdges(img);
             
             List<TIntSet> edgeList = mserE.getEdges();
-            Image im = img.copyToGreyscale2().copyToColorGreyscale();
+            Image im = mserE.getGsImg().copyToColorGreyscale();
             int[] clr = new int[]{255, 0, 0};
             for (int ii = 0; ii < edgeList.size(); ++ii) {
                 ImageIOHelper.addCurveToImage(edgeList.get(ii), im, 0, clr[0],

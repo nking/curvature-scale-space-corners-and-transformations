@@ -436,7 +436,7 @@ public class HOGs {
             long[] a = cells.get(i).a;
             for (int j = 0; j < a.length; ++j) {
                 //v /= Math.sqrt(blockTotal + 0.0001);
-                a[j] = (long)Math.round(norm * a[j]);
+                a[j] = Math.round(norm * a[j]);
             }
             add(outHist, a);
         }

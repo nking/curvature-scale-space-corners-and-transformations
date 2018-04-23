@@ -1,9 +1,13 @@
 package algorithms.imageProcessing.features.mser;
 
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
+import gnu.trove.set.TIntSet;
+import java.util.List;
 import junit.framework.TestCase;
 
 /**
@@ -76,38 +80,18 @@ public class MSEREdges2Test extends TestCase {
             
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
-            ImageProcessor imageProcessor = new ImageProcessor();
-
-            int w1 = img.getWidth();
-            int h1 = img.getHeight();
-
-            int binFactor1 = (int) Math.ceil(Math.max(
-                (float) w1 / maxDimension,
-                (float) h1 / maxDimension));
-
-            img = imageProcessor.binImage(img, binFactor1);
-       //     img = (ImageExt) img.copySubImage(
-       //         img.getWidth()/3, 2*img.getWidth()/3, 
-       //         img.getHeight()/3, 2*img.getHeight()/3);
-            //MiscDebug.writeImage(img, "_"  + fileName1Root);
+            MSEREdgesWrapper msew = new MSEREdgesWrapper();
                 
-            MSEREdges mserE = new MSEREdges(img);
-            mserE.setToDebug();
-            //mserE.extractEdges();
-            mserE.mergeAndExtractEdges();
+            MSEREdges mserE = msew.mergeAndExtractEdges(img);
             
-            /*GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
-            for (int k = 0; k < lma.length; ++k) {
-                MiscDebug.writeImage(lma[k], "_" + 
-                    fileName1Root + "_lma_" + k + "_");
+            List<TIntSet> edgeList = mserE.getEdges();
+            Image im = mserE.getGsImg().copyToColorGreyscale();
+            int[] clr = new int[]{255, 0, 0};
+            for (int ii = 0; ii < edgeList.size(); ++ii) {
+                ImageIOHelper.addCurveToImage(edgeList.get(ii), im, 0, clr[0],
+                    clr[1], clr[2]);
             }
-            
-            GreyscaleImage gradients = imageProcessor
-                .createGradientWithColorAndGreyscale(img);
-        
-            MiscDebug.writeImage(gradients,  
-                "_" + fileName1Root + "_SOBEL_");
-            */
+            MiscDebug.writeImage(im, "_" + fileName1 + "_edges_");
         }
     }
     
