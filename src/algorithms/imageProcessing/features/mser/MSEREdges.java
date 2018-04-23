@@ -1,11 +1,9 @@
 package algorithms.imageProcessing.features.mser;
 
-import algorithms.CountingSort;
 import algorithms.QuickSort;
 import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.CannyEdgeColorAdaptive;
-import algorithms.imageProcessing.ColorHistogram;
 import algorithms.connected.ConnectedPointsFinder;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.EdgeFilterProducts;
@@ -18,14 +16,12 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HGS;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.PatchUtil;
-import algorithms.imageProcessing.features.mser.Canonicalizer.RegionGeometry;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.matching.CMODE;
 import algorithms.imageProcessing.util.AngleUtil;
@@ -49,9 +45,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
@@ -127,7 +121,7 @@ public class MSEREdges {
 
     private boolean debug = false;
 
-    private boolean useLowerContrastLimits = false;
+    private boolean useLowerContrastLimits = true;
 
     private GreyscaleImage sobelScores = null;
 
@@ -149,7 +143,7 @@ public class MSEREdges {
         this.clrImg = img.copyToImageExt();
 
         //to correct for wrap around effects in ptImg, making a copy
-        //   shifted by -20 degrees in pixel values.
+        //   shifted by -60 degrees in pixel values.
         //   any false regions found due to the range 0-255 being wrap
         //   around from 255 to 0, but perceived as different can be
         //   found by comparing these two image's results, though
@@ -162,14 +156,6 @@ public class MSEREdges {
     public void setToDebug() {
         debug = true;
         ts = MiscDebug.getCurrentTimeFormatted();
-    }
-
-    /**
-     * use this to change the limits to keep lower contrast edges.
-     * NOTE that this increases the number of edges that are noise.
-     */
-    public void setToLowerContrast() {
-        useLowerContrastLimits = true;
     }
 
     public void extractEdges() {
@@ -191,7 +177,7 @@ public class MSEREdges {
         extractBoundaries();
 
         assert(labeledSets != null);
-        assert(edgeList != null);
+        assert(getEdgeList() != null);
 
         if (debug) {
             printEdges();
@@ -228,7 +214,7 @@ public class MSEREdges {
     private void extractRegions() {
 
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
-        if (state.equals(STATE.EDGES_EXTRACTED)) {
+        if (getState().equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
@@ -508,7 +494,7 @@ public class MSEREdges {
     private void extractBoundaries() {
 
         //INITIALIZED, REGIONS_EXTRACTED, MERGED, EDGES_EXTRACTED
-        if (state.equals(STATE.EDGES_EXTRACTED)) {
+        if (getState().equals(STATE.EDGES_EXTRACTED)) {
             throw new IllegalStateException("can only perform extraction of "
                 + "edges once");
         }
@@ -550,9 +536,9 @@ public class MSEREdges {
 
         int[] clr = new int[]{255, 0, 0};
 
-        for (int i = 0; i < edgeList.size(); ++i) {
+        for (int i = 0; i < getEdgeList().size(); ++i) {
             //int[] clr = ImageIOHelper.getNextRGB(i);
-            ImageIOHelper.addCurveToImage(edgeList.get(i), im, 0, clr[0],
+            ImageIOHelper.addCurveToImage(getEdgeList().get(i), im, 0, clr[0],
                 clr[1], clr[2]);
         }
         MiscDebug.writeImage(im, "_" + ts + "_edges_");
@@ -575,8 +561,8 @@ public class MSEREdges {
         }
 
         assert(labeledSets != null);
-        assert(edgeList != null);
-        assert(labeledSets.size() == edgeList.size());
+        assert(getEdgeList() != null);
+        assert(labeledSets.size() == getEdgeList().size());
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -635,7 +621,7 @@ public class MSEREdges {
         
         // -- making adjacency map using edgeList ---
         TIntObjectMap<VeryLongBitString> adjMap = imageProcessor
-            .createAdjacencyMap(pointIndexMap, edgeList, w, h);
+            .createAdjacencyMap(pointIndexMap, getEdgeList(), w, h);
         
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
 
@@ -664,7 +650,7 @@ public class MSEREdges {
 
                 // subtr edges from sets
                 TIntSet set1 = new TIntHashSet(labeledSets.get(label));
-                set1.removeAll(edgeList.get(label));
+                set1.removeAll(getEdgeList().get(label));
 
                 PairInt xy1 = centroidsMap.get(label);
 
@@ -685,7 +671,7 @@ public class MSEREdges {
 
                     // subtr edges from sets
                     TIntSet set2 = new TIntHashSet(labeledSets.get(label2));
-                    set2.removeAll(edgeList.get(label2));
+                    set2.removeAll(getEdgeList().get(label2));
 
                     List<PatchUtil> pList2 = clrs.get(label2);
 
@@ -743,13 +729,13 @@ public class MSEREdges {
                     adjMap.remove(label2);
 
                     labeledSets.get(label).addAll(labeledSets.get(label2));
-                    edgeList.get(label).addAll(edgeList.get(label2));
+                    getEdgeList().get(label).addAll(getEdgeList().get(label2));
                     labeledSets.get(label2).clear();
-                    edgeList.get(label2).clear();
+                    getEdgeList().get(label2).clear();
 
                     // subtr edges from sets
                     set1 = new TIntHashSet(labeledSets.get(label));
-                    set1.removeAll(edgeList.get(label));
+                    set1.removeAll(getEdgeList().get(label));
 
                     // debug
                     if (false && debug) {
@@ -786,7 +772,7 @@ public class MSEREdges {
         
         PerimeterFinder2 finder2 = new PerimeterFinder2();
         
-        edgeList.clear();
+        getEdgeList().clear();
         
         // redo the edgeList since the merged sets have embedded edges
         for (int i = 0; i < labeledSets.size(); ++i) {
@@ -794,13 +780,13 @@ public class MSEREdges {
             TIntSet embedded = new TIntHashSet();
             TIntSet outerBorder = new TIntHashSet();
             finder2.extractBorder2(set, embedded, outerBorder, w);
-            edgeList.add(outerBorder);
+            getEdgeList().add(outerBorder);
         }
-        assert(edgeList.size() == labeledSets.size());
+        assert(getEdgeList().size() == labeledSets.size());
         
         if (debug) {
             Image imgCp = clrImg.copyImage();
-            ImageIOHelper.addAlternatingColorCurvesToImage3(edgeList,
+            ImageIOHelper.addAlternatingColorCurvesToImage3(getEdgeList(),
                 imgCp, 0);
             MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
         }
@@ -1208,7 +1194,7 @@ public class MSEREdges {
                 + " methods first");
         }
 
-        return edgeList;
+        return getEdgeList();
     }
 
     /**
@@ -1512,7 +1498,7 @@ public class MSEREdges {
      */
     private void thinTheBoundaries(int minGroupSize) {
 
-        if (this.labeledSets == null || this.edgeList == null) {
+        if (this.labeledSets == null || this.getEdgeList() == null) {
             throw new IllegalStateException("instance vars are null: "
                 + " labeledSets, edgeLists");
         }
@@ -1615,7 +1601,7 @@ public class MSEREdges {
                 assignTheUnassigned(contigousSets2, labels, hsvs, reassign);
 
                 labeledSets.clear();
-                edgeList.clear();
+                getEdgeList().clear();
 
                 for (int i = 0; i < contigousSets2.size(); ++i) {
                     TIntSet set = contigousSets2.get(i);
@@ -1625,7 +1611,7 @@ public class MSEREdges {
                         clrImg.getWidth());
 
                     labeledSets.add(set);
-                    edgeList.add(outerBorder);
+                    getEdgeList().add(outerBorder);
                 }
             }
             
@@ -1677,7 +1663,7 @@ public class MSEREdges {
             TIntSet outerBorder = new TIntHashSet();
             finder2.extractBorder2(set, embedded, outerBorder, gsImg.getWidth());
 
-            edgeList.add(outerBorder);
+            getEdgeList().add(outerBorder);
         
             ne += outerBorder.size();
         }
@@ -1686,7 +1672,7 @@ public class MSEREdges {
             System.out.println(ne + " pixels in edgeList");
         }
 
-        assert(labeledSets.size() == edgeList.size());
+        assert(labeledSets.size() == getEdgeList().size());
 
         System.out.println(labeledSets.size() + " labeled sets");
     }
@@ -2305,5 +2291,19 @@ public class MSEREdges {
     
     public EdgeFilterProducts getEdgeFilterProducts() {
         return edgeProducts;
+    }
+
+    /**
+     * @return the edgeList
+     */
+    public List<TIntSet> getEdgeList() {
+        return edgeList;
+    }
+
+    /**
+     * @return the state
+     */
+    public STATE getState() {
+        return state;
     }
 }

@@ -60,7 +60,6 @@ public class Sky {
         
         mserEdges = new MSEREdges(this.img);
         mserEdges.setToDebug();
-        mserEdges.setToLowerContrast();
         mserEdges.mergeAndExtractEdges();
         
     }

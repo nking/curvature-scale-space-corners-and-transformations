@@ -93,9 +93,7 @@ public class MSEREdges2Test extends TestCase {
                 
             MSEREdges mserE = new MSEREdges(img);
             mserE.setToDebug();
-            //mserE.setToLowerContrast();
             //mserE.extractEdges();
-            mserE.setToLowerContrast();
             mserE.mergeAndExtractEdges();
             
             /*GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);

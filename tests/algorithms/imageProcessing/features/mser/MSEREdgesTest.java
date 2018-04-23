@@ -1,9 +1,13 @@
 package algorithms.imageProcessing.features.mser;
 
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
+import gnu.trove.set.TIntSet;
+import java.util.List;
 import junit.framework.TestCase;
 
 /**
@@ -199,24 +203,18 @@ public class MSEREdgesTest extends TestCase {
             //MiscDebug.writeImage(img, "_"  + fileName1Root);
                 
             MSEREdges mserE = new MSEREdges(img);
-            mserE.setToDebug();
-            //mserE.setToLowerContrast();
-            //mserE.extractEdges();
-            mserE.setToLowerContrast();
+            //mserE.setToDebug();
             mserE.mergeAndExtractEdges();
             
-            /*GreyscaleImage[] lma = imageProcessor.createLCHForLUV(img);
-            for (int k = 0; k < lma.length; ++k) {
-                MiscDebug.writeImage(lma[k], "_" + 
-                    fileName1Root + "_lma_" + k + "_");
+            List<TIntSet> edgeList = mserE.getEdges();
+            Image im = img.copyToGreyscale2().copyToColorGreyscale();
+            int[] clr = new int[]{255, 0, 0};
+            for (int ii = 0; ii < edgeList.size(); ++ii) {
+                ImageIOHelper.addCurveToImage(edgeList.get(ii), im, 0, clr[0],
+                    clr[1], clr[2]);
             }
+            MiscDebug.writeImage(im, "_" + fileName1Root + "_edges_");
             
-            GreyscaleImage gradients = imageProcessor
-                .createGradientWithColorAndGreyscale(img);
-        
-            MiscDebug.writeImage(gradients,  
-                "_" + fileName1Root + "_SOBEL_");
-            */
         }
     }
     

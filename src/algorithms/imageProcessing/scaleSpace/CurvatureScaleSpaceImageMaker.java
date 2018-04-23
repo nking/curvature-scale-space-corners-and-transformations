@@ -128,7 +128,6 @@ public final class CurvatureScaleSpaceImageMaker {
                 
             } else {
                 MSEREdges mserEdges = new MSEREdges(img);
-                mserEdges.setToLowerContrast();
                 mserEdges.mergeAndExtractEdges();
                 List<TIntSet> edgeSets = mserEdges.getEdges();
             
