@@ -45,6 +45,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import thirdparty.edu.princeton.cs.algs4.Interval;
@@ -204,7 +205,7 @@ public class MSEREdges {
 
         long t1 = System.currentTimeMillis();
 
-        System.out.format("%.3f sec for extractAndMerge\n", 
+        System.out.format("==> %.3f sec for extractAndMerge\n", 
             ((float)(t1 - t0)/1000.f));
         
         if (debug) {
@@ -235,6 +236,7 @@ public class MSEREdges {
         //_debugOrigRegions(ptShiftedRegions.get(1), "_shifted_1");
 
         regions = new ArrayList<Region>();
+        Set<Region> uniqueRegions = new HashSet<Region>();
 
         origGsPtRegions = new ArrayList<List<Region>>();
 
@@ -263,7 +265,8 @@ public class MSEREdges {
             origGsPtRegions.add(cpList);
             for (Region r : list) {
                 cpList.add(r.copy());
-                regions.add(r);
+                //regions.add(r);
+                uniqueRegions.add(r);
             }
         }
 
@@ -316,7 +319,7 @@ public class MSEREdges {
                     }
                 }
             }
-            System.out.println("hadWrapAroundArtifacts=" + hadWrapAroundArtifacts);
+            //System.out.println("hadWrapAroundArtifacts=" + hadWrapAroundArtifacts);
             if (hadWrapAroundArtifacts) {
                 // excluded level < 25.
                 //   so shift by +60 and any region found w level approx 60
@@ -354,16 +357,13 @@ public class MSEREdges {
             List<Region> cpList = new ArrayList<Region>();
             origGsPtRegions.add(cpList);
             for (Region r : list) {
-                regions.add(r);
+                //regions.add(r);
+                uniqueRegions.add(r);
                 cpList.add(r.copy());
             }
         }
 
-        /*
-        adding better configuration for greyscale positive here.
-        TODO: consider fixing the process above to include these.
-        */
-        regions.addAll(_extractSensitiveGS0());
+        uniqueRegions.addAll(_extractSensitiveGS0());
         //_debugOrigRegions(regions,"_GS0__");
 
         if (debug) {
@@ -402,12 +402,15 @@ public class MSEREdges {
                 MiscDebug.writeImage(imCp, "_" + ts + "_regions_pt_"+ type);
             }
         }
-
-        state = STATE.REGIONS_EXTRACTED;
         
+        regions.addAll(uniqueRegions);
+        
+        state = STATE.REGIONS_EXTRACTED;
+         
         long t1 = System.currentTimeMillis();
         
-        System.out.println("extractRegions runtime=" + ((t1 - t0)/1000) + " sec");
+        System.out.format("%.3f sec for extractRegions\n", 
+            ((float)(t1 - t0)/1000.f));
     }
 
     private List<List<Region>> extractMSERRegions(GreyscaleImage img,
@@ -1349,7 +1352,6 @@ public class MSEREdges {
         PerimeterFinder2 finder = new PerimeterFinder2();
 
         TIntSet allEdgePoints = new TIntHashSet();
-        TIntSet unmatchedPoints = new TIntHashSet();
         List<TIntSet> unmatchedRMap = new ArrayList<TIntSet>();
         
         TIntSet rmvdImgBorders = new TIntHashSet();
@@ -1357,24 +1359,26 @@ public class MSEREdges {
         double tt0 = System.currentTimeMillis();
         
         List<TIntSet> unusedRegionBounds = new ArrayList<TIntSet>();
-        
+                
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
             Region r = regions.get(rListIdx);
             TIntSet points = r.getAcc(clrImg.getWidth());
+            
             TIntSet embedded = new TIntHashSet();
             TIntSet outerBorder = new TIntHashSet();
+            //The runtime complexity is roughly O(N_points).
             finder.extractBorder2(points, embedded, outerBorder, clrImg.getWidth());
 
-            TIntSet border2 = removeImageBorder(outerBorder, rmvdImgBorders,
+            removeImageBorder(outerBorder, rmvdImgBorders,
                 clrImg.getWidth(), clrImg.getHeight());
 
             TIntSet matched = new TIntHashSet();
             TIntSet unmatched = new TIntHashSet();
 
-            double[] scoreAndMatch = calcAvgScore(border2, sobelScores,
+            double[] scoreAndMatch = calcAvgScore(outerBorder, sobelScores,
                 matched, unmatched, clrImg.getWidth());
 
-            double matchFraction = scoreAndMatch[1]/(double)border2.size();
+            double matchFraction = scoreAndMatch[1]/(double)outerBorder.size();
 
             /*
             System.out.format(" rIdx=%d score=%.3f "
@@ -1399,7 +1403,7 @@ public class MSEREdges {
 //System.out.println("rListIdx=" + rListIdx + " matchFraction=" + matchFraction
 //+ " (int)scoreAndMatch[1]=" + (int)scoreAndMatch[1]);
 
-                unusedRegionBounds.add(border2);
+                unusedRegionBounds.add(outerBorder);
                 continue;
             }
 
@@ -1429,8 +1433,6 @@ public class MSEREdges {
             */
 
             allEdgePoints.addAll(matched);
-            unmatchedPoints.addAll(unmatched);
-            
             unmatchedRMap.add(unmatched);
             
 //Image tmpImg = sobelScores.copyToColorGreyscale();
@@ -1439,24 +1441,10 @@ public class MSEREdges {
 
         }
         
-        /*
-        if (debug) {
-            Image tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-            ImageIOHelper.addCurveToImage(allEdgePoints, tmpImg, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmpImg, "_" + ts + "_matched_");
-            tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-            ImageIOHelper.addCurveToImage(unmatchedPoints, tmpImg, 0, 255, 0, 0);
-            MiscDebug.writeImage(tmpImg, "_" + ts + "_unmatched_");
-            //tmpImg = clrImg.copyToGreyscale2().copyToColorGreyscale();
-            //ImageIOHelper.addCurveToImage(rmvdImgBorders, tmpImg, 0, 255, 0, 0);
-            //MiscDebug.writeImage(tmpImg, "_" + ts + "_rmvdBounds_");
-        }
-        */
-        
         double tt1 = System.currentTimeMillis();
 
-        addUnmatchedToEdgePoints(unmatchedPoints, unmatchedRMap,
-            allEdgePoints, rmvdImgBorders, maxGapSize);
+        addUnmatchedToEdgePoints(unmatchedRMap, allEdgePoints, rmvdImgBorders, 
+            maxGapSize);
       
         long tt2 = System.currentTimeMillis();
         
@@ -2083,13 +2071,11 @@ public class MSEREdges {
         return shiftedImg;
     }
 
-    private TIntSet removeImageBorder(TIntSet pixIdxs, TIntSet outputRmvd,
+    private void removeImageBorder(TIntSet pixIdxs, TIntSet outputRmvd,
         int width, int height) {
 
-        TIntSet set = new TIntHashSet(pixIdxs);
-
         TIntSet rm = new TIntHashSet();
-        TIntIterator iter = set.iterator();
+        TIntIterator iter = pixIdxs.iterator();
         while (iter.hasNext()) {
             int pixIdx = iter.next();
             int y = pixIdx/width;
@@ -2100,9 +2086,7 @@ public class MSEREdges {
             }
         }
 
-        set.removeAll(rm);
-
-        return set;
+        pixIdxs.removeAll(rm);
     }
 
     // calc avg score and count the points w/ v>0
@@ -2198,8 +2182,7 @@ public class MSEREdges {
         
         System.out.println("number of unmatched regions=" + n);
         
-        List<List<TIntSet>> output = new 
-            ArrayList<List<TIntSet>>();
+        List<List<TIntSet>> output = new ArrayList<List<TIntSet>>();
         
         for (int i = 0; i < unmatchedRMap.size(); ++i) {
                         
@@ -2226,9 +2209,8 @@ public class MSEREdges {
         return output;
     }
     
-    private void addUnmatchedToEdgePoints(TIntSet unmatchedPoints, 
-        List<TIntSet> unmatchedRMap, TIntSet allEdgePoints, 
-        TIntSet rmvdImgBorders, int maxGapSize) {
+    private void addUnmatchedToEdgePoints(List<TIntSet> unmatchedRMap, 
+        TIntSet allEdgePoints, TIntSet rmvdImgBorders, int maxGapSize) {
         
         //make contiguous connected segments of matched set.
         ConnectedPointsFinder finder2 = new ConnectedPointsFinder(

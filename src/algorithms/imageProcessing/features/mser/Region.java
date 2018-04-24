@@ -47,7 +47,10 @@ image, and optionally fits ellipses to them.
 * 
 * ------
 * author nichole ported the C++ code of Charles Dubout to java and added
-* methods used in canonicalization (in progress) 
+* methods used in canonicalization.
+* 
+* The equals and hashcode have been tailored to consider the composite of
+* pixel_, area_ and moments_ as the primary key (for Collections, etc.).
 */
 public class Region {
 
@@ -816,5 +819,83 @@ public class Region {
         }
         
         return out;
+    }
+    
+    /*
+    public int level_;
+    double variation_;
+    
+    int pixel_;
+    int area_;
+    double[] moments_; //(x, y, x^2, xy, y^2)
+   */
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Region)) {
+            return false;
+        }
+        Region other = (Region)obj;
+        if (other.area_ != area_) {
+            return false;
+        }
+        double eps = 0.1;
+        for (int i = 0; i < moments_.length; ++i) {
+            if (Math.abs(moments_[i] - other.moments_[i]) > eps) {
+                return false;
+            }
+        }
+        if (pixel_ != other.pixel_) {
+            return false;
+        }
+        return true;
+    }
+    
+    @Override
+    public int hashCode() {
+        
+        int hash = fnvHashCode();
+
+        return hash;
+    }
+
+    protected static int fnv321aInit = 0x811c9dc5;
+    protected static int fnv32Prime = 0x01000193;
+
+    protected int fnvHashCode() {
+
+        /*
+         * hash = offset_basis
+         * for each octet_of_data to be hashed
+         *     hash = hash xor octet_of_data
+         *     hash = hash * FNV_prime
+         * return hash
+         *
+         * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+         */
+        int mask = (1 << 31) - 1;
+        int shift = 32;
+        int sum = fnv321aInit;
+        long b0, b1;
+        
+        sum ^= pixel_;
+        sum *= fnv32Prime;
+        sum ^= area_;
+        sum *= fnv32Prime;
+        
+        for (int i = 0; i < moments_.length; ++i) {
+            long a = Double.doubleToLongBits(moments_[i]); 
+            b0 = a & mask;
+            b1 = (a >> shift) & mask;
+            
+            // xor the bottom with the current octet.
+            sum ^= b0;
+            // multiply by the 32 bit FNV magic prime mod 2^32
+            sum *= fnv32Prime;
+            
+            sum ^= b1;
+            sum *= fnv32Prime;
+        }
+        
+        return sum;
     }
 }

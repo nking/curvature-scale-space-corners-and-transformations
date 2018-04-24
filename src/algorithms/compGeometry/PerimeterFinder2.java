@@ -275,6 +275,8 @@ public class PerimeterFinder2 {
     
     /**
      * finds any gaps embedded in the contiguous points.
+     * The runtime complexity is roughly O(N_contiguousPoints).
+     * 
      * @param contiguousPoints
      * @param outputEmbedded output variable
      * @param outputBoundary output variable
