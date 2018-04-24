@@ -674,9 +674,9 @@ public class MSEREdges {
 
                 List<PatchUtil> pList1 = clrs.get(label);
 
-                Set<PairInt> points1 = pList1.get(0).getPixelSet();
-                CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(ptImg, points1);
-                CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
+                //Set<PairInt> points1 = pList1.get(0).getPixelSet();
+                //CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(ptImg, points1);
+                //CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
 
                 int[] adjBits = adjLabels.getSetBits();
                 for (int label2 : adjBits) {
@@ -693,14 +693,29 @@ public class MSEREdges {
 
                     List<PatchUtil> pList2 = clrs.get(label2);
 
-                    Set<PairInt> points2 = pList2.get(0).getPixelSet();
-                    CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(ptImg, points2);
-                    CMODE cmode2 = CMODE.determineColorMode(clrImg, points2);
+                    //Set<PairInt> points2 = pList2.get(0).getPixelSet();
+                    //CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(ptImg, points2);
+                    //CMODE cmode2 = CMODE.determineColorMode(clrImg, points2);
 
+                    //TODO: could change the intersection to 
+                    //  use a detector window which scans in x and y at each
+                    //  cell interval.  currently, the intersection is for every
+                    //  interior pixel
+                    
                     //DEBUG
                     float inter0 = (float)pList1.get(0).intersection(pList2.get(0));
+                    if (inter0 < intersectionLimit) {
+                        continue;
+                    }
                     float inter1 = (float)pList1.get(1).intersection(pList2.get(1));
+                    if (inter1 < intersectionLimit1) {
+                        continue;
+                    }
                     float inter2 = (float)pList1.get(2).intersection(pList2.get(2));
+                    if (inter2 < intersectionLimit) {
+                        continue;
+                    }
+
                     /*System.out.format(
                         "(%d,%d) %s %s : (%d,%d) %s %s intersection=%.3f,%.3f,%.3f", 
                         xy1.getX(), xy1.getY(), 
@@ -710,12 +725,6 @@ public class MSEREdges {
                         inter0, inter1, inter2
                     );*/
                     
-                    if (inter0 < intersectionLimit || inter1 < intersectionLimit1 
-                        || inter2 < intersectionLimit) {
-                        //System.out.format("\n");
-                        continue;
-                    }
-
                     // -- merge the adjacent into the current label ---
 
                     pList1.get(0).add(set2, hogs);
@@ -776,7 +785,6 @@ public class MSEREdges {
                     mCount++;
                     eCount++;
                 }
-
             }
         } while (eCount > 0);
         
@@ -1357,23 +1365,28 @@ public class MSEREdges {
         TIntSet rmvdImgBorders = new TIntHashSet();
         
         double tt0 = System.currentTimeMillis();
-        
-        List<TIntSet> unusedRegionBounds = new ArrayList<TIntSet>();
-                
+             
+        Region r;
+        TIntSet points;
+        TIntSet embedded = new TIntHashSet();
+        TIntSet outerBorder = new TIntHashSet();
+        TIntSet matched;
+        TIntSet unmatched;
+
         for (int rListIdx = 0; rListIdx < regions.size(); ++rListIdx) {
-            Region r = regions.get(rListIdx);
-            TIntSet points = r.getAcc(clrImg.getWidth());
+            r = regions.get(rListIdx);
+            points = r.getAcc(clrImg.getWidth());
             
-            TIntSet embedded = new TIntHashSet();
-            TIntSet outerBorder = new TIntHashSet();
+            embedded.clear();
+            outerBorder.clear();
             //The runtime complexity is roughly O(N_points).
             finder.extractBorder2(points, embedded, outerBorder, clrImg.getWidth());
 
             removeImageBorder(outerBorder, rmvdImgBorders,
                 clrImg.getWidth(), clrImg.getHeight());
 
-            TIntSet matched = new TIntHashSet();
-            TIntSet unmatched = new TIntHashSet();
+            matched = new TIntHashSet();
+            unmatched = new TIntHashSet();
 
             double[] scoreAndMatch = calcAvgScore(outerBorder, sobelScores,
                 matched, unmatched, clrImg.getWidth());
@@ -1403,7 +1416,6 @@ public class MSEREdges {
 //System.out.println("rListIdx=" + rListIdx + " matchFraction=" + matchFraction
 //+ " (int)scoreAndMatch[1]=" + (int)scoreAndMatch[1]);
 
-                unusedRegionBounds.add(outerBorder);
                 continue;
             }
 
@@ -1440,6 +1452,12 @@ public class MSEREdges {
 //MiscDebug.writeImage(tmpImg, "_u_" + rListIdx);
 
         }
+        r = null;
+        points = null;
+        embedded = null;
+        outerBorder = null;
+        matched = null;
+        unmatched = null;
         
         double tt1 = System.currentTimeMillis();
 
