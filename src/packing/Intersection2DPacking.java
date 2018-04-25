@@ -18,13 +18,12 @@ import gnu.trove.set.hash.TIntHashSet;
  * 
  * Considering implementing these:
  * 
- * Option 1:
+ * Option 1 (naiveStripPacking):
  *     resembles 2D strips:
  *     -- find the intersection of the point sets by iterating over the smallest
  *        point set.
  *     -- sort the intersection data structure by x, then y
  *     -- fill the intersection space with rectangles of given x and y size.
- *        -- use IntervaleRangeSearch for collision checks
  *        
  * Option 2:
  *     find the intersection of the point sets by iterating over the smallest
@@ -34,7 +33,7 @@ import gnu.trove.set.hash.TIntHashSet;
  *     then fill the space using order based upon the most connected medial 
  *     axis points and then the space connected to those assigned bins, 
  *     iteratively.
- *     It also uses IntervaleRangeSearch for collision checks.
+ *     It can use IntervalRangeSearch for collision checks.
  * 
  * Option 3:
  *    find the intersection of the point sets by iterating over the smallest
