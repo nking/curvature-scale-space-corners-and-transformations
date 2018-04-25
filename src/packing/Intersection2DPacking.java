@@ -21,12 +21,25 @@ package packing;
  *        -- use IntervaleRangeSearch for collision checks
  *        
  * Option 2:
- *     uses a medial axis built from a voronoi diagram
+ *     find the intersection of the point sets by iterating over the smallest
+ *        point set.
+ *     use a medial axis built from a voronoi diagram
  *     (see algorithms.compGeometry.MedialAxis), 
- *     then fills the space using order based upon the most connected medial 
+ *     then fill the space using order based upon the most connected medial 
  *     axis points and then the space connected to those assigned bins, 
  *     iteratively.
  *     It also uses IntervaleRangeSearch for collision checks.
+ * 
+ * Option 3:
+ *    find the intersection of the point sets by iterating over the smallest
+ *        point set.
+ *     create ordered, connected boundary points of the
+ *     intersection.
+ *     then walk along the border, filling in bins
+ *        at cell x,y spacings and adding the connected
+ *        intervals to a stack iteratively to continue filling
+ *        the intersection with bins.
+ 
  * 
  * @author nichole
  */
