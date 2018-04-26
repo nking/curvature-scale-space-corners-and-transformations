@@ -41,8 +41,8 @@ import java.util.Set;
 <span class="fc" id="L41">    private int N_CELLS_PER_BLOCK_DIM = 3;</span>
 
     public void setToDebug() {
-<span class="fc" id="L44">        debug = true;</span>
-<span class="fc" id="L45">    }</span>
+<span class="nc" id="L44">        debug = true;</span>
+<span class="nc" id="L45">    }</span>
 
     private TIntObjectMap&lt;CRegion&gt; getOrCreate(
         TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csrs,
@@ -914,16 +914,16 @@ import java.util.Set;
             
 <span class="pc bpc" id="L915" title="1 of 2 branches missed.">            if (debug) {</span>
                 //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
-<span class="fc" id="L917">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
+<span class="nc" id="L917">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
                     + obj.r0Idx + &quot;_&quot; + obj.r1Idx;
-<span class="fc" id="L919">                System.out.format(</span>
+<span class="nc" id="L919">                System.out.format(</span>
                     &quot;final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
-<span class="fc" id="L921">                    settings.getDebugLabel(), i, x1, y1,</span>
-<span class="fc" id="L922">                    (float) obj.cost, x0, y0, lbl,</span>
-<span class="fc" id="L923">                    (float) obj.costs[0], (float) obj.costs[1],</span>
-<span class="fc" id="L924">                    (float) obj.costs[2], (float) obj.costs[3],</span>
-<span class="fc" id="L925">                    (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],</span>
-<span class="fc" id="L926">                    obj.nMatched</span>
+<span class="nc" id="L921">                    settings.getDebugLabel(), i, x1, y1,</span>
+<span class="nc" id="L922">                    (float) obj.cost, x0, y0, lbl,</span>
+<span class="nc" id="L923">                    (float) obj.costs[0], (float) obj.costs[1],</span>
+<span class="nc" id="L924">                    (float) obj.costs[2], (float) obj.costs[3],</span>
+<span class="nc" id="L925">                    (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],</span>
+<span class="nc" id="L926">                    obj.nMatched</span>
                 );               
             }
         }

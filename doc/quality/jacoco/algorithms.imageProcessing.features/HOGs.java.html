@@ -383,12 +383,12 @@ import java.util.List;
 
 <span class="fc" id="L384">            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);</span>
 
-<span class="pc bpc" id="L386" title="1 of 2 branches missed.">            if ((x2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
-<span class="nc" id="L387">                break;</span>
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">            } else if (x2 &lt; 0) {</span>
-<span class="nc" id="L389">                x2 = 0;</span>
-<span class="pc bpc" id="L390" title="1 of 2 branches missed.">            } else if (x2 &gt;= w) {</span>
-<span class="nc" id="L391">                break;</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">            if ((x2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="fc" id="L387">                break;</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">            } else if (x2 &lt; 0) {</span>
+<span class="fc" id="L389">                x2 = 0;</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">            } else if (x2 &gt;= w) {</span>
+<span class="fc" id="L391">                break;</span>
             }
 
 <span class="fc bfc" id="L394" title="All 2 branches covered.">            for (int cY = 0; cY &lt; N_CELLS_PER_BLOCK_DIM; ++cY) {</span>
@@ -397,12 +397,12 @@ import java.util.List;
 
 <span class="fc" id="L398">                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);</span>
 
-<span class="pc bpc" id="L400" title="1 of 2 branches missed.">                if ((y2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
-<span class="nc" id="L401">                    break;</span>
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">                } else if (y2 &lt; 0) {</span>
-<span class="nc" id="L403">                    y2 = 0;</span>
-<span class="pc bpc" id="L404" title="1 of 2 branches missed.">                } else if (y2 &gt;= h) {</span>
-<span class="nc" id="L405">                    break;</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">                if ((y2 + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="fc" id="L401">                    break;</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">                } else if (y2 &lt; 0) {</span>
+<span class="fc" id="L403">                    y2 = 0;</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">                } else if (y2 &gt;= h) {</span>
+<span class="fc" id="L405">                    break;</span>
                 }
 
 <span class="fc" id="L408">                int pixIdx = (y2 * w) + x2;</span>
@@ -417,7 +417,7 @@ import java.util.List;
             }
         }
 
-<span class="pc bpc" id="L420" title="1 of 2 branches missed.">        if (!cells.isEmpty()) {</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        if (!cells.isEmpty()) {</span>
 <span class="fc" id="L421">            blockTotal /= (double)cells.size();</span>
 <span class="fc" id="L422">            blockTotal = Math.sqrt(blockTotal);</span>
         }

@@ -52,8 +52,8 @@ import java.util.Set;
 <span class="fc" id="L52">    private boolean debug = false;</span>
 
     public void setToDebug() {
-<span class="fc" id="L55">        debug = true;</span>
-<span class="fc" id="L56">    }</span>
+<span class="nc" id="L55">        debug = true;</span>
+<span class="nc" id="L56">    }</span>
 
     private void filterCloseToBounds2(List&lt;Region&gt; regions,
         int width, int height, int border) {
@@ -140,8 +140,8 @@ import java.util.Set;
         }
         
 <span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L143">            System.out.println(debugLabel + &quot;  clrMode=&quot; + clrMode.name() </span>
-<span class="fc" id="L144">                + &quot; ptMode=&quot; + ptMode.name());</span>
+<span class="nc" id="L143">            System.out.println(debugLabel + &quot;  clrMode=&quot; + clrMode.name() </span>
+<span class="nc" id="L144">                + &quot; ptMode=&quot; + ptMode.name());</span>
         }
         
 <span class="fc bfc" id="L147" title="All 2 branches covered.">        if (clrMode.equals(CMODE.WHITE)) {</span>
@@ -670,7 +670,7 @@ import java.util.Set;
 
 <span class="fc" id="L671">        long ts = 0;</span>
 <span class="pc bpc" id="L672" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L673">            ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="nc" id="L673">            ts = MiscDebug.getCurrentTimeFormatted();</span>
         }
 
 <span class="fc" id="L676">        TrimmedImage img0Trim = trim(img0, shape0, 20);</span>
@@ -750,8 +750,8 @@ import java.util.Set;
         
 <span class="pc bpc" id="L751" title="1 of 2 branches missed.">        if (debug) {            </span>
             //MiscDebug.writeImage(img0Trimmed, &quot;_shape0_mask_&quot;);
-<span class="fc" id="L753">            MiscDebug.writeImage(luvTheta0, &quot;_luv_mask_&quot; + ts);</span>
-<span class="fc" id="L754">            MiscDebug.writeImage(luvTheta1, &quot;_luv_srch_&quot; + ts);</span>
+<span class="nc" id="L753">            MiscDebug.writeImage(luvTheta0, &quot;_luv_mask_&quot; + ts);</span>
+<span class="nc" id="L754">            MiscDebug.writeImage(luvTheta1, &quot;_luv_srch_&quot; + ts);</span>
             
             //MiscDebug.writeImage(tmp00, &quot;_gs_enhanced_0_&quot;);
             //MiscDebug.writeImage(tmp01, &quot;_luv_enhanced_0_&quot;);
@@ -848,21 +848,21 @@ import java.util.Set;
 <span class="fc" id="L848">        filterToLargestPartitions(regionPoints0, img0Trimmed, shape0Trimmed);</span>
         
 <span class="pc bpc" id="L850" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L851">            int[] xyCen = new int[2];</span>
+<span class="nc" id="L851">            int[] xyCen = new int[2];</span>
             Image im0Cp, im1Cp;
-<span class="fc" id="L853">            im0Cp = img0Trimmed.copyImage();</span>
-<span class="fc" id="L854">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints0.iterator();</span>
-<span class="fc bfc" id="L855" title="All 2 branches covered.">            for (int i = 0; i &lt; regionPoints0.size(); ++i) {</span>
-<span class="fc" id="L856">                iter.advance();</span>
-<span class="fc" id="L857">                int rIdx = iter.key();</span>
-<span class="fc" id="L858">                Region r = regionsComb0.get(rIdx);</span>
-<span class="fc" id="L859">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
-<span class="fc" id="L860">                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);</span>
-<span class="fc" id="L861">                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());</span>
-<span class="fc" id="L862">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,</span>
+<span class="nc" id="L853">            im0Cp = img0Trimmed.copyImage();</span>
+<span class="nc" id="L854">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints0.iterator();</span>
+<span class="nc bnc" id="L855" title="All 2 branches missed.">            for (int i = 0; i &lt; regionPoints0.size(); ++i) {</span>
+<span class="nc" id="L856">                iter.advance();</span>
+<span class="nc" id="L857">                int rIdx = iter.key();</span>
+<span class="nc" id="L858">                Region r = regionsComb0.get(rIdx);</span>
+<span class="nc" id="L859">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="nc" id="L860">                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);</span>
+<span class="nc" id="L861">                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());</span>
+<span class="nc" id="L862">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,</span>
                     1, 255, 0, 0);
             }
-<span class="fc" id="L865">            MiscDebug.writeImage(im0Cp, &quot;_&quot; + settings.getDebugLabel() + </span>
+<span class="nc" id="L865">            MiscDebug.writeImage(im0Cp, &quot;_&quot; + settings.getDebugLabel() + </span>
                 &quot;_regions_0_filterP_&quot;);
         }
         
@@ -877,20 +877,20 @@ import java.util.Set;
 <span class="fc" id="L877">        replaceWithAccumulatedPoints(regionPoints1);</span>
         
 <span class="pc bpc" id="L879" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L880">            int[] xyCen = new int[2];</span>
-<span class="fc" id="L881">            Image im1Cp = img1.copyImage();</span>
-<span class="fc" id="L882">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints1.iterator();</span>
-<span class="fc bfc" id="L883" title="All 2 branches covered.">            for (int i = 0; i &lt; regionPoints1.size(); ++i) {</span>
-<span class="fc" id="L884">                iter.advance();</span>
-<span class="fc" id="L885">                int rIdx = iter.key();</span>
-<span class="fc" id="L886">                Region r = regionsComb1.get(rIdx);</span>
-<span class="fc" id="L887">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
-<span class="fc" id="L888">                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);</span>
-<span class="fc" id="L889">                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());</span>
-<span class="fc" id="L890">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,</span>
+<span class="nc" id="L880">            int[] xyCen = new int[2];</span>
+<span class="nc" id="L881">            Image im1Cp = img1.copyImage();</span>
+<span class="nc" id="L882">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints1.iterator();</span>
+<span class="nc bnc" id="L883" title="All 2 branches missed.">            for (int i = 0; i &lt; regionPoints1.size(); ++i) {</span>
+<span class="nc" id="L884">                iter.advance();</span>
+<span class="nc" id="L885">                int rIdx = iter.key();</span>
+<span class="nc" id="L886">                Region r = regionsComb1.get(rIdx);</span>
+<span class="nc" id="L887">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="nc" id="L888">                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);</span>
+<span class="nc" id="L889">                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());</span>
+<span class="nc" id="L890">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,</span>
                     1, 255, 0, 0);
             }
-<span class="fc" id="L893">            MiscDebug.writeImage(im1Cp, &quot;_&quot; + settings.getDebugLabel() </span>
+<span class="nc" id="L893">            MiscDebug.writeImage(im1Cp, &quot;_&quot; + settings.getDebugLabel() </span>
                 + &quot;_regions_1_filtered_&quot;);
             
             /*
@@ -921,7 +921,7 @@ import java.util.Set;
 <span class="fc" id="L921">        MSERMatcher matcher = new MSERMatcher();</span>
 
 <span class="pc bpc" id="L923" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L924">            matcher.setToDebug();</span>
+<span class="nc" id="L924">            matcher.setToDebug();</span>
         }
         
 <span class="fc" id="L927">        List&lt;CorrespondenceList&gt; corList = matcher.matchObject0(</span>
