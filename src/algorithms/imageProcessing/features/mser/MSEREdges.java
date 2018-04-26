@@ -26,6 +26,7 @@ import algorithms.imageProcessing.features.mser.MSER.Threshold;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
+import algorithms.packing.Intersection2DPacking;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import algorithms.util.VeryLongBitString;
@@ -583,12 +584,13 @@ public class MSEREdges {
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        float intersectionLimit = 0.65f;//0.7f;
-        float intersectionLimit1 = 0.65f;
+        // for hogs and white-white merge, 0.65 is
+        float intersectionLimit = 0.67f;//0.65f;//0.7f;
+        float intersectionLimit1 = 0.7f;//0.65f;
         //float intersectionLimit1H = 0.8f;
         
-        int nCellsPerDim = 1;
-        int nPixPerCellDim = 6;
+        int nCellsPerDim = 3;//1
+        int nPixPerCellDim = 3;//6
         int nBins = 9;
         
         HOGs hogs = new HOGs(gsImg, nCellsPerDim, nPixPerCellDim, nBins);
@@ -601,19 +603,24 @@ public class MSEREdges {
         int w = gsImg.getWidth();
         int h = gsImg.getHeight();
 
+        Intersection2DPacking ip = new Intersection2DPacking();
+        
         for (int label = 0; label < labeledSets.size(); ++label) {
+            
             TIntSet set = new TIntHashSet(labeledSets.get(label));
             //set.removeAll(edgeList.get(label));
             
+            TIntSet points = ip.naiveStripPacking(set, w, nPixPerCellDim);
+            
             List<PatchUtil> list = new ArrayList<PatchUtil>();
             PatchUtil p = new PatchUtil(w, h, nBins);
-            p.add(set, hogs);
+            p.add(points, hogs);
             list.add(p);
             p = new PatchUtil(w, h, nBins);
-            p.add(set, hcpt);
+            p.add(points, hcpt);
             list.add(p);
             p = new PatchUtil(w, h, nBins);
-            p.add(set, hgs);
+            p.add(points, hgs);
             list.add(p);
             
             clrs.put(label, list);
@@ -671,6 +678,7 @@ public class MSEREdges {
 
                 PairInt xy1 = centroidsMap.get(label);
 
+                //hog, hcot, and hgs
                 List<PatchUtil> pList1 = clrs.get(label);
 
                 //Set<PairInt> points1 = pList1.get(0).getPixelSet();
@@ -690,6 +698,7 @@ public class MSEREdges {
                     TIntSet set2 = new TIntHashSet(labeledSets.get(label2));
                     set2.removeAll(getEdgeList().get(label2));
 
+                    //hog, hcot, and hgs
                     List<PatchUtil> pList2 = clrs.get(label2);
 
                     //Set<PairInt> points2 = pList2.get(0).getPixelSet();
@@ -725,10 +734,10 @@ public class MSEREdges {
                     );*/
                     
                     // -- merge the adjacent into the current label ---
-
-                    pList1.get(0).add(set2, hogs);
-                    pList1.get(1).add(set2, hcpt);
-                    pList1.get(2).add(set2, hgs);
+                    TIntSet points2 = pList2.get(0).getPixelIndexes();
+                    pList1.get(0).add(points2, hogs);
+                    pList1.get(1).add(points2, hcpt);
+                    pList1.get(2).add(points2, hgs);
 
                     clrs.remove(label2);
 

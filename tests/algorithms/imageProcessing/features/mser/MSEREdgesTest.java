@@ -23,7 +23,7 @@ public class MSEREdgesTest extends TestCase {
 
         String fileName1 = "";
 
-        //for (int i = 11; i < 12; ++i) {
+        //for (int i = 9; i < 10; ++i) {
         //for (int i = 25; i < 26; ++i) {
         //for (int i = 0; i < 1; ++i) {
         for (int i = 0; i < 37; ++i) {
