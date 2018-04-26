@@ -7,6 +7,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.HashSet;
 import java.util.Set;
+import algorithms.packing.Intersection2DPacking;
 
 /**
  * carries the current integrated histogram from a region of
@@ -306,6 +307,23 @@ public class PatchUtil {
         this.err += tmpSumErrSq;
         this.err /= (double)c1;
         this.err = Math.sqrt(err);
+    }
+    
+    /**
+     * returns the set of points that is a subset of the intersection, scanned
+     * from center to perimeter by interval of size hog cell.
+     * @param other
+     * @param nCellSize
+     * @return 
+     */
+    public TIntSet calculateDetectorWindow(PatchUtil other, int nCellSize) {
+        
+        Intersection2DPacking ip = new Intersection2DPacking();
+        
+        TIntSet seeds = ip.naiveStripPacking(pixIdxs, other.pixIdxs, imgW, 
+            nCellSize);
+        
+        return seeds;
     }
     
     /**

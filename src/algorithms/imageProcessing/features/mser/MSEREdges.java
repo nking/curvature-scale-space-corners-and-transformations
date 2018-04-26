@@ -23,7 +23,6 @@ import algorithms.imageProcessing.features.HGS;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.PatchUtil;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
-import algorithms.imageProcessing.matching.CMODE;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -701,7 +700,7 @@ public class MSEREdges {
                     //  use a detector window which scans in x and y at each
                     //  cell interval.  currently, the intersection is for every
                     //  interior pixel
-                    
+                   
                     //DEBUG
                     float inter0 = (float)pList1.get(0).intersection(pList2.get(0));
                     if (inter0 < intersectionLimit) {

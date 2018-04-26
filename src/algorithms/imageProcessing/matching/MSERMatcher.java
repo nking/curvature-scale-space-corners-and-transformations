@@ -2,8 +2,6 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HCPT;
 import algorithms.imageProcessing.features.HGS;
@@ -13,7 +11,7 @@ import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.features.mser.Region;
-import algorithms.misc.MiscDebug;
+import algorithms.packing.Intersection2DPacking;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -25,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -204,9 +201,14 @@ public class MSERMatcher {
     }
     
     //double[]{intersection, f0, f1, nMatched, area0, area1};
-    private double[] sumHOGCost2(HOGs hogs0, CRegion cr0, 
+    private double[] sumHOGCost2(Set<PairInt> offsets0, int intersectionCount,
+        HOGs hogs0, CRegion cr0, 
         HOGs hogs1, CRegion cr1) {
-        
+                
+        if (offsets0.size() == 0) {
+            return null;
+        }
+
         int orientation0 = cr0.hogOrientation;
             
         int orientation1 = cr1.hogOrientation;
@@ -214,25 +216,23 @@ public class MSERMatcher {
         Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
 
         double sum = 0;
-        int count = 0;
         
         int[] h0 = new int[hogs0.getNumberOfBins()];
         int[] h1 = new int[h0.length];
-            
+        
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
-        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
-
-            PairInt pOffset0 = entry0.getKey();
-
+        
+        for (PairInt pOffset0 : offsets0) {
+            
             PairInt xy1 = offsetMap1.get(pOffset0);
 
             if (xy1 == null) {
                 continue;
             }
 
-            PairInt xy0 = entry0.getValue();
+            PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);
 
             hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);
 
@@ -243,23 +243,18 @@ public class MSERMatcher {
                 h1, orientation1);
             
             sum += (intersection * intersection);
-
-            count++;
         }
-        if (count == 0) {
-            return null;
-        }
-
-        sum /= (double)count;
+        
+        sum /= (double)offsets0.size();
         sum = Math.sqrt(sum);
         
         double area1 = cr1.offsetsToOrigCoords.size();
-        double f1 = 1. - ((double) count / area1);
+        double f1 = 1. - ((double) intersectionCount / area1);
         
         double area0 = cr0.offsetsToOrigCoords.size();
-        double f0 = 1. - ((double) count / area0);
+        double f0 = 1. - ((double) intersectionCount / area0);
         
-        return new double[]{sum, f0, f1, count, area0, area1};
+        return new double[]{sum, f0, f1, intersectionCount, area0, area1};
     }
 
     //double[]{intersection, f0, f1, nMatched, area0, area1};
@@ -464,6 +459,27 @@ public class MSERMatcher {
 
         @Override
         public int compareTo(Obj other) {
+            if (cost < other.cost) {
+                return -1;
+            } else if (cost > other.cost) {
+                return 1;
+            }
+            if (nMatched > other.nMatched) {
+                return -1;
+            } else if (nMatched < other.nMatched) {
+                return 1;
+            }
+            // NOTE: may revise this.  wanting to choose smallest scale
+            //   or smaller fraction of whole
+            if (imgIdx0 < other.imgIdx0 && imgIdx1 < other.imgIdx1) {
+                return -1;
+            } else if (imgIdx0 > other.imgIdx0 && imgIdx1 > other.imgIdx1) {
+                return 1;
+            }
+            return 0;
+        }
+        
+        private int compareToObsolete(Obj other) {
             double diffCost = Math.abs(other.cost - cost);
             if (diffCost < 0.01) {//0.001
                 // NOTE: may revise this.  wanting to choose smallest scale
@@ -694,13 +710,22 @@ public class MSERMatcher {
                             
                             continue;
                         }
+                                                   
+                        Intersection2DPacking ip = new Intersection2DPacking();
+                        Set<PairInt> intersectingKeys = ip.intersection(
+                            cr0.offsetsToOrigCoords.keySet(),
+                            cr1.offsetsToOrigCoords.keySet());
+                        Set<PairInt> offsets0 = ip.naiveStripPacking(
+                            intersectingKeys, N_PIX_PER_CELL_DIM);
 
                         double[] hogCosts;
                         float hogCost;
                         
                         if (true) {// use intersection    
-                            //double[]{intersection, f0, f1, nMatched, area0, area1};
-                            hogCosts = sumHOGCost2(hogs0, cr0, hogs1, cr1);
+                            //double[]{intersection, f0, f1, count, area0, area1};
+                            hogCosts = sumHOGCost2(
+                                offsets0, intersectingKeys.size(), hogs0, cr0, 
+                                hogs1, cr1);
                             if (hogCosts == null) {
                                 continue;
                             }
@@ -746,7 +771,9 @@ public class MSERMatcher {
                         if (true) {
                             //double[]{combIntersection, f0, f1, 
                             //    intersectionHCPT, intersectionHGS, count}
-                            costs2 = sumCost2(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
+                            costs2 = sumCost2(
+                                offsets0, intersectingKeys.size(), hcpt0, hgs0, cr0, 
+                                hcpt1, hgs1, cr1);
                             if (clrMode0.equals(CMODE.WHITE)) {
                                 hcptHgsCost = 1.f - costs2[0];
                             } else {
@@ -789,16 +816,23 @@ public class MSERMatcher {
                         
                         boolean added = bestPerOctave.add(obj);
                         
-                        if (false && debug) {
+                        if (false || debug) {
                             double cost2 = (float) Math.sqrt(
                                 obj.costs[0]*obj.costs[0] +
                                 obj.costs[1]*obj.costs[1] +
                                 obj.costs[2]*obj.costs[2]
                             );
+                            String arrow;
+                            if (added) {
+                                arrow = "==>";
+                            } else {
+                                arrow = "   ";
+                            }
                             System.out.format(
-                            "%s octave %d %d] (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d c2=%.3f\n",
+                            "%s octave %d %d] %s (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d c2=%.3f\n",
                             settings.getDebugLabel(), pyrIdx0, pyrIdx1,
-                            x1, y1, (float) obj.cost,
+                            arrow, x1, y1, 
+                            (float) obj.cost,
                             Math.round(scale0 * obj.cr0.ellipseParams.xC),
                             Math.round(scale0 * obj.cr0.ellipseParams.yC), 
                             (float) obj.costs[0], (float) obj.costs[1], 
@@ -842,7 +876,7 @@ public class MSERMatcher {
         
         Set<PairInt> pairs = new HashSet<PairInt>();
         
-        Collections.sort(bestOverall, new CountComparator());
+        //Collections.sort(bestOverall, new CountComparator());
         
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
         
@@ -907,15 +941,18 @@ public class MSERMatcher {
     }
     
     //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count}
-    private double[] sumCost2(HCPT hcpt0, HGS hgs0, CRegion cr0, 
-        HCPT hcpt1, HGS hgs1, CRegion cr1) {
+    private double[] sumCost2(Set<PairInt> offsets0, int intersectionCount, 
+        HCPT hcpt0, HGS hgs0, CRegion cr0, HCPT hcpt1, HGS hgs1, CRegion cr1) {
+        
+        if (offsets0.size() == 0) {
+            return null;
+        }
         
         Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
 
         double sumCombined = 0;
         double sumHCPT = 0;
         double sumHGS = 0;
-        int count = 0;
         
         int[] h0 = new int[hcpt0.getNumberOfBins()];
         int[] h1 = new int[h0.length];
@@ -923,18 +960,16 @@ public class MSERMatcher {
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
-        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
-
-            PairInt pOffset0 = entry0.getKey();
-
+        for (PairInt pOffset0 : offsets0) {
+            
             PairInt xy1 = offsetMap1.get(pOffset0);
 
             if (xy1 == null) {
                 continue;
             }
 
-            PairInt xy0 = entry0.getValue();
-
+            PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);
+        
             hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);
 
             hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);
@@ -952,29 +987,24 @@ public class MSERMatcher {
             
             sumCombined += (intersection * intersection);
             sumHGS += (intersection * intersection);
-
-            count++;
-        }
-        if (count == 0) {
-            return null;
         }
 
-        sumCombined /= (2.*count);
+        sumCombined /= (2.*offsets0.size());
         sumCombined = Math.sqrt(sumCombined);
         
-        sumHCPT /= (double)count;
+        sumHCPT /= (double)intersectionCount;
         sumHCPT = Math.sqrt(sumHCPT);
         
-        sumHGS /= (double)count;
+        sumHGS /= (double)intersectionCount;
         sumHGS = Math.sqrt(sumHGS);
                      
         double area1 = cr1.offsetsToOrigCoords.size();
-        double f1 = 1. - ((double) count / area1);
+        double f1 = 1. - ((double) intersectionCount / area1);
         
         double area0 = cr0.offsetsToOrigCoords.size();
-        double f0 = 1. - ((double) count / area0);
+        double f0 = 1. - ((double) intersectionCount / area0);
         
-        return new double[]{sumCombined, f0, f1, sumHCPT, sumHGS, count};            
+        return new double[]{sumCombined, f0, f1, sumHCPT, sumHGS, intersectionCount};            
     }
     
     //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count};
