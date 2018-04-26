@@ -816,7 +816,7 @@ public class MSERMatcher {
                         
                         boolean added = bestPerOctave.add(obj);
                         
-                        if (false || debug) {
+                        if (false && debug) {
                             double cost2 = (float) Math.sqrt(
                                 obj.costs[0]*obj.costs[0] +
                                 obj.costs[1]*obj.costs[1] +
@@ -859,15 +859,6 @@ public class MSERMatcher {
             return null;
         }
         
-        /*
-        TODO: revisit with more tests.
-        a few tests suggest that the correct answer is to order by cost,
-        then walk down the array if hogs cost is lower for 2nd best
-        */
-        if (debug) {
-            System.out.println("looking for smallest hogs cost:");
-        }
-        
         List<Obj> bestOverall = new ArrayList<Obj>(bestOverallA.getNumberOfItems());        
         for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
             Obj objB = bestOverallA.getArray()[i];
@@ -876,7 +867,7 @@ public class MSERMatcher {
         
         Set<PairInt> pairs = new HashSet<PairInt>();
         
-        //Collections.sort(bestOverall, new CountComparator());
+        Collections.sort(bestOverall, new CountComparator());
         
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
         
@@ -932,7 +923,7 @@ public class MSERMatcher {
                     (float) obj.costs[0], (float) obj.costs[1],
                     (float) obj.costs[2], (float) obj.costs[3],
                     (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],
-                    obj.cr0.offsetsToOrigCoords.size()
+                    obj.nMatched
                 );               
             }
         }

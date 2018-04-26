@@ -25,7 +25,7 @@ public class AndroidStatuesTest extends TestCase {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    private boolean debug = true;
+    private boolean debug = false;
     
     public AndroidStatuesTest() {
     }
