@@ -31,13 +31,12 @@ public class AndroidStatuesTest extends TestCase {
     }
     
     public void testObjectFinder() throws Exception {
-        boolean debug = true;
-        runMatcher_gingerbreadman(debug);
-        runMatcher_icecream(debug);
-        runMatcher_cupcake(debug);
+        runMatcher_gingerbreadman();
+        runMatcher_icecream();
+        runMatcher_cupcake();
     }
 
-    public void runMatcher_gingerbreadman(boolean debug) throws Exception {
+    public void runMatcher_gingerbreadman() throws Exception {
 
         String[] fileNames0 = new String[]{
         //    "android_statues_03_sz1",
@@ -111,7 +110,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void runMatcher_cupcake(boolean debug) throws Exception {
+    public void runMatcher_cupcake() throws Exception {
         
         String[] fileNames0 = new String[]{
             "android_statues_04.jpg", 
@@ -185,7 +184,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
     
-    public void runMatcher_icecream(boolean debug) throws Exception {
+    public void runMatcher_icecream() throws Exception {
 
         String[] fileNames0 = new String[]{
             "android_statues_04.jpg",
