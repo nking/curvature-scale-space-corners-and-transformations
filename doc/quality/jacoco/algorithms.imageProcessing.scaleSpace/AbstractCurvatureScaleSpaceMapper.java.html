@@ -182,82 +182,81 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 <span class="fc" id="L182">        int h = originalImg.getHeight();</span>
 
 <span class="fc" id="L184">        MSEREdges mserEdges = new MSEREdges(this.originalImg);</span>
-<span class="fc" id="L185">        mserEdges.setToLowerContrast();</span>
-<span class="fc" id="L186">        mserEdges.mergeAndExtractEdges();</span>
-<span class="fc" id="L187">        this.filterProducts = mserEdges.getEdgeFilterProducts();</span>
-<span class="fc" id="L188">        List&lt;TIntSet&gt; edgeSets = mserEdges.getEdges();</span>
+<span class="fc" id="L185">        mserEdges.extractAndMergeEdges();</span>
+<span class="fc" id="L186">        this.filterProducts = mserEdges.getEdgeFilterProducts();</span>
+<span class="fc" id="L187">        List&lt;TIntSet&gt; edgeSets = mserEdges.getEdges();</span>
         
-<span class="fc" id="L190">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
+<span class="fc" id="L189">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
         
-<span class="fc" id="L192">        PerimeterFinder2 finder2 = new PerimeterFinder2();</span>
-<span class="fc bfc" id="L193" title="All 2 branches covered.">        for (int i = 0; i &lt; edgeSets.size(); ++i) {</span>
-<span class="fc" id="L194">            TIntSet set = edgeSets.get(i); </span>
+<span class="fc" id="L191">        PerimeterFinder2 finder2 = new PerimeterFinder2();</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 0; i &lt; edgeSets.size(); ++i) {</span>
+<span class="fc" id="L193">            TIntSet set = edgeSets.get(i); </span>
             
-<span class="fc" id="L196">            pltc.extremeStaircaseRemover(set, w, h);</span>
+<span class="fc" id="L195">            pltc.extremeStaircaseRemover(set, w, h);</span>
             
-<span class="fc" id="L198">            PairIntArray ordered = null;</span>
+<span class="fc" id="L197">            PairIntArray ordered = null;</span>
             try {
-<span class="fc" id="L200">                ordered = finder2.orderTheBoundary(</span>
+<span class="fc" id="L199">                ordered = finder2.orderTheBoundary(</span>
                     set, w, h);
-<span class="fc" id="L202">            } catch (Exception e) {</span>
-<span class="fc" id="L203">                log.severe(e.getMessage());</span>
-<span class="fc" id="L204">                continue;</span>
-<span class="fc" id="L205">            }</span>
+<span class="fc" id="L201">            } catch (Exception e) {</span>
+<span class="fc" id="L202">                log.severe(e.getMessage());</span>
+<span class="fc" id="L203">                continue;</span>
+<span class="fc" id="L204">            }</span>
 
-<span class="fc" id="L207">            PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(</span>
+<span class="fc" id="L206">            PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(</span>
                 ordered);
-<span class="fc" id="L209">            closedCurve.setAsClosedCurve();</span>
+<span class="fc" id="L208">            closedCurve.setAsClosedCurve();</span>
 
-<span class="fc" id="L211">            edges.add(closedCurve);</span>
+<span class="fc" id="L210">            edges.add(closedCurve);</span>
         }
                        
-<span class="fc" id="L214">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
+<span class="fc" id="L213">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
         
-<span class="fc" id="L216">        log.fine(&quot;edges extracted&quot;);</span>
-<span class="fc" id="L217">    }</span>
+<span class="fc" id="L215">        log.fine(&quot;edges extracted&quot;);</span>
+<span class="fc" id="L216">    }</span>
   
     public List&lt;PairIntArray&gt; getEdges() {
-<span class="fc" id="L220">        return edges;</span>
+<span class="fc" id="L219">        return edges;</span>
     }
     
     protected void addCurveToImage(PairIntArray edge, GreyscaleImage input, 
         int nExtraForDot, int value) {
         
-<span class="nc bnc" id="L226" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
-<span class="nc" id="L227">            int x = edge.getX(i);</span>
-<span class="nc" id="L228">            int y = edge.getY(i);</span>
-<span class="nc bnc" id="L229" title="All 2 branches missed.">            for (int dx = -1 * nExtraForDot; dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L230">                float xx = x + dx;</span>
-<span class="nc bnc" id="L231" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
-<span class="nc bnc" id="L232" title="All 2 branches missed.">                    for (int dy = -1 * nExtraForDot; dy &lt; (nExtraForDot + 1); </span>
-<span class="nc" id="L233">                        dy++) {</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
+<span class="nc" id="L226">            int x = edge.getX(i);</span>
+<span class="nc" id="L227">            int y = edge.getY(i);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            for (int dx = -1 * nExtraForDot; dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L229">                float xx = x + dx;</span>
+<span class="nc bnc" id="L230" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">                    for (int dy = -1 * nExtraForDot; dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L232">                        dy++) {</span>
                         
-<span class="nc" id="L235">                        float yy = y + dy;</span>
-<span class="nc bnc" id="L236" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
-<span class="nc" id="L237">                            input.setValue((int) xx, (int) yy, value);</span>
+<span class="nc" id="L234">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L235" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L236">                            input.setValue((int) xx, (int) yy, value);</span>
                         }
                     }
                 }
             }
         }
-<span class="nc" id="L243">    }</span>
+<span class="nc" id="L242">    }</span>
     
     public boolean getInitialized() {
         
-<span class="nc" id="L247">        return (state.ordinal() &gt;= </span>
-<span class="nc bnc" id="L248" title="All 2 branches missed.">            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());</span>
+<span class="nc" id="L246">        return (state.ordinal() &gt;= </span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());</span>
     }
     
     public GreyscaleImage getImage() {
-<span class="fc" id="L252">        return img;</span>
+<span class="fc" id="L251">        return img;</span>
     }
 
     public Image getOriginalImage() {
-<span class="nc" id="L256">        return originalImg;</span>
+<span class="nc" id="L255">        return originalImg;</span>
     }
    
     public EdgeFilterProducts getEdgeFilterProducts() {
-<span class="nc" id="L260">        return filterProducts;</span>
+<span class="nc" id="L259">        return filterProducts;</span>
     }
     
     /*

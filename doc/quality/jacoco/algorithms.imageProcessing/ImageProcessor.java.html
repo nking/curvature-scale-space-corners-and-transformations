@@ -5985,41 +5985,41 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
      */
     public GreyscaleImage createCIELUVTheta(Image img, int maxV) {
 
-<span class="nc" id="L5988">        int w = img.getWidth();</span>
-<span class="nc" id="L5989">        int h = img.getHeight();</span>
+<span class="fc" id="L5988">        int w = img.getWidth();</span>
+<span class="fc" id="L5989">        int h = img.getHeight();</span>
 
-<span class="nc" id="L5991">        GreyscaleImage theta = null;</span>
-<span class="nc bnc" id="L5992" title="All 2 branches missed.">        if (maxV &lt; 256) {</span>
-<span class="nc" id="L5993">            theta = new GreyscaleImage(w, h);</span>
+<span class="fc" id="L5991">        GreyscaleImage theta = null;</span>
+<span class="pc bpc" id="L5992" title="1 of 2 branches missed.">        if (maxV &lt; 256) {</span>
+<span class="fc" id="L5993">            theta = new GreyscaleImage(w, h);</span>
         } else {
 <span class="nc" id="L5995">            theta = new GreyscaleImage(w, h,</span>
                 GreyscaleImage.Type.Bits32FullRangeInt);
         }
 
-<span class="nc" id="L5999">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L5999">        CIEChromaticity cieC = new CIEChromaticity();</span>
 
-<span class="nc" id="L6001">        double ts = (double)maxV/(double)359;</span>
+<span class="fc" id="L6001">        double ts = (double)maxV/(double)359;</span>
 
-<span class="nc" id="L6003">        int n = img.getNPixels();</span>
+<span class="fc" id="L6003">        int n = img.getNPixels();</span>
         int v;
-<span class="nc bnc" id="L6005" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L6006" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L6005" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L6006" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
 
-<span class="nc" id="L6008">                int r = img.getR(i, j);</span>
-<span class="nc" id="L6009">                int g = img.getG(i, j);</span>
-<span class="nc" id="L6010">                int b = img.getB(i, j);</span>
+<span class="fc" id="L6008">                int r = img.getR(i, j);</span>
+<span class="fc" id="L6009">                int g = img.getG(i, j);</span>
+<span class="fc" id="L6010">                int b = img.getB(i, j);</span>
 
-<span class="nc" id="L6012">                float[] lma = cieC.rgbToPolarCIELUV(r, g, b);</span>
+<span class="fc" id="L6012">                float[] lma = cieC.rgbToPolarCIELUV(r, g, b);</span>
 
-<span class="nc" id="L6014">                double t = lma[2];</span>
-<span class="nc" id="L6015">                t *= ts;</span>
-<span class="nc" id="L6016">                v = (int)t;</span>
+<span class="fc" id="L6014">                double t = lma[2];</span>
+<span class="fc" id="L6015">                t *= ts;</span>
+<span class="fc" id="L6016">                v = (int)t;</span>
 
-<span class="nc" id="L6018">                theta.setValue(i, j, v);</span>
+<span class="fc" id="L6018">                theta.setValue(i, j, v);</span>
             }
         }
 
-<span class="nc" id="L6022">        return theta;</span>
+<span class="fc" id="L6022">        return theta;</span>
     }
     
     /**

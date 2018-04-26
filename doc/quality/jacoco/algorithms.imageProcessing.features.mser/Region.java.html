@@ -47,9 +47,12 @@ image, and optionally fits ellipses to them.
 * 
 * ------
 * author nichole ported the C++ code of Charles Dubout to java and added
-* methods used in canonicalization (in progress) 
+* methods used in canonicalization.
+* 
+* The equals and hashcode have been tailored to consider the composite of
+* pixel_, area_ and moments_ as the primary key (for Collections, etc.).
 */
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">public class Region {</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">public class Region {</span>
 
     /**
      * Level at which the region is processed.
@@ -82,211 +85,211 @@ image, and optionally fits ellipses to them.
      */
     private boolean stable_;
 
-<span class="fc" id="L85">    private Region parent_ = null;</span>
-<span class="fc" id="L86">    private Region child_ = null;</span>
-<span class="fc" id="L87">    private Region next_ = null;</span>
+<span class="fc" id="L88">    private Region parent_ = null;</span>
+<span class="fc" id="L89">    private Region child_ = null;</span>
+<span class="fc" id="L90">    private Region next_ = null;</span>
    
     // temporary storage of accumulated points to look at partial edges
-<span class="fc" id="L90">    public TIntList accX = new TIntArrayList();</span>
-<span class="fc" id="L91">    public TIntList accY = new TIntArrayList();</span>
+<span class="fc" id="L93">    public TIntList accX = new TIntArrayList();</span>
+<span class="fc" id="L94">    public TIntList accY = new TIntArrayList();</span>
     
     /**
      * constructor with default level = 256 and pixel=0.  255 is the maximum
      * values of any pixel used in MSER.  the default level is used when
      * instantiating MSER to start with a high component level.
      */
-<span class="fc" id="L98">    public Region() {</span>
-<span class="fc" id="L99">        int level = 256;</span>
-<span class="fc" id="L100">        int pixel = 0;</span>
-<span class="fc" id="L101">        init(level, pixel);</span>
-<span class="fc" id="L102">    }</span>
+<span class="fc" id="L101">    public Region() {</span>
+<span class="fc" id="L102">        int level = 256;</span>
+<span class="fc" id="L103">        int pixel = 0;</span>
+<span class="fc" id="L104">        init(level, pixel);</span>
+<span class="fc" id="L105">    }</span>
 
     /**
      * @param level Level at which the region is processed (default level = 256)
      * @param pixel Index of the initial pixel (y * width + x). (int pixel = 0)
      */
-<span class="fc" id="L108">    public Region(int level, int pixel) {</span>
-<span class="fc" id="L109">        init(level, pixel);</span>
-<span class="fc" id="L110">    }</span>
+<span class="fc" id="L111">    public Region(int level, int pixel) {</span>
+<span class="fc" id="L112">        init(level, pixel);</span>
+<span class="fc" id="L113">    }</span>
 
     public double getVariation() {
-<span class="fc" id="L113">        return variation_;</span>
+<span class="fc" id="L116">        return variation_;</span>
     }
     
     private void init(int level, int pixel) {
-<span class="fc" id="L117">        this.level_ = level;</span>
-<span class="fc" id="L118">        this.pixel_ = pixel;</span>
-<span class="fc" id="L119">        this.area_ = 0;</span>
+<span class="fc" id="L120">        this.level_ = level;</span>
+<span class="fc" id="L121">        this.pixel_ = pixel;</span>
+<span class="fc" id="L122">        this.area_ = 0;</span>
 
-<span class="fc" id="L121">        this.moments_ = new double[5];</span>
+<span class="fc" id="L124">        this.moments_ = new double[5];</span>
 
-<span class="fc" id="L123">        this.variation_ = Double.POSITIVE_INFINITY;</span>
-<span class="fc" id="L124">        this.stable_ = false;</span>
+<span class="fc" id="L126">        this.variation_ = Double.POSITIVE_INFINITY;</span>
+<span class="fc" id="L127">        this.stable_ = false;</span>
 
-<span class="fc" id="L126">        this.parent_ = null;</span>
-<span class="fc" id="L127">        this.child_ = null;</span>
-<span class="fc" id="L128">        this.next_ = null;</span>
+<span class="fc" id="L129">        this.parent_ = null;</span>
+<span class="fc" id="L130">        this.child_ = null;</span>
+<span class="fc" id="L131">        this.next_ = null;</span>
         
-<span class="fc" id="L130">    }</span>
+<span class="fc" id="L133">    }</span>
 
     public void accumulate(int x, int y) {
-<span class="fc" id="L133">        ++area_;</span>
-<span class="fc" id="L134">        moments_[0] += x;</span>
-<span class="fc" id="L135">        moments_[1] += y;</span>
-<span class="fc" id="L136">        moments_[2] += x * x;</span>
-<span class="fc" id="L137">        moments_[3] += x * y;</span>
-<span class="fc" id="L138">        moments_[4] += y * y;</span>
+<span class="fc" id="L136">        ++area_;</span>
+<span class="fc" id="L137">        moments_[0] += x;</span>
+<span class="fc" id="L138">        moments_[1] += y;</span>
+<span class="fc" id="L139">        moments_[2] += x * x;</span>
+<span class="fc" id="L140">        moments_[3] += x * y;</span>
+<span class="fc" id="L141">        moments_[4] += y * y;</span>
         
         // temporarily adding these to look at partial edges
-<span class="fc" id="L141">        this.accX.add(x);</span>
-<span class="fc" id="L142">        this.accY.add(y);</span>
-<span class="fc" id="L143">    }</span>
+<span class="fc" id="L144">        this.accX.add(x);</span>
+<span class="fc" id="L145">        this.accY.add(y);</span>
+<span class="fc" id="L146">    }</span>
 
     public void merge(Region child) {
-<span class="pc bpc" id="L146" title="3 of 4 branches missed.">        assert(child.parent_ == null);</span>
-<span class="pc bpc" id="L147" title="3 of 4 branches missed.">        assert(child.next_ == null);</span>
+<span class="pc bpc" id="L149" title="3 of 4 branches missed.">        assert(child.parent_ == null);</span>
+<span class="pc bpc" id="L150" title="3 of 4 branches missed.">        assert(child.next_ == null);</span>
 
         // Add the moments together
-<span class="fc" id="L150">        area_ += child.area_;</span>
-<span class="fc" id="L151">        moments_[0] += child.moments_[0];</span>
-<span class="fc" id="L152">        moments_[1] += child.moments_[1];</span>
-<span class="fc" id="L153">        moments_[2] += child.moments_[2];</span>
-<span class="fc" id="L154">        moments_[3] += child.moments_[3];</span>
-<span class="fc" id="L155">        moments_[4] += child.moments_[4];</span>
+<span class="fc" id="L153">        area_ += child.area_;</span>
+<span class="fc" id="L154">        moments_[0] += child.moments_[0];</span>
+<span class="fc" id="L155">        moments_[1] += child.moments_[1];</span>
+<span class="fc" id="L156">        moments_[2] += child.moments_[2];</span>
+<span class="fc" id="L157">        moments_[3] += child.moments_[3];</span>
+<span class="fc" id="L158">        moments_[4] += child.moments_[4];</span>
         
-<span class="fc" id="L157">        this.accX.addAll(child.accX);</span>
-<span class="fc" id="L158">        this.accY.addAll(child.accY);</span>
+<span class="fc" id="L160">        this.accX.addAll(child.accX);</span>
+<span class="fc" id="L161">        this.accY.addAll(child.accY);</span>
         
-<span class="fc" id="L160">        child.next_ = child_;</span>
-<span class="fc" id="L161">        child_ = child;</span>
-<span class="fc" id="L162">        child.parent_ = this;</span>
-<span class="fc" id="L163">    }</span>
+<span class="fc" id="L163">        child.next_ = child_;</span>
+<span class="fc" id="L164">        child_ = child;</span>
+<span class="fc" id="L165">        child.parent_ = this;</span>
+<span class="fc" id="L166">    }</span>
 
     public void detect(int delta, int minArea, int maxArea,
         double maxVariation, double minDiversity,
         List&lt;Region&gt; regions) {
 
-<span class="fc" id="L169">        process(delta, minArea, maxArea, maxVariation);</span>
+<span class="fc" id="L172">        process(delta, minArea, maxArea, maxVariation);</span>
 
-<span class="fc" id="L171">        save(minDiversity, regions);</span>
-<span class="fc" id="L172">    }</span>
+<span class="fc" id="L174">        save(minDiversity, regions);</span>
+<span class="fc" id="L175">    }</span>
 
     public void process(int delta, int minArea, int maxArea,
         double maxVariation) {
 
         // Find the last parent with level not higher than level + delta
-<span class="fc" id="L178">        Region parent = this;</span>
+<span class="fc" id="L181">        Region parent = this;</span>
 
-<span class="fc bfc" id="L180" title="All 4 branches covered.">        while (parent.parent_ != null</span>
+<span class="fc bfc" id="L183" title="All 4 branches covered.">        while (parent.parent_ != null</span>
             &amp;&amp; (parent.parent_.level_ &lt;= (level_ + delta))) {
 
-<span class="fc" id="L183">            parent = parent.parent_;</span>
+<span class="fc" id="L186">            parent = parent.parent_;</span>
         }
 
         // Calculate variation
-<span class="fc" id="L187">        variation_ = ((double)(parent.area_ - area_)) / (double)area_;</span>
+<span class="fc" id="L190">        variation_ = ((double)(parent.area_ - area_)) / (double)area_;</span>
 
         // Whether or not the region *could* be stable
-<span class="fc bfc" id="L190" title="All 10 branches covered.">        boolean stable</span>
+<span class="fc bfc" id="L193" title="All 10 branches covered.">        boolean stable</span>
             = ((parent_ == null) || (variation_ &lt;= parent_.variation_))
             &amp;&amp; (area_ &gt;= minArea) &amp;&amp; (area_ &lt;= maxArea)
             &amp;&amp; (variation_ &lt;= maxVariation);
 
         // Process all the children
-<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (Region child = child_; child != null; child = child.next_) {</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (Region child = child_; child != null; child = child.next_) {</span>
 
-<span class="fc" id="L198">            child.process(delta, minArea, maxArea, maxVariation);</span>
+<span class="fc" id="L201">            child.process(delta, minArea, maxArea, maxVariation);</span>
 
-<span class="fc bfc" id="L200" title="All 4 branches covered.">            if (stable &amp;&amp; (variation_ &lt; child.variation_)) {</span>
-<span class="fc" id="L201">                stable_ = true;</span>
+<span class="fc bfc" id="L203" title="All 4 branches covered.">            if (stable &amp;&amp; (variation_ &lt; child.variation_)) {</span>
+<span class="fc" id="L204">                stable_ = true;</span>
             }
         }
 
         // The region can be stable even without any children
-<span class="fc bfc" id="L206" title="All 4 branches covered.">        if ((child_ == null) &amp;&amp; stable) {</span>
-<span class="fc" id="L207">            stable_ = true;</span>
+<span class="fc bfc" id="L209" title="All 4 branches covered.">        if ((child_ == null) &amp;&amp; stable) {</span>
+<span class="fc" id="L210">            stable_ = true;</span>
         }
-<span class="fc" id="L209">    }</span>
+<span class="fc" id="L212">    }</span>
 
     public boolean check(double variation, int area) {
 
-<span class="fc bfc" id="L213" title="All 2 branches covered.">        if (area_ &lt;= area) {</span>
-<span class="fc" id="L214">            return true;</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        if (area_ &lt;= area) {</span>
+<span class="fc" id="L217">            return true;</span>
         }
 
-<span class="fc bfc" id="L217" title="All 4 branches covered.">        if (stable_ &amp;&amp; (variation_ &lt; variation)) {</span>
-<span class="fc" id="L218">            return false;</span>
+<span class="fc bfc" id="L220" title="All 4 branches covered.">        if (stable_ &amp;&amp; (variation_ &lt; variation)) {</span>
+<span class="fc" id="L221">            return false;</span>
         }
 
-<span class="fc bfc" id="L221" title="All 2 branches covered.">        for (Region child = child_; child != null; child = child.next_) {</span>
-<span class="fc bfc" id="L222" title="All 2 branches covered.">            if (!child.check(variation, area)) {</span>
-<span class="fc" id="L223">                return false;</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        for (Region child = child_; child != null; child = child.next_) {</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            if (!child.check(variation, area)) {</span>
+<span class="fc" id="L226">                return false;</span>
             }
         }
 
-<span class="fc" id="L227">        return true;</span>
+<span class="fc" id="L230">        return true;</span>
     }
 
     public void save(double minDiversity, List&lt;Region&gt; regions) {
 
-<span class="fc" id="L232">        int minParentArea = 0;</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">        if (stable_) {</span>
-<span class="fc" id="L234">            minParentArea = (int)(area_ / (1.0 - minDiversity) + 0.5);</span>
+<span class="fc" id="L235">        int minParentArea = 0;</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        if (stable_) {</span>
+<span class="fc" id="L237">            minParentArea = (int)(area_ / (1.0 - minDiversity) + 0.5);</span>
         }
 
-<span class="fc" id="L237">        Region parent = this;</span>
+<span class="fc" id="L240">        Region parent = this;</span>
 
-<span class="fc bfc" id="L239" title="All 4 branches covered.">        while ((parent.parent_ != null)</span>
+<span class="fc bfc" id="L242" title="All 4 branches covered.">        while ((parent.parent_ != null)</span>
             &amp;&amp; (parent.parent_.area_ &lt; minParentArea)) {
 
-<span class="fc" id="L242">            parent = parent.parent_;</span>
+<span class="fc" id="L245">            parent = parent.parent_;</span>
 
-<span class="fc bfc" id="L244" title="All 4 branches covered.">            if (parent.stable_</span>
+<span class="fc bfc" id="L247" title="All 4 branches covered.">            if (parent.stable_</span>
                 &amp;&amp; (parent.variation_ &lt;= variation_)) {
-<span class="fc" id="L246">                stable_ = false;</span>
-<span class="fc" id="L247">                break;</span>
+<span class="fc" id="L249">                stable_ = false;</span>
+<span class="fc" id="L250">                break;</span>
             }
         }
 
-<span class="fc bfc" id="L251" title="All 2 branches covered.">        if (stable_) {</span>
-<span class="fc" id="L252">            int maxChildArea = (int)(area_ * (1.0 - minDiversity) + 0.5);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (stable_) {</span>
+<span class="fc" id="L255">            int maxChildArea = (int)(area_ * (1.0 - minDiversity) + 0.5);</span>
 
-<span class="fc bfc" id="L254" title="All 2 branches covered.">            if (!check(variation_, maxChildArea)) {</span>
-<span class="fc" id="L255">                stable_ = false;</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">            if (!check(variation_, maxChildArea)) {</span>
+<span class="fc" id="L258">                stable_ = false;</span>
             }
         }
 
-<span class="fc bfc" id="L259" title="All 2 branches covered.">        if (stable_) {</span>
-<span class="fc" id="L260">            regions.add(this.copy());</span>
-<span class="fc" id="L261">            Region last = regions.get(regions.size() - 1);</span>
-<span class="fc" id="L262">            last.parent_ = null;</span>
-<span class="fc" id="L263">            last.child_ = null;</span>
-<span class="fc" id="L264">            last.next_ = null;</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (stable_) {</span>
+<span class="fc" id="L263">            regions.add(this.copy());</span>
+<span class="fc" id="L264">            Region last = regions.get(regions.size() - 1);</span>
+<span class="fc" id="L265">            last.parent_ = null;</span>
+<span class="fc" id="L266">            last.child_ = null;</span>
+<span class="fc" id="L267">            last.next_ = null;</span>
         }
 
-<span class="fc bfc" id="L267" title="All 2 branches covered.">        for (Region child = child_; child != null; child  = child.next_) {</span>
-<span class="fc" id="L268">            child.save(minDiversity, regions);</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (Region child = child_; child != null; child  = child.next_) {</span>
+<span class="fc" id="L271">            child.save(minDiversity, regions);</span>
         }
-<span class="fc" id="L270">    }</span>
+<span class="fc" id="L273">    }</span>
     
     public static void drawEllipses(Image img, List&lt;List&lt;Region&gt;&gt; regions, int nExtraDot) {
         
-<span class="pc bpc" id="L274" title="1 of 2 branches missed.">        if (regions.size() != 2) {</span>
-<span class="nc" id="L275">            throw new IllegalArgumentException(&quot;expecting the bright then&quot;</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (regions.size() != 2) {</span>
+<span class="nc" id="L278">            throw new IllegalArgumentException(&quot;expecting the bright then&quot;</span>
                 + &quot; dark msers in a list of size 2.&quot;);
         }
         
-<span class="fc bfc" id="L279" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.get(0).size(); ++i) {</span>
-<span class="fc" id="L280">            regions.get(0).get(i).drawEllipse(img, nExtraDot, </span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.get(0).size(); ++i) {</span>
+<span class="fc" id="L283">            regions.get(0).get(i).drawEllipse(img, nExtraDot, </span>
                 //127, 127, 127);
                 255, 255, 255);
         }
         
-<span class="fc bfc" id="L285" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.get(1).size(); ++i) {</span>
-<span class="fc" id="L286">            regions.get(1).get(i).drawEllipse(img, nExtraDot, </span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.get(1).size(); ++i) {</span>
+<span class="fc" id="L289">            regions.get(1).get(i).drawEllipse(img, nExtraDot, </span>
                 255, 255, 255);
         }
-<span class="fc" id="L289">    }</span>
+<span class="fc" id="L292">    }</span>
     
     /**
      * calculate the x,y centroid of the pixels within
@@ -297,21 +300,21 @@ image, and optionally fits ellipses to them.
      */
     public void calculateXYCentroid(int[] outputXY, int imageWidth, int imageHeight) {
                     
-<span class="fc" id="L300">        outputXY[0] = (int)Math.round(moments_[0]/(double)area_);</span>
-<span class="fc" id="L301">        outputXY[1] = (int)Math.round(moments_[1]/(double)area_);</span>
-<span class="pc bpc" id="L302" title="1 of 2 branches missed.">        if (outputXY[0] == -1) {</span>
-<span class="nc" id="L303">            outputXY[0] = 0;</span>
+<span class="fc" id="L303">        outputXY[0] = (int)Math.round(moments_[0]/(double)area_);</span>
+<span class="fc" id="L304">        outputXY[1] = (int)Math.round(moments_[1]/(double)area_);</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">        if (outputXY[0] == -1) {</span>
+<span class="nc" id="L306">            outputXY[0] = 0;</span>
         }
-<span class="pc bpc" id="L305" title="1 of 2 branches missed.">        if (outputXY[1] == -1) {</span>
-<span class="nc" id="L306">            outputXY[1] = 0;</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (outputXY[1] == -1) {</span>
+<span class="nc" id="L309">            outputXY[1] = 0;</span>
         }
-<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (outputXY[0] == imageWidth) {</span>
-<span class="nc" id="L309">            outputXY[0] = imageWidth - 1;</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (outputXY[0] == imageWidth) {</span>
+<span class="nc" id="L312">            outputXY[0] = imageWidth - 1;</span>
         }
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (outputXY[1] == imageHeight) {</span>
-<span class="nc" id="L312">            outputXY[1] = imageHeight - 1;</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (outputXY[1] == imageHeight) {</span>
+<span class="nc" id="L315">            outputXY[1] = imageHeight - 1;</span>
         }
-<span class="fc" id="L314">    }</span>
+<span class="fc" id="L317">    }</span>
     
     /**
      * calculate the intensity weighted centroid of the pixels within
@@ -324,62 +327,62 @@ image, and optionally fits ellipses to them.
     void calculateIntensityCentroid(int[] greyscale, int imageWidth, 
         int imageHeight, int[] outputXY) {
         
-<span class="nc" id="L327">        TrioInt[] yXRanges = getEllipseRange(imageWidth, imageHeight);</span>
+<span class="nc" id="L330">        TrioInt[] yXRanges = getEllipseRange(imageWidth, imageHeight);</span>
         
-<span class="nc" id="L329">        double iSum = 0;</span>
+<span class="nc" id="L332">        double iSum = 0;</span>
         
-<span class="nc" id="L331">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L334">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc bnc" id="L333" title="All 2 branches missed.">        for (TrioInt yXminMax : yXRanges) {</span>
-<span class="nc" id="L334">            int y = yXminMax.getX();</span>
-<span class="nc bnc" id="L335" title="All 2 branches missed.">            for (int x = yXminMax.getY(); x &lt;= yXminMax.getZ(); ++x) {</span>
-<span class="nc" id="L336">                PairInt p = new PairInt(x, y);</span>
-<span class="nc bnc" id="L337" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
-<span class="nc" id="L338">                    continue;</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        for (TrioInt yXminMax : yXRanges) {</span>
+<span class="nc" id="L337">            int y = yXminMax.getX();</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            for (int x = yXminMax.getY(); x &lt;= yXminMax.getZ(); ++x) {</span>
+<span class="nc" id="L339">                PairInt p = new PairInt(x, y);</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
+<span class="nc" id="L341">                    continue;</span>
                 }
-<span class="nc" id="L340">                visited.add(p);</span>
-<span class="nc" id="L341">                int idx = (y * imageWidth) + x;</span>
-<span class="nc" id="L342">                int intensity = greyscale[idx];</span>
-<span class="nc" id="L343">                iSum += intensity;</span>
+<span class="nc" id="L343">                visited.add(p);</span>
+<span class="nc" id="L344">                int idx = (y * imageWidth) + x;</span>
+<span class="nc" id="L345">                int intensity = greyscale[idx];</span>
+<span class="nc" id="L346">                iSum += intensity;</span>
             }
         }
         
-<span class="nc" id="L347">        double xSum = 0;</span>
-<span class="nc" id="L348">        double ySum = 0;</span>
+<span class="nc" id="L350">        double xSum = 0;</span>
+<span class="nc" id="L351">        double ySum = 0;</span>
         
         // for debugging only, assert sum of weights
-<span class="nc" id="L351">        double wSum = 0;</span>
+<span class="nc" id="L354">        double wSum = 0;</span>
         
-<span class="nc" id="L353">        visited.clear();</span>
+<span class="nc" id="L356">        visited.clear();</span>
         
-<span class="nc bnc" id="L355" title="All 2 branches missed.">        for (TrioInt yXminMax : yXRanges) {</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        for (TrioInt yXminMax : yXRanges) {</span>
             
-<span class="nc" id="L357">            int y = yXminMax.getX();</span>
+<span class="nc" id="L360">            int y = yXminMax.getX();</span>
             
-<span class="nc bnc" id="L359" title="All 2 branches missed.">            for (int x = yXminMax.getY(); x &lt;= yXminMax.getZ(); ++x) {</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">            for (int x = yXminMax.getY(); x &lt;= yXminMax.getZ(); ++x) {</span>
                 
-<span class="nc" id="L361">                PairInt p = new PairInt(x, y);</span>
-<span class="nc bnc" id="L362" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
-<span class="nc" id="L363">                    continue;</span>
+<span class="nc" id="L364">                PairInt p = new PairInt(x, y);</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
+<span class="nc" id="L366">                    continue;</span>
                 }
-<span class="nc" id="L365">                visited.add(p);</span>
+<span class="nc" id="L368">                visited.add(p);</span>
                 
-<span class="nc" id="L367">                int idx = (y * imageWidth) + x;</span>
+<span class="nc" id="L370">                int idx = (y * imageWidth) + x;</span>
                 
-<span class="nc" id="L369">                double intensity = greyscale[idx];</span>
-<span class="nc" id="L370">                double w = (intensity/iSum);</span>
+<span class="nc" id="L372">                double intensity = greyscale[idx];</span>
+<span class="nc" id="L373">                double w = (intensity/iSum);</span>
                 
-<span class="nc" id="L372">                xSum += (x * w);</span>
-<span class="nc" id="L373">                ySum += (y * w);</span>
+<span class="nc" id="L375">                xSum += (x * w);</span>
+<span class="nc" id="L376">                ySum += (y * w);</span>
                 
-<span class="nc" id="L375">                wSum += w;</span>
+<span class="nc" id="L378">                wSum += w;</span>
             }
         }
-<span class="nc bnc" id="L378" title="All 4 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
+<span class="nc bnc" id="L381" title="All 4 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
                 
-<span class="nc" id="L380">        outputXY[0] = (int)Math.round(xSum);</span>
-<span class="nc" id="L381">        outputXY[1] = (int)Math.round(ySum);</span>
-<span class="nc" id="L382">    }</span>
+<span class="nc" id="L383">        outputXY[0] = (int)Math.round(xSum);</span>
+<span class="nc" id="L384">        outputXY[1] = (int)Math.round(ySum);</span>
+<span class="nc" id="L385">    }</span>
     
     /**
      * calculate the intensity weighted centroid of pixels within
@@ -394,30 +397,30 @@ image, and optionally fits ellipses to them.
     void calculateIntensityCentroid(int[] greyscale, int imageWidth, 
         int imageHeight, int[] outputXY, int radius) {
       
-<span class="nc" id="L397">        int xC = (int)Math.round(moments_[0]/(double)area_);</span>
-<span class="nc" id="L398">        int yC = (int)Math.round(moments_[1]/(double)area_);</span>
+<span class="nc" id="L400">        int xC = (int)Math.round(moments_[0]/(double)area_);</span>
+<span class="nc" id="L401">        int yC = (int)Math.round(moments_[1]/(double)area_);</span>
         
         //v0x, v1x, v0y, v1y
-<span class="nc" id="L401">        double[] m = calcParamTransCoeff();</span>
+<span class="nc" id="L404">        double[] m = calcParamTransCoeff();</span>
         
         // semi-major and semi-minor axes:
-<span class="nc" id="L404">        double major = 2. * m[4];</span>
-<span class="nc" id="L405">        double minor = 2. * m[5];</span>
+<span class="nc" id="L407">        double major = 2. * m[4];</span>
+<span class="nc" id="L408">        double minor = 2. * m[5];</span>
             
-<span class="nc bnc" id="L407" title="All 2 branches missed.">        if (radius &gt; major) {</span>
-<span class="nc" id="L408">            radius = (int)major; </span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (radius &gt; major) {</span>
+<span class="nc" id="L411">            radius = (int)major; </span>
         }
-<span class="nc bnc" id="L410" title="All 2 branches missed.">        if (radius &gt; minor) {</span>
-<span class="nc" id="L411">            radius = (int)minor; </span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        if (radius &gt; minor) {</span>
+<span class="nc" id="L414">            radius = (int)minor; </span>
         }
         
-<span class="nc" id="L414">        int yStart = yC - radius;</span>
-<span class="nc bnc" id="L415" title="All 2 branches missed.">        if (yStart &lt; 0) {</span>
-<span class="nc" id="L416">            yStart = 0;</span>
+<span class="nc" id="L417">        int yStart = yC - radius;</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">        if (yStart &lt; 0) {</span>
+<span class="nc" id="L419">            yStart = 0;</span>
         }
-<span class="nc" id="L418">        int yStop = yC + radius;</span>
-<span class="nc bnc" id="L419" title="All 2 branches missed.">        if (yStop &gt;= imageHeight) {</span>
-<span class="nc" id="L420">            yStop = imageHeight - 1;</span>
+<span class="nc" id="L421">        int yStop = yC + radius;</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        if (yStop &gt;= imageHeight) {</span>
+<span class="nc" id="L423">            yStop = imageHeight - 1;</span>
         }
         
         /*
@@ -425,89 +428,89 @@ image, and optionally fits ellipses to them.
         x^2 =  radius^2 - y^2
         (x - xC) = sqrt(radius^2 - (y - yc)^2)
         */
-<span class="nc" id="L428">        double rSq = radius * radius;</span>
+<span class="nc" id="L431">        double rSq = radius * radius;</span>
         
-<span class="nc" id="L430">        double iSum = 0;</span>
+<span class="nc" id="L433">        double iSum = 0;</span>
         
         // for uniqueness
-<span class="nc" id="L433">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L436">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc bnc" id="L435" title="All 2 branches missed.">        for (int y = yStart; y &lt;= yStop; ++y) {</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">        for (int y = yStart; y &lt;= yStop; ++y) {</span>
             
-<span class="nc" id="L437">            double ySq = y - yC;</span>
-<span class="nc" id="L438">            ySq *= ySq;</span>
+<span class="nc" id="L440">            double ySq = y - yC;</span>
+<span class="nc" id="L441">            ySq *= ySq;</span>
             
-<span class="nc" id="L440">            double xH = Math.sqrt(rSq - ySq);</span>
+<span class="nc" id="L443">            double xH = Math.sqrt(rSq - ySq);</span>
             
-<span class="nc" id="L442">            int xStart = (int)Math.round(xC - xH);</span>
-<span class="nc bnc" id="L443" title="All 2 branches missed.">            if (xStart &lt; 0) {</span>
-<span class="nc" id="L444">                xStart = 0;</span>
+<span class="nc" id="L445">            int xStart = (int)Math.round(xC - xH);</span>
+<span class="nc bnc" id="L446" title="All 2 branches missed.">            if (xStart &lt; 0) {</span>
+<span class="nc" id="L447">                xStart = 0;</span>
             }
-<span class="nc" id="L446">            int xStop = (int)Math.round(xC + xH);</span>
-<span class="nc bnc" id="L447" title="All 2 branches missed.">            if (xStop &gt;= imageWidth) {</span>
-<span class="nc" id="L448">                xStop = imageWidth - 1;</span>
+<span class="nc" id="L449">            int xStop = (int)Math.round(xC + xH);</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">            if (xStop &gt;= imageWidth) {</span>
+<span class="nc" id="L451">                xStop = imageWidth - 1;</span>
             }
             
-<span class="nc bnc" id="L451" title="All 2 branches missed.">            for (int x = xStart; x &lt;= xStop; ++x) {</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">            for (int x = xStart; x &lt;= xStop; ++x) {</span>
                 
-<span class="nc" id="L453">                PairInt p = new PairInt(x, y);</span>
-<span class="nc bnc" id="L454" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
-<span class="nc" id="L455">                    continue;</span>
+<span class="nc" id="L456">                PairInt p = new PairInt(x, y);</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
+<span class="nc" id="L458">                    continue;</span>
                 }
-<span class="nc" id="L457">                visited.add(p);</span>
+<span class="nc" id="L460">                visited.add(p);</span>
                 
-<span class="nc" id="L459">                int idx = (y * imageWidth) + x;</span>
-<span class="nc" id="L460">                iSum += greyscale[idx];</span>
+<span class="nc" id="L462">                int idx = (y * imageWidth) + x;</span>
+<span class="nc" id="L463">                iSum += greyscale[idx];</span>
             }
         }
         
-<span class="nc" id="L464">        double xSum = 0;</span>
-<span class="nc" id="L465">        double ySum = 0;</span>
+<span class="nc" id="L467">        double xSum = 0;</span>
+<span class="nc" id="L468">        double ySum = 0;</span>
         
         // for debugging only, assert sum of weights
-<span class="nc" id="L468">        double wSum = 0;</span>
+<span class="nc" id="L471">        double wSum = 0;</span>
         
-<span class="nc" id="L470">        visited.clear();</span>
+<span class="nc" id="L473">        visited.clear();</span>
         
-<span class="nc bnc" id="L472" title="All 2 branches missed.">        for (int y = yStart; y &lt;= yStop; ++y) {</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">        for (int y = yStart; y &lt;= yStop; ++y) {</span>
             
-<span class="nc" id="L474">            double ySq = y - yC;</span>
-<span class="nc" id="L475">            ySq *= ySq;</span>
+<span class="nc" id="L477">            double ySq = y - yC;</span>
+<span class="nc" id="L478">            ySq *= ySq;</span>
             
-<span class="nc" id="L477">            double xH = Math.sqrt(rSq - ySq);</span>
+<span class="nc" id="L480">            double xH = Math.sqrt(rSq - ySq);</span>
             
-<span class="nc" id="L479">            int xStart = (int)Math.round(xC - xH);</span>
-<span class="nc bnc" id="L480" title="All 2 branches missed.">            if (xStart &lt; 0) {</span>
-<span class="nc" id="L481">                xStart = 0;</span>
+<span class="nc" id="L482">            int xStart = (int)Math.round(xC - xH);</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">            if (xStart &lt; 0) {</span>
+<span class="nc" id="L484">                xStart = 0;</span>
             }
-<span class="nc" id="L483">            int xStop = (int)Math.round(xC + xH);</span>
-<span class="nc bnc" id="L484" title="All 2 branches missed.">            if (xStop &gt;= imageWidth) {</span>
-<span class="nc" id="L485">                xStop = imageWidth - 1;</span>
+<span class="nc" id="L486">            int xStop = (int)Math.round(xC + xH);</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">            if (xStop &gt;= imageWidth) {</span>
+<span class="nc" id="L488">                xStop = imageWidth - 1;</span>
             }
             
-<span class="nc bnc" id="L488" title="All 2 branches missed.">            for (int x = xStart; x &lt;= xStop; ++x) {</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">            for (int x = xStart; x &lt;= xStop; ++x) {</span>
                 
-<span class="nc" id="L490">                PairInt p = new PairInt(x, y);</span>
-<span class="nc bnc" id="L491" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
-<span class="nc" id="L492">                    continue;</span>
+<span class="nc" id="L493">                PairInt p = new PairInt(x, y);</span>
+<span class="nc bnc" id="L494" title="All 2 branches missed.">                if (visited.contains(p)) {</span>
+<span class="nc" id="L495">                    continue;</span>
                 }
-<span class="nc" id="L494">                visited.add(p);</span>
+<span class="nc" id="L497">                visited.add(p);</span>
                 
-<span class="nc" id="L496">                int idx = (y * imageWidth) + x;</span>
-<span class="nc" id="L497">                double intensity = greyscale[idx];</span>
-<span class="nc" id="L498">                double w = (intensity/iSum);</span>
+<span class="nc" id="L499">                int idx = (y * imageWidth) + x;</span>
+<span class="nc" id="L500">                double intensity = greyscale[idx];</span>
+<span class="nc" id="L501">                double w = (intensity/iSum);</span>
                 
-<span class="nc" id="L500">                xSum += (x * w);</span>
-<span class="nc" id="L501">                ySum += (y * w);</span>
+<span class="nc" id="L503">                xSum += (x * w);</span>
+<span class="nc" id="L504">                ySum += (y * w);</span>
                 
-<span class="nc" id="L503">                wSum += w;</span>
+<span class="nc" id="L506">                wSum += w;</span>
             }
         }
-<span class="nc bnc" id="L506" title="All 4 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
+<span class="nc bnc" id="L509" title="All 4 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
                 
-<span class="nc" id="L508">        outputXY[0] = (int)Math.round(xSum);</span>
-<span class="nc" id="L509">        outputXY[1] = (int)Math.round(ySum);</span>
-<span class="nc" id="L510">    }</span>
+<span class="nc" id="L511">        outputXY[0] = (int)Math.round(xSum);</span>
+<span class="nc" id="L512">        outputXY[1] = (int)Math.round(ySum);</span>
+<span class="nc" id="L513">    }</span>
     
     /**
      * using the region moments and area, calculates parameters needed
@@ -537,15 +540,15 @@ image, and optionally fits ellipses to them.
         */
         
         // Centroid (mean)
-<span class="fc" id="L540">        double x = moments_[0] / (double)area_;</span>
-<span class="fc" id="L541">        double y = moments_[1] / (double)area_;</span>
+<span class="fc" id="L543">        double x = moments_[0] / (double)area_;</span>
+<span class="fc" id="L544">        double y = moments_[1] / (double)area_;</span>
         
         // a*x^2 + b*x*y + c*y^2 + d*x + e*y + f = 0
         
         // Covariance matrix [a b; b c]
-<span class="fc" id="L546">        double a = moments_[2] / (double)area_ - x * x;</span>
-<span class="fc" id="L547">        double b = moments_[3] / (double)area_ - x * y;</span>
-<span class="fc" id="L548">        double c = moments_[4] / (double)area_ - y * y;</span>
+<span class="fc" id="L549">        double a = moments_[2] / (double)area_ - x * x;</span>
+<span class="fc" id="L550">        double b = moments_[3] / (double)area_ - x * y;</span>
+<span class="fc" id="L551">        double c = moments_[4] / (double)area_ - y * y;</span>
 
         /*
         
@@ -569,36 +572,36 @@ image, and optionally fits ellipses to them.
         (xx, yy) with (yy, -xx).
         */
         // Eigenvalues of the covariance matrix
-<span class="fc" id="L572">        double d  = a + c; // xx + yy</span>
-<span class="fc" id="L573">        double e  = a - c; // xx - yy</span>
-<span class="fc" id="L574">        double f  = Math.sqrt(4.0 * b * b + e * e);</span>
-<span class="fc" id="L575">        double e0 = (d + f) / 2.0; // First eigenvalue</span>
-<span class="fc" id="L576">        double e1 = (d - f) / 2.0; // Second eigenvalue</span>
+<span class="fc" id="L575">        double d  = a + c; // xx + yy</span>
+<span class="fc" id="L576">        double e  = a - c; // xx - yy</span>
+<span class="fc" id="L577">        double f  = Math.sqrt(4.0 * b * b + e * e);</span>
+<span class="fc" id="L578">        double e0 = (d + f) / 2.0; // First eigenvalue</span>
+<span class="fc" id="L579">        double e1 = (d - f) / 2.0; // Second eigenvalue</span>
 
         // Desired norm of the eigenvectors
-<span class="fc" id="L579">        double e0sq = Math.sqrt(e0);</span>
-<span class="fc" id="L580">        double e1sq = Math.sqrt(e1);</span>
+<span class="fc" id="L582">        double e0sq = Math.sqrt(e0);</span>
+<span class="fc" id="L583">        double e1sq = Math.sqrt(e1);</span>
  
         // Eigenvectors
-<span class="fc" id="L583">        double v0x = e0sq;</span>
-<span class="fc" id="L584">        double v0y = 0.0;</span>
-<span class="fc" id="L585">        double v1x = 0.0;</span>
-<span class="fc" id="L586">        double v1y = e1sq;</span>
+<span class="fc" id="L586">        double v0x = e0sq;</span>
+<span class="fc" id="L587">        double v0y = 0.0;</span>
+<span class="fc" id="L588">        double v1x = 0.0;</span>
+<span class="fc" id="L589">        double v1y = e1sq;</span>
 
-<span class="fc bfc" id="L588" title="All 2 branches covered.">        if (b != 0.) {</span>
-<span class="fc" id="L589">            v0x = e0 - c;</span>
-<span class="fc" id="L590">            v0y = b;</span>
-<span class="fc" id="L591">            v1x = e1 - c;</span>
-<span class="fc" id="L592">            v1y = b;</span>
+<span class="fc bfc" id="L591" title="All 2 branches covered.">        if (b != 0.) {</span>
+<span class="fc" id="L592">            v0x = e0 - c;</span>
+<span class="fc" id="L593">            v0y = b;</span>
+<span class="fc" id="L594">            v1x = e1 - c;</span>
+<span class="fc" id="L595">            v1y = b;</span>
 
             // Normalize the eigenvectors
-<span class="fc" id="L595">            double n0 = e0sq / Math.sqrt(v0x * v0x + v0y * v0y);</span>
-<span class="fc" id="L596">            v0x *= n0;</span>
-<span class="fc" id="L597">            v0y *= n0;</span>
+<span class="fc" id="L598">            double n0 = e0sq / Math.sqrt(v0x * v0x + v0y * v0y);</span>
+<span class="fc" id="L599">            v0x *= n0;</span>
+<span class="fc" id="L600">            v0y *= n0;</span>
 
-<span class="fc" id="L599">            double n1 = e1sq / Math.sqrt(v1x * v1x + v1y * v1y);</span>
-<span class="fc" id="L600">            v1x *= n1;</span>
-<span class="fc" id="L601">            v1y *= n1;</span>
+<span class="fc" id="L602">            double n1 = e1sq / Math.sqrt(v1x * v1x + v1y * v1y);</span>
+<span class="fc" id="L603">            v1x *= n1;</span>
+<span class="fc" id="L604">            v1y *= n1;</span>
         }
         
         /*
@@ -617,7 +620,7 @@ image, and optionally fits ellipses to them.
         and the semi-minor axis length = 2 * Math.min(v0y, v1y)
         */
         
-<span class="fc" id="L620">        return new double[]{v0x, v1x, v0y, v1y, e0sq, e1sq};</span>
+<span class="fc" id="L623">        return new double[]{v0x, v1x, v0y, v1y, e0sq, e1sq};</span>
     }
     
     /**
@@ -630,192 +633,270 @@ image, and optionally fits ellipses to them.
      */
     public TrioInt[] getEllipseRange(int imageWidth, int imageHeight) {
         
-<span class="nc" id="L633">        TIntList xs = new TIntArrayList();</span>
-<span class="nc" id="L634">        TIntList ys = new TIntArrayList();</span>
+<span class="nc" id="L636">        TIntList xs = new TIntArrayList();</span>
+<span class="nc" id="L637">        TIntList ys = new TIntArrayList();</span>
     
         // Centroid (mean)
-<span class="nc" id="L637">        double x = moments_[0] / (double)area_;</span>
-<span class="nc" id="L638">        double y = moments_[1] / (double)area_;</span>
+<span class="nc" id="L640">        double x = moments_[0] / (double)area_;</span>
+<span class="nc" id="L641">        double y = moments_[1] / (double)area_;</span>
         
         //v0x, v1x, v0y, v1y
-<span class="nc" id="L641">        double[] coeffs = calcParamTransCoeff();</span>
+<span class="nc" id="L644">        double[] coeffs = calcParamTransCoeff();</span>
         
-<span class="nc" id="L643">        double v0x = coeffs[0];</span>
-<span class="nc" id="L644">        double v1x = coeffs[1];</span>
-<span class="nc" id="L645">        double v0y = coeffs[2];</span>
-<span class="nc" id="L646">        double v1y = coeffs[3];</span>
+<span class="nc" id="L646">        double v0x = coeffs[0];</span>
+<span class="nc" id="L647">        double v1x = coeffs[1];</span>
+<span class="nc" id="L648">        double v0y = coeffs[2];</span>
+<span class="nc" id="L649">        double v1y = coeffs[3];</span>
 
-<span class="nc" id="L648">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L651">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="nc bnc" id="L650" title="All 2 branches missed.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
             
-<span class="nc" id="L652">            double mc = Math.cos(t);</span>
-<span class="nc" id="L653">            double ms = Math.sin(t);</span>
+<span class="nc" id="L655">            double mc = Math.cos(t);</span>
+<span class="nc" id="L656">            double ms = Math.sin(t);</span>
             
-<span class="nc" id="L655">            int x2 = (int)Math.round(x + </span>
+<span class="nc" id="L658">            int x2 = (int)Math.round(x + </span>
                 (mc * v0x + ms * v1x) * 2.0 + 0.5);
-<span class="nc" id="L657">            int y2 = (int)Math.round(y + (mc * v0y </span>
+<span class="nc" id="L660">            int y2 = (int)Math.round(y + (mc * v0y </span>
                 + ms * v1y) * 2.0 + 0.5);
 
-<span class="nc bnc" id="L660" title="All 8 branches missed.">            if ((x2 &gt;= 0) &amp;&amp; (x2 &lt; imageWidth) </span>
+<span class="nc bnc" id="L663" title="All 8 branches missed.">            if ((x2 &gt;= 0) &amp;&amp; (x2 &lt; imageWidth) </span>
                 &amp;&amp; (y2 &gt;= 0) &amp;&amp; (y2 &lt; imageHeight)) {
                 
-<span class="nc" id="L663">                PairInt pt = new PairInt(x2, y2);</span>
-<span class="nc bnc" id="L664" title="All 2 branches missed.">                if (visited.contains(pt)) {</span>
-<span class="nc" id="L665">                    continue;</span>
+<span class="nc" id="L666">                PairInt pt = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L667" title="All 2 branches missed.">                if (visited.contains(pt)) {</span>
+<span class="nc" id="L668">                    continue;</span>
                 }
-<span class="nc" id="L667">                visited.add(pt);</span>
+<span class="nc" id="L670">                visited.add(pt);</span>
                 
-<span class="nc" id="L669">                xs.add(x2);</span>
-<span class="nc" id="L670">                ys.add(y2);</span>
+<span class="nc" id="L672">                xs.add(x2);</span>
+<span class="nc" id="L673">                ys.add(y2);</span>
             }
         }
         
-<span class="nc" id="L674">        int[] x2s = xs.toArray(new int[xs.size()]);</span>
-<span class="nc" id="L675">        int[] y2s = ys.toArray(new int[xs.size()]);</span>
+<span class="nc" id="L677">        int[] x2s = xs.toArray(new int[xs.size()]);</span>
+<span class="nc" id="L678">        int[] y2s = ys.toArray(new int[xs.size()]);</span>
         
-<span class="nc" id="L677">        QuickSort.sortBy1stThen2nd(y2s, x2s);</span>
+<span class="nc" id="L680">        QuickSort.sortBy1stThen2nd(y2s, x2s);</span>
         
-<span class="nc" id="L679">        int n = (new TIntHashSet(ys)).size();</span>
+<span class="nc" id="L682">        int n = (new TIntHashSet(ys)).size();</span>
         
-<span class="nc" id="L681">        TrioInt[] output = new TrioInt[n];</span>
-<span class="nc" id="L682">        int count = 0;</span>
-<span class="nc" id="L683">        int idx = 0;</span>
-<span class="nc bnc" id="L684" title="All 2 branches missed.">        for (idx = 0; idx &lt; x2s.length; ++idx) {</span>
-<span class="nc" id="L685">            int yC = y2s[idx];</span>
-<span class="nc" id="L686">            int minX = Integer.MAX_VALUE;</span>
-<span class="nc" id="L687">            int maxX = Integer.MIN_VALUE;</span>
-<span class="nc" id="L688">            int idx2 = idx;</span>
-<span class="nc bnc" id="L689" title="All 2 branches missed.">            for (idx2 = idx; idx2 &lt; x2s.length; ++idx2) {</span>
-<span class="nc bnc" id="L690" title="All 2 branches missed.">                if (y2s[idx2] &gt; yC) {</span>
-<span class="nc" id="L691">                    idx2--;</span>
-<span class="nc" id="L692">                    break;</span>
+<span class="nc" id="L684">        TrioInt[] output = new TrioInt[n];</span>
+<span class="nc" id="L685">        int count = 0;</span>
+<span class="nc" id="L686">        int idx = 0;</span>
+<span class="nc bnc" id="L687" title="All 2 branches missed.">        for (idx = 0; idx &lt; x2s.length; ++idx) {</span>
+<span class="nc" id="L688">            int yC = y2s[idx];</span>
+<span class="nc" id="L689">            int minX = Integer.MAX_VALUE;</span>
+<span class="nc" id="L690">            int maxX = Integer.MIN_VALUE;</span>
+<span class="nc" id="L691">            int idx2 = idx;</span>
+<span class="nc bnc" id="L692" title="All 2 branches missed.">            for (idx2 = idx; idx2 &lt; x2s.length; ++idx2) {</span>
+<span class="nc bnc" id="L693" title="All 2 branches missed.">                if (y2s[idx2] &gt; yC) {</span>
+<span class="nc" id="L694">                    idx2--;</span>
+<span class="nc" id="L695">                    break;</span>
                 }
-<span class="nc bnc" id="L694" title="All 2 branches missed.">                if (minX == Integer.MAX_VALUE) {</span>
-<span class="nc" id="L695">                    minX = x2s[idx2];</span>
+<span class="nc bnc" id="L697" title="All 2 branches missed.">                if (minX == Integer.MAX_VALUE) {</span>
+<span class="nc" id="L698">                    minX = x2s[idx2];</span>
                 }
-<span class="nc" id="L697">                maxX = x2s[idx2];</span>
+<span class="nc" id="L700">                maxX = x2s[idx2];</span>
             }
-<span class="nc" id="L699">            idx = idx2;</span>
-<span class="nc" id="L700">            output[count] = new TrioInt(yC, minX, maxX);</span>
-<span class="nc" id="L701">            count++;</span>
+<span class="nc" id="L702">            idx = idx2;</span>
+<span class="nc" id="L703">            output[count] = new TrioInt(yC, minX, maxX);</span>
+<span class="nc" id="L704">            count++;</span>
         }
-<span class="nc bnc" id="L703" title="All 4 branches missed.">        assert(count == n);</span>
+<span class="nc bnc" id="L706" title="All 4 branches missed.">        assert(count == n);</span>
         
-<span class="nc" id="L705">        return output;</span>
+<span class="nc" id="L708">        return output;</span>
     }
     
     public void drawEllipse(Image img, int nExtraDot,
         int rClr, int gClr, int bClr) {
 
         // Centroid (mean)
-<span class="fc" id="L712">        double x = moments_[0] / (double)area_;</span>
-<span class="fc" id="L713">        double y = moments_[1] / (double)area_;</span>
+<span class="fc" id="L715">        double x = moments_[0] / (double)area_;</span>
+<span class="fc" id="L716">        double y = moments_[1] / (double)area_;</span>
         
         //v0x, v1x, v0y, v1y
-<span class="fc" id="L716">        double[] coeffs = calcParamTransCoeff();</span>
+<span class="fc" id="L719">        double[] coeffs = calcParamTransCoeff();</span>
         
-<span class="fc" id="L718">        double v0x = coeffs[0];</span>
-<span class="fc" id="L719">        double v1x = coeffs[1];</span>
-<span class="fc" id="L720">        double v0y = coeffs[2];</span>
-<span class="fc" id="L721">        double v1y = coeffs[3];</span>
+<span class="fc" id="L721">        double v0x = coeffs[0];</span>
+<span class="fc" id="L722">        double v1x = coeffs[1];</span>
+<span class="fc" id="L723">        double v0y = coeffs[2];</span>
+<span class="fc" id="L724">        double v1y = coeffs[3];</span>
         
-<span class="fc bfc" id="L723" title="All 2 branches covered.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="fc bfc" id="L726" title="All 2 branches covered.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
             
-<span class="fc" id="L725">            double mc = Math.cos(t);</span>
-<span class="fc" id="L726">            double ms = Math.sin(t);</span>
+<span class="fc" id="L728">            double mc = Math.cos(t);</span>
+<span class="fc" id="L729">            double ms = Math.sin(t);</span>
             
-<span class="fc" id="L728">            int x2 = (int)Math.round(x + (mc * v0x + ms * v1x) * 2.0 + 0.5);</span>
-<span class="fc" id="L729">            int y2 = (int)Math.round(y + (mc * v0y + ms * v1y) * 2.0 + 0.5);</span>
+<span class="fc" id="L731">            int x2 = (int)Math.round(x + (mc * v0x + ms * v1x) * 2.0 + 0.5);</span>
+<span class="fc" id="L732">            int y2 = (int)Math.round(y + (mc * v0y + ms * v1y) * 2.0 + 0.5);</span>
 
-<span class="fc bfc" id="L731" title="All 6 branches covered.">            if ((x2 &gt;= 0) &amp;&amp; (x2 &lt; img.getWidth()) </span>
-<span class="fc bfc" id="L732" title="All 2 branches covered.">                &amp;&amp; (y2 &gt;= 0) &amp;&amp; (y2 &lt; img.getHeight())) {</span>
+<span class="fc bfc" id="L734" title="All 6 branches covered.">            if ((x2 &gt;= 0) &amp;&amp; (x2 &lt; img.getWidth()) </span>
+<span class="fc bfc" id="L735" title="All 2 branches covered.">                &amp;&amp; (y2 &gt;= 0) &amp;&amp; (y2 &lt; img.getHeight())) {</span>
                 
-<span class="fc" id="L734">                ImageIOHelper.addPointToImage(x2, y2, img, </span>
+<span class="fc" id="L737">                ImageIOHelper.addPointToImage(x2, y2, img, </span>
                     nExtraDot, rClr, gClr, bClr);
             }
         }
-<span class="fc" id="L738">    }</span>
+<span class="fc" id="L741">    }</span>
 
     public void drawCircle(Image img, int nExtraDot,
         int rClr, int gClr, int bClr) {
 
         // Centroid (mean)
-<span class="nc" id="L744">        double x = moments_[0] / (double)area_;</span>
-<span class="nc" id="L745">        double y = moments_[1] / (double)area_;</span>
+<span class="nc" id="L747">        double x = moments_[0] / (double)area_;</span>
+<span class="nc" id="L748">        double y = moments_[1] / (double)area_;</span>
         
         //v0x, v1x, v0y, v1y
-<span class="nc" id="L748">        double[] m = calcParamTransCoeff();</span>
+<span class="nc" id="L751">        double[] m = calcParamTransCoeff();</span>
         
-<span class="nc" id="L750">        double major = 2. * m[4];</span>
-<span class="nc" id="L751">        double minor = 2. * m[5];</span>
-<span class="nc" id="L752">        double radius = minor;</span>
-<span class="nc bnc" id="L753" title="All 2 branches missed.">        if (radius &lt; 4) {</span>
-<span class="nc" id="L754">            radius = 4;</span>
+<span class="nc" id="L753">        double major = 2. * m[4];</span>
+<span class="nc" id="L754">        double minor = 2. * m[5];</span>
+<span class="nc" id="L755">        double radius = minor;</span>
+<span class="nc bnc" id="L756" title="All 2 branches missed.">        if (radius &lt; 4) {</span>
+<span class="nc" id="L757">            radius = 4;</span>
         }
             
-<span class="nc bnc" id="L757" title="All 2 branches missed.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="nc bnc" id="L760" title="All 2 branches missed.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
             
-<span class="nc" id="L759">            double mc = Math.cos(t);</span>
-<span class="nc" id="L760">            double ms = Math.sin(t);</span>
+<span class="nc" id="L762">            double mc = Math.cos(t);</span>
+<span class="nc" id="L763">            double ms = Math.sin(t);</span>
             
-<span class="nc" id="L762">            int x2 = (int)Math.round(x + (mc * radius));</span>
-<span class="nc" id="L763">            int y2 = (int)Math.round(y + (ms * radius));</span>
+<span class="nc" id="L765">            int x2 = (int)Math.round(x + (mc * radius));</span>
+<span class="nc" id="L766">            int y2 = (int)Math.round(y + (ms * radius));</span>
 
-<span class="nc bnc" id="L765" title="All 6 branches missed.">            if ((x2 &gt;= 0) &amp;&amp; (x2 &lt; img.getWidth()) </span>
-<span class="nc bnc" id="L766" title="All 2 branches missed.">                &amp;&amp; (y2 &gt;= 0) &amp;&amp; (y2 &lt; img.getHeight())) {</span>
+<span class="nc bnc" id="L768" title="All 6 branches missed.">            if ((x2 &gt;= 0) &amp;&amp; (x2 &lt; img.getWidth()) </span>
+<span class="nc bnc" id="L769" title="All 2 branches missed.">                &amp;&amp; (y2 &gt;= 0) &amp;&amp; (y2 &lt; img.getHeight())) {</span>
                 
-<span class="nc" id="L768">                ImageIOHelper.addPointToImage(x2, y2, img, </span>
+<span class="nc" id="L771">                ImageIOHelper.addPointToImage(x2, y2, img, </span>
                     nExtraDot, rClr, gClr, bClr);
             }
         }
-<span class="nc" id="L772">    }</span>
+<span class="nc" id="L775">    }</span>
     
     public Region copy() {
-<span class="fc" id="L775">        Region region = new Region(this.level_, this.pixel_);</span>
-<span class="fc" id="L776">        region.area_ = this.area_;</span>
-<span class="fc" id="L777">        System.arraycopy(moments_, 0,region. moments_, 0, moments_.length);</span>
-<span class="fc" id="L778">        region.variation_ = this.variation_;</span>
-<span class="fc" id="L779">        region.stable_ = this.stable_;</span>
-<span class="fc" id="L780">        region.parent_ = this.parent_;</span>
-<span class="fc" id="L781">        region.child_ = this.child_;</span>
-<span class="fc" id="L782">        region.next_ = this.next_;</span>
-<span class="fc" id="L783">        region.accX.addAll(this.accX);</span>
-<span class="fc" id="L784">        region.accY.addAll(this.accY);</span>
+<span class="fc" id="L778">        Region region = new Region(this.level_, this.pixel_);</span>
+<span class="fc" id="L779">        region.area_ = this.area_;</span>
+<span class="fc" id="L780">        System.arraycopy(moments_, 0,region. moments_, 0, moments_.length);</span>
+<span class="fc" id="L781">        region.variation_ = this.variation_;</span>
+<span class="fc" id="L782">        region.stable_ = this.stable_;</span>
+<span class="fc" id="L783">        region.parent_ = this.parent_;</span>
+<span class="fc" id="L784">        region.child_ = this.child_;</span>
+<span class="fc" id="L785">        region.next_ = this.next_;</span>
+<span class="fc" id="L786">        region.accX.addAll(this.accX);</span>
+<span class="fc" id="L787">        region.accY.addAll(this.accY);</span>
         
-<span class="fc" id="L786">        return region;</span>
+<span class="fc" id="L789">        return region;</span>
     }
     
     @Override
     public String toString() {
-<span class="nc" id="L791">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L792">        sb.append(&quot;level_=&quot;).append(level_);</span>
-<span class="nc" id="L793">        sb.append(&quot; pixel_=&quot;).append(pixel_);</span>
-<span class="nc" id="L794">        sb.append(&quot; area_=&quot;).append(area_);</span>
-<span class="nc" id="L795">        sb.append(&quot; moments_=&quot;).append(Arrays.toString(moments_));</span>
-<span class="nc" id="L796">        sb.append(&quot; variation_=&quot;).append(variation_);</span>
-<span class="nc" id="L797">        sb.append(&quot; stable=&quot;).append(stable_);</span>
-<span class="nc" id="L798">        return sb.toString();</span>
+<span class="nc" id="L794">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L795">        sb.append(&quot;level_=&quot;).append(level_);</span>
+<span class="nc" id="L796">        sb.append(&quot; pixel_=&quot;).append(pixel_);</span>
+<span class="nc" id="L797">        sb.append(&quot; area_=&quot;).append(area_);</span>
+<span class="nc" id="L798">        sb.append(&quot; moments_=&quot;).append(Arrays.toString(moments_));</span>
+<span class="nc" id="L799">        sb.append(&quot; variation_=&quot;).append(variation_);</span>
+<span class="nc" id="L800">        sb.append(&quot; stable=&quot;).append(stable_);</span>
+<span class="nc" id="L801">        return sb.toString();</span>
     }
    
     public Set&lt;PairInt&gt; getAcc() {
-<span class="nc" id="L802">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L803" title="All 2 branches missed.">        for (int i = 0; i &lt; accX.size(); ++i) {</span>
-<span class="nc" id="L804">            out.add(new PairInt(accX.get(i), accY.get(i)));</span>
+<span class="nc" id="L805">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L806" title="All 2 branches missed.">        for (int i = 0; i &lt; accX.size(); ++i) {</span>
+<span class="nc" id="L807">            out.add(new PairInt(accX.get(i), accY.get(i)));</span>
         }
-<span class="nc" id="L806">        return out;</span>
+<span class="nc" id="L809">        return out;</span>
     }
     
     public TIntSet getAcc(int imgWidth) {
         
-<span class="fc" id="L811">        TIntSet out = new TIntHashSet();</span>
+<span class="fc" id="L814">        TIntSet out = new TIntHashSet();</span>
         
-<span class="fc bfc" id="L813" title="All 2 branches covered.">        for (int i = 0; i &lt; accX.size(); ++i) {</span>
-<span class="fc" id="L814">            int pixIdx = (accY.get(i) * imgWidth) + accX.get(i);</span>
-<span class="fc" id="L815">            out.add(pixIdx);</span>
+<span class="fc bfc" id="L816" title="All 2 branches covered.">        for (int i = 0; i &lt; accX.size(); ++i) {</span>
+<span class="fc" id="L817">            int pixIdx = (accY.get(i) * imgWidth) + accX.get(i);</span>
+<span class="fc" id="L818">            out.add(pixIdx);</span>
         }
         
-<span class="fc" id="L818">        return out;</span>
+<span class="fc" id="L821">        return out;</span>
+    }
+    
+    /*
+    public int level_;
+    double variation_;
+    
+    int pixel_;
+    int area_;
+    double[] moments_; //(x, y, x^2, xy, y^2)
+   */
+    @Override
+    public boolean equals(Object obj) {
+<span class="pc bpc" id="L834" title="1 of 2 branches missed.">        if (!(obj instanceof Region)) {</span>
+<span class="nc" id="L835">            return false;</span>
+        }
+<span class="fc" id="L837">        Region other = (Region)obj;</span>
+<span class="pc bpc" id="L838" title="1 of 2 branches missed.">        if (other.area_ != area_) {</span>
+<span class="nc" id="L839">            return false;</span>
+        }
+<span class="fc" id="L841">        double eps = 0.1;</span>
+<span class="fc bfc" id="L842" title="All 2 branches covered.">        for (int i = 0; i &lt; moments_.length; ++i) {</span>
+<span class="pc bpc" id="L843" title="1 of 2 branches missed.">            if (Math.abs(moments_[i] - other.moments_[i]) &gt; eps) {</span>
+<span class="nc" id="L844">                return false;</span>
+            }
+        }
+<span class="pc bpc" id="L847" title="1 of 2 branches missed.">        if (pixel_ != other.pixel_) {</span>
+<span class="nc" id="L848">            return false;</span>
+        }
+<span class="fc" id="L850">        return true;</span>
+    }
+    
+    @Override
+    public int hashCode() {
+        
+<span class="fc" id="L856">        int hash = fnvHashCode();</span>
+
+<span class="fc" id="L858">        return hash;</span>
+    }
+
+<span class="fc" id="L861">    protected static int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L862">    protected static int fnv32Prime = 0x01000193;</span>
+
+    protected int fnvHashCode() {
+
+        /*
+         * hash = offset_basis
+         * for each octet_of_data to be hashed
+         *     hash = hash xor octet_of_data
+         *     hash = hash * FNV_prime
+         * return hash
+         *
+         * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+         */
+<span class="fc" id="L875">        int mask = (1 &lt;&lt; 31) - 1;</span>
+<span class="fc" id="L876">        int shift = 32;</span>
+<span class="fc" id="L877">        int sum = fnv321aInit;</span>
+        long b0, b1;
+        
+<span class="fc" id="L880">        sum ^= pixel_;</span>
+<span class="fc" id="L881">        sum *= fnv32Prime;</span>
+<span class="fc" id="L882">        sum ^= area_;</span>
+<span class="fc" id="L883">        sum *= fnv32Prime;</span>
+        
+<span class="fc bfc" id="L885" title="All 2 branches covered.">        for (int i = 0; i &lt; moments_.length; ++i) {</span>
+<span class="fc" id="L886">            long a = Double.doubleToLongBits(moments_[i]); </span>
+<span class="fc" id="L887">            b0 = a &amp; mask;</span>
+<span class="fc" id="L888">            b1 = (a &gt;&gt; shift) &amp; mask;</span>
+            
+            // xor the bottom with the current octet.
+<span class="fc" id="L891">            sum ^= b0;</span>
+            // multiply by the 32 bit FNV magic prime mod 2^32
+<span class="fc" id="L893">            sum *= fnv32Prime;</span>
+            
+<span class="fc" id="L895">            sum ^= b1;</span>
+<span class="fc" id="L896">            sum *= fnv32Prime;</span>
+        }
+        
+<span class="fc" id="L899">        return sum;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

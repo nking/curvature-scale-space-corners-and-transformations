@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Intersection2DPacking.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.packing</a> &gt; <span class="el_source">Intersection2DPacking.java</span></div><h1>Intersection2DPacking.java</h1><pre class="source lang-java linenums">package algorithms.packing;
+
+import algorithms.MultiArrayMergeSort;
+import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Class to return a set of points for the intersection of 2 point sets where 
+ * the set of points are separated by a given interval in x and y, that is,
+ * the bins are squares.
+ * The two point sets can be irregular in shape.  
+ * The solution is not guaranteed to be optimal.
+ * 
+ * The runtime complexity is expected to be:
+ *     O(min(N_points) * lg_2(N_points))
+ * 
+ * Considering implementing these:
+ * 
+ * Option 1 (naiveStripPacking):
+ *     resembles 2D strips:
+ *     -- find the intersection of the point sets by iterating over the smallest
+ *        point set.
+ *     -- sort the intersection data structure by x, then y
+ *     -- fill the intersection space with rectangles of given x and y size.
+ *        
+ * Option 2:
+ *     find the intersection of the point sets by iterating over the smallest
+ *        point set.
+ *     use a medial axis built from a voronoi diagram
+ *     (see algorithms.compGeometry.MedialAxis), 
+ *     then fill the space using order based upon the most connected medial 
+ *     axis points and then the space connected to those assigned bins, 
+ *     iteratively.
+ *     It can use IntervalRangeSearch for collision checks.
+ * 
+ * Option 3:
+ *    find the intersection of the point sets by iterating over the smallest
+ *        point set.
+ *     create ordered, connected boundary points of the
+ *     intersection.
+ *     then walk along the border, filling in bins
+ *        at cell x,y spacings and adding the connected
+ *        intervals to a stack iteratively to continue filling
+ *        the intersection with bins.
+ 
+ * 
+ * @author nichole
+ */
+<span class="fc" id="L55">public class Intersection2DPacking {</span>
+    
+    /**
+     * uses 2-D strip packing and cell sizes of cellSize to place points 
+     * throughout the intersection of the 2-D points in the most naive greedy 
+     * placement order in x, then y.  Note that the result is not guaranteed
+     * to be optimal.
+     * 
+     * The runtime complexity is O(N * log_2(N)) 
+     * where N is min(N_points1, N_points2).
+     * 
+     * @param points1
+     * @param points2
+     * @param imageWidth
+     * @param cellSize
+     * @return 
+     */
+    public TIntSet naiveStripPacking(TIntSet points1, TIntSet points2, 
+        int imageWidth, int cellSize) {
+        
+        // O(N)
+<span class="fc" id="L76">        TIntSet intersection = intersection(points1, points2);</span>
+        
+<span class="fc" id="L78">        return naiveStripPacking(intersection, imageWidth, cellSize);</span>
+    }
+    
+    /**
+     * uses 2-D strip packing and cell sizes of cellSize to place points 
+     * throughout the intersection of the 2-D points in the most naive greedy 
+     * placement order in x, then y.  Note that the result is not guaranteed
+     * to be optimal.
+     * 
+     * The runtime complexity is O(N * log_2(N)) 
+     * where N is min(N_points1, N_points2).
+     * 
+     * @param points1
+     * @param points2
+     * @param cellSize
+     * @return 
+     */
+    public Set&lt;PairInt&gt; naiveStripPacking(Collection&lt;PairInt&gt; points1, 
+        Collection&lt;PairInt&gt; points2, int cellSize) {
+        
+        // O(N)
+<span class="fc" id="L99">        Set&lt;PairInt&gt; intersection = intersection(points1, points2);</span>
+        
+<span class="fc" id="L101">        return naiveStripPacking(intersection, cellSize);</span>
+    }
+    
+    /**
+     * uses 2-D strip packing and cell sizes of cellSize to place bins 
+     * throughout the 2-D points in the most naive greedy 
+     * placement order in x, then y.  Note that the result is not guaranteed
+     * to be optimal.
+     * 
+     * The runtime complexity is O(N * log_2(N)) 
+     * where N is min(N_points1, N_points2).
+     * 
+     * @param points
+     * @param imageWidth
+     * @param cellSize
+     * @return 
+     */
+    public TIntSet naiveStripPacking(TIntSet points, int imageWidth, int cellSize) {
+        
+        // O(N)
+<span class="fc" id="L121">        TIntSet intersection = points;</span>
+        
+        //O(N)
+<span class="fc" id="L124">        int[] xs = new int[intersection.size()];</span>
+<span class="fc" id="L125">        int[] ys = new int[intersection.size()];</span>
+<span class="fc" id="L126">        _populate(intersection, imageWidth, xs, ys);</span>
+        
+        //O(N*lg_2(N))
+<span class="fc" id="L129">        MultiArrayMergeSort.sortBy1stArgThen2nd(ys, xs);</span>
+        
+<span class="fc" id="L131">        TIntSet out = new TIntHashSet();</span>
+        
+<span class="fc" id="L133">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L134">        int lX = Integer.MIN_VALUE; </span>
+<span class="fc" id="L135">        int lY = Integer.MIN_VALUE;</span>
+        int x, y;
+        long pixIdx;
+       
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int i = 0; i &lt; xs.length; ++i) {</span>
+<span class="fc" id="L140">            x = xs[i];</span>
+<span class="fc" id="L141">            y = ys[i];</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            if (x &lt; lX) {</span>
+<span class="fc" id="L143">                lX = Integer.MIN_VALUE;</span>
+            }
+<span class="fc bfc" id="L145" title="All 6 branches covered.">            if ((x &gt;= (lX + cellSize)) &amp;&amp; </span>
+                ((y == lY) || (y &gt;= (lY + cellSize)))) {
+                
+<span class="fc" id="L148">                pixIdx = ph.toPixelIndex(x, y, imageWidth);</span>
+<span class="fc" id="L149">                out.add((int)pixIdx);</span>
+<span class="fc" id="L150">                lX = x;</span>
+<span class="fc" id="L151">                lY = y;</span>
+            }
+        }
+<span class="fc" id="L154">        return out;</span>
+    }
+    
+    /**
+     * uses 2-D strip packing and cell sizes of cellSize to place bins 
+     * throughout the 2-D points in the most naive greedy 
+     * placement order in x, then y.  Note that the result is not guaranteed
+     * to be optimal.
+     * 
+     * The runtime complexity is O(N * log_2(N)) 
+     * where N is min(N_points1, N_points2).
+     * 
+     * @param points
+     * @param cellSize
+     * @return 
+     */
+    public Set&lt;PairInt&gt; naiveStripPacking(Collection&lt;PairInt&gt; points, 
+        int cellSize) {
+        
+        // O(N)
+<span class="fc" id="L174">        Collection&lt;PairInt&gt; intersection = points;</span>
+        
+        //O(N)
+<span class="fc" id="L177">        int[] xs = new int[intersection.size()];</span>
+<span class="fc" id="L178">        int[] ys = new int[intersection.size()];</span>
+<span class="fc" id="L179">        _populate(intersection, xs, ys);</span>
+        
+        //O(N*lg_2(N))
+<span class="fc" id="L182">        MultiArrayMergeSort.sortBy1stArgThen2nd(ys, xs);</span>
+        
+<span class="fc" id="L184">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L186">        int lX = Integer.MIN_VALUE; </span>
+<span class="fc" id="L187">        int lY = Integer.MIN_VALUE;</span>
+        int x, y;
+       
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int i = 0; i &lt; xs.length; ++i) {</span>
+<span class="fc" id="L191">            x = xs[i];</span>
+<span class="fc" id="L192">            y = ys[i];</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            if (x &lt; lX) {</span>
+<span class="fc" id="L194">                lX = Integer.MIN_VALUE;</span>
+            }
+<span class="fc bfc" id="L196" title="All 6 branches covered.">            if ((x &gt;= (lX + cellSize)) &amp;&amp; </span>
+                ((y == lY) || (y &gt;= (lY + cellSize)))) {
+<span class="fc" id="L198">                PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L199">                out.add(p);</span>
+<span class="fc" id="L200">                lX = x;</span>
+<span class="fc" id="L201">                lY = y;</span>
+            }
+        }
+<span class="fc" id="L204">        return out;</span>
+    }
+    
+    /**
+     * Find the intersection of the 2 point sets.
+     * The runtime complexity is O(N) where N is min(N_points1, N_points2).
+     * 
+     * @param points1
+     * @param points2
+     * @return 
+     */
+    public TIntSet intersection(TIntSet points1, TIntSet points2) {
+        
+<span class="fc" id="L217">        TIntSet out = new TIntHashSet();</span>
+        
+        TIntSet p1, p2;
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (points1.size() &lt;= points2.size()) {</span>
+<span class="fc" id="L221">            p1 = points1;</span>
+<span class="fc" id="L222">            p2 = points2;</span>
+        } else {
+<span class="nc" id="L224">            p1 = points2;</span>
+<span class="nc" id="L225">            p2 = points1;</span>
+        }
+<span class="fc" id="L227">        TIntIterator iter = p1.iterator();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L229">            int pixIdx = iter.next();</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">            if (p2.contains(pixIdx)) {</span>
+<span class="fc" id="L231">                out.add(pixIdx);</span>
+            }
+<span class="fc" id="L233">        }</span>
+        
+<span class="fc" id="L235">        return out;</span>
+    }
+
+    /**
+     * Find the intersection of the 2 point sets.
+     * The runtime complexity is O(N) where N is min(N_points1, N_points2).
+     * 
+     * @param points1
+     * @param points2
+     * @return 
+     */
+    public Set&lt;PairInt&gt; intersection(Collection&lt;PairInt&gt; points1, 
+        Collection&lt;PairInt&gt; points2) {
+        
+<span class="fc" id="L249">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
+        
+        Collection&lt;PairInt&gt; p1, p2;
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (points1.size() &lt;= points2.size()) {</span>
+<span class="fc" id="L253">            p1 = points1;</span>
+<span class="fc" id="L254">            p2 = points2;</span>
+        } else {
+<span class="fc" id="L256">            p1 = points2;</span>
+<span class="fc" id="L257">            p2 = points1;</span>
+        }
+<span class="fc bfc" id="L259" title="All 2 branches covered.">        for (PairInt p : p1) {</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">            if (p2.contains(p)) {</span>
+<span class="fc" id="L261">                out.add(p);</span>
+            }
+<span class="fc" id="L263">        }</span>
+        
+<span class="fc" id="L265">        return out;</span>
+    }
+    
+    void _populate(TIntSet points, int imageWidth, int[] xs, int[] ys) {
+    
+<span class="fc" id="L270">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L271">        int[] xy = new int[2];</span>
+        
+<span class="fc" id="L273">        int i = 0;</span>
+<span class="fc" id="L274">        TIntIterator iter = points.iterator();</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L276">            int pixIdx = iter.next();</span>
+<span class="fc" id="L277">            ph.toPixelCoords(pixIdx, imageWidth, xy);</span>
+<span class="fc" id="L278">            xs[i] = xy[0];</span>
+<span class="fc" id="L279">            ys[i] = xy[1];</span>
+<span class="fc" id="L280">            ++i;</span>
+<span class="fc" id="L281">        }</span>
+<span class="fc" id="L282">    }</span>
+    
+    void _populate(Collection&lt;PairInt&gt; points, int[] xs, int[] ys) {
+    
+<span class="fc" id="L286">        int i = 0;</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L288">            xs[i] = p.getX();</span>
+<span class="fc" id="L289">            ys[i] = p.getY();</span>
+<span class="fc" id="L290">            ++i;</span>
+<span class="fc" id="L291">        }</span>
+<span class="fc" id="L292">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

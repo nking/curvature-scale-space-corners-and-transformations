@@ -436,7 +436,7 @@ import java.util.List;
 <span class="fc" id="L436">            long[] a = cells.get(i).a;</span>
 <span class="fc bfc" id="L437" title="All 2 branches covered.">            for (int j = 0; j &lt; a.length; ++j) {</span>
                 //v /= Math.sqrt(blockTotal + 0.0001);
-<span class="fc" id="L439">                a[j] = (long)Math.round(norm * a[j]);</span>
+<span class="fc" id="L439">                a[j] = Math.round(norm * a[j]);</span>
             }
 <span class="fc" id="L441">            add(outHist, a);</span>
         }

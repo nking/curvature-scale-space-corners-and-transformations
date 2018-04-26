@@ -582,244 +582,200 @@ import java.util.logging.Logger;
         }
 <span class="fc" id="L583">    }</span>
 
-    private void removeIsolatedPixels(GreyscaleImage img, int pixValue,
-        int pixNullValue, boolean use8Neighbors) {
-
-        int[] dxs, dys;
-<span class="nc bnc" id="L589" title="All 2 branches missed.">        if (use8Neighbors) {</span>
-<span class="nc" id="L590">            dxs = Misc.dx8;</span>
-<span class="nc" id="L591">            dys = Misc.dy8;</span>
-        } else {
-<span class="nc" id="L593">            dxs = Misc.dx4;</span>
-<span class="nc" id="L594">            dys = Misc.dy4;</span>
-        }
-
-<span class="nc" id="L597">        int w = img.getWidth();</span>
-<span class="nc" id="L598">        int h = img.getHeight();</span>
-
-<span class="nc bnc" id="L600" title="All 2 branches missed.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="nc bnc" id="L601" title="All 2 branches missed.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="nc" id="L602">                int v = img.getValue(x, y);</span>
-<span class="nc bnc" id="L603" title="All 2 branches missed.">                if (v != pixValue) {</span>
-<span class="nc" id="L604">                    continue;</span>
-                }
-<span class="nc" id="L606">                int count = 0;</span>
-<span class="nc" id="L607">                int nSame = 0;</span>
-<span class="nc bnc" id="L608" title="All 2 branches missed.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L609">                    int x2 = x + dxs[k];</span>
-<span class="nc" id="L610">                    int y2 = y + dys[k];</span>
-<span class="nc bnc" id="L611" title="All 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) ||</span>
-                        (y2 &gt; (h - 1))) {
-<span class="nc" id="L613">                        continue;</span>
-                    }
-<span class="nc" id="L615">                    count++;</span>
-<span class="nc" id="L616">                    int v2 = img.getValue(x2, y2);</span>
-<span class="nc bnc" id="L617" title="All 2 branches missed.">                    if (v2 == pixValue) {</span>
-<span class="nc" id="L618">                        nSame++;</span>
-<span class="nc" id="L619">                        break;</span>
-                    }
-                }
-<span class="nc bnc" id="L622" title="All 2 branches missed.">                if (nSame == 0) {</span>
-<span class="nc" id="L623">                    img.setValue(x, y, pixNullValue);</span>
-                }
-            }
-        }
-<span class="nc" id="L627">    }</span>
-
     private void mergeEdges(List&lt;Set&lt;PairInt&gt;&gt; clusterPoints,
         float[][] clusterDescriptors, int clrSpace, double tColor,
         List&lt;Integer&gt; edgeIndexes) {
 
-<span class="fc" id="L633">        log.fine(edgeIndexes.size() + &quot; edges&quot;);</span>
+<span class="fc" id="L589">        log.fine(edgeIndexes.size() + &quot; edges&quot;);</span>
 
-<span class="pc bpc" id="L635" title="1 of 2 branches missed.">        if (edgeIndexes.isEmpty()) {</span>
-<span class="nc" id="L636">            return;</span>
+<span class="pc bpc" id="L591" title="1 of 2 branches missed.">        if (edgeIndexes.isEmpty()) {</span>
+<span class="nc" id="L592">            return;</span>
         }
 
-<span class="fc" id="L639">        final long heapKeyFactor = 1000000l;</span>
-<span class="fc" id="L640">        Heap heap = new Heap();</span>
-<span class="fc" id="L641">        Map&lt;PairInt, HeapNode&gt; pairEdgePindexNodes = new HashMap&lt;PairInt, HeapNode&gt;();</span>
-<span class="fc" id="L642">        populateColorDiffHeap(clusterDescriptors, clrSpace,</span>
+<span class="fc" id="L595">        final long heapKeyFactor = 1000000l;</span>
+<span class="fc" id="L596">        Heap heap = new Heap();</span>
+<span class="fc" id="L597">        Map&lt;PairInt, HeapNode&gt; pairEdgePindexNodes = new HashMap&lt;PairInt, HeapNode&gt;();</span>
+<span class="fc" id="L598">        populateColorDiffHeap(clusterDescriptors, clrSpace,</span>
             edgeIndexes, heap, heapKeyFactor, pairEdgePindexNodes);
 
         // ---- make a map to find and update merged data structures ------
-<span class="fc" id="L646">        Map&lt;Integer, Set&lt;Integer&gt;&gt; indexToIndexMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
-<span class="fc bfc" id="L647" title="All 2 branches covered.">        for (PairInt p : pairEdgePindexNodes.keySet()) {</span>
+<span class="fc" id="L602">        Map&lt;Integer, Set&lt;Integer&gt;&gt; indexToIndexMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+<span class="fc bfc" id="L603" title="All 2 branches covered.">        for (PairInt p : pairEdgePindexNodes.keySet()) {</span>
 
-<span class="fc" id="L649">            Integer index1 = Integer.valueOf(p.getX());</span>
-<span class="fc" id="L650">            Integer index2 = Integer.valueOf(p.getY());</span>
+<span class="fc" id="L605">            Integer index1 = Integer.valueOf(p.getX());</span>
+<span class="fc" id="L606">            Integer index2 = Integer.valueOf(p.getY());</span>
 
-<span class="fc" id="L652">            Set&lt;Integer&gt; indexes = indexToIndexMap.get(index1);</span>
-<span class="fc bfc" id="L653" title="All 2 branches covered.">            if (indexes == null) {</span>
-<span class="fc" id="L654">                indexes = new HashSet&lt;Integer&gt;();</span>
-<span class="fc" id="L655">                indexToIndexMap.put(index1, indexes);</span>
+<span class="fc" id="L608">            Set&lt;Integer&gt; indexes = indexToIndexMap.get(index1);</span>
+<span class="fc bfc" id="L609" title="All 2 branches covered.">            if (indexes == null) {</span>
+<span class="fc" id="L610">                indexes = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L611">                indexToIndexMap.put(index1, indexes);</span>
             }
-<span class="fc" id="L657">            indexes.add(index2);</span>
+<span class="fc" id="L613">            indexes.add(index2);</span>
 
-<span class="fc" id="L659">            indexes = indexToIndexMap.get(index2);</span>
-<span class="fc bfc" id="L660" title="All 2 branches covered.">            if (indexes == null) {</span>
-<span class="fc" id="L661">                indexes = new HashSet&lt;Integer&gt;();</span>
-<span class="fc" id="L662">                indexToIndexMap.put(index2, indexes);</span>
+<span class="fc" id="L615">            indexes = indexToIndexMap.get(index2);</span>
+<span class="fc bfc" id="L616" title="All 2 branches covered.">            if (indexes == null) {</span>
+<span class="fc" id="L617">                indexes = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L618">                indexToIndexMap.put(index2, indexes);</span>
             }
-<span class="fc" id="L664">            indexes.add(index1);</span>
-<span class="fc" id="L665">        }</span>
+<span class="fc" id="L620">            indexes.add(index1);</span>
+<span class="fc" id="L621">        }</span>
 
-<span class="fc" id="L667">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L623">        CIEChromaticity cieC = new CIEChromaticity();</span>
 
-<span class="pc bpc" id="L669" title="1 of 2 branches missed.">        while (!heap.isEmpty()) {</span>
+<span class="pc bpc" id="L625" title="1 of 2 branches missed.">        while (!heap.isEmpty()) {</span>
 
-<span class="fc" id="L671">            HeapNode node = heap.extractMin();</span>
-<span class="fc" id="L672">            double diff = ((double)node.getKey())/((double)heapKeyFactor);</span>
+<span class="fc" id="L627">            HeapNode node = heap.extractMin();</span>
+<span class="fc" id="L628">            double diff = ((double)node.getKey())/((double)heapKeyFactor);</span>
 
-<span class="fc bfc" id="L674" title="All 2 branches covered.">            if (diff &gt; tColor) {</span>
-<span class="fc" id="L675">                break;</span>
-            }
-
-<span class="fc" id="L678">            PairInt p12 = (PairInt)node.getData();</span>
-
-<span class="fc" id="L680">            int idx1 = p12.getX();</span>
-<span class="fc" id="L681">            int idx2 = p12.getY();</span>
-
-<span class="fc" id="L683">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
-<span class="fc" id="L684">            Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
-
-<span class="pc bpc" id="L686" title="2 of 4 branches missed.">            if (set1.isEmpty() || set2.isEmpty()) {</span>
-<span class="nc" id="L687">                continue;</span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">            if (diff &gt; tColor) {</span>
+<span class="fc" id="L631">                break;</span>
             }
 
-<span class="fc bfc" id="L690" title="All 2 branches covered.">            if (set2.size() &gt; set1.size()) {</span>
-<span class="fc" id="L691">                idx1 = p12.getY();</span>
-<span class="fc" id="L692">                idx2 = p12.getX();</span>
-<span class="fc" id="L693">                set1 = set2;</span>
-<span class="fc" id="L694">                set2 = clusterPoints.get(idx2);</span>
+<span class="fc" id="L634">            PairInt p12 = (PairInt)node.getData();</span>
+
+<span class="fc" id="L636">            int idx1 = p12.getX();</span>
+<span class="fc" id="L637">            int idx2 = p12.getY();</span>
+
+<span class="fc" id="L639">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
+<span class="fc" id="L640">            Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
+
+<span class="pc bpc" id="L642" title="2 of 4 branches missed.">            if (set1.isEmpty() || set2.isEmpty()) {</span>
+<span class="nc" id="L643">                continue;</span>
+            }
+
+<span class="fc bfc" id="L646" title="All 2 branches covered.">            if (set2.size() &gt; set1.size()) {</span>
+<span class="fc" id="L647">                idx1 = p12.getY();</span>
+<span class="fc" id="L648">                idx2 = p12.getX();</span>
+<span class="fc" id="L649">                set1 = set2;</span>
+<span class="fc" id="L650">                set2 = clusterPoints.get(idx2);</span>
             }
 
             // set1 is largest
 
-<span class="fc" id="L699">            Integer index1 = Integer.valueOf(idx1);</span>
-<span class="fc" id="L700">            Integer index2 = Integer.valueOf(idx2);</span>
+<span class="fc" id="L655">            Integer index1 = Integer.valueOf(idx1);</span>
+<span class="fc" id="L656">            Integer index2 = Integer.valueOf(idx2);</span>
 
-<span class="fc" id="L702">            float[] desc1 = clusterDescriptors[idx1];</span>
-<span class="fc" id="L703">            float[] desc2 = clusterDescriptors[idx2];</span>
-<span class="fc" id="L704">            float n1 = set1.size();</span>
-<span class="fc" id="L705">            float n2 = set2.size();</span>
-<span class="fc" id="L706">            float nTot = n1 + n2;</span>
+<span class="fc" id="L658">            float[] desc1 = clusterDescriptors[idx1];</span>
+<span class="fc" id="L659">            float[] desc2 = clusterDescriptors[idx2];</span>
+<span class="fc" id="L660">            float n1 = set1.size();</span>
+<span class="fc" id="L661">            float n2 = set2.size();</span>
+<span class="fc" id="L662">            float nTot = n1 + n2;</span>
 
-<span class="pc bpc" id="L708" title="3 of 4 branches missed.">            assert(Math.abs(n1 - desc1[3]) &lt; 0.1);</span>
-<span class="pc bpc" id="L709" title="3 of 4 branches missed.">            assert(Math.abs(n2 - desc2[3]) &lt; 0.1);</span>
+<span class="pc bpc" id="L664" title="3 of 4 branches missed.">            assert(Math.abs(n1 - desc1[3]) &lt; 0.1);</span>
+<span class="pc bpc" id="L665" title="3 of 4 branches missed.">            assert(Math.abs(n2 - desc2[3]) &lt; 0.1);</span>
 
             //{h, s, v, nPix, cenX, cenY}
             // update desc1 contents for contents in desc2
-<span class="fc bfc" id="L713" title="All 2 branches covered.">            for (int k = 0; k &lt; desc1.length; ++k) {</span>
-<span class="fc bfc" id="L714" title="All 2 branches covered.">                if (k == 3) {</span>
-<span class="fc" id="L715">                    desc1[k] = nTot;</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">            for (int k = 0; k &lt; desc1.length; ++k) {</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">                if (k == 3) {</span>
+<span class="fc" id="L671">                    desc1[k] = nTot;</span>
                 } else {
-<span class="fc" id="L717">                    desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2)) / nTot;</span>
+<span class="fc" id="L673">                    desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2)) / nTot;</span>
                 }
             }
-<span class="fc" id="L720">            clusterDescriptors[idx2] = null;</span>
-<span class="fc" id="L721">            set1.addAll(set2);</span>
-<span class="fc" id="L722">            set2.clear();</span>
+<span class="fc" id="L676">            clusterDescriptors[idx2] = null;</span>
+<span class="fc" id="L677">            set1.addAll(set2);</span>
+<span class="fc" id="L678">            set2.clear();</span>
 
-<span class="fc" id="L724">            n1 = set1.size();</span>
+<span class="fc" id="L680">            n1 = set1.size();</span>
 
             // remove the idx1 --&gt; set&lt;integer&gt; pairs from map and heap
             // remove the idx2 --&gt; set&lt;integer&gt; pairs from map and heap
 
-<span class="fc" id="L729">            Set&lt;Integer&gt; indexes3 = indexToIndexMap.get(index1);</span>
-<span class="fc bfc" id="L730" title="All 2 branches covered.">            for (Integer index3 : indexes3) {</span>
-<span class="fc" id="L731">                int idx3 = index3.intValue();</span>
-<span class="fc" id="L732">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
-<span class="pc bpc" id="L733" title="1 of 4 branches missed.">                if (set3.isEmpty() || idx1 == idx3) {</span>
-<span class="nc" id="L734">                    continue;</span>
+<span class="fc" id="L685">            Set&lt;Integer&gt; indexes3 = indexToIndexMap.get(index1);</span>
+<span class="fc bfc" id="L686" title="All 2 branches covered.">            for (Integer index3 : indexes3) {</span>
+<span class="fc" id="L687">                int idx3 = index3.intValue();</span>
+<span class="fc" id="L688">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
+<span class="pc bpc" id="L689" title="1 of 4 branches missed.">                if (set3.isEmpty() || idx1 == idx3) {</span>
+<span class="nc" id="L690">                    continue;</span>
                 }
                 //keys in pairEdgePindexNodes have smaller index in x
                 PairInt p13;
-<span class="fc bfc" id="L738" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
-<span class="fc" id="L739">                    p13 = new PairInt(idx1, idx3);</span>
+<span class="fc bfc" id="L694" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
+<span class="fc" id="L695">                    p13 = new PairInt(idx1, idx3);</span>
                 } else {
-<span class="fc" id="L741">                    p13 = new PairInt(idx3, idx1);</span>
+<span class="fc" id="L697">                    p13 = new PairInt(idx3, idx1);</span>
                 }
-<span class="fc" id="L743">                HeapNode node3 = pairEdgePindexNodes.get(p13);</span>
-<span class="pc bpc" id="L744" title="3 of 4 branches missed.">                assert(node3 != null);</span>
-<span class="fc" id="L745">                heap.remove(node3);</span>
-<span class="fc" id="L746">                pairEdgePindexNodes.remove(p13);</span>
-<span class="fc" id="L747">            }</span>
+<span class="fc" id="L699">                HeapNode node3 = pairEdgePindexNodes.get(p13);</span>
+<span class="pc bpc" id="L700" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="fc" id="L701">                heap.remove(node3);</span>
+<span class="fc" id="L702">                pairEdgePindexNodes.remove(p13);</span>
+<span class="fc" id="L703">            }</span>
 
-<span class="fc" id="L749">            indexes3 = indexToIndexMap.get(index2);</span>
-<span class="fc bfc" id="L750" title="All 2 branches covered.">            for (Integer index3 : indexes3) {</span>
-<span class="fc" id="L751">                int idx3 = index3.intValue();</span>
-<span class="fc" id="L752">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
-<span class="fc bfc" id="L753" title="All 4 branches covered.">                if (set3.isEmpty() || idx1 == idx3) {</span>
-<span class="fc" id="L754">                    continue;</span>
+<span class="fc" id="L705">            indexes3 = indexToIndexMap.get(index2);</span>
+<span class="fc bfc" id="L706" title="All 2 branches covered.">            for (Integer index3 : indexes3) {</span>
+<span class="fc" id="L707">                int idx3 = index3.intValue();</span>
+<span class="fc" id="L708">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
+<span class="fc bfc" id="L709" title="All 4 branches covered.">                if (set3.isEmpty() || idx1 == idx3) {</span>
+<span class="fc" id="L710">                    continue;</span>
                 }
                 PairInt p23;
-<span class="fc bfc" id="L757" title="All 2 branches covered.">                if (idx2 &lt; idx3) {</span>
-<span class="fc" id="L758">                    p23 = new PairInt(idx2, idx3);</span>
+<span class="fc bfc" id="L713" title="All 2 branches covered.">                if (idx2 &lt; idx3) {</span>
+<span class="fc" id="L714">                    p23 = new PairInt(idx2, idx3);</span>
                 } else {
-<span class="fc" id="L760">                    p23 = new PairInt(idx3, idx2);</span>
+<span class="fc" id="L716">                    p23 = new PairInt(idx3, idx2);</span>
                 }
-<span class="fc" id="L762">                HeapNode node3 = pairEdgePindexNodes.get(p23);</span>
-<span class="pc bpc" id="L763" title="3 of 4 branches missed.">                assert(node3 != null);</span>
-<span class="fc" id="L764">                heap.remove(node3);</span>
-<span class="fc" id="L765">                pairEdgePindexNodes.remove(p23);</span>
-<span class="fc" id="L766">            }</span>
+<span class="fc" id="L718">                HeapNode node3 = pairEdgePindexNodes.get(p23);</span>
+<span class="pc bpc" id="L719" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="fc" id="L720">                heap.remove(node3);</span>
+<span class="fc" id="L721">                pairEdgePindexNodes.remove(p23);</span>
+<span class="fc" id="L722">            }</span>
 
             // update the indexToIndexMap
-<span class="fc" id="L769">            Set&lt;Integer&gt; iim = new HashSet&lt;Integer&gt;(indexToIndexMap.get(index2));</span>
-<span class="fc bfc" id="L770" title="All 2 branches covered.">            for (Integer index3 : iim) {</span>
-<span class="fc bfc" id="L771" title="All 2 branches covered.">                if (!index3.equals(index1)) {</span>
-<span class="fc" id="L772">                    Set&lt;Integer&gt; indexes4 = indexToIndexMap.get(index3);</span>
-<span class="fc bfc" id="L773" title="All 2 branches covered.">                    if (indexes4 != null) {</span>
-<span class="fc" id="L774">                        indexes4.remove(index2);</span>
-<span class="fc" id="L775">                        indexes4.add(index1);</span>
+<span class="fc" id="L725">            Set&lt;Integer&gt; iim = new HashSet&lt;Integer&gt;(indexToIndexMap.get(index2));</span>
+<span class="fc bfc" id="L726" title="All 2 branches covered.">            for (Integer index3 : iim) {</span>
+<span class="fc bfc" id="L727" title="All 2 branches covered.">                if (!index3.equals(index1)) {</span>
+<span class="fc" id="L728">                    Set&lt;Integer&gt; indexes4 = indexToIndexMap.get(index3);</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">                    if (indexes4 != null) {</span>
+<span class="fc" id="L730">                        indexes4.remove(index2);</span>
+<span class="fc" id="L731">                        indexes4.add(index1);</span>
                     }
                 }
-<span class="fc" id="L778">            }</span>
-<span class="fc" id="L779">            indexes3.addAll(iim);</span>
-<span class="fc" id="L780">            indexes3.remove(index2);</span>
-<span class="fc" id="L781">            indexToIndexMap.remove(index2);</span>
+<span class="fc" id="L734">            }</span>
+<span class="fc" id="L735">            indexes3.addAll(iim);</span>
+<span class="fc" id="L736">            indexes3.remove(index2);</span>
+<span class="fc" id="L737">            indexToIndexMap.remove(index2);</span>
 
             // add node for updated idx1 ---&gt; set&lt;integer&gt; to map and node
-<span class="fc" id="L784">            indexes3 = indexToIndexMap.get(Integer.valueOf(idx1));</span>
-<span class="fc bfc" id="L785" title="All 2 branches covered.">            for (Integer index3 : indexes3) {</span>
-<span class="fc" id="L786">                int idx3 = index3.intValue();</span>
-<span class="fc" id="L787">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
-<span class="pc bpc" id="L788" title="1 of 4 branches missed.">                if (set3.isEmpty() || idx1 == idx3) {</span>
-<span class="nc" id="L789">                    continue;</span>
+<span class="fc" id="L740">            indexes3 = indexToIndexMap.get(Integer.valueOf(idx1));</span>
+<span class="fc bfc" id="L741" title="All 2 branches covered.">            for (Integer index3 : indexes3) {</span>
+<span class="fc" id="L742">                int idx3 = index3.intValue();</span>
+<span class="fc" id="L743">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
+<span class="pc bpc" id="L744" title="1 of 4 branches missed.">                if (set3.isEmpty() || idx1 == idx3) {</span>
+<span class="nc" id="L745">                    continue;</span>
                 }
                 //keys in pairEdgePindexNodes have smaller index in x
                 PairInt p13;
-<span class="fc bfc" id="L793" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
-<span class="fc" id="L794">                    p13 = new PairInt(idx1, idx3);</span>
+<span class="fc bfc" id="L749" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
+<span class="fc" id="L750">                    p13 = new PairInt(idx1, idx3);</span>
                 } else {
-<span class="fc" id="L796">                    p13 = new PairInt(idx3, idx1);</span>
+<span class="fc" id="L752">                    p13 = new PairInt(idx3, idx1);</span>
                 }
 
-<span class="fc" id="L799">                float[] desc3 = clusterDescriptors[idx3];</span>
+<span class="fc" id="L755">                float[] desc3 = clusterDescriptors[idx3];</span>
 
                 double diffUpdated;
-<span class="pc bpc" id="L802" title="1 of 2 branches missed.">                if (clrSpace == 0) {</span>
-<span class="fc" id="L803">                    diffUpdated = Math.abs(cieC.calcDeltaECIE2000(</span>
+<span class="pc bpc" id="L758" title="1 of 2 branches missed.">                if (clrSpace == 0) {</span>
+<span class="fc" id="L759">                    diffUpdated = Math.abs(cieC.calcDeltaECIE2000(</span>
                         desc1[0], desc1[1], desc1[2],
                         desc3[0], desc3[1], desc3[2]));
                 } else {
-<span class="nc" id="L807">                    double diff1 = desc1[0] - desc3[0];</span>
-<span class="nc" id="L808">                    double diff2 = desc1[1] - desc3[1];</span>
-<span class="nc" id="L809">                    double diff3 = desc1[2] - desc3[2];</span>
-<span class="nc" id="L810">                    diffUpdated = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);</span>
+<span class="nc" id="L763">                    double diff1 = desc1[0] - desc3[0];</span>
+<span class="nc" id="L764">                    double diff2 = desc1[1] - desc3[1];</span>
+<span class="nc" id="L765">                    double diff3 = desc1[2] - desc3[2];</span>
+<span class="nc" id="L766">                    diffUpdated = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);</span>
                 }
 
-<span class="fc" id="L813">                long heapKey = (long)((double)heapKeyFactor * diffUpdated);</span>
-<span class="fc" id="L814">                HeapNode node3 = new HeapNode(heapKey);</span>
-<span class="fc" id="L815">                node3.setData(p13);</span>
-<span class="fc" id="L816">                heap.insert(node3);</span>
-<span class="fc" id="L817">                pairEdgePindexNodes.put(p13, node3);</span>
-<span class="fc" id="L818">            }</span>
+<span class="fc" id="L769">                long heapKey = (long)((double)heapKeyFactor * diffUpdated);</span>
+<span class="fc" id="L770">                HeapNode node3 = new HeapNode(heapKey);</span>
+<span class="fc" id="L771">                node3.setData(p13);</span>
+<span class="fc" id="L772">                heap.insert(node3);</span>
+<span class="fc" id="L773">                pairEdgePindexNodes.put(p13, node3);</span>
+<span class="fc" id="L774">            }</span>
 
             // pairs having set2 will be skipped because of the empty set at beginning of while loop
-<span class="fc" id="L821">        }</span>
-<span class="fc" id="L822">    }</span>
+<span class="fc" id="L777">        }</span>
+<span class="fc" id="L778">    }</span>
 
     private void growEdges(ImageExt img,
         List&lt;Set&lt;PairInt&gt;&gt; clusterPoints,
@@ -827,8 +783,8 @@ import java.util.logging.Logger;
         Map&lt;PairInt, Integer&gt; pointIndexMap, int clrSpace, double tColor,
         List&lt;Integer&gt; shortEdgeIndexes, List&lt;Integer&gt; longEdgeIndexes) {
 
-<span class="pc bpc" id="L830" title="1 of 2 branches missed.">        if (pointIndexMap.isEmpty()) {</span>
-<span class="nc" id="L831">            return;</span>
+<span class="pc bpc" id="L786" title="1 of 2 branches missed.">        if (pointIndexMap.isEmpty()) {</span>
+<span class="nc" id="L787">            return;</span>
         }
 
         /*
@@ -865,23 +821,23 @@ import java.util.logging.Logger;
 
         // removing short edge points from pointIndexMap and creating
         // shortPointIndexMap to more easily add them as a whole
-<span class="fc" id="L868">        Map&lt;PairInt, Integer&gt; shortPointIndexMap = new HashMap&lt;PairInt, Integer&gt;();</span>
-<span class="pc bpc" id="L869" title="1 of 2 branches missed.">        for (Integer index : shortEdgeIndexes) {</span>
-<span class="nc" id="L870">            int idx = index.intValue();</span>
-<span class="nc" id="L871">            Set&lt;PairInt&gt; set = clusterPoints.get(idx);</span>
-<span class="nc bnc" id="L872" title="All 2 branches missed.">            for (PairInt p : set) {</span>
-<span class="nc" id="L873">                shortPointIndexMap.put(p, index);</span>
-<span class="nc" id="L874">                pointIndexMap.remove(p);</span>
-<span class="nc" id="L875">            }</span>
-<span class="nc" id="L876">        }</span>
+<span class="fc" id="L824">        Map&lt;PairInt, Integer&gt; shortPointIndexMap = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="pc bpc" id="L825" title="1 of 2 branches missed.">        for (Integer index : shortEdgeIndexes) {</span>
+<span class="nc" id="L826">            int idx = index.intValue();</span>
+<span class="nc" id="L827">            Set&lt;PairInt&gt; set = clusterPoints.get(idx);</span>
+<span class="nc bnc" id="L828" title="All 2 branches missed.">            for (PairInt p : set) {</span>
+<span class="nc" id="L829">                shortPointIndexMap.put(p, index);</span>
+<span class="nc" id="L830">                pointIndexMap.remove(p);</span>
+<span class="nc" id="L831">            }</span>
+<span class="nc" id="L832">        }</span>
 
-<span class="fc" id="L878">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L834">        CIEChromaticity cieC = new CIEChromaticity();</span>
 
-<span class="fc" id="L880">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L881">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L836">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L837">        int[] dys = Misc.dy8;</span>
 
-<span class="fc" id="L883">        int width = img.getWidth();</span>
-<span class="fc" id="L884">        int height = img.getHeight();</span>
+<span class="fc" id="L839">        int width = img.getWidth();</span>
+<span class="fc" id="L840">        int height = img.getHeight();</span>
 
         /*
         on first iteration, the edge regions are grown to include adjacent points
@@ -892,195 +848,195 @@ import java.util.logging.Logger;
         most similar in color.
         */
 
-<span class="fc" id="L895">        int lastInnerQ = 0;</span>
+<span class="fc" id="L851">        int lastInnerQ = 0;</span>
 
-<span class="fc bfc" id="L897" title="All 2 branches covered.">        for (int nIter = 0; nIter &lt; 2; ++nIter) {</span>
+<span class="fc bfc" id="L853" title="All 2 branches covered.">        for (int nIter = 0; nIter &lt; 2; ++nIter) {</span>
 
-<span class="fc" id="L899">            Map&lt;PairInt, Set&lt;Integer&gt;&gt; unassignedAndIndexes =</span>
-<span class="fc" id="L900">                findUnassignedPixelsAndAdjacentIndexes(img, pointIndexMap);</span>
+<span class="fc" id="L855">            Map&lt;PairInt, Set&lt;Integer&gt;&gt; unassignedAndIndexes =</span>
+<span class="fc" id="L856">                findUnassignedPixelsAndAdjacentIndexes(img, pointIndexMap);</span>
 
-<span class="pc bpc" id="L902" title="1 of 2 branches missed.">            if (unassignedAndIndexes.isEmpty()) {</span>
-<span class="nc" id="L903">                return;</span>
+<span class="pc bpc" id="L858" title="1 of 2 branches missed.">            if (unassignedAndIndexes.isEmpty()) {</span>
+<span class="nc" id="L859">                return;</span>
             }
 
-<span class="pc bpc" id="L906" title="1 of 2 branches missed.">            assert(img.getNPixels() == (unassignedAndIndexes.size() +</span>
-<span class="nc bnc" id="L907" title="All 2 branches missed.">                pointIndexMap.size()));</span>
+<span class="pc bpc" id="L862" title="1 of 2 branches missed.">            assert(img.getNPixels() == (unassignedAndIndexes.size() +</span>
+<span class="nc bnc" id="L863" title="All 2 branches missed.">                pointIndexMap.size()));</span>
 
-<span class="fc" id="L909">            int count = 0;</span>
-<span class="fc bfc" id="L910" title="All 2 branches covered.">            for (Entry&lt;PairInt, Set&lt;Integer&gt;&gt; entry : unassignedAndIndexes.entrySet()) {</span>
-<span class="fc bfc" id="L911" title="All 2 branches covered.">                if (entry.getValue().size() &gt; 0) {</span>
-<span class="fc" id="L912">                    ++count;</span>
+<span class="fc" id="L865">            int count = 0;</span>
+<span class="fc bfc" id="L866" title="All 2 branches covered.">            for (Entry&lt;PairInt, Set&lt;Integer&gt;&gt; entry : unassignedAndIndexes.entrySet()) {</span>
+<span class="fc bfc" id="L867" title="All 2 branches covered.">                if (entry.getValue().size() &gt; 0) {</span>
+<span class="fc" id="L868">                    ++count;</span>
                 }
-<span class="fc" id="L914">            }</span>
-<span class="fc" id="L915">            PairInt[] unassigned = new PairInt[count];</span>
-<span class="fc" id="L916">            int[] nAdjIndexes = new int[unassigned.length];</span>
-<span class="fc" id="L917">            count = 0;</span>
+<span class="fc" id="L870">            }</span>
+<span class="fc" id="L871">            PairInt[] unassigned = new PairInt[count];</span>
+<span class="fc" id="L872">            int[] nAdjIndexes = new int[unassigned.length];</span>
+<span class="fc" id="L873">            count = 0;</span>
             for (Entry&lt;PairInt, Set&lt;Integer&gt;&gt; entry :
-<span class="fc bfc" id="L919" title="All 2 branches covered.">                unassignedAndIndexes.entrySet()) {</span>
-<span class="fc bfc" id="L920" title="All 2 branches covered.">                if (entry.getValue().size() &gt; 0) {</span>
-<span class="fc" id="L921">                    unassigned[count] = entry.getKey();</span>
-<span class="fc" id="L922">                    nAdjIndexes[count] = entry.getValue().size();</span>
-<span class="fc" id="L923">                    ++count;</span>
+<span class="fc bfc" id="L875" title="All 2 branches covered.">                unassignedAndIndexes.entrySet()) {</span>
+<span class="fc bfc" id="L876" title="All 2 branches covered.">                if (entry.getValue().size() &gt; 0) {</span>
+<span class="fc" id="L877">                    unassigned[count] = entry.getKey();</span>
+<span class="fc" id="L878">                    nAdjIndexes[count] = entry.getValue().size();</span>
+<span class="fc" id="L879">                    ++count;</span>
                 }
-<span class="fc" id="L925">            }</span>
-<span class="fc" id="L926">            QuickSort.sortBy1stArg(nAdjIndexes, unassigned);</span>
-<span class="fc" id="L927">            ArrayDeque&lt;PairInt&gt; outerQueue = new ArrayDeque&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L928" title="All 2 branches covered.">            for (int i = (unassigned.length - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L929">                outerQueue.add(unassigned[i]);</span>
+<span class="fc" id="L881">            }</span>
+<span class="fc" id="L882">            QuickSort.sortBy1stArg(nAdjIndexes, unassigned);</span>
+<span class="fc" id="L883">            ArrayDeque&lt;PairInt&gt; outerQueue = new ArrayDeque&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L884" title="All 2 branches covered.">            for (int i = (unassigned.length - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L885">                outerQueue.add(unassigned[i]);</span>
             }
 
-<span class="fc" id="L932">            ArrayDeque&lt;PairInt&gt; innerQueue = new ArrayDeque&lt;PairInt&gt;();</span>
+<span class="fc" id="L888">            ArrayDeque&lt;PairInt&gt; innerQueue = new ArrayDeque&lt;PairInt&gt;();</span>
             while (true) {
-<span class="fc bfc" id="L934" title="All 2 branches covered.">                while (!outerQueue.isEmpty()) {</span>
-<span class="fc" id="L935">                    PairInt p = outerQueue.poll();</span>
-<span class="fc bfc" id="L936" title="All 2 branches covered.">                    if (pointIndexMap.containsKey(p)) {</span>
-<span class="fc" id="L937">                        continue;</span>
+<span class="fc bfc" id="L890" title="All 2 branches covered.">                while (!outerQueue.isEmpty()) {</span>
+<span class="fc" id="L891">                    PairInt p = outerQueue.poll();</span>
+<span class="fc bfc" id="L892" title="All 2 branches covered.">                    if (pointIndexMap.containsKey(p)) {</span>
+<span class="fc" id="L893">                        continue;</span>
                     }
-<span class="fc" id="L939">                    int x = p.getX();</span>
-<span class="fc" id="L940">                    int y = p.getY();</span>
-<span class="fc" id="L941">                    boolean isAShortEdge = shortPointIndexMap.containsKey(p);</span>
+<span class="fc" id="L895">                    int x = p.getX();</span>
+<span class="fc" id="L896">                    int y = p.getY();</span>
+<span class="fc" id="L897">                    boolean isAShortEdge = shortPointIndexMap.containsKey(p);</span>
                     float[] clrs1;
-<span class="pc bpc" id="L943" title="1 of 2 branches missed.">                    if (isAShortEdge) {</span>
-<span class="nc" id="L944">                        clrs1 = clusterDescriptors[shortPointIndexMap.get(p).intValue()];</span>
+<span class="pc bpc" id="L899" title="1 of 2 branches missed.">                    if (isAShortEdge) {</span>
+<span class="nc" id="L900">                        clrs1 = clusterDescriptors[shortPointIndexMap.get(p).intValue()];</span>
                     } else {
-<span class="fc" id="L946">                        clrs1 = getColors(img, x, y, clrSpace);</span>
+<span class="fc" id="L902">                        clrs1 = getColors(img, x, y, clrSpace);</span>
                     }
 
-<span class="fc" id="L949">                    double minDiff = Double.MAX_VALUE;</span>
-<span class="fc" id="L950">                    Integer minDiffIndex = null;</span>
-<span class="fc bfc" id="L951" title="All 2 branches covered.">                    for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L952">                        int x2 = x + dxs[k];</span>
-<span class="fc" id="L953">                        int y2 = y + dys[k];</span>
-<span class="fc bfc" id="L954" title="All 8 branches covered.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (width - 1))</span>
+<span class="fc" id="L905">                    double minDiff = Double.MAX_VALUE;</span>
+<span class="fc" id="L906">                    Integer minDiffIndex = null;</span>
+<span class="fc bfc" id="L907" title="All 2 branches covered.">                    for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L908">                        int x2 = x + dxs[k];</span>
+<span class="fc" id="L909">                        int y2 = y + dys[k];</span>
+<span class="fc bfc" id="L910" title="All 8 branches covered.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (width - 1))</span>
                             || (y2 &gt; (height - 1))) {
-<span class="fc" id="L956">                            continue;</span>
+<span class="fc" id="L912">                            continue;</span>
                         }
-<span class="fc" id="L958">                        PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc" id="L959">                        Integer index2 = pointIndexMap.get(p2);</span>
-<span class="fc bfc" id="L960" title="All 2 branches covered.">                        if (index2 == null) {</span>
-<span class="fc" id="L961">                            continue;</span>
+<span class="fc" id="L914">                        PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L915">                        Integer index2 = pointIndexMap.get(p2);</span>
+<span class="fc bfc" id="L916" title="All 2 branches covered.">                        if (index2 == null) {</span>
+<span class="fc" id="L917">                            continue;</span>
                         } else {
-<span class="pc bpc" id="L963" title="3 of 4 branches missed.">                            if (isAShortEdge &amp;&amp; index2.equals(shortPointIndexMap.get(p))) {</span>
-<span class="nc" id="L964">                                continue;</span>
+<span class="pc bpc" id="L919" title="3 of 4 branches missed.">                            if (isAShortEdge &amp;&amp; index2.equals(shortPointIndexMap.get(p))) {</span>
+<span class="nc" id="L920">                                continue;</span>
                             }
-<span class="pc bpc" id="L966" title="1 of 2 branches missed.">                            if (clusterPoints.get(index2.intValue()).isEmpty()) {</span>
-<span class="nc" id="L967">                                continue;</span>
+<span class="pc bpc" id="L922" title="1 of 2 branches missed.">                            if (clusterPoints.get(index2.intValue()).isEmpty()) {</span>
+<span class="nc" id="L923">                                continue;</span>
                             }
                         }
-<span class="fc" id="L970">                        float[] desc2 = clusterDescriptors[index2.intValue()];</span>
+<span class="fc" id="L926">                        float[] desc2 = clusterDescriptors[index2.intValue()];</span>
                         double diff;
-<span class="pc bpc" id="L972" title="1 of 2 branches missed.">                        if (clrSpace == 0) {</span>
-<span class="fc" id="L973">                            diff = Math.abs(cieC.calcDeltaECIE2000(</span>
+<span class="pc bpc" id="L928" title="1 of 2 branches missed.">                        if (clrSpace == 0) {</span>
+<span class="fc" id="L929">                            diff = Math.abs(cieC.calcDeltaECIE2000(</span>
                                 clrs1[0], clrs1[1], clrs1[2], desc2[0], desc2[1], desc2[2]));
                         } else {
-<span class="nc" id="L976">                            double diff1 = clrs1[0] - desc2[0];</span>
-<span class="nc" id="L977">                            double diff2 = clrs1[1] - desc2[1];</span>
-<span class="nc" id="L978">                            double diff3 = clrs1[2] - desc2[2];</span>
-<span class="nc" id="L979">                            diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);</span>
+<span class="nc" id="L932">                            double diff1 = clrs1[0] - desc2[0];</span>
+<span class="nc" id="L933">                            double diff2 = clrs1[1] - desc2[1];</span>
+<span class="nc" id="L934">                            double diff3 = clrs1[2] - desc2[2];</span>
+<span class="nc" id="L935">                            diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);</span>
                         }
-<span class="pc bpc" id="L981" title="1 of 6 branches missed.">                        if ((nIter == 0) &amp;&amp; !isAShortEdge &amp;&amp; (diff &gt; tColor)) {</span>
-<span class="fc" id="L982">                            continue;</span>
+<span class="pc bpc" id="L937" title="1 of 6 branches missed.">                        if ((nIter == 0) &amp;&amp; !isAShortEdge &amp;&amp; (diff &gt; tColor)) {</span>
+<span class="fc" id="L938">                            continue;</span>
                         }
-<span class="fc bfc" id="L984" title="All 2 branches covered.">                        if (diff &lt; minDiff) {</span>
-<span class="fc" id="L985">                            minDiff = diff;</span>
-<span class="fc" id="L986">                            minDiffIndex = index2;</span>
+<span class="fc bfc" id="L940" title="All 2 branches covered.">                        if (diff &lt; minDiff) {</span>
+<span class="fc" id="L941">                            minDiff = diff;</span>
+<span class="fc" id="L942">                            minDiffIndex = index2;</span>
                         }
                     }
-<span class="fc bfc" id="L989" title="All 2 branches covered.">                    if (minDiffIndex == null) {</span>
-<span class="fc" id="L990">                        continue;</span>
+<span class="fc bfc" id="L945" title="All 2 branches covered.">                    if (minDiffIndex == null) {</span>
+<span class="fc" id="L946">                        continue;</span>
                     }
-<span class="fc" id="L992">                    int idx2 = minDiffIndex.intValue();</span>
-<span class="fc" id="L993">                    Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
-<span class="fc" id="L994">                    float[] desc2 = clusterDescriptors[idx2];</span>
-<span class="pc bpc" id="L995" title="1 of 2 branches missed.">                    if (isAShortEdge) {</span>
-<span class="nc" id="L996">                        Integer index1 = shortPointIndexMap.get(p);</span>
-<span class="nc" id="L997">                        int idx1 = index1.intValue();</span>
-<span class="nc" id="L998">                        Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
-<span class="nc" id="L999">                        float[] desc1 = clusterDescriptors[idx1];</span>
-<span class="nc" id="L1000">                        float n1 = set1.size();</span>
-<span class="nc" id="L1001">                        float n2 = set2.size();</span>
-<span class="nc" id="L1002">                        float nTot = n1 + n2;</span>
+<span class="fc" id="L948">                    int idx2 = minDiffIndex.intValue();</span>
+<span class="fc" id="L949">                    Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
+<span class="fc" id="L950">                    float[] desc2 = clusterDescriptors[idx2];</span>
+<span class="pc bpc" id="L951" title="1 of 2 branches missed.">                    if (isAShortEdge) {</span>
+<span class="nc" id="L952">                        Integer index1 = shortPointIndexMap.get(p);</span>
+<span class="nc" id="L953">                        int idx1 = index1.intValue();</span>
+<span class="nc" id="L954">                        Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
+<span class="nc" id="L955">                        float[] desc1 = clusterDescriptors[idx1];</span>
+<span class="nc" id="L956">                        float n1 = set1.size();</span>
+<span class="nc" id="L957">                        float n2 = set2.size();</span>
+<span class="nc" id="L958">                        float nTot = n1 + n2;</span>
                         //{h, s, v, nPix, cenX, cenY}
-<span class="nc bnc" id="L1004" title="All 2 branches missed.">                        for (int k = 0; k &lt; 6; ++k) {</span>
-<span class="nc bnc" id="L1005" title="All 2 branches missed.">                            if (k == 3) {</span>
-<span class="nc" id="L1006">                                desc2[k] = nTot;</span>
+<span class="nc bnc" id="L960" title="All 2 branches missed.">                        for (int k = 0; k &lt; 6; ++k) {</span>
+<span class="nc bnc" id="L961" title="All 2 branches missed.">                            if (k == 3) {</span>
+<span class="nc" id="L962">                                desc2[k] = nTot;</span>
                             } else {
-<span class="nc" id="L1008">                                desc2[k] = ((desc2[k] * n2) + desc1[k] * n1)/nTot;</span>
+<span class="nc" id="L964">                                desc2[k] = ((desc2[k] * n2) + desc1[k] * n1)/nTot;</span>
                             }
                         }
                         //add unassigned perimeter of short edge to innerqueue
-<span class="nc bnc" id="L1012" title="All 2 branches missed.">                        for (PairInt p3 : set1) {</span>
-<span class="nc" id="L1013">                            shortPointIndexMap.remove(p3);</span>
-<span class="nc" id="L1014">                            pointIndexMap.put(p3, minDiffIndex);</span>
-<span class="nc" id="L1015">                            set2.add(p3);</span>
-<span class="nc bnc" id="L1016" title="All 2 branches missed.">                            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L1017">                                int x4 = p3.getX() + dxs[k];</span>
-<span class="nc" id="L1018">                                int y4 = p3.getY() + dys[k];</span>
-<span class="nc bnc" id="L1019" title="All 8 branches missed.">                                if (x4 &lt; 0 || y4 &lt; 0 || (x4 &gt; (width - 1))</span>
+<span class="nc bnc" id="L968" title="All 2 branches missed.">                        for (PairInt p3 : set1) {</span>
+<span class="nc" id="L969">                            shortPointIndexMap.remove(p3);</span>
+<span class="nc" id="L970">                            pointIndexMap.put(p3, minDiffIndex);</span>
+<span class="nc" id="L971">                            set2.add(p3);</span>
+<span class="nc bnc" id="L972" title="All 2 branches missed.">                            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="nc" id="L973">                                int x4 = p3.getX() + dxs[k];</span>
+<span class="nc" id="L974">                                int y4 = p3.getY() + dys[k];</span>
+<span class="nc bnc" id="L975" title="All 8 branches missed.">                                if (x4 &lt; 0 || y4 &lt; 0 || (x4 &gt; (width - 1))</span>
                                     || (y4 &gt; (height - 1))) {
-<span class="nc" id="L1021">                                    continue;</span>
+<span class="nc" id="L977">                                    continue;</span>
                                 }
-<span class="nc" id="L1023">                                PairInt p4 = new PairInt(x4, y4);</span>
-<span class="nc bnc" id="L1024" title="All 2 branches missed.">                                if (!shortPointIndexMap.containsKey(p4) &amp;&amp;</span>
-<span class="nc bnc" id="L1025" title="All 2 branches missed.">                                    !pointIndexMap.containsKey(p4)) {</span>
-<span class="nc" id="L1026">                                    innerQueue.offer(p4);</span>
+<span class="nc" id="L979">                                PairInt p4 = new PairInt(x4, y4);</span>
+<span class="nc bnc" id="L980" title="All 2 branches missed.">                                if (!shortPointIndexMap.containsKey(p4) &amp;&amp;</span>
+<span class="nc bnc" id="L981" title="All 2 branches missed.">                                    !pointIndexMap.containsKey(p4)) {</span>
+<span class="nc" id="L982">                                    innerQueue.offer(p4);</span>
                                 }
                             }
-<span class="nc" id="L1029">                        }</span>
-<span class="nc" id="L1030">                        clusterDescriptors[idx1] = null;</span>
-<span class="nc" id="L1031">                        set1.clear();</span>
-<span class="nc" id="L1032">                    } else {</span>
-<span class="fc" id="L1033">                        float n2 = set2.size();</span>
-<span class="fc" id="L1034">                        float nTot = n2 + 1;</span>
+<span class="nc" id="L985">                        }</span>
+<span class="nc" id="L986">                        clusterDescriptors[idx1] = null;</span>
+<span class="nc" id="L987">                        set1.clear();</span>
+<span class="nc" id="L988">                    } else {</span>
+<span class="fc" id="L989">                        float n2 = set2.size();</span>
+<span class="fc" id="L990">                        float nTot = n2 + 1;</span>
                         //{h, s, v, nPix, cenX, cenY}
-<span class="fc" id="L1036">                        desc2[0] = ((desc2[0] * n2) + clrs1[0])/nTot;</span>
-<span class="fc" id="L1037">                        desc2[1] = ((desc2[1] * n2) + clrs1[1])/nTot;</span>
-<span class="fc" id="L1038">                        desc2[2] = ((desc2[2] * n2) + clrs1[2])/nTot;</span>
-<span class="fc" id="L1039">                        desc2[3] = nTot;</span>
-<span class="fc" id="L1040">                        desc2[4] = ((desc2[4] * n2) + x)/nTot;</span>
-<span class="fc" id="L1041">                        desc2[5] = ((desc2[5] * n2) + y)/nTot;</span>
+<span class="fc" id="L992">                        desc2[0] = ((desc2[0] * n2) + clrs1[0])/nTot;</span>
+<span class="fc" id="L993">                        desc2[1] = ((desc2[1] * n2) + clrs1[1])/nTot;</span>
+<span class="fc" id="L994">                        desc2[2] = ((desc2[2] * n2) + clrs1[2])/nTot;</span>
+<span class="fc" id="L995">                        desc2[3] = nTot;</span>
+<span class="fc" id="L996">                        desc2[4] = ((desc2[4] * n2) + x)/nTot;</span>
+<span class="fc" id="L997">                        desc2[5] = ((desc2[5] * n2) + y)/nTot;</span>
 
-<span class="fc" id="L1043">                        pointIndexMap.put(p, minDiffIndex);</span>
-<span class="fc" id="L1044">                        set2.add(p);</span>
-<span class="fc bfc" id="L1045" title="All 2 branches covered.">                        for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L1046">                            int x4 = x + dxs[k];</span>
-<span class="fc" id="L1047">                            int y4 = y + dys[k];</span>
-<span class="fc bfc" id="L1048" title="All 8 branches covered.">                            if (x4 &lt; 0 || y4 &lt; 0 || (x4 &gt; (width - 1))</span>
+<span class="fc" id="L999">                        pointIndexMap.put(p, minDiffIndex);</span>
+<span class="fc" id="L1000">                        set2.add(p);</span>
+<span class="fc bfc" id="L1001" title="All 2 branches covered.">                        for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L1002">                            int x4 = x + dxs[k];</span>
+<span class="fc" id="L1003">                            int y4 = y + dys[k];</span>
+<span class="fc bfc" id="L1004" title="All 8 branches covered.">                            if (x4 &lt; 0 || y4 &lt; 0 || (x4 &gt; (width - 1))</span>
                                 || (y4 &gt; (height - 1))) {
-<span class="fc" id="L1050">                                continue;</span>
+<span class="fc" id="L1006">                                continue;</span>
                             }
-<span class="fc" id="L1052">                            PairInt p4 = new PairInt(x4, y4);</span>
-<span class="pc bpc" id="L1053" title="1 of 2 branches missed.">                            if (!shortPointIndexMap.containsKey(p4) &amp;&amp;</span>
-<span class="fc bfc" id="L1054" title="All 2 branches covered.">                                !pointIndexMap.containsKey(p4)) {</span>
-<span class="fc" id="L1055">                                innerQueue.offer(p4);</span>
+<span class="fc" id="L1008">                            PairInt p4 = new PairInt(x4, y4);</span>
+<span class="pc bpc" id="L1009" title="1 of 2 branches missed.">                            if (!shortPointIndexMap.containsKey(p4) &amp;&amp;</span>
+<span class="fc bfc" id="L1010" title="All 2 branches covered.">                                !pointIndexMap.containsKey(p4)) {</span>
+<span class="fc" id="L1011">                                innerQueue.offer(p4);</span>
                             }
                         }
                     }
-<span class="fc" id="L1059">                }</span>
-<span class="fc bfc" id="L1060" title="All 2 branches covered.">                if (innerQueue.isEmpty()) {</span>
-<span class="fc bfc" id="L1061" title="All 2 branches covered.">                    if (nIter == 0) {</span>
-<span class="fc" id="L1062">                        break;</span>
+<span class="fc" id="L1015">                }</span>
+<span class="fc bfc" id="L1016" title="All 2 branches covered.">                if (innerQueue.isEmpty()) {</span>
+<span class="fc bfc" id="L1017" title="All 2 branches covered.">                    if (nIter == 0) {</span>
+<span class="fc" id="L1018">                        break;</span>
                     }
-<span class="pc bpc" id="L1064" title="1 of 2 branches missed.">                    if (!shortPointIndexMap.isEmpty()) {</span>
-<span class="nc bnc" id="L1065" title="All 2 branches missed.">                        if (shortPointIndexMap.size() == lastInnerQ) {</span>
-<span class="nc" id="L1066">                            return;</span>
+<span class="pc bpc" id="L1020" title="1 of 2 branches missed.">                    if (!shortPointIndexMap.isEmpty()) {</span>
+<span class="nc bnc" id="L1021" title="All 2 branches missed.">                        if (shortPointIndexMap.size() == lastInnerQ) {</span>
+<span class="nc" id="L1022">                            return;</span>
                         }
-<span class="nc" id="L1068">                        innerQueue.addAll(shortPointIndexMap.keySet());</span>
-<span class="nc" id="L1069">                        lastInnerQ = shortPointIndexMap.size();</span>
+<span class="nc" id="L1024">                        innerQueue.addAll(shortPointIndexMap.keySet());</span>
+<span class="nc" id="L1025">                        lastInnerQ = shortPointIndexMap.size();</span>
                     } else {
-<span class="fc" id="L1071">                        lastInnerQ = 0;</span>
-<span class="fc" id="L1072">                        break;</span>
+<span class="fc" id="L1027">                        lastInnerQ = 0;</span>
+<span class="fc" id="L1028">                        break;</span>
                     }
                 }
-<span class="fc" id="L1075">                outerQueue.addAll(innerQueue);</span>
-<span class="fc" id="L1076">                innerQueue.clear();</span>
+<span class="fc" id="L1031">                outerQueue.addAll(innerQueue);</span>
+<span class="fc" id="L1032">                innerQueue.clear();</span>
             }
         }
 
-<span class="pc bpc" id="L1080" title="3 of 4 branches missed.">        assert(assertShortEdgesAreEmpty(shortEdgeIndexes, clusterPoints));</span>
+<span class="pc bpc" id="L1036" title="3 of 4 branches missed.">        assert(assertShortEdgesAreEmpty(shortEdgeIndexes, clusterPoints));</span>
 
-<span class="pc bpc" id="L1082" title="3 of 4 branches missed.">        assert(pointIndexMap.size() == img.getNPixels());</span>
-<span class="fc" id="L1083">    }</span>
+<span class="pc bpc" id="L1038" title="3 of 4 branches missed.">        assert(pointIndexMap.size() == img.getNPixels());</span>
+<span class="fc" id="L1039">    }</span>
 
     private void mergeShortEdges(List&lt;Set&lt;PairInt&gt;&gt; clusterPoints,
         float[][] clusterDescriptors, int clrSpace, double tColor,
@@ -1097,90 +1053,90 @@ import java.util.logging.Logger;
 
         //TODO: consider improvements of this for large shortEdgeIndexes.size()
 
-<span class="fc" id="L1100">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L1056">        CIEChromaticity cieC = new CIEChromaticity();</span>
 
-<span class="pc bpc" id="L1102" title="1 of 2 branches missed.">        for (int i = 0; i &lt; shortEdgeIndexes.size(); ++i) {</span>
+<span class="pc bpc" id="L1058" title="1 of 2 branches missed.">        for (int i = 0; i &lt; shortEdgeIndexes.size(); ++i) {</span>
 
-<span class="nc" id="L1104">            Integer index1 = shortEdgeIndexes.get(i);</span>
-<span class="nc" id="L1105">            int idx1 = index1.intValue();</span>
-<span class="nc" id="L1106">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
-<span class="nc bnc" id="L1107" title="All 2 branches missed.">            if (set1.isEmpty()) {</span>
-<span class="nc" id="L1108">                continue;</span>
+<span class="nc" id="L1060">            Integer index1 = shortEdgeIndexes.get(i);</span>
+<span class="nc" id="L1061">            int idx1 = index1.intValue();</span>
+<span class="nc" id="L1062">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
+<span class="nc bnc" id="L1063" title="All 2 branches missed.">            if (set1.isEmpty()) {</span>
+<span class="nc" id="L1064">                continue;</span>
             }
 
-<span class="nc" id="L1111">            float[] desc1 = clusterDescriptors[idx1];</span>
+<span class="nc" id="L1067">            float[] desc1 = clusterDescriptors[idx1];</span>
 
-<span class="nc bnc" id="L1113" title="All 4 branches missed.">            assert(Math.abs(set1.size() - desc1[3]) &lt; 0.1);</span>
+<span class="nc bnc" id="L1069" title="All 4 branches missed.">            assert(Math.abs(set1.size() - desc1[3]) &lt; 0.1);</span>
 
-<span class="nc" id="L1115">            double minDistSq = Double.MAX_VALUE;</span>
-<span class="nc" id="L1116">            int minDistIdx = -1;</span>
+<span class="nc" id="L1071">            double minDistSq = Double.MAX_VALUE;</span>
+<span class="nc" id="L1072">            int minDistIdx = -1;</span>
 
-<span class="nc bnc" id="L1118" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; shortEdgeIndexes.size(); ++j) {</span>
+<span class="nc bnc" id="L1074" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; shortEdgeIndexes.size(); ++j) {</span>
 
-<span class="nc" id="L1120">                Integer index2 = shortEdgeIndexes.get(j);</span>
-<span class="nc" id="L1121">                int idx2 = index2.intValue();</span>
-<span class="nc" id="L1122">                Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
-<span class="nc bnc" id="L1123" title="All 2 branches missed.">                if (set2.isEmpty()) {</span>
-<span class="nc" id="L1124">                    continue;</span>
+<span class="nc" id="L1076">                Integer index2 = shortEdgeIndexes.get(j);</span>
+<span class="nc" id="L1077">                int idx2 = index2.intValue();</span>
+<span class="nc" id="L1078">                Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
+<span class="nc bnc" id="L1079" title="All 2 branches missed.">                if (set2.isEmpty()) {</span>
+<span class="nc" id="L1080">                    continue;</span>
                 }
 
                 //{h, s, v, nPix, cenX, cenY}
-<span class="nc" id="L1128">                float[] desc2 = clusterDescriptors[idx2];</span>
+<span class="nc" id="L1084">                float[] desc2 = clusterDescriptors[idx2];</span>
 
-<span class="nc bnc" id="L1130" title="All 4 branches missed.">                assert(Math.abs(set2.size() - desc2[3]) &lt; 0.1);</span>
+<span class="nc bnc" id="L1086" title="All 4 branches missed.">                assert(Math.abs(set2.size() - desc2[3]) &lt; 0.1);</span>
 
                 double diff;
-<span class="nc bnc" id="L1133" title="All 2 branches missed.">                if (clrSpace == 0) {</span>
-<span class="nc" id="L1134">                    diff = Math.abs(cieC.calcDeltaECIE2000(</span>
+<span class="nc bnc" id="L1089" title="All 2 branches missed.">                if (clrSpace == 0) {</span>
+<span class="nc" id="L1090">                    diff = Math.abs(cieC.calcDeltaECIE2000(</span>
                         desc1[0], desc1[1], desc1[2],
                         desc2[0], desc2[1], desc2[2]));
                 } else {
-<span class="nc" id="L1138">                    double diff1 = desc1[0] - desc2[0];</span>
-<span class="nc" id="L1139">                    double diff2 = desc1[1] - desc2[1];</span>
-<span class="nc" id="L1140">                    double diff3 = desc1[2] - desc2[2];</span>
-<span class="nc" id="L1141">                    diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);</span>
+<span class="nc" id="L1094">                    double diff1 = desc1[0] - desc2[0];</span>
+<span class="nc" id="L1095">                    double diff2 = desc1[1] - desc2[1];</span>
+<span class="nc" id="L1096">                    double diff3 = desc1[2] - desc2[2];</span>
+<span class="nc" id="L1097">                    diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);</span>
                 }
 
-<span class="nc bnc" id="L1144" title="All 2 branches missed.">                if (diff &gt;= tColor) {</span>
-<span class="nc" id="L1145">                    continue;</span>
+<span class="nc bnc" id="L1100" title="All 2 branches missed.">                if (diff &gt;= tColor) {</span>
+<span class="nc" id="L1101">                    continue;</span>
                 }
 
-<span class="nc" id="L1148">                float diffX = desc1[4] - desc2[4];</span>
-<span class="nc" id="L1149">                float diffY = desc1[5] - desc2[5];</span>
-<span class="nc" id="L1150">                double distSq = diffX * diffX + diffY * diffY;</span>
+<span class="nc" id="L1104">                float diffX = desc1[4] - desc2[4];</span>
+<span class="nc" id="L1105">                float diffY = desc1[5] - desc2[5];</span>
+<span class="nc" id="L1106">                double distSq = diffX * diffX + diffY * diffY;</span>
 
-<span class="nc bnc" id="L1152" title="All 2 branches missed.">                if (distSq &lt; minDistSq) {</span>
-<span class="nc" id="L1153">                    minDistSq = distSq;</span>
-<span class="nc" id="L1154">                    minDistIdx = idx2;</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">                if (distSq &lt; minDistSq) {</span>
+<span class="nc" id="L1109">                    minDistSq = distSq;</span>
+<span class="nc" id="L1110">                    minDistIdx = idx2;</span>
                 }
             }
 
-<span class="nc bnc" id="L1158" title="All 2 branches missed.">            if (minDistIdx == -1) {</span>
-<span class="nc" id="L1159">                continue;</span>
+<span class="nc bnc" id="L1114" title="All 2 branches missed.">            if (minDistIdx == -1) {</span>
+<span class="nc" id="L1115">                continue;</span>
             }
 
             // merge set2 with set1 and update associated data structures
-<span class="nc" id="L1163">            Set&lt;PairInt&gt; set2 = clusterPoints.get(minDistIdx);</span>
-<span class="nc" id="L1164">            float[] desc2 = clusterDescriptors[minDistIdx];</span>
+<span class="nc" id="L1119">            Set&lt;PairInt&gt; set2 = clusterPoints.get(minDistIdx);</span>
+<span class="nc" id="L1120">            float[] desc2 = clusterDescriptors[minDistIdx];</span>
 
-<span class="nc" id="L1166">            float n1 = set1.size();</span>
-<span class="nc" id="L1167">            float n2 = set2.size();</span>
-<span class="nc" id="L1168">            float nTot = n1 + n2;</span>
+<span class="nc" id="L1122">            float n1 = set1.size();</span>
+<span class="nc" id="L1123">            float n2 = set2.size();</span>
+<span class="nc" id="L1124">            float nTot = n1 + n2;</span>
 
             //{h, s, v, nPix, cenX, cenY}
             // update desc1 contents for contents in desc2
-<span class="nc bnc" id="L1172" title="All 2 branches missed.">            for (int k = 0; k &lt; desc1.length; ++k) {</span>
-<span class="nc bnc" id="L1173" title="All 2 branches missed.">                if (k == 3) {</span>
-<span class="nc" id="L1174">                    desc1[k] = nTot;</span>
+<span class="nc bnc" id="L1128" title="All 2 branches missed.">            for (int k = 0; k &lt; desc1.length; ++k) {</span>
+<span class="nc bnc" id="L1129" title="All 2 branches missed.">                if (k == 3) {</span>
+<span class="nc" id="L1130">                    desc1[k] = nTot;</span>
                 } else {
-<span class="nc" id="L1176">                    desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2)) / nTot;</span>
+<span class="nc" id="L1132">                    desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2)) / nTot;</span>
                 }
             }
-<span class="nc" id="L1179">            clusterDescriptors[minDistIdx] = null;</span>
-<span class="nc" id="L1180">            set1.addAll(set2);</span>
-<span class="nc" id="L1181">            set2.clear();</span>
+<span class="nc" id="L1135">            clusterDescriptors[minDistIdx] = null;</span>
+<span class="nc" id="L1136">            set1.addAll(set2);</span>
+<span class="nc" id="L1137">            set2.clear();</span>
         }
-<span class="fc" id="L1183">    }</span>
+<span class="fc" id="L1139">    }</span>
 
     /**
      * get cie lab or hsv colors from img for coordinates (x, y)
@@ -1192,29 +1148,29 @@ import java.util.logging.Logger;
      */
     private float[] getColors(ImageExt img, int x, int y, int clrSpace) {
 
-<span class="pc bpc" id="L1195" title="1 of 2 branches missed.">        if (clrSpace == 0) {</span>
-<span class="fc" id="L1196">            float[] lab2 = img.getCIELAB(x, y);</span>
-<span class="fc" id="L1197">            return lab2;</span>
+<span class="pc bpc" id="L1151" title="1 of 2 branches missed.">        if (clrSpace == 0) {</span>
+<span class="fc" id="L1152">            float[] lab2 = img.getCIELAB(x, y);</span>
+<span class="fc" id="L1153">            return lab2;</span>
         } else {
-<span class="nc" id="L1199">            float[] hsv = new float[3];</span>
-<span class="nc" id="L1200">            hsv[0] = img.getHue(x, y);</span>
-<span class="nc" id="L1201">            hsv[1] = img.getSaturation(x, y);</span>
-<span class="nc" id="L1202">            hsv[2] = img.getBrightness(x, y);</span>
-<span class="nc" id="L1203">            return hsv;</span>
+<span class="nc" id="L1155">            float[] hsv = new float[3];</span>
+<span class="nc" id="L1156">            hsv[0] = img.getHue(x, y);</span>
+<span class="nc" id="L1157">            hsv[1] = img.getSaturation(x, y);</span>
+<span class="nc" id="L1158">            hsv[2] = img.getBrightness(x, y);</span>
+<span class="nc" id="L1159">            return hsv;</span>
         }
     }
 
     private boolean assertDescriptorCounts(List&lt;Set&lt;PairInt&gt;&gt; clusterPoints,
         float[][] clusterDescriptors) {
 
-<span class="nc bnc" id="L1210" title="All 2 branches missed.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
-<span class="nc" id="L1211">            int n = clusterPoints.get(i).size();</span>
-<span class="nc bnc" id="L1212" title="All 2 branches missed.">            if (n == 0) { continue;}</span>
-<span class="nc" id="L1213">            float diff = Math.abs(n - clusterDescriptors[i][3]);</span>
-<span class="nc bnc" id="L1214" title="All 4 branches missed.">            assert(diff &lt; 0.1);</span>
+<span class="nc bnc" id="L1166" title="All 2 branches missed.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
+<span class="nc" id="L1167">            int n = clusterPoints.get(i).size();</span>
+<span class="nc bnc" id="L1168" title="All 2 branches missed.">            if (n == 0) { continue;}</span>
+<span class="nc" id="L1169">            float diff = Math.abs(n - clusterDescriptors[i][3]);</span>
+<span class="nc bnc" id="L1170" title="All 4 branches missed.">            assert(diff &lt; 0.1);</span>
         }
 
-<span class="nc" id="L1217">        return true;</span>
+<span class="nc" id="L1173">        return true;</span>
     }
 
     private void mergeByColorHistograms(ImageExt input,
@@ -1222,15 +1178,15 @@ import java.util.logging.Logger;
         Map&lt;Integer, Set&lt;Integer&gt;&gt; adjacencyMap,
         int clrSpace, double tR) {
 
-<span class="fc" id="L1225">        int[][][] colorHistograms = calculateColorHistograms(input,</span>
+<span class="fc" id="L1181">        int[][][] colorHistograms = calculateColorHistograms(input,</span>
             clusterPoints, clrSpace);
 
         // key is index1, index2 where index1 &lt; index2
-<span class="fc" id="L1229">        Map&lt;PairInt, HeapNode&gt; nodesMap = new HashMap&lt;PairInt, HeapNode&gt;();</span>
+<span class="fc" id="L1185">        Map&lt;PairInt, HeapNode&gt; nodesMap = new HashMap&lt;PairInt, HeapNode&gt;();</span>
 
-<span class="fc" id="L1231">        Heap heap = new Heap();</span>
+<span class="fc" id="L1187">        Heap heap = new Heap();</span>
 
-<span class="fc" id="L1233">        ColorHistogram ch = new ColorHistogram();</span>
+<span class="fc" id="L1189">        ColorHistogram ch = new ColorHistogram();</span>
 
         // the histogram intersection range of values
         //   is 0 : nColors * 1
@@ -1240,325 +1196,325 @@ import java.util.logging.Logger;
         // 3 - similairty bcomes the new key.
         // a tR of 0.7*3.0 = 2.1 becomes 0.9 and any values larger than
         //    that are less similar...smalled values are more similar
-<span class="fc" id="L1243">        double tRInv = 3.0 - tR;</span>
+<span class="fc" id="L1199">        double tRInv = 3.0 - tR;</span>
 
-<span class="fc" id="L1245">        long heapKeyFactor = input.getNPixels();</span>
+<span class="fc" id="L1201">        long heapKeyFactor = input.getNPixels();</span>
 
-<span class="fc bfc" id="L1247" title="All 2 branches covered.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : adjacencyMap.entrySet()) {</span>
+<span class="fc bfc" id="L1203" title="All 2 branches covered.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : adjacencyMap.entrySet()) {</span>
 
-<span class="fc" id="L1249">            Integer index1 = entry.getKey();</span>
-<span class="fc" id="L1250">            int idx1 = index1.intValue();</span>
+<span class="fc" id="L1205">            Integer index1 = entry.getKey();</span>
+<span class="fc" id="L1206">            int idx1 = index1.intValue();</span>
 
-<span class="fc" id="L1252">            int[][] hist1 = colorHistograms[idx1];</span>
-<span class="pc bpc" id="L1253" title="3 of 4 branches missed.">            assert(hist1 != null);</span>
+<span class="fc" id="L1208">            int[][] hist1 = colorHistograms[idx1];</span>
+<span class="pc bpc" id="L1209" title="3 of 4 branches missed.">            assert(hist1 != null);</span>
 
-<span class="fc" id="L1255">            Set&lt;Integer&gt; indexes2 = entry.getValue();</span>
+<span class="fc" id="L1211">            Set&lt;Integer&gt; indexes2 = entry.getValue();</span>
 
-<span class="fc bfc" id="L1257" title="All 2 branches covered.">            for (Integer index2 : indexes2) {</span>
+<span class="fc bfc" id="L1213" title="All 2 branches covered.">            for (Integer index2 : indexes2) {</span>
 
-<span class="fc" id="L1259">                int idx2 = index2.intValue();</span>
+<span class="fc" id="L1215">                int idx2 = index2.intValue();</span>
 
-<span class="pc bpc" id="L1261" title="3 of 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="pc bpc" id="L1217" title="3 of 4 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p12;
-<span class="fc bfc" id="L1263" title="All 2 branches covered.">                if (idx1 &lt; idx2) {</span>
-<span class="fc" id="L1264">                    p12 = new PairInt(idx1, idx2);</span>
+<span class="fc bfc" id="L1219" title="All 2 branches covered.">                if (idx1 &lt; idx2) {</span>
+<span class="fc" id="L1220">                    p12 = new PairInt(idx1, idx2);</span>
                 } else {
-<span class="fc" id="L1266">                    p12 = new PairInt(idx2, idx1);</span>
+<span class="fc" id="L1222">                    p12 = new PairInt(idx2, idx1);</span>
                 }
 
-<span class="fc bfc" id="L1269" title="All 2 branches covered.">                if (nodesMap.containsKey(p12)) {</span>
-<span class="fc" id="L1270">                    continue;</span>
+<span class="fc bfc" id="L1225" title="All 2 branches covered.">                if (nodesMap.containsKey(p12)) {</span>
+<span class="fc" id="L1226">                    continue;</span>
                 }
 
-<span class="fc" id="L1273">                int[][] hist2 = colorHistograms[index2.intValue()];</span>
-<span class="pc bpc" id="L1274" title="3 of 4 branches missed.">                assert(hist2 != null);</span>
+<span class="fc" id="L1229">                int[][] hist2 = colorHistograms[index2.intValue()];</span>
+<span class="pc bpc" id="L1230" title="3 of 4 branches missed.">                assert(hist2 != null);</span>
 
-<span class="fc" id="L1276">                float similarity = 3.0f - ch.intersection(hist1, hist2);</span>
+<span class="fc" id="L1232">                float similarity = 3.0f - ch.intersection(hist1, hist2);</span>
 
-<span class="fc" id="L1278">                long key = (long)(similarity * (double)heapKeyFactor);</span>
-<span class="fc" id="L1279">                HeapNode node = new HeapNode(key);</span>
-<span class="fc" id="L1280">                node.setData(p12);</span>
-<span class="fc" id="L1281">                heap.insert(node);</span>
-<span class="fc" id="L1282">                nodesMap.put(p12, node);</span>
+<span class="fc" id="L1234">                long key = (long)(similarity * (double)heapKeyFactor);</span>
+<span class="fc" id="L1235">                HeapNode node = new HeapNode(key);</span>
+<span class="fc" id="L1236">                node.setData(p12);</span>
+<span class="fc" id="L1237">                heap.insert(node);</span>
+<span class="fc" id="L1238">                nodesMap.put(p12, node);</span>
 
-<span class="pc bpc" id="L1284" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
-<span class="fc" id="L1285">            }</span>
-<span class="fc" id="L1286">        }</span>
+<span class="pc bpc" id="L1240" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
+<span class="fc" id="L1241">            }</span>
+<span class="fc" id="L1242">        }</span>
 
-<span class="fc" id="L1288">        int nMerged = 0;</span>
+<span class="fc" id="L1244">        int nMerged = 0;</span>
 
-<span class="pc bpc" id="L1290" title="1 of 2 branches missed.">        while(!heap.isEmpty()) {</span>
+<span class="pc bpc" id="L1246" title="1 of 2 branches missed.">        while(!heap.isEmpty()) {</span>
 
-<span class="fc" id="L1292">            HeapNode node = heap.extractMin();</span>
+<span class="fc" id="L1248">            HeapNode node = heap.extractMin();</span>
 
-<span class="fc" id="L1294">            PairInt p12 = (PairInt)node.getData();</span>
+<span class="fc" id="L1250">            PairInt p12 = (PairInt)node.getData();</span>
 
-<span class="fc" id="L1296">            nodesMap.remove(p12);</span>
+<span class="fc" id="L1252">            nodesMap.remove(p12);</span>
 
             // this is 3.0 - similarity
-<span class="fc" id="L1299">            double diff = ((double)node.getKey())/((double)heapKeyFactor);</span>
+<span class="fc" id="L1255">            double diff = ((double)node.getKey())/((double)heapKeyFactor);</span>
 
-<span class="fc bfc" id="L1301" title="All 2 branches covered.">            if (diff &gt; tRInv) {</span>
-<span class="fc" id="L1302">                break;</span>
+<span class="fc bfc" id="L1257" title="All 2 branches covered.">            if (diff &gt; tRInv) {</span>
+<span class="fc" id="L1258">                break;</span>
             }
 
-<span class="fc" id="L1305">            int idx1 = p12.getX();</span>
-<span class="fc" id="L1306">            int idx2 = p12.getY();</span>
+<span class="fc" id="L1261">            int idx1 = p12.getX();</span>
+<span class="fc" id="L1262">            int idx2 = p12.getY();</span>
 
-<span class="fc" id="L1308">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
-<span class="fc" id="L1309">            Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
+<span class="fc" id="L1264">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
+<span class="fc" id="L1265">            Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
 
-<span class="pc bpc" id="L1311" title="2 of 4 branches missed.">            if (set1.isEmpty() || set2.isEmpty()) {</span>
-<span class="nc" id="L1312">                continue;</span>
+<span class="pc bpc" id="L1267" title="2 of 4 branches missed.">            if (set1.isEmpty() || set2.isEmpty()) {</span>
+<span class="nc" id="L1268">                continue;</span>
             }
 
-<span class="fc bfc" id="L1315" title="All 2 branches covered.">            if (set2.size() &gt; set1.size()) {</span>
-<span class="fc" id="L1316">                idx1 = p12.getY();</span>
-<span class="fc" id="L1317">                idx2 = p12.getX();</span>
-<span class="fc" id="L1318">                set1 = set2;</span>
-<span class="fc" id="L1319">                set2 = clusterPoints.get(idx2);</span>
+<span class="fc bfc" id="L1271" title="All 2 branches covered.">            if (set2.size() &gt; set1.size()) {</span>
+<span class="fc" id="L1272">                idx1 = p12.getY();</span>
+<span class="fc" id="L1273">                idx2 = p12.getX();</span>
+<span class="fc" id="L1274">                set1 = set2;</span>
+<span class="fc" id="L1275">                set2 = clusterPoints.get(idx2);</span>
             }
 
             // set1 is largest
 
-<span class="fc" id="L1324">            int[][] hist1 = colorHistograms[idx1];</span>
-<span class="fc" id="L1325">            ch.add2To1(hist1, colorHistograms[idx2]);</span>
-<span class="fc" id="L1326">            colorHistograms[idx2] = null;</span>
+<span class="fc" id="L1280">            int[][] hist1 = colorHistograms[idx1];</span>
+<span class="fc" id="L1281">            ch.add2To1(hist1, colorHistograms[idx2]);</span>
+<span class="fc" id="L1282">            colorHistograms[idx2] = null;</span>
 
-<span class="fc" id="L1328">            float n1 = set1.size();</span>
-<span class="fc" id="L1329">            float n2 = set2.size();</span>
-<span class="fc" id="L1330">            float nTot = n1 + n2;</span>
+<span class="fc" id="L1284">            float n1 = set1.size();</span>
+<span class="fc" id="L1285">            float n2 = set2.size();</span>
+<span class="fc" id="L1286">            float nTot = n1 + n2;</span>
 
-<span class="fc" id="L1332">            set1.addAll(set2);</span>
-<span class="fc" id="L1333">            set2.clear();</span>
+<span class="fc" id="L1288">            set1.addAll(set2);</span>
+<span class="fc" id="L1289">            set2.clear();</span>
 
-<span class="fc" id="L1335">            Integer index1 = Integer.valueOf(idx1);</span>
-<span class="fc" id="L1336">            Integer index2 = Integer.valueOf(idx2);</span>
+<span class="fc" id="L1291">            Integer index1 = Integer.valueOf(idx1);</span>
+<span class="fc" id="L1292">            Integer index2 = Integer.valueOf(idx2);</span>
 
             // remove the idx1 --&gt; set&lt;integer&gt; pairs from map and heap
             // remove the idx2 --&gt; set&lt;integer&gt; pairs from map and heap
             // update the adjacencyMap
             //   add node for updated idx1 ---&gt; set&lt;integer&gt; to map and node
 
-<span class="fc" id="L1343">            Set&lt;Integer&gt; indexes1 = adjacencyMap.get(index1);</span>
-<span class="fc bfc" id="L1344" title="All 2 branches covered.">            for (Integer index3 : indexes1) {</span>
-<span class="fc" id="L1345">                int idx3 = index3.intValue();</span>
-<span class="fc" id="L1346">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
-<span class="pc bpc" id="L1347" title="1 of 4 branches missed.">                if (set3.isEmpty() || idx1 == idx3) {</span>
-<span class="nc" id="L1348">                    continue;</span>
+<span class="fc" id="L1299">            Set&lt;Integer&gt; indexes1 = adjacencyMap.get(index1);</span>
+<span class="fc bfc" id="L1300" title="All 2 branches covered.">            for (Integer index3 : indexes1) {</span>
+<span class="fc" id="L1301">                int idx3 = index3.intValue();</span>
+<span class="fc" id="L1302">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
+<span class="pc bpc" id="L1303" title="1 of 4 branches missed.">                if (set3.isEmpty() || idx1 == idx3) {</span>
+<span class="nc" id="L1304">                    continue;</span>
                 }
                 PairInt p13;
-<span class="fc bfc" id="L1351" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
-<span class="fc" id="L1352">                    p13 = new PairInt(idx1, idx3);</span>
+<span class="fc bfc" id="L1307" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
+<span class="fc" id="L1308">                    p13 = new PairInt(idx1, idx3);</span>
                 } else {
-<span class="fc" id="L1354">                    p13 = new PairInt(idx3, idx1);</span>
+<span class="fc" id="L1310">                    p13 = new PairInt(idx3, idx1);</span>
                 }
-<span class="fc" id="L1356">                HeapNode node3 = nodesMap.get(p13);</span>
-<span class="pc bpc" id="L1357" title="3 of 4 branches missed.">                assert(node3 != null);</span>
-<span class="fc" id="L1358">                heap.remove(node3);</span>
-<span class="fc" id="L1359">                nodesMap.remove(p13);</span>
-<span class="pc bpc" id="L1360" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
-<span class="fc" id="L1361">            }</span>
-<span class="fc" id="L1362">            Set&lt;Integer&gt; indexes2 = adjacencyMap.get(index2);</span>
-<span class="fc bfc" id="L1363" title="All 2 branches covered.">            for (Integer index3 : indexes2) {</span>
-<span class="fc" id="L1364">                int idx3 = index3.intValue();</span>
-<span class="fc" id="L1365">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
-<span class="pc bpc" id="L1366" title="2 of 6 branches missed.">                if (set3.isEmpty() || idx1 == idx3 || idx2 == idx3) {</span>
-<span class="nc" id="L1367">                    continue;</span>
+<span class="fc" id="L1312">                HeapNode node3 = nodesMap.get(p13);</span>
+<span class="pc bpc" id="L1313" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="fc" id="L1314">                heap.remove(node3);</span>
+<span class="fc" id="L1315">                nodesMap.remove(p13);</span>
+<span class="pc bpc" id="L1316" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
+<span class="fc" id="L1317">            }</span>
+<span class="fc" id="L1318">            Set&lt;Integer&gt; indexes2 = adjacencyMap.get(index2);</span>
+<span class="fc bfc" id="L1319" title="All 2 branches covered.">            for (Integer index3 : indexes2) {</span>
+<span class="fc" id="L1320">                int idx3 = index3.intValue();</span>
+<span class="fc" id="L1321">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
+<span class="pc bpc" id="L1322" title="2 of 6 branches missed.">                if (set3.isEmpty() || idx1 == idx3 || idx2 == idx3) {</span>
+<span class="nc" id="L1323">                    continue;</span>
                 }
                 PairInt p23;
-<span class="fc bfc" id="L1370" title="All 2 branches covered.">                if (idx2 &lt; idx3) {</span>
-<span class="fc" id="L1371">                    p23 = new PairInt(idx2, idx3);</span>
+<span class="fc bfc" id="L1326" title="All 2 branches covered.">                if (idx2 &lt; idx3) {</span>
+<span class="fc" id="L1327">                    p23 = new PairInt(idx2, idx3);</span>
                 } else {
-<span class="fc" id="L1373">                    p23 = new PairInt(idx3, idx2);</span>
+<span class="fc" id="L1329">                    p23 = new PairInt(idx3, idx2);</span>
                 }
-<span class="fc" id="L1375">                HeapNode node3 = nodesMap.get(p23);</span>
-<span class="pc bpc" id="L1376" title="3 of 4 branches missed.">                assert(node3 != null);</span>
-<span class="fc" id="L1377">                heap.remove(node3);</span>
-<span class="fc" id="L1378">                nodesMap.remove(p23);</span>
+<span class="fc" id="L1331">                HeapNode node3 = nodesMap.get(p23);</span>
+<span class="pc bpc" id="L1332" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="fc" id="L1333">                heap.remove(node3);</span>
+<span class="fc" id="L1334">                nodesMap.remove(p23);</span>
+<span class="pc bpc" id="L1335" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
+<span class="fc" id="L1336">            }</span>
+
+            //update adjacency map
+<span class="fc bfc" id="L1339" title="All 2 branches covered.">            for (Integer index3 : indexes2) {</span>
+<span class="fc bfc" id="L1340" title="All 2 branches covered.">                if (!index3.equals(index1)) {</span>
+<span class="fc" id="L1341">                    Set&lt;Integer&gt; indexes4 = adjacencyMap.get(index3);</span>
+<span class="pc bpc" id="L1342" title="1 of 2 branches missed.">                    if (indexes4 != null) {</span>
+<span class="fc" id="L1343">                        indexes4.remove(index2);</span>
+<span class="fc" id="L1344">                        indexes4.add(index1);</span>
+                    }
+                }
+<span class="fc" id="L1347">            }</span>
+<span class="fc" id="L1348">            indexes1.addAll(indexes2);</span>
+<span class="fc" id="L1349">            indexes1.remove(index1);</span>
+<span class="fc" id="L1350">            indexes1.remove(index2);</span>
+<span class="fc" id="L1351">            adjacencyMap.remove(index2);</span>
+
+            // add nodes back into heap and map for the updated idx1 --&gt; set&lt;integer&gt;
+<span class="fc bfc" id="L1354" title="All 2 branches covered.">            for (Integer index3 : indexes1) {</span>
+<span class="fc" id="L1355">                int idx3 = index3.intValue();</span>
+<span class="fc" id="L1356">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
+<span class="pc bpc" id="L1357" title="3 of 4 branches missed.">                assert(idx1 != idx3);</span>
+<span class="pc bpc" id="L1358" title="1 of 2 branches missed.">                if (set3.isEmpty()) {</span>
+<span class="nc" id="L1359">                    continue;</span>
+                }
+<span class="fc" id="L1361">                int[][] hist3 = colorHistograms[idx3];</span>
+<span class="pc bpc" id="L1362" title="3 of 4 branches missed.">                assert(hist3 != null);</span>
+
+                PairInt p13;
+<span class="fc bfc" id="L1365" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
+<span class="fc" id="L1366">                    p13 = new PairInt(idx1, idx3);</span>
+                } else {
+<span class="fc" id="L1368">                    p13 = new PairInt(idx3, idx1);</span>
+                }
+
+<span class="fc" id="L1371">                float similarity3 = 3.0f - ch.intersection(hist1, hist3);</span>
+
+<span class="fc" id="L1373">                long key3 = (long)(similarity3 * (double)heapKeyFactor);</span>
+<span class="fc" id="L1374">                HeapNode node3 = new HeapNode(key3);</span>
+<span class="fc" id="L1375">                node3.setData(p13);</span>
+
+<span class="fc" id="L1377">                heap.insert(node3);</span>
+<span class="fc" id="L1378">                nodesMap.put(p13, node3);</span>
 <span class="pc bpc" id="L1379" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
 <span class="fc" id="L1380">            }</span>
 
-            //update adjacency map
-<span class="fc bfc" id="L1383" title="All 2 branches covered.">            for (Integer index3 : indexes2) {</span>
-<span class="fc bfc" id="L1384" title="All 2 branches covered.">                if (!index3.equals(index1)) {</span>
-<span class="fc" id="L1385">                    Set&lt;Integer&gt; indexes4 = adjacencyMap.get(index3);</span>
-<span class="pc bpc" id="L1386" title="1 of 2 branches missed.">                    if (indexes4 != null) {</span>
-<span class="fc" id="L1387">                        indexes4.remove(index2);</span>
-<span class="fc" id="L1388">                        indexes4.add(index1);</span>
-                    }
-                }
-<span class="fc" id="L1391">            }</span>
-<span class="fc" id="L1392">            indexes1.addAll(indexes2);</span>
-<span class="fc" id="L1393">            indexes1.remove(index1);</span>
-<span class="fc" id="L1394">            indexes1.remove(index2);</span>
-<span class="fc" id="L1395">            adjacencyMap.remove(index2);</span>
+<span class="fc" id="L1382">            nMerged++;</span>
+<span class="fc" id="L1383">        }</span>
 
-            // add nodes back into heap and map for the updated idx1 --&gt; set&lt;integer&gt;
-<span class="fc bfc" id="L1398" title="All 2 branches covered.">            for (Integer index3 : indexes1) {</span>
-<span class="fc" id="L1399">                int idx3 = index3.intValue();</span>
-<span class="fc" id="L1400">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
-<span class="pc bpc" id="L1401" title="3 of 4 branches missed.">                assert(idx1 != idx3);</span>
-<span class="pc bpc" id="L1402" title="1 of 2 branches missed.">                if (set3.isEmpty()) {</span>
-<span class="nc" id="L1403">                    continue;</span>
-                }
-<span class="fc" id="L1405">                int[][] hist3 = colorHistograms[idx3];</span>
-<span class="pc bpc" id="L1406" title="3 of 4 branches missed.">                assert(hist3 != null);</span>
-
-                PairInt p13;
-<span class="fc bfc" id="L1409" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
-<span class="fc" id="L1410">                    p13 = new PairInt(idx1, idx3);</span>
-                } else {
-<span class="fc" id="L1412">                    p13 = new PairInt(idx3, idx1);</span>
-                }
-
-<span class="fc" id="L1415">                float similarity3 = 3.0f - ch.intersection(hist1, hist3);</span>
-
-<span class="fc" id="L1417">                long key3 = (long)(similarity3 * (double)heapKeyFactor);</span>
-<span class="fc" id="L1418">                HeapNode node3 = new HeapNode(key3);</span>
-<span class="fc" id="L1419">                node3.setData(p13);</span>
-
-<span class="fc" id="L1421">                heap.insert(node3);</span>
-<span class="fc" id="L1422">                nodesMap.put(p13, node3);</span>
-<span class="pc bpc" id="L1423" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
-<span class="fc" id="L1424">            }</span>
-
-<span class="fc" id="L1426">            nMerged++;</span>
-<span class="fc" id="L1427">        }</span>
-
-<span class="fc" id="L1429">        log.fine(&quot;color histogram nMerged=&quot; + nMerged);</span>
-<span class="fc" id="L1430">    }</span>
+<span class="fc" id="L1385">        log.fine(&quot;color histogram nMerged=&quot; + nMerged);</span>
+<span class="fc" id="L1386">    }</span>
 
     public int[][][] calculateColorHistograms(ImageExt input,
         List&lt;Set&lt;PairInt&gt;&gt; clusterPoints, int clrSpace) {
 
         //0 == cie lab,  1 = hsv, 2 = rgb
 
-<span class="fc" id="L1437">        int n = clusterPoints.size();</span>
+<span class="fc" id="L1393">        int n = clusterPoints.size();</span>
 
-<span class="fc" id="L1439">        int[][][] hist = new int[n][][];</span>
+<span class="fc" id="L1395">        int[][][] hist = new int[n][][];</span>
 
-<span class="fc" id="L1441">        ColorHistogram ch = new ColorHistogram();</span>
+<span class="fc" id="L1397">        ColorHistogram ch = new ColorHistogram();</span>
 
-<span class="fc bfc" id="L1443" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L1399" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
 
-<span class="fc" id="L1445">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
+<span class="fc" id="L1401">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
 
-<span class="pc bpc" id="L1447" title="1 of 2 branches missed.">            if (set.isEmpty()) {</span>
-<span class="nc" id="L1448">                continue;</span>
+<span class="pc bpc" id="L1403" title="1 of 2 branches missed.">            if (set.isEmpty()) {</span>
+<span class="nc" id="L1404">                continue;</span>
             }
 
-<span class="pc bpc" id="L1451" title="1 of 2 branches missed.">            if (clrSpace == 0) {</span>
-<span class="fc" id="L1452">                hist[i] = ch.histogramCIELAB(input, set);</span>
-<span class="nc bnc" id="L1453" title="All 2 branches missed.">            } else if (clrSpace == 1) {</span>
-<span class="nc" id="L1454">                hist[i] = ch.histogramHSV(input, set);</span>
-<span class="pc bpc" id="L1455" title="1 of 2 branches missed.">            } if (clrSpace == 2) {</span>
-<span class="nc" id="L1456">                hist[i] = ch.histogramRGB(input, set);</span>
+<span class="pc bpc" id="L1407" title="1 of 2 branches missed.">            if (clrSpace == 0) {</span>
+<span class="fc" id="L1408">                hist[i] = ch.histogramCIELAB(input, set);</span>
+<span class="nc bnc" id="L1409" title="All 2 branches missed.">            } else if (clrSpace == 1) {</span>
+<span class="nc" id="L1410">                hist[i] = ch.histogramHSV(input, set);</span>
+<span class="pc bpc" id="L1411" title="1 of 2 branches missed.">            } if (clrSpace == 2) {</span>
+<span class="nc" id="L1412">                hist[i] = ch.histogramRGB(input, set);</span>
             }
         }
 
-<span class="fc" id="L1460">        return hist;</span>
+<span class="fc" id="L1416">        return hist;</span>
     }
 
     private Map&lt;Integer, Set&lt;Integer&gt;&gt; createAdjacencyMap(List&lt;Set&lt;PairInt&gt;&gt;
         clusterPoints) {
 
-<span class="fc" id="L1466">        Map&lt;PairInt, Integer&gt; pointIndexMap = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="fc" id="L1422">        Map&lt;PairInt, Integer&gt; pointIndexMap = new HashMap&lt;PairInt, Integer&gt;();</span>
 
-<span class="fc bfc" id="L1468" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
-<span class="fc" id="L1469">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
-<span class="fc" id="L1470">            Integer index = Integer.valueOf(i);</span>
-<span class="fc bfc" id="L1471" title="All 2 branches covered.">            for (PairInt p : set) {</span>
-<span class="fc" id="L1472">                pointIndexMap.put(p, index);</span>
-<span class="fc" id="L1473">            }</span>
+<span class="fc bfc" id="L1424" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
+<span class="fc" id="L1425">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
+<span class="fc" id="L1426">            Integer index = Integer.valueOf(i);</span>
+<span class="fc bfc" id="L1427" title="All 2 branches covered.">            for (PairInt p : set) {</span>
+<span class="fc" id="L1428">                pointIndexMap.put(p, index);</span>
+<span class="fc" id="L1429">            }</span>
         }
 
-<span class="fc" id="L1476">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L1477">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L1432">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L1433">        int[] dys = Misc.dy8;</span>
 
-<span class="fc" id="L1479">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+<span class="fc" id="L1435">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
 
-<span class="fc bfc" id="L1481" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
+<span class="fc bfc" id="L1437" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
 
-<span class="fc" id="L1483">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
+<span class="fc" id="L1439">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
 
-<span class="fc" id="L1485">            Set&lt;Integer&gt; indexes2 = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L1441">            Set&lt;Integer&gt; indexes2 = new HashSet&lt;Integer&gt;();</span>
 
-<span class="fc bfc" id="L1487" title="All 2 branches covered.">            for (PairInt p : set) {</span>
-<span class="fc" id="L1488">                int x = p.getX();</span>
-<span class="fc" id="L1489">                int y = p.getY();</span>
-<span class="fc bfc" id="L1490" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L1491">                    int x2 = x + dxs[k];</span>
-<span class="fc" id="L1492">                    int y2 = y + dys[k];</span>
-<span class="fc" id="L1493">                    PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc" id="L1494">                    Integer index2 = pointIndexMap.get(p2);</span>
-<span class="fc bfc" id="L1495" title="All 4 branches covered.">                    if (index2 == null || index2.intValue() == i) {</span>
-<span class="fc" id="L1496">                        continue;</span>
+<span class="fc bfc" id="L1443" title="All 2 branches covered.">            for (PairInt p : set) {</span>
+<span class="fc" id="L1444">                int x = p.getX();</span>
+<span class="fc" id="L1445">                int y = p.getY();</span>
+<span class="fc bfc" id="L1446" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L1447">                    int x2 = x + dxs[k];</span>
+<span class="fc" id="L1448">                    int y2 = y + dys[k];</span>
+<span class="fc" id="L1449">                    PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L1450">                    Integer index2 = pointIndexMap.get(p2);</span>
+<span class="fc bfc" id="L1451" title="All 4 branches covered.">                    if (index2 == null || index2.intValue() == i) {</span>
+<span class="fc" id="L1452">                        continue;</span>
                     }
-<span class="fc" id="L1498">                    indexes2.add(index2);</span>
+<span class="fc" id="L1454">                    indexes2.add(index2);</span>
                 }
-<span class="fc" id="L1500">            }</span>
+<span class="fc" id="L1456">            }</span>
 
-<span class="pc bpc" id="L1502" title="1 of 2 branches missed.">            if (indexes2.isEmpty()) {</span>
-<span class="nc" id="L1503">                continue;</span>
+<span class="pc bpc" id="L1458" title="1 of 2 branches missed.">            if (indexes2.isEmpty()) {</span>
+<span class="nc" id="L1459">                continue;</span>
             }
 
             // add these to all point sets in adjacency map
 
-<span class="fc" id="L1508">            indexes2.add(Integer.valueOf(i));</span>
+<span class="fc" id="L1464">            indexes2.add(Integer.valueOf(i));</span>
 
-<span class="fc bfc" id="L1510" title="All 2 branches covered.">            for (Integer key : indexes2) {</span>
-<span class="fc" id="L1511">                Set&lt;Integer&gt; v = new HashSet&lt;Integer&gt;(indexes2);</span>
-<span class="fc" id="L1512">                v.remove(key);</span>
+<span class="fc bfc" id="L1466" title="All 2 branches covered.">            for (Integer key : indexes2) {</span>
+<span class="fc" id="L1467">                Set&lt;Integer&gt; v = new HashSet&lt;Integer&gt;(indexes2);</span>
+<span class="fc" id="L1468">                v.remove(key);</span>
 
-<span class="fc" id="L1514">                Set&lt;Integer&gt; mapV = adjMap.get(key);</span>
-<span class="fc bfc" id="L1515" title="All 2 branches covered.">                if (mapV == null) {</span>
-<span class="fc" id="L1516">                    adjMap.put(key, v);</span>
+<span class="fc" id="L1470">                Set&lt;Integer&gt; mapV = adjMap.get(key);</span>
+<span class="fc bfc" id="L1471" title="All 2 branches covered.">                if (mapV == null) {</span>
+<span class="fc" id="L1472">                    adjMap.put(key, v);</span>
                 } else {
-<span class="fc" id="L1518">                    mapV.addAll(v);</span>
+<span class="fc" id="L1474">                    mapV.addAll(v);</span>
                 }
-<span class="fc" id="L1520">            }</span>
+<span class="fc" id="L1476">            }</span>
         }
 
-<span class="fc" id="L1523">        return adjMap;</span>
+<span class="fc" id="L1479">        return adjMap;</span>
     }
 
     private Map&lt;PairInt, Set&lt;Integer&gt;&gt; 
     findUnassignedPixelsAndAdjacentIndexes(
         ImageExt img, Map&lt;PairInt, Integer&gt; pointIndexMap) {
 
-<span class="fc" id="L1530">        Map&lt;PairInt, Set&lt;Integer&gt;&gt; unassignedAndIndexes =</span>
+<span class="fc" id="L1486">        Map&lt;PairInt, Set&lt;Integer&gt;&gt; unassignedAndIndexes =</span>
             new HashMap&lt;PairInt, Set&lt;Integer&gt;&gt;();
 
-<span class="fc" id="L1533">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L1534">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L1489">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L1490">        int[] dys = Misc.dy8;</span>
 
-<span class="fc" id="L1536">        int w = img.getWidth();</span>
-<span class="fc" id="L1537">        int h = img.getHeight();</span>
+<span class="fc" id="L1492">        int w = img.getWidth();</span>
+<span class="fc" id="L1493">        int h = img.getHeight();</span>
 
-<span class="fc bfc" id="L1539" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L1540" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc" id="L1541">                PairInt p = new PairInt(x, y);</span>
-<span class="fc bfc" id="L1542" title="All 2 branches covered.">                if (pointIndexMap.containsKey(p)) {</span>
-<span class="fc" id="L1543">                    continue;</span>
+<span class="fc bfc" id="L1495" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L1496" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc" id="L1497">                PairInt p = new PairInt(x, y);</span>
+<span class="fc bfc" id="L1498" title="All 2 branches covered.">                if (pointIndexMap.containsKey(p)) {</span>
+<span class="fc" id="L1499">                    continue;</span>
                 }
-<span class="fc" id="L1545">                Set&lt;Integer&gt; adjIndexes = new HashSet&lt;Integer&gt;();</span>
-<span class="fc bfc" id="L1546" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L1547">                    int x2 = x + dxs[k];</span>
-<span class="fc" id="L1548">                    int y2 = y + dys[k];</span>
-<span class="fc" id="L1549">                    PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc" id="L1550">                    Integer index2 = pointIndexMap.get(p2);</span>
-<span class="fc bfc" id="L1551" title="All 2 branches covered.">                    if (index2 != null) {</span>
-<span class="fc" id="L1552">                        adjIndexes.add(index2);</span>
+<span class="fc" id="L1501">                Set&lt;Integer&gt; adjIndexes = new HashSet&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L1502" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L1503">                    int x2 = x + dxs[k];</span>
+<span class="fc" id="L1504">                    int y2 = y + dys[k];</span>
+<span class="fc" id="L1505">                    PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L1506">                    Integer index2 = pointIndexMap.get(p2);</span>
+<span class="fc bfc" id="L1507" title="All 2 branches covered.">                    if (index2 != null) {</span>
+<span class="fc" id="L1508">                        adjIndexes.add(index2);</span>
                     }
                 }
-<span class="fc" id="L1555">                unassignedAndIndexes.put(p, adjIndexes);</span>
+<span class="fc" id="L1511">                unassignedAndIndexes.put(p, adjIndexes);</span>
             }
         }
 
-<span class="pc bpc" id="L1559" title="3 of 4 branches missed.">        assert(pointIndexMap.size() + unassignedAndIndexes.size() == img.getNPixels());</span>
+<span class="pc bpc" id="L1515" title="3 of 4 branches missed.">        assert(pointIndexMap.size() + unassignedAndIndexes.size() == img.getNPixels());</span>
 
-<span class="fc" id="L1561">        return unassignedAndIndexes;</span>
+<span class="fc" id="L1517">        return unassignedAndIndexes;</span>
     }
 
     private void populateDescriptors(ImageExt img,
@@ -1569,165 +1525,165 @@ import java.util.logging.Logger;
         the descriptors are
              C_i = {h, s, v, nPix, cenX, cenY}  or labL, labA, labB for colorSpace = 0
         */
-<span class="fc" id="L1572">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L1528">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
 
-<span class="fc bfc" id="L1574" title="All 2 branches covered.">        for (int i = 0; i &lt; pointSets.size(); ++i) {</span>
+<span class="fc bfc" id="L1530" title="All 2 branches covered.">        for (int i = 0; i &lt; pointSets.size(); ++i) {</span>
 
-<span class="fc" id="L1576">            Set&lt;PairInt&gt; edgePoints = pointSets.get(i);</span>
+<span class="fc" id="L1532">            Set&lt;PairInt&gt; edgePoints = pointSets.get(i);</span>
 
-<span class="fc" id="L1578">            outputDescripors[i] = new float[6];</span>
+<span class="fc" id="L1534">            outputDescripors[i] = new float[6];</span>
 
-<span class="fc" id="L1580">            double[] xyCen = curveHelper.calculateXYCentroids(edgePoints);</span>
+<span class="fc" id="L1536">            double[] xyCen = curveHelper.calculateXYCentroids(edgePoints);</span>
 
-<span class="fc" id="L1582">            double c1Sum = 0;</span>
-<span class="fc" id="L1583">            double c2Sum = 0;</span>
-<span class="fc" id="L1584">            double c3Sum = 0;</span>
-<span class="fc bfc" id="L1585" title="All 2 branches covered.">            for (PairInt p : edgePoints) {</span>
+<span class="fc" id="L1538">            double c1Sum = 0;</span>
+<span class="fc" id="L1539">            double c2Sum = 0;</span>
+<span class="fc" id="L1540">            double c3Sum = 0;</span>
+<span class="fc bfc" id="L1541" title="All 2 branches covered.">            for (PairInt p : edgePoints) {</span>
 
-<span class="fc" id="L1587">                int x = p.getX();</span>
-<span class="fc" id="L1588">                int y = p.getY();</span>
+<span class="fc" id="L1543">                int x = p.getX();</span>
+<span class="fc" id="L1544">                int y = p.getY();</span>
 
-<span class="pc bpc" id="L1590" title="1 of 2 branches missed.">                if (clrSpace == 0) {</span>
-<span class="fc" id="L1591">                    float[] lab = img.getCIELAB(x, y);</span>
-<span class="fc" id="L1592">                    c1Sum += lab[0];</span>
-<span class="fc" id="L1593">                    c2Sum += lab[1];</span>
-<span class="fc" id="L1594">                    c3Sum += lab[2];</span>
-<span class="fc" id="L1595">                } else {</span>
+<span class="pc bpc" id="L1546" title="1 of 2 branches missed.">                if (clrSpace == 0) {</span>
+<span class="fc" id="L1547">                    float[] lab = img.getCIELAB(x, y);</span>
+<span class="fc" id="L1548">                    c1Sum += lab[0];</span>
+<span class="fc" id="L1549">                    c2Sum += lab[1];</span>
+<span class="fc" id="L1550">                    c3Sum += lab[2];</span>
+<span class="fc" id="L1551">                } else {</span>
                     // hsv
-<span class="nc" id="L1597">                    c1Sum += img.getHue(x, y);</span>
-<span class="nc" id="L1598">                    c2Sum += img.getSaturation(x, y);</span>
-<span class="nc" id="L1599">                    c3Sum += img.getBrightness(x, y);</span>
+<span class="nc" id="L1553">                    c1Sum += img.getHue(x, y);</span>
+<span class="nc" id="L1554">                    c2Sum += img.getSaturation(x, y);</span>
+<span class="nc" id="L1555">                    c3Sum += img.getBrightness(x, y);</span>
                 }
-<span class="fc" id="L1601">            }</span>
-<span class="fc" id="L1602">            c1Sum /= (float)edgePoints.size();</span>
-<span class="fc" id="L1603">            c2Sum /= (float)edgePoints.size();</span>
-<span class="fc" id="L1604">            c3Sum /= (float)edgePoints.size();</span>
+<span class="fc" id="L1557">            }</span>
+<span class="fc" id="L1558">            c1Sum /= (float)edgePoints.size();</span>
+<span class="fc" id="L1559">            c2Sum /= (float)edgePoints.size();</span>
+<span class="fc" id="L1560">            c3Sum /= (float)edgePoints.size();</span>
 
             //C_i = {h, s, v, nPix, cenX, cenY}
-<span class="fc" id="L1607">            outputDescripors[i][0] = (float)c1Sum;</span>
-<span class="fc" id="L1608">            outputDescripors[i][1] = (float)c2Sum;</span>
-<span class="fc" id="L1609">            outputDescripors[i][2] = (float)c3Sum;</span>
-<span class="fc" id="L1610">            outputDescripors[i][3] = edgePoints.size();</span>
-<span class="fc" id="L1611">            outputDescripors[i][4] = (float)xyCen[0];</span>
-<span class="fc" id="L1612">            outputDescripors[i][5] = (float)xyCen[1];</span>
+<span class="fc" id="L1563">            outputDescripors[i][0] = (float)c1Sum;</span>
+<span class="fc" id="L1564">            outputDescripors[i][1] = (float)c2Sum;</span>
+<span class="fc" id="L1565">            outputDescripors[i][2] = (float)c3Sum;</span>
+<span class="fc" id="L1566">            outputDescripors[i][3] = edgePoints.size();</span>
+<span class="fc" id="L1567">            outputDescripors[i][4] = (float)xyCen[0];</span>
+<span class="fc" id="L1568">            outputDescripors[i][5] = (float)xyCen[1];</span>
         }
-<span class="fc" id="L1614">    }</span>
+<span class="fc" id="L1570">    }</span>
 
     private float[][] condenseAndUpdate(List&lt;Set&lt;PairInt&gt;&gt; clusterPoints,
         float[][] clusterDescriptors, Map&lt;PairInt, Integer&gt; pointIndexMap) {
 
-<span class="fc" id="L1619">        int nNonNull = 0;</span>
-<span class="fc bfc" id="L1620" title="All 2 branches covered.">        for (Set&lt;PairInt&gt; set : clusterPoints) {</span>
-<span class="fc bfc" id="L1621" title="All 2 branches covered.">            if (!set.isEmpty()) {</span>
-<span class="fc" id="L1622">                nNonNull++;</span>
+<span class="fc" id="L1575">        int nNonNull = 0;</span>
+<span class="fc bfc" id="L1576" title="All 2 branches covered.">        for (Set&lt;PairInt&gt; set : clusterPoints) {</span>
+<span class="fc bfc" id="L1577" title="All 2 branches covered.">            if (!set.isEmpty()) {</span>
+<span class="fc" id="L1578">                nNonNull++;</span>
             }
-<span class="fc" id="L1624">        }</span>
+<span class="fc" id="L1580">        }</span>
 
-<span class="fc" id="L1626">        List&lt;Set&lt;PairInt&gt;&gt; tmp = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L1582">        List&lt;Set&lt;PairInt&gt;&gt; tmp = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
 
-<span class="fc" id="L1628">        float[][] outputDescriptors = new float[nNonNull][];</span>
+<span class="fc" id="L1584">        float[][] outputDescriptors = new float[nNonNull][];</span>
 
-<span class="fc bfc" id="L1630" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
-<span class="fc" id="L1631">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
-<span class="fc bfc" id="L1632" title="All 2 branches covered.">            if (!set.isEmpty()) {</span>
-<span class="fc" id="L1633">                outputDescriptors[tmp.size()] = clusterDescriptors[i];</span>
-<span class="fc" id="L1634">                tmp.add(set);</span>
+<span class="fc bfc" id="L1586" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
+<span class="fc" id="L1587">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
+<span class="fc bfc" id="L1588" title="All 2 branches covered.">            if (!set.isEmpty()) {</span>
+<span class="fc" id="L1589">                outputDescriptors[tmp.size()] = clusterDescriptors[i];</span>
+<span class="fc" id="L1590">                tmp.add(set);</span>
             }
         }
-<span class="fc" id="L1637">        clusterPoints.clear();</span>
-<span class="fc" id="L1638">        clusterPoints.addAll(tmp);</span>
+<span class="fc" id="L1593">        clusterPoints.clear();</span>
+<span class="fc" id="L1594">        clusterPoints.addAll(tmp);</span>
 
-<span class="fc" id="L1640">        pointIndexMap.clear();</span>
-<span class="fc bfc" id="L1641" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
-<span class="fc" id="L1642">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
-<span class="fc" id="L1643">            Integer index = Integer.valueOf(i);</span>
-<span class="fc bfc" id="L1644" title="All 2 branches covered.">            for (PairInt p : set) {</span>
-<span class="fc" id="L1645">                pointIndexMap.put(p, index);</span>
-<span class="fc" id="L1646">            }</span>
+<span class="fc" id="L1596">        pointIndexMap.clear();</span>
+<span class="fc bfc" id="L1597" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
+<span class="fc" id="L1598">            Set&lt;PairInt&gt; set = clusterPoints.get(i);</span>
+<span class="fc" id="L1599">            Integer index = Integer.valueOf(i);</span>
+<span class="fc bfc" id="L1600" title="All 2 branches covered.">            for (PairInt p : set) {</span>
+<span class="fc" id="L1601">                pointIndexMap.put(p, index);</span>
+<span class="fc" id="L1602">            }</span>
         }
 
-<span class="fc" id="L1649">        return outputDescriptors;</span>
+<span class="fc" id="L1605">        return outputDescriptors;</span>
     }
 
     private void mergeSmallClusters(ImageExt img,
         List&lt;Set&lt;PairInt&gt;&gt; clusterPoints, float[][] clusterDescriptors,
         int clrSpace, int tNumber, String debugTag) {
 
-<span class="pc bpc" id="L1656" title="1 of 2 branches missed.">        if (clusterPoints.isEmpty()) {</span>
-<span class="nc" id="L1657">            return;</span>
+<span class="pc bpc" id="L1612" title="1 of 2 branches missed.">        if (clusterPoints.isEmpty()) {</span>
+<span class="nc" id="L1613">            return;</span>
         }
 
-<span class="fc" id="L1660">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjacencyMap = createAdjacencyMap(</span>
+<span class="fc" id="L1616">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjacencyMap = createAdjacencyMap(</span>
             clusterPoints);
 
-<span class="fc" id="L1663">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L1619">        CIEChromaticity cieC = new CIEChromaticity();</span>
 
-<span class="fc bfc" id="L1665" title="All 2 branches covered.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : adjacencyMap.entrySet()) {</span>
+<span class="fc bfc" id="L1621" title="All 2 branches covered.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : adjacencyMap.entrySet()) {</span>
 
-<span class="fc" id="L1667">            Integer index1 = entry.getKey();</span>
+<span class="fc" id="L1623">            Integer index1 = entry.getKey();</span>
 
-<span class="fc" id="L1669">            int idx1 = index1.intValue();</span>
+<span class="fc" id="L1625">            int idx1 = index1.intValue();</span>
 
-<span class="fc" id="L1671">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
+<span class="fc" id="L1627">            Set&lt;PairInt&gt; set1 = clusterPoints.get(idx1);</span>
 
-<span class="pc bpc" id="L1673" title="1 of 4 branches missed.">            if ((set1.size() &gt; tNumber) || set1.isEmpty()) {</span>
-<span class="nc" id="L1674">                continue;</span>
+<span class="pc bpc" id="L1629" title="1 of 4 branches missed.">            if ((set1.size() &gt; tNumber) || set1.isEmpty()) {</span>
+<span class="nc" id="L1630">                continue;</span>
             }
 
-<span class="fc" id="L1677">            Set&lt;Integer&gt; indexes2 = entry.getValue();</span>
+<span class="fc" id="L1633">            Set&lt;Integer&gt; indexes2 = entry.getValue();</span>
 
             // merge with closest in color
 
-<span class="fc" id="L1681">            float[] desc1 = clusterDescriptors[idx1];</span>
+<span class="fc" id="L1637">            float[] desc1 = clusterDescriptors[idx1];</span>
 
-<span class="fc" id="L1683">            double minDiff = Double.MAX_VALUE;</span>
-<span class="fc" id="L1684">            Integer minDiffIndex = null;</span>
+<span class="fc" id="L1639">            double minDiff = Double.MAX_VALUE;</span>
+<span class="fc" id="L1640">            Integer minDiffIndex = null;</span>
 
-<span class="fc bfc" id="L1686" title="All 2 branches covered.">            for (Integer index2 : indexes2) {</span>
-<span class="fc" id="L1687">                int idx2 = index2.intValue();</span>
-<span class="fc" id="L1688">                Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
-<span class="fc bfc" id="L1689" title="All 2 branches covered.">                if (set2.isEmpty()) {</span>
-<span class="fc" id="L1690">                    continue;</span>
+<span class="fc bfc" id="L1642" title="All 2 branches covered.">            for (Integer index2 : indexes2) {</span>
+<span class="fc" id="L1643">                int idx2 = index2.intValue();</span>
+<span class="fc" id="L1644">                Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
+<span class="fc bfc" id="L1645" title="All 2 branches covered.">                if (set2.isEmpty()) {</span>
+<span class="fc" id="L1646">                    continue;</span>
                 }
-<span class="fc" id="L1692">                float[] desc2 = clusterDescriptors[idx2];</span>
+<span class="fc" id="L1648">                float[] desc2 = clusterDescriptors[idx2];</span>
                 double diff;
-<span class="pc bpc" id="L1694" title="1 of 2 branches missed.">                if (clrSpace == 0) {</span>
-<span class="fc" id="L1695">                    diff = Math.abs(cieC.calcDeltaECIE2000(</span>
+<span class="pc bpc" id="L1650" title="1 of 2 branches missed.">                if (clrSpace == 0) {</span>
+<span class="fc" id="L1651">                    diff = Math.abs(cieC.calcDeltaECIE2000(</span>
                         desc1[0], desc1[1], desc1[2], desc2[0], desc2[1], desc2[2]));
                 } else {
-<span class="nc" id="L1698">                    double diff1 = desc1[0] - desc2[0];</span>
-<span class="nc" id="L1699">                    double diff2 = desc1[1] - desc2[1];</span>
-<span class="nc" id="L1700">                    double diff3 = desc1[2] - desc2[2];</span>
-<span class="nc" id="L1701">                    diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);</span>
+<span class="nc" id="L1654">                    double diff1 = desc1[0] - desc2[0];</span>
+<span class="nc" id="L1655">                    double diff2 = desc1[1] - desc2[1];</span>
+<span class="nc" id="L1656">                    double diff3 = desc1[2] - desc2[2];</span>
+<span class="nc" id="L1657">                    diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);</span>
                 }
-<span class="fc bfc" id="L1703" title="All 2 branches covered.">                if (diff &lt; minDiff) {</span>
-<span class="fc" id="L1704">                    minDiff = diff;</span>
-<span class="fc" id="L1705">                    minDiffIndex = index2;</span>
+<span class="fc bfc" id="L1659" title="All 2 branches covered.">                if (diff &lt; minDiff) {</span>
+<span class="fc" id="L1660">                    minDiff = diff;</span>
+<span class="fc" id="L1661">                    minDiffIndex = index2;</span>
                 }
-<span class="fc" id="L1707">            }</span>
+<span class="fc" id="L1663">            }</span>
 
-<span class="pc bpc" id="L1709" title="1 of 2 branches missed.">            if (minDiffIndex == null) {</span>
-<span class="nc" id="L1710">                continue;</span>
+<span class="pc bpc" id="L1665" title="1 of 2 branches missed.">            if (minDiffIndex == null) {</span>
+<span class="nc" id="L1666">                continue;</span>
             }
-<span class="fc" id="L1712">            int idx2 = minDiffIndex.intValue();</span>
-<span class="fc" id="L1713">            Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
-<span class="pc bpc" id="L1714" title="3 of 4 branches missed.">            assert(!set2.isEmpty());</span>
-<span class="fc" id="L1715">            float[] desc2 = clusterDescriptors[idx2];</span>
-<span class="fc" id="L1716">            int n2 = set2.size();</span>
-<span class="fc" id="L1717">            int n1 = set1.size();</span>
-<span class="fc" id="L1718">            set2.addAll(set1);</span>
-<span class="fc" id="L1719">            int nTot = set2.size();</span>
-<span class="fc" id="L1720">            set1.clear();</span>
+<span class="fc" id="L1668">            int idx2 = minDiffIndex.intValue();</span>
+<span class="fc" id="L1669">            Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
+<span class="pc bpc" id="L1670" title="3 of 4 branches missed.">            assert(!set2.isEmpty());</span>
+<span class="fc" id="L1671">            float[] desc2 = clusterDescriptors[idx2];</span>
+<span class="fc" id="L1672">            int n2 = set2.size();</span>
+<span class="fc" id="L1673">            int n1 = set1.size();</span>
+<span class="fc" id="L1674">            set2.addAll(set1);</span>
+<span class="fc" id="L1675">            int nTot = set2.size();</span>
+<span class="fc" id="L1676">            set1.clear();</span>
 
             //{h, s, v, nPix, cenX, cenY}
-<span class="fc bfc" id="L1723" title="All 2 branches covered.">            for (int ii = 0; ii &lt; desc1.length; ++ii) {</span>
-<span class="fc" id="L1724">                desc2[ii] = ((desc2[ii] * n2) - desc1[ii] * n1) / nTot;</span>
+<span class="fc bfc" id="L1679" title="All 2 branches covered.">            for (int ii = 0; ii &lt; desc1.length; ++ii) {</span>
+<span class="fc" id="L1680">                desc2[ii] = ((desc2[ii] * n2) - desc1[ii] * n1) / nTot;</span>
             }
-<span class="fc" id="L1726">            desc2[3] = nTot;</span>
+<span class="fc" id="L1682">            desc2[3] = nTot;</span>
 
-<span class="fc" id="L1728">            clusterDescriptors[idx1] = null;</span>
-<span class="fc" id="L1729">        }</span>
-<span class="fc" id="L1730">    }</span>
+<span class="fc" id="L1684">            clusterDescriptors[idx1] = null;</span>
+<span class="fc" id="L1685">        }</span>
+<span class="fc" id="L1686">    }</span>
 
     /**
      *
@@ -1742,100 +1698,100 @@ import java.util.logging.Logger;
     public EdgeFilterProducts createGradient(Image img,
         int gradientMethod, long ts) {
 
-<span class="fc" id="L1745">        EdgeFilterProducts products = null;</span>
+<span class="fc" id="L1701">        EdgeFilterProducts products = null;</span>
 
-<span class="pc bpc" id="L1747" title="1 of 2 branches missed.">        if (gradientMethod == 0) {</span>
+<span class="pc bpc" id="L1703" title="1 of 2 branches missed.">        if (gradientMethod == 0) {</span>
 
-<span class="nc" id="L1749">            ImageExt imgCp = img.copyToImageExt();</span>
+<span class="nc" id="L1705">            ImageExt imgCp = img.copyToImageExt();</span>
             
-<span class="nc" id="L1751">            CannyEdgeFilterAdaptiveDeltaE2000 canny =</span>
+<span class="nc" id="L1707">            CannyEdgeFilterAdaptiveDeltaE2000 canny =</span>
                 new CannyEdgeFilterAdaptiveDeltaE2000();
-<span class="nc" id="L1753">            canny.setOtsuScaleFactor(0.3f);</span>
-<span class="nc" id="L1754">            canny.setToUseSingleThresholdIn2LayerFilter();</span>
-<span class="nc" id="L1755">            canny.applyFilter(imgCp);</span>
+<span class="nc" id="L1709">            canny.setOtsuScaleFactor(0.3f);</span>
+<span class="nc" id="L1710">            canny.setToUseSingleThresholdIn2LayerFilter();</span>
+<span class="nc" id="L1711">            canny.applyFilter(imgCp);</span>
 
-<span class="nc" id="L1757">            products = canny.getFilterProducts();</span>
+<span class="nc" id="L1713">            products = canny.getFilterProducts();</span>
 
-<span class="pc bpc" id="L1759" title="1 of 2 branches missed.">        } else if (gradientMethod == 1) {</span>
+<span class="pc bpc" id="L1715" title="1 of 2 branches missed.">        } else if (gradientMethod == 1) {</span>
             
-<span class="nc" id="L1761">            CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();</span>
-<span class="nc" id="L1762">            canny2.overrideToNotUseLineThinner();</span>
+<span class="nc" id="L1717">            CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();</span>
+<span class="nc" id="L1718">            canny2.overrideToNotUseLineThinner();</span>
             //canny2.setOtsuScaleFactor(0.3f);
-<span class="nc" id="L1764">            canny2.setToUseSingleThresholdIn2LayerFilter();</span>
-<span class="nc" id="L1765">            canny2.applyFilter(img.copyToGreyscale2());</span>
+<span class="nc" id="L1720">            canny2.setToUseSingleThresholdIn2LayerFilter();</span>
+<span class="nc" id="L1721">            canny2.applyFilter(img.copyToGreyscale2());</span>
 
-<span class="nc" id="L1767">            products = canny2.getFilterProducts();</span>
+<span class="nc" id="L1723">            products = canny2.getFilterProducts();</span>
 
-<span class="pc bpc" id="L1769" title="1 of 2 branches missed.">        } else if (gradientMethod == 2) {</span>
+<span class="pc bpc" id="L1725" title="1 of 2 branches missed.">        } else if (gradientMethod == 2) {</span>
             
-<span class="fc" id="L1771">            products = createPhaseCongruencyGradient(</span>
-<span class="fc" id="L1772">                img.copyBlueToGreyscale());</span>
+<span class="fc" id="L1727">            products = createPhaseCongruencyGradient(</span>
+<span class="fc" id="L1728">                img.copyBlueToGreyscale());</span>
 
         }
 
-<span class="fc" id="L1776">        return products;</span>
+<span class="fc" id="L1732">        return products;</span>
     }
 
     public EdgeFilterProducts packageToEdgeProduct(
         PhaseCongruencyDetector.PhaseCongruencyProducts pr) {
         
-<span class="fc" id="L1782">        EdgeFilterProducts eProduct = new EdgeFilterProducts();</span>
+<span class="fc" id="L1738">        EdgeFilterProducts eProduct = new EdgeFilterProducts();</span>
 
-<span class="fc" id="L1784">        int nCols = pr.getThinned()[0].length;//img.getWidth();</span>
-<span class="fc" id="L1785">        int nRows = pr.getThinned().length;//img.getHeight();</span>
+<span class="fc" id="L1740">        int nCols = pr.getThinned()[0].length;//img.getWidth();</span>
+<span class="fc" id="L1741">        int nRows = pr.getThinned().length;//img.getHeight();</span>
 
-<span class="fc" id="L1787">        GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);</span>
-<span class="fc" id="L1788">        double[][] pc = pr.getPhaseCongruency();</span>
-<span class="fc bfc" id="L1789" title="All 2 branches covered.">        for (int i = 0; i &lt; pr.getThinned().length; ++i) {</span>
-<span class="fc bfc" id="L1790" title="All 2 branches covered.">            for (int j = 0; j &lt; pr.getThinned()[i].length; ++j) {</span>
-<span class="fc bfc" id="L1791" title="All 2 branches covered.">                if (pr.getThinned()[i][j] &gt; 0) {</span>
-<span class="fc" id="L1792">                    int v = (int)Math.round(255. * pc[i][j]);</span>
-<span class="fc" id="L1793">                    pcImg.setValue(j, i, v);</span>
+<span class="fc" id="L1743">        GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);</span>
+<span class="fc" id="L1744">        double[][] pc = pr.getPhaseCongruency();</span>
+<span class="fc bfc" id="L1745" title="All 2 branches covered.">        for (int i = 0; i &lt; pr.getThinned().length; ++i) {</span>
+<span class="fc bfc" id="L1746" title="All 2 branches covered.">            for (int j = 0; j &lt; pr.getThinned()[i].length; ++j) {</span>
+<span class="fc bfc" id="L1747" title="All 2 branches covered.">                if (pr.getThinned()[i][j] &gt; 0) {</span>
+<span class="fc" id="L1748">                    int v = (int)Math.round(255. * pc[i][j]);</span>
+<span class="fc" id="L1749">                    pcImg.setValue(j, i, v);</span>
                 }
             }
         }
 
-<span class="fc" id="L1798">        eProduct.setGradientXY(pcImg);</span>
+<span class="fc" id="L1754">        eProduct.setGradientXY(pcImg);</span>
 
-<span class="fc" id="L1800">        GreyscaleImage paImg = new GreyscaleImage(nCols, nRows,</span>
+<span class="fc" id="L1756">        GreyscaleImage paImg = new GreyscaleImage(nCols, nRows,</span>
             GreyscaleImage.Type.Bits32FullRangeInt);
         // range -pi to pi
-<span class="fc" id="L1803">        double[][] pa = pr.getPhaseAngle();</span>
-<span class="fc bfc" id="L1804" title="All 2 branches covered.">        for (int i = 0; i &lt; pa.length; ++i) {</span>
-<span class="fc bfc" id="L1805" title="All 2 branches covered.">            for (int j = 0; j &lt; pa[i].length; ++j) {</span>
-<span class="fc" id="L1806">                double v = pa[i][j];</span>
-<span class="fc" id="L1807">                int d = (int)Math.round(v * 180./Math.PI);</span>
-<span class="fc" id="L1808">                paImg.setValue(j, i, d);</span>
+<span class="fc" id="L1759">        double[][] pa = pr.getPhaseAngle();</span>
+<span class="fc bfc" id="L1760" title="All 2 branches covered.">        for (int i = 0; i &lt; pa.length; ++i) {</span>
+<span class="fc bfc" id="L1761" title="All 2 branches covered.">            for (int j = 0; j &lt; pa[i].length; ++j) {</span>
+<span class="fc" id="L1762">                double v = pa[i][j];</span>
+<span class="fc" id="L1763">                int d = (int)Math.round(v * 180./Math.PI);</span>
+<span class="fc" id="L1764">                paImg.setValue(j, i, d);</span>
             }
         }
-<span class="fc" id="L1811">        eProduct.setPhaseAngle(paImg);</span>
+<span class="fc" id="L1767">        eProduct.setPhaseAngle(paImg);</span>
 
-<span class="fc" id="L1813">        GreyscaleImage orImg = new GreyscaleImage(nCols, nRows);</span>
-<span class="fc" id="L1814">        double[][] or = pr.getOrientation();</span>
+<span class="fc" id="L1769">        GreyscaleImage orImg = new GreyscaleImage(nCols, nRows);</span>
+<span class="fc" id="L1770">        double[][] or = pr.getOrientation();</span>
         // orientation is already in range 0 to 180
-<span class="fc bfc" id="L1816" title="All 2 branches covered.">        for (int i = 0; i &lt; or.length; ++i) {</span>
-<span class="fc bfc" id="L1817" title="All 2 branches covered.">            for (int j = 0; j &lt; or[i].length; ++j) {</span>
-<span class="fc" id="L1818">                double v = or[i][j];</span>
-<span class="fc" id="L1819">                orImg.setValue(j, i, (int)Math.round(v));</span>
+<span class="fc bfc" id="L1772" title="All 2 branches covered.">        for (int i = 0; i &lt; or.length; ++i) {</span>
+<span class="fc bfc" id="L1773" title="All 2 branches covered.">            for (int j = 0; j &lt; or[i].length; ++j) {</span>
+<span class="fc" id="L1774">                double v = or[i][j];</span>
+<span class="fc" id="L1775">                orImg.setValue(j, i, (int)Math.round(v));</span>
             }
         }
-<span class="fc" id="L1822">        eProduct.setTheta(orImg);</span>
+<span class="fc" id="L1778">        eProduct.setTheta(orImg);</span>
         
-<span class="fc" id="L1824">        return eProduct;</span>
+<span class="fc" id="L1780">        return eProduct;</span>
     }
     
     public EdgeFilterProducts createPhaseCongruencyGradient(
         GreyscaleImage img) {
         
-<span class="fc" id="L1830">        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();</span>
-<span class="fc" id="L1831">        phaseDetector.setK(2);</span>
+<span class="fc" id="L1786">        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();</span>
+<span class="fc" id="L1787">        phaseDetector.setK(2);</span>
         
-<span class="fc" id="L1833">        PhaseCongruencyDetector.PhaseCongruencyProducts pr =</span>
-<span class="fc" id="L1834">            phaseDetector.phaseCongMono(img);</span>
+<span class="fc" id="L1789">        PhaseCongruencyDetector.PhaseCongruencyProducts pr =</span>
+<span class="fc" id="L1790">            phaseDetector.phaseCongMono(img);</span>
 
-<span class="fc" id="L1836">        EdgeFilterProducts eProduct = packageToEdgeProduct(pr);</span>
+<span class="fc" id="L1792">        EdgeFilterProducts eProduct = packageToEdgeProduct(pr);</span>
         
-<span class="fc" id="L1838">        return eProduct;</span>
+<span class="fc" id="L1794">        return eProduct;</span>
     }
 
     /**
@@ -1853,14 +1809,14 @@ import java.util.logging.Logger;
     public static boolean doesDisconnect(final GreyscaleImage input,
         PairInt[][] neighborCoords, int col, int row) {
         
-<span class="fc" id="L1856">        int w = input.getWidth();</span>
-<span class="fc" id="L1857">        int h = input.getHeight();</span>
+<span class="fc" id="L1812">        int w = input.getWidth();</span>
+<span class="fc" id="L1813">        int h = input.getHeight();</span>
 
-<span class="pc bpc" id="L1859" title="4 of 8 branches missed.">        if (((col - 1) &lt; 0) || ((row - 1) &lt; 0) || ((col + 1) &gt; (w - 1)) ||</span>
+<span class="pc bpc" id="L1815" title="4 of 8 branches missed.">        if (((col - 1) &lt; 0) || ((row - 1) &lt; 0) || ((col + 1) &gt; (w - 1)) ||</span>
             ((row + 1) &gt; (h - 1))) {
             // general rule so that invoker doesn't disconnect a line that is
             // connected to image boundaries
-<span class="nc" id="L1863">            return true;</span>
+<span class="nc" id="L1819">            return true;</span>
         }
 
         /*
@@ -1902,58 +1858,58 @@ import java.util.logging.Logger;
         then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
         */
 
-<span class="fc bfc" id="L1905" title="All 2 branches covered.">        boolean t6 = (input.getValue(neighborCoords[0][2].getX() + col,</span>
-<span class="fc" id="L1906">            neighborCoords[0][2].getY() + row) &gt; 0);</span>
-<span class="fc bfc" id="L1907" title="All 2 branches covered.">        boolean t7 = (input.getValue(neighborCoords[1][2].getX() + col,</span>
-<span class="fc" id="L1908">            neighborCoords[1][2].getY() + row) &gt; 0);</span>
-<span class="fc bfc" id="L1909" title="All 2 branches covered.">        boolean t8 = (input.getValue(neighborCoords[2][2].getX() + col,</span>
-<span class="fc" id="L1910">            neighborCoords[2][2].getY() + row) &gt; 0);</span>
-<span class="fc bfc" id="L1911" title="All 2 branches covered.">        boolean t11 = (input.getValue(neighborCoords[0][1].getX() + col,</span>
-<span class="fc" id="L1912">            neighborCoords[0][1].getY() + row) &gt; 0);</span>
-<span class="fc bfc" id="L1913" title="All 2 branches covered.">        boolean t12 = (input.getValue(neighborCoords[2][1].getX() + col,</span>
-<span class="fc" id="L1914">            neighborCoords[2][1].getY() + row) &gt; 0);</span>
-<span class="fc bfc" id="L1915" title="All 2 branches covered.">        boolean t15 = (input.getValue(neighborCoords[0][0].getX() + col,</span>
-<span class="fc" id="L1916">            neighborCoords[0][0].getY() + row) &gt; 0);</span>
-<span class="fc bfc" id="L1917" title="All 2 branches covered.">        boolean t16 = (input.getValue(neighborCoords[1][0].getX() + col,</span>
-<span class="fc" id="L1918">            neighborCoords[1][0].getY() + row) &gt; 0);</span>
-<span class="fc bfc" id="L1919" title="All 2 branches covered.">        boolean t17 = (input.getValue(neighborCoords[2][0].getX() + col,</span>
-<span class="fc" id="L1920">            neighborCoords[2][0].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1861" title="All 2 branches covered.">        boolean t6 = (input.getValue(neighborCoords[0][2].getX() + col,</span>
+<span class="fc" id="L1862">            neighborCoords[0][2].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1863" title="All 2 branches covered.">        boolean t7 = (input.getValue(neighborCoords[1][2].getX() + col,</span>
+<span class="fc" id="L1864">            neighborCoords[1][2].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1865" title="All 2 branches covered.">        boolean t8 = (input.getValue(neighborCoords[2][2].getX() + col,</span>
+<span class="fc" id="L1866">            neighborCoords[2][2].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1867" title="All 2 branches covered.">        boolean t11 = (input.getValue(neighborCoords[0][1].getX() + col,</span>
+<span class="fc" id="L1868">            neighborCoords[0][1].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1869" title="All 2 branches covered.">        boolean t12 = (input.getValue(neighborCoords[2][1].getX() + col,</span>
+<span class="fc" id="L1870">            neighborCoords[2][1].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1871" title="All 2 branches covered.">        boolean t15 = (input.getValue(neighborCoords[0][0].getX() + col,</span>
+<span class="fc" id="L1872">            neighborCoords[0][0].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1873" title="All 2 branches covered.">        boolean t16 = (input.getValue(neighborCoords[1][0].getX() + col,</span>
+<span class="fc" id="L1874">            neighborCoords[1][0].getY() + row) &gt; 0);</span>
+<span class="fc bfc" id="L1875" title="All 2 branches covered.">        boolean t17 = (input.getValue(neighborCoords[2][0].getX() + col,</span>
+<span class="fc" id="L1876">            neighborCoords[2][0].getY() + row) &gt; 0);</span>
 
-<span class="pc bpc" id="L1922" title="7 of 12 branches missed.">       if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
-<span class="nc" id="L1923">            return true;</span>
-<span class="pc bpc" id="L1924" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L1925">            return true;</span>
-<span class="pc bpc" id="L1926" title="7 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
-<span class="nc" id="L1927">            return true;</span>
-<span class="pc bpc" id="L1928" title="1 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
-<span class="nc" id="L1929">            return true;</span>
-<span class="pc bpc" id="L1930" title="3 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
-<span class="nc" id="L1931">            return true;</span>
-<span class="pc bpc" id="L1932" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L1933">            return true;</span>
-<span class="pc bpc" id="L1934" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L1935">            return true;</span>
-<span class="pc bpc" id="L1936" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
-<span class="nc" id="L1937">            return true;</span>
-<span class="pc bpc" id="L1938" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L1939">            return true;</span>
-<span class="pc bpc" id="L1940" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
-<span class="nc" id="L1941">            return true;</span>
-<span class="pc bpc" id="L1942" title="1 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
-<span class="nc" id="L1943">            return true;</span>
-<span class="pc bpc" id="L1944" title="3 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
-<span class="nc" id="L1945">            return true;</span>
-<span class="pc bpc" id="L1946" title="1 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
-<span class="nc" id="L1947">            return true;</span>
-<span class="pc bpc" id="L1948" title="5 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
-<span class="nc" id="L1949">            return true;</span>
-<span class="pc bpc" id="L1950" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
-<span class="nc" id="L1951">            return true;</span>
-<span class="pc bpc" id="L1952" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
-<span class="nc" id="L1953">            return true;</span>
+<span class="pc bpc" id="L1878" title="7 of 12 branches missed.">       if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
+<span class="nc" id="L1879">            return true;</span>
+<span class="pc bpc" id="L1880" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L1881">            return true;</span>
+<span class="pc bpc" id="L1882" title="7 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
+<span class="nc" id="L1883">            return true;</span>
+<span class="pc bpc" id="L1884" title="1 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
+<span class="nc" id="L1885">            return true;</span>
+<span class="pc bpc" id="L1886" title="3 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
+<span class="nc" id="L1887">            return true;</span>
+<span class="pc bpc" id="L1888" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L1889">            return true;</span>
+<span class="pc bpc" id="L1890" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L1891">            return true;</span>
+<span class="pc bpc" id="L1892" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L1893">            return true;</span>
+<span class="pc bpc" id="L1894" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L1895">            return true;</span>
+<span class="pc bpc" id="L1896" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
+<span class="nc" id="L1897">            return true;</span>
+<span class="pc bpc" id="L1898" title="1 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L1899">            return true;</span>
+<span class="pc bpc" id="L1900" title="3 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
+<span class="nc" id="L1901">            return true;</span>
+<span class="pc bpc" id="L1902" title="1 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
+<span class="nc" id="L1903">            return true;</span>
+<span class="pc bpc" id="L1904" title="5 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
+<span class="nc" id="L1905">            return true;</span>
+<span class="pc bpc" id="L1906" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
+<span class="nc" id="L1907">            return true;</span>
+<span class="pc bpc" id="L1908" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
+<span class="nc" id="L1909">            return true;</span>
         }
 
-<span class="fc" id="L1956">        return false;</span>
+<span class="fc" id="L1912">        return false;</span>
     }
 
     /**
@@ -1973,11 +1929,11 @@ import java.util.logging.Logger;
     public static boolean doesDisconnect(final Set&lt;PairInt&gt; input,
         PairInt[][] neighborCoords, int col, int row, int w, int h) {
 
-<span class="pc bpc" id="L1976" title="3 of 8 branches missed.">        if (((col - 1) &lt; 0) || ((row - 1) &lt; 0) || ((col + 1) &gt; (w - 1)) ||</span>
+<span class="pc bpc" id="L1932" title="3 of 8 branches missed.">        if (((col - 1) &lt; 0) || ((row - 1) &lt; 0) || ((col + 1) &gt; (w - 1)) ||</span>
             ((row + 1) &gt; (h - 1))) {
             // general rule so that invoker doesn't disconnect a line that is
             // connected to image boundaries
-<span class="fc" id="L1980">            return true;</span>
+<span class="fc" id="L1936">            return true;</span>
         }
 
         /*
@@ -2019,66 +1975,66 @@ import java.util.logging.Logger;
         then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
         */
 
-<span class="fc" id="L2022">        boolean t6 = input.contains(</span>
-<span class="fc" id="L2023">            new PairInt(neighborCoords[0][2].getX() + col,</span>
-<span class="fc" id="L2024">            neighborCoords[0][2].getY() + row));</span>
-<span class="fc" id="L2025">        boolean t7 = input.contains(</span>
-<span class="fc" id="L2026">            new PairInt(neighborCoords[1][2].getX() + col,</span>
-<span class="fc" id="L2027">            neighborCoords[1][2].getY() + row));</span>
-<span class="fc" id="L2028">        boolean t8 = input.contains(</span>
-<span class="fc" id="L2029">            new PairInt(neighborCoords[2][2].getX() + col,</span>
-<span class="fc" id="L2030">            neighborCoords[2][2].getY() + row));</span>
-<span class="fc" id="L2031">        boolean t11 = input.contains(</span>
-<span class="fc" id="L2032">            new PairInt(neighborCoords[0][1].getX() + col,</span>
-<span class="fc" id="L2033">            neighborCoords[0][1].getY() + row));</span>
-<span class="fc" id="L2034">        boolean t12 = input.contains(</span>
-<span class="fc" id="L2035">            new PairInt(neighborCoords[2][1].getX() + col,</span>
-<span class="fc" id="L2036">            neighborCoords[2][1].getY() + row));</span>
-<span class="fc" id="L2037">        boolean t15 = input.contains(</span>
-<span class="fc" id="L2038">            new PairInt(neighborCoords[0][0].getX() + col,</span>
-<span class="fc" id="L2039">            neighborCoords[0][0].getY() + row));</span>
-<span class="fc" id="L2040">        boolean t16 = input.contains(</span>
-<span class="fc" id="L2041">            new PairInt(neighborCoords[1][0].getX() + col,</span>
-<span class="fc" id="L2042">            neighborCoords[1][0].getY() + row));</span>
-<span class="fc" id="L2043">        boolean t17 = input.contains(</span>
-<span class="fc" id="L2044">            new PairInt(neighborCoords[2][0].getX() + col,</span>
-<span class="fc" id="L2045">            neighborCoords[2][0].getY() + row));</span>
+<span class="fc" id="L1978">        boolean t6 = input.contains(</span>
+<span class="fc" id="L1979">            new PairInt(neighborCoords[0][2].getX() + col,</span>
+<span class="fc" id="L1980">            neighborCoords[0][2].getY() + row));</span>
+<span class="fc" id="L1981">        boolean t7 = input.contains(</span>
+<span class="fc" id="L1982">            new PairInt(neighborCoords[1][2].getX() + col,</span>
+<span class="fc" id="L1983">            neighborCoords[1][2].getY() + row));</span>
+<span class="fc" id="L1984">        boolean t8 = input.contains(</span>
+<span class="fc" id="L1985">            new PairInt(neighborCoords[2][2].getX() + col,</span>
+<span class="fc" id="L1986">            neighborCoords[2][2].getY() + row));</span>
+<span class="fc" id="L1987">        boolean t11 = input.contains(</span>
+<span class="fc" id="L1988">            new PairInt(neighborCoords[0][1].getX() + col,</span>
+<span class="fc" id="L1989">            neighborCoords[0][1].getY() + row));</span>
+<span class="fc" id="L1990">        boolean t12 = input.contains(</span>
+<span class="fc" id="L1991">            new PairInt(neighborCoords[2][1].getX() + col,</span>
+<span class="fc" id="L1992">            neighborCoords[2][1].getY() + row));</span>
+<span class="fc" id="L1993">        boolean t15 = input.contains(</span>
+<span class="fc" id="L1994">            new PairInt(neighborCoords[0][0].getX() + col,</span>
+<span class="fc" id="L1995">            neighborCoords[0][0].getY() + row));</span>
+<span class="fc" id="L1996">        boolean t16 = input.contains(</span>
+<span class="fc" id="L1997">            new PairInt(neighborCoords[1][0].getX() + col,</span>
+<span class="fc" id="L1998">            neighborCoords[1][0].getY() + row));</span>
+<span class="fc" id="L1999">        boolean t17 = input.contains(</span>
+<span class="fc" id="L2000">            new PairInt(neighborCoords[2][0].getX() + col,</span>
+<span class="fc" id="L2001">            neighborCoords[2][0].getY() + row));</span>
 
-<span class="pc bpc" id="L2047" title="7 of 12 branches missed.">       if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
-<span class="nc" id="L2048">            return true;</span>
-<span class="pc bpc" id="L2049" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L2050">            return true;</span>
-<span class="pc bpc" id="L2051" title="7 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
-<span class="nc" id="L2052">            return true;</span>
-<span class="pc bpc" id="L2053" title="1 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
-<span class="nc" id="L2054">            return true;</span>
-<span class="pc bpc" id="L2055" title="3 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
-<span class="nc" id="L2056">            return true;</span>
-<span class="pc bpc" id="L2057" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L2058">            return true;</span>
-<span class="pc bpc" id="L2059" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L2060">            return true;</span>
-<span class="pc bpc" id="L2061" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
-<span class="nc" id="L2062">            return true;</span>
-<span class="pc bpc" id="L2063" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L2064">            return true;</span>
-<span class="pc bpc" id="L2065" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
-<span class="nc" id="L2066">            return true;</span>
-<span class="pc bpc" id="L2067" title="1 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
-<span class="nc" id="L2068">            return true;</span>
-<span class="pc bpc" id="L2069" title="3 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
-<span class="nc" id="L2070">            return true;</span>
-<span class="pc bpc" id="L2071" title="1 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
-<span class="nc" id="L2072">            return true;</span>
-<span class="pc bpc" id="L2073" title="5 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
-<span class="nc" id="L2074">            return true;</span>
-<span class="pc bpc" id="L2075" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
-<span class="nc" id="L2076">            return true;</span>
-<span class="pc bpc" id="L2077" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
-<span class="nc" id="L2078">            return true;</span>
+<span class="pc bpc" id="L2003" title="7 of 12 branches missed.">       if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
+<span class="nc" id="L2004">            return true;</span>
+<span class="pc bpc" id="L2005" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L2006">            return true;</span>
+<span class="pc bpc" id="L2007" title="7 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
+<span class="nc" id="L2008">            return true;</span>
+<span class="pc bpc" id="L2009" title="1 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
+<span class="nc" id="L2010">            return true;</span>
+<span class="pc bpc" id="L2011" title="3 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
+<span class="nc" id="L2012">            return true;</span>
+<span class="pc bpc" id="L2013" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L2014">            return true;</span>
+<span class="pc bpc" id="L2015" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L2016">            return true;</span>
+<span class="pc bpc" id="L2017" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L2018">            return true;</span>
+<span class="pc bpc" id="L2019" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L2020">            return true;</span>
+<span class="pc bpc" id="L2021" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
+<span class="nc" id="L2022">            return true;</span>
+<span class="pc bpc" id="L2023" title="1 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L2024">            return true;</span>
+<span class="pc bpc" id="L2025" title="3 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
+<span class="nc" id="L2026">            return true;</span>
+<span class="pc bpc" id="L2027" title="1 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
+<span class="nc" id="L2028">            return true;</span>
+<span class="pc bpc" id="L2029" title="5 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
+<span class="nc" id="L2030">            return true;</span>
+<span class="pc bpc" id="L2031" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
+<span class="nc" id="L2032">            return true;</span>
+<span class="pc bpc" id="L2033" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
+<span class="nc" id="L2034">            return true;</span>
         }
 
-<span class="fc" id="L2081">        return false;</span>
+<span class="fc" id="L2037">        return false;</span>
     }
 
     /**
@@ -2098,11 +2054,11 @@ import java.util.logging.Logger;
     public static boolean doesDisconnect(final TIntSet input,
         PairInt[][] neighborCoords, int col, int row, int w, int h) {
 
-<span class="pc bpc" id="L2101" title="2 of 8 branches missed.">        if (((col - 1) &lt; 0) || ((row - 1) &lt; 0) || ((col + 1) &gt; (w - 1)) ||</span>
+<span class="pc bpc" id="L2057" title="2 of 8 branches missed.">        if (((col - 1) &lt; 0) || ((row - 1) &lt; 0) || ((col + 1) &gt; (w - 1)) ||</span>
             ((row + 1) &gt; (h - 1))) {
             // general rule so that invoker doesn't disconnect a line that is
             // connected to image boundaries
-<span class="fc" id="L2105">            return true;</span>
+<span class="fc" id="L2061">            return true;</span>
         }
 
         /*
@@ -2144,146 +2100,136 @@ import java.util.logging.Logger;
         then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
         */
 
-<span class="fc" id="L2147">        boolean t6 = input.contains(</span>
-<span class="fc" id="L2148">            ((neighborCoords[0][2].getY() + row) * w) +</span>
-<span class="fc" id="L2149">            neighborCoords[0][2].getX() + col);</span>
-<span class="fc" id="L2150">        boolean t7 = input.contains(</span>
-<span class="fc" id="L2151">            ((neighborCoords[1][2].getY() + row) * w) +</span>
-<span class="fc" id="L2152">            neighborCoords[1][2].getX() + col);</span>
-<span class="fc" id="L2153">        boolean t8 = input.contains(</span>
-<span class="fc" id="L2154">            ((neighborCoords[2][2].getY() + row) * w) +</span>
-<span class="fc" id="L2155">            neighborCoords[2][2].getX() + col);</span>
-<span class="fc" id="L2156">        boolean t11 = input.contains(</span>
-<span class="fc" id="L2157">            ((neighborCoords[0][1].getY() + row) * w) +</span>
-<span class="fc" id="L2158">            neighborCoords[0][1].getX() + col);</span>
-<span class="fc" id="L2159">        boolean t12 = input.contains(</span>
-<span class="fc" id="L2160">            ((neighborCoords[2][1].getY() + row) * w) +</span>
-<span class="fc" id="L2161">            neighborCoords[2][1].getX() + col);</span>
-<span class="fc" id="L2162">        boolean t15 = input.contains(</span>
-<span class="fc" id="L2163">            ((neighborCoords[0][0].getY() + row) * w) +</span>
-<span class="fc" id="L2164">            neighborCoords[0][0].getX() + col);</span>
-<span class="fc" id="L2165">        boolean t16 = input.contains(</span>
-<span class="fc" id="L2166">            ((neighborCoords[1][0].getY() + row) * w) +</span>
-<span class="fc" id="L2167">            neighborCoords[1][0].getX() + col);</span>
-<span class="fc" id="L2168">        boolean t17 = input.contains(</span>
-<span class="fc" id="L2169">            ((neighborCoords[2][0].getY() + row) * w) +</span>
-<span class="fc" id="L2170">            neighborCoords[2][0].getX() + col);</span>
+<span class="fc" id="L2103">        boolean t6 = input.contains(</span>
+<span class="fc" id="L2104">            ((neighborCoords[0][2].getY() + row) * w) +</span>
+<span class="fc" id="L2105">            neighborCoords[0][2].getX() + col);</span>
+<span class="fc" id="L2106">        boolean t7 = input.contains(</span>
+<span class="fc" id="L2107">            ((neighborCoords[1][2].getY() + row) * w) +</span>
+<span class="fc" id="L2108">            neighborCoords[1][2].getX() + col);</span>
+<span class="fc" id="L2109">        boolean t8 = input.contains(</span>
+<span class="fc" id="L2110">            ((neighborCoords[2][2].getY() + row) * w) +</span>
+<span class="fc" id="L2111">            neighborCoords[2][2].getX() + col);</span>
+<span class="fc" id="L2112">        boolean t11 = input.contains(</span>
+<span class="fc" id="L2113">            ((neighborCoords[0][1].getY() + row) * w) +</span>
+<span class="fc" id="L2114">            neighborCoords[0][1].getX() + col);</span>
+<span class="fc" id="L2115">        boolean t12 = input.contains(</span>
+<span class="fc" id="L2116">            ((neighborCoords[2][1].getY() + row) * w) +</span>
+<span class="fc" id="L2117">            neighborCoords[2][1].getX() + col);</span>
+<span class="fc" id="L2118">        boolean t15 = input.contains(</span>
+<span class="fc" id="L2119">            ((neighborCoords[0][0].getY() + row) * w) +</span>
+<span class="fc" id="L2120">            neighborCoords[0][0].getX() + col);</span>
+<span class="fc" id="L2121">        boolean t16 = input.contains(</span>
+<span class="fc" id="L2122">            ((neighborCoords[1][0].getY() + row) * w) +</span>
+<span class="fc" id="L2123">            neighborCoords[1][0].getX() + col);</span>
+<span class="fc" id="L2124">        boolean t17 = input.contains(</span>
+<span class="fc" id="L2125">            ((neighborCoords[2][0].getY() + row) * w) +</span>
+<span class="fc" id="L2126">            neighborCoords[2][0].getX() + col);</span>
 
-<span class="pc bpc" id="L2172" title="7 of 12 branches missed.">       if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
-<span class="nc" id="L2173">            return true;</span>
-<span class="pc bpc" id="L2174" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L2175">            return true;</span>
-<span class="pc bpc" id="L2176" title="7 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
-<span class="nc" id="L2177">            return true;</span>
-<span class="pc bpc" id="L2178" title="1 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
-<span class="nc" id="L2179">            return true;</span>
-<span class="pc bpc" id="L2180" title="3 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
-<span class="nc" id="L2181">            return true;</span>
-<span class="pc bpc" id="L2182" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L2183">            return true;</span>
-<span class="pc bpc" id="L2184" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
-<span class="nc" id="L2185">            return true;</span>
-<span class="pc bpc" id="L2186" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
-<span class="nc" id="L2187">            return true;</span>
-<span class="pc bpc" id="L2188" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
-<span class="nc" id="L2189">            return true;</span>
-<span class="pc bpc" id="L2190" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
-<span class="nc" id="L2191">            return true;</span>
-<span class="pc bpc" id="L2192" title="1 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
-<span class="nc" id="L2193">            return true;</span>
-<span class="pc bpc" id="L2194" title="3 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
-<span class="nc" id="L2195">            return true;</span>
-<span class="pc bpc" id="L2196" title="1 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
-<span class="nc" id="L2197">            return true;</span>
-<span class="pc bpc" id="L2198" title="5 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
-<span class="nc" id="L2199">            return true;</span>
-<span class="pc bpc" id="L2200" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
-<span class="nc" id="L2201">            return true;</span>
-<span class="pc bpc" id="L2202" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
-<span class="nc" id="L2203">            return true;</span>
+<span class="pc bpc" id="L2128" title="7 of 12 branches missed.">       if ((t6) &amp;&amp; (t8) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16) || !(t12))) {</span>
+<span class="nc" id="L2129">            return true;</span>
+<span class="pc bpc" id="L2130" title="5 of 10 branches missed.">        } else if ((t6) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L2131">            return true;</span>
+<span class="pc bpc" id="L2132" title="7 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t16) || !(t12) || !(t7))) {</span>
+<span class="nc" id="L2133">            return true;</span>
+<span class="pc bpc" id="L2134" title="1 of 8 branches missed.">        } else if ((t6) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t11)) {</span>
+<span class="nc" id="L2135">            return true;</span>
+<span class="pc bpc" id="L2136" title="3 of 12 branches missed.">        } else if ((t6) &amp;&amp; (t17) &amp;&amp; ( (!(t7) || !(t12)) &amp;&amp; (!(t11) || !(t16)) )) {</span>
+<span class="nc" id="L2137">            return true;</span>
+<span class="pc bpc" id="L2138" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t15) &amp;&amp; !(t11) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L2139">            return true;</span>
+<span class="pc bpc" id="L2140" title="5 of 10 branches missed.">        } else if ((t7) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t11) || !(t16))) {</span>
+<span class="nc" id="L2141">            return true;</span>
+<span class="pc bpc" id="L2142" title="1 of 8 branches missed.">        } else if ((t7) &amp;&amp; (t16) &amp;&amp; !(t11) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L2143">            return true;</span>
+<span class="pc bpc" id="L2144" title="5 of 10 branches missed.">        } else if ((t8) &amp;&amp; (t11) &amp;&amp; !(t7) &amp;&amp; (!(t12) || !(t16))) {</span>
+<span class="nc" id="L2145">            return true;</span>
+<span class="pc bpc" id="L2146" title="7 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t17) &amp;&amp; !(t12) &amp;&amp; (!(t16) || !(t11) || !(t7))) {</span>
+<span class="nc" id="L2147">            return true;</span>
+<span class="pc bpc" id="L2148" title="1 of 8 branches missed.">        } else if ((t8) &amp;&amp; (t16) &amp;&amp; !(t7) &amp;&amp; !(t12)) {</span>
+<span class="nc" id="L2149">            return true;</span>
+<span class="pc bpc" id="L2150" title="3 of 12 branches missed.">        } else if ((t8) &amp;&amp; (t15) &amp;&amp; ( (!(t7) || !(t11)) &amp;&amp; (!(t12) || !(t16)) )) {</span>
+<span class="nc" id="L2151">            return true;</span>
+<span class="pc bpc" id="L2152" title="1 of 8 branches missed.">        } else if ((t11) &amp;&amp; (t12) &amp;&amp; !(t7) &amp;&amp; !(t16)) {</span>
+<span class="nc" id="L2153">            return true;</span>
+<span class="pc bpc" id="L2154" title="5 of 10 branches missed.">        } else if ((t11) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t12))) {</span>
+<span class="nc" id="L2155">            return true;</span>
+<span class="pc bpc" id="L2156" title="5 of 10 branches missed.">        } else if ((t12) &amp;&amp; (t15) &amp;&amp; !(t16) &amp;&amp; (!(t7) || !(t11))) {</span>
+<span class="nc" id="L2157">            return true;</span>
+<span class="pc bpc" id="L2158" title="7 of 12 branches missed.">        } else if ((t15) &amp;&amp; (t17) &amp;&amp; !(t16) &amp;&amp; (!(t11) || !(t7) || !(t12))) {</span>
+<span class="nc" id="L2159">            return true;</span>
         }
 
-<span class="fc" id="L2206">        return false;</span>
-    }
-
-    private int[][] copy(int[][] a) {
-
-<span class="nc" id="L2211">        int[][] b = new int[a.length][];</span>
-<span class="nc bnc" id="L2212" title="All 2 branches missed.">        for (int i = 0; i &lt; b.length; ++i) {</span>
-<span class="nc" id="L2213">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
-        }
-
-<span class="nc" id="L2216">        return b;</span>
+<span class="fc" id="L2162">        return false;</span>
     }
 
     private boolean assertShortEdgesAreEmpty(List&lt;Integer&gt; indexes,
         List&lt;Set&lt;PairInt&gt;&gt; clusterSets) {
 
-<span class="nc bnc" id="L2222" title="All 2 branches missed.">        for (Integer index : indexes) {</span>
-<span class="nc" id="L2223">            Set&lt;PairInt&gt; set = clusterSets.get(index.intValue());</span>
-<span class="nc bnc" id="L2224" title="All 4 branches missed.">            assert(set.isEmpty());</span>
-<span class="nc" id="L2225">        }</span>
+<span class="nc bnc" id="L2168" title="All 2 branches missed.">        for (Integer index : indexes) {</span>
+<span class="nc" id="L2169">            Set&lt;PairInt&gt; set = clusterSets.get(index.intValue());</span>
+<span class="nc bnc" id="L2170" title="All 4 branches missed.">            assert(set.isEmpty());</span>
+<span class="nc" id="L2171">        }</span>
 
-<span class="nc" id="L2227">        return true;</span>
+<span class="nc" id="L2173">        return true;</span>
     }
 
     public void replaceSinglePixelLabelsCIELAB(int[] labels,
         ImageExt img) {
 
         // ----- replace single pixels w/ adjacent nearest in color -----
-<span class="fc" id="L2234">        int[] dx2 = Misc.dx4;</span>
-<span class="fc" id="L2235">        int[] dy2 = Misc.dy4;</span>
+<span class="fc" id="L2180">        int[] dx2 = Misc.dx4;</span>
+<span class="fc" id="L2181">        int[] dy2 = Misc.dy4;</span>
         // single pixels should join closest,,,
-<span class="fc bfc" id="L2237" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
-<span class="fc bfc" id="L2238" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
-<span class="fc" id="L2239">                int pixIdx = img.getInternalIndex(i, j);</span>
-<span class="fc" id="L2240">                int v = labels[pixIdx];</span>
-<span class="fc" id="L2241">                boolean oneIsSame = false;</span>
-<span class="fc bfc" id="L2242" title="All 2 branches covered.">                for (int z = 0; z &lt; dx2.length; ++z) {</span>
-<span class="fc" id="L2243">                    int x2 = i + dx2[z];</span>
-<span class="fc" id="L2244">                    int y2 = j + dy2[z];</span>
-<span class="fc bfc" id="L2245" title="All 6 branches covered.">                    if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
-<span class="fc bfc" id="L2246" title="All 2 branches covered.">                        || (y2 &gt; (img.getHeight() - 1))</span>
+<span class="fc bfc" id="L2183" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L2184" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
+<span class="fc" id="L2185">                int pixIdx = img.getInternalIndex(i, j);</span>
+<span class="fc" id="L2186">                int v = labels[pixIdx];</span>
+<span class="fc" id="L2187">                boolean oneIsSame = false;</span>
+<span class="fc bfc" id="L2188" title="All 2 branches covered.">                for (int z = 0; z &lt; dx2.length; ++z) {</span>
+<span class="fc" id="L2189">                    int x2 = i + dx2[z];</span>
+<span class="fc" id="L2190">                    int y2 = j + dy2[z];</span>
+<span class="fc bfc" id="L2191" title="All 6 branches covered.">                    if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
+<span class="fc bfc" id="L2192" title="All 2 branches covered.">                        || (y2 &gt; (img.getHeight() - 1))</span>
                         ) {
-<span class="fc" id="L2248">                        continue;</span>
+<span class="fc" id="L2194">                        continue;</span>
                     }
-<span class="fc" id="L2250">                    int pixIdx2 = img.getInternalIndex(x2, y2);</span>
-<span class="fc" id="L2251">                    int v2 = labels[pixIdx2];</span>
-<span class="fc bfc" id="L2252" title="All 2 branches covered.">                    if (v2 == v) {</span>
-<span class="fc" id="L2253">                        oneIsSame = true;</span>
-<span class="fc" id="L2254">                        break;</span>
+<span class="fc" id="L2196">                    int pixIdx2 = img.getInternalIndex(x2, y2);</span>
+<span class="fc" id="L2197">                    int v2 = labels[pixIdx2];</span>
+<span class="fc bfc" id="L2198" title="All 2 branches covered.">                    if (v2 == v) {</span>
+<span class="fc" id="L2199">                        oneIsSame = true;</span>
+<span class="fc" id="L2200">                        break;</span>
                     }
                 }
-<span class="fc bfc" id="L2257" title="All 2 branches covered.">                if (!oneIsSame) {</span>
-<span class="fc" id="L2258">                    float[] lab = img.getCIELAB(pixIdx);</span>
-<span class="fc" id="L2259">                    double minDiff = Double.MAX_VALUE;</span>
-<span class="fc" id="L2260">                    int minIdx = -1;</span>
-<span class="fc bfc" id="L2261" title="All 2 branches covered.">                    for (int z = 0; z &lt; dx2.length; ++z) {</span>
-<span class="fc" id="L2262">                        int x2 = i + dx2[z];</span>
-<span class="fc" id="L2263">                        int y2 = j + dy2[z];</span>
-<span class="fc bfc" id="L2264" title="All 6 branches covered.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
-<span class="fc bfc" id="L2265" title="All 2 branches covered.">                            || (y2 &gt; (img.getHeight() - 1))) {</span>
-<span class="fc" id="L2266">                            continue;</span>
+<span class="fc bfc" id="L2203" title="All 2 branches covered.">                if (!oneIsSame) {</span>
+<span class="fc" id="L2204">                    float[] lab = img.getCIELAB(pixIdx);</span>
+<span class="fc" id="L2205">                    double minDiff = Double.MAX_VALUE;</span>
+<span class="fc" id="L2206">                    int minIdx = -1;</span>
+<span class="fc bfc" id="L2207" title="All 2 branches covered.">                    for (int z = 0; z &lt; dx2.length; ++z) {</span>
+<span class="fc" id="L2208">                        int x2 = i + dx2[z];</span>
+<span class="fc" id="L2209">                        int y2 = j + dy2[z];</span>
+<span class="fc bfc" id="L2210" title="All 6 branches covered.">                        if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (img.getWidth() - 1))</span>
+<span class="fc bfc" id="L2211" title="All 2 branches covered.">                            || (y2 &gt; (img.getHeight() - 1))) {</span>
+<span class="fc" id="L2212">                            continue;</span>
                         }
-<span class="fc" id="L2268">                        int pixIdx2 = img.getInternalIndex(x2, y2);</span>
-<span class="fc" id="L2269">                        float[] lab2 = img.getCIELAB(pixIdx2);</span>
+<span class="fc" id="L2214">                        int pixIdx2 = img.getInternalIndex(x2, y2);</span>
+<span class="fc" id="L2215">                        float[] lab2 = img.getCIELAB(pixIdx2);</span>
                         
-<span class="fc" id="L2271">                        double dClrSq = 0;</span>
-<span class="fc bfc" id="L2272" title="All 2 branches covered.">                        for (int i2 = 0; i2 &lt; 3; ++i2) {</span>
-<span class="fc" id="L2273">                            float diff = lab[i2] - lab2[i2];</span>
-<span class="fc" id="L2274">                            dClrSq += (diff * diff);</span>
+<span class="fc" id="L2217">                        double dClrSq = 0;</span>
+<span class="fc bfc" id="L2218" title="All 2 branches covered.">                        for (int i2 = 0; i2 &lt; 3; ++i2) {</span>
+<span class="fc" id="L2219">                            float diff = lab[i2] - lab2[i2];</span>
+<span class="fc" id="L2220">                            dClrSq += (diff * diff);</span>
                         }
                         
-<span class="fc bfc" id="L2277" title="All 2 branches covered.">                        if (dClrSq &lt; minDiff) {</span>
-<span class="fc" id="L2278">                            minDiff = dClrSq;</span>
-<span class="fc" id="L2279">                            minIdx = pixIdx2;</span>
+<span class="fc bfc" id="L2223" title="All 2 branches covered.">                        if (dClrSq &lt; minDiff) {</span>
+<span class="fc" id="L2224">                            minDiff = dClrSq;</span>
+<span class="fc" id="L2225">                            minIdx = pixIdx2;</span>
                         }
                     }
-<span class="fc" id="L2282">                    labels[pixIdx] = labels[minIdx];</span>
+<span class="fc" id="L2228">                    labels[pixIdx] = labels[minIdx];</span>
                 }
             }
         }
-<span class="fc" id="L2286">    }</span>
+<span class="fc" id="L2232">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

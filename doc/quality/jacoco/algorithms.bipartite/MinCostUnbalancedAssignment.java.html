@@ -386,10 +386,10 @@ import java.util.logging.Logger;
 <span class="pc bpc" id="L386" title="3 of 4 branches missed.">            assert(gFlow.assertPricesAreQuantizedEps(eps));</span>
             // if using a smaller eps than maxC, cannot assert
             //    these on first round
-<span class="pc bpc" id="L389" title="2 of 4 branches missed.">            if ((nIterR &gt; 0) || (eps &gt; gFlow.getMaxC())) {</span>
+<span class="pc bpc" id="L389" title="1 of 4 branches missed.">            if ((nIterR &gt; 0) || (eps &gt; gFlow.getMaxC())) {</span>
                 //assert(gFlow.integralFlowIsEpsProper(eps));
-<span class="nc bnc" id="L391" title="All 4 branches missed.">                assert(gFlow.integralBipartiteFlowIsEpsProper(eps));</span>
-<span class="nc bnc" id="L392" title="All 4 branches missed.">                assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));</span>
+<span class="pc bpc" id="L391" title="3 of 4 branches missed.">                assert(gFlow.integralBipartiteFlowIsEpsProper(eps));</span>
+<span class="pc bpc" id="L392" title="3 of 4 branches missed.">                assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));</span>
             }
             
 <span class="fc" id="L395">            eps /= ((float) q);</span>
@@ -793,9 +793,9 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L793" title="All 4 branches covered.">            } else if (</span>
                 node1.pathPredecessor != null &amp;&amp;
                 node1.pathPredecessor instanceof RightNode &amp;&amp;
-<span class="pc bpc" id="L796" title="1 of 2 branches missed.">                terminatingKeys.containsKey(</span>
+<span class="fc bfc" id="L796" title="All 2 branches covered.">                terminatingKeys.containsKey(</span>
                 node1.pathPredecessor.index)) {
-<span class="nc" id="L798">                continue;</span>
+<span class="fc" id="L798">                continue;</span>
 <span class="fc bfc" id="L799" title="All 2 branches covered.">            } else if (node1.pathPredecessor != null) {</span>
 <span class="fc bfc" id="L800" title="All 2 branches covered.">                if (node1.pathPredecessor instanceof LeftNode &amp;&amp;</span>
 <span class="fc bfc" id="L801" title="All 2 branches covered.">                surplusForestKeys.containsKey(</span>
@@ -1468,8 +1468,8 @@ Matchings in G are integral flows in N_G
 <span class="fc" id="L1468">                                leftPriceIncreases.put(idx1, p1);</span>
                             }
 
-<span class="pc bpc" id="L1471" title="1 of 2 branches missed.">                            if (rF.getBackwardLinksRM().containsKey(idx2)</span>
-<span class="nc bnc" id="L1472" title="All 2 branches missed.">                                &amp;&amp; rF.getBackwardLinksRM().get(idx2) == idx1) {</span>
+<span class="fc bfc" id="L1471" title="All 2 branches covered.">                            if (rF.getBackwardLinksRM().containsKey(idx2)</span>
+<span class="pc bpc" id="L1472" title="1 of 2 branches missed.">                                &amp;&amp; rF.getBackwardLinksRM().get(idx2) == idx1) {</span>
 
                                 // saturated link node1(left) &lt;-- node2(right)
 <span class="nc" id="L1475">                                l1 -= (lt - l2);</span>
@@ -1682,7 +1682,7 @@ Matchings in G are integral flows in N_G
 <span class="fc" id="L1682">            LeftNode xNode = surp.iterator().next();</span>
 <span class="fc" id="L1683">            surp.remove(xNode);</span>
 <span class="fc" id="L1684">            stack.add(xNode);</span>
-<span class="pc bpc" id="L1685" title="1 of 2 branches missed.">            B: while (!stack.isEmpty()) {</span>
+<span class="fc bfc" id="L1685" title="All 2 branches covered.">            B: while (!stack.isEmpty()) {</span>
 <span class="fc" id="L1686">                PathNode v = stack.peek();</span>
 <span class="fc" id="L1687">                log.fine(&quot;v=stack.top=&quot; + v.toString());</span>
 <span class="fc" id="L1688">                boolean isLeftNode = (v instanceof LeftNode);</span>
@@ -1690,7 +1690,7 @@ Matchings in G are integral flows in N_G
 <span class="pc bpc" id="L1690" title="1 of 4 branches missed.">                if (isLeftNode || isRightNode) {</span>
 <span class="fc" id="L1691">                    v.m = 1;</span>
                 }
-<span class="pc bpc" id="L1693" title="1 of 4 branches missed.">                if (isRightNode &amp;&amp; def.contains((RightNode)v)) {</span>
+<span class="fc bfc" id="L1693" title="All 4 branches covered.">                if (isRightNode &amp;&amp; def.contains((RightNode)v)) {</span>
                     // add all of stack to P as an augmenting Path
 <span class="fc" id="L1695">                    LinkedList&lt;PathNode&gt; augPath = new</span>
                         LinkedList&lt;PathNode&gt;();
@@ -1703,8 +1703,8 @@ Matchings in G are integral flows in N_G
                     continue A;
                 }
 <span class="fc" id="L1705">                Set&lt;PathNode&gt; set = pathLinksMap.get(v);</span>
-<span class="pc bpc" id="L1706" title="1 of 2 branches missed.">                if (set != null) {</span>
-<span class="pc bpc" id="L1707" title="1 of 2 branches missed.">                    while (!set.isEmpty()) {</span>
+<span class="fc bfc" id="L1706" title="All 2 branches covered.">                if (set != null) {</span>
+<span class="fc bfc" id="L1707" title="All 2 branches covered.">                    while (!set.isEmpty()) {</span>
 <span class="fc" id="L1708">                        PathNode w = set.iterator().next();</span>
 <span class="fc" id="L1709">                        set.remove(w);</span>
 <span class="fc" id="L1710">                        log.fine(&quot;stack.push w = &quot; + w.toString());</span>
@@ -1715,9 +1715,9 @@ Matchings in G are integral flows in N_G
 <span class="nc" id="L1715">                    }</span>
                 }
                 // do nothing with v
-<span class="nc" id="L1718">                stack.pop();</span>
-<span class="nc" id="L1719">            }</span>
-<span class="nc" id="L1720">        }</span>
+<span class="fc" id="L1718">                stack.pop();</span>
+<span class="fc" id="L1719">            }</span>
+<span class="fc" id="L1720">        }</span>
         
 <span class="fc" id="L1722">        return augPaths;</span>
     }
@@ -1882,7 +1882,7 @@ Matchings in G are integral flows in N_G
 <span class="nc bnc" id="L1882" title="All 2 branches missed.">                    surplus.contains(idx2)) {</span>
 <span class="nc" id="L1883">                    outputSurplus.add((LeftNode)node2);</span>
 <span class="pc bpc" id="L1884" title="1 of 2 branches missed.">                } else if (node2 instanceof RightNode &amp;&amp; </span>
-<span class="pc bpc" id="L1885" title="1 of 2 branches missed.">                    deficit.contains(idx2)) {</span>
+<span class="fc bfc" id="L1885" title="All 2 branches covered.">                    deficit.contains(idx2)) {</span>
 <span class="fc" id="L1886">                    outputDeficit.add((RightNode)node2);</span>
                 }
 <span class="fc" id="L1888">            }</span>
@@ -1930,14 +1930,14 @@ Matchings in G are integral flows in N_G
 <span class="fc" id="L1930">                yInEdges.add(p.getY());</span>
 <span class="fc" id="L1931">            }</span>
 <span class="pc bpc" id="L1932" title="1 of 2 branches missed.">            if (!lessThan1) {</span>
-<span class="pc bpc" id="L1933" title="1 of 4 branches missed.">                if (g.getNLeft() &gt; xInEdges.size() || g.getNRight() &gt; yInEdges.size()) {</span>
-<span class="fc" id="L1934">                    errors.append(&quot; every vertex in g must have at least one edge.&quot;);</span>
+<span class="pc bpc" id="L1933" title="2 of 4 branches missed.">                if (g.getNLeft() &gt; xInEdges.size() || g.getNRight() &gt; yInEdges.size()) {</span>
+<span class="nc" id="L1934">                    errors.append(&quot; every vertex in g must have at least one edge.&quot;);</span>
                 }
             }
         }
         
-<span class="fc bfc" id="L1939" title="All 2 branches covered.">        if (errors.length() &gt; 0) {</span>
-<span class="fc" id="L1940">            throw new IllegalArgumentException(errors.toString());</span>
+<span class="pc bpc" id="L1939" title="1 of 2 branches missed.">        if (errors.length() &gt; 0) {</span>
+<span class="nc" id="L1940">            throw new IllegalArgumentException(errors.toString());</span>
         }
 <span class="fc" id="L1942">    }</span>
 

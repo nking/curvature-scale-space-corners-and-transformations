@@ -128,46 +128,45 @@ public final class CurvatureScaleSpaceImageMaker {
                 
 <span class="fc" id="L129">            } else {</span>
 <span class="nc" id="L130">                MSEREdges mserEdges = new MSEREdges(img);</span>
-<span class="nc" id="L131">                mserEdges.setToLowerContrast();</span>
-<span class="nc" id="L132">                mserEdges.mergeAndExtractEdges();</span>
-<span class="nc" id="L133">                List&lt;TIntSet&gt; edgeSets = mserEdges.getEdges();</span>
+<span class="nc" id="L131">                mserEdges.extractAndMergeEdges();</span>
+<span class="nc" id="L132">                List&lt;TIntSet&gt; edgeSets = mserEdges.getEdges();</span>
             
-<span class="nc" id="L135">                PerimeterFinder2 finder2 = new PerimeterFinder2();</span>
+<span class="nc" id="L134">                PerimeterFinder2 finder2 = new PerimeterFinder2();</span>
 
-<span class="nc bnc" id="L137" title="All 2 branches missed.">                for (int i = 0; i &lt; edgeSets.size(); ++i) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">                for (int i = 0; i &lt; edgeSets.size(); ++i) {</span>
 
-<span class="nc" id="L139">                    TIntSet set = edgeSets.get(i);</span>
+<span class="nc" id="L138">                    TIntSet set = edgeSets.get(i);</span>
 
-<span class="nc bnc" id="L141" title="All 2 branches missed.">                    if (isOnImageBounds(set, w, h)) {</span>
-<span class="nc" id="L142">                        continue;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                    if (isOnImageBounds(set, w, h)) {</span>
+<span class="nc" id="L141">                        continue;</span>
                     }
                     
-<span class="nc" id="L145">                    PairIntArray ordered = null;</span>
+<span class="nc" id="L144">                    PairIntArray ordered = null;</span>
                     try {
-<span class="nc" id="L147">                        ordered = finder2.orderTheBoundary(</span>
+<span class="nc" id="L146">                        ordered = finder2.orderTheBoundary(</span>
                             set, w, h);
-<span class="nc" id="L149">                    } catch (Exception e) {</span>
-<span class="nc" id="L150">                        continue;</span>
-<span class="nc" id="L151">                    }</span>
+<span class="nc" id="L148">                    } catch (Exception e) {</span>
+<span class="nc" id="L149">                        continue;</span>
+<span class="nc" id="L150">                    }</span>
                     
                     // NOTE: ordered is clockwise, but other code expects 
                     //  CCW, so reversing for now
-<span class="nc" id="L155">                    ordered.reverse();</span>
+<span class="nc" id="L154">                    ordered.reverse();</span>
                     
-<span class="nc" id="L157">                    PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(</span>
+<span class="nc" id="L156">                    PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(</span>
                         ordered);
-<span class="nc" id="L159">                    closedCurve.setAsClosedCurve();</span>
+<span class="nc" id="L158">                    closedCurve.setAsClosedCurve();</span>
 
-<span class="nc" id="L161">                    closedCurves.add(closedCurve);</span>
+<span class="nc" id="L160">                    closedCurves.add(closedCurve);</span>
                 }
             }
             
-<span class="fc" id="L165">            state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
+<span class="fc" id="L164">            state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
 
-<span class="fc" id="L167">            state = CurvatureScaleSpaceMapperState.INITIALIZED;</span>
+<span class="fc" id="L166">            state = CurvatureScaleSpaceMapperState.INITIALIZED;</span>
         }
                 
-<span class="fc" id="L170">    } </span>
+<span class="fc" id="L169">    } </span>
     
     /**
      * Create for each edge in the instance variable edges, 
@@ -185,21 +184,21 @@ public final class CurvatureScaleSpaceImageMaker {
               where t is the indexes normalized to the range 0 to 1.
         */
 
-<span class="nc" id="L188">        Map&lt;PairIntArray, Map&lt;Float, ScaleSpaceCurve&gt; &gt; scaleSpaceMaps</span>
+<span class="nc" id="L187">        Map&lt;PairIntArray, Map&lt;Float, ScaleSpaceCurve&gt; &gt; scaleSpaceMaps</span>
             = new HashMap&lt;PairIntArray, Map&lt;Float, ScaleSpaceCurve&gt; &gt;();
                 
-<span class="nc bnc" id="L191" title="All 2 branches missed.">        for (int i = 0; i &lt; closedCurves.size(); i++) {</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        for (int i = 0; i &lt; closedCurves.size(); i++) {</span>
             
-<span class="nc" id="L193">            PairIntArray edge = closedCurves.get(i);</span>
+<span class="nc" id="L192">            PairIntArray edge = closedCurves.get(i);</span>
             
-<span class="nc" id="L195">            Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap = </span>
-<span class="nc" id="L196">                createScaleSpaceMetricsForEdge2(edge);</span>
+<span class="nc" id="L194">            Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap = </span>
+<span class="nc" id="L195">                createScaleSpaceMetricsForEdge2(edge);</span>
     
-<span class="nc" id="L198">           scaleSpaceMaps.put(edge, scaleSpaceMap);</span>
+<span class="nc" id="L197">           scaleSpaceMaps.put(edge, scaleSpaceMap);</span>
                 
         }
         
-<span class="nc" id="L202">        return scaleSpaceMaps;</span>
+<span class="nc" id="L201">        return scaleSpaceMaps;</span>
     }
         
     /**
@@ -248,54 +247,54 @@ public final class CurvatureScaleSpaceImageMaker {
               where t is the indexes normalized to the range 0 to 1.
         */
         
-<span class="fc" id="L251">        ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();</span>
+<span class="fc" id="L250">        ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();</span>
             
-<span class="fc" id="L253">        Map&lt;SIGMA, ScaleSpaceCurve&gt; scaleSpaceMap = new HashMap&lt;SIGMA,</span>
+<span class="fc" id="L252">        Map&lt;SIGMA, ScaleSpaceCurve&gt; scaleSpaceMap = new HashMap&lt;SIGMA,</span>
             ScaleSpaceCurve&gt;();
         
-<span class="fc" id="L256">        SIGMA sigma = SIGMA.ONE;</span>
+<span class="fc" id="L255">        SIGMA sigma = SIGMA.ONE;</span>
 
         // this increases by a factor of sqrt(2)
-<span class="fc" id="L259">        float resultingSigma = SIGMA.getValue(sigma);</span>
+<span class="fc" id="L258">        float resultingSigma = SIGMA.getValue(sigma);</span>
 
-<span class="fc" id="L261">        boolean hasInflectionPoints = true;</span>
+<span class="fc" id="L260">        boolean hasInflectionPoints = true;</span>
 
-<span class="fc" id="L263">        ScaleSpaceCurve lastCurve = null;</span>
+<span class="fc" id="L262">        ScaleSpaceCurve lastCurve = null;</span>
 
-<span class="pc bpc" id="L265" title="1 of 4 branches missed.">        while (hasInflectionPoints &amp;&amp; (sigma != null) </span>
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">            &amp;&amp; (resultingSigma &lt; SIGMA.getValue(SIGMA.TWOHUNDREDANDFIFTYSIX))) {</span>
+<span class="pc bpc" id="L264" title="1 of 4 branches missed.">        while (hasInflectionPoints &amp;&amp; (sigma != null) </span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">            &amp;&amp; (resultingSigma &lt; SIGMA.getValue(SIGMA.TWOHUNDREDANDFIFTYSIX))) {</span>
 
             ScaleSpaceCurve curve;
 
 //log.info(&quot;trimmedXOffset=&quot; + trimmedXOffset + &quot; trimmedYOffset=&quot; + trimmedYOffset);
       
-<span class="fc bfc" id="L272" title="All 2 branches covered.">            if (lastCurve == null) {</span>
-<span class="fc" id="L273">                curve = scaleSpaceHelper.computeCurvature(edge, sigma, </span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            if (lastCurve == null) {</span>
+<span class="fc" id="L272">                curve = scaleSpaceHelper.computeCurvature(edge, sigma, </span>
                     resultingSigma);
             } else {
-<span class="fc" id="L276">                curve = scaleSpaceHelper.computeCurvature(</span>
-<span class="fc" id="L277">                    lastCurve.getXYCurve(), sigma, resultingSigma);</span>
+<span class="fc" id="L275">                curve = scaleSpaceHelper.computeCurvature(</span>
+<span class="fc" id="L276">                    lastCurve.getXYCurve(), sigma, resultingSigma);</span>
             }
 
-<span class="fc" id="L280">            scaleSpaceMap.put(sigma, curve);</span>
+<span class="fc" id="L279">            scaleSpaceMap.put(sigma, curve);</span>
 
-<span class="fc bfc" id="L282" title="All 2 branches covered.">            hasInflectionPoints = (curve.getKIsZeroIdxSize() &gt; 0);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">            hasInflectionPoints = (curve.getKIsZeroIdxSize() &gt; 0);</span>
             
-<span class="fc" id="L284">            log.fine(&quot;sigma=&quot; + sigma + &quot; nZeros=&quot; + curve.getKIsZeroIdxSize());</span>
+<span class="fc" id="L283">            log.fine(&quot;sigma=&quot; + sigma + &quot; nZeros=&quot; + curve.getKIsZeroIdxSize());</span>
 
-<span class="fc bfc" id="L286" title="All 2 branches covered.">            if (hasInflectionPoints) {</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">            if (hasInflectionPoints) {</span>
                 //sigma = SIGMA.increaseToFactorBy2(resultingSigma);
                 //resultingSigma *= 2;
-<span class="fc" id="L289">                sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);</span>
+<span class="fc" id="L288">                sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);</span>
 
-<span class="fc" id="L291">                resultingSigma *= Math.sqrt(2);</span>
+<span class="fc" id="L290">                resultingSigma *= Math.sqrt(2);</span>
                 
             }
 
-<span class="fc" id="L295">            lastCurve = curve;</span>
-<span class="fc" id="L296">        }</span>
+<span class="fc" id="L294">            lastCurve = curve;</span>
+<span class="fc" id="L295">        }</span>
         
-<span class="fc" id="L298">        return scaleSpaceMap;</span>
+<span class="fc" id="L297">        return scaleSpaceMap;</span>
     }
     
     public ScaleSpaceCurveImage convertScaleSpaceMapToSparseImage(
@@ -309,13 +308,13 @@ public final class CurvatureScaleSpaceImageMaker {
                    scale free axis t
         */
     
-<span class="fc" id="L312">        CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();</span>
+<span class="fc" id="L311">        CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();</span>
         
-<span class="fc" id="L314">        ScaleSpaceCurveImage spaceImage = </span>
-<span class="fc" id="L315">            csscMaker.convertScaleSpaceMapToSparseImage(</span>
+<span class="fc" id="L313">        ScaleSpaceCurveImage spaceImage = </span>
+<span class="fc" id="L314">            csscMaker.convertScaleSpaceMapToSparseImage(</span>
             scaleSpaceMap, edgeNumber, edgeLength);
         
-<span class="fc" id="L318">        return spaceImage;</span>
+<span class="fc" id="L317">        return spaceImage;</span>
     }
     
     /**
@@ -336,12 +335,12 @@ public final class CurvatureScaleSpaceImageMaker {
     protected Map&lt;Float, ScaleSpaceCurve&gt; createScaleSpaceMetricsForEdge2(
     PairIntArray edge) {
  
-<span class="fc" id="L339">        CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();</span>
+<span class="fc" id="L338">        CurvatureScaleSpaceCurvesMaker csscMaker = new CurvatureScaleSpaceCurvesMaker();</span>
         
         // if use 2^(1/8) as a sigma factor should result in an error less than 10%
         // in determing the peak of a contour.  smaller factors have smaller
         // errors than that.
-<span class="fc" id="L344">        float factor = (float)Math.pow(2, 1./32.);</span>
+<span class="fc" id="L343">        float factor = (float)Math.pow(2, 1./32.);</span>
         
         /*
         SIGMA=0:
@@ -349,30 +348,30 @@ public final class CurvatureScaleSpaceImageMaker {
               where t is the indexes normalized to the range 0 to 1.
         */
         
-<span class="fc" id="L352">        Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap = </span>
-<span class="fc" id="L353">            csscMaker.createScaleSpaceMetricsForEdge(edge, factor,</span>
+<span class="fc" id="L351">        Map&lt;Float, ScaleSpaceCurve&gt; scaleSpaceMap = </span>
+<span class="fc" id="L352">            csscMaker.createScaleSpaceMetricsForEdge(edge, factor,</span>
                 SIGMA.ONE, SIGMA.TWOHUNDREDANDFIFTYSIX);
         
-<span class="fc" id="L356">        return scaleSpaceMap;</span>
+<span class="fc" id="L355">        return scaleSpaceMap;</span>
     }
     
     public List&lt;PairIntArray&gt; getClosedCurves() {
-<span class="fc" id="L360">        return closedCurves;</span>
+<span class="fc" id="L359">        return closedCurves;</span>
     }
 
     private boolean isOnImageBounds(TIntSet set, int w, int h) {
 
-<span class="fc" id="L365">        TIntIterator iter = set.iterator();</span>
-<span class="fc bfc" id="L366" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L367">            int pixIdx = iter.next();</span>
-<span class="fc" id="L368">            int y = pixIdx/w;</span>
-<span class="fc" id="L369">            int x = pixIdx - (y * w);</span>
-<span class="fc bfc" id="L370" title="All 8 branches covered.">            if (x == 0 || y == 0 || (x == (w - 1)) || (y == (h - 1))) {</span>
-<span class="fc" id="L371">                return true;</span>
+<span class="fc" id="L364">        TIntIterator iter = set.iterator();</span>
+<span class="fc bfc" id="L365" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L366">            int pixIdx = iter.next();</span>
+<span class="fc" id="L367">            int y = pixIdx/w;</span>
+<span class="fc" id="L368">            int x = pixIdx - (y * w);</span>
+<span class="fc bfc" id="L369" title="All 8 branches covered.">            if (x == 0 || y == 0 || (x == (w - 1)) || (y == (h - 1))) {</span>
+<span class="fc" id="L370">                return true;</span>
             }
-<span class="fc" id="L373">        }</span>
+<span class="fc" id="L372">        }</span>
         
-<span class="fc" id="L375">        return false;</span>
+<span class="fc" id="L374">        return false;</span>
     }
     
     public static class DescendingScaleSpaceComparator implements 

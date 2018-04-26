@@ -21,12 +21,12 @@ import java.util.Set;
         
 <span class="fc" id="L22">        int limit1 = 150;</span>
 <span class="fc" id="L23">        int limit2 = 55;</span>
-<span class="fc bfc" id="L24" title="All 4 branches covered.">        if (clrs.getR() &gt;= limit1 &amp;&amp; clrs.getG() &gt;= limit1 &amp;&amp;</span>
+<span class="pc bpc" id="L24" title="2 of 4 branches missed.">        if (clrs.getR() &gt;= limit1 &amp;&amp; clrs.getG() &gt;= limit1 &amp;&amp;</span>
 <span class="fc bfc" id="L25" title="All 2 branches covered.">            clrs.getB() &gt;= limit1) {</span>
 <span class="fc" id="L26">            return CMODE.WHITE;</span>
-<span class="fc bfc" id="L27" title="All 4 branches covered.">        } else if (clrs.getR() &lt;= limit2 &amp;&amp; clrs.getG() &lt;= limit2 &amp;&amp;</span>
-<span class="fc bfc" id="L28" title="All 2 branches covered.">            clrs.getB() &lt;= limit2) {</span>
-<span class="fc" id="L29">            return CMODE.BLACK;</span>
+<span class="pc bpc" id="L27" title="3 of 4 branches missed.">        } else if (clrs.getR() &lt;= limit2 &amp;&amp; clrs.getG() &lt;= limit2 &amp;&amp;</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">            clrs.getB() &lt;= limit2) {</span>
+<span class="nc" id="L29">            return CMODE.BLACK;</span>
         } else {
 <span class="fc" id="L31">            return CMODE.OTHER;</span>
         }
@@ -43,10 +43,10 @@ import java.util.Set;
         
 <span class="fc" id="L44">        int limit1 = 220;</span>
 <span class="fc" id="L45">        int limit2 = 25;</span>
-<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (avg &gt;= limit1) {</span>
-<span class="fc" id="L47">            return CMODE.WHITE;</span>
-<span class="fc bfc" id="L48" title="All 2 branches covered.">        } else if (avg &lt;= limit2) {</span>
-<span class="fc" id="L49">            return CMODE.BLACK;</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (avg &gt;= limit1) {</span>
+<span class="nc" id="L47">            return CMODE.WHITE;</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        } else if (avg &lt;= limit2) {</span>
+<span class="nc" id="L49">            return CMODE.BLACK;</span>
         } else {
 <span class="fc" id="L51">            return CMODE.OTHER;</span>
         }

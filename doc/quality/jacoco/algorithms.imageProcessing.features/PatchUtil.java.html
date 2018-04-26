@@ -7,6 +7,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.HashSet;
 import java.util.Set;
+import algorithms.packing.Intersection2DPacking;
 
 /**
  * carries the current integrated histogram from a region of
@@ -19,7 +20,7 @@ import java.util.Set;
  */
 public class PatchUtil {
     
-<span class="fc" id="L22">    private static float eps = 0.000001f;</span>
+<span class="fc" id="L23">    private static float eps = 0.000001f;</span>
     
     private final long[] h;
     
@@ -27,286 +28,303 @@ public class PatchUtil {
     private final int imgW;
     private final int imgH;
     
-<span class="fc" id="L30">    private double err = 0;</span>
+<span class="fc" id="L31">    private double err = 0;</span>
     
-<span class="fc" id="L32">    private double blockTotals = 0;</span>
+<span class="fc" id="L33">    private double blockTotals = 0;</span>
     
-<span class="fc" id="L34">    public PatchUtil(int imageWidth, int imageHeight, int nBins) {</span>
-<span class="fc" id="L35">        this.h = new long[nBins];</span>
-<span class="fc" id="L36">        this.imgW = imageWidth;</span>
-<span class="fc" id="L37">        this.imgH = imageHeight;</span>
-<span class="fc" id="L38">        this.pixIdxs = new TIntHashSet();</span>
-<span class="fc" id="L39">    }</span>
+<span class="fc" id="L35">    public PatchUtil(int imageWidth, int imageHeight, int nBins) {</span>
+<span class="fc" id="L36">        this.h = new long[nBins];</span>
+<span class="fc" id="L37">        this.imgW = imageWidth;</span>
+<span class="fc" id="L38">        this.imgH = imageHeight;</span>
+<span class="fc" id="L39">        this.pixIdxs = new TIntHashSet();</span>
+<span class="fc" id="L40">    }</span>
     
     public void add(TIntSet addPixelIndexes, HOGs hogs) {
         
-<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (hogs.getNumberOfBins() != h.length) {</span>
-<span class="nc" id="L44">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (hogs.getNumberOfBins() != h.length) {</span>
+<span class="nc" id="L45">            throw new IllegalArgumentException(</span>
                &quot;hog number of bins differs the expected&quot;);
         }
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (hogs.getImageWidth() != imgW) {</span>
-<span class="nc" id="L48">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (hogs.getImageWidth() != imgW) {</span>
+<span class="nc" id="L49">            throw new IllegalArgumentException(</span>
                &quot;hog image width differs the expected&quot;);
         }
-<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (hogs.getImageHeight() != imgH) {</span>
-<span class="nc" id="L52">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (hogs.getImageHeight() != imgH) {</span>
+<span class="nc" id="L53">            throw new IllegalArgumentException(</span>
                &quot;hog image height differs the expected&quot;);
         }
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (addPixelIndexes.isEmpty()) {</span>
-<span class="nc" id="L56">            return;</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (addPixelIndexes.isEmpty()) {</span>
+<span class="nc" id="L57">            return;</span>
         }
         
-<span class="fc" id="L59">        int c0 = pixIdxs.size();</span>
+<span class="fc" id="L60">        int c0 = pixIdxs.size();</span>
         
         // to keep adding to block totals, square and factor by count again
-<span class="fc" id="L62">        double tmpBlockTotals = blockTotals;</span>
-<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
+<span class="fc" id="L63">        double tmpBlockTotals = blockTotals;</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
                    
-<span class="fc" id="L65">            double norm = 255.f/(blockTotals + eps);</span>
+<span class="fc" id="L66">            double norm = 255.f/(blockTotals + eps);</span>
 
-<span class="fc" id="L67">            div(h, norm);</span>
+<span class="fc" id="L68">            div(h, norm);</span>
         }
         
-<span class="fc" id="L70">        long tmpSum = 0;</span>
-<span class="fc" id="L71">        long tmpSumErrSq = 0;</span>
+<span class="fc" id="L71">        long tmpSum = 0;</span>
+<span class="fc" id="L72">        long tmpSumErrSq = 0;</span>
         double maxValue;
         
-<span class="fc" id="L74">        long[] tmp = new long[h.length];</span>
+<span class="fc" id="L75">        long[] tmp = new long[h.length];</span>
         
-<span class="fc" id="L76">        int[] xy = new int[2];</span>
-<span class="fc" id="L77">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L77">        int[] xy = new int[2];</span>
+<span class="fc" id="L78">        PixelHelper ph = new PixelHelper();</span>
         
         //TODO: correct to use a scan by cell size pattern
-<span class="fc" id="L80">        TIntIterator iter = addPixelIndexes.iterator();</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L82">            int pixIdx = iter.next();</span>
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (pixIdxs.contains(pixIdx)) {</span>
-<span class="nc" id="L84">                continue;</span>
+<span class="fc" id="L81">        TIntIterator iter = addPixelIndexes.iterator();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L83">            int pixIdx = iter.next();</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            if (pixIdxs.contains(pixIdx)) {</span>
+<span class="nc" id="L85">                continue;</span>
             }
-<span class="fc" id="L86">            pixIdxs.add(pixIdx);</span>
+<span class="fc" id="L87">            pixIdxs.add(pixIdx);</span>
             
-<span class="fc" id="L88">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
+<span class="fc" id="L89">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
             
-<span class="fc" id="L90">            hogs.extractBlock(xy[0], xy[1], tmp);</span>
+<span class="fc" id="L91">            hogs.extractBlock(xy[0], xy[1], tmp);</span>
            
-<span class="fc" id="L92">            hogs.add(h, tmp);</span>
+<span class="fc" id="L93">            HOGs.add(h, tmp);</span>
                    
-<span class="fc" id="L94">            tmpSum = 0;</span>
-<span class="fc" id="L95">            maxValue = Double.NEGATIVE_INFINITY;</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">            for (int j = 0; j &lt; tmp.length; ++j) {</span>
-<span class="fc" id="L97">                tmpSum += tmp[j];</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">                if (tmp[j] &gt; maxValue) {</span>
-<span class="fc" id="L99">                    maxValue = tmp[j];</span>
+<span class="fc" id="L95">            tmpSum = 0;</span>
+<span class="fc" id="L96">            maxValue = Double.NEGATIVE_INFINITY;</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            for (int j = 0; j &lt; tmp.length; ++j) {</span>
+<span class="fc" id="L98">                tmpSum += tmp[j];</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                if (tmp[j] &gt; maxValue) {</span>
+<span class="fc" id="L100">                    maxValue = tmp[j];</span>
                 } 
             }
             
-<span class="fc" id="L103">            maxValue += eps;</span>
+<span class="fc" id="L104">            maxValue += eps;</span>
             
-<span class="fc" id="L105">            tmpBlockTotals += tmpSum;</span>
-<span class="fc" id="L106">            tmpSum /= tmp.length; </span>
-<span class="fc" id="L107">            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));</span>
-<span class="fc" id="L108">        }</span>
+<span class="fc" id="L106">            tmpBlockTotals += tmpSum;</span>
+<span class="fc" id="L107">            tmpSum /= tmp.length; </span>
+<span class="fc" id="L108">            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));</span>
+<span class="fc" id="L109">        }</span>
         
-<span class="fc" id="L110">        int nAdded = pixIdxs.size() - c0;</span>
-<span class="fc" id="L111">        int c1 = pixIdxs.size();</span>
+<span class="fc" id="L111">        int nAdded = pixIdxs.size() - c0;</span>
+<span class="fc" id="L112">        int c1 = pixIdxs.size();</span>
         
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (c1 &gt; 0) {</span>
-<span class="fc" id="L114">            this.blockTotals = tmpBlockTotals;</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (c1 &gt; 0) {</span>
+<span class="fc" id="L115">            this.blockTotals = tmpBlockTotals;</span>
         }  
         
-<span class="fc" id="L117">        double norm = 1./(blockTotals + eps);</span>
-<span class="fc" id="L118">        float maxBlock = 255.f;</span>
-<span class="fc" id="L119">        norm *= maxBlock;</span>
+<span class="fc" id="L118">        double norm = 1./(blockTotals + eps);</span>
+<span class="fc" id="L119">        float maxBlock = 255.f;</span>
+<span class="fc" id="L120">        norm *= maxBlock;</span>
         
-<span class="fc" id="L121">        mult(h, norm);</span>
+<span class="fc" id="L122">        mult(h, norm);</span>
         
         //TODO: examine the order of divide by count and sqrt
-<span class="fc" id="L124">        this.err *= this.err;</span>
-<span class="fc" id="L125">        this.err *= c0;</span>
-<span class="fc" id="L126">        this.err += tmpSumErrSq;</span>
-<span class="fc" id="L127">        this.err /= (double)c1;</span>
-<span class="fc" id="L128">        this.err = Math.sqrt(err);</span>
-<span class="fc" id="L129">    }</span>
+<span class="fc" id="L125">        this.err *= this.err;</span>
+<span class="fc" id="L126">        this.err *= c0;</span>
+<span class="fc" id="L127">        this.err += tmpSumErrSq;</span>
+<span class="fc" id="L128">        this.err /= (double)c1;</span>
+<span class="fc" id="L129">        this.err = Math.sqrt(err);</span>
+<span class="fc" id="L130">    }</span>
     
     public void add(TIntSet addPixelIndexes, HCPT hcpt) {
         
-<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (hcpt.getNumberOfBins() != h.length) {</span>
-<span class="nc" id="L134">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (hcpt.getNumberOfBins() != h.length) {</span>
+<span class="nc" id="L135">            throw new IllegalArgumentException(</span>
                &quot;hog number of bins differs the expected&quot;);
         }
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (hcpt.getImageWidth() != imgW) {</span>
-<span class="nc" id="L138">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (hcpt.getImageWidth() != imgW) {</span>
+<span class="nc" id="L139">            throw new IllegalArgumentException(</span>
                &quot;hog image width differs the expected&quot;);
         }
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (hcpt.getImageHeight() != imgH) {</span>
-<span class="nc" id="L142">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (hcpt.getImageHeight() != imgH) {</span>
+<span class="nc" id="L143">            throw new IllegalArgumentException(</span>
                &quot;hog image height differs the expected&quot;);
         }
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (addPixelIndexes.isEmpty()) {</span>
-<span class="nc" id="L146">            return;</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (addPixelIndexes.isEmpty()) {</span>
+<span class="nc" id="L147">            return;</span>
         }
         
-<span class="fc" id="L149">        int c0 = pixIdxs.size();</span>
+<span class="fc" id="L150">        int c0 = pixIdxs.size();</span>
         
         // to keep adding to block totals, square and factor by count again
-<span class="fc" id="L152">        double tmpBlockTotals = blockTotals;</span>
-<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
+<span class="fc" id="L153">        double tmpBlockTotals = blockTotals;</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
                    
-<span class="fc" id="L155">            double norm = 255.f/(blockTotals + eps);</span>
+<span class="fc" id="L156">            double norm = 255.f/(blockTotals + eps);</span>
 
-<span class="fc" id="L157">            div(h, norm);</span>
+<span class="fc" id="L158">            div(h, norm);</span>
         }
         
-<span class="fc" id="L160">        long tmpSum = 0;</span>
-<span class="fc" id="L161">        long tmpSumErrSq = 0;</span>
+<span class="fc" id="L161">        long tmpSum = 0;</span>
+<span class="fc" id="L162">        long tmpSumErrSq = 0;</span>
         double maxValue;
         
-<span class="fc" id="L164">        long[] tmp = new long[h.length];</span>
+<span class="fc" id="L165">        long[] tmp = new long[h.length];</span>
         
-<span class="fc" id="L166">        int[] xy = new int[2];</span>
-<span class="fc" id="L167">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L167">        int[] xy = new int[2];</span>
+<span class="fc" id="L168">        PixelHelper ph = new PixelHelper();</span>
         
         //TODO: correct to use a scan by cell size pattern
-<span class="fc" id="L170">        TIntIterator iter = addPixelIndexes.iterator();</span>
-<span class="fc bfc" id="L171" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L172">            int pixIdx = iter.next();</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">            if (pixIdxs.contains(pixIdx)) {</span>
-<span class="nc" id="L174">                continue;</span>
+<span class="fc" id="L171">        TIntIterator iter = addPixelIndexes.iterator();</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L173">            int pixIdx = iter.next();</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            if (pixIdxs.contains(pixIdx)) {</span>
+<span class="nc" id="L175">                continue;</span>
             }
-<span class="fc" id="L176">            pixIdxs.add(pixIdx);</span>
+<span class="fc" id="L177">            pixIdxs.add(pixIdx);</span>
             
-<span class="fc" id="L178">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
+<span class="fc" id="L179">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
             
-<span class="fc" id="L180">            hcpt.extractBlock(xy[0], xy[1], tmp);</span>
+<span class="fc" id="L181">            hcpt.extractBlock(xy[0], xy[1], tmp);</span>
            
-<span class="fc" id="L182">            HOGs.add(h, tmp);</span>
+<span class="fc" id="L183">            HOGs.add(h, tmp);</span>
                    
-<span class="fc" id="L184">            tmpSum = 0;</span>
-<span class="fc" id="L185">            maxValue = Double.NEGATIVE_INFINITY;</span>
-<span class="fc bfc" id="L186" title="All 2 branches covered.">            for (int j = 0; j &lt; tmp.length; ++j) {</span>
-<span class="fc" id="L187">                tmpSum += tmp[j];</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">                if (tmp[j] &gt; maxValue) {</span>
-<span class="fc" id="L189">                    maxValue = tmp[j];</span>
+<span class="fc" id="L185">            tmpSum = 0;</span>
+<span class="fc" id="L186">            maxValue = Double.NEGATIVE_INFINITY;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            for (int j = 0; j &lt; tmp.length; ++j) {</span>
+<span class="fc" id="L188">                tmpSum += tmp[j];</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                if (tmp[j] &gt; maxValue) {</span>
+<span class="fc" id="L190">                    maxValue = tmp[j];</span>
                 } 
             }
             
-<span class="fc" id="L193">            maxValue += eps;</span>
+<span class="fc" id="L194">            maxValue += eps;</span>
             
-<span class="fc" id="L195">            tmpBlockTotals += tmpSum;</span>
-<span class="fc" id="L196">            tmpSum /= tmp.length; </span>
-<span class="fc" id="L197">            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));</span>
-<span class="fc" id="L198">        }</span>
+<span class="fc" id="L196">            tmpBlockTotals += tmpSum;</span>
+<span class="fc" id="L197">            tmpSum /= tmp.length; </span>
+<span class="fc" id="L198">            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));</span>
+<span class="fc" id="L199">        }</span>
         
-<span class="fc" id="L200">        int nAdded = pixIdxs.size() - c0;</span>
-<span class="fc" id="L201">        int c1 = pixIdxs.size();</span>
+<span class="fc" id="L201">        int nAdded = pixIdxs.size() - c0;</span>
+<span class="fc" id="L202">        int c1 = pixIdxs.size();</span>
         
-<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (c1 &gt; 0) {</span>
-<span class="fc" id="L204">            this.blockTotals = tmpBlockTotals;</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">        if (c1 &gt; 0) {</span>
+<span class="fc" id="L205">            this.blockTotals = tmpBlockTotals;</span>
         }  
         
-<span class="fc" id="L207">        double norm = 1./(blockTotals + eps);</span>
-<span class="fc" id="L208">        float maxBlock = 255.f;</span>
-<span class="fc" id="L209">        norm *= maxBlock;</span>
+<span class="fc" id="L208">        double norm = 1./(blockTotals + eps);</span>
+<span class="fc" id="L209">        float maxBlock = 255.f;</span>
+<span class="fc" id="L210">        norm *= maxBlock;</span>
         
-<span class="fc" id="L211">        mult(h, norm);</span>
+<span class="fc" id="L212">        mult(h, norm);</span>
         
         //TODO: examine the order of divide by count and sqrt
-<span class="fc" id="L214">        this.err *= this.err;</span>
-<span class="fc" id="L215">        this.err *= c0;</span>
-<span class="fc" id="L216">        this.err += tmpSumErrSq;</span>
-<span class="fc" id="L217">        this.err /= (double)c1;</span>
-<span class="fc" id="L218">        this.err = Math.sqrt(err);</span>
-<span class="fc" id="L219">    }</span>
+<span class="fc" id="L215">        this.err *= this.err;</span>
+<span class="fc" id="L216">        this.err *= c0;</span>
+<span class="fc" id="L217">        this.err += tmpSumErrSq;</span>
+<span class="fc" id="L218">        this.err /= (double)c1;</span>
+<span class="fc" id="L219">        this.err = Math.sqrt(err);</span>
+<span class="fc" id="L220">    }</span>
     
     public void add(TIntSet addPixelIndexes, HGS hgs) {
         
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        if (hgs.getNumberOfBins() != h.length) {</span>
-<span class="nc" id="L224">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        if (hgs.getNumberOfBins() != h.length) {</span>
+<span class="nc" id="L225">            throw new IllegalArgumentException(</span>
                &quot;hog number of bins differs the expected&quot;);
         }
-<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (hgs.getImageWidth() != imgW) {</span>
-<span class="nc" id="L228">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (hgs.getImageWidth() != imgW) {</span>
+<span class="nc" id="L229">            throw new IllegalArgumentException(</span>
                &quot;hog image width differs the expected&quot;);
         }
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">        if (hgs.getImageHeight() != imgH) {</span>
-<span class="nc" id="L232">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">        if (hgs.getImageHeight() != imgH) {</span>
+<span class="nc" id="L233">            throw new IllegalArgumentException(</span>
                &quot;hog image height differs the expected&quot;);
         }
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (addPixelIndexes.isEmpty()) {</span>
-<span class="nc" id="L236">            return;</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (addPixelIndexes.isEmpty()) {</span>
+<span class="nc" id="L237">            return;</span>
         }
         
-<span class="fc" id="L239">        int c0 = pixIdxs.size();</span>
+<span class="fc" id="L240">        int c0 = pixIdxs.size();</span>
         
         // to keep adding to block totals, square and factor by count again
-<span class="fc" id="L242">        double tmpBlockTotals = blockTotals;</span>
-<span class="fc bfc" id="L243" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
+<span class="fc" id="L243">        double tmpBlockTotals = blockTotals;</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
                    
-<span class="fc" id="L245">            double norm = 255.f/(blockTotals + eps);</span>
+<span class="fc" id="L246">            double norm = 255.f/(blockTotals + eps);</span>
 
-<span class="fc" id="L247">            div(h, norm);</span>
+<span class="fc" id="L248">            div(h, norm);</span>
         }
         
-<span class="fc" id="L250">        long tmpSum = 0;</span>
-<span class="fc" id="L251">        long tmpSumErrSq = 0;</span>
+<span class="fc" id="L251">        long tmpSum = 0;</span>
+<span class="fc" id="L252">        long tmpSumErrSq = 0;</span>
         double maxValue;
         
-<span class="fc" id="L254">        long[] tmp = new long[h.length];</span>
+<span class="fc" id="L255">        long[] tmp = new long[h.length];</span>
         
-<span class="fc" id="L256">        int[] xy = new int[2];</span>
-<span class="fc" id="L257">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L257">        int[] xy = new int[2];</span>
+<span class="fc" id="L258">        PixelHelper ph = new PixelHelper();</span>
         
         //TODO: correct to use a scan by cell size pattern
-<span class="fc" id="L260">        TIntIterator iter = addPixelIndexes.iterator();</span>
-<span class="fc bfc" id="L261" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L262">            int pixIdx = iter.next();</span>
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">            if (pixIdxs.contains(pixIdx)) {</span>
-<span class="nc" id="L264">                continue;</span>
+<span class="fc" id="L261">        TIntIterator iter = addPixelIndexes.iterator();</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L263">            int pixIdx = iter.next();</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">            if (pixIdxs.contains(pixIdx)) {</span>
+<span class="nc" id="L265">                continue;</span>
             }
-<span class="fc" id="L266">            pixIdxs.add(pixIdx);</span>
+<span class="fc" id="L267">            pixIdxs.add(pixIdx);</span>
             
-<span class="fc" id="L268">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
+<span class="fc" id="L269">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
             
-<span class="fc" id="L270">            hgs.extractBlock(xy[0], xy[1], tmp);</span>
+<span class="fc" id="L271">            hgs.extractBlock(xy[0], xy[1], tmp);</span>
            
-<span class="fc" id="L272">            HOGs.add(h, tmp);</span>
+<span class="fc" id="L273">            HOGs.add(h, tmp);</span>
                    
-<span class="fc" id="L274">            tmpSum = 0;</span>
-<span class="fc" id="L275">            maxValue = Double.NEGATIVE_INFINITY;</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">            for (int j = 0; j &lt; tmp.length; ++j) {</span>
-<span class="fc" id="L277">                tmpSum += tmp[j];</span>
-<span class="fc bfc" id="L278" title="All 2 branches covered.">                if (tmp[j] &gt; maxValue) {</span>
-<span class="fc" id="L279">                    maxValue = tmp[j];</span>
+<span class="fc" id="L275">            tmpSum = 0;</span>
+<span class="fc" id="L276">            maxValue = Double.NEGATIVE_INFINITY;</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            for (int j = 0; j &lt; tmp.length; ++j) {</span>
+<span class="fc" id="L278">                tmpSum += tmp[j];</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                if (tmp[j] &gt; maxValue) {</span>
+<span class="fc" id="L280">                    maxValue = tmp[j];</span>
                 } 
             }
             
-<span class="fc" id="L283">            maxValue += eps;</span>
+<span class="fc" id="L284">            maxValue += eps;</span>
             
-<span class="fc" id="L285">            tmpBlockTotals += tmpSum;</span>
-<span class="fc" id="L286">            tmpSum /= tmp.length; </span>
-<span class="fc" id="L287">            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));</span>
-<span class="fc" id="L288">        }</span>
+<span class="fc" id="L286">            tmpBlockTotals += tmpSum;</span>
+<span class="fc" id="L287">            tmpSum /= tmp.length; </span>
+<span class="fc" id="L288">            tmpSumErrSq += ((tmpSum/maxValue)*(tmpSum/maxValue));</span>
+<span class="fc" id="L289">        }</span>
         
-<span class="fc" id="L290">        int nAdded = pixIdxs.size() - c0;</span>
-<span class="fc" id="L291">        int c1 = pixIdxs.size();</span>
+<span class="fc" id="L291">        int nAdded = pixIdxs.size() - c0;</span>
+<span class="fc" id="L292">        int c1 = pixIdxs.size();</span>
         
-<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if (c1 &gt; 0) {</span>
-<span class="fc" id="L294">            this.blockTotals = tmpBlockTotals;</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">        if (c1 &gt; 0) {</span>
+<span class="fc" id="L295">            this.blockTotals = tmpBlockTotals;</span>
         }  
         
-<span class="fc" id="L297">        double norm = 1./(blockTotals + eps);</span>
-<span class="fc" id="L298">        float maxBlock = 255.f;</span>
-<span class="fc" id="L299">        norm *= maxBlock;</span>
+<span class="fc" id="L298">        double norm = 1./(blockTotals + eps);</span>
+<span class="fc" id="L299">        float maxBlock = 255.f;</span>
+<span class="fc" id="L300">        norm *= maxBlock;</span>
         
-<span class="fc" id="L301">        mult(h, norm);</span>
+<span class="fc" id="L302">        mult(h, norm);</span>
         
         //TODO: examine the order of divide by count and sqrt
-<span class="fc" id="L304">        this.err *= this.err;</span>
-<span class="fc" id="L305">        this.err *= c0;</span>
-<span class="fc" id="L306">        this.err += tmpSumErrSq;</span>
-<span class="fc" id="L307">        this.err /= (double)c1;</span>
-<span class="fc" id="L308">        this.err = Math.sqrt(err);</span>
-<span class="fc" id="L309">    }</span>
+<span class="fc" id="L305">        this.err *= this.err;</span>
+<span class="fc" id="L306">        this.err *= c0;</span>
+<span class="fc" id="L307">        this.err += tmpSumErrSq;</span>
+<span class="fc" id="L308">        this.err /= (double)c1;</span>
+<span class="fc" id="L309">        this.err = Math.sqrt(err);</span>
+<span class="fc" id="L310">    }</span>
+    
+    /**
+     * returns the set of points that is a subset of the intersection, scanned
+     * from center to perimeter by interval of size hog cell.
+     * @param other
+     * @param nCellSize
+     * @return 
+     */
+    public TIntSet calculateDetectorWindow(PatchUtil other, int nCellSize) {
+        
+<span class="nc" id="L321">        Intersection2DPacking ip = new Intersection2DPacking();</span>
+        
+<span class="nc" id="L323">        TIntSet seeds = ip.naiveStripPacking(pixIdxs, other.pixIdxs, imgW, </span>
+            nCellSize);
+        
+<span class="nc" id="L326">        return seeds;</span>
+    }
     
     /**
      * calculate the intersection of the histograms. histograms that are
@@ -318,32 +336,32 @@ public class PatchUtil {
      */
     public double intersection(PatchUtil other) {
         
-<span class="pc bpc" id="L321" title="1 of 2 branches missed.">        if ((h.length != other.h.length)) {</span>
-<span class="nc" id="L322">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">        if ((h.length != other.h.length)) {</span>
+<span class="nc" id="L340">            throw new IllegalArgumentException(</span>
                 &quot;h and other.h must be same dimensions&quot;);
         }
         
-<span class="fc" id="L326">        int nBins = h.length;</span>
+<span class="fc" id="L344">        int nBins = h.length;</span>
 
-<span class="fc" id="L328">        double sum = 0;</span>
-<span class="fc" id="L329">        double sumA = 0;</span>
-<span class="fc" id="L330">        double sumB = 0;</span>
-<span class="fc bfc" id="L331" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+<span class="fc" id="L346">        double sum = 0;</span>
+<span class="fc" id="L347">        double sumA = 0;</span>
+<span class="fc" id="L348">        double sumB = 0;</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
 
-<span class="fc" id="L333">            long yA = h[j];</span>
-<span class="fc" id="L334">            long yB = other.h[j];</span>
+<span class="fc" id="L351">            long yA = h[j];</span>
+<span class="fc" id="L352">            long yB = other.h[j];</span>
 
-<span class="fc" id="L336">            sum += Math.min(yA, yB);</span>
-<span class="fc" id="L337">            sumA += yA;</span>
-<span class="fc" id="L338">            sumB += yB;</span>
+<span class="fc" id="L354">            sum += Math.min(yA, yB);</span>
+<span class="fc" id="L355">            sumA += yA;</span>
+<span class="fc" id="L356">            sumB += yB;</span>
 
             //System.out.println(&quot; &quot; + yA + &quot; -- &quot; + yB + &quot; sum=&quot;+sum + &quot;, &quot; + sumA + &quot;,&quot; + sumB);
         }
 
-<span class="fc" id="L343">        double d = eps + Math.min(sumA, sumB);</span>
-<span class="fc" id="L344">        double sim = sum/d;</span>
+<span class="fc" id="L361">        double d = eps + Math.min(sumA, sumB);</span>
+<span class="fc" id="L362">        double sim = sum/d;</span>
 
-<span class="fc" id="L346">        return sim;</span>
+<span class="fc" id="L364">        return sim;</span>
     }
     
     /**
@@ -356,80 +374,80 @@ public class PatchUtil {
      */
     public double[] diff(PatchUtil other) {
         
-<span class="pc bpc" id="L359" title="1 of 2 branches missed.">        if ((h.length != other.h.length)) {</span>
-<span class="nc" id="L360">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">        if ((h.length != other.h.length)) {</span>
+<span class="nc" id="L378">            throw new IllegalArgumentException(</span>
                 &quot;h and other.h must be same dimensions&quot;);
         }
         
-<span class="fc" id="L364">        int nBins = h.length;</span>
+<span class="fc" id="L382">        int nBins = h.length;</span>
 
-<span class="fc" id="L366">        double tmpSumDiff = 0;</span>
-<span class="fc" id="L367">        double tmpErr = 0;</span>
+<span class="fc" id="L384">        double tmpSumDiff = 0;</span>
+<span class="fc" id="L385">        double tmpErr = 0;</span>
         
-<span class="fc bfc" id="L369" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
 
-<span class="fc" id="L371">            long yA = h[j];</span>
-<span class="fc" id="L372">            long yB = other.h[j];</span>
+<span class="fc" id="L389">            long yA = h[j];</span>
+<span class="fc" id="L390">            long yB = other.h[j];</span>
 
-<span class="fc" id="L374">            float maxValue = Math.max(yA, yB) + eps;</span>
+<span class="fc" id="L392">            float maxValue = Math.max(yA, yB) + eps;</span>
 
-<span class="fc" id="L376">            float diff = Math.abs((yA - yB)/maxValue);</span>
+<span class="fc" id="L394">            float diff = Math.abs((yA - yB)/maxValue);</span>
             
-<span class="fc" id="L378">            tmpSumDiff += diff;</span>
+<span class="fc" id="L396">            tmpSumDiff += diff;</span>
 
             //      already squared
-<span class="fc" id="L381">            tmpErr += (diff/maxValue);</span>
+<span class="fc" id="L399">            tmpErr += (diff/maxValue);</span>
         }
         
-<span class="fc" id="L384">        tmpSumDiff /= (double)nBins;</span>
+<span class="fc" id="L402">        tmpSumDiff /= (double)nBins;</span>
                 
-<span class="fc" id="L386">        tmpErr = Math.sqrt(tmpErr);</span>
-<span class="fc" id="L387">        tmpErr /= (double)nBins;</span>
+<span class="fc" id="L404">        tmpErr = Math.sqrt(tmpErr);</span>
+<span class="fc" id="L405">        tmpErr /= (double)nBins;</span>
         
-<span class="fc" id="L389">        return new double[]{tmpSumDiff, tmpErr};</span>
+<span class="fc" id="L407">        return new double[]{tmpSumDiff, tmpErr};</span>
     }
     
     private void mult(long[] a, double factor) {
         double t;
-<span class="fc bfc" id="L394" title="All 2 branches covered.">        for (int j = 0; j &lt; a.length; ++j) {</span>
-<span class="fc" id="L395">            t = factor * a[j]; </span>
-<span class="fc" id="L396">            a[j] = (long)t;</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">        for (int j = 0; j &lt; a.length; ++j) {</span>
+<span class="fc" id="L413">            t = factor * a[j]; </span>
+<span class="fc" id="L414">            a[j] = (long)t;</span>
         }
-<span class="fc" id="L398">    }</span>
+<span class="fc" id="L416">    }</span>
     private void div(long[] a, double factor) {
-<span class="pc bpc" id="L400" title="1 of 2 branches missed.">        if (factor == 0) {</span>
-<span class="nc" id="L401">            throw new IllegalArgumentException(&quot;factor cannot be 0&quot;);</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">        if (factor == 0) {</span>
+<span class="nc" id="L419">            throw new IllegalArgumentException(&quot;factor cannot be 0&quot;);</span>
         }
         double t;
-<span class="fc bfc" id="L404" title="All 2 branches covered.">        for (int j = 0; j &lt; a.length; ++j) {</span>
-<span class="fc" id="L405">            t = a[j] / factor; </span>
-<span class="fc" id="L406">            a[j] = (long)t;</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">        for (int j = 0; j &lt; a.length; ++j) {</span>
+<span class="fc" id="L423">            t = a[j] / factor; </span>
+<span class="fc" id="L424">            a[j] = (long)t;</span>
         }
-<span class="fc" id="L408">    }</span>
+<span class="fc" id="L426">    }</span>
    
     public double getAvgErr() {
-<span class="nc" id="L411">        return Math.sqrt(err);</span>
+<span class="nc" id="L429">        return Math.sqrt(err);</span>
     }
     
     public long[] getHistogram() {
-<span class="fc" id="L415">        return h;</span>
+<span class="fc" id="L433">        return h;</span>
     }
     
     public TIntSet getPixelIndexes() {
-<span class="nc" id="L419">        return pixIdxs;</span>
+<span class="nc" id="L437">        return pixIdxs;</span>
     }
     
     public Set&lt;PairInt&gt; getPixelSet() {
-<span class="fc" id="L423">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L424">        int[] xy = new int[2];</span>
-<span class="fc" id="L425">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L426">        TIntIterator iter = pixIdxs.iterator();</span>
-<span class="fc bfc" id="L427" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L428">            int pixIdx = iter.next();</span>
-<span class="fc" id="L429">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
-<span class="fc" id="L430">            set.add(new PairInt(xy[0], xy[1]));</span>
-<span class="fc" id="L431">        }</span>
-<span class="fc" id="L432">        return set;</span>
+<span class="nc" id="L441">        PixelHelper ph = new PixelHelper();</span>
+<span class="nc" id="L442">        int[] xy = new int[2];</span>
+<span class="nc" id="L443">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L444">        TIntIterator iter = pixIdxs.iterator();</span>
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L446">            int pixIdx = iter.next();</span>
+<span class="nc" id="L447">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
+<span class="nc" id="L448">            set.add(new PairInt(xy[0], xy[1]));</span>
+<span class="nc" id="L449">        }</span>
+<span class="nc" id="L450">        return set;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
