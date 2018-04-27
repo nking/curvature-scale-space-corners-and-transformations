@@ -755,8 +755,8 @@ public class HOGs {
         
         //sumDiff = Math.sqrt(sumDiff);
         
-        err = Math.sqrt(err);
         err /= (double)nBins;
+        err = Math.sqrt(err);
         
         return new float[]{(float)sumDiff, (float)err};
     }

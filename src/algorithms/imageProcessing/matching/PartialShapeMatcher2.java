@@ -99,7 +99,8 @@ based upon algorithm in paper
 
        <emph>The runtime complexity for the search of the
        integral image of summed differences and analysis,
-       is n2 * (O(n1 * lg2(n1)).</emph>
+       is n2 * (O(n1 * lg2(n1))</emph> where n1 and n2 are the number of points
+       in the 2 shapes after the spacing has been considered.
        
        The algorithm runtime complexity could be reduced more, but with
        more loss in accuracy by selecting a discrete number of diagonal read 

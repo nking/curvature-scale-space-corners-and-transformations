@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.OneDLongArray;
 import java.util.ArrayList;
@@ -399,9 +398,9 @@ public class HCPT {
 
         //sumDiff = Math.sqrt(sumDiff);
 
-        err = Math.sqrt(err);
         err /= (double)nBins;
-
+        err = Math.sqrt(err);
+        
         return new float[]{(float)sumDiff, (float)err};
     }
 

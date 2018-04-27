@@ -14,7 +14,6 @@ import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.MorphologicalFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.ComplexModifiable;
 import algorithms.misc.Histogram;
@@ -26,11 +25,8 @@ import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import com.climbwithyourfeet.clustering.ClusterFinder;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TLongIterator;
-import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TIntHashSet;
 import gnu.trove.set.hash.TLongHashSet;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +39,8 @@ import java.util.logging.Logger;
 
 /**
  An edge detector that uses principles of phase congruency to create an edge
- * map and orientation and phase angle images.
+ * map and orientation and phase angle images - it uses monogenic filters to
+ * decrease the runtime.
  * Phase congruency operates in the frequency domain of fourier transforms and
  * with the inverse FFT produces an image that is summed over scales and
  * cleaned of some of the noise.

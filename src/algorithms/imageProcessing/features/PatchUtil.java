@@ -401,8 +401,8 @@ public class PatchUtil {
         
         tmpSumDiff /= (double)nBins;
                 
-        tmpErr = Math.sqrt(tmpErr);
         tmpErr /= (double)nBins;
+        tmpErr = Math.sqrt(tmpErr);
         
         return new double[]{tmpSumDiff, tmpErr};
     }
