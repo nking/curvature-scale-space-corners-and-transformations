@@ -74,22 +74,30 @@ public class ObjectMatcher {
         int buffer) {
 
         int[] minMaxXY = MiscMath.findMinMaxXY(shape);
+        
+        int dx = img.getWidth() - 1;
+        int dy = img.getHeight() - 1;
+        int dxs = minMaxXY[1] - minMaxXY[0];
+        int dys = minMaxXY[3] - minMaxXY[2];
+        if ((dxs - dx) < buffer || (dys - dy) < buffer) {
+            buffer = 0;
+        }
 
         int x0 = minMaxXY[0] - buffer;
         if (x0 < 0) {
             x0 = 0;
         }
-        int x1 = minMaxXY[1] + buffer;
-        if (x1 >= img.getWidth()) {
-            x1 = img.getWidth() - 1;
+        int x1 = minMaxXY[1] + buffer + 1;
+        if (x1 > img.getWidth()) {
+            x1 = img.getWidth();
         }
         int y0 = minMaxXY[2] - buffer;
         if (y0 < 0) {
             y0 = 0;
         }
-        int y1 = minMaxXY[3] + buffer;
-        if (y1 >= img.getHeight()) {
-            y1 = img.getHeight() - 1;
+        int y1 = minMaxXY[3] + buffer + 1;
+        if (y1 > img.getHeight()) {
+            y1 = img.getHeight();
         }
 
         TrimmedImage trImg = new TrimmedImage(img, x0, x1, y0, y1);
@@ -674,15 +682,16 @@ public class ObjectMatcher {
         }
 
         TrimmedImage img0Trim = trim(img0, shape0, 20);
-
+        ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
+        int xOff = img0Trim.getXOffset();
+        int yOff = img0Trim.getYOffset();
         Set<PairInt> shape0Trimmed = new HashSet<PairInt>();
         for (PairInt p : shape0) {
-            PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),
-                p.getY() - img0Trim.getYOffset());
+            PairInt p2 = new PairInt(p.getX() - xOff, p.getY() - yOff);
             shape0Trimmed.add(p2);
+            assert(p2.getX() < img0Trimmed.getWidth());
+            assert(p2.getY() < img0Trimmed.getHeight());
         }
-
-        ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
 
         ImageProcessor imageProcessor = new ImageProcessor();
 

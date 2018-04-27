@@ -46,6 +46,17 @@ public class ObjectMatcherWrapper {
         return find(imgs0, shape0, searchFilePath, debugLabel);
     }
     
+    public List<CorrespondenceList> find(String templateFilePath,
+        String searchFilePath, String debugLabel) throws Exception {
+   
+        Set<PairInt> shape0 = new HashSet<PairInt>();
+
+        ImageExt img0 = maskAndBin2(templateFilePath, shape0);
+            
+        return find(new ImageExt[]{img0, img0}, shape0, searchFilePath, 
+            debugLabel);
+    }
+    
     public List<CorrespondenceList> find(ImageExt[] binnedTemplateAndMask, 
         Set<PairInt> shape0,
         String searchFilePath, String debugLabel) throws IOException {
@@ -74,11 +85,6 @@ public class ObjectMatcherWrapper {
         int w1 = searchImage.getWidth();
         int h1 = searchImage.getHeight();
 
-        /*
-        int binFactor1 = (int) Math.ceil(Math.max(
-            (float) w1 / maxDimension,
-            (float) h1 / maxDimension));
-        */
         int binFactor1 = (int) Math.ceil(Math.max(
             (float) w1 / maxDimension,
             (float) h1 / maxDimension));
@@ -123,6 +129,35 @@ public class ObjectMatcherWrapper {
         return corresList;
     }
     
+    public ImageExt maskAndBin2(String templateFilePath, 
+        Set<PairInt> outputShape) throws IOException {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        ImageExt img0 = ImageIOHelper.readImageExt(templateFilePath);
+    
+        int w0 = img0.getWidth();
+        int h0 = img0.getHeight();
+
+        int binFactor0 = (int) Math.ceil(Math.max(
+             (float) w0 / maxDimension,
+             (float) h0 / maxDimension));
+                
+        if (binFactor0 != 1) {
+            img0 = imageProcessor.binImage(img0, binFactor0);
+        }
+                        
+        for (int x = 0; x < img0.getWidth(); ++x) {
+            for (int y = 0; y < img0.getHeight(); ++y) {
+                if (img0.getRGB(x, y) != 0) {
+                    outputShape.add(new PairInt(x, y));
+                }
+            }
+        }
+   
+        return img0;
+    }
+
     public ImageExt[] maskAndBin2(String templateFilePath,
         String templateMaskFilePath, Set<PairInt> outputShape) throws 
         IOException {
@@ -146,6 +181,8 @@ public class ObjectMatcherWrapper {
              (float) w0 / maxDimension,
              (float) h0 / maxDimension));
         
+        
+        
         if (binFactor0 != 1) {
             img0 = imageProcessor.binImage(img0, binFactor0);
             imgMask0 = imageProcessor.binImage(imgMask0, binFactor0);
@@ -155,18 +192,18 @@ public class ObjectMatcherWrapper {
                 
         assert(imgMask0.getNPixels() == img0.getNPixels());
 
-        for (int i = 0; i < imgMask0.getNPixels(); ++i) {
-            if (imgMask0.getR(i) == 0) {
-                img0Masked.setRGB(i, 0, 0, 0);
+        for (int pixIdx = 0; pixIdx < imgMask0.getNPixels(); ++pixIdx) {
+            if (imgMask0.getR(pixIdx) == 0) {
+                img0Masked.setRGB(pixIdx, 0, 0, 0);
             } else {
-                outputShape.add(new PairInt(imgMask0.getCol(i), 
-                    imgMask0.getRow(i)));
+                outputShape.add(new PairInt(imgMask0.getCol(pixIdx), 
+                    imgMask0.getRow(pixIdx)));
             }
         }
    
         return new ImageExt[]{img0, img0Masked};
     }
-
+    
     /**
      * @return the templateImage
      */

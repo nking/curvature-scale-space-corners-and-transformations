@@ -7,6 +7,7 @@ import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.matching.ObjectMatcherWrapper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.misc.MiscDebug;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
@@ -25,7 +26,7 @@ public class AndroidStatuesTest extends TestCase {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    private boolean debug = false;
+    private boolean debug = true;
     
     public AndroidStatuesTest() {
     }
@@ -34,6 +35,7 @@ public class AndroidStatuesTest extends TestCase {
         runMatcher_gingerbreadman();
         runMatcher_icecream();
         runMatcher_cupcake();
+        runMatcher_honeycomb();
     }
 
     public void runMatcher_gingerbreadman() throws Exception {
@@ -169,6 +171,9 @@ public class AndroidStatuesTest extends TestCase {
 
             ImageExt[] imgs0 = omw.maskAndBin2(filePath0, filePath0Mask,
                 shape0);
+            
+            //MiscDebug.writeImage(imgs0[0], "_imgs0_0_");
+            //MiscDebug.writeImage(imgs0[1], "_imgs0_1_");
         
             List<CorrespondenceList> corresList = omw.find(imgs0, shape0, img, 
                 debugLabel);
@@ -253,6 +258,49 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
    
+    public void runMatcher_honeycomb() throws Exception {
+        
+        String[] fileNames0 = new String[]{
+            "android_statues_01_honeycomb.png"};
+
+        String[] fileNames1 = new String[]{
+            "android_statues_03.jpg"
+        };
+       
+        String filePath0 = ResourceFinder.findFileInTestResources(fileNames0[0]);
+        
+        for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {
+            
+            String fileName1 = fileNames1[fIdx];             
+
+            String filePath1 = ResourceFinder.findFileInTestResources(
+                fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+            
+            //img = (ImageExt) img.copySubImage(0, img.getWidth()/5, 0, img.getHeight());
+            
+            String debugLabel = "honeycomb_" + fIdx;
+                
+            ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
+
+            if (debug) {
+                omw.setToDebug();
+            }
+            
+            List<CorrespondenceList> corresList = omw.find(filePath0, 
+                filePath1, debugLabel);
+
+            if (corresList == null || corresList.isEmpty()) {
+                return;
+            }
+
+            plotCorrespondence(corresList, 
+                omw.getTemplateImage()[1].copyToImageExt(),
+                omw.getSearchImage().copyToImageExt(),
+                debugLabel);
+        }
+    }
+    
     public void estRot90() throws Exception {
 
         String fileName1, fileName2;
