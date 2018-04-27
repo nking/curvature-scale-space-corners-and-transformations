@@ -2616,7 +2616,7 @@ Proceedings&lt;/I&gt;, pp. 296-305, Springer.
      *  
      * @see #writeToDefaultFiles() */
     public void writeToDefaultFiles(int flgForce) {
-<span class="pc bpc" id="L2619" title="1 of 4 branches missed.">        if (flgForce &gt; 0 &amp;&amp; countiter != citerlastwritten) </span>
+<span class="pc bpc" id="L2619" title="2 of 4 branches missed.">        if (flgForce &gt; 0 &amp;&amp; countiter != citerlastwritten) </span>
 <span class="fc" id="L2620">            citerlastwritten = -1; // force writing if something new is there</span>
 <span class="pc bpc" id="L2621" title="1 of 2 branches missed.">        if (flgForce &gt;= 2)</span>
 <span class="nc" id="L2622">            citerlastwritten = -1; // force writing </span>
@@ -2634,8 +2634,8 @@ Proceedings&lt;/I&gt;, pp. 296-305, Springer.
 <span class="fc bfc" id="L2634" title="All 2 branches covered.">        if (citerlastwritten &gt;= 0) { // negative value forces writing</span>
 <span class="pc bpc" id="L2635" title="1 of 2 branches missed.">            if (state &lt; 1)</span>
 <span class="nc" id="L2636">                return;</span>
-<span class="fc bfc" id="L2637" title="All 2 branches covered.">            if (countiter == citerlastwritten)</span>
-<span class="fc" id="L2638">                return; </span>
+<span class="pc bpc" id="L2637" title="1 of 2 branches missed.">            if (countiter == citerlastwritten)</span>
+<span class="nc" id="L2638">                return; </span>
 <span class="pc bpc" id="L2639" title="1 of 2 branches missed.">            if (options.maxTimeFractionForWriteToDefaultFiles &lt;= 0)</span>
 <span class="nc" id="L2640">                return;</span>
 <span class="pc bpc" id="L2641" title="1 of 6 branches missed.">            if (countiter &gt; 4 &amp;&amp; stopConditions.index == 0  // has no effect if stopCondition.test() was not called</span>

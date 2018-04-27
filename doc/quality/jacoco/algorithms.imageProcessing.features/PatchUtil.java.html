@@ -401,8 +401,8 @@ public class PatchUtil {
         
 <span class="fc" id="L402">        tmpSumDiff /= (double)nBins;</span>
                 
-<span class="fc" id="L404">        tmpErr = Math.sqrt(tmpErr);</span>
-<span class="fc" id="L405">        tmpErr /= (double)nBins;</span>
+<span class="fc" id="L404">        tmpErr /= (double)nBins;</span>
+<span class="fc" id="L405">        tmpErr = Math.sqrt(tmpErr);</span>
         
 <span class="fc" id="L407">        return new double[]{tmpSumDiff, tmpErr};</span>
     }

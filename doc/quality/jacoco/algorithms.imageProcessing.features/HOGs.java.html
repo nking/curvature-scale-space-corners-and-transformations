@@ -755,8 +755,8 @@ import java.util.List;
         
         //sumDiff = Math.sqrt(sumDiff);
         
-<span class="fc" id="L758">        err = Math.sqrt(err);</span>
-<span class="fc" id="L759">        err /= (double)nBins;</span>
+<span class="fc" id="L758">        err /= (double)nBins;</span>
+<span class="fc" id="L759">        err = Math.sqrt(err);</span>
         
 <span class="fc" id="L761">        return new float[]{(float)sumDiff, (float)err};</span>
     }
