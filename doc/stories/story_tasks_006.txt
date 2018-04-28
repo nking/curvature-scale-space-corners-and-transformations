@@ -1,0 +1,72 @@
+========================================================================
+Story: Implement a 2D bin packing algorithm for a rectangular container 
+    and irregular shapes.
+    The class is meant to be used to make a version of the 2D summed area histograms
+    which can use a third dimension to help make object separation and use of masks
+    cleaner.
+ 
+    summary: 
+
+    time estimate: min  days, max  (FTE)
+
+    amount of time used: 
+
+    state of completion: 
+
+    comments regarding state:
+
+    comments:
+
+------------------------------------------------------------------
+Task 1: class diagram
+      
+    details:  
+       data encapsulation and methods needed for the story will be
+       designed in class diagram.
+
+    time estimate: min  days, max  day
+  
+    amount of time used:
+
+    state of completion: 
+
+    comments:
+
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+
+Notes while designing and implementing:
+
+
+2D bin packing for a rectangular container and irregular shapes.
+
+     Designing a version based upon the Left-edge scheduling algorithm and use of
+     an interval range search data stucture to check for collisions.
+     The expected runtime complexity is O(N_regions * lg2(N_regions)).
+
+  -- determine rectangular bounds for each region
+     The runtime complexity is O(N_regions).
+  -- sort bounds by largest X, ties are broken by smallest Y, then smallest X
+     The runtime complexity is O(N_regions * lg2(N_regions)).
+  -- a buffer around edges is given by method or class arguments
+  -- will use a left edge approach (sim to IntervalPartitioningGreedy)
+     This is for 1-D, but will be altered for 2-D.  track is an image dimension.
+     The runtime complexity is O(N_regions * lg2(N_regions)).
+     for each region:
+         if region.start >= current track's last region.end,
+             add region
+         else create new track and add region
+         (should not need to remove tracks from the list because they have all been added)
+     merge the tracks
+         iterate over tracks until no new merges have occurred:
+         for each track (visited in reverse order of tracks list):
+            see if a track above it in the tracks list has a last region.end which is
+            less than or equal to current track's first region.start and if so, add the current
+            to the found track and remove the current track
+
+     The porting to a 2-D version adds the y-axis.  To keep track of the use of y-axis space,
+         a fast datastructure to use for collision checks is the IntervalRangeSearch as used
+         in PartialShapeMatcher.java.
+         The runtime complexity is O(N_regions * lg2(N_regions)).
+     The check for region.end before adding, would also check for collision of 2D-bounds in the IntervalRangeSearch.
+
