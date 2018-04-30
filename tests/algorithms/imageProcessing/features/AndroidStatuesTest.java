@@ -32,10 +32,10 @@ public class AndroidStatuesTest extends TestCase {
     }
     
     public void testObjectFinder() throws Exception {
-        runMatcher_gingerbreadman();
-        runMatcher_icecream();
+    //    runMatcher_gingerbreadman();
+    //    runMatcher_icecream();
         runMatcher_cupcake();
-        runMatcher_honeycomb();
+    //    runMatcher_honeycomb();
     }
 
     public void runMatcher_gingerbreadman() throws Exception {
@@ -275,7 +275,6 @@ public class AndroidStatuesTest extends TestCase {
 
             String filePath1 = ResourceFinder.findFileInTestResources(
                 fileName1);
-            ImageExt img = ImageIOHelper.readImageExt(filePath1);
             
             //img = (ImageExt) img.copySubImage(0, img.getWidth()/5, 0, img.getHeight());
             
@@ -293,10 +292,12 @@ public class AndroidStatuesTest extends TestCase {
             if (corresList == null || corresList.isEmpty()) {
                 return;
             }
+            
+            MiscDebug.writeImage(omw.getTemplateImage()[0], "_hny_");
 
             plotCorrespondence(corresList, 
-                omw.getTemplateImage()[1].copyToImageExt(),
-                omw.getSearchImage().copyToImageExt(),
+                omw.getTemplateImage()[0],
+                omw.getSearchImage(),
                 debugLabel);
         }
     }

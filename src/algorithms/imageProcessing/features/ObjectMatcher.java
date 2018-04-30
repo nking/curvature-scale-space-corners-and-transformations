@@ -74,20 +74,12 @@ public class ObjectMatcher {
         int buffer) {
 
         int[] minMaxXY = MiscMath.findMinMaxXY(shape);
-        
-        int dx = img.getWidth() - 1;
-        int dy = img.getHeight() - 1;
-        int dxs = minMaxXY[1] - minMaxXY[0];
-        int dys = minMaxXY[3] - minMaxXY[2];
-        if ((dxs - dx) < buffer || (dys - dy) < buffer) {
-            buffer = 0;
-        }
 
         int x0 = minMaxXY[0] - buffer;
         if (x0 < 0) {
             x0 = 0;
         }
-        int x1 = minMaxXY[1] + buffer + 1;
+        int x1 = minMaxXY[1] + buffer;
         if (x1 > img.getWidth()) {
             x1 = img.getWidth();
         }
@@ -95,7 +87,7 @@ public class ObjectMatcher {
         if (y0 < 0) {
             y0 = 0;
         }
-        int y1 = minMaxXY[3] + buffer + 1;
+        int y1 = minMaxXY[3] + buffer;
         if (y1 > img.getHeight()) {
             y1 = img.getHeight();
         }
@@ -291,6 +283,47 @@ public class ObjectMatcher {
                 2 * halfDimension + 1);
             pyr.set(i, imgM);
         }
+    }
+
+    private RegionPoints createARegion(Set<PairInt> points, int w, int h) {
+        
+        Region r = new Region();
+        for (PairInt pl : points) {
+            r.accumulate(pl.getX(), pl.getY());
+        }
+
+        int[] xyCen = new int[2];
+        r.calculateXYCentroid(xyCen, w, h);
+        int x = xyCen[0];
+        int y = xyCen[1];
+        assert (x >= 0 && x < w);
+        assert (y >= 0 && y < h);
+        double[] m = r.calcParamTransCoeff();
+
+        double angle = Math.atan(m[0] / m[2]);
+        if (angle < 0) {
+            angle += Math.PI;
+        }
+
+        double major = 2. * m[4];
+        double minor = 2. * m[5];
+
+        double ecc = Math.sqrt(major * major - minor * minor) / major;
+        assert (!Double.isNaN(ecc));
+
+        Canonicalizer.RegionGeometry rg = new Canonicalizer.RegionGeometry();
+        rg.eccentricity = ecc;
+        rg.major = major;
+        rg.minor = minor;
+        rg.orientation = angle;
+        rg.xC = x;
+        rg.yC = y;
+
+        RegionPoints rp = new RegionPoints();
+        rp.ellipseParams = rg;
+        rp.points = new HashSet<PairInt>(points);
+        
+        return rp;
     }
     
     private void filterByColorHistograms(ImageExt img0, Set<PairInt> shape0, 
@@ -641,16 +674,15 @@ public class ObjectMatcher {
         }
 
         TrimmedImage img0Trim = trim(img0, shape0, 20);
-        ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
-        int xOff = img0Trim.getXOffset();
-        int yOff = img0Trim.getYOffset();
+
         Set<PairInt> shape0Trimmed = new HashSet<PairInt>();
         for (PairInt p : shape0) {
-            PairInt p2 = new PairInt(p.getX() - xOff, p.getY() - yOff);
+            PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),
+                p.getY() - img0Trim.getYOffset());
             shape0Trimmed.add(p2);
-            assert(p2.getX() < img0Trimmed.getWidth());
-            assert(p2.getY() < img0Trimmed.getHeight());
         }
+
+        ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
