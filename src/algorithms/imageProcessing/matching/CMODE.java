@@ -4,6 +4,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.util.PairInt;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -33,7 +34,7 @@ public enum CMODE {
     }
 
     public static CMODE determinePolarThetaMode(GreyscaleImage luvTheta, 
-        Set<PairInt> points) {
+        Collection<PairInt> points) {
     
         double avg = 0;
         for (PairInt p : points) {
@@ -46,6 +47,26 @@ public enum CMODE {
         if (avg >= limit1) {
             return CMODE.WHITE;
         } else if (avg <= limit2) {
+            return CMODE.BLACK;
+        } else {
+            return CMODE.OTHER;
+        }
+    }
+
+    static CMODE determineColorMode(GreyscaleImage rImg, 
+        GreyscaleImage gImg, GreyscaleImage bImg, 
+        Collection<PairInt> points) {
+    
+        GroupAverageColors clrs = new GroupAverageColors(
+            rImg, gImg, bImg, points);
+        
+        int limit1 = 150;
+        int limit2 = 55;
+        if (clrs.getR() >= limit1 && clrs.getG() >= limit1 &&
+            clrs.getB() >= limit1) {
+            return CMODE.WHITE;
+        } else if (clrs.getR() <= limit2 && clrs.getG() <= limit2 &&
+            clrs.getB() <= limit2) {
             return CMODE.BLACK;
         } else {
             return CMODE.OTHER;

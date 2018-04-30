@@ -39,6 +39,8 @@ public class MSERMatcher {
     
     private int N_PIX_PER_CELL_DIM = 3;
     private int N_CELLS_PER_BLOCK_DIM = 3;
+    
+    private static float eps = 0.000001f;
 
     public void setToDebug() {
         debug = true;
@@ -205,7 +207,7 @@ public class MSERMatcher {
         HOGs hogs0, CRegion cr0, 
         HOGs hogs1, CRegion cr1) {
                 
-        if (offsets0.size() == 0) {
+        if (offsets0.isEmpty()) {
             return null;
         }
 
@@ -248,10 +250,10 @@ public class MSERMatcher {
         sum /= (double)offsets0.size();
         sum = Math.sqrt(sum);
         
-        double area1 = cr1.offsetsToOrigCoords.size();
+        double area1 = cr1.offsetsToOrigCoords.size() + eps;
         double f1 = 1. - ((double) intersectionCount / area1);
         
-        double area0 = cr0.offsetsToOrigCoords.size();
+        double area0 = cr0.offsetsToOrigCoords.size() + eps;
         double f0 = 1. - ((double) intersectionCount / area0);
         
         return new double[]{sum, f0, f1, intersectionCount, area0, area1};
@@ -316,10 +318,10 @@ public class MSERMatcher {
         sumErrSq /= (double)count;
         sumErrSq = Math.sqrt(sumErrSq);
         
-        double area1 = cr1.offsetsToOrigCoords.size();
+        double area1 = cr1.offsetsToOrigCoords.size() + eps;
         double f1 = 1. - ((double) count / area1);
         
-        double area0 = cr0.offsetsToOrigCoords.size();
+        double area0 = cr0.offsetsToOrigCoords.size() + eps;
         double f0 = 1. - ((double) count / area0);
         
         return new double[]{sum, f0, f1, count, sumErrSq, area0, area1};
@@ -452,7 +454,7 @@ public class MSERMatcher {
         double cost = Double.MAX_VALUE;
         double[] costs;
         double f;
-        
+                
         // might not be populatated:
         int r0Idx = -1;
         int r1Idx = -1;
@@ -474,31 +476,6 @@ public class MSERMatcher {
             if (imgIdx0 < other.imgIdx0 && imgIdx1 < other.imgIdx1) {
                 return -1;
             } else if (imgIdx0 > other.imgIdx0 && imgIdx1 > other.imgIdx1) {
-                return 1;
-            }
-            return 0;
-        }
-        
-        private int compareToObsolete(Obj other) {
-            double diffCost = Math.abs(other.cost - cost);
-            if (diffCost < 0.01) {//0.001
-                // NOTE: may revise this.  wanting to choose smallest scale
-                //   or smaller fraction of whole
-                if (imgIdx0 < other.imgIdx0 && imgIdx1 < other.imgIdx1) {
-                    return -1;
-                } else if (imgIdx0 > other.imgIdx0 && imgIdx1 > other.imgIdx1) {
-                    return 1;
-                }
-                
-                if (f < other.f) {
-                    return -1;
-                } else if (f > other.f) {
-                    return 1;
-                }
-                return 0;
-            } else if (cost < other.cost) {
-                return -1;
-            } else if (cost > other.cost) {
                 return 1;
             }
             return 0;
@@ -669,6 +646,17 @@ public class MSERMatcher {
                     int sz0 = calculateObjectSizeByAvgDist(
                         cr0.ellipseParams.xC, cr0.ellipseParams.yC,
                         cr0.offsetsToOrigCoords.values());
+
+                    /*
+                    CMODE cmode0 = CMODE.determineColorMode(
+                        pyrRGB0.get(pyrIdx0).get(0),
+                        pyrRGB0.get(pyrIdx0).get(1), pyrRGB0.get(pyrIdx0).get(2),
+                        cr0.offsetsToOrigCoords.values());
+                    CMODE cmodeLUV0 = CMODE.determinePolarThetaMode(ptI0, 
+                        cr0.offsetsToOrigCoords.values());
+                    System.out.println("cmode0=" + cmode0.name() + ", " + 
+                        cmodeLUV0);
+                    */
                     
                     //int area0_full = csr0.get(0).get(rIdx0).offsetsToOrigCoords.size();
                     TIntObjectIterator<CRegion> iter1 = regions1.iterator();
@@ -794,9 +782,11 @@ public class MSERMatcher {
                         
                         cost = (float) Math.sqrt(
                             2. * hogCost * hogCost
-                            + 2. * f * f
+                            //+ 2. * f * f
+                            + f * f
                             + hcptHgsCost * hcptHgsCost
                         );
+                        
                         obj.costs = new double[]{
                             hogCost, f, hcptHgsCost, f0, f1, hcptCost, hgsCost
                         };
@@ -869,9 +859,11 @@ public class MSERMatcher {
             double f = 1. - (objB.nMatched/(double)maxN);
             objB.cost = (float) Math.sqrt(
                 2. * objB.costs[0] * objB.costs[0]
-                + 2. * f * f
+                //+ 2. * f * f
+                + f * f
                 + objB.costs[2] * objB.costs[2]
-            );
+            );         
+            
             bestOverall.add(objB);
         }
         
