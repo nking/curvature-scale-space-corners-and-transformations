@@ -397,12 +397,12 @@ public class MSERMatcher {
         return area;
     }
 
-    private static class CountComparator implements Comparator<Obj> {
-        public CountComparator() {
+    private static class CostComparator implements Comparator<Obj> {
+        public CostComparator() {
         }
         @Override
         public int compare(Obj o1, Obj o2) {
-            return -1*Integer.compare(o1.nMatched, o2.nMatched);
+            return o1.compareTo(o2);
         }
     }
 
@@ -816,12 +816,8 @@ public class MSERMatcher {
                         
                         boolean added = bestPerOctave.add(obj);
                         
-                        if (false && debug) {
-                            double cost2 = (float) Math.sqrt(
-                                obj.costs[0]*obj.costs[0] +
-                                obj.costs[1]*obj.costs[1] +
-                                obj.costs[2]*obj.costs[2]
-                            );
+                        if (debug) {
+                            
                             String arrow;
                             if (added) {
                                 arrow = "==>";
@@ -829,7 +825,7 @@ public class MSERMatcher {
                                 arrow = "   ";
                             }
                             System.out.format(
-                            "%s octave %d %d] %s (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d c2=%.3f\n",
+                            "%s octave %d %d] %s (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
                             settings.getDebugLabel(), pyrIdx0, pyrIdx1,
                             arrow, x1, y1, 
                             (float) obj.cost,
@@ -839,8 +835,7 @@ public class MSERMatcher {
                             (float) obj.costs[2], (float) obj.costs[3], 
                             (float) obj.costs[4], (float) obj.costs[5], 
                             (float) obj.costs[6], 
-                            obj.cr0.offsetsToOrigCoords.size(),
-                            (float)cost2
+                            obj.cr0.offsetsToOrigCoords.size()
                             );
                         }
                     }
@@ -859,15 +854,31 @@ public class MSERMatcher {
             return null;
         }
         
+        // re-calculating fraction of whole:
+        int maxN = Integer.MIN_VALUE;
+        for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
+            Obj objB = bestOverallA.getArray()[i];
+            if (objB.nMatched > maxN) {
+                maxN = objB.nMatched;
+            }
+        }
         List<Obj> bestOverall = new ArrayList<Obj>(bestOverallA.getNumberOfItems());        
         for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
             Obj objB = bestOverallA.getArray()[i];
+            
+            double f = 1. - (objB.nMatched/(double)maxN);
+            objB.cost = (float) Math.sqrt(
+                2. * objB.costs[0] * objB.costs[0]
+                + 2. * f * f
+                + objB.costs[2] * objB.costs[2]
+            );
             bestOverall.add(objB);
         }
         
         Set<PairInt> pairs = new HashSet<PairInt>();
         
-        Collections.sort(bestOverall, new CountComparator());
+        //    based upon max here
+        Collections.sort(bestOverall, new CostComparator());
         
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
         

@@ -33,8 +33,8 @@ public class AndroidStatuesTest extends TestCase {
     
     public void testObjectFinder() throws Exception {
         runMatcher_gingerbreadman();
-        runMatcher_icecream();
         runMatcher_cupcake();
+        runMatcher_icecream();
         runMatcher_honeycomb();
     }
 
@@ -227,15 +227,7 @@ public class AndroidStatuesTest extends TestCase {
             
             String filePath1 = ResourceFinder.findFileInTestResources(
                 fileName1);
-            ImageExt img = ImageIOHelper.readImageExt(filePath1);
-            
-            if (fileName1.equals("android_statues_01.jpg")) {
-                //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
-                img = (ImageExt) img.copySubImage(0, img.getWidth()/5, 0, img.getHeight());
-            } else if (fileName1.equals("android_statues_02.jpg")) {
-                
-            }
-
+           
             String debugLabel = "icecream_" + fIdx;
                 
             ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
@@ -276,9 +268,9 @@ public class AndroidStatuesTest extends TestCase {
             String filePath1 = ResourceFinder.findFileInTestResources(
                 fileName1);
             
-            //img = (ImageExt) img.copySubImage(0, img.getWidth()/5, 0, img.getHeight());
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
             
-            String debugLabel = "honeycomb_" + fIdx;
+            String debugLabel = "_honeycomb_" + fIdx;
                 
             ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
 
@@ -286,14 +278,17 @@ public class AndroidStatuesTest extends TestCase {
                 omw.setToDebug();
             }
             
-            List<CorrespondenceList> corresList = omw.find(filePath0, 
-                filePath1, debugLabel);
+            //MiscDebug.writeImage(imgs0[0], "_imgs0_0_");
+            //MiscDebug.writeImage(imgs0[1], "_imgs0_1_");
+        
+            List<CorrespondenceList> corresList = omw.find(filePath0, filePath1, 
+                debugLabel);
 
             if (corresList == null || corresList.isEmpty()) {
                 return;
             }
             
-            MiscDebug.writeImage(omw.getTemplateImage()[0], "_hny_");
+            //MiscDebug.writeImage(omw.getTemplateImage()[0], "_hny_");
 
             plotCorrespondence(corresList, 
                 omw.getTemplateImage()[0],
