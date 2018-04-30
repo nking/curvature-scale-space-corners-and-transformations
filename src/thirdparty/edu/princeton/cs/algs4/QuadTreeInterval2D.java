@@ -2,8 +2,10 @@ package thirdparty.edu.princeton.cs.algs4;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -184,7 +186,71 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         
         return output;
     }
+    
+    public Map<Interval2D<T>, Value> query2D_2(Interval2D<T> rect) {
+                
+        Map<Interval2D<T>, Value> output = new HashMap<Interval2D<T>, Value>();
+        
+        query2D(root, rect, output);
+        
+        return output;
+    }
+    
+    private void query2D(Node<T> h, Interval2D<T> srch,
+        Map<Interval2D<T>, Value> output) {
 
+        /*
+        TODO:
+        consider improvements that lead to a balanced
+        tree, hence faster queries.
+        
+        a search returns this which I havent read:
+        "Improving the Performance of Region
+        Quadtrees" by Wolfensberger
+        http://www.ifi.uzh.ch/dam/jcr:ffffffff-96c1-007c-ffff-fffff2d50548/ReportWolfensbergerFA.pdf
+        
+        TODO:
+        consider adding other methods:
+        http://www.cs.cmu.edu/~rcm/papers/thesis/ch4.pdf
+        
+        */
+        
+        if (h == null) return;
+        
+        int cX = h.xy.intervalX.compareTo(srch.intervalX);
+        int cY = h.xy.intervalY.compareTo(srch.intervalY);
+        
+        //System.out.println("qry cX=" + cX + " cY=" + cY
+        //+ " for (" + srch.toString() + ")");
+    
+        if ((cX == 0) && (cY == 0)) {
+            output.put(h.xy, h.value);
+        }
+        
+        /*
+        unlike inserts, for queries, need to search 0's
+        for all directions due to overlap,
+        which unfortunately increases the recursion
+        */
+        
+        if (h.SW != null && (cX <= 0) && (cY <= 0)) {
+            //System.out.println("->SW parent=" + h.toString());
+            query2D(h.SW, srch, output);
+        }
+        if (h.NW != null && (cX <= 0) && (cY >= 0)) { 
+            //System.out.println("->NW parent=" + h.toString());
+            query2D(h.NW, srch, output);
+        }
+        if (h.SE != null && (cX >= 0) && (cY <= 0)) { 
+            //System.out.println("->SE parent=" + h.toString());
+            query2D(h.SE, srch, output);
+        }
+        if (h.NE != null && (cX >= 0) && (cY >= 0)) { 
+            //System.out.println("->NE parent=" + h.toString());
+            query2D(h.NE, srch, output);
+        }
+    }
+    
     private void query2D(Node<T> h, Interval2D<T> srch,
         List<Interval2D<T>> output) {
       

@@ -127,7 +127,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     
     /**
      * put key in map, and if compareVal is greater than or equal to the
-     * replaced value, re-insert the replaced value and return false, rlse
+     * replaced value, re-insert the replaced value and return false, else
      * the insert succeeded and returns true.
      * @param <Value2>
      * @param key

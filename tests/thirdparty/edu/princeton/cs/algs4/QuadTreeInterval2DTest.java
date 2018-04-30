@@ -11,6 +11,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -625,7 +626,139 @@ public class QuadTreeInterval2DTest extends TestCase {
             }
         }
     }
+    
+    public void testRandomInsertRemove_2() throws Exception {
+     
+        SecureRandom r = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.nanoTime();
+        //seed = 722829906140326L;
+        System.out.println("SEED=" + seed);
+        r.setSeed(seed);
 
+        int xmin = 10;
+        int xmax = 1000;
+        int ymin = 10;
+        int ymax = 1000;
+
+        int n = 100;//1000;
+
+        QuadTreeInterval2D<Integer, PairInt> qt
+            = new QuadTreeInterval2D<Integer, PairInt>();    
+        List<Interval2D<Integer>> list = 
+            new ArrayList<Interval2D<Integer>>();
+        Interval<Integer> aX = null;
+        Interval<Integer> aY = null;
+        Interval2D<Integer> a = null;
+        
+        Set<QuadInt> added = new HashSet<QuadInt>();
+        
+        int xrange = xmax - xmin;
+        int yrange = ymax - ymin;
+        
+        // repeat a cycle of insert, query, delete some, query
+        int nCycle = 10;
+        for (int ii = 0; ii < nCycle; ++ii) {
+        
+            for (int i = 0; i < n; ++i) {
+                int x1 = r.nextInt(xrange - 1);
+                int xr = xrange - x1;
+                x1 += xmin;
+                int x2 = r.nextInt(xr) + x1;
+
+                int y1 = r.nextInt(yrange - 1);
+                int yr = yrange - y1;
+                y1 += ymin;
+                int y2 = r.nextInt(yr) + y1;
+
+                QuadInt chk = new QuadInt(x1, y1, x2, y2);
+                if (added.contains(chk)) {
+                    continue;
+                }
+                added.add(chk);
+                aX = new Interval<Integer>(x1, x2);
+                aY = new Interval<Integer>(y1, y2);
+                a = new Interval2D<Integer>(aX, aY);
+                qt.insert(a, new PairInt(x1, y1));
+                list.add(a);
+            }
+       
+            // query for all
+            Map<Interval2D<Integer>, PairInt> results = null;
+                        
+            for (int i = 0; i < list.size(); ++i) {
+                a = list.get(i);
+                results = qt.query2D_2(a);
+                boolean found = results.containsKey(a);
+                assertTrue(found);
+            }
+        
+            // randomly remove several
+            TIntList rmList = new TIntArrayList();
+            TIntSet rmSet = new TIntHashSet();
+            int nRm = list.size()/3;
+            for (int i = 0; i < nRm; ++i) {
+                int d = r.nextInt(n);
+                if (!rmSet.contains(d)){
+                    rmList.add(d);
+                    rmSet.add(d);
+                }
+            }
+            rmList.sort();
+            //System.out.println("rm.sz=" + rmList.size() 
+            //    + " list.sz=" + list.size());
+            List<Interval2D<Integer>> treeNodes =
+                new ArrayList<Interval2D<Integer>>();
+            
+            List<PairInt> values = new ArrayList<PairInt>();
+            qt.getAllNodes(treeNodes, values);
+            assertEquals(list.size(), treeNodes.size());
+            //debug(treeNodes);
+            
+            for (int i = (rmList.size() - 1); i > -1; --i) {
+                int rmIdx = rmList.get(i);
+                a = list.get(rmIdx);
+                assertNotNull(a);
+                
+                qt.remove(a);
+                assertNotNull(list.remove(rmIdx)); 
+                
+                //treeNodes.clear(); 
+                //values.clear();
+                //qt.getAllNodes(treeNodes, values);
+                //assertEquals(list.size(), treeNodes.size());
+                //debug(treeNodes);
+                
+                QuadInt chk = new QuadInt(
+                    a.intervalX.min(), a.intervalX.max(),
+                    a.intervalY.min(), a.intervalY.max());
+                added.remove(chk);
+                results = qt.query2D_2(a);
+                boolean found = results.containsKey(a);
+                assertFalse(found);
+                for (int j = 0; j < list.size(); ++j) {
+                    a = list.get(j);
+                    //System.out.println("cycle=" + ii + " i=" + i +
+                    //    " j=" + j + " list.sz=" + list.size()
+                    //+ " q=" + a.toString());
+                    results = qt.query2D_2(a);
+                    found = results.containsKey(a);
+                    assertTrue(found);
+                }
+            }
+        
+            // query all
+            for (int i = 0; i < list.size(); ++i) {
+                a = list.get(i);
+                //System.out.println("cycle=" + ii + " q i=" + i);
+                results = qt.query2D_2(a);
+                boolean found = false;
+                results = qt.query2D_2(a);
+                found = results.containsKey(a);
+                assertTrue(found);
+            }
+        }
+    }
+    
     private void debug(List<Interval2D<Integer>> treeNodes) {
         StringBuilder sb = new StringBuilder();
         for (Interval2D<Integer> g : treeNodes) {
