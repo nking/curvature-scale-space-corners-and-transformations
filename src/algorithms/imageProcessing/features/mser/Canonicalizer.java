@@ -364,8 +364,6 @@ public class Canonicalizer {
         int imageWidth, int imageHeight) {
 
         TIntObjectMap<RegionPoints> output = new TIntObjectHashMap<RegionPoints>();
-
-        int[] xyCen = new int[2];
     
         for (int i = 0; i < regions.size(); ++i) {
 

@@ -43,6 +43,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
+import javax.swing.ImageIcon;
 
 /**
  *
@@ -73,7 +74,18 @@ public class ImageIOHelper {
                 return readJPEGImage(filePath);
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
             
             //System.out.println("imageType=" + img.getType());
             
@@ -192,7 +204,18 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
             
             //System.out.println("imageType=" + img.getType());
             
@@ -229,29 +252,40 @@ public class ImageIOHelper {
         
         return null;
     }
-    
+   
     public static ImageExt readImageExt(String filePath) throws IOException {
      
         if (filePath == null) {
             throw new IllegalStateException("filePath cannot be null");
         }
-                
+            
         try {
             File file = new File(filePath);
             if (!file.exists()) {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage bufferedInput = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
             
             //System.out.println("imageType=" + img.getType());
             
-            int h = bufferedInput.getHeight();
-            int w = bufferedInput.getWidth();
+            int h = img.getHeight();
+            int w = img.getWidth();
             
             ImageExt image = new ImageExt(w, h);
             
-            convertImage(bufferedInput, image);
+            convertImage(img, image);
             
             return image;
             
@@ -267,7 +301,7 @@ public class ImageIOHelper {
         if (fromImage == null) {
             return;
         }
-                
+               
         int h = fromImage.getHeight();
         int w = fromImage.getWidth();
 
@@ -328,7 +362,18 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
             
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
             ColorConvertOp op = new ColorConvertOp(cs, null);
@@ -382,7 +427,18 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
                        
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
             ColorConvertOp op = new ColorConvertOp(cs, null);
@@ -436,7 +492,18 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
                        
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
             ColorConvertOp op = new ColorConvertOp(cs, null);
@@ -490,10 +557,18 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
-            //if (img.getType() == BufferedImage.TYPE_BYTE_GRAY) {
-            //    System.out.println("img type=TYPE_BYTE_GRAY");
-            //}
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
 
             //ImageDisplayer.displayDisposableImage("buffered", img);
 
@@ -556,7 +631,18 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
                  
             int h = img.getHeight();
             int w = img.getWidth();
@@ -601,7 +687,18 @@ public class ImageIOHelper {
                 throw new IllegalStateException(filePath + " does not exist");
             }
             
-            BufferedImage img = ImageIO.read(file);
+            BufferedImage img;
+            if (filePath.endsWith("png") || filePath.endsWith("PNG")) {
+                ImageIcon imageIcon = new ImageIcon(filePath);
+                java.awt.Image tmpImage = imageIcon.getImage();
+
+                img = new BufferedImage(
+                    imageIcon.getIconWidth(), imageIcon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+                img.getGraphics().drawImage(tmpImage, 0, 0, null);
+                tmpImage.flush();
+            } else {
+                img = ImageIO.read(file);
+            }
             
             ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);  
             ColorConvertOp op = new ColorConvertOp(cs, null);  
