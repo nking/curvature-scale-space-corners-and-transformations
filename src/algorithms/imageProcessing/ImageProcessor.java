@@ -3523,6 +3523,30 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return new int[]{rSum, gSum, bSum};
     }
 
+    public int[] getAverageRGB(GreyscaleImage rImg, GreyscaleImage gImg,
+        GreyscaleImage bImg, Collection<PairInt> points) {
+
+        if (points.isEmpty()) {
+            return null;
+        }
+
+        int rSum = 0;
+        int gSum = 0;
+        int bSum = 0;
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            rSum += rImg.getValue(x, y);
+            gSum += gImg.getValue(x, y);
+            bSum += bImg.getValue(x, y);
+        }
+        rSum /= points.size();
+        gSum /= points.size();
+        bSum /= points.size();
+
+        return new int[]{rSum, gSum, bSum};
+    }
+    
     public int[] getAverageRGB(Image img, Collection<PairInt> pArr) {
 
         if (pArr.isEmpty()) {
