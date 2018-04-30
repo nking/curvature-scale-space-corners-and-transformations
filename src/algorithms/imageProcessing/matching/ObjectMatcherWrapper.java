@@ -73,13 +73,6 @@ public class ObjectMatcherWrapper {
 
         System.out.println("shape0 nPts=" + nShape0_0);
 
-        //String filePath1 = 
-        //    ResourceFinder.findFileInTestResources(searchFilePath);
-        
-        // template img size is 218  163
-        //img = (ImageExt) imageProcessor.bilinearDownSampling(
-        //    img, 218, 163, 0, 255);
-
         long ts = MiscDebug.getCurrentTimeFormatted();
 
         int w1 = searchImage.getWidth();

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.util;
 
 import algorithms.imageProcessing.CIEChromaticity;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
@@ -42,6 +43,36 @@ public class GroupAverageColors {
         this.yCen = (int)Math.round(xyCen[1]);
                 
         int[] avgRGB = imageProcessor.getAverageRGB(img, a);
+        
+        this.rAvg = avgRGB[0];
+        this.gAvg = avgRGB[1];
+        this.bAvg = avgRGB[2];
+        
+        float[] lab = cieC.rgbToCIELAB(
+            avgRGB[0], avgRGB[1], avgRGB[2]);
+                
+        this.avgCIEL = lab[0];
+        this.avgCIEA = lab[1];
+        this.avgCIEB = lab[2];
+    }
+    
+    public GroupAverageColors(GreyscaleImage rImg, GreyscaleImage gImg,
+        GreyscaleImage bImg, Collection<PairInt> a) {
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+            
+        MiscellaneousCurveHelper curveHelper =
+            new MiscellaneousCurveHelper();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        double[] xyCen = curveHelper.calculateXYCentroids(a);
+                
+        this.xCen = (int)Math.round(xyCen[0]);
+        
+        this.yCen = (int)Math.round(xyCen[1]);
+                
+        int[] avgRGB = imageProcessor.getAverageRGB(rImg, gImg, bImg, a);
         
         this.rAvg = avgRGB[0];
         this.gAvg = avgRGB[1];

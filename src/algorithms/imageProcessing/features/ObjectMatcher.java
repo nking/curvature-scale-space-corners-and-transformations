@@ -292,47 +292,6 @@ public class ObjectMatcher {
             pyr.set(i, imgM);
         }
     }
-
-    private RegionPoints createARegion(Set<PairInt> points, int w, int h) {
-        
-        Region r = new Region();
-        for (PairInt pl : points) {
-            r.accumulate(pl.getX(), pl.getY());
-        }
-
-        int[] xyCen = new int[2];
-        r.calculateXYCentroid(xyCen, w, h);
-        int x = xyCen[0];
-        int y = xyCen[1];
-        assert (x >= 0 && x < w);
-        assert (y >= 0 && y < h);
-        double[] m = r.calcParamTransCoeff();
-
-        double angle = Math.atan(m[0] / m[2]);
-        if (angle < 0) {
-            angle += Math.PI;
-        }
-
-        double major = 2. * m[4];
-        double minor = 2. * m[5];
-
-        double ecc = Math.sqrt(major * major - minor * minor) / major;
-        assert (!Double.isNaN(ecc));
-
-        Canonicalizer.RegionGeometry rg = new Canonicalizer.RegionGeometry();
-        rg.eccentricity = ecc;
-        rg.major = major;
-        rg.minor = minor;
-        rg.orientation = angle;
-        rg.xC = x;
-        rg.yC = y;
-
-        RegionPoints rp = new RegionPoints();
-        rp.ellipseParams = rg;
-        rp.points = new HashSet<PairInt>(points);
-        
-        return rp;
-    }
     
     private void filterByColorHistograms(ImageExt img0, Set<PairInt> shape0, 
         ImageExt img1, TIntObjectMap<RegionPoints> regions1) {
