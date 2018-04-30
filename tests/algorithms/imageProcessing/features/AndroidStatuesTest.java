@@ -32,10 +32,10 @@ public class AndroidStatuesTest extends TestCase {
     }
     
     public void testObjectFinder() throws Exception {
-    //    runMatcher_gingerbreadman();
-    //    runMatcher_icecream();
+        runMatcher_gingerbreadman();
+        runMatcher_icecream();
         runMatcher_cupcake();
-    //    runMatcher_honeycomb();
+        runMatcher_honeycomb();
     }
 
     public void runMatcher_gingerbreadman() throws Exception {

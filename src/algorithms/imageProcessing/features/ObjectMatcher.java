@@ -20,14 +20,18 @@ import algorithms.imageProcessing.matching.MSERMatcher;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -555,6 +559,49 @@ public class ObjectMatcher {
         regionPoints.putAll(regionPoints2);
     }
 
+    private TLongSet createAccumulatedPixels(TIntObjectMap<RegionPoints> 
+        regionPoints, int width) {
+        
+        TLongSet out = new TLongHashSet();
+        PixelHelper ph = new PixelHelper();
+        
+        TIntObjectIterator<RegionPoints> iter = regionPoints.iterator();
+        for (int i = 0; i < regionPoints.size(); ++i) {
+            iter.advance();
+            RegionPoints r = iter.value();
+            for (PairInt p : r.points) {
+                long pixIdx = ph.toPixelIndex(p, width);
+                out.add(pixIdx);
+            }
+        }
+        
+        return out;
+    }
+
+    private void maskOutNonRegion(ImageExt img, TLongSet pixs) {
+        PixelHelper ph = new PixelHelper();
+        int w = img.getWidth();
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < img.getHeight(); ++y) {
+                if (!pixs.contains(ph.toPixelIndex(x, y, w))) {
+                    img.setRGB(x, y, 0, 0, 0);
+                }
+            }
+        }
+    }
+
+    private void maskOutNonRegion(GreyscaleImage img, TLongSet pixs) {
+        PixelHelper ph = new PixelHelper();
+        int w = img.getWidth();
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < img.getHeight(); ++y) {
+                if (!pixs.contains(ph.toPixelIndex(x, y, w))) {
+                    img.setValue(x, y, 0);
+                }
+            }
+        }
+    }
+
     public static class Settings {
         private boolean useLargerPyramid0 = false;
         private boolean useLargerPyramid1 = false;
@@ -771,23 +818,6 @@ public class ObjectMatcher {
         Canonicalizer.filterBySpatialProximity(critSep, regionsComb1, 
             img1.getWidth(), img1.getHeight());
         
-        List<List<GreyscaleImage>> pyrRGB0 = imageProcessor.buildColorPyramid(
-            img0Trimmed, settings.useLargerPyramid0);
-        
-        List<GreyscaleImage> pyrPT0 = imageProcessor.buildPyramid(
-            luvTheta0, settings.useLargerPyramid0);
-
-        List<List<GreyscaleImage>> pyrRGB1 = imageProcessor.buildColorPyramid(
-            img1, settings.useLargerPyramid1);
-
-        List<GreyscaleImage> pyrPT1 = imageProcessor.buildPyramid(
-            luvTheta1, settings.useLargerPyramid1);
-       
-        //// applyWindowedMean(pyrRGB0, 1);
-        ////applyWindowedMean(pyrRGB1, 1);
-        ////applyWindowedMean2(pyrPT0, 1);
-        ////applyWindowedMean2(pyrPT1, 1);
-        
         Canonicalizer canonicalizer = new Canonicalizer();
 
         // ----- create the cRegions for a masked image pyramid of img 0 ====
@@ -831,10 +861,12 @@ public class ObjectMatcher {
         */
         
         TIntObjectMap<RegionPoints> regionPoints0 =
-            canonicalizer.canonicalizeRegions2(regionsComb0, pyrRGB0.get(0).get(1));
+            canonicalizer.canonicalizeRegions2(regionsComb0, 
+            img0Trimmed.getWidth(), img0Trimmed.getHeight());
    
         TIntObjectMap<RegionPoints> regionPoints1 =
-            canonicalizer.canonicalizeRegions2(regionsComb1, pyrRGB1.get(0).get(1));
+            canonicalizer.canonicalizeRegions2(regionsComb1, img1.getWidth(),
+            img1.getHeight());
   
         // filter by color hist of hsv, cielab and CIECH
         if (settings.useColorFilter()) {
@@ -917,6 +949,30 @@ public class ObjectMatcher {
             */
         }
         
+          //DEBUG: mask out all pixels not in a region
+        TLongSet pix0 = createAccumulatedPixels(regionPoints0, img0Trimmed.getWidth());
+        TLongSet pix1 = createAccumulatedPixels(regionPoints1, img1.getWidth());
+        maskOutNonRegion(img0Trimmed, pix0);
+        maskOutNonRegion(luvTheta0, pix0);
+        maskOutNonRegion(img1, pix1);
+        maskOutNonRegion(luvTheta1, pix1);
+                
+        List<List<GreyscaleImage>> pyrRGB0 = imageProcessor.buildColorPyramid(
+            img0Trimmed, settings.useLargerPyramid0);
+        
+        List<GreyscaleImage> pyrPT0 = imageProcessor.buildPyramid(
+            luvTheta0, settings.useLargerPyramid0);
+
+        List<List<GreyscaleImage>> pyrRGB1 = imageProcessor.buildColorPyramid(
+            img1, settings.useLargerPyramid1);
+
+        List<GreyscaleImage> pyrPT1 = imageProcessor.buildPyramid(
+            luvTheta1, settings.useLargerPyramid1);
+       
+        //// applyWindowedMean(pyrRGB0, 1);
+        ////applyWindowedMean(pyrRGB1, 1);
+        ////applyWindowedMean2(pyrPT0, 1);
+        ////applyWindowedMean2(pyrPT1, 1);
         
         MSERMatcher matcher = new MSERMatcher();
 
@@ -931,7 +987,7 @@ public class ObjectMatcher {
         if (corList == null) {
             return null;
         }
-                
+        
         // apply offsets for having trimmed image 0
         for (int i0 = 0; i0 < corList.size(); ++i0) {
             CorrespondenceList topC = corList.get(i0);

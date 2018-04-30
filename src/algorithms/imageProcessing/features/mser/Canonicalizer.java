@@ -361,7 +361,7 @@ public class Canonicalizer {
      * @return
      */
     public TIntObjectMap<RegionPoints> canonicalizeRegions2(List<Region> regions,
-        GreyscaleImage meanWindowedImg) {
+        int imageWidth, int imageHeight) {
 
         TIntObjectMap<RegionPoints> output = new TIntObjectHashMap<RegionPoints>();
 
@@ -371,8 +371,7 @@ public class Canonicalizer {
 
             Region r = regions.get(i);
             
-            RegionPoints cRegion = canonicalizeRegion2(r, 
-                meanWindowedImg.getWidth(), meanWindowedImg.getHeight());
+            RegionPoints cRegion = canonicalizeRegion2(r, imageWidth, imageHeight);
             
             output.put(i, cRegion);
         }
