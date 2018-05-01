@@ -129,6 +129,8 @@ public class Canonicalizer {
         
         public int dataIdx = -1;
         
+        private int[] minMaxXY = null;
+        
         public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
 
             double mc = Math.cos(ellipseParams.orientation - Math.PI/2.);
@@ -192,6 +194,32 @@ public class Canonicalizer {
                 offsetsToOrigCoords.size());
 
             return str;
+        }
+
+        public int[] getMinMaxXY() {
+            if (minMaxXY == null) {
+                int minX = Integer.MAX_VALUE;
+                int minY = Integer.MAX_VALUE;
+                int maxX = Integer.MIN_VALUE;
+                int maxY = Integer.MIN_VALUE;
+                for (Entry<PairInt, PairInt> entry : offsetsToOrigCoords.entrySet()) {
+                    PairInt xy = entry.getValue();
+                    if (xy.getX() < minX) {
+                        minX = xy.getX();
+                    }
+                    if (xy.getX() > maxX) {
+                        maxX = xy.getX();
+                    }
+                    if (xy.getY() < minY) {
+                        minY = xy.getY();
+                    }
+                    if (xy.getY() > maxY) {
+                        maxY = xy.getY();
+                    }
+                }
+                this.minMaxXY = new int[]{minX, maxX, minY, maxY};
+            }
+            return minMaxXY;
         }
     }
 

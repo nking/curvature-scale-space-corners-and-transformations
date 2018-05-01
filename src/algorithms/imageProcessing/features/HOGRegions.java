@@ -3,22 +3,38 @@ package algorithms.imageProcessing.features;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.OneDLongArray;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
+import algorithms.util.TwoDIntArray;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
- CAVEAT: small amount of testing done, not yet throughly tested.
+ * This is a version of HOGs which requires a CRegion list as input
+ * and creates masked integral histograms for each.
+ * It does not cover the entire given image, only the CRegions.
+ * 
 
  An implementation of Histograms of Oriented Gradients
  constructed from reading the following papers:
@@ -101,7 +117,7 @@ import java.util.List;
 
   @author nichole
 */
-public class HOGs {
+public class HOGRegions {
 
     private static float eps = 0.000001f;
     
@@ -114,8 +130,14 @@ public class HOGs {
     // 2x2 or 3x3 is recommended
     private final int N_CELLS_PER_BLOCK_DIM;
 
-    // histogrm integral images with a windowed sum of N_PIX_PER_CELL_DIM
-    private final int[][] gHists;
+    private final TIntObjectMap<TwoDIntArray> regionIndexHist = 
+        new TIntObjectHashMap<TwoDIntArray>();
+    private final TIntObjectMap<OneDIntArray> regionIndexMinMaxXY =
+        new TIntObjectHashMap<OneDIntArray>();
+    private final TIntObjectMap<CRegion> regionIndexRegions;
+    //In reference frame of subImage
+    private final TIntObjectMap<TLongSet> regionCoords 
+        = new TIntObjectHashMap<TLongSet>();
 
     private final int w;
     private final int h;
@@ -126,56 +148,59 @@ public class HOGs {
     //   using integers instead of long for storage.
     // e.g. 8.4 million pix, roughly 2900 X 2900
 
-    public HOGs(GreyscaleImage rgb) {
+    public HOGRegions(GreyscaleImage rgb, TIntObjectMap<CRegion> regionMap) {
 
+        regionIndexRegions = regionMap;
         nAngleBins = 9;
         N_PIX_PER_CELL_DIM = 4;
         N_CELLS_PER_BLOCK_DIM = 2;
         w = rgb.getWidth();
         h = rgb.getHeight();
-
-        gHists = init(rgb);
+        init(rgb);
     }
 
-    public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim) {
+    public HOGRegions(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim, 
+        TIntObjectMap<CRegion> regionMap) {
 
+        regionIndexRegions = regionMap;
         nAngleBins = 9;
         N_PIX_PER_CELL_DIM = nPixPerCellDim;
         N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
         w = rgb.getWidth();
         h = rgb.getHeight();
-
-        gHists = init(rgb);
+        init(rgb);
     }
     
-    public HOGs(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim,
-            int nAngleBins) {
+    public HOGRegions(GreyscaleImage rgb, int nCellsPerDim, int nPixPerCellDim,
+        int nAngleBins, TIntObjectMap<CRegion> regionMap) {
+
+        regionIndexRegions = regionMap;
 
         this.nAngleBins = nAngleBins;
         N_PIX_PER_CELL_DIM = nPixPerCellDim;
         N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
         w = rgb.getWidth();
         h = rgb.getHeight();
-
-        gHists = init(rgb);
+        init(rgb);
     }
 
-    public HOGs(GreyscaleImage gradientXY, GreyscaleImage theta) {
+    public HOGRegions(GreyscaleImage gradientXY, GreyscaleImage theta, 
+        TIntObjectMap<CRegion> regionMap) {
 
+        regionIndexRegions = regionMap;
         nAngleBins = 9;
         N_PIX_PER_CELL_DIM = 4;
         N_CELLS_PER_BLOCK_DIM = 2;
         w = gradientXY.getWidth();
         h = gradientXY.getHeight();
-
-        gHists = init(gradientXY, theta);
+        init(gradientXY, theta);
     }
 
     public void setToDebug() {
         debug = true;
     }
 
-    private int[][] init(GreyscaleImage rgb) {
+    private void init(GreyscaleImage rgb) {
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -194,10 +219,10 @@ public class HOGs {
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
 
-        return init(gXY, theta);
+        init(gXY, theta);
     }
 
-    private int[][] init(GreyscaleImage gradientXY, GreyscaleImage theta) {
+    private void init(GreyscaleImage gradientXY, GreyscaleImage theta) {
 
         if (w != gradientXY.getWidth() || h != gradientXY.getHeight()) {
             throw new IllegalArgumentException("gradient and theta must be same size");
@@ -211,17 +236,71 @@ public class HOGs {
             algorithms.misc.MiscDebug.writeImage(gradientXY, "_gXY_");
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
-
+        
+        PixelHelper ph = new PixelHelper();
+        
         GradientIntegralHistograms gh = new GradientIntegralHistograms();
+        
+        TIntObjectIterator<CRegion> iter = regionIndexRegions.iterator();
+        for (int i = 0; i < regionIndexRegions.size(); ++i) {
+            iter.advance();
+            
+            int rIndex = iter.key();
+            CRegion r = iter.value();
+            
+            //TODO: could make this faster by creating methods that use the
+            //    offsets and the full-images instead of sub-images.
+            
+            int[] minMaxXY = r.getMinMaxXY();
+            
+            GreyscaleImage gXY = gradientXY.subImage2(minMaxXY[0], minMaxXY[1], 
+                minMaxXY[2], minMaxXY[3]);
+            
+            GreyscaleImage th = theta.subImage2(minMaxXY[0], minMaxXY[1], 
+                minMaxXY[2], minMaxXY[3]);
+            
+            int w2 = minMaxXY[1] - minMaxXY[0] + 1;
+            int h2 = minMaxXY[3] - minMaxXY[2] + 1;
+            int xOffset = minMaxXY[0];
+            int yOffset = minMaxXY[2];
+        
+            //In reference frame of subImage
+            TLongSet rCoords;
+            if (regionCoords.containsKey(rIndex)) {
+                rCoords = regionCoords.get(rIndex);
+            } else {
+                rCoords = new TLongHashSet();
+                regionCoords.put(rIndex, rCoords);
+                for (Entry<PairInt, PairInt> entry : r.offsetsToOrigCoords.entrySet()) {
+                    PairInt xy = entry.getValue();
+                    long pixIdx = ph.toPixelIndex(xy.getX() - xOffset, 
+                        xy.getY() - yOffset, w2);
+                    rCoords.add(pixIdx);
+                }
+            }
+            
+            // mask out pixels not in the region
+            for (int i2 = 0; i2 < w2; ++i2) {
+                for (int j2 = 0; j2 < h2; ++j2) {
+                    long pixIdx = ph.toPixelIndex(i2, j2, w2);
+                    if (!rCoords.contains(pixIdx)) {
+                        gXY.setValue(i2, j2, 0);
+                        th.setValue(i2, j2, 0);
+                    }
+                }
+            }
+                                
+            int[][] histograms = gh.createHistograms(gXY, th, nAngleBins);
 
-        int[][] histograms = gh.createHistograms(gradientXY, theta, nAngleBins);
-
-        //apply a windowed sum across the integral image.
-        // result is that at each pixel is a histogram holding the sum of histograms
-        //    from the surrounding N_PIX_PER_CELL_DIM window. 
-        gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);
-
-        return histograms;
+            //apply a windowed sum across the integral image.
+            // result is that at each pixel is a histogram holding the sum of histograms
+            //    from the surrounding N_PIX_PER_CELL_DIM window. 
+            gh.applyWindowedSum(histograms, gXY.getWidth(), gXY.getHeight(), 
+                N_PIX_PER_CELL_DIM);
+            
+            regionIndexHist.put(rIndex, new TwoDIntArray(histograms));
+            regionIndexMinMaxXY.put(rIndex, new OneDIntArray(minMaxXY));
+        }
     }
 
     /**
@@ -242,7 +321,7 @@ public class HOGs {
      * @param y
      * @param outHist
      */
-    public void extractBlock(int x, int y, int[] outHist) {
+    public void extractBlock(int rIndex, int x, int y, int[] outHist) {
 
         if (outHist.length != nAngleBins) {
             throw new IllegalArgumentException("outHist.length != nAngleBins");
@@ -261,6 +340,15 @@ public class HOGs {
 
         double blockTotal = 0;
 
+        int[][] hist = regionIndexHist.get(rIndex).a;
+        int[] minMaxXY = regionIndexMinMaxXY.get(rIndex).a;
+        TLongSet rCoords = regionCoords.get(rIndex);
+        
+        int width = minMaxXY[1] - minMaxXY[0] + 1;
+        int height = minMaxXY[3] - minMaxXY[2] + 1;
+        int xOffset = minMaxXY[0];
+        int yOffset = minMaxXY[2];
+        
         List<OneDIntArray> cells = new ArrayList<OneDIntArray>(nH);
 
         for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
@@ -269,11 +357,11 @@ public class HOGs {
 
             int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
 
-            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+            if ((x2 + N_PIX_PER_CELL_DIM - 1) < xOffset) {
                 break;
-            } else if (x2 < 0) {
+            } else if (x2 < xOffset) {
                 x2 = 0;
-            } else if (x2 >= w) {
+            } else if (x2 >= width) {
                 break;
             }
 
@@ -283,17 +371,21 @@ public class HOGs {
 
                 int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
 
-                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
+                if ((y2 + N_PIX_PER_CELL_DIM - 1) < yOffset) {
                     break;
-                } else if (y2 < 0) {
+                } else if (y2 < yOffset) {
                     y2 = 0;
-                } else if (y2 >= h) {
+                } else if (y2 >= height) {
                     break;
                 }
+                
+                //if (!rCoords.contains(y2 * width + x2)) {
+                //    continue;
+                //}
 
-                int pixIdx = (y2 * w) + x2;
+                int pixIdx = ((y2 - yOffset) * width) + (x2 - xOffset);
 
-                int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
+                int[] out = Arrays.copyOf(hist[pixIdx], hist[pixIdx].length);
 
                 cells.add(new OneDIntArray(out));
 
@@ -338,237 +430,6 @@ public class HOGs {
         */
     }
 
-    /**
-     * CAVEAT: small amount of testing done, not yet throughly tested.
-     *
-     * extract the block surrounding the feature.
-     * the number of pixels in a cell and the number of cells in 
-     * block were set during
-     * construction.
-     * 
-     * The feature is nAngleBins in length for 180 degrees
-     * and the bin with the largest value
-     * is the bin holding the angle perpendicular to the windowed point.
-     * (for example: a horizontal line, the feature of a point on the
-     * line has largest bin being the 90 degrees bin).
-     *
-     * @param x
-     * @param y
-     * @param outHist
-     */
-    public void extractBlock(int x, int y, long[] outHist) {
-
-        if (outHist.length != nAngleBins) {
-            throw new IllegalArgumentException("outHist.length != nAngleBins");
-        }
-
-        if (x < 0 || y < 0 || x >= w || y >= h) {
-            throw new IllegalArgumentException("x or y is out of bounds of "
-                + "original image");
-        }
-
-        // uses the block normalization recomended by Dalal & Triggs,
-        //   the summary of histogram counts over all cells
-        //   is used to normalize each cell by that sum.
-
-        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
-
-        double blockTotal = 0;
-
-        List<OneDLongArray> cells = new ArrayList<OneDLongArray>(nH);
-
-        for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
-
-            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
-
-            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
-
-            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                break;
-            } else if (x2 < 0) {
-                x2 = 0;
-            } else if (x2 >= w) {
-                break;
-            }
-
-            for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
-
-                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
-
-                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
-
-                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                    break;
-                } else if (y2 < 0) {
-                    y2 = 0;
-                } else if (y2 >= h) {
-                    break;
-                }
-
-                int pixIdx = (y2 * w) + x2;
-
-                long[] out = copyHist(pixIdx);
-
-                cells.add(new OneDLongArray(out));
-
-                long t = sumCounts(out);
-
-                blockTotal += (t * t);                
-            }
-        }
-
-        if (!cells.isEmpty()) {
-            blockTotal /= (double)cells.size();
-            blockTotal = Math.sqrt(blockTotal);
-        }
-        
-        double norm = 1./(blockTotal + eps);
-
-        float maxBlock = 255.f * cells.size();
-            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
-            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
-
-        norm *= maxBlock;
-
-        Arrays.fill(outHist, 0, outHist.length, 0);
-
-        for (int i = 0; i < cells.size(); ++i) {
-            long[] a = cells.get(i).a;
-            for (int j = 0; j < a.length; ++j) {
-                //v /= Math.sqrt(blockTotal + 0.0001);
-                a[j] = Math.round(norm * a[j]);
-            }
-            add(outHist, a);
-        }
-
-        /*
-        part of a block of 3 X 3 cells
-
-           2        2        2        2
-           1        1        1        1
-           0        0        0        0
-          -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
-                                      *
-        */
-    }
-    
-    /**
-     * CAVEAT: small amount of testing done, not yet throughly tested.
-     *
-     * Extract the blocks within the feature, add and normalize them and place
-     * the result in the output array.
-     * 
-     * The feature is nAngleBins in length for 180 degrees
-     * and the bin with the largest value
-     * is the bin holding the angle perpendicular to the windowed point.
-     * (for example: a horizontal line, the feature of a point on the
-     * line has largest bin being the 90 degrees bin).
-     *
-     * Each block is extracted with "extractBlock" which is normalized by its 
-     * own sum, then the sum of the blocks is used here to normalize the
-     * feature.
-     * 
-     * @param xCenter
-     * @param yCenter
-     * @param detectorWidth
-     * @param detectorHeight
-     * @return outHist
-     */
-    public int[] extractFeature(int xCenter, int yCenter, int detectorWidth,
-        int detectorHeight) {
-        
-        int hw = detectorWidth/2;
-        int hh = detectorHeight/2;
-
-        if ((xCenter - hw) < 0 || (yCenter - hh) < 0 
-            || (xCenter + hw) >= w || (yCenter + hh) >= h) {
-            throw new IllegalArgumentException("out of bounds of "
-                + "original image");
-        }
-        
-        int hc = N_PIX_PER_CELL_DIM/2;
-        
-        /*        
-                          xc,yc            
-             |         |         |         |
-        */
-        int nX0 = (hw - hc)/N_PIX_PER_CELL_DIM;
-        int startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);
-        if (startX < hc) {
-            nX0 = (xCenter - hc)/N_PIX_PER_CELL_DIM;
-            startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);
-        }
-        int nX1 = (hw - hc)/N_PIX_PER_CELL_DIM;
-        int stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);
-        if (stopX >= (this.w - hc)) {
-            nX1 = (w - 1 - xCenter - hc)/N_PIX_PER_CELL_DIM;
-            stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);
-        }
-        int nY0 = (hh - hc)/N_PIX_PER_CELL_DIM;
-        int startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);
-        if (startY < hc) {
-            nY0 = (yCenter - hc)/N_PIX_PER_CELL_DIM;
-            startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);
-        }
-        int nY1 = (hh - hc)/N_PIX_PER_CELL_DIM;
-        int stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);
-        if (stopY >= (this.h - hc)) {
-            nY1 = (h - 1 - yCenter - hc)/N_PIX_PER_CELL_DIM;
-            stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);
-        }
-        
-        //System.out.println(" startX=" + startX + " stopX=" + stopX
-        //    + " startY=" + startY + " stopY=" + stopY
-        //    + " HC=" + hc
-        //);
-        
-        int nH = (nX0 + nX1 + 1) * (nY0 + nY1 + 1) * nAngleBins;
-        
-        int[] tmp = new int[nAngleBins];
-        int[] out = new int[nH];
-        
-        int count = 0;
-        double blockTotal = 0;
-                
-        // scan forward by 1 cell
-        for (int x = startX; x <= stopX; x += N_PIX_PER_CELL_DIM) {
-            for (int y = startY; y <= stopY; y += N_PIX_PER_CELL_DIM) {
-                
-                extractBlock(x, y, tmp);
-                
-                System.arraycopy(tmp, 0, out, count * nAngleBins, nAngleBins);
-                
-                double t = sumCounts(tmp);
-                blockTotal += (t * t);               
-                count++;                
-            }
-        }
-        
-        //System.out.println("NH=" + nH + " count=" + count + " blockTotal=" + blockTotal);
-        
-        // normalize over detector
-        if (count > 0) {
-            blockTotal = Math.sqrt(blockTotal/(double)count);
-        }
-        
-        double norm = 1./(blockTotal + eps);
-
-        float maxBlock = 255.f * count;
-            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
-            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
-
-        norm *= maxBlock;
-        
-        assert(!Double.isNaN(norm));
-
-        for (int i = 0; i < out.length; ++i) {
-            out[i] *= norm;
-            assert(out[i] >= 0);
-        }
-
-        return out;
-    }
-    
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      *
@@ -623,109 +484,10 @@ public class HOGs {
         return HOGUtil.diff(histA, orientationA, histB, orientationB);
     }
     
-    /**
-     * CAVEAT: small amount of testing done, not yet throughly tested.
-     *
-     * calculate the intersection of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
-     *
-     * Note that because the feature contains spatially ordered concatenation of
-     * histograms, the registration of featureA and featureB to the same 
-     * orientation must be done before this method (more specifically, before
-     * extraction to features).
-     *      *
-     * @param featureA
-     * @param featureB
-     * @return
-     */
-    public float intersectionOfFeatures(int[] featureA, int[] featureB) {
-
-        if ((featureA.length != featureB.length)) {
-            throw new IllegalArgumentException(
-                "featureA and featureB must be same dimensions");
-        }
-        
-        int[] tmpA = new int[nAngleBins];
-        int[] tmpB = new int[nAngleBins];
-        
-        float t;
-        double sum = 0;
-        for (int j = 0; j < featureA.length; j += nAngleBins) {
-            System.arraycopy(featureA, j, tmpA, 0, nAngleBins);
-            System.arraycopy(featureB, j, tmpB, 0, nAngleBins);
-            t = intersection(tmpA, 0, tmpB, 0);
-            //System.out.println("    inter=" + t);
-            sum += (t * t);
-        }
-
-        sum /= (double)(featureA.length/nAngleBins);
-        sum = Math.sqrt(sum);
-
-        return (float)sum;
-    }
-    
-    /**
-     * CAVEAT: small amount of testing done, not yet throughly tested.
-     *
-     * calculate the difference of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
-     *
-     * Note that because the feature contains spatially ordered concatenation of
-     * histograms, the registration of featureA and featureB to the same 
-     * orientation must be done before this method (more specifically, before
-     * extraction to features).
-     *
-     * @param featureA
-     * @param featureB
-     * @return
-     */
-    public float[] diffOfFeatures(int[] featureA, int[] featureB) {
-
-        if ((featureA.length != featureB.length)) {
-            throw new IllegalArgumentException(
-                "featureA and featureB must be same dimensions");
-        }
-        
-        int[] tmpA = new int[nAngleBins];
-        int[] tmpB = new int[nAngleBins];
-        
-        float[] t;
-        double sum = 0;
-        double sumSqErr = 0;
-        for (int j = 0; j < featureA.length; j += nAngleBins) {
-            System.arraycopy(featureA, j, tmpA, 0, nAngleBins);
-            System.arraycopy(featureB, j, tmpB, 0, nAngleBins);
-            t = diff(tmpA, 0, tmpB, 0);
-            //System.out.println("    inter=" + t);
-            sum += t[0];
-            sumSqErr += (t[1] * t[1]);
-        }
-
-        sum /= (double)(featureA.length/nAngleBins);
-        //sum = Math.sqrt(sum);
-        
-        sumSqErr /= (double)(featureA.length/nAngleBins);
-        sumSqErr = Math.sqrt(sumSqErr);
-
-        return new float[]{(float)sum, (float)sumSqErr};
-    }
-
     private int sumCounts(int[] hist) {
 
         int sum = 0;
         for (int v : hist) {
-            sum += v;
-        }
-
-        return sum;
-    }
-    
-    public static long sumCounts(long[] hist) {
-
-        long sum = 0;
-        for (long v : hist) {
             sum += v;
         }
 
@@ -750,23 +512,30 @@ public class HOGs {
         }
     }
 
-    public int getNumberOfBins() {
-        return nAngleBins;
-    }
-
     /**
      * NOT READY FOR USE.
      *
-     * @param xy
+     * @param rIndex
      * @return
      */
-    public int calculateDominantOrientation(Collection<PairInt> xy) {
+    public int calculateDominantOrientation(int rIndex) {
 
+        int[][] hist = regionIndexHist.get(rIndex).a;
+        int[] minMaxXY = regionIndexMinMaxXY.get(rIndex).a;
+        
+        int width = minMaxXY[1] - minMaxXY[0] + 1;
+        //int height = minMaxXY[3] - minMaxXY[2] + 1;
+        int xOffset = minMaxXY[0];
+        int yOffset = minMaxXY[2];
+        
+        CRegion r = regionIndexRegions.get(rIndex);
+        
         long[] combined = new long[nAngleBins];
 
-        for (PairInt p : xy) {
-            int pixIdx = (p.getY() * w) + p.getX();
-            add(combined, gHists[pixIdx]);
+        for (Entry<PairInt, PairInt> entry : r.offsetsToOrigCoords.entrySet()) {
+            PairInt xy = entry.getValue();
+            int pixIdx = ((xy.getY() - yOffset) * width) + (xy.getX() - xOffset);
+            add(combined, hist[pixIdx]);
         }
 
         TIntList maxIdxs = new TIntArrayList();
@@ -831,13 +600,27 @@ public class HOGs {
         }
     }
 
-    public TIntSet calculateDominantOrientations(Collection<PairInt> xy) {
+    public TIntSet calculateDominantOrientations(int rIndex) {
 
+        int[][] hist = regionIndexHist.get(rIndex).a;
+        int[] minMaxXY = regionIndexMinMaxXY.get(rIndex).a;
+        
+        int width = minMaxXY[1] - minMaxXY[0] + 1;
+        //int height = minMaxXY[3] - minMaxXY[2] + 1;
+        int xOffset = minMaxXY[0];
+        int yOffset = minMaxXY[2];
+        
+        CRegion r = regionIndexRegions.get(rIndex);
+        
+        Set<PairInt> xys = new HashSet<PairInt>();
+        
         long[] combined = new long[nAngleBins];
 
-        for (PairInt p : xy) {
-            int pixIdx = (p.getY() * w) + p.getX();
-            add(combined, gHists[pixIdx]);
+        for (Entry<PairInt, PairInt> entry : r.offsetsToOrigCoords.entrySet()) {
+            PairInt xy = entry.getValue();
+            int pixIdx = ((xy.getY() - yOffset) * width) + (xy.getX() - xOffset);
+            add(combined, hist[pixIdx]);
+            xys.add(xy);
         }
 
         int maxIdx = MiscMath.findYMaxIndex(combined);
@@ -869,13 +652,13 @@ public class HOGs {
             int angle = Math.round((idx + 0.5f) * binWidth);
             orientations.add(angle);
         }
-        
+                        
         //NOTE: adding an orientation for the center of points
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        PairInt xyCen = ch.calculateXYCentroids2(xy);
-        if (xy.contains(xyCen)) {
-            int pixIdx = (xyCen.getY() * w) + xyCen.getX();
-            maxIdx = MiscMath.findYMaxIndex(gHists[pixIdx]);
+        PairInt xyCen = ch.calculateXYCentroids2(xys);
+        if (xys.contains(xyCen)) {
+            int pixIdx = ((xyCen.getY() - yOffset) * width) + (xyCen.getX() - xOffset);
+            maxIdx = MiscMath.findYMaxIndex(hist[pixIdx]);
             if (maxIdx > -1) {
                 int angle = Math.round((maxIdx + 0.5f) * binWidth);
                 orientations.add(angle);
@@ -885,43 +668,16 @@ public class HOGs {
         return orientations;
     }
 
-    public void _printHistograms() {
-        for (int i = 0; i < gHists.length; ++i) {
-            int[] gh0 = gHists[i];
-            if (hasNonZeroes(gh0)) {
-                System.out.format("%d) %s\n", i, Arrays.toString(gh0));
-            }
-        }
-    }
-    private boolean hasNonZeroes(int[] a) {
-        for (int b : a) {
-            if (b != 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    int[] extractHistogram(int x, int y) {
-        int pixIdx = (y * w) + x;
-        int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
-        return out;
-    }
-
-    private long[] copyHist(int pixIdx) {
-        int[] a = gHists[pixIdx];
-        long[] out = new long[a.length];
-        for (int i = 0; i < a.length; ++i) {
-            out[i] = a[i];
-        }
-        return out;
-    }
-    
     public int getImageWidth() {
         return w;
     }
+    
     public int getImageHeight() {
         return h;
+    }
+
+    public int getNumberOfBins() {
+        return nAngleBins;
     }
 
 }
