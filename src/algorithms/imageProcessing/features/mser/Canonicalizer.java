@@ -182,6 +182,14 @@ public class Canonicalizer {
             }
         }
         
+        public Set<PairInt> extractCoords() {
+            Set<PairInt> out = new HashSet<PairInt>();
+            for (Entry<PairInt, PairInt> entry : offsetsToOrigCoords.entrySet()) {
+                out.add(entry.getValue());
+            }
+            return out;
+        }
+        
         @Override
         public String toString() {
 
@@ -262,11 +270,11 @@ public class Canonicalizer {
      * ellipse derived orientation.
      * 
      * @param regions
-     * @param img
      * @return 
      */
     public TIntObjectMap<CRegion> canonicalizeRegions4(
-        TIntObjectMap<RegionPoints> regions, GreyscaleImage img) {
+        TIntObjectMap<RegionPoints> regions, 
+        int imageWidth, int imageHeight) {
         
         int addIdx = regions.size();
         
@@ -281,49 +289,12 @@ public class Canonicalizer {
             int rIdx = iter.key();
             RegionPoints r = iter.value();
             
-            TIntSet orientations = new TIntHashSet(r.hogOrientations);
+            Set<CRegion> cRegions = canonicalizeRegions4(
+                r, imageWidth, imageHeight);
+        
+            for (CRegion cRegion : cRegions) {
             
-            /*
-            NOTE that hog orientations have 90 pointing up and that is the
-            direction of the major axis of points, that is 90 degrees is
-            the direction from x,y = (0,0) to (1,0).
-            
-            NOTE also that the regionpoint ellipse orientation is the angle of the
-            minor axis of the ellipse, so 90 degrees must be subtracted from
-            it to use with the dominant orientations.
-            */
-            
-            int eAngle = (int)Math.round(r.ellipseParams.orientation * 180./Math.PI);
-            // put into 0 to 180 ref frame
-            if (eAngle > 179) {
-                eAngle -= 180;
-            }
-            // put into ref frame of dominant orientations (major axis direction)
-            eAngle -= 90;
-            if (eAngle < 0) {
-                eAngle += 180;
-            }
-            orientations.add(eAngle);
-            
-            PairIntArray points = Misc.convertWithoutOrder(r.points);
-            
-            TIntIterator iter2 = orientations.iterator();
-            while (iter2.hasNext()) {
-                
-                int or = iter2.next();
-            
-                double angle = or * (Math.PI/180.);
-                    
-                Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
-                    r.ellipseParams.xC, r.ellipseParams.yC,
-                    points, img.getWidth(), img.getHeight(),
-                    angle);
-
-                CRegion cRegion = new CRegion();
-                cRegion.ellipseParams = r.ellipseParams;
-                cRegion.offsetsToOrigCoords = offsetToOrigMap;
                 cRegion.dataIdx = rIdx;
-                cRegion.hogOrientation = or;
                 
                 if (output.containsKey(rIdx)) {
                     cRegion.dataIdx = addIdx;
@@ -336,6 +307,69 @@ public class Canonicalizer {
         }
 
         return output;        
+    }
+    
+    /**
+     * uses RegionPoints.hogOrientations to make multiple cRegions for 
+     * each RegionPoints instance.  it also make a region for the mser
+     * ellipse derived orientation.
+     * 
+     * NOTE" remember to set cRegion.dataIdx = rIdx in the results 
+     * afterwards.
+     * 
+     * @return 
+     */
+    public Set<CRegion> canonicalizeRegions4(
+        RegionPoints r, int imageWidth, int imageHeight) {
+        
+        Set<CRegion> out = new HashSet<CRegion>();
+            
+        TIntSet orientations = new TIntHashSet(r.hogOrientations);
+            
+        /*
+        NOTE that hog orientations have 90 pointing up and that is the
+        direction of the major axis of points, that is 90 degrees is
+        the direction from x,y = (0,0) to (1,0).
+
+        NOTE also that the regionpoint ellipse orientation is the angle of the
+        minor axis of the ellipse, so 90 degrees must be subtracted from
+        it to use with the dominant orientations.
+        */
+
+        int eAngle = (int)Math.round(r.ellipseParams.orientation * 180./Math.PI);
+        // put into 0 to 180 ref frame
+        if (eAngle > 179) {
+            eAngle -= 180;
+        }
+        // put into ref frame of dominant orientations (major axis direction)
+        eAngle -= 90;
+        if (eAngle < 0) {
+            eAngle += 180;
+        }
+        orientations.add(eAngle);
+
+        PairIntArray points = Misc.convertWithoutOrder(r.points);
+
+        TIntIterator iter2 = orientations.iterator();
+        while (iter2.hasNext()) {
+
+            int or = iter2.next();
+
+            double angle = or * (Math.PI/180.);
+
+            Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
+                r.ellipseParams.xC, r.ellipseParams.yC,
+                points, imageWidth, imageHeight, angle);
+
+            CRegion cRegion = new CRegion();
+            cRegion.ellipseParams = r.ellipseParams;
+            cRegion.offsetsToOrigCoords = offsetToOrigMap;
+            cRegion.hogOrientation = or;
+            
+            out.add(cRegion);
+        }
+
+        return out;        
     }
     
     /**

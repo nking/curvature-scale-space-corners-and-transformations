@@ -382,7 +382,7 @@ public class ObjectMatcher {
         System.out.println("chist filter removed " + rmSet.size());
     }
 
-    private void replaceWithAccumulatedPoints(TIntObjectMap<RegionPoints> regionPoints) {
+    static void replaceWithAccumulatedPoints(TIntObjectMap<RegionPoints> regionPoints) {
     
         PerimeterFinder2 finder = new PerimeterFinder2();
         

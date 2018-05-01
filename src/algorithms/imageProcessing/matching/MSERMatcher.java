@@ -565,11 +565,13 @@ public class MSERMatcher {
         // create the CRegion objects which have the rotated points and 
         //    offsets in them
         TIntObjectMap<CRegion> cRegions0 = canonicalizer.canonicalizeRegions4(
-            regionPoints0, pyrRGB0.get(0).get(1));
+            regionPoints0, pyrRGB0.get(0).get(1).getWidth(),
+            pyrRGB0.get(0).get(1).getHeight());
         
         TIntObjectMap<CRegion> cRegions1 = canonicalizer.canonicalizeRegions4(
-            regionPoints1, pyrRGB1.get(0).get(1));
-                
+            regionPoints1, pyrRGB1.get(0).get(1).getWidth(),
+            pyrRGB1.get(0).get(1).getHeight());
+        
         // populated on demand, some are skipped for large size differences
         TIntObjectMap<TIntObjectMap<CRegion>> csr0
             = new TIntObjectHashMap<TIntObjectMap<CRegion>>();

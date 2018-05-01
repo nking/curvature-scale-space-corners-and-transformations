@@ -82,24 +82,37 @@ public class AndroidStatuesTest extends TestCase {
           
             for (int fIdx = 0; fIdx < fileNames1.length; ++fIdx) {               
         
-                String fileName1 = fileNames1[fIdx];
+                String filePath1 = ResourceFinder
+                    .findFileInTestResources(fileNames1[fIdx]);
                                 
                 String debugLabel = "gbman_" + fIdx + "_" + fn0;
                 
+                ImageExt img = ImageIOHelper.readImageExt(filePath1);
+            
+                if (filePath1.endsWith("android_statues_01.jpg")) {
+                    //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
+                    img = (ImageExt) img.copySubImage(
+                        img.getWidth()/4, 3*img.getWidth()/4, 
+                        0, img.getHeight());
+                }
+
                 ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
 
                 if (debug) {
                     omw.setToDebug();
                 }
-                
-                String filePath1
-                    = ResourceFinder.findFileInTestResources(fileName1);
 
-                List<CorrespondenceList> corresList = omw.find(filePath0, 
-                    filePathMask0, filePath1, debugLabel);
-                
-                //omw.setToDebug();
+                Set<PairInt> shape0 = new HashSet<PairInt>();
 
+                ImageExt[] imgs0 = omw.maskAndBin2(filePath0, filePathMask0,
+                    shape0);
+
+                //MiscDebug.writeImage(imgs0[0], "_imgs0_0_");
+                //MiscDebug.writeImage(imgs0[1], "_imgs0_1_");
+
+                List<CorrespondenceList> corresList = omw.find(imgs0, shape0, img, 
+                    debugLabel);
+                
                 if (corresList == null || corresList.isEmpty()) {
                     return;
                 }
@@ -154,9 +167,11 @@ public class AndroidStatuesTest extends TestCase {
             
             if (fileName1.equals("android_statues_01.jpg")) {
                 //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
-                img = (ImageExt) img.copySubImage(0, img.getWidth()/5, 0, img.getHeight());
+                img = (ImageExt) img.copySubImage(
+                    0, img.getWidth()/5, 0, img.getHeight());
             } else if (fileName1.equals("android_statues_02.jpg")) {
-                
+              //  img = (ImageExt) img.copySubImage(
+              //      0, img.getWidth()/2, 0, img.getHeight());
             }
 
             String debugLabel = "cupcake_" + fIdx;
@@ -450,7 +465,7 @@ public class AndroidStatuesTest extends TestCase {
                 //System.out.println("orb matched: " + p1 + " " + p2);
                 //if (p2.getX() > 160)
                 plotter.drawDashedLine(p1.getX(), p1.getY(),
-                    p2.getX(), p2.getY(), 255, 200, 200, 0, 7);
+                    p2.getX(), p2.getY(), 255, 200, 200, 1, 7);
             }
         }
 

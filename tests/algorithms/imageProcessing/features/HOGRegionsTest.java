@@ -1,13 +1,31 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.features.mser.Canonicalizer;
+import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
+import algorithms.imageProcessing.features.mser.MSER;
+import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
+import algorithms.packing.Intersection2DPacking;
+import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import junit.framework.TestCase;
 
 /**
@@ -21,86 +39,119 @@ public class HOGRegionsTest extends TestCase {
 
     public void test1() throws IOException {
         
-        boolean useImg1 = true;
-        boolean useImg2 = true;
+        int maxDimension = 256;
         
-        /* 
-        226,160
-        196:256, 190:130
-        */
-        int w = 60;
-        int h = 60;
-        int xc1 = 226;
-        int yc1 = 160;
-        int xc2 = 226;
-        int yc2 = 102;
-        int dw = w-1;
-        int dh = h-1;
+        int nCellsPerDim = 3;
+        int nPixPerCellDim = 3; 
+        int nAngleBins = 9;
         
-        //int N_PIX_PER_CELL_DIM = 4;
-        //int N_CELLS_PER_BLOCK_DIM = 2;
-        int N_PIX_PER_CELL_DIM = 3;    //1;  3;
-        int N_CELLS_PER_BLOCK_DIM = 3; //10; 3;
-        //int angle = 20;
-        int nBins = 8;//180/angle;
-        float angle = 180.f/nBins;
-          
-        Transformer transformer = new Transformer();
-        TransformationParameters params = new TransformationParameters();
-        params.setRotationInDegrees(90);
-        params.setScale(1);
-        params.setOriginX(0);
-        params.setOriginY(0);
+        String templateFilePath = ResourceFinder.findFileInTestResources(
+            "android_statues_01_honeycomb.png");
+                
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        ImageExt img0 = ImageIOHelper.readImageExt(templateFilePath);
     
-        // make a test with spiral.png
-        String filePath = ResourceFinder.findFileInTestResources(
-                "android_statues_objects.png");
+        int w0 = img0.getWidth();
+        int h0 = img0.getHeight();
+
+        int binFactor0 = (int) Math.ceil(Math.max(
+             (float) w0 / maxDimension,
+             (float) h0 / maxDimension));
         
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        img0 = imageProcessor.binImage(img0, binFactor0);
         
-        GreyscaleImage img1 = null;
-        GreyscaleImage img1_rot = null;
-        GreyscaleImage img2 = null;
-        GreyscaleImage img2_rot = null;
-        //GreyscaleImage img3 = null;
-        GreyscaleImage img4 = null;
-        GreyscaleImage img5 = null;
+        GreyscaleImage gsImg = img0.copyToGreyscale2();
+        MSER.Threshold thrGs = MSER.Threshold.LEAST_SENSITIVE;
+        MSER mser = new MSER();
+        List<List<Region>> regions = mser.findRegions(gsImg, thrGs);
+         
+        Canonicalizer canonicalizer = new Canonicalizer();
         
-        if (useImg1) {
-            img1 = img.subImage(xc1, yc1, w, h);    
+        TIntObjectMap<Canonicalizer.RegionPoints> regionPoints0 =
+            canonicalizer.canonicalizeRegions2(regions.get(1), 
+            img0.getWidth(), img0.getHeight());
+        
+        ObjectMatcher.replaceWithAccumulatedPoints(regionPoints0);
+        
+        {
+            int[] xyCen = new int[2];
+            Image im0Cp;
+            im0Cp = img0.copyImage();
+            int n9 = regions.get(1).size();
+            for (int i = 0; i < n9; ++i) {
+                Region r = regions.get(1).get(i);
+                int[] clr = ImageIOHelper.getNextRGB(i);
+                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);
+                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());
+                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,
+                    1, 255, 0, 0);
+            }
+            MiscDebug.writeImage(im0Cp, "_hogs_regions_");
+        }
+                
+        // instead of sobel, using 1st deriv
+        GreyscaleImage[] gXgY = 
+            imageProcessor.createCentralDifferenceGradients(gsImg);
+        GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
+        GreyscaleImage gXY = 
+            imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
+
+        TIntObjectMap<CRegion> regionMap = new TIntObjectHashMap<CRegion>();
+        
+        HOGRegions hr = new HOGRegions(regionMap, img0.getWidth(), 
+            img0.getHeight(), nCellsPerDim, nPixPerCellDim, nAngleBins);
+        
+        TIntObjectIterator<Canonicalizer.RegionPoints> iter = regionPoints0.iterator();
+        for (int i = 0; i < regionPoints0.size(); ++i) {
+            iter.advance();
+            RegionPoints regionPoints = iter.value();
+            hr.addARegion(gXY, theta, regionPoints);
+        }
+        
+        int[] h_0 = new int[hr.getNumberOfBins()];
+        int[] h_1 = new int[hr.getNumberOfBins()];
+        TIntObjectIterator<CRegion> iter2 = regionMap.iterator();
+        for (int i = 0; i < regionMap.size(); ++i) {
+            iter2.advance();
             
-            params.setTranslationX(0);
-            params.setTranslationY(img1.getWidth() - 1);
-            img1_rot = transformer.applyTransformation(img1, params, 
-                img1.getHeight(), img1.getWidth());
+            CRegion cr0 = iter2.value();
+            int rIndex0 = cr0.dataIdx;
+            
+            //TODO: use rotated image instead
+            CRegion cr1 = regionMap.get(i);
+            int rIndex1 = cr1.dataIdx;
+            
+            Intersection2DPacking ip = new Intersection2DPacking();
+            Set<PairInt> intersectingKeys = ip.intersection(
+                cr0.offsetsToOrigCoords.keySet(),
+                cr1.offsetsToOrigCoords.keySet());
+            Set<PairInt> offsets0 = ip.naiveStripPacking(
+                intersectingKeys, nPixPerCellDim);
+            
+            int orientation0 = cr0.hogOrientation;
+            int orientation1 = cr1.hogOrientation;
+            Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+            // key = transformed offsets, value = coords in image ref frame,
+            // so, can compare dataset0 and dataset1 points with same
+            //  keys
+            int count = 0;
+            for (PairInt pOffset0 : offsets0) {
+                PairInt xy1 = offsetMap1.get(pOffset0);
+                if (xy1 == null) {
+                    continue;
+                }
+                PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);            
+                hr.extractBlock(rIndex0, xy0.getX(), xy0.getY(), h_0);
+                hr.extractBlock(rIndex1, xy1.getX(), xy1.getY(), h_1);
+            
+                float intersection = 
+                    hr.intersection(h_0, orientation0, h_1, orientation1);
+                
+                System.out.println(count + " " + intersection);
+                count++;
+            }
         }
         
-        if (useImg2) {
-            img2 = img.subImage(xc2, yc2, w, h);
-            params.setTranslationX(0);
-            params.setTranslationY(img2.getWidth() - 1);
-            img2_rot = transformer.applyTransformation(img2, params, 
-                img2.getHeight(), img2.getWidth());
-        }
-        
-        //int xc3 = 29;
-        //int yc3 = 160;
-        //img3 = img.subImage(xc3, yc3, w, h);
-        int xc4 = 94;
-        int yc4 = 160;
-        img4 = img.subImage(xc4, yc4, w, h);
-        int xc5 = 159;
-        int yc5 = 160;
-        img5 = img.subImage(xc5, yc5, w, h);
-        
-        
-        /*
-        MiscDebug.writeImage(img1, "img1");
-        MiscDebug.writeImage(img1_rot, "img1_rot");
-        MiscDebug.writeImage(img2, "img2");
-        MiscDebug.writeImage(img2_rot, "img2_rot");
-        */
-        
-        //TODO: finish unit test
     }
 }

@@ -3,6 +3,7 @@ package algorithms.imageProcessing.features;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
@@ -130,6 +131,9 @@ public class HOGRegions {
     // 2x2 or 3x3 is recommended
     private final int N_CELLS_PER_BLOCK_DIM;
 
+    /**
+     * key = region index
+     */
     private final TIntObjectMap<TwoDIntArray> regionIndexHist = 
         new TIntObjectHashMap<TwoDIntArray>();
     private final TIntObjectMap<OneDIntArray> regionIndexMinMaxXY =
@@ -195,6 +199,17 @@ public class HOGRegions {
         h = gradientXY.getHeight();
         init(gradientXY, theta);
     }
+    
+    public HOGRegions(TIntObjectMap<CRegion> regionMap, int imageWidth,
+        int imageHeight, int nCellsPerDim, int nPixPerCellDim, int nAngleBins) {
+
+        regionIndexRegions = regionMap;
+        this.nAngleBins = nAngleBins;
+        N_PIX_PER_CELL_DIM = nPixPerCellDim;
+        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;
+        w = imageWidth;
+        h = imageHeight;
+    }
 
     public void setToDebug() {
         debug = true;
@@ -236,11 +251,7 @@ public class HOGRegions {
             algorithms.misc.MiscDebug.writeImage(gradientXY, "_gXY_");
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
-        
-        PixelHelper ph = new PixelHelper();
-        
-        GradientIntegralHistograms gh = new GradientIntegralHistograms();
-        
+                        
         TIntObjectIterator<CRegion> iter = regionIndexRegions.iterator();
         for (int i = 0; i < regionIndexRegions.size(); ++i) {
             iter.advance();
@@ -248,58 +259,138 @@ public class HOGRegions {
             int rIndex = iter.key();
             CRegion r = iter.value();
             
-            //TODO: could make this faster by creating methods that use the
-            //    offsets and the full-images instead of sub-images.
-            
-            int[] minMaxXY = r.getMinMaxXY();
-            
-            GreyscaleImage gXY = gradientXY.subImage2(minMaxXY[0], minMaxXY[1], 
-                minMaxXY[2], minMaxXY[3]);
-            
-            GreyscaleImage th = theta.subImage2(minMaxXY[0], minMaxXY[1], 
-                minMaxXY[2], minMaxXY[3]);
-            
-            int w2 = minMaxXY[1] - minMaxXY[0] + 1;
-            int h2 = minMaxXY[3] - minMaxXY[2] + 1;
-            int xOffset = minMaxXY[0];
-            int yOffset = minMaxXY[2];
+            int[] minMaxXY = new int[4];
         
             //In reference frame of subImage
-            TLongSet rCoords;
-            if (regionCoords.containsKey(rIndex)) {
-                rCoords = regionCoords.get(rIndex);
-            } else {
-                rCoords = new TLongHashSet();
-                regionCoords.put(rIndex, rCoords);
-                for (Entry<PairInt, PairInt> entry : r.offsetsToOrigCoords.entrySet()) {
-                    PairInt xy = entry.getValue();
-                    long pixIdx = ph.toPixelIndex(xy.getX() - xOffset, 
-                        xy.getY() - yOffset, w2);
-                    rCoords.add(pixIdx);
-                }
-            }
+            TLongSet rCoords = new TLongHashSet();
+                
+            int[][] histograms = createHistogram(gradientXY, theta, 
+                r.extractCoords(), minMaxXY, rCoords);
             
-            // mask out pixels not in the region
-            for (int i2 = 0; i2 < w2; ++i2) {
-                for (int j2 = 0; j2 < h2; ++j2) {
-                    long pixIdx = ph.toPixelIndex(i2, j2, w2);
-                    if (!rCoords.contains(pixIdx)) {
-                        gXY.setValue(i2, j2, 0);
-                        th.setValue(i2, j2, 0);
-                    }
-                }
-            }
-                                
-            int[][] histograms = gh.createHistograms(gXY, th, nAngleBins);
-
-            //apply a windowed sum across the integral image.
-            // result is that at each pixel is a histogram holding the sum of histograms
-            //    from the surrounding N_PIX_PER_CELL_DIM window. 
-            gh.applyWindowedSum(histograms, gXY.getWidth(), gXY.getHeight(), 
-                N_PIX_PER_CELL_DIM);
-            
+            regionCoords.put(rIndex, rCoords);
             regionIndexHist.put(rIndex, new TwoDIntArray(histograms));
             regionIndexMinMaxXY.put(rIndex, new OneDIntArray(minMaxXY));
+        }
+    }
+    
+    int[][] createHistogram(GreyscaleImage gradientXY, 
+        GreyscaleImage theta, Collection<PairInt> points,
+        int[] outputMinMaxXY, TLongSet outputRefFramePixs) {
+
+        if (w != gradientXY.getWidth() || h != gradientXY.getHeight()) {
+            throw new IllegalArgumentException("gradient and theta must be same size");
+        }
+
+        if (w != theta.getWidth() || h != theta.getHeight()) {
+            throw new IllegalArgumentException("gradient and theta must be same size");
+        }
+
+        PixelHelper ph = new PixelHelper();
+        
+        GradientIntegralHistograms gh = new GradientIntegralHistograms();
+        
+        outputMinMaxXY[0] = Integer.MAX_VALUE;
+        outputMinMaxXY[1] = Integer.MIN_VALUE;
+        outputMinMaxXY[2] = Integer.MAX_VALUE;
+        outputMinMaxXY[3] = Integer.MIN_VALUE;
+        for (PairInt xy : points) {
+            if (xy.getX() < outputMinMaxXY[0]) {
+                outputMinMaxXY[0] = xy.getX();
+            }
+            if (xy.getX() > outputMinMaxXY[1]) {
+                outputMinMaxXY[1] = xy.getX();
+            }
+            if (xy.getY() < outputMinMaxXY[2]) {
+                outputMinMaxXY[2] = xy.getY();
+            }
+            if (xy.getY() > outputMinMaxXY[3]) {
+                outputMinMaxXY[3] = xy.getY();
+            }
+        } 
+        
+        GreyscaleImage gXY = gradientXY.subImage2(outputMinMaxXY[0], 
+            outputMinMaxXY[1], outputMinMaxXY[2], outputMinMaxXY[3]);
+
+        GreyscaleImage th = theta.subImage2(outputMinMaxXY[0], 
+            outputMinMaxXY[1], outputMinMaxXY[2], outputMinMaxXY[3]);
+
+        int w2 = outputMinMaxXY[1] - outputMinMaxXY[0] + 1;
+        int h2 = outputMinMaxXY[3] - outputMinMaxXY[2] + 1;
+        int xOffset = outputMinMaxXY[0];
+        int yOffset = outputMinMaxXY[2];
+
+        //In reference frame of subImage
+        for (PairInt xy : points) {
+            long pixIdx = ph.toPixelIndex(xy.getX() - xOffset, 
+                xy.getY() - yOffset, w2);
+            if (pixIdx < 0) {
+                int z = 0;
+            } else if (pixIdx >= (w2 * h2)) {
+                int z = 0;
+            }
+            outputRefFramePixs.add(pixIdx);
+        }
+        
+        // mask out pixels not in the region
+        for (int i2 = 0; i2 < w2; ++i2) {
+            for (int j2 = 0; j2 < h2; ++j2) {
+                long pixIdx = ph.toPixelIndex(i2, j2, w2);
+                if (!outputRefFramePixs.contains(pixIdx)) {
+                    gXY.setValue(i2, j2, 0);
+                    th.setValue(i2, j2, 0);
+                }
+            }
+        }
+
+        int[][] histograms = gh.createHistograms(gXY, th, nAngleBins);
+
+        //apply a windowed sum across the integral image.
+        // result is that at each pixel is a histogram holding the sum of histograms
+        //    from the surrounding N_PIX_PER_CELL_DIM window. 
+        gh.applyWindowedSum(histograms, gXY.getWidth(), gXY.getHeight(), 
+            N_PIX_PER_CELL_DIM);
+
+        return histograms;
+    }
+    
+    public void addARegion(GreyscaleImage gradientXY, GreyscaleImage theta,
+        Canonicalizer.RegionPoints regionPoints) {
+
+        if (w != gradientXY.getWidth() || h != gradientXY.getHeight()) {
+            throw new IllegalArgumentException("gradient and theta must be same size");
+        }
+
+        if (w != theta.getWidth() || h != theta.getHeight()) {
+            throw new IllegalArgumentException("gradient and theta must be same size");
+        }
+    
+        int[] minMaxXY = new int[4];
+        
+        //In reference frame of subImage
+        TLongSet rCoords = new TLongHashSet();
+                
+        int[][] histograms = createHistogram(gradientXY, theta, 
+            regionPoints.points, minMaxXY, rCoords);
+        
+        int w2 = minMaxXY[1] - minMaxXY[0] + 1;
+        int h2 = minMaxXY[3] - minMaxXY[2] + 1;
+        //int xOffset = minMaxXY[0];
+        //int yOffset = minMaxXY[2];
+         
+        Canonicalizer canonicalizer = new Canonicalizer();
+        
+        Set<CRegion> cRegions = canonicalizer.canonicalizeRegions4(
+            regionPoints, w2, h2);
+        
+        for (CRegion cRegion : cRegions) {
+        
+            int rIndex = this.regionIndexRegions.size();
+            cRegion.dataIdx = rIndex;
+        
+            regionCoords.put(rIndex, rCoords);
+            regionIndexHist.put(rIndex, new TwoDIntArray(histograms));
+            regionIndexMinMaxXY.put(rIndex, new OneDIntArray(minMaxXY));
+            regionIndexRegions.put(rIndex, cRegion);
         }
     }
 
@@ -317,6 +408,7 @@ public class HOGRegions {
      * (for example: a horizontal line, the feature of a point on the
      * line has largest bin being the 90 degrees bin).
      *
+     * @param rIndex
      * @param x
      * @param y
      * @param outHist
@@ -357,11 +449,13 @@ public class HOGRegions {
 
             int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
 
-            if ((x2 + N_PIX_PER_CELL_DIM - 1) < xOffset) {
+            int xSub = x2 - xOffset;
+            
+            if ((xSub + N_PIX_PER_CELL_DIM - 1) < 0) {
                 break;
-            } else if (x2 < xOffset) {
-                x2 = 0;
-            } else if (x2 >= width) {
+            } else if (xSub < 0) {
+                xSub = 0;
+            } else if (xSub >= width) {
                 break;
             }
 
@@ -371,19 +465,21 @@ public class HOGRegions {
 
                 int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
 
-                if ((y2 + N_PIX_PER_CELL_DIM - 1) < yOffset) {
+                int ySub = y2 - yOffset;
+                
+                if ((ySub + N_PIX_PER_CELL_DIM - 1) < 0) {
                     break;
-                } else if (y2 < yOffset) {
-                    y2 = 0;
-                } else if (y2 >= height) {
+                } else if (ySub < 0) {
+                    ySub = 0;
+                } else if (ySub >= height) {
                     break;
                 }
                 
-                //if (!rCoords.contains(y2 * width + x2)) {
+                //if (!rCoords.contains(ySub * width + xSub)) {
                 //    continue;
                 //}
 
-                int pixIdx = ((y2 - yOffset) * width) + (x2 - xOffset);
+                int pixIdx = (ySub * width) + xSub;
 
                 int[] out = Arrays.copyOf(hist[pixIdx], hist[pixIdx].length);
 
