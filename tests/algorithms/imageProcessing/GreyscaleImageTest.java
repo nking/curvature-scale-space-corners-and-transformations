@@ -368,4 +368,43 @@ public class GreyscaleImageTest extends TestCase {
             assertEquals(expected, v);
         }
     }
+    
+    public void testSubImage() {
+        int w = 10;
+        int h = 10;
+        GreyscaleImage img = new GreyscaleImage(w, h);
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                img.setValue(i, j, i + j*20);
+            }
+        }
+        
+        int xOffset = 3;
+        int yOffset = 4;
+        GreyscaleImage img2 = img.subImage(xOffset, yOffset, 2, 2);
+        assertEquals(4, img2.getNPixels());
+        assertEquals(2, img2.getWidth());
+        assertEquals(2, img2.getHeight());
+        for (int i = 0; i < img2.getWidth(); ++i) {
+            for (int j = 0; j < img2.getHeight(); ++j) {
+                int v = img2.getValue(i, j);
+                int expected =  (i + xOffset - 1) + ((j + yOffset - 1)*20);
+                assertEquals(expected, v);
+            }
+        }
+        
+        GreyscaleImage img3 = img.subImage2(xOffset, xOffset + 1, yOffset, 
+            yOffset + 1);
+        assertEquals(4, img3.getNPixels());
+        assertEquals(2, img3.getWidth());
+        assertEquals(2, img3.getHeight());
+        for (int i = 0; i < img3.getWidth(); ++i) {
+            for (int j = 0; j < img3.getHeight(); ++j) {
+                int v = img3.getValue(i, j);
+                int expected =  (i + xOffset) + ((j + yOffset) * 20);
+                assertEquals(expected, v);
+            }
+        }
+    }
 }

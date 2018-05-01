@@ -840,6 +840,55 @@ public class GreyscaleImage {
     }
     
     /**
+     * create a new sub-image for the given start and stop, inclusive, pixels.
+     * 
+     * @param startX
+     * @param stopX
+     * @param startY
+     * @param stopY
+     * @return 
+     */
+    public GreyscaleImage subImage2(int startX, int stopX, 
+        int startY, int stopY) {
+        
+        if (startX < 0) {
+            throw new IllegalArgumentException("startX must be positive non-zero");
+        }
+        if (startY < 0) {
+            throw new IllegalArgumentException("startY must be positive non-zero");
+        }
+        if (stopX >= this.width) {
+            throw new IllegalArgumentException("stopX must be < imageWidth");
+        }
+        if (stopY >= this.height) {
+            throw new IllegalArgumentException("stopY must be < imageHeight");
+        }
+        
+        int w2 = stopX - startX + 1;
+        int h2 = stopY - startY + 1;
+        
+        GreyscaleImage img2 = new GreyscaleImage(w2, h2, type);
+                
+        int col2 = 0;
+        for (int col = startX; col <= stopX; ++col) {
+            
+            int row2 = 0;
+            for (int row = startY; row <= stopY; ++row) {
+                
+                int v = getValue(col, row);
+                
+                img2.setValue(col2, row2, v);
+                
+                row2++;
+            }
+            
+            col2++;
+        }
+            
+        return img2;
+    }
+    
+    /**
      * note, can only use this if image has values between 0 and 255, inclusive
      * @return 
      */
