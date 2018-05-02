@@ -8,6 +8,7 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
@@ -28,6 +29,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -84,7 +86,35 @@ public class Canonicalizer {
         public double eccentricity;
         public double minor;
         public double major;
+        
+        /**
+         * using the region moments and area, calculates parameters needed
+         * for a bounding ellipse.
+         * 
+       The equation for rotation of an ellipse by angle alpha:
+        x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+        y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+        
+        returns 
+            v0x = aParam * cos(alpha);
+            v1x = bParam * sin(alpha);
+            v0y = aParam * sin(alpha);
+            v1y = bParam * cos(alpha);
+            e0 = first eigenvalue
+            e1 = 2nd eigenvalue
+        m is []{v0x, v1x, v0y, v1y} */
         public double[] m;
+       
+        public RegionGeometry createNewDividedByScale(float scale) {
+            RegionGeometry rg = new RegionGeometry();
+            rg.xC = Math.round((float) xC / scale);
+            rg.yC = Math.round((float) yC / scale);
+            rg.orientation = orientation;
+            rg.eccentricity = eccentricity;
+            rg.minor = minor/scale;
+            rg.major = major/scale;
+            return rg;
+        }
     }
     
     public static class RegionPoints {
@@ -183,11 +213,35 @@ public class Canonicalizer {
         }
         
         public Set<PairInt> extractCoords() {
-            Set<PairInt> out = new HashSet<PairInt>();
-            for (Entry<PairInt, PairInt> entry : offsetsToOrigCoords.entrySet()) {
-                out.add(entry.getValue());
+            return new HashSet<PairInt>(offsetsToOrigCoords.values());            
+        }
+        
+        public CRegion createNewDividedByScale(float scale) {
+            
+            CRegion r = new CRegion();
+            r.ellipseParams = ellipseParams.createNewDividedByScale(scale);
+            r.hogOrientation = hogOrientation;
+            r.autocorrel = autocorrel;
+            r.dataIdx = dataIdx;
+            if (minMaxXY != null) {
+                r.minMaxXY = Arrays.copyOf(minMaxXY, minMaxXY.length);
             }
-            return out;
+            r.labels.addAll(labels);
+            r.offsetsToOrigCoords = new HashMap<PairInt, PairInt>();
+            if (offsetsToOrigCoords != null) {
+                for (Entry<PairInt, PairInt> entry : offsetsToOrigCoords.entrySet()) {
+                    PairInt pOffset = entry.getKey();
+                    PairInt p = entry.getValue();
+                    r.offsetsToOrigCoords.put(
+                        new PairInt((int)(pOffset.getX()/scale),
+                            (int)(pOffset.getY()/scale)),
+                        new PairInt((int)(p.getX()/scale),
+                            (int)(p.getY()/scale))
+                    );
+                }
+            }
+            
+            return r;
         }
         
         @Override
@@ -309,6 +363,67 @@ public class Canonicalizer {
         return output;        
     }
     
+    public List<CRegion> canonicalizeRegionsToFit(
+        Canonicalizer.RegionPoints regionPoints, int[] outputMinMaxXY) {
+        
+        List<CRegion> out = new ArrayList<CRegion>();
+            
+        TIntSet orientations = new TIntHashSet(regionPoints.hogOrientations);
+        orientations.add(0);
+        
+        /*
+        NOTE that hog orientations have 90 pointing up and that is the
+        direction of the major axis of points, that is 90 degrees is
+        the direction from x,y = (0,0) to (1,0).
+
+        NOTE also that the regionpoint ellipse orientation is the angle of the
+        minor axis of the ellipse, so 90 degrees must be subtracted from
+        it to use with the dominant orientations.
+        */
+
+        int eAngle = (int)Math.round(regionPoints.ellipseParams.orientation * 180./Math.PI);
+        // put into 0 to 180 ref frame
+        if (eAngle > 179) {
+            eAngle -= 180;
+        }
+        // put into ref frame of dominant orientations (major axis direction)
+        eAngle -= 90;
+        if (eAngle < 0) {
+            eAngle += 180;
+        }
+        orientations.add(eAngle);
+
+        PairIntArray points = Misc.convertWithoutOrder(regionPoints.points);
+
+        outputMinMaxXY[0] = MiscMath.findMin(points.getX());
+        outputMinMaxXY[1] = MiscMath.findMax(points.getX());
+        outputMinMaxXY[2] = MiscMath.findMin(points.getY());
+        outputMinMaxXY[3] = MiscMath.findMax(points.getY());
+        int w = outputMinMaxXY[1] - outputMinMaxXY[0] + 1;
+        int h = outputMinMaxXY[3] - outputMinMaxXY[2] + 1;
+        
+        TIntIterator iter2 = orientations.iterator();
+        while (iter2.hasNext()) {
+
+            int or = iter2.next();
+
+            double angle = or * (Math.PI/180.);
+
+            Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
+                regionPoints.ellipseParams.xC, regionPoints.ellipseParams.yC,
+                points, w, h, angle);
+
+            CRegion cRegion = new CRegion();
+            cRegion.ellipseParams = regionPoints.ellipseParams;
+            cRegion.offsetsToOrigCoords = offsetToOrigMap;
+            cRegion.hogOrientation = or;
+            
+            out.add(cRegion);
+        }
+        
+        return out;
+    }
+    
     /**
      * uses RegionPoints.hogOrientations to make multiple cRegions for 
      * each RegionPoints instance.  it also make a region for the mser
@@ -319,13 +434,14 @@ public class Canonicalizer {
      * 
      * @return 
      */
-    public Set<CRegion> canonicalizeRegions4(
-        RegionPoints r, int imageWidth, int imageHeight) {
+    public Set<CRegion> canonicalizeRegions4(RegionPoints r, int imageWidth, 
+        int imageHeight) {
         
         Set<CRegion> out = new HashSet<CRegion>();
             
         TIntSet orientations = new TIntHashSet(r.hogOrientations);
-            
+        orientations.add(0);
+        
         /*
         NOTE that hog orientations have 90 pointing up and that is the
         direction of the major axis of points, that is 90 degrees is
@@ -591,7 +707,6 @@ public class Canonicalizer {
         rg.m = m;
         rg.xC = x;
         rg.yC = y;
-        rg.m = m;
 
         RegionPoints regionPoints = new RegionPoints();
         regionPoints.ellipseParams = rg;

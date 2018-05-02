@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import gnu.trove.set.TLongSet;
 import java.util.Arrays;
 
 /**
@@ -55,8 +56,30 @@ public class IntegralHistograms {
      * @return output two dimensional array with first dimension being 
      * the pixel index and the second being the histogram at that pixel.
      */
-    public int[][] create(GreyscaleImage img, int minValue, int maxValue,
-        int nBins) {
+    public int[][] create(GreyscaleImage img, int minValue, int maxValue, int nBins) {
+        
+        TLongSet includePixels = null;
+        
+        return create(img, includePixels, minValue, maxValue, nBins);
+    }
+    
+    /**
+     * NOT TESTED YET
+     * 
+     * for a default range in values of 0 to 255, inclusive, and a default
+     * bin size of 16, calculate the integral histograms.
+     * 
+     * @param img
+     * @param includePixels set of pixel coords to include, but if this is null
+     * all pixels are included
+     * @param minValue
+     * @param maxValue
+     * @param nBins
+     * @return output two dimensional array with first dimension being 
+     * the pixel index and the second being the histogram at that pixel.
+     */
+    public int[][] create(GreyscaleImage img, TLongSet includePixels,
+        int minValue, int maxValue, int nBins) {
 
         //NOTE: because there is little change between the data in one pixel
         // and the next, it should be possible encode and compress this
@@ -77,26 +100,38 @@ public class IntegralHistograms {
                 if (bin >= nBins) {
                     bin = nBins - 1;
                 }
+                
+                boolean incl = (includePixels == null) || 
+                    includePixels.contains(pixIdx);
+                
                 if (pixIdx == 0) {
                     out[pixIdx] = new int[nBins];
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                 } else if (x > 0 && y > 0) {
                     int pixIdxL = img.getInternalIndex(x - 1, y);
                     int pixIdxB = img.getInternalIndex(x, y - 1);
                     int pixIdxLB = img.getInternalIndex(x - 1, y - 1);
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                     // add bin, add pixIdxB and subtract pixIdxLB
                     add(out[pixIdx], out[pixIdxB]);
                     subtract(out[pixIdx], out[pixIdxLB]);
                 } else if (x > 0) {
                     int pixIdxL = img.getInternalIndex(x - 1, y);
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                 } else if (y > 0) {
                     int pixIdxB = img.getInternalIndex(x, y - 1);
                     out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                 }
             }
         }

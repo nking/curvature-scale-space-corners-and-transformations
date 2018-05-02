@@ -1,6 +1,8 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.*;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.util.Arrays;
 
 /**
@@ -38,6 +40,24 @@ public class PolarThetaIntegralHistograms {
      * @return 
      */
     public int[][] createHistograms(GreyscaleImage img, int nBins) {
+        
+        TLongSet includePixels = null;
+        
+        return createHistograms(img, includePixels, nBins);
+    }
+    
+    /**
+     * runtime complexity is O(N_pixels).
+     * 
+     * @param img greyscale image where intensity is polar angles of the X,Y 
+     * chromaticity
+     * @param includePixels set of pixel coords to include, but if this is null
+     * all pixels are included
+     * @param nBins
+     * @return 
+     */
+    public int[][] createHistograms(GreyscaleImage img, TLongSet includePixels,
+        int nBins) {
 
         int w = img.getWidth();
         int h = img.getHeight();
@@ -63,12 +83,17 @@ public class PolarThetaIntegralHistograms {
                 if (bin >= nBins) {
                     bin = nBins - 1;
                 }
-                               
+                
+                boolean incl = (includePixels == null) || 
+                    includePixels.contains(pixIdx);
+                    
                 if (pixIdx == 0) {
                     
                     out[pixIdx] = new int[nBins];
                     
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                     
                 } else if (x > 0 && y > 0) {
                     
@@ -78,7 +103,9 @@ public class PolarThetaIntegralHistograms {
                     
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
                                         
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                     
                     // add bin, add pixIdxB and subtract pixIdxLB
                     add(out[pixIdx], out[pixIdxB]);
@@ -89,7 +116,9 @@ public class PolarThetaIntegralHistograms {
                     int pixIdxL = img.getInternalIndex(x - 1, y);
                                    
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                 
                 } else if (y > 0) {
                 
@@ -97,7 +126,9 @@ public class PolarThetaIntegralHistograms {
                                     
                     out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);
                     
-                    out[pixIdx][bin]++;
+                    if (incl) {
+                        out[pixIdx][bin]++;
+                    }
                 }
             }
         }
