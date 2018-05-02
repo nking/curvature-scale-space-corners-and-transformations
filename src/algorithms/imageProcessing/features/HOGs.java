@@ -310,9 +310,7 @@ public class HOGs {
         
         double norm = 1./(blockTotal + eps);
 
-        float maxBlock = 255.f * cells.size();
-            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
-            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
+        float maxBlock = 255.f;
 
         norm *= maxBlock;
 
@@ -424,9 +422,7 @@ public class HOGs {
         
         double norm = 1./(blockTotal + eps);
 
-        float maxBlock = 255.f * cells.size();
-            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
-            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
+        float maxBlock = 255.f;
 
         norm *= maxBlock;
 
@@ -553,9 +549,7 @@ public class HOGs {
         
         double norm = 1./(blockTotal + eps);
 
-        float maxBlock = 255.f * count;
-            //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
-            //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
+        float maxBlock = 255.f;
 
         norm *= maxBlock;
         

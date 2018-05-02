@@ -112,6 +112,9 @@ public class ImageProcessor {
      */
     public GreyscaleImage[] createCentralDifferenceGradients(GreyscaleImage input) {
 
+        if (input.getWidth() < 3 || input.getHeight() < 3) {
+            throw new IllegalStateException("image dimensions must be at least 3 pixels each");
+        }
         //[1 0 -1]
         GreyscaleImage gX = input.copyToFullRangeIntImage();
         

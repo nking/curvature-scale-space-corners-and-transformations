@@ -1,8 +1,12 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.set.TLongSet;
 import java.util.Arrays;
 import java.util.Collection;
@@ -105,9 +109,9 @@ public class HOGUtil {
         float d = eps + Math.min(sumA, sumB);
         float sim = sum/d;
 
-        System.out.format("  (%d) hA=%s\n", orientationA, Arrays.toString(histA));
-        System.out.format("  (%d) hB=%s\n", orientationB, Arrays.toString(histB));
-        System.out.println("->inters=" + sim);
+        //System.out.format("  (%d) hA=%s\n", orientationA, Arrays.toString(histA));
+        //System.out.format("  (%d) hB=%s\n", orientationB, Arrays.toString(histB));
+        //System.out.println("->inters=" + sim);
         
         return sim;
     }
@@ -362,9 +366,7 @@ public class HOGUtil {
         int[] outputMinMaxXY, TLongSet outputRefFramePixs) {
 
         PixelHelper ph = new PixelHelper();
-        
-        GradientIntegralHistograms gh = new GradientIntegralHistograms();
-        
+                
         outputMinMaxXY[0] = Integer.MAX_VALUE;
         outputMinMaxXY[1] = Integer.MIN_VALUE;
         outputMinMaxXY[2] = Integer.MAX_VALUE;
@@ -387,6 +389,8 @@ public class HOGUtil {
         GreyscaleImage img2 = img.subImage2(outputMinMaxXY[0], 
             outputMinMaxXY[1], outputMinMaxXY[2], outputMinMaxXY[3]);
                 
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
         int w2 = img2.getWidth();
         int h2 = img2.getHeight();
         int xOffset = outputMinMaxXY[0];
@@ -416,6 +420,28 @@ public class HOGUtil {
         }
         System.out.println("  masked " + c + " out of " + (w2*h2));
         
+        //DEBUG
+        {
+            int ts = MiscDebug.getCurrentTimeFormatted();
+            Image img0 = img.copyToColorGreyscale();
+            Image imgSub = img2.copyToColorGreyscale();
+            
+            int[] xy2 = new int[2];            
+            for (PairInt p : points) {
+                ImageIOHelper.addPointToImage(p.getX(), p.getY(), img0,
+                    0, 255, 0, 0);
+            }
+            TLongIterator iter3 = outputRefFramePixs.iterator();
+            while (iter3.hasNext()) {
+                long pixIdx = iter3.next();
+                ph.toPixelCoords(pixIdx, w2, xy2);
+                ImageIOHelper.addPointToImage(xy2[0], xy2[1], imgSub,
+                    0, 255, 0, 0);
+            };
+            MiscDebug.writeImage(img0, "_DGB_IMG__" + ts);
+            MiscDebug.writeImage(imgSub, "_DGB_IMGSUB__" + ts);
+        }
+        
         return img2;
     }
     
@@ -429,12 +455,11 @@ public class HOGUtil {
      * @return 
      */
     public static GreyscaleImage createAndMaskSubImage2(GreyscaleImage img, 
-        Collection<PairInt> points,
         int[] minMaxXY, TLongSet refFramePixs) {
         
         int maskValue = 0;
         
-        return createAndMaskSubImage2(img, maskValue, points, minMaxXY, 
+        return createAndMaskSubImage2(img, maskValue, minMaxXY, 
             refFramePixs);
     }
 
@@ -449,20 +474,17 @@ public class HOGUtil {
      * @return 
      */
     public static GreyscaleImage createAndMaskSubImage2(GreyscaleImage img, 
-        int maskValue, Collection<PairInt> points,
-        int[] minMaxXY, TLongSet refFramePixs) {
+        int maskValue, int[] minMaxXY, TLongSet refFramePixs) {
 
         PixelHelper ph = new PixelHelper();
-        
-        GradientIntegralHistograms gh = new GradientIntegralHistograms();
-        
+                
         GreyscaleImage img2 = img.subImage2(minMaxXY[0], minMaxXY[1], 
             minMaxXY[2], minMaxXY[3]);
                 
         int w2 = img2.getWidth();
         int h2 = img2.getHeight();
-        int xOffset = minMaxXY[0];
-        int yOffset = minMaxXY[2];
+        //int xOffset = minMaxXY[0];
+        //int yOffset = minMaxXY[2];
         
         // mask out pixels not in the region
         for (int i2 = 0; i2 < w2; ++i2) {

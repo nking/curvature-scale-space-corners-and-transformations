@@ -2,24 +2,24 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.CorrespondenceList;
-import algorithms.imageProcessing.features.HCPT;
-import algorithms.imageProcessing.features.HGS;
-import algorithms.imageProcessing.features.HOGs;
+import algorithms.imageProcessing.features.HOGRegionsManager;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
-import algorithms.imageProcessing.features.mser.Region;
+import algorithms.misc.MiscDebug;
 import algorithms.packing.Intersection2DPacking;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,94 +39,13 @@ public class MSERMatcher {
     
     private int N_PIX_PER_CELL_DIM = 3;
     private int N_CELLS_PER_BLOCK_DIM = 3;
+    private int N_ANGLE_BINS = 9;
+    private int N_HIST_BINS = 12;
     
     private static float eps = 0.000001f;
 
     public void setToDebug() {
         debug = true;
-    }
-
-    private TIntObjectMap<CRegion> getOrCreate(
-        TIntObjectMap<TIntObjectMap<CRegion>> csrs,
-        int imgIdx, GreyscaleImage rgb, float scale) {
-
-        TIntObjectMap<CRegion> csrMap = csrs.get(imgIdx);
-        if (csrMap != null) {
-            return csrMap;
-        }
-        csrMap = new TIntObjectHashMap<CRegion>();
-        csrs.put(imgIdx, csrMap);
-
-        TIntObjectMap<CRegion> csrMap0 = csrs.get(0);
-
-        int w = rgb.getWidth();
-        int h = rgb.getHeight();
-
-        TIntObjectIterator<CRegion> iter = csrMap0.iterator();
-        for (int i = 0; i < csrMap0.size(); ++i) {
-            iter.advance();
-            int idx = iter.key();
-            CRegion csr = iter.value();
-
-            if (csr.offsetsToOrigCoords.size() < 9) {
-                continue;
-            }
-
-            // these are in scale of individual octave (not full reference frame)
-            Set<PairInt> scaledSet = extractScaledPts(csr, w, h, scale);
-
-            if (scaledSet.size() < 9) {
-                continue;
-            }
-
-            PairIntArray xy = new PairIntArray();
-
-            Region r = new Region();
-            for (PairInt pl : scaledSet) {
-                r.accumulate(pl.getX(), pl.getY());
-                xy.add(pl.getX(), pl.getY());
-            }
-
-            int[] xyCen = new int[2];
-            r.calculateXYCentroid(xyCen, w, h);
-            int x = xyCen[0];
-            int y = xyCen[1];
-            assert(x >= 0 && x < w);
-            assert(y >= 0 && y < h);
-            double[] m = r.calcParamTransCoeff();
-
-            double angle = Math.atan(m[0]/m[2]);
-            if (angle < 0) {
-                angle += Math.PI;
-            }
-
-            double major = 2. * m[4];
-            double minor = 2. * m[5];
-
-            double ecc = Math.sqrt(major * major - minor * minor)/major;
-            assert(!Double.isNaN(ecc));
-
-            Map<PairInt, PairInt> offsetMap = Canonicalizer.createOffsetToOrigMap(
-                x, y, xy, w, h, angle);
-
-            double autocorrel = Canonicalizer.calcAutoCorrel(rgb, x, y, offsetMap);
-
-            CRegion csRegion = new CRegion();
-            csRegion.ellipseParams.orientation = angle;
-            csRegion.ellipseParams.eccentricity = ecc;
-            csRegion.ellipseParams.major = major;
-            csRegion.ellipseParams.minor = minor;
-            csRegion.ellipseParams.xC = x;
-            csRegion.ellipseParams.yC = y;
-            csRegion.offsetsToOrigCoords = offsetMap;
-            csRegion.autocorrel = Math.sqrt(autocorrel)/255.;
-            csRegion.labels.addAll(csr.labels);
-            csRegion.dataIdx = idx;
-                
-            csrMap.put(idx, csRegion);
-        }
-
-        return csrMap;
     }
 
     private GreyscaleImage combineImages(List<GreyscaleImage> rgb) {
@@ -158,13 +77,15 @@ public class MSERMatcher {
         return comb;
     }
 
-    private Set<PairInt> extractScaledPts(CRegion csr, int w, int h,
-        float scale) {
-
-        Set<PairInt> scaledSet = new HashSet<PairInt>();
-        for (Entry<PairInt, PairInt> entry : csr.offsetsToOrigCoords.entrySet()) {
-
-            PairInt p = entry.getValue();
+    private RegionPoints extractPartiallyScaled(RegionPoints regionPoints, 
+        int scaledWidth, int scaledHeight, float scale) {
+        
+        RegionPoints rpScaled = new RegionPoints();
+        rpScaled.ellipseParams = regionPoints.ellipseParams.createNewDividedByScale(scale);
+        rpScaled.hogOrientations.addAll(regionPoints.hogOrientations);
+        rpScaled.points = new HashSet<PairInt>();
+        
+        for (PairInt p : regionPoints.points) {
 
             int xScaled = Math.round((float) p.getX() / scale);
             int yScaled = Math.round((float) p.getY() / scale);
@@ -174,18 +95,18 @@ public class MSERMatcher {
             if (yScaled == -1) {
                 yScaled = 0;
             }
-            if (xScaled == w) {
-                xScaled = w - 1;
+            if (xScaled == scaledWidth) {
+                xScaled = scaledWidth - 1;
             }
-            if (yScaled == h) {
-                yScaled = h - 1;
+            if (yScaled == scaledHeight) {
+                yScaled = scaledHeight - 1;
             }
             PairInt pOrigScaled = new PairInt(xScaled, yScaled);
 
-            scaledSet.add(pOrigScaled);
+            rpScaled.points.add(pOrigScaled);
         }
 
-        return scaledSet;
+        return rpScaled;
     }
     
     private int calculateObjectSizeByAvgDist(int x, int y, 
@@ -202,29 +123,38 @@ public class MSERMatcher {
         return sumD;
     }
     
-    //double[]{intersection, f0, f1, nMatched, area0, area1};
-    private double[] sumHOGCost2(Set<PairInt> offsets0, int intersectionCount,
-        HOGs hogs0, CRegion cr0, 
-        HOGs hogs1, CRegion cr1) {
+    //double[]{sumHOG, sumHCPT, sumHGS, f0, f1, intersectionCount, area0, area1};
+    private double[] sumHOGCost(Set<PairInt> offsets0, int intersectionCount,
+        HOGRegionsManager hogMgr0, CRegion cr0, 
+        HOGRegionsManager hogMgr1, CRegion cr1) {
                 
         if (offsets0.isEmpty()) {
             return null;
         }
 
+        assert(cr0.dataIdx != -1);
+        assert(cr1.dataIdx != -1);
+        
         int orientation0 = cr0.hogOrientation;
-            
         int orientation1 = cr1.hogOrientation;
         
         Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
 
-        double sum = 0;
+        double sumHOG = 0;
+        double sumHCPT = 0;
+        double sumHGS = 0;
         
-        int[] h0 = new int[hogs0.getNumberOfBins()];
+        int[] h0 = new int[N_ANGLE_BINS];
         int[] h1 = new int[h0.length];
         
+        int[] ha0 = new int[N_HIST_BINS];
+        int[] ha1 = new int[ha0.length];
+        float intersection;
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
+    
+        int count = 0;
         
         for (PairInt pOffset0 : offsets0) {
             
@@ -235,20 +165,43 @@ public class MSERMatcher {
             }
 
             PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);
-
-            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);
-
-            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);
-
-            // 1.0 is perfect similarity
-            float intersection = hogs0.intersection(h0, orientation0, 
-                h1, orientation1);
+            assert(xy0 != null);
             
-            sum += (intersection * intersection);
+            if (!hogMgr0.extractBlockHOG(cr0.dataIdx, xy0.getX(), xy0.getY(), h0)) {
+                continue;
+            }
+            if (!hogMgr1.extractBlockHOG(cr1.dataIdx, xy1.getX(), xy1.getY(), h1)) {
+                continue;
+            }
+            System.out.println("   " + Arrays.toString(h0) + ", " + Arrays.toString(h1));
+            // 1.0 is perfect similarity
+            intersection = hogMgr0.intersection(h0, orientation0, 
+                h1, orientation1);
+            sumHOG += (intersection * intersection);
+            
+            hogMgr0.extractBlockHCPT(cr0.dataIdx, xy0.getX(), xy0.getY(), ha0);
+            hogMgr1.extractBlockHCPT(cr1.dataIdx, xy1.getX(), xy1.getY(), ha1);
+            // 1.0 is perfect similarity
+            intersection = hogMgr0.intersection(ha0, ha1);
+            sumHCPT += (intersection * intersection);
+            
+            hogMgr0.extractBlockHGS(cr0.dataIdx, xy0.getX(), xy0.getY(), ha0);
+            hogMgr1.extractBlockHGS(cr1.dataIdx, xy1.getX(), xy1.getY(), ha1);
+            // 1.0 is perfect similarity
+            intersection = hogMgr0.intersection(ha0, ha1);
+            sumHGS += (intersection * intersection);
+            
+            count++;
         }
         
-        sum /= (double)offsets0.size();
-        sum = Math.sqrt(sum);
+        sumHOG /= (double)count;
+        sumHOG = Math.sqrt(sumHOG);
+        
+        sumHCPT /= (double)count;
+        sumHCPT = Math.sqrt(sumHCPT);
+        
+        sumHGS /= (double)count;
+        sumHGS = Math.sqrt(sumHGS);
         
         double area1 = cr1.offsetsToOrigCoords.size() + eps;
         double f1 = 1. - ((double) intersectionCount / area1);
@@ -256,132 +209,26 @@ public class MSERMatcher {
         double area0 = cr0.offsetsToOrigCoords.size() + eps;
         double f0 = 1. - ((double) intersectionCount / area0);
         
-        return new double[]{sum, f0, f1, intersectionCount, area0, area1};
+        return new double[]{sumHOG, sumHCPT, sumHGS, f0, f1, intersectionCount, area0, area1};
     }
-
-    //double[]{intersection, f0, f1, nMatched, area0, area1};
-    private double[] sumHOGCost3(HOGs hogs0, CRegion cr0, HOGs hogs1, 
-        CRegion cr1) {
+    
+    private HOGRegionsManager getOrCreate(
+        TIntObjectMap<HOGRegionsManager> hogsMap, 
+        TIntObjectMap<CRegion> cRegions, 
+        int imageWidth, int imageHeight, int idx) {
         
-        int orientation0 = cr0.hogOrientation;
-            
-        int orientation1 = cr1.hogOrientation;
-        
-        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
-
-        double sum = 0;
-        double sumErrSq = 0;
-        int count = 0;
-        
-        int[] h0 = new int[hogs0.getNumberOfBins()];
-        int[] h1 = new int[h0.length];
-            
-        float[] diffAndErr;
-        
-        //NOTE: the coordinate set block could be changed to not visit
-        //   every point, but to instead use a spacing of the HOG cell length
-        //   which is what Dala & Trigg recommend for their detector windows.
-        
-        // key = transformed offsets, value = coords in image ref frame,
-        // so, can compare dataset0 and dataset1 points with same
-        //  keys
-        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
-
-            PairInt pOffset0 = entry0.getKey();
-
-            PairInt xy1 = offsetMap1.get(pOffset0);
-
-            if (xy1 == null) {
-                continue;
-            }
-
-            PairInt xy0 = entry0.getValue();
-
-            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);
-
-            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);
-
-            // 1.0 is perfect similarity
-            diffAndErr = hogs0.diff(h0, orientation0, h1, orientation1);
-            
-            sum += diffAndErr[0];
-            sumErrSq += (diffAndErr[1] * diffAndErr[1]);
-            
-            count++;
-        }
-        if (count == 0) {
-            return null;
-        }
-
-        sum /= (double)count;
-        
-        sumErrSq /= (double)count;
-        sumErrSq = Math.sqrt(sumErrSq);
-        
-        double area1 = cr1.offsetsToOrigCoords.size() + eps;
-        double f1 = 1. - ((double) count / area1);
-        
-        double area0 = cr0.offsetsToOrigCoords.size() + eps;
-        double f0 = 1. - ((double) count / area0);
-        
-        return new double[]{sum, f0, f1, count, sumErrSq, area0, area1};
-    }
-
-    private HOGs getOrCreate(TIntObjectMap<HOGs> hogsMap, GreyscaleImage gs, 
-        int idx) {
-        
-        HOGs hogs = hogsMap.get(idx);
+        HOGRegionsManager hogs = hogsMap.get(idx);
         if (hogs != null) {
             return hogs;
         }
-        hogs = new HOGs(gs, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM);
+        
+        hogs = new HOGRegionsManager(cRegions, 
+            imageWidth, imageHeight, 
+            N_CELLS_PER_BLOCK_DIM, N_PIX_PER_CELL_DIM, N_ANGLE_BINS, N_HIST_BINS);
         
         hogsMap.put(idx, hogs);
         
         return hogs;
-    }
-
-    private HCPT getOrCreate2(TIntObjectMap<HCPT> hcptMap, GreyscaleImage pt, 
-        int idx) {
-        
-        HCPT hcpt = hcptMap.get(idx);
-        if (hcpt != null) {
-            return hcpt;
-        }
-        hcpt = new HCPT(pt, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);
-        
-        hcptMap.put(idx, hcpt);
-        
-        return hcpt;
-    }
-
-    private HGS getOrCreate3(TIntObjectMap<HGS> hgsMap, GreyscaleImage img, 
-        int idx) {
-        
-        HGS hgs = hgsMap.get(idx);
-        if (hgs != null) {
-            return hgs;
-        }
-        hgs = new HGS(img, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);
-        
-        hgsMap.put(idx, hgs);
-        
-        return hgs;
-    }
-    
-    private void calculateDominantOrientations(
-        TIntObjectMap<RegionPoints> regionPoints, HOGs hogs) {
-
-        TIntObjectIterator<RegionPoints> iter = regionPoints.iterator();
-        for (int i = 0; i < regionPoints.size(); ++i) {
-            iter.advance();
-            
-            RegionPoints r = iter.value();
-            
-            TIntSet orientations = hogs.calculateDominantOrientations(r.points);
-        
-            r.hogOrientations.addAll(orientations);
-        }
     }
 
     private int getLargestArea(TIntObjectMap<CRegion> regions) {
@@ -397,6 +244,14 @@ public class MSERMatcher {
             }
         }
         return area;
+    }
+
+    private List<TIntObjectMap<CRegion>> createList(int n) {
+        List<TIntObjectMap<CRegion>> out = new ArrayList<TIntObjectMap<CRegion>>();
+        for (int i = 0; i < n; ++i) {
+            out.add(new TIntObjectHashMap<CRegion>());
+        }
+        return out;
     }
 
     private static class CostComparator implements Comparator<Obj> {
@@ -545,42 +400,17 @@ public class MSERMatcher {
         TIntObjectMap<Canonicalizer.RegionPoints> regionPoints1, 
         Settings settings) {
             
-        TIntObjectMap<HOGs> hogsMap0 = new TIntObjectHashMap<HOGs>();
-        TIntObjectMap<HOGs> hogsMap1 = new TIntObjectHashMap<HOGs>();
-        
-        TIntObjectMap<HCPT> hcptMap0 = new TIntObjectHashMap<HCPT>();
-        TIntObjectMap<HGS> hgsMap0 = new TIntObjectHashMap<HGS>();
-        TIntObjectMap<HCPT> hcptMap1 = new TIntObjectHashMap<HCPT>();
-        TIntObjectMap<HGS> hgsMap1 = new TIntObjectHashMap<HGS>();
+        TIntObjectMap<HOGRegionsManager> hogsMap0 
+            = new TIntObjectHashMap<HOGRegionsManager>();
+        TIntObjectMap<HOGRegionsManager> hogsMap1 
+            = new TIntObjectHashMap<HOGRegionsManager>();
 
-        // use hogs to calculate the dominant orientations
-        calculateDominantOrientations(regionPoints0, 
-            getOrCreate(hogsMap0, combineImages(pyrRGB0.get(0)), 0));
+        // a reference to the regions, is same as what the HOGRegions etc hold
+        List<TIntObjectMap<CRegion>> cRegionsList0 = createList(pyrRGB0.size());
+        List<TIntObjectMap<CRegion>> cRegionsList1 = createList(pyrRGB1.size());
         
-        calculateDominantOrientations(regionPoints1, 
-            getOrCreate(hogsMap1, combineImages(pyrRGB1.get(0)), 0));
-        
-        Canonicalizer canonicalizer = new Canonicalizer();
-        
-        // create the CRegion objects which have the rotated points and 
-        //    offsets in them
-        TIntObjectMap<CRegion> cRegions0 = canonicalizer.canonicalizeRegions4(
-            regionPoints0, pyrRGB0.get(0).get(1).getWidth(),
-            pyrRGB0.get(0).get(1).getHeight());
-        
-        TIntObjectMap<CRegion> cRegions1 = canonicalizer.canonicalizeRegions4(
-            regionPoints1, pyrRGB1.get(0).get(1).getWidth(),
-            pyrRGB1.get(0).get(1).getHeight());
-        
-        // populated on demand, some are skipped for large size differences
-        TIntObjectMap<TIntObjectMap<CRegion>> csr0
-            = new TIntObjectHashMap<TIntObjectMap<CRegion>>();
-        csr0.put(0, cRegions0);
-
-        TIntObjectMap<TIntObjectMap<CRegion>> csr1
-            = new TIntObjectHashMap<TIntObjectMap<CRegion>>();
-        csr1.put(0, cRegions1);
-
+        ImageProcessor imageProcessor = new ImageProcessor();
+       
         int n0 = pyrPT0.size();
         int n1 = pyrPT1.size();
 
@@ -605,19 +435,20 @@ public class MSERMatcher {
             float scale0 = (((float) w0 / (float) w0_i)
                 + ((float) h0 / (float) h0_i)) / 2.f;
 
-            HOGs hogs0 = getOrCreate(hogsMap0, gsI0, pyrIdx0);
-
-            HCPT hcpt0 = getOrCreate2(hcptMap0, ptI0, pyrIdx0);
-            HGS hgs0 = getOrCreate3(hgsMap0, gsI0, pyrIdx0);
+            TIntObjectMap<CRegion> regions0 = cRegionsList0.get(pyrIdx0);
             
-            TIntObjectMap<CRegion> regions0 = getOrCreate(csr0, pyrIdx0, gsI0,
-                scale0);
- 
+            // instantiate and cache hogs0 if doesn't exist
+            HOGRegionsManager hogsMgr0 = getOrCreate(hogsMap0, regions0, 
+                w0_i, h0_i, pyrIdx0);
+            
+            HOGRegionsManager.populateRegionsIfNeeded(
+                regionPoints0, scale0, hogsMgr0, gsI0, ptI0);
+            
             FixedSizeSortedVector<Obj> bestPerOctave =
                 //new FixedSizeSortedVector<Obj>(100, Obj.class);
                 new FixedSizeSortedVector<Obj>(1, Obj.class);
             
-            int maxArea0 = getLargestArea(cRegions0);
+            int maxArea0 = getLargestArea(regions0);
             
             for (int pyrIdx1 = 0; pyrIdx1 < n1; ++pyrIdx1) {
 
@@ -629,15 +460,19 @@ public class MSERMatcher {
                 float scale1 = (((float) w1 / (float) w1_i)
                     + ((float) h1 / (float) h1_i)) / 2.f;
 
-                TIntObjectMap<CRegion> regions1 = getOrCreate(csr1, pyrIdx1,
-                    gsI1, scale1);
-
-                HOGs hogs1 = getOrCreate(hogsMap1, gsI1, pyrIdx1);
-                HCPT hcpt1 = getOrCreate2(hcptMap1, ptI1, pyrIdx1);
-                HGS hgs1 = getOrCreate3(hgsMap1, gsI1, pyrIdx1);
+                TIntObjectMap<CRegion> regions1 = cRegionsList1.get(pyrIdx1);
                 
+                // instantiate and cache hogs0 if doesn't exist
+                // instantiate and cache hogs0 if doesn't exist
+                HOGRegionsManager hogsMgr1 = getOrCreate(hogsMap1, regions1, 
+                    w1_i, h1_i, pyrIdx1);
+            
+                HOGRegionsManager.populateRegionsIfNeeded(
+                    regionPoints1, scale1, hogsMgr1, gsI1, ptI1);
+                  
+                int nr0 = regions0.size();
                 TIntObjectIterator<CRegion> iter0 = regions0.iterator();
-                for (int i0 = 0; i0 < regions0.size(); ++i0) {
+                for (int i0 = 0; i0 < nr0; ++i0) {
                     
                     iter0.advance();
                     
@@ -649,6 +484,10 @@ public class MSERMatcher {
                         cr0.ellipseParams.xC, cr0.ellipseParams.yC,
                         cr0.offsetsToOrigCoords.values());
 
+                    if (sz0 == 0) {
+                        continue;
+                    }
+                    
                     /*
                     CMODE cmode0 = CMODE.determineColorMode(
                         pyrRGB0.get(pyrIdx0).get(0),
@@ -660,9 +499,10 @@ public class MSERMatcher {
                         cmodeLUV0);
                     */
                     
+                    int nr1 = regions1.size();
                     //int area0_full = csr0.get(0).get(rIdx0).offsetsToOrigCoords.size();
                     TIntObjectIterator<CRegion> iter1 = regions1.iterator();
-                    for (int i1 = 0; i1 < regions1.size(); ++i1) {
+                    for (int i1 = 0; i1 < nr1; ++i1) {
                         
                         iter1.advance();
                         
@@ -679,6 +519,10 @@ public class MSERMatcher {
                             cr1.ellipseParams.xC, cr1.ellipseParams.yC,
                             cr1.offsetsToOrigCoords.values());
 
+                        if (sz1 == 0) {
+                            continue;
+                        }
+                        
                         /*
                         int xp0 = -1; int yp0 = -1; int xp1 = -1; int yp1 = -1;
                         if (debug) {
@@ -707,41 +551,53 @@ public class MSERMatcher {
                             cr1.offsetsToOrigCoords.keySet());
                         Set<PairInt> offsets0 = ip.naiveStripPacking(
                             intersectingKeys, N_PIX_PER_CELL_DIM);
-
-                        double[] hogCosts;
-                        float hogCost;
                         
-                        if (true) {// use intersection    
-                            //double[]{intersection, f0, f1, count, area0, area1};
-                            hogCosts = sumHOGCost2(
-                                offsets0, intersectingKeys.size(), hogs0, cr0, 
-                                hogs1, cr1);
-                            if (hogCosts == null) {
-                                continue;
-                            }
-                            hogCost = 1.f - (float) hogCosts[0];
-                        } else {// use mean difference    
-                            //double[]{diff, f0, f1, count, error, area0, area1};
-                            hogCosts = sumHOGCost3(hogs0, cr0, hogs1, cr1);
-                            if (hogCosts == null) {
-                                continue;
-                            }
-                            hogCost = (float)hogCosts[0];
+                        //DEBUG
+                        {
+                            Image tmp = gsI1.copyToColorGreyscale();
+                            for (Entry<PairInt, PairInt> entry : cr1.offsetsToOrigCoords.entrySet()) {
+                                ImageIOHelper.addPointToImage(entry.getValue().getX(),
+                                    entry.getValue().getY(), tmp,
+                                    1, 255, 0, 0);
+                            };
+                            MiscDebug.writeImage(tmp, "_DBG_" 
+                                + pyrIdx0 + "_" + i0 + "__" + pyrIdx1 + "_" + i1);
                         }
+                        /*{
+                            System.out.println("intersectionKeys.size=" +
+                                intersectingKeys.size() + 
+                                " offsets0.size=" + offsets0.size());
+                            
+                            for (PairInt p : offsets0) {
+                                assert(intersectingKeys.contains(p));
+                            }
+                        }*/
+
+                        
+                        //double[]{sumHOG, sumHCPT, sumHGS, f0, f1, 
+                        //   intersectionCount, area0, area1};      
+                        double[] hogCosts = sumHOGCost(
+                            offsets0, intersectingKeys.size(), 
+                            hogsMgr0, cr0, hogsMgr1, cr1);
+                        if (hogCosts == null) {
+                            continue;
+                        }
+                        double hogCost = 1. - hogCosts[0];
+                        double hcptCost = 1. - hogCosts[1];
+                        double hgsCost = 1. - hogCosts[2];
                         
                         // 1 - fraction of whole (is coverage expressed as a cost)
-                        double f0 = Math.max(0, hogCosts[1]);
-                        double f1 = Math.max(0, hogCosts[2]);
+                        double f0 = Math.max(0, hogCosts[3]);
+                        double f1 = Math.max(0, hogCosts[4]);
                         double f = (f0 + f1)/2;
-                        /*
-                        // penalty if area1 is > maxArea0
-                        //NOTE: this will make it difficult to find template 
-                        //  when it's incomplete or search foreground is blended 
-                        //  into obj
-                        double area1 = hogCosts[hogCosts.length - 1];
-                        if (area1 > maxArea0) {
-                            f = Math.max(1.0, f + (area1 - maxArea0)/maxArea0);
-                        }*/
+                        
+                        double cost = (float) Math.sqrt(
+                            hogCost * hogCost
+                            //+ 2. * f * f
+                            + f * f
+                            + hcptCost * hcptCost
+                            + hgsCost * hgsCost
+                        );
                         
                         Obj obj = new Obj();
                         obj.cr0 = cr0;
@@ -750,49 +606,10 @@ public class MSERMatcher {
                         obj.r1Idx = rIdx1;
                         obj.imgIdx0 = pyrIdx0;
                         obj.imgIdx1 = pyrIdx1;
-                        obj.nMatched = (int) hogCosts[3];
-                        
-                        double cost;
-                        double[] costs2;
-                        double hcptHgsCost;
-                        double hcptCost;
-                        double hgsCost;
-                       
-                        if (true) {
-                            //double[]{combIntersection, f0, f1, 
-                            //    intersectionHCPT, intersectionHGS, count}
-                            costs2 = sumCost2(
-                                offsets0, intersectingKeys.size(), hcpt0, hgs0, cr0, 
-                                hcpt1, hgs1, cr1);
-                            if (clrMode0.equals(CMODE.WHITE)) {
-                                hcptHgsCost = 1.f - costs2[0];
-                            } else {
-                                hcptHgsCost = 1.f - costs2[3];
-                            }
-                            hcptCost = 1.f - costs2[3];
-                            hgsCost = 1.f - costs2[4];
-                        } else {
-                            costs2 = sumCost3(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
-                            if (clrMode0.equals(CMODE.WHITE)) {
-                                hcptHgsCost = costs2[0];
-                            } else {
-                                hcptHgsCost = costs2[3];
-                            }
-                            hcptCost = costs2[3];
-                            hgsCost = costs2[4];
-                        }
-                        
-                        cost = (float) Math.sqrt(
-                            2. * hogCost * hogCost
-                            //+ 2. * f * f
-                            + f * f
-                            + hcptHgsCost * hcptHgsCost
-                        );
-                        
+                        obj.nMatched = (int) hogCosts[5];
                         obj.costs = new double[]{
-                            hogCost, f, hcptHgsCost, f0, f1, hcptCost, hgsCost
+                            cost, f, hogCost, hcptCost, hgsCost, f0, f1 
                         };
-                        
                         obj.cost = cost;
                         obj.f = f;
 
@@ -936,155 +753,4 @@ public class MSERMatcher {
         return out;
     }
     
-    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count}
-    private double[] sumCost2(Set<PairInt> offsets0, int intersectionCount, 
-        HCPT hcpt0, HGS hgs0, CRegion cr0, HCPT hcpt1, HGS hgs1, CRegion cr1) {
-        
-        if (offsets0.size() == 0) {
-            return null;
-        }
-        
-        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
-
-        double sumCombined = 0;
-        double sumHCPT = 0;
-        double sumHGS = 0;
-        
-        int[] h0 = new int[hcpt0.getNumberOfBins()];
-        int[] h1 = new int[h0.length];
-        
-        // key = transformed offsets, value = coords in image ref frame,
-        // so, can compare dataset0 and dataset1 points with same
-        //  keys
-        for (PairInt pOffset0 : offsets0) {
-            
-            PairInt xy1 = offsetMap1.get(pOffset0);
-
-            if (xy1 == null) {
-                continue;
-            }
-
-            PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);
-        
-            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);
-
-            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);
-
-            float intersection = hcpt0.intersection(h0, h1);
-            
-            sumCombined += (intersection * intersection);
-            sumHCPT += (intersection * intersection);
-            
-            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);
-
-            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);
-
-            intersection = hgs0.intersection(h0, h1);
-            
-            sumCombined += (intersection * intersection);
-            sumHGS += (intersection * intersection);
-        }
-
-        sumCombined /= (2.*offsets0.size());
-        sumCombined = Math.sqrt(sumCombined);
-        
-        sumHCPT /= (double)intersectionCount;
-        sumHCPT = Math.sqrt(sumHCPT);
-        
-        sumHGS /= (double)intersectionCount;
-        sumHGS = Math.sqrt(sumHGS);
-                     
-        double area1 = cr1.offsetsToOrigCoords.size();
-        double f1 = 1. - ((double) intersectionCount / area1);
-        
-        double area0 = cr0.offsetsToOrigCoords.size();
-        double f0 = 1. - ((double) intersectionCount / area0);
-        
-        return new double[]{sumCombined, f0, f1, sumHCPT, sumHGS, intersectionCount};            
-    }
-    
-    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count};
-    private double[] sumCost3(HCPT hcpt0, HGS hgs0, CRegion cr0, 
-        HCPT hcpt1, HGS hgs1, CRegion cr1) {
-        
-        int orientation0 = cr0.hogOrientation;
-            
-        int orientation1 = cr1.hogOrientation;
-        
-        Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
-
-        double sum = 0;
-        double sumHCPT = 0;
-        double sumHGS = 0;
-        double sumErrSq = 0;
-        int count = 0;
-        
-        int[] h0 = new int[hcpt0.getNumberOfBins()];
-        int[] h1 = new int[h0.length];
-            
-        float[] diffAndErr;
-        
-        //NOTE: the coordinate set block could be changed to not visit
-        //   every point, but to instead use a spacing of the HOG cell length
-        //   which is what Dala & Trigg recommend for their detector windows.
-        
-        // key = transformed offsets, value = coords in image ref frame,
-        // so, can compare dataset0 and dataset1 points with same
-        //  keys
-        for (Entry<PairInt, PairInt> entry0 : cr0.offsetsToOrigCoords.entrySet()) {
-
-            PairInt pOffset0 = entry0.getKey();
-
-            PairInt xy1 = offsetMap1.get(pOffset0);
-
-            if (xy1 == null) {
-                continue;
-            }
-
-            PairInt xy0 = entry0.getValue();
-
-            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);
-
-            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);
-
-            // 1.0 is perfect similarity
-            diffAndErr = hcpt0.diff(h0, h1);
-            
-            sum += diffAndErr[0];
-            sumHCPT += diffAndErr[0];
-            sumErrSq += (diffAndErr[1] * diffAndErr[1]);
-            
-            
-            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);
-
-            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);
-
-            // 1.0 is perfect similarity
-            diffAndErr = hgs0.diff(h0, h1);
-            
-            sum += diffAndErr[0];
-            sumHGS += diffAndErr[0];
-            sumErrSq += (diffAndErr[1] * diffAndErr[1]);
-            
-            count++;
-        }
-        if (count == 0) {
-            return null;
-        }
-
-        sum /= (2.*count);
-        sumHCPT /= (double)count;
-        sumHGS /= (double)count;
-        
-        sumErrSq /= (2.*count);
-        sumErrSq = Math.sqrt(sumErrSq);
-        
-        double area1 = cr1.offsetsToOrigCoords.size();
-        double f1 = 1. - ((double) count / area1);
-        
-        double area0 = cr0.offsetsToOrigCoords.size();
-        double f0 = 1. - ((double) count / area0);
-        
-        return new double[]{sum, f0, f1, count, sumErrSq};
-    }
 }

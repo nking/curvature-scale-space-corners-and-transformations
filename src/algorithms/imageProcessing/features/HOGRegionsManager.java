@@ -1,16 +1,23 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.IntegralHistograms;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
+import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
 import algorithms.util.TwoDIntArray;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -25,6 +32,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -153,15 +161,18 @@ public class HOGRegionsManager {
      * @param subImagePTImg
      * @param subImageGradient
      * @param subImageTheta
-     * @param cRegion
-     * @param fullFrameMinMaxXY
+     * @param cRegion a region whose coordinates are in the reference frame of
+     *    the uncropped image (that is, the sumImages).
+     * @param minMaxXYUnCroppedRefFrame these are the bounds of the points in
+     *    cRegion but the reference frame is the uncropped image (that is, the sumImages)
+     *    to pass to this method the offsets from the uncropped image.
      * @param subImagePixelCoords
      */
     public void addARegion(
         GreyscaleImage subImageGSImg, GreyscaleImage subImagePTImg,
         GreyscaleImage subImageGradient, GreyscaleImage subImageTheta,
         Canonicalizer.CRegion cRegion, 
-        int[] fullFrameMinMaxXY, TLongSet subImagePixelCoords) {
+        int[] minMaxXYUnCroppedRefFrame, TLongSet subImagePixelCoords) {
         
         int rIndex = cRegion.dataIdx;
         if (rIndex == -1) {
@@ -176,7 +187,7 @@ public class HOGRegionsManager {
         int h2 = subImageGSImg.getHeight();
         
         regionCoords.put(rIndex, subImagePixelCoords);
-        regionIndexMinMaxXY.put(rIndex, new OneDIntArray(fullFrameMinMaxXY));        
+        regionIndexMinMaxXY.put(rIndex, new OneDIntArray(minMaxXYUnCroppedRefFrame));        
         regionIndexRegions.putIfAbsent(rIndex, cRegion);
             
         // non-region pixels are excluded because magnitude is zero
@@ -374,9 +385,10 @@ public class HOGRegionsManager {
     }
     
     public static void populateRegionsIfNeeded(
-        TIntObjectMap<Canonicalizer.RegionPoints> regionPointsMap, float scale,
+        TIntObjectMap<Canonicalizer.RegionPoints> regionPointsMapNotScaled, 
+        float scale,
         HOGRegionsManager hogMgs,
-        GreyscaleImage gsImg, GreyscaleImage ptImg) {
+        GreyscaleImage gsImgScaled, GreyscaleImage ptImgScaled) {
 
         TIntObjectMap<Canonicalizer.CRegion> cRegionMapReference 
             = hogMgs.getRegionIndexRegions();
@@ -386,8 +398,10 @@ public class HOGRegionsManager {
             return;
         }
         
-        int w = gsImg.getWidth();
-        int h = gsImg.getHeight();
+        int w = gsImgScaled.getWidth();
+        int h = gsImgScaled.getHeight();
+        
+        PixelHelper ph = new PixelHelper();
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -395,59 +409,102 @@ public class HOGRegionsManager {
         int[] outputMinMaxXY = new int[4];
         
         TIntObjectIterator<Canonicalizer.RegionPoints> iter 
-            = regionPointsMap.iterator();
+            = regionPointsMapNotScaled.iterator();
         
-        int n = regionPointsMap.size();
+        int n = regionPointsMapNotScaled.size();
+        
+        int ts = MiscDebug.getCurrentTimeFormatted();
         
         for (int i = 0; i < n; ++i) {
             iter.advance();
             
-            Canonicalizer.RegionPoints regionPoints = iter.value();
+            RegionPoints regionPointsNotScaled = iter.value();
             
-            if (regionPoints.points.size() < 9) {
+            if (regionPointsNotScaled.points.size() < 9) {
                 continue;
             }
             
-            List<Canonicalizer.CRegion> crs = cn.canonicalizeRegionsToFit(regionPoints, 
-                outputMinMaxXY);
+            RegionPoints regionPointsScaled = 
+                regionPointsNotScaled.createNewDividedByScaleSansAcc(scale);
+            
+            List<CRegion> crsScaled = cn.canonicalizeRegions(
+                w, h, regionPointsScaled, outputMinMaxXY);
+            
+            //DEBUG
+            /*{
+                Image tmp = gsImgScaled.copyToColorGreyscale();
+                for (PairInt p : regionPointsScaled.points) {
+                    ImageIOHelper.addPointToImage(
+                        p.getX(), p.getY(), 
+                        tmp,
+                        0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, "_DBG00_" + scale + "_" + ts); 
+                int z = 0;
+            }*/
             
             //System.out.println("created " + crs.size() + " from RegionPoints " + i);
             
-            for (Canonicalizer.CRegion cr : crs) {
+            for (Canonicalizer.CRegion crScaled : crsScaled) {
+
                 int rIdx = cRegionMapReference.size();
-                cr.dataIdx = rIdx;
-                
-                if (cr.offsetsToOrigCoords.size() < 9) {
-                    continue;
-                }
-                
-                Canonicalizer.CRegion crScaled = cr.createNewDividedByScale(scale);
                 
                 if (crScaled.offsetsToOrigCoords.size() < 9) {
                     continue;
                 }
-                
+            
                 int[] minMaxXY = crScaled.getMinMaxXY();
                 
-                //cRegionMapReference.put(rIdx, crScaled);
+                int w2 = minMaxXY[1] - minMaxXY[0] + 1;
+                int h2 = minMaxXY[3] - minMaxXY[2] + 1;
+                if (w2 < 3 || h2 < 3) {
+                    continue;
+                }
                 
-                TLongSet outputRefFramePixs = new TLongHashSet();
-                Set<PairInt> coords = crScaled.extractCoords();
-                GreyscaleImage gsImg2 = HOGUtil.createAndMaskSubImage(gsImg, 
-                    maskValue, coords, outputMinMaxXY, 
-                    outputRefFramePixs);
-
+                crScaled.dataIdx = rIdx;
+                                
+                GreyscaleImage gsImg2 = gsImgScaled.subImage2(
+                    minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3]);
+                
                 GreyscaleImage[] gXgY = 
                     imageProcessor.createCentralDifferenceGradients(gsImg2);
                 GreyscaleImage theta2 = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
                 GreyscaleImage gXY2 = 
                     imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
-               
-                GreyscaleImage ptImg2 = HOGUtil.createAndMaskSubImage2(ptImg, 
-                    maskValue, coords, outputMinMaxXY, outputRefFramePixs);
+                               
+                TLongSet refFramePixs = new TLongHashSet();
+                for (Entry<PairInt, PairInt> entry : crScaled.offsetsToOrigCoords.entrySet()) {
+                    int x = entry.getValue().getX() - minMaxXY[0];
+                    int y = entry.getValue().getY() - minMaxXY[2];
+                    long pixIdx = ph.toPixelIndex(x, y, w2);
+                    refFramePixs.add(pixIdx);
+                }
                 
-                hogMgs.addARegion(gsImg2, ptImg2, gXY2, theta2, crScaled, 
-                    outputMinMaxXY, outputRefFramePixs);
+                GreyscaleImage ptImg2 = HOGUtil.createAndMaskSubImage2(ptImgScaled, 
+                    maskValue, minMaxXY, refFramePixs);
+                
+                //DEBUG
+                /*{
+                    int[] xy2 = new int[2];
+                    Image tmp = gsImg2.copyToColorGreyscale();
+                    TLongIterator iter3 = refFramePixs.iterator();
+                    while (iter3.hasNext()) {
+                        long pixIdx = iter3.next();
+                        ph.toPixelCoords(pixIdx, w2, xy2);
+                        
+                        //ImageIOHelper.addPointToImage(xy2[0], xy2[1], tmp,
+                        //    1, 0, 255, 0);
+                        ImageIOHelper.addPointToImage(xy2[0], xy2[1], tmp,
+                            0, 255, 0, 0);
+                    };
+                    MiscDebug.writeImage(tmp, "_DBG2_" 
+                        + rIdx + "_" + scale + "_" + ts);
+                }*/
+ 
+                hogMgs.addARegion(
+                    gsImg2, ptImg2, gXY2, theta2, 
+                    crScaled, minMaxXY, refFramePixs);
+               
                 assert(cRegionMapReference.get(rIdx).equals(crScaled));
             }
         }

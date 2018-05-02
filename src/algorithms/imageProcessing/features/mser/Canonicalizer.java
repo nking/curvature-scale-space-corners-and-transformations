@@ -135,6 +135,18 @@ public class Canonicalizer {
         public TIntList accX = new TIntArrayList();
         public TIntList accY = new TIntArrayList();
         
+        public RegionPoints createNewDividedByScaleSansAcc(float scale) {
+            RegionPoints rp = new RegionPoints();
+            rp.ellipseParams = ellipseParams.createNewDividedByScale(scale);
+            rp.hogOrientations.addAll(hogOrientations);
+            rp.points = new HashSet<PairInt>(points.size());
+            for (PairInt p : points) {
+                rp.points.add(new PairInt(
+                    (int)(p.getX()/scale),(int)(p.getY()/scale)));
+            }
+            return rp;
+        }
+        
     }
 
     public static class CRegion {
@@ -363,7 +375,15 @@ public class Canonicalizer {
         return output;        
     }
     
-    public List<CRegion> canonicalizeRegionsToFit(
+    /**
+     * NOTE: the returned CRegions need to have their .dataIdx fields set for
+     * their specific context.
+     * @param regionPoints
+     * @param outputMinMaxXY
+     * @return 
+     */
+    public List<CRegion> canonicalizeRegions(
+        int w0, int h0,
         Canonicalizer.RegionPoints regionPoints, int[] outputMinMaxXY) {
         
         List<CRegion> out = new ArrayList<CRegion>();
@@ -392,13 +412,13 @@ public class Canonicalizer {
             eAngle += 180;
         }
         orientations.add(eAngle);
+        
+        PairIntArray pointsArray = Misc.convertWithoutOrder(regionPoints.points);
 
-        PairIntArray points = Misc.convertWithoutOrder(regionPoints.points);
-
-        outputMinMaxXY[0] = MiscMath.findMin(points.getX());
-        outputMinMaxXY[1] = MiscMath.findMax(points.getX());
-        outputMinMaxXY[2] = MiscMath.findMin(points.getY());
-        outputMinMaxXY[3] = MiscMath.findMax(points.getY());
+        outputMinMaxXY[0] = MiscMath.findMin(pointsArray.getX());
+        outputMinMaxXY[1] = MiscMath.findMax(pointsArray.getX());
+        outputMinMaxXY[2] = MiscMath.findMin(pointsArray.getY());
+        outputMinMaxXY[3] = MiscMath.findMax(pointsArray.getY());
         int w = outputMinMaxXY[1] - outputMinMaxXY[0] + 1;
         int h = outputMinMaxXY[3] - outputMinMaxXY[2] + 1;
         
@@ -409,14 +429,15 @@ public class Canonicalizer {
 
             double angle = or * (Math.PI/180.);
 
-            Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
-                regionPoints.ellipseParams.xC, regionPoints.ellipseParams.yC,
-                points, w, h, angle);
+            Map<PairInt, PairInt> offsetToOrigMap = 
+                createOffsetToOrigMap(regionPoints.ellipseParams.xC, regionPoints.ellipseParams.yC,
+                pointsArray, w0, h0, angle);
 
             CRegion cRegion = new CRegion();
             cRegion.ellipseParams = regionPoints.ellipseParams;
             cRegion.offsetsToOrigCoords = offsetToOrigMap;
             cRegion.hogOrientation = or;
+            cRegion.minMaxXY = Arrays.copyOf(outputMinMaxXY, outputMinMaxXY.length);
             
             out.add(cRegion);
         }

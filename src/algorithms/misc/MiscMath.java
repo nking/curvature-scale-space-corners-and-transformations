@@ -134,7 +134,7 @@ public class MiscMath {
     }
     
     public static float findMin(float[] a, int nIndexes) {
-        float min = Float.MAX_VALUE;
+        float min = Float.POSITIVE_INFINITY;
         for (int i = 0; i < nIndexes; i++) {
             if ((a[i] < min) && !Float.isInfinite(a[i])) {
                 min = a[i];
