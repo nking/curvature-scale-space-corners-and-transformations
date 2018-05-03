@@ -425,7 +425,8 @@ public class HOGRegionsManager {
             }
             
             RegionPoints regionPointsScaled = 
-                regionPointsNotScaled.createNewDividedByScaleSansAcc(scale);
+                regionPointsNotScaled.createNewDividedByScaleSansAcc(
+                scale, w - 1, h - 1);
             
             List<CRegion> crsScaled = cn.canonicalizeRegions(
                 w, h, regionPointsScaled, outputMinMaxXY);
@@ -462,7 +463,7 @@ public class HOGRegionsManager {
                 }
                 
                 crScaled.dataIdx = rIdx;
-                                
+                               
                 GreyscaleImage gsImg2 = gsImgScaled.subImage2(
                     minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3]);
                 

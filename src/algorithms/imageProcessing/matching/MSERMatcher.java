@@ -77,38 +77,6 @@ public class MSERMatcher {
         return comb;
     }
 
-    private RegionPoints extractPartiallyScaled(RegionPoints regionPoints, 
-        int scaledWidth, int scaledHeight, float scale) {
-        
-        RegionPoints rpScaled = new RegionPoints();
-        rpScaled.ellipseParams = regionPoints.ellipseParams.createNewDividedByScale(scale);
-        rpScaled.hogOrientations.addAll(regionPoints.hogOrientations);
-        rpScaled.points = new HashSet<PairInt>();
-        
-        for (PairInt p : regionPoints.points) {
-
-            int xScaled = Math.round((float) p.getX() / scale);
-            int yScaled = Math.round((float) p.getY() / scale);
-            if (xScaled == -1) {
-                xScaled = 0;
-            }
-            if (yScaled == -1) {
-                yScaled = 0;
-            }
-            if (xScaled == scaledWidth) {
-                xScaled = scaledWidth - 1;
-            }
-            if (yScaled == scaledHeight) {
-                yScaled = scaledHeight - 1;
-            }
-            PairInt pOrigScaled = new PairInt(xScaled, yScaled);
-
-            rpScaled.points.add(pOrigScaled);
-        }
-
-        return rpScaled;
-    }
-    
     private int calculateObjectSizeByAvgDist(int x, int y, 
         Collection<PairInt> values) {
 
@@ -173,7 +141,6 @@ public class MSERMatcher {
             if (!hogMgr1.extractBlockHOG(cr1.dataIdx, xy1.getX(), xy1.getY(), h1)) {
                 continue;
             }
-            System.out.println("   " + Arrays.toString(h0) + ", " + Arrays.toString(h1));
             // 1.0 is perfect similarity
             intersection = hogMgr0.intersection(h0, orientation0, 
                 h1, orientation1);
@@ -553,7 +520,7 @@ public class MSERMatcher {
                             intersectingKeys, N_PIX_PER_CELL_DIM);
                         
                         //DEBUG
-                        {
+                        /*{
                             Image tmp = gsI1.copyToColorGreyscale();
                             for (Entry<PairInt, PairInt> entry : cr1.offsetsToOrigCoords.entrySet()) {
                                 ImageIOHelper.addPointToImage(entry.getValue().getX(),
@@ -562,7 +529,7 @@ public class MSERMatcher {
                             };
                             MiscDebug.writeImage(tmp, "_DBG_" 
                                 + pyrIdx0 + "_" + i0 + "__" + pyrIdx1 + "_" + i1);
-                        }
+                        }*/
                         /*{
                             System.out.println("intersectionKeys.size=" +
                                 intersectingKeys.size() + 
@@ -589,6 +556,9 @@ public class MSERMatcher {
                         // 1 - fraction of whole (is coverage expressed as a cost)
                         double f0 = Math.max(0, hogCosts[3]);
                         double f1 = Math.max(0, hogCosts[4]);
+                        if (f0 > 0.85 || f1 > 0.85) {
+                            continue;
+                        }
                         double f = (f0 + f1)/2;
                         
                         double cost = (float) Math.sqrt(
@@ -596,7 +566,7 @@ public class MSERMatcher {
                             //+ 2. * f * f
                             + f * f
                             + hcptCost * hcptCost
-                            + hgsCost * hgsCost
+                        //    + hgsCost * hgsCost
                         );
                         
                         Obj obj = new Obj();
@@ -608,7 +578,7 @@ public class MSERMatcher {
                         obj.imgIdx1 = pyrIdx1;
                         obj.nMatched = (int) hogCosts[5];
                         obj.costs = new double[]{
-                            cost, f, hogCost, hcptCost, hgsCost, f0, f1 
+                            cost, hogCost, hcptCost, hgsCost, f, f0, f1 
                         };
                         obj.cost = cost;
                         obj.f = f;
@@ -644,7 +614,7 @@ public class MSERMatcher {
                             (float) obj.costs[2], (float) obj.costs[3], 
                             (float) obj.costs[4], (float) obj.costs[5], 
                             (float) obj.costs[6], 
-                            obj.cr0.offsetsToOrigCoords.size()
+                            obj.nMatched
                             );
                         }
                     }
@@ -677,9 +647,10 @@ public class MSERMatcher {
             
             double f = 1. - (objB.nMatched/(double)maxN);
             objB.cost = (float) Math.sqrt(
-                2. * objB.costs[0] * objB.costs[0]
+                objB.costs[0] * objB.costs[0]
                 //+ 2. * f * f
                 + f * f
+                + objB.costs[1] * objB.costs[1]
                 + objB.costs[2] * objB.costs[2]
             );         
             

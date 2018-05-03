@@ -105,10 +105,17 @@ public class Canonicalizer {
         m is []{v0x, v1x, v0y, v1y} */
         public double[] m;
        
-        public RegionGeometry createNewDividedByScale(float scale) {
+        public RegionGeometry createNewDividedByScale(float scale,
+            int maxX, int maxY) {
             RegionGeometry rg = new RegionGeometry();
             rg.xC = Math.round((float) xC / scale);
+            if (rg.xC > maxX) {
+                maxX = rg.xC;
+            }
             rg.yC = Math.round((float) yC / scale);
+            if (rg.yC > maxY) {
+                maxY = rg.yC;
+            }
             rg.orientation = orientation;
             rg.eccentricity = eccentricity;
             rg.minor = minor/scale;
@@ -135,14 +142,24 @@ public class Canonicalizer {
         public TIntList accX = new TIntArrayList();
         public TIntList accY = new TIntArrayList();
         
-        public RegionPoints createNewDividedByScaleSansAcc(float scale) {
+        public RegionPoints createNewDividedByScaleSansAcc(float scale,
+            int maxX, int maxY) {
             RegionPoints rp = new RegionPoints();
-            rp.ellipseParams = ellipseParams.createNewDividedByScale(scale);
+            rp.ellipseParams = ellipseParams.createNewDividedByScale(scale,
+                maxX, maxY);
             rp.hogOrientations.addAll(hogOrientations);
             rp.points = new HashSet<PairInt>(points.size());
+            int x, y;
             for (PairInt p : points) {
-                rp.points.add(new PairInt(
-                    (int)(p.getX()/scale),(int)(p.getY()/scale)));
+                x = (int)(p.getX()/scale);
+                y = (int)(p.getY()/scale);
+                if (x > maxX) {
+                    x = maxX;
+                }
+                if (y > maxY) {
+                    y = maxY;
+                }
+                rp.points.add(new PairInt(x, y));
             }
             return rp;
         }
@@ -228,10 +245,12 @@ public class Canonicalizer {
             return new HashSet<PairInt>(offsetsToOrigCoords.values());            
         }
         
-        public CRegion createNewDividedByScale(float scale) {
+        public CRegion createNewDividedByScale(float scale, 
+            int maxX, int maxY) {
             
             CRegion r = new CRegion();
-            r.ellipseParams = ellipseParams.createNewDividedByScale(scale);
+            r.ellipseParams = ellipseParams.createNewDividedByScale(scale,
+                maxX, maxY);
             r.hogOrientation = hogOrientation;
             r.autocorrel = autocorrel;
             r.dataIdx = dataIdx;
@@ -240,16 +259,29 @@ public class Canonicalizer {
             }
             r.labels.addAll(labels);
             r.offsetsToOrigCoords = new HashMap<PairInt, PairInt>();
+            int x0, y0, x1, y1;
             if (offsetsToOrigCoords != null) {
                 for (Entry<PairInt, PairInt> entry : offsetsToOrigCoords.entrySet()) {
                     PairInt pOffset = entry.getKey();
+                    x0 = Math.round(pOffset.getX()/scale);
+                    y0 = Math.round(pOffset.getY()/scale);
+                    if (x0 > maxX) {
+                        x0 = maxX;
+                    }
+                    if (y0 > maxY) {
+                        y0 = maxY;
+                    }
                     PairInt p = entry.getValue();
-                    r.offsetsToOrigCoords.put(
-                        new PairInt((int)(pOffset.getX()/scale),
-                            (int)(pOffset.getY()/scale)),
-                        new PairInt((int)(p.getX()/scale),
-                            (int)(p.getY()/scale))
-                    );
+                    x1 = Math.round(p.getX()/scale);
+                    y1 = Math.round(p.getY()/scale);
+                    if (x1 > maxX) {
+                        x1 = maxX;
+                    }
+                    if (y1 > maxY) {
+                        y1 = maxY;
+                    }
+                    r.offsetsToOrigCoords.put(new PairInt(x0, y0),
+                        new PairInt(x1, y1));
                 }
             }
             

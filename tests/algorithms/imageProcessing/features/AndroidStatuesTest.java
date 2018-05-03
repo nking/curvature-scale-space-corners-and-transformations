@@ -33,9 +33,9 @@ public class AndroidStatuesTest extends TestCase {
     
     public void testObjectFinder() throws Exception {
         runMatcher_gingerbreadman();
-    //    runMatcher_cupcake();
-    //    runMatcher_icecream();
-    //    runMatcher_honeycomb();
+        runMatcher_cupcake();
+        runMatcher_icecream();
+        runMatcher_honeycomb();
     }
 
     public void runMatcher_gingerbreadman() throws Exception {
@@ -89,12 +89,12 @@ public class AndroidStatuesTest extends TestCase {
                 
                 ImageExt img = ImageIOHelper.readImageExt(filePath1);
             
-                if (filePath1.endsWith("android_statues_01.jpg")) {
+                /*if (filePath1.endsWith("android_statues_01.jpg")) {
                     //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
                     img = (ImageExt) img.copySubImage(
                         img.getWidth()/4, 3*img.getWidth()/4, 
                         0, img.getHeight());
-                }
+                }*/
 
                 ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
 

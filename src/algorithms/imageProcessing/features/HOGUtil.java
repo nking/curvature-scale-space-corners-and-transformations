@@ -1,14 +1,9 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
-import gnu.trove.iterator.TLongIterator;
 import gnu.trove.set.TLongSet;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -418,10 +413,10 @@ public class HOGUtil {
                 }
             }
         }
-        System.out.println("  masked " + c + " out of " + (w2*h2));
+        //System.out.println("  masked " + c + " out of " + (w2*h2));
         
         //DEBUG
-        {
+        /*{
             int ts = MiscDebug.getCurrentTimeFormatted();
             Image img0 = img.copyToColorGreyscale();
             Image imgSub = img2.copyToColorGreyscale();
@@ -440,7 +435,7 @@ public class HOGUtil {
             };
             MiscDebug.writeImage(img0, "_DGB_IMG__" + ts);
             MiscDebug.writeImage(imgSub, "_DGB_IMGSUB__" + ts);
-        }
+        }*/
         
         return img2;
     }
