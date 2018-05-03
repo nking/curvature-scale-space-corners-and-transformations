@@ -133,7 +133,8 @@ public class AndroidStatuesTest extends TestCase {
 
         String[] fileNames1 = new String[]{
             "android_statues_01.jpg",
-            "android_statues_02.jpg",  
+            "android_statues_02.jpg", 
+            "android_statues_02.jpg", 
             "android_statues_04.jpg"
         };
         
@@ -169,9 +170,9 @@ public class AndroidStatuesTest extends TestCase {
                 //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
                 img = (ImageExt) img.copySubImage(
                     0, img.getWidth()/5, 0, img.getHeight());
-            } else if (fileName1.equals("android_statues_02.jpg")) {
-              //  img = (ImageExt) img.copySubImage(
-              //      0, img.getWidth()/2, 0, img.getHeight());
+            } else if (fileNames1.length == 4 && fIdx == 2) {
+                img = (ImageExt) img.copySubImage(
+                    0, img.getWidth()/2, 0, img.getHeight());
             }
 
             String debugLabel = "cupcake_" + fIdx;
@@ -271,6 +272,7 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_01_honeycomb.png"};
 
         String[] fileNames1 = new String[]{
+            "android_statues_03.jpg",
             "android_statues_03.jpg"
         };
        
@@ -293,10 +295,21 @@ public class AndroidStatuesTest extends TestCase {
                 omw.setToDebug();
             }
             
+            if (fileNames1.length == 2 && fIdx == 1) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/8, 7*img.getWidth()/8, 
+                    0, img.getHeight());
+            }
+            
+            Set<PairInt> shape0 = new HashSet<PairInt>();
+
+            ImageExt img0 = omw.maskAndBin2(filePath0, shape0);
+            
             //MiscDebug.writeImage(imgs0[0], "_imgs0_0_");
             //MiscDebug.writeImage(imgs0[1], "_imgs0_1_");
         
-            List<CorrespondenceList> corresList = omw.find(filePath0, filePath1, 
+            List<CorrespondenceList> corresList = omw.find(
+                new ImageExt[]{img0, img0}, shape0, img, 
                 debugLabel);
 
             if (corresList == null || corresList.isEmpty()) {
