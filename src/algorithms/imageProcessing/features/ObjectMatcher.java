@@ -613,7 +613,7 @@ public class ObjectMatcher {
         private boolean findVanishingPoints = false;
         
         private boolean useColorFilter = true;
- 
+         
         private String lbl = "";
         
         /**
@@ -648,7 +648,7 @@ public class ObjectMatcher {
             return useLargerPyramid1;
         }
 
-        public void setToFindVnishingPoints() {
+        public void setToFindVanishingPoints() {
             this.findVanishingPoints = true;
         }
 

@@ -1,11 +1,8 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.IntegralHistograms;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
@@ -17,7 +14,6 @@ import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import algorithms.util.TwoDIntArray;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -26,14 +22,10 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
 import gnu.trove.set.hash.TLongHashSet;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  *
@@ -57,18 +49,22 @@ public class HOGRegionsManager {
     /**
      * key = region index
      */
-    private final TIntObjectMap<TwoDIntArray> regionIndexHistHOG = 
-        new TIntObjectHashMap<TwoDIntArray>();
-    private final TIntObjectMap<TwoDIntArray> regionIndexHistHCPT = 
-        new TIntObjectHashMap<TwoDIntArray>();
-    private final TIntObjectMap<TwoDIntArray> regionIndexHistHGS = 
-        new TIntObjectHashMap<TwoDIntArray>();
     private final TIntObjectMap<OneDIntArray> regionIndexMinMaxXY =
         new TIntObjectHashMap<OneDIntArray>();
     private final TIntObjectMap<Canonicalizer.CRegion> regionIndexRegions;
     //In reference frame of subImage
     private final TIntObjectMap<TLongSet> regionCoords 
         = new TIntObjectHashMap<TLongSet>();
+    
+    /**
+     * key = minmaxXY for region
+     */
+    private final Map<OneDIntArray, TwoDIntArray> histHOGMap = 
+        new HashMap<OneDIntArray, TwoDIntArray>();
+    private final Map<OneDIntArray,TwoDIntArray> histHCPTMap = 
+        new HashMap<OneDIntArray, TwoDIntArray>();
+    private final Map<OneDIntArray,TwoDIntArray> histHGSMap = 
+        new HashMap<OneDIntArray, TwoDIntArray>();
     
     private static int maskValue = 0;
 
@@ -189,21 +185,28 @@ public class HOGRegionsManager {
         regionCoords.put(rIndex, subImagePixelCoords);
         regionIndexMinMaxXY.put(rIndex, new OneDIntArray(minMaxXYUnCroppedRefFrame));        
         regionIndexRegions.putIfAbsent(rIndex, cRegion);
-            
-        // non-region pixels are excluded because magnitude is zero
-        int[][] histogramsHOG = createHOGHistogram(subImageGradient, subImageTheta);        
-        regionIndexHistHOG.put(rIndex, new TwoDIntArray(histogramsHOG));
         
-        // exclude non-region pixels:
-        int[][] histogramsHCPT = createHCPTHistogram(subImagePTImg, subImagePixelCoords);
-        regionIndexHistHCPT.put(rIndex, new TwoDIntArray(histogramsHCPT));
+        OneDIntArray key = new OneDIntArray(cRegion.getMinMaxXY());
         
-        IntegralHistograms gh = new IntegralHistograms();
-        int[][] histogramsHGS = gh.create(subImageGSImg, subImagePixelCoords, 
-            0, 255, nHistBins);
-        //apply a windowed avg across the integral image
-        gh.applyWindowedSum(histogramsHGS, w2, h2, N_PIX_PER_CELL_DIM);
-        regionIndexHistHGS.put(rIndex, new TwoDIntArray(histogramsHGS));        
+        if (!histHOGMap.containsKey(key)) {
+            // non-region pixels are excluded because magnitude is zero
+            int[][] histogramsHOG = createHOGHistogram(subImageGradient, subImageTheta);        
+            histHOGMap.put(key, new TwoDIntArray(histogramsHOG));
+        }
+        
+        if (!histHCPTMap.containsKey(key)) {
+            // exclude non-region pixels:
+            int[][] histogramsHCPT = createHCPTHistogram(subImagePTImg, subImagePixelCoords);
+            histHCPTMap.put(key, new TwoDIntArray(histogramsHCPT));
+        }
+        if (!histHGSMap.containsKey(key)) {
+            IntegralHistograms gh = new IntegralHistograms();
+            int[][] histogramsHGS = gh.create(subImageGSImg, subImagePixelCoords, 
+                0, 255, nHistBins);
+            //apply a windowed avg across the integral image
+            gh.applyWindowedSum(histogramsHGS, w2, h2, N_PIX_PER_CELL_DIM);
+            histHGSMap.put(key, new TwoDIntArray(histogramsHGS));
+        }
     }
     
     private static enum TYPE {
@@ -257,6 +260,7 @@ public class HOGRegionsManager {
      * @param x
      * @param y
      * @param outHist
+     * @return 
      */
     public boolean extractBlockHGS(int rIndex, int x, int y, int[] outHist) {
         return extractBlock(TYPE.HGS, rIndex, x, y, outHist);
@@ -301,6 +305,8 @@ public class HOGRegionsManager {
             !regionIndexMinMaxXY.containsKey(rIndex)) {
             return false;
         }
+        
+        OneDIntArray key = regionIndexMinMaxXY.get(rIndex);
 
         // uses the block normalization recomended by Dalal & Triggs,
         //   the summary of histogram counts over all cells
@@ -308,15 +314,48 @@ public class HOGRegionsManager {
 
         int[][] hist = null;
         switch (type) {
-            case HOG: hist = regionIndexHistHOG.get(rIndex).a; break;
-            case HCPT: hist = regionIndexHistHCPT.get(rIndex).a; break;
-            case HGS: hist = regionIndexHistHGS.get(rIndex).a; break;
+            case HOG: hist = histHOGMap.get(key).a; break;
+            case HCPT: hist = histHCPTMap.get(key).a; break;
+            case HGS: hist = histHGSMap.get(key).a; break;
             default: break;
         }
         
         int[] minMaxXY = regionIndexMinMaxXY.get(rIndex).a;
         TLongSet rCoords = regionCoords.get(rIndex);
         
+        return extractBlock(hist, rCoords, minMaxXY, x, y, outHist);
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param x
+     * @param y
+     * @param outHist
+     */
+    private boolean extractBlock(int[][] hist, TLongSet pixelIndexes, int[] minMaxXY,
+        int x, int y, int[] outHist) {
+
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+            throw new IllegalArgumentException("x or y is out of bounds of "
+                + "original image");
+        }
+        
+        // uses the block normalization recomended by Dalal & Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normalize each cell by that sum.
+
         int width = minMaxXY[1] - minMaxXY[0] + 1;
         int height = minMaxXY[3] - minMaxXY[2] + 1;
         int xOffset = minMaxXY[0];
@@ -362,7 +401,7 @@ public class HOGRegionsManager {
                 
                 int pixIdx = (ySub * width) + xSub;
                 
-                if (!rCoords.contains(pixIdx)) {
+                if (!pixelIndexes.contains(pixIdx)) {
                     continue;
                 }
 
@@ -384,7 +423,7 @@ public class HOGRegionsManager {
         return true;
     }
     
-    public static void populateRegionsIfNeeded(
+    public void populateRegionsIfNeeded(
         TIntObjectMap<Canonicalizer.RegionPoints> regionPointsMapNotScaled, 
         float scale,
         HOGRegionsManager hogMgs,
@@ -406,7 +445,6 @@ public class HOGRegionsManager {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         Canonicalizer cn = new Canonicalizer();
-        int[] outputMinMaxXY = new int[4];
         
         TIntObjectIterator<Canonicalizer.RegionPoints> iter 
             = regionPointsMapNotScaled.iterator();
@@ -428,9 +466,70 @@ public class HOGRegionsManager {
                 regionPointsNotScaled.createNewDividedByScaleSansAcc(
                 scale, w - 1, h - 1);
             
-            List<CRegion> crsScaled = cn.canonicalizeRegions(
-                w, h, regionPointsScaled, outputMinMaxXY);
+            int[] minMaxXY = regionPointsScaled.getMinMaxXY();
+            int w2 = minMaxXY[1] - minMaxXY[0] + 1;
+            int h2 = minMaxXY[3] - minMaxXY[2] + 1;
+            if (w2 < 3 || h2 < 3) {
+                continue;
+            }
+            TLongSet refFramePixs = new TLongHashSet();
+            for (PairInt p : regionPointsScaled.points) {
+                int x = p.getX() - minMaxXY[0];
+                int y = p.getY() - minMaxXY[2];
+                long pixIdx = ph.toPixelIndex(x, y, w2);
+                refFramePixs.add(pixIdx);
+            }
             
+            GreyscaleImage gsImg2 = gsImgScaled.subImage2(
+                minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3]);
+
+            GreyscaleImage[] gXgY = 
+                imageProcessor.createCentralDifferenceGradients(gsImg2);
+            GreyscaleImage theta2 = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
+            GreyscaleImage gXY2 = 
+                imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
+            GreyscaleImage ptImg2 = HOGUtil.createAndMaskSubImage2(ptImgScaled, 
+                maskValue, minMaxXY, refFramePixs);
+            
+            // the histograms are stored by bounds minMaxXY
+            
+            OneDIntArray key = new OneDIntArray(minMaxXY);
+        
+            // non-region pixels are excluded because magnitude is zero
+            int[][] histogramsHOG = createHOGHistogram(gXY2, theta2);        
+            histHOGMap.put(key, new TwoDIntArray(histogramsHOG));
+        
+            // exclude non-region pixels:
+            int[][] histogramsHCPT = createHCPTHistogram(ptImg2, refFramePixs);
+            histHCPTMap.put(key, new TwoDIntArray(histogramsHCPT));
+        
+            IntegralHistograms gh = new IntegralHistograms();
+            int[][] histogramsHGS = gh.create(gsImg2, refFramePixs, 
+                0, 255, nHistBins);
+            //apply a windowed avg across the integral image
+            gh.applyWindowedSum(histogramsHGS, w2, h2, N_PIX_PER_CELL_DIM);
+            histHGSMap.put(key, new TwoDIntArray(histogramsHGS));
+            
+            int[] hogHistCenter = new int[nAngleBins];
+            extractBlock(histogramsHOG, refFramePixs, minMaxXY, 
+                regionPointsScaled.ellipseParams.xC, 
+                regionPointsScaled.ellipseParams.yC, hogHistCenter);
+            
+            // need to create the HOG here to calculate the dominant orientations
+            //   for multiple versions of CRegion if needed.
+            TIntList dos = calculateDominantOrientations(hogHistCenter);
+            if (false) {
+                // use the MSER ellipse orientation and the top 80% HOG bins
+                regionPointsScaled.hogOrientations.addAll(dos);
+            } else {
+                // only use hog orientation
+                regionPointsScaled.hogOrientations.clear();
+                regionPointsScaled.hogOrientations.add(dos.get(0));
+            }
+            
+            List<CRegion> crsScaled = cn.canonicalizeRegions(
+                w, h, regionPointsScaled);
+           
             //DEBUG
             /*{
                 Image tmp = gsImgScaled.copyToColorGreyscale();
@@ -453,55 +552,9 @@ public class HOGRegionsManager {
                 if (crScaled.offsetsToOrigCoords.size() < 9) {
                     continue;
                 }
-            
-                int[] minMaxXY = crScaled.getMinMaxXY();
-                
-                int w2 = minMaxXY[1] - minMaxXY[0] + 1;
-                int h2 = minMaxXY[3] - minMaxXY[2] + 1;
-                if (w2 < 3 || h2 < 3) {
-                    continue;
-                }
                 
                 crScaled.dataIdx = rIdx;
-                               
-                GreyscaleImage gsImg2 = gsImgScaled.subImage2(
-                    minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3]);
                 
-                GreyscaleImage[] gXgY = 
-                    imageProcessor.createCentralDifferenceGradients(gsImg2);
-                GreyscaleImage theta2 = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
-                GreyscaleImage gXY2 = 
-                    imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);
-                               
-                TLongSet refFramePixs = new TLongHashSet();
-                for (Entry<PairInt, PairInt> entry : crScaled.offsetsToOrigCoords.entrySet()) {
-                    int x = entry.getValue().getX() - minMaxXY[0];
-                    int y = entry.getValue().getY() - minMaxXY[2];
-                    long pixIdx = ph.toPixelIndex(x, y, w2);
-                    refFramePixs.add(pixIdx);
-                }
-                
-                GreyscaleImage ptImg2 = HOGUtil.createAndMaskSubImage2(ptImgScaled, 
-                    maskValue, minMaxXY, refFramePixs);
-                
-                //DEBUG
-                /*{
-                    int[] xy2 = new int[2];
-                    Image tmp = gsImg2.copyToColorGreyscale();
-                    TLongIterator iter3 = refFramePixs.iterator();
-                    while (iter3.hasNext()) {
-                        long pixIdx = iter3.next();
-                        ph.toPixelCoords(pixIdx, w2, xy2);
-                        
-                        //ImageIOHelper.addPointToImage(xy2[0], xy2[1], tmp,
-                        //    1, 0, 255, 0);
-                        ImageIOHelper.addPointToImage(xy2[0], xy2[1], tmp,
-                            0, 255, 0, 0);
-                    };
-                    MiscDebug.writeImage(tmp, "_DBG2_" 
-                        + rIdx + "_" + scale + "_" + ts);
-                }*/
- 
                 hogMgs.addARegion(
                     gsImg2, ptImg2, gXY2, theta2, 
                     crScaled, minMaxXY, refFramePixs);
@@ -609,161 +662,43 @@ public class HOGRegionsManager {
         }
     }
 
-     
-    /**
-     * NOT READY FOR USE.
-     *
-     * @param rIndex
-     * @return
-     */
-    public int calculateDominantOrientation(int rIndex) {
-
-        int[][] hist = regionIndexHistHOG.get(rIndex).a;
-        int[] minMaxXY = getRegionIndexMinMaxXY().get(rIndex).a;
+    TIntList calculateDominantOrientations(int[] hogHist) {
         
-        int width = minMaxXY[1] - minMaxXY[0] + 1;
-        //int height = minMaxXY[3] - minMaxXY[2] + 1;
-        int xOffset = minMaxXY[0];
-        int yOffset = minMaxXY[2];
-        
-        Canonicalizer.CRegion r = regionIndexRegions.get(rIndex);
-        
-        long[] combined = new long[nAngleBins];
-
-        for (Map.Entry<PairInt, PairInt> entry : r.offsetsToOrigCoords.entrySet()) {
-            PairInt xy = entry.getValue();
-            int pixIdx = ((xy.getY() - yOffset) * width) + (xy.getX() - xOffset);
-            add(combined, hist[pixIdx]);
-        }
-        
-        TIntList maxIdxs = new TIntArrayList();
-        long maxValue = Long.MIN_VALUE;
-        for (int i = 0; i < combined.length; ++i) {
-            long v = combined[i];
-            if (v > maxValue) {
-                maxIdxs.clear();
-                maxIdxs.add(i);
-                maxValue = v;
-            } else if (v == maxValue) {
-                maxIdxs.add(i);
-            }
-        }
-        
-        int binWidth = 180 / nAngleBins;
-
-        //TODO: revise to fit max peak using neighboring bins
-        if (maxIdxs.size() == 1) {
-            return Math.round((maxIdxs.get(0) + 0.5f) * binWidth);
-        }
-
-        //TODO: revise this
-        if (maxIdxs.size() == 2) {
-
-            // min of average with and without a wraparound phase
-            float ang0 = (maxIdxs.get(0) + 0.5f) * binWidth;
-            float ang1 = (maxIdxs.get(1) + 0.5f) * binWidth;
-
-            if (ang0 < ang1) {
-                float diff0 = 360 + ang0 - ang1;
-                float diff1 = ang1 - ang0;
-                if (diff0 < diff1) {
-                    return Math.round(0.5f * (360 + ang0 + ang1));
-                }
-
-                return Math.round(0.5f * (ang0 + ang1));
-            }
-
-            float diff0 = 360 + ang1 - ang0;
-            float diff1 = ang0 - ang1;
-            if (diff0 < diff1) {
-                return Math.round(0.5f * (360 + ang1 + ang0));
-            }
-
-            return Math.round(0.5f * (ang0 + ang1));
-
-        } else {
-
-            // average of all indexes
-
-            double[] angles = new double[maxIdxs.size()];
-            for (int i = 0; i < maxIdxs.size(); ++i) {
-                angles[i] = ((maxIdxs.get(i) + 0.5f) * binWidth);
-            }
-
-            double angleAvg =
-                AngleUtil.calculateAverageWithQuadrantCorrections(
-                    angles, false);
-
-            return (int)Math.round(angleAvg);
-        }
-    }
-
-    public TIntSet calculateDominantOrientations(int rIndex) {
-
-        int[][] hist = regionIndexHistHOG.get(rIndex).a;
-        int[] minMaxXY = getRegionIndexMinMaxXY().get(rIndex).a;
-        
-        int width = minMaxXY[1] - minMaxXY[0] + 1;
-        //int height = minMaxXY[3] - minMaxXY[2] + 1;
-        int xOffset = minMaxXY[0];
-        int yOffset = minMaxXY[2];
-        
-        Canonicalizer.CRegion r = regionIndexRegions.get(rIndex);
-        
-        Set<PairInt> xys = new HashSet<PairInt>();
-        
-        long[] combined = new long[nAngleBins];
-
-        for (Map.Entry<PairInt, PairInt> entry : r.offsetsToOrigCoords.entrySet()) {
-            PairInt xy = entry.getValue();
-            int pixIdx = ((xy.getY() - yOffset) * width) + (xy.getX() - xOffset);
-            add(combined, hist[pixIdx]);
-            xys.add(xy);
-        }
-
-        int maxIdx = MiscMath.findYMaxIndex(combined);
+        int maxIdx = MiscMath.findYMaxIndex(hogHist);
 
         if (maxIdx == -1) {
             throw new IllegalArgumentException("histogram is full of "
                 + " min value longs");
-        }
+        }        
 
+        TIntSet set = new TIntHashSet();
+        set.add(maxIdx);
+        
         // if any bins have values within 80% of max, add to maxIdxs
-        TIntList maxIdxs = new TIntArrayList();
+        TIntList list = new TIntArrayList();
+        list.add(maxIdx);
 
-        long max = combined[maxIdx];
+        long max = hogHist[maxIdx];
         double limit = 0.8 * max;
 
-        for (int i = 0; i < combined.length; ++i) {
-            long v = combined[i];
+        for (int i = 0; i < hogHist.length; ++i) {
+            long v = hogHist[i];
             if (v >= limit) {
-                maxIdxs.add(i);
+                if (set.add(i)) {
+                    list.add(i);
+                }
             }
         }
 
         int binWidth = 180 / nAngleBins;
-
-        TIntSet orientations = new TIntHashSet();
-
-        for (int i = 0; i < maxIdxs.size(); ++i) {
-            int idx = maxIdxs.get(i);
+        
+        for (int i = 0; i < list.size(); ++i) {
+            int idx = list.get(i);
             int angle = Math.round((idx + 0.5f) * binWidth);
-            orientations.add(angle);
-        }
-                        
-        //NOTE: adding an orientation for the center of points
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        PairInt xyCen = ch.calculateXYCentroids2(xys);
-        if (xys.contains(xyCen)) {
-            int pixIdx = ((xyCen.getY() - yOffset) * width) + (xyCen.getX() - xOffset);
-            maxIdx = MiscMath.findYMaxIndex(hist[pixIdx]);
-            if (maxIdx > -1) {
-                int angle = Math.round((maxIdx + 0.5f) * binWidth);
-                orientations.add(angle);
-            }
+            list.set(i, angle);
         }
         
-        return orientations;
+        return list;
     }
 
     public int getImageWidth() {

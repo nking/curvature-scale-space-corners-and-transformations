@@ -99,7 +99,7 @@ public class HOGRegionsManagerTest extends TestCase {
        
         float scale = 1.0f;
         
-        HOGRegionsManager.populateRegionsIfNeeded(
+        hogMgr.populateRegionsIfNeeded(
             regionPoints0, scale, hogMgr, gsImg, ptImg);
         
         System.out.println("region map.size=" + regionMap.size());

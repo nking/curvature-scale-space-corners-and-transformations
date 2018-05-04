@@ -22,7 +22,7 @@ import java.util.Set;
  */
 public class ObjectMatcherWrapper {
     
-    private int maxDimension = 256;
+    private static int maxDimension = 256;
     private SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;
 
     private ImageExt[] templateImage = null;
@@ -75,16 +75,7 @@ public class ObjectMatcherWrapper {
 
         long ts = MiscDebug.getCurrentTimeFormatted();
 
-        int w1 = searchImage.getWidth();
-        int h1 = searchImage.getHeight();
-
-        int binFactor1 = (int) Math.ceil(Math.max(
-            (float) w1 / maxDimension,
-            (float) h1 / maxDimension));
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-
-        searchImage = imageProcessor.binImage(searchImage, binFactor1);
+        searchImage = bin(searchImage);
         
         return _run_matcher(binnedTemplateAndMask, shape0, searchImage, debugLabel);
     }
@@ -122,24 +113,13 @@ public class ObjectMatcherWrapper {
         return corresList;
     }
     
-    public ImageExt maskAndBin2(String templateFilePath, 
+    public static ImageExt maskAndBin2(String templateFilePath, 
         Set<PairInt> outputShape) throws IOException {
         
         ImageProcessor imageProcessor = new ImageProcessor();
 
-        ImageExt img0 = ImageIOHelper.readImageExt(templateFilePath);
-    
-        int w0 = img0.getWidth();
-        int h0 = img0.getHeight();
-
-        int binFactor0 = (int) Math.ceil(Math.max(
-             (float) w0 / maxDimension,
-             (float) h0 / maxDimension));
-                
-        if (binFactor0 != 1) {
-            img0 = imageProcessor.binImage(img0, binFactor0);
-        }
-                        
+        ImageExt img0 = bin(ImageIOHelper.readImageExt(templateFilePath));
+          
         for (int x = 0; x < img0.getWidth(); ++x) {
             for (int y = 0; y < img0.getHeight(); ++y) {
                 if (img0.getRGB(x, y) != 0) {
@@ -150,8 +130,26 @@ public class ObjectMatcherWrapper {
    
         return img0;
     }
+    
+    public static ImageExt bin(ImageExt img) throws IOException {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+    
+        int w = img.getWidth();
+        int h = img.getHeight();
 
-    public ImageExt[] maskAndBin2(String templateFilePath,
+        int binFactor = (int) Math.ceil(Math.max(
+             (float) w / maxDimension,
+             (float) h / maxDimension));
+                
+        if (binFactor != 1) {
+            img = imageProcessor.binImage(img, binFactor);
+        }
+   
+        return img;
+    }
+
+    public static ImageExt[] maskAndBin2(String templateFilePath,
         String templateMaskFilePath, Set<PairInt> outputShape) throws 
         IOException {
         
@@ -160,27 +158,13 @@ public class ObjectMatcherWrapper {
         //String fileNameMask0 = fileNames[1];
         //String filePathMask0 = ResourceFinder
         //    .findFileInTestResources(fileNameMask0);
-        ImageExt imgMask0 = ImageIOHelper.readImageExt(templateMaskFilePath);
+        ImageExt imgMask0 = bin(ImageIOHelper.readImageExt(templateMaskFilePath));
 
         //String fileName0 = fileNames[0];
         //String filePath0 = ResourceFinder
         //    .findFileInTestResources(fileName0);
-        ImageExt img0 = ImageIOHelper.readImageExt(templateFilePath);
+        ImageExt img0 = bin(ImageIOHelper.readImageExt(templateFilePath));
     
-        int w0 = img0.getWidth();
-        int h0 = img0.getHeight();
-
-        int binFactor0 = (int) Math.ceil(Math.max(
-             (float) w0 / maxDimension,
-             (float) h0 / maxDimension));
-        
-        
-        
-        if (binFactor0 != 1) {
-            img0 = imageProcessor.binImage(img0, binFactor0);
-            imgMask0 = imageProcessor.binImage(imgMask0, binFactor0);
-        }
-        
         ImageExt img0Masked = img0.copyToImageExt();
                 
         assert(imgMask0.getNPixels() == img0.getNPixels());

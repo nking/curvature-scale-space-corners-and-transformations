@@ -117,10 +117,13 @@ public class AndroidStatuesTest extends TestCase {
                     return;
                 }
                        
+                // re-read for mask free plotting:
+                img = ImageIOHelper.readImageExt(filePath1);
+                img = ObjectMatcherWrapper.bin(img);
+
                 plotCorrespondence(corresList, 
                     omw.getTemplateImage()[1].copyToImageExt(),
-                    omw.getSearchImage().copyToImageExt(),
-                    debugLabel);
+                    img, debugLabel);
             }
         }
     }
@@ -172,7 +175,7 @@ public class AndroidStatuesTest extends TestCase {
                     0, img.getWidth()/5, 0, img.getHeight());
             } else if (fileNames1.length == 4 && fIdx == 2) {
                 img = (ImageExt) img.copySubImage(
-                    0, img.getWidth()/2, 0, img.getHeight());
+                    img.getWidth()/8, img.getWidth()/2, 0, img.getHeight());
             }
 
             String debugLabel = "cupcake_" + fIdx;
@@ -198,10 +201,21 @@ public class AndroidStatuesTest extends TestCase {
                 return;
             }
 
+            // re-read for mask free plotting:
+            img = ImageIOHelper.readImageExt(filePath1);
+            if (fileName1.equals("android_statues_01.jpg")) {
+                //A LOOK AT WHETHER zoom in helps find difficult shadowed patterns
+                img = (ImageExt) img.copySubImage(
+                    0, img.getWidth()/5, 0, img.getHeight());
+            } else if (fileNames1.length == 4 && fIdx == 2) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/8, img.getWidth()/2, 0, img.getHeight());
+            }
+            img = ObjectMatcherWrapper.bin(img);
+            
             plotCorrespondence(corresList, 
                 omw.getTemplateImage()[1].copyToImageExt(),
-                omw.getSearchImage().copyToImageExt(),
-                debugLabel);
+                img, debugLabel);
         }
     }
     
@@ -215,7 +229,9 @@ public class AndroidStatuesTest extends TestCase {
         String[] fileNames1 = new String[]{
             "android_statues_01.jpg",  
             "android_statues_02.jpg",
-            "android_statues_04.jpg", // descr are fine
+            "android_statues_04.jpg",
+            "android_statues_04.jpg",
+            "android_statues_04.jpg"
         };
         
         /*  ROUGH COORDS
@@ -245,24 +261,49 @@ public class AndroidStatuesTest extends TestCase {
                 fileName1);
            
             String debugLabel = "icecream_" + fIdx;
+            
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+            
+            if (fileNames1.length == 5 && fIdx == 3) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/4, img.getWidth(), 0, img.getHeight());
+            } else if (fileNames1.length == 5 && fIdx == 4) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/2, img.getWidth(), 0, img.getHeight());
+            }
                 
             ObjectMatcherWrapper omw = new ObjectMatcherWrapper();
+
             if (debug) {
                 omw.setToDebug();
             }
+            
+            Set<PairInt> shape0 = new HashSet<PairInt>();
 
-            List<CorrespondenceList> corresList = omw.find(filePath0, 
-                filePath0Mask, filePath1, debugLabel);
+            ImageExt[] imgs0 = omw.maskAndBin2(filePath0, filePath0Mask,
+                shape0);
+            
+            List<CorrespondenceList> corresList = omw.find(imgs0, shape0, img, 
+                debugLabel);
 
             if (corresList == null || corresList.isEmpty()) {
                 return;
             }
 
+            // re-read for mask free plotting:
+            img = ImageIOHelper.readImageExt(filePath1);
+            if (fileNames1.length == 5 && fIdx == 3) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/4, img.getWidth(), 0, img.getHeight());
+            } else if (fileNames1.length == 5 && fIdx == 4) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/2, img.getWidth(), 0, img.getHeight());
+            }
+            img = ObjectMatcherWrapper.bin(img);
+            
             plotCorrespondence(corresList, 
                 omw.getTemplateImage()[1].copyToImageExt(),
-                omw.getSearchImage().copyToImageExt(),
-                debugLabel);
-            
+                img, debugLabel);
         }
     }
    
@@ -272,6 +313,7 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_01_honeycomb.png"};
 
         String[] fileNames1 = new String[]{
+            "android_statues_03.jpg",
             "android_statues_03.jpg",
             "android_statues_03.jpg"
         };
@@ -295,9 +337,13 @@ public class AndroidStatuesTest extends TestCase {
                 omw.setToDebug();
             }
             
-            if (fileNames1.length == 2 && fIdx == 1) {
+            if (fileNames1.length == 3 && fIdx == 1) {
                 img = (ImageExt) img.copySubImage(
-                    img.getWidth()/8, 7*img.getWidth()/8, 
+                    img.getWidth()/8, img.getWidth(), 
+                    0, img.getHeight());
+            } else if (fileNames1.length == 3 && fIdx == 2) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/4, img.getWidth(), 
                     0, img.getHeight());
             }
             
@@ -316,12 +362,22 @@ public class AndroidStatuesTest extends TestCase {
                 return;
             }
             
-            //MiscDebug.writeImage(omw.getTemplateImage()[0], "_hny_");
-
+            // re-read for mask free plotting:
+            img = ImageIOHelper.readImageExt(filePath1);
+            if (fileNames1.length == 3 && fIdx == 1) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/8, img.getWidth(), 
+                    0, img.getHeight());
+            } else if (fileNames1.length == 3 && fIdx == 2) {
+                img = (ImageExt) img.copySubImage(
+                    img.getWidth()/4, img.getWidth(), 
+                    0, img.getHeight());
+            }
+            img = ObjectMatcherWrapper.bin(img);
+            
             plotCorrespondence(corresList, 
-                omw.getTemplateImage()[0],
-                omw.getSearchImage(),
-                debugLabel);
+                omw.getTemplateImage()[0].copyToImageExt(),
+                img, debugLabel);
         }
     }
     

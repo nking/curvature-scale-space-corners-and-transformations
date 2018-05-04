@@ -142,6 +142,30 @@ public class Canonicalizer {
         public TIntList accX = new TIntArrayList();
         public TIntList accY = new TIntArrayList();
         
+        private int[] minMaxXY = null;
+        
+        public int[] getMinMaxXY() {
+            if (minMaxXY == null && points != null) {
+                minMaxXY = new int[]{Integer.MAX_VALUE, Integer.MIN_VALUE, 
+                    Integer.MAX_VALUE, Integer.MIN_VALUE};
+                for (PairInt p : points) {
+                    if (p.getX() < minMaxXY[0]) {
+                        minMaxXY[0] = p.getX();
+                    }
+                    if (p.getX() > minMaxXY[1]) {
+                        minMaxXY[1] = p.getX();
+                    }
+                    if (p.getY() < minMaxXY[2]) {
+                        minMaxXY[2] = p.getY();
+                    }
+                    if (p.getY() > minMaxXY[3]) {
+                        minMaxXY[3] = p.getY();
+                    }
+                }
+            }
+            return minMaxXY;
+        }
+        
         public RegionPoints createNewDividedByScaleSansAcc(float scale,
             int maxX, int maxY) {
             RegionPoints rp = new RegionPoints();
@@ -416,12 +440,11 @@ public class Canonicalizer {
      */
     public List<CRegion> canonicalizeRegions(
         int w0, int h0,
-        Canonicalizer.RegionPoints regionPoints, int[] outputMinMaxXY) {
+        Canonicalizer.RegionPoints regionPoints) {
         
         List<CRegion> out = new ArrayList<CRegion>();
             
         TIntSet orientations = new TIntHashSet(regionPoints.hogOrientations);
-        orientations.add(0);
         
         /*
         NOTE that hog orientations have 90 pointing up and that is the
@@ -447,13 +470,6 @@ public class Canonicalizer {
         
         PairIntArray pointsArray = Misc.convertWithoutOrder(regionPoints.points);
 
-        outputMinMaxXY[0] = MiscMath.findMin(pointsArray.getX());
-        outputMinMaxXY[1] = MiscMath.findMax(pointsArray.getX());
-        outputMinMaxXY[2] = MiscMath.findMin(pointsArray.getY());
-        outputMinMaxXY[3] = MiscMath.findMax(pointsArray.getY());
-        int w = outputMinMaxXY[1] - outputMinMaxXY[0] + 1;
-        int h = outputMinMaxXY[3] - outputMinMaxXY[2] + 1;
-        
         TIntIterator iter2 = orientations.iterator();
         while (iter2.hasNext()) {
 
@@ -469,7 +485,7 @@ public class Canonicalizer {
             cRegion.ellipseParams = regionPoints.ellipseParams;
             cRegion.offsetsToOrigCoords = offsetToOrigMap;
             cRegion.hogOrientation = or;
-            cRegion.minMaxXY = Arrays.copyOf(outputMinMaxXY, outputMinMaxXY.length);
+            cRegion.minMaxXY = Arrays.copyOf(regionPoints.getMinMaxXY(), 4);
             
             out.add(cRegion);
         }
@@ -493,7 +509,6 @@ public class Canonicalizer {
         Set<CRegion> out = new HashSet<CRegion>();
             
         TIntSet orientations = new TIntHashSet(r.hogOrientations);
-        orientations.add(0);
         
         /*
         NOTE that hog orientations have 90 pointing up and that is the

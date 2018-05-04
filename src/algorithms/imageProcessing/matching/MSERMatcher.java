@@ -2,16 +2,12 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HOGRegionsManager;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
-import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
-import algorithms.misc.MiscDebug;
 import algorithms.packing.Intersection2DPacking;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
@@ -19,14 +15,12 @@ import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -408,11 +402,11 @@ public class MSERMatcher {
             HOGRegionsManager hogsMgr0 = getOrCreate(hogsMap0, regions0, 
                 w0_i, h0_i, pyrIdx0);
             
-            HOGRegionsManager.populateRegionsIfNeeded(
+            hogsMgr0.populateRegionsIfNeeded(
                 regionPoints0, scale0, hogsMgr0, gsI0, ptI0);
             
             FixedSizeSortedVector<Obj> bestPerOctave =
-                //new FixedSizeSortedVector<Obj>(100, Obj.class);
+                //new FixedSizeSortedVector<Obj>(2, Obj.class);
                 new FixedSizeSortedVector<Obj>(1, Obj.class);
             
             int maxArea0 = getLargestArea(regions0);
@@ -434,7 +428,7 @@ public class MSERMatcher {
                 HOGRegionsManager hogsMgr1 = getOrCreate(hogsMap1, regions1, 
                     w1_i, h1_i, pyrIdx1);
             
-                HOGRegionsManager.populateRegionsIfNeeded(
+                hogsMgr1.populateRegionsIfNeeded(
                     regionPoints1, scale1, hogsMgr1, gsI1, ptI1);
                   
                 int nr0 = regions0.size();
@@ -566,7 +560,7 @@ public class MSERMatcher {
                             //+ 2. * f * f
                             + f * f
                             + hcptCost * hcptCost
-                        //    + hgsCost * hgsCost
+                            //+ hgsCost * hgsCost
                         );
                         
                         Obj obj = new Obj();
@@ -578,7 +572,7 @@ public class MSERMatcher {
                         obj.imgIdx1 = pyrIdx1;
                         obj.nMatched = (int) hogCosts[5];
                         obj.costs = new double[]{
-                            cost, hogCost, hcptCost, hgsCost, f, f0, f1 
+                            hogCost, hcptCost, hgsCost, f0, f1 
                         };
                         obj.cost = cost;
                         obj.f = f;
@@ -604,7 +598,7 @@ public class MSERMatcher {
                                 arrow = "   ";
                             }
                             System.out.format(
-                            "%s octave %d %d] %s (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
+                            "%s octave %d %d] %s (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
                             settings.getDebugLabel(), pyrIdx0, pyrIdx1,
                             arrow, x1, y1, 
                             (float) obj.cost,
@@ -612,8 +606,7 @@ public class MSERMatcher {
                             Math.round(scale0 * obj.cr0.ellipseParams.yC), 
                             (float) obj.costs[0], (float) obj.costs[1], 
                             (float) obj.costs[2], (float) obj.costs[3], 
-                            (float) obj.costs[4], (float) obj.costs[5], 
-                            (float) obj.costs[6], 
+                            (float) obj.costs[4], 
                             obj.nMatched
                             );
                         }
@@ -710,12 +703,12 @@ public class MSERMatcher {
                 String lbl = "_" + obj.imgIdx0 + "_" + obj.imgIdx1 + "_"
                     + obj.r0Idx + "_" + obj.r1Idx;
                 System.out.format(
-                    "final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
+                    "final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
                     settings.getDebugLabel(), i, x1, y1,
                     (float) obj.cost, x0, y0, lbl,
                     (float) obj.costs[0], (float) obj.costs[1],
                     (float) obj.costs[2], (float) obj.costs[3],
-                    (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],
+                    (float) obj.costs[4],
                     obj.nMatched
                 );               
             }
