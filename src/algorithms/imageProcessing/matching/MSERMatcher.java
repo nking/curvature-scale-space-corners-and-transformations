@@ -2,7 +2,6 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HOGRegionsManager;
 import algorithms.imageProcessing.features.HOGsManager;
@@ -19,9 +18,9 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TLongSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -310,7 +309,7 @@ public class MSERMatcher {
                         }
                         boolean added = bestPerOctave.add(obj);
                         
-                        /*
+                      
                         Obj _obj = _calculateHOGCosts(offsets0, intersectingKeys.size(), 
                             _hogsMgr0, cr0, scale0, rIdx0, pyrIdx0,
                             _hogsMgr1, cr1, scale1, rIdx1, pyrIdx1);
@@ -319,7 +318,7 @@ public class MSERMatcher {
                             continue;
                         }
                         boolean _added = _bestPerOctave.add(_obj);
-                        */
+                        
                         
                         int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);
                         int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);
@@ -340,12 +339,13 @@ public class MSERMatcher {
                                 arrow = "   ";
                             }
                             System.out.format(
-                            "%s octave %d %d] %s (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
+                            "%s octave %d %d] %s (%d,%d;%d) best: %.4f (%d,%d;%d) [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
                             settings.getDebugLabel(), pyrIdx0, pyrIdx1,
-                            arrow, x1, y1, 
+                            arrow, x1, y1, obj.cr1.hogOrientation,
                             (float) obj.cost,
                             Math.round(scale0 * obj.cr0.ellipseParams.xC),
                             Math.round(scale0 * obj.cr0.ellipseParams.yC), 
+                            obj.cr0.hogOrientation,
                             (float) obj.costs[0], (float) obj.costs[1], 
                             (float) obj.costs[2], (float) obj.costs[3], 
                             (float) obj.costs[4], 
@@ -353,7 +353,7 @@ public class MSERMatcher {
                             );
                             
                             //==============
-                           /* if (_added) {
+                            if (_added) {
                                 arrow = "==>";
                             } else {
                                 arrow = "   ";
@@ -369,7 +369,7 @@ public class MSERMatcher {
                             (float) _obj.costs[2], (float) _obj.costs[3], 
                             (float) _obj.costs[4], 
                             _obj.nMatched
-                            );*/
+                            );
                         }
                     }
                 }
@@ -391,7 +391,7 @@ public class MSERMatcher {
             return null;
         }
         if (_bestOverallA.getNumberOfItems() == 0) {
-       //     return null;
+            return null;
         }
         
         // re-calculating fraction of whole:
@@ -409,6 +409,9 @@ public class MSERMatcher {
                 _maxN = objB.nMatched;
             }
         }
+       
+        Map<QuadInt, Obj> bestCombined = new HashMap<QuadInt, Obj>();
+        
         List<Obj> bestOverall = new ArrayList<Obj>(bestOverallA.getNumberOfItems());        
         for (int i = 0; i < bestOverallA.getNumberOfItems(); ++i) {
             Obj objB = bestOverallA.getArray()[i];
@@ -423,6 +426,27 @@ public class MSERMatcher {
             );         
             
             bestOverall.add(objB);
+            
+            int imgIdx0 = objB.imgIdx0;
+            int imgIdx1 = objB.imgIdx1;
+            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
+            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);            
+            int w0_i = gsI0.getWidth();
+            int h0_i = gsI0.getHeight();
+            float scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;
+            int w1_i = gsI1.getWidth();
+            int h1_i = gsI1.getHeight();
+            float scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;
+            int x0 = Math.round(scale0 * objB.cr0.ellipseParams.xC);
+            int y0 = Math.round(scale0 * objB.cr0.ellipseParams.yC);
+            int x1 = Math.round(scale1 * objB.cr1.ellipseParams.xC);
+            int y1 = Math.round(scale1 * objB.cr1.ellipseParams.yC);
+            QuadInt q = new QuadInt(x0, y0, x1, y1);
+            Obj existing = bestCombined.get(q);
+            if (existing != null && existing.cost <= objB.cost) {
+                objB = existing;
+            }
+            bestCombined.put(q, objB);
         }
         List<Obj> _bestOverall = new ArrayList<Obj>(_bestOverallA.getNumberOfItems());        
         for (int i = 0; i < _bestOverallA.getNumberOfItems(); ++i) {
@@ -438,18 +462,44 @@ public class MSERMatcher {
             );         
             
             _bestOverall.add(objB);
+            
+            int imgIdx0 = objB.imgIdx0;
+            int imgIdx1 = objB.imgIdx1;
+            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
+            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);            
+            int w0_i = gsI0.getWidth();
+            int h0_i = gsI0.getHeight();
+            float scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;
+            int w1_i = gsI1.getWidth();
+            int h1_i = gsI1.getHeight();
+            float scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;
+            int x0 = Math.round(scale0 * objB.cr0.ellipseParams.xC);
+            int y0 = Math.round(scale0 * objB.cr0.ellipseParams.yC);
+            int x1 = Math.round(scale1 * objB.cr1.ellipseParams.xC);
+            int y1 = Math.round(scale1 * objB.cr1.ellipseParams.yC);
+            QuadInt q = new QuadInt(x0, y0, x1, y1);
+            Obj existing = bestCombined.get(q);
+            if (existing != null && existing.cost <= objB.cost) {
+                objB = existing;
+            }
+            bestCombined.put(q, objB);
         }
         
+        List<Obj> bestOverallCombined = new ArrayList<Obj>();
+        bestOverallCombined.addAll(bestCombined.values());
+        Collections.sort(bestOverallCombined, new CostComparator());
+        
         Collections.sort(bestOverall, new CostComparator());
-      //  Collections.sort(_bestOverall, new CostComparator());
+        Collections.sort(_bestOverall, new CostComparator());
         
         Set<PairInt> pairs = new HashSet<PairInt>();
         List<CorrespondenceList> out = new ArrayList<CorrespondenceList>();
-        for (int i = 0; i < bestOverall.size(); ++i) {
+        
+        for (int i = 0; i < bestOverallCombined.size(); ++i) {
             
             List<QuadInt> qs = new ArrayList<QuadInt>();
             
-            Obj obj = bestOverall.get(i);
+            Obj obj = bestOverallCombined.get(i);
             
             PairInt pair = new PairInt(obj.r0Idx, obj.r1Idx);
             if (!pairs.add(pair)) {
@@ -492,6 +542,63 @@ public class MSERMatcher {
                     + obj.r0Idx + "_" + obj.r1Idx;
                 System.out.format(
                     "final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
+                    settings.getDebugLabel(), i, x1, y1,
+                    (float) obj.cost, x0, y0, lbl,
+                    (float) obj.costs[0], (float) obj.costs[1],
+                    (float) obj.costs[2], (float) obj.costs[3],
+                    (float) obj.costs[4],
+                    obj.nMatched
+                );               
+            }
+        }
+                
+        for (int i = 0; i < bestOverall.size(); ++i) {
+            
+            List<QuadInt> qs = new ArrayList<QuadInt>();
+            
+            Obj obj = bestOverall.get(i);
+            
+            PairInt pair = new PairInt(obj.r0Idx, obj.r1Idx);
+            if (!pairs.add(pair)) {
+                continue;
+            }
+            
+            int imgIdx0 = obj.imgIdx0;
+            int imgIdx1 = obj.imgIdx1;
+            
+            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);
+            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);
+            
+            float scale0, scale1;
+            {
+                int w0_i = gsI0.getWidth();
+                int h0_i = gsI0.getHeight();
+                scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;
+                
+                int w1_i = gsI1.getWidth();
+                int h1_i = gsI1.getHeight();
+                scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;                
+            }
+            
+            // NOTE: for now, just mser centers,
+            // but should fill out more than this, including centroid of points
+            
+            int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);
+            int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);
+            int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);
+            int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);
+            QuadInt q = new QuadInt(x0, y0, x1, y1);
+            qs.add(q);
+            
+            //CorrespondenceList cor = new CorrespondenceList(qs);
+            //out.add(cor);
+            
+            if (debug) {
+                //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
+                String lbl = "_" + obj.imgIdx0 + "_" + obj.imgIdx1 + "_"
+                    + obj.r0Idx + "_" + obj.r1Idx;
+                System.out.format(
+                    "~final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n",
                     settings.getDebugLabel(), i, x1, y1,
                     (float) obj.cost, x0, y0, lbl,
                     (float) obj.costs[0], (float) obj.costs[1],
@@ -746,12 +853,10 @@ public class MSERMatcher {
             PairInt xy0 = cr0.getOffsetsToOrigCoords().get(pOffset0);
             assert(xy0 != null);
             
-            if (!_hogMgr0.extractBlockHOG(xy0.getX(), xy0.getY(), 
-                cr0.getMinMaxXY(), cr0.getPixelCoords(), h0)) {
+            if (!_hogMgr0.extractBlockHOG(xy0.getX(), xy0.getY(), h0)) {
                 continue;
             }
-            if (!_hogMgr1.extractBlockHOG(xy1.getX(), xy1.getY(), 
-                cr1.getMinMaxXY(), cr1.getPixelCoords(), h1)) {
+            if (!_hogMgr1.extractBlockHOG(xy1.getX(), xy1.getY(), h1)) {
                 continue;
             }
             // 1.0 is perfect similarity
@@ -759,18 +864,14 @@ public class MSERMatcher {
                 h1, orientation1);
             sumHOG += (intersection * intersection);
             
-            _hogMgr0.extractBlockHCPT(xy0.getX(), xy0.getY(), 
-                cr0.getMinMaxXY(), cr0.getPixelCoords(), ha0);
-            _hogMgr1.extractBlockHCPT(xy1.getX(), xy1.getY(), 
-                cr1.getMinMaxXY(), cr1.getPixelCoords(), ha1);
+            _hogMgr0.extractBlockHCPT(xy0.getX(), xy0.getY(), ha0);
+            _hogMgr1.extractBlockHCPT(xy1.getX(), xy1.getY(), ha1);
             // 1.0 is perfect similarity
             intersection = _hogMgr0.intersection(ha0, ha1);
             sumHCPT += (intersection * intersection);
             
-            _hogMgr0.extractBlockHGS(xy0.getX(), xy0.getY(), 
-                cr0.getMinMaxXY(), cr0.getPixelCoords(), ha0);
-            _hogMgr1.extractBlockHGS(xy1.getX(), xy1.getY(), 
-                cr1.getMinMaxXY(), cr1.getPixelCoords(), ha1);
+            _hogMgr0.extractBlockHGS(xy0.getX(), xy0.getY(), ha0);
+            _hogMgr1.extractBlockHGS(xy1.getX(), xy1.getY(), ha1);
             // 1.0 is perfect similarity
             intersection = _hogMgr0.intersection(ha0, ha1);
             sumHGS += (intersection * intersection);

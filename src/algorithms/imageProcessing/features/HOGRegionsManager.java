@@ -445,7 +445,7 @@ public class HOGRegionsManager {
             = hogMgs.getRegionIndexRegions();
         
         if (!cRegionMapReference.isEmpty()) {
-            System.out.println("*map is not empty, so not adding more.");
+            //System.out.println("*map is not empty, so not adding more.");
             return;
         }
         

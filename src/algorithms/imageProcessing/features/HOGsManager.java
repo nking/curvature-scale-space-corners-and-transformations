@@ -151,16 +151,13 @@ public class HOGsManager {
      *
      * @param x
      * @param y
-     * @param minMaxXY
-     * @param rCoords
      * @param outHist
      * @return true if method succeeded, else false.  can return false if the
      * addARegion failed due to having fewer than 9 pixels in the CRegion
      * for rIndex.
      */
-    public boolean extractBlockHOG(int x, int y, int[] minMaxXY, 
-        TLongSet rCoords, int[] outHist) {
-        return extractBlock(TYPE.HOG, x, y, minMaxXY, rCoords, outHist);
+    public boolean extractBlockHOG(int x, int y, int[] outHist) {
+        return extractBlock(TYPE.HOG, x, y, outHist);
     }
     
     /**
@@ -174,9 +171,8 @@ public class HOGsManager {
      * @param outHist
      * @return 
      */
-    public boolean extractBlockHCPT(int x, int y, int[] minMaxXY, 
-        TLongSet rCoords, int[] outHist) {
-        return extractBlock(TYPE.HCPT, x, y, minMaxXY, rCoords, outHist);
+    public boolean extractBlockHCPT(int x, int y, int[] outHist) {
+        return extractBlock(TYPE.HCPT, x, y, outHist);
     }
     
     /**
@@ -186,14 +182,11 @@ public class HOGsManager {
      * 
      * @param x
      * @param y
-     * @param minMaxXY
-     * @param rCoords
      * @param outHist
      * @return 
      */
-    public boolean extractBlockHGS(int x, int y, int[] minMaxXY, 
-        TLongSet rCoords, int[] outHist) {
-        return extractBlock(TYPE.HGS, x, y, minMaxXY, rCoords, outHist);
+    public boolean extractBlockHGS(int x, int y, int[] outHist) {
+        return extractBlock(TYPE.HGS, x, y, outHist);
     }
     
     /**
@@ -214,8 +207,7 @@ public class HOGsManager {
      * @param y
      * @param outHist
      */
-    private boolean extractBlock(TYPE type, int x, int y, 
-        int[] minMaxXY, TLongSet rCoords, int[] outHist) {
+    private boolean extractBlock(TYPE type, int x, int y, int[] outHist) {
 
         if ((type.equals(TYPE.HOG) && outHist.length != nAngleBins) ||
             (!type.equals(TYPE.HOG) && outHist.length != nHistBins)) {
@@ -239,7 +231,7 @@ public class HOGsManager {
             default: break;
         }
         
-        return extractBlock(hist, rCoords, minMaxXY, x, y, outHist);
+        return extractBlock(hist, x, y, outHist);
     }
     
     /**
@@ -260,8 +252,7 @@ public class HOGsManager {
      * @param y
      * @param outHist
      */
-    private boolean extractBlock(int[][] hist, TLongSet pixelIndexes, int[] minMaxXY,
-        int x, int y, int[] outHist) {
+    private boolean extractBlock(int[][] hist, int x, int y, int[] outHist) {
 
         if (x < 0 || y < 0 || x >= w || y >= h) {
             throw new IllegalArgumentException("x or y is out of bounds of "
@@ -272,30 +263,21 @@ public class HOGsManager {
         //   the summary of histogram counts over all cells
         //   is used to normalize each cell by that sum.
 
-        int width = minMaxXY[1] - minMaxXY[0] + 1;
-        int height = minMaxXY[3] - minMaxXY[2] + 1;
-        int xOffset = minMaxXY[0];
-        int yOffset = minMaxXY[2];
-        
         int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
         
         long[] tmp = new long[outHist.length];
-        
-        int count = 0;
-        
+                
         for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
 
             int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
 
             int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
-
-            int xSub = x2 - xOffset;
             
-            if ((xSub + N_PIX_PER_CELL_DIM - 1) < 0) {
+            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
                 break;
-            } else if (xSub < 0) {
-                xSub = 0;
-            } else if (xSub >= width) {
+            } else if (x2 < 0) {
+                x2 = 0;
+            } else if (x2 >= w) {
                 break;
             }
 
@@ -304,23 +286,17 @@ public class HOGsManager {
                 int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
 
                 int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
-
-                int ySub = y2 - yOffset;
                 
-                if ((ySub + N_PIX_PER_CELL_DIM - 1) < 0) {
+                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
                     break;
-                } else if (ySub < 0) {
-                    ySub = 0;
-                } else if (ySub >= height) {
+                } else if (y2 < 0) {
+                    y2 = 0;
+                } else if (y2 >= h) {
                     break;
                 }
                 
-                int pixIdx = (ySub * width) + xSub;
+                int pixIdx = (y2 * w) + x2;
                 
-                if (!pixelIndexes.contains(pixIdx)) {
-                //    continue;
-                }
-
                 add(tmp, hist[pixIdx]);
             }
         }
