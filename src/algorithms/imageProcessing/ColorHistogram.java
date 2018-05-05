@@ -146,6 +146,66 @@ public class ColorHistogram {
     }
     
     /**
+     * histogram of 16 bins each of CIE LAB colors where the bins
+     * of each color are taken to be in the range of min and max
+     * possible values
+     * <pre>
+     *    L    0 to 28.5
+     *    A  -46.9  62.5
+     *    B  -45.7  48.0
+     * </pre>
+     * 
+     * @param img
+     * @return histogram accessed as hist[0][bin] and hist[1][bin] and
+     * hist[2][bin] where 0, 1, 2 are histograms for L, A, and B, respectively
+     * using a range of values (0,-50,-50) to (28.5 62.5 48.0) and 16 bins.
+     */
+    public int[][] histogramCIELAB(ImageExt img, TIntList xPoints,
+        TIntList yPoints) {
+        
+        int nBins = 16;
+        
+        int[][] hist = new int[3][];
+        for (int i = 0; i < 3; ++i) {
+            hist[i] = new int[nBins];
+        }
+        
+        //(0,-50,-50) to (28.5 62.5 48.0) 
+        
+        float binWidthL = 28.5f/(float)nBins;
+        float binWidthA = (62.5f + 50.f)/(float)nBins;
+        float binWidthB = (48.0f + 50.f)/(float)nBins;
+                
+        for (int i = 0; i < xPoints.size(); ++i) {
+            int x = xPoints.get(i);
+            int y = yPoints.get(i);
+            
+            float[] lab = img.getCIELAB(x, y);
+            
+            int binNumberL = (int)(lab[0]/binWidthL);
+            if (binNumberL > (nBins - 1)) {
+                binNumberL = nBins - 1;
+            }
+            hist[0][binNumberL]++;
+            
+            //(0,-50,-50) to (28.5 62.5 48.0)
+            int binNumberA = (int)((lab[1] - -50.f)/binWidthA);
+            if (binNumberA > (nBins - 1)) {
+                binNumberA = nBins - 1;
+            }
+            hist[1][binNumberA]++;
+            
+            int binNumberB = (int)((lab[2] - -50.f)/binWidthB);
+            if (binNumberB > (nBins - 1)) {
+                binNumberB = nBins - 1;
+            }
+            hist[2][binNumberB]++;
+        }
+        
+        return hist;
+    }
+    
+    /**
      * histogram of 16 bins each of CIE LUV colors where the bins
      * of each color are taken to be in the range of min and max
      * possible values
@@ -301,6 +361,69 @@ public class ColorHistogram {
         for (PairInt p : points) {
             
             int pixIdx = img.getInternalIndex(p);
+            
+            float[] lch = cieC.rgbToCIELCH(
+                img.getR(pixIdx), img.getG(pixIdx), img.getR(pixIdx));
+            
+            int binNumberC = (int)(lch[1]/binWidthC);
+            if (binNumberC > (nBins - 1)) {
+                binNumberC = nBins - 1;
+            }
+            
+            int binNumberH = (int)(lch[2]/binWidthH);
+            if (binNumberH > (nBins - 1)) {
+                binNumberH = nBins - 1;
+            }
+            
+            int hIdx = (binNumberC * nBins) + binNumberH;
+            
+            assert(hIdx < nTot);
+            
+            hist[hIdx]++;
+        }
+        
+        return hist;
+    }
+    
+    /**
+     * histogram of CIE LUV C and H which are the polar angle of U,V and the 
+     * magnitude.  The histogram is a one dimensional binning of 
+     * divisions of C and H in combination.  8 divisions in C or H results
+     * in 84 bins, for example.
+     * 
+     * The ranges of the bins are the ranges from use of the D65 standard
+     * illuminant which are
+     * <pre>
+     * * L* 0 to 105
+     * c  0 to 139
+     * h  0 to 359
+     * </pre>
+     * 
+     * @param img
+     * @return histogram of CIE LUV C and H which are the polar angle of 
+     * U,V and the magnitude.  The histogram is a one dimensional binning 
+     * of divisions of C and H in combination.  8 divisions in C or H 
+     * results in 84 bins, for example.
+     */
+    public int[] histogramCIECH64(ImageExt img, TIntList xPoints,
+        TIntList yPoints) {
+        
+        int nBins = 8;
+        
+        int nTot = nBins * nBins;
+
+        int[] hist = new int[nTot];
+        
+        float binWidthC = 139.f/(float)nBins;
+        float binWidthH = 359.f/(float)nBins;
+        
+        // idx = (cBin * nBins) + hBin
+                
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        for (int i = 0; i < xPoints.size(); ++i) {
+            
+            int pixIdx = img.getInternalIndex(xPoints.get(i), yPoints.get(i));
             
             float[] lch = cieC.rgbToCIELCH(
                 img.getR(pixIdx), img.getG(pixIdx), img.getR(pixIdx));
@@ -516,6 +639,50 @@ public class ColorHistogram {
             
             int x = p.getX();
             int y = p.getY();
+            
+            float h = img.getHue(x, y);
+            float s = img.getSaturation(x, y);
+            float b = img.getBrightness(x, y);
+            
+            int binNumberH = Math.abs(Math.round(h/binWidth));
+            if (binNumberH > (nBins - 1)) {
+                binNumberH = nBins - 1;
+            }
+            hist[0][binNumberH]++;
+            
+            int binNumberS = Math.abs(Math.round(s/binWidth));
+            if (binNumberS > (nBins - 1)) {
+                binNumberS = nBins - 1;
+            }
+            hist[1][binNumberS]++;
+            
+            int binNumberB = Math.abs(Math.round(b/binWidth));
+            if (binNumberB > (nBins - 1)) {
+                binNumberB = nBins - 1;
+            }
+            hist[2][binNumberB]++;
+        }
+        
+        return hist;
+    }
+    public int[][] histogramHSV(ImageExt img, TIntList xPoints,
+        TIntList yPoints) {
+        
+        // range of Color values of h, s, b are 0:1 for all
+        
+        int nBins = 16;
+        
+        int[][] hist = new int[3][];
+        for (int i = 0; i < 3; ++i) {
+            hist[i] = new int[nBins];
+        }
+        
+        float binWidth = 1.f/(float)nBins;
+
+        for (int i = 0; i < xPoints.size(); ++i) {
+            
+            int x = xPoints.get(i);
+            int y = yPoints.get(i);
             
             float h = img.getHue(x, y);
             float s = img.getSaturation(x, y);

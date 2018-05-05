@@ -6,9 +6,6 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.PairIntWithIndex;
-import algorithms.misc.Misc;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
@@ -19,15 +16,14 @@ import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TLongIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -110,11 +106,11 @@ public class Canonicalizer {
             RegionGeometry rg = new RegionGeometry();
             rg.xC = Math.round((float) xC / scale);
             if (rg.xC > maxX) {
-                maxX = rg.xC;
+                rg.xC = maxX;
             }
             rg.yC = Math.round((float) yC / scale);
             if (rg.yC > maxY) {
-                maxY = rg.yC;
+                rg.yC = maxY;
             }
             rg.orientation = orientation;
             rg.eccentricity = eccentricity;
@@ -133,7 +129,7 @@ public class Canonicalizer {
          * key = transformed xOffset, yOffset,
          * value = coordinate in the original untransformed reference frame.
          */
-        public Set<PairInt> points;
+        //public Set<PairInt> points;
 
         // orientations in degrees in range 0 to 180
         public TIntList hogOrientations = new TIntArrayList();
@@ -144,46 +140,73 @@ public class Canonicalizer {
         
         private int[] minMaxXY = null;
         
+        public RegionPoints() {
+            
+        }
+        
         public int[] getMinMaxXY() {
-            if (minMaxXY == null && points != null) {
+            if (minMaxXY == null) {
                 minMaxXY = new int[]{Integer.MAX_VALUE, Integer.MIN_VALUE, 
                     Integer.MAX_VALUE, Integer.MIN_VALUE};
-                for (PairInt p : points) {
-                    if (p.getX() < minMaxXY[0]) {
-                        minMaxXY[0] = p.getX();
+                for (int i = 0; i < accX.size(); ++i) {
+                    if (accX.get(i) < minMaxXY[0]) {
+                        minMaxXY[0] = accX.get(i);
                     }
-                    if (p.getX() > minMaxXY[1]) {
-                        minMaxXY[1] = p.getX();
+                    if (accX.get(i) > minMaxXY[1]) {
+                        minMaxXY[1] = accX.get(i);
                     }
-                    if (p.getY() < minMaxXY[2]) {
-                        minMaxXY[2] = p.getY();
+                    if (accY.get(i) < minMaxXY[2]) {
+                        minMaxXY[2] = accY.get(i);
                     }
-                    if (p.getY() > minMaxXY[3]) {
-                        minMaxXY[3] = p.getY();
+                    if (accY.get(i) > minMaxXY[3]) {
+                        minMaxXY[3] = accY.get(i);
                     }
                 }
             }
             return minMaxXY;
         }
         
-        public RegionPoints createNewDividedByScaleSansAcc(float scale,
+        public TLongSet createAccPixelCoords(int imageWidth) {
+            TLongSet pixs = new TLongHashSet();
+            PixelHelper ph = new PixelHelper();
+            for (int i = 0; i < accX.size(); ++i) {
+                pixs.add(ph.toPixelIndex(accX.get(i), accY.get(i), imageWidth));
+            }
+            return pixs;
+        }
+        
+        public TLongSet createAccPixelCoords(int[] minMaxXY2) {
+            int xOffset = minMaxXY2[0];
+            int yOffset = minMaxXY2[1];
+            int w2 = minMaxXY2[1] - minMaxXY2[0] + 1;
+            int h2 = minMaxXY2[3] - minMaxXY2[2] + 1;
+            TLongSet pixs = new TLongHashSet();
+            PixelHelper ph = new PixelHelper();
+            for (int i = 0; i < accX.size(); ++i) {
+                int x = accX.get(i) - xOffset;
+                int y = accY.get(i) - yOffset;
+                pixs.add(ph.toPixelIndex(x, y, w2));
+            }
+            return pixs;
+        }
+        
+        public RegionPoints createNewDividedByScale(float scale,
             int maxX, int maxY) {
             RegionPoints rp = new RegionPoints();
             rp.ellipseParams = ellipseParams.createNewDividedByScale(scale,
                 maxX, maxY);
             rp.hogOrientations.addAll(hogOrientations);
-            rp.points = new HashSet<PairInt>(points.size());
-            int x, y;
-            for (PairInt p : points) {
-                x = (int)(p.getX()/scale);
-                y = (int)(p.getY()/scale);
+            for (int i = 0; i < accX.size(); ++i) {
+                int x = Math.round(accX.get(i)/scale);
+                int y = Math.round(accY.get(i)/scale);
                 if (x > maxX) {
                     x = maxX;
                 }
                 if (y > maxY) {
                     y = maxY;
                 }
-                rp.points.add(new PairInt(x, y));
+                rp.accX.add(x);
+                rp.accY.add(y);
             }
             return rp;
         }
@@ -203,8 +226,14 @@ public class Canonicalizer {
          * key = transformed xOffset, yOffset,
          * value = coordinate in the original untransformed reference frame.
          */
-        public Map<PairInt, PairInt> offsetsToOrigCoords;
+        private final Map<PairInt, PairInt> offsetsToOrigCoords =
+            new HashMap<PairInt, PairInt>();
 
+        public final int imgWidth;
+        public final int imgHeight;
+        
+        // these are the values in offsetsToOrigCoords 
+        private final TLongSet origPixs = new TLongHashSet();
         /**
          * when not empty, this holds label of segmented regions
          */
@@ -213,6 +242,37 @@ public class Canonicalizer {
         public int dataIdx = -1;
         
         private int[] minMaxXY = null;
+        
+        public CRegion(int imageWidth, int imageHeight) {
+            imgWidth = imageWidth;
+            imgHeight = imageHeight;
+        }
+        
+        public void addAllOffsets(Map<PairInt, PairInt> offsetCoords) {
+            PixelHelper ph = new PixelHelper();
+            for (Entry<PairInt, PairInt> entry : offsetCoords.entrySet()) {
+                PairInt p = entry.getValue();
+                offsetsToOrigCoords.put(entry.getKey(), p);
+                origPixs.add(ph.toPixelIndex(p, imgWidth));
+            }
+        }
+        public void resetToTheseOffsets(Map<PairInt, PairInt> offsetCoords) {
+            offsetCoords.clear();
+            origPixs.clear();
+            addAllOffsets(offsetCoords);
+        }
+        
+        public TLongSet getPixelCoords() {
+            return origPixs;
+        }
+        
+        public Set<PairInt> getOffsetKeys() {
+            return offsetsToOrigCoords.keySet();
+        }
+        
+        public Map<PairInt, PairInt> getOffsetsToOrigCoords() {
+            return offsetsToOrigCoords;
+        }
         
         public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
 
@@ -272,7 +332,12 @@ public class Canonicalizer {
         public CRegion createNewDividedByScale(float scale, 
             int maxX, int maxY) {
             
-            CRegion r = new CRegion();
+            int w2 = maxX + 1;
+            int h2 = maxY + 1;
+            
+            PixelHelper ph = new PixelHelper();
+            
+            CRegion r = new CRegion(w2, h2);
             r.ellipseParams = ellipseParams.createNewDividedByScale(scale,
                 maxX, maxY);
             r.hogOrientation = hogOrientation;
@@ -282,7 +347,6 @@ public class Canonicalizer {
                 r.minMaxXY = Arrays.copyOf(minMaxXY, minMaxXY.length);
             }
             r.labels.addAll(labels);
-            r.offsetsToOrigCoords = new HashMap<PairInt, PairInt>();
             int x0, y0, x1, y1;
             if (offsetsToOrigCoords != null) {
                 for (Entry<PairInt, PairInt> entry : offsetsToOrigCoords.entrySet()) {
@@ -306,6 +370,7 @@ public class Canonicalizer {
                     }
                     r.offsetsToOrigCoords.put(new PairInt(x0, y0),
                         new PairInt(x1, y1));
+                    r.origPixs.add(ph.toPixelIndex(x1, y1, w2));
                 }
             }
             
@@ -369,8 +434,6 @@ public class Canonicalizer {
         GreyscaleImage meanWindowedImg) {
 
         TIntObjectMap<CRegion> output = new TIntObjectHashMap<CRegion>();
-
-        int[] xyCen = new int[2];
     
         for (int i = 0; i < regions.size(); ++i) {
 
@@ -401,8 +464,6 @@ public class Canonicalizer {
         int addIdx = regions.size();
         
         TIntObjectMap<CRegion> output = new TIntObjectHashMap<CRegion>();
-
-        int[] xyCen = new int[2];
     
         TIntObjectIterator<RegionPoints> iter = regions.iterator();
         for (int i = 0; i < regions.size(); ++i) {
@@ -435,7 +496,6 @@ public class Canonicalizer {
      * NOTE: the returned CRegions need to have their .dataIdx fields set for
      * their specific context.
      * @param regionPoints
-     * @param outputMinMaxXY
      * @return 
      */
     public List<CRegion> canonicalizeRegions(
@@ -468,8 +528,6 @@ public class Canonicalizer {
         }
         orientations.add(eAngle);
         
-        PairIntArray pointsArray = Misc.convertWithoutOrder(regionPoints.points);
-
         TIntIterator iter2 = orientations.iterator();
         while (iter2.hasNext()) {
 
@@ -478,12 +536,13 @@ public class Canonicalizer {
             double angle = or * (Math.PI/180.);
 
             Map<PairInt, PairInt> offsetToOrigMap = 
-                createOffsetToOrigMap(regionPoints.ellipseParams.xC, regionPoints.ellipseParams.yC,
-                pointsArray, w0, h0, angle);
+                createOffsetToOrigMap(regionPoints.ellipseParams.xC, 
+                    regionPoints.ellipseParams.yC,
+                    regionPoints.accX, regionPoints.accY, w0, h0, angle);
 
-            CRegion cRegion = new CRegion();
+            CRegion cRegion = new CRegion(w0, h0);
             cRegion.ellipseParams = regionPoints.ellipseParams;
-            cRegion.offsetsToOrigCoords = offsetToOrigMap;
+            cRegion.addAllOffsets(offsetToOrigMap);
             cRegion.hogOrientation = or;
             cRegion.minMaxXY = Arrays.copyOf(regionPoints.getMinMaxXY(), 4);
             
@@ -532,8 +591,6 @@ public class Canonicalizer {
         }
         orientations.add(eAngle);
 
-        PairIntArray points = Misc.convertWithoutOrder(r.points);
-
         TIntIterator iter2 = orientations.iterator();
         while (iter2.hasNext()) {
 
@@ -543,11 +600,11 @@ public class Canonicalizer {
 
             Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
                 r.ellipseParams.xC, r.ellipseParams.yC,
-                points, imageWidth, imageHeight, angle);
+                r.accX, r.accY, imageWidth, imageHeight, angle);
 
-            CRegion cRegion = new CRegion();
+            CRegion cRegion = new CRegion(imageWidth, imageHeight);
             cRegion.ellipseParams = r.ellipseParams;
-            cRegion.offsetsToOrigCoords = offsetToOrigMap;
+            cRegion.addAllOffsets(offsetToOrigMap);
             cRegion.hogOrientation = or;
             
             out.add(cRegion);
@@ -582,12 +639,12 @@ public class Canonicalizer {
             
             Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(
                 r.ellipseParams.xC, r.ellipseParams.yC,
-                Misc.convertWithoutOrder(r.points), img.getWidth(), img.getHeight(), 
+                r.accX, r.accY, img.getWidth(), img.getHeight(), 
                 r.ellipseParams.orientation);
 
-            CRegion cRegion = new CRegion();
+            CRegion cRegion = new CRegion(img.getWidth(), img.getHeight());
             cRegion.ellipseParams = r.ellipseParams;
-            cRegion.offsetsToOrigCoords = offsetToOrigMap;
+            cRegion.addAllOffsets(offsetToOrigMap);
             
             output.put(label, cRegion);
         }
@@ -765,7 +822,7 @@ public class Canonicalizer {
             }
         }
         
-        fillInEllipse(xy);
+        fillInEllipse(r.accX, r.accY);
         
         RegionGeometry rg = new RegionGeometry();
         rg.eccentricity = ecc;
@@ -777,9 +834,7 @@ public class Canonicalizer {
         rg.yC = y;
 
         RegionPoints regionPoints = new RegionPoints();
-        regionPoints.ellipseParams = rg;
-        regionPoints.points = Misc.convert(xy);
-    
+        regionPoints.ellipseParams = rg;    
         regionPoints.accX.addAll(r.accX);
         regionPoints.accY.addAll(r.accY);
         
@@ -851,7 +906,7 @@ public class Canonicalizer {
         }
 
         Map<PairInt, PairInt> offsetToOrigMap = createOffsetToOrigMap(x, y,
-            xy, imageWidth, imageHeight, angle);
+            r.accX, r.accY, imageWidth, imageHeight, angle);
 
         RegionGeometry rg = new RegionGeometry();
         rg.eccentricity = ecc;
@@ -862,9 +917,9 @@ public class Canonicalizer {
         rg.yC = y;
         rg.m = m;
 
-        CRegion cRegion = new CRegion();
+        CRegion cRegion = new CRegion(imageWidth, imageHeight);
         cRegion.ellipseParams = rg;
-        cRegion.offsetsToOrigCoords = offsetToOrigMap;
+        cRegion.addAllOffsets(offsetToOrigMap);
 
         return cRegion;
     }
@@ -939,6 +994,9 @@ public class Canonicalizer {
             float scale = ((float)mImg0.getWidth()/(float)mImg.getWidth()) +
                 ((float)mImg0.getHeight()/(float)mImg.getHeight());
             scale /= 2.f;
+            
+            int w2 = mImg.getWidth();
+            int h2 = mImg.getHeight();
 
             iter0 = crMap0.iterator();
             for (int i = 0; i < crMap0.size(); ++i) {
@@ -986,11 +1044,11 @@ public class Canonicalizer {
                     if (yScaled == -1) {
                         yScaled = 0;
                     }
-                    if (xScaled == mImg.getWidth()) {
-                        xScaled = mImg.getWidth() - 1;
+                    if (xScaled >= w2) {
+                        xScaled = w2 - 1;
                     }
-                    if (yScaled == mImg.getHeight()) {
-                        yScaled = mImg.getHeight() - 1;
+                    if (yScaled >= h2) {
+                        yScaled = h2 - 1;
                     }
                     PairInt pOrigScaled = new PairInt(xScaled, yScaled);
 
@@ -1002,8 +1060,8 @@ public class Canonicalizer {
                     int xETr = (int)Math.round(xyETr[0]);
                     int yETr = (int)Math.round(xyETr[1]);
 
-                    if ((xETr >= 0) && (xETr < mImg.getWidth())
-                        && (yETr >= 0) && (yETr < mImg.getHeight())) {
+                    if ((xETr >= 0) && (xETr < w2)
+                        && (yETr >= 0) && (yETr < h2)) {
 
                         PairInt pTrOffset = new PairInt(xETr - xc2, yETr - yc2);
 
@@ -1036,9 +1094,9 @@ public class Canonicalizer {
                 //NOTE: these are not scaled:
                 rg.m = cr.ellipseParams.m;
                 
-                CRegion cRegion = new CRegion();
+                CRegion cRegion = new CRegion(w2, h2);
                 cRegion.ellipseParams = rg;
-                cRegion.offsetsToOrigCoords = offsetMap;
+                cRegion.addAllOffsets(offsetMap);
                 cRegion.autocorrel = Math.sqrt(autocorSum)/255.;
 
                 crMap.put(idx, cRegion);
@@ -1119,9 +1177,10 @@ public class Canonicalizer {
     }
 
     public static Map<PairInt, PairInt> createOffsetToOrigMap(int x, int y, 
-        PairIntArray xy, int imgWidth, int imgHeight, double orientation) {
+        TIntList xList, TIntList yList, int imgWidth, int imgHeight, 
+        double orientation) {
         
-        fillInEllipse(xy);
+        fillInEllipse(xList, yList);
 
         Set<PairInt> visited = new HashSet<PairInt>();
 
@@ -1141,22 +1200,24 @@ public class Canonicalizer {
 
         Transformer transformer = new Transformer();
     
+        TIntList xListTr = new TIntArrayList(xList);
+        TIntList yListTr = new TIntArrayList(yList);
         // ellipse, rotated by orientation to create
         //   x and y offsets from center that are comparable to
         //   the same for CRegions in other dataset.
-        PairIntArray xyTr = transformer.applyTransformation(params, xy);
+        transformer.applyTransformation(params, xListTr, yListTr);
 
         // visit all points in region and transform them
         // also determine the auto-correlation
 
         int nc = 0;
-        for (int j = 0; j < xy.getN(); ++j) {
+        for (int j = 0; j < xListTr.size(); ++j) {
             
-            int xp = xy.getX(j);
-            int yp = xy.getY(j);
+            int xp = xList.get(j);
+            int yp = yList.get(j);
             
-            int xpTr = xyTr.getX(j);
-            int ypTr = xyTr.getY(j);
+            int xpTr = xListTr.get(j);
+            int ypTr = yListTr.get(j);
             
             if (xpTr == -1) {
                 xpTr = 0;
@@ -1237,7 +1298,7 @@ public class Canonicalizer {
         return autocorSum;
     }
     
-    private static void fillInEllipse(PairIntArray xy) {
+    private static void fillInEllipse(TIntList xList, TIntList yList) {
 
         // key = row number, value = start and stop x range
         TIntObjectMap<PairInt> rowColRange = new TIntObjectHashMap<PairInt>();
@@ -1245,10 +1306,10 @@ public class Canonicalizer {
         int minRow = Integer.MAX_VALUE;
         int maxRow = Integer.MIN_VALUE;
         
-        for (int i = 0; i < xy.getN(); ++i) {
+        for (int i = 0; i < xList.size(); ++i) {
             
-            int row = xy.getY(i);
-            int col = xy.getX(i);
+            int row = yList.get(i);
+            int col = xList.get(i);
             
             PairInt xMinMax = rowColRange.get(row);
             if (xMinMax == null) {
@@ -1295,7 +1356,8 @@ public class Canonicalizer {
                 x1 = xMinMax.getY();
             }
             for (int x = (x0 + 1); x < x1; ++x) {
-                xy.add(x, i);
+                xList.add(x);
+                yList.add(i);
             }
         }
     }

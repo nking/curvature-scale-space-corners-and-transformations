@@ -5,6 +5,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
@@ -40,6 +41,14 @@ public class Misc {
         PairIntArray out = new PairIntArray(points.size());
         for (PairInt p : points) {
             out.add(p.getX(), p.getY());
+        }
+        return out;
+    }
+    
+    public static PairIntArray convert(TIntList xList, TIntList yList) {
+        PairIntArray out = new PairIntArray(xList.size());
+        for (int i = 0; i < xList.size(); ++i) {
+            out.add(xList.get(i), yList.get(i));
         }
         return out;
     }

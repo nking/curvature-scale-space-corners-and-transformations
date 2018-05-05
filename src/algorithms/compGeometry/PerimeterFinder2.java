@@ -11,6 +11,7 @@ import algorithms.util.PixelHelper;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -138,6 +139,22 @@ public class PerimeterFinder2 {
         }
         
         return embedded;
+    }
+    
+    /**
+     * finds any gaps embedded in the contiguous points.
+     * @return 
+     */
+    public Set<PairInt> findEmbeddedGaps(TIntList contiguousXPoints,
+        TIntList contiguousYPoints) {
+        
+        Set<PairInt> contiguousPoints = new HashSet<PairInt>();
+        for (int i = 0; i < contiguousXPoints.size(); ++i) {
+            contiguousPoints.add(new PairInt(
+                contiguousXPoints.get(i), contiguousYPoints.get(i)));
+        }
+        
+        return findEmbeddedGaps(contiguousPoints);
     }
     
     /**

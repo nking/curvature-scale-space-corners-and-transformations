@@ -1,6 +1,8 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.IntegralHistograms;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
@@ -14,6 +16,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import algorithms.util.TwoDIntArray;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -115,33 +118,13 @@ public class HOGRegionsManager {
     
     int[][] createHOGHistogram(GreyscaleImage gXY, GreyscaleImage theta) {
         
-        GradientIntegralHistograms gh = new GradientIntegralHistograms();
-        
-        int[][] histograms = gh.createHistograms(gXY, theta, nAngleBins);
-
-        //apply a windowed sum across the integral image.
-        // result is that at each pixel is a histogram holding the sum of histograms
-        //    from the surrounding N_PIX_PER_CELL_DIM window. 
-        gh.applyWindowedSum(histograms, gXY.getWidth(), gXY.getHeight(), 
-            N_PIX_PER_CELL_DIM);
-
-        return histograms;
+        return HOGUtil.createHOGHistogram(gXY, theta, nAngleBins, N_PIX_PER_CELL_DIM);
     }
     
     int[][] createHCPTHistogram(GreyscaleImage ptImg, TLongSet regionPixelCoords) {
 
-        int w2 = ptImg.getWidth();
-        int h2 = ptImg.getHeight();
-        
-        PolarThetaIntegralHistograms gh = new PolarThetaIntegralHistograms();
-        
-        int[][] histograms = gh.createHistograms(ptImg, 
-            regionPixelCoords, nHistBins);
-
-        //apply a windowed avg across the integral image
-        gh.applyWindowedSum(histograms, w2, h2, N_PIX_PER_CELL_DIM);
-        
-        return histograms;
+        return HOGUtil.createHCPTHistogram(ptImg, regionPixelCoords, nHistBins, 
+            N_PIX_PER_CELL_DIM);
     }
     
     /**
@@ -175,38 +158,60 @@ public class HOGRegionsManager {
             throw new IllegalArgumentException("cRegion.dataIdx must be >=");
         }
         
-        if (cRegion.offsetsToOrigCoords.size() < 9) {
+        if (cRegion.getOffsetsToOrigCoords().size() < 9) {
             return;
         }
         
         int w2 = subImageGSImg.getWidth();
         int h2 = subImageGSImg.getHeight();
         
-        regionCoords.put(rIndex, subImagePixelCoords);
-        regionIndexMinMaxXY.put(rIndex, new OneDIntArray(minMaxXYUnCroppedRefFrame));        
+        regionCoords.putIfAbsent(rIndex, subImagePixelCoords);
+        regionIndexMinMaxXY.putIfAbsent(rIndex, new OneDIntArray(minMaxXYUnCroppedRefFrame));        
         regionIndexRegions.putIfAbsent(rIndex, cRegion);
         
-        OneDIntArray key = new OneDIntArray(cRegion.getMinMaxXY());
+        int[] minMaxXY = cRegion.getMinMaxXY();
+        assert(minMaxXY[0] < Integer.MAX_VALUE);
+        assert(minMaxXY[2] < Integer.MAX_VALUE);
+        assert(minMaxXY[1] > Integer.MIN_VALUE);
+        assert(minMaxXY[3] > Integer.MIN_VALUE);
+        
+        OneDIntArray key = new OneDIntArray(minMaxXY);
         
         if (!histHOGMap.containsKey(key)) {
             // non-region pixels are excluded because magnitude is zero
             int[][] histogramsHOG = createHOGHistogram(subImageGradient, subImageTheta);        
             histHOGMap.put(key, new TwoDIntArray(histogramsHOG));
-        }
-        
+        }     
         if (!histHCPTMap.containsKey(key)) {
             // exclude non-region pixels:
             int[][] histogramsHCPT = createHCPTHistogram(subImagePTImg, subImagePixelCoords);
             histHCPTMap.put(key, new TwoDIntArray(histogramsHCPT));
         }
         if (!histHGSMap.containsKey(key)) {
-            IntegralHistograms gh = new IntegralHistograms();
-            int[][] histogramsHGS = gh.create(subImageGSImg, subImagePixelCoords, 
-                0, 255, nHistBins);
-            //apply a windowed avg across the integral image
-            gh.applyWindowedSum(histogramsHGS, w2, h2, N_PIX_PER_CELL_DIM);
+            int[][] histogramsHGS = HOGUtil.createHGSHistogram(
+                subImageGSImg, subImagePixelCoords, nHistBins, N_PIX_PER_CELL_DIM);
             histHGSMap.put(key, new TwoDIntArray(histogramsHGS));
         }
+        assert(histHOGMap.size() > 0);
+        assert(histHCPTMap.size() > 0);
+        assert(histHGSMap.size() > 0);
+    }
+
+    private TLongSet transformByOffsets(TLongSet pixs, int w, int w2, 
+        int xOffset2, int yOffset2) {
+        
+        PixelHelper ph = new PixelHelper();
+        int[] xy = new int[2];
+        TLongSet pixs2 = new TLongHashSet();
+        TLongIterator iter = pixs.iterator();
+        while (iter.hasNext()) {
+            long pix = iter.next();
+            ph.toPixelCoords(pix, w, xy);
+            long pix2 = ph.toPixelIndex(
+                xy[0] - xOffset2, xy[1] - yOffset2, w2);
+            pixs2.add(pix2);
+        }
+        return pixs2;
     }
     
     private static enum TYPE {
@@ -344,9 +349,10 @@ public class HOGRegionsManager {
      * @param y
      * @param outHist
      */
-    private boolean extractBlock(int[][] hist, TLongSet pixelIndexes, int[] minMaxXY,
+    private boolean extractBlock(int[][] hist, TLongSet subImagePixelIndexes, 
+        int[] minMaxXY,
         int x, int y, int[] outHist) {
-
+        
         if (x < 0 || y < 0 || x >= w || y >= h) {
             throw new IllegalArgumentException("x or y is out of bounds of "
                 + "original image");
@@ -364,9 +370,7 @@ public class HOGRegionsManager {
         int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
         
         long[] tmp = new long[outHist.length];
-        
-        int count = 0;
-        
+                
         for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
 
             int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
@@ -401,7 +405,7 @@ public class HOGRegionsManager {
                 
                 int pixIdx = (ySub * width) + xSub;
                 
-                if (!pixelIndexes.contains(pixIdx)) {
+                if (!subImagePixelIndexes.contains(pixIdx)) {
                     continue;
                 }
 
@@ -423,17 +427,25 @@ public class HOGRegionsManager {
         return true;
     }
     
+    /**
+     * populate the instance variables if not already.
+     * 
+     * @param regionPointsMapNotScaled
+     * @param scale
+     * @param hogMgs
+     * @param gsImgScaled
+     * @param ptImgScaled 
+     */
     public void populateRegionsIfNeeded(
         TIntObjectMap<Canonicalizer.RegionPoints> regionPointsMapNotScaled, 
-        float scale,
-        HOGRegionsManager hogMgs,
-        GreyscaleImage gsImgScaled, GreyscaleImage ptImgScaled) {
+        float scale, HOGRegionsManager hogMgs, GreyscaleImage gsImgScaled, 
+        GreyscaleImage ptImgScaled) {
 
         TIntObjectMap<Canonicalizer.CRegion> cRegionMapReference 
             = hogMgs.getRegionIndexRegions();
         
         if (!cRegionMapReference.isEmpty()) {
-            //System.out.println("*map is not empty, so not adding more.");
+            System.out.println("*map is not empty, so not adding more.");
             return;
         }
         
@@ -453,36 +465,87 @@ public class HOGRegionsManager {
         
         int ts = MiscDebug.getCurrentTimeFormatted();
         
+        int count = 0;
+        
         for (int i = 0; i < n; ++i) {
             iter.advance();
             
             RegionPoints regionPointsNotScaled = iter.value();
             
-            if (regionPointsNotScaled.points.size() < 9) {
+            int nr = regionPointsNotScaled.accX.size();
+            
+            if (nr < 9) {
                 continue;
             }
             
+            assert(regionPointsNotScaled.accX.size() == 
+                regionPointsNotScaled.accY.size());
+            
             RegionPoints regionPointsScaled = 
-                regionPointsNotScaled.createNewDividedByScaleSansAcc(
+                regionPointsNotScaled.createNewDividedByScale(
                 scale, w - 1, h - 1);
             
+            assert(!regionPointsScaled.accX.isEmpty());
+            assert(!regionPointsScaled.accY.isEmpty());
+            
             int[] minMaxXY = regionPointsScaled.getMinMaxXY();
+            assert(minMaxXY[0] != Integer.MAX_VALUE);
+            assert(minMaxXY[2] != Integer.MAX_VALUE);
+            assert(minMaxXY[1] != Integer.MIN_VALUE);
+            assert(minMaxXY[3] != Integer.MIN_VALUE);
             int w2 = minMaxXY[1] - minMaxXY[0] + 1;
             int h2 = minMaxXY[3] - minMaxXY[2] + 1;
             if (w2 < 3 || h2 < 3) {
                 continue;
             }
-            TLongSet refFramePixs = new TLongHashSet();
-            for (PairInt p : regionPointsScaled.points) {
-                int x = p.getX() - minMaxXY[0];
-                int y = p.getY() - minMaxXY[2];
-                long pixIdx = ph.toPixelIndex(x, y, w2);
-                refFramePixs.add(pixIdx);
-            }
             
+            TLongSet refFramePixs = regionPointsScaled
+                .createAccPixelCoords(w);
+            assert(!refFramePixs.isEmpty());
+            
+            /*if (true) {
+                Image tmp;
+                int[] xy = new int[2];
+                tmp = gsImgScaled.copyToColorGreyscale();
+                for (int ii = 0; ii < regionPointsScaled.accX.size(); ++ii) {
+                    ImageIOHelper.addPointToImage(
+                        regionPointsScaled.accX.get(ii), 
+                        regionPointsScaled.accY.get(ii), 
+                        tmp, 0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, "_" + ts + "_rpdebug0_");
+                tmp = gsImgScaled.copyToColorGreyscale();
+                TLongIterator iter2 = refFramePixs.iterator();
+                while (iter2.hasNext()) {
+                    long pixIdx = iter2.next();
+                    ph.toPixelCoords(pixIdx, w, xy);
+                    ImageIOHelper.addPointToImage(
+                        xy[0], xy[1], 
+                        tmp, 0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, "_" +  "_rpdebug1_");
+            }*/
+            
+            refFramePixs = transformByOffsets(refFramePixs, w, w2, minMaxXY[0], minMaxXY[2]);
+                    
             GreyscaleImage gsImg2 = gsImgScaled.subImage2(
                 minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3]);
-
+            
+            /*if (true) {
+                Image tmp;
+                int[] xy = new int[2];
+                tmp = gsImg2.copyToColorGreyscale();
+                TLongIterator iter2 = refFramePixs.iterator();
+                while (iter2.hasNext()) {
+                    long pixIdx = iter2.next();
+                    ph.toPixelCoords(pixIdx, w2, xy);
+                    ImageIOHelper.addPointToImage(
+                        xy[0], xy[1], 
+                        tmp, 0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, "_" +  "_rpdebug2_");
+            }*/
+            
             GreyscaleImage[] gXgY = 
                 imageProcessor.createCentralDifferenceGradients(gsImg2);
             GreyscaleImage theta2 = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);
@@ -497,18 +560,18 @@ public class HOGRegionsManager {
         
             // non-region pixels are excluded because magnitude is zero
             int[][] histogramsHOG = createHOGHistogram(gXY2, theta2);        
-            histHOGMap.put(key, new TwoDIntArray(histogramsHOG));
+            histHOGMap.putIfAbsent(key, new TwoDIntArray(histogramsHOG));
         
             // exclude non-region pixels:
             int[][] histogramsHCPT = createHCPTHistogram(ptImg2, refFramePixs);
-            histHCPTMap.put(key, new TwoDIntArray(histogramsHCPT));
+            histHCPTMap.putIfAbsent(key, new TwoDIntArray(histogramsHCPT));
         
             IntegralHistograms gh = new IntegralHistograms();
             int[][] histogramsHGS = gh.create(gsImg2, refFramePixs, 
                 0, 255, nHistBins);
             //apply a windowed avg across the integral image
             gh.applyWindowedSum(histogramsHGS, w2, h2, N_PIX_PER_CELL_DIM);
-            histHGSMap.put(key, new TwoDIntArray(histogramsHGS));
+            histHGSMap.putIfAbsent(key, new TwoDIntArray(histogramsHGS));
             
             int[] hogHistCenter = new int[nAngleBins];
             extractBlock(histogramsHOG, refFramePixs, minMaxXY, 
@@ -529,7 +592,9 @@ public class HOGRegionsManager {
             
             List<CRegion> crsScaled = cn.canonicalizeRegions(
                 w, h, regionPointsScaled);
-           
+            
+            assert(!crsScaled.isEmpty());
+          
             //DEBUG
             /*{
                 Image tmp = gsImgScaled.copyToColorGreyscale();
@@ -545,23 +610,38 @@ public class HOGRegionsManager {
             
             //System.out.println("created " + crs.size() + " from RegionPoints " + i);
             
+            count++;
+            
             for (Canonicalizer.CRegion crScaled : crsScaled) {
 
                 int rIdx = cRegionMapReference.size();
                 
-                if (crScaled.offsetsToOrigCoords.size() < 9) {
+                if (crScaled.getOffsetsToOrigCoords().size() < 9) {
                     continue;
                 }
                 
                 crScaled.dataIdx = rIdx;
-                
+            
                 hogMgs.addARegion(
                     gsImg2, ptImg2, gXY2, theta2, 
                     crScaled, minMaxXY, refFramePixs);
-               
+                
+                assert(regionIndexRegions.containsKey(rIdx));
+                assert(regionIndexMinMaxXY.containsKey(rIdx));
+                assert(regionCoords.containsKey(rIdx));
                 assert(cRegionMapReference.get(rIdx).equals(crScaled));
+                assert(!histHOGMap.isEmpty());
+                assert(!histHCPTMap.isEmpty());
+                assert(!histHGSMap.isEmpty());
             }
         }
+        
+        assert(!histHOGMap.isEmpty());
+        assert(!histHCPTMap.isEmpty());
+        assert(!histHGSMap.isEmpty());
+        assert(regionCoords.size() >= count);
+        assert(regionIndexRegions.size() >= count);
+        assert(regionIndexMinMaxXY.size() >= count);
     }
     
     /**
@@ -634,16 +714,6 @@ public class HOGRegionsManager {
         return HOGUtil.diff(histA, orientationA, histB, orientationB);
     }
     
-    private int sumCounts(int[] hist) {
-
-        int sum = 0;
-        for (int v : hist) {
-            sum += v;
-        }
-
-        return sum;
-    }
-
     public static void add(int[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];

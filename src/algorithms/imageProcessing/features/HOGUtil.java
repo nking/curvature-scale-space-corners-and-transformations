@@ -1,8 +1,10 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.IntegralHistograms;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
+import algorithms.util.TwoDIntArray;
 import gnu.trove.set.TLongSet;
 import java.util.Collection;
 
@@ -329,6 +331,22 @@ public class HOGUtil {
         return new float[]{(float)sumDiff, (float)err};
     }
     
+    public static int[][] createHOGHistogram(GreyscaleImage gXY, 
+        GreyscaleImage theta, int nAngleBins, int nPixPerCellDimension) {
+        
+        GradientIntegralHistograms gh = new GradientIntegralHistograms();
+        
+        int[][] histograms = gh.createHistograms(gXY, theta, nAngleBins);
+
+        //apply a windowed sum across the integral image.
+        // result is that at each pixel is a histogram holding the sum of histograms
+        //    from the surrounding N_PIX_PER_CELL_DIM window. 
+        gh.applyWindowedSum(histograms, gXY.getWidth(), gXY.getHeight(), 
+            nPixPerCellDimension);
+
+        return histograms;
+    }
+    
     /**
      * 
      * @param img
@@ -345,6 +363,39 @@ public class HOGUtil {
         
         return createAndMaskSubImage(img, maskValue, points, 
             outputMinMaxXY, outputRefFramePixs);
+    }
+    
+    public static int[][] createHCPTHistogram(GreyscaleImage ptImg, 
+        TLongSet regionPixelCoords, int nHistBins, int nPixPerCellDimension) {
+
+        int w2 = ptImg.getWidth();
+        int h2 = ptImg.getHeight();
+        
+        PolarThetaIntegralHistograms gh = new PolarThetaIntegralHistograms();
+        
+        int[][] histograms = gh.createHistograms(ptImg, 
+            regionPixelCoords, nHistBins);
+
+        //apply a windowed avg across the integral image
+        gh.applyWindowedSum(histograms, w2, h2, nPixPerCellDimension);
+        
+        return histograms;
+    }
+    
+    public static int[][] createHGSHistogram(GreyscaleImage gsImg, 
+        TLongSet regionPixelCoords, int nHistBins, int nPixPerCellDimension) {
+
+        int w2 = gsImg.getWidth();
+        int h2 = gsImg.getHeight();
+        
+        IntegralHistograms gh = new IntegralHistograms();
+            
+        int[][] histogramsHGS = gh.create(gsImg, regionPixelCoords, 
+            0, 255, nHistBins);
+        //apply a windowed avg across the integral image
+        gh.applyWindowedSum(histogramsHGS, w2, h2, nPixPerCellDimension);
+        
+        return histogramsHGS;
     }
     
     /**

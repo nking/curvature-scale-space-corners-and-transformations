@@ -104,7 +104,7 @@ public class AndroidStatuesTest extends TestCase {
 
                 Set<PairInt> shape0 = new HashSet<PairInt>();
 
-                ImageExt[] imgs0 = omw.maskAndBin2(filePath0, filePathMask0,
+                ImageExt[] imgs0 = ObjectMatcherWrapper.maskAndBin2(filePath0, filePathMask0,
                     shape0);
 
                 //MiscDebug.writeImage(imgs0[0], "_imgs0_0_");
@@ -188,7 +188,7 @@ public class AndroidStatuesTest extends TestCase {
             
             Set<PairInt> shape0 = new HashSet<PairInt>();
 
-            ImageExt[] imgs0 = omw.maskAndBin2(filePath0, filePath0Mask,
+            ImageExt[] imgs0 = ObjectMatcherWrapper.maskAndBin2(filePath0, filePath0Mask,
                 shape0);
             
             //MiscDebug.writeImage(imgs0[0], "_imgs0_0_");
@@ -280,7 +280,7 @@ public class AndroidStatuesTest extends TestCase {
             
             Set<PairInt> shape0 = new HashSet<PairInt>();
 
-            ImageExt[] imgs0 = omw.maskAndBin2(filePath0, filePath0Mask,
+            ImageExt[] imgs0 = ObjectMatcherWrapper.maskAndBin2(filePath0, filePath0Mask,
                 shape0);
             
             List<CorrespondenceList> corresList = omw.find(imgs0, shape0, img, 
@@ -349,7 +349,7 @@ public class AndroidStatuesTest extends TestCase {
             
             Set<PairInt> shape0 = new HashSet<PairInt>();
 
-            ImageExt img0 = omw.maskAndBin2(filePath0, shape0);
+            ImageExt img0 = ObjectMatcherWrapper.maskAndBin2(filePath0, shape0);
             
             //MiscDebug.writeImage(imgs0[0], "_imgs0_0_");
             //MiscDebug.writeImage(imgs0[1], "_imgs0_1_");

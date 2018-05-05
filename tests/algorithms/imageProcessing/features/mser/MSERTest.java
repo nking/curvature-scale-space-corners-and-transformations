@@ -108,25 +108,25 @@ public class MSERTest extends TestCase {
                 GreyscaleImage mImg = mImgs.get(i);
                 TIntObjectMap<CRegion> map = cRegions1List.get(i);
                 CRegion r = map.get(specFeatureIdx[i][j]);
-                int n1 = r.offsetsToOrigCoords.size();
+                int n1 = r.getOffsetsToOrigCoords().size();
                 
                 for (int ii = 0; ii < specFeatureIdx.length; ++ii) {
                     GreyscaleImage mImg2 = mImgs.get(ii);
                     TIntObjectMap<CRegion> map2 = cRegions1List.get(ii);
                     CRegion r2 = map2.get(specFeatureIdx[ii][j]);
                     
-                    int maxMatchable = Math.min(n1, r2.offsetsToOrigCoords.size());
+                    int maxMatchable = Math.min(n1, r2.getOffsetsToOrigCoords().size());
                     
                     double ssdSum = 0;
                     int ssdCount = 0;
                     
                     for (Entry<PairInt, PairInt> entry : 
-                        r.offsetsToOrigCoords.entrySet()) {
+                        r.getOffsetsToOrigCoords().entrySet()) {
                         
                         PairInt pOffsets = entry.getKey();
                         PairInt xy = entry.getValue();
                         
-                        PairInt xy2 = r2.offsetsToOrigCoords.get(pOffsets);
+                        PairInt xy2 = r2.getOffsetsToOrigCoords().get(pOffsets);
                         if (xy2 == null) {
                             continue;
                         }
@@ -284,7 +284,7 @@ public class MSERTest extends TestCase {
                             
                             int idx1 = iteri1.key();
                             CRegion cr1 = iteri1.value();
-                            int n1 = cr1.offsetsToOrigCoords.size();
+                            int n1 = cr1.getOffsetsToOrigCoords().size();
                             
                             TIntObjectIterator<CRegion> iteri2 = cMap2.iterator();
                             for (int i2 = 0; i2 < cMap2.size(); ++i2) {
@@ -292,7 +292,7 @@ public class MSERTest extends TestCase {
                                
                                 int idx2 = iteri2.key();
                                 CRegion cr2 = iteri2.value();
-                                int n2 = cr2.offsetsToOrigCoords.size();
+                                int n2 = cr2.getOffsetsToOrigCoords().size();
                                 
                                 int maxMatchable = Math.min(n1, n2);
 
@@ -300,12 +300,12 @@ public class MSERTest extends TestCase {
                                 int ssdCount = 0;
 
                                 for (Entry<PairInt, PairInt> entry
-                                    : cr1.offsetsToOrigCoords.entrySet()) {
+                                    : cr1.getOffsetsToOrigCoords().entrySet()) {
 
                                     PairInt pOffsets = entry.getKey();
                                     PairInt xy = entry.getValue();
 
-                                    PairInt xy2 = cr2.offsetsToOrigCoords.get(pOffsets);
+                                    PairInt xy2 = cr2.getOffsetsToOrigCoords().get(pOffsets);
                                     if (xy2 == null) {
                                         continue;
                                     }

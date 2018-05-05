@@ -127,14 +127,14 @@ public class HOGRegionsManagerTest extends TestCase {
             
             Intersection2DPacking ip = new Intersection2DPacking();
             Set<PairInt> intersectingKeys = ip.intersection(
-                cr0.offsetsToOrigCoords.keySet(),
-                cr1.offsetsToOrigCoords.keySet());
+                cr0.getOffsetsToOrigCoords().keySet(),
+                cr1.getOffsetsToOrigCoords().keySet());
             Set<PairInt> offsets0 = ip.naiveStripPacking(
                 intersectingKeys, N_PIX_PER_CELL_DIM);
             
             int orientation0 = cr0.hogOrientation;
             int orientation1 = cr1.hogOrientation;
-            Map<PairInt, PairInt> offsetMap1 = cr1.offsetsToOrigCoords;
+            Map<PairInt, PairInt> offsetMap1 = cr1.getOffsetsToOrigCoords();
             // key = transformed offsets, value = coords in image ref frame,
             // so, can compare dataset0 and dataset1 points with same
             //  keys
@@ -145,7 +145,7 @@ public class HOGRegionsManagerTest extends TestCase {
                 if (xy1 == null) {
                     continue;
                 }
-                PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);            
+                PairInt xy0 = cr0.getOffsetsToOrigCoords().get(pOffset0);            
                 
                 if (!hogMgr.extractBlockHOG(rIndex0, xy0.getX(), xy0.getY(), h_0)) {
                     continue;
