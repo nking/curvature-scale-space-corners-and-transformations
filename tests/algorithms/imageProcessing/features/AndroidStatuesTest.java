@@ -534,7 +534,20 @@ public class AndroidStatuesTest extends TestCase {
                 //System.out.println("orb matched: " + p1 + " " + p2);
                 //if (p2.getX() > 160)
                 plotter.drawDashedLine(p1.getX(), p1.getY(),
-                    p2.getX(), p2.getY(), 255, 200, 200, 1, 7);
+                    p2.getX(), p2.getY(), 255, 5, 178, 1, 5);
+            }
+        }
+        
+        if (corresList.size() > 2) {
+            cor = corresList.get(2);
+            for (int ii = 0; ii < cor.getPoints1().size(); ++ii) {
+                PairInt p1 = cor.getPoints1().get(ii);
+                PairInt p2 = cor.getPoints2().get(ii);
+
+                //System.out.println("orb matched: " + p1 + " " + p2);
+                //if (p2.getX() > 160)
+                plotter.drawDashedLine(p1.getX(), p1.getY(),
+                    p2.getX(), p2.getY(), 5, 255, 178, 1, 15);
             }
         }
 

@@ -4,7 +4,6 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.IntegralHistograms;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
-import algorithms.util.TwoDIntArray;
 import gnu.trove.set.TLongSet;
 import java.util.Collection;
 
