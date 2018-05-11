@@ -82,8 +82,9 @@
             LCH color space can find potential objects.  
             I combined the Canny color edges with the boundaries of MSER regions to create
             edges that are complete contours (== segmentation).
-            The current version has some color filter rules that are potentially fragile,
-            but the results look promising and can be sped up.
+            The current version has some color filter rules that are potentially fragile and
+            the use of MSER is resolution dependent so a wrapper class is provided.
+            The results look promising.
             <table>
             <tr>
             <td>
@@ -120,7 +121,7 @@
         <li>
             Finding an object in another image in which it has changed location, lighting,
             and pose is not easy, but can be done with MSER and HOGs.
-            The current version needs improvements.
+            The current version has wrapper classes which help pre-prepare the images.
             <table>
             <tr>
             <td>
@@ -146,10 +147,6 @@
             </td>
             </tr>
             </table>
-        </li>
-        <li>
-            NOTE the MSER is sensitive to resolution and the classes have been adapted to
-            expect input being images of sizes near 256 X 256.
         </li>
     </ul>
 
