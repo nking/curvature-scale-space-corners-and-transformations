@@ -2,12 +2,15 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HOGRegionsManager;
 import algorithms.imageProcessing.features.HOGsManager;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.misc.MiscDebug;
 import algorithms.packing.Intersection2DPacking;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
@@ -24,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -274,33 +278,34 @@ public class MSERMatcher {
                         }
                                                    
                         Intersection2DPacking ip = new Intersection2DPacking();
-                        Set<PairInt> intersectingKeys = ip.intersection(
+                        Set<PairInt> intersectingOffsetKeys = ip.intersection(
                             cr0.getOffsetKeys(), cr1.getOffsetKeys());
                         Set<PairInt> offsets0 = ip.naiveStripPacking(
-                            intersectingKeys, N_PIX_PER_CELL_DIM);
+                            intersectingOffsetKeys, N_PIX_PER_CELL_DIM);
                         
                         //DEBUG
                         /*{
                             Image tmp = gsI1.copyToColorGreyscale();
-                            for (Entry<PairInt, PairInt> entry : cr1.offsetsToOrigCoords.entrySet()) {
+                            for (Entry<PairInt, PairInt> entry : 
+                                cr1.getOffsetsToOrigCoords().entrySet()) {
                                 ImageIOHelper.addPointToImage(entry.getValue().getX(),
                                     entry.getValue().getY(), tmp,
                                     1, 255, 0, 0);
                             };
                             MiscDebug.writeImage(tmp, "_DBG_" 
                                 + pyrIdx0 + "_" + i0 + "__" + pyrIdx1 + "_" + i1);
-                        }*/
-                        /*{
+                        }
+                        {
                             System.out.println("intersectionKeys.size=" +
-                                intersectingKeys.size() + 
+                                intersectingOffsetKeys.size() + 
                                 " offsets0.size=" + offsets0.size());
                             
                             for (PairInt p : offsets0) {
-                                assert(intersectingKeys.contains(p));
+                                assert(intersectingOffsetKeys.contains(p));
                             }
                         }*/
 
-                        Obj obj = calculateHOGCosts(offsets0, intersectingKeys.size(), 
+                        Obj obj = calculateHOGCosts(offsets0, intersectingOffsetKeys.size(), 
                             hogsMgr0, cr0, scale0, rIdx0, pyrIdx0,
                             hogsMgr1, cr1, scale1, rIdx1, pyrIdx1);
                         
@@ -310,7 +315,7 @@ public class MSERMatcher {
                         boolean added = bestPerOctave.add(obj);
                         
                       
-                        Obj _obj = _calculateHOGCosts(offsets0, intersectingKeys.size(), 
+                        Obj _obj = _calculateHOGCosts(offsets0, intersectingOffsetKeys.size(), 
                             _hogsMgr0, cr0, scale0, rIdx0, pyrIdx0,
                             _hogsMgr1, cr1, scale1, rIdx1, pyrIdx1);
                         

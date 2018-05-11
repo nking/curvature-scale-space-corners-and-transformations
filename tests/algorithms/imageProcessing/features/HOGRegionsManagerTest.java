@@ -122,7 +122,7 @@ public class HOGRegionsManagerTest extends TestCase {
             int rIndex1 = cr1.dataIdx;
             
             
-            System.out.println("extract blocks for " + rIndex0 + ", " + rIndex1);
+            //System.out.println("extract blocks for " + rIndex0 + ", " + rIndex1);
             
             
             Intersection2DPacking ip = new Intersection2DPacking();
@@ -163,8 +163,8 @@ public class HOGRegionsManagerTest extends TestCase {
                 hogMgr.extractBlockHGS(rIndex1, xy1.getX(), xy1.getY(), ha_1);
                 float intersection2 = hogMgr.intersection(ha_0, ha_1);
                 
-                System.out.println(count + " " + intersection0 + ", " +
-                    intersection1 + ", " + intersection2);
+                //System.out.println(count + " " + intersection0 + ", " +
+                //    intersection1 + ", " + intersection2);
                 
                 count++;
             }

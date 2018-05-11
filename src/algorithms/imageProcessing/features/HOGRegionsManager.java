@@ -1,14 +1,11 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.IntegralHistograms;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
 import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.OneDIntArray;
@@ -370,6 +367,8 @@ public class HOGRegionsManager {
         int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
         
         long[] tmp = new long[outHist.length];
+        long[] tmp2 = new long[tmp.length];
+        int[] outN = new int[1];
                 
         for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
 
@@ -408,8 +407,11 @@ public class HOGRegionsManager {
                 if (!subImagePixelIndexes.contains(pixIdx)) {
                     continue;
                 }
+                
+                HOGUtil.extractWindow(hist, xSub, xSub, ySub, ySub, width, 
+                    height, tmp2, outN);
 
-                add(tmp, hist[pixIdx]);
+                HOGUtil.add(tmp, tmp2);
             }
         }
 
@@ -610,8 +612,8 @@ public class HOGRegionsManager {
             
             //System.out.println("created " + crs.size() + " from RegionPoints " + i);
             
-            count++;
             
+            int c = 0;
             for (Canonicalizer.CRegion crScaled : crsScaled) {
 
                 int rIdx = cRegionMapReference.size();
@@ -626,6 +628,7 @@ public class HOGRegionsManager {
                     gsImg2, ptImg2, gXY2, theta2, 
                     crScaled, minMaxXY, refFramePixs);
                 
+                c++;
                 assert(regionIndexRegions.containsKey(rIdx));
                 assert(regionIndexMinMaxXY.containsKey(rIdx));
                 assert(regionCoords.containsKey(rIdx));
@@ -634,7 +637,11 @@ public class HOGRegionsManager {
                 assert(!histHCPTMap.isEmpty());
                 assert(!histHGSMap.isEmpty());
             }
+            if (c > 0) {
+                count++;
+            }
         }
+ 
         
         assert(!histHOGMap.isEmpty());
         assert(!histHCPTMap.isEmpty());
@@ -642,6 +649,7 @@ public class HOGRegionsManager {
         assert(regionCoords.size() >= count);
         assert(regionIndexRegions.size() >= count);
         assert(regionIndexMinMaxXY.size() >= count);
+        
     }
     
     /**
@@ -713,25 +721,7 @@ public class HOGRegionsManager {
 
         return HOGUtil.diff(histA, orientationA, histB, orientationB);
     }
-    
-    public static void add(int[] addTo, int[] addFrom) {
-        for (int i = 0; i < addTo.length; ++i) {
-            addTo[i] += addFrom[i];
-        }
-    }
-
-    public static void add(long[] addTo, int[] addFrom) {
-        for (int i = 0; i < addTo.length; ++i) {
-            addTo[i] += addFrom[i];
-        }
-    }
-    
-    public static void add(long[] addTo, long[] addFrom) {
-        for (int i = 0; i < addTo.length; ++i) {
-            addTo[i] += addFrom[i];
-        }
-    }
-
+   
     TIntList calculateDominantOrientations(int[] hogHist) {
         
         int maxIdx = MiscMath.findYMaxIndex(hogHist);

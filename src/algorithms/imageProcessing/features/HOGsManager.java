@@ -4,15 +4,11 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
-import algorithms.util.OneDIntArray;
-import algorithms.util.PairInt;
-import algorithms.util.PixelHelper;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
-import java.util.Set;
+import java.util.Arrays;
 
 /**
  * similar to HOGRegionsManager except that there is only one histogram of each
@@ -166,8 +162,6 @@ public class HOGsManager {
      * construction.
      * @param x
      * @param y
-     * @param minMaxXY
-     * @param rCoords
      * @param outHist
      * @return 
      */
@@ -263,55 +257,52 @@ public class HOGsManager {
         //   the summary of histogram counts over all cells
         //   is used to normalize each cell by that sum.
 
-        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
+        Arrays.fill(outHist, 0, outHist.length, 0);
+                
+        int r = N_CELLS_PER_BLOCK_DIM >> 1;
+        int stopY = y + r;
+        int stopX = x + r;
+        int startX = x - r;
+        int startY = y - r;
+        if ((h & 1) == 0) {
+            startX--;
+            startY--;            
+        }
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY > 0) {
+            startY = 0;
+        }
+        if (stopX >= w) {
+            stopX = w - 1;
+        }
+        if (stopY >= h) {
+            stopY = h - 1;
+        }
         
-        long[] tmp = new long[outHist.length];
-                
-        for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
+        
+        int[] outputN = new int[1];  
+        
+        HOGUtil.extractWindow(hist, startX, stopX, startY, stopY, w, h, 
+            outHist, outputN);
+        
+        double blockTotal = HOGUtil.sumCounts(outHist);
+        blockTotal *= blockTotal;
 
-            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
-
-            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
-            
-            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                break;
-            } else if (x2 < 0) {
-                x2 = 0;
-            } else if (x2 >= w) {
-                break;
-            }
-
-            for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
-
-                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
-
-                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
-                
-                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                    break;
-                } else if (y2 < 0) {
-                    y2 = 0;
-                } else if (y2 >= h) {
-                    break;
-                }
-                
-                int pixIdx = (y2 * w) + x2;
-                
-                add(tmp, hist[pixIdx]);
-            }
+        double norm;
+        if (blockTotal > 0) {
+            blockTotal /= (double)outputN[0];
+            blockTotal = Math.sqrt(blockTotal);
+            norm = 255./blockTotal;
+        } else {
+            norm = 255.;
         }
-
-        //System.out.println("  s=" + Arrays.toString(tmp));
-        long blockTotal = 0;        
-        for (int i = 0; i < tmp.length; ++i) {
-            blockTotal += tmp[i];
-        }
-        double norm = 255./(blockTotal + eps);
+          
         for (int i = 0; i < outHist.length; ++i) {
-            outHist[i] = (int)(tmp[i]*norm);
+            outHist[i] = (int)Math.round(norm * outHist[i]);
         }
-        //System.out.println("->out=" + Arrays.toString(outHist));
-
+        
         return true;
     }
     
@@ -385,24 +376,6 @@ public class HOGsManager {
         return HOGUtil.diff(histA, orientationA, histB, orientationB);
     }
     
-    public static void add(int[] addTo, int[] addFrom) {
-        for (int i = 0; i < addTo.length; ++i) {
-            addTo[i] += addFrom[i];
-        }
-    }
-
-    public static void add(long[] addTo, int[] addFrom) {
-        for (int i = 0; i < addTo.length; ++i) {
-            addTo[i] += addFrom[i];
-        }
-    }
-    
-    public static void add(long[] addTo, long[] addFrom) {
-        for (int i = 0; i < addTo.length; ++i) {
-            addTo[i] += addFrom[i];
-        }
-    }
-
     public int getImageWidth() {
         return w;
     }
