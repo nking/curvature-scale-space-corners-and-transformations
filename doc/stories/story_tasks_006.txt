@@ -2,8 +2,7 @@
 Story: Implement a 2D bin packing algorithm for a rectangular container 
     and irregular shapes.
     The class is meant to be used to make a version of the 2D summed area histograms
-    which can use a third dimension to help make object separation and use of masks
-    cleaner.
+    which can use a third dimension to help make object separation and use of masks cleaner.
  
     summary: 
 
@@ -24,6 +23,9 @@ Task 1: class diagram
        data encapsulation and methods needed for the story will be
        designed in class diagram.
 
+       algorithms.packing.Rectangular2DContainer.java
+           uses Interval2D, Interval, and QuadTreeInterval2D<Integer, PairInt>
+
     time estimate: min  days, max  day
   
     amount of time used:
@@ -37,7 +39,6 @@ Task 1: class diagram
 
 Notes while designing and implementing:
 
-
 2D bin packing for a rectangular container and irregular shapes.
 
      Designing a version based upon the Left-edge scheduling algorithm and use of
@@ -45,13 +46,13 @@ Notes while designing and implementing:
      The expected runtime complexity is O(N_regions * lg2(N_regions)).
 
   -- determine rectangular bounds for each region
-     The runtime complexity is O(N_regions).
   -- sort bounds by largest X, ties are broken by smallest Y, then smallest X
      The runtime complexity is O(N_regions * lg2(N_regions)).
   -- a buffer around edges is given by method or class arguments
   -- will use a left edge approach (sim to IntervalPartitioningGreedy)
      This is for 1-D, but will be altered for 2-D.  track is an image dimension.
      The runtime complexity is O(N_regions * lg2(N_regions)).
+     A CRegion holds the rectangular boundaries and accumulated points.
      for each region:
          if region.start >= current track's last region.end,
              add region
@@ -68,5 +69,10 @@ Notes while designing and implementing:
          a fast datastructure to use for collision checks is the IntervalRangeSearch as used
          in PartialShapeMatcher.java.
          The runtime complexity is O(N_regions * lg2(N_regions)).
-     The check for region.end before adding, would also check for collision of 2D-bounds in the IntervalRangeSearch.
+     The check for region.end before adding, would also check for collision of 2D-bounds in 
+         the IntervalRangeSearch.
+
+     ------
+     Given: image dimensions and list or map of CRegions
+     Return: a map of CRegion indexes and their image levels (== 3rd dimension)
 
