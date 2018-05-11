@@ -59,6 +59,10 @@ public class GradientIntegralHistogramsTest extends TestCase {
         //  0  1  2  3  4  5  6  7  8 
         gh.extractWindow(histograms, 0, 1, 0, 0, w, h, outHist, outN);
         
+        //HOGUtil._printHistograms_xy(histograms, w, h);
+        //System.out.format("extract(%d:%d, %d:%d) = %s\n", 0, 1, 0, 0, 
+        //   Arrays.toString(outHist));
+        
         assertEquals(5, outHist[0]);
         assertEquals(5, outHist[1]);
         assertEquals(0, outHist[4]);
@@ -369,7 +373,7 @@ public class GradientIntegralHistogramsTest extends TestCase {
         double f0, f1;
         int t, v, b0, b1;
         
-        gih._printHistograms_xy(hists, w, h);
+        //HOGUtil._printHistograms_xy(hists, w, h);
         
         for (int i = 0; i < nT; ++i) {
             
@@ -402,8 +406,9 @@ public class GradientIntegralHistogramsTest extends TestCase {
                     sumH[b1] += (f1 * v);
                 }
             }
-            //System.out.println("try " + i + " outH=" + Arrays.toString(outH));
-            //System.out.println("try " + i + " sumH=" + Arrays.toString(sumH));
+            //System.out.format("(%d:%d, %d:%d) testN=%d\n", x1, x2, y1, y2, i);
+            //System.out.println(" extracted H=" + Arrays.toString(outH));
+            //System.out.println(" expected H=" + Arrays.toString(sumH));
             for (int kk = 0; kk < sumH.length; ++kk) {
                 assertTrue(Math.abs(sumH[kk] - outH[kk]) <= 1);
             }

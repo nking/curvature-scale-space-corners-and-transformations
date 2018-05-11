@@ -103,7 +103,7 @@ public class GradientIntegralHistograms {
         }
         
         // if min < 0, creates a new copy and adds a bias level of min
-        gradient = addBiasLevelIfNeeded(gradient);
+        gradient = HOGUtil.applyBiasLevelToMakePositive(gradient);
         
         int nPix = gradient.getNPixels();
                 
@@ -186,10 +186,13 @@ public class GradientIntegralHistograms {
      * 
      * runtime complexity is O(nBins)
      * 
+     * @param histograms the 2D histogram integral image.  the first dimension 
+     *    is the pixel index and the 2nd is the histogram bin, e.g.
+     *    histograms[pixIdx][binIdx].
      * @param startX
-     * @param stopX
+     * @param stopX the last x pixel in the window, inclusive
      * @param startY
-     * @param stopY
+     * @param stopY the last y pixel in the window, inclusive
      * @param output
      * @param outputN an empty 1 dimensional array of size 1 to return the 
      * number of pixels in the cell
@@ -206,124 +209,61 @@ public class GradientIntegralHistograms {
             throw new IllegalArgumentException("stopX must be >= startX and "
                 + "stopY >= startY");
         }
-                
-        int dx, dy;
-        if (startX > -1) {
-            dx = stopX - startX;
-        } else {
-            dx = stopX;
-        }
-        if (startY > -1) {
-            dy = stopY - startY;
-        } else {
-            dy = stopY;
-        }
         
-        if (dx > 0 && dy > 0) {
-            if ((startX > 0) && (stopX < w) && (startY > 0) && (stopY < h)) {
-                int nPix = (dx + 1) * (dy + 1);
-                outputN[0] = nPix;
-                
+        if (startX == 0 && startY == 0) {
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
                 System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
                     output, 0, output.length);
-                
-                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-                                                        
-                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-                
-                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
-                                
-                return;
+            } else if (stopX > startX && stopY > startY) {
+                outputN[0] = (stopX + 1) * (stopY + 1);
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else if (stopX > startX) {
+                //startY==0 && stopY=0
+                outputN[0] = (stopX + 1);
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+            } else if (stopY > startY) {
+                outputN[0] = (stopY + 1);
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
             }
-        }
-        
-        if (dx == 0 && dy == 0) {
-            if (stopX == 0) {
-                if (stopY == 0) {
-                    outputN[0] = 1;
-                                        
-                    System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                        output, 0, output.length);
-                                    
-                    return;
-                }
-                outputN[0] = 1;
-                
-                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                    output, 0, output.length);
-                
-                subtract(output, histograms[getPixIdx(stopX, stopY - 1, w)]);
-                                
-                return;
-            } else if (stopY == 0) {
-                //stopX == 0 && stopY == 0 has been handles in previous block
-                outputN[0] = 1;
-                
-                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                    output, 0, output.length);
-                
-                subtract(output, histograms[getPixIdx(stopX - 1, stopY, w)]);
-                                
-                return;
-            } else {
-                // stopX > 0
-                outputN[0] = 1;
-                
-                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                    output, 0, output.length);
-                
-                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-                
-                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-                
-                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
-                            
-                return;
-            }
-            //System.out.println(" --> startX=" + startX +
-            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
-        }
-        
-        if (startX > 0 && startY > 0) {
-            int nPix = (dx + 1) * (dy + 1);
-            outputN[0] = nPix;
-            
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+        } else if (startX > 0 && startY > 0) {
+            outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
                 output, 0, output.length);
-            
-            subtract(output, histograms[getPixIdx(startX, stopY, w)]);
-            
-            subtract(output, histograms[getPixIdx(stopX, startY, w)]);
-            
-            add(output, histograms[getPixIdx(startX, startY, w)]);
-            
-        } else if (startX > 0) {
-            // startY is < 0
-            int nPix = (dx + 1) * (stopY + 1);
-            outputN[0] = nPix;
-            
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                output, 0, output.length);
-            
             subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-            
-        } else if (startY > 0) {
-            // startX < 0
-            int nPix = (stopX + 1) * (dy + 1);
-            outputN[0] = nPix;
-            
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                output, 0, output.length);
-            
             subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-            
-        } else {
-            // startX < 0 && startY < 0
-            int nPix = (stopX + 1) * (stopY + 1);
-            outputN[0] = nPix;
-            
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                output, 0, output.length);            
+            add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
+                
+        } else if (startX > 0) {
+            //startY == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
+            }       
+        } else if (startY > 0) {
+            //startX == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
+            }   
         }
     }
     
@@ -352,88 +292,60 @@ public class GradientIntegralHistograms {
                 + "stopY >= startY");
         }
         
-        int dx, dy;
-        if (startX > -1) {
-            dx = stopX - startX;
-        } else {
-            dx = stopX;
-        }
-        if (startY > -1) {
-            dy = stopY - startY;
-        } else {
-            dy = stopY;
-        }
-        
-        if (dx > 0 && dy > 0) {
-            if ((startX > 0) && (stopX < w) && (startY > 0) && (stopY < h)) {
-                int nPix = (dx + 1) * (dy + 1);
-                outputN[0] = nPix;
-                copy(histograms[getPixIdx(stopX, stopY, w)], output);
-                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
-                return;
+        if (startX == 0 && startY == 0) {
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else if (stopX > startX && stopY > startY) {
+                outputN[0] = (stopX + 1) * (stopY + 1);
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else if (stopX > startX) {
+                //startY==0 && stopY=0
+                outputN[0] = (stopX + 1);
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+            } else if (stopY > startY) {
+                outputN[0] = (stopY + 1);
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
             }
-        }
-        
-        if (dx == 0 && dy == 0) {
-            if (stopX == 0) {
-                if (stopY == 0) {
-                    outputN[0] = 1;
-                    copy(histograms[getPixIdx(stopX, stopY, w)], output);
-                    return;
-                }
-                outputN[0] = 1;
-                copy(histograms[getPixIdx(stopX, stopY, w)], output);
-                subtract(output, histograms[getPixIdx(stopX, stopY - 1, w)]);
-                return;
-            } else if (stopY == 0) {
-                //stopX == 0 && stopY == 0 has been handles in previous block
-                outputN[0] = 1;
-                copy(histograms[getPixIdx(stopX, stopY, w)], output);
-                subtract(output, histograms[getPixIdx(stopX - 1, stopY, w)]);
-                return;
-            } else {
-                // stopX > 0
-                outputN[0] = 1;
-                copy(histograms[getPixIdx(stopX, stopY, w)], output);
-                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
-                return;
-            }
-            //System.out.println(" --> startX=" + startX +
-            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
-        }
-        
-        if (startX > 0 && startY > 0) {
-            int nPix = (dx + 1) * (dy + 1);
-            outputN[0] = nPix;
-            copy(histograms[getPixIdx(stopX, stopY, w)], output);
-            subtract(output, histograms[getPixIdx(startX, stopY, w)]);
-            subtract(output, histograms[getPixIdx(stopX, startY, w)]);
-            add(output, histograms[getPixIdx(startX, startY, w)]);
-            return;
-        } else if (startX > 0) {
-            // startY is < 0
-            int nPix = (dx + 1) * (stopY + 1);
-            outputN[0] = nPix;
-            copy(histograms[getPixIdx(stopX, stopY, w)], output);
+        } else if (startX > 0 && startY > 0) {
+            outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                output, 0, output.length);
             subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-            return;
-        } else if (startY > 0) {
-            // startX < 0
-            int nPix = (stopX + 1) * (dy + 1);
-            outputN[0] = nPix;
-            copy(histograms[getPixIdx(stopX, stopY, w)], output);
             subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-            return;
-        } else {
-            // startX < 0 && startY < 0
-            int nPix = (stopX + 1) * (stopY + 1);
-            outputN[0] = nPix;
-            copy(histograms[getPixIdx(stopX, stopY, w)], output);
-            return;
+            add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
+                
+        } else if (startX > 0) {
+            //startY == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
+            }       
+        } else if (startY > 0) {
+            //startX == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
+            }   
         }
     }
     
@@ -442,6 +354,9 @@ public class GradientIntegralHistograms {
      * where the window size is N_PIX_PER_CELL_DIM.
      * The result is an image of histograms, where each histogram represents
      * the integration over the surrounding N_PIX_PER_CELL_DIM window.
+     * For windows near the image edge, a factor is applied to bring the
+     * counts up by factor (N_PIX_PER_CELL_DIM/n_pix_in_window).
+     * The resulting 2D histograms are then made into an integral image again.
      *  
      * @param histograms
      * @param w
@@ -451,89 +366,28 @@ public class GradientIntegralHistograms {
     public void applyWindowedSum(int[][] histograms, int w, int h, 
         int N_PIX_PER_CELL_DIM) {
         
-        if (N_PIX_PER_CELL_DIM < 1) {
-            throw new IllegalArgumentException("N_PIX_PER_CELL_DIM must be >= 1");
-        }
+        int[][] img2 = applyWindowedSum0(histograms, w, h, N_PIX_PER_CELL_DIM);
         
-        int nBins = histograms[0].length;
-                
-        int[][] img2 = new int[w * h][];
-        
-        int[] outN = new int[1];
-        
-        // a centered window sum
-        int r = N_PIX_PER_CELL_DIM >> 1;
-        int r0, r1;
-        if (r == 0) {
-            r0 = 0;
-            r1 = 0;
-        } else if ((N_PIX_PER_CELL_DIM & 1) == 1) {
-            r0 = -r;
-            r1 = r;
-        } else {
-            r0 = -r;
-            r1 = r - 1;
-        }
-                        
-        // extract the summed area of each dxd window centered on x,y
-        for (int x = 0; x < w; ++x) {
-            
-            int x2 = x + r0;
-            int x3 = x + r1;
-            if (x3 < 0) {
-                continue;
-            } else if (x2 < 0) {
-                x2 = 0;
-            } else if (x2 >= w) {
-                break;
-            }
-            if (x3 >= w) {
-                x3 = w - 1;
-            }
-
-            for (int y = 0; y < h; ++y) {
-                
-                int y2 = y + r0;
-                int y3 = y + r1;
-                if (y3 < 0) {
-                    continue;
-                } else if (y2 < 0) {
-                    y2 = 0;
-                } else if (y2 >= h) {
-                    break;
-                }
-                if (y3 >= h) {
-                    y3 = h - 1;
-                }
-                                
-                int pixIdx = (y * w) + x;
-                
-                int[] out = new int[nBins];
-
-                extractWindow(histograms, x2, x3, y2, y3, w, h, out, outN);
-                
-                img2[pixIdx] = out;                
-            }
-        }
+        img2 = transformIntoIntegral2DHist(img2, w, h);
         
         for (int i = 0; i < histograms.length; ++i) {
-            System.arraycopy(img2[i], 0, histograms[i], 0, nBins);
+            System.arraycopy(img2[i], 0, histograms[i], 0, img2[i].length);
         }
     }
     
     /**
-     * apply a windowed mean across the gradient integral histogram image,
+     * apply a windowed sum across the gradient integral histogram image,
      * where the window size is N_PIX_PER_CELL_DIM.
      * The result is an image of histograms, where each histogram represents
-     * the integration over the surrounding N_PIX_PER_CELL_DIM window divided
-     * by the number of pixels contributing to the sum.
+     * the integration over the surrounding N_PIX_PER_CELL_DIM window.
+     * The result is NOT a 2D integral histogram image, just a 2D histogram image;
      *  
      * @param histograms
      * @param w
      * @param h
      * @param N_PIX_PER_CELL_DIM
      */    
-    public void applyWindowedAverage(int[][] histograms, int w, int h, 
+    int[][] applyWindowedSum0(int[][] histograms, int w, int h, 
         int N_PIX_PER_CELL_DIM) {
         
         if (N_PIX_PER_CELL_DIM < 1) {
@@ -546,6 +400,8 @@ public class GradientIntegralHistograms {
         
         int[] outN = new int[1];
         
+        int windowSize = N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM;
+        
         // a centered window sum
         int r = N_PIX_PER_CELL_DIM >> 1;
         int r0, r1;
@@ -559,6 +415,8 @@ public class GradientIntegralHistograms {
             r0 = -r;
             r1 = r - 1;
         }
+        
+        float factor;
                         
         // extract the summed area of each dxd window centered on x,y
         for (int x = 0; x < w; ++x) {
@@ -593,24 +451,29 @@ public class GradientIntegralHistograms {
                                 
                 int pixIdx = (y * w) + x;
                 
-                int[] out = new int[nBins];
+                img2[pixIdx] = new int[nBins];
 
-                extractWindow(histograms, x2, x3, y2, y3, w, h, out, outN);
+                extractWindow(histograms, x2, x3, y2, y3, w, h, img2[pixIdx], outN);
                 
-                img2[pixIdx] = out;
-                
-                divide(img2[pixIdx], outN[0]);
+                if (outN[0] < windowSize) {
+                    factor = (float)windowSize/(float)outN[0];
+                    mult(img2[pixIdx], factor);
+                }             
             }
         }
         
-        for (int i = 0; i < histograms.length; ++i) {
-            System.arraycopy(img2[i], 0, histograms[i], 0, nBins);
-        }
+        return img2;
     }
     
     protected void add(int[] addTo, int[] addFrom) {
         for (int i = 0; i < addTo.length; ++i) {
             addTo[i] += addFrom[i];
+        }
+    }
+    
+    protected void mult(int[] a, float factor) {
+        for (int i = 0; i < a.length; ++i) {
+            a[i] = Math.round(a[i] * factor);
         }
     }
     
@@ -647,53 +510,52 @@ public class GradientIntegralHistograms {
             dest[i] = src[i];
         }
     }
-    
-    private boolean containsNegativeNumber(int[] a) {
-        for (int ai : a) {
-            if (ai < 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private GreyscaleImage addBiasLevelIfNeeded(GreyscaleImage gradient) {
-        int min = gradient.min();
-        if (min >= 0) {
-            return gradient;
-        }
-        GreyscaleImage g2;
-        int range = gradient.max() - min;
-        if (range > gradient.getMaxAllowed()) {
-            g2 = gradient.copyToFullRangeIntImage();
-        } else {
-            g2 = gradient.copyImage();
-        } 
-        for (int pixIdx = 0; pixIdx < g2.getNPixels(); ++pixIdx) {
-            int v = g2.getValue(pixIdx) - min;
-            g2.setValue(pixIdx, v);
-        }
-        return g2;
-    }
-    
-    public void _printHistograms_xy(int[][] gHists, int w, int h) {
+   
+    int[][] transformIntoIntegral2DHist(int[][] hist, int imageWidth,
+        int imageHeight) {
+        
+        int nPix = imageWidth * imageHeight;
         PixelHelper ph = new PixelHelper();
-        for (int row = 0; row < h; ++row) {
-            for (int col = 0; col < w; ++col) {
-                int pixIdx = (int)ph.toPixelIndex(col, row, w);
-                int[] gh0 = gHists[pixIdx];
-                if (hasNonZeroes(gh0)) {
-                    System.out.format("%d,%d) %s\n", col, row, Arrays.toString(gh0));
+        
+        int[][] out = new int[nPix][];
+        for (int i = 0; i < nPix; ++i) {
+            out[i] = Arrays.copyOf(hist[i], hist[i].length);
+        }
+        
+        int[] tmp;
+        int pixIdx;
+                
+        for (int x = 0; x < imageWidth; ++x) {
+            for (int y = 0; y < imageHeight; ++y) {
+                
+                pixIdx = (int)ph.toPixelIndex(x, y, imageWidth);
+                
+                tmp = out[pixIdx];
+                                
+                if (x > 0 && y > 0) {
+                    add(tmp, out[(int)ph.toPixelIndex(x - 1, y, imageWidth)]);
+                    add(tmp, out[(int)ph.toPixelIndex(x, y - 1, imageWidth)]);
+                    subtract(tmp, out[(int)ph.toPixelIndex(x - 1, y - 1, 
+                        imageWidth)]);
+                    //int v = out.getValue(x, y)
+                    //        + out.getValue(x - 1, y) 
+                    //        + out.getValue(x, y - 1) 
+                    //        - out.getValue(x - 1, y - 1);
+                    //out.setValue(x, y, v);
+                } else if (x > 0) {
+                    add(tmp, out[(int)ph.toPixelIndex(x - 1, y, imageWidth)]);
+                    //int v = out.getValue(x, y) 
+                    //        + out.getValue(x - 1, y);
+                    //out.setValue(x, y, v);
+                } else if (y > 0) {
+                    add(tmp, out[(int)ph.toPixelIndex(x, y - 1, imageWidth)]);
+                    //int v = out.getValue(x, y)
+                    //        + out.getValue(x, y - 1);
+                    //out.setValue(x, y, v);
                 }
             }
         }
+        return out;
     }
-    private boolean hasNonZeroes(int[] a) {
-        for (int b : a) {
-            if (b != 0) {
-                return true;
-            }
-        }
-        return false;
-    }
+
 }
