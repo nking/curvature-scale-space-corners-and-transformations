@@ -58,12 +58,12 @@ public class ImageProcessor6Test extends TestCase {
         ptImg = imageProcessor
             .createCIELUVTheta_WideRangeLightness(img0, 255);
         
-        assertEquals(ptImg.getValue(1, 1), ptImg.getValue(1, 2));
-        assertEquals(ptImg.getValue(1, 1), ptImg.getValue(1, 3));
-        assertEquals(ptImg.getValue(1, 1), ptImg.getValue(1, 4));
-        assertEquals(ptImg.getValue(5, 1), ptImg.getValue(5, 2));
-        assertEquals(ptImg.getValue(5, 1), ptImg.getValue(5, 3));
-        assertEquals(ptImg.getValue(5, 1), ptImg.getValue(5, 4));
+        assertTrue(Math.abs(ptImg.getValue(1, 1) - ptImg.getValue(1, 2)) <= 1);
+        assertTrue(Math.abs(ptImg.getValue(1, 1) - ptImg.getValue(1, 3)) <= 1);
+        assertTrue(Math.abs(ptImg.getValue(1, 1) - ptImg.getValue(1, 4)) <= 1);
+        assertTrue(Math.abs(ptImg.getValue(5, 1) - ptImg.getValue(5, 2)) <= 1);
+        assertTrue(Math.abs(ptImg.getValue(5, 1) - ptImg.getValue(5, 3)) <= 1);
+        assertTrue(Math.abs(ptImg.getValue(5, 1) - ptImg.getValue(5, 4)) <= 1);
         
         /*
         System.out.println("greens:" + ptImg.getValue(1, 1) + " " +
