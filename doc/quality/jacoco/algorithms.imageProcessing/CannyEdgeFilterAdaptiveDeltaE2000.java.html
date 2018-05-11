@@ -842,11 +842,11 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
 <span class="fc" id="L842">            int nnzs = imageProcessor.countNonZeroes(out);</span>
             while (true) {
 <span class="fc" id="L844">                int nnzs2 = imageProcessor.applyThinning2(out);</span>
-<span class="pc bpc" id="L845" title="1 of 2 branches missed.">                if (nnzs == nnzs2) {</span>
+<span class="fc bfc" id="L845" title="All 2 branches covered.">                if (nnzs == nnzs2) {</span>
 <span class="fc" id="L846">                    break;</span>
                 }
-<span class="nc" id="L848">                nnzs = nnzs2;</span>
-<span class="nc" id="L849">            }</span>
+<span class="fc" id="L848">                nnzs = nnzs2;</span>
+<span class="fc" id="L849">            }</span>
         
         }
         

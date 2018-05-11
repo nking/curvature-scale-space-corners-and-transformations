@@ -785,11 +785,11 @@ import java.util.logging.Logger;
 
     public PairInt calculateXYCentroids2(Collection&lt;PairInt&gt; points) {
         
-<span class="fc" id="L788">        double[] xyCen = calculateXYCentroids(points);</span>
+<span class="nc" id="L788">        double[] xyCen = calculateXYCentroids(points);</span>
         
-<span class="fc" id="L790">        PairInt p = new PairInt((int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));</span>
+<span class="nc" id="L790">        PairInt p = new PairInt((int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));</span>
         
-<span class="fc" id="L792">        return p;</span>
+<span class="nc" id="L792">        return p;</span>
     }
     
     public double[] calculateXYCentroids(Collection&lt;PairInt&gt; points) {
@@ -815,40 +815,40 @@ import java.util.logging.Logger;
 
     public int[] calculateRoundedXYCentroids(Set&lt;PairInt&gt; points) {
 
-<span class="fc" id="L818">        double[] xyCen = calculateXYCentroids(points);</span>
+<span class="nc" id="L818">        double[] xyCen = calculateXYCentroids(points);</span>
 
-<span class="fc" id="L820">        int[] out = new int[2];</span>
-<span class="fc" id="L821">        out[0] = (int)Math.round(xyCen[0]);</span>
-<span class="fc" id="L822">        out[1] = (int)Math.round(xyCen[1]);</span>
+<span class="nc" id="L820">        int[] out = new int[2];</span>
+<span class="nc" id="L821">        out[0] = (int)Math.round(xyCen[0]);</span>
+<span class="nc" id="L822">        out[1] = (int)Math.round(xyCen[1]);</span>
 
-<span class="fc" id="L824">        return out;</span>
+<span class="nc" id="L824">        return out;</span>
     }
     
     public int[] calculateRoundedXYCentroids(TIntSet pixelIdxs, int imgWidth) {
 
-<span class="fc" id="L829">        double xc = 0;</span>
-<span class="fc" id="L830">        double yc = 0;</span>
+<span class="nc" id="L829">        double xc = 0;</span>
+<span class="nc" id="L830">        double yc = 0;</span>
 
-<span class="fc" id="L832">        TIntIterator iter = pixelIdxs.iterator();</span>
-<span class="fc bfc" id="L833" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L832">        TIntIterator iter = pixelIdxs.iterator();</span>
+<span class="nc bnc" id="L833" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
 
-<span class="fc" id="L835">            int pixIdx = iter.next();</span>
+<span class="nc" id="L835">            int pixIdx = iter.next();</span>
             
-<span class="fc" id="L837">            int y = pixIdx/imgWidth;</span>
-<span class="fc" id="L838">            int x = pixIdx - (y * imgWidth);</span>
+<span class="nc" id="L837">            int y = pixIdx/imgWidth;</span>
+<span class="nc" id="L838">            int x = pixIdx - (y * imgWidth);</span>
             
-<span class="fc" id="L840">            xc += x;</span>
-<span class="fc" id="L841">            yc += y;</span>
-<span class="fc" id="L842">        }</span>
+<span class="nc" id="L840">            xc += x;</span>
+<span class="nc" id="L841">            yc += y;</span>
+<span class="nc" id="L842">        }</span>
 
-<span class="fc" id="L844">        xc /= (double)pixelIdxs.size();</span>
-<span class="fc" id="L845">        yc /= (double)pixelIdxs.size();</span>
+<span class="nc" id="L844">        xc /= (double)pixelIdxs.size();</span>
+<span class="nc" id="L845">        yc /= (double)pixelIdxs.size();</span>
         
-<span class="fc" id="L847">        int[] out = new int[2];</span>
-<span class="fc" id="L848">        out[0] = (int)Math.round(xc);</span>
-<span class="fc" id="L849">        out[1] = (int)Math.round(yc);</span>
+<span class="nc" id="L847">        int[] out = new int[2];</span>
+<span class="nc" id="L848">        out[0] = (int)Math.round(xc);</span>
+<span class="nc" id="L849">        out[1] = (int)Math.round(yc);</span>
 
-<span class="fc" id="L851">        return out;</span>
+<span class="nc" id="L851">        return out;</span>
     }
 
     public double[] calculateXYCentroids(float[] x, float[] y) {

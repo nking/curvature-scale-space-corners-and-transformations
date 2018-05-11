@@ -2,27 +2,28 @@
 
 import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
-import algorithms.imageProcessing.features.HCPT;
-import algorithms.imageProcessing.features.HGS;
-import algorithms.imageProcessing.features.HOGs;
+import algorithms.imageProcessing.features.HOGRegionsManager;
+import algorithms.imageProcessing.features.HOGsManager;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
-import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
-import algorithms.imageProcessing.features.mser.Region;
+import algorithms.misc.MiscDebug;
 import algorithms.packing.Intersection2DPacking;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
+import algorithms.util.PixelHelper;
 import algorithms.util.QuadInt;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,489 +34,20 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L36" title="1 of 2 branches missed.">public class MSERMatcher {</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">public class MSERMatcher {</span>
 
-<span class="fc" id="L38">    private boolean debug = false;</span>
+<span class="fc" id="L39">    private boolean debug = false;</span>
     
-<span class="fc" id="L40">    private int N_PIX_PER_CELL_DIM = 3;</span>
-<span class="fc" id="L41">    private int N_CELLS_PER_BLOCK_DIM = 3;</span>
+<span class="fc" id="L41">    private int N_PIX_PER_CELL_DIM = 3;</span>
+<span class="fc" id="L42">    private int N_CELLS_PER_BLOCK_DIM = 3;</span>
+<span class="fc" id="L43">    private int N_ANGLE_BINS = 9;</span>
+<span class="fc" id="L44">    private int N_HIST_BINS = 12;</span>
+    
+<span class="fc" id="L46">    private static float eps = 0.000001f;</span>
 
     public void setToDebug() {
-<span class="fc" id="L44">        debug = true;</span>
-<span class="fc" id="L45">    }</span>
-
-    private TIntObjectMap&lt;CRegion&gt; getOrCreate(
-        TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csrs,
-        int imgIdx, GreyscaleImage rgb, float scale) {
-
-<span class="fc" id="L51">        TIntObjectMap&lt;CRegion&gt; csrMap = csrs.get(imgIdx);</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (csrMap != null) {</span>
-<span class="fc" id="L53">            return csrMap;</span>
-        }
-<span class="fc" id="L55">        csrMap = new TIntObjectHashMap&lt;CRegion&gt;();</span>
-<span class="fc" id="L56">        csrs.put(imgIdx, csrMap);</span>
-
-<span class="fc" id="L58">        TIntObjectMap&lt;CRegion&gt; csrMap0 = csrs.get(0);</span>
-
-<span class="fc" id="L60">        int w = rgb.getWidth();</span>
-<span class="fc" id="L61">        int h = rgb.getHeight();</span>
-
-<span class="fc" id="L63">        TIntObjectIterator&lt;CRegion&gt; iter = csrMap0.iterator();</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (int i = 0; i &lt; csrMap0.size(); ++i) {</span>
-<span class="fc" id="L65">            iter.advance();</span>
-<span class="fc" id="L66">            int idx = iter.key();</span>
-<span class="fc" id="L67">            CRegion csr = iter.value();</span>
-
-<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (csr.offsetsToOrigCoords.size() &lt; 9) {</span>
-<span class="fc" id="L70">                continue;</span>
-            }
-
-            // these are in scale of individual octave (not full reference frame)
-<span class="fc" id="L74">            Set&lt;PairInt&gt; scaledSet = extractScaledPts(csr, w, h, scale);</span>
-
-<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (scaledSet.size() &lt; 9) {</span>
-<span class="fc" id="L77">                continue;</span>
-            }
-
-<span class="fc" id="L80">            PairIntArray xy = new PairIntArray();</span>
-
-<span class="fc" id="L82">            Region r = new Region();</span>
-<span class="fc bfc" id="L83" title="All 2 branches covered.">            for (PairInt pl : scaledSet) {</span>
-<span class="fc" id="L84">                r.accumulate(pl.getX(), pl.getY());</span>
-<span class="fc" id="L85">                xy.add(pl.getX(), pl.getY());</span>
-<span class="fc" id="L86">            }</span>
-
-<span class="fc" id="L88">            int[] xyCen = new int[2];</span>
-<span class="fc" id="L89">            r.calculateXYCentroid(xyCen, w, h);</span>
-<span class="fc" id="L90">            int x = xyCen[0];</span>
-<span class="fc" id="L91">            int y = xyCen[1];</span>
-<span class="pc bpc" id="L92" title="5 of 6 branches missed.">            assert(x &gt;= 0 &amp;&amp; x &lt; w);</span>
-<span class="pc bpc" id="L93" title="5 of 6 branches missed.">            assert(y &gt;= 0 &amp;&amp; y &lt; h);</span>
-<span class="fc" id="L94">            double[] m = r.calcParamTransCoeff();</span>
-
-<span class="fc" id="L96">            double angle = Math.atan(m[0]/m[2]);</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (angle &lt; 0) {</span>
-<span class="fc" id="L98">                angle += Math.PI;</span>
-            }
-
-<span class="fc" id="L101">            double major = 2. * m[4];</span>
-<span class="fc" id="L102">            double minor = 2. * m[5];</span>
-
-<span class="fc" id="L104">            double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="pc bpc" id="L105" title="3 of 4 branches missed.">            assert(!Double.isNaN(ecc));</span>
-
-<span class="fc" id="L107">            Map&lt;PairInt, PairInt&gt; offsetMap = Canonicalizer.createOffsetToOrigMap(</span>
-                x, y, xy, w, h, angle);
-
-<span class="fc" id="L110">            double autocorrel = Canonicalizer.calcAutoCorrel(rgb, x, y, offsetMap);</span>
-
-<span class="fc" id="L112">            CRegion csRegion = new CRegion();</span>
-<span class="fc" id="L113">            csRegion.ellipseParams.orientation = angle;</span>
-<span class="fc" id="L114">            csRegion.ellipseParams.eccentricity = ecc;</span>
-<span class="fc" id="L115">            csRegion.ellipseParams.major = major;</span>
-<span class="fc" id="L116">            csRegion.ellipseParams.minor = minor;</span>
-<span class="fc" id="L117">            csRegion.ellipseParams.xC = x;</span>
-<span class="fc" id="L118">            csRegion.ellipseParams.yC = y;</span>
-<span class="fc" id="L119">            csRegion.offsetsToOrigCoords = offsetMap;</span>
-<span class="fc" id="L120">            csRegion.autocorrel = Math.sqrt(autocorrel)/255.;</span>
-<span class="fc" id="L121">            csRegion.labels.addAll(csr.labels);</span>
-<span class="fc" id="L122">            csRegion.dataIdx = idx;</span>
-                
-<span class="fc" id="L124">            csrMap.put(idx, csRegion);</span>
-        }
-
-<span class="fc" id="L127">        return csrMap;</span>
-    }
-
-    private GreyscaleImage combineImages(List&lt;GreyscaleImage&gt; rgb) {
-
-<span class="fc" id="L132">        GreyscaleImage r = rgb.get(0);</span>
-<span class="fc" id="L133">        GreyscaleImage g = rgb.get(1);</span>
-<span class="fc" id="L134">        GreyscaleImage b = rgb.get(2);</span>
-
-<span class="pc bpc" id="L136" title="2 of 4 branches missed.">        if (r.getWidth() != g.getWidth() || r.getWidth() != b.getWidth() ||</span>
-<span class="pc bpc" id="L137" title="2 of 4 branches missed.">            r.getHeight() != g.getHeight() || r.getHeight() != b.getHeight()) {</span>
-<span class="nc" id="L138">            throw new IllegalArgumentException(&quot;r, g, and b must have same&quot;</span>
-                + &quot; width and height&quot;);
-        }
-
-<span class="fc" id="L142">        int w = r.getWidth();</span>
-<span class="fc" id="L143">        int h = r.getHeight();</span>
-
-<span class="fc" id="L145">        GreyscaleImage comb = new GreyscaleImage(w, h, r.getType());</span>
-
-<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (int i = 0; i &lt; r.getNPixels(); ++i) {</span>
-<span class="fc" id="L148">            float v0 = r.getValue(i);</span>
-<span class="fc" id="L149">            float v1 = g.getValue(i);</span>
-<span class="fc" id="L150">            float v2 = b.getValue(i);</span>
-<span class="fc" id="L151">            float avg = (v0 + v1 + v2)/3.f;</span>
-
-<span class="fc" id="L153">            comb.setValue(i, Math.round(avg));</span>
-        }
-
-<span class="fc" id="L156">        return comb;</span>
-    }
-
-    private Set&lt;PairInt&gt; extractScaledPts(CRegion csr, int w, int h,
-        float scale) {
-
-<span class="fc" id="L162">        Set&lt;PairInt&gt; scaledSet = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L163" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry : csr.offsetsToOrigCoords.entrySet()) {</span>
-
-<span class="fc" id="L165">            PairInt p = entry.getValue();</span>
-
-<span class="fc" id="L167">            int xScaled = Math.round((float) p.getX() / scale);</span>
-<span class="fc" id="L168">            int yScaled = Math.round((float) p.getY() / scale);</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">            if (xScaled == -1) {</span>
-<span class="nc" id="L170">                xScaled = 0;</span>
-            }
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            if (yScaled == -1) {</span>
-<span class="nc" id="L173">                yScaled = 0;</span>
-            }
-<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (xScaled == w) {</span>
-<span class="fc" id="L176">                xScaled = w - 1;</span>
-            }
-<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (yScaled == h) {</span>
-<span class="fc" id="L179">                yScaled = h - 1;</span>
-            }
-<span class="fc" id="L181">            PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
-
-<span class="fc" id="L183">            scaledSet.add(pOrigScaled);</span>
-<span class="fc" id="L184">        }</span>
-
-<span class="fc" id="L186">        return scaledSet;</span>
-    }
-    
-    private int calculateObjectSizeByAvgDist(int x, int y, 
-        Collection&lt;PairInt&gt; values) {
-
-<span class="fc" id="L192">        int sumD = 0;</span>
-<span class="fc bfc" id="L193" title="All 2 branches covered.">        for (PairInt p : values) {</span>
-<span class="fc" id="L194">            int diffX = p.getX() - x;</span>
-<span class="fc" id="L195">            int diffY = p.getY() - y;</span>
-<span class="fc" id="L196">            sumD += (diffX * diffX + diffY * diffY);</span>
-<span class="fc" id="L197">        }</span>
-<span class="fc" id="L198">        sumD = (int)Math.ceil(Math.sqrt((double)sumD/(double)values.size()));</span>
-        
-<span class="fc" id="L200">        return sumD;</span>
-    }
-    
-    //double[]{intersection, f0, f1, nMatched, area0, area1};
-    private double[] sumHOGCost2(Set&lt;PairInt&gt; offsets0, int intersectionCount,
-        HOGs hogs0, CRegion cr0, 
-        HOGs hogs1, CRegion cr1) {
-                
-<span class="pc bpc" id="L208" title="1 of 2 branches missed.">        if (offsets0.size() == 0) {</span>
-<span class="nc" id="L209">            return null;</span>
-        }
-
-<span class="fc" id="L212">        int orientation0 = cr0.hogOrientation;</span>
-            
-<span class="fc" id="L214">        int orientation1 = cr1.hogOrientation;</span>
-        
-<span class="fc" id="L216">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
-
-<span class="fc" id="L218">        double sum = 0;</span>
-        
-<span class="fc" id="L220">        int[] h0 = new int[hogs0.getNumberOfBins()];</span>
-<span class="fc" id="L221">        int[] h1 = new int[h0.length];</span>
-        
-        // key = transformed offsets, value = coords in image ref frame,
-        // so, can compare dataset0 and dataset1 points with same
-        //  keys
-        
-<span class="fc bfc" id="L227" title="All 2 branches covered.">        for (PairInt pOffset0 : offsets0) {</span>
-            
-<span class="fc" id="L229">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
-
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">            if (xy1 == null) {</span>
-<span class="nc" id="L232">                continue;</span>
-            }
-
-<span class="fc" id="L235">            PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);</span>
-
-<span class="fc" id="L237">            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
-
-<span class="fc" id="L239">            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
-
-            // 1.0 is perfect similarity
-<span class="fc" id="L242">            float intersection = hogs0.intersection(h0, orientation0, </span>
-                h1, orientation1);
-            
-<span class="fc" id="L245">            sum += (intersection * intersection);</span>
-<span class="fc" id="L246">        }</span>
-        
-<span class="fc" id="L248">        sum /= (double)offsets0.size();</span>
-<span class="fc" id="L249">        sum = Math.sqrt(sum);</span>
-        
-<span class="fc" id="L251">        double area1 = cr1.offsetsToOrigCoords.size();</span>
-<span class="fc" id="L252">        double f1 = 1. - ((double) intersectionCount / area1);</span>
-        
-<span class="fc" id="L254">        double area0 = cr0.offsetsToOrigCoords.size();</span>
-<span class="fc" id="L255">        double f0 = 1. - ((double) intersectionCount / area0);</span>
-        
-<span class="fc" id="L257">        return new double[]{sum, f0, f1, intersectionCount, area0, area1};</span>
-    }
-
-    //double[]{intersection, f0, f1, nMatched, area0, area1};
-    private double[] sumHOGCost3(HOGs hogs0, CRegion cr0, HOGs hogs1, 
-        CRegion cr1) {
-        
-<span class="nc" id="L264">        int orientation0 = cr0.hogOrientation;</span>
-            
-<span class="nc" id="L266">        int orientation1 = cr1.hogOrientation;</span>
-        
-<span class="nc" id="L268">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
-
-<span class="nc" id="L270">        double sum = 0;</span>
-<span class="nc" id="L271">        double sumErrSq = 0;</span>
-<span class="nc" id="L272">        int count = 0;</span>
-        
-<span class="nc" id="L274">        int[] h0 = new int[hogs0.getNumberOfBins()];</span>
-<span class="nc" id="L275">        int[] h1 = new int[h0.length];</span>
-            
-        float[] diffAndErr;
-        
-        //NOTE: the coordinate set block could be changed to not visit
-        //   every point, but to instead use a spacing of the HOG cell length
-        //   which is what Dala &amp; Trigg recommend for their detector windows.
-        
-        // key = transformed offsets, value = coords in image ref frame,
-        // so, can compare dataset0 and dataset1 points with same
-        //  keys
-<span class="nc bnc" id="L286" title="All 2 branches missed.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
-
-<span class="nc" id="L288">            PairInt pOffset0 = entry0.getKey();</span>
-
-<span class="nc" id="L290">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
-
-<span class="nc bnc" id="L292" title="All 2 branches missed.">            if (xy1 == null) {</span>
-<span class="nc" id="L293">                continue;</span>
-            }
-
-<span class="nc" id="L296">            PairInt xy0 = entry0.getValue();</span>
-
-<span class="nc" id="L298">            hogs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
-
-<span class="nc" id="L300">            hogs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
-
-            // 1.0 is perfect similarity
-<span class="nc" id="L303">            diffAndErr = hogs0.diff(h0, orientation0, h1, orientation1);</span>
-            
-<span class="nc" id="L305">            sum += diffAndErr[0];</span>
-<span class="nc" id="L306">            sumErrSq += (diffAndErr[1] * diffAndErr[1]);</span>
-            
-<span class="nc" id="L308">            count++;</span>
-<span class="nc" id="L309">        }</span>
-<span class="nc bnc" id="L310" title="All 2 branches missed.">        if (count == 0) {</span>
-<span class="nc" id="L311">            return null;</span>
-        }
-
-<span class="nc" id="L314">        sum /= (double)count;</span>
-        
-<span class="nc" id="L316">        sumErrSq /= (double)count;</span>
-<span class="nc" id="L317">        sumErrSq = Math.sqrt(sumErrSq);</span>
-        
-<span class="nc" id="L319">        double area1 = cr1.offsetsToOrigCoords.size();</span>
-<span class="nc" id="L320">        double f1 = 1. - ((double) count / area1);</span>
-        
-<span class="nc" id="L322">        double area0 = cr0.offsetsToOrigCoords.size();</span>
-<span class="nc" id="L323">        double f0 = 1. - ((double) count / area0);</span>
-        
-<span class="nc" id="L325">        return new double[]{sum, f0, f1, count, sumErrSq, area0, area1};</span>
-    }
-
-    private HOGs getOrCreate(TIntObjectMap&lt;HOGs&gt; hogsMap, GreyscaleImage gs, 
-        int idx) {
-        
-<span class="fc" id="L331">        HOGs hogs = hogsMap.get(idx);</span>
-<span class="fc bfc" id="L332" title="All 2 branches covered.">        if (hogs != null) {</span>
-<span class="fc" id="L333">            return hogs;</span>
-        }
-<span class="fc" id="L335">        hogs = new HOGs(gs, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM);</span>
-        
-<span class="fc" id="L337">        hogsMap.put(idx, hogs);</span>
-        
-<span class="fc" id="L339">        return hogs;</span>
-    }
-
-    private HCPT getOrCreate2(TIntObjectMap&lt;HCPT&gt; hcptMap, GreyscaleImage pt, 
-        int idx) {
-        
-<span class="fc" id="L345">        HCPT hcpt = hcptMap.get(idx);</span>
-<span class="fc bfc" id="L346" title="All 2 branches covered.">        if (hcpt != null) {</span>
-<span class="fc" id="L347">            return hcpt;</span>
-        }
-<span class="fc" id="L349">        hcpt = new HCPT(pt, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);</span>
-        
-<span class="fc" id="L351">        hcptMap.put(idx, hcpt);</span>
-        
-<span class="fc" id="L353">        return hcpt;</span>
-    }
-
-    private HGS getOrCreate3(TIntObjectMap&lt;HGS&gt; hgsMap, GreyscaleImage img, 
-        int idx) {
-        
-<span class="fc" id="L359">        HGS hgs = hgsMap.get(idx);</span>
-<span class="fc bfc" id="L360" title="All 2 branches covered.">        if (hgs != null) {</span>
-<span class="fc" id="L361">            return hgs;</span>
-        }
-<span class="fc" id="L363">        hgs = new HGS(img, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, 12);</span>
-        
-<span class="fc" id="L365">        hgsMap.put(idx, hgs);</span>
-        
-<span class="fc" id="L367">        return hgs;</span>
-    }
-    
-    private void calculateDominantOrientations(
-        TIntObjectMap&lt;RegionPoints&gt; regionPoints, HOGs hogs) {
-
-<span class="fc" id="L373">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
-<span class="fc bfc" id="L374" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
-<span class="fc" id="L375">            iter.advance();</span>
-            
-<span class="fc" id="L377">            RegionPoints r = iter.value();</span>
-            
-<span class="fc" id="L379">            TIntSet orientations = hogs.calculateDominantOrientations(r.points);</span>
-        
-<span class="fc" id="L381">            r.hogOrientations.addAll(orientations);</span>
-        }
-<span class="fc" id="L383">    }</span>
-
-    private int getLargestArea(TIntObjectMap&lt;CRegion&gt; regions) {
-<span class="fc" id="L386">        int area = Integer.MIN_VALUE;    </span>
-    
-<span class="fc" id="L388">        TIntObjectIterator&lt;CRegion&gt; iter = regions.iterator();</span>
-<span class="fc bfc" id="L389" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
-<span class="fc" id="L390">            iter.advance();</span>
-<span class="fc" id="L391">            CRegion cr = iter.value();</span>
-<span class="fc" id="L392">            int n = cr.offsetsToOrigCoords.size();</span>
-<span class="fc bfc" id="L393" title="All 2 branches covered.">            if (n &gt; area) {</span>
-<span class="fc" id="L394">                area = n;</span>
-            }
-        }
-<span class="fc" id="L397">        return area;</span>
-    }
-
-    private static class CountComparator implements Comparator&lt;Obj&gt; {
-        public CountComparator() {
-        }
-        @Override
-        public int compare(Obj o1, Obj o2) {
-            return -1*Integer.compare(o1.nMatched, o2.nMatched);
-        }
-    }
-
-    /* NOTE: recalculating this worsens the solutions.
-    Using the MSER originally determined ellipse parameters has better
-    results for the small number of tests here
-    private void recalcOrientationAndTrans(HOGs hogs, 
-        TIntObjectMap&lt;CRegion&gt; regions, GreyscaleImage gsImg, float scale) {
-        
-        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
-        
-        TIntObjectIterator&lt;CRegion&gt; iter = regions.iterator();
-        for (int i = 0; i &lt; regions.size(); ++i) {
-            iter.advance();
-            int rIdx = iter.key();
-            CRegion cr = iter.value();
-            
-            int orientation = hogs.calculateDominantOrientation(
-                cr.offsetsToOrigCoords.values());
-
-            Collection&lt;PairInt&gt; xyp = cr.offsetsToOrigCoords.values();
-            
-            PairIntArray xy = Misc.convertWithoutOrder(xyp);
-            
-            PairInt xyCen = ch.calculateXYCentroids2(xyp);
-            
-            cr.ellipseParams.orientation = Math.PI * orientation/180.;
-            cr.ellipseParams.xC = xyCen.getX();
-            cr.ellipseParams.yC = xyCen.getY();
-            
-            Map&lt;PairInt, PairInt&gt; offsetToOrigMap = 
-                Canonicalizer.createOffsetToOrigMap(
-                xyCen.getX(), xyCen.getY(), 
-                xy, gsImg.getWidth(), gsImg.getHeight(), orientation);
-        
-            cr.offsetsToOrigCoords = offsetToOrigMap;
-        }
-    }
-    */  
-
-    private class Obj implements Comparable&lt;Obj&gt;{
-        CRegion cr0;
-        CRegion cr1;
-        int imgIdx0;
-        int imgIdx1;
-        int nMatched;
-        double cost = Double.MAX_VALUE;
-        double[] costs;
-        double f;
-        
-        // might not be populatated:
-        int r0Idx = -1;
-        int r1Idx = -1;
-
-        @Override
-        public int compareTo(Obj other) {
-            if (cost &lt; other.cost) {
-                return -1;
-            } else if (cost &gt; other.cost) {
-                return 1;
-            }
-            if (nMatched &gt; other.nMatched) {
-                return -1;
-            } else if (nMatched &lt; other.nMatched) {
-                return 1;
-            }
-            // NOTE: may revise this.  wanting to choose smallest scale
-            //   or smaller fraction of whole
-            if (imgIdx0 &lt; other.imgIdx0 &amp;&amp; imgIdx1 &lt; other.imgIdx1) {
-                return -1;
-            } else if (imgIdx0 &gt; other.imgIdx0 &amp;&amp; imgIdx1 &gt; other.imgIdx1) {
-                return 1;
-            }
-            return 0;
-        }
-        
-        private int compareToObsolete(Obj other) {
-            double diffCost = Math.abs(other.cost - cost);
-            if (diffCost &lt; 0.01) {//0.001
-                // NOTE: may revise this.  wanting to choose smallest scale
-                //   or smaller fraction of whole
-                if (imgIdx0 &lt; other.imgIdx0 &amp;&amp; imgIdx1 &lt; other.imgIdx1) {
-                    return -1;
-                } else if (imgIdx0 &gt; other.imgIdx0 &amp;&amp; imgIdx1 &gt; other.imgIdx1) {
-                    return 1;
-                }
-                
-                if (f &lt; other.f) {
-                    return -1;
-                } else if (f &gt; other.f) {
-                    return 1;
-                }
-                return 0;
-            } else if (cost &lt; other.cost) {
-                return -1;
-            } else if (cost &gt; other.cost) {
-                return 1;
-            }
-            return 0;
-        }
-    }
-
-    public static int distance(PairInt p1, PairInt p2) {
-<span class="nc" id="L509">        int diffX = p1.getX() - p2.getX();</span>
-<span class="nc" id="L510">        int diffY = p1.getY() - p2.getY();</span>
-<span class="nc" id="L511">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
-    }
-
-    public static int distance(float x0, float y0, float x1, float y1) {
-<span class="nc" id="L515">        float diffX = x0 - x1;</span>
-<span class="nc" id="L516">        float diffY = y0 - y1;</span>
-<span class="nc" id="L517">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
-    }
+<span class="fc" id="L49">        debug = true;</span>
+<span class="fc" id="L50">    }</span>
     
     /**
      * This method is a work in progress.  
@@ -568,113 +100,118 @@ import java.util.Set;
         TIntObjectMap&lt;Canonicalizer.RegionPoints&gt; regionPoints1, 
         Settings settings) {
             
-<span class="fc" id="L571">        TIntObjectMap&lt;HOGs&gt; hogsMap0 = new TIntObjectHashMap&lt;HOGs&gt;();</span>
-<span class="fc" id="L572">        TIntObjectMap&lt;HOGs&gt; hogsMap1 = new TIntObjectHashMap&lt;HOGs&gt;();</span>
-        
-<span class="fc" id="L574">        TIntObjectMap&lt;HCPT&gt; hcptMap0 = new TIntObjectHashMap&lt;HCPT&gt;();</span>
-<span class="fc" id="L575">        TIntObjectMap&lt;HGS&gt; hgsMap0 = new TIntObjectHashMap&lt;HGS&gt;();</span>
-<span class="fc" id="L576">        TIntObjectMap&lt;HCPT&gt; hcptMap1 = new TIntObjectHashMap&lt;HCPT&gt;();</span>
-<span class="fc" id="L577">        TIntObjectMap&lt;HGS&gt; hgsMap1 = new TIntObjectHashMap&lt;HGS&gt;();</span>
+<span class="fc" id="L103">        TIntObjectMap&lt;HOGRegionsManager&gt; hogsMap0 </span>
+            = new TIntObjectHashMap&lt;HOGRegionsManager&gt;();
+<span class="fc" id="L105">        TIntObjectMap&lt;HOGRegionsManager&gt; hogsMap1 </span>
+            = new TIntObjectHashMap&lt;HOGRegionsManager&gt;();
 
-        // use hogs to calculate the dominant orientations
-<span class="fc" id="L580">        calculateDominantOrientations(regionPoints0, </span>
-<span class="fc" id="L581">            getOrCreate(hogsMap0, combineImages(pyrRGB0.get(0)), 0));</span>
-        
-<span class="fc" id="L583">        calculateDominantOrientations(regionPoints1, </span>
-<span class="fc" id="L584">            getOrCreate(hogsMap1, combineImages(pyrRGB1.get(0)), 0));</span>
-        
-<span class="fc" id="L586">        Canonicalizer canonicalizer = new Canonicalizer();</span>
-        
-        // create the CRegion objects which have the rotated points and 
-        //    offsets in them
-<span class="fc" id="L590">        TIntObjectMap&lt;CRegion&gt; cRegions0 = canonicalizer.canonicalizeRegions4(</span>
-<span class="fc" id="L591">            regionPoints0, pyrRGB0.get(0).get(1));</span>
-        
-<span class="fc" id="L593">        TIntObjectMap&lt;CRegion&gt; cRegions1 = canonicalizer.canonicalizeRegions4(</span>
-<span class="fc" id="L594">            regionPoints1, pyrRGB1.get(0).get(1));</span>
-                
-        // populated on demand, some are skipped for large size differences
-<span class="fc" id="L597">        TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csr0</span>
-            = new TIntObjectHashMap&lt;TIntObjectMap&lt;CRegion&gt;&gt;();
-<span class="fc" id="L599">        csr0.put(0, cRegions0);</span>
+        // a reference to the regions, is same as what the HOGRegions etc hold
+<span class="fc" id="L109">        List&lt;TIntObjectMap&lt;CRegion&gt;&gt; cRegionsList0 = createList(pyrRGB0.size());</span>
+<span class="fc" id="L110">        List&lt;TIntObjectMap&lt;CRegion&gt;&gt; cRegionsList1 = createList(pyrRGB1.size());</span>
+               
+<span class="fc" id="L112">        int n0 = pyrPT0.size();</span>
+<span class="fc" id="L113">        int n1 = pyrPT1.size();</span>
 
-<span class="fc" id="L601">        TIntObjectMap&lt;TIntObjectMap&lt;CRegion&gt;&gt; csr1</span>
-            = new TIntObjectHashMap&lt;TIntObjectMap&lt;CRegion&gt;&gt;();
-<span class="fc" id="L603">        csr1.put(0, cRegions1);</span>
-
-<span class="fc" id="L605">        int n0 = pyrPT0.size();</span>
-<span class="fc" id="L606">        int n1 = pyrPT1.size();</span>
-
-<span class="fc" id="L608">        int w0 = pyrPT0.get(0).getWidth();</span>
-<span class="fc" id="L609">        int h0 = pyrPT0.get(0).getHeight();</span>
-<span class="fc" id="L610">        int w1 = pyrPT1.get(0).getWidth();</span>
-<span class="fc" id="L611">        int h1 = pyrPT1.get(0).getHeight();</span>
+<span class="fc" id="L115">        int w0 = pyrPT0.get(0).getWidth();</span>
+<span class="fc" id="L116">        int h0 = pyrPT0.get(0).getHeight();</span>
+<span class="fc" id="L117">        int w1 = pyrPT1.get(0).getWidth();</span>
+<span class="fc" id="L118">        int h1 = pyrPT1.get(0).getHeight();</span>
               
-<span class="fc" id="L613">        float sizeFactor = 1.2f;//2;//1.2f;</span>
+<span class="fc" id="L120">        float sizeFactor = 1.2f;//2;//1.2f;</span>
 
-<span class="fc" id="L615">        FixedSizeSortedVector&lt;Obj&gt; bestOverallA =</span>
+<span class="fc" id="L122">        FixedSizeSortedVector&lt;Obj&gt; bestOverallA =</span>
             //new FixedSizeSortedVector&lt;Obj&gt;(100, Obj.class);
             new FixedSizeSortedVector&lt;Obj&gt;(n0, Obj.class);
-                        
-<span class="fc bfc" id="L619" title="All 2 branches covered.">        for (int pyrIdx0 = 0; pyrIdx0 &lt; n0; ++pyrIdx0) {</span>
+           
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (int pyrIdx0 = 0; pyrIdx0 &lt; n0; ++pyrIdx0) {</span>
 
-<span class="fc" id="L621">            GreyscaleImage gsI0 = combineImages(pyrRGB0.get(pyrIdx0));</span>
-<span class="fc" id="L622">            GreyscaleImage ptI0 = pyrPT0.get(pyrIdx0);</span>
+<span class="fc" id="L128">            GreyscaleImage gsI0 = combineImages(pyrRGB0.get(pyrIdx0));</span>
+<span class="fc" id="L129">            GreyscaleImage ptI0 = pyrPT0.get(pyrIdx0);</span>
 
-<span class="fc" id="L624">            int w0_i = ptI0.getWidth();</span>
-<span class="fc" id="L625">            int h0_i = ptI0.getHeight();</span>
-<span class="fc" id="L626">            float scale0 = (((float) w0 / (float) w0_i)</span>
+<span class="fc" id="L131">            int w0_i = ptI0.getWidth();</span>
+<span class="fc" id="L132">            int h0_i = ptI0.getHeight();</span>
+<span class="pc bpc" id="L133" title="3 of 4 branches missed.">            assert(gsI0.getWidth() == w0_i);</span>
+<span class="pc bpc" id="L134" title="3 of 4 branches missed.">            assert(gsI0.getHeight() == h0_i);</span>
+<span class="fc" id="L135">            float scale0 = (</span>
+                ((float) w0 / (float) w0_i)
                 + ((float) h0 / (float) h0_i)) / 2.f;
 
-<span class="fc" id="L629">            HOGs hogs0 = getOrCreate(hogsMap0, gsI0, pyrIdx0);</span>
-
-<span class="fc" id="L631">            HCPT hcpt0 = getOrCreate2(hcptMap0, ptI0, pyrIdx0);</span>
-<span class="fc" id="L632">            HGS hgs0 = getOrCreate3(hgsMap0, gsI0, pyrIdx0);</span>
+<span class="fc" id="L139">            TIntObjectMap&lt;CRegion&gt; regions0 = cRegionsList0.get(pyrIdx0);</span>
             
-<span class="fc" id="L634">            TIntObjectMap&lt;CRegion&gt; regions0 = getOrCreate(csr0, pyrIdx0, gsI0,</span>
-                scale0);
- 
-<span class="fc" id="L637">            FixedSizeSortedVector&lt;Obj&gt; bestPerOctave =</span>
-                //new FixedSizeSortedVector&lt;Obj&gt;(100, Obj.class);
+            // instantiate and cache hogs0 if doesn't exist
+<span class="fc" id="L142">            HOGRegionsManager hogsMgr0 = getOrCreate(hogsMap0, regions0, </span>
+                w0_i, h0_i, pyrIdx0);
+            
+<span class="pc bpc" id="L145" title="3 of 4 branches missed.">            assert(regionPoints0.size() &gt; 0);</span>
+            
+<span class="fc" id="L147">            hogsMgr0.populateRegionsIfNeeded(</span>
+                regionPoints0, scale0, hogsMgr0, gsI0, ptI0);
+            
+<span class="fc" id="L150">            int nr0 = regions0.size();</span>
+<span class="pc bpc" id="L151" title="3 of 4 branches missed.">            assert(nr0 &gt; 0);</span>
+            
+<span class="fc" id="L153">            FixedSizeSortedVector&lt;Obj&gt; bestPerOctave =</span>
+                //new FixedSizeSortedVector&lt;Obj&gt;(2, Obj.class);
                 new FixedSizeSortedVector&lt;Obj&gt;(1, Obj.class);
             
-<span class="fc" id="L641">            int maxArea0 = getLargestArea(cRegions0);</span>
+<span class="fc" id="L157">            int maxArea0 = getLargestArea(regions0);</span>
             
-<span class="fc bfc" id="L643" title="All 2 branches covered.">            for (int pyrIdx1 = 0; pyrIdx1 &lt; n1; ++pyrIdx1) {</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            for (int pyrIdx1 = 0; pyrIdx1 &lt; n1; ++pyrIdx1) {</span>
 
-<span class="fc" id="L645">                GreyscaleImage gsI1 = combineImages(pyrRGB1.get(pyrIdx1));</span>
-<span class="fc" id="L646">                GreyscaleImage ptI1 = pyrPT1.get(pyrIdx1);</span>
+<span class="fc" id="L161">                GreyscaleImage gsI1 = combineImages(pyrRGB1.get(pyrIdx1));</span>
+<span class="fc" id="L162">                GreyscaleImage ptI1 = pyrPT1.get(pyrIdx1);</span>
 
-<span class="fc" id="L648">                int w1_i = ptI1.getWidth();</span>
-<span class="fc" id="L649">                int h1_i = ptI1.getHeight();</span>
-<span class="fc" id="L650">                float scale1 = (((float) w1 / (float) w1_i)</span>
+<span class="fc" id="L164">                int w1_i = ptI1.getWidth();</span>
+<span class="fc" id="L165">                int h1_i = ptI1.getHeight();</span>
+<span class="fc" id="L166">                float scale1 = (((float) w1 / (float) w1_i)</span>
                     + ((float) h1 / (float) h1_i)) / 2.f;
 
-<span class="fc" id="L653">                TIntObjectMap&lt;CRegion&gt; regions1 = getOrCreate(csr1, pyrIdx1,</span>
-                    gsI1, scale1);
-
-<span class="fc" id="L656">                HOGs hogs1 = getOrCreate(hogsMap1, gsI1, pyrIdx1);</span>
-<span class="fc" id="L657">                HCPT hcpt1 = getOrCreate2(hcptMap1, ptI1, pyrIdx1);</span>
-<span class="fc" id="L658">                HGS hgs1 = getOrCreate3(hgsMap1, gsI1, pyrIdx1);</span>
+<span class="fc" id="L169">                TIntObjectMap&lt;CRegion&gt; regions1 = cRegionsList1.get(pyrIdx1);</span>
                 
-<span class="fc" id="L660">                TIntObjectIterator&lt;CRegion&gt; iter0 = regions0.iterator();</span>
-<span class="fc bfc" id="L661" title="All 2 branches covered.">                for (int i0 = 0; i0 &lt; regions0.size(); ++i0) {</span>
+                // instantiate and cache hogs0 if doesn't exist
+                // instantiate and cache hogs0 if doesn't exist
+<span class="fc" id="L173">                HOGRegionsManager hogsMgr1 = getOrCreate(hogsMap1, regions1, </span>
+                    w1_i, h1_i, pyrIdx1);
+            
+<span class="fc" id="L176">                hogsMgr1.populateRegionsIfNeeded(</span>
+                    regionPoints1, scale1, hogsMgr1, gsI1, ptI1);
+                
+<span class="fc" id="L179">                int nr1 = regions1.size();</span>
+<span class="pc bpc" id="L180" title="3 of 4 branches missed.">                assert(nr1 &gt; 0);</span>
+                 
+<span class="fc" id="L182">                TIntObjectIterator&lt;CRegion&gt; iter0 = regions0.iterator();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                for (int i0 = 0; i0 &lt; nr0; ++i0) {</span>
                     
-<span class="fc" id="L663">                    iter0.advance();</span>
+<span class="fc" id="L185">                    iter0.advance();</span>
                     
-<span class="fc" id="L665">                    int rIdx0 = iter0.key();</span>
+<span class="fc" id="L187">                    int rIdx0 = iter0.key();</span>
                     
-<span class="fc" id="L667">                    CRegion cr0 = iter0.value();</span>
+<span class="fc" id="L189">                    CRegion cr0 = iter0.value();</span>
       
-<span class="fc" id="L669">                    int sz0 = calculateObjectSizeByAvgDist(</span>
+<span class="fc" id="L191">                    int sz0 = calculateObjectSizeByAvgDist(</span>
                         cr0.ellipseParams.xC, cr0.ellipseParams.yC,
-<span class="fc" id="L671">                        cr0.offsetsToOrigCoords.values());</span>
+<span class="fc" id="L193">                        cr0.getPixelCoords(), w0_i );</span>
+
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">                    if (sz0 == 0) {</span>
+<span class="nc" id="L196">                        continue;</span>
+                    }
+                    
+                    /*
+                    CMODE cmode0 = CMODE.determineColorMode(
+                        pyrRGB0.get(pyrIdx0).get(0),
+                        pyrRGB0.get(pyrIdx0).get(1), pyrRGB0.get(pyrIdx0).get(2),
+                        cr0.offsetsToOrigCoords.values());
+                    CMODE cmodeLUV0 = CMODE.determinePolarThetaMode(ptI0, 
+                        cr0.offsetsToOrigCoords.values());
+                    System.out.println(&quot;cmode0=&quot; + cmode0.name() + &quot;, &quot; + 
+                        cmodeLUV0);
+                    */
                     
                     //int area0_full = csr0.get(0).get(rIdx0).offsetsToOrigCoords.size();
-<span class="fc" id="L674">                    TIntObjectIterator&lt;CRegion&gt; iter1 = regions1.iterator();</span>
-<span class="fc bfc" id="L675" title="All 2 branches covered.">                    for (int i1 = 0; i1 &lt; regions1.size(); ++i1) {</span>
+<span class="fc" id="L211">                    TIntObjectIterator&lt;CRegion&gt; iter1 = regions1.iterator();</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">                    for (int i1 = 0; i1 &lt; nr1; ++i1) {</span>
                         
-<span class="fc" id="L677">                        iter1.advance();</span>
+<span class="fc" id="L214">                        iter1.advance();</span>
                         
                         // because these regions were made w/ hog orientations,
                         // there may be multiple regions with the same 
@@ -682,13 +219,17 @@ import java.util.Set;
                         // a different rIdx1 here.
                         // so cr.dataIdx is used below for the identity to keep
                         // the best match for the cr.dataIdx (== original rIdx)
-<span class="fc" id="L685">                        int rIdx1 = iter1.key();</span>
-<span class="fc" id="L686">                        CRegion cr1 = iter1.value();</span>
+<span class="fc" id="L222">                        int rIdx1 = iter1.key();</span>
+<span class="fc" id="L223">                        CRegion cr1 = iter1.value();</span>
 
-<span class="fc" id="L688">                        int sz1 = calculateObjectSizeByAvgDist(</span>
+<span class="fc" id="L225">                        int sz1 = calculateObjectSizeByAvgDist(</span>
                             cr1.ellipseParams.xC, cr1.ellipseParams.yC,
-<span class="fc" id="L690">                            cr1.offsetsToOrigCoords.values());</span>
+<span class="fc" id="L227">                            cr1.getPixelCoords(), w1_i);</span>
 
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">                        if (sz1 == 0) {</span>
+<span class="nc" id="L230">                            continue;</span>
+                        }
+                        
                         /*
                         int xp0 = -1; int yp0 = -1; int xp1 = -1; int yp1 = -1;
                         if (debug) {
@@ -701,146 +242,81 @@ import java.util.Set;
                         }*/
                         
                         // size filter
-<span class="fc bfc" id="L704" title="All 8 branches covered.">                        if ((sz1 &gt; sz0 &amp;&amp; ((sz1 / sz0) &gt; sizeFactor))</span>
+<span class="fc bfc" id="L245" title="All 8 branches covered.">                        if ((sz1 &gt; sz0 &amp;&amp; ((sz1 / sz0) &gt; sizeFactor))</span>
                             || (sz0 &gt; sz1 &amp;&amp; ((sz0 / sz1) &gt; sizeFactor))) {
                             
                             //System.out.format(
                             //    &quot;  REMOVING (%d,%d) where sz0=%d sz1=%d\n&quot;,
                             //    xp1, yp1, sz0, sz1);
                             
-<span class="fc" id="L711">                            continue;</span>
+<span class="fc" id="L252">                            continue;</span>
                         }
                                                    
-<span class="fc" id="L714">                        Intersection2DPacking ip = new Intersection2DPacking();</span>
-<span class="fc" id="L715">                        Set&lt;PairInt&gt; intersectingKeys = ip.intersection(</span>
-<span class="fc" id="L716">                            cr0.offsetsToOrigCoords.keySet(),</span>
-<span class="fc" id="L717">                            cr1.offsetsToOrigCoords.keySet());</span>
-<span class="fc" id="L718">                        Set&lt;PairInt&gt; offsets0 = ip.naiveStripPacking(</span>
-                            intersectingKeys, N_PIX_PER_CELL_DIM);
-
-                        double[] hogCosts;
-                        float hogCost;
+<span class="fc" id="L255">                        Intersection2DPacking ip = new Intersection2DPacking();</span>
+<span class="fc" id="L256">                        Set&lt;PairInt&gt; intersectingOffsetKeys = ip.intersection(</span>
+<span class="fc" id="L257">                            cr0.getOffsetKeys(), cr1.getOffsetKeys());</span>
+<span class="fc" id="L258">                        Set&lt;PairInt&gt; offsets0 = ip.naiveStripPacking(</span>
+                            intersectingOffsetKeys, N_PIX_PER_CELL_DIM);
                         
-                        if (true) {// use intersection    
-                            //double[]{intersection, f0, f1, count, area0, area1};
-<span class="fc" id="L726">                            hogCosts = sumHOGCost2(</span>
-<span class="fc" id="L727">                                offsets0, intersectingKeys.size(), hogs0, cr0, </span>
-                                hogs1, cr1);
-<span class="pc bpc" id="L729" title="1 of 2 branches missed.">                            if (hogCosts == null) {</span>
-<span class="nc" id="L730">                                continue;</span>
-                            }
-<span class="fc" id="L732">                            hogCost = 1.f - (float) hogCosts[0];</span>
-                        } else {// use mean difference    
-                            //double[]{diff, f0, f1, count, error, area0, area1};
-                            hogCosts = sumHOGCost3(hogs0, cr0, hogs1, cr1);
-                            if (hogCosts == null) {
-                                continue;
-                            }
-                            hogCost = (float)hogCosts[0];
+                        //DEBUG
+                        /*{
+                            Image tmp = gsI1.copyToColorGreyscale();
+                            for (Entry&lt;PairInt, PairInt&gt; entry : 
+                                cr1.getOffsetsToOrigCoords().entrySet()) {
+                                ImageIOHelper.addPointToImage(entry.getValue().getX(),
+                                    entry.getValue().getY(), tmp,
+                                    1, 255, 0, 0);
+                            };
+                            MiscDebug.writeImage(tmp, &quot;_DBG_&quot; 
+                                + pyrIdx0 + &quot;_&quot; + i0 + &quot;__&quot; + pyrIdx1 + &quot;_&quot; + i1);
                         }
-                        
-                        // 1 - fraction of whole (is coverage expressed as a cost)
-<span class="fc" id="L743">                        double f0 = Math.max(0, hogCosts[1]);</span>
-<span class="fc" id="L744">                        double f1 = Math.max(0, hogCosts[2]);</span>
-<span class="fc" id="L745">                        double f = (f0 + f1)/2;</span>
-                        /*
-                        // penalty if area1 is &gt; maxArea0
-                        //NOTE: this will make it difficult to find template 
-                        //  when it's incomplete or search foreground is blended 
-                        //  into obj
-                        double area1 = hogCosts[hogCosts.length - 1];
-                        if (area1 &gt; maxArea0) {
-                            f = Math.max(1.0, f + (area1 - maxArea0)/maxArea0);
+                        {
+                            System.out.println(&quot;intersectionKeys.size=&quot; +
+                                intersectingOffsetKeys.size() + 
+                                &quot; offsets0.size=&quot; + offsets0.size());
+                            
+                            for (PairInt p : offsets0) {
+                                assert(intersectingOffsetKeys.contains(p));
+                            }
                         }*/
-                        
-<span class="fc" id="L756">                        Obj obj = new Obj();</span>
-<span class="fc" id="L757">                        obj.cr0 = cr0;</span>
-<span class="fc" id="L758">                        obj.cr1 = cr1;</span>
-<span class="fc" id="L759">                        obj.r0Idx = rIdx0;</span>
-<span class="fc" id="L760">                        obj.r1Idx = rIdx1;</span>
-<span class="fc" id="L761">                        obj.imgIdx0 = pyrIdx0;</span>
-<span class="fc" id="L762">                        obj.imgIdx1 = pyrIdx1;</span>
-<span class="fc" id="L763">                        obj.nMatched = (int) hogCosts[3];</span>
-                        
-                        double cost;
-                        double[] costs2;
-                        double hcptHgsCost;
-                        double hcptCost;
-                        double hgsCost;
-                       
-                        if (true) {
-                            //double[]{combIntersection, f0, f1, 
-                            //    intersectionHCPT, intersectionHGS, count}
-<span class="fc" id="L774">                            costs2 = sumCost2(</span>
-<span class="fc" id="L775">                                offsets0, intersectingKeys.size(), hcpt0, hgs0, cr0, </span>
-                                hcpt1, hgs1, cr1);
-<span class="fc bfc" id="L777" title="All 2 branches covered.">                            if (clrMode0.equals(CMODE.WHITE)) {</span>
-<span class="fc" id="L778">                                hcptHgsCost = 1.f - costs2[0];</span>
-                            } else {
-<span class="fc" id="L780">                                hcptHgsCost = 1.f - costs2[3];</span>
-                            }
-<span class="fc" id="L782">                            hcptCost = 1.f - costs2[3];</span>
-<span class="fc" id="L783">                            hgsCost = 1.f - costs2[4];</span>
-                        } else {
-                            costs2 = sumCost3(hcpt0, hgs0, cr0, hcpt1, hgs1, cr1);
-                            if (clrMode0.equals(CMODE.WHITE)) {
-                                hcptHgsCost = costs2[0];
-                            } else {
-                                hcptHgsCost = costs2[3];
-                            }
-                            hcptCost = costs2[3];
-                            hgsCost = costs2[4];
-                        }
-                        
-<span class="fc" id="L795">                        cost = (float) Math.sqrt(</span>
-                            2. * hogCost * hogCost
-                            + 2. * f * f
-                            + hcptHgsCost * hcptHgsCost
-                        );
-<span class="fc" id="L800">                        obj.costs = new double[]{</span>
-                            hogCost, f, hcptHgsCost, f0, f1, hcptCost, hgsCost
-                        };
-                        
-<span class="fc" id="L804">                        obj.cost = cost;</span>
-<span class="fc" id="L805">                        obj.f = f;</span>
 
-<span class="fc" id="L807">                        int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
-<span class="fc" id="L808">                        int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
-<span class="fc" id="L809">                        int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
-<span class="fc" id="L810">                        int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
+<span class="fc" id="L283">                        Obj obj = calculateHOGCosts(offsets0, intersectingOffsetKeys.size(), </span>
+                            hogsMgr0, cr0, scale0, rIdx0, pyrIdx0,
+                            hogsMgr1, cr1, scale1, rIdx1, pyrIdx1);
                         
+<span class="fc bfc" id="L287" title="All 2 branches covered.">                        if (obj == null) {</span>
+<span class="fc" id="L288">                            continue;</span>
+                        }
+<span class="fc" id="L290">                        boolean added = bestPerOctave.add(obj);</span>
+                        
+<span class="fc" id="L292">                        int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
+<span class="fc" id="L293">                        int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
+<span class="fc" id="L294">                        int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
+<span class="fc" id="L295">                        int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
+
                         //NOTE: may need to consider the best match
                         //  for each rIdx, that is, consider multiple 
                         //  orientations for a region rather than keeping
                         //  the best orienation for a region only
                         
-<span class="fc" id="L817">                        boolean added = bestPerOctave.add(obj);</span>
-                        
-                        if (false &amp;&amp; debug) {
-                            double cost2 = (float) Math.sqrt(
-                                obj.costs[0]*obj.costs[0] +
-                                obj.costs[1]*obj.costs[1] +
-                                obj.costs[2]*obj.costs[2]
-                            );
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">                        if (debug) {</span>
+
                             String arrow;
-                            if (added) {
-                                arrow = &quot;==&gt;&quot;;
+<span class="fc bfc" id="L305" title="All 2 branches covered.">                            if (added) {</span>
+<span class="fc" id="L306">                                arrow = &quot;==&gt;&quot;;</span>
                             } else {
-                                arrow = &quot;   &quot;;
+<span class="fc" id="L308">                                arrow = &quot;   &quot;;</span>
                             }
-                            System.out.format(
-                            &quot;%s octave %d %d] %s (%d,%d) best: %.4f (%d,%d) [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d c2=%.3f\n&quot;,
-                            settings.getDebugLabel(), pyrIdx0, pyrIdx1,
-                            arrow, x1, y1, 
-                            (float) obj.cost,
-                            Math.round(scale0 * obj.cr0.ellipseParams.xC),
-                            Math.round(scale0 * obj.cr0.ellipseParams.yC), 
-                            (float) obj.costs[0], (float) obj.costs[1], 
-                            (float) obj.costs[2], (float) obj.costs[3], 
-                            (float) obj.costs[4], (float) obj.costs[5], 
-                            (float) obj.costs[6], 
-                            obj.cr0.offsetsToOrigCoords.size(),
-                            (float)cost2
+<span class="fc" id="L310">                            System.out.format(</span>
+                            &quot;%s octave %d %d] %s (%d,%d;%d) best: %.4f (%d,%d;%d) [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
+<span class="fc" id="L312">                            settings.getDebugLabel(), pyrIdx0, pyrIdx1,</span>
+<span class="fc" id="L313">                            arrow, x1, y1, obj.cr1.hogOrientation,</span>
+<span class="fc" id="L314">                            (float) obj.cost, x0, y0, </span>
+<span class="fc" id="L315">                            obj.cr0.hogOrientation,</span>
+<span class="fc" id="L316">                            (float) obj.costs[0], (float) obj.costs[1], </span>
+<span class="fc" id="L317">                            (float) obj.costs[2], (float) obj.costs[3], </span>
+<span class="fc" id="L318">                            (float) obj.costs[4], </span>
+<span class="fc" id="L319">                            obj.nMatched</span>
                             );
                         }
                     }
@@ -849,238 +325,602 @@ import java.util.Set;
             
             // temporarily print the best of each octave0 to look at 
             //    scale biases
-<span class="fc bfc" id="L852" title="All 2 branches covered.">            for (int k = 0; k &lt; bestPerOctave.getNumberOfItems(); ++k) {</span>
-<span class="fc" id="L853">                Obj obj0 = bestPerOctave.getArray()[k];                               </span>
-<span class="fc" id="L854">                bestOverallA.add(obj0);</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">            for (int k = 0; k &lt; bestPerOctave.getNumberOfItems(); ++k) {</span>
+<span class="fc" id="L329">                Obj obj0 = bestPerOctave.getArray()[k];                               </span>
+<span class="fc" id="L330">                bestOverallA.add(obj0);</span>
             }
         }
        
-<span class="pc bpc" id="L858" title="1 of 2 branches missed.">        if (bestOverallA.getNumberOfItems() == 0) {</span>
-<span class="nc" id="L859">            return null;</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">        if (bestOverallA.getNumberOfItems() == 0) {</span>
+<span class="nc" id="L335">            return null;</span>
+        }
+        // re-calculating fraction of whole:
+<span class="fc" id="L338">        int maxN = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverallA.getNumberOfItems(); ++i) {</span>
+<span class="fc" id="L340">            Obj objB = bestOverallA.getArray()[i];</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">            if (objB.nMatched &gt; maxN) {</span>
+<span class="fc" id="L342">                maxN = objB.nMatched;</span>
+            }
         }
         
-<span class="fc" id="L862">        List&lt;Obj&gt; bestOverall = new ArrayList&lt;Obj&gt;(bestOverallA.getNumberOfItems());        </span>
-<span class="fc bfc" id="L863" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverallA.getNumberOfItems(); ++i) {</span>
-<span class="fc" id="L864">            Obj objB = bestOverallA.getArray()[i];</span>
-<span class="fc" id="L865">            bestOverall.add(objB);</span>
-        }
-        
-<span class="fc" id="L868">        Set&lt;PairInt&gt; pairs = new HashSet&lt;PairInt&gt;();</span>
-        
-<span class="fc" id="L870">        Collections.sort(bestOverall, new CountComparator());</span>
-        
-<span class="fc" id="L872">        List&lt;CorrespondenceList&gt; out = new ArrayList&lt;CorrespondenceList&gt;();</span>
-        
-<span class="fc bfc" id="L874" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverall.size(); ++i) {</span>
+<span class="fc" id="L346">        Map&lt;QuadInt, Obj&gt; bestCombined = new HashMap&lt;QuadInt, Obj&gt;();        </span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverallA.getNumberOfItems(); ++i) {</span>
+<span class="fc" id="L348">            Obj objB = bestOverallA.getArray()[i];</span>
             
-<span class="fc" id="L876">            List&lt;QuadInt&gt; qs = new ArrayList&lt;QuadInt&gt;();</span>
-            
-<span class="fc" id="L878">            Obj obj = bestOverall.get(i);</span>
-            
-<span class="fc" id="L880">            PairInt pair = new PairInt(obj.r0Idx, obj.r1Idx);</span>
-<span class="fc bfc" id="L881" title="All 2 branches covered.">            if (!pairs.add(pair)) {</span>
-<span class="fc" id="L882">                continue;</span>
+<span class="fc" id="L350">            double f = 1. - (objB.nMatched/(double)maxN);</span>
+<span class="fc" id="L351">            objB.cost = (float) Math.sqrt(</span>
+                objB.costs[0] * objB.costs[0]
+                //+ 2. * f * f
+                + f * f
+                + objB.costs[1] * objB.costs[1]
+                + objB.costs[2] * objB.costs[2]
+            );         
+                        
+<span class="fc" id="L359">            int imgIdx0 = objB.imgIdx0;</span>
+<span class="fc" id="L360">            int imgIdx1 = objB.imgIdx1;</span>
+<span class="fc" id="L361">            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);</span>
+<span class="fc" id="L362">            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);            </span>
+<span class="fc" id="L363">            int w0_i = gsI0.getWidth();</span>
+<span class="fc" id="L364">            int h0_i = gsI0.getHeight();</span>
+<span class="fc" id="L365">            float scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;</span>
+<span class="fc" id="L366">            int w1_i = gsI1.getWidth();</span>
+<span class="fc" id="L367">            int h1_i = gsI1.getHeight();</span>
+<span class="fc" id="L368">            float scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;</span>
+<span class="fc" id="L369">            int x0 = Math.round(scale0 * objB.cr0.ellipseParams.xC);</span>
+<span class="fc" id="L370">            int y0 = Math.round(scale0 * objB.cr0.ellipseParams.yC);</span>
+<span class="fc" id="L371">            int x1 = Math.round(scale1 * objB.cr1.ellipseParams.xC);</span>
+<span class="fc" id="L372">            int y1 = Math.round(scale1 * objB.cr1.ellipseParams.yC);</span>
+<span class="fc" id="L373">            QuadInt q = new QuadInt(x0, y0, x1, y1);</span>
+<span class="fc" id="L374">            Obj existing = bestCombined.get(q);</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">            if (existing != null) {</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">                if (existing.cost &gt; objB.cost){</span>
+<span class="fc" id="L377">                    bestCombined.put(q, objB);</span>
+                }
+            } else {
+<span class="fc" id="L380">                bestCombined.put(q, objB);</span>
             }
             
-<span class="fc" id="L885">            int imgIdx0 = obj.imgIdx0;</span>
-<span class="fc" id="L886">            int imgIdx1 = obj.imgIdx1;</span>
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">            if (debug) {</span>
+                //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
+<span class="fc" id="L385">                String lbl = &quot;_&quot; + objB.imgIdx0 + &quot;_&quot; + objB.imgIdx1 + &quot;_&quot;</span>
+                    + objB.r0Idx + &quot;_&quot; + objB.r1Idx;
+<span class="fc" id="L387">                System.out.format(</span>
+                    &quot;_final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
+<span class="fc" id="L389">                    settings.getDebugLabel(), i, x1, y1,</span>
+<span class="fc" id="L390">                    (float) objB.cost, x0, y0, lbl,</span>
+<span class="fc" id="L391">                    (float) objB.costs[0], (float) objB.costs[1],</span>
+<span class="fc" id="L392">                    (float) objB.costs[2], (float) objB.costs[3],</span>
+<span class="fc" id="L393">                    (float) objB.costs[4],</span>
+<span class="fc" id="L394">                    objB.nMatched</span>
+                );    
+            }
+        }
+        
+<span class="fc" id="L399">        List&lt;Obj&gt; bestOverall = new ArrayList&lt;Obj&gt;();</span>
+<span class="fc" id="L400">        bestOverall.addAll(bestCombined.values());</span>
+<span class="fc" id="L401">        Collections.sort(bestOverall, new CostComparator());</span>
+                
+<span class="fc" id="L403">        Set&lt;PairInt&gt; pairs = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L404">        List&lt;CorrespondenceList&gt; out = new ArrayList&lt;CorrespondenceList&gt;();</span>
+        
+<span class="fc bfc" id="L406" title="All 2 branches covered.">        for (int i = 0; i &lt; bestOverall.size(); ++i) {</span>
             
-<span class="fc" id="L888">            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);</span>
-<span class="fc" id="L889">            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
+<span class="fc" id="L408">            List&lt;QuadInt&gt; qs = new ArrayList&lt;QuadInt&gt;();</span>
+            
+<span class="fc" id="L410">            Obj obj = bestOverall.get(i);</span>
+            
+<span class="fc" id="L412">            PairInt pair = new PairInt(obj.r0Idx, obj.r1Idx);</span>
+<span class="fc bfc" id="L413" title="All 2 branches covered.">            if (!pairs.add(pair)) {</span>
+<span class="fc" id="L414">                continue;</span>
+            }
+            
+<span class="fc" id="L417">            int imgIdx0 = obj.imgIdx0;</span>
+<span class="fc" id="L418">            int imgIdx1 = obj.imgIdx1;</span>
+            
+<span class="fc" id="L420">            GreyscaleImage gsI0 = pyrRGB0.get(imgIdx0).get(1);</span>
+<span class="fc" id="L421">            GreyscaleImage gsI1 = pyrRGB1.get(imgIdx1).get(1);</span>
             
             float scale0, scale1;
-            {
-<span class="fc" id="L893">                int w0_i = gsI0.getWidth();</span>
-<span class="fc" id="L894">                int h0_i = gsI0.getHeight();</span>
-<span class="fc" id="L895">                scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;</span>
-                
-<span class="fc" id="L897">                int w1_i = gsI1.getWidth();</span>
-<span class="fc" id="L898">                int h1_i = gsI1.getHeight();</span>
-<span class="fc" id="L899">                scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;                </span>
-            }
+<span class="fc" id="L424">            int w0_i = gsI0.getWidth();</span>
+<span class="fc" id="L425">            int h0_i = gsI0.getHeight();</span>
+<span class="fc" id="L426">            scale0 = (((float)w0/(float)w0_i) + ((float)h0/(float)h0_i))/2.f;</span>
+
+<span class="fc" id="L428">            int w1_i = gsI1.getWidth();</span>
+<span class="fc" id="L429">            int h1_i = gsI1.getHeight();</span>
+<span class="fc" id="L430">            scale1 = (((float)w1/(float)w1_i) + ((float)h1/(float)h1_i))/2.f;                </span>
             
             // NOTE: for now, just mser centers,
             // but should fill out more than this, including centroid of points
             
-<span class="fc" id="L905">            int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
-<span class="fc" id="L906">            int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
-<span class="fc" id="L907">            int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
-<span class="fc" id="L908">            int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
-<span class="fc" id="L909">            QuadInt q = new QuadInt(x0, y0, x1, y1);</span>
-<span class="fc" id="L910">            qs.add(q);</span>
+<span class="fc" id="L435">            int x0 = Math.round(scale0 * obj.cr0.ellipseParams.xC);</span>
+<span class="fc" id="L436">            int y0 = Math.round(scale0 * obj.cr0.ellipseParams.yC);</span>
+<span class="fc" id="L437">            int x1 = Math.round(scale1 * obj.cr1.ellipseParams.xC);</span>
+<span class="fc" id="L438">            int y1 = Math.round(scale1 * obj.cr1.ellipseParams.yC);</span>
+<span class="fc" id="L439">            QuadInt q = new QuadInt(x0, y0, x1, y1);</span>
+<span class="fc" id="L440">            qs.add(q);</span>
             
-<span class="fc" id="L912">            CorrespondenceList cor = new CorrespondenceList(qs);</span>
-<span class="fc" id="L913">            out.add(cor);</span>
+<span class="fc" id="L442">            CorrespondenceList cor = new CorrespondenceList(qs);</span>
+<span class="fc" id="L443">            out.add(cor);</span>
             
-<span class="pc bpc" id="L915" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">            if (debug) {</span>
                 //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
-<span class="fc" id="L917">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
+<span class="fc" id="L447">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
                     + obj.r0Idx + &quot;_&quot; + obj.r1Idx;
-<span class="fc" id="L919">                System.out.format(</span>
-                    &quot;final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
-<span class="fc" id="L921">                    settings.getDebugLabel(), i, x1, y1,</span>
-<span class="fc" id="L922">                    (float) obj.cost, x0, y0, lbl,</span>
-<span class="fc" id="L923">                    (float) obj.costs[0], (float) obj.costs[1],</span>
-<span class="fc" id="L924">                    (float) obj.costs[2], (float) obj.costs[3],</span>
-<span class="fc" id="L925">                    (float) obj.costs[4], (float) obj.costs[5], (float) obj.costs[6],</span>
-<span class="fc" id="L926">                    obj.nMatched</span>
+<span class="fc" id="L449">                System.out.format(</span>
+                    &quot;final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
+<span class="fc" id="L451">                    settings.getDebugLabel(), i, x1, y1,</span>
+<span class="fc" id="L452">                    (float) obj.cost, x0, y0, lbl,</span>
+<span class="fc" id="L453">                    (float) obj.costs[0], (float) obj.costs[1],</span>
+<span class="fc" id="L454">                    (float) obj.costs[2], (float) obj.costs[3],</span>
+<span class="fc" id="L455">                    (float) obj.costs[4],</span>
+<span class="fc" id="L456">                    obj.nMatched</span>
                 );               
             }
         }
+            
+<span class="fc" id="L461">        return out;</span>
+    }
+   
+    
+    private GreyscaleImage combineImages(List&lt;GreyscaleImage&gt; rgb) {
 
-<span class="fc" id="L931">        return out;</span>
+<span class="fc" id="L467">        GreyscaleImage r = rgb.get(0);</span>
+<span class="fc" id="L468">        GreyscaleImage g = rgb.get(1);</span>
+<span class="fc" id="L469">        GreyscaleImage b = rgb.get(2);</span>
+
+<span class="pc bpc" id="L471" title="2 of 4 branches missed.">        if (r.getWidth() != g.getWidth() || r.getWidth() != b.getWidth() ||</span>
+<span class="pc bpc" id="L472" title="2 of 4 branches missed.">            r.getHeight() != g.getHeight() || r.getHeight() != b.getHeight()) {</span>
+<span class="nc" id="L473">            throw new IllegalArgumentException(&quot;r, g, and b must have same&quot;</span>
+                + &quot; width and height&quot;);
+        }
+
+<span class="fc" id="L477">        int w = r.getWidth();</span>
+<span class="fc" id="L478">        int h = r.getHeight();</span>
+
+<span class="fc" id="L480">        GreyscaleImage comb = new GreyscaleImage(w, h, r.getType());</span>
+
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        for (int i = 0; i &lt; r.getNPixels(); ++i) {</span>
+<span class="fc" id="L483">            float v0 = r.getValue(i);</span>
+<span class="fc" id="L484">            float v1 = g.getValue(i);</span>
+<span class="fc" id="L485">            float v2 = b.getValue(i);</span>
+<span class="fc" id="L486">            float avg = (v0 + v1 + v2)/3.f;</span>
+
+<span class="fc" id="L488">            comb.setValue(i, Math.round(avg));</span>
+        }
+
+<span class="fc" id="L491">        return comb;</span>
+    }
+
+    private int calculateObjectSizeByAvgDist(int x, int y, 
+        TLongSet pixCoords, int imageWidth) {
+
+<span class="fc" id="L497">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L498">        int[] xy = new int[2];</span>
+        
+<span class="fc" id="L500">        TLongIterator iter = pixCoords.iterator();</span>
+        
+<span class="fc" id="L502">        int sumD = 0;</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L504">            long pix = iter.next();</span>
+<span class="fc" id="L505">            ph.toPixelCoords(pix, imageWidth, xy);</span>
+<span class="fc" id="L506">            int diffX = xy[0] - x;</span>
+<span class="fc" id="L507">            int diffY = xy[1] - y;</span>
+<span class="fc" id="L508">            sumD += (diffX * diffX + diffY * diffY);</span>
+<span class="fc" id="L509">        }</span>
+<span class="fc" id="L510">        sumD = (int)Math.ceil(Math.sqrt((double)sumD/(double)pixCoords.size()));</span>
+        
+<span class="fc" id="L512">        return sumD;</span>
     }
     
-    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count}
-    private double[] sumCost2(Set&lt;PairInt&gt; offsets0, int intersectionCount, 
-        HCPT hcpt0, HGS hgs0, CRegion cr0, HCPT hcpt1, HGS hgs1, CRegion cr1) {
-        
-<span class="pc bpc" id="L938" title="1 of 2 branches missed.">        if (offsets0.size() == 0) {</span>
-<span class="nc" id="L939">            return null;</span>
+    //double[]{sumHOG, sumHCPT, sumHGS, f0, f1, intersectionCount, area0, area1};
+    private double[] sumHOGCost(Set&lt;PairInt&gt; offsets0, int intersectionCount,
+        HOGRegionsManager hogMgr0, CRegion cr0, 
+        HOGRegionsManager hogMgr1, CRegion cr1) {
+                
+<span class="pc bpc" id="L520" title="1 of 2 branches missed.">        if (offsets0.isEmpty()) {</span>
+<span class="nc" id="L521">            return null;</span>
         }
-        
-<span class="fc" id="L942">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
 
-<span class="fc" id="L944">        double sumCombined = 0;</span>
-<span class="fc" id="L945">        double sumHCPT = 0;</span>
-<span class="fc" id="L946">        double sumHGS = 0;</span>
+<span class="pc bpc" id="L524" title="3 of 4 branches missed.">        assert(cr0.dataIdx != -1);</span>
+<span class="pc bpc" id="L525" title="3 of 4 branches missed.">        assert(cr1.dataIdx != -1);</span>
         
-<span class="fc" id="L948">        int[] h0 = new int[hcpt0.getNumberOfBins()];</span>
-<span class="fc" id="L949">        int[] h1 = new int[h0.length];</span>
+<span class="fc" id="L527">        int orientation0 = cr0.hogOrientation;</span>
+<span class="fc" id="L528">        int orientation1 = cr1.hogOrientation;</span>
         
+<span class="fc" id="L530">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.getOffsetsToOrigCoords();</span>
+
+<span class="fc" id="L532">        double sumHOG = 0;</span>
+<span class="fc" id="L533">        double sumHCPT = 0;</span>
+<span class="fc" id="L534">        double sumHGS = 0;</span>
+        
+<span class="fc" id="L536">        int[] h0 = new int[N_ANGLE_BINS];</span>
+<span class="fc" id="L537">        int[] h1 = new int[h0.length];</span>
+        
+<span class="fc" id="L539">        int[] ha0 = new int[N_HIST_BINS];</span>
+<span class="fc" id="L540">        int[] ha1 = new int[ha0.length];</span>
+        float intersection;
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
-<span class="fc bfc" id="L954" title="All 2 branches covered.">        for (PairInt pOffset0 : offsets0) {</span>
+    
+<span class="fc" id="L546">        int count = 0;</span>
+        
+<span class="fc bfc" id="L548" title="All 2 branches covered.">        for (PairInt pOffset0 : offsets0) {</span>
             
-<span class="fc" id="L956">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
+<span class="fc" id="L550">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
 
-<span class="pc bpc" id="L958" title="1 of 2 branches missed.">            if (xy1 == null) {</span>
-<span class="nc" id="L959">                continue;</span>
+<span class="pc bpc" id="L552" title="1 of 2 branches missed.">            if (xy1 == null) {</span>
+<span class="nc" id="L553">                continue;</span>
             }
 
-<span class="fc" id="L962">            PairInt xy0 = cr0.offsetsToOrigCoords.get(pOffset0);</span>
-        
-<span class="fc" id="L964">            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
-
-<span class="fc" id="L966">            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
-
-<span class="fc" id="L968">            float intersection = hcpt0.intersection(h0, h1);</span>
+<span class="fc" id="L556">            PairInt xy0 = cr0.getOffsetsToOrigCoords().get(pOffset0);</span>
+<span class="pc bpc" id="L557" title="3 of 4 branches missed.">            assert(xy0 != null);</span>
             
-<span class="fc" id="L970">            sumCombined += (intersection * intersection);</span>
-<span class="fc" id="L971">            sumHCPT += (intersection * intersection);</span>
+<span class="pc bpc" id="L559" title="1 of 2 branches missed.">            if (!hogMgr0.extractBlockHOG(cr0.dataIdx, xy0.getX(), xy0.getY(), h0)) {</span>
+<span class="nc" id="L560">                continue;</span>
+            }
+<span class="pc bpc" id="L562" title="1 of 2 branches missed.">            if (!hogMgr1.extractBlockHOG(cr1.dataIdx, xy1.getX(), xy1.getY(), h1)) {</span>
+<span class="nc" id="L563">                continue;</span>
+            }
+            // 1.0 is perfect similarity
+<span class="fc" id="L566">            intersection = hogMgr0.intersection(h0, orientation0, </span>
+                h1, orientation1);
+<span class="fc" id="L568">            sumHOG += (intersection * intersection);</span>
             
-<span class="fc" id="L973">            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
-
-<span class="fc" id="L975">            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
-
-<span class="fc" id="L977">            intersection = hgs0.intersection(h0, h1);</span>
+<span class="fc" id="L570">            hogMgr0.extractBlockHCPT(cr0.dataIdx, xy0.getX(), xy0.getY(), ha0);</span>
+<span class="fc" id="L571">            hogMgr1.extractBlockHCPT(cr1.dataIdx, xy1.getX(), xy1.getY(), ha1);</span>
+            // 1.0 is perfect similarity
+<span class="fc" id="L573">            intersection = hogMgr0.intersection(ha0, ha1);</span>
+<span class="fc" id="L574">            sumHCPT += (intersection * intersection);</span>
             
-<span class="fc" id="L979">            sumCombined += (intersection * intersection);</span>
-<span class="fc" id="L980">            sumHGS += (intersection * intersection);</span>
-<span class="fc" id="L981">        }</span>
-
-<span class="fc" id="L983">        sumCombined /= (2.*offsets0.size());</span>
-<span class="fc" id="L984">        sumCombined = Math.sqrt(sumCombined);</span>
+<span class="fc" id="L576">            hogMgr0.extractBlockHGS(cr0.dataIdx, xy0.getX(), xy0.getY(), ha0);</span>
+<span class="fc" id="L577">            hogMgr1.extractBlockHGS(cr1.dataIdx, xy1.getX(), xy1.getY(), ha1);</span>
+            // 1.0 is perfect similarity
+<span class="fc" id="L579">            intersection = hogMgr0.intersection(ha0, ha1);</span>
+<span class="fc" id="L580">            sumHGS += (intersection * intersection);</span>
+            
+<span class="fc" id="L582">            count++;</span>
+<span class="fc" id="L583">        }</span>
         
-<span class="fc" id="L986">        sumHCPT /= (double)intersectionCount;</span>
-<span class="fc" id="L987">        sumHCPT = Math.sqrt(sumHCPT);</span>
+<span class="fc" id="L585">        sumHOG /= (double)count;</span>
+<span class="fc" id="L586">        sumHOG = Math.sqrt(sumHOG);</span>
         
-<span class="fc" id="L989">        sumHGS /= (double)intersectionCount;</span>
-<span class="fc" id="L990">        sumHGS = Math.sqrt(sumHGS);</span>
-                     
-<span class="fc" id="L992">        double area1 = cr1.offsetsToOrigCoords.size();</span>
-<span class="fc" id="L993">        double f1 = 1. - ((double) intersectionCount / area1);</span>
+<span class="fc" id="L588">        sumHCPT /= (double)count;</span>
+<span class="fc" id="L589">        sumHCPT = Math.sqrt(sumHCPT);</span>
         
-<span class="fc" id="L995">        double area0 = cr0.offsetsToOrigCoords.size();</span>
-<span class="fc" id="L996">        double f0 = 1. - ((double) intersectionCount / area0);</span>
+<span class="fc" id="L591">        sumHGS /= (double)count;</span>
+<span class="fc" id="L592">        sumHGS = Math.sqrt(sumHGS);</span>
         
-<span class="fc" id="L998">        return new double[]{sumCombined, f0, f1, sumHCPT, sumHGS, intersectionCount};            </span>
+<span class="fc" id="L594">        double area1 = cr1.getOffsetsToOrigCoords().size() + eps;</span>
+<span class="fc" id="L595">        double f1 = 1. - ((double) intersectionCount / area1);</span>
+        
+<span class="fc" id="L597">        double area0 = cr0.getOffsetsToOrigCoords().size() + eps;</span>
+<span class="fc" id="L598">        double f0 = 1. - ((double) intersectionCount / area0);</span>
+        
+<span class="fc" id="L600">        return new double[]{sumHOG, sumHCPT, sumHGS, f0, f1, intersectionCount, area0, area1};</span>
     }
     
-    //double[]{combIntersection, f0, f1, intersectionHCPT, intersectionHGS, count};
-    private double[] sumCost3(HCPT hcpt0, HGS hgs0, CRegion cr0, 
-        HCPT hcpt1, HGS hgs1, CRegion cr1) {
-        
-<span class="nc" id="L1005">        int orientation0 = cr0.hogOrientation;</span>
-            
-<span class="nc" id="L1007">        int orientation1 = cr1.hogOrientation;</span>
-        
-<span class="nc" id="L1009">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.offsetsToOrigCoords;</span>
+    private double[] _sumHOGCost(Set&lt;PairInt&gt; offsets0, int intersectionCount,
+        HOGsManager _hogMgr0, CRegion cr0, 
+        HOGsManager _hogMgr1, CRegion cr1) {
+                
+<span class="nc bnc" id="L607" title="All 2 branches missed.">        if (offsets0.isEmpty()) {</span>
+<span class="nc" id="L608">            return null;</span>
+        }
 
-<span class="nc" id="L1011">        double sum = 0;</span>
-<span class="nc" id="L1012">        double sumHCPT = 0;</span>
-<span class="nc" id="L1013">        double sumHGS = 0;</span>
-<span class="nc" id="L1014">        double sumErrSq = 0;</span>
-<span class="nc" id="L1015">        int count = 0;</span>
+<span class="nc bnc" id="L611" title="All 4 branches missed.">        assert(cr0.dataIdx != -1);</span>
+<span class="nc bnc" id="L612" title="All 4 branches missed.">        assert(cr1.dataIdx != -1);</span>
         
-<span class="nc" id="L1017">        int[] h0 = new int[hcpt0.getNumberOfBins()];</span>
-<span class="nc" id="L1018">        int[] h1 = new int[h0.length];</span>
-            
-        float[] diffAndErr;
+<span class="nc" id="L614">        int orientation0 = cr0.hogOrientation;</span>
+<span class="nc" id="L615">        int orientation1 = cr1.hogOrientation;</span>
         
-        //NOTE: the coordinate set block could be changed to not visit
-        //   every point, but to instead use a spacing of the HOG cell length
-        //   which is what Dala &amp; Trigg recommend for their detector windows.
+<span class="nc" id="L617">        Map&lt;PairInt, PairInt&gt; offsetMap1 = cr1.getOffsetsToOrigCoords();</span>
+
+<span class="nc" id="L619">        double sumHOG = 0;</span>
+<span class="nc" id="L620">        double sumHCPT = 0;</span>
+<span class="nc" id="L621">        double sumHGS = 0;</span>
         
+<span class="nc" id="L623">        int[] h0 = new int[N_ANGLE_BINS];</span>
+<span class="nc" id="L624">        int[] h1 = new int[h0.length];</span>
+        
+<span class="nc" id="L626">        int[] ha0 = new int[N_HIST_BINS];</span>
+<span class="nc" id="L627">        int[] ha1 = new int[ha0.length];</span>
+        float intersection;
         // key = transformed offsets, value = coords in image ref frame,
         // so, can compare dataset0 and dataset1 points with same
         //  keys
-<span class="nc bnc" id="L1029" title="All 2 branches missed.">        for (Entry&lt;PairInt, PairInt&gt; entry0 : cr0.offsetsToOrigCoords.entrySet()) {</span>
+    
+<span class="nc" id="L633">        int count = 0;</span>
+        
+<span class="nc bnc" id="L635" title="All 2 branches missed.">        for (PairInt pOffset0 : offsets0) {</span>
+            
+<span class="nc" id="L637">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
 
-<span class="nc" id="L1031">            PairInt pOffset0 = entry0.getKey();</span>
-
-<span class="nc" id="L1033">            PairInt xy1 = offsetMap1.get(pOffset0);</span>
-
-<span class="nc bnc" id="L1035" title="All 2 branches missed.">            if (xy1 == null) {</span>
-<span class="nc" id="L1036">                continue;</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">            if (xy1 == null) {</span>
+<span class="nc" id="L640">                continue;</span>
             }
 
-<span class="nc" id="L1039">            PairInt xy0 = entry0.getValue();</span>
-
-<span class="nc" id="L1041">            hcpt0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
-
-<span class="nc" id="L1043">            hcpt1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
-
+<span class="nc" id="L643">            PairInt xy0 = cr0.getOffsetsToOrigCoords().get(pOffset0);</span>
+<span class="nc bnc" id="L644" title="All 4 branches missed.">            assert(xy0 != null);</span>
+            
+<span class="nc bnc" id="L646" title="All 2 branches missed.">            if (!_hogMgr0.extractBlockHOG(xy0.getX(), xy0.getY(), h0)) {</span>
+<span class="nc" id="L647">                continue;</span>
+            }
+<span class="nc bnc" id="L649" title="All 2 branches missed.">            if (!_hogMgr1.extractBlockHOG(xy1.getX(), xy1.getY(), h1)) {</span>
+<span class="nc" id="L650">                continue;</span>
+            }
             // 1.0 is perfect similarity
-<span class="nc" id="L1046">            diffAndErr = hcpt0.diff(h0, h1);</span>
+<span class="nc" id="L653">            intersection = _hogMgr0.intersection(h0, orientation0, </span>
+                h1, orientation1);
+<span class="nc" id="L655">            sumHOG += (intersection * intersection);</span>
             
-<span class="nc" id="L1048">            sum += diffAndErr[0];</span>
-<span class="nc" id="L1049">            sumHCPT += diffAndErr[0];</span>
-<span class="nc" id="L1050">            sumErrSq += (diffAndErr[1] * diffAndErr[1]);</span>
-            
-            
-<span class="nc" id="L1053">            hgs0.extractBlock(xy0.getX(), xy0.getY(), h0);</span>
-
-<span class="nc" id="L1055">            hgs1.extractBlock(xy1.getX(), xy1.getY(), h1);</span>
-
+<span class="nc" id="L657">            _hogMgr0.extractBlockHCPT(xy0.getX(), xy0.getY(), ha0);</span>
+<span class="nc" id="L658">            _hogMgr1.extractBlockHCPT(xy1.getX(), xy1.getY(), ha1);</span>
             // 1.0 is perfect similarity
-<span class="nc" id="L1058">            diffAndErr = hgs0.diff(h0, h1);</span>
+<span class="nc" id="L660">            intersection = _hogMgr0.intersection(ha0, ha1);</span>
+<span class="nc" id="L661">            sumHCPT += (intersection * intersection);</span>
             
-<span class="nc" id="L1060">            sum += diffAndErr[0];</span>
-<span class="nc" id="L1061">            sumHGS += diffAndErr[0];</span>
-<span class="nc" id="L1062">            sumErrSq += (diffAndErr[1] * diffAndErr[1]);</span>
+<span class="nc" id="L663">            _hogMgr0.extractBlockHGS(xy0.getX(), xy0.getY(), ha0);</span>
+<span class="nc" id="L664">            _hogMgr1.extractBlockHGS(xy1.getX(), xy1.getY(), ha1);</span>
+            // 1.0 is perfect similarity
+<span class="nc" id="L666">            intersection = _hogMgr0.intersection(ha0, ha1);</span>
+<span class="nc" id="L667">            sumHGS += (intersection * intersection);</span>
             
-<span class="nc" id="L1064">            count++;</span>
-<span class="nc" id="L1065">        }</span>
-<span class="nc bnc" id="L1066" title="All 2 branches missed.">        if (count == 0) {</span>
-<span class="nc" id="L1067">            return null;</span>
+<span class="nc" id="L669">            count++;</span>
+<span class="nc" id="L670">        }</span>
+        
+<span class="nc" id="L672">        sumHOG /= (double)count;</span>
+<span class="nc" id="L673">        sumHOG = Math.sqrt(sumHOG);</span>
+        
+<span class="nc" id="L675">        sumHCPT /= (double)count;</span>
+<span class="nc" id="L676">        sumHCPT = Math.sqrt(sumHCPT);</span>
+        
+<span class="nc" id="L678">        sumHGS /= (double)count;</span>
+<span class="nc" id="L679">        sumHGS = Math.sqrt(sumHGS);</span>
+        
+<span class="nc" id="L681">        double area1 = cr1.getOffsetsToOrigCoords().size() + eps;</span>
+<span class="nc" id="L682">        double f1 = 1. - ((double) intersectionCount / area1);</span>
+        
+<span class="nc" id="L684">        double area0 = cr0.getOffsetsToOrigCoords().size() + eps;</span>
+<span class="nc" id="L685">        double f0 = 1. - ((double) intersectionCount / area0);</span>
+        
+<span class="nc" id="L687">        return new double[]{sumHOG, sumHCPT, sumHGS, f0, f1, intersectionCount, </span>
+            area0, area1};
+    }
+    
+    private HOGRegionsManager getOrCreate(
+        TIntObjectMap&lt;HOGRegionsManager&gt; hogsMap, 
+        TIntObjectMap&lt;CRegion&gt; cRegions, 
+        int imageWidth, int imageHeight, int idx) {
+        
+<span class="fc" id="L696">        HOGRegionsManager hogs = hogsMap.get(idx);</span>
+<span class="fc bfc" id="L697" title="All 2 branches covered.">        if (hogs != null) {</span>
+<span class="fc" id="L698">            return hogs;</span>
         }
+        
+<span class="fc" id="L701">        hogs = new HOGRegionsManager(cRegions, </span>
+            imageWidth, imageHeight, 
+            N_CELLS_PER_BLOCK_DIM, N_PIX_PER_CELL_DIM, N_ANGLE_BINS, N_HIST_BINS);
+        
+<span class="fc" id="L705">        hogsMap.put(idx, hogs);</span>
+        
+<span class="fc" id="L707">        return hogs;</span>
+    }
 
-<span class="nc" id="L1070">        sum /= (2.*count);</span>
-<span class="nc" id="L1071">        sumHCPT /= (double)count;</span>
-<span class="nc" id="L1072">        sumHGS /= (double)count;</span>
+    private int getLargestArea(TIntObjectMap&lt;CRegion&gt; regions) {
+<span class="fc" id="L711">        int area = Integer.MIN_VALUE;    </span>
+    
+<span class="fc" id="L713">        TIntObjectIterator&lt;CRegion&gt; iter = regions.iterator();</span>
+<span class="fc bfc" id="L714" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="fc" id="L715">            iter.advance();</span>
+<span class="fc" id="L716">            CRegion cr = iter.value();</span>
+<span class="fc" id="L717">            int n = cr.getOffsetsToOrigCoords().size();</span>
+<span class="fc bfc" id="L718" title="All 2 branches covered.">            if (n &gt; area) {</span>
+<span class="fc" id="L719">                area = n;</span>
+            }
+        }
+<span class="fc" id="L722">        return area;</span>
+    }
+
+    private List&lt;TIntObjectMap&lt;CRegion&gt;&gt; createList(int n) {
+<span class="fc" id="L726">        List&lt;TIntObjectMap&lt;CRegion&gt;&gt; out = new ArrayList&lt;TIntObjectMap&lt;CRegion&gt;&gt;();</span>
+<span class="fc bfc" id="L727" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L728">            out.add(new TIntObjectHashMap&lt;CRegion&gt;());</span>
+        }
+<span class="fc" id="L730">        return out;</span>
+    }
+
+    private Obj calculateHOGCosts(Set&lt;PairInt&gt; offsets0, int intersectionCount, 
+        HOGRegionsManager hogsMgr0, CRegion cr0, float scale0, int rIdx0, int pyrIdx0, 
+        HOGRegionsManager hogsMgr1, CRegion cr1, float scale1, int rIdx1, int pyrIdx1) {
         
-<span class="nc" id="L1074">        sumErrSq /= (2.*count);</span>
-<span class="nc" id="L1075">        sumErrSq = Math.sqrt(sumErrSq);</span>
+        //double[]{sumHOG, sumHCPT, sumHGS, f0, f1, 
+        //   intersectionCount, area0, area1};      
+<span class="fc" id="L739">        double[] hogCosts = sumHOGCost(</span>
+            offsets0, intersectionCount, 
+            hogsMgr0, cr0, hogsMgr1, cr1);
+<span class="pc bpc" id="L742" title="1 of 2 branches missed.">        if (hogCosts == null) {</span>
+<span class="nc" id="L743">            return null;</span>
+        }
+<span class="fc" id="L745">        double hogCost = 1. - hogCosts[0];</span>
+<span class="fc" id="L746">        double hcptCost = 1. - hogCosts[1];</span>
+<span class="fc" id="L747">        double hgsCost = 1. - hogCosts[2];</span>
+
+        // 1 - fraction of whole (is coverage expressed as a cost)
+<span class="fc" id="L750">        double f0 = Math.max(0, hogCosts[3]);</span>
+<span class="fc" id="L751">        double f1 = Math.max(0, hogCosts[4]);</span>
+<span class="fc bfc" id="L752" title="All 4 branches covered.">        if (f0 &gt; 0.85 || f1 &gt; 0.85) {</span>
+<span class="fc" id="L753">            return null;</span>
+        }
+<span class="fc" id="L755">        double f = (f0 + f1)/2;</span>
+
+<span class="fc" id="L757">        double cost = (float) Math.sqrt(</span>
+            hogCost * hogCost
+            //+ 2. * f * f
+            + f * f
+            + hcptCost * hcptCost
+            //+ hgsCost * hgsCost
+        );
+
+<span class="fc" id="L765">        Obj obj = new Obj();</span>
+<span class="fc" id="L766">        obj.cr0 = cr0;</span>
+<span class="fc" id="L767">        obj.cr1 = cr1;</span>
+<span class="fc" id="L768">        obj.r0Idx = rIdx0;</span>
+<span class="fc" id="L769">        obj.r1Idx = rIdx1;</span>
+<span class="fc" id="L770">        obj.imgIdx0 = pyrIdx0;</span>
+<span class="fc" id="L771">        obj.imgIdx1 = pyrIdx1;</span>
+<span class="fc" id="L772">        obj.nMatched = (int) hogCosts[5];</span>
+<span class="fc" id="L773">        obj.costs = new double[]{</span>
+            hogCost, hcptCost, hgsCost, f0, f1 
+        };
+<span class="fc" id="L776">        obj.cost = cost;</span>
+<span class="fc" id="L777">        obj.f = f;</span>
+
+<span class="fc" id="L779">        return obj;</span>
+    }
+
+    private Obj _calculateHOGCosts(Set&lt;PairInt&gt; offsets0, int intersectionCount, 
+        HOGsManager _hogsMgr0, CRegion cr0, float scale0, int rIdx0, int pyrIdx0, 
+        HOGsManager _hogsMgr1, CRegion cr1, float scale1, int rIdx1, int pyrIdx1) {
         
-<span class="nc" id="L1077">        double area1 = cr1.offsetsToOrigCoords.size();</span>
-<span class="nc" id="L1078">        double f1 = 1. - ((double) count / area1);</span>
+        //double[]{sumHOG, sumHCPT, sumHGS, f0, f1, 
+        //   intersectionCount, area0, area1};      
+<span class="nc" id="L788">        double[] hogCosts = _sumHOGCost(</span>
+            offsets0, intersectionCount, 
+            _hogsMgr0, cr0, _hogsMgr1, cr1);
+<span class="nc bnc" id="L791" title="All 2 branches missed.">        if (hogCosts == null) {</span>
+<span class="nc" id="L792">            return null;</span>
+        }
+<span class="nc" id="L794">        double hogCost = 1. - hogCosts[0];</span>
+<span class="nc" id="L795">        double hcptCost = 1. - hogCosts[1];</span>
+<span class="nc" id="L796">        double hgsCost = 1. - hogCosts[2];</span>
+
+        // 1 - fraction of whole (is coverage expressed as a cost)
+<span class="nc" id="L799">        double f0 = Math.max(0, hogCosts[3]);</span>
+<span class="nc" id="L800">        double f1 = Math.max(0, hogCosts[4]);</span>
+<span class="nc bnc" id="L801" title="All 4 branches missed.">        if (f0 &gt; 0.85 || f1 &gt; 0.85) {</span>
+<span class="nc" id="L802">            return null;</span>
+        }
+<span class="nc" id="L804">        double f = (f0 + f1)/2;</span>
+
+<span class="nc" id="L806">        double cost = (float) Math.sqrt(</span>
+            hogCost * hogCost
+            //+ 2. * f * f
+            + f * f
+            + hcptCost * hcptCost
+            //+ hgsCost * hgsCost
+        );
+
+<span class="nc" id="L814">        Obj obj = new Obj();</span>
+<span class="nc" id="L815">        obj.cr0 = cr0;</span>
+<span class="nc" id="L816">        obj.cr1 = cr1;</span>
+<span class="nc" id="L817">        obj.r0Idx = rIdx0;</span>
+<span class="nc" id="L818">        obj.r1Idx = rIdx1;</span>
+<span class="nc" id="L819">        obj.imgIdx0 = pyrIdx0;</span>
+<span class="nc" id="L820">        obj.imgIdx1 = pyrIdx1;</span>
+<span class="nc" id="L821">        obj.nMatched = (int) hogCosts[5];</span>
+<span class="nc" id="L822">        obj.costs = new double[]{</span>
+            hogCost, hcptCost, hgsCost, f0, f1 
+        };
+<span class="nc" id="L825">        obj.cost = cost;</span>
+<span class="nc" id="L826">        obj.f = f;</span>
+
+<span class="nc" id="L828">        return obj;</span>
+    }
+
+    private static class CostComparator implements Comparator&lt;Obj&gt; {
+        public CostComparator() {
+        }
+        @Override
+        public int compare(Obj o1, Obj o2) {
+            return o1.compareTo(o2);
+        }
+    }
+
+    /* NOTE: recalculating this worsens the solutions.
+    Using the MSER originally determined ellipse parameters has better
+    results for the small number of tests here
+    private void recalcOrientationAndTrans(HOGs hogs, 
+        TIntObjectMap&lt;CRegion&gt; regions, GreyscaleImage gsImg, float scale) {
         
-<span class="nc" id="L1080">        double area0 = cr0.offsetsToOrigCoords.size();</span>
-<span class="nc" id="L1081">        double f0 = 1. - ((double) count / area0);</span>
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
         
-<span class="nc" id="L1083">        return new double[]{sum, f0, f1, count, sumErrSq};</span>
+        TIntObjectIterator&lt;CRegion&gt; iter = regions.iterator();
+        for (int i = 0; i &lt; regions.size(); ++i) {
+            iter.advance();
+            int rIdx = iter.key();
+            CRegion cr = iter.value();
+            
+            int orientation = hogs.calculateDominantOrientation(
+                cr.offsetsToOrigCoords.values());
+
+            Collection&lt;PairInt&gt; xyp = cr.offsetsToOrigCoords.values();
+            
+            PairIntArray xy = Misc.convertWithoutOrder(xyp);
+            
+            PairInt xyCen = ch.calculateXYCentroids2(xyp);
+            
+            cr.ellipseParams.orientation = Math.PI * orientation/180.;
+            cr.ellipseParams.xC = xyCen.getX();
+            cr.ellipseParams.yC = xyCen.getY();
+            
+            Map&lt;PairInt, PairInt&gt; offsetToOrigMap = 
+                Canonicalizer.createOffsetToOrigMap(
+                xyCen.getX(), xyCen.getY(), 
+                xy, gsImg.getWidth(), gsImg.getHeight(), orientation);
+        
+            cr.offsetsToOrigCoords = offsetToOrigMap;
+        }
+    }
+    */  
+
+    private class Obj implements Comparable&lt;Obj&gt;{
+        CRegion cr0;
+        CRegion cr1;
+        int imgIdx0;
+        int imgIdx1;
+        int nMatched;
+        double cost = Double.MAX_VALUE;
+        double[] costs;
+        double f;
+                
+        // might not be populatated:
+        int r0Idx = -1;
+        int r1Idx = -1;
+
+        @Override
+        public int compareTo(Obj other) {
+            if (cost &lt; other.cost) {
+                return -1;
+            } else if (cost &gt; other.cost) {
+                return 1;
+            }
+            if (nMatched &gt; other.nMatched) {
+                return -1;
+            } else if (nMatched &lt; other.nMatched) {
+                return 1;
+            }
+            // NOTE: may revise this.  wanting to choose smallest scale
+            //   or smaller fraction of whole
+            if (imgIdx0 &lt; other.imgIdx0 &amp;&amp; imgIdx1 &lt; other.imgIdx1) {
+                return -1;
+            } else if (imgIdx0 &gt; other.imgIdx0 &amp;&amp; imgIdx1 &gt; other.imgIdx1) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+
+    public static int distance(PairInt p1, PairInt p2) {
+<span class="nc" id="L915">        int diffX = p1.getX() - p2.getX();</span>
+<span class="nc" id="L916">        int diffY = p1.getY() - p2.getY();</span>
+<span class="nc" id="L917">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
+    }
+
+    public static int distance(float x0, float y0, float x1, float y1) {
+<span class="nc" id="L921">        float diffX = x0 - x1;</span>
+<span class="nc" id="L922">        float diffY = y0 - y1;</span>
+<span class="nc" id="L923">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

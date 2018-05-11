@@ -283,15 +283,15 @@ public class ContourFinder {
 
 <span class="fc bfc" id="L284" title="All 2 branches covered.">            if (rightIndexBelow == -1) {</span>
                 //TODO: the 2nd conditional should be revised
-<span class="pc bpc" id="L286" title="1 of 4 branches missed.">                if ((nToRight == 1) &amp;&amp; (tPoint &gt; 0.9)) {</span>
-<span class="nc" id="L287">                    isAnEdgePair = true;</span>
+<span class="fc bfc" id="L286" title="All 4 branches covered.">                if ((nToRight == 1) &amp;&amp; (tPoint &gt; 0.9)) {</span>
+<span class="fc" id="L287">                    isAnEdgePair = true;</span>
                 } else {
                     // this can happen if the contour has already been removed
 <span class="fc" id="L290">                    return null;</span>
                 }
             }
 
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if (!isAnEdgePair) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">            if (!isAnEdgePair) {</span>
 
 <span class="fc" id="L296">                float tNext</span>
 <span class="fc" id="L297">                    = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];</span>
@@ -344,7 +344,7 @@ public class ContourFinder {
 <span class="fc bfc" id="L344" title="All 2 branches covered.">            if (tL &gt;= scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length) {</span>
 <span class="fc" id="L345">                tL = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 2;</span>
             }
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">            int tR = (rightIndexBelow &gt; -1) ? rightIndexBelow : tIndex + 1;</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">            int tR = (rightIndexBelow &gt; -1) ? rightIndexBelow : tIndex + 1;</span>
 <span class="fc bfc" id="L348" title="All 2 branches covered.">            if (tR &lt;= tL) {</span>
 <span class="fc" id="L349">                tR = tL + 1;</span>
             }

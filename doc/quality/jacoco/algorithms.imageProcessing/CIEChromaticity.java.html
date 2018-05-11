@@ -1435,11 +1435,11 @@ import java.util.List;
         * u   -99.9 to 176.8
         * v  -150.0 to 95.0
         */        
-<span class="fc" id="L1438">        float diff1 = Math.abs(luv1[0] - luv2[1])/104.8f;</span>
-<span class="fc" id="L1439">        float diff2 = Math.abs(luv1[1] - luv2[1])/(176.8f + 99.9f);</span>
-<span class="fc" id="L1440">        float diff3 = Math.abs(luv1[2] - luv2[2])/(95.0f + 150.0f);</span>
+<span class="nc" id="L1438">        float diff1 = Math.abs(luv1[0] - luv2[1])/104.8f;</span>
+<span class="nc" id="L1439">        float diff2 = Math.abs(luv1[1] - luv2[1])/(176.8f + 99.9f);</span>
+<span class="nc" id="L1440">        float diff3 = Math.abs(luv1[2] - luv2[2])/(95.0f + 150.0f);</span>
         
-<span class="fc" id="L1442">        return (diff1 + diff2 + diff3)/3.f;</span>
+<span class="nc" id="L1442">        return (diff1 + diff2 + diff3)/3.f;</span>
     }
     
     public float calcNormalizedDifferenceLUV(float ell1, float u1, float v1,

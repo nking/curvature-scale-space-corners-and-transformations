@@ -6,8 +6,6 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.PairIntWithIndex;
-import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.List;
 import algorithms.util.PairIntArray;
@@ -18,16 +16,16 @@ import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TLongIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,7 +38,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L43" title="1 of 2 branches missed.">public class Canonicalizer {</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">public class Canonicalizer {</span>
 
     /*
     affine transformation
@@ -84,7 +82,42 @@ import java.util.Set;
         public double eccentricity;
         public double minor;
         public double major;
+        
+        /**
+         * using the region moments and area, calculates parameters needed
+         * for a bounding ellipse.
+         * 
+       The equation for rotation of an ellipse by angle alpha:
+        x(t) = xCenter + aParam*cos(alpha)*cos(t) − bParam*sin(alpha)*sin(t)
+        y(t) = yCenter + aParam*sin(alpha)*cos(t) + bParam*cos(alpha)*sin(t)
+        
+        returns 
+            v0x = aParam * cos(alpha);
+            v1x = bParam * sin(alpha);
+            v0y = aParam * sin(alpha);
+            v1y = bParam * cos(alpha);
+            e0 = first eigenvalue
+            e1 = 2nd eigenvalue
+        m is []{v0x, v1x, v0y, v1y} */
         public double[] m;
+       
+        public RegionGeometry createNewDividedByScale(float scale,
+            int maxX, int maxY) {
+            RegionGeometry rg = new RegionGeometry();
+            rg.xC = Math.round((float) xC / scale);
+            if (rg.xC &gt; maxX) {
+                rg.xC = maxX;
+            }
+            rg.yC = Math.round((float) yC / scale);
+            if (rg.yC &gt; maxY) {
+                rg.yC = maxY;
+            }
+            rg.orientation = orientation;
+            rg.eccentricity = eccentricity;
+            rg.minor = minor/scale;
+            rg.major = major/scale;
+            return rg;
+        }
     }
     
     public static class RegionPoints {
@@ -96,7 +129,7 @@ import java.util.Set;
          * key = transformed xOffset, yOffset,
          * value = coordinate in the original untransformed reference frame.
          */
-        public Set&lt;PairInt&gt; points;
+        //public Set&lt;PairInt&gt; points;
 
         // orientations in degrees in range 0 to 180
         public TIntList hogOrientations = new TIntArrayList();
@@ -104,6 +137,79 @@ import java.util.Set;
         // temporary storage of original accumulated points to explore partial edges
         public TIntList accX = new TIntArrayList();
         public TIntList accY = new TIntArrayList();
+        
+        private int[] minMaxXY = null;
+        
+        public RegionPoints() {
+            
+        }
+        
+        public int[] getMinMaxXY() {
+            if (minMaxXY == null) {
+                minMaxXY = new int[]{Integer.MAX_VALUE, Integer.MIN_VALUE, 
+                    Integer.MAX_VALUE, Integer.MIN_VALUE};
+                for (int i = 0; i &lt; accX.size(); ++i) {
+                    if (accX.get(i) &lt; minMaxXY[0]) {
+                        minMaxXY[0] = accX.get(i);
+                    }
+                    if (accX.get(i) &gt; minMaxXY[1]) {
+                        minMaxXY[1] = accX.get(i);
+                    }
+                    if (accY.get(i) &lt; minMaxXY[2]) {
+                        minMaxXY[2] = accY.get(i);
+                    }
+                    if (accY.get(i) &gt; minMaxXY[3]) {
+                        minMaxXY[3] = accY.get(i);
+                    }
+                }
+            }
+            return minMaxXY;
+        }
+        
+        public TLongSet createAccPixelCoords(int imageWidth) {
+            TLongSet pixs = new TLongHashSet();
+            PixelHelper ph = new PixelHelper();
+            for (int i = 0; i &lt; accX.size(); ++i) {
+                pixs.add(ph.toPixelIndex(accX.get(i), accY.get(i), imageWidth));
+            }
+            return pixs;
+        }
+        
+        public TLongSet createAccPixelCoords(int[] minMaxXY2) {
+            int xOffset = minMaxXY2[0];
+            int yOffset = minMaxXY2[1];
+            int w2 = minMaxXY2[1] - minMaxXY2[0] + 1;
+            int h2 = minMaxXY2[3] - minMaxXY2[2] + 1;
+            TLongSet pixs = new TLongHashSet();
+            PixelHelper ph = new PixelHelper();
+            for (int i = 0; i &lt; accX.size(); ++i) {
+                int x = accX.get(i) - xOffset;
+                int y = accY.get(i) - yOffset;
+                pixs.add(ph.toPixelIndex(x, y, w2));
+            }
+            return pixs;
+        }
+        
+        public RegionPoints createNewDividedByScale(float scale,
+            int maxX, int maxY) {
+            RegionPoints rp = new RegionPoints();
+            rp.ellipseParams = ellipseParams.createNewDividedByScale(scale,
+                maxX, maxY);
+            rp.hogOrientations.addAll(hogOrientations);
+            for (int i = 0; i &lt; accX.size(); ++i) {
+                int x = Math.round(accX.get(i)/scale);
+                int y = Math.round(accY.get(i)/scale);
+                if (x &gt; maxX) {
+                    x = maxX;
+                }
+                if (y &gt; maxY) {
+                    y = maxY;
+                }
+                rp.accX.add(x);
+                rp.accY.add(y);
+            }
+            return rp;
+        }
         
     }
 
@@ -120,14 +226,53 @@ import java.util.Set;
          * key = transformed xOffset, yOffset,
          * value = coordinate in the original untransformed reference frame.
          */
-        public Map&lt;PairInt, PairInt&gt; offsetsToOrigCoords;
+        private final Map&lt;PairInt, PairInt&gt; offsetsToOrigCoords =
+            new HashMap&lt;PairInt, PairInt&gt;();
 
+        public final int imgWidth;
+        public final int imgHeight;
+        
+        // these are the values in offsetsToOrigCoords 
+        private final TLongSet origPixs = new TLongHashSet();
         /**
          * when not empty, this holds label of segmented regions
          */
         public TIntSet labels = new TIntHashSet();
         
         public int dataIdx = -1;
+        
+        private int[] minMaxXY = null;
+        
+        public CRegion(int imageWidth, int imageHeight) {
+            imgWidth = imageWidth;
+            imgHeight = imageHeight;
+        }
+        
+        public void addAllOffsets(Map&lt;PairInt, PairInt&gt; offsetCoords) {
+            PixelHelper ph = new PixelHelper();
+            for (Entry&lt;PairInt, PairInt&gt; entry : offsetCoords.entrySet()) {
+                PairInt p = entry.getValue();
+                offsetsToOrigCoords.put(entry.getKey(), p);
+                origPixs.add(ph.toPixelIndex(p, imgWidth));
+            }
+        }
+        public void resetToTheseOffsets(Map&lt;PairInt, PairInt&gt; offsetCoords) {
+            offsetCoords.clear();
+            origPixs.clear();
+            addAllOffsets(offsetCoords);
+        }
+        
+        public TLongSet getPixelCoords() {
+            return origPixs;
+        }
+        
+        public Set&lt;PairInt&gt; getOffsetKeys() {
+            return offsetsToOrigCoords.keySet();
+        }
+        
+        public Map&lt;PairInt, PairInt&gt; getOffsetsToOrigCoords() {
+            return offsetsToOrigCoords;
+        }
         
         public void draw(Image img, int nExtraDot, int rClr, int gClr, int bClr) {
 
@@ -180,6 +325,58 @@ import java.util.Set;
             }
         }
         
+        public Set&lt;PairInt&gt; extractCoords() {
+            return new HashSet&lt;PairInt&gt;(offsetsToOrigCoords.values());            
+        }
+        
+        public CRegion createNewDividedByScale(float scale, 
+            int maxX, int maxY) {
+            
+            int w2 = maxX + 1;
+            int h2 = maxY + 1;
+            
+            PixelHelper ph = new PixelHelper();
+            
+            CRegion r = new CRegion(w2, h2);
+            r.ellipseParams = ellipseParams.createNewDividedByScale(scale,
+                maxX, maxY);
+            r.hogOrientation = hogOrientation;
+            r.autocorrel = autocorrel;
+            r.dataIdx = dataIdx;
+            if (minMaxXY != null) {
+                r.minMaxXY = Arrays.copyOf(minMaxXY, minMaxXY.length);
+            }
+            r.labels.addAll(labels);
+            int x0, y0, x1, y1;
+            if (offsetsToOrigCoords != null) {
+                for (Entry&lt;PairInt, PairInt&gt; entry : offsetsToOrigCoords.entrySet()) {
+                    PairInt pOffset = entry.getKey();
+                    x0 = Math.round(pOffset.getX()/scale);
+                    y0 = Math.round(pOffset.getY()/scale);
+                    if (x0 &gt; maxX) {
+                        x0 = maxX;
+                    }
+                    if (y0 &gt; maxY) {
+                        y0 = maxY;
+                    }
+                    PairInt p = entry.getValue();
+                    x1 = Math.round(p.getX()/scale);
+                    y1 = Math.round(p.getY()/scale);
+                    if (x1 &gt; maxX) {
+                        x1 = maxX;
+                    }
+                    if (y1 &gt; maxY) {
+                        y1 = maxY;
+                    }
+                    r.offsetsToOrigCoords.put(new PairInt(x0, y0),
+                        new PairInt(x1, y1));
+                    r.origPixs.add(ph.toPixelIndex(x1, y1, w2));
+                }
+            }
+            
+            return r;
+        }
+        
         @Override
         public String toString() {
 
@@ -192,6 +389,32 @@ import java.util.Set;
                 offsetsToOrigCoords.size());
 
             return str;
+        }
+
+        public int[] getMinMaxXY() {
+            if (minMaxXY == null) {
+                int minX = Integer.MAX_VALUE;
+                int minY = Integer.MAX_VALUE;
+                int maxX = Integer.MIN_VALUE;
+                int maxY = Integer.MIN_VALUE;
+                for (Entry&lt;PairInt, PairInt&gt; entry : offsetsToOrigCoords.entrySet()) {
+                    PairInt xy = entry.getValue();
+                    if (xy.getX() &lt; minX) {
+                        minX = xy.getX();
+                    }
+                    if (xy.getX() &gt; maxX) {
+                        maxX = xy.getX();
+                    }
+                    if (xy.getY() &lt; minY) {
+                        minY = xy.getY();
+                    }
+                    if (xy.getY() &gt; maxY) {
+                        maxY = xy.getY();
+                    }
+                }
+                this.minMaxXY = new int[]{minX, maxX, minY, maxY};
+            }
+            return minMaxXY;
         }
     }
 
@@ -210,22 +433,20 @@ import java.util.Set;
     public TIntObjectMap&lt;CRegion&gt; canonicalizeRegions(List&lt;Region&gt; regions,
         GreyscaleImage meanWindowedImg) {
 
-<span class="nc" id="L213">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
-
-<span class="nc" id="L215">        int[] xyCen = new int[2];</span>
+<span class="nc" id="L436">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
     
-<span class="nc bnc" id="L217" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
 
-<span class="nc" id="L219">            Region r = regions.get(i);</span>
+<span class="nc" id="L440">            Region r = regions.get(i);</span>
             
-<span class="nc" id="L221">            CRegion cRegion = canonicalizeRegion(r, meanWindowedImg);</span>
+<span class="nc" id="L442">            CRegion cRegion = canonicalizeRegion(r, meanWindowedImg);</span>
             
-<span class="nc bnc" id="L223" title="All 2 branches missed.">            if (cRegion != null) {</span>
-<span class="nc" id="L224">                output.put(i, cRegion);</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">            if (cRegion != null) {</span>
+<span class="nc" id="L445">                output.put(i, cRegion);</span>
             }
         }
 
-<span class="nc" id="L228">        return output;</span>
+<span class="nc" id="L449">        return output;</span>
     }
     
     /**
@@ -234,80 +455,162 @@ import java.util.Set;
      * ellipse derived orientation.
      * 
      * @param regions
-     * @param img
      * @return 
      */
     public TIntObjectMap&lt;CRegion&gt; canonicalizeRegions4(
-        TIntObjectMap&lt;RegionPoints&gt; regions, GreyscaleImage img) {
+        TIntObjectMap&lt;RegionPoints&gt; regions, 
+        int imageWidth, int imageHeight) {
         
-<span class="fc" id="L243">        int addIdx = regions.size();</span>
+<span class="nc" id="L464">        int addIdx = regions.size();</span>
         
-<span class="fc" id="L245">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
-
-<span class="fc" id="L247">        int[] xyCen = new int[2];</span>
+<span class="nc" id="L466">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
     
-<span class="fc" id="L249">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions.iterator();</span>
-<span class="fc bfc" id="L250" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
-<span class="fc" id="L251">            iter.advance();</span>
+<span class="nc" id="L468">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions.iterator();</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="nc" id="L470">            iter.advance();</span>
             
-<span class="fc" id="L253">            int rIdx = iter.key();</span>
-<span class="fc" id="L254">            RegionPoints r = iter.value();</span>
+<span class="nc" id="L472">            int rIdx = iter.key();</span>
+<span class="nc" id="L473">            RegionPoints r = iter.value();</span>
             
-<span class="fc" id="L256">            TIntSet orientations = new TIntHashSet(r.hogOrientations);</span>
+<span class="nc" id="L475">            Set&lt;CRegion&gt; cRegions = canonicalizeRegions4(</span>
+                r, imageWidth, imageHeight);
+        
+<span class="nc bnc" id="L478" title="All 2 branches missed.">            for (CRegion cRegion : cRegions) {</span>
             
-            /*
-            NOTE that hog orientations have 90 pointing up and that is the
-            direction of the major axis of points, that is 90 degrees is
-            the direction from x,y = (0,0) to (1,0).
-            
-            NOTE also that the regionpoint ellipse orientation is the angle of the
-            minor axis of the ellipse, so 90 degrees must be subtracted from
-            it to use with the dominant orientations.
-            */
-            
-<span class="fc" id="L268">            int eAngle = (int)Math.round(r.ellipseParams.orientation * 180./Math.PI);</span>
-            // put into 0 to 180 ref frame
-<span class="fc bfc" id="L270" title="All 2 branches covered.">            if (eAngle &gt; 179) {</span>
-<span class="fc" id="L271">                eAngle -= 180;</span>
-            }
-            // put into ref frame of dominant orientations (major axis direction)
-<span class="fc" id="L274">            eAngle -= 90;</span>
-<span class="fc bfc" id="L275" title="All 2 branches covered.">            if (eAngle &lt; 0) {</span>
-<span class="fc" id="L276">                eAngle += 180;</span>
-            }
-<span class="fc" id="L278">            orientations.add(eAngle);</span>
-            
-<span class="fc" id="L280">            PairIntArray points = Misc.convertWithoutOrder(r.points);</span>
-            
-<span class="fc" id="L282">            TIntIterator iter2 = orientations.iterator();</span>
-<span class="fc bfc" id="L283" title="All 2 branches covered.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L480">                cRegion.dataIdx = rIdx;</span>
                 
-<span class="fc" id="L285">                int or = iter2.next();</span>
-            
-<span class="fc" id="L287">                double angle = or * (Math.PI/180.);</span>
-                    
-<span class="fc" id="L289">                Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(</span>
-                    r.ellipseParams.xC, r.ellipseParams.yC,
-<span class="fc" id="L291">                    points, img.getWidth(), img.getHeight(),</span>
-                    angle);
-
-<span class="fc" id="L294">                CRegion cRegion = new CRegion();</span>
-<span class="fc" id="L295">                cRegion.ellipseParams = r.ellipseParams;</span>
-<span class="fc" id="L296">                cRegion.offsetsToOrigCoords = offsetToOrigMap;</span>
-<span class="fc" id="L297">                cRegion.dataIdx = rIdx;</span>
-<span class="fc" id="L298">                cRegion.hogOrientation = or;</span>
-                
-<span class="fc bfc" id="L300" title="All 2 branches covered.">                if (output.containsKey(rIdx)) {</span>
-<span class="fc" id="L301">                    cRegion.dataIdx = addIdx;</span>
-<span class="fc" id="L302">                    output.put(addIdx, cRegion);</span>
-<span class="fc" id="L303">                    addIdx++;</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">                if (output.containsKey(rIdx)) {</span>
+<span class="nc" id="L483">                    cRegion.dataIdx = addIdx;</span>
+<span class="nc" id="L484">                    output.put(addIdx, cRegion);</span>
+<span class="nc" id="L485">                    addIdx++;</span>
                 } else {
-<span class="fc" id="L305">                    output.put(rIdx, cRegion);</span>
+<span class="nc" id="L487">                    output.put(rIdx, cRegion);</span>
                 }
-<span class="fc" id="L307">            }</span>
+<span class="nc" id="L489">            }</span>
         }
 
-<span class="fc" id="L310">        return output;        </span>
+<span class="nc" id="L492">        return output;        </span>
+    }
+    
+    /**
+     * NOTE: the returned CRegions need to have their .dataIdx fields set for
+     * their specific context.
+     * @param regionPoints
+     * @return 
+     */
+    public List&lt;CRegion&gt; canonicalizeRegions(
+        int w0, int h0,
+        Canonicalizer.RegionPoints regionPoints) {
+        
+<span class="fc" id="L505">        List&lt;CRegion&gt; out = new ArrayList&lt;CRegion&gt;();</span>
+            
+<span class="fc" id="L507">        TIntSet orientations = new TIntHashSet(regionPoints.hogOrientations);</span>
+        
+        /*
+        NOTE that hog orientations have 90 pointing up and that is the
+        direction of the major axis of points, that is 90 degrees is
+        the direction from x,y = (0,0) to (1,0).
+
+        NOTE also that the regionpoint ellipse orientation is the angle of the
+        minor axis of the ellipse, so 90 degrees must be subtracted from
+        it to use with the dominant orientations.
+        */
+
+<span class="fc" id="L519">        int eAngle = (int)Math.round(regionPoints.ellipseParams.orientation * 180./Math.PI);</span>
+        // put into 0 to 180 ref frame
+<span class="fc bfc" id="L521" title="All 2 branches covered.">        if (eAngle &gt; 179) {</span>
+<span class="fc" id="L522">            eAngle -= 180;</span>
+        }
+        // put into ref frame of dominant orientations (major axis direction)
+<span class="fc" id="L525">        eAngle -= 90;</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">        if (eAngle &lt; 0) {</span>
+<span class="fc" id="L527">            eAngle += 180;</span>
+        }
+<span class="fc" id="L529">        orientations.add(eAngle);</span>
+        
+<span class="fc" id="L531">        TIntIterator iter2 = orientations.iterator();</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">        while (iter2.hasNext()) {</span>
+
+<span class="fc" id="L534">            int or = iter2.next();</span>
+
+<span class="fc" id="L536">            double angle = or * (Math.PI/180.);</span>
+
+<span class="fc" id="L538">            Map&lt;PairInt, PairInt&gt; offsetToOrigMap = </span>
+<span class="fc" id="L539">                createOffsetToOrigMap(regionPoints.ellipseParams.xC, </span>
+                    regionPoints.ellipseParams.yC,
+                    regionPoints.accX, regionPoints.accY, w0, h0, angle);
+
+<span class="fc" id="L543">            CRegion cRegion = new CRegion(w0, h0);</span>
+<span class="fc" id="L544">            cRegion.ellipseParams = regionPoints.ellipseParams;</span>
+<span class="fc" id="L545">            cRegion.addAllOffsets(offsetToOrigMap);</span>
+<span class="fc" id="L546">            cRegion.hogOrientation = or;</span>
+<span class="fc" id="L547">            cRegion.minMaxXY = Arrays.copyOf(regionPoints.getMinMaxXY(), 4);</span>
+            
+<span class="fc" id="L549">            out.add(cRegion);</span>
+<span class="fc" id="L550">        }</span>
+        
+<span class="fc" id="L552">        return out;</span>
+    }
+    
+    /**
+     * uses RegionPoints.hogOrientations to make multiple cRegions for 
+     * each RegionPoints instance.  it also make a region for the mser
+     * ellipse derived orientation.
+     * 
+     * NOTE&quot; remember to set cRegion.dataIdx = rIdx in the results 
+     * afterwards.
+     * 
+     * @return 
+     */
+    public Set&lt;CRegion&gt; canonicalizeRegions4(RegionPoints r, int imageWidth, 
+        int imageHeight) {
+        
+<span class="nc" id="L568">        Set&lt;CRegion&gt; out = new HashSet&lt;CRegion&gt;();</span>
+            
+<span class="nc" id="L570">        TIntSet orientations = new TIntHashSet(r.hogOrientations);</span>
+        
+        /*
+        NOTE that hog orientations have 90 pointing up and that is the
+        direction of the major axis of points, that is 90 degrees is
+        the direction from x,y = (0,0) to (1,0).
+
+        NOTE also that the regionpoint ellipse orientation is the angle of the
+        minor axis of the ellipse, so 90 degrees must be subtracted from
+        it to use with the dominant orientations.
+        */
+
+<span class="nc" id="L582">        int eAngle = (int)Math.round(r.ellipseParams.orientation * 180./Math.PI);</span>
+        // put into 0 to 180 ref frame
+<span class="nc bnc" id="L584" title="All 2 branches missed.">        if (eAngle &gt; 179) {</span>
+<span class="nc" id="L585">            eAngle -= 180;</span>
+        }
+        // put into ref frame of dominant orientations (major axis direction)
+<span class="nc" id="L588">        eAngle -= 90;</span>
+<span class="nc bnc" id="L589" title="All 2 branches missed.">        if (eAngle &lt; 0) {</span>
+<span class="nc" id="L590">            eAngle += 180;</span>
+        }
+<span class="nc" id="L592">        orientations.add(eAngle);</span>
+
+<span class="nc" id="L594">        TIntIterator iter2 = orientations.iterator();</span>
+<span class="nc bnc" id="L595" title="All 2 branches missed.">        while (iter2.hasNext()) {</span>
+
+<span class="nc" id="L597">            int or = iter2.next();</span>
+
+<span class="nc" id="L599">            double angle = or * (Math.PI/180.);</span>
+
+<span class="nc" id="L601">            Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(</span>
+                r.ellipseParams.xC, r.ellipseParams.yC,
+                r.accX, r.accY, imageWidth, imageHeight, angle);
+
+<span class="nc" id="L605">            CRegion cRegion = new CRegion(imageWidth, imageHeight);</span>
+<span class="nc" id="L606">            cRegion.ellipseParams = r.ellipseParams;</span>
+<span class="nc" id="L607">            cRegion.addAllOffsets(offsetToOrigMap);</span>
+<span class="nc" id="L608">            cRegion.hogOrientation = or;</span>
+            
+<span class="nc" id="L610">            out.add(cRegion);</span>
+<span class="nc" id="L611">        }</span>
+
+<span class="nc" id="L613">        return out;        </span>
     }
     
     /**
@@ -324,29 +627,29 @@ import java.util.Set;
     public TIntObjectMap&lt;CRegion&gt; canonicalizeRegions3(
         TIntObjectMap&lt;RegionPoints&gt; regions, GreyscaleImage img) {
 
-<span class="nc" id="L327">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
+<span class="nc" id="L630">        TIntObjectMap&lt;CRegion&gt; output = new TIntObjectHashMap&lt;CRegion&gt;();</span>
 
-<span class="nc" id="L329">        int[] xyCen = new int[2];</span>
+<span class="nc" id="L632">        int[] xyCen = new int[2];</span>
     
-<span class="nc" id="L331">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions.iterator();</span>
-<span class="nc bnc" id="L332" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
-<span class="nc" id="L333">            iter.advance();</span>
-<span class="nc" id="L334">            int label = iter.key();</span>
-<span class="nc" id="L335">            RegionPoints r = iter.value();</span>
+<span class="nc" id="L634">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions.iterator();</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="nc" id="L636">            iter.advance();</span>
+<span class="nc" id="L637">            int label = iter.key();</span>
+<span class="nc" id="L638">            RegionPoints r = iter.value();</span>
             
-<span class="nc" id="L337">            Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(</span>
+<span class="nc" id="L640">            Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(</span>
                 r.ellipseParams.xC, r.ellipseParams.yC,
-<span class="nc" id="L339">                Misc.convertWithoutOrder(r.points), img.getWidth(), img.getHeight(), </span>
+<span class="nc" id="L642">                r.accX, r.accY, img.getWidth(), img.getHeight(), </span>
                 r.ellipseParams.orientation);
 
-<span class="nc" id="L342">            CRegion cRegion = new CRegion();</span>
-<span class="nc" id="L343">            cRegion.ellipseParams = r.ellipseParams;</span>
-<span class="nc" id="L344">            cRegion.offsetsToOrigCoords = offsetToOrigMap;</span>
+<span class="nc" id="L645">            CRegion cRegion = new CRegion(img.getWidth(), img.getHeight());</span>
+<span class="nc" id="L646">            cRegion.ellipseParams = r.ellipseParams;</span>
+<span class="nc" id="L647">            cRegion.addAllOffsets(offsetToOrigMap);</span>
             
-<span class="nc" id="L346">            output.put(label, cRegion);</span>
+<span class="nc" id="L649">            output.put(label, cRegion);</span>
         }
 
-<span class="nc" id="L349">        return output;</span>
+<span class="nc" id="L652">        return output;</span>
     }
     
     /**
@@ -361,23 +664,20 @@ import java.util.Set;
      * @return
      */
     public TIntObjectMap&lt;RegionPoints&gt; canonicalizeRegions2(List&lt;Region&gt; regions,
-        GreyscaleImage meanWindowedImg) {
+        int imageWidth, int imageHeight) {
 
-<span class="fc" id="L366">        TIntObjectMap&lt;RegionPoints&gt; output = new TIntObjectHashMap&lt;RegionPoints&gt;();</span>
-
-<span class="fc" id="L368">        int[] xyCen = new int[2];</span>
+<span class="fc" id="L669">        TIntObjectMap&lt;RegionPoints&gt; output = new TIntObjectHashMap&lt;RegionPoints&gt;();</span>
     
-<span class="fc bfc" id="L370" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="fc bfc" id="L671" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
 
-<span class="fc" id="L372">            Region r = regions.get(i);</span>
+<span class="fc" id="L673">            Region r = regions.get(i);</span>
             
-<span class="fc" id="L374">            RegionPoints cRegion = canonicalizeRegion2(r, </span>
-<span class="fc" id="L375">                meanWindowedImg.getWidth(), meanWindowedImg.getHeight());</span>
+<span class="fc" id="L675">            RegionPoints cRegion = canonicalizeRegion2(r, imageWidth, imageHeight);</span>
             
-<span class="fc" id="L377">            output.put(i, cRegion);</span>
+<span class="fc" id="L677">            output.put(i, cRegion);</span>
         }
 
-<span class="fc" id="L380">        return output;</span>
+<span class="fc" id="L680">        return output;</span>
     }
     
     /**
@@ -393,22 +693,22 @@ import java.util.Set;
      */
     public CRegion canonicalizeRegion(Region r, GreyscaleImage meanWindowedImg) {
 
-<span class="nc" id="L396">        int imageWidth = meanWindowedImg.getWidth();</span>
-<span class="nc" id="L397">        int imageHeight = meanWindowedImg.getHeight();</span>
+<span class="nc" id="L696">        int imageWidth = meanWindowedImg.getWidth();</span>
+<span class="nc" id="L697">        int imageHeight = meanWindowedImg.getHeight();</span>
 
-<span class="nc" id="L399">        CRegion cRegion = canonicalizeRegion(r, imageWidth, imageHeight);</span>
+<span class="nc" id="L699">        CRegion cRegion = canonicalizeRegion(r, imageWidth, imageHeight);</span>
 
-<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (cRegion == null) {</span>
-<span class="nc" id="L402">            return null;</span>
+<span class="nc bnc" id="L701" title="All 2 branches missed.">        if (cRegion == null) {</span>
+<span class="nc" id="L702">            return null;</span>
         }
         
-<span class="nc" id="L405">        double autocorrel = calcAutoCorrel(meanWindowedImg, </span>
+<span class="nc" id="L705">        double autocorrel = calcAutoCorrel(meanWindowedImg, </span>
             cRegion.ellipseParams.xC, cRegion.ellipseParams.yC, 
-            cRegion.offsetsToOrigCoords);
+<span class="nc" id="L707">            cRegion.offsetsToOrigCoords);</span>
 
-<span class="nc" id="L409">        cRegion.autocorrel = Math.sqrt(autocorrel)/255.;</span>
+<span class="nc" id="L709">        cRegion.autocorrel = Math.sqrt(autocorrel)/255.;</span>
 
-<span class="nc" id="L411">        return cRegion;</span>
+<span class="nc" id="L711">        return cRegion;</span>
     }
 
     /**
@@ -424,39 +724,39 @@ import java.util.Set;
     public static PairIntArray createEllipse(int x, int y, 
         double[] m, int imageWidth, int imageHeight) {
 
-<span class="fc" id="L427">        PairIntArray xy = new PairIntArray();</span>
+<span class="fc" id="L727">        PairIntArray xy = new PairIntArray();</span>
         
-<span class="pc bpc" id="L429" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="pc bpc" id="L430" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="pc bpc" id="L729" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bpc" id="L730" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
         //double[] m = r.calcParamTransCoeff();
 
-<span class="fc" id="L435">        double angle = Math.atan(m[0]/m[2]);</span>
-<span class="fc bfc" id="L436" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
-<span class="fc" id="L437">            angle += Math.PI;</span>
+<span class="fc" id="L735">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="fc bfc" id="L736" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
+<span class="fc" id="L737">            angle += Math.PI;</span>
         }
 
-<span class="fc" id="L440">        double major = 2. * m[4];</span>
-<span class="fc" id="L441">        double minor = 2. * m[5];</span>
+<span class="fc" id="L740">        double major = 2. * m[4];</span>
+<span class="fc" id="L741">        double minor = 2. * m[5];</span>
 
-<span class="fc" id="L443">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="pc bpc" id="L444" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
+<span class="fc" id="L743">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="pc bpc" id="L744" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
 
         // elliptical bounds
         // find the ranges of the untransformed ellipse first
-<span class="fc bfc" id="L448" title="All 2 branches covered.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
-<span class="fc" id="L449">            int xE = (int)Math.round(x +</span>
-<span class="fc" id="L450">                (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);</span>
-<span class="fc" id="L451">            int yE = (int)Math.round(y + (Math.cos(t) * m[2]</span>
-<span class="fc" id="L452">                + Math.sin(t) * m[3]) * 2.0 + 0.5);</span>
-<span class="fc bfc" id="L453" title="All 8 branches covered.">            if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">        for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="fc" id="L749">            int xE = (int)Math.round(x +</span>
+<span class="fc" id="L750">                (Math.cos(t) * m[0] + Math.sin(t) * m[1]) * 2.0 + 0.5);</span>
+<span class="fc" id="L751">            int yE = (int)Math.round(y + (Math.cos(t) * m[2]</span>
+<span class="fc" id="L752">                + Math.sin(t) * m[3]) * 2.0 + 0.5);</span>
+<span class="fc bfc" id="L753" title="All 8 branches covered.">            if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
                 (yE &gt;= 0) &amp;&amp; (yE &lt; imageHeight)) {
-<span class="fc" id="L455">                xy.add(xE, yE);</span>
+<span class="fc" id="L755">                xy.add(xE, yE);</span>
             }
         }
         
-<span class="fc" id="L459">        return xy;</span>
+<span class="fc" id="L759">        return xy;</span>
     }   
     
     /**
@@ -475,73 +775,70 @@ import java.util.Set;
     public RegionPoints canonicalizeRegion2(Region r, int imageWidth, 
         int imageHeight) {
 
-<span class="fc" id="L478">        int[] xyCen = new int[2];</span>
+<span class="fc" id="L778">        int[] xyCen = new int[2];</span>
     
-<span class="fc" id="L480">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
-<span class="fc" id="L481">        int x = xyCen[0];</span>
-<span class="fc" id="L482">        int y = xyCen[1];</span>
-<span class="pc bpc" id="L483" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="pc bpc" id="L484" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="fc" id="L780">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+<span class="fc" id="L781">        int x = xyCen[0];</span>
+<span class="fc" id="L782">        int y = xyCen[1];</span>
+<span class="pc bpc" id="L783" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bpc" id="L784" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
-<span class="fc" id="L487">        double[] m = r.calcParamTransCoeff();</span>
+<span class="fc" id="L787">        double[] m = r.calcParamTransCoeff();</span>
 
-<span class="fc" id="L489">        double angle = Math.atan(m[0]/m[2]);</span>
-<span class="fc bfc" id="L490" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
-<span class="fc" id="L491">            angle += Math.PI;</span>
+<span class="fc" id="L789">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
+<span class="fc" id="L791">            angle += Math.PI;</span>
         }
 
-<span class="fc" id="L494">        double major = 2. * m[4];</span>
-<span class="fc" id="L495">        double minor = 2. * m[5];</span>
+<span class="fc" id="L794">        double major = 2. * m[4];</span>
+<span class="fc" id="L795">        double minor = 2. * m[5];</span>
 
-<span class="fc" id="L497">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="pc bpc" id="L498" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
+<span class="fc" id="L797">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="pc bpc" id="L798" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
 
         PairIntArray xy;
 
-<span class="fc" id="L502">        boolean createEllipse = true;</span>
-<span class="fc" id="L503">        double radius = minor;</span>
-<span class="fc bfc" id="L504" title="All 2 branches covered.">        if (radius &lt; 4) {</span>
-<span class="fc" id="L505">            radius = 4;</span>
-<span class="fc" id="L506">            createEllipse = false;</span>
+<span class="fc" id="L802">        boolean createEllipse = true;</span>
+<span class="fc" id="L803">        double radius = minor;</span>
+<span class="fc bfc" id="L804" title="All 2 branches covered.">        if (radius &lt; 4) {</span>
+<span class="fc" id="L805">            radius = 4;</span>
+<span class="fc" id="L806">            createEllipse = false;</span>
         }
 
-<span class="fc bfc" id="L509" title="All 2 branches covered.">        if (createEllipse) {</span>
-<span class="fc" id="L510">            xy = createEllipse(x, y, m, imageWidth, imageHeight);</span>
+<span class="fc bfc" id="L809" title="All 2 branches covered.">        if (createEllipse) {</span>
+<span class="fc" id="L810">            xy = createEllipse(x, y, m, imageWidth, imageHeight);</span>
         } else {
-<span class="fc" id="L512">            xy = new PairIntArray();</span>
-<span class="fc bfc" id="L513" title="All 2 branches covered.">            for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
-<span class="fc" id="L514">                double mc = Math.cos(t);</span>
-<span class="fc" id="L515">                double ms = Math.sin(t);</span>
-<span class="fc" id="L516">                int xE = (int)Math.round(x + (mc * radius));</span>
-<span class="fc" id="L517">                int yE = (int)Math.round(y + (ms * radius));</span>
-<span class="pc bpc" id="L518" title="4 of 8 branches missed.">                if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
+<span class="fc" id="L812">            xy = new PairIntArray();</span>
+<span class="fc bfc" id="L813" title="All 2 branches covered.">            for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="fc" id="L814">                double mc = Math.cos(t);</span>
+<span class="fc" id="L815">                double ms = Math.sin(t);</span>
+<span class="fc" id="L816">                int xE = (int)Math.round(x + (mc * radius));</span>
+<span class="fc" id="L817">                int yE = (int)Math.round(y + (ms * radius));</span>
+<span class="pc bpc" id="L818" title="4 of 8 branches missed.">                if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
                     (yE &gt;= 0) &amp;&amp; (yE &lt; imageHeight)) {
-<span class="fc" id="L520">                    xy.add(xE, yE);</span>
+<span class="fc" id="L820">                    xy.add(xE, yE);</span>
                 }
             }
         }
         
-<span class="fc" id="L525">        fillInEllipse(xy);</span>
+<span class="fc" id="L825">        fillInEllipse(r.accX, r.accY);</span>
         
-<span class="fc" id="L527">        RegionGeometry rg = new RegionGeometry();</span>
-<span class="fc" id="L528">        rg.eccentricity = ecc;</span>
-<span class="fc" id="L529">        rg.major = major;</span>
-<span class="fc" id="L530">        rg.minor = minor;</span>
-<span class="fc" id="L531">        rg.orientation = angle;</span>
-<span class="fc" id="L532">        rg.m = m;</span>
-<span class="fc" id="L533">        rg.xC = x;</span>
-<span class="fc" id="L534">        rg.yC = y;</span>
-<span class="fc" id="L535">        rg.m = m;</span>
+<span class="fc" id="L827">        RegionGeometry rg = new RegionGeometry();</span>
+<span class="fc" id="L828">        rg.eccentricity = ecc;</span>
+<span class="fc" id="L829">        rg.major = major;</span>
+<span class="fc" id="L830">        rg.minor = minor;</span>
+<span class="fc" id="L831">        rg.orientation = angle;</span>
+<span class="fc" id="L832">        rg.m = m;</span>
+<span class="fc" id="L833">        rg.xC = x;</span>
+<span class="fc" id="L834">        rg.yC = y;</span>
 
-<span class="fc" id="L537">        RegionPoints regionPoints = new RegionPoints();</span>
-<span class="fc" id="L538">        regionPoints.ellipseParams = rg;</span>
-<span class="fc" id="L539">        regionPoints.points = Misc.convert(xy);</span>
-    
-<span class="fc" id="L541">        regionPoints.accX.addAll(r.accX);</span>
-<span class="fc" id="L542">        regionPoints.accY.addAll(r.accY);</span>
+<span class="fc" id="L836">        RegionPoints regionPoints = new RegionPoints();</span>
+<span class="fc" id="L837">        regionPoints.ellipseParams = rg;    </span>
+<span class="fc" id="L838">        regionPoints.accX.addAll(r.accX);</span>
+<span class="fc" id="L839">        regionPoints.accY.addAll(r.accY);</span>
         
-<span class="fc" id="L544">        return regionPoints;</span>
+<span class="fc" id="L841">        return regionPoints;</span>
     }
     
     /**
@@ -559,110 +856,110 @@ import java.util.Set;
      */
     public CRegion canonicalizeRegion(Region r, int imageWidth, int imageHeight) {
 
-<span class="nc" id="L562">        int[] xyCen = new int[2];</span>
+<span class="nc" id="L859">        int[] xyCen = new int[2];</span>
     
-<span class="nc" id="L564">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
-<span class="nc" id="L565">        int x = xyCen[0];</span>
-<span class="nc" id="L566">        int y = xyCen[1];</span>
-<span class="nc bnc" id="L567" title="All 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="nc bnc" id="L568" title="All 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="nc" id="L861">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+<span class="nc" id="L862">        int x = xyCen[0];</span>
+<span class="nc" id="L863">        int y = xyCen[1];</span>
+<span class="nc bnc" id="L864" title="All 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="nc bnc" id="L865" title="All 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
-<span class="nc" id="L571">        double[] m = r.calcParamTransCoeff();</span>
+<span class="nc" id="L868">        double[] m = r.calcParamTransCoeff();</span>
 
-<span class="nc" id="L573">        double angle = Math.atan(m[0]/m[2]);</span>
-<span class="nc bnc" id="L574" title="All 2 branches missed.">        if (angle &lt; 0) {</span>
-<span class="nc" id="L575">            angle += Math.PI;</span>
+<span class="nc" id="L870">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">        if (angle &lt; 0) {</span>
+<span class="nc" id="L872">            angle += Math.PI;</span>
         }
 
-<span class="nc" id="L578">        double major = 2. * m[4];</span>
-<span class="nc" id="L579">        double minor = 2. * m[5];</span>
+<span class="nc" id="L875">        double major = 2. * m[4];</span>
+<span class="nc" id="L876">        double minor = 2. * m[5];</span>
 
-<span class="nc" id="L581">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="nc bnc" id="L582" title="All 2 branches missed.">        if (Double.isNaN(ecc)) {</span>
-<span class="nc" id="L583">            return null;</span>
+<span class="nc" id="L878">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="nc bnc" id="L879" title="All 2 branches missed.">        if (Double.isNaN(ecc)) {</span>
+<span class="nc" id="L880">            return null;</span>
         }
 
         PairIntArray xy;
 
-<span class="nc" id="L588">        boolean createEllipse = true;</span>
-<span class="nc" id="L589">        double radius = minor;</span>
-<span class="nc bnc" id="L590" title="All 2 branches missed.">        if (radius &lt; 4) {</span>
-<span class="nc" id="L591">            radius = 4;</span>
-<span class="nc" id="L592">            createEllipse = false;</span>
+<span class="nc" id="L885">        boolean createEllipse = true;</span>
+<span class="nc" id="L886">        double radius = minor;</span>
+<span class="nc bnc" id="L887" title="All 2 branches missed.">        if (radius &lt; 4) {</span>
+<span class="nc" id="L888">            radius = 4;</span>
+<span class="nc" id="L889">            createEllipse = false;</span>
         }
 
-<span class="nc bnc" id="L595" title="All 2 branches missed.">        if (createEllipse) {</span>
-<span class="nc" id="L596">            xy = createEllipse(x, y, m, imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L892" title="All 2 branches missed.">        if (createEllipse) {</span>
+<span class="nc" id="L893">            xy = createEllipse(x, y, m, imageWidth, imageHeight);</span>
         } else {
-<span class="nc" id="L598">            xy = new PairIntArray();</span>
-<span class="nc bnc" id="L599" title="All 2 branches missed.">            for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
-<span class="nc" id="L600">                double mc = Math.cos(t);</span>
-<span class="nc" id="L601">                double ms = Math.sin(t);</span>
-<span class="nc" id="L602">                int xE = (int)Math.round(x + (mc * radius));</span>
-<span class="nc" id="L603">                int yE = (int)Math.round(y + (ms * radius));</span>
-<span class="nc bnc" id="L604" title="All 8 branches missed.">                if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
+<span class="nc" id="L895">            xy = new PairIntArray();</span>
+<span class="nc bnc" id="L896" title="All 2 branches missed.">            for (double t = 0.0; t &lt; 2.0 * Math.PI; t += 0.001) {</span>
+<span class="nc" id="L897">                double mc = Math.cos(t);</span>
+<span class="nc" id="L898">                double ms = Math.sin(t);</span>
+<span class="nc" id="L899">                int xE = (int)Math.round(x + (mc * radius));</span>
+<span class="nc" id="L900">                int yE = (int)Math.round(y + (ms * radius));</span>
+<span class="nc bnc" id="L901" title="All 8 branches missed.">                if ((xE &gt;= 0) &amp;&amp; (xE &lt; imageWidth) &amp;&amp;</span>
                     (yE &gt;= 0) &amp;&amp; (yE &lt; imageHeight)) {
-<span class="nc" id="L606">                    xy.add(xE, yE);</span>
+<span class="nc" id="L903">                    xy.add(xE, yE);</span>
                 }
             }
         }
 
-<span class="nc" id="L611">        Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(x, y,</span>
-            xy, imageWidth, imageHeight, angle);
+<span class="nc" id="L908">        Map&lt;PairInt, PairInt&gt; offsetToOrigMap = createOffsetToOrigMap(x, y,</span>
+            r.accX, r.accY, imageWidth, imageHeight, angle);
 
-<span class="nc" id="L614">        RegionGeometry rg = new RegionGeometry();</span>
-<span class="nc" id="L615">        rg.eccentricity = ecc;</span>
-<span class="nc" id="L616">        rg.major = major;</span>
-<span class="nc" id="L617">        rg.minor = minor;</span>
-<span class="nc" id="L618">        rg.orientation = angle;</span>
-<span class="nc" id="L619">        rg.xC = x;</span>
-<span class="nc" id="L620">        rg.yC = y;</span>
-<span class="nc" id="L621">        rg.m = m;</span>
+<span class="nc" id="L911">        RegionGeometry rg = new RegionGeometry();</span>
+<span class="nc" id="L912">        rg.eccentricity = ecc;</span>
+<span class="nc" id="L913">        rg.major = major;</span>
+<span class="nc" id="L914">        rg.minor = minor;</span>
+<span class="nc" id="L915">        rg.orientation = angle;</span>
+<span class="nc" id="L916">        rg.xC = x;</span>
+<span class="nc" id="L917">        rg.yC = y;</span>
+<span class="nc" id="L918">        rg.m = m;</span>
 
-<span class="nc" id="L623">        CRegion cRegion = new CRegion();</span>
-<span class="nc" id="L624">        cRegion.ellipseParams = rg;</span>
-<span class="nc" id="L625">        cRegion.offsetsToOrigCoords = offsetToOrigMap;</span>
+<span class="nc" id="L920">        CRegion cRegion = new CRegion(imageWidth, imageHeight);</span>
+<span class="nc" id="L921">        cRegion.ellipseParams = rg;</span>
+<span class="nc" id="L922">        cRegion.addAllOffsets(offsetToOrigMap);</span>
 
-<span class="nc" id="L627">        return cRegion;</span>
+<span class="nc" id="L924">        return cRegion;</span>
     }
     
     public static RegionGeometry calculateEllipseParams(Region r, int imageWidth, int imageHeight) {
 
-<span class="fc" id="L632">        int[] xyCen = new int[2];</span>
+<span class="fc" id="L929">        int[] xyCen = new int[2];</span>
     
-<span class="fc" id="L634">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
-<span class="fc" id="L635">        int x = xyCen[0];</span>
-<span class="fc" id="L636">        int y = xyCen[1];</span>
-<span class="pc bpc" id="L637" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="pc bpc" id="L638" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="fc" id="L931">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+<span class="fc" id="L932">        int x = xyCen[0];</span>
+<span class="fc" id="L933">        int y = xyCen[1];</span>
+<span class="pc bpc" id="L934" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bpc" id="L935" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
-<span class="fc" id="L641">        double[] m = r.calcParamTransCoeff();</span>
+<span class="fc" id="L938">        double[] m = r.calcParamTransCoeff();</span>
 
-<span class="fc" id="L643">        double angle = Math.atan(m[0]/m[2]);</span>
-<span class="fc bfc" id="L644" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
-<span class="fc" id="L645">            angle += Math.PI;</span>
+<span class="fc" id="L940">        double angle = Math.atan(m[0]/m[2]);</span>
+<span class="fc bfc" id="L941" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
+<span class="fc" id="L942">            angle += Math.PI;</span>
         }
 
-<span class="fc" id="L648">        double major = 2. * m[4];</span>
-<span class="fc" id="L649">        double minor = 2. * m[5];</span>
+<span class="fc" id="L945">        double major = 2. * m[4];</span>
+<span class="fc" id="L946">        double minor = 2. * m[5];</span>
 
-<span class="fc" id="L651">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="pc bpc" id="L652" title="1 of 2 branches missed.">        if (Double.isNaN(ecc)) {</span>
-<span class="nc" id="L653">            return null;</span>
+<span class="fc" id="L948">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="pc bpc" id="L949" title="1 of 2 branches missed.">        if (Double.isNaN(ecc)) {</span>
+<span class="nc" id="L950">            return null;</span>
         }
 
-<span class="fc" id="L656">        RegionGeometry rg = new RegionGeometry();</span>
-<span class="fc" id="L657">        rg.eccentricity = ecc;</span>
-<span class="fc" id="L658">        rg.major = major;</span>
-<span class="fc" id="L659">        rg.minor = minor;</span>
-<span class="fc" id="L660">        rg.orientation = angle;</span>
-<span class="fc" id="L661">        rg.xC = x;</span>
-<span class="fc" id="L662">        rg.yC = y;</span>
-<span class="fc" id="L663">        rg.m = m;</span>
+<span class="fc" id="L953">        RegionGeometry rg = new RegionGeometry();</span>
+<span class="fc" id="L954">        rg.eccentricity = ecc;</span>
+<span class="fc" id="L955">        rg.major = major;</span>
+<span class="fc" id="L956">        rg.minor = minor;</span>
+<span class="fc" id="L957">        rg.orientation = angle;</span>
+<span class="fc" id="L958">        rg.xC = x;</span>
+<span class="fc" id="L959">        rg.yC = y;</span>
+<span class="fc" id="L960">        rg.m = m;</span>
         
-<span class="fc" id="L665">        return rg;</span>
+<span class="fc" id="L962">        return rg;</span>
     }
 
     /**
@@ -677,133 +974,136 @@ import java.util.Set;
     public List&lt;TIntObjectMap&lt;CRegion&gt;&gt; canonicalizeRegions(
         List&lt;Region&gt; regions, List&lt;GreyscaleImage&gt; pyramidImgs) {
 
-<span class="nc" id="L680">        List&lt;TIntObjectMap&lt;CRegion&gt;&gt; output = new ArrayList&lt;TIntObjectMap&lt;CRegion&gt;&gt;();</span>
+<span class="nc" id="L977">        List&lt;TIntObjectMap&lt;CRegion&gt;&gt; output = new ArrayList&lt;TIntObjectMap&lt;CRegion&gt;&gt;();</span>
 
-<span class="nc" id="L682">        TIntObjectMap&lt;CRegion&gt; crMap0 = canonicalizeRegions(regions, pyramidImgs.get(0));</span>
+<span class="nc" id="L979">        TIntObjectMap&lt;CRegion&gt; crMap0 = canonicalizeRegions(regions, pyramidImgs.get(0));</span>
 
-<span class="nc" id="L684">        output.add(crMap0);</span>
+<span class="nc" id="L981">        output.add(crMap0);</span>
 
-<span class="nc" id="L686">        Transformer transformer = new Transformer();</span>
+<span class="nc" id="L983">        Transformer transformer = new Transformer();</span>
 
         TIntObjectIterator&lt;CRegion&gt; iter0;
-<span class="nc" id="L689">        GreyscaleImage mImg0 = pyramidImgs.get(0);</span>
+<span class="nc" id="L986">        GreyscaleImage mImg0 = pyramidImgs.get(0);</span>
 
-<span class="nc bnc" id="L691" title="All 2 branches missed.">        for (int imgIdx = 1; imgIdx &lt; pyramidImgs.size(); ++imgIdx) {</span>
+<span class="nc bnc" id="L988" title="All 2 branches missed.">        for (int imgIdx = 1; imgIdx &lt; pyramidImgs.size(); ++imgIdx) {</span>
 
-<span class="nc" id="L693">            TIntObjectMap&lt;CRegion&gt; crMap = new TIntObjectHashMap&lt;CRegion&gt;();</span>
-<span class="nc" id="L694">            output.add(crMap);</span>
+<span class="nc" id="L990">            TIntObjectMap&lt;CRegion&gt; crMap = new TIntObjectHashMap&lt;CRegion&gt;();</span>
+<span class="nc" id="L991">            output.add(crMap);</span>
 
-<span class="nc" id="L696">            GreyscaleImage mImg = pyramidImgs.get(imgIdx);</span>
-<span class="nc" id="L697">            float scale = ((float)mImg0.getWidth()/(float)mImg.getWidth()) +</span>
-<span class="nc" id="L698">                ((float)mImg0.getHeight()/(float)mImg.getHeight());</span>
-<span class="nc" id="L699">            scale /= 2.f;</span>
+<span class="nc" id="L993">            GreyscaleImage mImg = pyramidImgs.get(imgIdx);</span>
+<span class="nc" id="L994">            float scale = ((float)mImg0.getWidth()/(float)mImg.getWidth()) +</span>
+<span class="nc" id="L995">                ((float)mImg0.getHeight()/(float)mImg.getHeight());</span>
+<span class="nc" id="L996">            scale /= 2.f;</span>
+            
+<span class="nc" id="L998">            int w2 = mImg.getWidth();</span>
+<span class="nc" id="L999">            int h2 = mImg.getHeight();</span>
 
-<span class="nc" id="L701">            iter0 = crMap0.iterator();</span>
-<span class="nc bnc" id="L702" title="All 2 branches missed.">            for (int i = 0; i &lt; crMap0.size(); ++i) {</span>
-<span class="nc" id="L703">                iter0.advance();</span>
+<span class="nc" id="L1001">            iter0 = crMap0.iterator();</span>
+<span class="nc bnc" id="L1002" title="All 2 branches missed.">            for (int i = 0; i &lt; crMap0.size(); ++i) {</span>
+<span class="nc" id="L1003">                iter0.advance();</span>
 
-<span class="nc" id="L705">                int idx = iter0.key();</span>
-<span class="nc" id="L706">                CRegion cr = iter0.value();</span>
+<span class="nc" id="L1005">                int idx = iter0.key();</span>
+<span class="nc" id="L1006">                CRegion cr = iter0.value();</span>
 
-<span class="nc" id="L708">                int xc2 = Math.round((float)cr.ellipseParams.xC/scale);</span>
-<span class="nc" id="L709">                int yc2 = Math.round((float)cr.ellipseParams.yC/scale);</span>
+<span class="nc" id="L1008">                int xc2 = Math.round((float)cr.ellipseParams.xC/scale);</span>
+<span class="nc" id="L1009">                int yc2 = Math.round((float)cr.ellipseParams.yC/scale);</span>
 
-<span class="nc bnc" id="L711" title="All 6 branches missed.">                if (xc2 &lt; 0 || yc2 &lt; 0 || xc2 &gt;= mImg.getWidth() ||</span>
-<span class="nc bnc" id="L712" title="All 2 branches missed.">                    yc2 &gt;= mImg.getHeight()) {</span>
-<span class="nc" id="L713">                    continue;</span>
+<span class="nc bnc" id="L1011" title="All 6 branches missed.">                if (xc2 &lt; 0 || yc2 &lt; 0 || xc2 &gt;= mImg.getWidth() ||</span>
+<span class="nc bnc" id="L1012" title="All 2 branches missed.">                    yc2 &gt;= mImg.getHeight()) {</span>
+<span class="nc" id="L1013">                    continue;</span>
                 }
 
                 // transform the elliptical range so that angle2 is pointing
                 // up in the image, that is angle2 = Math.PI/2
                 // pi/2 = deltaR + angle --&gt; deltaR = (pi/2) - angle
-<span class="nc" id="L719">                TransformationParameters params = new TransformationParameters();</span>
-<span class="nc" id="L720">                params.setOriginX(xc2);</span>
-<span class="nc" id="L721">                params.setOriginY(yc2);</span>
-<span class="nc" id="L722">                params.setScale(1.0f);</span>
-<span class="nc" id="L723">                params.setTranslationX(0);</span>
-<span class="nc" id="L724">                params.setTranslationY(0);</span>
-<span class="nc" id="L725">                params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f,</span>
+<span class="nc" id="L1019">                TransformationParameters params = new TransformationParameters();</span>
+<span class="nc" id="L1020">                params.setOriginX(xc2);</span>
+<span class="nc" id="L1021">                params.setOriginY(yc2);</span>
+<span class="nc" id="L1022">                params.setScale(1.0f);</span>
+<span class="nc" id="L1023">                params.setTranslationX(0);</span>
+<span class="nc" id="L1024">                params.setTranslationY(0);</span>
+<span class="nc" id="L1025">                params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f,</span>
                     (float)(cr.ellipseParams.orientation*180./Math.PI)));
 
                 // copy and reduce structure in size by scale factor
-<span class="nc" id="L729">                Map&lt;PairInt, PairInt&gt; offsetMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
+<span class="nc" id="L1029">                Map&lt;PairInt, PairInt&gt; offsetMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
 
-<span class="nc" id="L731">                int vc = mImg.getValue(xc2, yc2);</span>
-<span class="nc" id="L732">                int nc = 0;</span>
-<span class="nc" id="L733">                double autocorSum = 0;</span>
+<span class="nc" id="L1031">                int vc = mImg.getValue(xc2, yc2);</span>
+<span class="nc" id="L1032">                int nc = 0;</span>
+<span class="nc" id="L1033">                double autocorSum = 0;</span>
 
-<span class="nc bnc" id="L735" title="All 2 branches missed.">                for (Map.Entry&lt;PairInt, PairInt&gt; entry : cr.offsetsToOrigCoords.entrySet()) {</span>
+<span class="nc bnc" id="L1035" title="All 2 branches missed.">                for (Map.Entry&lt;PairInt, PairInt&gt; entry : cr.offsetsToOrigCoords.entrySet()) {</span>
 
-<span class="nc" id="L737">                    PairInt pOrig = entry.getValue();</span>
+<span class="nc" id="L1037">                    PairInt pOrig = entry.getValue();</span>
 
-<span class="nc" id="L739">                    int xScaled = Math.round((float)pOrig.getX()/scale);</span>
-<span class="nc" id="L740">                    int yScaled = Math.round((float)pOrig.getY()/scale);</span>
-<span class="nc bnc" id="L741" title="All 2 branches missed.">                    if (xScaled == -1) {</span>
-<span class="nc" id="L742">                        xScaled = 0;</span>
+<span class="nc" id="L1039">                    int xScaled = Math.round((float)pOrig.getX()/scale);</span>
+<span class="nc" id="L1040">                    int yScaled = Math.round((float)pOrig.getY()/scale);</span>
+<span class="nc bnc" id="L1041" title="All 2 branches missed.">                    if (xScaled == -1) {</span>
+<span class="nc" id="L1042">                        xScaled = 0;</span>
                     }
-<span class="nc bnc" id="L744" title="All 2 branches missed.">                    if (yScaled == -1) {</span>
-<span class="nc" id="L745">                        yScaled = 0;</span>
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">                    if (yScaled == -1) {</span>
+<span class="nc" id="L1045">                        yScaled = 0;</span>
                     }
-<span class="nc bnc" id="L747" title="All 2 branches missed.">                    if (xScaled == mImg.getWidth()) {</span>
-<span class="nc" id="L748">                        xScaled = mImg.getWidth() - 1;</span>
+<span class="nc bnc" id="L1047" title="All 2 branches missed.">                    if (xScaled &gt;= w2) {</span>
+<span class="nc" id="L1048">                        xScaled = w2 - 1;</span>
                     }
-<span class="nc bnc" id="L750" title="All 2 branches missed.">                    if (yScaled == mImg.getHeight()) {</span>
-<span class="nc" id="L751">                        yScaled = mImg.getHeight() - 1;</span>
+<span class="nc bnc" id="L1050" title="All 2 branches missed.">                    if (yScaled &gt;= h2) {</span>
+<span class="nc" id="L1051">                        yScaled = h2 - 1;</span>
                     }
-<span class="nc" id="L753">                    PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
+<span class="nc" id="L1053">                    PairInt pOrigScaled = new PairInt(xScaled, yScaled);</span>
 
                     // TODO: review this...should be the same as entry.getKey/scale
                     // but slightly better integer rounding results
-<span class="nc" id="L757">                    double[] xyETr = transformer.applyTransformation(params,</span>
+<span class="nc" id="L1057">                    double[] xyETr = transformer.applyTransformation(params,</span>
                         xScaled, yScaled);
 
-<span class="nc" id="L760">                    int xETr = (int)Math.round(xyETr[0]);</span>
-<span class="nc" id="L761">                    int yETr = (int)Math.round(xyETr[1]);</span>
+<span class="nc" id="L1060">                    int xETr = (int)Math.round(xyETr[0]);</span>
+<span class="nc" id="L1061">                    int yETr = (int)Math.round(xyETr[1]);</span>
 
-<span class="nc bnc" id="L763" title="All 6 branches missed.">                    if ((xETr &gt;= 0) &amp;&amp; (xETr &lt; mImg.getWidth())</span>
-<span class="nc bnc" id="L764" title="All 2 branches missed.">                        &amp;&amp; (yETr &gt;= 0) &amp;&amp; (yETr &lt; mImg.getHeight())) {</span>
+<span class="nc bnc" id="L1063" title="All 8 branches missed.">                    if ((xETr &gt;= 0) &amp;&amp; (xETr &lt; w2)</span>
+                        &amp;&amp; (yETr &gt;= 0) &amp;&amp; (yETr &lt; h2)) {
 
-<span class="nc" id="L766">                        PairInt pTrOffset = new PairInt(xETr - xc2, yETr - yc2);</span>
+<span class="nc" id="L1066">                        PairInt pTrOffset = new PairInt(xETr - xc2, yETr - yc2);</span>
 
-<span class="nc bnc" id="L768" title="All 2 branches missed.">                        if (!offsetMap.containsKey(pTrOffset)) {</span>
+<span class="nc bnc" id="L1068" title="All 2 branches missed.">                        if (!offsetMap.containsKey(pTrOffset)) {</span>
 
-<span class="nc" id="L770">                            offsetMap.put(pTrOffset, pOrigScaled);</span>
+<span class="nc" id="L1070">                            offsetMap.put(pTrOffset, pOrigScaled);</span>
 
-<span class="nc" id="L772">                            int diff = mImg.getValue(xETr, yETr) - vc;</span>
+<span class="nc" id="L1072">                            int diff = mImg.getValue(xETr, yETr) - vc;</span>
 
-<span class="nc" id="L774">                            autocorSum += (diff * diff);</span>
-<span class="nc" id="L775">                            nc++;</span>
+<span class="nc" id="L1074">                            autocorSum += (diff * diff);</span>
+<span class="nc" id="L1075">                            nc++;</span>
                         }
                     }
-<span class="nc" id="L778">                }</span>
-<span class="nc" id="L779">                autocorSum /= (double)nc;</span>
+<span class="nc" id="L1078">                }</span>
+<span class="nc" id="L1079">                autocorSum /= (double)nc;</span>
 
-<span class="nc" id="L781">                double major = cr.ellipseParams.major/scale;</span>
-<span class="nc" id="L782">                double minor = cr.ellipseParams.minor/scale;</span>
+<span class="nc" id="L1081">                double major = cr.ellipseParams.major/scale;</span>
+<span class="nc" id="L1082">                double minor = cr.ellipseParams.minor/scale;</span>
 
-<span class="nc" id="L784">                double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="nc bnc" id="L785" title="All 4 branches missed.">                assert(!Double.isNaN(ecc));</span>
+<span class="nc" id="L1084">                double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
+<span class="nc bnc" id="L1085" title="All 4 branches missed.">                assert(!Double.isNaN(ecc));</span>
 
-<span class="nc" id="L787">                RegionGeometry rg = new RegionGeometry();</span>
-<span class="nc" id="L788">                rg.eccentricity = ecc;</span>
-<span class="nc" id="L789">                rg.major = major;</span>
-<span class="nc" id="L790">                rg.minor = minor;</span>
-<span class="nc" id="L791">                rg.orientation = cr.ellipseParams.orientation;</span>
-<span class="nc" id="L792">                rg.xC = xc2;</span>
-<span class="nc" id="L793">                rg.yC = yc2;</span>
+<span class="nc" id="L1087">                RegionGeometry rg = new RegionGeometry();</span>
+<span class="nc" id="L1088">                rg.eccentricity = ecc;</span>
+<span class="nc" id="L1089">                rg.major = major;</span>
+<span class="nc" id="L1090">                rg.minor = minor;</span>
+<span class="nc" id="L1091">                rg.orientation = cr.ellipseParams.orientation;</span>
+<span class="nc" id="L1092">                rg.xC = xc2;</span>
+<span class="nc" id="L1093">                rg.yC = yc2;</span>
                 //NOTE: these are not scaled:
-<span class="nc" id="L795">                rg.m = cr.ellipseParams.m;</span>
+<span class="nc" id="L1095">                rg.m = cr.ellipseParams.m;</span>
                 
-<span class="nc" id="L797">                CRegion cRegion = new CRegion();</span>
-<span class="nc" id="L798">                cRegion.ellipseParams = rg;</span>
-<span class="nc" id="L799">                cRegion.offsetsToOrigCoords = offsetMap;</span>
-<span class="nc" id="L800">                cRegion.autocorrel = Math.sqrt(autocorSum)/255.;</span>
+<span class="nc" id="L1097">                CRegion cRegion = new CRegion(w2, h2);</span>
+<span class="nc" id="L1098">                cRegion.ellipseParams = rg;</span>
+<span class="nc" id="L1099">                cRegion.addAllOffsets(offsetMap);</span>
+<span class="nc" id="L1100">                cRegion.autocorrel = Math.sqrt(autocorSum)/255.;</span>
 
-<span class="nc" id="L802">                crMap.put(idx, cRegion);</span>
+<span class="nc" id="L1102">                crMap.put(idx, cRegion);</span>
             }
         }
 
-<span class="nc" id="L806">        return output;</span>
+<span class="nc" id="L1106">        return output;</span>
     }
 
     public PairIntArray calculateCentroids(List&lt;Region&gt; regions,
@@ -812,343 +1112,347 @@ import java.util.Set;
         //return calculateIntensityCentroids(regions,
         //    greyscale, imageWidth, imageHeight);
 
-<span class="nc" id="L815">        return extractRegionXYCenters(regions, imageWidth, imageHeight);</span>
+<span class="nc" id="L1115">        return extractRegionXYCenters(regions, imageWidth, imageHeight);</span>
     }
 
     PairIntArray extractRegionXYCenters(List&lt;Region&gt; regions,
         int imageWidth, int imageHeight) {
 
-<span class="nc" id="L821">        int[] xyCen = new int[2];</span>
+<span class="nc" id="L1121">        int[] xyCen = new int[2];</span>
 
-<span class="nc" id="L823">        PairIntArray output = new PairIntArray(regions.size());</span>
+<span class="nc" id="L1123">        PairIntArray output = new PairIntArray(regions.size());</span>
 
-<span class="nc bnc" id="L825" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
-<span class="nc" id="L826">            Region r = regions.get(i);</span>
-<span class="nc" id="L827">            r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
+<span class="nc bnc" id="L1125" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="nc" id="L1126">            Region r = regions.get(i);</span>
+<span class="nc" id="L1127">            r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
 
-<span class="nc" id="L829">            output.add(xyCen[0], xyCen[1]);</span>
+<span class="nc" id="L1129">            output.add(xyCen[0], xyCen[1]);</span>
         }
 
-<span class="nc" id="L832">        return output;</span>
+<span class="nc" id="L1132">        return output;</span>
     }
 
     PairIntArray calculateIntensityCentroids(List&lt;Region&gt; regions,
         int[] greyscale, int imageWidth, int imageHeight) {
 
-<span class="nc" id="L838">        int n = regions.size();</span>
+<span class="nc" id="L1138">        int n = regions.size();</span>
 
-<span class="nc" id="L840">        PairIntArray output = new PairIntArray(n);</span>
+<span class="nc" id="L1140">        PairIntArray output = new PairIntArray(n);</span>
 
-<span class="nc" id="L842">        int[] cenXY = new int[2];</span>
+<span class="nc" id="L1142">        int[] cenXY = new int[2];</span>
 
-<span class="nc bnc" id="L844" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L1144" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
 
-<span class="nc" id="L846">            Region region = regions.get(i);</span>
+<span class="nc" id="L1146">            Region region = regions.get(i);</span>
 
-<span class="nc" id="L848">            region.calculateIntensityCentroid(greyscale, imageWidth,</span>
+<span class="nc" id="L1148">            region.calculateIntensityCentroid(greyscale, imageWidth,</span>
                 imageHeight, cenXY);
 
-<span class="nc" id="L851">            output.add(cenXY[0], cenXY[1]);</span>
+<span class="nc" id="L1151">            output.add(cenXY[0], cenXY[1]);</span>
         }
 
-<span class="nc" id="L854">        return output;</span>
+<span class="nc" id="L1154">        return output;</span>
     }
 
     private PairIntArray calculateIntensityCentroids(List&lt;Region&gt; regions,
         int radius, int[] greyscale, int imageWidth, int imageHeight) {
 
-<span class="nc" id="L860">        int n = regions.size();</span>
+<span class="nc" id="L1160">        int n = regions.size();</span>
 
-<span class="nc" id="L862">        PairIntArray output = new PairIntArray(n);</span>
+<span class="nc" id="L1162">        PairIntArray output = new PairIntArray(n);</span>
 
-<span class="nc" id="L864">        int[] cenXY = new int[2];</span>
+<span class="nc" id="L1164">        int[] cenXY = new int[2];</span>
 
-<span class="nc bnc" id="L866" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L1166" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
 
-<span class="nc" id="L868">            Region r = regions.get(i);</span>
+<span class="nc" id="L1168">            Region r = regions.get(i);</span>
 
-<span class="nc" id="L870">            r.calculateIntensityCentroid(greyscale, imageWidth,</span>
+<span class="nc" id="L1170">            r.calculateIntensityCentroid(greyscale, imageWidth,</span>
                 imageHeight, cenXY, radius);
 
-<span class="nc" id="L873">            output.add(cenXY[0], cenXY[1]);</span>
+<span class="nc" id="L1173">            output.add(cenXY[0], cenXY[1]);</span>
         }
 
-<span class="nc" id="L876">        return output;</span>
+<span class="nc" id="L1176">        return output;</span>
     }
 
     public static Map&lt;PairInt, PairInt&gt; createOffsetToOrigMap(int x, int y, 
-        PairIntArray xy, int imgWidth, int imgHeight, double orientation) {
+        TIntList xList, TIntList yList, int imgWidth, int imgHeight, 
+        double orientation) {
         
-<span class="fc" id="L882">        fillInEllipse(xy);</span>
+<span class="fc" id="L1183">        fillInEllipse(xList, yList);</span>
 
-<span class="fc" id="L884">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1185">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
 
         // transform the elliptical range so that angle2 is pointing
         // up in the image, that is angle2 = Math.PI/2
         // pi/2 = deltaR + angle --&gt; deltaR = (pi/2) - angle
-<span class="fc" id="L889">        TransformationParameters params = new TransformationParameters();</span>
-<span class="fc" id="L890">        params.setOriginX(x);</span>
-<span class="fc" id="L891">        params.setOriginY(y);</span>
-<span class="fc" id="L892">        params.setScale(1.0f);</span>
-<span class="fc" id="L893">        params.setTranslationX(0);</span>
-<span class="fc" id="L894">        params.setTranslationY(0);</span>
-<span class="fc" id="L895">        params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f,</span>
+<span class="fc" id="L1190">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L1191">        params.setOriginX(x);</span>
+<span class="fc" id="L1192">        params.setOriginY(y);</span>
+<span class="fc" id="L1193">        params.setScale(1.0f);</span>
+<span class="fc" id="L1194">        params.setTranslationX(0);</span>
+<span class="fc" id="L1195">        params.setTranslationY(0);</span>
+<span class="fc" id="L1196">        params.setRotationInDegrees(AngleUtil.getAngleDifference(90.f,</span>
             (float)(orientation*180./Math.PI)));
 
-<span class="fc" id="L898">        Map&lt;PairInt, PairInt&gt; offsetToOrigMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
+<span class="fc" id="L1199">        Map&lt;PairInt, PairInt&gt; offsetToOrigMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
 
-<span class="fc" id="L900">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L1201">        Transformer transformer = new Transformer();</span>
     
+<span class="fc" id="L1203">        TIntList xListTr = new TIntArrayList(xList);</span>
+<span class="fc" id="L1204">        TIntList yListTr = new TIntArrayList(yList);</span>
         // ellipse, rotated by orientation to create
         //   x and y offsets from center that are comparable to
         //   the same for CRegions in other dataset.
-<span class="fc" id="L905">        PairIntArray xyTr = transformer.applyTransformation(params, xy);</span>
+<span class="fc" id="L1208">        transformer.applyTransformation(params, xListTr, yListTr);</span>
 
         // visit all points in region and transform them
         // also determine the auto-correlation
 
-<span class="fc" id="L910">        int nc = 0;</span>
-<span class="fc bfc" id="L911" title="All 2 branches covered.">        for (int j = 0; j &lt; xy.getN(); ++j) {</span>
+<span class="fc" id="L1213">        int nc = 0;</span>
+<span class="fc bfc" id="L1214" title="All 2 branches covered.">        for (int j = 0; j &lt; xListTr.size(); ++j) {</span>
             
-<span class="fc" id="L913">            int xp = xy.getX(j);</span>
-<span class="fc" id="L914">            int yp = xy.getY(j);</span>
+<span class="fc" id="L1216">            int xp = xList.get(j);</span>
+<span class="fc" id="L1217">            int yp = yList.get(j);</span>
             
-<span class="fc" id="L916">            int xpTr = xyTr.getX(j);</span>
-<span class="fc" id="L917">            int ypTr = xyTr.getY(j);</span>
+<span class="fc" id="L1219">            int xpTr = xListTr.get(j);</span>
+<span class="fc" id="L1220">            int ypTr = yListTr.get(j);</span>
             
-<span class="fc bfc" id="L919" title="All 2 branches covered.">            if (xpTr == -1) {</span>
-<span class="fc" id="L920">                xpTr = 0;</span>
+<span class="fc bfc" id="L1222" title="All 2 branches covered.">            if (xpTr == -1) {</span>
+<span class="fc" id="L1223">                xpTr = 0;</span>
             }
-<span class="fc bfc" id="L922" title="All 2 branches covered.">            if (ypTr == -1) {</span>
-<span class="fc" id="L923">                ypTr = 0;</span>
+<span class="fc bfc" id="L1225" title="All 2 branches covered.">            if (ypTr == -1) {</span>
+<span class="fc" id="L1226">                ypTr = 0;</span>
             }
-<span class="fc bfc" id="L925" title="All 2 branches covered.">            if (xpTr == imgWidth) {</span>
-<span class="fc" id="L926">                xpTr--;</span>
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">            if (xpTr == imgWidth) {</span>
+<span class="fc" id="L1229">                xpTr--;</span>
             }
-<span class="fc bfc" id="L928" title="All 2 branches covered.">            if (ypTr == imgHeight) {</span>
-<span class="fc" id="L929">                ypTr--;</span>
+<span class="fc bfc" id="L1231" title="All 2 branches covered.">            if (ypTr == imgHeight) {</span>
+<span class="fc" id="L1232">                ypTr--;</span>
             }
-<span class="fc bfc" id="L931" title="All 8 branches covered.">            if (xpTr &lt; 0 || ypTr &lt; 0 || xpTr &gt;= imgWidth || ypTr &gt;= imgHeight) {</span>
-<span class="fc" id="L932">                continue;</span>
+<span class="fc bfc" id="L1234" title="All 8 branches covered.">            if (xpTr &lt; 0 || ypTr &lt; 0 || xpTr &gt;= imgWidth || ypTr &gt;= imgHeight) {</span>
+<span class="fc" id="L1235">                continue;</span>
             }
             
-<span class="fc" id="L935">            PairInt pt = new PairInt(xpTr, ypTr);</span>
-<span class="fc bfc" id="L936" title="All 2 branches covered.">            if (visited.contains(pt)) {</span>
-<span class="fc" id="L937">                continue;</span>
+<span class="fc" id="L1238">            PairInt pt = new PairInt(xpTr, ypTr);</span>
+<span class="fc bfc" id="L1239" title="All 2 branches covered.">            if (visited.contains(pt)) {</span>
+<span class="fc" id="L1240">                continue;</span>
             }
-<span class="fc" id="L939">            visited.add(pt);</span>
+<span class="fc" id="L1242">            visited.add(pt);</span>
 
-<span class="fc" id="L941">            PairInt pOffsets = new PairInt(xpTr - x, ypTr - y);</span>
-<span class="fc" id="L942">            offsetToOrigMap.put(pOffsets, new PairInt(xp, yp));</span>
-<span class="fc" id="L943">            nc++;</span>
+<span class="fc" id="L1244">            PairInt pOffsets = new PairInt(xpTr - x, ypTr - y);</span>
+<span class="fc" id="L1245">            offsetToOrigMap.put(pOffsets, new PairInt(xp, yp));</span>
+<span class="fc" id="L1246">            nc++;</span>
         }
 
-<span class="fc" id="L946">        return offsetToOrigMap;</span>
+<span class="fc" id="L1249">        return offsetToOrigMap;</span>
     }
     
     public static double calcAutoCorrel(GreyscaleImage img, int x, int y, 
         Map&lt;PairInt, PairInt&gt; offsetMap) {
         
-<span class="fc" id="L952">        int vc = img.getValue(x, y);</span>
+<span class="nc" id="L1255">        int vc = img.getValue(x, y);</span>
         
-<span class="fc" id="L954">        int w = img.getWidth();</span>
-<span class="fc" id="L955">        int h = img.getHeight();</span>
+<span class="nc" id="L1257">        int w = img.getWidth();</span>
+<span class="nc" id="L1258">        int h = img.getHeight();</span>
         
-<span class="fc" id="L957">        int nc = 0;</span>
+<span class="nc" id="L1260">        int nc = 0;</span>
         
-<span class="fc" id="L959">        double autocorSum = 0;</span>
+<span class="nc" id="L1262">        double autocorSum = 0;</span>
         
-<span class="fc" id="L961">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1264">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L963" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry : offsetMap.entrySet()) {</span>
+<span class="nc bnc" id="L1266" title="All 2 branches missed.">        for (Entry&lt;PairInt, PairInt&gt; entry : offsetMap.entrySet()) {</span>
             
-<span class="fc" id="L965">            PairInt p = entry.getValue();</span>
+<span class="nc" id="L1268">            PairInt p = entry.getValue();</span>
             
-<span class="fc" id="L967">            int x2 = p.getX();</span>
+<span class="nc" id="L1270">            int x2 = p.getX();</span>
             
-<span class="fc" id="L969">            int y2 = p.getY();</span>
+<span class="nc" id="L1272">            int y2 = p.getY();</span>
             
-<span class="pc bpc" id="L971" title="1 of 2 branches missed.">            if (x2 == w) {</span>
-<span class="nc" id="L972">                x2--;</span>
+<span class="nc bnc" id="L1274" title="All 2 branches missed.">            if (x2 == w) {</span>
+<span class="nc" id="L1275">                x2--;</span>
             }
-<span class="pc bpc" id="L974" title="1 of 2 branches missed.">            if (y2 == h) {</span>
-<span class="nc" id="L975">                y2--;</span>
+<span class="nc bnc" id="L1277" title="All 2 branches missed.">            if (y2 == h) {</span>
+<span class="nc" id="L1278">                y2--;</span>
             }
             
-<span class="fc" id="L978">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc" id="L1281">            PairInt p2 = new PairInt(x2, y2);</span>
             
-<span class="pc bpc" id="L980" title="1 of 2 branches missed.">            if (visited.contains(p2)) {</span>
-<span class="nc" id="L981">                continue;</span>
+<span class="nc bnc" id="L1283" title="All 2 branches missed.">            if (visited.contains(p2)) {</span>
+<span class="nc" id="L1284">                continue;</span>
             }
-<span class="fc" id="L983">            visited.add(p2);</span>
+<span class="nc" id="L1286">            visited.add(p2);</span>
             
-<span class="fc" id="L985">            int v = img.getValue(x2, y2);</span>
+<span class="nc" id="L1288">            int v = img.getValue(x2, y2);</span>
            
-<span class="fc" id="L987">            int diff = v - vc;</span>
+<span class="nc" id="L1290">            int diff = v - vc;</span>
 
-<span class="fc" id="L989">            autocorSum += (diff * diff);</span>
-<span class="fc" id="L990">            nc++;</span>
-<span class="fc" id="L991">        }</span>
+<span class="nc" id="L1292">            autocorSum += (diff * diff);</span>
+<span class="nc" id="L1293">            nc++;</span>
+<span class="nc" id="L1294">        }</span>
         
-<span class="fc" id="L993">        autocorSum /= (double)nc;</span>
+<span class="nc" id="L1296">        autocorSum /= (double)nc;</span>
         
-<span class="fc" id="L995">        return autocorSum;</span>
+<span class="nc" id="L1298">        return autocorSum;</span>
     }
     
-    private static void fillInEllipse(PairIntArray xy) {
+    private static void fillInEllipse(TIntList xList, TIntList yList) {
 
         // key = row number, value = start and stop x range
-<span class="fc" id="L1001">        TIntObjectMap&lt;PairInt&gt; rowColRange = new TIntObjectHashMap&lt;PairInt&gt;();</span>
+<span class="fc" id="L1304">        TIntObjectMap&lt;PairInt&gt; rowColRange = new TIntObjectHashMap&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L1003">        int minRow = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1004">        int maxRow = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1306">        int minRow = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1307">        int maxRow = Integer.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1006" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.getN(); ++i) {</span>
+<span class="fc bfc" id="L1309" title="All 2 branches covered.">        for (int i = 0; i &lt; xList.size(); ++i) {</span>
             
-<span class="fc" id="L1008">            int row = xy.getY(i);</span>
-<span class="fc" id="L1009">            int col = xy.getX(i);</span>
+<span class="fc" id="L1311">            int row = yList.get(i);</span>
+<span class="fc" id="L1312">            int col = xList.get(i);</span>
             
-<span class="fc" id="L1011">            PairInt xMinMax = rowColRange.get(row);</span>
-<span class="fc bfc" id="L1012" title="All 2 branches covered.">            if (xMinMax == null) {</span>
-<span class="fc" id="L1013">                xMinMax = new PairInt(col, col);</span>
-<span class="fc" id="L1014">                rowColRange.put(row, xMinMax);</span>
+<span class="fc" id="L1314">            PairInt xMinMax = rowColRange.get(row);</span>
+<span class="fc bfc" id="L1315" title="All 2 branches covered.">            if (xMinMax == null) {</span>
+<span class="fc" id="L1316">                xMinMax = new PairInt(col, col);</span>
+<span class="fc" id="L1317">                rowColRange.put(row, xMinMax);</span>
             } else {
-<span class="fc bfc" id="L1016" title="All 2 branches covered.">                if (col &lt; xMinMax.getX()) {</span>
-<span class="fc" id="L1017">                    xMinMax.setX(col);</span>
-<span class="fc bfc" id="L1018" title="All 2 branches covered.">                } else if (col &gt; xMinMax.getY()) {</span>
-<span class="fc" id="L1019">                    xMinMax.setY(col);</span>
+<span class="fc bfc" id="L1319" title="All 2 branches covered.">                if (col &lt; xMinMax.getX()) {</span>
+<span class="fc" id="L1320">                    xMinMax.setX(col);</span>
+<span class="fc bfc" id="L1321" title="All 2 branches covered.">                } else if (col &gt; xMinMax.getY()) {</span>
+<span class="fc" id="L1322">                    xMinMax.setY(col);</span>
                 }
             }
             
-<span class="fc bfc" id="L1023" title="All 2 branches covered.">            if (row &lt; minRow) {</span>
-<span class="fc" id="L1024">                minRow = row;</span>
+<span class="fc bfc" id="L1326" title="All 2 branches covered.">            if (row &lt; minRow) {</span>
+<span class="fc" id="L1327">                minRow = row;</span>
             }
-<span class="fc bfc" id="L1026" title="All 2 branches covered.">            if (row &gt; maxRow) {</span>
-<span class="fc" id="L1027">                maxRow = row;</span>
+<span class="fc bfc" id="L1329" title="All 2 branches covered.">            if (row &gt; maxRow) {</span>
+<span class="fc" id="L1330">                maxRow = row;</span>
             }
         }
     
-<span class="fc bfc" id="L1031" title="All 2 branches covered.">        for (int i = minRow; i &lt;= maxRow; ++i) {</span>
-<span class="fc" id="L1032">            PairInt xMinMax = rowColRange.get(i);</span>
+<span class="fc bfc" id="L1334" title="All 2 branches covered.">        for (int i = minRow; i &lt;= maxRow; ++i) {</span>
+<span class="fc" id="L1335">            PairInt xMinMax = rowColRange.get(i);</span>
             int x0, x1;
-<span class="fc bfc" id="L1034" title="All 2 branches covered.">            if (xMinMax == null) {</span>
-<span class="fc" id="L1035">                PairInt prev = null;</span>
-<span class="fc" id="L1036">                int off = 0;</span>
-<span class="fc bfc" id="L1037" title="All 2 branches covered.">                while (prev == null) {</span>
-<span class="fc" id="L1038">                    off--;</span>
-<span class="fc" id="L1039">                    prev = rowColRange.get(i + off);</span>
+<span class="pc bpc" id="L1337" title="1 of 2 branches missed.">            if (xMinMax == null) {</span>
+<span class="nc" id="L1338">                PairInt prev = null;</span>
+<span class="nc" id="L1339">                int off = 0;</span>
+<span class="nc bnc" id="L1340" title="All 2 branches missed.">                while (prev == null) {</span>
+<span class="nc" id="L1341">                    off--;</span>
+<span class="nc" id="L1342">                    prev = rowColRange.get(i + off);</span>
                 }
-<span class="fc" id="L1041">                PairInt next = null;</span>
-<span class="fc" id="L1042">                off = 0;</span>
-<span class="fc bfc" id="L1043" title="All 2 branches covered.">                while (next == null) {</span>
-<span class="fc" id="L1044">                    off++;</span>
-<span class="fc" id="L1045">                    next = rowColRange.get(i + off);</span>
+<span class="nc" id="L1344">                PairInt next = null;</span>
+<span class="nc" id="L1345">                off = 0;</span>
+<span class="nc bnc" id="L1346" title="All 2 branches missed.">                while (next == null) {</span>
+<span class="nc" id="L1347">                    off++;</span>
+<span class="nc" id="L1348">                    next = rowColRange.get(i + off);</span>
                 }
-<span class="pc bpc" id="L1047" title="3 of 4 branches missed.">                assert(prev != null);</span>
-<span class="pc bpc" id="L1048" title="3 of 4 branches missed.">                assert(next != null);</span>
-<span class="fc" id="L1049">                x0 = Math.round(((float)prev.getX() + (float)next.getX())/2.f);</span>
-<span class="fc" id="L1050">                x1 = Math.round(((float)prev.getY() + (float)next.getY())/2.f);</span>
-<span class="fc" id="L1051">            } else {</span>
-<span class="fc" id="L1052">                x0 = xMinMax.getX();</span>
-<span class="fc" id="L1053">                x1 = xMinMax.getY();</span>
+<span class="nc bnc" id="L1350" title="All 4 branches missed.">                assert(prev != null);</span>
+<span class="nc bnc" id="L1351" title="All 4 branches missed.">                assert(next != null);</span>
+<span class="nc" id="L1352">                x0 = Math.round(((float)prev.getX() + (float)next.getX())/2.f);</span>
+<span class="nc" id="L1353">                x1 = Math.round(((float)prev.getY() + (float)next.getY())/2.f);</span>
+<span class="nc" id="L1354">            } else {</span>
+<span class="fc" id="L1355">                x0 = xMinMax.getX();</span>
+<span class="fc" id="L1356">                x1 = xMinMax.getY();</span>
             }
-<span class="fc bfc" id="L1055" title="All 2 branches covered.">            for (int x = (x0 + 1); x &lt; x1; ++x) {</span>
-<span class="fc" id="L1056">                xy.add(x, i);</span>
+<span class="fc bfc" id="L1358" title="All 2 branches covered.">            for (int x = (x0 + 1); x &lt; x1; ++x) {</span>
+<span class="fc" id="L1359">                xList.add(x);</span>
+<span class="fc" id="L1360">                yList.add(i);</span>
             }
         }
-<span class="fc" id="L1059">    }</span>
+<span class="fc" id="L1363">    }</span>
      
     public static void filterBySpatialProximity(float critSep, 
         List&lt;Region&gt; regions, int width, int height) {
         
-<span class="fc" id="L1064">        System.out.println(&quot;before spatial filter regions.n=&quot; + regions.size());</span>
+<span class="fc" id="L1368">        System.out.println(&quot;before spatial filter regions.n=&quot; + regions.size());</span>
 
         // index = pixIdx, value = rIdx
-<span class="fc" id="L1067">        TLongIntMap pixRIdxMap = new TLongIntHashMap();</span>
-<span class="fc" id="L1068">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L1371">        TLongIntMap pixRIdxMap = new TLongIntHashMap();</span>
+<span class="fc" id="L1372">        PixelHelper ph = new PixelHelper();</span>
        
-<span class="fc" id="L1070">        TIntObjectMap&lt;Canonicalizer.RegionGeometry&gt; rgMap </span>
+<span class="fc" id="L1374">        TIntObjectMap&lt;Canonicalizer.RegionGeometry&gt; rgMap </span>
             = new TIntObjectHashMap&lt;Canonicalizer.RegionGeometry&gt;();
         
-<span class="fc bfc" id="L1073" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; regions.size(); ++rIdx) {</span>
+<span class="fc bfc" id="L1377" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; regions.size(); ++rIdx) {</span>
 
-<span class="fc" id="L1075">            Region region = regions.get(rIdx);</span>
+<span class="fc" id="L1379">            Region region = regions.get(rIdx);</span>
          
-<span class="fc" id="L1077">            Canonicalizer.RegionGeometry rg = Canonicalizer.calculateEllipseParams(</span>
+<span class="fc" id="L1381">            Canonicalizer.RegionGeometry rg = Canonicalizer.calculateEllipseParams(</span>
                 region, width, height);
             
-<span class="pc bpc" id="L1080" title="1 of 2 branches missed.">            if (rg == null) {</span>
-<span class="nc" id="L1081">                continue;</span>
+<span class="pc bpc" id="L1384" title="1 of 2 branches missed.">            if (rg == null) {</span>
+<span class="nc" id="L1385">                continue;</span>
             }
             
-<span class="fc" id="L1084">            long pixIdx = ph.toPixelIndex(rg.xC, rg.yC, width);</span>
-<span class="fc" id="L1085">            pixRIdxMap.put(pixIdx, rIdx);</span>
+<span class="fc" id="L1388">            long pixIdx = ph.toPixelIndex(rg.xC, rg.yC, width);</span>
+<span class="fc" id="L1389">            pixRIdxMap.put(pixIdx, rIdx);</span>
             
-<span class="fc" id="L1087">            rgMap.put(rIdx, rg);</span>
+<span class="fc" id="L1391">            rgMap.put(rIdx, rg);</span>
         }
         
-<span class="fc" id="L1090">        int sep = Math.round(critSep);</span>
+<span class="fc" id="L1394">        int sep = Math.round(critSep);</span>
         
-<span class="fc" id="L1092">        ClusterFinder cFinder</span>
-<span class="fc" id="L1093">            = new ClusterFinder(pixRIdxMap.keySet(), width, height);</span>
-<span class="fc" id="L1094">        cFinder.setMinimumNumberInCluster(2);</span>
-<span class="fc" id="L1095">        cFinder.setThreshholdFactor(1.f);</span>
-<span class="fc" id="L1096">        cFinder.setBackgroundSeparation(sep, sep);</span>
-<span class="fc" id="L1097">        cFinder.findClusters();</span>
-<span class="fc" id="L1098">        List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
+<span class="fc" id="L1396">        ClusterFinder cFinder</span>
+<span class="fc" id="L1397">            = new ClusterFinder(pixRIdxMap.keySet(), width, height);</span>
+<span class="fc" id="L1398">        cFinder.setMinimumNumberInCluster(2);</span>
+<span class="fc" id="L1399">        cFinder.setThreshholdFactor(1.f);</span>
+<span class="fc" id="L1400">        cFinder.setBackgroundSeparation(sep, sep);</span>
+<span class="fc" id="L1401">        cFinder.findClusters();</span>
+<span class="fc" id="L1402">        List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
         
-<span class="fc" id="L1100">        TIntList rm = new TIntArrayList();</span>
+<span class="fc" id="L1404">        TIntList rm = new TIntArrayList();</span>
         
         //NOTE: may need to revise how to choose best region to keep.
-<span class="fc bfc" id="L1103" title="All 2 branches covered.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
+<span class="fc bfc" id="L1407" title="All 2 branches covered.">        for (int i = 0; i &lt; groupList.size(); ++i) {</span>
             
-<span class="fc" id="L1105">            TLongSet groupPixs = groupList.get(i);</span>
+<span class="fc" id="L1409">            TLongSet groupPixs = groupList.get(i);</span>
             
-<span class="fc" id="L1107">            int maxArea = Integer.MIN_VALUE;</span>
-<span class="fc" id="L1108">            int maxAreaIdx = -1;</span>
+<span class="fc" id="L1411">            int maxArea = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1412">            int maxAreaIdx = -1;</span>
             
-<span class="fc" id="L1110">            TLongIterator iter3 = groupPixs.iterator();</span>
-<span class="fc bfc" id="L1111" title="All 2 branches covered.">            while (iter3.hasNext()) {</span>
-<span class="fc" id="L1112">                long pixIdx = iter3.next();</span>
-<span class="fc" id="L1113">                int rIdx = pixRIdxMap.get(pixIdx);</span>
+<span class="fc" id="L1414">            TLongIterator iter3 = groupPixs.iterator();</span>
+<span class="fc bfc" id="L1415" title="All 2 branches covered.">            while (iter3.hasNext()) {</span>
+<span class="fc" id="L1416">                long pixIdx = iter3.next();</span>
+<span class="fc" id="L1417">                int rIdx = pixRIdxMap.get(pixIdx);</span>
             
-<span class="fc" id="L1115">                Canonicalizer.RegionGeometry rg = rgMap.get(rIdx);</span>
-<span class="pc bpc" id="L1116" title="1 of 2 branches missed.">                if (rg == null) {</span>
-<span class="nc" id="L1117">                    continue;</span>
+<span class="fc" id="L1419">                Canonicalizer.RegionGeometry rg = rgMap.get(rIdx);</span>
+<span class="pc bpc" id="L1420" title="1 of 2 branches missed.">                if (rg == null) {</span>
+<span class="nc" id="L1421">                    continue;</span>
                 }
                 //double area = rg.major * rg.minor;
-<span class="fc" id="L1120">                int area = regions.get(rIdx).accX.size();</span>
+<span class="fc" id="L1424">                int area = regions.get(rIdx).accX.size();</span>
                 
                 //if (rg.xC &gt; 73 &amp;&amp; rg.xC &lt; 85 &amp;&amp; rg.yC &gt; 49 &amp;&amp; rg.yC &lt; 65) {
                 //    System.out.format(&quot;(%d, %d) minor=%.3f major=%.3f area=%\n&quot;, 
                 //        rg.xC, rg.yC, (float)rg.minor, (float)rg.major, area);
                 //}
                 
-<span class="fc bfc" id="L1127" title="All 2 branches covered.">                if (area &gt; maxArea) {</span>
-<span class="fc" id="L1128">                    maxArea = area;</span>
-<span class="fc" id="L1129">                    maxAreaIdx = rIdx;</span>
+<span class="fc bfc" id="L1431" title="All 2 branches covered.">                if (area &gt; maxArea) {</span>
+<span class="fc" id="L1432">                    maxArea = area;</span>
+<span class="fc" id="L1433">                    maxAreaIdx = rIdx;</span>
                 }               
-<span class="fc" id="L1131">            }</span>
-<span class="pc bpc" id="L1132" title="3 of 4 branches missed.">            assert(maxAreaIdx &gt; -1);</span>
-<span class="fc" id="L1133">            iter3 = groupPixs.iterator();</span>
-<span class="fc bfc" id="L1134" title="All 2 branches covered.">            while (iter3.hasNext()) {</span>
-<span class="fc" id="L1135">                long pixIdx = iter3.next();</span>
-<span class="fc" id="L1136">                int rIdx = pixRIdxMap.get(pixIdx);</span>
-<span class="fc bfc" id="L1137" title="All 2 branches covered.">                if (rIdx == maxAreaIdx) {</span>
-<span class="fc" id="L1138">                    continue;</span>
+<span class="fc" id="L1435">            }</span>
+<span class="pc bpc" id="L1436" title="3 of 4 branches missed.">            assert(maxAreaIdx &gt; -1);</span>
+<span class="fc" id="L1437">            iter3 = groupPixs.iterator();</span>
+<span class="fc bfc" id="L1438" title="All 2 branches covered.">            while (iter3.hasNext()) {</span>
+<span class="fc" id="L1439">                long pixIdx = iter3.next();</span>
+<span class="fc" id="L1440">                int rIdx = pixRIdxMap.get(pixIdx);</span>
+<span class="fc bfc" id="L1441" title="All 2 branches covered.">                if (rIdx == maxAreaIdx) {</span>
+<span class="fc" id="L1442">                    continue;</span>
                 }
-<span class="fc" id="L1140">                rm.add(rIdx);</span>
-<span class="fc" id="L1141">            }</span>
+<span class="fc" id="L1444">                rm.add(rIdx);</span>
+<span class="fc" id="L1445">            }</span>
         }
-<span class="fc" id="L1143">        rm.sort();</span>
+<span class="fc" id="L1447">        rm.sort();</span>
         
-<span class="fc bfc" id="L1145" title="All 2 branches covered.">        for (int i = (rm.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L1146">            int rmIdx = rm.get(i);</span>
-<span class="fc" id="L1147">            regions.remove(rmIdx);</span>
+<span class="fc bfc" id="L1449" title="All 2 branches covered.">        for (int i = (rm.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L1450">            int rmIdx = rm.get(i);</span>
+<span class="fc" id="L1451">            regions.remove(rmIdx);</span>
         }
         
-<span class="fc" id="L1150">        System.out.println(&quot;after spatial filter regions.n=&quot; + regions.size());</span>
-<span class="fc" id="L1151">    }</span>
+<span class="fc" id="L1454">        System.out.println(&quot;after spatial filter regions.n=&quot; + regions.size());</span>
+<span class="fc" id="L1455">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

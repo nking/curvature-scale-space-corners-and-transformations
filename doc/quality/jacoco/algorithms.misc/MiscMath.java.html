@@ -134,7 +134,7 @@ import java.util.Set;
     }
     
     public static float findMin(float[] a, int nIndexes) {
-<span class="nc" id="L137">        float min = Float.MAX_VALUE;</span>
+<span class="nc" id="L137">        float min = Float.POSITIVE_INFINITY;</span>
 <span class="nc bnc" id="L138" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
 <span class="nc bnc" id="L139" title="All 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
 <span class="nc" id="L140">                min = a[i];</span>
@@ -184,7 +184,7 @@ import java.util.Set;
     }
     
     public static int findYMaxIndex(long[] a) {
-<span class="fc" id="L187">        return MiscMath0.findYMaxIndex(a);</span>
+<span class="nc" id="L187">        return MiscMath0.findYMaxIndex(a);</span>
     }
     
     public static int[] findYMaxIndexes(int[] a) {
@@ -1851,29 +1851,29 @@ import java.util.Set;
      */
     public static void rescale(GreyscaleImage a, int vi, int vf) {
         
-<span class="fc" id="L1854">        int minV = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1855">        int maxV = Integer.MIN_VALUE;</span>
+<span class="nc" id="L1854">        int minV = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1855">        int maxV = Integer.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1857" title="All 2 branches covered.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
-<span class="fc" id="L1858">            int v = a.getValue(i);</span>
-<span class="fc bfc" id="L1859" title="All 2 branches covered.">            if (v &lt; minV) {</span>
-<span class="fc" id="L1860">                minV = v;</span>
+<span class="nc bnc" id="L1857" title="All 2 branches missed.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
+<span class="nc" id="L1858">            int v = a.getValue(i);</span>
+<span class="nc bnc" id="L1859" title="All 2 branches missed.">            if (v &lt; minV) {</span>
+<span class="nc" id="L1860">                minV = v;</span>
             }
-<span class="fc bfc" id="L1862" title="All 2 branches covered.">            if (v &gt; maxV) {</span>
-<span class="fc" id="L1863">                maxV = v;</span>
+<span class="nc bnc" id="L1862" title="All 2 branches missed.">            if (v &gt; maxV) {</span>
+<span class="nc" id="L1863">                maxV = v;</span>
             }
         }
-<span class="fc" id="L1866">        int range = maxV - minV;</span>
+<span class="nc" id="L1866">        int range = maxV - minV;</span>
         
-<span class="fc" id="L1868">        double scale = ((double)(vf - vi))/range;</span>
+<span class="nc" id="L1868">        double scale = ((double)(vf - vi))/range;</span>
          
-<span class="fc bfc" id="L1870" title="All 2 branches covered.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L1870" title="All 2 branches missed.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
             
-<span class="fc" id="L1872">            double v = (a.getValue(i) - minV) * scale;</span>
+<span class="nc" id="L1872">            double v = (a.getValue(i) - minV) * scale;</span>
             
-<span class="fc" id="L1874">            a.setValue(i, (int)Math.round(v));</span>
+<span class="nc" id="L1874">            a.setValue(i, (int)Math.round(v));</span>
         } 
-<span class="fc" id="L1876">    }</span>
+<span class="nc" id="L1876">    }</span>
     
     /**
      * rescale a to values between vi and vf, inclusive.  the input array a is

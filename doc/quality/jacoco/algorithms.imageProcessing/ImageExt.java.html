@@ -151,16 +151,16 @@ public class ImageExt extends Image {
     
     public void getHSB(int pixIdx, float[] output) {
                 
-<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (output.length != 3) {</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (output.length != 3) {</span>
 <span class="nc" id="L155">            throw new IllegalArgumentException(&quot;output must be length 3&quot;);</span>
         }
         
-<span class="fc" id="L158">        getHue(pixIdx);</span>
+<span class="nc" id="L158">        getHue(pixIdx);</span>
         
-<span class="fc" id="L160">        output[0] = hue[pixIdx];</span>
-<span class="fc" id="L161">        output[1] = saturation[pixIdx];</span>
-<span class="fc" id="L162">        output[2] = brightness[pixIdx];</span>
-<span class="fc" id="L163">    }</span>
+<span class="nc" id="L160">        output[0] = hue[pixIdx];</span>
+<span class="nc" id="L161">        output[1] = saturation[pixIdx];</span>
+<span class="nc" id="L162">        output[2] = brightness[pixIdx];</span>
+<span class="nc" id="L163">    }</span>
     
     public float getHue(int col, int row) {
         
@@ -274,8 +274,8 @@ public class ImageExt extends Image {
                 &quot;internalIndex is out of bounds:&quot;);
         }
         
-<span class="fc bfc" id="L277" title="All 2 branches covered.">        if (!extPopulated[internalIndex]) {</span>
-<span class="fc" id="L278">            calculateColorIncludingNeighbors(internalIndex, </span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (!extPopulated[internalIndex]) {</span>
+<span class="nc" id="L278">            calculateColorIncludingNeighbors(internalIndex, </span>
                 radiusForPopulateOnDemand);
         }
        

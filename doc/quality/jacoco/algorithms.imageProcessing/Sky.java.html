@@ -60,22 +60,22 @@ public class Sky {
         
 <span class="fc" id="L61">        mserEdges = new MSEREdges(this.img);</span>
 <span class="fc" id="L62">        mserEdges.setToDebug();</span>
-<span class="fc" id="L63">        mserEdges.extractAndMergeEdges();</span>
+<span class="nc" id="L63">        mserEdges.extractAndMergeEdges();</span>
         
-<span class="fc" id="L65">    }</span>
+<span class="nc" id="L65">    }</span>
     
     public SkyObject findSun() {
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (sFinder == null) {</span>
-<span class="fc" id="L69">            sFinder = new SunFinder();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (sFinder == null) {</span>
+<span class="nc" id="L69">            sFinder = new SunFinder();</span>
         }
-<span class="fc" id="L71">        return sFinder.findSun(mserEdges);</span>
+<span class="nc" id="L71">        return sFinder.findSun(mserEdges);</span>
     }
     
     public List&lt;SkyObject&gt; findRainbows() {
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (rFinder == null) {</span>
-<span class="fc" id="L76">            rFinder = new RainbowFinder();</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (rFinder == null) {</span>
+<span class="nc" id="L76">            rFinder = new RainbowFinder();</span>
         }
-<span class="fc" id="L78">        return rFinder.findRainbows(mserEdges);</span>
+<span class="nc" id="L78">        return rFinder.findRainbows(mserEdges);</span>
     }
     
     //public SkyObject findMoonDogs() {
@@ -163,12 +163,12 @@ public class Sky {
     //}
     
     public void setToDebug(String dbgLbl) {
-<span class="fc" id="L166">        debug = true;</span>
+<span class="nc" id="L166">        debug = true;</span>
         
-<span class="fc" id="L168">        this.debugLabel = dbgLbl;</span>
+<span class="nc" id="L168">        this.debugLabel = dbgLbl;</span>
     
-<span class="fc" id="L170">        ts = System.currentTimeMillis();</span>
-<span class="fc" id="L171">    }</span>
+<span class="nc" id="L170">        ts = System.currentTimeMillis();</span>
+<span class="nc" id="L171">    }</span>
     
     public void _printGsRegions0() {
 <span class="nc" id="L174">        mserEdges._debugOrigRegions(0, &quot;gs&quot;);</span>
@@ -203,148 +203,148 @@ public class Sky {
          5:  purple = 193 - 255
         */
         
-<span class="fc" id="L206">        TIntList indexes = new TIntArrayList();</span>
+<span class="nc" id="L206">        TIntList indexes = new TIntArrayList();</span>
         
-<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
-<span class="fc" id="L209">            TIntSet pixIdxs = labeledSets.get(i);</span>
-<span class="fc bfc" id="L210" title="All 2 branches covered.">            if (hasAPointWithY(0, pixIdxs, imgWidth)) {</span>
-<span class="fc" id="L211">                float[] normalizedHist = normPTCHs.get(i).a;</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
+<span class="nc" id="L209">            TIntSet pixIdxs = labeledSets.get(i);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">            if (hasAPointWithY(0, pixIdxs, imgWidth)) {</span>
+<span class="nc" id="L211">                float[] normalizedHist = normPTCHs.get(i).a;</span>
                 // all colors are sky colors except green,
                 // but this could be improved
-<span class="fc bfc" id="L214" title="All 2 branches covered.">                if (normalizedHist[3] &lt; 0.3f) {</span>
-<span class="fc" id="L215">                    indexes.add(i);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                if (normalizedHist[3] &lt; 0.3f) {</span>
+<span class="nc" id="L215">                    indexes.add(i);</span>
                 }
             }
         }
         
-<span class="fc" id="L220">        return indexes;</span>
+<span class="nc" id="L220">        return indexes;</span>
     }
 
     private boolean hasAPointWithY(int yCoord, TIntSet pixIdxs, 
         int imgWidth) {
         
-<span class="fc" id="L226">        TIntIterator iter = pixIdxs.iterator();</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L228">            int pixIdx = iter.next();</span>
-<span class="fc" id="L229">            int y = pixIdx/imgWidth;</span>
-<span class="fc bfc" id="L230" title="All 2 branches covered.">            if (y == yCoord) {</span>
-<span class="fc" id="L231">                return true;</span>
+<span class="nc" id="L226">        TIntIterator iter = pixIdxs.iterator();</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L228">            int pixIdx = iter.next();</span>
+<span class="nc" id="L229">            int y = pixIdx/imgWidth;</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">            if (y == yCoord) {</span>
+<span class="nc" id="L231">                return true;</span>
             } 
-<span class="fc" id="L233">        }</span>
+<span class="nc" id="L233">        }</span>
         
-<span class="fc" id="L235">        return false;</span>
+<span class="nc" id="L235">        return false;</span>
     }
 
     private TIntIntMap getLabelSetLs(GreyscaleImage gsImg, 
         List&lt;TIntSet&gt; labeledSets, TIntList indexes) {
         
-<span class="fc" id="L241">        TIntIntMap map = new TIntIntHashMap();</span>
+<span class="nc" id="L241">        TIntIntMap map = new TIntIntHashMap();</span>
         
-<span class="fc" id="L243">        TIntIterator iter = indexes.iterator();</span>
-<span class="fc bfc" id="L244" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L245">            int idx = iter.next();</span>
+<span class="nc" id="L243">        TIntIterator iter = indexes.iterator();</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L245">            int idx = iter.next();</span>
             
-<span class="fc" id="L247">            TIntSet pixIdxs = labeledSets.get(idx);</span>
+<span class="nc" id="L247">            TIntSet pixIdxs = labeledSets.get(idx);</span>
             
-<span class="fc" id="L249">            TIntIterator iter2 = pixIdxs.iterator();</span>
+<span class="nc" id="L249">            TIntIterator iter2 = pixIdxs.iterator();</span>
             
-<span class="fc" id="L251">            int avg = 0;</span>
-<span class="fc bfc" id="L252" title="All 2 branches covered.">            while (iter2.hasNext()) {</span>
-<span class="fc" id="L253">                int pixIdx = iter2.next();</span>
-<span class="fc" id="L254">                avg += gsImg.getValue(pixIdx);</span>
-<span class="fc" id="L255">            }</span>
-<span class="fc" id="L256">            avg /= pixIdxs.size();</span>
+<span class="nc" id="L251">            int avg = 0;</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L253">                int pixIdx = iter2.next();</span>
+<span class="nc" id="L254">                avg += gsImg.getValue(pixIdx);</span>
+<span class="nc" id="L255">            }</span>
+<span class="nc" id="L256">            avg /= pixIdxs.size();</span>
             
-<span class="fc" id="L258">            map.put(idx, avg);</span>
-<span class="fc" id="L259">        }</span>
+<span class="nc" id="L258">            map.put(idx, avg);</span>
+<span class="nc" id="L259">        }</span>
         
-<span class="fc" id="L261">        return map;</span>
+<span class="nc" id="L261">        return map;</span>
     }
 
     private TIntObjectMap&lt;PairInt&gt; calcCentroids(List&lt;TIntSet&gt; labeledSets, 
         TIntList indexes, int width) {
         
-<span class="fc" id="L267">        TIntObjectMap&lt;PairInt&gt; map = new TIntObjectHashMap&lt;PairInt&gt;();</span>
+<span class="nc" id="L267">        TIntObjectMap&lt;PairInt&gt; map = new TIntObjectHashMap&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L269">        TIntIterator iter = indexes.iterator();</span>
-<span class="fc bfc" id="L270" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L271">            int idx = iter.next();</span>
+<span class="nc" id="L269">        TIntIterator iter = indexes.iterator();</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L271">            int idx = iter.next();</span>
             
-<span class="fc" id="L273">            TIntSet pixIdxs = labeledSets.get(idx);</span>
+<span class="nc" id="L273">            TIntSet pixIdxs = labeledSets.get(idx);</span>
             
-<span class="fc" id="L275">            TIntIterator iter2 = pixIdxs.iterator();</span>
+<span class="nc" id="L275">            TIntIterator iter2 = pixIdxs.iterator();</span>
             
-<span class="fc" id="L277">            int xAvg = 0;</span>
-<span class="fc" id="L278">            int yAvg = 0;</span>
-<span class="fc bfc" id="L279" title="All 2 branches covered.">            while (iter2.hasNext()) {</span>
-<span class="fc" id="L280">                int pixIdx = iter2.next();</span>
-<span class="fc" id="L281">                int y = pixIdx/width;</span>
-<span class="fc" id="L282">                int x = pixIdx - (y * width);</span>
-<span class="fc" id="L283">                xAvg += x;</span>
-<span class="fc" id="L284">                yAvg += y;</span>
-<span class="fc" id="L285">            }</span>
-<span class="fc" id="L286">            xAvg /= pixIdxs.size();</span>
-<span class="fc" id="L287">            yAvg /= pixIdxs.size();</span>
+<span class="nc" id="L277">            int xAvg = 0;</span>
+<span class="nc" id="L278">            int yAvg = 0;</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L280">                int pixIdx = iter2.next();</span>
+<span class="nc" id="L281">                int y = pixIdx/width;</span>
+<span class="nc" id="L282">                int x = pixIdx - (y * width);</span>
+<span class="nc" id="L283">                xAvg += x;</span>
+<span class="nc" id="L284">                yAvg += y;</span>
+<span class="nc" id="L285">            }</span>
+<span class="nc" id="L286">            xAvg /= pixIdxs.size();</span>
+<span class="nc" id="L287">            yAvg /= pixIdxs.size();</span>
             
-<span class="fc" id="L289">            map.put(idx, new PairInt(xAvg, yAvg));</span>
-<span class="fc" id="L290">        }</span>
+<span class="nc" id="L289">            map.put(idx, new PairInt(xAvg, yAvg));</span>
+<span class="nc" id="L290">        }</span>
         
-<span class="fc" id="L292">        return map;</span>
+<span class="nc" id="L292">        return map;</span>
     }
 
     private TIntList getBottomBordering(List&lt;TIntSet&gt; labeledSets, int width,
         int height) {
 
-<span class="fc" id="L298">        TIntList indexes = new TIntArrayList();</span>
+<span class="nc" id="L298">        TIntList indexes = new TIntArrayList();</span>
         
-<span class="fc bfc" id="L300" title="All 2 branches covered.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
-<span class="fc" id="L301">            TIntSet pixIdxs = labeledSets.get(i);</span>
-<span class="fc bfc" id="L302" title="All 2 branches covered.">            if (hasAPointWithY(height - 1, pixIdxs, width)) {</span>
-<span class="fc" id="L303">                indexes.add(i);</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
+<span class="nc" id="L301">            TIntSet pixIdxs = labeledSets.get(i);</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">            if (hasAPointWithY(height - 1, pixIdxs, width)) {</span>
+<span class="nc" id="L303">                indexes.add(i);</span>
             }
         }
         
-<span class="fc" id="L307">        return indexes;</span>
+<span class="nc" id="L307">        return indexes;</span>
     }
 
     private Set&lt;PairInt&gt; createPoints(List&lt;TIntSet&gt; labeledSets, 
         TIntList indexes, int width) {
         
-<span class="fc" id="L313">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L313">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L315">        TIntIterator iter = indexes.iterator();</span>
-<span class="fc bfc" id="L316" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L317">            int idx = iter.next();</span>
-<span class="fc" id="L318">            TIntSet pixIdxs = labeledSets.get(idx);</span>
-<span class="fc" id="L319">            TIntIterator iter2 = pixIdxs.iterator();</span>
-<span class="fc bfc" id="L320" title="All 2 branches covered.">            while (iter2.hasNext()) {</span>
-<span class="fc" id="L321">                int pixIdx = iter2.next();</span>
-<span class="fc" id="L322">                int y = pixIdx/width;</span>
-<span class="fc" id="L323">                int x = pixIdx - (y * width);</span>
-<span class="fc" id="L324">                set.add(new PairInt(x, y));</span>
-<span class="fc" id="L325">            }</span>
-<span class="fc" id="L326">        }</span>
+<span class="nc" id="L315">        TIntIterator iter = indexes.iterator();</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L317">            int idx = iter.next();</span>
+<span class="nc" id="L318">            TIntSet pixIdxs = labeledSets.get(idx);</span>
+<span class="nc" id="L319">            TIntIterator iter2 = pixIdxs.iterator();</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
+<span class="nc" id="L321">                int pixIdx = iter2.next();</span>
+<span class="nc" id="L322">                int y = pixIdx/width;</span>
+<span class="nc" id="L323">                int x = pixIdx - (y * width);</span>
+<span class="nc" id="L324">                set.add(new PairInt(x, y));</span>
+<span class="nc" id="L325">            }</span>
+<span class="nc" id="L326">        }</span>
         
-<span class="fc" id="L328">        return set;</span>
+<span class="nc" id="L328">        return set;</span>
     }
 
     private List&lt;OneDFloatArray&gt; normalize(List&lt;OneDIntArray&gt; chs) {
     
-<span class="fc" id="L333">        List&lt;OneDFloatArray&gt; norm = new ArrayList&lt;OneDFloatArray&gt;();</span>
-<span class="fc bfc" id="L334" title="All 2 branches covered.">        for (int i = 0; i &lt; chs.size(); ++i) {</span>
-<span class="fc" id="L335">            int[] a = chs.get(i).a;</span>
-<span class="fc" id="L336">            int tot = 0;</span>
-<span class="fc bfc" id="L337" title="All 2 branches covered.">            for (int c : a) {</span>
-<span class="fc" id="L338">                tot += c;</span>
+<span class="nc" id="L333">        List&lt;OneDFloatArray&gt; norm = new ArrayList&lt;OneDFloatArray&gt;();</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">        for (int i = 0; i &lt; chs.size(); ++i) {</span>
+<span class="nc" id="L335">            int[] a = chs.get(i).a;</span>
+<span class="nc" id="L336">            int tot = 0;</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            for (int c : a) {</span>
+<span class="nc" id="L338">                tot += c;</span>
             }
-<span class="fc" id="L340">            float[] b = new float[a.length];</span>
-<span class="fc bfc" id="L341" title="All 2 branches covered.">            for (int j = 0; j &lt; a.length; ++j) {</span>
-<span class="fc" id="L342">                b[j] = (float)a[j]/(float)tot;</span>
+<span class="nc" id="L340">            float[] b = new float[a.length];</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">            for (int j = 0; j &lt; a.length; ++j) {</span>
+<span class="nc" id="L342">                b[j] = (float)a[j]/(float)tot;</span>
             }
-<span class="fc" id="L344">            norm.add(new OneDFloatArray(b));</span>
+<span class="nc" id="L344">            norm.add(new OneDFloatArray(b));</span>
         }
         
-<span class="fc" id="L347">        return norm;</span>
+<span class="nc" id="L347">        return norm;</span>
     }
     
     private class BSObj {
@@ -478,7 +478,7 @@ public class Sky {
      * @return 
      */
     public List&lt;SkyObject&gt; findSkyAssumingHorizon() {
-<span class="fc" id="L481">        return findSkyAssumingHorizon(false);</span>
+<span class="nc" id="L481">        return findSkyAssumingHorizon(false);</span>
     }
     
     /**
@@ -553,31 +553,31 @@ public class Sky {
                   multiple images (for cloud or foreground motion), etc.
         */
         
-<span class="fc" id="L556">        GreyscaleImage ptImg = mserEdges.getPtImg();</span>
+<span class="nc" id="L556">        GreyscaleImage ptImg = mserEdges.getPtImg();</span>
         
-<span class="fc" id="L558">        GreyscaleImage gsImg = mserEdges.getGsImg();</span>
+<span class="nc" id="L558">        GreyscaleImage gsImg = mserEdges.getGsImg();</span>
         
-<span class="fc" id="L560">        List&lt;TIntSet&gt; labeledSets = mserEdges.getLabeledSets();</span>
+<span class="nc" id="L560">        List&lt;TIntSet&gt; labeledSets = mserEdges.getLabeledSets();</span>
        
-<span class="pc bpc" id="L562" title="1 of 2 branches missed.">        if (labeledSets.isEmpty()) {</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">        if (labeledSets.isEmpty()) {</span>
 <span class="nc" id="L563">            return null;</span>
         }
         
-<span class="fc" id="L566">        List&lt;OneDIntArray&gt; ptCHs = </span>
-<span class="fc" id="L567">            ColorHistogram.createPTHistograms(ptImg, labeledSets);</span>
+<span class="nc" id="L566">        List&lt;OneDIntArray&gt; ptCHs = </span>
+<span class="nc" id="L567">            ColorHistogram.createPTHistograms(ptImg, labeledSets);</span>
         
-<span class="fc" id="L569">        List&lt;OneDFloatArray&gt; normPTCHs = normalize(ptCHs);</span>
+<span class="nc" id="L569">        List&lt;OneDFloatArray&gt; normPTCHs = normalize(ptCHs);</span>
         
         //NOTE: this may need corrections for some bright white clouds:
-<span class="fc" id="L572">        TIntList topSkyIndexes = findSkyColorsAtTop(normPTCHs,</span>
-<span class="fc" id="L573">            labeledSets, ptImg.getWidth());</span>
+<span class="nc" id="L572">        TIntList topSkyIndexes = findSkyColorsAtTop(normPTCHs,</span>
+<span class="nc" id="L573">            labeledSets, ptImg.getWidth());</span>
         
-<span class="fc" id="L575">        TIntObjectMap&lt;PairInt&gt; topXYs = calcCentroids(labeledSets, topSkyIndexes,</span>
-<span class="fc" id="L576">            gsImg.getWidth());</span>
+<span class="nc" id="L575">        TIntObjectMap&lt;PairInt&gt; topXYs = calcCentroids(labeledSets, topSkyIndexes,</span>
+<span class="nc" id="L576">            gsImg.getWidth());</span>
         
-<span class="fc" id="L578">        TIntIntMap topAvgGrey = getLabelSetLs(gsImg, labeledSets, topSkyIndexes);</span>
+<span class="nc" id="L578">        TIntIntMap topAvgGrey = getLabelSetLs(gsImg, labeledSets, topSkyIndexes);</span>
         
-<span class="pc bpc" id="L580" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">        if (debug) {</span>
 <span class="nc" id="L581">            System.out.println(debugLabel);</span>
 <span class="nc" id="L582">            TIntIterator iter = topSkyIndexes.iterator();</span>
 <span class="nc bnc" id="L583" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
@@ -589,15 +589,15 @@ public class Sky {
 <span class="nc" id="L589">            }</span>
         }
         
-<span class="fc" id="L592">        TIntList bottomBorderIndexes = getBottomBordering(labeledSets,</span>
-<span class="fc" id="L593">            ptImg.getWidth(), ptImg.getHeight());</span>
+<span class="nc" id="L592">        TIntList bottomBorderIndexes = getBottomBordering(labeledSets,</span>
+<span class="nc" id="L593">            ptImg.getWidth(), ptImg.getHeight());</span>
         
-<span class="fc" id="L595">        TIntIntMap bottomAvgGrey = getLabelSetLs(gsImg, labeledSets, </span>
+<span class="nc" id="L595">        TIntIntMap bottomAvgGrey = getLabelSetLs(gsImg, labeledSets, </span>
             bottomBorderIndexes);
         
         // DEBUG xy centroids
-<span class="fc" id="L599">        TIntObjectMap&lt;PairInt&gt; bottomXYs = calcCentroids(labeledSets, </span>
-<span class="fc" id="L600">            bottomBorderIndexes, gsImg.getWidth());</span>
+<span class="nc" id="L599">        TIntObjectMap&lt;PairInt&gt; bottomXYs = calcCentroids(labeledSets, </span>
+<span class="nc" id="L600">            bottomBorderIndexes, gsImg.getWidth());</span>
         
         if (false &amp;&amp; debug) {
             TIntIterator iter = bottomBorderIndexes.iterator();
@@ -610,77 +610,77 @@ public class Sky {
             }
         }
         
-<span class="fc" id="L613">        SkyObject sun = findSun();</span>
+<span class="nc" id="L613">        SkyObject sun = findSun();</span>
         
-<span class="fc" id="L615">        List&lt;SkyObject&gt; rbs = findRainbows();</span>
+<span class="nc" id="L615">        List&lt;SkyObject&gt; rbs = findRainbows();</span>
         
         // ---- finding the main sky sets at top of image, before further logic
         //      about sky in other sets
         
-<span class="fc" id="L620">        TIntList filtered = new TIntArrayList();</span>
+<span class="nc" id="L620">        TIntList filtered = new TIntArrayList();</span>
         
-<span class="fc" id="L622">        ColorHistogram clrHist = new ColorHistogram();</span>
-<span class="fc" id="L623">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L622">        ColorHistogram clrHist = new ColorHistogram();</span>
+<span class="nc" id="L623">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
         
-<span class="fc" id="L625">        boolean allAreBlue = true;</span>
-<span class="fc" id="L626">        int maxAvgIfBlue = Integer.MIN_VALUE;</span>
-<span class="fc" id="L627">        int maxAvgIdx = -1;</span>
+<span class="nc" id="L625">        boolean allAreBlue = true;</span>
+<span class="nc" id="L626">        int maxAvgIfBlue = Integer.MIN_VALUE;</span>
+<span class="nc" id="L627">        int maxAvgIdx = -1;</span>
         
-<span class="fc bfc" id="L629" title="All 2 branches covered.">        if (topSkyIndexes.size() == 1) {</span>
+<span class="nc bnc" id="L629" title="All 2 branches missed.">        if (topSkyIndexes.size() == 1) {</span>
             
-<span class="fc" id="L631">            int idx = topSkyIndexes.get(0);</span>
-<span class="fc" id="L632">            filtered.add(idx);</span>
+<span class="nc" id="L631">            int idx = topSkyIndexes.get(0);</span>
+<span class="nc" id="L632">            filtered.add(idx);</span>
             
-<span class="fc bfc" id="L634" title="All 2 branches covered.">            if (normPTCHs.get(idx).a[0] &gt; 0.1) {</span>
-<span class="fc" id="L635">                allAreBlue = false;</span>
+<span class="nc bnc" id="L634" title="All 2 branches missed.">            if (normPTCHs.get(idx).a[0] &gt; 0.1) {</span>
+<span class="nc" id="L635">                allAreBlue = false;</span>
             } else {
-<span class="fc" id="L637">                maxAvgIdx = idx;</span>
-<span class="fc" id="L638">                maxAvgIfBlue = topAvgGrey.get(idx);</span>
+<span class="nc" id="L637">                maxAvgIdx = idx;</span>
+<span class="nc" id="L638">                maxAvgIfBlue = topAvgGrey.get(idx);</span>
             }
             
-<span class="fc" id="L641">        } else {</span>
+<span class="nc" id="L641">        } else {</span>
             
             // could improve efficiency here:
-<span class="fc" id="L644">            TIntList rmvd = new TIntArrayList(topSkyIndexes);</span>
+<span class="nc" id="L644">            TIntList rmvd = new TIntArrayList(topSkyIndexes);</span>
             //NOTE: assuming all bottom bordering sets are &quot;nonsky&quot;
-<span class="fc" id="L646">            topSkyIndexes.removeAll(bottomBorderIndexes);</span>
-<span class="fc" id="L647">            rmvd.removeAll(topSkyIndexes);</span>
+<span class="nc" id="L646">            topSkyIndexes.removeAll(bottomBorderIndexes);</span>
+<span class="nc" id="L647">            rmvd.removeAll(topSkyIndexes);</span>
             
             // test for all blue or 
             //    brightest having essentially no green
             //    and add to filtered, those resembling them
-<span class="fc" id="L652">            TIntIterator iter = topSkyIndexes.iterator();</span>
-<span class="fc bfc" id="L653" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L654">                int idx = iter.next();</span>
-<span class="fc" id="L655">                float[] norm = normPTCHs.get(idx).a;</span>
-<span class="fc" id="L656">                System.out.println(&quot;  *top &quot; + Arrays.toString(norm) + &quot;&quot;</span>
-<span class="fc" id="L657">                    + &quot;  inten=&quot; + topAvgGrey.get(idx)</span>
-<span class="fc" id="L658">                    + &quot;  xy=&quot; + topXYs.get(idx));</span>
-<span class="fc bfc" id="L659" title="All 2 branches covered.">                if (norm[0] &gt; 0.1) {</span>
-<span class="fc" id="L660">                    allAreBlue = false;</span>
-<span class="pc bpc" id="L661" title="1 of 4 branches missed.">                } else if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
+<span class="nc" id="L652">            TIntIterator iter = topSkyIndexes.iterator();</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L654">                int idx = iter.next();</span>
+<span class="nc" id="L655">                float[] norm = normPTCHs.get(idx).a;</span>
+<span class="nc" id="L656">                System.out.println(&quot;  *top &quot; + Arrays.toString(norm) + &quot;&quot;</span>
+<span class="nc" id="L657">                    + &quot;  inten=&quot; + topAvgGrey.get(idx)</span>
+<span class="nc" id="L658">                    + &quot;  xy=&quot; + topXYs.get(idx));</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">                if (norm[0] &gt; 0.1) {</span>
+<span class="nc" id="L660">                    allAreBlue = false;</span>
+<span class="nc bnc" id="L661" title="All 4 branches missed.">                } else if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
                     // to try to remove relfection from water, avoiding the
                     //    histograms with green and darker for blue skies
-<span class="fc" id="L664">                    int avg = topAvgGrey.get(idx);</span>
-<span class="fc bfc" id="L665" title="All 2 branches covered.">                    if (avg &gt; maxAvgIfBlue) {</span>
+<span class="nc" id="L664">                    int avg = topAvgGrey.get(idx);</span>
+<span class="nc bnc" id="L665" title="All 2 branches missed.">                    if (avg &gt; maxAvgIfBlue) {</span>
                         
                         // prefer those without any purple if exist
-<span class="fc bfc" id="L668" title="All 2 branches covered.">                        boolean doNotSet = maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="pc bpc" id="L669" title="2 of 4 branches missed.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
+<span class="nc bnc" id="L668" title="All 2 branches missed.">                        boolean doNotSet = maxAvgIdx &gt; -1 &amp;&amp; </span>
+<span class="nc bnc" id="L669" title="All 4 branches missed.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
                             norm[5] &gt; 0;
                         
-<span class="pc bpc" id="L672" title="1 of 2 branches missed.">                        if (!doNotSet) {</span>
-<span class="fc" id="L673">                            maxAvgIfBlue = avg;</span>
-<span class="fc" id="L674">                            maxAvgIdx = idx;</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">                        if (!doNotSet) {</span>
+<span class="nc" id="L673">                            maxAvgIfBlue = avg;</span>
+<span class="nc" id="L674">                            maxAvgIdx = idx;</span>
                         }
                         
-<span class="pc bpc" id="L677" title="1 of 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="pc bpc" id="L678" title="1 of 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
+<span class="nc bnc" id="L677" title="All 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
+<span class="nc bnc" id="L678" title="All 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
 <span class="nc" id="L679">                        maxAvgIfBlue = avg;</span>
 <span class="nc" id="L680">                        maxAvgIdx = idx;</span>
                     }
                 }
-<span class="fc" id="L683">            }</span>
+<span class="nc" id="L683">            }</span>
             
             if (false &amp;&amp; debug) {
                 iter = rmvd.iterator();
@@ -697,19 +697,19 @@ public class Sky {
                     &quot; maxAvgIfBlue=&quot; + maxAvgIfBlue);
             }
             
-<span class="pc bpc" id="L700" title="1 of 4 branches missed.">            boolean blueSkies = (sun != null) &amp;&amp; (maxAvgIfBlue &gt; 0);</span>
+<span class="nc bnc" id="L700" title="All 4 branches missed.">            boolean blueSkies = (sun != null) &amp;&amp; (maxAvgIfBlue &gt; 0);</span>
             
-<span class="fc" id="L702">            System.out.println(&quot;blueSkies=&quot; + blueSkies);</span>
+<span class="nc" id="L702">            System.out.println(&quot;blueSkies=&quot; + blueSkies);</span>
             
-<span class="fc bfc" id="L704" title="All 4 branches covered.">            if (allAreBlue || blueSkies) {</span>
+<span class="nc bnc" id="L704" title="All 4 branches missed.">            if (allAreBlue || blueSkies) {</span>
 
-<span class="pc bpc" id="L706" title="1 of 2 branches missed.">                if (maxAvgIdx == -1) {</span>
+<span class="nc bnc" id="L706" title="All 2 branches missed.">                if (maxAvgIdx == -1) {</span>
                     // possibly an error in algorithm above, espec. 
                     //    regarding reflection filter for green
 <span class="nc" id="L709">                    return null;</span>
                 }
                 
-<span class="pc bpc" id="L712" title="1 of 2 branches missed.">                if (addOnlyContiguous) {</span>
+<span class="nc bnc" id="L712" title="All 2 branches missed.">                if (addOnlyContiguous) {</span>
 
 <span class="nc" id="L714">                    filtered.add(maxAvgIdx);</span>
                     
@@ -717,22 +717,22 @@ public class Sky {
                     
                     //TODO: consider how to correct for sky reflected in water
                     //  (see test image for stinson beach)
-<span class="fc" id="L720">                    iter = topSkyIndexes.iterator();</span>
-<span class="fc bfc" id="L721" title="All 2 branches covered.">                    while (iter.hasNext()) {</span>
-<span class="fc" id="L722">                        int idx = iter.next();</span>
-<span class="fc" id="L723">                        float[] norm = normPTCHs.get(idx).a;</span>
+<span class="nc" id="L720">                    iter = topSkyIndexes.iterator();</span>
+<span class="nc bnc" id="L721" title="All 2 branches missed.">                    while (iter.hasNext()) {</span>
+<span class="nc" id="L722">                        int idx = iter.next();</span>
+<span class="nc" id="L723">                        float[] norm = normPTCHs.get(idx).a;</span>
                         // collect the sky w/o green that has similar intensity
-<span class="pc bpc" id="L725" title="1 of 4 branches missed.">                        if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
-<span class="fc" id="L726">                            int avg = topAvgGrey.get(idx);</span>
-<span class="fc" id="L727">                            filtered.add(idx);</span>
+<span class="nc bnc" id="L725" title="All 4 branches missed.">                        if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
+<span class="nc" id="L726">                            int avg = topAvgGrey.get(idx);</span>
+<span class="nc" id="L727">                            filtered.add(idx);</span>
                         }
-<span class="fc" id="L729">                    }</span>
+<span class="nc" id="L729">                    }</span>
                 }
             } else {
                 
                 //TODO: this section needs to be corrected
                
-<span class="pc bpc" id="L735" title="1 of 2 branches missed.">                if (addOnlyContiguous) {</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">                if (addOnlyContiguous) {</span>
                     // choose brightest of blue or red if doesn't resemble
                     //     foreground
 <span class="nc bnc" id="L738" title="All 2 branches missed.">                    if (maxAvgIdx &gt; -1) {</span>
@@ -790,26 +790,26 @@ public class Sky {
                     // filtering for all red or blue and red
                     //    (mostly, trying to remove anything resembling the
                     //    removed foreground)
-<span class="fc" id="L793">                    iter = topSkyIndexes.iterator();</span>
-<span class="fc bfc" id="L794" title="All 2 branches covered.">                    while (iter.hasNext()) {</span>
-<span class="fc" id="L795">                        int idx = iter.next();</span>
-<span class="fc" id="L796">                        int[] hist = ptCHs.get(idx).a;</span>
-<span class="fc" id="L797">                        boolean keep = true;</span>
-<span class="fc bfc" id="L798" title="All 2 branches covered.">                        for (int i = 0; i &lt; rmvd.size(); ++i) {</span>
-<span class="fc" id="L799">                            int rIdx = rmvd.get(i);</span>
-<span class="fc" id="L800">                            int[] rHist = ptCHs.get(rIdx).a;</span>
-<span class="fc" id="L801">                            float intersection = clrHist.intersection(hist, rHist);</span>
-<span class="fc" id="L802">                            System.out.println(&quot; inter=&quot; + intersection + &quot; &quot;</span>
-<span class="fc" id="L803">                                + Arrays.toString(hist));</span>
-<span class="pc bpc" id="L804" title="1 of 2 branches missed.">                            if (intersection &gt; 0.5) {</span>
+<span class="nc" id="L793">                    iter = topSkyIndexes.iterator();</span>
+<span class="nc bnc" id="L794" title="All 2 branches missed.">                    while (iter.hasNext()) {</span>
+<span class="nc" id="L795">                        int idx = iter.next();</span>
+<span class="nc" id="L796">                        int[] hist = ptCHs.get(idx).a;</span>
+<span class="nc" id="L797">                        boolean keep = true;</span>
+<span class="nc bnc" id="L798" title="All 2 branches missed.">                        for (int i = 0; i &lt; rmvd.size(); ++i) {</span>
+<span class="nc" id="L799">                            int rIdx = rmvd.get(i);</span>
+<span class="nc" id="L800">                            int[] rHist = ptCHs.get(rIdx).a;</span>
+<span class="nc" id="L801">                            float intersection = clrHist.intersection(hist, rHist);</span>
+<span class="nc" id="L802">                            System.out.println(&quot; inter=&quot; + intersection + &quot; &quot;</span>
+<span class="nc" id="L803">                                + Arrays.toString(hist));</span>
+<span class="nc bnc" id="L804" title="All 2 branches missed.">                            if (intersection &gt; 0.5) {</span>
 <span class="nc" id="L805">                                keep = false;</span>
 <span class="nc" id="L806">                                break;</span>
                             }
                         }
-<span class="pc bpc" id="L809" title="1 of 2 branches missed.">                        if (keep) {</span>
-<span class="fc" id="L810">                            filtered.add(idx);</span>
+<span class="nc bnc" id="L809" title="All 2 branches missed.">                        if (keep) {</span>
+<span class="nc" id="L810">                            filtered.add(idx);</span>
                         }
-<span class="fc" id="L812">                    }</span>
+<span class="nc" id="L812">                    }</span>
                 }
             }   
         }
@@ -820,24 +820,24 @@ public class Sky {
         //      are clear ways to continue adding sky sets        
         
 
-<span class="fc" id="L823">        Set&lt;PairInt&gt; skyPoints = createPoints(labeledSets, filtered, </span>
-<span class="fc" id="L824">            ptImg.getWidth());</span>
+<span class="nc" id="L823">        Set&lt;PairInt&gt; skyPoints = createPoints(labeledSets, filtered, </span>
+<span class="nc" id="L824">            ptImg.getWidth());</span>
         
-<span class="fc" id="L826">        int[] xyCen = ch.calculateRoundedXYCentroids(skyPoints);</span>
+<span class="nc" id="L826">        int[] xyCen = ch.calculateRoundedXYCentroids(skyPoints);</span>
 
-<span class="fc" id="L828">        List&lt;SkyObject&gt; sky = new ArrayList&lt;SkyObject&gt;();</span>
+<span class="nc" id="L828">        List&lt;SkyObject&gt; sky = new ArrayList&lt;SkyObject&gt;();</span>
 
-<span class="fc" id="L830">        SkyObject obj = new SkyObject();</span>
-<span class="fc" id="L831">        obj.points = skyPoints;</span>
-<span class="fc" id="L832">        obj.xyCenter = xyCen;</span>
-<span class="fc" id="L833">        sky.add(obj);</span>
+<span class="nc" id="L830">        SkyObject obj = new SkyObject();</span>
+<span class="nc" id="L831">        obj.points = skyPoints;</span>
+<span class="nc" id="L832">        obj.xyCenter = xyCen;</span>
+<span class="nc" id="L833">        sky.add(obj);</span>
 
-<span class="fc bfc" id="L835" title="All 2 branches covered.">        if (sun != null) {</span>
-<span class="fc" id="L836">            sky.add(sun);</span>
-<span class="pc bpc" id="L837" title="3 of 4 branches missed.">        } else if (rbs != null &amp;&amp; !rbs.isEmpty()) {</span>
+<span class="nc bnc" id="L835" title="All 2 branches missed.">        if (sun != null) {</span>
+<span class="nc" id="L836">            sky.add(sun);</span>
+<span class="nc bnc" id="L837" title="All 4 branches missed.">        } else if (rbs != null &amp;&amp; !rbs.isEmpty()) {</span>
 <span class="nc" id="L838">            sky.addAll(rbs);</span>
         }
-<span class="fc" id="L840">        return sky;</span>
+<span class="nc" id="L840">        return sky;</span>
     }
     
     //TODO: consider adding findSolarEclipse or sun w/ occultation or coronograph...

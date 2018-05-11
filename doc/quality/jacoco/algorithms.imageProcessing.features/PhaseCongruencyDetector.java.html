@@ -1623,8 +1623,8 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1623" title="All 2 branches covered.">                for (int i = 0; i &lt; w; ++i) {</span>
 <span class="fc bfc" id="L1624" title="All 2 branches covered.">                    for (int j = 0; j &lt; h; ++j) {</span>
 <span class="fc" id="L1625">                        double t = threshImg[i][j];</span>
-<span class="fc bfc" id="L1626" title="All 4 branches covered.">                        if (imgCp[i][j] &gt; t &amp;&amp; imgCp[i][j] &gt; t1) {</span>
-<span class="fc" id="L1627">                            imgCp[i][j] = 255.;</span>
+<span class="pc bpc" id="L1626" title="3 of 4 branches missed.">                        if (imgCp[i][j] &gt; t &amp;&amp; imgCp[i][j] &gt; t1) {</span>
+<span class="nc" id="L1627">                            imgCp[i][j] = 255.;</span>
                         } else {
 <span class="fc" id="L1629">                            imgCp[i][j] = 0;</span>
                         }
@@ -1667,7 +1667,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L1667">                    tLow0 = tLow;</span>
                 }
 
-<span class="fc bfc" id="L1670" title="All 4 branches covered.">                if (v &lt; tHigh0 || v &lt; tLow) {</span>
+<span class="pc bpc" id="L1670" title="1 of 4 branches missed.">                if (v &lt; tHigh0 || v &lt; tLow) {</span>
 <span class="fc" id="L1671">                    continue;</span>
                 }
 
@@ -1681,8 +1681,8 @@ import java.util.logging.Logger;
 <span class="nc" id="L1681">                        continue;</span>
                     }
 <span class="fc" id="L1683">                    double v2 = img[x2][y2];</span>
-<span class="fc bfc" id="L1684" title="All 2 branches covered.">                    if (v2 &gt; tLow0) {</span>
-<span class="fc" id="L1685">                        img2[x2][y2] = 255;</span>
+<span class="pc bpc" id="L1684" title="1 of 2 branches missed.">                    if (v2 &gt; tLow0) {</span>
+<span class="nc" id="L1685">                        img2[x2][y2] = 255;</span>
                     }
                 }
             }

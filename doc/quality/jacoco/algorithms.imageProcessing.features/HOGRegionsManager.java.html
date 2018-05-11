@@ -1,0 +1,787 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HOGRegionsManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">HOGRegionsManager.java</span></div><h1>HOGRegionsManager.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.IntegralHistograms;
+import algorithms.imageProcessing.features.mser.Canonicalizer;
+import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import algorithms.imageProcessing.features.mser.Canonicalizer.RegionPoints;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
+import algorithms.util.OneDIntArray;
+import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
+import algorithms.util.TwoDIntArray;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TLongIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.set.hash.TLongHashSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">public class HOGRegionsManager {</span>
+    
+<span class="fc" id="L36">    private static float eps = 0.000001f;</span>
+    
+    // 9 is default
+    private final int nAngleBins;
+    
+    private final int nHistBins;
+
+    // 6 x 6 is recommended
+    private final int N_PIX_PER_CELL_DIM;
+
+    // 2x2 or 3x3 is recommended
+    private final int N_CELLS_PER_BLOCK_DIM;
+
+    /**
+     * key = region index
+     */
+<span class="fc" id="L52">    private final TIntObjectMap&lt;OneDIntArray&gt; regionIndexMinMaxXY =</span>
+        new TIntObjectHashMap&lt;OneDIntArray&gt;();
+    private final TIntObjectMap&lt;Canonicalizer.CRegion&gt; regionIndexRegions;
+    //In reference frame of subImage
+<span class="fc" id="L56">    private final TIntObjectMap&lt;TLongSet&gt; regionCoords </span>
+        = new TIntObjectHashMap&lt;TLongSet&gt;();
+    
+    /**
+     * key = minmaxXY for region
+     */
+<span class="fc" id="L62">    private final Map&lt;OneDIntArray, TwoDIntArray&gt; histHOGMap = </span>
+        new HashMap&lt;OneDIntArray, TwoDIntArray&gt;();
+<span class="fc" id="L64">    private final Map&lt;OneDIntArray,TwoDIntArray&gt; histHCPTMap = </span>
+        new HashMap&lt;OneDIntArray, TwoDIntArray&gt;();
+<span class="fc" id="L66">    private final Map&lt;OneDIntArray,TwoDIntArray&gt; histHGSMap = </span>
+        new HashMap&lt;OneDIntArray, TwoDIntArray&gt;();
+    
+<span class="fc" id="L69">    private static int maskValue = 0;</span>
+
+    private final int w;
+    private final int h;
+
+<span class="fc" id="L74">    private boolean debug = false;</span>
+    
+    public HOGRegionsManager(TIntObjectMap&lt;Canonicalizer.CRegion&gt; regionMap, 
+        int imageWidth, int imageHeight, int nCellsPerDim, int nPixPerCellDim, 
+<span class="fc" id="L78">        int nAngleBins, int nHCPTHGSBins) {</span>
+
+<span class="fc" id="L80">        regionIndexRegions = regionMap;</span>
+<span class="fc" id="L81">        this.nAngleBins = nAngleBins;</span>
+<span class="fc" id="L82">        nHistBins = nHCPTHGSBins;</span>
+<span class="fc" id="L83">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
+<span class="fc" id="L84">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
+<span class="fc" id="L85">        w = imageWidth;</span>
+<span class="fc" id="L86">        h = imageHeight;</span>
+<span class="fc" id="L87">    }</span>
+
+    public void setToDebug() {
+<span class="nc" id="L90">        debug = true;</span>
+<span class="nc" id="L91">    }</span>
+    
+    int[][] createHOGHistogram(GreyscaleImage gsImg, 
+        Collection&lt;PairInt&gt; points,
+        int[] outputMinMaxXY, TLongSet outputRefFramePixs) {
+
+<span class="nc bnc" id="L97" title="All 4 branches missed.">        if (w != gsImg.getWidth() || h != gsImg.getHeight()) {</span>
+<span class="nc" id="L98">            throw new IllegalArgumentException(</span>
+            &quot;gsImg must have size same as constructor args&quot;);
+        }
+
+<span class="nc" id="L102">        GreyscaleImage gsImg2 = HOGUtil.createAndMaskSubImage(gsImg, </span>
+            maskValue, points, outputMinMaxXY, outputRefFramePixs);
+        
+<span class="nc" id="L105">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="nc" id="L107">        GreyscaleImage[] gXgY = </span>
+<span class="nc" id="L108">            imageProcessor.createCentralDifferenceGradients(gsImg2);</span>
+<span class="nc" id="L109">        GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);</span>
+<span class="nc" id="L110">        GreyscaleImage gXY = </span>
+<span class="nc" id="L111">            imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);</span>
+            
+<span class="nc" id="L113">        return createHOGHistogram(gXY, theta);        </span>
+    }
+    
+    int[][] createHOGHistogram(GreyscaleImage gXY, GreyscaleImage theta) {
+        
+<span class="fc" id="L118">        return HOGUtil.createHOGHistogram(gXY, theta, nAngleBins, N_PIX_PER_CELL_DIM);</span>
+    }
+    
+    int[][] createHCPTHistogram(GreyscaleImage ptImg, TLongSet regionPixelCoords) {
+
+<span class="fc" id="L123">        return HOGUtil.createHCPTHistogram(ptImg, regionPixelCoords, nHistBins, </span>
+            N_PIX_PER_CELL_DIM);
+    }
+    
+    /**
+     * add a region to the maps and construct a 2D histogram for it.
+     * Note that the region index is taken from cRegion.dataIdx.
+     * 
+     * Also note that the method assumes that the sub-images have already 
+     * been masked.
+     * 
+     * Also note that if the cRegion has fewer than 9 points, the region is not added.
+     * 
+     * @param subImageGSImg
+     * @param subImagePTImg
+     * @param subImageGradient
+     * @param subImageTheta
+     * @param cRegion a region whose coordinates are in the reference frame of
+     *    the uncropped image (that is, the sumImages).
+     * @param minMaxXYUnCroppedRefFrame these are the bounds of the points in
+     *    cRegion but the reference frame is the uncropped image (that is, the sumImages)
+     *    to pass to this method the offsets from the uncropped image.
+     * @param subImagePixelCoords
+     */
+    public void addARegion(
+        GreyscaleImage subImageGSImg, GreyscaleImage subImagePTImg,
+        GreyscaleImage subImageGradient, GreyscaleImage subImageTheta,
+        Canonicalizer.CRegion cRegion, 
+        int[] minMaxXYUnCroppedRefFrame, TLongSet subImagePixelCoords) {
+        
+<span class="fc" id="L153">        int rIndex = cRegion.dataIdx;</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (rIndex == -1) {</span>
+<span class="nc" id="L155">            throw new IllegalArgumentException(&quot;cRegion.dataIdx must be &gt;=&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (cRegion.getOffsetsToOrigCoords().size() &lt; 9) {</span>
+<span class="nc" id="L159">            return;</span>
+        }
+        
+<span class="fc" id="L162">        int w2 = subImageGSImg.getWidth();</span>
+<span class="fc" id="L163">        int h2 = subImageGSImg.getHeight();</span>
+        
+<span class="fc" id="L165">        regionCoords.putIfAbsent(rIndex, subImagePixelCoords);</span>
+<span class="fc" id="L166">        regionIndexMinMaxXY.putIfAbsent(rIndex, new OneDIntArray(minMaxXYUnCroppedRefFrame));        </span>
+<span class="fc" id="L167">        regionIndexRegions.putIfAbsent(rIndex, cRegion);</span>
+        
+<span class="fc" id="L169">        int[] minMaxXY = cRegion.getMinMaxXY();</span>
+<span class="pc bpc" id="L170" title="3 of 4 branches missed.">        assert(minMaxXY[0] &lt; Integer.MAX_VALUE);</span>
+<span class="pc bpc" id="L171" title="3 of 4 branches missed.">        assert(minMaxXY[2] &lt; Integer.MAX_VALUE);</span>
+<span class="pc bpc" id="L172" title="3 of 4 branches missed.">        assert(minMaxXY[1] &gt; Integer.MIN_VALUE);</span>
+<span class="pc bpc" id="L173" title="3 of 4 branches missed.">        assert(minMaxXY[3] &gt; Integer.MIN_VALUE);</span>
+        
+<span class="fc" id="L175">        OneDIntArray key = new OneDIntArray(minMaxXY);</span>
+        
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (!histHOGMap.containsKey(key)) {</span>
+            // non-region pixels are excluded because magnitude is zero
+<span class="nc" id="L179">            int[][] histogramsHOG = createHOGHistogram(subImageGradient, subImageTheta);        </span>
+<span class="nc" id="L180">            histHOGMap.put(key, new TwoDIntArray(histogramsHOG));</span>
+        }     
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (!histHCPTMap.containsKey(key)) {</span>
+            // exclude non-region pixels:
+<span class="nc" id="L184">            int[][] histogramsHCPT = createHCPTHistogram(subImagePTImg, subImagePixelCoords);</span>
+<span class="nc" id="L185">            histHCPTMap.put(key, new TwoDIntArray(histogramsHCPT));</span>
+        }
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (!histHGSMap.containsKey(key)) {</span>
+<span class="nc" id="L188">            int[][] histogramsHGS = HOGUtil.createHGSHistogram(</span>
+                subImageGSImg, subImagePixelCoords, nHistBins, N_PIX_PER_CELL_DIM);
+<span class="nc" id="L190">            histHGSMap.put(key, new TwoDIntArray(histogramsHGS));</span>
+        }
+<span class="pc bpc" id="L192" title="3 of 4 branches missed.">        assert(histHOGMap.size() &gt; 0);</span>
+<span class="pc bpc" id="L193" title="3 of 4 branches missed.">        assert(histHCPTMap.size() &gt; 0);</span>
+<span class="pc bpc" id="L194" title="3 of 4 branches missed.">        assert(histHGSMap.size() &gt; 0);</span>
+<span class="fc" id="L195">    }</span>
+
+    private TLongSet transformByOffsets(TLongSet pixs, int w, int w2, 
+        int xOffset2, int yOffset2) {
+        
+<span class="fc" id="L200">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L201">        int[] xy = new int[2];</span>
+<span class="fc" id="L202">        TLongSet pixs2 = new TLongHashSet();</span>
+<span class="fc" id="L203">        TLongIterator iter = pixs.iterator();</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L205">            long pix = iter.next();</span>
+<span class="fc" id="L206">            ph.toPixelCoords(pix, w, xy);</span>
+<span class="fc" id="L207">            long pix2 = ph.toPixelIndex(</span>
+                xy[0] - xOffset2, xy[1] - yOffset2, w2);
+<span class="fc" id="L209">            pixs2.add(pix2);</span>
+<span class="fc" id="L210">        }</span>
+<span class="fc" id="L211">        return pixs2;</span>
+    }
+    
+    private static enum TYPE {
+        HOG, HCPT, HGS
+    };
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the coordinates.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param rIndex
+     * @param x
+     * @param y
+     * @param outHist
+     * @return true if method succeeded, else false.  can return false if the
+     * addARegion failed due to having fewer than 9 pixels in the CRegion
+     * for rIndex.
+     */
+    public boolean extractBlockHOG(int rIndex, int x, int y, int[] outHist) {
+<span class="fc" id="L241">        return extractBlock(TYPE.HOG, rIndex, x, y, outHist);</span>
+    }
+    
+    /**
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in block were set during
+     * construction.
+     * @param rIndex
+     * @param x
+     * @param y
+     * @param outHist
+     */
+    public boolean extractBlockHCPT(int rIndex, int x, int y, int[] outHist) {
+<span class="fc" id="L254">        return extractBlock(TYPE.HCPT, rIndex, x, y, outHist);</span>
+    }
+    
+    /**
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in block were set during
+     * construction.
+     * @param rIndex
+     * @param x
+     * @param y
+     * @param outHist
+     * @return 
+     */
+    public boolean extractBlockHGS(int rIndex, int x, int y, int[] outHist) {
+<span class="fc" id="L268">        return extractBlock(TYPE.HGS, rIndex, x, y, outHist);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param rIndex
+     * @param x
+     * @param y
+     * @param outHist
+     */
+    private boolean extractBlock(TYPE type, int rIndex, int x, int y, int[] outHist) {
+
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        if (!regionIndexRegions.containsKey(rIndex)) {</span>
+<span class="nc" id="L293">            return false;</span>
+        }
+        
+<span class="pc bpc" id="L296" title="1 of 4 branches missed.">        if ((type.equals(TYPE.HOG) &amp;&amp; outHist.length != nAngleBins) ||</span>
+<span class="pc bpc" id="L297" title="1 of 4 branches missed.">            (!type.equals(TYPE.HOG) &amp;&amp; outHist.length != nHistBins)) {</span>
+<span class="nc" id="L298">            throw new IllegalArgumentException(&quot;outHist.length != expected&quot;);</span>
+        }
+
+<span class="pc bpc" id="L301" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L302">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+                + &quot;original image&quot;);
+        }
+        
+<span class="pc bpc" id="L306" title="1 of 2 branches missed.">        if (!regionCoords.containsKey(rIndex) || </span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">            !regionIndexMinMaxXY.containsKey(rIndex)) {</span>
+<span class="nc" id="L308">            return false;</span>
+        }
+        
+<span class="fc" id="L311">        OneDIntArray key = regionIndexMinMaxXY.get(rIndex);</span>
+
+        // uses the block normalization recomended by Dalal &amp; Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normalize each cell by that sum.
+
+<span class="fc" id="L317">        int[][] hist = null;</span>
+<span class="pc bpc" id="L318" title="1 of 4 branches missed.">        switch (type) {</span>
+<span class="fc" id="L319">            case HOG: hist = histHOGMap.get(key).a; break;</span>
+<span class="fc" id="L320">            case HCPT: hist = histHCPTMap.get(key).a; break;</span>
+<span class="fc" id="L321">            case HGS: hist = histHGSMap.get(key).a; break;</span>
+            default: break;
+        }
+        
+<span class="fc" id="L325">        int[] minMaxXY = regionIndexMinMaxXY.get(rIndex).a;</span>
+<span class="fc" id="L326">        TLongSet rCoords = regionCoords.get(rIndex);</span>
+        
+<span class="fc" id="L328">        return extractBlock(hist, rCoords, minMaxXY, x, y, outHist);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param x
+     * @param y
+     * @param outHist
+     */
+    private boolean extractBlock(int[][] hist, TLongSet subImagePixelIndexes, 
+        int[] minMaxXY,
+        int x, int y, int[] outHist) {
+        
+<span class="pc bpc" id="L353" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L354">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+                + &quot;original image&quot;);
+        }
+        
+        // uses the block normalization recomended by Dalal &amp; Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normalize each cell by that sum.
+
+<span class="fc" id="L362">        int width = minMaxXY[1] - minMaxXY[0] + 1;</span>
+<span class="fc" id="L363">        int height = minMaxXY[3] - minMaxXY[2] + 1;</span>
+<span class="fc" id="L364">        int xOffset = minMaxXY[0];</span>
+<span class="fc" id="L365">        int yOffset = minMaxXY[2];</span>
+        
+<span class="fc" id="L367">        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;</span>
+        
+<span class="fc" id="L369">        long[] tmp = new long[outHist.length];</span>
+<span class="fc" id="L370">        long[] tmp2 = new long[tmp.length];</span>
+<span class="fc" id="L371">        int[] outN = new int[1];</span>
+                
+<span class="fc bfc" id="L373" title="All 2 branches covered.">        for (int cX = 0; cX &lt; N_CELLS_PER_BLOCK_DIM; ++cX) {</span>
+
+<span class="fc" id="L375">            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;</span>
+
+<span class="fc" id="L377">            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);</span>
+
+<span class="fc" id="L379">            int xSub = x2 - xOffset;</span>
+            
+<span class="fc bfc" id="L381" title="All 2 branches covered.">            if ((xSub + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="fc" id="L382">                break;</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">            } else if (xSub &lt; 0) {</span>
+<span class="fc" id="L384">                xSub = 0;</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">            } else if (xSub &gt;= width) {</span>
+<span class="fc" id="L386">                break;</span>
+            }
+
+<span class="fc bfc" id="L389" title="All 2 branches covered.">            for (int cY = 0; cY &lt; N_CELLS_PER_BLOCK_DIM; ++cY) {</span>
+
+<span class="fc" id="L391">                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;</span>
+
+<span class="fc" id="L393">                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);</span>
+
+<span class="fc" id="L395">                int ySub = y2 - yOffset;</span>
+                
+<span class="fc bfc" id="L397" title="All 2 branches covered.">                if ((ySub + N_PIX_PER_CELL_DIM - 1) &lt; 0) {</span>
+<span class="fc" id="L398">                    break;</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">                } else if (ySub &lt; 0) {</span>
+<span class="fc" id="L400">                    ySub = 0;</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">                } else if (ySub &gt;= height) {</span>
+<span class="fc" id="L402">                    break;</span>
+                }
+                
+<span class="fc" id="L405">                int pixIdx = (ySub * width) + xSub;</span>
+                
+<span class="fc bfc" id="L407" title="All 2 branches covered.">                if (!subImagePixelIndexes.contains(pixIdx)) {</span>
+<span class="fc" id="L408">                    continue;</span>
+                }
+                
+<span class="fc" id="L411">                HOGUtil.extractWindow(hist, xSub, xSub, ySub, ySub, width, </span>
+                    height, tmp2, outN);
+
+<span class="fc" id="L414">                HOGUtil.add(tmp, tmp2);</span>
+            }
+        }
+
+        //System.out.println(&quot;  s=&quot; + Arrays.toString(tmp));
+<span class="fc" id="L419">        long blockTotal = 0;        </span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        for (int i = 0; i &lt; tmp.length; ++i) {</span>
+<span class="fc" id="L421">            blockTotal += tmp[i];</span>
+        }
+<span class="fc" id="L423">        double norm = 255./(blockTotal + eps);</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
+<span class="fc" id="L425">            outHist[i] = (int)(tmp[i]*norm);</span>
+        }
+        //System.out.println(&quot;-&gt;out=&quot; + Arrays.toString(outHist));
+
+<span class="fc" id="L429">        return true;</span>
+    }
+    
+    /**
+     * populate the instance variables if not already.
+     * 
+     * @param regionPointsMapNotScaled
+     * @param scale
+     * @param hogMgs
+     * @param gsImgScaled
+     * @param ptImgScaled 
+     */
+    public void populateRegionsIfNeeded(
+        TIntObjectMap&lt;Canonicalizer.RegionPoints&gt; regionPointsMapNotScaled, 
+        float scale, HOGRegionsManager hogMgs, GreyscaleImage gsImgScaled, 
+        GreyscaleImage ptImgScaled) {
+
+<span class="fc" id="L446">        TIntObjectMap&lt;Canonicalizer.CRegion&gt; cRegionMapReference </span>
+<span class="fc" id="L447">            = hogMgs.getRegionIndexRegions();</span>
+        
+<span class="fc bfc" id="L449" title="All 2 branches covered.">        if (!cRegionMapReference.isEmpty()) {</span>
+            //System.out.println(&quot;*map is not empty, so not adding more.&quot;);
+<span class="fc" id="L451">            return;</span>
+        }
+        
+<span class="fc" id="L454">        int w = gsImgScaled.getWidth();</span>
+<span class="fc" id="L455">        int h = gsImgScaled.getHeight();</span>
+        
+<span class="fc" id="L457">        PixelHelper ph = new PixelHelper();</span>
+        
+<span class="fc" id="L459">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="fc" id="L461">        Canonicalizer cn = new Canonicalizer();</span>
+        
+<span class="fc" id="L463">        TIntObjectIterator&lt;Canonicalizer.RegionPoints&gt; iter </span>
+<span class="fc" id="L464">            = regionPointsMapNotScaled.iterator();</span>
+        
+<span class="fc" id="L466">        int n = regionPointsMapNotScaled.size();</span>
+        
+<span class="fc" id="L468">        int ts = MiscDebug.getCurrentTimeFormatted();</span>
+        
+<span class="fc" id="L470">        int count = 0;</span>
+        
+<span class="fc bfc" id="L472" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L473">            iter.advance();</span>
+            
+<span class="fc" id="L475">            RegionPoints regionPointsNotScaled = iter.value();</span>
+            
+<span class="fc" id="L477">            int nr = regionPointsNotScaled.accX.size();</span>
+            
+<span class="fc bfc" id="L479" title="All 2 branches covered.">            if (nr &lt; 9) {</span>
+<span class="fc" id="L480">                continue;</span>
+            }
+            
+<span class="pc bpc" id="L483" title="1 of 2 branches missed.">            assert(regionPointsNotScaled.accX.size() == </span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">                regionPointsNotScaled.accY.size());</span>
+            
+<span class="fc" id="L486">            RegionPoints regionPointsScaled = </span>
+<span class="fc" id="L487">                regionPointsNotScaled.createNewDividedByScale(</span>
+                scale, w - 1, h - 1);
+            
+<span class="pc bpc" id="L490" title="3 of 4 branches missed.">            assert(!regionPointsScaled.accX.isEmpty());</span>
+<span class="pc bpc" id="L491" title="3 of 4 branches missed.">            assert(!regionPointsScaled.accY.isEmpty());</span>
+            
+<span class="fc" id="L493">            int[] minMaxXY = regionPointsScaled.getMinMaxXY();</span>
+<span class="pc bpc" id="L494" title="3 of 4 branches missed.">            assert(minMaxXY[0] != Integer.MAX_VALUE);</span>
+<span class="pc bpc" id="L495" title="3 of 4 branches missed.">            assert(minMaxXY[2] != Integer.MAX_VALUE);</span>
+<span class="pc bpc" id="L496" title="3 of 4 branches missed.">            assert(minMaxXY[1] != Integer.MIN_VALUE);</span>
+<span class="pc bpc" id="L497" title="3 of 4 branches missed.">            assert(minMaxXY[3] != Integer.MIN_VALUE);</span>
+<span class="fc" id="L498">            int w2 = minMaxXY[1] - minMaxXY[0] + 1;</span>
+<span class="fc" id="L499">            int h2 = minMaxXY[3] - minMaxXY[2] + 1;</span>
+<span class="fc bfc" id="L500" title="All 4 branches covered.">            if (w2 &lt; 3 || h2 &lt; 3) {</span>
+<span class="fc" id="L501">                continue;</span>
+            }
+            
+<span class="fc" id="L504">            TLongSet refFramePixs = regionPointsScaled</span>
+<span class="fc" id="L505">                .createAccPixelCoords(w);</span>
+<span class="pc bpc" id="L506" title="3 of 4 branches missed.">            assert(!refFramePixs.isEmpty());</span>
+            
+            /*if (true) {
+                Image tmp;
+                int[] xy = new int[2];
+                tmp = gsImgScaled.copyToColorGreyscale();
+                for (int ii = 0; ii &lt; regionPointsScaled.accX.size(); ++ii) {
+                    ImageIOHelper.addPointToImage(
+                        regionPointsScaled.accX.get(ii), 
+                        regionPointsScaled.accY.get(ii), 
+                        tmp, 0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, &quot;_&quot; + ts + &quot;_rpdebug0_&quot;);
+                tmp = gsImgScaled.copyToColorGreyscale();
+                TLongIterator iter2 = refFramePixs.iterator();
+                while (iter2.hasNext()) {
+                    long pixIdx = iter2.next();
+                    ph.toPixelCoords(pixIdx, w, xy);
+                    ImageIOHelper.addPointToImage(
+                        xy[0], xy[1], 
+                        tmp, 0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, &quot;_&quot; +  &quot;_rpdebug1_&quot;);
+            }*/
+            
+<span class="fc" id="L531">            refFramePixs = transformByOffsets(refFramePixs, w, w2, minMaxXY[0], minMaxXY[2]);</span>
+                    
+<span class="fc" id="L533">            GreyscaleImage gsImg2 = gsImgScaled.subImage2(</span>
+                minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3]);
+            
+            /*if (true) {
+                Image tmp;
+                int[] xy = new int[2];
+                tmp = gsImg2.copyToColorGreyscale();
+                TLongIterator iter2 = refFramePixs.iterator();
+                while (iter2.hasNext()) {
+                    long pixIdx = iter2.next();
+                    ph.toPixelCoords(pixIdx, w2, xy);
+                    ImageIOHelper.addPointToImage(
+                        xy[0], xy[1], 
+                        tmp, 0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, &quot;_&quot; +  &quot;_rpdebug2_&quot;);
+            }*/
+            
+<span class="fc" id="L551">            GreyscaleImage[] gXgY = </span>
+<span class="fc" id="L552">                imageProcessor.createCentralDifferenceGradients(gsImg2);</span>
+<span class="fc" id="L553">            GreyscaleImage theta2 = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);</span>
+<span class="fc" id="L554">            GreyscaleImage gXY2 = </span>
+<span class="fc" id="L555">                imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);</span>
+<span class="fc" id="L556">            GreyscaleImage ptImg2 = HOGUtil.createAndMaskSubImage2(ptImgScaled, </span>
+                maskValue, minMaxXY, refFramePixs);
+            
+            // the histograms are stored by bounds minMaxXY
+            
+<span class="fc" id="L561">            OneDIntArray key = new OneDIntArray(minMaxXY);</span>
+        
+            // non-region pixels are excluded because magnitude is zero
+<span class="fc" id="L564">            int[][] histogramsHOG = createHOGHistogram(gXY2, theta2);        </span>
+<span class="fc" id="L565">            histHOGMap.putIfAbsent(key, new TwoDIntArray(histogramsHOG));</span>
+        
+            // exclude non-region pixels:
+<span class="fc" id="L568">            int[][] histogramsHCPT = createHCPTHistogram(ptImg2, refFramePixs);</span>
+<span class="fc" id="L569">            histHCPTMap.putIfAbsent(key, new TwoDIntArray(histogramsHCPT));</span>
+        
+<span class="fc" id="L571">            IntegralHistograms gh = new IntegralHistograms();</span>
+<span class="fc" id="L572">            int[][] histogramsHGS = gh.create(gsImg2, refFramePixs, </span>
+                0, 255, nHistBins);
+            //apply a windowed avg across the integral image
+<span class="fc" id="L575">            gh.applyWindowedSum(histogramsHGS, w2, h2, N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L576">            histHGSMap.putIfAbsent(key, new TwoDIntArray(histogramsHGS));</span>
+            
+<span class="fc" id="L578">            int[] hogHistCenter = new int[nAngleBins];</span>
+<span class="fc" id="L579">            extractBlock(histogramsHOG, refFramePixs, minMaxXY, </span>
+                regionPointsScaled.ellipseParams.xC, 
+                regionPointsScaled.ellipseParams.yC, hogHistCenter);
+            
+            // need to create the HOG here to calculate the dominant orientations
+            //   for multiple versions of CRegion if needed.
+<span class="fc" id="L585">            TIntList dos = calculateDominantOrientations(hogHistCenter);</span>
+            if (false) {
+                // use the MSER ellipse orientation and the top 80% HOG bins
+                regionPointsScaled.hogOrientations.addAll(dos);
+            } else {
+                // only use hog orientation
+<span class="fc" id="L591">                regionPointsScaled.hogOrientations.clear();</span>
+<span class="fc" id="L592">                regionPointsScaled.hogOrientations.add(dos.get(0));</span>
+            }
+            
+<span class="fc" id="L595">            List&lt;CRegion&gt; crsScaled = cn.canonicalizeRegions(</span>
+                w, h, regionPointsScaled);
+            
+<span class="pc bpc" id="L598" title="3 of 4 branches missed.">            assert(!crsScaled.isEmpty());</span>
+          
+            //DEBUG
+            /*{
+                Image tmp = gsImgScaled.copyToColorGreyscale();
+                for (PairInt p : regionPointsScaled.points) {
+                    ImageIOHelper.addPointToImage(
+                        p.getX(), p.getY(), 
+                        tmp,
+                        0, 255, 0, 0);
+                };
+                MiscDebug.writeImage(tmp, &quot;_DBG00_&quot; + scale + &quot;_&quot; + ts); 
+                int z = 0;
+            }*/
+            
+            //System.out.println(&quot;created &quot; + crs.size() + &quot; from RegionPoints &quot; + i);
+            
+            
+<span class="fc" id="L616">            int c = 0;</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">            for (Canonicalizer.CRegion crScaled : crsScaled) {</span>
+
+<span class="fc" id="L619">                int rIdx = cRegionMapReference.size();</span>
+                
+<span class="fc bfc" id="L621" title="All 2 branches covered.">                if (crScaled.getOffsetsToOrigCoords().size() &lt; 9) {</span>
+<span class="fc" id="L622">                    continue;</span>
+                }
+                
+<span class="fc" id="L625">                crScaled.dataIdx = rIdx;</span>
+            
+<span class="fc" id="L627">                hogMgs.addARegion(</span>
+                    gsImg2, ptImg2, gXY2, theta2, 
+                    crScaled, minMaxXY, refFramePixs);
+                
+<span class="fc" id="L631">                c++;</span>
+<span class="pc bpc" id="L632" title="3 of 4 branches missed.">                assert(regionIndexRegions.containsKey(rIdx));</span>
+<span class="pc bpc" id="L633" title="3 of 4 branches missed.">                assert(regionIndexMinMaxXY.containsKey(rIdx));</span>
+<span class="pc bpc" id="L634" title="3 of 4 branches missed.">                assert(regionCoords.containsKey(rIdx));</span>
+<span class="pc bpc" id="L635" title="3 of 4 branches missed.">                assert(cRegionMapReference.get(rIdx).equals(crScaled));</span>
+<span class="pc bpc" id="L636" title="3 of 4 branches missed.">                assert(!histHOGMap.isEmpty());</span>
+<span class="pc bpc" id="L637" title="3 of 4 branches missed.">                assert(!histHCPTMap.isEmpty());</span>
+<span class="pc bpc" id="L638" title="3 of 4 branches missed.">                assert(!histHGSMap.isEmpty());</span>
+<span class="fc" id="L639">            }</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">            if (c &gt; 0) {</span>
+<span class="fc" id="L641">                count++;</span>
+            }
+        }
+ 
+        
+<span class="pc bpc" id="L646" title="3 of 4 branches missed.">        assert(!histHOGMap.isEmpty());</span>
+<span class="pc bpc" id="L647" title="3 of 4 branches missed.">        assert(!histHCPTMap.isEmpty());</span>
+<span class="pc bpc" id="L648" title="3 of 4 branches missed.">        assert(!histHGSMap.isEmpty());</span>
+<span class="pc bpc" id="L649" title="3 of 4 branches missed.">        assert(regionCoords.size() &gt;= count);</span>
+<span class="pc bpc" id="L650" title="3 of 4 branches missed.">        assert(regionIndexRegions.size() &gt;= count);</span>
+<span class="pc bpc" id="L651" title="3 of 4 branches missed.">        assert(regionIndexMinMaxXY.size() &gt;= count);</span>
+        
+<span class="fc" id="L653">    }</span>
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     *
+     * The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     *
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     * 
+     * Note also that you may want to try the rotation of oppossite direction.
+     *
+     * @param histA
+     * @param orientationA
+     * @param histB
+     * @param orientationB
+     * @return
+     */
+    public float intersection(int[] histA, int orientationA, int[] histB,
+        int orientationB) {
+
+<span class="fc" id="L680">        return HOGUtil.intersection(histA, orientationA, histB, orientationB);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     *
+     * @param histA
+     * @param histB
+     * @return
+     */
+    public float intersection(int[] histA, int[] histB) {
+
+<span class="fc" id="L696">        return HOGUtil.intersection(histA, histB);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     *
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     *
+     * @param histA
+     * @param orientationA
+     * @param histB
+     * @param orientationB
+     * @return difference, error
+     */
+    public float[] diff(int[] histA, int orientationA, int[] histB,
+        int orientationB) {
+
+<span class="nc" id="L722">        return HOGUtil.diff(histA, orientationA, histB, orientationB);</span>
+    }
+   
+    TIntList calculateDominantOrientations(int[] hogHist) {
+        
+<span class="fc" id="L727">        int maxIdx = MiscMath.findYMaxIndex(hogHist);</span>
+
+<span class="pc bpc" id="L729" title="1 of 2 branches missed.">        if (maxIdx == -1) {</span>
+<span class="nc" id="L730">            throw new IllegalArgumentException(&quot;histogram is full of &quot;</span>
+                + &quot; min value longs&quot;);
+        }        
+
+<span class="fc" id="L734">        TIntSet set = new TIntHashSet();</span>
+<span class="fc" id="L735">        set.add(maxIdx);</span>
+        
+        // if any bins have values within 80% of max, add to maxIdxs
+<span class="fc" id="L738">        TIntList list = new TIntArrayList();</span>
+<span class="fc" id="L739">        list.add(maxIdx);</span>
+
+<span class="fc" id="L741">        long max = hogHist[maxIdx];</span>
+<span class="fc" id="L742">        double limit = 0.8 * max;</span>
+
+<span class="fc bfc" id="L744" title="All 2 branches covered.">        for (int i = 0; i &lt; hogHist.length; ++i) {</span>
+<span class="fc" id="L745">            long v = hogHist[i];</span>
+<span class="fc bfc" id="L746" title="All 2 branches covered.">            if (v &gt;= limit) {</span>
+<span class="fc bfc" id="L747" title="All 2 branches covered.">                if (set.add(i)) {</span>
+<span class="fc" id="L748">                    list.add(i);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L753">        int binWidth = 180 / nAngleBins;</span>
+        
+<span class="fc bfc" id="L755" title="All 2 branches covered.">        for (int i = 0; i &lt; list.size(); ++i) {</span>
+<span class="fc" id="L756">            int idx = list.get(i);</span>
+<span class="fc" id="L757">            int angle = Math.round((idx + 0.5f) * binWidth);</span>
+<span class="fc" id="L758">            list.set(i, angle);</span>
+        }
+        
+<span class="fc" id="L761">        return list;</span>
+    }
+
+    public int getImageWidth() {
+<span class="nc" id="L765">        return w;</span>
+    }
+    
+    public int getImageHeight() {
+<span class="nc" id="L769">        return h;</span>
+    }
+
+    public int getNumberOfBins() {
+<span class="nc" id="L773">        return nAngleBins;</span>
+    }
+
+    public TIntObjectMap&lt;Canonicalizer.CRegion&gt; getRegionIndexRegions() {
+<span class="fc" id="L777">        return regionIndexRegions;</span>
+    }
+
+    /**
+     * @return the regionIndexMinMaxXY
+     */
+    public TIntObjectMap&lt;OneDIntArray&gt; getRegionIndexMinMaxXY() {
+<span class="nc" id="L784">        return regionIndexMinMaxXY;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

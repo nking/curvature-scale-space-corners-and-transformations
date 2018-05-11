@@ -146,6 +146,66 @@ import java.util.Set;
     }
     
     /**
+     * histogram of 16 bins each of CIE LAB colors where the bins
+     * of each color are taken to be in the range of min and max
+     * possible values
+     * &lt;pre&gt;
+     *    L    0 to 28.5
+     *    A  -46.9  62.5
+     *    B  -45.7  48.0
+     * &lt;/pre&gt;
+     * 
+     * @param img
+     * @return histogram accessed as hist[0][bin] and hist[1][bin] and
+     * hist[2][bin] where 0, 1, 2 are histograms for L, A, and B, respectively
+     * using a range of values (0,-50,-50) to (28.5 62.5 48.0) and 16 bins.
+     */
+    public int[][] histogramCIELAB(ImageExt img, TIntList xPoints,
+        TIntList yPoints) {
+        
+<span class="fc" id="L166">        int nBins = 16;</span>
+        
+<span class="fc" id="L168">        int[][] hist = new int[3][];</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L170">            hist[i] = new int[nBins];</span>
+        }
+        
+        //(0,-50,-50) to (28.5 62.5 48.0) 
+        
+<span class="fc" id="L175">        float binWidthL = 28.5f/(float)nBins;</span>
+<span class="fc" id="L176">        float binWidthA = (62.5f + 50.f)/(float)nBins;</span>
+<span class="fc" id="L177">        float binWidthB = (48.0f + 50.f)/(float)nBins;</span>
+                
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (int i = 0; i &lt; xPoints.size(); ++i) {</span>
+<span class="fc" id="L180">            int x = xPoints.get(i);</span>
+<span class="fc" id="L181">            int y = yPoints.get(i);</span>
+            
+<span class="fc" id="L183">            float[] lab = img.getCIELAB(x, y);</span>
+            
+<span class="fc" id="L185">            int binNumberL = (int)(lab[0]/binWidthL);</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            if (binNumberL &gt; (nBins - 1)) {</span>
+<span class="fc" id="L187">                binNumberL = nBins - 1;</span>
+            }
+<span class="fc" id="L189">            hist[0][binNumberL]++;</span>
+            
+            //(0,-50,-50) to (28.5 62.5 48.0)
+<span class="fc" id="L192">            int binNumberA = (int)((lab[1] - -50.f)/binWidthA);</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            if (binNumberA &gt; (nBins - 1)) {</span>
+<span class="nc" id="L194">                binNumberA = nBins - 1;</span>
+            }
+<span class="fc" id="L196">            hist[1][binNumberA]++;</span>
+            
+<span class="fc" id="L198">            int binNumberB = (int)((lab[2] - -50.f)/binWidthB);</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">            if (binNumberB &gt; (nBins - 1)) {</span>
+<span class="nc" id="L200">                binNumberB = nBins - 1;</span>
+            }
+<span class="fc" id="L202">            hist[2][binNumberB]++;</span>
+        }
+        
+<span class="fc" id="L205">        return hist;</span>
+    }
+    
+    /**
      * histogram of 16 bins each of CIE LUV colors where the bins
      * of each color are taken to be in the range of min and max
      * possible values
@@ -165,45 +225,45 @@ import java.util.Set;
      */
     public int[][] histogramCIELUV(Image img, Set&lt;PairInt&gt; points) {
         
-<span class="nc" id="L168">        int nBins = 16;</span>
+<span class="nc" id="L228">        int nBins = 16;</span>
         
-<span class="nc" id="L170">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L230">        CIEChromaticity cieC = new CIEChromaticity();</span>
         
-<span class="nc" id="L172">        int[][] hist = new int[3][];</span>
-<span class="nc bnc" id="L173" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L174">            hist[i] = new int[nBins];</span>
+<span class="nc" id="L232">        int[][] hist = new int[3][];</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L234">            hist[i] = new int[nBins];</span>
         }
                
-<span class="nc" id="L177">        float binWidthL = 104.5f/(float)nBins;</span>
-<span class="nc" id="L178">        float binWidthU = (183.8f + 86.9f)/(float)nBins;</span>
-<span class="nc" id="L179">        float binWidthV = (112.3f + 141.4f)/(float)nBins;</span>
+<span class="nc" id="L237">        float binWidthL = 104.5f/(float)nBins;</span>
+<span class="nc" id="L238">        float binWidthU = (183.8f + 86.9f)/(float)nBins;</span>
+<span class="nc" id="L239">        float binWidthV = (112.3f + 141.4f)/(float)nBins;</span>
                 
-<span class="nc bnc" id="L181" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        for (PairInt p : points) {</span>
             
-<span class="nc" id="L183">            float[] lab = cieC.rgbToPolarCIELUV(</span>
-<span class="nc" id="L184">                img.getR(p), img.getG(p), img.getB(p));</span>
+<span class="nc" id="L243">            float[] lab = cieC.rgbToPolarCIELUV(</span>
+<span class="nc" id="L244">                img.getR(p), img.getG(p), img.getB(p));</span>
             
-<span class="nc" id="L186">            int binNumberL = (int)(lab[0]/binWidthL);</span>
-<span class="nc bnc" id="L187" title="All 2 branches missed.">            if (binNumberL &gt; (nBins - 1)) {</span>
-<span class="nc" id="L188">                binNumberL = nBins - 1;</span>
+<span class="nc" id="L246">            int binNumberL = (int)(lab[0]/binWidthL);</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            if (binNumberL &gt; (nBins - 1)) {</span>
+<span class="nc" id="L248">                binNumberL = nBins - 1;</span>
             }
-<span class="nc" id="L190">            hist[0][binNumberL]++;</span>
+<span class="nc" id="L250">            hist[0][binNumberL]++;</span>
             
             //(0,-50,-50) to (28.5 62.5 48.0)
-<span class="nc" id="L193">            int binNumberU = (int)((lab[1] - -50.f)/binWidthU);</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">            if (binNumberU &gt; (nBins - 1)) {</span>
-<span class="nc" id="L195">                binNumberU = nBins - 1;</span>
+<span class="nc" id="L253">            int binNumberU = (int)((lab[1] - -50.f)/binWidthU);</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            if (binNumberU &gt; (nBins - 1)) {</span>
+<span class="nc" id="L255">                binNumberU = nBins - 1;</span>
             }
-<span class="nc" id="L197">            hist[1][binNumberU]++;</span>
+<span class="nc" id="L257">            hist[1][binNumberU]++;</span>
             
-<span class="nc" id="L199">            int binNumberV = (int)((lab[2] - -50.f)/binWidthV);</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">            if (binNumberV &gt; (nBins - 1)) {</span>
-<span class="nc" id="L201">                binNumberV = nBins - 1;</span>
+<span class="nc" id="L259">            int binNumberV = (int)((lab[2] - -50.f)/binWidthV);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            if (binNumberV &gt; (nBins - 1)) {</span>
+<span class="nc" id="L261">                binNumberV = nBins - 1;</span>
             }
-<span class="nc" id="L203">            hist[2][binNumberV]++;</span>
-<span class="nc" id="L204">        }</span>
+<span class="nc" id="L263">            hist[2][binNumberV]++;</span>
+<span class="nc" id="L264">        }</span>
         
-<span class="nc" id="L206">        return hist;</span>
+<span class="nc" id="L266">        return hist;</span>
     }
     
     /**
@@ -220,46 +280,46 @@ import java.util.Set;
      */
     public int[][] histogramCIELAB(ImageExt img, TIntSet points) {
         
-<span class="nc" id="L223">        int nBins = 16;</span>
+<span class="nc" id="L283">        int nBins = 16;</span>
         
-<span class="nc" id="L225">        int[][] hist = new int[3][];</span>
-<span class="nc bnc" id="L226" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L227">            hist[i] = new int[nBins];</span>
+<span class="nc" id="L285">        int[][] hist = new int[3][];</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L287">            hist[i] = new int[nBins];</span>
         }
         
         //(0,-50,-50) to (28.5 62.5 48.0) 
         
-<span class="nc" id="L232">        float binWidthL = 28.5f/(float)nBins;</span>
-<span class="nc" id="L233">        float binWidthA = (62.5f + 50.f)/(float)nBins;</span>
-<span class="nc" id="L234">        float binWidthB = (48.0f + 50.f)/(float)nBins;</span>
+<span class="nc" id="L292">        float binWidthL = 28.5f/(float)nBins;</span>
+<span class="nc" id="L293">        float binWidthA = (62.5f + 50.f)/(float)nBins;</span>
+<span class="nc" id="L294">        float binWidthB = (48.0f + 50.f)/(float)nBins;</span>
                 
-<span class="nc" id="L236">        TIntIterator iter = points.iterator();</span>
-<span class="nc bnc" id="L237" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L238">            int pixIdx = iter.next();</span>
+<span class="nc" id="L296">        TIntIterator iter = points.iterator();</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L298">            int pixIdx = iter.next();</span>
             
-<span class="nc" id="L240">            float[] lab = img.getCIELAB(pixIdx);</span>
+<span class="nc" id="L300">            float[] lab = img.getCIELAB(pixIdx);</span>
             
-<span class="nc" id="L242">            int binNumberL = (int)(lab[0]/binWidthL);</span>
-<span class="nc bnc" id="L243" title="All 2 branches missed.">            if (binNumberL &gt; (nBins - 1)) {</span>
-<span class="nc" id="L244">                binNumberL = nBins - 1;</span>
+<span class="nc" id="L302">            int binNumberL = (int)(lab[0]/binWidthL);</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">            if (binNumberL &gt; (nBins - 1)) {</span>
+<span class="nc" id="L304">                binNumberL = nBins - 1;</span>
             }
-<span class="nc" id="L246">            hist[0][binNumberL]++;</span>
+<span class="nc" id="L306">            hist[0][binNumberL]++;</span>
             
             //(0,-50,-50) to (28.5 62.5 48.0)
-<span class="nc" id="L249">            int binNumberA = (int)((lab[1] - -50.f)/binWidthA);</span>
-<span class="nc bnc" id="L250" title="All 2 branches missed.">            if (binNumberA &gt; (nBins - 1)) {</span>
-<span class="nc" id="L251">                binNumberA = nBins - 1;</span>
+<span class="nc" id="L309">            int binNumberA = (int)((lab[1] - -50.f)/binWidthA);</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">            if (binNumberA &gt; (nBins - 1)) {</span>
+<span class="nc" id="L311">                binNumberA = nBins - 1;</span>
             }
-<span class="nc" id="L253">            hist[1][binNumberA]++;</span>
+<span class="nc" id="L313">            hist[1][binNumberA]++;</span>
             
-<span class="nc" id="L255">            int binNumberB = (int)((lab[2] - -50.f)/binWidthB);</span>
-<span class="nc bnc" id="L256" title="All 2 branches missed.">            if (binNumberB &gt; (nBins - 1)) {</span>
-<span class="nc" id="L257">                binNumberB = nBins - 1;</span>
+<span class="nc" id="L315">            int binNumberB = (int)((lab[2] - -50.f)/binWidthB);</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">            if (binNumberB &gt; (nBins - 1)) {</span>
+<span class="nc" id="L317">                binNumberB = nBins - 1;</span>
             }
-<span class="nc" id="L259">            hist[2][binNumberB]++;</span>
-<span class="nc" id="L260">        }</span>
+<span class="nc" id="L319">            hist[2][binNumberB]++;</span>
+<span class="nc" id="L320">        }</span>
         
-<span class="nc" id="L262">        return hist;</span>
+<span class="nc" id="L322">        return hist;</span>
     }
     
     /**
@@ -285,44 +345,107 @@ import java.util.Set;
      */
     public int[] histogramCIECH64(ImageExt img, Set&lt;PairInt&gt; points) {
         
-<span class="fc" id="L288">        int nBins = 8;</span>
+<span class="fc" id="L348">        int nBins = 8;</span>
         
-<span class="fc" id="L290">        int nTot = nBins * nBins;</span>
+<span class="fc" id="L350">        int nTot = nBins * nBins;</span>
 
-<span class="fc" id="L292">        int[] hist = new int[nTot];</span>
+<span class="fc" id="L352">        int[] hist = new int[nTot];</span>
         
-<span class="fc" id="L294">        float binWidthC = 139.f/(float)nBins;</span>
-<span class="fc" id="L295">        float binWidthH = 359.f/(float)nBins;</span>
+<span class="fc" id="L354">        float binWidthC = 139.f/(float)nBins;</span>
+<span class="fc" id="L355">        float binWidthH = 359.f/(float)nBins;</span>
         
         // idx = (cBin * nBins) + hBin
         
-<span class="fc" id="L299">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="fc" id="L359">        CIEChromaticity cieC = new CIEChromaticity();</span>
         
-<span class="fc bfc" id="L301" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">        for (PairInt p : points) {</span>
             
-<span class="fc" id="L303">            int pixIdx = img.getInternalIndex(p);</span>
+<span class="fc" id="L363">            int pixIdx = img.getInternalIndex(p);</span>
             
-<span class="fc" id="L305">            float[] lch = cieC.rgbToCIELCH(</span>
-<span class="fc" id="L306">                img.getR(pixIdx), img.getG(pixIdx), img.getR(pixIdx));</span>
+<span class="fc" id="L365">            float[] lch = cieC.rgbToCIELCH(</span>
+<span class="fc" id="L366">                img.getR(pixIdx), img.getG(pixIdx), img.getR(pixIdx));</span>
             
-<span class="fc" id="L308">            int binNumberC = (int)(lch[1]/binWidthC);</span>
-<span class="pc bpc" id="L309" title="1 of 2 branches missed.">            if (binNumberC &gt; (nBins - 1)) {</span>
-<span class="nc" id="L310">                binNumberC = nBins - 1;</span>
+<span class="fc" id="L368">            int binNumberC = (int)(lch[1]/binWidthC);</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">            if (binNumberC &gt; (nBins - 1)) {</span>
+<span class="nc" id="L370">                binNumberC = nBins - 1;</span>
             }
             
-<span class="fc" id="L313">            int binNumberH = (int)(lch[2]/binWidthH);</span>
-<span class="pc bpc" id="L314" title="1 of 2 branches missed.">            if (binNumberH &gt; (nBins - 1)) {</span>
-<span class="nc" id="L315">                binNumberH = nBins - 1;</span>
+<span class="fc" id="L373">            int binNumberH = (int)(lch[2]/binWidthH);</span>
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">            if (binNumberH &gt; (nBins - 1)) {</span>
+<span class="nc" id="L375">                binNumberH = nBins - 1;</span>
             }
             
-<span class="fc" id="L318">            int hIdx = (binNumberC * nBins) + binNumberH;</span>
+<span class="fc" id="L378">            int hIdx = (binNumberC * nBins) + binNumberH;</span>
             
-<span class="pc bpc" id="L320" title="3 of 4 branches missed.">            assert(hIdx &lt; nTot);</span>
+<span class="pc bpc" id="L380" title="3 of 4 branches missed.">            assert(hIdx &lt; nTot);</span>
             
-<span class="fc" id="L322">            hist[hIdx]++;</span>
-<span class="fc" id="L323">        }</span>
+<span class="fc" id="L382">            hist[hIdx]++;</span>
+<span class="fc" id="L383">        }</span>
         
-<span class="fc" id="L325">        return hist;</span>
+<span class="fc" id="L385">        return hist;</span>
+    }
+    
+    /**
+     * histogram of CIE LUV C and H which are the polar angle of U,V and the 
+     * magnitude.  The histogram is a one dimensional binning of 
+     * divisions of C and H in combination.  8 divisions in C or H results
+     * in 84 bins, for example.
+     * 
+     * The ranges of the bins are the ranges from use of the D65 standard
+     * illuminant which are
+     * &lt;pre&gt;
+     * * L* 0 to 105
+     * c  0 to 139
+     * h  0 to 359
+     * &lt;/pre&gt;
+     * 
+     * @param img
+     * @return histogram of CIE LUV C and H which are the polar angle of 
+     * U,V and the magnitude.  The histogram is a one dimensional binning 
+     * of divisions of C and H in combination.  8 divisions in C or H 
+     * results in 84 bins, for example.
+     */
+    public int[] histogramCIECH64(ImageExt img, TIntList xPoints,
+        TIntList yPoints) {
+        
+<span class="fc" id="L411">        int nBins = 8;</span>
+        
+<span class="fc" id="L413">        int nTot = nBins * nBins;</span>
+
+<span class="fc" id="L415">        int[] hist = new int[nTot];</span>
+        
+<span class="fc" id="L417">        float binWidthC = 139.f/(float)nBins;</span>
+<span class="fc" id="L418">        float binWidthH = 359.f/(float)nBins;</span>
+        
+        // idx = (cBin * nBins) + hBin
+                
+<span class="fc" id="L422">        CIEChromaticity cieC = new CIEChromaticity();</span>
+        
+<span class="fc bfc" id="L424" title="All 2 branches covered.">        for (int i = 0; i &lt; xPoints.size(); ++i) {</span>
+            
+<span class="fc" id="L426">            int pixIdx = img.getInternalIndex(xPoints.get(i), yPoints.get(i));</span>
+            
+<span class="fc" id="L428">            float[] lch = cieC.rgbToCIELCH(</span>
+<span class="fc" id="L429">                img.getR(pixIdx), img.getG(pixIdx), img.getR(pixIdx));</span>
+            
+<span class="fc" id="L431">            int binNumberC = (int)(lch[1]/binWidthC);</span>
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">            if (binNumberC &gt; (nBins - 1)) {</span>
+<span class="nc" id="L433">                binNumberC = nBins - 1;</span>
+            }
+            
+<span class="fc" id="L436">            int binNumberH = (int)(lch[2]/binWidthH);</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">            if (binNumberH &gt; (nBins - 1)) {</span>
+<span class="nc" id="L438">                binNumberH = nBins - 1;</span>
+            }
+            
+<span class="fc" id="L441">            int hIdx = (binNumberC * nBins) + binNumberH;</span>
+            
+<span class="pc bpc" id="L443" title="3 of 4 branches missed.">            assert(hIdx &lt; nTot);</span>
+            
+<span class="fc" id="L445">            hist[hIdx]++;</span>
+        }
+        
+<span class="fc" id="L448">        return hist;</span>
     }
     
     /**
@@ -333,25 +456,25 @@ import java.util.Set;
      */
     public float intersection(int[][] hist0, int[][] hist1) {
         
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
-<span class="nc" id="L337">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
+<span class="nc" id="L460">            throw new IllegalArgumentException(</span>
                 &quot;hist0 and hist1 must be same dimensions&quot;);
         }
-<span class="fc bfc" id="L340" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="pc bpc" id="L341" title="1 of 2 branches missed.">            if ((hist0[i].length != hist1[i].length)) {</span>
-<span class="nc" id="L342">                throw new IllegalArgumentException(</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="pc bpc" id="L464" title="1 of 2 branches missed.">            if ((hist0[i].length != hist1[i].length)) {</span>
+<span class="nc" id="L465">                throw new IllegalArgumentException(</span>
                     &quot;hist0 and hist1 must be same dimensions&quot;);
             }
         }
                 
         // the values need to be normalized by the total number of points
         // in the histogram, so calculate that first
-<span class="fc" id="L349">        int[] n0 = new int[hist0.length];</span>
-<span class="fc" id="L350">        int[] n1 = new int[hist0.length];</span>
-<span class="fc bfc" id="L351" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="fc bfc" id="L352" title="All 2 branches covered.">            for (int j = 0; j &lt; hist0[i].length; ++j) {</span>
-<span class="fc" id="L353">                n0[i] += hist0[i][j];</span>
-<span class="fc" id="L354">                n1[i] += hist1[i][j];</span>
+<span class="fc" id="L472">        int[] n0 = new int[hist0.length];</span>
+<span class="fc" id="L473">        int[] n1 = new int[hist0.length];</span>
+<span class="fc bfc" id="L474" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">            for (int j = 0; j &lt; hist0[i].length; ++j) {</span>
+<span class="fc" id="L476">                n0[i] += hist0[i][j];</span>
+<span class="fc" id="L477">                n1[i] += hist1[i][j];</span>
             }
         }
         
@@ -364,40 +487,40 @@ import java.util.Set;
             (min(summation_over_i(a_i), summation_over_i(b_i))
         */
             
-<span class="fc" id="L367">        float sum = 0;</span>
-<span class="fc" id="L368">        float sum0 = 0;</span>
-<span class="fc" id="L369">        float sum1 = 0;</span>
-<span class="fc bfc" id="L370" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="fc bfc" id="L371" title="All 2 branches covered.">            for (int j = 0; j &lt; hist0[i].length; ++j) {</span>
-<span class="fc" id="L372">                float y0 = 0;</span>
-<span class="fc" id="L373">                float y1 = 0;</span>
-<span class="fc bfc" id="L374" title="All 2 branches covered.">                if (n0[i] &gt; 0) {</span>
-<span class="fc" id="L375">                    y0 = (float)hist0[i][j]/(float)n0[i];</span>
+<span class="fc" id="L490">        float sum = 0;</span>
+<span class="fc" id="L491">        float sum0 = 0;</span>
+<span class="fc" id="L492">        float sum1 = 0;</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">            for (int j = 0; j &lt; hist0[i].length; ++j) {</span>
+<span class="fc" id="L495">                float y0 = 0;</span>
+<span class="fc" id="L496">                float y1 = 0;</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">                if (n0[i] &gt; 0) {</span>
+<span class="fc" id="L498">                    y0 = (float)hist0[i][j]/(float)n0[i];</span>
                 }
-<span class="fc bfc" id="L377" title="All 2 branches covered.">                if (n1[i] &gt; 0) {</span>
-<span class="fc" id="L378">                    y1 = (float)hist1[i][j]/(float)n1[i];</span>
+<span class="fc bfc" id="L500" title="All 2 branches covered.">                if (n1[i] &gt; 0) {</span>
+<span class="fc" id="L501">                    y1 = (float)hist1[i][j]/(float)n1[i];</span>
                 }
-<span class="fc" id="L380">                sum += Math.min(y0, y1);</span>
-<span class="fc" id="L381">                sum0 += y0;</span>
-<span class="fc" id="L382">                sum1 += y1;</span>
+<span class="fc" id="L503">                sum += Math.min(y0, y1);</span>
+<span class="fc" id="L504">                sum0 += y0;</span>
+<span class="fc" id="L505">                sum1 += y1;</span>
             }
         }
         
-<span class="fc" id="L386">        float d = Math.min(sum0, sum1);</span>
+<span class="fc" id="L509">        float d = Math.min(sum0, sum1);</span>
         
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        float sim = (d == 0.f) ? 0 : sum/d;</span>
+<span class="pc bpc" id="L511" title="1 of 2 branches missed.">        float sim = (d == 0.f) ? 0 : sum/d;</span>
                 
-<span class="fc" id="L390">        return sim;</span>
+<span class="fc" id="L513">        return sim;</span>
     }
     
     public int[][] createWithDefaultSize() {
-<span class="fc" id="L394">        int nBins = 16;</span>
+<span class="fc" id="L517">        int nBins = 16;</span>
         
-<span class="fc" id="L396">        int[][] hist = new int[3][];</span>
-<span class="fc bfc" id="L397" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L398">            hist[i] = new int[nBins];</span>
+<span class="fc" id="L519">        int[][] hist = new int[3][];</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L521">            hist[i] = new int[nBins];</span>
         }
-<span class="fc" id="L400">        return hist;</span>
+<span class="fc" id="L523">        return hist;</span>
     }
     
     /**
@@ -409,15 +532,15 @@ import java.util.Set;
      */
     public float chiSquaredSum(int[][] hist0, int[][] hist1) {
      
-<span class="nc" id="L412">        float[] x2 = new float[3];</span>
-<span class="nc" id="L413">        chiSquaredSum(hist0, hist1, x2);</span>
+<span class="nc" id="L535">        float[] x2 = new float[3];</span>
+<span class="nc" id="L536">        chiSquaredSum(hist0, hist1, x2);</span>
         
-<span class="nc" id="L415">        float sum = 0;</span>
-<span class="nc bnc" id="L416" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="nc" id="L417">            sum += x2[i];</span>
+<span class="nc" id="L538">        float sum = 0;</span>
+<span class="nc bnc" id="L539" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="nc" id="L540">            sum += x2[i];</span>
         }
         
-<span class="nc" id="L420">        return sum;</span>
+<span class="nc" id="L543">        return sum;</span>
     }
     
     /**
@@ -429,118 +552,162 @@ import java.util.Set;
      */
     public void chiSquaredSum(int[][] hist0, int[][] hist1, float[] output) {
         
-<span class="nc bnc" id="L432" title="All 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
-<span class="nc" id="L433">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
+<span class="nc" id="L556">            throw new IllegalArgumentException(</span>
                 &quot;hist0 and hist1 must be same dimensions&quot;);
         }
-<span class="nc bnc" id="L436" title="All 2 branches missed.">        if (output.length != hist0.length) {</span>
-<span class="nc" id="L437">            throw new IllegalArgumentException(&quot;output must be same length as &quot;</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">        if (output.length != hist0.length) {</span>
+<span class="nc" id="L560">            throw new IllegalArgumentException(&quot;output must be same length as &quot;</span>
                 + &quot; hist0 first dimension&quot;);
         }
-<span class="nc bnc" id="L440" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="nc bnc" id="L441" title="All 2 branches missed.">            if ((hist0[i].length != hist1[i].length)) {</span>
-<span class="nc" id="L442">                throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L563" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">            if ((hist0[i].length != hist1[i].length)) {</span>
+<span class="nc" id="L565">                throw new IllegalArgumentException(</span>
                     &quot;hist0 and hist1 must be same dimensions&quot;);
             }
         }
         
         //1/2 times sum over all bins of : (h1 - h2)^2/(h1 + h2)
-<span class="nc bnc" id="L448" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="nc bnc" id="L449" title="All 2 branches missed.">            for (int k = 0; k &lt; hist0[i].length; ++k) {</span>
-<span class="nc" id="L450">                float diff = hist0[i][k] - hist1[i][k];</span>
-<span class="nc" id="L451">                float add = hist0[i][k] + hist1[i][k];</span>
-<span class="nc bnc" id="L452" title="All 2 branches missed.">                if (add &gt; 0) {</span>
-<span class="nc" id="L453">                    output[i] += (diff * diff)/add;</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">            for (int k = 0; k &lt; hist0[i].length; ++k) {</span>
+<span class="nc" id="L573">                float diff = hist0[i][k] - hist1[i][k];</span>
+<span class="nc" id="L574">                float add = hist0[i][k] + hist1[i][k];</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">                if (add &gt; 0) {</span>
+<span class="nc" id="L576">                    output[i] += (diff * diff)/add;</span>
                 }
             }
-<span class="nc" id="L456">            output[i] *= 0.5;</span>
+<span class="nc" id="L579">            output[i] *= 0.5;</span>
         }        
-<span class="nc" id="L458">    }</span>
+<span class="nc" id="L581">    }</span>
 
     public int[][] histogramRGB(ImageExt img, Set&lt;PairInt&gt; points) {
         
-<span class="nc" id="L462">        int nBins = 16;</span>
+<span class="nc" id="L585">        int nBins = 16;</span>
         
-<span class="nc" id="L464">        int[][] hist = new int[3][];</span>
-<span class="nc bnc" id="L465" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L466">            hist[i] = new int[nBins];</span>
+<span class="nc" id="L587">        int[][] hist = new int[3][];</span>
+<span class="nc bnc" id="L588" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L589">            hist[i] = new int[nBins];</span>
         }
         
-<span class="nc" id="L469">        float binWidth = 256.f/(float)nBins;</span>
+<span class="nc" id="L592">        float binWidth = 256.f/(float)nBins;</span>
 
-<span class="nc bnc" id="L471" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L594" title="All 2 branches missed.">        for (PairInt p : points) {</span>
             
-<span class="nc" id="L473">            int x = p.getX();</span>
-<span class="nc" id="L474">            int y = p.getY();</span>
+<span class="nc" id="L596">            int x = p.getX();</span>
+<span class="nc" id="L597">            int y = p.getY();</span>
             
-<span class="nc" id="L476">            float r = img.getR(x, y);</span>
-<span class="nc" id="L477">            float g = img.getG(x, y);</span>
-<span class="nc" id="L478">            float b = img.getB(x, y);</span>
+<span class="nc" id="L599">            float r = img.getR(x, y);</span>
+<span class="nc" id="L600">            float g = img.getG(x, y);</span>
+<span class="nc" id="L601">            float b = img.getB(x, y);</span>
             
-<span class="nc" id="L480">            int binNumberR = Math.abs(Math.round(r/binWidth));</span>
-<span class="nc bnc" id="L481" title="All 2 branches missed.">            if (binNumberR &gt; (nBins - 1)) {</span>
-<span class="nc" id="L482">                binNumberR = nBins - 1;</span>
+<span class="nc" id="L603">            int binNumberR = Math.abs(Math.round(r/binWidth));</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">            if (binNumberR &gt; (nBins - 1)) {</span>
+<span class="nc" id="L605">                binNumberR = nBins - 1;</span>
             }
-<span class="nc" id="L484">            hist[0][binNumberR]++;</span>
+<span class="nc" id="L607">            hist[0][binNumberR]++;</span>
             
-<span class="nc" id="L486">            int binNumberG = Math.abs(Math.round(g/binWidth));</span>
-<span class="nc bnc" id="L487" title="All 2 branches missed.">            if (binNumberG &gt; (nBins - 1)) {</span>
-<span class="nc" id="L488">                binNumberG = nBins - 1;</span>
+<span class="nc" id="L609">            int binNumberG = Math.abs(Math.round(g/binWidth));</span>
+<span class="nc bnc" id="L610" title="All 2 branches missed.">            if (binNumberG &gt; (nBins - 1)) {</span>
+<span class="nc" id="L611">                binNumberG = nBins - 1;</span>
             }
-<span class="nc" id="L490">            hist[1][binNumberG]++;</span>
+<span class="nc" id="L613">            hist[1][binNumberG]++;</span>
             
-<span class="nc" id="L492">            int binNumberB = Math.abs(Math.round(b/binWidth));</span>
-<span class="nc bnc" id="L493" title="All 2 branches missed.">            if (binNumberB &gt; (nBins - 1)) {</span>
-<span class="nc" id="L494">                binNumberB = nBins - 1;</span>
+<span class="nc" id="L615">            int binNumberB = Math.abs(Math.round(b/binWidth));</span>
+<span class="nc bnc" id="L616" title="All 2 branches missed.">            if (binNumberB &gt; (nBins - 1)) {</span>
+<span class="nc" id="L617">                binNumberB = nBins - 1;</span>
             }
-<span class="nc" id="L496">            hist[2][binNumberB]++;</span>
-<span class="nc" id="L497">        }</span>
+<span class="nc" id="L619">            hist[2][binNumberB]++;</span>
+<span class="nc" id="L620">        }</span>
         
-<span class="nc" id="L499">        return hist;</span>
+<span class="nc" id="L622">        return hist;</span>
     }
     
     public int[][] histogramHSV(ImageExt img, Set&lt;PairInt&gt; points) {
         
         // range of Color values of h, s, b are 0:1 for all
         
-<span class="fc" id="L506">        int nBins = 16;</span>
+<span class="fc" id="L629">        int nBins = 16;</span>
         
-<span class="fc" id="L508">        int[][] hist = new int[3][];</span>
-<span class="fc bfc" id="L509" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L510">            hist[i] = new int[nBins];</span>
+<span class="fc" id="L631">        int[][] hist = new int[3][];</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L633">            hist[i] = new int[nBins];</span>
         }
         
-<span class="fc" id="L513">        float binWidth = 1.f/(float)nBins;</span>
+<span class="fc" id="L636">        float binWidth = 1.f/(float)nBins;</span>
 
-<span class="fc bfc" id="L515" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">        for (PairInt p : points) {</span>
             
-<span class="fc" id="L517">            int x = p.getX();</span>
-<span class="fc" id="L518">            int y = p.getY();</span>
+<span class="fc" id="L640">            int x = p.getX();</span>
+<span class="fc" id="L641">            int y = p.getY();</span>
             
-<span class="fc" id="L520">            float h = img.getHue(x, y);</span>
-<span class="fc" id="L521">            float s = img.getSaturation(x, y);</span>
-<span class="fc" id="L522">            float b = img.getBrightness(x, y);</span>
+<span class="fc" id="L643">            float h = img.getHue(x, y);</span>
+<span class="fc" id="L644">            float s = img.getSaturation(x, y);</span>
+<span class="fc" id="L645">            float b = img.getBrightness(x, y);</span>
             
-<span class="fc" id="L524">            int binNumberH = Math.abs(Math.round(h/binWidth));</span>
-<span class="fc bfc" id="L525" title="All 2 branches covered.">            if (binNumberH &gt; (nBins - 1)) {</span>
-<span class="fc" id="L526">                binNumberH = nBins - 1;</span>
+<span class="fc" id="L647">            int binNumberH = Math.abs(Math.round(h/binWidth));</span>
+<span class="fc bfc" id="L648" title="All 2 branches covered.">            if (binNumberH &gt; (nBins - 1)) {</span>
+<span class="fc" id="L649">                binNumberH = nBins - 1;</span>
             }
-<span class="fc" id="L528">            hist[0][binNumberH]++;</span>
+<span class="fc" id="L651">            hist[0][binNumberH]++;</span>
             
-<span class="fc" id="L530">            int binNumberS = Math.abs(Math.round(s/binWidth));</span>
-<span class="fc bfc" id="L531" title="All 2 branches covered.">            if (binNumberS &gt; (nBins - 1)) {</span>
-<span class="fc" id="L532">                binNumberS = nBins - 1;</span>
+<span class="fc" id="L653">            int binNumberS = Math.abs(Math.round(s/binWidth));</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">            if (binNumberS &gt; (nBins - 1)) {</span>
+<span class="fc" id="L655">                binNumberS = nBins - 1;</span>
             }
-<span class="fc" id="L534">            hist[1][binNumberS]++;</span>
+<span class="fc" id="L657">            hist[1][binNumberS]++;</span>
             
-<span class="fc" id="L536">            int binNumberB = Math.abs(Math.round(b/binWidth));</span>
-<span class="fc bfc" id="L537" title="All 2 branches covered.">            if (binNumberB &gt; (nBins - 1)) {</span>
-<span class="fc" id="L538">                binNumberB = nBins - 1;</span>
+<span class="fc" id="L659">            int binNumberB = Math.abs(Math.round(b/binWidth));</span>
+<span class="fc bfc" id="L660" title="All 2 branches covered.">            if (binNumberB &gt; (nBins - 1)) {</span>
+<span class="fc" id="L661">                binNumberB = nBins - 1;</span>
             }
-<span class="fc" id="L540">            hist[2][binNumberB]++;</span>
-<span class="fc" id="L541">        }</span>
+<span class="fc" id="L663">            hist[2][binNumberB]++;</span>
+<span class="fc" id="L664">        }</span>
         
-<span class="fc" id="L543">        return hist;</span>
+<span class="fc" id="L666">        return hist;</span>
+    }
+    public int[][] histogramHSV(ImageExt img, TIntList xPoints,
+        TIntList yPoints) {
+        
+        // range of Color values of h, s, b are 0:1 for all
+        
+<span class="fc" id="L673">        int nBins = 16;</span>
+        
+<span class="fc" id="L675">        int[][] hist = new int[3][];</span>
+<span class="fc bfc" id="L676" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L677">            hist[i] = new int[nBins];</span>
+        }
+        
+<span class="fc" id="L680">        float binWidth = 1.f/(float)nBins;</span>
+
+<span class="fc bfc" id="L682" title="All 2 branches covered.">        for (int i = 0; i &lt; xPoints.size(); ++i) {</span>
+            
+<span class="fc" id="L684">            int x = xPoints.get(i);</span>
+<span class="fc" id="L685">            int y = yPoints.get(i);</span>
+            
+<span class="fc" id="L687">            float h = img.getHue(x, y);</span>
+<span class="fc" id="L688">            float s = img.getSaturation(x, y);</span>
+<span class="fc" id="L689">            float b = img.getBrightness(x, y);</span>
+            
+<span class="fc" id="L691">            int binNumberH = Math.abs(Math.round(h/binWidth));</span>
+<span class="fc bfc" id="L692" title="All 2 branches covered.">            if (binNumberH &gt; (nBins - 1)) {</span>
+<span class="fc" id="L693">                binNumberH = nBins - 1;</span>
+            }
+<span class="fc" id="L695">            hist[0][binNumberH]++;</span>
+            
+<span class="fc" id="L697">            int binNumberS = Math.abs(Math.round(s/binWidth));</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">            if (binNumberS &gt; (nBins - 1)) {</span>
+<span class="fc" id="L699">                binNumberS = nBins - 1;</span>
+            }
+<span class="fc" id="L701">            hist[1][binNumberS]++;</span>
+            
+<span class="fc" id="L703">            int binNumberB = Math.abs(Math.round(b/binWidth));</span>
+<span class="fc bfc" id="L704" title="All 2 branches covered.">            if (binNumberB &gt; (nBins - 1)) {</span>
+<span class="fc" id="L705">                binNumberB = nBins - 1;</span>
+            }
+<span class="fc" id="L707">            hist[2][binNumberB]++;</span>
+        }
+        
+<span class="fc" id="L710">        return hist;</span>
     }
     
     /**
@@ -554,26 +721,26 @@ import java.util.Set;
     public int[] histogram1D(GreyscaleImage img, Set&lt;PairInt&gt; points,
         int maxV) {
              
-<span class="nc" id="L557">        int nBins = 16;</span>
+<span class="nc" id="L724">        int nBins = 16;</span>
         
-<span class="nc" id="L559">        int[] hist = new int[nBins];</span>
+<span class="nc" id="L726">        int[] hist = new int[nBins];</span>
         
-<span class="nc" id="L561">        float binWidth = (float)maxV/(float)nBins;</span>
+<span class="nc" id="L728">        float binWidth = (float)maxV/(float)nBins;</span>
            
-<span class="nc bnc" id="L563" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L564">            int x = p.getX();</span>
-<span class="nc" id="L565">            int y = p.getY();</span>
+<span class="nc bnc" id="L730" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L731">            int x = p.getX();</span>
+<span class="nc" id="L732">            int y = p.getY();</span>
             
-<span class="nc" id="L567">            float v = img.getValue(x, y);</span>
+<span class="nc" id="L734">            float v = img.getValue(x, y);</span>
             
-<span class="nc" id="L569">            int binNumber = Math.round(v/binWidth);</span>
-<span class="nc bnc" id="L570" title="All 2 branches missed.">            if (binNumber &gt; (nBins - 1)) {</span>
-<span class="nc" id="L571">                binNumber = nBins - 1;</span>
+<span class="nc" id="L736">            int binNumber = Math.round(v/binWidth);</span>
+<span class="nc bnc" id="L737" title="All 2 branches missed.">            if (binNumber &gt; (nBins - 1)) {</span>
+<span class="nc" id="L738">                binNumber = nBins - 1;</span>
             }
-<span class="nc" id="L573">            hist[binNumber]++;           </span>
-<span class="nc" id="L574">        }</span>
+<span class="nc" id="L740">            hist[binNumber]++;           </span>
+<span class="nc" id="L741">        }</span>
         
-<span class="nc" id="L576">        return hist;</span>
+<span class="nc" id="L743">        return hist;</span>
     }
     
     /**
@@ -585,24 +752,24 @@ import java.util.Set;
      */
     public int[] histogram1D(TIntList values, int maxV) {
              
-<span class="nc" id="L588">        int nBins = 16;</span>
+<span class="nc" id="L755">        int nBins = 16;</span>
         
-<span class="nc" id="L590">        int[] hist = new int[nBins];</span>
+<span class="nc" id="L757">        int[] hist = new int[nBins];</span>
         
-<span class="nc" id="L592">        float binWidth = (float)maxV/(float)nBins;</span>
+<span class="nc" id="L759">        float binWidth = (float)maxV/(float)nBins;</span>
            
-<span class="nc bnc" id="L594" title="All 2 branches missed.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
+<span class="nc bnc" id="L761" title="All 2 branches missed.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
             
-<span class="nc" id="L596">            float v = values.get(i);</span>
+<span class="nc" id="L763">            float v = values.get(i);</span>
             
-<span class="nc" id="L598">            int binNumber = Math.round(v/binWidth);</span>
-<span class="nc bnc" id="L599" title="All 2 branches missed.">            if (binNumber &gt; (nBins - 1)) {</span>
-<span class="nc" id="L600">                binNumber = nBins - 1;</span>
+<span class="nc" id="L765">            int binNumber = Math.round(v/binWidth);</span>
+<span class="nc bnc" id="L766" title="All 2 branches missed.">            if (binNumber &gt; (nBins - 1)) {</span>
+<span class="nc" id="L767">                binNumber = nBins - 1;</span>
             }
-<span class="nc" id="L602">            hist[binNumber]++;           </span>
+<span class="nc" id="L769">            hist[binNumber]++;           </span>
         }
         
-<span class="nc" id="L605">        return hist;</span>
+<span class="nc" id="L772">        return hist;</span>
     }
     
     /**
@@ -613,18 +780,18 @@ import java.util.Set;
      */
     public float intersection(int[] hist0, int[] hist1) {
         
-<span class="pc bpc" id="L616" title="1 of 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
-<span class="nc" id="L617">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L783" title="1 of 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
+<span class="nc" id="L784">            throw new IllegalArgumentException(</span>
                 &quot;hist0 and hist1 must be same dimensions&quot;);
         }
                 
         // the values need to be normalized by the total number of points
         // in the histogram, so calculate that first
-<span class="fc" id="L623">        int n0 = 0;</span>
-<span class="fc" id="L624">        int n1 = 0;</span>
-<span class="fc bfc" id="L625" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="fc" id="L626">            n0 += hist0[i];</span>
-<span class="fc" id="L627">            n1 += hist1[i];</span>
+<span class="fc" id="L790">        int n0 = 0;</span>
+<span class="fc" id="L791">        int n1 = 0;</span>
+<span class="fc bfc" id="L792" title="All 2 branches covered.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="fc" id="L793">            n0 += hist0[i];</span>
+<span class="fc" id="L794">            n1 += hist1[i];</span>
         }
         
         /*
@@ -636,28 +803,28 @@ import java.util.Set;
             (min(summation_over_i(a_i), summation_over_i(b_i))
         */
             
-<span class="fc" id="L639">        float sum = 0;</span>
-<span class="fc" id="L640">        float sum0 = 0;</span>
-<span class="fc" id="L641">        float sum1 = 0;</span>
-<span class="fc bfc" id="L642" title="All 2 branches covered.">        for (int j = 0; j &lt; hist0.length; ++j) {</span>
-<span class="fc" id="L643">            float y0 = 0;</span>
-<span class="fc" id="L644">            float y1 = 0;</span>
-<span class="pc bpc" id="L645" title="1 of 2 branches missed.">            if (n0 &gt; 0) {</span>
-<span class="fc" id="L646">                y0 = (float)hist0[j]/(float)n0;</span>
+<span class="fc" id="L806">        float sum = 0;</span>
+<span class="fc" id="L807">        float sum0 = 0;</span>
+<span class="fc" id="L808">        float sum1 = 0;</span>
+<span class="fc bfc" id="L809" title="All 2 branches covered.">        for (int j = 0; j &lt; hist0.length; ++j) {</span>
+<span class="fc" id="L810">            float y0 = 0;</span>
+<span class="fc" id="L811">            float y1 = 0;</span>
+<span class="pc bpc" id="L812" title="1 of 2 branches missed.">            if (n0 &gt; 0) {</span>
+<span class="fc" id="L813">                y0 = (float)hist0[j]/(float)n0;</span>
             }
-<span class="pc bpc" id="L648" title="1 of 2 branches missed.">            if (n1 &gt; 0) {</span>
-<span class="fc" id="L649">                y1 = (float)hist1[j]/(float)n1;</span>
+<span class="pc bpc" id="L815" title="1 of 2 branches missed.">            if (n1 &gt; 0) {</span>
+<span class="fc" id="L816">                y1 = (float)hist1[j]/(float)n1;</span>
             }
-<span class="fc" id="L651">            sum += Math.min(y0, y1);</span>
-<span class="fc" id="L652">            sum0 += y0;</span>
-<span class="fc" id="L653">            sum1 += y1;</span>
+<span class="fc" id="L818">            sum += Math.min(y0, y1);</span>
+<span class="fc" id="L819">            sum0 += y0;</span>
+<span class="fc" id="L820">            sum1 += y1;</span>
         }
         
-<span class="fc" id="L656">        float d = Math.min(sum0, sum1);</span>
+<span class="fc" id="L823">        float d = Math.min(sum0, sum1);</span>
         
-<span class="pc bpc" id="L658" title="1 of 2 branches missed.">        float sim = (d == 0.f) ? 0 : sum/d;</span>
+<span class="pc bpc" id="L825" title="1 of 2 branches missed.">        float sim = (d == 0.f) ? 0 : sum/d;</span>
                 
-<span class="fc" id="L660">        return sim;</span>
+<span class="fc" id="L827">        return sim;</span>
     }
 
     /**
@@ -670,18 +837,18 @@ import java.util.Set;
      */
     public float intersection(int[] hist0, int[] hist1, int bins0Shift) {
     
-<span class="nc bnc" id="L673" title="All 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
-<span class="nc" id="L674">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L840" title="All 2 branches missed.">        if ((hist0.length != hist1.length)) {</span>
+<span class="nc" id="L841">            throw new IllegalArgumentException(</span>
                 &quot;hist0 and hist1 must be same dimensions&quot;);
         }
                 
         // the values need to be normalized by the total number of points
         // in the histogram, so calculate that first
-<span class="nc" id="L680">        int n0 = 0;</span>
-<span class="nc" id="L681">        int n1 = 0;</span>
-<span class="nc bnc" id="L682" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
-<span class="nc" id="L683">            n0 += hist0[i];</span>
-<span class="nc" id="L684">            n1 += hist1[i];</span>
+<span class="nc" id="L847">        int n0 = 0;</span>
+<span class="nc" id="L848">        int n1 = 0;</span>
+<span class="nc bnc" id="L849" title="All 2 branches missed.">        for (int i = 0; i &lt; hist0.length; ++i) {</span>
+<span class="nc" id="L850">            n0 += hist0[i];</span>
+<span class="nc" id="L851">            n1 += hist1[i];</span>
         }
         
         /*
@@ -693,32 +860,32 @@ import java.util.Set;
             (min(summation_over_i(a_i), summation_over_i(b_i))
         */
             
-<span class="nc" id="L696">        float sum = 0;</span>
-<span class="nc" id="L697">        float sum0 = 0;</span>
-<span class="nc" id="L698">        float sum1 = 0;</span>
-<span class="nc bnc" id="L699" title="All 2 branches missed.">        for (int j = 0; j &lt; hist0.length; ++j) {</span>
-<span class="nc" id="L700">            float y0 = 0;</span>
-<span class="nc" id="L701">            float y1 = 0;</span>
-<span class="nc" id="L702">            int idx0 = j + bins0Shift;</span>
-<span class="nc bnc" id="L703" title="All 2 branches missed.">            if (idx0 &gt; (hist0.length - 1)) {</span>
-<span class="nc" id="L704">                idx0 -= hist0.length;</span>
+<span class="nc" id="L863">        float sum = 0;</span>
+<span class="nc" id="L864">        float sum0 = 0;</span>
+<span class="nc" id="L865">        float sum1 = 0;</span>
+<span class="nc bnc" id="L866" title="All 2 branches missed.">        for (int j = 0; j &lt; hist0.length; ++j) {</span>
+<span class="nc" id="L867">            float y0 = 0;</span>
+<span class="nc" id="L868">            float y1 = 0;</span>
+<span class="nc" id="L869">            int idx0 = j + bins0Shift;</span>
+<span class="nc bnc" id="L870" title="All 2 branches missed.">            if (idx0 &gt; (hist0.length - 1)) {</span>
+<span class="nc" id="L871">                idx0 -= hist0.length;</span>
             }
-<span class="nc bnc" id="L706" title="All 2 branches missed.">            if (n0 &gt; 0) {</span>
-<span class="nc" id="L707">                y0 = (float)hist0[idx0]/(float)n0;</span>
+<span class="nc bnc" id="L873" title="All 2 branches missed.">            if (n0 &gt; 0) {</span>
+<span class="nc" id="L874">                y0 = (float)hist0[idx0]/(float)n0;</span>
             }
-<span class="nc bnc" id="L709" title="All 2 branches missed.">            if (n1 &gt; 0) {</span>
-<span class="nc" id="L710">                y1 = (float)hist1[j]/(float)n1;</span>
+<span class="nc bnc" id="L876" title="All 2 branches missed.">            if (n1 &gt; 0) {</span>
+<span class="nc" id="L877">                y1 = (float)hist1[j]/(float)n1;</span>
             }
-<span class="nc" id="L712">            sum += Math.min(y0, y1);</span>
-<span class="nc" id="L713">            sum0 += y0;</span>
-<span class="nc" id="L714">            sum1 += y1;</span>
+<span class="nc" id="L879">            sum += Math.min(y0, y1);</span>
+<span class="nc" id="L880">            sum0 += y0;</span>
+<span class="nc" id="L881">            sum1 += y1;</span>
         }
         
-<span class="nc" id="L717">        float d = Math.min(sum0, sum1);</span>
+<span class="nc" id="L884">        float d = Math.min(sum0, sum1);</span>
         
-<span class="nc bnc" id="L719" title="All 2 branches missed.">        float sim = (d == 0.f) ? 0 : sum/d;</span>
+<span class="nc bnc" id="L886" title="All 2 branches missed.">        float sim = (d == 0.f) ? 0 : sum/d;</span>
                 
-<span class="nc" id="L721">        return sim;</span>
+<span class="nc" id="L888">        return sim;</span>
     }
     
     /**
@@ -747,36 +914,36 @@ import java.util.Set;
          5:  purple = 193 - 255
         */
         
-<span class="fc" id="L750">        List&lt;OneDIntArray&gt; output = new ArrayList&lt;OneDIntArray&gt;();</span>
+<span class="nc" id="L917">        List&lt;OneDIntArray&gt; output = new ArrayList&lt;OneDIntArray&gt;();</span>
         
-<span class="fc bfc" id="L752" title="All 2 branches covered.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
+<span class="nc bnc" id="L919" title="All 2 branches missed.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
             
-<span class="fc" id="L754">            TIntSet set = labeledSets.get(i);</span>
-<span class="fc" id="L755">            TIntIterator iter = set.iterator();</span>
+<span class="nc" id="L921">            TIntSet set = labeledSets.get(i);</span>
+<span class="nc" id="L922">            TIntIterator iter = set.iterator();</span>
             
-<span class="fc" id="L757">            int[] hist = new int[6];</span>
-<span class="fc" id="L758">            output.add(new OneDIntArray(hist));</span>
+<span class="nc" id="L924">            int[] hist = new int[6];</span>
+<span class="nc" id="L925">            output.add(new OneDIntArray(hist));</span>
             
-<span class="fc bfc" id="L760" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L761">                int pixIdx = iter.next();</span>
-<span class="fc" id="L762">                int v = ptImg.getValue(pixIdx);</span>
-<span class="fc bfc" id="L763" title="All 2 branches covered.">                if (v &lt; 19) {</span>
-<span class="fc" id="L764">                    hist[0]++;</span>
-<span class="fc bfc" id="L765" title="All 2 branches covered.">                } else if (v &lt; 41) {</span>
-<span class="fc" id="L766">                    hist[1]++;</span>
-<span class="fc bfc" id="L767" title="All 2 branches covered.">                } else if (v &lt; 61) {</span>
-<span class="fc" id="L768">                    hist[2]++;</span>
-<span class="fc bfc" id="L769" title="All 2 branches covered.">                } else if (v &lt; 107) {</span>
-<span class="fc" id="L770">                    hist[3]++;</span>
-<span class="fc bfc" id="L771" title="All 2 branches covered.">                } else if (v &lt; 193) {</span>
-<span class="fc" id="L772">                    hist[4]++;</span>
+<span class="nc bnc" id="L927" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L928">                int pixIdx = iter.next();</span>
+<span class="nc" id="L929">                int v = ptImg.getValue(pixIdx);</span>
+<span class="nc bnc" id="L930" title="All 2 branches missed.">                if (v &lt; 19) {</span>
+<span class="nc" id="L931">                    hist[0]++;</span>
+<span class="nc bnc" id="L932" title="All 2 branches missed.">                } else if (v &lt; 41) {</span>
+<span class="nc" id="L933">                    hist[1]++;</span>
+<span class="nc bnc" id="L934" title="All 2 branches missed.">                } else if (v &lt; 61) {</span>
+<span class="nc" id="L935">                    hist[2]++;</span>
+<span class="nc bnc" id="L936" title="All 2 branches missed.">                } else if (v &lt; 107) {</span>
+<span class="nc" id="L937">                    hist[3]++;</span>
+<span class="nc bnc" id="L938" title="All 2 branches missed.">                } else if (v &lt; 193) {</span>
+<span class="nc" id="L939">                    hist[4]++;</span>
                 } else {
-<span class="fc" id="L774">                    hist[5]++;</span>
+<span class="nc" id="L941">                    hist[5]++;</span>
                 }
-<span class="fc" id="L776">            }</span>
+<span class="nc" id="L943">            }</span>
         }
         
-<span class="fc" id="L779">        return output;</span>
+<span class="nc" id="L946">        return output;</span>
     }
 
     /**
@@ -805,29 +972,29 @@ import java.util.Set;
          5:  purple = 193 - 255
         */
         
-<span class="nc" id="L808">        TIntIterator iter = labeledSet.iterator();</span>
+<span class="nc" id="L975">        TIntIterator iter = labeledSet.iterator();</span>
 
-<span class="nc" id="L810">        int[] hist = new int[6];</span>
+<span class="nc" id="L977">        int[] hist = new int[6];</span>
 
-<span class="nc bnc" id="L812" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L813">            int pixIdx = iter.next();</span>
-<span class="nc" id="L814">            int v = ptImg.getValue(pixIdx);</span>
-<span class="nc bnc" id="L815" title="All 2 branches missed.">            if (v &lt; 19) {</span>
-<span class="nc" id="L816">                hist[0]++;</span>
-<span class="nc bnc" id="L817" title="All 2 branches missed.">            } else if (v &lt; 41) {</span>
-<span class="nc" id="L818">                hist[1]++;</span>
-<span class="nc bnc" id="L819" title="All 2 branches missed.">            } else if (v &lt; 61) {</span>
-<span class="nc" id="L820">                hist[2]++;</span>
-<span class="nc bnc" id="L821" title="All 2 branches missed.">            } else if (v &lt; 107) {</span>
-<span class="nc" id="L822">                hist[3]++;</span>
-<span class="nc bnc" id="L823" title="All 2 branches missed.">            } else if (v &lt; 193) {</span>
-<span class="nc" id="L824">                hist[4]++;</span>
+<span class="nc bnc" id="L979" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L980">            int pixIdx = iter.next();</span>
+<span class="nc" id="L981">            int v = ptImg.getValue(pixIdx);</span>
+<span class="nc bnc" id="L982" title="All 2 branches missed.">            if (v &lt; 19) {</span>
+<span class="nc" id="L983">                hist[0]++;</span>
+<span class="nc bnc" id="L984" title="All 2 branches missed.">            } else if (v &lt; 41) {</span>
+<span class="nc" id="L985">                hist[1]++;</span>
+<span class="nc bnc" id="L986" title="All 2 branches missed.">            } else if (v &lt; 61) {</span>
+<span class="nc" id="L987">                hist[2]++;</span>
+<span class="nc bnc" id="L988" title="All 2 branches missed.">            } else if (v &lt; 107) {</span>
+<span class="nc" id="L989">                hist[3]++;</span>
+<span class="nc bnc" id="L990" title="All 2 branches missed.">            } else if (v &lt; 193) {</span>
+<span class="nc" id="L991">                hist[4]++;</span>
             } else {
-<span class="nc" id="L826">                hist[5]++;</span>
+<span class="nc" id="L993">                hist[5]++;</span>
             }
-<span class="nc" id="L828">        }</span>
+<span class="nc" id="L995">        }</span>
         
-<span class="nc" id="L830">        return hist;</span>
+<span class="nc" id="L997">        return hist;</span>
     }
 
     /**
@@ -856,26 +1023,26 @@ import java.util.Set;
          5:  purple = 193 - 255
         */
         
-<span class="nc" id="L859">        int[] hist = new int[6];</span>
+<span class="nc" id="L1026">        int[] hist = new int[6];</span>
 
-<span class="nc bnc" id="L861" title="All 2 branches missed.">        for (PairInt p : labeledSet) {</span>
-<span class="nc" id="L862">            int v = ptImg.getValue(p);</span>
-<span class="nc bnc" id="L863" title="All 2 branches missed.">            if (v &lt; 19) {</span>
-<span class="nc" id="L864">                hist[0]++;</span>
-<span class="nc bnc" id="L865" title="All 2 branches missed.">            } else if (v &lt; 41) {</span>
-<span class="nc" id="L866">                hist[1]++;</span>
-<span class="nc bnc" id="L867" title="All 2 branches missed.">            } else if (v &lt; 61) {</span>
-<span class="nc" id="L868">                hist[2]++;</span>
-<span class="nc bnc" id="L869" title="All 2 branches missed.">            } else if (v &lt; 107) {</span>
-<span class="nc" id="L870">                hist[3]++;</span>
-<span class="nc bnc" id="L871" title="All 2 branches missed.">            } else if (v &lt; 193) {</span>
-<span class="nc" id="L872">                hist[4]++;</span>
+<span class="nc bnc" id="L1028" title="All 2 branches missed.">        for (PairInt p : labeledSet) {</span>
+<span class="nc" id="L1029">            int v = ptImg.getValue(p);</span>
+<span class="nc bnc" id="L1030" title="All 2 branches missed.">            if (v &lt; 19) {</span>
+<span class="nc" id="L1031">                hist[0]++;</span>
+<span class="nc bnc" id="L1032" title="All 2 branches missed.">            } else if (v &lt; 41) {</span>
+<span class="nc" id="L1033">                hist[1]++;</span>
+<span class="nc bnc" id="L1034" title="All 2 branches missed.">            } else if (v &lt; 61) {</span>
+<span class="nc" id="L1035">                hist[2]++;</span>
+<span class="nc bnc" id="L1036" title="All 2 branches missed.">            } else if (v &lt; 107) {</span>
+<span class="nc" id="L1037">                hist[3]++;</span>
+<span class="nc bnc" id="L1038" title="All 2 branches missed.">            } else if (v &lt; 193) {</span>
+<span class="nc" id="L1039">                hist[4]++;</span>
             } else {
-<span class="nc" id="L874">                hist[5]++;</span>
+<span class="nc" id="L1041">                hist[5]++;</span>
             }
-<span class="nc" id="L876">        }</span>
+<span class="nc" id="L1043">        }</span>
         
-<span class="nc" id="L878">        return hist;</span>
+<span class="nc" id="L1045">        return hist;</span>
     }
 
 }

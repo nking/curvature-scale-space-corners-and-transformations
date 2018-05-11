@@ -63,8 +63,8 @@ public class CSSCornerMaker {
 <span class="fc" id="L63">    }</span>
 
     public void doNotStoreCornerRegions() {
-<span class="fc" id="L66">        doStoreCornerRegions = false;</span>
-<span class="fc" id="L67">    }</span>
+<span class="nc" id="L66">        doStoreCornerRegions = false;</span>
+<span class="nc" id="L67">    }</span>
 
     public void increaseFactorForCurvatureMinimum(float factor) {
 <span class="nc" id="L70">        factorIncreaseForCurvatureMinimum = factor;</span>
@@ -156,7 +156,7 @@ public class CSSCornerMaker {
 <span class="fc" id="L156">        SIGMA selectedSigma = null;</span>
 <span class="fc bfc" id="L157" title="All 2 branches covered.">        for (Entry&lt;SIGMA, Integer&gt; entry : sigmaCountMap.entrySet()) {</span>
 <span class="fc" id="L158">            int c = entry.getValue().intValue();</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">            if (c &gt; maxCount) {</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">            if (c &gt; maxCount) {</span>
 <span class="fc" id="L160">                selectedSigma = entry.getKey();</span>
 <span class="fc" id="L161">                maxCount = c;</span>
             }
@@ -165,15 +165,15 @@ public class CSSCornerMaker {
 <span class="fc" id="L165">        List&lt;CornerArray&gt; output = new ArrayList&lt;CornerArray&gt;();</span>
 <span class="fc bfc" id="L166" title="All 2 branches covered.">        for (List&lt;CornerArray&gt; scaleSpaceCorners : edgeCornerLists) {</span>
 <span class="fc" id="L167">            boolean found = false;</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (CornerArray corners : scaleSpaceCorners) {</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            for (CornerArray corners : scaleSpaceCorners) {</span>
 <span class="fc bfc" id="L169" title="All 2 branches covered.">                if (corners.getSIGMA() == selectedSigma) {</span>
 <span class="fc" id="L170">                    output.add(corners);</span>
 <span class="fc" id="L171">                    found = true;</span>
 <span class="fc" id="L172">                    break;</span>
                 }
 <span class="fc" id="L174">            }</span>
-<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (!found) {</span>
-<span class="fc" id="L176">                output.add(new CornerArray(selectedSigma));</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">            if (!found) {</span>
+<span class="nc" id="L176">                output.add(new CornerArray(selectedSigma));</span>
             }
 <span class="fc" id="L178">        }</span>
             
@@ -321,12 +321,12 @@ public class CSSCornerMaker {
 
 <span class="fc" id="L322">        }</span>
 
-<span class="fc bfc" id="L324" title="All 2 branches covered.">        if (!map.containsKey(maxSIGMA)) {</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">        if (!map.containsKey(maxSIGMA)) {</span>
 
-<span class="fc" id="L326">            ScaleSpaceCurve curve = scaleSpaceHelper.computeCurvature(edge,</span>
-<span class="fc" id="L327">                maxSIGMA, SIGMA.getValue(maxSIGMA));</span>
+<span class="nc" id="L326">            ScaleSpaceCurve curve = scaleSpaceHelper.computeCurvature(edge,</span>
+<span class="nc" id="L327">                maxSIGMA, SIGMA.getValue(maxSIGMA));</span>
 
-<span class="fc" id="L329">            map.put(maxSIGMA, curve);</span>
+<span class="nc" id="L329">            map.put(maxSIGMA, curve);</span>
         }
 
 <span class="fc" id="L332">        return map;</span>
@@ -506,8 +506,8 @@ public class CSSCornerMaker {
 
 <span class="fc" id="L507">        int[] firstPeakAndMinIdx = findFirstPeakAndMinimum(h);</span>
 
-<span class="fc bfc" id="L509" title="All 2 branches covered.">        if (firstPeakAndMinIdx[1] &gt; 3) {</span>
-<span class="fc" id="L510">            firstPeakAndMinIdx[1] = firstPeakAndMinIdx[0] + 1;</span>
+<span class="pc bpc" id="L509" title="1 of 2 branches missed.">        if (firstPeakAndMinIdx[1] &gt; 3) {</span>
+<span class="nc" id="L510">            firstPeakAndMinIdx[1] = firstPeakAndMinIdx[0] + 1;</span>
         }
 <span class="fc bfc" id="L512" title="All 2 branches covered.">        if (firstPeakAndMinIdx[1] &gt;= (h.getYHist().length &gt;&gt; 1)) {</span>
 <span class="fc" id="L513">            firstPeakAndMinIdx[1] = 1;</span>
@@ -530,8 +530,8 @@ public class CSSCornerMaker {
 
 <span class="fc" id="L531">        float divSum = (float)sum0/(float)sum1;</span>
 <span class="fc" id="L532">        outputLowThreshold[0] = 0;</span>
-<span class="fc bfc" id="L533" title="All 2 branches covered.">        if (divSum &gt; 10) {</span>
-<span class="fc" id="L534">            outputLowThreshold[0] = h.getXHist()[firstPeakAndMinIdx[0]];</span>
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        if (divSum &gt; 10) {</span>
+<span class="nc" id="L534">            outputLowThreshold[0] = h.getXHist()[firstPeakAndMinIdx[0]];</span>
 <span class="pc bpc" id="L535" title="1 of 4 branches missed.">        } else if ((firstPeakAndMinIdx[1] &gt; 0) &amp;&amp; (sum1 &gt; 0)) {</span>
 <span class="fc" id="L536">            outputLowThreshold[0] = (h.getXHist()[firstPeakAndMinIdx[1]]</span>
 <span class="fc" id="L537">                + h.getXHist()[firstPeakAndMinIdx[1] - 1])/2;</span>
@@ -581,7 +581,7 @@ public class CSSCornerMaker {
 <span class="fc" id="L581">                    break;</span>
                 }
             } else {
-<span class="pc bpc" id="L584" title="1 of 4 branches missed.">                if ((yh[i] &lt; lastY) &amp;&amp; incr) {</span>
+<span class="pc bpc" id="L584" title="2 of 4 branches missed.">                if ((yh[i] &lt; lastY) &amp;&amp; incr) {</span>
 <span class="fc" id="L585">                    incr = false;</span>
 <span class="fc" id="L586">                    yFirstPeakIdx = i - 1;</span>
                 }
@@ -699,8 +699,8 @@ public class CSSCornerMaker {
         //    else    sigma=4
 <span class="fc bfc" id="L700" title="All 2 branches covered.">        if (nPoints &lt; 200) {</span>
 <span class="fc" id="L701">            return SIGMA.TWO;</span>
-<span class="fc bfc" id="L702" title="All 2 branches covered.">        } else if (nPoints &lt; 601) {</span>
-<span class="fc" id="L703">            return SIGMA.THREE;</span>
+<span class="pc bpc" id="L702" title="1 of 2 branches missed.">        } else if (nPoints &lt; 601) {</span>
+<span class="nc" id="L703">            return SIGMA.THREE;</span>
         } else {
 <span class="fc" id="L705">            return SIGMA.FOUR;</span>
         }

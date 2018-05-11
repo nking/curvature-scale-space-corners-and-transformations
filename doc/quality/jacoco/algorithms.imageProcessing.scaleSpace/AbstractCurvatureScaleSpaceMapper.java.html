@@ -167,10 +167,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 <span class="fc" id="L167">    }</span>
     
     protected void extractEdges() {
-<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (useLineDrawingMode) {</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
 <span class="fc" id="L171">            extractEdgesLineMode();</span>
         } else {
-<span class="fc" id="L173">            extractEdgesNotLineMode();</span>
+<span class="nc" id="L173">            extractEdgesNotLineMode();</span>
         }
 <span class="fc" id="L175">    }</span>
     
@@ -182,38 +182,38 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 <span class="fc" id="L182">        int h = originalImg.getHeight();</span>
 
 <span class="fc" id="L184">        MSEREdges mserEdges = new MSEREdges(this.originalImg);</span>
-<span class="fc" id="L185">        mserEdges.extractAndMergeEdges();</span>
-<span class="fc" id="L186">        this.filterProducts = mserEdges.getEdgeFilterProducts();</span>
-<span class="fc" id="L187">        List&lt;TIntSet&gt; edgeSets = mserEdges.getEdges();</span>
+<span class="nc" id="L185">        mserEdges.extractAndMergeEdges();</span>
+<span class="nc" id="L186">        this.filterProducts = mserEdges.getEdgeFilterProducts();</span>
+<span class="nc" id="L187">        List&lt;TIntSet&gt; edgeSets = mserEdges.getEdges();</span>
         
-<span class="fc" id="L189">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
+<span class="nc" id="L189">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
         
-<span class="fc" id="L191">        PerimeterFinder2 finder2 = new PerimeterFinder2();</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 0; i &lt; edgeSets.size(); ++i) {</span>
-<span class="fc" id="L193">            TIntSet set = edgeSets.get(i); </span>
+<span class="nc" id="L191">        PerimeterFinder2 finder2 = new PerimeterFinder2();</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        for (int i = 0; i &lt; edgeSets.size(); ++i) {</span>
+<span class="nc" id="L193">            TIntSet set = edgeSets.get(i); </span>
             
-<span class="fc" id="L195">            pltc.extremeStaircaseRemover(set, w, h);</span>
+<span class="nc" id="L195">            pltc.extremeStaircaseRemover(set, w, h);</span>
             
-<span class="fc" id="L197">            PairIntArray ordered = null;</span>
+<span class="nc" id="L197">            PairIntArray ordered = null;</span>
             try {
-<span class="fc" id="L199">                ordered = finder2.orderTheBoundary(</span>
+<span class="nc" id="L199">                ordered = finder2.orderTheBoundary(</span>
                     set, w, h);
-<span class="fc" id="L201">            } catch (Exception e) {</span>
-<span class="fc" id="L202">                log.severe(e.getMessage());</span>
-<span class="fc" id="L203">                continue;</span>
-<span class="fc" id="L204">            }</span>
+<span class="nc" id="L201">            } catch (Exception e) {</span>
+<span class="nc" id="L202">                log.severe(e.getMessage());</span>
+<span class="nc" id="L203">                continue;</span>
+<span class="nc" id="L204">            }</span>
 
-<span class="fc" id="L206">            PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(</span>
+<span class="nc" id="L206">            PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(</span>
                 ordered);
-<span class="fc" id="L208">            closedCurve.setAsClosedCurve();</span>
+<span class="nc" id="L208">            closedCurve.setAsClosedCurve();</span>
 
-<span class="fc" id="L210">            edges.add(closedCurve);</span>
+<span class="nc" id="L210">            edges.add(closedCurve);</span>
         }
                        
-<span class="fc" id="L213">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
+<span class="nc" id="L213">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
         
-<span class="fc" id="L215">        log.fine(&quot;edges extracted&quot;);</span>
-<span class="fc" id="L216">    }</span>
+<span class="nc" id="L215">        log.fine(&quot;edges extracted&quot;);</span>
+<span class="nc" id="L216">    }</span>
   
     public List&lt;PairIntArray&gt; getEdges() {
 <span class="fc" id="L219">        return edges;</span>
@@ -248,7 +248,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     }
     
     public GreyscaleImage getImage() {
-<span class="fc" id="L251">        return img;</span>
+<span class="nc" id="L251">        return img;</span>
     }
 
     public Image getOriginalImage() {

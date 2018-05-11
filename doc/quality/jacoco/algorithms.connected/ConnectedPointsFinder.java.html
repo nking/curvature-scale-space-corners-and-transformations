@@ -63,8 +63,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L63">    }</span>
     
     public void setDebug(boolean setDebugToTrue) {
-<span class="fc" id="L66">        this.debug = setDebugToTrue;</span>
-<span class="fc" id="L67">    }</span>
+<span class="nc" id="L66">        this.debug = setDebugToTrue;</span>
+<span class="nc" id="L67">    }</span>
 
     public void setMinimumNumberInCluster(int n) {
 <span class="fc" id="L70">        this.minimumNumberInCluster = n;</span>
@@ -92,8 +92,8 @@ import java.util.logging.Logger;
 
     protected void findClustersIterative(TIntSet pixIdxs) {
         
-<span class="fc bfc" id="L95" title="All 2 branches covered.">        if (pixIdxs.isEmpty()) {</span>
-<span class="fc" id="L96">            return;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (pixIdxs.isEmpty()) {</span>
+<span class="nc" id="L96">            return;</span>
         }
                 
         int[] dxs;
@@ -144,8 +144,8 @@ import java.util.logging.Logger;
                 
 <span class="fc" id="L145">                found = true;</span>
             }
-<span class="fc bfc" id="L147" title="All 4 branches covered.">            if (!found &amp;&amp; minimumNumberInCluster == 1) {</span>
-<span class="fc" id="L148">                process(uPoint);</span>
+<span class="pc bpc" id="L147" title="1 of 4 branches missed.">            if (!found &amp;&amp; minimumNumberInCluster == 1) {</span>
+<span class="nc" id="L148">                process(uPoint);</span>
             }  
 <span class="fc" id="L150">        }</span>
 <span class="fc" id="L151">    }</span>
@@ -221,24 +221,24 @@ import java.util.logging.Logger;
     
     protected void process(int uPoint) {
         
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        int uGroupIdx = pixGroupMap.containsKey(uPoint) ?</span>
-<span class="pc" id="L225">            pixGroupMap.get(uPoint) : -1;</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        int uGroupIdx = pixGroupMap.containsKey(uPoint) ?</span>
+<span class="nc" id="L225">            pixGroupMap.get(uPoint) : -1;</span>
         
         //System.out.format(&quot;u=%d sz=%d\n&quot;, uGroupIdx, groupPixIdxsMap.size());
         
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (uGroupIdx == -1) {</span>
-<span class="fc" id="L230">            TIntSet set = new TIntHashSet();</span>
-<span class="fc" id="L231">            set.add(uPoint);</span>
-<span class="fc" id="L232">            int groupIdx = pixGroupMap.size();</span>
-<span class="fc" id="L233">            pixGroupMap.put(uPoint, groupIdx);</span>
-<span class="fc" id="L234">            groupPixIdxsMap.put(groupIdx, set);</span>
-<span class="fc" id="L235">        } else {</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (uGroupIdx == -1) {</span>
+<span class="nc" id="L230">            TIntSet set = new TIntHashSet();</span>
+<span class="nc" id="L231">            set.add(uPoint);</span>
+<span class="nc" id="L232">            int groupIdx = pixGroupMap.size();</span>
+<span class="nc" id="L233">            pixGroupMap.put(uPoint, groupIdx);</span>
+<span class="nc" id="L234">            groupPixIdxsMap.put(groupIdx, set);</span>
+<span class="nc" id="L235">        } else {</span>
             // merge the two
 <span class="nc" id="L237">            TIntSet uSet = groupPixIdxsMap.get(uGroupIdx);</span>
 <span class="nc" id="L238">            uSet.add(uPoint);</span>
 <span class="nc" id="L239">            pixGroupMap.put(uPoint, uGroupIdx);</span>
         }
-<span class="fc" id="L241">    }</span>
+<span class="nc" id="L241">    }</span>
 
     public List&lt;TIntSet&gt; getGroupMembershipList() {
 <span class="nc" id="L244">        return groupList;</span>
@@ -277,21 +277,21 @@ import java.util.logging.Logger;
     
     public TIntIntMap createPointIndexMap() {
         
-<span class="fc" id="L280">        TIntIntMap ptIdxMap = new TIntIntHashMap();</span>
+<span class="nc" id="L280">        TIntIntMap ptIdxMap = new TIntIntHashMap();</span>
         
-<span class="fc" id="L282">        int n = getNumberOfGroups();</span>
-<span class="fc bfc" id="L283" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L282">        int n = getNumberOfGroups();</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
             
-<span class="fc" id="L285">            TIntSet set = getXY(i);</span>
+<span class="nc" id="L285">            TIntSet set = getXY(i);</span>
             
-<span class="fc" id="L287">            TIntIterator iter = set.iterator();</span>
-<span class="fc bfc" id="L288" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L289">                int pixIdx = iter.next();</span>
-<span class="fc" id="L290">                ptIdxMap.put(pixIdx, i);</span>
-<span class="fc" id="L291">            }</span>
+<span class="nc" id="L287">            TIntIterator iter = set.iterator();</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L289">                int pixIdx = iter.next();</span>
+<span class="nc" id="L290">                ptIdxMap.put(pixIdx, i);</span>
+<span class="nc" id="L291">            }</span>
         }
         
-<span class="fc" id="L294">        return ptIdxMap;</span>
+<span class="nc" id="L294">        return ptIdxMap;</span>
     }
 
 

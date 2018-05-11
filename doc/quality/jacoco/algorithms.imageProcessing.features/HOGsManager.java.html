@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HOGsManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">HOGsManager.java</span></div><h1>HOGsManager.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.features.mser.Canonicalizer;
+import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
+import java.util.Arrays;
+
+/**
+ * similar to HOGRegionsManager except that there is only one histogram of each
+ * type for all regions.
+ * 
+ * @author nichole
+ */
+public class HOGsManager {
+    
+<span class="nc" id="L21">    private static float eps = 0.000001f;</span>
+    
+    // 9 is default
+    private final int nAngleBins;
+    
+    private final int nHistBins;
+
+    // 6 x 6 is recommended
+    private final int N_PIX_PER_CELL_DIM;
+
+    // 2x2 or 3x3 is recommended
+    private final int N_CELLS_PER_BLOCK_DIM;
+    
+    // histogram integral images with a windowed sum of N_PIX_PER_CELL_DIM
+    private final int[][] histHOG2D;
+    private final int[][] histHCPT2D;
+    private final int[][] histHGS2D;
+
+<span class="nc" id="L39">    private static int maskValue = 0;</span>
+
+    private final int w;
+    private final int h;
+
+<span class="nc" id="L44">    private boolean debug = false;</span>
+    
+    public HOGsManager(GreyscaleImage gsImg, GreyscaleImage ptImg,
+        TIntObjectMap&lt;Canonicalizer.CRegion&gt; regionMap, 
+        int nCellsPerDim, int nPixPerCellDim, 
+<span class="nc" id="L49">        int nAngleBins, int nHCPTHGSBins) {</span>
+
+<span class="nc" id="L51">        this.nAngleBins = nAngleBins;</span>
+<span class="nc" id="L52">        nHistBins = nHCPTHGSBins;</span>
+<span class="nc" id="L53">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
+<span class="nc" id="L54">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
+<span class="nc" id="L55">        w = gsImg.getWidth();</span>
+<span class="nc" id="L56">        h = gsImg.getHeight();</span>
+
+<span class="nc" id="L58">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="nc" id="L60">        GreyscaleImage[] gXgY = </span>
+<span class="nc" id="L61">            imageProcessor.createCentralDifferenceGradients(gsImg);</span>
+<span class="nc" id="L62">        GreyscaleImage theta = imageProcessor.computeTheta180(gXgY[0], gXgY[1]);</span>
+<span class="nc" id="L63">        GreyscaleImage gXY = </span>
+<span class="nc" id="L64">            imageProcessor.combineConvolvedImages(gXgY[0], gXgY[1]);</span>
+        
+        // non-region pixels are excluded because magnitude is zero
+<span class="nc" id="L67">        histHOG2D = HOGUtil.createHOGHistogram(gXY, theta, </span>
+            nAngleBins, N_PIX_PER_CELL_DIM);
+        
+<span class="nc" id="L70">        TLongSet regionPixelCoords = allPixelCoords(regionMap);</span>
+        
+<span class="nc" id="L72">        histHCPT2D = HOGUtil.createHCPTHistogram(ptImg, regionPixelCoords, </span>
+            nHistBins, N_PIX_PER_CELL_DIM);
+        
+<span class="nc" id="L75">        histHGS2D = HOGUtil.createHGSHistogram(gsImg, regionPixelCoords, </span>
+            nHistBins, N_PIX_PER_CELL_DIM);
+<span class="nc" id="L77">    }</span>
+
+    public HOGsManager(GreyscaleImage gsImg, GreyscaleImage ptImg,
+        GreyscaleImage gradient, GreyscaleImage theta,
+        TIntObjectMap&lt;Canonicalizer.CRegion&gt; regionMap, 
+        int nCellsPerDim, int nPixPerCellDim, 
+<span class="nc" id="L83">        int nAngleBins, int nHCPTHGSBins) {</span>
+
+<span class="nc" id="L85">        this.nAngleBins = nAngleBins;</span>
+<span class="nc" id="L86">        nHistBins = nHCPTHGSBins;</span>
+<span class="nc" id="L87">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
+<span class="nc" id="L88">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
+<span class="nc" id="L89">        w = gsImg.getWidth();</span>
+<span class="nc" id="L90">        h = gsImg.getHeight();</span>
+
+<span class="nc" id="L92">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+        // non-region pixels are excluded because magnitude is zero
+<span class="nc" id="L95">        histHOG2D = HOGUtil.createHOGHistogram(gradient, theta, </span>
+            nAngleBins, N_PIX_PER_CELL_DIM);
+        
+<span class="nc" id="L98">        TLongSet regionPixelCoords = allPixelCoords(regionMap);</span>
+        
+<span class="nc" id="L100">        histHCPT2D = HOGUtil.createHCPTHistogram(ptImg, regionPixelCoords, </span>
+            nHistBins, N_PIX_PER_CELL_DIM);
+        
+<span class="nc" id="L103">        histHGS2D = HOGUtil.createHGSHistogram(gsImg, regionPixelCoords, </span>
+            nHistBins, N_PIX_PER_CELL_DIM);
+<span class="nc" id="L105">    }</span>
+    
+    public void setToDebug() {
+<span class="nc" id="L108">        debug = true;</span>
+<span class="nc" id="L109">    }</span>
+    
+    int[][] createHCPTHistogram(GreyscaleImage ptImg, TLongSet regionPixelCoords) {
+<span class="nc" id="L112">        return HOGUtil.createHCPTHistogram(ptImg, regionPixelCoords, nHistBins, </span>
+            N_PIX_PER_CELL_DIM);
+    }
+    
+    private TLongSet allPixelCoords(TIntObjectMap&lt;CRegion&gt; regionMap) {
+
+<span class="nc" id="L118">        TLongSet pixs = new TLongHashSet();</span>
+        
+<span class="nc" id="L120">        TIntObjectIterator&lt;CRegion&gt; iter = regionMap.iterator();</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        for (int i = 0; i &lt; regionMap.size(); ++i) {</span>
+<span class="nc" id="L122">            iter.advance();</span>
+<span class="nc" id="L123">            CRegion cRegion = iter.value();</span>
+<span class="nc" id="L124">            pixs.addAll(cRegion.getPixelCoords());</span>
+        }
+        
+<span class="nc" id="L127">        return pixs;</span>
+    }
+    
+    private static enum TYPE {
+        HOG, HCPT, HGS
+    };
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the coordinates.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param x
+     * @param y
+     * @param outHist
+     * @return true if method succeeded, else false.  can return false if the
+     * addARegion failed due to having fewer than 9 pixels in the CRegion
+     * for rIndex.
+     */
+    public boolean extractBlockHOG(int x, int y, int[] outHist) {
+<span class="nc" id="L156">        return extractBlock(TYPE.HOG, x, y, outHist);</span>
+    }
+    
+    /**
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in block were set during
+     * construction.
+     * @param x
+     * @param y
+     * @param outHist
+     * @return 
+     */
+    public boolean extractBlockHCPT(int x, int y, int[] outHist) {
+<span class="nc" id="L169">        return extractBlock(TYPE.HCPT, x, y, outHist);</span>
+    }
+    
+    /**
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in block were set during
+     * construction.
+     * 
+     * @param x
+     * @param y
+     * @param outHist
+     * @return 
+     */
+    public boolean extractBlockHGS(int x, int y, int[] outHist) {
+<span class="nc" id="L183">        return extractBlock(TYPE.HGS, x, y, outHist);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param x
+     * @param y
+     * @param outHist
+     */
+    private boolean extractBlock(TYPE type, int x, int y, int[] outHist) {
+
+<span class="nc bnc" id="L206" title="All 4 branches missed.">        if ((type.equals(TYPE.HOG) &amp;&amp; outHist.length != nAngleBins) ||</span>
+<span class="nc bnc" id="L207" title="All 4 branches missed.">            (!type.equals(TYPE.HOG) &amp;&amp; outHist.length != nHistBins)) {</span>
+<span class="nc" id="L208">            throw new IllegalArgumentException(&quot;outHist.length != expected&quot;);</span>
+        }
+
+<span class="nc bnc" id="L211" title="All 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L212">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+                + &quot;original image&quot;);
+        }
+        
+        // uses the block normalization recomended by Dalal &amp; Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normalize each cell by that sum.
+
+<span class="nc" id="L220">        int[][] hist = null;</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">        switch (type) {</span>
+<span class="nc" id="L222">            case HOG: hist = histHOG2D; break;</span>
+<span class="nc" id="L223">            case HCPT: hist = histHCPT2D; break;</span>
+<span class="nc" id="L224">            case HGS: hist = histHGS2D; break;</span>
+            default: break;
+        }
+        
+<span class="nc" id="L228">        return extractBlock(hist, x, y, outHist);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * extract the block surrounding the feature.
+     * the number of pixels in a cell and the number of cells in 
+     * block were set during
+     * construction.
+     * 
+     * The feature is nAngleBins in length for 180 degrees
+     * and the bin with the largest value
+     * is the bin holding the angle perpendicular to the windowed point.
+     * (for example: a horizontal line, the feature of a point on the
+     * line has largest bin being the 90 degrees bin).
+     *
+     * @param x
+     * @param y
+     * @param outHist
+     */
+    private boolean extractBlock(int[][] hist, int x, int y, int[] outHist) {
+
+<span class="nc bnc" id="L251" title="All 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L252">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+                + &quot;original image&quot;);
+        }
+        
+        // uses the block normalization recomended by Dalal &amp; Triggs,
+        //   the summary of histogram counts over all cells
+        //   is used to normalize each cell by that sum.
+
+<span class="nc" id="L260">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
+                
+<span class="nc" id="L262">        int r = N_CELLS_PER_BLOCK_DIM &gt;&gt; 1;</span>
+<span class="nc" id="L263">        int stopY = y + r;</span>
+<span class="nc" id="L264">        int stopX = x + r;</span>
+<span class="nc" id="L265">        int startX = x - r;</span>
+<span class="nc" id="L266">        int startY = y - r;</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        if ((h &amp; 1) == 0) {</span>
+<span class="nc" id="L268">            startX--;</span>
+<span class="nc" id="L269">            startY--;            </span>
+        }
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        if (startX &lt; 0) {</span>
+<span class="nc" id="L272">            startX = 0;</span>
+        }
+<span class="nc bnc" id="L274" title="All 2 branches missed.">        if (startY &gt; 0) {</span>
+<span class="nc" id="L275">            startY = 0;</span>
+        }
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (stopX &gt;= w) {</span>
+<span class="nc" id="L278">            stopX = w - 1;</span>
+        }
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (stopY &gt;= h) {</span>
+<span class="nc" id="L281">            stopY = h - 1;</span>
+        }
+        
+        
+<span class="nc" id="L285">        int[] outputN = new int[1];  </span>
+        
+<span class="nc" id="L287">        HOGUtil.extractWindow(hist, startX, stopX, startY, stopY, w, h, </span>
+            outHist, outputN);
+        
+<span class="nc" id="L290">        double blockTotal = HOGUtil.sumCounts(outHist);</span>
+<span class="nc" id="L291">        blockTotal *= blockTotal;</span>
+
+        double norm;
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        if (blockTotal &gt; 0) {</span>
+<span class="nc" id="L295">            blockTotal /= (double)outputN[0];</span>
+<span class="nc" id="L296">            blockTotal = Math.sqrt(blockTotal);</span>
+<span class="nc" id="L297">            norm = 255./blockTotal;</span>
+        } else {
+<span class="nc" id="L299">            norm = 255.;</span>
+        }
+          
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
+<span class="nc" id="L303">            outHist[i] = (int)Math.round(norm * outHist[i]);</span>
+        }
+        
+<span class="nc" id="L306">        return true;</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     *
+     * The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     *
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     * 
+     * Note also that you may want to try the rotation of oppossite direction.
+     *
+     * @param histA
+     * @param orientationA
+     * @param histB
+     * @param orientationB
+     * @return
+     */
+    public float intersection(int[] histA, int orientationA, int[] histB,
+        int orientationB) {
+
+<span class="nc" id="L334">        return HOGUtil.intersection(histA, orientationA, histB, orientationB);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     *
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     *
+     * @param histA
+     * @param histB
+     * @return
+     */
+    public float intersection(int[] histA, int[] histB) {
+
+<span class="nc" id="L350">        return HOGUtil.intersection(histA, histB);</span>
+    }
+    
+    /**
+     * CAVEAT: small amount of testing done, not yet throughly tested.
+     * 
+     * calculate the intersection of histA and histB which have already
+     * been normalized to the same scale.
+     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * 
+     The orientations are needed to compare the correct rotated bins to one another.
+     * Internally, orientation of 90 leads to no shift for rotation,
+     * and orientation near 0 results in rotation of nBins/2, etc...
+     *
+     * Note that an orientation of 90 is a unit vector from x,y=0,0 to
+     * x,y=0,1.
+     *
+     * @param histA
+     * @param orientationA
+     * @param histB
+     * @param orientationB
+     * @return difference, error
+     */
+    public float[] diff(int[] histA, int orientationA, int[] histB,
+        int orientationB) {
+
+<span class="nc" id="L376">        return HOGUtil.diff(histA, orientationA, histB, orientationB);</span>
+    }
+    
+    public int getImageWidth() {
+<span class="nc" id="L380">        return w;</span>
+    }
+    
+    public int getImageHeight() {
+<span class="nc" id="L384">        return h;</span>
+    }
+
+    public int getNumberOfBins() {
+<span class="nc" id="L388">        return nAngleBins;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

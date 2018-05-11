@@ -195,14 +195,14 @@ import java.util.Stack;
             } else {
 
 <span class="fc" id="L197">                T parent = (T) z.getParent();</span>
-<span class="pc bpc" id="L198" title="1 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="pc bpc" id="L198" title="2 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
 <span class="fc" id="L199">                    parent.setLeft(y);</span>
                 } else {
-<span class="pc bpc" id="L201" title="3 of 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
-<span class="pc bpc" id="L202" title="2 of 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
+<span class="nc bnc" id="L201" title="All 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="nc bnc" id="L202" title="All 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
 <span class="nc" id="L203">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
                     }
-<span class="fc" id="L205">                    parent.setRight(y);</span>
+<span class="nc" id="L205">                    parent.setRight(y);</span>
                 }
 <span class="fc" id="L207">                y.setParent(parent);</span>
             }
@@ -229,7 +229,7 @@ import java.util.Stack;
             } else {
 
 <span class="fc" id="L231">                T parent = (T) z.getParent();</span>
-<span class="fc bfc" id="L232" title="All 4 branches covered.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
+<span class="pc bpc" id="L232" title="1 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
 <span class="fc" id="L233">                    parent.setLeft(child);</span>
                 } else {
 <span class="pc bpc" id="L235" title="3 of 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
