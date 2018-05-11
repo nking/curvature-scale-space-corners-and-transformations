@@ -682,7 +682,7 @@ public class MSER {
         double minDiversity) {
 
         // Extract MSER
-        long start = System.currentTimeMillis();
+        //long start = System.currentTimeMillis();
 
         MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, 
             minDiversity, true);
@@ -705,7 +705,7 @@ public class MSER {
 
         mser4.operator(greyscale, width, height, regions.get(1));
 
-        long stop = System.currentTimeMillis();
+        //long stop = System.currentTimeMillis();
 
         //System.out.println(
         //    "Extracted " + (regions.get(0).size() + regions.get(1).size())
