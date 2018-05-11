@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.features.HOGUtil;
 import java.util.Arrays;
 import junit.framework.TestCase;
 
@@ -114,7 +115,7 @@ public class IntegralHistogramsTest extends TestCase {
         // window=5
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 0, 5, output, outputN);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -122,7 +123,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 0, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[4]);
+        HOGUtil.add(expectedWindow, sHists[4]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(4, outputN[0]);
         
@@ -130,7 +131,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 0, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[0]);
+        HOGUtil.add(expectedWindow, sHists[0]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -150,7 +151,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 1, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -158,7 +159,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 1, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[7]);
+        HOGUtil.add(expectedWindow, sHists[7]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(6, outputN[0]);
         
@@ -166,8 +167,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 1, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[3]);
-        sumTable.subtract(expectedWindow, sHists[0]);
+        HOGUtil.add(expectedWindow, sHists[3]);
+        HOGUtil.subtract(expectedWindow, sHists[0]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -187,7 +188,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 2, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
        
@@ -195,8 +196,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 2, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[7]);
-        sumTable.subtract(expectedWindow, sHists[1]);
+        HOGUtil.add(expectedWindow, sHists[7]);
+        HOGUtil.subtract(expectedWindow, sHists[1]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(4, outputN[0]);
         
@@ -204,8 +205,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 0, 2, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[6]);
-        sumTable.subtract(expectedWindow, sHists[3]);
+        HOGUtil.add(expectedWindow, sHists[6]);
+        HOGUtil.subtract(expectedWindow, sHists[3]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -225,7 +226,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 0, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -233,7 +234,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 0, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[5]);
+        HOGUtil.add(expectedWindow, sHists[5]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(6, outputN[0]);
         
@@ -241,8 +242,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 0, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[1]);
-        sumTable.subtract(expectedWindow, sHists[0]);
+        HOGUtil.add(expectedWindow, sHists[1]);
+        HOGUtil.subtract(expectedWindow, sHists[0]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -262,7 +263,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 1, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -270,7 +271,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 1, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -278,10 +279,10 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 1, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[4]);
-        sumTable.subtract(expectedWindow, sHists[3]);
-        sumTable.subtract(expectedWindow, sHists[1]);
-        sumTable.add(expectedWindow, sHists[0]);
+        HOGUtil.add(expectedWindow, sHists[4]);
+        HOGUtil.subtract(expectedWindow, sHists[3]);
+        HOGUtil.subtract(expectedWindow, sHists[1]);
+        HOGUtil.add(expectedWindow, sHists[0]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -301,7 +302,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 2, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -309,8 +310,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 2, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
-        sumTable.subtract(expectedWindow, sHists[2]);
+        HOGUtil.add(expectedWindow, sHists[8]);
+        HOGUtil.subtract(expectedWindow, sHists[2]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(6, outputN[0]);
         
@@ -318,10 +319,10 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 1, 2, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[7]);
-        sumTable.subtract(expectedWindow, sHists[6]);
-        sumTable.subtract(expectedWindow, sHists[4]);
-        sumTable.add(expectedWindow, sHists[3]);
+        HOGUtil.add(expectedWindow, sHists[7]);
+        HOGUtil.subtract(expectedWindow, sHists[6]);
+        HOGUtil.subtract(expectedWindow, sHists[4]);
+        HOGUtil.add(expectedWindow, sHists[3]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -340,7 +341,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 0, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -348,8 +349,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 0, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[5]);
-        sumTable.subtract(expectedWindow, sHists[3]);
+        HOGUtil.add(expectedWindow, sHists[5]);
+        HOGUtil.subtract(expectedWindow, sHists[3]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(4, outputN[0]);
         
@@ -357,8 +358,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 0, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[2]);
-        sumTable.subtract(expectedWindow, sHists[1]);
+        HOGUtil.add(expectedWindow, sHists[2]);
+        HOGUtil.subtract(expectedWindow, sHists[1]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -377,7 +378,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 1, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -385,8 +386,8 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 1, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
-        sumTable.subtract(expectedWindow, sHists[6]);
+        HOGUtil.add(expectedWindow, sHists[8]);
+        HOGUtil.subtract(expectedWindow, sHists[6]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(6, outputN[0]);
         
@@ -394,10 +395,10 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 1, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[5]);
-        sumTable.subtract(expectedWindow, sHists[4]);
-        sumTable.subtract(expectedWindow, sHists[2]);
-        sumTable.add(expectedWindow, sHists[1]);
+        HOGUtil.add(expectedWindow, sHists[5]);
+        HOGUtil.subtract(expectedWindow, sHists[4]);
+        HOGUtil.subtract(expectedWindow, sHists[2]);
+        HOGUtil.add(expectedWindow, sHists[1]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         
@@ -416,7 +417,7 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 2, 5, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
+        HOGUtil.add(expectedWindow, sHists[8]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(9, outputN[0]);
         
@@ -424,10 +425,10 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 2, 3, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
-        sumTable.subtract(expectedWindow, sHists[6]);
-        sumTable.subtract(expectedWindow, sHists[2]);
-        sumTable.add(expectedWindow, sHists[0]);
+        HOGUtil.add(expectedWindow, sHists[8]);
+        HOGUtil.subtract(expectedWindow, sHists[6]);
+        HOGUtil.subtract(expectedWindow, sHists[2]);
+        HOGUtil.add(expectedWindow, sHists[0]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(4, outputN[0]);
         
@@ -435,10 +436,10 @@ public class IntegralHistogramsTest extends TestCase {
         sumTable.extractWindowFromIntegralHistograms(sHists, 
             w, h, 2, 2, 1, output, outputN);
         Arrays.fill(expectedWindow, 0);
-        sumTable.add(expectedWindow, sHists[8]);
-        sumTable.subtract(expectedWindow, sHists[7]);
-        sumTable.subtract(expectedWindow, sHists[5]);
-        sumTable.add(expectedWindow, sHists[4]);
+        HOGUtil.add(expectedWindow, sHists[8]);
+        HOGUtil.subtract(expectedWindow, sHists[7]);
+        HOGUtil.subtract(expectedWindow, sHists[5]);
+        HOGUtil.add(expectedWindow, sHists[4]);
         assertTrue(Arrays.equals(expectedWindow, output));
         assertEquals(1, outputN[0]);
         

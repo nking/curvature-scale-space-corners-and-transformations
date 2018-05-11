@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.*;
-import algorithms.util.PixelHelper;
 import java.util.Arrays;
 
 /**
@@ -273,126 +272,14 @@ public class GradientIntegralHistograms {
     int[][] applyWindowedSum0(int[][] histograms, int w, int h, 
         int N_PIX_PER_CELL_DIM) {
         
-        if (N_PIX_PER_CELL_DIM < 1) {
-            throw new IllegalArgumentException("N_PIX_PER_CELL_DIM must be >= 1");
-        }
-        
-        int nBins = histograms[0].length;
-                
-        int[][] img2 = new int[w * h][];
-        
-        int[] outN = new int[1];
-        
-        int windowSize = N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM;
-        
-        // a centered window sum
-        int r = N_PIX_PER_CELL_DIM >> 1;
-        int r0, r1;
-        if (r == 0) {
-            r0 = 0;
-            r1 = 0;
-        } else if ((N_PIX_PER_CELL_DIM & 1) == 1) {
-            r0 = -r;
-            r1 = r;
-        } else {
-            r0 = -r;
-            r1 = r - 1;
-        }
-        
-        float factor;
-                        
-        // extract the summed area of each dxd window centered on x,y
-        for (int x = 0; x < w; ++x) {
-            
-            int x2 = x + r0;
-            int x3 = x + r1;
-            if (x3 < 0) {
-                continue;
-            } else if (x2 < 0) {
-                x2 = 0;
-            } else if (x2 >= w) {
-                break;
-            }
-            if (x3 >= w) {
-                x3 = w - 1;
-            }
-
-            for (int y = 0; y < h; ++y) {
-                
-                int y2 = y + r0;
-                int y3 = y + r1;
-                if (y3 < 0) {
-                    continue;
-                } else if (y2 < 0) {
-                    y2 = 0;
-                } else if (y2 >= h) {
-                    break;
-                }
-                if (y3 >= h) {
-                    y3 = h - 1;
-                }
-                                
-                int pixIdx = (y * w) + x;
-                
-                img2[pixIdx] = new int[nBins];
-
-                extractWindow(histograms, x2, x3, y2, y3, w, h, img2[pixIdx], outN);
-                
-                if (outN[0] < windowSize) {
-                    factor = (float)windowSize/(float)outN[0];
-                    HOGUtil.mult(img2[pixIdx], factor);
-                }             
-            }
-        }
-        
-        return img2;
+        return HOGUtil.applyWindowedSum0(histograms, w, h, N_PIX_PER_CELL_DIM);
     }
     
     int[][] transformIntoIntegral2DHist(int[][] hist, int imageWidth,
         int imageHeight) {
         
-        int nPix = imageWidth * imageHeight;
-        PixelHelper ph = new PixelHelper();
-        
-        int[][] out = new int[nPix][];
-        for (int i = 0; i < nPix; ++i) {
-            out[i] = Arrays.copyOf(hist[i], hist[i].length);
-        }
-        
-        int[] tmp;
-        int pixIdx;
-                
-        for (int x = 0; x < imageWidth; ++x) {
-            for (int y = 0; y < imageHeight; ++y) {
-                
-                pixIdx = (int)ph.toPixelIndex(x, y, imageWidth);
-                
-                tmp = out[pixIdx];
-                                
-                if (x > 0 && y > 0) {
-                    HOGUtil.add(tmp, out[(int)ph.toPixelIndex(x - 1, y, imageWidth)]);
-                    HOGUtil.add(tmp, out[(int)ph.toPixelIndex(x, y - 1, imageWidth)]);
-                    HOGUtil.subtract(tmp, out[(int)ph.toPixelIndex(x - 1, y - 1, 
-                        imageWidth)]);
-                    //int v = out.getValue(x, y)
-                    //        + out.getValue(x - 1, y) 
-                    //        + out.getValue(x, y - 1) 
-                    //        - out.getValue(x - 1, y - 1);
-                    //out.setValue(x, y, v);
-                } else if (x > 0) {
-                    HOGUtil.add(tmp, out[(int)ph.toPixelIndex(x - 1, y, imageWidth)]);
-                    //int v = out.getValue(x, y) 
-                    //        + out.getValue(x - 1, y);
-                    //out.setValue(x, y, v);
-                } else if (y > 0) {
-                    HOGUtil.add(tmp, out[(int)ph.toPixelIndex(x, y - 1, imageWidth)]);
-                    //int v = out.getValue(x, y)
-                    //        + out.getValue(x, y - 1);
-                    //out.setValue(x, y, v);
-                }
-            }
-        }
-        return out;
+        return HOGUtil.transformIntoIntegral2DHist(hist, imageWidth, 
+            imageHeight);
     }
 
 }

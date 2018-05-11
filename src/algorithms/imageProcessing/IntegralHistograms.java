@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.features.HOGUtil;
 import gnu.trove.set.TLongSet;
 import java.util.Arrays;
 
@@ -118,8 +119,8 @@ public class IntegralHistograms {
                         out[pixIdx][bin]++;
                     }
                     // add bin, add pixIdxB and subtract pixIdxLB
-                    add(out[pixIdx], out[pixIdxB]);
-                    subtract(out[pixIdx], out[pixIdxLB]);
+                    HOGUtil.add(out[pixIdx], out[pixIdxB]);
+                    HOGUtil.subtract(out[pixIdx], out[pixIdxLB]);
                 } else if (x > 0) {
                     int pixIdxL = img.getInternalIndex(x - 1, y);
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
@@ -188,104 +189,45 @@ public class IntegralHistograms {
         
         final int r = (d >> 1);
         
-        Arrays.fill(output, 0);
-        
-        // extract the summed histograms in area of dxd window centered on x,y
-        if (r > 0) {
-            if (x > r && x < (w-r) && (y > r) && (y < (h-r))) {
-                outputN[0] = d * d;
-                add(output, integralHistograms[getPixIdx(x+r, y+r, width)]);
-                subtract(output, integralHistograms[getPixIdx(x-r, y+r, width)]);
-                subtract(output, integralHistograms[getPixIdx(x+r, y-r, width)]);
-                add(output, integralHistograms[getPixIdx(x-r, y-r, width)]);
-                return;
-            }
-        }
-                
-        // handling borders separately
-        
-        int startX = x - r - 1;
-        int stopX = x + r;
-        int startY = y - r - 1;
-        int stopY = y + r;
-        
-        if (stopX > (w - 1)) {
-            stopX = w - 1;
-        }
-        if (stopY > (h - 1)) {
-            stopY = h - 1;
-        }
-        
-        //System.out.println("x=" + x + " y=" + y + " r=" + r
-        //    + " startX=" + startX +
-        //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);
-       
-        // when r == 0, bounds need another edit or immediate return
-        /*
-         2            2           2           2           2       *
-         1            1 *         1           1    *      1
-         0 *          0           0    *      0           0
-           0  1  2      0  1  2     0  1  2     0  1  2     0  1  2
-        */
-        if (r == 0) {
-            if (stopX == 0) {
-                if (stopY == 0) {
-                    outputN[0] = 1;
-                    add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
-                    return;
-                }
-                startY = stopY - 1;
-                if (startY == 0) {
-                    outputN[0] = 1;
-                    add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
-                    subtract(output, integralHistograms[getPixIdx(stopX, startY, width)]);
-                    return;
-                }
-            } else {
-                // stopX > 0
-                startX = stopX - 1;
-                if (stopY == 0) {
-                    outputN[0] = 1;
-                    add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
-                    subtract(output, integralHistograms[getPixIdx(startX, stopY, width)]);
-                    return;
-                }
-                startY = stopY - 1;
-            }
-            //System.out.println(" --> startX=" + startX +
-            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
-        }
-        
-        if (startX >= 0 && startY >= 0) {
-            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY - startY);
-            outputN[0] = nPix;
-            add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
-            subtract(output, integralHistograms[getPixIdx(startX, stopY, width)]);
-            subtract(output, integralHistograms[getPixIdx(stopX, startY, width)]);
-            add(output, integralHistograms[getPixIdx(startX, startY, width)]);
-            return;
-        } else if (startX >= 0) {
-            // startY is < 0
-            int nPix = (r == 0) ? 1 : (stopX - startX) * (stopY + 1);
-            outputN[0] = nPix;
-            add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
-            subtract(output, integralHistograms[getPixIdx(startX, stopY, width)]);
-            return;
-        } else if (startY >= 0) {
-            // startX < 0
-            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY - startY);
-            outputN[0] = nPix;
-            add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
-            subtract(output, integralHistograms[getPixIdx(stopX, startY, width)]);
-            return;
+        int startX, stopX, startY, stopY;
+        if ((r & 1) == 1) {
+            startX = x - r;
+            stopX = x + r;
+            startY = y - r;
+            stopY = y + r;
         } else {
-            // startX < 0 && startY < 0
-            int nPix = (r == 0) ? 1 : (stopX + 1) * (stopY + 1);
-            outputN[0] = nPix;
-            add(output, integralHistograms[getPixIdx(stopX, stopY, width)]);
-            return;
+            startX = x - r - 1;
+            stopX = x + r;
+            startY = y - r - 1;
+            stopY = y + r;
         }
-               
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY < 0) {
+            startY = 0;
+        }
+        if (startX >= width) {
+            startX = width - 1;
+        }
+        if (startY >= height) {
+            startY = height - 1;
+        }
+        if (stopX < 0) {
+            stopX = 0;
+        }
+        if (stopY < 0) {
+            stopY = 0;
+        }
+        if (stopX >= width) {
+            stopX = width - 1;
+        }
+        if (stopY >= height) {
+            stopY = height - 1;
+        }
+        
+        HOGUtil.extractWindow(integralHistograms, startX, stopX, startY, stopY, 
+            w, h, output, outputN);
     }
     
     /**
@@ -369,138 +311,55 @@ public class IntegralHistograms {
             System.arraycopy(img2[i], 0, histograms[i], 0, nBins);
         }
     }
-    
-    protected void add(int[] addTo, int[] addFrom) {
-        for (int i = 0; i < addTo.length; ++i) {
-            addTo[i] += addFrom[i];
-        }
-    }
-    
+  
     /**
+     * extract the sum of histograms in the window inclusively defined as
+     * (startX:stopX, startY:stopY).
      * 
      * runtime complexity is O(nBins)
      * 
+     * @param histograms the 2D histogram integral image.  the first dimension 
+     *    is the pixel index and the 2nd is the histogram bin, e.g.
+     *    histograms[pixIdx][binIdx].
      * @param startX
-     * @param stopX
+     * @param stopX the last x pixel in the window, inclusive
      * @param startY
-     * @param stopY
+     * @param stopY the last y pixel in the window, inclusive
      * @param output
-     * @param outputN 
+     * @param outputN an empty 1 dimensional array of size 1 to return the 
+     * number of pixels in the cell
      */
     public void extractWindow(int[][] histograms, int startX, int stopX, 
         int startY, int stopY, int w, int h, 
-        int output[], int[] outputN) {
+        int[] output, int[] outputN) {
 
-        if (output.length != histograms[0].length) {
-            throw new IllegalArgumentException("output.length must == nThetaBins");
-        }
-        
-        if (stopX < startX || stopY < startY) {
-            throw new IllegalArgumentException("stopX must be >= startX and "
-                + "stopY >= startY");
-        }
-        
-        int dx, dy;
-        if (startX > -1) {
-            dx = stopX - startX;
-        } else {
-            dx = stopX;
-        }
-        if (startY > -1) {
-            dy = stopY - startY;
-        } else {
-            dy = stopY;
-        }
-        
-        if (dx > 0 && dy > 0) {
-            if ((startX > 0) && (stopX < w) && (startY > 0) && (stopY < h)) {
-                int nPix = (dx + 1) * (dy + 1);
-                outputN[0] = nPix;
-                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                    output, 0, output.length);
-                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
-                return;
-            }
-        }
-        
-        if (dx == 0 && dy == 0) {
-            if (stopX == 0) {
-                if (stopY == 0) {
-                    outputN[0] = 1;
-                    System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                        output, 0, output.length);
-                    return;
-                }
-                outputN[0] = 1;
-                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                    output, 0, output.length);
-                subtract(output, histograms[getPixIdx(stopX, stopY - 1, w)]);
-                return;
-            } else if (stopY == 0) {
-                //stopX == 0 && stopY == 0 has been handles in previous block
-                outputN[0] = 1;
-                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                    output, 0, output.length);
-                subtract(output, histograms[getPixIdx(stopX - 1, stopY, w)]);
-                return;
-            } else {
-                // stopX > 0
-                outputN[0] = 1;
-                System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                    output, 0, output.length);
-                subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-                subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-                add(output, histograms[getPixIdx(startX - 1, startY - 1, w)]);
-                return;
-            }
-            //System.out.println(" --> startX=" + startX +
-            //    " stopX=" + stopX + " startY=" + startY + " stopY=" + stopY);            
-        }
-        
-        if (startX > 0 && startY > 0) {
-            int nPix = (dx + 1) * (dy + 1);
-            outputN[0] = nPix;
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                output, 0, output.length);
-            subtract(output, histograms[getPixIdx(startX, stopY, w)]);
-            subtract(output, histograms[getPixIdx(stopX, startY, w)]);
-            add(output, histograms[getPixIdx(startX, startY, w)]);
-            return;
-        } else if (startX > 0) {
-            // startY is < 0
-            int nPix = (dx + 1) * (stopY + 1);
-            outputN[0] = nPix;
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                output, 0, output.length);
-            subtract(output, histograms[getPixIdx(startX - 1, stopY, w)]);
-            return;
-        } else if (startY > 0) {
-            // startX < 0
-            int nPix = (stopX + 1) * (dy + 1);
-            outputN[0] = nPix;
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                output, 0, output.length);
-            subtract(output, histograms[getPixIdx(stopX, startY - 1, w)]);
-            return;
-        } else {
-            // startX < 0 && startY < 0
-            int nPix = (stopX + 1) * (stopY + 1);
-            outputN[0] = nPix;
-            System.arraycopy(histograms[getPixIdx(stopX, stopY, w)], 0, 
-                output, 0, output.length);
-            return;
-        }
+        HOGUtil.extractWindow(histograms, startX, stopX, startY, stopY, w, h, 
+            output, outputN);
     }
     
-    protected void subtract(int[] subtractFrom, int[] subtract) {
-        for (int i = 0; i < subtractFrom.length; ++i) {
-            subtractFrom[i] -= subtract[i];
-        }
+    /**
+     * extract the sum of histograms in the window inclusively defined as
+     * (startX:stopX, startY:stopY).
+     * 
+     * runtime complexity is O(nBins)
+     * 
+     * @param histograms the 2D histogram integral image.  the first dimension 
+     *    is the pixel index and the 2nd is the histogram bin, e.g.
+     *    histograms[pixIdx][binIdx].
+     * @param startX
+     * @param stopX the last x pixel in the window, inclusive
+     * @param startY
+     * @param stopY the last y pixel in the window, inclusive
+     * @param output
+     * @param outputN an empty 1 dimensional array of size 1 to return the 
+     * number of pixels in the cell
+     */
+    public void extractWindow(int[][] histograms, int startX, int stopX, 
+        int startY, int stopY, int w, int h, 
+        long[] output, int[] outputN) {
+
+        HOGUtil.extractWindow(histograms, startX, stopX, startY, stopY, w, h, 
+            output, outputN);
     }
     
-    protected int getPixIdx(int col, int row, int width) {
-        return (row * width) + col;
-    }
 }
