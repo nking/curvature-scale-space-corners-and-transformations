@@ -212,12 +212,13 @@ public class GradientIntegralHistogramsTest extends TestCase {
         
         int w = g.getWidth();
         int h = g.getHeight();
+        int nBins = 9;
         
         GradientIntegralHistograms gh = new GradientIntegralHistograms();
         
-        int[][] histograms = gh.createHistograms(g, t, 9);
+        int[][] histograms = gh.createHistograms(g, t, nBins);
         
-        int[] outHist = new int[9];
+        int[] outHist = new int[nBins];
         int[] outN = new int[1];
         
         assertTest0(gh, outHist, outN, histograms, w, h);
@@ -285,12 +286,13 @@ public class GradientIntegralHistogramsTest extends TestCase {
         
         int w = g.getWidth();
         int h = g.getHeight();
+        int nBins = 9;
         
         GradientIntegralHistograms gh = new GradientIntegralHistograms();
         
-        int[][] histograms = gh.createHistograms(g, t, 9);
+        int[][] histograms = gh.createHistograms(g, t, nBins);
         
-        long[] outHist = new long[9];
+        long[] outHist = new long[nBins];
         int[] outN = new int[1];
         
         assertTest0(gh, outHist, outN, histograms, w, h);

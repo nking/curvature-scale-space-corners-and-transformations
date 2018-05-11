@@ -2,9 +2,11 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.IntegralHistograms;
+import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import gnu.trove.set.TLongSet;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -330,6 +332,15 @@ public class HOGUtil {
         return new float[]{(float)sumDiff, (float)err};
     }
     
+    /**
+     * create a 2D integral histogram image, apply a windows sum of cell size
+     * to it, then transform back into a 2D histogram integral image again.
+     * @param gXY
+     * @param theta
+     * @param nAngleBins
+     * @param nPixPerCellDimension
+     * @return 
+     */
     public static int[][] createHOGHistogram(GreyscaleImage gXY, 
         GreyscaleImage theta, int nAngleBins, int nPixPerCellDimension) {
         
@@ -340,6 +351,7 @@ public class HOGUtil {
         //apply a windowed sum across the integral image.
         // result is that at each pixel is a histogram holding the sum of histograms
         //    from the surrounding N_PIX_PER_CELL_DIM window. 
+        // The result is a 2D histogram integral image
         gh.applyWindowedSum(histograms, gXY.getWidth(), gXY.getHeight(), 
             nPixPerCellDimension);
 
@@ -542,5 +554,304 @@ public class HOGUtil {
         }
         
         return img2;
+    }
+    
+    /**
+     * 
+     * runtime complexity is O(nBins)
+     * 
+     * @param histograms the 2D histogram integral image.  the first dimension 
+     *    is the pixel index and the 2nd is the histogram bin, e.g.
+     *    histograms[pixIdx][binIdx].
+     * @param startX
+     * @param stopX the last x pixel in the window, inclusive
+     * @param startY
+     * @param stopY the last y pixel in the window, inclusive
+     * @param w image width
+     * @param h image height
+     * @param output
+     * @param outputN an empty 1 dimensional array of size 1 to return the 
+     * number of pixels in the cell
+     */
+    public static void extractWindow(int[][] histograms, int startX, int stopX, 
+        int startY, int stopY, int w, int h, 
+        int output[], int[] outputN) {
+
+        if (output.length != histograms[0].length) {
+            throw new IllegalArgumentException("output.length must == nThetaBins");
+        }
+        
+        if (stopX < startX || stopY < startY) {
+            throw new IllegalArgumentException("stopX must be >= startX and "
+                + "stopY >= startY");
+        }
+        
+        PixelHelper ph = new PixelHelper();
+        
+        if (startX == 0 && startY == 0) {
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else if (stopX > startX && stopY > startY) {
+                outputN[0] = (stopX + 1) * (stopY + 1);
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else if (stopX > startX) {
+                //startY==0 && stopY=0
+                outputN[0] = (stopX + 1);
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+            } else if (stopY > startY) {
+                outputN[0] = (stopY + 1);
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+            }
+        } else if (startX > 0 && startY > 0) {
+            outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+            System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0,
+                output, 0, output.length);
+            subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);
+            subtract(output, histograms[(int)ph.toPixelIndex(stopX, startY - 1, w)]);
+            add(output, histograms[(int)ph.toPixelIndex(startX - 1, startY - 1, w)]);
+                
+        } else if (startX > 0) {
+            //startY == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+                subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);
+            }       
+        } else if (startY > 0) {
+            //startX == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0, 
+                    output, 0, output.length);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0,
+                    output, 0, output.length);
+                subtract(output, histograms[(int)ph.toPixelIndex(stopX, startY - 1, w)]);
+            }   
+        }
+    }
+    
+    /**
+     * extract the sum of histograms in the window inclusively defined as
+     * (startX:stopX, startY:stopY).
+     * 
+     * runtime complexity is O(nBins)
+     * 
+     * @param histograms the 2D histogram integral image.  the first dimension 
+     *    is the pixel index and the 2nd is the histogram bin, e.g.
+     *    histograms[pixIdx][binIdx].
+     * @param startX
+     * @param stopX the last x pixel in the window, inclusive
+     * @param startY
+     * @param stopY the last y pixel in the window, inclusive
+     * @param output
+     * @param outputN an empty 1 dimensional array of size 1 to return the 
+     * number of pixels in the cell
+     */
+    public static void extractWindow(int[][] histograms, int startX, int stopX, 
+        int startY, int stopY, int w, int h, 
+        long[] output, int[] outputN) {
+
+        if (output.length != histograms[0].length) {
+            throw new IllegalArgumentException("output.length must == nThetaBins");
+        }
+        
+        if (stopX < startX || stopY < startY) {
+            throw new IllegalArgumentException("stopX must be >= startX and "
+                + "stopY >= startY");
+        }
+        
+        PixelHelper ph = new PixelHelper();
+        
+        if (startX == 0 && startY == 0) {
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 
+                    output);
+            } else if (stopX > startX && stopY > startY) {
+                outputN[0] = (stopX + 1) * (stopY + 1);
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 
+                    output);
+            } else if (stopX > startX) {
+                //startY==0 && stopY=0
+                outputN[0] = (stopX + 1);
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],
+                    output);
+            } else if (stopY > startY) {
+                outputN[0] = (stopY + 1);
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],
+                    output);
+            }
+        } else if (startX > 0 && startY > 0) {
+            outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+            copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],
+                output);
+            subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);
+            subtract(output, histograms[(int)ph.toPixelIndex(stopX, startY - 1, w)]);
+            add(output, histograms[(int)ph.toPixelIndex(startX - 1, startY - 1, w)]);
+                
+        } else if (startX > 0) {
+            //startY == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 
+                    output);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],
+                    output);
+                subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);
+            }       
+        } else if (startY > 0) {
+            //startX == 0
+            if (stopX == startX && stopY == startY) {
+                outputN[0] = 1;
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],
+                    output);
+            } else {
+                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
+
+                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],
+                    output);
+                subtract(output, histograms[(int)ph.toPixelIndex(stopX, startY - 1, w)]);
+            }   
+        }
+    }
+    
+    public static void add(int[] addTo, int[] addFrom) {
+        for (int i = 0; i < addTo.length; ++i) {
+            addTo[i] += addFrom[i];
+        }
+    }
+    
+    public static void mult(int[] a, float factor) {
+        for (int i = 0; i < a.length; ++i) {
+            a[i] = Math.round(a[i] * factor);
+        }
+    }
+    
+    public static void add(long[] addTo, int[] addFrom) {
+        for (int i = 0; i < addTo.length; ++i) {
+            addTo[i] += addFrom[i];
+        }
+    }
+    
+    public static void subtract(int[] subtractFrom, int[] subtract) {
+        for (int i = 0; i < subtractFrom.length; ++i) {
+            subtractFrom[i] -= subtract[i];
+        }
+    }
+    
+    public static void subtract(long[] subtractFrom, int[] subtract) {
+        for (int i = 0; i < subtractFrom.length; ++i) {
+            subtractFrom[i] -= subtract[i];
+        }
+    }
+    
+    public static void divide(int[] a, int d) {
+        for (int i = 0; i < a.length; ++i) {
+            a[i] /= d;
+        }
+    }
+    
+    public static void copy(int[] src, long[] dest) {
+        for (int i = 0; i < dest.length; ++i) {
+            dest[i] = src[i];
+        }
+    }
+   
+    public static GreyscaleImage applyMeanSmoothing(GreyscaleImage img,
+        int window) {
+        
+        SummedAreaTable sat = new SummedAreaTable();
+        
+        GreyscaleImage imgS = sat.createAbsoluteSummedAreaTable(img);
+        
+        imgS = sat.applyMeanOfWindowFromSummedAreaTable(imgS, window);
+        
+        return imgS;
+    }
+
+    public static GreyscaleImage applyBiasLevelToMakePositive(GreyscaleImage gradient) {
+        int min = gradient.min();
+        if (min >= 0) {
+            return gradient;
+        }
+        GreyscaleImage g2;
+        int range = gradient.max() - min;
+        if (range > gradient.getMaxAllowed()) {
+            g2 = gradient.copyToFullRangeIntImage();
+        } else {
+            g2 = gradient.copyImage();
+        } 
+        for (int pixIdx = 0; pixIdx < g2.getNPixels(); ++pixIdx) {
+            int v = g2.getValue(pixIdx) - min;
+            g2.setValue(pixIdx, v);
+        }
+        return g2;
+    }
+
+    public static boolean containsNegativeNumber(int[] a) {
+        for (int ai : a) {
+            if (ai < 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+   
+    
+    public static void _printHistograms_xy(int[][] gHists, int w, int h) {
+        PixelHelper ph = new PixelHelper();
+        for (int row = 0; row < h; ++row) {
+            for (int col = 0; col < w; ++col) {
+                int pixIdx = (int)ph.toPixelIndex(col, row, w);
+                int[] gh0 = gHists[pixIdx];
+                if (hasNonZeroes(gh0)) {
+                    System.out.format("(%d,%d) %s\n", col, row, Arrays.toString(gh0));
+                }
+            }
+        }
+    }
+    public static void _printHistograms_xy_4(int[][] gHists, int w, int h) {
+        PixelHelper ph = new PixelHelper();
+        for (int row = 0; row < h; ++row) {
+            for (int col = 0; col < w; ++col) {
+                int pixIdx = (int)ph.toPixelIndex(col, row, w);
+                int[] gh0 = gHists[pixIdx];
+                //if (hasNonZeroes(gh0)) {
+                    StringBuilder sb = new StringBuilder(
+                        String.format("(%4d,%4d)", col, row));
+                    for (int j = 0; j < gh0.length; ++j) {
+                        sb.append(String.format(", %4d", gh0[j]));
+                    }
+                    System.out.println(sb.toString());
+                //}
+            }
+        }
+    }
+    private static boolean hasNonZeroes(int[] a) {
+        for (int b : a) {
+            if (b != 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }
