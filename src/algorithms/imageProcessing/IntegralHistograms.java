@@ -246,70 +246,7 @@ public class IntegralHistograms {
             throw new IllegalArgumentException("N_PIX_PER_CELL_DIM must be >= 1");
         }
         
-        int nBins = histograms[0].length;
-                
-        int[][] img2 = new int[w * h][];
-        
-        int[] outN = new int[1];
-        
-        // a centered window sum
-        int r = N_PIX_PER_CELL_DIM >> 1;
-        int r0, r1;
-        if (r == 0) {
-            r0 = 0;
-            r1 = 0;
-        } else if ((N_PIX_PER_CELL_DIM & 1) == 1) {
-            r0 = -r;
-            r1 = r;
-        } else {
-            r0 = -r;
-            r1 = r - 1;
-        }
-                        
-        // extract the summed area of each dxd window centered on x,y
-        for (int x = 0; x < w; ++x) {
-            
-            int x2 = x + r0;
-            int x3 = x + r1;
-            if (x3 < 0) {
-                continue;
-            } else if (x2 < 0) {
-                x2 = 0;
-            } else if (x2 >= w) {
-                break;
-            }
-            if (x3 > (w - 1)) {
-                x3 = w - 1;
-            }
-
-            for (int y = 0; y < h; ++y) {
-                
-                int y2 = y + r0;
-                int y3 = y + r1;
-                if (y3 < 0) {
-                    continue;
-                } else if (y2 < 0) {
-                    y2 = 0;
-                } else if (y2 >= h) {
-                    break;
-                }
-                if (y3 > (h - 1)) {
-                    y3 = h - 1;
-                }
-                                
-                int pixIdx = (y * w) + x;
-
-                int[] out = new int[nBins];
-
-                extractWindow(histograms, x2, x3, y2, y3, w, h, out, outN);
-                                
-                img2[pixIdx] = out;
-            }
-        }
-        
-        for (int i = 0; i < histograms.length; ++i) {
-            System.arraycopy(img2[i], 0, histograms[i], 0, nBins);
-        }
+        HOGUtil.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);
     }
   
     /**

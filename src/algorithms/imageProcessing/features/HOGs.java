@@ -5,17 +5,14 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.MiscMath;
-import algorithms.util.OneDIntArray;
-import algorithms.util.OneDLongArray;
 import algorithms.util.PairInt;
+import algorithms.util.PixelHelper;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 /**
  CAVEAT: small amount of testing done, not yet throughly tested.
@@ -160,6 +157,11 @@ public class HOGs {
         gHists = init(rgb);
     }
 
+    /**
+     * create a HOG structure for patch comparisons. 
+     * @param gradientXY
+     * @param theta
+     */
     public HOGs(GreyscaleImage gradientXY, GreyscaleImage theta) {
 
         nAngleBins = 9;
@@ -167,7 +169,7 @@ public class HOGs {
         N_CELLS_PER_BLOCK_DIM = 2;
         w = gradientXY.getWidth();
         h = gradientXY.getHeight();
-
+        
         gHists = init(gradientXY, theta);
     }
 
@@ -193,7 +195,7 @@ public class HOGs {
             algorithms.misc.MiscDebug.writeImage(gXY, "_gXY_");
             algorithms.misc.MiscDebug.writeImage(theta, "_theta_");
         }
-
+        
         return init(gXY, theta);
     }
 
@@ -216,11 +218,13 @@ public class HOGs {
 
         int[][] histograms = gh.createHistograms(gradientXY, theta, nAngleBins);
 
-        //apply a windowed sum across the integral image.
-        // result is that at each pixel is a histogram holding the sum of histograms
-        //    from the surrounding N_PIX_PER_CELL_DIM window. 
+        // note, there may be negative values in the 2D integral histograms, 
+        //    but when extracted to 1D for their single pixels or windows, 
+        //    the extracted histogram should be all positive
         gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);
-
+        
+        //_printHistograms_xy(histograms);
+        
         return histograms;
     }
 
@@ -257,83 +261,39 @@ public class HOGs {
         //   the summary of histogram counts over all cells
         //   is used to normalize each cell by that sum.
 
-        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
-
-        double blockTotal = 0;
-
-        List<OneDIntArray> cells = new ArrayList<OneDIntArray>(nH);
-
-        for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
-
-            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
-
-            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
-
-            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                break;
-            } else if (x2 < 0) {
-                x2 = 0;
-            } else if (x2 >= w) {
-                break;
-            }
-
-            for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
-
-                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
-
-                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
-
-                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                    break;
-                } else if (y2 < 0) {
-                    y2 = 0;
-                } else if (y2 >= h) {
-                    break;
-                }
-
-                int pixIdx = (y2 * w) + x2;
-
-                int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
-
-                cells.add(new OneDIntArray(out));
-
-                int t = sumCounts(out);
-
-                blockTotal += (t * t);                
-            }
+        Arrays.fill(outHist, 0, outHist.length, 0);
+                
+        int r = N_CELLS_PER_BLOCK_DIM >> 1;
+        int stopY = y + r;
+        int stopX = x + r;
+        int startX = x - r;
+        int startY = y - r;
+        if ((h & 1) == 0) {
+            startX--;
+            startY--;            
         }
+        int[] outputN = new int[1];
+        
+        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, 
+            outHist, outputN);
+        
+        assert(isAllPositive(outHist));
+            
+        double blockTotal = sumCounts(outHist);
+        blockTotal *= blockTotal;
 
-        if (!cells.isEmpty()) {
-            blockTotal /= (double)cells.size();
+        double norm;
+        if (blockTotal > 0) {
+            blockTotal /= (double)outputN[0];
             blockTotal = Math.sqrt(blockTotal);
+            norm = 255./blockTotal;
+        } else {
+            norm = 255.;
         }
         
-        double norm = 1./(blockTotal + eps);
-
-        float maxBlock = 255.f;
-
-        norm *= maxBlock;
-
-        Arrays.fill(outHist, 0, outHist.length, 0);
-
-        for (int i = 0; i < cells.size(); ++i) {
-            int[] a = cells.get(i).a;
-            for (int j = 0; j < a.length; ++j) {
-                //v /= Math.sqrt(blockTotal + 0.0001);
-                a[j] = (int)Math.round(norm * a[j]);
-            }
-            add(outHist, a);
+        for (int i = 0; i < outHist.length; ++i) {
+            outHist[i] = (int)Math.round(norm * outHist[i]);
         }
-
-        /*
-        part of a block of 3 X 3 cells
-
-           2        2        2        2
-           1        1        1        1
-           0        0        0        0
-          -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
-                                      *
-        */
     }
 
     /**
@@ -369,83 +329,37 @@ public class HOGs {
         //   the summary of histogram counts over all cells
         //   is used to normalize each cell by that sum.
 
-        int nH = N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM;
-
-        double blockTotal = 0;
-
-        List<OneDLongArray> cells = new ArrayList<OneDLongArray>(nH);
-
-        for (int cX = 0; cX < N_CELLS_PER_BLOCK_DIM; ++cX) {
-
-            int cXOff = -(N_CELLS_PER_BLOCK_DIM/2) + cX;
-
-            int x2 = x + (cXOff * N_PIX_PER_CELL_DIM);
-
-            if ((x2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                break;
-            } else if (x2 < 0) {
-                x2 = 0;
-            } else if (x2 >= w) {
-                break;
-            }
-
-            for (int cY = 0; cY < N_CELLS_PER_BLOCK_DIM; ++cY) {
-
-                int cYOff = -(N_CELLS_PER_BLOCK_DIM/2) + cY;
-
-                int y2 = y + (cYOff * N_PIX_PER_CELL_DIM);
-
-                if ((y2 + N_PIX_PER_CELL_DIM - 1) < 0) {
-                    break;
-                } else if (y2 < 0) {
-                    y2 = 0;
-                } else if (y2 >= h) {
-                    break;
-                }
-
-                int pixIdx = (y2 * w) + x2;
-
-                long[] out = copyHist(pixIdx);
-
-                cells.add(new OneDLongArray(out));
-
-                long t = sumCounts(out);
-
-                blockTotal += (t * t);                
-            }
-        }
-
-        if (!cells.isEmpty()) {
-            blockTotal /= (double)cells.size();
-            blockTotal = Math.sqrt(blockTotal);
-        }
-        
-        double norm = 1./(blockTotal + eps);
-
-        float maxBlock = 255.f;
-
-        norm *= maxBlock;
-
         Arrays.fill(outHist, 0, outHist.length, 0);
+                
+        int r = N_CELLS_PER_BLOCK_DIM >> 1;
+        int stopY = y + r;
+        int stopX = x + r;
+        int startX = x - r;
+        int startY = y - r;
+        if ((h & 1) == 0) {
+            startX--;
+            startY--;            
+        }
+        int[] outputN = new int[1];
+        
+        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, 
+            outHist, outputN);
+            
+        double blockTotal = sumCounts(outHist);
+        blockTotal *= blockTotal;
 
-        for (int i = 0; i < cells.size(); ++i) {
-            long[] a = cells.get(i).a;
-            for (int j = 0; j < a.length; ++j) {
-                //v /= Math.sqrt(blockTotal + 0.0001);
-                a[j] = Math.round(norm * a[j]);
-            }
-            add(outHist, a);
+        double norm;
+        if (blockTotal > 0) {
+            blockTotal /= (double)outputN[0];
+            blockTotal = Math.sqrt(blockTotal);
+            norm = 255./blockTotal;
+        } else {
+            norm = 255.;
         }
 
-        /*
-        part of a block of 3 X 3 cells
-
-           2        2        2        2
-           1        1        1        1
-           0        0        0        0
-          -9 -8 -7 -6 -5 -4 -3 -2 -1  *  1  2  3  4  5  6  7  9
-                                      *
-        */
+        for (int i = 0; i < outHist.length; ++i) {
+            outHist[i] = (int)Math.round(norm * outHist[i]);
+        }
     }
     
     /**
@@ -483,6 +397,8 @@ public class HOGs {
         }
         
         int hc = N_PIX_PER_CELL_DIM/2;
+        
+        //assert(isAllPositive(gHists));
         
         /*        
                           xc,yc            
@@ -532,6 +448,8 @@ public class HOGs {
                 
                 extractBlock(x, y, tmp);
                 
+                //assert(isAllPositive(tmp));
+                
                 System.arraycopy(tmp, 0, out, count * nAngleBins, nAngleBins);
                 
                 double t = sumCounts(tmp);
@@ -540,24 +458,24 @@ public class HOGs {
             }
         }
         
+        assert(blockTotal >= 0.);
+        
         //System.out.println("NH=" + nH + " count=" + count + " blockTotal=" + blockTotal);
         
         // normalize over detector
+        double norm;
         if (count > 0) {
             blockTotal = Math.sqrt(blockTotal/(double)count);
+            norm = 255./blockTotal;
+        } else {
+            norm = 255.;
         }
-        
-        double norm = 1./(blockTotal + eps);
-
-        float maxBlock = 255.f;
-
-        norm *= maxBlock;
         
         assert(!Double.isNaN(norm));
 
         for (int i = 0; i < out.length; ++i) {
             out[i] *= norm;
-            assert(out[i] >= 0);
+            //assert(out[i] >= 0);
         }
 
         return out;
@@ -887,6 +805,21 @@ public class HOGs {
             }
         }
     }
+    public void _printHistograms_xy(int[][] a) {
+        PixelHelper ph = new PixelHelper();
+        for (int row = 0; row < h; ++row) {
+            for (int col = 0; col < w; ++col) {
+                int pixIdx = (int)ph.toPixelIndex(col, row, w);
+                int[] gh0 = a[pixIdx];
+                if (hasNonZeroes(gh0)) {
+                    System.out.format("%d,%d) %s\n", col, row, Arrays.toString(gh0));
+                }
+            }
+        }
+    }
+    public void _printHistograms_xy() {
+        _printHistograms_xy(gHists);
+    }
     private boolean hasNonZeroes(int[] a) {
         for (int b : a) {
             if (b != 0) {
@@ -895,27 +828,32 @@ public class HOGs {
         }
         return false;
     }
-    
-    int[] extractHistogram(int x, int y) {
-        int pixIdx = (y * w) + x;
-        int[] out = Arrays.copyOf(gHists[pixIdx], gHists[pixIdx].length);
-        return out;
-    }
 
-    private long[] copyHist(int pixIdx) {
-        int[] a = gHists[pixIdx];
-        long[] out = new long[a.length];
-        for (int i = 0; i < a.length; ++i) {
-            out[i] = a[i];
-        }
-        return out;
-    }
-    
     public int getImageWidth() {
         return w;
     }
     public int getImageHeight() {
         return h;
+    }
+
+    private boolean isAllPositive(int[] a) {
+        for (int i = 0; i < a.length; ++i) {
+            if (a[i] < 0) {
+                System.out.println("  " + Arrays.toString(a));
+                return false;
+            }
+        }
+        return true;
+    }
+    private boolean isAllPositive(int[][] h) {
+        for (int i = 0; i < h.length; ++i) {
+            for (int j = 0; j < h[i].length; ++j) {
+                if (h[i][j] < 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
 }

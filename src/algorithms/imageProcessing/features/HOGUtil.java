@@ -919,6 +919,12 @@ public class HOGUtil {
         }
     }
     
+    public static void add(long[] addTo, long[] addFrom) {
+        for (int i = 0; i < addTo.length; ++i) {
+            addTo[i] += addFrom[i];
+        }
+    }
+    
     public static void subtract(int[] subtractFrom, int[] subtract) {
         for (int i = 0; i < subtractFrom.length; ++i) {
             subtractFrom[i] -= subtract[i];
@@ -1020,5 +1026,23 @@ public class HOGUtil {
             }
         }
         return false;
+    }
+
+    public static long sumCounts(long[] hist) {
+
+        long sum = 0;
+        for (long v : hist) {
+            sum += v;
+        }
+
+        return sum;
+    }
+    
+    public static double sumCounts(int[] a) {
+        double sum = 0;
+        for (int b : a) {
+            sum += b;
+        }
+        return sum;
     }
 }

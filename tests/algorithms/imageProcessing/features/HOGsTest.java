@@ -274,16 +274,16 @@ public class HOGsTest extends TestCase {
         if (useImg1) {
             
             hogs1 = new HOGs(img1, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
-            hogs1_rot = new HOGs(img1_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
-            
-            //hogs1._printHistograms();
-            //System.out.println("ROTATED: " + img1.getWidth() + "," + img1.getHeight());
-            //hogs1_rot._printHistograms();
             
             block1 = new int[nBins];
+            
+            //hogs1._printHistograms_xy();
             hogs1.extractBlock((w/2), (h/2), block1);
+            
+            hogs1_rot = new HOGs(img1_rot, N_PIX_PER_CELL_DIM, N_CELLS_PER_BLOCK_DIM, nBins);
             block1_rot = new int[nBins];
             hogs1_rot.extractBlock(w/2, (h/2)-1, block1_rot);
+            
             
             System.out.println(Arrays.toString(block1));
             System.out.println(Arrays.toString(block1_rot));
@@ -383,7 +383,7 @@ public class HOGsTest extends TestCase {
             float[] diff2_neg = hogs1_rot.diffOfFeatures(feature1_rot, 
                 feature2);
             
-            System.out.println("Comparing 'registered' block detector results for features:");
+            System.out.println("\nComparing 'registered' block detector results for features:");
             System.out.format("    positive intersections=%.3f, %.3f\n", 
                 inter2_pos, inter3_pos);
             System.out.format("    negative intersections=%.3f, %.3f\n", 

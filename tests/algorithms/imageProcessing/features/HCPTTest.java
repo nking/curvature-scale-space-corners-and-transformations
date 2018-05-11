@@ -322,7 +322,7 @@ public class HCPTTest extends TestCase {
             float[] diff2_neg = hogs1_rot.diffOfFeatures(feature1_rot, 
                 feature2);
             
-            System.out.println("Comparing 'registered' block detector results for features:");
+            System.out.println("\nComparing 'registered' block detector results for features:");
             System.out.format("    positive intersections=%.3f, %.3f\n", 
                 inter2_pos, inter3_pos);
             System.out.format("    negative intersections=%.3f, %.3f\n", 

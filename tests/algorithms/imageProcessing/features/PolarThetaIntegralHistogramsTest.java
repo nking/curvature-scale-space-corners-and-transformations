@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import java.util.Arrays;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertEquals;
 
