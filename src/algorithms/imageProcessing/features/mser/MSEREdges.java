@@ -586,9 +586,9 @@ public class MSEREdges {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         // for hogs and white-white merge, 0.65 is
-        float intersectionLimit = 0.9f;//0.67f;
-        float intersectionLimit1 = 0.9f;//0.7f;
-        //float intersectionLimit1H = 0.8f;
+        float intersectionLimit  = 0.8f;//0.67f;
+        float intersectionLimit1 = 0.88f;//0.9f;//0.88f;//0.9f;//0.7f;
+        float intersectionLimit2 = 0.925f;
         
         int nCellsPerDim = 3;//1
         int nPixPerCellDim = 3;//6
@@ -744,7 +744,7 @@ public class MSEREdges {
                         continue;
                     }
                     float inter2 = (float)pList1.get(2).intersection(pList2.get(2));
-                    if (inter2 < intersectionLimit) {
+                    if (inter2 < intersectionLimit2) {
                         continue;
                     }
 
