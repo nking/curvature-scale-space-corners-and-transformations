@@ -36,17 +36,17 @@ import java.util.logging.Logger;
  */
 public class RainbowFinder {
     
-<span class="nc" id="L39">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L39">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     static class Hull {
         float[] xHull;
         float[] yHull;
     }
     
-<span class="nc" id="L46">    private Hull rainbowHull = null;</span>
+<span class="fc" id="L46">    private Hull rainbowHull = null;</span>
     
-<span class="nc" id="L48">    public RainbowFinder() {</span>
-<span class="nc" id="L49">    }</span>
+<span class="fc" id="L48">    public RainbowFinder() {</span>
+<span class="fc" id="L49">    }</span>
     
     /**
      * find rainbows in the blob detector results of MSER.
@@ -60,9 +60,9 @@ public class RainbowFinder {
         // there may be more than one rainbow in this set.
         // for example, a test image has 1 strong rainbow and 2 fainter ones.
             
-<span class="nc" id="L63">        ImageExt img = mserEdges.getClrImg();</span>
+<span class="fc" id="L63">        ImageExt img = mserEdges.getClrImg();</span>
         
-<span class="nc" id="L65">        List&lt;Region&gt; polarThetaPositive = mserEdges._extractSensitivePT0();</span>
+<span class="fc" id="L65">        List&lt;Region&gt; polarThetaPositive = mserEdges._extractSensitivePT0();</span>
         
         /*
         segments of rainbows in two test images are found as elongated
@@ -74,34 +74,34 @@ public class RainbowFinder {
         NOTE: once a rainbow is found, could look for others fainter in the
         image.
         */
-<span class="nc" id="L77">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets0 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L77">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets0 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
         
-<span class="nc" id="L79">        List&lt;OneDIntArray&gt; hists0 = new ArrayList&lt;OneDIntArray&gt;();</span>
+<span class="fc" id="L79">        List&lt;OneDIntArray&gt; hists0 = new ArrayList&lt;OneDIntArray&gt;();</span>
         
-<span class="nc" id="L81">        List&lt;RegionGeometry&gt; rgs0 = new ArrayList&lt;RegionGeometry&gt;();</span>
+<span class="fc" id="L81">        List&lt;RegionGeometry&gt; rgs0 = new ArrayList&lt;RegionGeometry&gt;();</span>
 
         //mserEdges._debugOrigRegions(2, &quot;_PT_&quot;);
-<span class="nc" id="L84">        findPositivePT(img, polarThetaPositive, listOfSets0, hists0, rgs0);</span>
+<span class="fc" id="L84">        findPositivePT(img, polarThetaPositive, listOfSets0, hists0, rgs0);</span>
        
-<span class="nc" id="L86">        List&lt;Region&gt; polarThetaNegative = mserEdges.getOrigGsPtRegions().get(3);</span>
+<span class="fc" id="L86">        List&lt;Region&gt; polarThetaNegative = mserEdges.getOrigGsPtRegions().get(3);</span>
         
-<span class="nc" id="L88">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets1 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L88">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets1 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
         
-<span class="nc" id="L90">        List&lt;OneDIntArray&gt; hists1 = new ArrayList&lt;OneDIntArray&gt;();</span>
+<span class="fc" id="L90">        List&lt;OneDIntArray&gt; hists1 = new ArrayList&lt;OneDIntArray&gt;();</span>
         
-<span class="nc" id="L92">        List&lt;RegionGeometry&gt; rgs1 = new ArrayList&lt;RegionGeometry&gt;();</span>
+<span class="fc" id="L92">        List&lt;RegionGeometry&gt; rgs1 = new ArrayList&lt;RegionGeometry&gt;();</span>
 
-<span class="nc" id="L94">        findNegativePT(img, polarThetaNegative, listOfSets1, hists1, rgs1);</span>
+<span class="fc" id="L94">        findNegativePT(img, polarThetaNegative, listOfSets1, hists1, rgs1);</span>
        
-<span class="nc" id="L96">        List&lt;VeryLongBitString&gt; listOfSetBits0 = makeBitStrings(listOfSets0, img);</span>
+<span class="fc" id="L96">        List&lt;VeryLongBitString&gt; listOfSetBits0 = makeBitStrings(listOfSets0, img);</span>
         
-<span class="nc" id="L98">        List&lt;SkyObject&gt; output = new ArrayList&lt;SkyObject&gt;();</span>
+<span class="fc" id="L98">        List&lt;SkyObject&gt; output = new ArrayList&lt;SkyObject&gt;();</span>
         
-<span class="nc" id="L100">        TIntList arcIdxs = findLargeArc(listOfSetBits0, listOfSets0, hists0, </span>
+<span class="fc" id="L100">        TIntList arcIdxs = findLargeArc(listOfSetBits0, listOfSets0, hists0, </span>
             rgs0, img);
         
-<span class="nc bnc" id="L103" title="All 4 branches missed.">        if (arcIdxs == null || arcIdxs.isEmpty()) {</span>
-<span class="nc" id="L104">            return null;</span>
+<span class="pc bpc" id="L103" title="3 of 4 branches missed.">        if (arcIdxs == null || arcIdxs.isEmpty()) {</span>
+<span class="fc" id="L104">            return null;</span>
         }
             
         // if have found a large arc in the positive image, search for 
@@ -671,33 +671,33 @@ public class RainbowFinder {
     private void extractHues(ImageExt img, Set&lt;PairInt&gt; points, 
         int[] hues, float[] sbAvg) {
         
-<span class="nc" id="L674">        float sum0 = 0;</span>
-<span class="nc" id="L675">        float sum1 = 0;</span>
+<span class="fc" id="L674">        float sum0 = 0;</span>
+<span class="fc" id="L675">        float sum1 = 0;</span>
         
-<span class="nc" id="L677">        float[] hsb = new float[3];</span>
-<span class="nc bnc" id="L678" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L679">            int r = img.getR(p);</span>
-<span class="nc" id="L680">            int g = img.getG(p);</span>
-<span class="nc" id="L681">            int b = img.getB(p);</span>
-<span class="nc" id="L682">            Color.RGBtoHSB(r, g, b, hsb);</span>
+<span class="fc" id="L677">        float[] hsb = new float[3];</span>
+<span class="fc bfc" id="L678" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L679">            int r = img.getR(p);</span>
+<span class="fc" id="L680">            int g = img.getG(p);</span>
+<span class="fc" id="L681">            int b = img.getB(p);</span>
+<span class="fc" id="L682">            Color.RGBtoHSB(r, g, b, hsb);</span>
             
-<span class="nc" id="L684">            sum0 += hsb[1];</span>
-<span class="nc" id="L685">            sum1 += hsb[2];</span>
+<span class="fc" id="L684">            sum0 += hsb[1];</span>
+<span class="fc" id="L685">            sum1 += hsb[2];</span>
             
             // TODO: consider satudation and brightness limits
-<span class="nc" id="L688">            int bin = (int)(hsb[0]/0.1f);</span>
-<span class="nc bnc" id="L689" title="All 2 branches missed.">            if (bin == 10) {</span>
+<span class="fc" id="L688">            int bin = (int)(hsb[0]/0.1f);</span>
+<span class="pc bpc" id="L689" title="1 of 2 branches missed.">            if (bin == 10) {</span>
 <span class="nc" id="L690">                bin--;</span>
             }
-<span class="nc" id="L692">            hues[bin]++;</span>
-<span class="nc" id="L693">        }</span>
+<span class="fc" id="L692">            hues[bin]++;</span>
+<span class="fc" id="L693">        }</span>
         
-<span class="nc" id="L695">        sum0 /= (float)points.size();</span>
-<span class="nc" id="L696">        sum1 /= (float)points.size();</span>
+<span class="fc" id="L695">        sum0 /= (float)points.size();</span>
+<span class="fc" id="L696">        sum1 /= (float)points.size();</span>
     
-<span class="nc" id="L698">        sbAvg[0] = sum0;</span>
-<span class="nc" id="L699">        sbAvg[1] = sum1;</span>
-<span class="nc" id="L700">    }</span>
+<span class="fc" id="L698">        sbAvg[0] = sum0;</span>
+<span class="fc" id="L699">        sbAvg[1] = sum1;</span>
+<span class="fc" id="L700">    }</span>
 
     private boolean isWithinBounds(int x, int y, int width, int height) {
     
@@ -708,9 +708,9 @@ public class RainbowFinder {
     }
     
     private boolean isEmpty(int[] hues) {
-<span class="nc bnc" id="L711" title="All 2 branches missed.">        for (int h : hues) {</span>
-<span class="nc bnc" id="L712" title="All 2 branches missed.">            if (h != 0) {</span>
-<span class="nc" id="L713">                return false;</span>
+<span class="pc bpc" id="L711" title="1 of 2 branches missed.">        for (int h : hues) {</span>
+<span class="fc bfc" id="L712" title="All 2 branches covered.">            if (h != 0) {</span>
+<span class="fc" id="L713">                return false;</span>
             }
         }
 <span class="nc" id="L716">        return true;</span>
@@ -770,28 +770,28 @@ public class RainbowFinder {
         List&lt;Region&gt; polarThetaPositive, List&lt;Set&lt;PairInt&gt;&gt; listOfSets, 
         List&lt;OneDIntArray&gt; hists, List&lt;RegionGeometry&gt; rgs) {
         
-<span class="nc bnc" id="L773" title="All 2 branches missed.">        for (int rIdx = 0; rIdx &lt; polarThetaPositive.size(); ++rIdx) {</span>
+<span class="fc bfc" id="L773" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; polarThetaPositive.size(); ++rIdx) {</span>
             
-<span class="nc" id="L775">            Region r = polarThetaPositive.get(rIdx);</span>
+<span class="fc" id="L775">            Region r = polarThetaPositive.get(rIdx);</span>
            
-<span class="nc" id="L777">            Set&lt;PairInt&gt; set1 = null;</span>
+<span class="fc" id="L777">            Set&lt;PairInt&gt; set1 = null;</span>
                         
-<span class="nc bnc" id="L779" title="All 2 branches missed.">            for (int i = 0; i &lt; r.accX.size(); ++i) {</span>
-<span class="nc" id="L780">                int x = r.accX.get(i);</span>
-<span class="nc" id="L781">                int y = r.accY.get(i);</span>
-<span class="nc" id="L782">                PairInt p = new PairInt(x, y);</span>
-<span class="nc" id="L783">                int pixIdx = img.getInternalIndex(p);</span>
+<span class="fc bfc" id="L779" title="All 2 branches covered.">            for (int i = 0; i &lt; r.accX.size(); ++i) {</span>
+<span class="fc" id="L780">                int x = r.accX.get(i);</span>
+<span class="fc" id="L781">                int y = r.accY.get(i);</span>
+<span class="fc" id="L782">                PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L783">                int pixIdx = img.getInternalIndex(p);</span>
                
-<span class="nc bnc" id="L785" title="All 2 branches missed.">                if (set1 == null) {</span>
-<span class="nc" id="L786">                    set1 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L785" title="All 2 branches covered.">                if (set1 == null) {</span>
+<span class="fc" id="L786">                    set1 = new HashSet&lt;PairInt&gt;();</span>
                 }
-<span class="nc" id="L788">                set1.add(p);</span>
+<span class="fc" id="L788">                set1.add(p);</span>
             }
             
-<span class="nc bnc" id="L791" title="All 2 branches missed.">            if (set1 != null) {</span>
+<span class="pc bpc" id="L791" title="1 of 2 branches missed.">            if (set1 != null) {</span>
                 
-<span class="nc" id="L793">                RegionGeometry rg = Canonicalizer.calculateEllipseParams(</span>
-<span class="nc" id="L794">                    r, img.getWidth(), img.getHeight());</span>
+<span class="fc" id="L793">                RegionGeometry rg = Canonicalizer.calculateEllipseParams(</span>
+<span class="fc" id="L794">                    r, img.getWidth(), img.getHeight());</span>
                 
                 /*System.out.format(
                     &quot;%d : xy=(%d,%d) angle=%.2f &quot;
@@ -802,15 +802,15 @@ public class RainbowFinder {
                     (float) rg.major, set1.size());
                 */
                 
-<span class="nc bnc" id="L805" title="All 2 branches missed.">                if (rg.eccentricity &gt;= 0.95) {</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">                if (rg.eccentricity &gt;= 0.95) {</span>
                     
-<span class="nc" id="L807">                    int[] hues = new int[10];</span>
-<span class="nc" id="L808">                    float[] sbAvg = new float[2];</span>
-<span class="nc" id="L809">                    extractHues(img, set1, hues, sbAvg);</span>
+<span class="fc" id="L807">                    int[] hues = new int[10];</span>
+<span class="fc" id="L808">                    float[] sbAvg = new float[2];</span>
+<span class="fc" id="L809">                    extractHues(img, set1, hues, sbAvg);</span>
                     
                     //System.out.println(&quot;  &quot; + rIdx + &quot; hues=&quot; + Arrays.toString(hues));
                     
-<span class="nc bnc" id="L813" title="All 4 branches missed.">                    if (isEmpty(hues) || Float.isNaN(sbAvg[0])) {</span>
+<span class="pc bpc" id="L813" title="2 of 4 branches missed.">                    if (isEmpty(hues) || Float.isNaN(sbAvg[0])) {</span>
 <span class="nc" id="L814">                        continue;</span>
                     }
                                         
@@ -823,23 +823,23 @@ public class RainbowFinder {
                         rnbw hues peak is 1st peak
                     */
                     
-<span class="nc" id="L826">                    int maxPeakIdx = MiscMath.findYMaxIndex(hues);</span>
-<span class="nc" id="L827">                    int hIdx = -1;</span>
+<span class="fc" id="L826">                    int maxPeakIdx = MiscMath.findYMaxIndex(hues);</span>
+<span class="fc" id="L827">                    int hIdx = -1;</span>
                     
                     //NOTE: this may need to be revised
-<span class="nc bnc" id="L830" title="All 2 branches missed.">                    if (sbAvg[1] &lt; 0.55) {</span>
-<span class="nc bnc" id="L831" title="All 2 branches missed.">                        if (maxPeakIdx == 0) {</span>
-<span class="nc" id="L832">                            hIdx = hists.size();</span>
-<span class="nc" id="L833">                            listOfSets.add(set1);</span>
-<span class="nc" id="L834">                            hists.add(new OneDIntArray(hues));</span>
-<span class="nc" id="L835">                            rgs.add(rg);</span>
+<span class="fc bfc" id="L830" title="All 2 branches covered.">                    if (sbAvg[1] &lt; 0.55) {</span>
+<span class="fc bfc" id="L831" title="All 2 branches covered.">                        if (maxPeakIdx == 0) {</span>
+<span class="fc" id="L832">                            hIdx = hists.size();</span>
+<span class="fc" id="L833">                            listOfSets.add(set1);</span>
+<span class="fc" id="L834">                            hists.add(new OneDIntArray(hues));</span>
+<span class="fc" id="L835">                            rgs.add(rg);</span>
                         }
                     } else {
-<span class="nc bnc" id="L838" title="All 2 branches missed.">                        if (maxPeakIdx == 1) {</span>
-<span class="nc" id="L839">                            hIdx = hists.size();</span>
-<span class="nc" id="L840">                            listOfSets.add(set1);</span>
-<span class="nc" id="L841">                            hists.add(new OneDIntArray(hues));</span>
-<span class="nc" id="L842">                            rgs.add(rg);</span>
+<span class="fc bfc" id="L838" title="All 2 branches covered.">                        if (maxPeakIdx == 1) {</span>
+<span class="fc" id="L839">                            hIdx = hists.size();</span>
+<span class="fc" id="L840">                            listOfSets.add(set1);</span>
+<span class="fc" id="L841">                            hists.add(new OneDIntArray(hues));</span>
+<span class="fc" id="L842">                            rgs.add(rg);</span>
                         }
                     }
                     
@@ -856,46 +856,46 @@ public class RainbowFinder {
                 }
             }
         }        
-<span class="nc" id="L859">    }</span>
+<span class="fc" id="L859">    }</span>
     
     private void findNegativePT(ImageExt img, 
         List&lt;Region&gt; polarThetaNegative, List&lt;Set&lt;PairInt&gt;&gt; listOfSets, 
         List&lt;OneDIntArray&gt; hists, List&lt;RegionGeometry&gt; rgs) {
         
-<span class="nc bnc" id="L865" title="All 2 branches missed.">        for (int rIdx = 0; rIdx &lt; polarThetaNegative.size(); ++rIdx) {</span>
+<span class="fc bfc" id="L865" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; polarThetaNegative.size(); ++rIdx) {</span>
             
-<span class="nc" id="L867">            Region r = polarThetaNegative.get(rIdx);</span>
+<span class="fc" id="L867">            Region r = polarThetaNegative.get(rIdx);</span>
            
-<span class="nc" id="L869">            Set&lt;PairInt&gt; set1 = null;</span>
+<span class="fc" id="L869">            Set&lt;PairInt&gt; set1 = null;</span>
                         
-<span class="nc bnc" id="L871" title="All 2 branches missed.">            for (int i = 0; i &lt; r.accX.size(); ++i) {</span>
-<span class="nc" id="L872">                int x = r.accX.get(i);</span>
-<span class="nc" id="L873">                int y = r.accY.get(i);</span>
-<span class="nc" id="L874">                PairInt p = new PairInt(x, y);</span>
-<span class="nc" id="L875">                int pixIdx = img.getInternalIndex(p);</span>
+<span class="fc bfc" id="L871" title="All 2 branches covered.">            for (int i = 0; i &lt; r.accX.size(); ++i) {</span>
+<span class="fc" id="L872">                int x = r.accX.get(i);</span>
+<span class="fc" id="L873">                int y = r.accY.get(i);</span>
+<span class="fc" id="L874">                PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L875">                int pixIdx = img.getInternalIndex(p);</span>
                
-<span class="nc bnc" id="L877" title="All 2 branches missed.">                if (set1 == null) {</span>
-<span class="nc" id="L878">                    set1 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L877" title="All 2 branches covered.">                if (set1 == null) {</span>
+<span class="fc" id="L878">                    set1 = new HashSet&lt;PairInt&gt;();</span>
                 }
-<span class="nc" id="L880">                set1.add(p);</span>
+<span class="fc" id="L880">                set1.add(p);</span>
             }
             
-<span class="nc bnc" id="L883" title="All 2 branches missed.">            if (set1 != null) {</span>
+<span class="pc bpc" id="L883" title="1 of 2 branches missed.">            if (set1 != null) {</span>
                 
-<span class="nc" id="L885">                RegionGeometry rg = Canonicalizer.calculateEllipseParams(</span>
-<span class="nc" id="L886">                    r, img.getWidth(), img.getHeight());</span>
+<span class="fc" id="L885">                RegionGeometry rg = Canonicalizer.calculateEllipseParams(</span>
+<span class="fc" id="L886">                    r, img.getWidth(), img.getHeight());</span>
 
                 //System.out.println(&quot;negative xy=&quot; 
                 //   + rg.xC + &quot;,&quot; + rg.yC 
                 //   + &quot; ecc=&quot; + rg.eccentricity);
                 
-<span class="nc bnc" id="L892" title="All 2 branches missed.">                if (rg.eccentricity &gt;= 0.95) {</span>
+<span class="fc bfc" id="L892" title="All 2 branches covered.">                if (rg.eccentricity &gt;= 0.95) {</span>
                     
-<span class="nc" id="L894">                    int[] hues = new int[10];</span>
-<span class="nc" id="L895">                    float[] sbAvg = new float[2];</span>
-<span class="nc" id="L896">                    extractHues(img, set1, hues, sbAvg);</span>
+<span class="fc" id="L894">                    int[] hues = new int[10];</span>
+<span class="fc" id="L895">                    float[] sbAvg = new float[2];</span>
+<span class="fc" id="L896">                    extractHues(img, set1, hues, sbAvg);</span>
                     
-<span class="nc bnc" id="L898" title="All 4 branches missed.">                    if (isEmpty(hues) || Float.isNaN(sbAvg[0])) {</span>
+<span class="pc bpc" id="L898" title="2 of 4 branches missed.">                    if (isEmpty(hues) || Float.isNaN(sbAvg[0])) {</span>
 <span class="nc" id="L899">                        continue;</span>
                     }
                    
@@ -910,13 +910,13 @@ public class RainbowFinder {
                         rnbw hues
                     */
                     
-<span class="nc" id="L913">                    int maxPeakIdx = MiscMath.findYMaxIndex(hues);</span>
+<span class="fc" id="L913">                    int maxPeakIdx = MiscMath.findYMaxIndex(hues);</span>
                     
                     //NOTE: this may need to be revised
-<span class="nc bnc" id="L916" title="All 2 branches missed.">                    if (maxPeakIdx == 5) {</span>
-<span class="nc" id="L917">                        listOfSets.add(set1);</span>
-<span class="nc" id="L918">                        hists.add(new OneDIntArray(hues));</span>
-<span class="nc" id="L919">                        rgs.add(rg);</span>
+<span class="fc bfc" id="L916" title="All 2 branches covered.">                    if (maxPeakIdx == 5) {</span>
+<span class="fc" id="L917">                        listOfSets.add(set1);</span>
+<span class="fc" id="L918">                        hists.add(new OneDIntArray(hues));</span>
+<span class="fc" id="L919">                        rgs.add(rg);</span>
                     }
                     
                     /*System.out.println(&quot;negative xy=(&quot; + rg.xC + &quot;,&quot; + rg.yC + &quot;) &quot;
@@ -930,81 +930,81 @@ public class RainbowFinder {
                 }
             }
         }        
-<span class="nc" id="L933">    }</span>
+<span class="fc" id="L933">    }</span>
     
     private TIntList findLargeArc(List&lt;VeryLongBitString&gt; listOfSetBits, 
         List&lt;Set&lt;PairInt&gt;&gt; listOfSets, 
         List&lt;OneDIntArray&gt; hists0, List&lt;RegionGeometry&gt; rgs0, Image img) {
     
-<span class="nc" id="L939">        int n = listOfSetBits.size();</span>
+<span class="fc" id="L939">        int n = listOfSetBits.size();</span>
         
-<span class="nc" id="L941">        int[] sizes = new int[n];</span>
-<span class="nc" id="L942">        int[] indexes = new int[n];</span>
-<span class="nc bnc" id="L943" title="All 2 branches missed.">        for (int i = 0; i &lt; listOfSetBits.size(); ++i) {</span>
-<span class="nc" id="L944">            sizes[i] = (int)listOfSetBits.get(i).getNSetBits();</span>
-<span class="nc" id="L945">            indexes[i] = i;</span>
+<span class="fc" id="L941">        int[] sizes = new int[n];</span>
+<span class="fc" id="L942">        int[] indexes = new int[n];</span>
+<span class="fc bfc" id="L943" title="All 2 branches covered.">        for (int i = 0; i &lt; listOfSetBits.size(); ++i) {</span>
+<span class="fc" id="L944">            sizes[i] = (int)listOfSetBits.get(i).getNSetBits();</span>
+<span class="fc" id="L945">            indexes[i] = i;</span>
         }
-<span class="nc" id="L947">        QuickSort.sortBy1stArg(sizes, indexes);</span>
+<span class="fc" id="L947">        QuickSort.sortBy1stArg(sizes, indexes);</span>
         
-<span class="nc bnc" id="L949" title="All 2 branches missed.">        for (int i = n - 1; i &gt; 0; --i) {</span>
-<span class="nc" id="L950">            int idx0 = indexes[i];</span>
-<span class="nc" id="L951">            VeryLongBitString bs = listOfSetBits.get(idx0);</span>
-<span class="nc" id="L952">            int nbs0 = (int)bs.getNSetBits();</span>
+<span class="fc bfc" id="L949" title="All 2 branches covered.">        for (int i = n - 1; i &gt; 0; --i) {</span>
+<span class="fc" id="L950">            int idx0 = indexes[i];</span>
+<span class="fc" id="L951">            VeryLongBitString bs = listOfSetBits.get(idx0);</span>
+<span class="fc" id="L952">            int nbs0 = (int)bs.getNSetBits();</span>
             
-<span class="nc" id="L954">            TIntList subsetIdxs = new TIntArrayList();</span>
-<span class="nc" id="L955">            int nInSubsets = 0;</span>
+<span class="fc" id="L954">            TIntList subsetIdxs = new TIntArrayList();</span>
+<span class="fc" id="L955">            int nInSubsets = 0;</span>
             
-<span class="nc" id="L957">            ParabolaLeastSquares polyFitter0 = null;</span>
-<span class="nc" id="L958">            float[] coeff0 = null;</span>
+<span class="fc" id="L957">            ParabolaLeastSquares polyFitter0 = null;</span>
+<span class="fc" id="L958">            float[] coeff0 = null;</span>
             
-<span class="nc bnc" id="L960" title="All 2 branches missed.">            for (int j = i - 1; j &gt; -1; --j) {</span>
-<span class="nc" id="L961">                int idx1 = indexes[j];</span>
-<span class="nc" id="L962">                VeryLongBitString bs2 = listOfSetBits.get(idx1);</span>
-<span class="nc" id="L963">                int nbs2 = (int)bs2.getNSetBits();</span>
+<span class="fc bfc" id="L960" title="All 2 branches covered.">            for (int j = i - 1; j &gt; -1; --j) {</span>
+<span class="fc" id="L961">                int idx1 = indexes[j];</span>
+<span class="fc" id="L962">                VeryLongBitString bs2 = listOfSetBits.get(idx1);</span>
+<span class="fc" id="L963">                int nbs2 = (int)bs2.getNSetBits();</span>
                 
-<span class="nc" id="L965">                VeryLongBitString inter = bs.and(bs2);</span>
-<span class="nc" id="L966">                int nbsi = (int)inter.getNSetBits();</span>
+<span class="fc" id="L965">                VeryLongBitString inter = bs.and(bs2);</span>
+<span class="fc" id="L966">                int nbsi = (int)inter.getNSetBits();</span>
                 
-<span class="nc bnc" id="L968" title="All 2 branches missed.">                if ((nbs2 - nbsi) &lt; 0.1*(nbs2)) {</span>
-<span class="nc" id="L969">                    subsetIdxs.add(idx1);</span>
-<span class="nc" id="L970">                    nInSubsets += nbs2;</span>
+<span class="fc bfc" id="L968" title="All 2 branches covered.">                if ((nbs2 - nbsi) &lt; 0.1*(nbs2)) {</span>
+<span class="fc" id="L969">                    subsetIdxs.add(idx1);</span>
+<span class="fc" id="L970">                    nInSubsets += nbs2;</span>
                 }
             }
             
-<span class="nc bnc" id="L974" title="All 2 branches missed.">            if (!subsetIdxs.isEmpty()) {</span>
+<span class="fc bfc" id="L974" title="All 2 branches covered.">            if (!subsetIdxs.isEmpty()) {</span>
                 
                 // if not empty, check to see if set idx0 is an arc rather
                 //    than a large level set which includes most of the image
-<span class="nc" id="L978">                RegionGeometry rg0 = rgs0.get(idx0);</span>
-<span class="nc" id="L979">                double area = rg0.major * rg0.minor;</span>
+<span class="fc" id="L978">                RegionGeometry rg0 = rgs0.get(idx0);</span>
+<span class="fc" id="L979">                double area = rg0.major * rg0.minor;</span>
             
-<span class="nc" id="L981">                double dens = ((double)listOfSets.get(idx0).size())/area;</span>
+<span class="fc" id="L981">                double dens = ((double)listOfSets.get(idx0).size())/area;</span>
                 
                 /*System.out.println(&quot;dens of x,y=&quot; + rg0.xC + &quot;,&quot; + rg0.yC
                     + &quot; -&gt; &quot; + String.format(&quot;%.3f&quot;, dens)
                     + &quot; nPts=&quot; + nbs0 + &quot; nInSubsets=&quot; + nInSubsets    
                 );*/
                 
-<span class="nc bnc" id="L988" title="All 2 branches missed.">                if (dens &gt; 0.1) {</span>
+<span class="pc bpc" id="L988" title="1 of 2 branches missed.">                if (dens &gt; 0.1) {</span>
                     
                     // fit a polynomial to rainbow points.  
                     // would prefer a circle, but the optical depth of the dispersers and the
                     // orientation of groups of them is not always a slab perpendicular to 
                     // the camera
                     
-<span class="nc bnc" id="L995" title="All 2 branches missed.">                    if (polyFitter0 == null) {</span>
-<span class="nc" id="L996">                        polyFitter0 = new ParabolaLeastSquares();</span>
-<span class="nc" id="L997">                        Set&lt;PairInt&gt; set = listOfSets.get(idx0);</span>
+<span class="pc bpc" id="L995" title="1 of 2 branches missed.">                    if (polyFitter0 == null) {</span>
+<span class="fc" id="L996">                        polyFitter0 = new ParabolaLeastSquares();</span>
+<span class="fc" id="L997">                        Set&lt;PairInt&gt; set = listOfSets.get(idx0);</span>
                         
                         //y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-<span class="nc" id="L1000">                        polyFitter0.accumulate(set);</span>
-<span class="nc" id="L1001">                        coeff0 = polyFitter0.solve();</span>
+<span class="fc" id="L1000">                        polyFitter0.accumulate(set);</span>
+<span class="fc" id="L1001">                        coeff0 = polyFitter0.solve();</span>
                         
-<span class="nc" id="L1003">                        ParabolaLeastSquares.plotFit(coeff0, set, img.getWidth(),</span>
-<span class="nc" id="L1004">                            img.getHeight(), i, </span>
+<span class="fc" id="L1003">                        ParabolaLeastSquares.plotFit(coeff0, set, img.getWidth(),</span>
+<span class="fc" id="L1004">                            img.getHeight(), i, </span>
                             &quot;rainbow points&quot;);
 
-<span class="nc" id="L1007">                        double resid = ParabolaLeastSquares.calcResiduals(coeff0, set);</span>
+<span class="fc" id="L1007">                        double resid = ParabolaLeastSquares.calcResiduals(coeff0, set);</span>
                         
                         /*System.out.println(&quot;rainbow polynomial coefficients = &quot; 
                             + Arrays.toString(coeff0));
@@ -1014,7 +1014,7 @@ public class RainbowFinder {
                             + &quot; rg.coeff=&quot; + Arrays.toString(rg0.m)
                         );*/
 
-<span class="nc bnc" id="L1017" title="All 2 branches missed.">                        if (resid &lt; 5) {</span>
+<span class="pc bpc" id="L1017" title="1 of 2 branches missed.">                        if (resid &lt; 5) {</span>
                             
 <span class="nc" id="L1019">                            TIntSet chk = new TIntHashSet(subsetIdxs);</span>
                             
@@ -1064,22 +1064,22 @@ public class RainbowFinder {
             }
         }
         
-<span class="nc" id="L1067">        return null;</span>
+<span class="fc" id="L1067">        return null;</span>
     }
 
     private List&lt;VeryLongBitString&gt; makeBitStrings(List&lt;Set&lt;PairInt&gt;&gt; 
         listOfSets, Image img) {
         
-<span class="nc" id="L1073">        List&lt;VeryLongBitString&gt; out = new ArrayList&lt;VeryLongBitString&gt;();</span>
-<span class="nc bnc" id="L1074" title="All 2 branches missed.">        for (Set&lt;PairInt&gt; set : listOfSets) {</span>
-<span class="nc" id="L1075">            VeryLongBitString bs = new VeryLongBitString(img.getNPixels());</span>
-<span class="nc bnc" id="L1076" title="All 2 branches missed.">            for (PairInt p : set) {</span>
-<span class="nc" id="L1077">                bs.setBit(img.getInternalIndex(p));</span>
-<span class="nc" id="L1078">            }</span>
-<span class="nc" id="L1079">            out.add(bs);</span>
-<span class="nc" id="L1080">        }</span>
+<span class="fc" id="L1073">        List&lt;VeryLongBitString&gt; out = new ArrayList&lt;VeryLongBitString&gt;();</span>
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">        for (Set&lt;PairInt&gt; set : listOfSets) {</span>
+<span class="fc" id="L1075">            VeryLongBitString bs = new VeryLongBitString(img.getNPixels());</span>
+<span class="fc bfc" id="L1076" title="All 2 branches covered.">            for (PairInt p : set) {</span>
+<span class="fc" id="L1077">                bs.setBit(img.getInternalIndex(p));</span>
+<span class="fc" id="L1078">            }</span>
+<span class="fc" id="L1079">            out.add(bs);</span>
+<span class="fc" id="L1080">        }</span>
         
-<span class="nc" id="L1082">        return out;</span>
+<span class="fc" id="L1082">        return out;</span>
     }
 
     private int[] findAdjacent(NearestNeighbor2D nn, 

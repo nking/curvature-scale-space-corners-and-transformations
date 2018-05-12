@@ -103,14 +103,14 @@ public class EllipseHelper {
 <span class="fc" id="L103">        int y1 = (int)Math.round(y + major * ms);</span>
 <span class="fc" id="L104">        int x2 = (int)Math.round(x + major * mc);</span>
 <span class="fc" id="L105">        int y2 = (int)Math.round(y - major * ms);</span>
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (x1 &lt; 0) { x1 = 0;}</span>
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (y1 &lt; 0) { y1 = 0;}</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (x1 &lt; 0) { x1 = 0;}</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (y1 &lt; 0) { y1 = 0;}</span>
 <span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (x2 &lt; 0) { x2 = 0;}</span>
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (y2 &lt; 0) { y2 = 0;}</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (y2 &lt; 0) { y2 = 0;}</span>
 <span class="pc bpc" id="L110" title="1 of 2 branches missed.">        x1 = (x1 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x1;</span>
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        y1 = (y1 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y1;</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        x2 = (x2 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x2;</span>
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        y2 = (y2 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y2;</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        y1 = (y1 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y1;</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        x2 = (x2 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x2;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        y2 = (y2 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y2;</span>
 <span class="fc" id="L114">        axesEndPoints[0] = new PairInt(x1, y1);</span>
 <span class="fc" id="L115">        axesEndPoints[1] = new PairInt(x2, y2);</span>
         
@@ -121,13 +121,13 @@ public class EllipseHelper {
 <span class="fc" id="L121">        x2 = (int)Math.round(x - minor * mc);</span>
 <span class="fc" id="L122">        y2 = (int)Math.round(y + minor * ms);</span>
 <span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (x1 &lt; 0) { x1 = 0;}</span>
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (y1 &lt; 0) { y1 = 0;}</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (y1 &lt; 0) { y1 = 0;}</span>
 <span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (x2 &lt; 0) { x2 = 0;}</span>
 <span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (y2 &lt; 0) { y2 = 0;}</span>
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        x1 = (x1 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x1;</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        y1 = (y1 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y1;</span>
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        x2 = (x2 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x2;</span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        y2 = (y2 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y2;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        x1 = (x1 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x1;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        y1 = (y1 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y1;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        x2 = (x2 &gt;= bounds.maxCol) ? bounds.maxCol - 1 : x2;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        y2 = (y2 &gt;= bounds.maxRow) ? bounds.maxRow - 1 : y2;</span>
 <span class="fc" id="L131">        axesEndPoints[2] = new PairInt(x1, y1);</span>
 <span class="fc" id="L132">        axesEndPoints[3] = new PairInt(x2, y2);</span>
         
@@ -157,7 +157,7 @@ public class EllipseHelper {
 <span class="fc" id="L157">        this.minor = 2. * coeffs[5];</span>
     
 <span class="fc" id="L159">        double angle = Math.atan(coeffs[0]/coeffs[2]);</span>
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (angle &lt; 0) {</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (angle &lt; 0) {</span>
 <span class="fc" id="L161">            angle += Math.PI;</span>
         }
 <span class="fc" id="L163">        orientation = angle;</span>
@@ -172,7 +172,7 @@ public class EllipseHelper {
 <span class="fc" id="L172">    }</span>
     
     public double getEccentricity() {
-<span class="nc" id="L175">        return eccentricity;</span>
+<span class="fc" id="L175">        return eccentricity;</span>
     }
     
     public double getOrientation() {
@@ -197,7 +197,7 @@ public class EllipseHelper {
     }
     
     public double getMajorTimesMinor() {
-<span class="nc" id="L200">        return major * minor;</span>
+<span class="fc" id="L200">        return major * minor;</span>
     }
     
     public boolean intersects(EllipseHelper other) {
@@ -328,11 +328,11 @@ public class EllipseHelper {
     }
     
     public int getSemiMinor() {
-<span class="nc" id="L331">        return (int)Math.round(minor);</span>
+<span class="fc" id="L331">        return (int)Math.round(minor);</span>
     }
     
     public int getSemiMajor() {
-<span class="nc" id="L335">        return (int)Math.round(major);</span>
+<span class="fc" id="L335">        return (int)Math.round(major);</span>
     }
     
     public PairInt[] getSemiAxesEndoints() {
@@ -340,7 +340,7 @@ public class EllipseHelper {
     }
     
     public int[] getXYCenter() {
-<span class="nc" id="L343">        return new int[]{x, y};</span>
+<span class="fc" id="L343">        return new int[]{x, y};</span>
     }
     
     public int[] getMinMaxXY() {

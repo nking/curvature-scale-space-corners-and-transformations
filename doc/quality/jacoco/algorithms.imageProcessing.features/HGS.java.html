@@ -2,11 +2,7 @@
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.IntegralHistograms;
-import algorithms.util.OneDIntArray;
-import algorithms.util.OneDLongArray;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  A class holding histograms of a greyscale image 
@@ -18,9 +14,9 @@ import java.util.List;
  
   @author nichole
 */
-<span class="pc bpc" id="L21" title="1 of 2 branches missed.">public class HGS {</span>
+<span class="pc bpc" id="L17" title="1 of 2 branches missed.">public class HGS {</span>
    
-<span class="fc" id="L23">    private static float eps = 0.000001f;</span>
+<span class="fc" id="L19">    private static float eps = 0.000001f;</span>
     
     private final int nBins;
     
@@ -34,7 +30,7 @@ import java.util.List;
     private final int w;
     private final int h;
     
-<span class="pc" id="L37">    private boolean debug = false;</span>
+<span class="pc" id="L33">    private boolean debug = false;</span>
     
     //TODO: calculate the limits in nPixels this can handle due to
     //   using integers instead of long for storage.
@@ -44,45 +40,45 @@ import java.util.List;
      * constructor
      * @param img gradient image or greyscale
      */
-<span class="nc" id="L47">    public HGS(GreyscaleImage img) {</span>
+<span class="nc" id="L43">    public HGS(GreyscaleImage img) {</span>
         
         // binWidth of 16
-<span class="nc" id="L50">        nBins = 16;</span>
-<span class="nc" id="L51">        N_PIX_PER_CELL_DIM = 4;</span>
-<span class="nc" id="L52">        N_CELLS_PER_BLOCK_DIM = 2;</span>
-<span class="nc" id="L53">        w = img.getWidth();</span>
-<span class="nc" id="L54">        h = img.getHeight();</span>
+<span class="nc" id="L46">        nBins = 16;</span>
+<span class="nc" id="L47">        N_PIX_PER_CELL_DIM = 4;</span>
+<span class="nc" id="L48">        N_CELLS_PER_BLOCK_DIM = 2;</span>
+<span class="nc" id="L49">        w = img.getWidth();</span>
+<span class="nc" id="L50">        h = img.getHeight();</span>
         
-<span class="nc" id="L56">        gHists = init(img);</span>
-<span class="nc" id="L57">    }</span>
+<span class="nc" id="L52">        gHists = init(img);</span>
+<span class="nc" id="L53">    }</span>
     
     public HGS(GreyscaleImage img, int nCellsPerDim, int nPixPerCellDim,
-<span class="fc" id="L60">        int nBins) {</span>
+<span class="fc" id="L56">        int nBins) {</span>
         
         // binWidth of 16
-<span class="fc" id="L63">        this.nBins = nBins;</span>
-<span class="fc" id="L64">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
-<span class="fc" id="L65">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
-<span class="fc" id="L66">        w = img.getWidth();</span>
-<span class="fc" id="L67">        h = img.getHeight();</span>
+<span class="fc" id="L59">        this.nBins = nBins;</span>
+<span class="fc" id="L60">        N_PIX_PER_CELL_DIM = nPixPerCellDim;</span>
+<span class="fc" id="L61">        N_CELLS_PER_BLOCK_DIM = nCellsPerDim;</span>
+<span class="fc" id="L62">        w = img.getWidth();</span>
+<span class="fc" id="L63">        h = img.getHeight();</span>
         
-<span class="fc" id="L69">        gHists = init(img);</span>
-<span class="fc" id="L70">    }</span>
+<span class="fc" id="L65">        gHists = init(img);</span>
+<span class="fc" id="L66">    }</span>
     
     public void setToDebug() {
-<span class="nc" id="L73">        debug = true;</span>
-<span class="nc" id="L74">    }</span>
+<span class="nc" id="L69">        debug = true;</span>
+<span class="nc" id="L70">    }</span>
     
     private int[][] init(GreyscaleImage img) {
        
-<span class="fc" id="L78">        IntegralHistograms gh = new IntegralHistograms();</span>
+<span class="fc" id="L74">        IntegralHistograms gh = new IntegralHistograms();</span>
         
-<span class="fc" id="L80">        int[][] histograms = gh.create(img, nBins);</span>
+<span class="fc" id="L76">        int[][] histograms = gh.create(img, nBins);</span>
 
         //apply a windowed avg across the integral image
-<span class="fc" id="L83">        gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L79">        gh.applyWindowedSum(histograms, w, h, N_PIX_PER_CELL_DIM);</span>
         
-<span class="fc" id="L85">        return histograms;  </span>
+<span class="fc" id="L81">        return histograms;  </span>
     }
 
     /**     * 
@@ -97,12 +93,12 @@ import java.util.List;
      */
     public void extractBlock(int x, int y, int[] outHist) {
                 
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (outHist.length != nBins) {</span>
-<span class="nc" id="L101">            throw new IllegalArgumentException(&quot;outHist.length != nBins&quot;);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (outHist.length != nBins) {</span>
+<span class="nc" id="L97">            throw new IllegalArgumentException(&quot;outHist.length != nBins&quot;);</span>
         }
 
-<span class="pc bpc" id="L104" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
-<span class="nc" id="L105">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+<span class="pc bpc" id="L100" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L101">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
                 + &quot;original image&quot;);
         }
         
@@ -110,38 +106,51 @@ import java.util.List;
         //   the summary of histogram counts over all cells
         //   is used to normalize each cell by that sum.
 
-<span class="fc" id="L113">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
+<span class="fc" id="L109">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
                 
-<span class="fc" id="L115">        int r = N_CELLS_PER_BLOCK_DIM &gt;&gt; 1;</span>
-<span class="fc" id="L116">        int stopY = y + r;</span>
-<span class="fc" id="L117">        int stopX = x + r;</span>
-<span class="fc" id="L118">        int startX = x - r;</span>
-<span class="fc" id="L119">        int startY = y - r;</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if ((h &amp; 1) == 0) {</span>
-<span class="fc" id="L121">            startX--;</span>
-<span class="fc" id="L122">            startY--;            </span>
+<span class="fc" id="L111">        int r = N_CELLS_PER_BLOCK_DIM &gt;&gt; 1;</span>
+<span class="fc" id="L112">        int stopY = y + r;</span>
+<span class="fc" id="L113">        int stopX = x + r;</span>
+<span class="fc" id="L114">        int startX = x - r;</span>
+<span class="fc" id="L115">        int startY = y - r;</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if ((h &amp; 1) == 0) {</span>
+<span class="fc" id="L117">            startX--;</span>
+<span class="fc" id="L118">            startY--;            </span>
         }
-<span class="fc" id="L124">        int[] outputN = new int[1];  </span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (startX &lt; 0) {</span>
+<span class="nc" id="L121">            startX = 0;</span>
+        }
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (startY &gt; 0) {</span>
+<span class="fc" id="L124">            startY = 0;</span>
+        }
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (stopX &gt;= w) {</span>
+<span class="nc" id="L127">            stopX = w - 1;</span>
+        }
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (stopY &gt;= h) {</span>
+<span class="nc" id="L130">            stopY = h - 1;</span>
+        }
         
-<span class="fc" id="L126">        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, </span>
+<span class="fc" id="L133">        int[] outputN = new int[1];  </span>
+        
+<span class="fc" id="L135">        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, </span>
             outHist, outputN);
         
-<span class="fc" id="L129">        double blockTotal = HOGUtil.sumCounts(outHist);</span>
-<span class="fc" id="L130">        blockTotal *= blockTotal;</span>
+<span class="fc" id="L138">        double blockTotal = HOGUtil.sumCounts(outHist);</span>
+<span class="fc" id="L139">        blockTotal *= blockTotal;</span>
 
         double norm;
-<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (blockTotal &gt; 0) {</span>
-<span class="fc" id="L134">            blockTotal /= (double)outputN[0];</span>
-<span class="fc" id="L135">            blockTotal = Math.sqrt(blockTotal);</span>
-<span class="fc" id="L136">            norm = 255./blockTotal;</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (blockTotal &gt; 0) {</span>
+<span class="fc" id="L143">            blockTotal /= (double)outputN[0];</span>
+<span class="fc" id="L144">            blockTotal = Math.sqrt(blockTotal);</span>
+<span class="fc" id="L145">            norm = 255./blockTotal;</span>
         } else {
-<span class="nc" id="L138">            norm = 255.;</span>
+<span class="nc" id="L147">            norm = 255.;</span>
         }
           
-<span class="fc bfc" id="L141" title="All 2 branches covered.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
-<span class="fc" id="L142">            outHist[i] = (int)Math.round(norm * outHist[i]);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
+<span class="fc" id="L151">            outHist[i] = (int)Math.round(norm * outHist[i]);</span>
         }       
-<span class="fc" id="L144">    }</span>
+<span class="fc" id="L153">    }</span>
     
     /**
      * NOT READY FOR USE
@@ -157,12 +166,12 @@ import java.util.List;
      */
     public void extractBlock(int x, int y, long[] outHist) {
                 
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (outHist.length != nBins) {</span>
-<span class="nc" id="L161">            throw new IllegalArgumentException(&quot;outHist.length != nBins&quot;);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (outHist.length != nBins) {</span>
+<span class="nc" id="L170">            throw new IllegalArgumentException(&quot;outHist.length != nBins&quot;);</span>
         }
 
-<span class="pc bpc" id="L164" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
-<span class="nc" id="L165">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+<span class="pc bpc" id="L173" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L174">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
                 + &quot;original image&quot;);
         }
         
@@ -170,38 +179,51 @@ import java.util.List;
         //   the summary of histogram counts over all cells
         //   is used to normalize each cell by that sum.
 
-<span class="fc" id="L173">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
+<span class="fc" id="L182">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
                 
-<span class="fc" id="L175">        int r = N_CELLS_PER_BLOCK_DIM &gt;&gt; 1;</span>
-<span class="fc" id="L176">        int stopY = y + r;</span>
-<span class="fc" id="L177">        int stopX = x + r;</span>
-<span class="fc" id="L178">        int startX = x - r;</span>
-<span class="fc" id="L179">        int startY = y - r;</span>
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if ((h &amp; 1) == 0) {</span>
-<span class="fc" id="L181">            startX--;</span>
-<span class="fc" id="L182">            startY--;            </span>
+<span class="fc" id="L184">        int r = N_CELLS_PER_BLOCK_DIM &gt;&gt; 1;</span>
+<span class="fc" id="L185">        int stopY = y + r;</span>
+<span class="fc" id="L186">        int stopX = x + r;</span>
+<span class="fc" id="L187">        int startX = x - r;</span>
+<span class="fc" id="L188">        int startY = y - r;</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if ((h &amp; 1) == 0) {</span>
+<span class="fc" id="L190">            startX--;</span>
+<span class="fc" id="L191">            startY--;            </span>
         }
-<span class="fc" id="L184">        int[] outputN = new int[1];  </span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        if (startX &lt; 0) {</span>
+<span class="fc" id="L194">            startX = 0;</span>
+        }
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        if (startY &gt; 0) {</span>
+<span class="fc" id="L197">            startY = 0;</span>
+        }
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (stopX &gt;= w) {</span>
+<span class="fc" id="L200">            stopX = w - 1;</span>
+        }
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        if (stopY &gt;= h) {</span>
+<span class="fc" id="L203">            stopY = h - 1;</span>
+        }
         
-<span class="fc" id="L186">        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, </span>
+<span class="fc" id="L206">        int[] outputN = new int[1];  </span>
+        
+<span class="fc" id="L208">        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, </span>
             outHist, outputN);
         
-<span class="fc" id="L189">        double blockTotal = HOGUtil.sumCounts(outHist);</span>
-<span class="fc" id="L190">        blockTotal *= blockTotal;</span>
+<span class="fc" id="L211">        double blockTotal = HOGUtil.sumCounts(outHist);</span>
+<span class="fc" id="L212">        blockTotal *= blockTotal;</span>
 
         double norm;
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (blockTotal &gt; 0) {</span>
-<span class="fc" id="L194">            blockTotal /= (double)outputN[0];</span>
-<span class="fc" id="L195">            blockTotal = Math.sqrt(blockTotal);</span>
-<span class="fc" id="L196">            norm = 255./blockTotal;</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (blockTotal &gt; 0) {</span>
+<span class="fc" id="L216">            blockTotal /= (double)outputN[0];</span>
+<span class="fc" id="L217">            blockTotal = Math.sqrt(blockTotal);</span>
+<span class="fc" id="L218">            norm = 255./blockTotal;</span>
         } else {
-<span class="nc" id="L198">            norm = 255.;</span>
+<span class="fc" id="L220">            norm = 255.;</span>
         }
           
-<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
-<span class="fc" id="L202">            outHist[i] = (int)Math.round(norm * outHist[i]);</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
+<span class="fc" id="L224">            outHist[i] = (int)Math.round(norm * outHist[i]);</span>
         }     
-<span class="fc" id="L204">    }</span>
+<span class="fc" id="L226">    }</span>
     
     /**
      * NOT READY FOR USE
@@ -220,12 +242,12 @@ import java.util.List;
      */
     public void extractBlock2(int x, int y, int[] outHist) {
                 
-<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (outHist.length != nBins) {</span>
-<span class="nc" id="L224">            throw new IllegalArgumentException(&quot;outHist.length != nBins&quot;);</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">        if (outHist.length != nBins) {</span>
+<span class="nc" id="L246">            throw new IllegalArgumentException(&quot;outHist.length != nBins&quot;);</span>
         }
 
-<span class="nc bnc" id="L227" title="All 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
-<span class="nc" id="L228">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+<span class="nc bnc" id="L249" title="All 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || x &gt;= w || y &gt;= h) {</span>
+<span class="nc" id="L250">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
                 + &quot;original image&quot;);
         }
         
@@ -233,39 +255,52 @@ import java.util.List;
         //   the summary of histogram counts over all cells
         //   is used to normalize each cell by that sum.
 
-<span class="nc" id="L236">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
+<span class="nc" id="L258">        Arrays.fill(outHist, 0, outHist.length, 0);</span>
                 
-<span class="nc" id="L238">        int r = N_CELLS_PER_BLOCK_DIM &gt;&gt; 1;</span>
-<span class="nc" id="L239">        int stopY = y + r;</span>
-<span class="nc" id="L240">        int stopX = x + r;</span>
-<span class="nc" id="L241">        int startX = x - r;</span>
-<span class="nc" id="L242">        int startY = y - r;</span>
-<span class="nc bnc" id="L243" title="All 2 branches missed.">        if ((h &amp; 1) == 0) {</span>
-<span class="nc" id="L244">            startX--;</span>
-<span class="nc" id="L245">            startY--;            </span>
+<span class="nc" id="L260">        int r = N_CELLS_PER_BLOCK_DIM &gt;&gt; 1;</span>
+<span class="nc" id="L261">        int stopY = y + r;</span>
+<span class="nc" id="L262">        int stopX = x + r;</span>
+<span class="nc" id="L263">        int startX = x - r;</span>
+<span class="nc" id="L264">        int startY = y - r;</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">        if ((h &amp; 1) == 0) {</span>
+<span class="nc" id="L266">            startX--;</span>
+<span class="nc" id="L267">            startY--;            </span>
         }
-<span class="nc" id="L247">        int[] outputN = new int[1];  </span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        if (startX &lt; 0) {</span>
+<span class="nc" id="L270">            startX = 0;</span>
+        }
+<span class="nc bnc" id="L272" title="All 2 branches missed.">        if (startY &gt; 0) {</span>
+<span class="nc" id="L273">            startY = 0;</span>
+        }
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        if (stopX &gt;= w) {</span>
+<span class="nc" id="L276">            stopX = w - 1;</span>
+        }
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (stopY &gt;= h) {</span>
+<span class="nc" id="L279">            stopY = h - 1;</span>
+        }
         
-<span class="nc" id="L249">        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, </span>
+<span class="nc" id="L282">        int[] outputN = new int[1];  </span>
+        
+<span class="nc" id="L284">        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, </span>
             outHist, outputN);
         
-<span class="nc" id="L252">        double blockTotal = HOGUtil.sumCounts(outHist);</span>
-<span class="nc" id="L253">        blockTotal *= blockTotal;</span>
+<span class="nc" id="L287">        double blockTotal = HOGUtil.sumCounts(outHist);</span>
+<span class="nc" id="L288">        blockTotal *= blockTotal;</span>
 
         double norm;
-<span class="nc bnc" id="L256" title="All 2 branches missed.">        if (blockTotal &gt; 0) {</span>
-<span class="nc" id="L257">            blockTotal /= (double)outputN[0];</span>
-<span class="nc" id="L258">            blockTotal = Math.sqrt(blockTotal);</span>
-<span class="nc" id="L259">            norm = 1./blockTotal;</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        if (blockTotal &gt; 0) {</span>
+<span class="nc" id="L292">            blockTotal /= (double)outputN[0];</span>
+<span class="nc" id="L293">            blockTotal = Math.sqrt(blockTotal);</span>
+<span class="nc" id="L294">            norm = 1./blockTotal;</span>
         } else {
-<span class="nc" id="L261">            norm = 1.;</span>
+<span class="nc" id="L296">            norm = 1.;</span>
         }
           
-<span class="nc bnc" id="L264" title="All 2 branches missed.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
-<span class="nc" id="L265">            outHist[i] = (int)Math.round(norm * outHist[i]);</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        for (int i = 0; i &lt; outHist.length; ++i) {</span>
+<span class="nc" id="L300">            outHist[i] = (int)Math.round(norm * outHist[i]);</span>
         }    
         
-<span class="nc" id="L268">    }</span>
+<span class="nc" id="L303">    }</span>
     
     /**
      * 
@@ -286,14 +321,14 @@ import java.util.List;
      */
     public float intersection(int[] histA, int[] histB) {
        
-<span class="pc bpc" id="L289" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
-<span class="nc" id="L290">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
+<span class="nc" id="L325">            throw new IllegalArgumentException(</span>
                 &quot;histA and histB must be same dimensions&quot;);
         }
         
-<span class="fc" id="L294">        int nBins = histA.length;</span>
+<span class="fc" id="L329">        int nBins = histA.length;</span>
         
-<span class="fc" id="L296">        int binWidth = 256/nBins;</span>
+<span class="fc" id="L331">        int binWidth = 256/nBins;</span>
         
         /*
         histograms are already normalized
@@ -304,109 +339,109 @@ import java.util.List;
             (min(summation_over_i(a_i), summation_over_i(b_i))
         */
             
-<span class="fc" id="L307">        float sum = 0;</span>
-<span class="fc" id="L308">        float sumA = 0;</span>
-<span class="fc" id="L309">        float sumB = 0;</span>
-<span class="fc bfc" id="L310" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+<span class="fc" id="L342">        float sum = 0;</span>
+<span class="fc" id="L343">        float sumA = 0;</span>
+<span class="fc" id="L344">        float sumB = 0;</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
             
-<span class="fc" id="L312">            float yA = histA[j];</span>
-<span class="fc" id="L313">            float yB = histB[j];</span>
+<span class="fc" id="L347">            float yA = histA[j];</span>
+<span class="fc" id="L348">            float yB = histB[j];</span>
             
-<span class="fc" id="L315">            sum += Math.min(yA, yB);</span>
-<span class="fc" id="L316">            sumA += yA;</span>
-<span class="fc" id="L317">            sumB += yB;</span>
+<span class="fc" id="L350">            sum += Math.min(yA, yB);</span>
+<span class="fc" id="L351">            sumA += yA;</span>
+<span class="fc" id="L352">            sumB += yB;</span>
             
             //System.out.println(&quot; &quot; + yA + &quot; -- &quot; + yB + &quot; sum=&quot;+sum + &quot;, &quot; + sumA + &quot;,&quot; + sumB);
         }
         
-<span class="fc" id="L322">        float d = eps + Math.min(sumA, sumB);</span>
+<span class="fc" id="L357">        float d = eps + Math.min(sumA, sumB);</span>
         
-<span class="fc" id="L324">        float sim = sum/d;</span>
+<span class="fc" id="L359">        float sim = sum/d;</span>
         
-<span class="fc" id="L326">        return sim;</span>
+<span class="fc" id="L361">        return sim;</span>
     }
     
     public float[] diff(int[] histA, int[] histB) {
 
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
-<span class="nc" id="L332">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">        if ((histA.length != histB.length)) {</span>
+<span class="nc" id="L367">            throw new IllegalArgumentException(</span>
                 &quot;histA and histB must be same dimensions&quot;);
         }
 
-<span class="fc" id="L336">        int nBins = histA.length;</span>
+<span class="fc" id="L371">        int nBins = histA.length;</span>
 
-<span class="fc" id="L338">        int binWidth = 180/nBins;</span>
+<span class="fc" id="L373">        int binWidth = 180/nBins;</span>
 
-<span class="fc" id="L340">        double sumDiff = 0;</span>
-<span class="fc" id="L341">        double err = 0;</span>
+<span class="fc" id="L375">        double sumDiff = 0;</span>
+<span class="fc" id="L376">        double err = 0;</span>
                         
-<span class="fc bfc" id="L343" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (int j = 0; j &lt; nBins; ++j) {</span>
             
-<span class="fc" id="L345">            float yA = histA[j];</span>
-<span class="fc" id="L346">            float yB = histB[j];</span>
+<span class="fc" id="L380">            float yA = histA[j];</span>
+<span class="fc" id="L381">            float yB = histB[j];</span>
             
-<span class="fc" id="L348">            float maxValue = Math.max(yA, yB) + eps;</span>
+<span class="fc" id="L383">            float maxValue = Math.max(yA, yB) + eps;</span>
 
-<span class="fc" id="L350">            float diff = Math.abs((yA - yB)/maxValue);</span>
+<span class="fc" id="L385">            float diff = Math.abs((yA - yB)/maxValue);</span>
             
             //sumDiff += (diff * diff);
-<span class="fc" id="L353">            sumDiff += diff;</span>
+<span class="fc" id="L388">            sumDiff += diff;</span>
 
             //      already squared
-<span class="fc" id="L356">            err += (diff/maxValue);           </span>
+<span class="fc" id="L391">            err += (diff/maxValue);           </span>
         }
         
-<span class="fc" id="L359">        sumDiff /= (double)nBins;</span>
+<span class="fc" id="L394">        sumDiff /= (double)nBins;</span>
 
         //sumDiff = Math.sqrt(sumDiff);
 
-<span class="fc" id="L363">        err /= (double)nBins;</span>
-<span class="fc" id="L364">        err = Math.sqrt(err);</span>
+<span class="fc" id="L398">        err /= (double)nBins;</span>
+<span class="fc" id="L399">        err = Math.sqrt(err);</span>
 
-<span class="fc" id="L366">        return new float[]{(float)sumDiff, (float)err};</span>
+<span class="fc" id="L401">        return new float[]{(float)sumDiff, (float)err};</span>
     }
 
     public int[] extractFeature(int xCenter, int yCenter, int detectorWidth,
         int detectorHeight) {
         
-<span class="fc" id="L372">        int hw = detectorWidth/2;</span>
-<span class="fc" id="L373">        int hh = detectorHeight/2;</span>
+<span class="fc" id="L407">        int hw = detectorWidth/2;</span>
+<span class="fc" id="L408">        int hh = detectorHeight/2;</span>
 
-<span class="pc bpc" id="L375" title="4 of 8 branches missed.">        if ((xCenter - hw) &lt; 0 || (yCenter - hh) &lt; 0 </span>
+<span class="pc bpc" id="L410" title="4 of 8 branches missed.">        if ((xCenter - hw) &lt; 0 || (yCenter - hh) &lt; 0 </span>
             || (xCenter + hw) &gt;= w || (yCenter + hh) &gt;= h) {
-<span class="nc" id="L377">            throw new IllegalArgumentException(&quot;out of bounds of &quot;</span>
+<span class="nc" id="L412">            throw new IllegalArgumentException(&quot;out of bounds of &quot;</span>
                 + &quot;original image&quot;);
         }
         
-<span class="fc" id="L381">        int hc = N_PIX_PER_CELL_DIM/2;</span>
+<span class="fc" id="L416">        int hc = N_PIX_PER_CELL_DIM/2;</span>
         
         /*        
                           xc,yc            
              |         |         |         |
         */
-<span class="fc" id="L387">        int nX0 = (hw - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="fc" id="L388">        int startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);</span>
-<span class="pc bpc" id="L389" title="1 of 2 branches missed.">        if (startX &lt; hc) {</span>
-<span class="nc" id="L390">            nX0 = (xCenter - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="nc" id="L391">            startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L422">        int nX0 = (hw - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="fc" id="L423">        int startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">        if (startX &lt; hc) {</span>
+<span class="nc" id="L425">            nX0 = (xCenter - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="nc" id="L426">            startX = xCenter - (nX0 * N_PIX_PER_CELL_DIM);</span>
         }
-<span class="fc" id="L393">        int nX1 = (hw - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="fc" id="L394">        int stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);</span>
-<span class="pc bpc" id="L395" title="1 of 2 branches missed.">        if (stopX &gt;= (this.w - hc)) {</span>
-<span class="nc" id="L396">            nX1 = (w - 1 - xCenter - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="nc" id="L397">            stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L428">        int nX1 = (hw - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="fc" id="L429">        int stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);</span>
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">        if (stopX &gt;= (this.w - hc)) {</span>
+<span class="nc" id="L431">            nX1 = (w - 1 - xCenter - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="nc" id="L432">            stopX = xCenter + (nX1 * N_PIX_PER_CELL_DIM);</span>
         }
-<span class="fc" id="L399">        int nY0 = (hh - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="fc" id="L400">        int startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);</span>
-<span class="pc bpc" id="L401" title="1 of 2 branches missed.">        if (startY &lt; hc) {</span>
-<span class="nc" id="L402">            nY0 = (yCenter - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="nc" id="L403">            startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L434">        int nY0 = (hh - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="fc" id="L435">        int startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);</span>
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (startY &lt; hc) {</span>
+<span class="nc" id="L437">            nY0 = (yCenter - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="nc" id="L438">            startY = yCenter - (nY0 * N_PIX_PER_CELL_DIM);</span>
         }
-<span class="fc" id="L405">        int nY1 = (hh - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="fc" id="L406">        int stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);</span>
-<span class="pc bpc" id="L407" title="1 of 2 branches missed.">        if (stopY &gt;= (this.h - hc)) {</span>
-<span class="nc" id="L408">            nY1 = (h - 1 - yCenter - hc)/N_PIX_PER_CELL_DIM;</span>
-<span class="nc" id="L409">            stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);</span>
+<span class="fc" id="L440">        int nY1 = (hh - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="fc" id="L441">        int stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);</span>
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if (stopY &gt;= (this.h - hc)) {</span>
+<span class="nc" id="L443">            nY1 = (h - 1 - yCenter - hc)/N_PIX_PER_CELL_DIM;</span>
+<span class="nc" id="L444">            stopY = yCenter + (nY1 * N_PIX_PER_CELL_DIM);</span>
         }
         
         //System.out.println(&quot; startX=&quot; + startX + &quot; stopX=&quot; + stopX
@@ -414,77 +449,77 @@ import java.util.List;
         //    + &quot; HC=&quot; + hc
         //);
         
-<span class="fc" id="L417">        int nH = (nX0 + nX1 + 1) * (nY0 + nY1 + 1) * nBins;</span>
+<span class="fc" id="L452">        int nH = (nX0 + nX1 + 1) * (nY0 + nY1 + 1) * nBins;</span>
         
-<span class="fc" id="L419">        int[] tmp = new int[nBins];</span>
-<span class="fc" id="L420">        int[] out = new int[nH];</span>
+<span class="fc" id="L454">        int[] tmp = new int[nBins];</span>
+<span class="fc" id="L455">        int[] out = new int[nH];</span>
         
-<span class="fc" id="L422">        int count = 0;</span>
-<span class="fc" id="L423">        double blockTotal = 0;</span>
+<span class="fc" id="L457">        int count = 0;</span>
+<span class="fc" id="L458">        double blockTotal = 0;</span>
                 
         // scan forward by 1 cell
-<span class="fc bfc" id="L426" title="All 2 branches covered.">        for (int x = startX; x &lt;= stopX; x += N_PIX_PER_CELL_DIM) {</span>
-<span class="fc bfc" id="L427" title="All 2 branches covered.">            for (int y = startY; y &lt;= stopY; y += N_PIX_PER_CELL_DIM) {</span>
+<span class="fc bfc" id="L461" title="All 2 branches covered.">        for (int x = startX; x &lt;= stopX; x += N_PIX_PER_CELL_DIM) {</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">            for (int y = startY; y &lt;= stopY; y += N_PIX_PER_CELL_DIM) {</span>
                 
-<span class="fc" id="L429">                extractBlock(x, y, tmp);</span>
+<span class="fc" id="L464">                extractBlock(x, y, tmp);</span>
                 
-<span class="fc" id="L431">                System.arraycopy(tmp, 0, out, count * nBins, nBins);</span>
+<span class="fc" id="L466">                System.arraycopy(tmp, 0, out, count * nBins, nBins);</span>
                 
-<span class="fc" id="L433">                double t = HOGUtil.sumCounts(tmp);</span>
-<span class="fc" id="L434">                blockTotal += (t * t);               </span>
-<span class="fc" id="L435">                count++;                </span>
+<span class="fc" id="L468">                double t = HOGUtil.sumCounts(tmp);</span>
+<span class="fc" id="L469">                blockTotal += (t * t);               </span>
+<span class="fc" id="L470">                count++;                </span>
             }
         }
         
         //System.out.println(&quot;NH=&quot; + nH + &quot; count=&quot; + count + &quot; blockTotal=&quot; + blockTotal);
         
         // normalize over detector
-<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if (count &gt; 0) {</span>
-<span class="fc" id="L443">            blockTotal = Math.sqrt(blockTotal/(double)count);</span>
+<span class="pc bpc" id="L477" title="1 of 2 branches missed.">        if (count &gt; 0) {</span>
+<span class="fc" id="L478">            blockTotal = Math.sqrt(blockTotal/(double)count);</span>
         }
         
-<span class="fc" id="L446">        double norm = 1./(blockTotal + eps);</span>
+<span class="fc" id="L481">        double norm = 1./(blockTotal + eps);</span>
 
-<span class="fc" id="L448">        float maxBlock = 255.f;</span>
+<span class="fc" id="L483">        float maxBlock = 255.f;</span>
             //(N_CELLS_PER_BLOCK_DIM * N_CELLS_PER_BLOCK_DIM) *
             //(N_PIX_PER_CELL_DIM * N_PIX_PER_CELL_DIM);
 
-<span class="fc" id="L452">        norm *= maxBlock;</span>
+<span class="fc" id="L487">        norm *= maxBlock;</span>
         
-<span class="pc bpc" id="L454" title="3 of 4 branches missed.">        assert(!Double.isNaN(norm));</span>
+<span class="pc bpc" id="L489" title="3 of 4 branches missed.">        assert(!Double.isNaN(norm));</span>
 
-<span class="fc bfc" id="L456" title="All 2 branches covered.">        for (int i = 0; i &lt; out.length; ++i) {</span>
-<span class="fc" id="L457">            out[i] *= norm;</span>
-<span class="pc bpc" id="L458" title="3 of 4 branches missed.">            assert(out[i] &gt;= 0);</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">        for (int i = 0; i &lt; out.length; ++i) {</span>
+<span class="fc" id="L492">            out[i] *= norm;</span>
+<span class="pc bpc" id="L493" title="3 of 4 branches missed.">            assert(out[i] &gt;= 0);</span>
         }
 
-<span class="fc" id="L461">        return out;</span>
+<span class="fc" id="L496">        return out;</span>
     }
     
     public float intersectionOfFeatures(int[] featureA, int[] featureB) {
 
-<span class="pc bpc" id="L466" title="1 of 2 branches missed.">        if ((featureA.length != featureB.length)) {</span>
-<span class="nc" id="L467">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L501" title="1 of 2 branches missed.">        if ((featureA.length != featureB.length)) {</span>
+<span class="nc" id="L502">            throw new IllegalArgumentException(</span>
                 &quot;featureA and featureB must be same dimensions&quot;);
         }
         
-<span class="fc" id="L471">        int[] tmpA = new int[nBins];</span>
-<span class="fc" id="L472">        int[] tmpB = new int[nBins];</span>
+<span class="fc" id="L506">        int[] tmpA = new int[nBins];</span>
+<span class="fc" id="L507">        int[] tmpB = new int[nBins];</span>
         
         float t;
-<span class="fc" id="L475">        double sum = 0;</span>
-<span class="fc bfc" id="L476" title="All 2 branches covered.">        for (int j = 0; j &lt; featureA.length; j += nBins) {</span>
-<span class="fc" id="L477">            System.arraycopy(featureA, j, tmpA, 0, nBins);</span>
-<span class="fc" id="L478">            System.arraycopy(featureB, j, tmpB, 0, nBins);</span>
-<span class="fc" id="L479">            t = intersection(tmpA, tmpB);</span>
+<span class="fc" id="L510">        double sum = 0;</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">        for (int j = 0; j &lt; featureA.length; j += nBins) {</span>
+<span class="fc" id="L512">            System.arraycopy(featureA, j, tmpA, 0, nBins);</span>
+<span class="fc" id="L513">            System.arraycopy(featureB, j, tmpB, 0, nBins);</span>
+<span class="fc" id="L514">            t = intersection(tmpA, tmpB);</span>
             //System.out.println(&quot;    inter=&quot; + t);
-<span class="fc" id="L481">            sum += (t * t);</span>
+<span class="fc" id="L516">            sum += (t * t);</span>
         }
 
-<span class="fc" id="L484">        sum /= (double)(featureA.length/nBins);</span>
-<span class="fc" id="L485">        sum = Math.sqrt(sum);</span>
+<span class="fc" id="L519">        sum /= (double)(featureA.length/nBins);</span>
+<span class="fc" id="L520">        sum = Math.sqrt(sum);</span>
 
-<span class="fc" id="L487">        return (float)sum;</span>
+<span class="fc" id="L522">        return (float)sum;</span>
     }
     
     /**
@@ -505,46 +540,46 @@ import java.util.List;
      */
     public float[] diffOfFeatures(int[] featureA, int[] featureB) {
 
-<span class="pc bpc" id="L508" title="1 of 2 branches missed.">        if ((featureA.length != featureB.length)) {</span>
-<span class="nc" id="L509">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L543" title="1 of 2 branches missed.">        if ((featureA.length != featureB.length)) {</span>
+<span class="nc" id="L544">            throw new IllegalArgumentException(</span>
                 &quot;featureA and featureB must be same dimensions&quot;);
         }
         
-<span class="fc" id="L513">        int[] tmpA = new int[nBins];</span>
-<span class="fc" id="L514">        int[] tmpB = new int[nBins];</span>
+<span class="fc" id="L548">        int[] tmpA = new int[nBins];</span>
+<span class="fc" id="L549">        int[] tmpB = new int[nBins];</span>
         
         float[] t;
-<span class="fc" id="L517">        double sum = 0;</span>
-<span class="fc" id="L518">        double sumSqErr = 0;</span>
-<span class="fc bfc" id="L519" title="All 2 branches covered.">        for (int j = 0; j &lt; featureA.length; j += nBins) {</span>
-<span class="fc" id="L520">            System.arraycopy(featureA, j, tmpA, 0, nBins);</span>
-<span class="fc" id="L521">            System.arraycopy(featureB, j, tmpB, 0, nBins);</span>
-<span class="fc" id="L522">            t = diff(tmpA, tmpB);</span>
+<span class="fc" id="L552">        double sum = 0;</span>
+<span class="fc" id="L553">        double sumSqErr = 0;</span>
+<span class="fc bfc" id="L554" title="All 2 branches covered.">        for (int j = 0; j &lt; featureA.length; j += nBins) {</span>
+<span class="fc" id="L555">            System.arraycopy(featureA, j, tmpA, 0, nBins);</span>
+<span class="fc" id="L556">            System.arraycopy(featureB, j, tmpB, 0, nBins);</span>
+<span class="fc" id="L557">            t = diff(tmpA, tmpB);</span>
             //System.out.println(&quot;    inter=&quot; + t);
-<span class="fc" id="L524">            sum += t[0];</span>
-<span class="fc" id="L525">            sumSqErr += (t[1] * t[1]);</span>
+<span class="fc" id="L559">            sum += t[0];</span>
+<span class="fc" id="L560">            sumSqErr += (t[1] * t[1]);</span>
         }
 
-<span class="fc" id="L528">        sum /= (double)(featureA.length/nBins);</span>
+<span class="fc" id="L563">        sum /= (double)(featureA.length/nBins);</span>
         //sum = Math.sqrt(sum);
         
         //TODO: check normalization by nBins here
-<span class="fc" id="L532">        sumSqErr /= (double)(featureA.length/nBins);</span>
-<span class="fc" id="L533">        sumSqErr = Math.sqrt(sumSqErr);</span>
+<span class="fc" id="L567">        sumSqErr /= (double)(featureA.length/nBins);</span>
+<span class="fc" id="L568">        sumSqErr = Math.sqrt(sumSqErr);</span>
 
-<span class="fc" id="L535">        return new float[]{(float)sum, (float)sumSqErr};</span>
+<span class="fc" id="L570">        return new float[]{(float)sum, (float)sumSqErr};</span>
     }
     
     public int getNumberOfBins() {
-<span class="fc" id="L539">        return nBins;</span>
+<span class="fc" id="L574">        return nBins;</span>
     }
 
     public int getImageWidth() {
-<span class="fc" id="L543">        return w;</span>
+<span class="fc" id="L578">        return w;</span>
     }
 
     public int getImageHeight() {
-<span class="fc" id="L547">        return h;</span>
+<span class="fc" id="L582">        return h;</span>
     }
 
 }

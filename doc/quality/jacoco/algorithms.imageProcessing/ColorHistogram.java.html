@@ -914,36 +914,36 @@ import java.util.Set;
          5:  purple = 193 - 255
         */
         
-<span class="nc" id="L917">        List&lt;OneDIntArray&gt; output = new ArrayList&lt;OneDIntArray&gt;();</span>
+<span class="fc" id="L917">        List&lt;OneDIntArray&gt; output = new ArrayList&lt;OneDIntArray&gt;();</span>
         
-<span class="nc bnc" id="L919" title="All 2 branches missed.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
+<span class="fc bfc" id="L919" title="All 2 branches covered.">        for (int i = 0; i &lt; labeledSets.size(); ++i) {</span>
             
-<span class="nc" id="L921">            TIntSet set = labeledSets.get(i);</span>
-<span class="nc" id="L922">            TIntIterator iter = set.iterator();</span>
+<span class="fc" id="L921">            TIntSet set = labeledSets.get(i);</span>
+<span class="fc" id="L922">            TIntIterator iter = set.iterator();</span>
             
-<span class="nc" id="L924">            int[] hist = new int[6];</span>
-<span class="nc" id="L925">            output.add(new OneDIntArray(hist));</span>
+<span class="fc" id="L924">            int[] hist = new int[6];</span>
+<span class="fc" id="L925">            output.add(new OneDIntArray(hist));</span>
             
-<span class="nc bnc" id="L927" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
-<span class="nc" id="L928">                int pixIdx = iter.next();</span>
-<span class="nc" id="L929">                int v = ptImg.getValue(pixIdx);</span>
-<span class="nc bnc" id="L930" title="All 2 branches missed.">                if (v &lt; 19) {</span>
-<span class="nc" id="L931">                    hist[0]++;</span>
-<span class="nc bnc" id="L932" title="All 2 branches missed.">                } else if (v &lt; 41) {</span>
-<span class="nc" id="L933">                    hist[1]++;</span>
-<span class="nc bnc" id="L934" title="All 2 branches missed.">                } else if (v &lt; 61) {</span>
-<span class="nc" id="L935">                    hist[2]++;</span>
-<span class="nc bnc" id="L936" title="All 2 branches missed.">                } else if (v &lt; 107) {</span>
-<span class="nc" id="L937">                    hist[3]++;</span>
-<span class="nc bnc" id="L938" title="All 2 branches missed.">                } else if (v &lt; 193) {</span>
-<span class="nc" id="L939">                    hist[4]++;</span>
+<span class="fc bfc" id="L927" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L928">                int pixIdx = iter.next();</span>
+<span class="fc" id="L929">                int v = ptImg.getValue(pixIdx);</span>
+<span class="fc bfc" id="L930" title="All 2 branches covered.">                if (v &lt; 19) {</span>
+<span class="fc" id="L931">                    hist[0]++;</span>
+<span class="fc bfc" id="L932" title="All 2 branches covered.">                } else if (v &lt; 41) {</span>
+<span class="fc" id="L933">                    hist[1]++;</span>
+<span class="fc bfc" id="L934" title="All 2 branches covered.">                } else if (v &lt; 61) {</span>
+<span class="fc" id="L935">                    hist[2]++;</span>
+<span class="fc bfc" id="L936" title="All 2 branches covered.">                } else if (v &lt; 107) {</span>
+<span class="fc" id="L937">                    hist[3]++;</span>
+<span class="fc bfc" id="L938" title="All 2 branches covered.">                } else if (v &lt; 193) {</span>
+<span class="fc" id="L939">                    hist[4]++;</span>
                 } else {
-<span class="nc" id="L941">                    hist[5]++;</span>
+<span class="fc" id="L941">                    hist[5]++;</span>
                 }
-<span class="nc" id="L943">            }</span>
+<span class="fc" id="L943">            }</span>
         }
         
-<span class="nc" id="L946">        return output;</span>
+<span class="fc" id="L946">        return output;</span>
     }
 
     /**

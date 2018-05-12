@@ -6,7 +6,7 @@ import java.awt.Color;
  *
  * @author nichole
  */
-<span class="nc" id="L9">public class SunColors {</span>
+<span class="fc" id="L9">public class SunColors {</span>
     
     /*
     photosphere of sun, 5800K,
@@ -53,34 +53,34 @@ import java.awt.Color;
     }
     
     public boolean isSunCenterColor(float h, float s, float v) {
-<span class="nc bnc" id="L56" title="All 8 branches missed.">        if (</span>
+<span class="pc bpc" id="L56" title="1 of 8 branches missed.">        if (</span>
             (s &lt; 0.4f) &amp;&amp; 
             (v &gt; 0.25)
             &amp;&amp; (h &gt;= 0.0) &amp;&amp; (h &lt;= 0.18)) {
-<span class="nc" id="L60">            return true;</span>
-<span class="nc bnc" id="L61" title="All 4 branches missed.">        } else if ((s &lt; 0.05) &amp;&amp; (v &gt; 0.95)) {</span>
-<span class="nc" id="L62">            return true;</span>
+<span class="fc" id="L60">            return true;</span>
+<span class="fc bfc" id="L61" title="All 4 branches covered.">        } else if ((s &lt; 0.05) &amp;&amp; (v &gt; 0.95)) {</span>
+<span class="fc" id="L62">            return true;</span>
         }
-<span class="nc" id="L64">        return false;</span>
+<span class="fc" id="L64">        return false;</span>
     }
     
     public boolean isSunCenterColor(ImageExt colorImg, int pixelIndex) {
          
-<span class="nc bnc" id="L69" title="All 2 branches missed.">        if ((colorImg.getR(pixelIndex) &lt; 15) &amp;&amp; </span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">            (colorImg.getG(pixelIndex) &lt; 15) &amp;&amp; </span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">            (colorImg.getB(pixelIndex) &lt; 15)) {</span>
-<span class="nc" id="L72">            return false;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if ((colorImg.getR(pixelIndex) &lt; 15) &amp;&amp; </span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            (colorImg.getG(pixelIndex) &lt; 15) &amp;&amp; </span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            (colorImg.getB(pixelIndex) &lt; 15)) {</span>
+<span class="fc" id="L72">            return false;</span>
         }
         
-<span class="nc" id="L75">        float saturation = colorImg.getSaturation(pixelIndex);</span>
-<span class="nc" id="L76">        float brightness = colorImg.getBrightness(pixelIndex);</span>
-<span class="nc" id="L77">        float hue = colorImg.getHue(pixelIndex);</span>
+<span class="fc" id="L75">        float saturation = colorImg.getSaturation(pixelIndex);</span>
+<span class="fc" id="L76">        float brightness = colorImg.getBrightness(pixelIndex);</span>
+<span class="fc" id="L77">        float hue = colorImg.getHue(pixelIndex);</span>
         
-<span class="nc" id="L79">        boolean a = isSunCenterColor(hue, saturation, brightness);</span>
+<span class="fc" id="L79">        boolean a = isSunCenterColor(hue, saturation, brightness);</span>
         //System.out.format(&quot;(%d,%d) %.3f, %.3f, %.3f sunClr=%b\n&quot;, colorImg.getCol(pixelIndex), 
         //    colorImg.getRow(pixelIndex), hue, saturation, brightness, a);
         
-<span class="nc" id="L83">        return a;</span>
+<span class="fc" id="L83">        return a;</span>
     }
      
 }

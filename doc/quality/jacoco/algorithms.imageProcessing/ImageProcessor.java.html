@@ -2579,30 +2579,30 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
 <span class="fc" id="L2580">        GreyscaleImage imgM = img.copyImage();</span>
 
-<span class="nc" id="L2582">        applyCenteredMean2(imgM, halfDimension);</span>
+<span class="fc" id="L2582">        applyCenteredMean2(imgM, halfDimension);</span>
 
-<span class="nc" id="L2584">        int c = 7;</span>
+<span class="fc" id="L2584">        int c = 7;</span>
 
-<span class="nc" id="L2586">        int foreground = 255;//1;</span>
-<span class="nc" id="L2587">        int background = 0;</span>
+<span class="fc" id="L2586">        int foreground = 255;//1;</span>
+<span class="fc" id="L2587">        int background = 0;</span>
 
-<span class="nc bnc" id="L2589" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
-<span class="nc bnc" id="L2590" title="All 2 branches missed.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
-<span class="nc" id="L2591">                int v = img.getValue(i, j);</span>
-<span class="nc" id="L2592">                int m = imgM.getValue(i, j);</span>
-<span class="nc" id="L2593">                int t = m - c;</span>
-<span class="nc bnc" id="L2594" title="All 2 branches missed.">                if (v &gt; t) {</span>
-<span class="nc" id="L2595">                    img.setValue(i, j, foreground);</span>
+<span class="fc bfc" id="L2589" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L2590" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
+<span class="fc" id="L2591">                int v = img.getValue(i, j);</span>
+<span class="fc" id="L2592">                int m = imgM.getValue(i, j);</span>
+<span class="fc" id="L2593">                int t = m - c;</span>
+<span class="fc bfc" id="L2594" title="All 2 branches covered.">                if (v &gt; t) {</span>
+<span class="fc" id="L2595">                    img.setValue(i, j, foreground);</span>
                 } else {
-<span class="nc" id="L2597">                    img.setValue(i, j, background);</span>
+<span class="fc" id="L2597">                    img.setValue(i, j, background);</span>
                 }
             }
         }
 
-<span class="nc" id="L2602">        imgM = null;</span>
+<span class="fc" id="L2602">        imgM = null;</span>
 
         //System.gc();
-<span class="nc" id="L2605">    }</span>
+<span class="fc" id="L2605">    }</span>
 
     /**
      * create an image of the mean of the surrounding dimension x dimension
@@ -2736,11 +2736,11 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
 <span class="fc" id="L2737">        GreyscaleImage imgS = sumTable.createAbsoluteSummedAreaTable(img);</span>
 
-<span class="nc" id="L2739">        imgS = sumTable.applyMeanOfWindowFromSummedAreaTable(imgS,</span>
+<span class="fc" id="L2739">        imgS = sumTable.applyMeanOfWindowFromSummedAreaTable(imgS,</span>
             2*halfDimension + 1);
 
-<span class="nc" id="L2742">        img.resetTo(imgS);</span>
-<span class="nc" id="L2743">    }</span>
+<span class="fc" id="L2742">        img.resetTo(imgS);</span>
+<span class="fc" id="L2743">    }</span>
 
     public double[][] createUnitStandardDeviation(GreyscaleImage img, int halfDimension) {
 
@@ -4699,25 +4699,25 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="fc" id="L4699">        Map&lt;String, GreyscaleImage&gt; transformed = new</span>
             HashMap&lt;String, GreyscaleImage&gt;();
 
-<span class="pc bpc" id="L4702" title="1 of 2 branches missed.">        for (int dir = 0; dir &lt; 2; ++dir) {</span>
-<span class="pc bpc" id="L4703" title="1 of 2 branches missed.">            for (int l0 = 0; l0 &lt; labels.length; ++l0) {</span>
-<span class="pc bpc" id="L4704" title="1 of 2 branches missed.">                for (int l1 = l0; l1 &lt; labels.length; ++l1) {</span>
-<span class="pc bpc" id="L4705" title="1 of 2 branches missed.">                    int i = (dir == 0) ? l0 : l1;</span>
-<span class="pc bpc" id="L4706" title="1 of 2 branches missed.">                    int j = (dir == 0) ? l1 : l0;</span>
+<span class="fc bfc" id="L4702" title="All 2 branches covered.">        for (int dir = 0; dir &lt; 2; ++dir) {</span>
+<span class="fc bfc" id="L4703" title="All 2 branches covered.">            for (int l0 = 0; l0 &lt; labels.length; ++l0) {</span>
+<span class="fc bfc" id="L4704" title="All 2 branches covered.">                for (int l1 = l0; l1 &lt; labels.length; ++l1) {</span>
+<span class="fc bfc" id="L4705" title="All 2 branches covered.">                    int i = (dir == 0) ? l0 : l1;</span>
+<span class="fc bfc" id="L4706" title="All 2 branches covered.">                    int j = (dir == 0) ? l1 : l0;</span>
 <span class="fc" id="L4707">                    float[] filter1 = kernels[i];</span>
-<span class="pc bpc" id="L4708" title="3 of 4 branches missed.">                    if ((dir == 1) &amp;&amp; (i == j)) {</span>
-<span class="nc" id="L4709">                        continue;</span>
+<span class="fc bfc" id="L4708" title="All 4 branches covered.">                    if ((dir == 1) &amp;&amp; (i == j)) {</span>
+<span class="fc" id="L4709">                        continue;</span>
                     }
 <span class="fc" id="L4711">                    float[] filter2 = kernels[j];</span>
 <span class="fc" id="L4712">                    GreyscaleImage img2 = img.copyToFullRangeIntImage();</span>
 <span class="fc" id="L4713">                    applyKernel1D(img2, filter1, true);</span>
 <span class="fc" id="L4714">                    applyKernel1D(img2, filter2, false);</span>
 
-<span class="pc bpc" id="L4716" title="1 of 2 branches missed.">                    if (i != j) {</span>
-<span class="nc" id="L4717">                        GreyscaleImage img3 = img.copyToFullRangeIntImage();</span>
-<span class="nc" id="L4718">                        applyKernel1D(img3, filter2, true);</span>
-<span class="nc" id="L4719">                        applyKernel1D(img3, filter1, false);</span>
-<span class="nc" id="L4720">                        img2 = divide(img2, img3);</span>
+<span class="fc bfc" id="L4716" title="All 2 branches covered.">                    if (i != j) {</span>
+<span class="fc" id="L4717">                        GreyscaleImage img3 = img.copyToFullRangeIntImage();</span>
+<span class="fc" id="L4718">                        applyKernel1D(img3, filter2, true);</span>
+<span class="fc" id="L4719">                        applyKernel1D(img3, filter1, false);</span>
+<span class="fc" id="L4720">                        img2 = divide(img2, img3);</span>
                     }
 
 <span class="fc" id="L4723">                    GreyscaleImage imgM = null;</span>
@@ -4732,11 +4732,11 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
 <span class="pc bpc" id="L4733" title="1 of 2 branches missed.">                    if (state &gt; 0) {</span>
 <span class="fc" id="L4734">                        imgM = img2.copyToFullRangeIntImage();</span>
-<span class="nc" id="L4735">                        applyCenteredMean2(imgM, 2);</span>
-<span class="nc" id="L4736">                        img2 = subtractImages(img2, imgM);</span>
+<span class="fc" id="L4735">                        applyCenteredMean2(imgM, 2);</span>
+<span class="fc" id="L4736">                        img2 = subtractImages(img2, imgM);</span>
                     }
 
-<span class="nc bnc" id="L4739" title="All 2 branches missed.">                    if (state == 3) {</span>
+<span class="pc bpc" id="L4739" title="1 of 2 branches missed.">                    if (state == 3) {</span>
                         // make unit standard deviation image, but mult by 255
                         // for storage in integer.
                         // NOTE: considering change of output to float array for
@@ -4746,18 +4746,18 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="nc" id="L4746">                            double v = 255.*img2.getValue(ii)/(Math.sqrt(2)/m);</span>
 <span class="nc" id="L4747">                            img2.setValue(ii, (int)Math.round(v));</span>
                         }
-<span class="nc bnc" id="L4749" title="All 2 branches missed.">                    } else if (state == 2) {</span>
+<span class="pc bpc" id="L4749" title="1 of 2 branches missed.">                    } else if (state == 2) {</span>
                         // square img2 to result in variance
-<span class="nc bnc" id="L4751" title="All 2 branches missed.">                        for (int ii = 0; ii &lt; img2.getNPixels(); ++ii) {</span>
-<span class="nc" id="L4752">                            int v = img2.getValue(ii);</span>
-<span class="nc" id="L4753">                            v *= v;</span>
-<span class="nc" id="L4754">                            img2.setValue(ii, v);</span>
+<span class="fc bfc" id="L4751" title="All 2 branches covered.">                        for (int ii = 0; ii &lt; img2.getNPixels(); ++ii) {</span>
+<span class="fc" id="L4752">                            int v = img2.getValue(ii);</span>
+<span class="fc" id="L4753">                            v *= v;</span>
+<span class="fc" id="L4754">                            img2.setValue(ii, v);</span>
                         }
                     }
 
-<span class="nc" id="L4758">                    String label = labels[i] + labels[j];</span>
+<span class="fc" id="L4758">                    String label = labels[i] + labels[j];</span>
 
-<span class="nc" id="L4760">                    transformed.put(label, img2);</span>
+<span class="fc" id="L4760">                    transformed.put(label, img2);</span>
 
                     /*{
                         GreyscaleImage img3 = img2.copyImage();
@@ -4770,7 +4770,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
             }
         }
 
-<span class="nc" id="L4773">        return transformed;</span>
+<span class="fc" id="L4773">        return transformed;</span>
     }
 
     public void exploreTextures() throws IOException {
@@ -4849,20 +4849,20 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
         //createCurvatureKeyPoints(image, sigma, keypoints0, keypoints1,
         //   0.001f);
 
-<span class="nc" id="L4852">        createR5R5KeyPoints(image, keypoints0, keypoints1);</span>
+<span class="fc" id="L4852">        createR5R5KeyPoints(image, keypoints0, keypoints1);</span>
         //createE5E5KeyPoints(image, keypoints0, keypoints1);
         //createL5E5KeyPoints(image, keypoints0, keypoints1);
         //createS5S5KeyPoints(image, keypoints0, keypoints1);
         //createFirstDerivKeyPoints(image, sigma, keypoints0, keypoints1);
 
         //Image kpImg = img.copyToColorGreyscale();
-<span class="nc" id="L4859">        Image kpImg = gradient.copyToColorGreyscale();</span>
-<span class="nc bnc" id="L4860" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0.size(); ++i) {</span>
-<span class="nc" id="L4861">            int x = keypoints1.get(i);</span>
-<span class="nc" id="L4862">            int y = keypoints0.get(i);</span>
-<span class="nc" id="L4863">            kpImg.setRGB(x, y, 255, 0, 0);</span>
+<span class="fc" id="L4859">        Image kpImg = gradient.copyToColorGreyscale();</span>
+<span class="fc bfc" id="L4860" title="All 2 branches covered.">        for (int i = 0; i &lt; keypoints0.size(); ++i) {</span>
+<span class="fc" id="L4861">            int x = keypoints1.get(i);</span>
+<span class="fc" id="L4862">            int y = keypoints0.get(i);</span>
+<span class="fc" id="L4863">            kpImg.setRGB(x, y, 255, 0, 0);</span>
         }
-<span class="nc" id="L4865">        MiscDebug.writeImage(kpImg, &quot;_keypoints_1_&quot;);</span>
+<span class="fc" id="L4865">        MiscDebug.writeImage(kpImg, &quot;_keypoints_1_&quot;);</span>
 
         /*
         Complex1D[] ccOut = create2DFFT2WithSwapMajor(kpImg, true);
@@ -4948,7 +4948,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
         }
         MiscDebug.writeImage(kpFreqR2Img, &quot;_keypoints_freq2_spatial_&quot;);
     */
-<span class="nc" id="L4951">    }</span>
+<span class="fc" id="L4951">    }</span>
 
     /**
      *
@@ -5043,9 +5043,9 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
         //3rd deriv gaussian, a.k.a. Gabor
 <span class="fc" id="L5044">        float[] kernel = new float[]{ 1, -4, 6, -4, 1};</span>
 
-<span class="nc" id="L5046">        createLawKeyPoints(image, kernel, kernel, outputKeypoints0,</span>
+<span class="fc" id="L5046">        createLawKeyPoints(image, kernel, kernel, outputKeypoints0,</span>
             outputKeypoints1);
-<span class="nc" id="L5048">    }</span>
+<span class="fc" id="L5048">    }</span>
 
     public void createS5S5KeyPoints(float[][] image,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
@@ -5104,45 +5104,45 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="fc" id="L5104">        int nRows = image2[0].length;</span>
 
 <span class="fc" id="L5106">        GreyscaleImage imageM = new GreyscaleImage(nCols, nRows);</span>
-<span class="pc bpc" id="L5107" title="1 of 2 branches missed.">        for (int i = 0; i &lt; nCols; ++i) {</span>
+<span class="fc bfc" id="L5107" title="All 2 branches covered.">        for (int i = 0; i &lt; nCols; ++i) {</span>
 <span class="fc bfc" id="L5108" title="All 2 branches covered.">            for (int j = 0; j &lt; nRows; ++j) {</span>
 <span class="fc" id="L5109">                imageM.setValue(i, j, Math.round(image2[i][j]));</span>
             }
         }
 
-<span class="nc" id="L5113">        applyCenteredMean2(imageM, 2);</span>
+<span class="fc" id="L5113">        applyCenteredMean2(imageM, 2);</span>
 
         // subtract mean
-<span class="nc bnc" id="L5116" title="All 2 branches missed.">        for (int i = 0; i &lt; nCols; ++i) {</span>
-<span class="nc bnc" id="L5117" title="All 2 branches missed.">            for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L5118">                image2[i][j] -= imageM.getValue(i, j);</span>
+<span class="fc bfc" id="L5116" title="All 2 branches covered.">        for (int i = 0; i &lt; nCols; ++i) {</span>
+<span class="fc bfc" id="L5117" title="All 2 branches covered.">            for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="fc" id="L5118">                image2[i][j] -= imageM.getValue(i, j);</span>
             }
         }
 
         // NOTE: square image2 to result in variance if preferred.
-<span class="nc bnc" id="L5123" title="All 2 branches missed.">        for (int i = 0; i &lt; image2.length; ++i) {</span>
-<span class="nc bnc" id="L5124" title="All 2 branches missed.">            for (int j = 0; j &lt; image2[i].length; ++j) {</span>
-<span class="nc" id="L5125">                float v = image2[i][j];</span>
+<span class="fc bfc" id="L5123" title="All 2 branches covered.">        for (int i = 0; i &lt; image2.length; ++i) {</span>
+<span class="fc bfc" id="L5124" title="All 2 branches covered.">            for (int j = 0; j &lt; image2[i].length; ++j) {</span>
+<span class="fc" id="L5125">                float v = image2[i][j];</span>
                 //v *= v;
-<span class="nc" id="L5127">                image2[i][j] = v;</span>
+<span class="fc" id="L5127">                image2[i][j] = v;</span>
             }
         }
 
-<span class="nc" id="L5131">        GreyscaleImage img2 = imageM.createFullRangeIntWithDimensions();</span>
-<span class="nc bnc" id="L5132" title="All 2 branches missed.">        for (int i = 0; i &lt; image2.length; ++i) {</span>
-<span class="nc bnc" id="L5133" title="All 2 branches missed.">            for (int j = 0; j &lt; image2[i].length; ++j) {</span>
-<span class="nc" id="L5134">                float v = image2[i][j];</span>
-<span class="nc" id="L5135">                img2.setValue(i, j, Math.round(v));</span>
+<span class="fc" id="L5131">        GreyscaleImage img2 = imageM.createFullRangeIntWithDimensions();</span>
+<span class="fc bfc" id="L5132" title="All 2 branches covered.">        for (int i = 0; i &lt; image2.length; ++i) {</span>
+<span class="fc bfc" id="L5133" title="All 2 branches covered.">            for (int j = 0; j &lt; image2[i].length; ++j) {</span>
+<span class="fc" id="L5134">                float v = image2[i][j];</span>
+<span class="fc" id="L5135">                img2.setValue(i, j, Math.round(v));</span>
             }
         }
 
         // use adaptive means to extract centers
-<span class="nc" id="L5140">        applyAdaptiveMeanThresholding(img2, 1);</span>
-<span class="nc bnc" id="L5141" title="All 2 branches missed.">        for (int i = 3; i &lt; img2.getWidth(); ++i) {</span>
-<span class="nc bnc" id="L5142" title="All 2 branches missed.">            for (int j = 3; j &lt; img2.getHeight(); ++j) {</span>
-<span class="nc bnc" id="L5143" title="All 2 branches missed.">                if (img2.getValue(i, j) == 0) {</span>
-<span class="nc" id="L5144">                    outputKeypoints0.add(i);</span>
-<span class="nc" id="L5145">                    outputKeypoints1.add(j);</span>
+<span class="fc" id="L5140">        applyAdaptiveMeanThresholding(img2, 1);</span>
+<span class="fc bfc" id="L5141" title="All 2 branches covered.">        for (int i = 3; i &lt; img2.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L5142" title="All 2 branches covered.">            for (int j = 3; j &lt; img2.getHeight(); ++j) {</span>
+<span class="fc bfc" id="L5143" title="All 2 branches covered.">                if (img2.getValue(i, j) == 0) {</span>
+<span class="fc" id="L5144">                    outputKeypoints0.add(i);</span>
+<span class="fc" id="L5145">                    outputKeypoints1.add(j);</span>
                 }
             }
         }
@@ -5150,7 +5150,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
         // or, extract many points all over the image:
         //peakLocalMax(image2, 1, 0.01f, outputKeypoints0,
         //    outputKeypoints1);
-<span class="nc" id="L5153">    }</span>
+<span class="fc" id="L5153">    }</span>
 
     /**
      * return first derivatives from sigma=sqrt(2)/2 and
@@ -5195,25 +5195,25 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
     public GreyscaleImage divide(GreyscaleImage img1, GreyscaleImage img2) {
 
-<span class="nc bnc" id="L5198" title="All 2 branches missed.">        if (img1.getNPixels() != img2.getNPixels() || img1.getWidth() !=</span>
-<span class="nc bnc" id="L5199" title="All 4 branches missed.">            img2.getWidth() || img1.getHeight() != img2.getHeight()) {</span>
+<span class="pc bpc" id="L5198" title="1 of 2 branches missed.">        if (img1.getNPixels() != img2.getNPixels() || img1.getWidth() !=</span>
+<span class="pc bpc" id="L5199" title="2 of 4 branches missed.">            img2.getWidth() || img1.getHeight() != img2.getHeight()) {</span>
 <span class="nc" id="L5200">            throw new IllegalArgumentException(&quot;img1 and img2 must be same size&quot;);</span>
         }
 
-<span class="nc" id="L5203">        int n = img1.getNPixels();</span>
+<span class="fc" id="L5203">        int n = img1.getNPixels();</span>
 
-<span class="nc" id="L5205">        GreyscaleImage out = img1.copyToFullRangeIntImage();</span>
+<span class="fc" id="L5205">        GreyscaleImage out = img1.copyToFullRangeIntImage();</span>
 
-<span class="nc bnc" id="L5207" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc" id="L5208">            int v = out.getValue(i);</span>
-<span class="nc" id="L5209">            int v2 = img2.getValue(i);</span>
-<span class="nc bnc" id="L5210" title="All 2 branches missed.">            if (v2 &gt; 0) {</span>
-<span class="nc" id="L5211">                v /= v2;</span>
+<span class="fc bfc" id="L5207" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L5208">            int v = out.getValue(i);</span>
+<span class="fc" id="L5209">            int v2 = img2.getValue(i);</span>
+<span class="fc bfc" id="L5210" title="All 2 branches covered.">            if (v2 &gt; 0) {</span>
+<span class="fc" id="L5211">                v /= v2;</span>
             }
-<span class="nc" id="L5213">            out.setValue(i, v);</span>
+<span class="fc" id="L5213">            out.setValue(i, v);</span>
         }
 
-<span class="nc" id="L5216">        return out;</span>
+<span class="fc" id="L5216">        return out;</span>
     }
 
     public float[][] copy(float[][] a) {
@@ -6327,49 +6327,49 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
         TIntIntMap pointIndexMap, List&lt;TIntSet&gt; labeledPoints,
         int imgWidth, int imgHeight) {
 
-<span class="nc" id="L6330">        int n = labeledPoints.size();</span>
+<span class="fc" id="L6330">        int n = labeledPoints.size();</span>
 
-<span class="nc" id="L6332">        TIntObjectMap&lt;VeryLongBitString&gt; output</span>
+<span class="fc" id="L6332">        TIntObjectMap&lt;VeryLongBitString&gt; output</span>
             = new TIntObjectHashMap&lt;VeryLongBitString&gt;();
 
-<span class="nc" id="L6335">        int[] dxs = Misc.dx4;</span>
-<span class="nc" id="L6336">        int[] dys = Misc.dy4;</span>
+<span class="fc" id="L6335">        int[] dxs = Misc.dx4;</span>
+<span class="fc" id="L6336">        int[] dys = Misc.dy4;</span>
 
-<span class="nc bnc" id="L6338" title="All 2 branches missed.">        for (int label = 0; label &lt; n; ++label) {</span>
+<span class="fc bfc" id="L6338" title="All 2 branches covered.">        for (int label = 0; label &lt; n; ++label) {</span>
 
-<span class="nc" id="L6340">            TIntSet pixIdxs = labeledPoints.get(label);</span>
+<span class="fc" id="L6340">            TIntSet pixIdxs = labeledPoints.get(label);</span>
 
-<span class="nc" id="L6342">            VeryLongBitString nbrs = new VeryLongBitString(n);</span>
+<span class="fc" id="L6342">            VeryLongBitString nbrs = new VeryLongBitString(n);</span>
 
-<span class="nc" id="L6344">            boolean aloSet = false;</span>
+<span class="fc" id="L6344">            boolean aloSet = false;</span>
 
-<span class="nc" id="L6346">            TIntIterator iter2 = pixIdxs.iterator();</span>
-<span class="nc bnc" id="L6347" title="All 2 branches missed.">            while (iter2.hasNext()) {</span>
-<span class="nc" id="L6348">                int pixIdx = iter2.next();</span>
-<span class="nc" id="L6349">                int y = pixIdx/imgWidth;</span>
-<span class="nc" id="L6350">                int x = pixIdx - (y * imgWidth);</span>
-<span class="nc bnc" id="L6351" title="All 2 branches missed.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L6352">                    int x2 = x + dxs[k];</span>
-<span class="nc" id="L6353">                    int y2 = y + dys[k];</span>
-<span class="nc bnc" id="L6354" title="All 8 branches missed.">                    if (x2 &lt; 0 || y2 &lt; 0 || x2 &gt;= imgWidth || y2 &gt;= imgHeight) {</span>
-<span class="nc" id="L6355">                        continue;</span>
+<span class="fc" id="L6346">            TIntIterator iter2 = pixIdxs.iterator();</span>
+<span class="fc bfc" id="L6347" title="All 2 branches covered.">            while (iter2.hasNext()) {</span>
+<span class="fc" id="L6348">                int pixIdx = iter2.next();</span>
+<span class="fc" id="L6349">                int y = pixIdx/imgWidth;</span>
+<span class="fc" id="L6350">                int x = pixIdx - (y * imgWidth);</span>
+<span class="fc bfc" id="L6351" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L6352">                    int x2 = x + dxs[k];</span>
+<span class="fc" id="L6353">                    int y2 = y + dys[k];</span>
+<span class="fc bfc" id="L6354" title="All 8 branches covered.">                    if (x2 &lt; 0 || y2 &lt; 0 || x2 &gt;= imgWidth || y2 &gt;= imgHeight) {</span>
+<span class="fc" id="L6355">                        continue;</span>
                     }
-<span class="nc" id="L6357">                    int pixIdx2 = (y2 * imgWidth) + x2;</span>
-<span class="nc bnc" id="L6358" title="All 2 branches missed.">                    if (pointIndexMap.containsKey(pixIdx2)) {</span>
-<span class="nc" id="L6359">                        int label2 = pointIndexMap.get(pixIdx2);</span>
-<span class="nc bnc" id="L6360" title="All 2 branches missed.">                        if (label2 != label) {</span>
-<span class="nc" id="L6361">                            nbrs.setBit(label2);</span>
-<span class="nc" id="L6362">                            aloSet = true;</span>
+<span class="fc" id="L6357">                    int pixIdx2 = (y2 * imgWidth) + x2;</span>
+<span class="pc bpc" id="L6358" title="1 of 2 branches missed.">                    if (pointIndexMap.containsKey(pixIdx2)) {</span>
+<span class="fc" id="L6359">                        int label2 = pointIndexMap.get(pixIdx2);</span>
+<span class="fc bfc" id="L6360" title="All 2 branches covered.">                        if (label2 != label) {</span>
+<span class="fc" id="L6361">                            nbrs.setBit(label2);</span>
+<span class="fc" id="L6362">                            aloSet = true;</span>
                         }
                     }
                 }
-<span class="nc" id="L6366">            }</span>
-<span class="nc bnc" id="L6367" title="All 2 branches missed.">            if (aloSet) {</span>
-<span class="nc" id="L6368">                output.put(label, nbrs);</span>
+<span class="fc" id="L6366">            }</span>
+<span class="fc bfc" id="L6367" title="All 2 branches covered.">            if (aloSet) {</span>
+<span class="fc" id="L6368">                output.put(label, nbrs);</span>
             }
         }
 
-<span class="nc" id="L6372">        return output;</span>
+<span class="fc" id="L6372">        return output;</span>
     }
 
     public TIntObjectMap&lt;VeryLongBitString&gt; createAdjacencyMap(

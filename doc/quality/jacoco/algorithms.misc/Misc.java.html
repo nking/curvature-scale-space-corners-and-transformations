@@ -38,11 +38,11 @@ import java.util.Set;
 <span class="fc" id="L38">    public static final int[] dy4 = new int[]{ 0, -1, 0, 1};</span>
 
     public static PairIntArray convertWithoutOrder(Collection&lt;PairInt&gt; points) {
-<span class="nc" id="L41">        PairIntArray out = new PairIntArray(points.size());</span>
-<span class="nc bnc" id="L42" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L43">            out.add(p.getX(), p.getY());</span>
-<span class="nc" id="L44">        }</span>
-<span class="nc" id="L45">        return out;</span>
+<span class="fc" id="L41">        PairIntArray out = new PairIntArray(points.size());</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L43">            out.add(p.getX(), p.getY());</span>
+<span class="fc" id="L44">        }</span>
+<span class="fc" id="L45">        return out;</span>
     }
     
     public static PairIntArray convert(TIntList xList, TIntList yList) {

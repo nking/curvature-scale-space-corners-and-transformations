@@ -61,11 +61,11 @@ public class PatchUtil {
         
         // to keep adding to block totals, square and factor by count again
 <span class="fc" id="L63">        double tmpBlockTotals = blockTotals;</span>
-<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (blockTotals &gt; 0) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
                    
-<span class="nc" id="L66">            double norm = 255.f/(blockTotals + eps);</span>
+<span class="fc" id="L66">            double norm = 255.f/(blockTotals + eps);</span>
 
-<span class="nc" id="L68">            div(h, norm);</span>
+<span class="fc" id="L68">            div(h, norm);</span>
         }
         
 <span class="fc" id="L71">        long tmpSum = 0;</span>
@@ -151,11 +151,11 @@ public class PatchUtil {
         
         // to keep adding to block totals, square and factor by count again
 <span class="fc" id="L153">        double tmpBlockTotals = blockTotals;</span>
-<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (blockTotals &gt; 0) {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
                    
-<span class="nc" id="L156">            double norm = 255.f/(blockTotals + eps);</span>
+<span class="fc" id="L156">            double norm = 255.f/(blockTotals + eps);</span>
 
-<span class="nc" id="L158">            div(h, norm);</span>
+<span class="fc" id="L158">            div(h, norm);</span>
         }
         
 <span class="fc" id="L161">        long tmpSum = 0;</span>
@@ -241,11 +241,11 @@ public class PatchUtil {
         
         // to keep adding to block totals, square and factor by count again
 <span class="fc" id="L243">        double tmpBlockTotals = blockTotals;</span>
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        if (blockTotals &gt; 0) {</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        if (blockTotals &gt; 0) {</span>
                    
-<span class="nc" id="L246">            double norm = 255.f/(blockTotals + eps);</span>
+<span class="fc" id="L246">            double norm = 255.f/(blockTotals + eps);</span>
 
-<span class="nc" id="L248">            div(h, norm);</span>
+<span class="fc" id="L248">            div(h, norm);</span>
         }
         
 <span class="fc" id="L251">        long tmpSum = 0;</span>
@@ -415,15 +415,15 @@ public class PatchUtil {
         }
 <span class="fc" id="L416">    }</span>
     private void div(long[] a, double factor) {
-<span class="nc bnc" id="L418" title="All 2 branches missed.">        if (factor == 0) {</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">        if (factor == 0) {</span>
 <span class="nc" id="L419">            throw new IllegalArgumentException(&quot;factor cannot be 0&quot;);</span>
         }
         double t;
-<span class="nc bnc" id="L422" title="All 2 branches missed.">        for (int j = 0; j &lt; a.length; ++j) {</span>
-<span class="nc" id="L423">            t = a[j] / factor; </span>
-<span class="nc" id="L424">            a[j] = (long)t;</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">        for (int j = 0; j &lt; a.length; ++j) {</span>
+<span class="fc" id="L423">            t = a[j] / factor; </span>
+<span class="fc" id="L424">            a[j] = (long)t;</span>
         }
-<span class="nc" id="L426">    }</span>
+<span class="fc" id="L426">    }</span>
    
     public double getAvgErr() {
 <span class="nc" id="L429">        return Math.sqrt(err);</span>
@@ -434,20 +434,20 @@ public class PatchUtil {
     }
     
     public TIntSet getPixelIndexes() {
-<span class="nc" id="L437">        return pixIdxs;</span>
+<span class="fc" id="L437">        return pixIdxs;</span>
     }
     
     public Set&lt;PairInt&gt; getPixelSet() {
-<span class="nc" id="L441">        PixelHelper ph = new PixelHelper();</span>
-<span class="nc" id="L442">        int[] xy = new int[2];</span>
-<span class="nc" id="L443">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L444">        TIntIterator iter = pixIdxs.iterator();</span>
-<span class="nc bnc" id="L445" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L446">            int pixIdx = iter.next();</span>
-<span class="nc" id="L447">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
-<span class="nc" id="L448">            set.add(new PairInt(xy[0], xy[1]));</span>
-<span class="nc" id="L449">        }</span>
-<span class="nc" id="L450">        return set;</span>
+<span class="fc" id="L441">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L442">        int[] xy = new int[2];</span>
+<span class="fc" id="L443">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L444">        TIntIterator iter = pixIdxs.iterator();</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L446">            int pixIdx = iter.next();</span>
+<span class="fc" id="L447">            ph.toPixelCoords(pixIdx, imgW, xy);</span>
+<span class="fc" id="L448">            set.add(new PairInt(xy[0], xy[1]));</span>
+<span class="fc" id="L449">        }</span>
+<span class="fc" id="L450">        return set;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

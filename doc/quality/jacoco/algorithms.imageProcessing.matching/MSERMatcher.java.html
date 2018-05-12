@@ -46,8 +46,8 @@ import java.util.Set;
 <span class="fc" id="L46">    private static float eps = 0.000001f;</span>
 
     public void setToDebug() {
-<span class="fc" id="L49">        debug = true;</span>
-<span class="fc" id="L50">    }</span>
+<span class="nc" id="L49">        debug = true;</span>
+<span class="nc" id="L50">    }</span>
     
     /**
      * This method is a work in progress.  
@@ -302,21 +302,21 @@ import java.util.Set;
 <span class="pc bpc" id="L302" title="1 of 2 branches missed.">                        if (debug) {</span>
 
                             String arrow;
-<span class="fc bfc" id="L305" title="All 2 branches covered.">                            if (added) {</span>
-<span class="fc" id="L306">                                arrow = &quot;==&gt;&quot;;</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">                            if (added) {</span>
+<span class="nc" id="L306">                                arrow = &quot;==&gt;&quot;;</span>
                             } else {
-<span class="fc" id="L308">                                arrow = &quot;   &quot;;</span>
+<span class="nc" id="L308">                                arrow = &quot;   &quot;;</span>
                             }
-<span class="fc" id="L310">                            System.out.format(</span>
+<span class="nc" id="L310">                            System.out.format(</span>
                             &quot;%s octave %d %d] %s (%d,%d;%d) best: %.4f (%d,%d;%d) [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
-<span class="fc" id="L312">                            settings.getDebugLabel(), pyrIdx0, pyrIdx1,</span>
-<span class="fc" id="L313">                            arrow, x1, y1, obj.cr1.hogOrientation,</span>
-<span class="fc" id="L314">                            (float) obj.cost, x0, y0, </span>
-<span class="fc" id="L315">                            obj.cr0.hogOrientation,</span>
-<span class="fc" id="L316">                            (float) obj.costs[0], (float) obj.costs[1], </span>
-<span class="fc" id="L317">                            (float) obj.costs[2], (float) obj.costs[3], </span>
-<span class="fc" id="L318">                            (float) obj.costs[4], </span>
-<span class="fc" id="L319">                            obj.nMatched</span>
+<span class="nc" id="L312">                            settings.getDebugLabel(), pyrIdx0, pyrIdx1,</span>
+<span class="nc" id="L313">                            arrow, x1, y1, obj.cr1.hogOrientation,</span>
+<span class="nc" id="L314">                            (float) obj.cost, x0, y0, </span>
+<span class="nc" id="L315">                            obj.cr0.hogOrientation,</span>
+<span class="nc" id="L316">                            (float) obj.costs[0], (float) obj.costs[1], </span>
+<span class="nc" id="L317">                            (float) obj.costs[2], (float) obj.costs[3], </span>
+<span class="nc" id="L318">                            (float) obj.costs[4], </span>
+<span class="nc" id="L319">                            obj.nMatched</span>
                             );
                         }
                     }
@@ -382,16 +382,16 @@ import java.util.Set;
             
 <span class="pc bpc" id="L383" title="1 of 2 branches missed.">            if (debug) {</span>
                 //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
-<span class="fc" id="L385">                String lbl = &quot;_&quot; + objB.imgIdx0 + &quot;_&quot; + objB.imgIdx1 + &quot;_&quot;</span>
+<span class="nc" id="L385">                String lbl = &quot;_&quot; + objB.imgIdx0 + &quot;_&quot; + objB.imgIdx1 + &quot;_&quot;</span>
                     + objB.r0Idx + &quot;_&quot; + objB.r1Idx;
-<span class="fc" id="L387">                System.out.format(</span>
+<span class="nc" id="L387">                System.out.format(</span>
                     &quot;_final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
-<span class="fc" id="L389">                    settings.getDebugLabel(), i, x1, y1,</span>
-<span class="fc" id="L390">                    (float) objB.cost, x0, y0, lbl,</span>
-<span class="fc" id="L391">                    (float) objB.costs[0], (float) objB.costs[1],</span>
-<span class="fc" id="L392">                    (float) objB.costs[2], (float) objB.costs[3],</span>
-<span class="fc" id="L393">                    (float) objB.costs[4],</span>
-<span class="fc" id="L394">                    objB.nMatched</span>
+<span class="nc" id="L389">                    settings.getDebugLabel(), i, x1, y1,</span>
+<span class="nc" id="L390">                    (float) objB.cost, x0, y0, lbl,</span>
+<span class="nc" id="L391">                    (float) objB.costs[0], (float) objB.costs[1],</span>
+<span class="nc" id="L392">                    (float) objB.costs[2], (float) objB.costs[3],</span>
+<span class="nc" id="L393">                    (float) objB.costs[4],</span>
+<span class="nc" id="L394">                    objB.nMatched</span>
                 );    
             }
         }
@@ -444,16 +444,16 @@ import java.util.Set;
             
 <span class="pc bpc" id="L445" title="1 of 2 branches missed.">            if (debug) {</span>
                 //hogCost, f, hcptHgsCost, f0, f1, costHCPT, costHGS
-<span class="fc" id="L447">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
+<span class="nc" id="L447">                String lbl = &quot;_&quot; + obj.imgIdx0 + &quot;_&quot; + obj.imgIdx1 + &quot;_&quot;</span>
                     + obj.r0Idx + &quot;_&quot; + obj.r1Idx;
-<span class="fc" id="L449">                System.out.format(</span>
+<span class="nc" id="L449">                System.out.format(</span>
                     &quot;final) %s %d (%d,%d) best: %.4f (%d,%d) %s [%.3f,%.3f,%.3f,%.3f,%.3f] n=%d\n&quot;,
-<span class="fc" id="L451">                    settings.getDebugLabel(), i, x1, y1,</span>
-<span class="fc" id="L452">                    (float) obj.cost, x0, y0, lbl,</span>
-<span class="fc" id="L453">                    (float) obj.costs[0], (float) obj.costs[1],</span>
-<span class="fc" id="L454">                    (float) obj.costs[2], (float) obj.costs[3],</span>
-<span class="fc" id="L455">                    (float) obj.costs[4],</span>
-<span class="fc" id="L456">                    obj.nMatched</span>
+<span class="nc" id="L451">                    settings.getDebugLabel(), i, x1, y1,</span>
+<span class="nc" id="L452">                    (float) obj.cost, x0, y0, lbl,</span>
+<span class="nc" id="L453">                    (float) obj.costs[0], (float) obj.costs[1],</span>
+<span class="nc" id="L454">                    (float) obj.costs[2], (float) obj.costs[3],</span>
+<span class="nc" id="L455">                    (float) obj.costs[4],</span>
+<span class="nc" id="L456">                    obj.nMatched</span>
                 );               
             }
         }

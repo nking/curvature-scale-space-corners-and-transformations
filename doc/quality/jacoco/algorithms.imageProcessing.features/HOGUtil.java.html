@@ -246,8 +246,8 @@ import java.util.Collection;
 <span class="fc" id="L246">            int idxB = j + shiftB;</span>
 <span class="fc bfc" id="L247" title="All 2 branches covered.">            if (idxB &lt; 0) {</span>
 <span class="fc" id="L248">                idxB += nBins;</span>
-<span class="fc bfc" id="L249" title="All 2 branches covered.">            } else if (idxB &gt; (nBins - 1 )) {</span>
-<span class="fc" id="L250">                idxB -= nBins;</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            } else if (idxB &gt; (nBins - 1 )) {</span>
+<span class="nc" id="L250">                idxB -= nBins;</span>
             }
 
 <span class="fc" id="L253">            float yA = histA[idxA];</span>
@@ -617,7 +617,7 @@ import java.util.Collection;
                 
 <span class="fc bfc" id="L618" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
             //startY == 0
-<span class="pc bpc" id="L620" title="1 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="fc bfc" id="L620" title="All 4 branches covered.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
 <span class="fc" id="L621">                outputN[0] = 1;</span>
 <span class="fc" id="L622">                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);
@@ -698,26 +698,26 @@ import java.util.Collection;
 <span class="fc bfc" id="L698" title="All 4 branches covered.">        } else if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
 <span class="fc" id="L699">            outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L701">            copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],</span>
-                output);
+<span class="fc" id="L701">            int pixIdx = (int)ph.toPixelIndex(stopX, stopY, w);</span>
+<span class="fc" id="L702">            copy(histograms[pixIdx], output);</span>
 <span class="fc" id="L703">            subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);</span>
 <span class="fc" id="L704">            subtract(output, histograms[(int)ph.toPixelIndex(stopX, startY - 1, w)]);</span>
 <span class="fc" id="L705">            add(output, histograms[(int)ph.toPixelIndex(startX - 1, startY - 1, w)]);</span>
                 
 <span class="fc bfc" id="L707" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
             //startY == 0
-<span class="pc bpc" id="L709" title="2 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="pc bpc" id="L709" title="1 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
 <span class="fc" id="L710">                outputN[0] = 1;</span>
 <span class="fc" id="L711">                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], </span>
                     output);
             } else {
-<span class="nc" id="L714">                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="fc" id="L714">                outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="nc" id="L716">                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],</span>
+<span class="fc" id="L716">                copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],</span>
                     output);
-<span class="nc" id="L718">                subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);</span>
+<span class="fc" id="L718">                subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);</span>
             }       
-<span class="pc bpc" id="L720" title="1 of 2 branches missed.">        } else if (startY &gt; 0) {</span>
+<span class="fc bfc" id="L720" title="All 2 branches covered.">        } else if (startY &gt; 0) {</span>
             //startX == 0
 <span class="pc bpc" id="L722" title="1 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
 <span class="fc" id="L723">                outputN[0] = 1;</span>

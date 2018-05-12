@@ -94,23 +94,23 @@ public class MinHeapForRT2012 {
             // wanting the base of the prefix tree to be filled
             // to improve performance.   for larger N
             
-<span class="fc" id="L97">            algorithm = 2;</span>
+<span class="nc" id="L97">            algorithm = 2;</span>
             
-<span class="fc" id="L99">            heap2 = new YFastTrieWrapper(capacity);</span>
+<span class="nc" id="L99">            heap2 = new YFastTrieWrapper(capacity);</span>
             
-<span class="fc" id="L101">            heap0 = null;</span>
+<span class="nc" id="L101">            heap0 = null;</span>
             
-<span class="fc" id="L103">            heap1 = null;</span>
+<span class="nc" id="L103">            heap1 = null;</span>
             
         } else {
             
-<span class="nc" id="L107">            algorithm = 1;</span>
+<span class="fc" id="L107">            algorithm = 1;</span>
         
-<span class="nc" id="L109">            heap0 = null;</span>
+<span class="fc" id="L109">            heap0 = null;</span>
             
-<span class="nc" id="L111">            heap1 = new FibonacciHeapWrapper(approxN, capacity);</span>
+<span class="fc" id="L111">            heap1 = new FibonacciHeapWrapper(approxN, capacity);</span>
         
-<span class="nc" id="L113">            heap2 = null;</span>
+<span class="fc" id="L113">            heap2 = null;</span>
         }
 <span class="fc" id="L115">    }</span>
     
@@ -126,10 +126,10 @@ public class MinHeapForRT2012 {
 <span class="fc" id="L126">                ++n0;</span>
 <span class="fc" id="L127">                break;</span>
             case 1:
-<span class="nc" id="L129">                insert1(node);</span>
-<span class="nc" id="L130">                break;</span>
+<span class="fc" id="L129">                insert1(node);</span>
+<span class="fc" id="L130">                break;</span>
             default:
-<span class="fc" id="L132">                insert2(node);</span>
+<span class="nc" id="L132">                insert2(node);</span>
                 break;
         }
 <span class="fc" id="L135">    }</span>
@@ -140,9 +140,9 @@ public class MinHeapForRT2012 {
             case 0:
 <span class="fc" id="L141">                return extractMin0();</span>
             case 1:
-<span class="nc" id="L143">                return extractMin1();</span>
+<span class="fc" id="L143">                return extractMin1();</span>
             default:
-<span class="fc" id="L145">                return extractMin2();</span>
+<span class="nc" id="L145">                return extractMin2();</span>
         }
         
     }
@@ -165,16 +165,16 @@ public class MinHeapForRT2012 {
     
     private HeapNode extractMin1() {
         
-<span class="nc" id="L168">        HeapNode node = heap1.extractMin();</span>
-<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (node != null) {</span>
-<span class="nc" id="L170">            return node;</span>
+<span class="fc" id="L168">        HeapNode node = heap1.extractMin();</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (node != null) {</span>
+<span class="fc" id="L170">            return node;</span>
         } else {
 <span class="nc" id="L172">            return null;</span>
         }
     }
     
     private HeapNode extractMin2() {        
-<span class="fc" id="L177">        return heap2.extractMin();</span>
+<span class="nc" id="L177">        return heap2.extractMin();</span>
     }
     
     private void insert0(HeapNode node) {
@@ -191,8 +191,8 @@ public class MinHeapForRT2012 {
        
 <span class="fc" id="L192">        bucket.insert(node);</span>
         
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (key &lt; lastKnownMinKey0) {</span>
-<span class="nc" id="L195">            lastKnownMinKey0 = key;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (key &lt; lastKnownMinKey0) {</span>
+<span class="fc" id="L195">            lastKnownMinKey0 = key;</span>
         }
 <span class="fc bfc" id="L197" title="All 2 branches covered.">        if (key &gt; lastKnownMaxKey0) {</span>
 <span class="fc" id="L198">            lastKnownMaxKey0 = key;</span>
@@ -201,21 +201,21 @@ public class MinHeapForRT2012 {
     
     private void insert1(HeapNode node) {
          
-<span class="nc" id="L204">        int key = (int)node.getKey();</span>
+<span class="fc" id="L204">        int key = (int)node.getKey();</span>
         
-<span class="nc" id="L206">        heap1.insert(node);</span>
+<span class="fc" id="L206">        heap1.insert(node);</span>
         
-<span class="nc" id="L208">        log.fine(&quot;insert into minHeap at key =&quot; + key);        </span>
-<span class="nc" id="L209">    }</span>
+<span class="fc" id="L208">        log.fine(&quot;insert into minHeap at key =&quot; + key);        </span>
+<span class="fc" id="L209">    }</span>
     
     private void insert2(HeapNode node) {
          
-<span class="fc" id="L213">        int key = (int)node.getKey();</span>
+<span class="nc" id="L213">        int key = (int)node.getKey();</span>
         
-<span class="fc" id="L215">        heap2.insert(node);</span>
+<span class="nc" id="L215">        heap2.insert(node);</span>
         
-<span class="fc" id="L217">        log.fine(&quot;insert into minHeap at key =&quot; + key);        </span>
-<span class="fc" id="L218">    }</span>
+<span class="nc" id="L217">        log.fine(&quot;insert into minHeap at key =&quot; + key);        </span>
+<span class="nc" id="L218">    }</span>
     
     public void decreaseKey(HeapNode node, long key2) {
     
@@ -224,10 +224,10 @@ public class MinHeapForRT2012 {
 <span class="fc" id="L224">                decreaseKey0(node, key2);</span>
 <span class="fc" id="L225">                break;</span>
             case 1:
-<span class="nc" id="L227">                decreaseKey1(node, key2);</span>
-<span class="nc" id="L228">                break;</span>
+<span class="fc" id="L227">                decreaseKey1(node, key2);</span>
+<span class="fc" id="L228">                break;</span>
             default:
-<span class="fc" id="L230">                decreaseKey2(node, key2);</span>
+<span class="nc" id="L230">                decreaseKey2(node, key2);</span>
                 break;
         }
 <span class="fc" id="L233">    }</span>
@@ -247,19 +247,19 @@ public class MinHeapForRT2012 {
     
     private void decreaseKey1(HeapNode node, long key2) {
 
-<span class="nc" id="L250">        log.fine(&quot;decreaseKey in fibHeap from key=&quot; + </span>
-<span class="nc" id="L251">            node.getKey() + &quot; to key=&quot; + key2);</span>
+<span class="fc" id="L250">        log.fine(&quot;decreaseKey in fibHeap from key=&quot; + </span>
+<span class="fc" id="L251">            node.getKey() + &quot; to key=&quot; + key2);</span>
         
-<span class="nc" id="L253">        heap1.decreaseKey(node, key2);</span>
-<span class="nc" id="L254">    }</span>
+<span class="fc" id="L253">        heap1.decreaseKey(node, key2);</span>
+<span class="fc" id="L254">    }</span>
     
     private void decreaseKey2(HeapNode node, long key2) {
 
-<span class="fc" id="L258">        log.fine(&quot;decreaseKey in fibHeap from key=&quot; + </span>
-<span class="fc" id="L259">            node.getKey() + &quot; to key=&quot; + key2);</span>
+<span class="nc" id="L258">        log.fine(&quot;decreaseKey in fibHeap from key=&quot; + </span>
+<span class="nc" id="L259">            node.getKey() + &quot; to key=&quot; + key2);</span>
         
-<span class="fc" id="L261">        heap2.decreaseKey(node, key2);</span>
-<span class="fc" id="L262">    }</span>
+<span class="nc" id="L261">        heap2.decreaseKey(node, key2);</span>
+<span class="nc" id="L262">    }</span>
     
     public long getNumberOfNodes() {
         

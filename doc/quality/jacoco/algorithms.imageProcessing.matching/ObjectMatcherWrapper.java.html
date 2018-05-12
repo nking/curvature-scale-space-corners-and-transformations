@@ -31,8 +31,8 @@ import java.util.Set;
 <span class="fc" id="L31">    private boolean debug = false;</span>
     
     public void setToDebug() {
-<span class="fc" id="L34">        debug = true;</span>
-<span class="fc" id="L35">    }</span>
+<span class="nc" id="L34">        debug = true;</span>
+<span class="nc" id="L35">    }</span>
     
     public List&lt;CorrespondenceList&gt; find(String templateFilePath,
         String templateMaskFilePath,
@@ -93,7 +93,7 @@ import java.util.Set;
 <span class="fc" id="L93">        ObjectMatcher objMatcher = new ObjectMatcher();</span>
 
 <span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L96">            objMatcher.setToDebug();</span>
+<span class="nc" id="L96">            objMatcher.setToDebug();</span>
         }
 <span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (debugLabel != null) {  </span>
 <span class="fc" id="L99">            settings.setDebugLabel(debugLabel);</span>

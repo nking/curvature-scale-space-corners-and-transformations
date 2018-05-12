@@ -20,8 +20,8 @@ public class GroupPixelHSV2 {
     private double sumV;
     private int nPoints;
     
-<span class="nc" id="L23">    public GroupPixelHSV2() {</span>
-<span class="nc" id="L24">    }</span>
+<span class="fc" id="L23">    public GroupPixelHSV2() {</span>
+<span class="fc" id="L24">    }</span>
 
     /**
      * resets the internal sums to 0 and sets them with calculated HSB
@@ -73,39 +73,39 @@ public class GroupPixelHSV2 {
      */
     public void calculateColors(final TIntSet pIdxs, ImageExt img) {
         
-<span class="nc" id="L76">        float[] hsv = new float[3];</span>
+<span class="fc" id="L76">        float[] hsv = new float[3];</span>
         
-<span class="nc" id="L78">        nPoints = 0;</span>
-<span class="nc" id="L79">        sumH = 0;</span>
-<span class="nc" id="L80">        sumS = 0;</span>
-<span class="nc" id="L81">        sumV = 0;</span>
-<span class="nc" id="L82">        sumR = 0;</span>
-<span class="nc" id="L83">        sumG = 0;</span>
-<span class="nc" id="L84">        sumB = 0;</span>
+<span class="fc" id="L78">        nPoints = 0;</span>
+<span class="fc" id="L79">        sumH = 0;</span>
+<span class="fc" id="L80">        sumS = 0;</span>
+<span class="fc" id="L81">        sumV = 0;</span>
+<span class="fc" id="L82">        sumR = 0;</span>
+<span class="fc" id="L83">        sumG = 0;</span>
+<span class="fc" id="L84">        sumB = 0;</span>
         
-<span class="nc" id="L86">        TIntIterator iter = pIdxs.iterator();</span>
+<span class="fc" id="L86">        TIntIterator iter = pIdxs.iterator();</span>
         
-<span class="nc bnc" id="L88" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
             
-<span class="nc" id="L90">            int pixIdx = iter.next();</span>
+<span class="fc" id="L90">            int pixIdx = iter.next();</span>
             
-<span class="nc" id="L92">            int r = img.getR(pixIdx);</span>
-<span class="nc" id="L93">            int g = img.getG(pixIdx);</span>
-<span class="nc" id="L94">            int b = img.getB(pixIdx);</span>
+<span class="fc" id="L92">            int r = img.getR(pixIdx);</span>
+<span class="fc" id="L93">            int g = img.getG(pixIdx);</span>
+<span class="fc" id="L94">            int b = img.getB(pixIdx);</span>
             
-<span class="nc" id="L96">            Color.RGBtoHSB(r, g, b, hsv);</span>
+<span class="fc" id="L96">            Color.RGBtoHSB(r, g, b, hsv);</span>
             
-<span class="nc" id="L98">            sumH += hsv[0];</span>
-<span class="nc" id="L99">            sumS += hsv[1];</span>
-<span class="nc" id="L100">            sumV += hsv[2];</span>
+<span class="fc" id="L98">            sumH += hsv[0];</span>
+<span class="fc" id="L99">            sumS += hsv[1];</span>
+<span class="fc" id="L100">            sumV += hsv[2];</span>
         
-<span class="nc" id="L102">            sumR += r;</span>
-<span class="nc" id="L103">            sumG += g;</span>
-<span class="nc" id="L104">            sumB += b;</span>
-<span class="nc" id="L105">        }</span>
+<span class="fc" id="L102">            sumR += r;</span>
+<span class="fc" id="L103">            sumG += g;</span>
+<span class="fc" id="L104">            sumB += b;</span>
+<span class="fc" id="L105">        }</span>
                 
-<span class="nc" id="L107">        nPoints = pIdxs.size();</span>
-<span class="nc" id="L108">    }</span>
+<span class="fc" id="L107">        nPoints = pIdxs.size();</span>
+<span class="fc" id="L108">    }</span>
     
     /**
      * adds the calculated HSB of points to the current instance sums.
@@ -222,21 +222,21 @@ public class GroupPixelHSV2 {
      * @return the avgH
      */
     public float getAvgH() {
-<span class="nc" id="L225">        return (float)(sumH/(double)nPoints);</span>
+<span class="fc" id="L225">        return (float)(sumH/(double)nPoints);</span>
     }
 
     /**
      * @return the avgS
      */
     public float getAvgS() {
-<span class="nc" id="L232">        return (float)(sumS/(double)nPoints);</span>
+<span class="fc" id="L232">        return (float)(sumS/(double)nPoints);</span>
     }
 
     /**
      * @return the avgV
      */
     public float getAvgV() {
-<span class="nc" id="L239">        return (float)(sumV/(double)nPoints);</span>
+<span class="fc" id="L239">        return (float)(sumV/(double)nPoints);</span>
     }
     
     /**

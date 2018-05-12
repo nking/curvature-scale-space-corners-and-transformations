@@ -1391,14 +1391,14 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     
     public static double trace(double[][] d) {
         
-<span class="nc" id="L1394">        double sum = 0;</span>
+<span class="fc" id="L1394">        double sum = 0;</span>
         
-<span class="nc" id="L1396">        int n = Math.min(d.length, d[0].length);</span>
-<span class="nc bnc" id="L1397" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc" id="L1398">            sum += d[i][i];</span>
+<span class="fc" id="L1396">        int n = Math.min(d.length, d[0].length);</span>
+<span class="fc bfc" id="L1397" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1398">            sum += d[i][i];</span>
         }
         
-<span class="nc" id="L1401">        return sum;</span>
+<span class="fc" id="L1401">        return sum;</span>
     }
 
     public static float[][] copy(float[][] a) {

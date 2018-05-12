@@ -1124,19 +1124,19 @@ import javax.swing.ImageIcon;
     public static void addAlternatingColorCurvesToImage3(
         List&lt;TIntSet&gt; pointGroups, Image input, int nExtraForDot) {
         
-<span class="nc bnc" id="L1127" title="All 4 branches missed.">        if (pointGroups == null || input == null) {</span>
+<span class="pc bpc" id="L1127" title="2 of 4 branches missed.">        if (pointGroups == null || input == null) {</span>
 <span class="nc" id="L1128">            return;</span>
         }
         
-<span class="nc bnc" id="L1131" title="All 2 branches missed.">        for (int i = 0; i &lt; pointGroups.size(); ++i) {</span>
+<span class="fc bfc" id="L1131" title="All 2 branches covered.">        for (int i = 0; i &lt; pointGroups.size(); ++i) {</span>
             
-<span class="nc" id="L1133">            int[] clr = getNextRGB(i);</span>
+<span class="fc" id="L1133">            int[] clr = getNextRGB(i);</span>
             
-<span class="nc" id="L1135">            addCurveToImage(pointGroups.get(i), input, nExtraForDot,</span>
+<span class="fc" id="L1135">            addCurveToImage(pointGroups.get(i), input, nExtraForDot,</span>
                 clr[0], clr[1], clr[2]);
         }
         
-<span class="nc" id="L1139">    }</span>
+<span class="fc" id="L1139">    }</span>
     
     /**
      * draw lines from points at index i to index i+1 
@@ -1422,8 +1422,8 @@ import javax.swing.ImageIcon;
             }
 <span class="fc bfc" id="L1423" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1424">                int yy = y + dy;</span>
-<span class="pc bpc" id="L1425" title="1 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1426">                    continue;</span>
+<span class="fc bfc" id="L1425" title="All 4 branches covered.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc" id="L1426">                    continue;</span>
                 }
 <span class="fc" id="L1428">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
             }
@@ -1790,14 +1790,14 @@ import javax.swing.ImageIcon;
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, Image input) {
         
-<span class="nc bnc" id="L1793" title="All 4 branches missed.">        if (curves == null || input == null) {</span>
+<span class="pc bpc" id="L1793" title="2 of 4 branches missed.">        if (curves == null || input == null) {</span>
 <span class="nc" id="L1794">            return;</span>
         }
         
-<span class="nc" id="L1797">        addAlternatingColorCurvesToImage(</span>
-<span class="nc" id="L1798">            curves.toArray(new PairIntArray[curves.size()]),</span>
+<span class="fc" id="L1797">        addAlternatingColorCurvesToImage(</span>
+<span class="fc" id="L1798">            curves.toArray(new PairIntArray[curves.size()]),</span>
             input, 1);
-<span class="nc" id="L1800">    }</span>
+<span class="fc" id="L1800">    }</span>
     
     public static int getNextColorRGB(int count) {
         
@@ -1907,13 +1907,13 @@ import javax.swing.ImageIcon;
                 
 <span class="fc bfc" id="L1908" title="All 2 branches covered.">                for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 <span class="fc" id="L1909">                    int xx = col + dx;</span>
-<span class="pc bpc" id="L1910" title="2 of 4 branches missed.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L1911">                        continue;</span>
+<span class="fc bfc" id="L1910" title="All 4 branches covered.">                    if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="fc" id="L1911">                        continue;</span>
                     }
 <span class="fc bfc" id="L1913" title="All 2 branches covered.">                    for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1914">                        int yy = row + dy;</span>
-<span class="pc bpc" id="L1915" title="2 of 4 branches missed.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="nc" id="L1916">                            continue;</span>
+<span class="fc bfc" id="L1915" title="All 4 branches covered.">                        if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc" id="L1916">                            continue;</span>
                         }
 <span class="fc" id="L1918">                        input.setRGB(xx, yy, c);</span>
                     }
@@ -1945,19 +1945,19 @@ import javax.swing.ImageIcon;
         List&lt;TIntSet&gt; pointSets, int xOffset, int yOffset, 
         int nExtraForDot, Image input) {
         
-<span class="nc bnc" id="L1948" title="All 4 branches missed.">        if (pointSets == null || input == null) {</span>
+<span class="pc bpc" id="L1948" title="2 of 4 branches missed.">        if (pointSets == null || input == null) {</span>
 <span class="nc" id="L1949">            return;</span>
         }
                 
-<span class="nc bnc" id="L1952" title="All 2 branches missed.">        for (int i = 0; i &lt; pointSets.size(); i++) {</span>
+<span class="fc bfc" id="L1952" title="All 2 branches covered.">        for (int i = 0; i &lt; pointSets.size(); i++) {</span>
             
-<span class="nc" id="L1954">            TIntSet pIdxs = pointSets.get(i);</span>
+<span class="fc" id="L1954">            TIntSet pIdxs = pointSets.get(i);</span>
             
-<span class="nc" id="L1956">            int[] c = getNextRGB(i);</span>
+<span class="fc" id="L1956">            int[] c = getNextRGB(i);</span>
             
-<span class="nc" id="L1958">            addToImage(pIdxs, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);</span>
+<span class="fc" id="L1958">            addToImage(pIdxs, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);</span>
         }
-<span class="nc" id="L1960">    }</span>
+<span class="fc" id="L1960">    }</span>
     
     public static &lt;T extends Collection&lt;PairInt&gt;&gt; void addToImage(
         T points, int xOffsetToApply, int yOffsetToApply, Image input) {
@@ -2047,36 +2047,36 @@ import javax.swing.ImageIcon;
         int yOffsetToApply, Image input, int nExtraForDot,
         int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L2050" title="All 4 branches missed.">        if (pIdxs == null || input == null) {</span>
+<span class="pc bpc" id="L2050" title="2 of 4 branches missed.">        if (pIdxs == null || input == null) {</span>
 <span class="nc" id="L2051">            return;</span>
         }
         
-<span class="nc" id="L2054">        int w = input.getWidth();</span>
-<span class="nc" id="L2055">        int h = input.getHeight();</span>
+<span class="fc" id="L2054">        int w = input.getWidth();</span>
+<span class="fc" id="L2055">        int h = input.getHeight();</span>
              
-<span class="nc" id="L2057">        TIntIterator iter = pIdxs.iterator();</span>
-<span class="nc bnc" id="L2058" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
-<span class="nc" id="L2059">            int pixIdx = iter.next();</span>
-<span class="nc" id="L2060">            int y = pixIdx/w;</span>
-<span class="nc" id="L2061">            int x = pixIdx - (y * w);</span>
-<span class="nc" id="L2062">            x += xOffsetToApply;</span>
-<span class="nc" id="L2063">            y += yOffsetToApply;</span>
+<span class="fc" id="L2057">        TIntIterator iter = pIdxs.iterator();</span>
+<span class="fc bfc" id="L2058" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L2059">            int pixIdx = iter.next();</span>
+<span class="fc" id="L2060">            int y = pixIdx/w;</span>
+<span class="fc" id="L2061">            int x = pixIdx - (y * w);</span>
+<span class="fc" id="L2062">            x += xOffsetToApply;</span>
+<span class="fc" id="L2063">            y += yOffsetToApply;</span>
             
-<span class="nc bnc" id="L2065" title="All 2 branches missed.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
-<span class="nc" id="L2066">                int xx = x + dx;</span>
-<span class="nc bnc" id="L2067" title="All 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="fc bfc" id="L2065" title="All 2 branches covered.">            for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); ++dx) {</span>
+<span class="fc" id="L2066">                int xx = x + dx;</span>
+<span class="pc bpc" id="L2067" title="2 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="nc" id="L2068">                    continue;</span>
                 }
-<span class="nc bnc" id="L2070" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
-<span class="nc" id="L2071">                    int yy = y + dy;</span>
-<span class="nc bnc" id="L2072" title="All 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc bfc" id="L2070" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
+<span class="fc" id="L2071">                    int yy = y + dy;</span>
+<span class="pc bpc" id="L2072" title="2 of 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
 <span class="nc" id="L2073">                        continue;</span>
                     }
-<span class="nc" id="L2075">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
+<span class="fc" id="L2075">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
                 }
             }
-<span class="nc" id="L2078">        }</span>
-<span class="nc" id="L2079">    }</span>
+<span class="fc" id="L2078">        }</span>
+<span class="fc" id="L2079">    }</span>
 
     public static void addAlternatingColorCurvesToImage(
         List&lt;PairIntArray&gt; curves, String fileName, boolean writeImage, 
