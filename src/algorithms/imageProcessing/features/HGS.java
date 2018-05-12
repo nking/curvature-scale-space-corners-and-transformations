@@ -2,11 +2,7 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.IntegralHistograms;
-import algorithms.util.OneDIntArray;
-import algorithms.util.OneDLongArray;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  A class holding histograms of a greyscale image 
@@ -121,6 +117,19 @@ public class HGS {
             startX--;
             startY--;            
         }
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY > 0) {
+            startY = 0;
+        }
+        if (stopX >= w) {
+            stopX = w - 1;
+        }
+        if (stopY >= h) {
+            stopY = h - 1;
+        }
+        
         int[] outputN = new int[1];  
         
         HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, 
@@ -181,6 +190,19 @@ public class HGS {
             startX--;
             startY--;            
         }
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY > 0) {
+            startY = 0;
+        }
+        if (stopX >= w) {
+            stopX = w - 1;
+        }
+        if (stopY >= h) {
+            stopY = h - 1;
+        }
+        
         int[] outputN = new int[1];  
         
         HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, 
@@ -244,6 +266,19 @@ public class HGS {
             startX--;
             startY--;            
         }
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY > 0) {
+            startY = 0;
+        }
+        if (stopX >= w) {
+            stopX = w - 1;
+        }
+        if (stopY >= h) {
+            stopY = h - 1;
+        }
+        
         int[] outputN = new int[1];  
         
         HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, 

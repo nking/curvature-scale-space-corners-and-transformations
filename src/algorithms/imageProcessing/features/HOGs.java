@@ -272,6 +272,19 @@ public class HOGs {
             startX--;
             startY--;            
         }
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY > 0) {
+            startY = 0;
+        }
+        if (stopX >= w) {
+            stopX = w - 1;
+        }
+        if (stopY >= h) {
+            stopY = h - 1;
+        }
+        
         int[] outputN = new int[1];
         
         HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, 
@@ -340,6 +353,19 @@ public class HOGs {
             startX--;
             startY--;            
         }
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY > 0) {
+            startY = 0;
+        }
+        if (stopX >= w) {
+            stopX = w - 1;
+        }
+        if (stopY >= h) {
+            stopY = h - 1;
+        }
+        
         int[] outputN = new int[1];
         
         HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, 

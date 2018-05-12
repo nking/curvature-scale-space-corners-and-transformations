@@ -401,11 +401,32 @@ public class SummedAreaTable {
         int stopX = x + r;
         int startY = y - r;
         int stopY = y + r;
-        
-        if (stopX > (w - 1)) {
+        if ((r & 1) == 0) {
+            startX--;
+            startY--;
+        }
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY < 0) {
+            startY = 0;
+        }
+        if (startX >= w) {
+            startX = w - 1;
+        }
+        if (startY >= h) {
+            startY = h - 1;
+        }
+        if (stopX < 0) {
+            stopX = 0;
+        }
+        if (stopY < 0) {
+            stopY = 0;
+        }
+        if (stopX >= w) {
             stopX = w - 1;
         }
-        if (stopY > (h - 1)) {
+        if (stopY >= h) {
             stopY = h - 1;
         }
               

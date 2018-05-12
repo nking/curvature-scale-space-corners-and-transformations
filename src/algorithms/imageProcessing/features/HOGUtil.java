@@ -698,8 +698,8 @@ public class HOGUtil {
         } else if (startX > 0 && startY > 0) {
             outputN[0] = ((stopX - startX) + 1) * ((stopY - startY) + 1);
 
-            copy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)],
-                output);
+            int pixIdx = (int)ph.toPixelIndex(stopX, stopY, w);
+            copy(histograms[pixIdx], output);
             subtract(output, histograms[(int)ph.toPixelIndex(startX - 1, stopY, w)]);
             subtract(output, histograms[(int)ph.toPixelIndex(stopX, startY - 1, w)]);
             add(output, histograms[(int)ph.toPixelIndex(startX - 1, startY - 1, w)]);
