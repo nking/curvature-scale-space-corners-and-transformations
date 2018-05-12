@@ -23,6 +23,7 @@ import algorithms.imageProcessing.features.HGS;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.PatchUtil;
 import algorithms.imageProcessing.features.mser.MSER.Threshold;
+import algorithms.imageProcessing.matching.CMODE;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -585,8 +586,8 @@ public class MSEREdges {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         // for hogs and white-white merge, 0.65 is
-        float intersectionLimit = 0.67f;//0.65f;//0.7f;
-        float intersectionLimit1 = 0.7f;//0.65f;
+        float intersectionLimit = 0.9f;//0.67f;
+        float intersectionLimit1 = 0.9f;//0.7f;
         //float intersectionLimit1H = 0.8f;
         
         int nCellsPerDim = 3;//1
@@ -611,6 +612,29 @@ public class MSEREdges {
             //set.removeAll(edgeList.get(label));
             
             TIntSet points = ip.naiveStripPacking(set, w, nPixPerCellDim);
+        
+            /*if (true || debug) {
+                PixelHelper ph = new PixelHelper();
+                int[] xy = new int[2];
+                Image tmp = gsImg.copyToColorGreyscale();
+                assert(w == hogs.getImageWidth());
+                assert(h == hogs.getImageHeight());
+                TIntIterator iter = set.iterator();
+                while (iter.hasNext()) {
+                    int pixIdx = iter.next();
+                    ph.toPixelCoords(pixIdx, w, xy);
+                    ImageIOHelper.addPointToImage(xy[0], xy[1], tmp, 0, 
+                        255, 0, 0);
+                }
+                iter = points.iterator();
+                while (iter.hasNext()) {
+                    int pixIdx = iter.next();
+                    ph.toPixelCoords(pixIdx, w, xy);
+                    ImageIOHelper.addPointToImage(xy[0], xy[1], tmp, 0, 
+                        0, 255, 0);
+                }
+                MiscDebug.writeImage(tmp, "_dbg_set_" + label + "_" + ts);
+            }*/
             
             List<PatchUtil> list = new ArrayList<PatchUtil>();
             PatchUtil p = new PatchUtil(w, h, nBins);
@@ -681,9 +705,9 @@ public class MSEREdges {
                 //hog, hcot, and hgs
                 List<PatchUtil> pList1 = clrs.get(label);
 
-                //Set<PairInt> points1 = pList1.get(0).getPixelSet();
-                //CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(ptImg, points1);
-                //CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
+                Set<PairInt> points1 = pList1.get(0).getPixelSet();
+                CMODE cmodeLUV1 = CMODE.determinePolarThetaMode(ptImg, points1);
+                CMODE cmode1 = CMODE.determineColorMode(clrImg, points1);
 
                 int[] adjBits = adjLabels.getSetBits();
                 for (int label2 : adjBits) {
@@ -701,9 +725,9 @@ public class MSEREdges {
                     //hog, hcot, and hgs
                     List<PatchUtil> pList2 = clrs.get(label2);
 
-                    //Set<PairInt> points2 = pList2.get(0).getPixelSet();
-                    //CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(ptImg, points2);
-                    //CMODE cmode2 = CMODE.determineColorMode(clrImg, points2);
+                    Set<PairInt> points2 = pList2.get(0).getPixelSet();
+                    CMODE cmodeLUV2 = CMODE.determinePolarThetaMode(ptImg, points2);
+                    CMODE cmode2 = CMODE.determineColorMode(clrImg, points2);
 
                     //TODO: could change the intersection to 
                     //  use a detector window which scans in x and y at each
@@ -734,10 +758,10 @@ public class MSEREdges {
                     );*/
                     
                     // -- merge the adjacent into the current label ---
-                    TIntSet points2 = pList2.get(0).getPixelIndexes();
-                    pList1.get(0).add(points2, hogs);
-                    pList1.get(1).add(points2, hcpt);
-                    pList1.get(2).add(points2, hgs);
+                    TIntSet points_2 = pList2.get(0).getPixelIndexes();
+                    pList1.get(0).add(points_2, hogs);
+                    pList1.get(1).add(points_2, hcpt);
+                    pList1.get(2).add(points_2, hgs);
 
                     clrs.remove(label2);
 
@@ -773,7 +797,7 @@ public class MSEREdges {
                     set1.removeAll(getEdgeList().get(label));
 
                     // debug
-                    if (false && debug) {
+                    if (debug) {
                         Image tmp = clrImg.copyImage();
                         ImageIOHelper.addAlternatingColorPointSetsToImage2(
                             labeledSets, 0, 0, 0, tmp);

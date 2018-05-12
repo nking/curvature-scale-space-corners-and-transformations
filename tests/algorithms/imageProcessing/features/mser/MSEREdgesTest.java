@@ -3,7 +3,6 @@ package algorithms.imageProcessing.features.mser;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import gnu.trove.set.TIntSet;
@@ -186,7 +185,7 @@ public class MSEREdgesTest extends TestCase {
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
             MSEREdgesWrapper msew = new MSEREdgesWrapper();
-                
+            //msew.setToDebug();
             MSEREdges mserE = msew.extractAndMergeEdges(img);
             
             List<TIntSet> edgeList = mserE.getEdges();
