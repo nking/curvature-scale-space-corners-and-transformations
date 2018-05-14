@@ -55,6 +55,7 @@ public class MinHeapForRT2012 {
      * 
      * The Fibonacci Heap has O(1) operations excepting
      * extractMin which is O(lg_2(N_nodes)).
+     * @param maxNumberOfBits
      * 
      */
     public MinHeapForRT2012(int capacity, int approxN, int maxNumberOfBits) {
@@ -68,7 +69,7 @@ public class MinHeapForRT2012 {
         long[] yftEstimate = YFastTrie.estimateSizeOnHeap(capacity, 
                 maxNumberOfBits);
         
-        log.info("avail=" + avail + " yftEst=" + yftEstimate[1] + " < " +
+        log.fine("avail=" + avail + " yftEst=" + yftEstimate[1] + " < " +
             (yftEstimate[1] < avail));
         
         if (yftEstimate[1] < avail) {

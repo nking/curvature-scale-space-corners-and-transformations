@@ -1,6 +1,6 @@
 package algorithms.shortestPath;
 
-import algorithms.imageProcessing.Heap;
+import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -47,10 +47,14 @@ public class AStar {
     //    as one implementation.
     
     protected boolean calculateHeuristics = false;
+    
+    private int sentinel = Integer.MAX_VALUE;
+    
+    private int maxDist = sentinel;
 
     // key is total estimate from srcIdx to destIdx for the given refIdx
     //    (that is the distance from srcIdx to refIdx + refIdx + heuristic)
-    protected final Heap heap = new Heap();
+    protected MinHeapForRT2012 heap = null;
 
     // refs to nodes internal to heap for decrease key operations
     protected HeapNode[] nodes = null;
@@ -74,7 +78,7 @@ public class AStar {
 
     protected final int sourceIndx;
     protected final int destinationIndx;
-    
+
     private enum State {
        INITIALIZED, COMPLETE
     }
@@ -119,21 +123,35 @@ public class AStar {
         prevNode = new HeapNode[n];
 
         // populate w/ straight line distances as needed:
-        Arrays.fill(heuristics, Long.MAX_VALUE);
+        for (int i = 0; i < points.length; ++i) {
+            heuristics[i] = distBetween(i, destinationIndx);
+        }
 
         initHeap();
+        
+        log.fine("src=" + points[srcIndx].toString() + " dest=" + 
+            points[destIndx].toString());
     }
 
     private void initHeap() {
         
         int n = points.length;
+        
+        maxDist = calculateMaxDistance();
+        
+        int capacity = Math.max(n, maxDist + 1);
+        
+        int nBits = (int)Math.ceil(Math.log(maxDist/Math.log(2)));
+        
+        //int capacity, int approxN, int maxNumberOfBits
+        heap = new MinHeapForRT2012(capacity, n, nBits);
 
         nodes = new HeapNode[n];
 
         // initialize all except the source node as having infinite distance
         for (int i = 0; i < points.length; ++i) {
 
-            long dist = (i == sourceIndx) ? 0 : Long.MAX_VALUE;
+            long dist = (i == sourceIndx) ? 0 : (maxDist + 1);
 
             HeapNode node = new HeapNode(dist);
             node.setData(Integer.valueOf(i));
@@ -173,11 +191,8 @@ public class AStar {
 
                 int vIndx = vIndex.intValue();
 
-                if ((distFromS[uIndx] == Long.MAX_VALUE) || 
-                    (nodes[vIndx] == null)) {
-                    
-                    vIndex = adj.poll();
-                    
+                if ((distFromS[uIndx] == sentinel) || (nodes[vIndx] == null)) {
+                    vIndex = adj.poll();                    
                     continue;
                 }
 
@@ -185,21 +200,31 @@ public class AStar {
 
                 long uDistPlusCost = (distFromS[uIndx] + distUV);
 
-                long vDist = (distFromS[vIndex] == Long.MAX_VALUE) ?
-                    Long.MAX_VALUE : distFromS[vIndex];
+                long vDist = (distFromS[vIndex] == sentinel) ?
+                    sentinel : 
+                    distFromS[vIndex];
 
+                log.fine(points[uIndx].toString() + ":" + points[vIndx] + " "
+                    + " dU=" + distFromS[uIndx] 
+                    + " dU+UtoV=" + uDistPlusCost 
+                    + " dV=" + vDist);
+                    
                 // relax(u,v, wght)
                 if (uDistPlusCost < vDist) {
 
                     long vDistFromSrc = distFromS[uIndx] + distUV;
 
-                    long vDistPlusHeuristic = vDistFromSrc + heuristic(vIndx);
+                    long vDistPlusHeuristic = vDistFromSrc + heuristics[vIndx];
 
                     HeapNode vNode = nodes[vIndx];
 
+                    log.fine("dU+UtoV+H=" + vDistPlusHeuristic 
+                        + " _dV=" + vNode.getKey());
+                    
                     if (vDistPlusHeuristic < vNode.getKey()) {
 
-                        heap.decreaseKey(vNode, vDistPlusHeuristic);
+                        //heap.decreaseKey(vNode, vDistPlusHeuristic);
+                        heap.decreaseKey(vNode, vDistFromSrc);
                         
                         distFromS[vIndex] = vDistFromSrc;
 
@@ -207,13 +232,14 @@ public class AStar {
 
                         count++;
 
+                        log.fine(" ");
                     } else {
 
                         String str = String.format(
-                        "did not decrease key for: u=%d v=%d uDist+distUV=%d vDist=%d currentVDistPlusHeuristic=%d rejected vDistPlusH=%d",
+                        "  did not decrease v key for: u=%d v=%d uDist+distUV=%d vDist=%d currentVDistPlusHeuristic=%d rejected vDistPlusH=%d",
                             uIndx, vIndx, (int)uDistPlusCost, (int)vDist,
                             (int)vNode.getKey(), (int)vDistPlusHeuristic);
-                        System.err.println(str);
+                        log.fine(str);
                     }
                 }
 
@@ -248,19 +274,9 @@ public class AStar {
         int diffX = points[uIdx].getX() - points[vIdx].getX();
         int diffY = points[uIdx].getY() - points[vIdx].getY();
 
-        long dist = (long)Math.round(diffX*diffX + diffY*diffY);
+        long dist = (long)Math.round(Math.sqrt(diffX*diffX + diffY*diffY));
 
         return dist;
-    }
-
-    private long heuristic(int vIndx) {
-
-        if (heuristics[vIndx] == Long.MAX_VALUE) {
-            // calc straight line distance from vIndx to destination
-            heuristics[vIndx] = distBetween(vIndx, destinationIndx);
-        }
-
-        return heuristics[vIndx];
     }
 
     private int[] getNodeIndexesToDestination() {
@@ -327,7 +343,7 @@ public class AStar {
         
         for (int i = 0; i < distFromS.length; ++i) {
             long d = distFromS[i];
-            if (d == Long.MAX_VALUE) {
+            if (d == sentinel) {
                 continue;
             }
             distances[count] = (int)d;
@@ -347,4 +363,33 @@ public class AStar {
         return indexes;
     }
 
+    private int calculateMaxDistance() {
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            if (x < minX) {
+                minX = x;
+            }
+            if (x > maxX) {
+                maxX = x;
+            }
+            if (y < minY) {
+                minY = y;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+        }
+        int dX = maxX - minX + 1;
+        int dY = maxY - minY + 1;
+        int dist = (int)Math.ceil(Math.sqrt(dX * dX + dY * dY));
+        
+        return dist;
+    }
+    
 }
