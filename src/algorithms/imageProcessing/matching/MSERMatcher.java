@@ -2,15 +2,12 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.features.HOGRegionsManager;
 import algorithms.imageProcessing.features.HOGsManager;
 import algorithms.imageProcessing.features.ObjectMatcher.Settings;
 import algorithms.imageProcessing.features.mser.Canonicalizer;
 import algorithms.imageProcessing.features.mser.Canonicalizer.CRegion;
-import algorithms.misc.MiscDebug;
 import algorithms.packing.Intersection2DPacking;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
@@ -27,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**

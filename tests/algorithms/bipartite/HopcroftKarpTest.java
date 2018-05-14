@@ -1,7 +1,5 @@
 package algorithms.bipartite;
 
-import algorithms.imageProcessing.DoubleLinkedCircularList;
-import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.map.TIntIntMap;
@@ -12,14 +10,8 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
 /**
  *

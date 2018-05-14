@@ -33,8 +33,8 @@ public class SLICSuperPixelsTest extends TestCase {
 
         String fileName1 = "";
 
-        for (int i = 0; i < 4; ++i) {
-        //for (int i = 0; i < 37; ++i) {
+        //for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 37; ++i) {
 
             switch(i) {
                 case 0: {
@@ -225,7 +225,7 @@ public class SLICSuperPixelsTest extends TestCase {
             int n11 = Math.round(nPix/f11);
             //==> nClusters = nPix/((w/x0)^2)
             //==> nClusters = nPix/((h/x0)^2)
-            int nc = (n10+n11)/2;
+            int nc = (n10 + n11)/2;
             //nc = 40;
             //nc *= 2;
       nc = 100;      
@@ -244,7 +244,8 @@ public class SLICSuperPixelsTest extends TestCase {
             MiscDebug.writeImage(img3, "_slic_" + "_" + str);
         
             NormalizedCuts norm = new NormalizedCuts();
-            norm.setColorSpaceToPolarCIELAB();
+            //norm.setColorSpaceToPolarCIELAB();
+            norm.setColorSpaceToCIELAB();
             labels = norm.normalizedCut(img, labels);
             
             img3 = img.createWithDimensions();
