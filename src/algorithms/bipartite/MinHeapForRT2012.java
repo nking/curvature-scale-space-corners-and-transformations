@@ -1,25 +1,20 @@
 package algorithms.bipartite;
 
 import algorithms.YFastTrie;
-import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.util.logging.Logger;
 
 /**
- * a min heap for the MinCostUnbalancedAssignment.
- * It uses the "Dial algorithm" pattern by default
- * (which is similar to counting sort in part),
- * but if the requested capacity is larger than
- * 46300, a Fibonacci Heap is used internally instead.
- * All operations for the "Dial" mode are essentially O(1),
- * else, the extractMin operation is O(lg_2(N_nodes))
- * for the internal Fibonacci heap.
+ * A min heap for the MinCostUnbalancedAssignment.
+ * It uses the "YFastTrie min priority queue algorithm" 
+ * pattern by default if the VM has enough memory, else
+ * uses a Fibonacci Heap.
+ * All operations for the "YFastTrie" are constant time.
  * 
- * NOTE: in the future, would like to include MLB for
- * another option that improves the extractMin runtime
- * complexity.
+ * The Fibonacci Heap has O(1) operations excepting
+ * extractMin which is O(lg_2(N_nodes)).
  * 
  * @author nichole
  */
@@ -29,15 +24,11 @@ public class MinHeapForRT2012 {
     
     // 0 = use Dial, 1 = use Fibonacci, 2 = use XFastTrie
     private final int algorithm;
-    
-    private final DoubleLinkedCircularList[] heap0;
-    
+        
     private int lastKnownMinKey0 = 0;
     
     // for use in tuning the capacity
     private int lastKnownMaxKey0 = 0;
-    
-    private long n0 = 0;
     
     private final FibonacciHeapWrapper heap1;
 
@@ -56,13 +47,14 @@ public class MinHeapForRT2012 {
      * (it's used to help determine which algorithm to use
      * internally).
      * 
-     * If capacity is less than 46300 (might lower this as memory will begin
-     * to affect performance at high capacity),
-     * then a minimum priority monotonic bucket queue which uses the node keys 
-     * as priorities is used.  creation of the structure has runtime complexity 
-     * O(capacity), but thereafter, all operations are O(1).
-     * If capacity is higher than 46300, then the approxN is used to 
-     * decide between an XFastTrie and a FibonacciHeap.
+     * IA min heap for the MinCostUnbalancedAssignment.
+     * It uses the "YFastTrie min priority queue algorithm" 
+     * pattern by default if the VM has enough memory, else
+     * uses a Fibonacci Heap.
+     * All operations for the "YFastTrie" are constant time.
+     * 
+     * The Fibonacci Heap has O(1) operations excepting
+     * extractMin which is O(lg_2(N_nodes)).
      * 
      */
     public MinHeapForRT2012(int capacity, int approxN, int maxNumberOfBits) {
@@ -76,21 +68,10 @@ public class MinHeapForRT2012 {
         long[] yftEstimate = YFastTrie.estimateSizeOnHeap(capacity, 
                 maxNumberOfBits);
         
-        if (capacity < 46300) {
+        log.info("avail=" + avail + " yftEst=" + yftEstimate[1] + " < " +
+            (yftEstimate[1] < avail));
         
-            // the 1 level Dial algorithm has O(1) inserts and
-            //    constant time extractMin.
-            algorithm = 0;
-        
-            heap0 = new DoubleLinkedCircularList[capacity];
-            
-            heap1 = null;
-            
-            heap2 = null;
-
-            log.fine("useDial=true cap=" + capacity + " approxN=" + approxN);
-            
-        } else if (yftEstimate[1] < avail) {
+        if (yftEstimate[1] < avail) {
             // wanting the base of the prefix tree to be filled
             // to improve performance.   for larger N
             
@@ -98,16 +79,12 @@ public class MinHeapForRT2012 {
             
             heap2 = new YFastTrieWrapper(capacity);
             
-            heap0 = null;
-            
             heap1 = null;
             
         } else {
             
             algorithm = 1;
         
-            heap0 = null;
-            
             heap1 = new FibonacciHeapWrapper(approxN, capacity);
         
             heap2 = null;
@@ -121,10 +98,6 @@ public class MinHeapForRT2012 {
         }
         
         switch(algorithm) {
-            case 0:
-                insert0(node);
-                ++n0;
-                break;
             case 1:
                 insert1(node);
                 break;
@@ -137,30 +110,12 @@ public class MinHeapForRT2012 {
     public HeapNode extractMin() {
         
         switch(algorithm) {
-            case 0:
-                return extractMin0();
             case 1:
                 return extractMin1();
             default:
                 return extractMin2();
         }
         
-    }
-    
-    private HeapNode extractMin0() {
-    
-        for (int i = lastKnownMinKey0; i < heap0.length; ++i) {
-            DoubleLinkedCircularList bucket = heap0[i];
-            if (bucket != null && (bucket.getNumberOfNodes() > 0)) {
-                HeapNode node = bucket.getSentinel().getLeft();
-                bucket.remove(node);
-                lastKnownMinKey0 = i;
-                n0--;
-                return node;
-            }
-        }
-        
-        return null;
     }
     
     private HeapNode extractMin1() {
@@ -175,28 +130,6 @@ public class MinHeapForRT2012 {
     
     private HeapNode extractMin2() {        
         return heap2.extractMin();
-    }
-    
-    private void insert0(HeapNode node) {
-         
-        int key = (int)node.getKey();
-        
-        DoubleLinkedCircularList bucket = heap0[key];
-        if (bucket == null) {
-            bucket = new DoubleLinkedCircularList();
-            heap0[key] = bucket;
-        }
-        
-        log.fine("insert into minHeap at key =" + node.toString());
-       
-        bucket.insert(node);
-        
-        if (key < lastKnownMinKey0) {
-            lastKnownMinKey0 = key;
-        }
-        if (key > lastKnownMaxKey0) {
-            lastKnownMaxKey0 = key;
-        }
     }
     
     private void insert1(HeapNode node) {
@@ -220,9 +153,6 @@ public class MinHeapForRT2012 {
     public void decreaseKey(HeapNode node, long key2) {
     
         switch(algorithm) {
-            case 0:
-                decreaseKey0(node, key2);
-                break;
             case 1:
                 decreaseKey1(node, key2);
                 break;
@@ -232,19 +162,6 @@ public class MinHeapForRT2012 {
         }
     }
      
-    private void decreaseKey0(HeapNode node, long key2) {
-
-        log.fine("decreaseKey in minHeap from key=" + 
-            node.getKey() + " to key=" + key2);
-        
-        int prevKey = (int)node.getKey();
-        heap0[prevKey].remove(node);
-        
-        node.setKey(key2);
-        
-        insert0(node);        
-    }
-    
     private void decreaseKey1(HeapNode node, long key2) {
 
         log.fine("decreaseKey in fibHeap from key=" + 
@@ -264,12 +181,28 @@ public class MinHeapForRT2012 {
     public long getNumberOfNodes() {
         
         switch(algorithm) {
-            case 0:
-                return n0;
             case 1:
                 return heap1.getNumberOfNodes();
             default:
                 return heap2.getNumberOfNodes();
         }
     }
+
+    @Override
+    public String toString() {
+    
+        StringBuilder sb = new StringBuilder();
+        sb.append("min heap type = ");
+        switch(algorithm) {
+            case 1:
+                sb.append("Fibonacci Heap"); break;
+            default:
+                sb.append("YFastTrie min priority queue"); break;
+        }
+        sb.append(". size=").append(getNumberOfNodes());
+        
+        return sb.toString();
+    }
+    
+    
 }
