@@ -274,7 +274,7 @@ public class AStar {
         int diffX = points[uIdx].getX() - points[vIdx].getX();
         int diffY = points[uIdx].getY() - points[vIdx].getY();
 
-        long dist = (long)Math.round(Math.sqrt(diffX*diffX + diffY*diffY));
+        long dist = Math.round(Math.sqrt(diffX*diffX + diffY*diffY));
 
         return dist;
     }

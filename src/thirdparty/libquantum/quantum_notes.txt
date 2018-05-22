@@ -102,7 +102,8 @@ notes from "Basic concepts in quantum computation" by
 ===============================
 Notes about Shor's algorithm
 ---------------------------------
-        
+ given an integer N, find its prime factors.
+
  following pseudocode in wikipedia
  https://en.wikipedia.org/wiki/Shor%27s_algorithm
  
@@ -113,25 +114,25 @@ Notes about Shor's algorithm
     
        1) Pick a random number a < N.
        2) Compute gcd(a, N). This may be done using the Euclidean algorithm.
+             gcd is the greatest common denominator.
        3) If gcd(a, N) ≠ 1, then this number is a nontrivial factor of N, 
           so we are done.
        4) Otherwise, use the period-finding subroutine to find r, 
           the period of the following function:
-              f(x)=a^{x}mod N
-              smallest pos integer r for which f(x+r) = f(x)
-              f(x + r)=a^{x + r}mod N = a^{x}mod N
+              f(x) = a^{x}mod N
+              smallest positive integer r for which f(x+r) = f(x)
+              f(x + r) = a^{x + r}mod N = a^{x}mod N
               
          Note that this complex portion of the problem is encapsulated
          by the method
            Gates.quantum_exp_mod_n
-                  
               
        5) If r is odd, go back to step 1.
        6) If a^{r/2} ==  −1 (mod N), go back to step 1.
        7) gcd(a^{r/2} + 1, N) and gcd(a^{r/2} - 1, N) 
           are both nontrivial factors of N. We are done.
        For example: N=15,a=7,r=4
-          gcd(7^{2}\pm 1,15)== gcd(49\pm 1,15)} 
+          gcd(7^{2}\pm 1,15) == gcd(49\pm 1,15)} 
               where gcd(48,15)=3 and gcd(50,15)=5
           
     
@@ -145,9 +146,8 @@ Notes about Shor's algorithm
     guarantees that there are at least N different x which produce the 
     same f(x), even as the period r approaches N/2.
 
-    The circuit diagram uses symbols [H] for hadamard operations,
-    U*a*2^n for controlled unitary operations, and QFT quantum FT.
-
+   The circuit diagram uses symbols [H] for hadamard operations,
+   U*a*2^n for controlled unitary operations, and QFT quantum Fourier Transform.
                                         ______
     |0> -[H]----------------------O-----|     |----
     ...                          ...    |     | ...
@@ -156,11 +156,10 @@ Notes about Shor's algorithm
     |1> -------|--------|---------|-------
                |        |         |
             [Ua2^0]  [Ua2^1] [Ua2^n-1]
-    
-        
+         
 ===============================
 Notes about Grover's algorithm
----------------------------------
+-------------------------------
                 
 from https://en.wikipedia.org/wiki/Grover%27s_algorithm
             
@@ -182,10 +181,10 @@ the size of the function's domain.
       solving the collision problem,
       cracking passwords.
 
-              
-              
+                      
 from "Quantum Mechanics Helps in Searching for a Needle 
 in a Haystack" by Grover
+Physical Review Letters, 1997
         
  Premise is that can reformat the problem into a 
  superposition of states so that a memory bit in the 
@@ -196,8 +195,7 @@ in a Haystack" by Grover
  on a pure state followed by measurement operation.
       (1) create superposition
           (wherein the amplitude of the system being in 
-          any of the 
-          N basic states of the system is equal)
+          any of the N basic states of the system is equal)
       (2) the Walsh-Hadamard transformation operation, 
       (3) the selective rotation of the phases of states.
              
@@ -225,8 +223,7 @@ in a Haystack" by Grover
         -> This is a way of creating a superposition 
         with the same
         amplitude in all 2^n states.
-            
-
+    
     -------        
         N-dimensional state space H, can 
         be supplied by n = log2 N qubits
@@ -294,7 +291,7 @@ the algorithm outline is:
         VIAMONTES, MARKOV, AND HAYES
 
     for an oracle p(x) that can be evaluated on any record x
-    of the database, the aalgorithm then looks for an x
+    of the database, the algorithm then looks for an x
     such that p(x) = 1. In this context, x can be addressed
     by a k bit string, and the database can contain
     up to N = 2k records.

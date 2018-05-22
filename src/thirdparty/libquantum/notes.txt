@@ -19,8 +19,8 @@ problem can be solved by using the density operator formalism.
 In this formalism the quantum state $\rho$ is represented by a statistical 
 mixture of state vectors where 
 
-\begin{displaymath}\rho = \sum_i p_i \vert\psi_i\rangle \hspace{-0.092cm} \langle\psi_i\vert \; . \end{displaymath}
+\begin{displaymath}\rho = 
+    \sum_i p_i \vert\psi_i\rangle \hspace{-0.092cm} \langle\psi_i\vert \; . \end{displaymath}
 
 Here $p_i$ denotes the probability of finding the system in the state $\psi_i$ 
     [Breuer, 2002].
-
