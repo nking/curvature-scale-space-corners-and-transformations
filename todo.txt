@@ -1,7 +1,10 @@
 -- note, when considering computer vision in water,
-   consider that the mantis shrimp holds 16 color receptive cones
-   compared to only just r,g,b.
+   -- consider that the mantis shrimp holds 16 color receptive cones
+   compared to only just r,g,b.  also has polarization sensitivity.
    read about cameras designed after mantis shrimp vision.
+   -- consider bee vision's uv sensitivity and polarization sensitivity
+      and multiple aperature
+      for atmospheric computer vision (ability to tell direction of sun)
 
 
 -- when return to reading on neural networks, see these 2:
