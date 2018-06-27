@@ -2,9 +2,10 @@
    -- consider that the mantis shrimp holds 16 color receptive cones
    compared to only just r,g,b.  also has polarization sensitivity.
    read about cameras designed after mantis shrimp vision.
-   -- consider bee vision's uv sensitivity and polarization sensitivity
-      and multiple aperature
-      for atmospheric computer vision (ability to tell direction of sun)
+-- consider bee vision's uv sensitivity and polarization sensitivity
+   and multiple apertures
+   for atmospheric computer vision (ability to tell direction of sun)
+-- consider the bird eye's oil drops...
 
 
 -- when return to reading on neural networks, see these 2:
