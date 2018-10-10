@@ -42,6 +42,10 @@
     -- Conditional Random Fields
     -- variational Bayes and expectation propagation
 
+    (1.5) general review of control theory and use of it in
+          systems biology (e.g. high osmolarity glycerol (HOG)
+          pathway system).
+
 (2) read the remote sensing paper
 
 -- consider making a greyscale MSEREdges
