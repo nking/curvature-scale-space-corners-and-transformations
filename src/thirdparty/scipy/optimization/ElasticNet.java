@@ -30,6 +30,38 @@ import java.util.logging.Logger;
   License: BSD 3 clause
  </pre>
 
+   ElasticNet is a linear regression algorithm with combined L1 and L2 priors of the
+      LASSO (least absolute shrinkage and selection operator)
+      and ridge (a.k.a. Tikhonov regularization) algorithms as regularizer.
+      It's used in 
+        support vector machine:  supervised learning models with associated 
+           learning algorithms that analyze data used for classification and 
+           regression analysis;
+        metric learning: closely related to similarity learning, it's the 
+           task of learning a distance function over objects;
+       and portfolio management:
+           large transaction volumes are the primary root of trading costs
+           so classic risk minimization models w/ 2 penalty terms for 
+           the objective of selecting only a small set of assets and
+           for similarity of portfolios in consecutive trading periods.
+           
+   Minimizes the objective function:
+      1 / (2 * n_samples) * ||y - Xw||^2_2
+         + alpha * l1_ratio * ||w||_1
+         + 0.5 * alpha * (1 - l1_ratio) * ||w||^2_2
+   If you are interested in controlling the L1 and L2 penalty separately, 
+   keep in mind that this is equivalent to:
+      a * L1 + b * L2
+      where:
+         alpha = a + b and l1_ratio = a / (a + b)
+
+   The parameter l1_ratio corresponds to alpha in the glmnet R package while 
+   alpha corresponds to the lambda parameter in glmnet. Specifically, 
+   l1_ratio = 1 is the lasso penalty. Currently, l1_ratio <= 0.01 is not reliable, 
+   unless you supply your own sequence of alpha.
+
+
+
  */
 public class ElasticNet {
 
