@@ -1,0 +1,105 @@
+notes aside from ising models:
+  Nitrogen freezes, goes from liquid to solid, at 63 Kelvin (-209.86 Celsius, -346 Fahrenheit))
+  Helium            goes from gas to liquid,   at 5.2 Kelvin (-268 Celsius, -450 Fahrenheit)
+     (core of Jupiter is thought to have liquid helium rain)
+  Helium freezes,   goes from liquid to solid,  at essentially 0K and very high pressure.
+     (25 Pa, 1 K, −272 °C, or −458 °F)
+     (not sure what cosmological model predicts a 0K temperature... nowhere is at 0K currently as
+     pressure from kinetic energy in an imperfect vacuum always results in a higher temperature
+     than that... CMB is 3K)
+     (centers of black holes have very different total energy states, but have exhausted
+      their supply of hydrogen and helium...)
+
+temperatures for use of ising models???  low-temperature superconductors?
+
+   literature suggests micro-environments w/ very low temperatures:
+
+   ^3He/^4He (superfluids) dilution refrigeration w/ pre-cooling by a 
+     Gifford-McMahon 2-stage refrigerators achieving temperatures in milli-Kelvin????
+     (Gifford-McMahon T=80K for 100 W of cooling power at 3% efficiency is cited elsewhere).
+     https://www.semanticscholar.org/paper/3He%2F4He-dilution-refrigerator-with-Gifford-McMahon-Uhlig-Hehn/37fdb7e28ad2ca96c6766265afeb79fe3d466049
+
+   SC (super conducting) magnets in the LHC particle accelerator? niobium-titanium (Nb-Ti) magnets operate at 1.9 K
+     Type II superconductors such as niobium-tin and niobium-titanium are in superconducting magnets. 
+     Nb-Ti critical temperature is 10 Kelvin.
+     contrast to historical NAL 15-foot bubble chamber operated at liquid hydrogen temperature 
+       of 20 Kelvin (-423 F).
+
+     Nb-Ti and Nb3Sn superconductors typically require cooling to 4.2 K by liquid He and 
+       sometimes to below 2 K by superfluid liquid He (as in Large Hadron Collider and
+       Nb-based Superconducting Radio Frequency Cavity applications) 
+       (? https://www.researchgate.net/publication/237733978_Niobium_in_superconducting_RF_cavities). 
+
+-----------------------------------------------------------------------
+
+From Classical to Quantum Glass
+by Wu, Ellman, Rosenbaum, Aeppli, and Reich
+  published in Physical Review Letters, 7 Oct 1991, Vol 67, NUMBER 15
+  https://authors.library.caltech.edu/47021/1/PhysRevLett.67.2076.pdf
+Ensembles of randomly distributed magnetic spins with
+competing interactions exhibit many of the hallmarks of
+glassy behavior.
+...
+Only at the lowest temperatures, well below the glass transition, does quantum
+mechanics become important as different parts of the
+free-energy surface can be linked through tunneling.
+...
+
+----------------------------------------------------
+
+Structural Glass Transition and the Entropy of the Metastable States
+Rémi Monasson
+Phys. Rev. Lett. 75, 2847 – Published 9 October 1995
+
+The metastable states of a glass are localized and counted by adding a 
+weak pinning field that explicitly breaks the ergodicity. The entropy 
+of the metastable states, that is, the logarithm of their number, 
+is extensive in a range of temperatures T_s < T < T_c
+ only. It is argued that T_s and T_c
+ are the ideal calorimetric and kinetic transition temperatures, respectively. 
+An explicit computation of the metastable states entropy for a (φ^2)^2 model is given.
+
+----------------------------------------------------
+
+"Spin-Glass Theory for Pedestrians"
+   by Castellani and Cavagna
+   2 May 2005
+   https://arxiv.org/pdf/cond-mat/0505032.pdf
+
+There is a thermodynamic transition at a temperature Ts,
+where the free energy switches from a paramagnetic state, to many spin-glass states.
+Moreover, Ts is also the temperature where the complexity of equilibrium states vanishes.
+
+What happens at Ts is a perfect realization of the entropy crisis scenario described by
+Kauzmann for supercooled liquids. Below Ts equilibrium is given by a non-exponential
+number of lowest free energy states, which are detected and described by a standard
+thermodynamic approach. Above Ts an exponentially large number of metastable states
+dominates the partition function, due to their nonzero complexity. In this phase, we
+have the funny result that the free energy density of equilibrium states is larger than
+the global equilibrium free energy density. 
+
+Thermodynamics is totally unaware of these
+states, and predicts a trivial paramagnetic state, with P(q) = δ(q).
+
+At higher temperatures we have a purely dynamic transition Td > Ts. When we
+arrive at this temperature coming from above, the dynamics gets trapped by metastable
+states, and the correlation time diverges. The equations describing such dynamical
+behavior are the same as the MCT equations for supercooled liquids. This suggests
+that what happens in the p-spin spherical model (PSM) at Td is similar to what happens in real glasses close
+to the MCT temperature. The crucial difference, of course, is that in the PSM there
+can be no barrier crossing, since barriers are infinite, while in real glasses activation is
+present. 
+
+On the other hand, the fact that standard MCT predicts a sharp dynamical
+transition at Td seems to suggest that this theory too, as the PSM, does not account for
+activated events.
+...
+A very final warning. We should never forget that the PSM is a mean-field model,
+with no spatial structure at all. As a consequence, all physical modelizations and
+interpretations coming from the PSM, inevitably have a mean-field flavor. In particular,
+this is true for the topological interpretation of the dynamical transition: no fluctuations
+are taken into account, not to mention spatial heterogeneities, which may play a very
+important role. However, the arguments we gave in terms of phase space and topological
+concepts have at least the virtue of being simple and effective. If not pushed too far,
+they provide a nice tool to understand in a unifying way the physics of glassy systems.
+

@@ -1,0 +1,108 @@
+https://webcache.googleusercontent.com/search?q=cache:z6LqMz8SlhIJ:https://www2.math.ethz.ch/education/bachelor/seminars/fs2008/nas/vetter.pdf+&cd=8&hl=en&ct=clnk&gl=us
+
+http://webcache.googleusercontent.com/search?q=cache:oy5CJsNTUQsJ:amath.colorado.edu/faculty/martinss/2014_CBMS/Refs/2012_fmm_encyclopedia.pdf+&cd=9&hl=en&ct=clnk&gl=us
+
+Fast Multipole Algorithm (FMA) a.k.a. Fast Multipole Method (FMM):
+    Seminar”Top Ten Algorithms“ 
+    Daniel Vetter. 22 May 2008
+
+  Evaluate the force upon N particles, where the force F has the form
+    F = F_near + F_far + F_external.
+
+    F_near: e.g. chemical bonding forces.
+    F_external: e.g. external known field (earth’s magnetic field).
+
+    F_near and F_external can be evaluated in O(N)
+
+      A more precise estimateof the time required (in d dimensions) is 
+        O(N log_(d−1)(1/ε)) as ε → 0
+        where ε is the accuracy
+     
+      “FMM” refers to a broad class of algorithms with linear or close to
+      linear complexity for evaluating all pairwise interactions between 
+      N particles, given some pairwise interaction kernel 
+      (e.g. the kernels associated with elasticity, gravitation, 
+      wave propagation, etc.).
+      ** An important application is the evaluation of the matrix-vector product x ↦→ Ax 
+      where A is a dense N × N matrix arising from the discretization of an integral operator.
+      The classical FMM and its descendants rely on quad-trees or oct-trees to hierarchically 
+      subdividethe computational domain, and are sometimes called “tree code” algorithms. 
+      The tree structure enables such schemes to adaptively refine non-uniform charge 
+      distributions, and are well-suited for multi-core and parallel computing platforms
+
+    
+ ** Problem is F_far:
+    Naive approach: O(N^2)
+    Clever divide-and-conquer approach: O(N log N).
+    The FMA manages O(N)
+ 
+    Potential Fields in 2D:
+      Fundamental Field for a particle at x_0 and grad(phi)=0.
+      ...
+      p-term Multipole Expansion (ME) of m particles with 
+      charge q_i atlocations z_i around 0 is the Laurent series 
+      truncated after the p-th term.
+      ...
+      Evaluating the field due to the particles x_1,...,x_m at 
+      the points y_1,...,y_n using multipole expansion takes 
+      only O(mp) + O(np)operations.
+      ...
+    FMA in 2d:
+      Recursively divide the computational domain C.
+         ( Complexity: O(4n · p) = O(Np) )
+      Calculate Multipole's Expansions (ME’s) of ever larger areas from the bottom up.
+         ( Complexity: O(Np2) )
+      Evaluate Φ using Local's Expansions (LE’s) from the top downwards.
+         ( Complexity: O(Np2) )
+      Directly evaluate local effects of neighbouring particles.
+         ( Complexity: O(Np) )
+
+      Note that storage complexity is only O(Np)
+
+      where:
+        p = ⌈log_c(ϵ)⌉ number of terms of the ME and the LE where ϵ is the desired precision.
+        n = ⌈log_4(N)⌉ level of refinement of the finest mesh.
+        Φ_l,i p-term ME around the center of box i at mesh level l.
+        Ψ_l,i p-term LE around the center of box i at level l.
+        ˜Ψ_l,i p-term LE around the center of box i at level l, describingthe potential 
+          field outside of box i’s parent’s box
+
+    Adaptive FMA in 2d:
+      Problem 
+        What if the particles are not uniformely distributed, i.e. there is no
+        upper bound k_n? 
+      Solution 
+        Fix k_n.
+        Recursively divide the boxes until there are at most k_n particles in a box
+
+      Application: Simulation of biochemical reactions in cell fluid
+      References:
+        Carrier, J., Greengard, L., and Rokhlin, V. (1988). 
+        A Fast Adaptive Multipole Algorithm for Particle Simulations. 
+        SIAM Journal on Scientific and Statistical Computing, 9:669. 
+
+        Greengard, L. (1988). 
+        The Rapid Evaluation of Potential Fields in Particle Systems. 
+        Mit Press. 
+
+        Greengard, L. and Rokhlin, V. (1987). 
+        A fast algorithm for particle simulations. 
+        Journal of Computational Physics, 73(2):325–348.
+
+      Note: The key to rapidly evaluating the sum of the kernel in F_far is that 
+        the kernel g(x,y) is smooth when x and y are not close. 
+        tensor factorization makes the operation O(M + N) instead of O(M*N).
+          no one combination of sums represents all combinations of target 
+          and source points, so we cut the domain up into pieces, 
+          and use approximations to evaluate interactions between 
+          distant pieces, and use direct evaluation only for points 
+          that are close. 
+          (Equivalently, one could say that we will evaluate the matrix-vector 
+          product (see eqn 3 or look up elsewhere if needed) by exploiting 
+          rank-deficiencies in off-diagonal blocks of A.)
+          There are methods for cases where sets of target and source locations
+          coincide, or are in separate boxes.
+        Note: when calculating the tensor, nomenclature for the translation
+          operator as "incoming-from-outgoing" is often called the 
+          "multipole-to-local” or “M2L” operator
+
