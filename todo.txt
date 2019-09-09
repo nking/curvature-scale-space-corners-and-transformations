@@ -6,7 +6,46 @@
    and multiple apertures
    for atmospheric computer vision (ability to tell direction of sun)
 -- consider the bird eye's oil drops...
+-- for sky direction, bees have more sensitivity to UV and polarization
+   so can tell direction of sun quickly
 
+-- apply mser to the test images of the computer vision and robotics books 
+(img_books_illum3*) with lowered thresholds to pick up the fainter text
+too, then use the EdgesWrapper on it or explore other means of identifying
+the text regions in the MSER results.  a couple of recent papers use MSER
+in neural networks as fast text detecting algorithms to` find signs in images.
+
+-- for the mser code where have needed to handle shifting of image for
+points near 0 and 180 boundaries, could instead adjust the algorithm
+to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
+
+-- if update libquantum porting to 1.1.1,
+   consider browsing Nielson's book which Cambridge publishing is no
+   longer selling:
+       http://www-reynal.ensea.fr/docs/iq/QC10th.pdf
+
+   -- Hubbard and Ising models
+
+-- make the simplest, even if impossible design to the fire thermal energy
+    convertor
+    - goal is to consume as much of the fire without by-product that worsens it
+      and to convert some fraction of the results to power safely usable in that
+      environment.
+
+-- re-evaluate whether or not could be useful in the canny color edges
+   algorithm to also use the polar chroma image that is shifted by
+   some amount.  did i include the wrap around difference already in
+   intrpreting the polar chroma image?
+
+-- when return to the libquantum code:
+   -- add back the ability to use the objcode and density classes
+   -- port the ising model from 1.1.1
+
+-- acousto optics
+
+-- geohashing, multi-D vornoi, approx nearest neighbor, falconn, etc.
+-- vocabulary trees
+-- kdtree with different attributes for each level.
 
 -- when return to reading on neural networks, see these 2:
    https://playground.tensorflow.org/#activation=tanh&batchSize=10&dataset=circle&regDataset=reg-plane&learningRate=0.03&regularizationRate=0&noise=0&networkShape=4,2&seed=0.21870&showTestData=false&discretize=false&percTrainData=50&x=true&y=true&xTimesY=false&xSquared=false&ySquared=false&cosX=false&sinX=false&cosY=false&sinY=false&collectStats=false&problem=classification&initZero=false&hideText=false
