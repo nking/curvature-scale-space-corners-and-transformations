@@ -14,6 +14,10 @@
 too, then use the EdgesWrapper on it or explore other means of identifying
 the text regions in the MSER results.  a couple of recent papers use MSER
 in neural networks as fast text detecting algorithms to` find signs in images.
+if need to calculate stroke widths, could mask out all regions not possibly
+text and quickly hollow out insides of letters, then use a distance transform
+on the image or cropped image.
+
 
 -- for the mser code where have needed to handle shifting of image for
 points near 0 and 180 boundaries, could instead adjust the algorithm
