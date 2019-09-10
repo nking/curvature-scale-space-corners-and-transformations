@@ -30,12 +30,6 @@ to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
 
    -- Hubbard and Ising models
 
--- make the simplest, even if impossible design to the fire thermal energy
-    convertor
-    - goal is to consume as much of the fire without by-product that worsens it
-      and to convert some fraction of the results to power safely usable in that
-      environment.
-
 -- re-evaluate whether or not could be useful in the canny color edges
    algorithm to also use the polar chroma image that is shifted by
    some amount.  did i include the wrap around difference already in
@@ -85,9 +79,9 @@ to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
     -- Conditional Random Fields
     -- variational Bayes and expectation propagation
 
-    (1.5) general review of control theory and use of it in
-          systems biology (e.g. high osmolarity glycerol (HOG)
-          pathway system).
+ (1.5) general review of control theory and use of it in
+       systems biology (e.g. high osmolarity glycerol (HOG)
+       pathway system).
 
 (2) read the remote sensing paper
 
@@ -97,6 +91,13 @@ to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
 
 -- consider implementing a 3-view transformation solver
    ...trifocal tensor
+
+-- consider implementing an "integral image" method for the L1 differences, that is, the 
+   absolute value of the pixel differences in summed area table format for fast
+   extraction.
+     Note that cannot use the summed are table format for L2 differences as the
+     exponent gets combined into successive terms and separability of inner quadrants
+     then is not possible in 4 operations.
 
 -- interesting:
    solving the transformations between 2 images
