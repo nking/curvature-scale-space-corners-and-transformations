@@ -161,7 +161,7 @@ public class LinkedListCostNode extends SimpleLinkedListNode {
         LinkedListCostNode current = last;
 
         while (current.next != null) {
-            current = (LinkedListCostNode)next;
+            current = (LinkedListCostNode)current.next;
             if (current.key == deleteKey) {
                 last.next = current.next;
                 n--;
