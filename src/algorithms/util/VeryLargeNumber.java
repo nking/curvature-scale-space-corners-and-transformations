@@ -42,7 +42,7 @@ public class VeryLargeNumber implements Comparable<VeryLargeNumber>, Cloneable {
     // adding faster alternative methods for the large integer division
     // could improve the largest bottleneck.
  
-    //TODO: change BASE to (1<<30)-1, that is, 1073741823 
+    //1073741823 
     public final static int BASE = (1<<30) - 1;
     
     private int[] a;

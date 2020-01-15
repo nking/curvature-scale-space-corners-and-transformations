@@ -22,7 +22,7 @@ public class MinHeapForRT2012 {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    // 0 = use Dial, 1 = use Fibonacci, 2 = use XFastTrie
+    // 1 = Fibonacci, 2 = YFastTrie
     private final int algorithm;
         
     private int lastKnownMinKey0 = 0;

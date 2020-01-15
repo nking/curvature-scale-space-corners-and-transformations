@@ -8,6 +8,13 @@ import java.util.LinkedList;
 /**
  * adapted from dlib class 
  *   optimization/optimization_search_strategies.h
+
+   Limited-memory BFGS is an optimization algorithm in the family of
+   quasi-Newton methods (finds zeroes or local maxima and minima of functions)
+   that approximates the
+   Broyden–Fletcher–Goldfarb–Shanno (BFGS) algorithm using a limited
+   amount of computer memory. It is a popular algorithm for parameter
+   estimation in machine learning
  * 
  * (add license here)
  * 

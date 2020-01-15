@@ -1,0 +1,224 @@
+In mathematics, an integral transform maps an equation from its original domain into another domain where it might be manipulated and solved much more easily than in the original domain. The solution is then mapped back to the original domain using the inverse of the integral transform.
+    The input of this transform is a functiuon f, 
+        and the output is another function Tf. 
+        An integral transform is a particular kind of mathematical operator.
+    There are numerous useful integral transforms. Each is specified by a choice of the 
+        function K of two variables, the kernel function, integral kernel or nucleus of the transform.
+        The term kernel is used in statistical analysis to refer to a window function. 
+
+    (Tf)(u) = integral_t1_to_t2( f(t) K(t, u) dt
+
+The Laplace Transform is useful for linear differential equations
+with discontinuous forcing functions.
+
+Some properties of the Laplace Transform:
+   (1) L(0) = 0
+   (2) L{f(t)+g(t)} = L{f(t)} +- L{g(t)}
+   (3) L{c*f(t)} = c*L{f(t)}, for any constant c
+ (2) & (3) make the transform linear
+   (4) derivatives
+       L{(-t)f(t)} = F'(s), or equivalently L{t*f(t)} = -F'(s)
+         e.g. L{t^2} = -(L{t})' = -(d/ds)(1/s^2) = -(-2/s^3) = 2/s^3
+
+In solving linear differential equations algebraically:
+   Laplace Transform of derivatives:
+     L{f'(t)} = s*L{f(t)}- f(0)
+     L{f"(t)} = s^2*L{f(t)}- s*f(0) - f'(0)
+     L{f"'(t)} = s^3*L{f(t)}- s^2*f(0) - s*f'(0) - f"(0)
+
+     L{f^n(t)} = s^n*L{f(t)}- s^(n-1)*f(0) - s^(n-2)*f'(0) - ...
+         - s^2*f^(n-3)(0) - s*f^(n-2)(0) - f^(n-1)(0)
+
+To solve a linear differential equation using Laplace transforms, there are
+only 3 basic steps:
+ 1. Take the Laplace transforms of both sides of an equation.
+ 2. Simplify algebraically the result to solve for L{y} = Y(s) in terms
+    of s.
+ 3. Find the inverse transform of Y(s). (Or, rather, find a function y(t)
+    whose Laplace transform matches the expression of Y(s).) This
+    inverse transform, y(t), is the solution of the given differential
+    equation. 
+
+Example:
+  y" - 6*y' + 5*y = 0,  y(0)=1, y'(0)=-3
+  (1) transform both sides:
+      L{y" - 6*y' + 5*y} = L{0}
+
+      (s^2*L{y} - s*y(0) - y'(0)) - 6*(s*L{y} - y(0)) + 5*L{y} = 0
+  (2) simplify to find Y(s) = L{y}
+      (s^2*L{y} - s-(-3)) - 6*(s*L{y} - 1) + 5*L{y} = 0
+      L{y}*(s^2 - 6*s + 5) = s - 9
+      L{y} = (s - 9) / (s^2 - 6*s + 5)
+  (3) find the inverse transform of y(t)
+      use partial fractions to simplify
+      L{y} = (s - 9) / (s^2 - 6*s + 5) = (a/(s-1)) + (b/(s-5))
+                                       = (a(s-5)/((s-5)*(s-1))) + (b(s-1)/((s-5)*(s-1)))
+              s-9 = a(s-5) + b(s-1)
+                  = (a+b)s + (-5a-b)
+
+      Equating the corresponding coefficients
+         1 = a+b    ==> a=2
+         -9 = -5a-b ==> b=-1
+      hence
+        L{y} = (s - 9) / (s^2 - 6*s + 5) = (2/(s-1)) - (1/(s-5))
+
+        the last expression corresponds to the Laplace Transform of 2e^t-e^(5t)
+        so y(t) must be 2e^t-e^5t
+
+
+From book "MANEUVERING AND CONTROL OF MARINE VEHICLES" 
+    by Triantafyllou and Hover, Dept of Ocean Engineering, MIT
+
+The Laplace transform projects time-domain signals into a complex frequency-domain equivalent.
+The signal y(t) has transform Y (s) defined as follows:
+
+  Y (s) = L(y(t)) = integral_tau_from_0_to_inf ( y(tau) * e^(-s*tau)*dtau
+     where s is a complex variable, constrained within a region so that the integral converges.
+
+Note that the Laplace transform is linear, so it is distributive: 
+  L(x(t) + y(t)) = L(x(t)) + L(y(t)). 
+
+As with the Fourier transform, the convolution of two signals in the 
+time domain corresponds with the multiplication of signals in the 
+frequency domain. 
+  Consider a system whose impulse response is g(t), 
+  being driven by an input signal x(t); 
+  the output is y(t) = g(t) conv x(t). 
+  The Convolution Theorem is
+    y(t) = integral_tau_from_0_to_t( g(t-tau)*x(tau)*dtau ) <---> Y(s) = G(s)*X(s)
+
+  see Boas Appendix or referenced book for list of Laplace transform pairs.
+
+  These are commonly used in control system design:
+    *** ______ ****
+      
+  Solution of Differential Equations by Laplace Transform:
+    1. Transform the system impulse response g(t) into G(s), and the input signal x(t) into
+       X(s), using the transform pairs.
+    2. Perform the multiplication in the Laplace domain to find Y (s).
+    3. Ignoring the effects of pure time delays, break Y(s) into partial fractions with no powers
+       of s greater than 2 in the denominator.
+    4. Generate the time-domain response from the simple transform pairs. Apply time delay
+       as necessary.
+    Specific examples of this procedure are given in a later section on transfer functions.
+
+
+Solution of Differential Equations by Laplace Transform
+The Convolution Theorem allows one to solve (linear time-invariant) differential equations
+in the following way:
+1. Transform the system impulse response g(t) into G(s), and the input signal x(t) into
+X(s), using the transform pairs.
+2. Perform the multiplication in the Laplace domain to find Y (s).
+3. Ignoring the effects of pure time delays, break Y (s) into partial fractions with no powers
+of s greater than 2 in the denominator.
+4. Generate the time-domain response from the simple transform pairs. Apply time delay
+as necessary.
+Specific examples of this procedure are given in a later section on transfer functions.
+
+
+https://x-engineer.org/graduate-engineering/signals-systems/control-systems/find-transfer-function-system/
+https://help.scilab.org/docs/6.0.0/pt_BR/csim.html
+
+
+laplace transform and transfer function
+input                          output
+u(t) --> Laplace Transform --> U(s)
+y(t) --> Laplace Transform --> Y(s)
+
+t=time, s=frequency
+H(s) is transfer function = Y(s)/U(s)
+
+L[f(t)] = F(s)
+L[f'(t)] = sF(s) - f(0)
+L[f"(t)] = s^2F(s) - sf(0) - f'(0)
+
+example: input:   F(t) = m(d2x(t)/dt2) + c(dx(t)/dt) + kx(t)
+         output:  x(t)
+
+apply he Laplace transform to each term of the input:
+    L[m(d2x(t)/dt2)] = m*(s^2X(s) - sx(0) - dx(0)/dt)
+    L[c(dx(t)/dt)] = c*(sX(s) - sx(0))
+    L[k(x(t))] = k*(X(s))
+    L[F(t)] = F(s)
+
+initial conditions for the example:  x(0) = 0, dx(0)/dt = 0
+    L[m(d2x(t)/dt2)] = m*(s^2X(s))
+    L[c(dx(t)/dt)] = c*(sX(s))
+    L[k(x(t))] = k*(X(s))
+    L[F(t)] = F(s)
+       F(s) = m*(s^2X(s)) + c*(sX(s)) + k*(X(s))
+       F(s) = X(s)*(m*(s^2) + c*(s) + k)
+Then the transfer function H(s) = X(s)/F(s) = 1/(m*(s^2) + c*(s) + k)
+
+Prove that the transfer function is correct, make a simple Xcos block diagram
+to simulate the step response of the system:
+
+     --------------    ----------------------------|
+     |            |    |    ____________________   |    ____________
+     |     -----  |    |    |         1         |  |-->|           |
+     |     |      |O---O--->|  ---------------  |O---->|  (analog  |
+     |  ___|      |         |  m*s^2 + c*s + k  |      |   wave)   |
+     |  (step)    |         ---------------------      |___________|
+     --------------
+
+example parameters:
+   m = 2 kg
+   c = 1 Ns/m
+   k = 2 N/m
+
+run the Xcos simulation for 20 sec
+    H(s) = X(s)/F(s) = 1/(m*(s^2) + c*(s) + k)
+      0     1/2 = 0.5
+      0.01  1/2.01 = 0.497
+      0.1   1/2.12 = 0.47
+      0.2   1/2.28 = 0.44
+      0.3   1/2.48 = 0.40
+      0.4   1/2.72 = 0.37
+      0.5   1/3 = 0.33
+      0.6   1/3.2 = 0.3
+      0.7   1/3.7 = 0.27
+      0.8   1/4.08 = 0.25
+      0.9   1/4.52 = 0.22
+      1     1/(2+1+2) = 1/5 = 0.2
+      2     1/(2*2+2+2)=1/8 = 0.125
+      20    1/822 = 0.0012
+      
+   They use an opensource software called Scilab for the linear algebra for
+     extracting x(t) from H(s) and X(s).
+     package is called csim.
+     https://help.scilab.org/docs/6.0.0/pt_BR/csim.html
+
+   The result is a plot showing that x(t) starts as a step perturbation
+     and does dampen with increasing time.
+
+------------
+
+libraries for it:
+
+netlib, python-control, scipy.signal.TransferFunction
+
+  https://github.com/python-control/python-control/blob/601b58152080d89575cc677474ec7714e1a34ee2/external/controls.py
+
+  https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.TransferFunction.html#scipy.signal.TransferFunction
+
+  netlib (http://netlib3.cs.utk.edu/toms/)
+    e.g. http://www.netlib.org/toms-2014-06-10/619
+
+    toms619 for Laplace transform, automatic numerical inversion
+        (automatic numerical inversion of the Laplace transform)
+      - dlainv
+    toms629 for 3d Laplace equation, double potential, spherical harmonics 
+        (interior Dirichlet problem for Laplace's equation on a general three dimensional domain)
+      - laplac
+    toms662 for numerical inversion of the Laplace transform 
+        (Weeks' method)
+      - moduli1 and moduli2
+    toms682 for inversion of the Laplace transform
+ 	(Talbot's method)
+      - ?
+    toms788
+        (Boundary Integral Equation Programs for the Planar {Laplace} Equation)
+    toms796
+        (A {Fortran} Software Package for the Numerical Inversion of the 
+            {Laplace} Transform Based on a {Fourier} Series Method)
+        invltf?

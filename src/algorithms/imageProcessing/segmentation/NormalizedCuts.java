@@ -29,6 +29,20 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
  * implementation of the algorithm of
  * "Normalized Cuts and Image Segmentation"
         by Jianbo Shi and Jitendra Malik
+
+    grouping algorithm:
+      1. Given an image or image sequence, set up a
+        weighted graph G(V; E) and set the weight on
+        the edge connecting two nodes to be a measure of
+        the similarity between the two nodes.
+      2. Solve (D - W)*x = lambda*D*x for eigenvectors with the
+        smallest eigenvalues.
+      3. Use the eigenvector with the second smallest
+        eigenvalue to bipartition the graph.
+      4. Decide if the current partition should be subdivided
+        and recursively repartition the segmented parts if
+        necessary
+
          
     Much of the logic here is adopted from the scipy skimage 
     implementation of normalized cuts.
@@ -295,6 +309,8 @@ public class NormalizedCuts {
             }
                             
             // 2nd smallest eigenvector
+            //NOTE: improve upon thisone day, following "splitting point" of page 892:3 of paper
+            //  and K-way cut on page 893
             int m = w.numRows();
             //int nEig = 2;
             int nEig = Math.min(100, m - 2);
