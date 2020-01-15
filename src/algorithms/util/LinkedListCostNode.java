@@ -1,64 +1,56 @@
 package algorithms.util;
 
-import java.util.Arrays;
-
 /**
- * a node holding only a integer key and the next reference.  the key must be 
- * larger than -1.
- *
- * adapted from 
-   https://code.google.com/p/two-point-correlation/source/browse/src/main/java/algorithms/compGeometry/clustering/twopointcorrelation/SimpleLinkedListNode.java
- * under MIT License (MIT), Nichole King 2013
+ * extends SimpleLinkedListNode to hold an integer for the cost (which is
+ * by default Integer.MAX_VALUE for use with min heaps and priority queues).
+ * (NOTE, could edit the code to make defaultCost modifiable.)
  * 
  * @author nichole
  */
-public class SimpleLinkedListNode {
-
-    protected int key = -1;
-
-    protected SimpleLinkedListNode next = null;
+public class LinkedListCostNode extends SimpleLinkedListNode {
     
-    protected int n = 0;
-
-    public SimpleLinkedListNode() {}
+    public final static int DEFAULT_COST = Integer.MAX_VALUE;
     
-    public SimpleLinkedListNode(int insertKey) {
-        this.key = insertKey;
-        n++;
+    protected int cost = DEFAULT_COST;
+    
+    public LinkedListCostNode() {
+        super();
     }
     
-    public int getKey() {
-        return key;
+    public LinkedListCostNode(int insertKey, int cost) {
+        super(insertKey);
+        this.cost = cost;
     }
     
-    public SimpleLinkedListNode getNext() {
-        return next;
-    }
-
-    /**
-     * set next to nextNode.  note that if this.next is not null, it is lost.
-     * @param nextNode
-     */
-    public void setNext(SimpleLinkedListNode nextNode) {
-        this.next = nextNode;
-        n++;
+    public LinkedListCostNode(int insertKey) {
+        super(insertKey);
     }
     
+    public int getCost() {
+        return cost;
+    }
+    
+    @Override
     public SimpleLinkedListNode insert(int insertKey) {
-        
-        if (insertKey == -1) {
+        return insert(insertKey, DEFAULT_COST);
+    }
+    
+    public LinkedListCostNode insert(int insertKey, int insertCost) {
+         if (insertKey == -1) {
             throw new IllegalArgumentException(
             "insertKey must be larger than -1");
         }
         n++;
         if (this.key == -1) {
             key = insertKey;
+            cost = insertCost;
             return this;
         }
         
-        SimpleLinkedListNode node = new SimpleLinkedListNode(key);
+        LinkedListCostNode node = new LinkedListCostNode(key, cost);
         
         key = insertKey;
+        cost = insertCost;
 
         if (next == null) {
             next = node;
@@ -68,11 +60,16 @@ public class SimpleLinkedListNode {
         node.next = next;
         
         next = node;
-
+        
         return node;
     }
-
+    
+    @Override
     public SimpleLinkedListNode insertIfDoesNotAlreadyExist(int insertKey) {
+        return insertIfDoesNotAlreadyExist(insertKey, DEFAULT_COST);
+    }
+    
+    public LinkedListCostNode insertIfDoesNotAlreadyExist(int insertKey, int insertCost) {
         
         if (insertKey == -1) {
             throw new IllegalArgumentException(
@@ -83,6 +80,7 @@ public class SimpleLinkedListNode {
         }
         if (this.key == -1) {
             key = insertKey;
+            cost = insertCost;
             return this;
         }
         
@@ -92,10 +90,10 @@ public class SimpleLinkedListNode {
             return null;
         }
         
-        return insert(insertKey);
+        return insert(insertKey, insertCost);
     }
-
-    public void delete(SimpleLinkedListNode node) {
+    
+    public void delete(LinkedListCostNode node) {
 
         if (key == -1) {
             return;
@@ -105,8 +103,10 @@ public class SimpleLinkedListNode {
         if (this.equals(node)) {
             if (this.next == null) {
                 this.key = -1;
+                this.cost = DEFAULT_COST;
             } else {
                 this.key = next.key;
+                this.cost = ((LinkedListCostNode)next).cost;
                 this.next = next.next;
             }
             n--;
@@ -114,20 +114,27 @@ public class SimpleLinkedListNode {
         }
 
         // start w/ 2nd node because we've already searched the first
-        SimpleLinkedListNode last = this;
-        SimpleLinkedListNode current = this;
+        LinkedListCostNode last = this;
+        
+        LinkedListCostNode current = last;
 
         while (current.next != null) {
-            current = current.next;
+            current = (LinkedListCostNode)current.next;
             if (current.equals(node)) {
                 last.next = current.next; 
                 n--;
                 break;
             }
-            last = current;
+            last = current;            
         }
     }
-
+    
+    /**
+     * delete the first node found with key == deleteKey.
+     * 
+     * @param deleteKey 
+     */
+    @Override
     public void delete(int deleteKey) {
 
         if (deleteKey == -1) {
@@ -138,8 +145,10 @@ public class SimpleLinkedListNode {
         if (this.key == deleteKey) {
             if (this.next == null) {
                 this.key = -1;
+                this.cost = DEFAULT_COST;
             } else {
                 this.key = next.key;
+                this.cost = ((LinkedListCostNode)next).getCost();
                 this.next = next.next;
             }
             n--;
@@ -147,11 +156,12 @@ public class SimpleLinkedListNode {
         }
         
         // start w/ 2nd node because we've already searched the first
-        SimpleLinkedListNode last = this;
-        SimpleLinkedListNode current = this;
+        LinkedListCostNode last = this;
+        
+        LinkedListCostNode current = last;
 
         while (current.next != null) {
-            current = current.next;
+            current = (LinkedListCostNode)next;
             if (current.key == deleteKey) {
                 last.next = current.next;
                 n--;
@@ -160,52 +170,9 @@ public class SimpleLinkedListNode {
             last = current;
         }
     }
-
-    public SimpleLinkedListNode search(int searchKey) {
-
-        SimpleLinkedListNode latest = this;
-
-        while (latest != null) {
-            if (latest.key == searchKey) {
-                return latest;
-            }
-            latest = latest.next;
-        }
-        return null;
-    }
-
-    public boolean contains(int searchKey) {
-        SimpleLinkedListNode node = search(searchKey);
-        return (node != null);
-    }
-
-    public int[] getKeys() {
-        if (key == -1) {
-            return new int[0];
-        }
-        int n = 10;
-        int[] nodeKeys = new int[n];
-        int count = 0;
-
-        SimpleLinkedListNode latest = this;
-        while (latest != null && latest.key != -1) {
-            if ((count + 1) > n) {
-                n = 2*n;
-                nodeKeys = Arrays.copyOf(nodeKeys, n);
-            }
-            nodeKeys[count] = latest.key;
-            count++;
-            latest = latest.next;
-        }
-        return Arrays.copyOf(nodeKeys, count);
-    }
-
-    public int getNumberOfKeys() {
-        return n;
-    }
     
     public static long approximateMemoryUsed() {
-            
+        
         String arch = System.getProperty("sun.arch.data.model");
     
         boolean is32Bit = ((arch != null) && arch.equals("64")) ? false : true;
@@ -215,8 +182,8 @@ public class SimpleLinkedListNode {
         int overheadBytes = 16;
     
         int intBytes = (is32Bit) ? 4 : 8;
-        // 2 ints:
-        intBytes *= 2;
+        // 4 ints:
+        intBytes *= 4;
         
         int refBytes = nbits/8;
 
@@ -231,20 +198,24 @@ public class SimpleLinkedListNode {
         return sumBytes;
     }
     
+    /**
+     * only the key is used for this equals identity
+     * @param arg0
+     * @return 
+     */
     @Override
     public boolean equals(Object arg0) {
-        if (!(arg0 instanceof SimpleLinkedListNode)) {
+        if (!(arg0 instanceof LinkedListCostNode)) {
             return false;
         }
-        SimpleLinkedListNode other = (SimpleLinkedListNode)arg0;
+        LinkedListCostNode other = (LinkedListCostNode)arg0;
+        
         return (other.key == this.key);
     }
-
+    
     @Override
     public int hashCode() {
         // even if same keys, want different hashcodes
         return super.hashCode(); 
     }
-
-    
 }

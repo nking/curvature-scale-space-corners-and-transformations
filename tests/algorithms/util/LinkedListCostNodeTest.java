@@ -4,17 +4,14 @@ import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 /**
- * adapted from 
-http://code.google.com/p/two-point-correlation/source/browse/src/test/java/algorithms/compGeometry/clustering/twopointcorrelation/SimpleLinkedListNodeTest.java
-* under MIT License (MIT), Nichole King 2013
  * 
  * @author nichole
  */
-public class SimpleLinkedListNodeTest extends TestCase {
+public class LinkedListCostNodeTest extends TestCase {
 
     protected Logger log = Logger.getLogger(this.getClass().getSimpleName());
     
-    public SimpleLinkedListNodeTest(String testName) {
+    public LinkedListCostNodeTest(String testName) {
         super(testName);
     }
 
@@ -29,7 +26,7 @@ public class SimpleLinkedListNodeTest extends TestCase {
     }
 
     /**
-     * Test of insert method, of class SimpleLinkedListNode.
+     * Test of insert method, of class LinkedListCostNode.
      */
     public void testInsert() {
         log.info("insert");
@@ -37,14 +34,16 @@ public class SimpleLinkedListNodeTest extends TestCase {
         int key = 1234;
         int key2 = 5678;
 
-        SimpleLinkedListNode node = new SimpleLinkedListNode();
+        LinkedListCostNode node = new LinkedListCostNode();
 
         node.insert(key);
         assertTrue(node.key == key);
+        assertTrue(node.getCost() == LinkedListCostNode.DEFAULT_COST);
         assertTrue(node.next == null);
 
         node.insert(key2);
         assertTrue(node.key == key2);
+        assertTrue(node.getCost() == LinkedListCostNode.DEFAULT_COST);
         assertTrue(node.next.key == key);
         assertTrue(node.next.next == null);
         
@@ -69,137 +68,169 @@ public class SimpleLinkedListNodeTest extends TestCase {
     }
 
     /**
-     * Test of insertIfDoesNotAlreadyExist method, of class SimpleLinkedListNode.
+     * Test of insertIfDoesNotAlreadyExist method, of class LinkedListCostNode.
      */
     public void testInsertIfDoesNotAlreadyExist() {
         log.info("insertIfDoesNotAlreadyExist");
 
         int key = 1234;
         int key2 = 5678;
+        
+        int cost = 1;
+        int cost2 = 2;
+       
 
-        SimpleLinkedListNode node = new SimpleLinkedListNode();
+        LinkedListCostNode node = new LinkedListCostNode();
 
-        node.insertIfDoesNotAlreadyExist(key);
+        node.insertIfDoesNotAlreadyExist(key, cost);
         assertTrue(node.key == key);
+        assertTrue(node.cost == cost);
         assertTrue(node.next == null);
 
-        node.insertIfDoesNotAlreadyExist(key2);
+        node.insertIfDoesNotAlreadyExist(key2, cost2);
         assertTrue(node.key == key2);
+        assertTrue(node.cost == cost2);
         assertTrue(node.next.key == key);
         assertTrue(node.next.next == null);
 
         node.insertIfDoesNotAlreadyExist(key);
         assertTrue(node.key == key2);
+        assertTrue(node.cost == cost2);
         assertTrue(node.next.key == key);
+        assertTrue(((LinkedListCostNode)node.getNext()).getCost() == cost);
         assertTrue(node.next.next == null);
         
         int key3 = 12;
         
-        SimpleLinkedListNode r = node.insertIfDoesNotAlreadyExist(key3);
+        LinkedListCostNode r = (LinkedListCostNode)node.insertIfDoesNotAlreadyExist(key3);
         assertNotNull(r);
         
-        r = node.insertIfDoesNotAlreadyExist(key3);
-        assertNull(r);
+        assertNull(node.insertIfDoesNotAlreadyExist(key3));
         
     }
 
     /**
      * Test of delete method, of class SimpleLinkedListNode.
      */
-    public void testDelete_SimpleLinkedListNode() {
+    public void testDelete_LinkedListCostNode() {
 
         log.info("delete");
 
         int key = 1234;
         int key2 = 5678;
+        
+        int cost = 1;
+        int cost2 = 2;
 
-        SimpleLinkedListNode node = new SimpleLinkedListNode();
+        LinkedListCostNode node = new LinkedListCostNode();
 
-        node.insert(key);
-        node.insert(key2);
+        node.insert(key, cost);
+        node.insert(key2, cost2);
 
         node.delete(key);
 
         assertTrue(node.key == key2);
+        assertTrue(node.cost == cost2);
         assertTrue(node.next == null);
 
         node.delete(key2);
 
         assertTrue(node.key == -1);
         
-        node = new SimpleLinkedListNode();
-        node.delete(new SimpleLinkedListNode(2));
+        node = new LinkedListCostNode();
+        node.delete(new LinkedListCostNode(2, Integer.MAX_VALUE));
         
         
-        node = new SimpleLinkedListNode();
+        node = new LinkedListCostNode();
         node.insert(key);
         node.delete(key);
         assertTrue(node.key == -1);
+        assertTrue(node.cost == LinkedListCostNode.DEFAULT_COST);
         assertTrue(node.next == null);
         
-        node = new SimpleLinkedListNode();
-        node.insert(key);
-        node.delete(new SimpleLinkedListNode(key));
+        node = new LinkedListCostNode();
+        node.insert(key, cost);
+        node.delete(new LinkedListCostNode(key));
         assertTrue(node.key == -1);
+        assertTrue(node.cost == LinkedListCostNode.DEFAULT_COST);
         assertTrue(node.next == null);
         
         
-        node = new SimpleLinkedListNode();
-        node.insert(key);
-        node.insert(key2);
+        node = new LinkedListCostNode();
+        node.insert(key, cost);
+        node.insert(key2, cost2);
         node.delete(key2);
         assertTrue(node.key == key);
+        assertTrue(node.cost == cost);
         assertTrue(node.next == null);
         
-        node = new SimpleLinkedListNode();
-        node.insert(key);
-        node.insert(key2);
-        node.delete(new SimpleLinkedListNode(key2));
+        node = new LinkedListCostNode();
+        node.insert(key, cost);
+        node.insert(key2, cost2);
+        node.delete(new LinkedListCostNode(key2));
         assertTrue(node.key == key);
+        assertTrue(node.cost == cost);
         assertTrue(node.next == null);
-        
         
         int key3 = 12;
-        node = new SimpleLinkedListNode();
-        node.insert(key);
-        node.insert(key2);
-        node.insert(key3);
+        int cost3 = 3;
+        node = new LinkedListCostNode();
+        node.insert(key, cost);
+        node.insert(key2, cost2);
+        node.insert(key3, cost3);
         node.delete(key2);
         assertTrue(node.key == key3);
+        assertTrue(node.cost == cost3);
         assertTrue(node.next.key == key);
+        assertTrue(((LinkedListCostNode)node.next).cost == cost);
         node.delete(-1);
         assertTrue(node.key == key3);
+        assertTrue(node.cost == cost3);
         assertTrue(node.next.key == key);
+        assertTrue(((LinkedListCostNode)node.next).cost == cost);
         node.delete(key2);
         assertTrue(node.key == key3);
+        assertTrue(node.cost == cost3);
         assertTrue(node.next.key == key);
+        assertTrue(((LinkedListCostNode)node.next).cost == cost);
         
-        node = new SimpleLinkedListNode();
-        node.insert(key);
-        node.insert(key2);
-        node.insert(key3);
-        node.delete(new SimpleLinkedListNode(key2));
+        node = new LinkedListCostNode();
+        node.insert(key, cost);
+        node.insert(key2, cost2);
+        node.insert(key3, cost3);
+        
+        node.delete(new LinkedListCostNode(key2));
         assertTrue(node.key == key3);
+        assertTrue(node.cost == cost3);
         assertTrue(node.next.key == key);
+        assertTrue(((LinkedListCostNode)node.next).cost == cost);
+        
         node.delete(-1);
         assertTrue(node.key == key3);
+        assertTrue(node.cost == cost3);
         assertTrue(node.next.key == key);
-        node.delete(new SimpleLinkedListNode(key2));
-        assertTrue(node.key == key3);
-        assertTrue(node.next.key == key);
+        assertTrue(((LinkedListCostNode)node.next).cost == cost);
         
-        node = new SimpleLinkedListNode();
-        node.insert(key);
-        node.insert(key2);
-        node.insert(key3);
-        node.delete(new SimpleLinkedListNode(key));
+        node.delete(new LinkedListCostNode(key2));
         assertTrue(node.key == key3);
+        assertTrue(node.cost == cost3);
+        assertTrue(node.next.key == key);
+        assertTrue(((LinkedListCostNode)node.next).cost == cost);
+        
+        node = new LinkedListCostNode();
+        node.insert(key, cost);
+        node.insert(key2, cost2);
+        node.insert(key3, cost3);
+        node.delete(new LinkedListCostNode(key));
+        assertTrue(node.key == key3);
+        assertTrue(node.cost == cost3);
         assertTrue(node.next.key == key2);
+        assertTrue(((LinkedListCostNode)node.next).cost == cost2);
         
     }
 
     /**
-     * Test of search method, of class SimpleLinkedListNode.
+     * Test of search method, of class LinkedListCostNode.
      */
     public void testSearch() {
 
@@ -207,26 +238,30 @@ public class SimpleLinkedListNodeTest extends TestCase {
 
         int key = 1234;
         int key2 = 5678;
+        
+        int cost = 1;
+        int cost2 = 2;
 
-        SimpleLinkedListNode node = new SimpleLinkedListNode();
+        LinkedListCostNode node = new LinkedListCostNode();
 
-        node.insert(key);
-        node.insert(key2);
+        node.insert(key, cost);
+        node.insert(key2, cost2);
 
-        SimpleLinkedListNode rNode = node.search(key);
-        SimpleLinkedListNode rNode2 = node.search(key2);
+        LinkedListCostNode rNode = (LinkedListCostNode)node.search(key);
+        LinkedListCostNode rNode2 = (LinkedListCostNode)node.search(key2);
 
-        assertNotNull(rNode);
         assertTrue(rNode.key == key);
+        assertTrue(rNode.cost == cost);
 
-        assertNotNull(rNode2);
         assertTrue(rNode2.key == key2);
+        assertTrue(rNode2.cost == cost2);
         
         
-        node = new SimpleLinkedListNode();
-        node.insert(key);
-        node.insert(key2);
+        node = new LinkedListCostNode();
+        node.insert(key, cost);
+        node.insert(key2, cost2);
         assertTrue(node.contains(key));
+        assertTrue(node.contains(key2));
     }
    
     public void testGetKeys() {
@@ -235,11 +270,14 @@ public class SimpleLinkedListNodeTest extends TestCase {
 
         int key = 1234;
         int key2 = 5678;
+        
+        int cost = 1;
+        int cost2 = 2;
 
-        SimpleLinkedListNode node = new SimpleLinkedListNode();
+        LinkedListCostNode node = new LinkedListCostNode();
 
-        node.insert(key);
-        node.insert(key2);
+        node.insert(key, cost);
+        node.insert(key2, cost2);
         
         assertTrue(node.getNumberOfKeys() == 2);
         
@@ -249,19 +287,19 @@ public class SimpleLinkedListNodeTest extends TestCase {
         assertTrue(keys[1] == key);
         
         
-        node = new SimpleLinkedListNode();
+        node = new LinkedListCostNode();
         keys = node.getKeys();
         assertTrue(keys.length == 0);
         assertTrue(node.getNumberOfKeys() == 0);
         
         assertFalse(node.equals(new Object()));
         
-        node = new SimpleLinkedListNode();
+        node = new LinkedListCostNode();
         for (int i = 0; i < 12; i++) {
             node.insert(i);
         }
         keys = node.getKeys();
         assertTrue(keys.length == 12);
     }
-    
+        
 }
