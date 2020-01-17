@@ -27,9 +27,7 @@ import java.util.logging.Logger;
 
 /**
  * NOTE:  this class is NOT READY FOR USE YET.
- * It needs an implementation of "multi-level buckets"
- * to reduce the minHeap's extractMin and should possibly
- * be refactored to use primitives.
+ * should possibly be refactored to use primitives where possible.
  * 
  * @author nichole
  */
@@ -53,11 +51,10 @@ public class HopcroftKarpRT2012 {
     
     /**
      NOT READY FOR USE.
+     should possibly be refactored to use primitives where possible.
      runtime complexity O(m * sqrt(s)) where m is number of edges and s is the 
      size of the matching whose target size may be less than the maximum 
-     matchable.  It needs an implementation of "multi-level buckets" to reduce 
-     the minHeap's extractMin and should possibly be refactored to use 
-     primitives.
+     matchable.  
      @param g
      @return 
     */

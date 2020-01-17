@@ -200,8 +200,7 @@ public class AStar {
 
                 long uDistPlusCost = (distFromS[uIndx] + distUV);
 
-                long vDist = (distFromS[vIndex] == sentinel) ?
-                    sentinel : 
+                long vDist = (distFromS[vIndex] == sentinel) ? sentinel : 
                     distFromS[vIndex];
 
                 log.fine(points[uIndx].toString() + ":" + points[vIndx] + " "
