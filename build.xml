@@ -59,6 +59,7 @@
         <echo message="compileTests:               compile test files"/>
         <echo message="runTests:                   run tests"/>
         <echo message="runTest:                    run test with -Dtest=fully qualified name of test"/>
+        <echo message="runTest2:                   run test without recompiling, -Dtest=fully qualified name of test"/>
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
     	<echo message="runCoverage:                run code coverage tools (requires env.JACOCO_HOME)"/>
         <echo message="runDependency               run dependency analysis on packages (requires graphviz and jdepend)"/>
