@@ -10,7 +10,11 @@ public class SimpleDAG {
     protected int nVertices = 0;
 
     public SimpleDAG(boolean[][] connected) {
-
+        createDAG(connected);
+    }
+    
+    private void createDAG(boolean[][] connected) {
+    
         vertices = new LinkedListNode[connected.length];
 
         for (int i = 0; i < connected.length; i++) {
@@ -22,7 +26,6 @@ public class SimpleDAG {
             for (int j = 0; j < connected[i].length; j++) {
                 boolean con = connected[i][j];
                 if (con) {
-                    // add incoming for i and outgoing for j
 
                     if (vertices[j] == null) {
                         vertices[j] = new LinkedListNode(j);
