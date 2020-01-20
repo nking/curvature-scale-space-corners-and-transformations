@@ -62,6 +62,22 @@ public class DFSTest extends TestCase {
         assertTrue(Arrays.equals(new int[]{0, 3, 1, 4, 2, 5}, dIdxs));
         assertTrue(Arrays.equals(new int[]{4, 1, 3, 0, 5, 2}, fIdxs));
         
+        System.out.println("ITERATIVE:");
+        
+        DFSIterative dfs2 = new DFSIterative();
+        dfs2.walk(directedEdges);
+        
+        dIdxs = dfs2.getOrderedBeginIndexes();
+        fIdxs = dfs2.getOrderedEndIndexes();
+        
+        System.out.println("dTimes=" + Arrays.toString(dfs2.getTd()));
+        System.out.println("fTimes=" + Arrays.toString(dfs2.getTf()));
+        System.out.println("dIndexes=" + Arrays.toString(dIdxs));
+        System.out.println("fIndexes=" + Arrays.toString(fIdxs));
+                
+        assertTrue(Arrays.equals(new int[]{0, 3, 1, 4, 2, 5}, dIdxs));
+        assertTrue(Arrays.equals(new int[]{4, 1, 3, 0, 5, 2}, fIdxs));
+        
     }
 
     public void testWalk2() {
@@ -112,18 +128,6 @@ public class DFSTest extends TestCase {
             objs.get("shirt"), objs.get("belt"), objs.get("tie"),
             objs.get("jacket")
         };
-
-        DFS dfs = new DFS(connected);
-        dfs.walk();
-        //dfs.walkIteratively();
-        
-        int[] dIdxs = dfs.getOrderedBeginIndexes();
-        int[] fIdxs = dfs.getOrderedEndIndexes();
-        
-        System.out.println("dTimes=" + Arrays.toString(dfs.getTd()));
-        System.out.println("fTimes=" + Arrays.toString(dfs.getTf()));
-        System.out.println("dIndexes=" + Arrays.toString(dIdxs));
-        System.out.println("fIndexes=" + Arrays.toString(fIdxs));
         
         // jacket, tie, belt, shirt, watch, shoes, pants, undershorts, socks
         int[] expected = new int[] {
@@ -132,6 +136,35 @@ public class DFSTest extends TestCase {
             objs.get("pants"), objs.get("undershorts"), objs.get("socks"),
         };
         
+        int[] dIdxs;
+        int[] fIdxs;
+
+        System.out.println("recursive:");
+        DFS dfs = new DFS(connected);
+        dfs.walk();
+        
+        dIdxs = dfs.getOrderedBeginIndexes();
+        fIdxs = dfs.getOrderedEndIndexes();
+        
+        System.out.println("dTimes=" + Arrays.toString(dfs.getTd()));
+        System.out.println("fTimes=" + Arrays.toString(dfs.getTf()));
+        System.out.println("dIndexes=" + Arrays.toString(dIdxs));
+        System.out.println("fIndexes=" + Arrays.toString(fIdxs));
+        
+        assertTrue(Arrays.equals(expected, fIdxs));
+        
+        System.out.println("iterative:");
+        DFSIterative dfs2 = new DFSIterative();
+        dfs2.walk(connected);
+        
+        dIdxs = dfs2.getOrderedBeginIndexes();
+        fIdxs = dfs2.getOrderedEndIndexes();
+        
+        System.out.println("dTimes=" + Arrays.toString(dfs2.getTd()));
+        System.out.println("fTimes=" + Arrays.toString(dfs2.getTf()));
+        System.out.println("dIndexes=" + Arrays.toString(dIdxs));
+        System.out.println("fIndexes=" + Arrays.toString(fIdxs));
+                
         assertTrue(Arrays.equals(expected, fIdxs));
     }
 }

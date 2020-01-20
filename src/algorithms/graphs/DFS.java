@@ -1,11 +1,8 @@
 package algorithms.graphs;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.util.SimpleLinkedListNode;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.Arrays;
 
 /**
    DFS
@@ -51,7 +48,7 @@ public class DFS {
    
     protected final int[] predecessor;
 
-    protected int time;
+    protected int time = 0;
     
     /**
      * @param theDirectedEdges  adjacency matrix with connected i->j indicated 
@@ -67,11 +64,10 @@ public class DFS {
         this.td = new int[directedEdges.length];
         this.tf = new int[directedEdges.length];
         this.predecessor = new int[directedEdges.length];
+        Arrays.fill(predecessor, -1);
     }
 
     public void walk() {
-
-        init();
 
         for (int u = 0; u < directedEdges.length; u++) {
             if (visited[u] == 0) {
@@ -80,37 +76,31 @@ public class DFS {
         }        
     }
     
-    private void init() {
-        for (int u = 0; u < directedEdges.length; u++) {
-            visited[u] = 0;
-            predecessor[u] = -1;
-        }
-        time = 0;
-    }
-    
     private void visit(int u) {
+        System.out.println("load method frame for " + u);
+        
         visited[u] = 1;
         time++;
-        //System.out.println("visit(" + u + ") to set td=" + time);
+        System.out.println("  visiting " + u + " to set td=" + time);
         td[u] = time;
 
-        SimpleLinkedListNode adjacent = directedEdges[u];
+        SimpleLinkedListNode next = directedEdges[u];
         
-        while (adjacent != null && adjacent.getKey() != -1) {
-            int v = adjacent.getKey();
+        while (next != null && next.getKey() != -1) {
+            int v = next.getKey();
             if (visited[v] == 0) {
                 predecessor[v] = u;
-                visit(v);                 
+                visit(v);
             }
-            adjacent = adjacent.getNext();
+            next = next.getNext();
         }
         visited[u] = 2;
         time++;
         tf[u] = time;
-        //System.out.println("   visited(" + u + ") to set tf=" + time);
+        System.out.println("  visited " + u + ") to set tf=" + time);
     }
-   
-      /**
+    
+    /**
      * return the indexes in order of the starts of their traversals
      * @return 
      */
