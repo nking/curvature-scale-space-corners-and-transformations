@@ -77,11 +77,11 @@ public class DFS {
     }
     
     private void visit(int u) {
-        System.out.println("load method frame for " + u);
+        //System.out.println("load method frame for " + u);
         
         visited[u] = 1;
         time++;
-        System.out.println("  visiting " + u + " to set td=" + time);
+        //System.out.println("  visiting " + u + " to set td=" + time);
         td[u] = time;
 
         SimpleLinkedListNode next = directedEdges[u];
@@ -97,7 +97,7 @@ public class DFS {
         visited[u] = 2;
         time++;
         tf[u] = time;
-        System.out.println("  visited " + u + ") to set tf=" + time);
+        //System.out.println("  visited " + u + ") to set tf=" + time);
     }
     
     /**

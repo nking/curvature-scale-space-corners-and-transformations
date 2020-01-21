@@ -2,9 +2,7 @@ package algorithms.graphs;
 
 import algorithms.QuickSort;
 import algorithms.util.SimpleLinkedListNode;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Stack;
 
 /**
@@ -87,7 +85,7 @@ public class DFSIterative {
         Stack<Snapshot> stack = new Stack<Snapshot>();
         Snapshot current;
         
-        System.out.println("*load method frame for " + u);
+        //System.out.println("*load method frame for " + u);
         
         current = new Snapshot(u);
         current.stage = 0;
@@ -97,20 +95,20 @@ public class DFSIterative {
             
             current = stack.pop();
             
-            System.out.println(current.toString());
+            //System.out.println(current.toString());
             
             switch(current.stage) {
                 case 0: { 
                     // before recursion is invoked
                     visited[current.node] = 1;
                     time++;
-                    System.out.println("  0: visiting " + current.node + " to set td=" + time);
+                    //System.out.println("  0: visiting " + current.node + " to set td=" + time);
                     td[current.node] = time;
                     
                     current.stage = 1;
                     stack.push(current);
                     
-                    System.out.format("  0: push onto stack u=%d\n", current.node);
+                    //System.out.format("  0: push onto stack u=%d\n", current.node);
                             
                     SimpleLinkedListNode next = directedEdges[current.node];
                     
@@ -128,8 +126,8 @@ public class DFSIterative {
                             newSnapshot.stage = 0;
                             stack.push(newSnapshot);
 
-                            System.out.format("   0: and push onto stack v=%d\n", v);
-                            System.out.println("   0: [v: " + newSnapshot.toString() + "]");
+                            //System.out.format("   0: and push onto stack v=%d\n", v);
+                            //System.out.println("   0: [v: " + newSnapshot.toString() + "]");
   
                             continue;
                         }
@@ -137,22 +135,22 @@ public class DFSIterative {
                     break;
                 }
                 case 1: {
-                    System.out.println(" 1: have all child links been visited?  snap="
-                       + current.toString());
+                    //System.out.println(" 1: have all child links been visited?  snap="
+                    //   + current.toString());
                     
                     SimpleLinkedListNode next = directedEdges[current.node];
                     if (next != null && next.getKey() != -1) {
                         
                         int v = next.getKey();
                         
-                        System.out.format(" 1: there is a child link %d\n", v);
+                        //System.out.format(" 1: there is a child link %d\n", v);
                         
                         directedEdges[current.node].delete(next);
                         
                         current.stage = 1;
                         stack.push(current);
 
-                        System.out.format("  0: push onto stack u=%d\n", current.node);
+                        //System.out.format("  0: push onto stack u=%d\n", current.node);
                                                       
                         if (visited[v] == 0) {
                             
@@ -162,8 +160,8 @@ public class DFSIterative {
                             newSnapshot.stage = 0;
                             stack.push(newSnapshot);
 
-                            System.out.format("   1: and push onto stack v=%d\n", v);
-                            System.out.println("   1: [v: " + newSnapshot.toString() + "]");
+                            //System.out.format("   1: and push onto stack v=%d\n", v);
+                            //System.out.println("   1: [v: " + newSnapshot.toString() + "]");
   
                             continue;
                         }
@@ -173,23 +171,20 @@ public class DFSIterative {
                     
                     visited[current.node] = 2;
                     time++;
-                    tf [current.node] = time;
-                    System.out.format(" 1: end visit to %d, set tf=%d\n",
-                            current.node, time);
+                    tf[current.node] = time;
+                    //System.out.format(" 1: end visit to %d, set tf=%d\n",
+                    //    current.node, time);
 
                     break;
                 }
             }
         }
-        
-        //---------------------------------------
-        
     }
     
     private class Snapshot {
         
         /**
-         * index of current snapshot within this instance's arrays.
+         * index of current snapshot within DFSIterative instance's arrays.
          */
         protected final int node;
                 
