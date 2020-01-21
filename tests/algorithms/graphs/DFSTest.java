@@ -26,7 +26,7 @@ public class DFSTest extends TestCase {
         super.tearDown();
     }
 
-    public void estDFS() {
+    public void testDFS() {
 
         /*
          *   u --+ v     w
