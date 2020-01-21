@@ -1,9 +1,7 @@
 package algorithms.graphs;
 
-import algorithms.graphs.LinkedListNode;
 import algorithms.util.SimpleLinkedListNode;
 import java.util.Arrays;
-import java.util.LinkedList;
 
 /**
  * From Cormen et al. "Introduction to Algorithms",
@@ -52,13 +50,22 @@ public class TopologicalSort {
          //- call DFS(G) to compute finish times for each vertex v, f[v]
          //- as each vertex is finished, insert it onto front of a linkedlist
          // - return linked list of vertices
+         
          DFS dfs = new DFS(this.directedEdges);
          dfs.walk();
+         //DFSIterative dfs = new DFSIterative();
+         //dfs.walk(this.directedEdges);
          int[] fIdxs = dfs.getOrderedEndIndexes();
          
          fIdxs = Arrays.copyOf(fIdxs, fIdxs.length);
          reverse(fIdxs);
         
+         /*
+         NOTE: some unit tests suggest that some implementations of topological sort
+         next use partitioning of connected components and then further 
+         sorts the results by the longest subsequences within the results,
+         but does not change order for same subsequence length.
+         */
          return fIdxs;
     }
     

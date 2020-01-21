@@ -3,7 +3,6 @@ package algorithms.graphs;
 import algorithms.util.SimpleLinkedListNode;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import junit.framework.TestCase;
 
@@ -92,32 +91,31 @@ public class TopologicalSortTest extends TestCase {
          *  <6> ------> <3> .
          */
         /*
-        connected[0] = new SimpleLinkedListNode();
+        expected=[6, 4, 3, 5, 1, 0, 7, 2]
+        result=  [6, 4, 5, 3, 1, 0, 7, 2]
+        */
+        
+        for (int i = 0; i < 8; ++i) {
+            connected[i] = new SimpleLinkedListNode();
+        }
+        
         connected[0].insert(7);
 
-        connected[1] = new SimpleLinkedListNode();
         connected[1].insert(0);
 
-        connected[2] = new SimpleLinkedListNode();
-
-        connected[3] = new SimpleLinkedListNode();
         connected[3].insert(2);
         connected[3].insert(7);
 
-        connected[4] = new SimpleLinkedListNode();
         connected[4].insert(1);
         connected[4].insert(3);
         connected[4].insert(5);
 
-        connected[5] = new SimpleLinkedListNode();
         connected[5].insert(0);
         connected[5].insert(1);
 
-        connected[6] = new SimpleLinkedListNode();
         connected[6].insert(3);
         connected[6].insert(4);
 
-        connected[7] = new SimpleLinkedListNode();
         connected[7].insert(2);
 
         int[] expResult = new int[]{6, 4, 3, 5, 1, 0, 7, 2};
@@ -125,18 +123,24 @@ public class TopologicalSortTest extends TestCase {
         TopologicalSort ts = new TopologicalSort(connected);
         
         int[] result = ts.sort();
-
-        assertTrue(Arrays.equals(expResult, result));
+        
+        /*
+        expected=[6, 4, 3, 5, 1, 0, 7, 2]
+        result=  [6, 4, 5, 3, 1, 0, 7, 2]
         */
+        System.out.println("expected=" + Arrays.toString(expResult));
+        System.out.println("result=  " + Arrays.toString(result));
+
+        //assertTrue(Arrays.equals(expResult, result));
+        
     }
    
-    
     public void estSort2() {
 
         System.out.println("testSort2");
         
         // constructing test from Cormen et al.'s "Introduction to Algorithms"
-        boolean[][] connected = null;
+        SimpleLinkedListNode[] connected = new SimpleLinkedListNode[9];
 
         /*    *0 \         *3
          *    ||    \      ||        *8
@@ -153,20 +157,18 @@ public class TopologicalSortTest extends TestCase {
          *        \->\/
          *           *7
          */
-        connected = new boolean[9][];
         for (int i = 0; i < connected.length; i++) {
-            connected[i] = new boolean[connected.length];
+            connected[i] = new SimpleLinkedListNode();
         }
-        connected[0][1] = true;
-        connected[0][4] = true;
-        connected[1][2] = true;
-        connected[1][4] = true;
-        connected[2][7] = true;
-        connected[3][4] = true;
-        connected[5][2] = true;
-        connected[5][6] = true;
-        connected[6][7] = true;
-
+        connected[0].insert(1);
+        connected[0].insert(4);
+        connected[1].insert(2);
+        connected[1].insert(4);
+        connected[2].insert(7);
+        connected[3].insert(4);
+        connected[5].insert(2);
+        connected[5].insert(6);
+        connected[6].insert(7);
         
         /*    *0 \         *3
          *    ||    \      ||        *8
@@ -183,46 +185,33 @@ public class TopologicalSortTest extends TestCase {
          *        \->\/
          *           *7
 
-           sorted=[8, 5, 6, 3,  0,  4,  1, 2,  7]
-                d=[1, 2, 3, 11, 7, 13, 14, 4, 17]
-                f=[9, 8, 5, 11, 7, 15, 14, 4, 17]
-                   0  1  2   3  4   5   6  7   8
-                p=[i, 0, 1,  i, 1,  i,  5, 2,  i]
-
-        This solution:
-        0   1   3   4    5    2    6    7    8
-        --->-------->    ---->---------->
-        ------------>    --------->----->
-                 --->              
-           
-                      
         Book solution:
         3   0   1   4    8    5    2    6    7
         ------------>         --------->----->
             --->---->         ---->---------->
             -------->
-                                        
-        So, they are equivalent in finding the arrangement with fewest overlapping edges,
-        but the solution here is optimized to finish faster (if one thinks of the edges
-        as start and finish times of a scheduled process, for example).
+                
+        result=  [8, 
+                  5, 
+                  6, 
+                  3, 0, 1, 4, 
+                  2, 
+                  7]
+        
+        Looks like the book solution must be using partitions of connected
+            components, then, if there sorts by longest sub-sequence
         
          */
 
-        /*SimpleDAG dag = new SimpleDAG(connected);
-        
-        TopologicalSort ts = new TopologicalSort();
-        
-        int[] result = ts.sort(dag);
-        
-        int[] currentSolution = new int[]{0,   1,   3,   4,    5,    2,    6,    7,    8};
-        int[] bookSolution = new int[]{3, 0, 1, 4, 8, 5, 2, 6, 7};
+        int[] expResult = new int[]{3, 0, 1, 4, 8, 5, 2, 6, 7};
 
+        TopologicalSort ts = new TopologicalSort(connected);
         
-        System.out.println("sorted=" + Arrays.toString(result));
-        System.out.println("currentSolution=" + Arrays.toString(currentSolution));
-        System.out.println("bookSolution=" + Arrays.toString(bookSolution));
+        int[] result = ts.sort();
+        
+        System.out.println("expected=" + Arrays.toString(expResult));
+        System.out.println("result=  " + Arrays.toString(result));
 
-        assertTrue(Arrays.equals(currentSolution, result));
-        */
+        assertTrue(Arrays.equals(expResult, result));
     }
 }
