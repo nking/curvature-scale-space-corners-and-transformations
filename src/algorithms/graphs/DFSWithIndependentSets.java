@@ -1,8 +1,16 @@
 package algorithms.graphs;
 
 import algorithms.QuickSort;
+import algorithms.disjointSets.DisjointSet2Helper;
+import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.util.SimpleLinkedListNode;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -19,10 +27,24 @@ import java.util.Stack;
    worst case space needed: O(|V|)
 
    implemented following Cormen et al. "Introduction To Algorithms"
-
+   
+  NOTE: have added use of maps and sets to determine the independent groups
+     during the traversal.
+     Also using a disjoint set to keep track of the topmost parent in a the
+     independent connected set.
+     Disjoint sets use path compression to update representatives quickly.
+     (THIS IS NOT FINISHED YET).
+    
+           3
+       1       2
+    1: mkset, map:(1, set1)
+    2: mkset, map:(2, set2)
+    3: mkset, map:(3, set3)
+       3's links: merge 1 into 3, rm set1, map: 1, set3, rmset1 
+   
  * @author nichole
  */
-public class DFSIterative {
+public class DFSWithIndependentSets {
     /**
      * adjacency matrix with connected i->j indicated by the index and each
      *    node in the linked list, respectively.
@@ -47,10 +69,31 @@ public class DFSIterative {
     private int[] tf;
    
     private int[] predecessor;
-
+    
+    /**
+     * key = graph index.
+     * value = top-most predecessor index.
+     */
+    private TIntObjectHashMap<DisjointSet2Node<Integer>> indexParentMap;
+    
+    /**
+     * key = top-most predecessor index
+     * value = sets of paths through the code present as sub-sequences in tf
+     */
+    private TIntObjectHashMap<TIntHashSet> parentGroupMap;
+    
+    /**
+     * key = top-most predecessor index
+     * value = set of connected nodes.  each set is independent of one another
+     *    (no connecting edges between them).
+     */
+    private TIntObjectHashMap<TIntHashSet> independentGroupsMap;
+    
+    private DisjointSet2Helper disjointSetHelper;
+    
     private int time;
 
-    public DFSIterative() {
+    public DFSWithIndependentSets() {
         
     }
 
@@ -72,6 +115,11 @@ public class DFSIterative {
         Arrays.fill(tf, -1);
         Arrays.fill(predecessor, -1);
         time = 0;
+        indexParentMap = new TIntObjectHashMap<DisjointSet2Node<Integer>>();
+        parentGroupMap = new TIntObjectHashMap<TIntHashSet>();
+        independentGroupsMap = new TIntObjectHashMap<TIntHashSet>();
+        
+        disjointSetHelper = new DisjointSet2Helper();
         
         for (int u = 0; u < directedEdges.length; u++) {
             if (visited[u] == 0) {
@@ -108,6 +156,8 @@ public class DFSIterative {
                     current.stage = 1;
                     stack.push(current);
                     
+                    addToMap(current.node);
+                    
                     //System.out.format("  0: push onto stack u=%d\n", current.node);
                             
                     SimpleLinkedListNode next = directedEdges[current.node];
@@ -122,6 +172,8 @@ public class DFSIterative {
                             
                             predecessor[v] = current.node;
                             
+                            addToMap(v);
+                            
                             Snapshot newSnapshot = new Snapshot(v);
                             newSnapshot.stage = 0;
                             stack.push(newSnapshot);
@@ -133,7 +185,17 @@ public class DFSIterative {
                         } else if (predecessor[v] == -1) {
                             // in case the instance graph is not ordered top-down
                             predecessor[v] = current.node;
+                            
+                            addToMap(v);
                         }
+                        //NOTE: could make another change here to add one more
+                        //   else if conditional for the case of
+                        //     visited[v] > 0 and predecessor[v] > -1
+                        //     and have knowledge that predecessor path for
+                        //     predecessor[v] is shorter than predecessor[u]
+                        //     so would want to reset predecessor[v] to u in that case.
+                        //     Currently making another version of DFS which adds disjoint sets,
+                        //     so this might be addressable there.
                     }
                     break;
                 }
@@ -159,6 +221,8 @@ public class DFSIterative {
                             
                             predecessor[v] = current.node;
                             
+                            addToMap(v);
+                            
                             Snapshot newSnapshot = new Snapshot(v);
                             newSnapshot.stage = 0;
                             stack.push(newSnapshot);
@@ -168,7 +232,10 @@ public class DFSIterative {
   
                             continue;
                         } else if (predecessor[v] == -1) {
+                            // in case the instance graph is not ordered top-down
                             predecessor[v] = current.node;
+                            
+                            addToMap(v);
                         }
                         
                         continue;
@@ -184,6 +251,67 @@ public class DFSIterative {
                 }
             }
         }
+    }
+
+    /**
+     * update indexParentMap and independentGroupsMap for the given node and
+     * presence or absence of predecessor.
+     * @param node 
+     */
+    private void addToMap(int node) {
+        
+        /*
+                3
+            1       2
+        1: mkset, map:(1, set1)
+        2: mkset, map:(2, set2)
+        3: mkset, map:(3, set3),
+            3's links: merge 1 into 3, rm set1, map: 1, set3, rmset1 
+        
+        Uodate indexParentMap and independentGroupsMap.
+        
+        key = graph index. value = top-most predecessor index.
+        TIntObjectHashMap<DisjointSet2Node<Integer>> indexParentMap
+     
+        key = top-most predecessor index. value = set of connected nodes.  
+              each set is independent of one another
+              (no connecting edges between them).
+        TIntObjectHashMap<TIntHashSet> independentGroupsMap;
+        */
+        
+        DisjointSet2Node<Integer> connectedRepr = indexParentMap.get(node);
+        if (connectedRepr == null) {
+            connectedRepr = new DisjointSet2Node<Integer>(node);
+            connectedRepr = disjointSetHelper.makeSet(connectedRepr);
+        }
+        
+        TIntHashSet indepSet = parentGroupMap.get(node);
+        if (indepSet == null) {
+            indepSet = new TIntHashSet();
+            indepSet.add(node);
+        } else {
+            parentGroupMap.remove(node);
+        }
+        int parentNode = node;
+        if (predecessor[node] > -1) {
+            DisjointSet2Node<Integer> prevRepr = indexParentMap.get(predecessor[node]);
+            assert(prevRepr != null);
+            DisjointSet2Node<Integer> parent = prevRepr.getParent();
+            parentNode = parent.getMember();
+            
+            TIntHashSet indepSet2 = parentGroupMap.get(parentNode);
+            assert(indepSet2 != null);
+            indepSet.addAll(indepSet2);
+            //independentGroupsMap.remove(parentNode);
+            
+            connectedRepr = disjointSetHelper.union(prevRepr, connectedRepr);
+            connectedRepr.setParent(parent);
+            
+            indexParentMap.put(parentNode, connectedRepr);
+        } 
+        
+        parentGroupMap.put(parentNode, indepSet); 
+        indexParentMap.put(node, connectedRepr);
     }
     
     private class Snapshot {
@@ -215,17 +343,6 @@ public class DFSIterative {
             return sb.toString();
         }
         
-    }
-    
-    /**
-     * get predecessor indexes
-     * @return get predecessor indexes
-     */
-    public int[] getPredecessorIndexes() {
-        if (predecessor == null) {
-            return null;
-        }
-        return Arrays.copyOf(predecessor, predecessor.length);
     }
     
     /**
@@ -267,17 +384,73 @@ public class DFSIterative {
     }
     
     public int[] getTd() {
-        if (td == null) {
-            return null;
-        }
         return td;
     }
 
     public int[] getTf() {
-        if (tf == null) {
-            return null;
-        }
         return tf;
     }
     
+    /**
+     * get a map of sequential path members in tf
+     * @return a map w/ keys = parent index of independent set, value = 
+     *    indexes of members in a sequential path in tf
+     */
+    public TIntObjectHashMap<TIntHashSet> getSequentialTFGroups() {
+        return parentGroupMap;
+    }
+    public int getParentIndexForSequentialTFGroups(int node) {
+        DisjointSet2Node<Integer> parentNode = indexParentMap.get(node);
+        if (parentNode == null) {
+            throw new IllegalStateException("there was no entry for node=" + node);
+        }
+        return parentNode.getParent().getMember();
+    }
+
+    /*    
+    public TIntObjectHashMap<TIntHashSet> getIndependentGroups() {
+    }
+    public int getParentIndexForIndependentGroup(int node) {
+    }
+    */
+    
+    /**
+     * get predecessor indexes
+     * @return get predecessor indexes
+     */
+    public int[] getPredecessorIndexes() {
+        if (predecessor == null) {
+            return null;
+        }
+        return Arrays.copyOf(predecessor, predecessor.length);
+    }
+    
+    /**
+     * creates a string of the independent sets in format:
+     *    parent=(top-most index), set=(indexes in independent set)
+     * @return 
+     */
+    public String printIndependentSets() {
+        
+        StringBuilder sb = new StringBuilder();
+        if (parentGroupMap == null) {
+            return sb.toString();
+        }
+        
+        TIntObjectIterator<TIntHashSet> iter = this.parentGroupMap.iterator();
+        
+        for (int ii = this.parentGroupMap.size(); ii-- > 0;) {
+            iter.advance();
+            int parentNode = iter.key();
+            TIntHashSet indepSet = iter.value();
+            sb.append("parent=").append(Integer.toString(parentNode)).append("; set=");
+            TIntIterator iter2 = indepSet.iterator();
+            while (iter2.hasNext()) {
+                int idx = iter2.next();
+                sb.append(Integer.toString(idx)).append(", ");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
 }

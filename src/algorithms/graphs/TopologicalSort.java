@@ -51,10 +51,10 @@ public class TopologicalSort {
          //- as each vertex is finished, insert it onto front of a linkedlist
          // - return linked list of vertices
          
-         DFS dfs = new DFS(this.directedEdges);
-         dfs.walk();
-         //DFSIterative dfs = new DFSIterative();
-         //dfs.walk(this.directedEdges);
+         //DFS dfs = new DFS(this.directedEdges);
+         //dfs.walk();
+         DFSIterative dfs = new DFSIterative();
+         dfs.walk(this.directedEdges);
          int[] fIdxs = dfs.getOrderedEndIndexes();
          
          fIdxs = Arrays.copyOf(fIdxs, fIdxs.length);

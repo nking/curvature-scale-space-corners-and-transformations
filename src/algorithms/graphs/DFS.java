@@ -91,6 +91,9 @@ public class DFS {
             if (visited[v] == 0) {
                 predecessor[v] = u;
                 visit(v);
+            } else if (predecessor[v] == -1) {
+                // in case the instance graph is not ordered top-down
+                predecessor[v] = u;
             }
             next = next.getNext();
         }
@@ -98,6 +101,17 @@ public class DFS {
         time++;
         tf[u] = time;
         //System.out.println("  visited " + u + ") to set tf=" + time);
+    }
+    
+    /**
+     * get predecessor indexes
+     * @return get predecessor indexes
+     */
+    public int[] getPredecessorIndexes() {
+        if (predecessor == null) {
+            return null;
+        }
+        return Arrays.copyOf(predecessor, predecessor.length);
     }
     
     /**
