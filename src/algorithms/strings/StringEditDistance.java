@@ -85,7 +85,7 @@ public class StringEditDistance {
             } else if (d[i][j] == d[i][j-1] + cIns) {
                 j--;
             } else {
-                System.out.printf("(%d,%d)", i, j);
+                System.out.printf("(%d,%d)\n", i, j);
                 i--;
                 j--;
             }
