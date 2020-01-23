@@ -69,7 +69,7 @@ public class DFSWithIndependentSets {
     
     /**
      * key = graph index.
-     * value = disjoint set holder, parent of internal set's member is key for parentGroupMap
+     * value = disjoint set holder, parent.member of internal set is key for parentGroupMap
      */
     private TIntObjectHashMap<DisjointSetHolder> indexDJSetMap;
     
@@ -85,7 +85,7 @@ public class DFSWithIndependentSets {
     
     private Logger log = Logger.getLogger(getClass().getSimpleName());
     
-    private Level logLevel = Level.FINE;
+    private Level logLevel = Level.INFO;
 
     public DFSWithIndependentSets() {
         
@@ -344,12 +344,17 @@ public class DFSWithIndependentSets {
                 log.log(logLevel, "  merge: nodeIdx=" + nodeIdx + " prevIdx=" +
                     prevIdx + " predecessor[" + nodeIdx + "]=" +
                     predecessor[nodeIdx] + 
-                    " nodeDJSet=" + nodeDJSet.toString() +
-                    " prevDJSet=" + prevDJSet.toString()                        
+                    "\n   nodeDJSet=" + nodeDJSet.toString() +
+                    "\n    prevDJSet=" + prevDJSet.toString()                        
                 );
-                prevDJSet = disjointSetHelper.unionChooseY(prevDJSet, nodeDJSet);
+                
+                prevDJSet = disjointSetHelper.unionChooseY(nodeDJSet, prevDJSet);
+                
                 prevRef.set = prevDJSet;
                 nodeRef.set = prevDJSet;
+                log.log(logLevel, "  merged: " +
+                    "\n    prevDJSet=" + prevDJSet.toString()                        
+                );
                 
                 // indexParentMap entries already existed for both nodes,
                 //   so only needed to update existing values,
@@ -365,15 +370,21 @@ public class DFSWithIndependentSets {
                                 
                 DisjointSet2Node<Integer> temp = new DisjointSet2Node<Integer>(nodeIdx);
                 temp = disjointSetHelper.makeSet(temp);
+                
                 log.log(logLevel, "  merge: nodeIdx=" + nodeIdx + " prevIdx=" +
-                    prevIdx + " predecessor[" + nodeIdx + "]=" +
+                    prevIdx + "    \npredecessor[" + nodeIdx + "]=" +
                     predecessor[nodeIdx] + 
-                    " temp=" + temp.toString() +
-                    " prevDJSet=" + prevDJSet.toString()                        
+                    "\n    temp=" + temp.toString() +
+                    "]n    prevDJSet=" + prevDJSet.toString()                        
                 );
-                prevDJSet = disjointSetHelper.unionChooseY(prevDJSet, temp);
+                
+                prevDJSet = disjointSetHelper.unionChooseY(temp, prevDJSet);
                 
                 prevRef.set = prevDJSet;
+                
+                log.log(logLevel, "  merged: " +
+                    "\n    prevDJSet=" + prevDJSet.toString()                        
+                );
                 
                 indexDJSetMap.put(nodeIdx, prevRef);
             }
@@ -395,6 +406,9 @@ public class DFSWithIndependentSets {
                 nodeGroupSet.add(nodeIdx);
             }
         }
+        log.log(logLevel, "   addToMap results:" + 
+            "\n    prevIdx=" + prevIdx + " prevRef=" + indexDJSetMap.get(prevIdx) +
+            "\n    nodeIdx=" + nodeIdx + " nodeRef=" + indexDJSetMap.get(nodeIdx));
     }
 
     private void populateGroupMap() {
@@ -403,7 +417,7 @@ public class DFSWithIndependentSets {
         for (int ii = indexDJSetMap.size(); ii-- > 0;) {
             iter.advance();
             int idx = iter.key();
-            int pIdx = iter.value().set.getParent().getMember().intValue();
+            int pIdx = iter.value().set.getParent().getMember();
             TIntHashSet set = parentGroupMap.get(pIdx);
             if (set == null) {
                 set = new TIntHashSet();
@@ -452,6 +466,17 @@ public class DFSWithIndependentSets {
      */
     private class DisjointSetHolder {
         protected DisjointSet2Node<Integer> set = null;
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("hash: @").append(Integer.toHexString(hashCode()));
+            if (set != null) {
+                sb.append(" ").append(set.toString());
+            }
+            return sb.toString();
+        }
+        
     }
     
     /**
