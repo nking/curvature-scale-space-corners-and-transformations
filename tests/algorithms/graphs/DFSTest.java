@@ -105,20 +105,21 @@ public class DFSTest extends TestCase {
                 dIndexes=[0, 4, 1, 2, 7, 3, 5, 6, 8]
                 fIndexes=[4, 7, 2, 1, 0, 3, 6, 5, 8]
                     prev=[-1, 0, 1, -1, 0, -1, 5, 2, -1]
-            NOTE: if were tracking prev of prev etc to top-most
-                  parent, the value at prev[7] would become 0 instead of 2
-                  and prev[2] value would become 0 instead of 1
+            
+            4
+            7210
+            3
+            65
+            8
              */
             int[] dIdxs;
             int[] fIdxs;
-            int[] prev;
 
             if (j == 0) {
                 DFS dfs = new DFS(connected);
                 dfs.walk();
                 dIdxs = dfs.getOrderedBeginIndexes();
                 fIdxs = dfs.getOrderedEndIndexes();
-                prev = dfs.getPredecessorIndexes();
             } else if (j == 1) {
 
                 DFSIterative dfs2 = new DFSIterative();
@@ -126,22 +127,20 @@ public class DFSTest extends TestCase {
 
                 dIdxs = dfs2.getOrderedBeginIndexes();
                 fIdxs = dfs2.getOrderedEndIndexes();
-                prev = dfs2.getPredecessorIndexes();
             } else if (j == 2) {
                 DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
                 dfs3.walk(connected);
 
                 dIdxs = dfs3.getOrderedBeginIndexes();
                 fIdxs = dfs3.getOrderedEndIndexes();
-                prev = dfs3.getPredecessorIndexes();
 
                 Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs3.getTd()));
                 Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
                 Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
                 Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-                Logger.getLogger(getClass().getSimpleName()).info("prev=" + Arrays.toString(prev));
 
-                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
+                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
+                Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
 
                 assertEquals(2, dfs3.getIndependentSets().size());
             } else if (j == 3) {
@@ -205,7 +204,8 @@ public class DFSTest extends TestCase {
                 Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
                 Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
                 Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
+                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
+                Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
 
                 assertEquals(1, dfs3.getIndependentSets().size());
 
@@ -331,8 +331,9 @@ public class DFSTest extends TestCase {
                 Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
                 Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
                 Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
-
+                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
+                Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
+                
                 assertEquals(2, dfs3.getIndependentSets().size());
 
             } else if (j == 1) {
@@ -443,8 +444,9 @@ public class DFSTest extends TestCase {
         Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
         Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
         Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
-        
+        Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
+        Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
+                
         assertEquals(1, dfs3.getIndependentSets().size());
     
         DFSIterativeWithIndependentSets dfs4 = new DFSIterativeWithIndependentSets();

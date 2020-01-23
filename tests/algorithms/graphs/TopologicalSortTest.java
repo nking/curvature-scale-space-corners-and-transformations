@@ -152,7 +152,7 @@ public class TopologicalSortTest extends TestCase {
         
         DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
         dfs3.walk(connected);
-        System.out.println(dfs3.printIndependentSetsInTF());
+        System.out.println(dfs3.printIndependentSets());
         
     }
    

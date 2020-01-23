@@ -6,9 +6,13 @@ import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.util.SimpleLinkedListNode;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,6 +31,11 @@ import java.util.logging.Logger;
 
    implemented following Cormen et al. "Introduction To Algorithms"
 
+*   NOTE: have added use of disjoint sets to determine the independent sets
+     during the traversal.
+     Disjoint sets use path compression to update representatives quickly,
+     hence, all connected components can point to the same parent.
+     * 
  * @author nichole
  */
 public class DFSWithIndependentSets {
@@ -71,7 +80,7 @@ public class DFSWithIndependentSets {
     private TIntObjectHashMap<TIntHashSet> parentGroupMap;
     
     private DisjointSet2Helper disjointSetHelper;
-        
+            
     private Logger log = Logger.getLogger(getClass().getSimpleName());
     
     private Level logLevel = Level.FINE;
@@ -104,7 +113,7 @@ public class DFSWithIndependentSets {
         parentGroupMap = new TIntObjectHashMap<TIntHashSet>();
         
         disjointSetHelper = new DisjointSet2Helper();
-        
+                
         for (int u = 0; u < directedEdges.length; u++) {
             if (visited[u] == 0) {
                 visit(u);
@@ -114,6 +123,8 @@ public class DFSWithIndependentSets {
         }
         
         populateGroupMap();
+        
+        modifySequenceList();
     }
     
     private void visit(int u) {
@@ -134,10 +145,6 @@ public class DFSWithIndependentSets {
             if (visited[v] == 0) {
                 predecessor[v] = u;
                 visit(v);
-            } else if (predecessor[v] == -1) {
-                // in case the instance graph is not ordered top-down
-                predecessor[v] = u;
-                addToMap(v, predecessor[v]);
             } else {
                 addToMap(v, u);
             }
@@ -147,7 +154,19 @@ public class DFSWithIndependentSets {
         visited[u] = 2;
         time++;
         tf[u] = time;
+                
         //System.out.println("  visited " + u + ") to set tf=" + time);
+    }
+    
+    private void modifySequenceList() {
+        assert(tf != null);
+        int p, t;
+        
+        for (int i = 1; i < tf.length; ++i) {
+            p = predecessor[i];
+            t = tf[i];
+            //if ()
+        }
     }
     
     /**
@@ -416,7 +435,7 @@ public class DFSWithIndependentSets {
      *    parent=(top-most index), set=(indexes in independent set)
      * @return 
      */
-    public String printIndependentSetsInTF() {
+    public String printIndependentSets() {
         
         StringBuilder sb = new StringBuilder();
         if (parentGroupMap == null) {

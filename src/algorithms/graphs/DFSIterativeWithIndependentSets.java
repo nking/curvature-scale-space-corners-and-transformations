@@ -31,14 +31,11 @@ import java.util.logging.Logger;
 
    implemented following Cormen et al. "Introduction To Algorithms"
    
-  NOTE: have added use of maps and sets to determine the independent groups
+  NOTE: have added use of disjoint sets to determine the independent sets
      during the traversal.
-     Also using a disjoint set to keep track of the topmost parent in a the
-     independent connected set.
-     Disjoint sets use path compression to update representatives quickly.
-     
-     (THIS IS NOT FINISHED YET).
-    
+     Disjoint sets use path compression to update representatives quickly,
+     hence, all connected components can point to the same parent.
+         
  * @author nichole
  */
 public class DFSIterativeWithIndependentSets {
@@ -542,7 +539,7 @@ public class DFSIterativeWithIndependentSets {
      *    parent=(top-most index), set=(indexes in independent set)
      * @return 
      */
-    public String printIndependentSetsInTF() {
+    public String printIndependentSets() {
         
         StringBuilder sb = new StringBuilder();
         if (parentGroupMap == null) {
