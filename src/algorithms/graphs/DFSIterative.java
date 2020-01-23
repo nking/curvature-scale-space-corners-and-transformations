@@ -63,6 +63,9 @@ public class DFSIterative {
      * the linked list.
      */
     public void walk(SimpleLinkedListNode[] directedEdges) {
+        if (directedEdges == null) {
+            throw new IllegalArgumentException("directedEdges cannot be null");
+        }
         this.directedEdges = Arrays.copyOf(directedEdges, directedEdges.length);
         visited = new int[directedEdges.length];
         td = new int[directedEdges.length];
@@ -247,6 +250,7 @@ public class DFSIterative {
             return null;
         }
         assert(a.length == directedEdges.length);
+        a = Arrays.copyOf(a, a.length);
         int[] idxs = new int[a.length];
         for (int i = 0; i < idxs.length; ++i) {
             idxs[i] = i;

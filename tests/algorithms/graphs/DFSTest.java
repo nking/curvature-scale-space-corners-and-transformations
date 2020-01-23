@@ -44,88 +44,112 @@ public class DFSTest extends TestCase {
         if (!test0) {
             return;
         }
-        
-        Logger.getLogger(getClass().getSimpleName()).info("test0");
-        
-        // constructing test from Cormen et al.'s "Introduction to Algorithms"
-        SimpleLinkedListNode[] connected = new SimpleLinkedListNode[9];
-        
-        /*    *0 \         *3
-         *    ||    \      ||        *8
-         *    \/       \-> \/
-         *    *1 --------> *4
-         *    ||
-         *    ||    /*5
-         *    ||   / ||
-         *    \/<-/  ||
-         *    *2     \/
-         *      \    *6
-         *       \   ||
-         *       \   ||
-         *        \->\/
-         *           *7
-         */
-        for (int i = 0; i < connected.length; i++) {
-            connected[i] = new SimpleLinkedListNode();
-        }
-        connected[0].insert(1);
-        connected[0].insert(4);
-        connected[1].insert(2);
-        connected[1].insert(4);
-        connected[2].insert(7);
-        connected[3].insert(4);
-        connected[5].insert(2);
-        connected[5].insert(6);
-        connected[6].insert(7);
-        
-        /*    *0 \         *3
-         *    ||    \      ||        *8
-         *    \/       \-> \/
-         *    *1 --------> *4
-         *    ||
-         *    ||    /*5
-         *    ||   / ||
-         *    \/<-/  ||
-         *    *2     \/
-         *      \    *6
-         *       \   ||
-         *       \   ||
-         *        \->\/
-         *           *7
 
-        Book solution for indexes of tf (==fIndexes) reversed:
-        3   0   1   4    8    5    2    6    7
-        ------------>         --------->----->
-            --->---->         ---->---------->
-            -------->
-           
-        result:
-            dIndexes=[0, 4, 1, 2, 7, 3, 5, 6, 8]
-            fIndexes=[4, 7, 2, 1, 0, 3, 6, 5, 8]
-                prev=[-1, 0, 1, -1, 0, -1, 5, 2, -1]
-        NOTE: if were tracking prev of prev etc to top-most
-              parent, the value at prev[7] would become 0 instead of 2
-              and prev[2] value would become 0 instead of 1
-        */
-        
-        //DFS dfs = new DFS(connected);
-        //dfs.walk();
-        //DFSIterative dfs = new DFSIterative();
-        //dfs.walk(connected);
-        DFSWithIndependentSets dfs = new DFSWithIndependentSets();
-        dfs.walk(connected);
-        
-        int[] dIdxs = dfs.getOrderedBeginIndexes();
-        int[] fIdxs = dfs.getOrderedEndIndexes();
-        int[] prev = dfs.getPredecessorIndexes();
-        
-        Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs.getTd()));
-        Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs.getTf()));
-        Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("prev=" + Arrays.toString(prev));
-        
-        Logger.getLogger(getClass().getSimpleName()).info(dfs.printIndependentSetsInTF());
+        Logger.getLogger(getClass().getSimpleName()).info("test0");
+
+        for (int j = 0; j < 4; ++j) {
+
+            // constructing test from Cormen et al.'s "Introduction to Algorithms"
+            SimpleLinkedListNode[] connected = new SimpleLinkedListNode[9];
+
+            /*    *0 \         *3
+             *    ||    \      ||        *8
+             *    \/       \-> \/
+             *    *1 --------> *4
+             *    ||
+             *    ||    /*5
+             *    ||   / ||
+             *    \/<-/  ||
+             *    *2     \/
+             *      \    *6
+             *       \   ||
+             *       \   ||
+             *        \->\/
+             *           *7
+             */
+            for (int i = 0; i < connected.length; i++) {
+                connected[i] = new SimpleLinkedListNode();
+            }
+            connected[0].insert(1);
+            connected[0].insert(4);
+            connected[1].insert(2);
+            connected[1].insert(4);
+            connected[2].insert(7);
+            connected[3].insert(4);
+            connected[5].insert(2);
+            connected[5].insert(6);
+            connected[6].insert(7);
+
+            /*    *0 \         *3
+             *    ||    \      ||        *8
+             *    \/       \-> \/
+             *    *1 --------> *4
+             *    ||
+             *    ||    /*5
+             *    ||   / ||
+             *    \/<-/  ||
+             *    *2     \/
+             *      \    *6
+             *       \   ||
+             *       \   ||
+             *        \->\/
+             *           *7
+
+            Book solution for indexes of tf (==fIndexes) reversed:
+            3   0   1   4    8    5    2    6    7
+            ------------>         --------->----->
+                --->---->         ---->---------->
+                -------->
+
+            result:
+                dIndexes=[0, 4, 1, 2, 7, 3, 5, 6, 8]
+                fIndexes=[4, 7, 2, 1, 0, 3, 6, 5, 8]
+                    prev=[-1, 0, 1, -1, 0, -1, 5, 2, -1]
+            NOTE: if were tracking prev of prev etc to top-most
+                  parent, the value at prev[7] would become 0 instead of 2
+                  and prev[2] value would become 0 instead of 1
+             */
+            int[] dIdxs;
+            int[] fIdxs;
+            int[] prev;
+
+            if (j == 0) {
+                DFS dfs = new DFS(connected);
+                dfs.walk();
+                dIdxs = dfs.getOrderedBeginIndexes();
+                fIdxs = dfs.getOrderedEndIndexes();
+                prev = dfs.getPredecessorIndexes();
+            } else if (j == 1) {
+
+                DFSIterative dfs2 = new DFSIterative();
+                dfs2.walk(connected);
+
+                dIdxs = dfs2.getOrderedBeginIndexes();
+                fIdxs = dfs2.getOrderedEndIndexes();
+                prev = dfs2.getPredecessorIndexes();
+            } else if (j == 2) {
+                DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
+                dfs3.walk(connected);
+
+                dIdxs = dfs3.getOrderedBeginIndexes();
+                fIdxs = dfs3.getOrderedEndIndexes();
+                prev = dfs3.getPredecessorIndexes();
+
+                Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs3.getTd()));
+                Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
+                Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("prev=" + Arrays.toString(prev));
+
+                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
+
+                assertEquals(2, dfs3.getIndependentSets().size());
+            } else if (j == 3) {
+                DFSIterativeWithIndependentSets dfs4 = new DFSIterativeWithIndependentSets();
+                dfs4.walk(connected);
+                assertEquals(2, dfs4.getIndependentSets().size());
+            }
+        }
     }
 
     public void testDFS() {
@@ -148,70 +172,81 @@ public class DFSTest extends TestCase {
             4, 1, 3, 0, 
             5, 2
          */
-        SimpleLinkedListNode[] directedEdges = new SimpleLinkedListNode[6];
-        directedEdges[0] = new SimpleLinkedListNode(1); // edge from 0:1
-        directedEdges[0].insert(3);                   // edge 0:3
-        directedEdges[1] = new SimpleLinkedListNode(4); // edge 1:4
-        directedEdges[2] = new SimpleLinkedListNode(4); // edge 2:4
-        directedEdges[2].insert(5); // edge 2:5
-        directedEdges[3] = new SimpleLinkedListNode(1); // edge 3:1
-        directedEdges[4] = new SimpleLinkedListNode(3); // edge 4:3
-        directedEdges[5] = new SimpleLinkedListNode(5); // edge 5:5
+        for (int j = 0; j < 4; ++j) {
+            SimpleLinkedListNode[] directedEdges = new SimpleLinkedListNode[6];
+            directedEdges[0] = new SimpleLinkedListNode(1); // edge from 0:1
+            directedEdges[0].insert(3);                   // edge 0:3
+            directedEdges[1] = new SimpleLinkedListNode(4); // edge 1:4
+            directedEdges[2] = new SimpleLinkedListNode(4); // edge 2:4
+            directedEdges[2].insert(5); // edge 2:5
+            directedEdges[3] = new SimpleLinkedListNode(1); // edge 3:1
+            directedEdges[4] = new SimpleLinkedListNode(3); // edge 4:3
+            directedEdges[5] = new SimpleLinkedListNode(5); // edge 5:5
 
-        int[] dIdxs;
-        int[] fIdxs;
-        
-        /*
-        DFS dfs = new DFS(directedEdges);
-        dfs.walk();
-        
-        dIdxs = dfs.getOrderedBeginIndexes();
-        fIdxs = dfs.getOrderedEndIndexes();
-        
-        Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs.getTd()));
-        Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs.getTf()));
-        Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-                
-        assertTrue(Arrays.equals(new int[]{0, 3, 1, 4, 2, 5}, dIdxs));
-        assertTrue(Arrays.equals(new int[]{4, 1, 3, 0, 5, 2}, fIdxs));
-        
-        Logger.getLogger(getClass().getSimpleName()).info("ITERATIVE:");
-        
-        DFSIterative dfs2 = new DFSIterative();
-        dfs2.walk(directedEdges);
-        
-        dIdxs = dfs2.getOrderedBeginIndexes();
-        fIdxs = dfs2.getOrderedEndIndexes();
-        
-        Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs2.getTd()));
-        Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs2.getTf()));
-        Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-                
-        assertTrue(Arrays.equals(new int[]{0, 3, 1, 4, 2, 5}, dIdxs));
-        assertTrue(Arrays.equals(new int[]{4, 1, 3, 0, 5, 2}, fIdxs));
-        */
-        /*
-        4, 1, 3, 0, 
-            5, 2
-        */
-        TIntSet expectedNodes0 = new TIntHashSet();
-        TIntSet expectedNodes1 = new TIntHashSet();
-        expectedNodes0.add(4); expectedNodes0.add(1); expectedNodes0.add(3); expectedNodes0.add(0);
-        expectedNodes1.add(5); expectedNodes1.add(2);
-        
-        DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
-        dfs3.walk(directedEdges);
-        dIdxs = dfs3.getOrderedBeginIndexes();
-        fIdxs = dfs3.getOrderedEndIndexes();
-        
-        Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs3.getTd()));
-        Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
-        Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
-        
+            int[] dIdxs;
+            int[] fIdxs;
+
+            TIntSet expectedNodes0 = new TIntHashSet();
+            TIntSet expectedNodes1 = new TIntHashSet();
+            expectedNodes0.add(4);
+            expectedNodes0.add(1);
+            expectedNodes0.add(3);
+            expectedNodes0.add(0);
+            expectedNodes1.add(5);
+            expectedNodes1.add(2);
+
+            if (j == 0) {
+                DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
+                dfs3.walk(directedEdges);
+                dIdxs = dfs3.getOrderedBeginIndexes();
+                fIdxs = dfs3.getOrderedEndIndexes();
+
+                Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs3.getTd()));
+                Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
+                Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
+
+                assertEquals(1, dfs3.getIndependentSets().size());
+
+            } else if (j == 1) {
+                DFSIterativeWithIndependentSets dfs4 = new DFSIterativeWithIndependentSets();
+                dfs4.walk(directedEdges);
+                assertEquals(1, dfs4.getIndependentSets().size());
+
+            } else if (j == 2) {
+                DFS dfs = new DFS(directedEdges);
+                dfs.walk();
+
+                dIdxs = dfs.getOrderedBeginIndexes();
+                fIdxs = dfs.getOrderedEndIndexes();
+
+                Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs.getTd()));
+                Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs.getTf()));
+                Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
+
+                assertTrue(Arrays.equals(new int[]{0, 3, 1, 4, 2, 5}, dIdxs));
+                assertTrue(Arrays.equals(new int[]{4, 1, 3, 0, 5, 2}, fIdxs));
+
+                Logger.getLogger(getClass().getSimpleName()).info("ITERATIVE:");
+
+            } else if (j == 3) {
+                DFSIterative dfs2 = new DFSIterative();
+                dfs2.walk(directedEdges);
+
+                dIdxs = dfs2.getOrderedBeginIndexes();
+                fIdxs = dfs2.getOrderedEndIndexes();
+
+                Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs2.getTd()));
+                Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs2.getTf()));
+                Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
+
+                assertTrue(Arrays.equals(new int[]{0, 3, 1, 4, 2, 5}, dIdxs));
+                assertTrue(Arrays.equals(new int[]{4, 1, 3, 0, 5, 2}, fIdxs));
+            }
+        }
     }
 
     public void testWalk2() {
@@ -243,11 +278,10 @@ public class DFSTest extends TestCase {
         fTimes=[4, 5, 7, 8, 10, 13, 15, 16, 18]
         dIndexes=[0, 2, 3, 1, 4, 5, 7, 6, 8]
         fIndexes=[3, 2, 1, 0, 4, 7, 6, 5, 8]
-        parent=8; set=8,
-        parent=5; set=7, 6, 5,
-        parent=4; set=4,
-        parent=0; set=3, 2, 1, 0,
+        
         */
+        
+        for (int j = 0; j < 4; ++j) {
         Map<String, Integer> objs = new HashMap<String, Integer>();
         objs.put("shirt", 0);      // belt, tie
         objs.put("belt", 1);       // jacket
@@ -287,45 +321,57 @@ public class DFSTest extends TestCase {
         int[] dIdxs;
         int[] fIdxs;
 
-        /*
-        Logger.getLogger(getClass().getSimpleName()).info("recursive:");
-        DFS dfs = new DFS(connected);
-        dfs.walk();
-        
-        dIdxs = dfs.getOrderedBeginIndexes();
-        fIdxs = dfs.getOrderedEndIndexes();
-        
-        Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs.getTd()));
-        Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs.getTf()));
-        Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-        
-        assertTrue(Arrays.equals(expected, fIdxs));
-        
-        Logger.getLogger(getClass().getSimpleName()).info("iterative:");
-        DFSIterative dfs2 = new DFSIterative();
-        dfs2.walk(connected);
-        
-        dIdxs = dfs2.getOrderedBeginIndexes();
-        fIdxs = dfs2.getOrderedEndIndexes();
-        
-        Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs2.getTd()));
-        Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs2.getTf()));
-        Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-                
-        assertTrue(Arrays.equals(expected, fIdxs));
-        */
-        DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
-        dfs3.walk(connected);
-        dIdxs = dfs3.getOrderedBeginIndexes();
-        fIdxs = dfs3.getOrderedEndIndexes();
-        
-        Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs3.getTd()));
-        Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
-        Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
-        Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
+            if (j == 0) {
+                DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
+                dfs3.walk(connected);
+                dIdxs = dfs3.getOrderedBeginIndexes();
+                fIdxs = dfs3.getOrderedEndIndexes();
+
+                Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs3.getTd()));
+                Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs3.getTf()));
+                Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
+
+                assertEquals(2, dfs3.getIndependentSets().size());
+
+            } else if (j == 1) {
+
+                DFSIterativeWithIndependentSets dfs4 = new DFSIterativeWithIndependentSets();
+                dfs4.walk(connected);
+                assertEquals(2, dfs4.getIndependentSets().size());
+            } else if (j == 2) {
+                Logger.getLogger(getClass().getSimpleName()).info("recursive:");
+                DFS dfs = new DFS(connected);
+                dfs.walk();
+
+                dIdxs = dfs.getOrderedBeginIndexes();
+                fIdxs = dfs.getOrderedEndIndexes();
+
+                Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs.getTd()));
+                Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs.getTf()));
+                Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
+
+                assertTrue(Arrays.equals(expected, fIdxs));
+
+            } else if (j == 3) {
+
+                Logger.getLogger(getClass().getSimpleName()).info("iterative:");
+                DFSIterative dfs2 = new DFSIterative();
+                dfs2.walk(connected);
+
+                dIdxs = dfs2.getOrderedBeginIndexes();
+                fIdxs = dfs2.getOrderedEndIndexes();
+
+                Logger.getLogger(getClass().getSimpleName()).info("dTimes=" + Arrays.toString(dfs2.getTd()));
+                Logger.getLogger(getClass().getSimpleName()).info("fTimes=" + Arrays.toString(dfs2.getTf()));
+                Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
+                Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
+
+                assertTrue(Arrays.equals(expected, fIdxs));
+            }
+        }
     }
     
     public void testSort_SimpleDAG() {
@@ -399,5 +445,10 @@ public class DFSTest extends TestCase {
         Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
         Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSetsInTF());
         
+        assertEquals(1, dfs3.getIndependentSets().size());
+    
+        DFSIterativeWithIndependentSets dfs4 = new DFSIterativeWithIndependentSets();
+        dfs4.walk(connected);
+        assertEquals(1, dfs4.getIndependentSets().size());
     }
 }

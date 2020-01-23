@@ -51,15 +51,18 @@ public class DFS {
     protected int time = 0;
     
     /**
-     * @param theDirectedEdges  adjacency matrix with connected i->j indicated 
+     * @param directedEdges  adjacency matrix with connected i->j indicated 
      * by the index and each node in the linked list, respectively.
      * Note that the key of each node is expected to be the same as it's index
      * in the adjacency matrix.
      * For example, adjacent to node 3 is found via directedEdges[3] as all in 
      * the linked list.
      */
-    public DFS(SimpleLinkedListNode[] theDirectedEdges) {
-        this.directedEdges = theDirectedEdges;
+    public DFS(SimpleLinkedListNode[] directedEdges) {
+        if (directedEdges == null) {
+            throw new IllegalArgumentException("directedEdges cannot be null");
+        }
+        this.directedEdges = Arrays.copyOf(directedEdges, directedEdges.length);
         this.visited = new int[directedEdges.length];
         this.td = new int[directedEdges.length];
         this.tf = new int[directedEdges.length];
@@ -123,7 +126,14 @@ public class DFS {
     }
     
     private int[] sortForIndexes(int[] a) {
-        assert(a.length == this.directedEdges.length);
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (directedEdges == null) {
+            return null;
+        }
+        assert(a.length == directedEdges.length);
+        a = Arrays.copyOf(a, a.length);
         int[] idxs = new int[a.length];
         for (int i = 0; i < idxs.length; ++i) {
             idxs[i] = i;

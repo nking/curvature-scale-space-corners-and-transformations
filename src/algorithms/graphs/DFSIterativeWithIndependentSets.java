@@ -7,8 +7,12 @@ import algorithms.util.SimpleLinkedListNode;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,37 +30,42 @@ import java.util.logging.Logger;
    worst case space needed: O(|V|)
 
    implemented following Cormen et al. "Introduction To Algorithms"
-
+   
+  NOTE: have added use of maps and sets to determine the independent groups
+     during the traversal.
+     Also using a disjoint set to keep track of the topmost parent in a the
+     independent connected set.
+     Disjoint sets use path compression to update representatives quickly.
+     
+     (THIS IS NOT FINISHED YET).
+    
  * @author nichole
  */
-public class DFSWithIndependentSets {
-
+public class DFSIterativeWithIndependentSets {
     /**
      * adjacency matrix with connected i->j indicated by the index and each
      *    node in the linked list, respectively.
      * for example, adjacent to node 3 is found via directedEdges[3] as all in the linked list.
      */
-    protected SimpleLinkedListNode[] directedEdges;
-
+    private SimpleLinkedListNode[] directedEdges;
+    
     /** 
      * holds state for whether a node has been visited.  0 = not visited,
      * 1 = visiting now, 2 = was visited.
     */
-    protected int[] visited;
+    private int[] visited;
 
     /**
      * time when node is first discovered
      */
-    protected int[] td;
+    private int[] td;
 
     /**
      * time when node's adjacency list has all been visited
      */
-    protected int[] tf;
+    private int[] tf;
    
-    protected int[] predecessor;
-
-    protected int time = 0;
+    private int[] predecessor;
     
     /**
      * key = graph index.
@@ -71,12 +80,15 @@ public class DFSWithIndependentSets {
     private TIntObjectHashMap<TIntHashSet> parentGroupMap;
     
     private DisjointSet2Helper disjointSetHelper;
-        
+    
+    private int time;
+    
     private Logger log = Logger.getLogger(getClass().getSimpleName());
     
     private Level logLevel = Level.FINE;
-    
-    public DFSWithIndependentSets() {
+
+    public DFSIterativeWithIndependentSets() {
+        
     }
 
     /**
@@ -107,59 +119,147 @@ public class DFSWithIndependentSets {
         
         for (int u = 0; u < directedEdges.length; u++) {
             if (visited[u] == 0) {
-                visit(u);
-            } else {
-                addToMap(u, predecessor[u]);
+                walk(u);
             }
         }
         
         populateGroupMap();
     }
     
-    private void visit(int u) {
-        log.log(logLevel, "  visit u=" + u);
+    private void walk(int u) {
         
-        visited[u] = 1;
-        time++;
-        //System.out.println("  visiting " + u + " to set td=" + time);
-        td[u] = time;
+        Stack<Snapshot> stack = new Stack<Snapshot>();
+        Snapshot current;
         
-        addToMap(u, predecessor[u]);
+        log.log(logLevel, "*load method frame for " + u);
+        
+        current = new Snapshot(u);
+        current.stage = 0;
+        stack.push(current);
+        
+        while(!stack.empty()) {
+            
+            current = stack.pop();
+            
+            log.log(logLevel, current.toString());
+            
+            switch(current.stage) {
+                case 0: { 
+                    // before recursion is invoked
+                    visited[current.node] = 1;
+                    time++;
+                    log.log(logLevel, "  stage 0: visiting " + current.node + " to set td=" + time);
+                    td[current.node] = time;
+                    
+                    current.stage = 1;
+                    stack.push(current);
+                    
+                    addToMap(current.node, predecessor[current.node]);
+                    
+                    log.log(logLevel, 
+                        String.format("  stage 0: push onto stack u=%d\n", current.node));
+                            
+                    SimpleLinkedListNode next = directedEdges[current.node];
+                    
+                    if (next != null && next.getKey() != -1) {
+                        
+                        int v = next.getKey();
+                        
+                        directedEdges[current.node].delete(next);
+                                                      
+                        if (visited[v] == 0) {
+                            
+                            predecessor[v] = current.node;
+                            
+                            addToMap(v, predecessor[v]);
+                            
+                            Snapshot newSnapshot = new Snapshot(v);
+                            newSnapshot.stage = 0;
+                            stack.push(newSnapshot);
 
-        SimpleLinkedListNode next = directedEdges[u];
-        
-        while (next != null && next.getKey() != -1) {
-            int v = next.getKey();
-            log.log(logLevel, "        v=" + v);
-            if (visited[v] == 0) {
-                predecessor[v] = u;
-                visit(v);
-            } else if (predecessor[v] == -1) {
-                // in case the instance graph is not ordered top-down
-                predecessor[v] = u;
-                addToMap(v, predecessor[v]);
-            } else {
-                addToMap(v, u);
+                            log.log(logLevel, 
+                                String.format("   stage 0: and push onto stack v=%d\n", v));
+                            log.log(logLevel, "   stage 0: [v: " + newSnapshot.toString() + "]");
+  
+                            continue;
+                        } else if (predecessor[v] == -1) {
+                            // in case the instance graph is not ordered top-down
+                            predecessor[v] = current.node;
+                            
+                            addToMap(v, predecessor[v]);
+                        } else {
+                            addToMap(v, current.node);
+                        }
+                    }
+                    break;
+                }
+                case 1: {
+                    log.log(logLevel, " stage 1: have all child links been visited?  snap="
+                       + current.toString());
+                    
+                    SimpleLinkedListNode next = directedEdges[current.node];
+                    if (next != null && next.getKey() != -1) {
+                        
+                        int v = next.getKey();
+                        
+                        log.log(logLevel, 
+                            String.format(" stage 1: there is a child link %d\n", v));
+                        
+                        directedEdges[current.node].delete(next);
+                        
+                        current.stage = 1;
+                        stack.push(current);
+
+                        log.log(logLevel, 
+                            String.format("  stage 1: push onto stack u=%d\n", current.node));
+                                                      
+                        if (visited[v] == 0) {
+                            
+                            predecessor[v] = current.node;
+                            
+                            addToMap(v, predecessor[v]);
+                            
+                            Snapshot newSnapshot = new Snapshot(v);
+                            newSnapshot.stage = 0;
+                            stack.push(newSnapshot);
+
+                            log.log(logLevel, String.format(
+                                "   stage 1: and push onto stack v=%d\n", v));
+                            log.log(logLevel, "   stage 1: [v: " + newSnapshot.toString() + "]");
+  
+                            continue;
+                        } else if (predecessor[v] == -1) {
+                            // in case the instance graph is not ordered top-down
+                            predecessor[v] = current.node;
+                            
+                            addToMap(v, current.node);
+                        } else {
+                            addToMap(v, current.node);
+                        }
+                        
+                        continue;
+                    } else {
+                        addToMap(current.node, predecessor[current.node]);
+                    }
+                    
+                    visited[current.node] = 2;
+                    time++;
+                    tf[current.node] = time;
+                    log.log(logLevel, String.format(" stage 1: end visit to %d, set tf=%d\n",
+                        current.node, time));
+
+                    break;
+                }
             }
-            next = next.getNext();
         }
-        //addToMap(u, predecessor[u]);
-        visited[u] = 2;
-        time++;
-        tf[u] = time;
-        //System.out.println("  visited " + u + ") to set tf=" + time);
     }
-    
+
     /**
      * update indexParentMap and independentGroupsMap for the given node and
      * presence or absence of predecessor.
      * @param node 
      */
     private void addToMap(int nodeIdx, int prevIdx) {
-        
-        log.log(logLevel, "  addToMap: nodeIdx=" + nodeIdx + " prevIdx=" +
-            prevIdx + " predecessor[" + nodeIdx + "]=" +
-            predecessor[nodeIdx]);
         
         /*
         5 cases:
@@ -174,7 +274,7 @@ public class DFSWithIndependentSets {
                     (in this case, nodeIdx data is created, added to prevIdx
                      data, and uses the existing djset to store the merged values in
                      index map.)
-       
+        
             prevIdx does not exist:
                (in this case, nodeIdx data was stored upon visit from path
                   of a parent node and this somehow got invoked during
@@ -184,23 +284,14 @@ public class DFSWithIndependentSets {
                (4) nodeIdx does not exist
                    (in this case, new data is created for nodeIdx and stored in maps)
         
-        NOTE: these objects and thier names will change soon.
-        when finished, will have data structure for sequential indexes in tf,
-        and will have data structures holding independent sets.
-        
         key = graph index. value = holder for DJSet which has parent idx as key for parentGroupMap.
         TIntObjectHashMap<DisjointSetHolder> indexDJSetMap
      
         TIntObjectHashMap<TIntHashSet> parentGroupMap
-        
-        key = top-most predecessor index. value = set of connected nodes.  
-              each set is independent of one another
-              (no connecting edges between them).
-        TIntObjectHashMap<TIntHashSet> independentGroupsMap;
         */
         
         if (prevIdx > -1) {
-          // merge existing prev with (1) existing or (2) new node
+            // merge existing prev with (1) existing or (2) new node
             DisjointSetHolder prevRef = indexDJSetMap.get(prevIdx);
             assert(prevRef != null);
             DisjointSet2Node<Integer> prevDJSet = prevRef.set;
@@ -219,29 +310,24 @@ public class DFSWithIndependentSets {
                 DisjointSetHolder nodeRef = indexDJSetMap.get(nodeIdx);
                 DisjointSet2Node<Integer> nodeDJSet = nodeRef.set;
                 
-                if (prevRef.equals(nodeRef)) {
-                    // Case (?):  
-                    return;
-                }
-                if (prevDJSet.equals(nodeDJSet) || 
-                    prevDJSet.getMember().intValue() == nodeDJSet.getMember().intValue()) {
+                if (prevDJSet.equals(nodeDJSet)) {
                     // Case (?):  
                     return;
                 }
                 
-                log.log(logLevel, "   merge: nodeIdx=" + nodeIdx + " prevIdx=" +
-                    prevIdx + "  predecessor[" + nodeIdx + "]=" +
+                log.log(logLevel, "  merge: nodeIdx=" + nodeIdx + " prevIdx=" +
+                    prevIdx + " predecessor[" + nodeIdx + "]=" +
                     predecessor[nodeIdx] + 
-                    "\n          nodeDJSet=" + nodeDJSet.toString() +
-                    "\n          prevDJSet=" + prevDJSet.toString()                        
+                    "\n   nodeDJSet=" + nodeDJSet.toString() +
+                    "\n    prevDJSet=" + prevDJSet.toString()                        
                 );
                 
                 prevDJSet = disjointSetHelper.unionChooseY(nodeDJSet, prevDJSet);
                 
                 prevRef.set = prevDJSet;
                 nodeRef.set = prevDJSet;
-                log.log(logLevel, "    merged: " +
-                    "\n          prevDJSet=" + prevDJSet.toString()                        
+                log.log(logLevel, "  merged: " +
+                    "\n    prevDJSet=" + prevDJSet.toString()                        
                 );
                 
                 // indexParentMap entries already existed for both nodes,
@@ -255,22 +341,23 @@ public class DFSWithIndependentSets {
             } else {
                 // Case (2) create new data and add it to prev
                 indexDJSetMap.put(nodeIdx, prevRef);
-                    
+                                
                 DisjointSet2Node<Integer> temp = new DisjointSet2Node<Integer>(nodeIdx);
                 temp = disjointSetHelper.makeSet(temp);
                 
-                log.log(logLevel, "    merge: nodeIdx=" + nodeIdx + " prevIdx=" +
-                    prevIdx + " predecessor[" + nodeIdx + "]=" + predecessor[nodeIdx] + 
-                    "\n           temp=" + temp.toString() +
-                    "\n           prevDJSet=" + prevDJSet.toString()                        
+                log.log(logLevel, "  merge: nodeIdx=" + nodeIdx + " prevIdx=" +
+                    prevIdx + "    \npredecessor[" + nodeIdx + "]=" +
+                    predecessor[nodeIdx] + 
+                    "\n    temp=" + temp.toString() +
+                    "]n    prevDJSet=" + prevDJSet.toString()                        
                 );
                 
                 prevDJSet = disjointSetHelper.unionChooseY(temp, prevDJSet);
                 
                 prevRef.set = prevDJSet;
                 
-                log.log(logLevel, "   merged: " +
-                    "\n          prevDJSet=" + prevDJSet.toString()                        
+                log.log(logLevel, "  merged: " +
+                    "\n    prevDJSet=" + prevDJSet.toString()                        
                 );
                 
                 indexDJSetMap.put(nodeIdx, prevRef);
@@ -281,7 +368,7 @@ public class DFSWithIndependentSets {
             if (indexDJSetMap.contains(nodeIdx)) {
                 // Case (3) prevIdx does not exist but nodeIdx does
                 return;
-               } else {
+            } else {
                 // Case (4) create data for nodeIdx and store it for itself and as it's own parent
                 DisjointSetHolder nodeRef = new DisjointSetHolder();
                 nodeRef.set = new DisjointSet2Node<Integer>(nodeIdx);
@@ -294,8 +381,8 @@ public class DFSWithIndependentSets {
             }
         }
         log.log(logLevel, "   addToMap results:" + 
-            "\n         prevIdx=" + prevIdx + " prevRef=" + indexDJSetMap.get(prevIdx) +
-            "\n         nodeIdx=" + nodeIdx + " nodeRef=" + indexDJSetMap.get(nodeIdx));
+            "\n    prevIdx=" + prevIdx + " prevRef=" + indexDJSetMap.get(prevIdx) +
+            "\n    nodeIdx=" + nodeIdx + " nodeRef=" + indexDJSetMap.get(nodeIdx));
     }
 
     private void populateGroupMap() {
@@ -306,12 +393,43 @@ public class DFSWithIndependentSets {
             int idx = iter.key();
             int pIdx = iter.value().set.getParent().getMember();
             TIntHashSet set = parentGroupMap.get(pIdx);
-            if (set == null) {         
-            set = new TIntHashSet();
+            if (set == null) {
+                set = new TIntHashSet();
                 parentGroupMap.put(pIdx, set);
             }
             set.add(idx);
         }
+    }
+    
+    private class Snapshot {
+        
+        /**
+         * index of current snapshot within DFSIterative instance's arrays.
+         */
+        protected final int node;
+                
+        protected int stage = 0;
+                        
+        public Snapshot(int u) {
+            this.node = u;
+        }
+                
+        public Snapshot(Snapshot s) {
+            this.stage = s.stage;
+            this.node = s.node;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("node=").append(Integer.toString(node))
+                .append(", stage=").append(Integer.toString(stage))
+                .append(", prev=").append(Integer.toString(predecessor[node]))
+                .append(", visited=").append(Integer.toString(visited[node]))
+            ;
+            return sb.toString();
+        }
+        
     }
     
     /**
@@ -333,17 +451,6 @@ public class DFSWithIndependentSets {
             return sb.toString();
         }
         
-    }
-                           
-    /**
-     * get predecessor indexes
-     * @return get predecessor indexes
-     */
-    public int[] getPredecessorIndexes() {
-        if (predecessor == null) {
-            return null;
-        }
-        return Arrays.copyOf(predecessor, predecessor.length);
     }
     
     /**
@@ -373,6 +480,7 @@ public class DFSWithIndependentSets {
         QuickSort.sortBy1stArg(a, idxs);
         return idxs;
     }
+    
     /**
      * return the indexes in order of the ends of their traversal
      * @return 
@@ -409,6 +517,24 @@ public class DFSWithIndependentSets {
             throw new IllegalStateException("there was no entry for node=" + node);
         }
         return parentNode.getParent().getMember();
+    }
+
+    /*    
+    public TIntObjectHashMap<TIntHashSet> getIndependentGroups() {
+    }
+    public int getParentIndexForIndependentGroup(int node) {
+    }
+    */
+    
+    /**
+     * get predecessor indexes
+     * @return get predecessor indexes
+     */
+    public int[] getPredecessorIndexes() {
+        if (predecessor == null) {
+            return null;
+        }
+        return Arrays.copyOf(predecessor, predecessor.length);
     }
     
     /**
