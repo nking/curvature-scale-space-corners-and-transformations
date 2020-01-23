@@ -58,7 +58,7 @@ public class TopologicalSortTest extends TestCase {
         connected[objs.get("belt")].insert(objs.get("jacket"));
         connected[objs.get("tie")].insert(objs.get("jacket"));
         connected[objs.get("undershorts")].insert(objs.get("pants")); connected[objs.get("undershorts")].insert(objs.get("shoes"));
-        connected[objs.get("pants")].insert(objs.get("shoes"));
+        connected[objs.get("pants")].insert(objs.get("shoes")); connected[objs.get("pants")].insert(objs.get("shoes"));
         connected[objs.get("socks")].insert(objs.get("shoes"));
         // socks, undershorts, pants, shoes, watch, shirt, belt, tie, jacket
         int[] expResult = new int[]{objs.get("socks"), objs.get("undershorts"),
@@ -150,6 +150,10 @@ public class TopologicalSortTest extends TestCase {
 
         //assertTrue(Arrays.equals(expResult, result));
         
+        DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
+        dfs3.walk(connected);
+        System.out.println(dfs3.printIndependentSetsInTF());
+        
     }
    
     public void testSort2() {
@@ -208,14 +212,12 @@ public class TopologicalSortTest extends TestCase {
             --->---->         ---->---------->
             -------->
                 8, 5, 6, 3, 0, 1, 2, 7, 4
-                
         result=  [8, 
                   5, 
                   6, 
                   3, 0, 1, 4, 
                   2, 
                   7]
-        
          */
 
         int[] expResult = new int[]{3, 0, 1, 4, 8, 5, 2, 6, 7};
@@ -228,7 +230,5 @@ public class TopologicalSortTest extends TestCase {
         System.out.println("result=  " + Arrays.toString(result));
 
         //assertTrue(Arrays.equals(expResult, result));
-        
-        DFSWithIndependentSets dfs3 = new DFSWithIndependentSets();
     }
 }
