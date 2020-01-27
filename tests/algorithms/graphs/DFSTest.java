@@ -140,7 +140,6 @@ public class DFSTest extends TestCase {
                 Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
 
                 Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
-                Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
 
                 assertEquals(2, dfs3.getIndependentSets().size());
             } else if (j == 3) {
@@ -205,7 +204,6 @@ public class DFSTest extends TestCase {
                 Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
                 Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
                 Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
-                Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
 
                 assertEquals(1, dfs3.getIndependentSets().size());
 
@@ -332,7 +330,6 @@ public class DFSTest extends TestCase {
                 Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
                 Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
                 Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
-                Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
                 
                 assertEquals(2, dfs3.getIndependentSets().size());
 
@@ -445,7 +442,6 @@ public class DFSTest extends TestCase {
         Logger.getLogger(getClass().getSimpleName()).info("dIndexes=" + Arrays.toString(dIdxs));
         Logger.getLogger(getClass().getSimpleName()).info("fIndexes=" + Arrays.toString(fIdxs));
         Logger.getLogger(getClass().getSimpleName()).info(dfs3.printIndependentSets());
-        Logger.getLogger(getClass().getSimpleName()).info("Sequences:" + dfs3.printSequentialPathsInTF());
                 
         assertEquals(1, dfs3.getIndependentSets().size());
     

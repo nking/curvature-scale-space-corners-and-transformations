@@ -19,6 +19,23 @@ import java.util.Arrays;
 
    implemented following Cormen et al. "Introduction To Algorithms"
 
+   pros of DFS:
+      useful in topological sorting
+      connected components, espec 2-(edge or vertex) and 3-(edge or vertex).
+      finding the bridges of a graph
+      Generating words in order to plot the limit set of a group.
+      Finding strongly connected components.
+      Planarity testing
+      Solving puzzles with only one solution, such as mazes. (
+      biconnectivity in graphs.
+  
+   cons of DFS:
+      difficult to parallelize.
+      requires more memory, in C++ too because it's not using tail recursion
+      in its recursion.
+  
+* 
+* 
  * @author nichole
  */
 public class DFS {
