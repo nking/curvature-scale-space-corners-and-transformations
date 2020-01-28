@@ -1,5 +1,6 @@
 package algorithms.mst;
 
+import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import gnu.trove.iterator.TIntIntIterator;
@@ -40,7 +41,7 @@ import java.util.Stack;
  *      
  * @author nichole
  */
-public class PrimsMST {
+public class PrimsMSTFaster {
 
     private int[] prev = null;
     
@@ -48,34 +49,50 @@ public class PrimsMST {
     
     /**
      * 
-     * @param nVertexes
      * @param adjCostMap key=vertex1 index, 
      *   value=map with key = vertex2 index and
-     *    value = cost of edge between vertex1 and vertex2
-     * @return 
+     *   value = cost of edge between vertex1 and vertex2.  Note that the 
+     *   algorithm assumes the map key values are 0 through the number of vertexes
+     *   without gaps.
+     * @param maximumWeightInGraph the maximum value of any weight in the graph.
+     * This sets the word size of the YFastTrie used as the min priority q which
+     * is used by default if the VM has enough memory (a large number of items
+     * requires more memory).  If the YFastTrie is expected to consume more 
+     * memory than available, this class will use a Fibonacci Heap instead.
+     * 
      */
     public void calculateMinimumSpanningTree(
-        final int nVertexes, final TIntObjectMap<TIntIntMap>
-            adjCostMap) {
+        final TIntObjectMap<TIntIntMap> adjCostMap, 
+        int maximumWeightInGraph) {
 
         this.adjCostMap = adjCostMap;
+        
+        int nVertexes = adjCostMap.size();
         
         boolean[] inQ = new boolean[nVertexes];
         Arrays.fill(inQ, true);
         prev = new int[nVertexes];
         Arrays.fill(prev, -1);
         
-        Heap heap = new Heap();
+        int sentinel = (maximumWeightInGraph < Integer.MAX_VALUE) ? 
+            (maximumWeightInGraph + 1) : Integer.MAX_VALUE;
         
+        int maxNumberOfBits = (int)Math.ceil(Math.log(sentinel)/Math.log(2));
+        
+        MinHeapForRT2012 heap = new MinHeapForRT2012(sentinel,
+            nVertexes, maxNumberOfBits);
+   
+        // extra data structure needed to hold references to the nodes to be
+        //     able to read the nodes still in the queue.
         List<HeapNode> nodes = new ArrayList<HeapNode>();
 
         // initialize heap
         for (int i = 0; i < nVertexes; i++) {
-        	HeapNode v = new HeapNode();
-        	if (i == 0) {
+            HeapNode v = new HeapNode();
+            if (i == 0) {
                 v.setKey(0);
             } else {
-                v.setKey(Integer.MAX_VALUE);
+                v.setKey(sentinel);
             }
             v.setData(Integer.valueOf(i));
             heap.insert(v);
@@ -84,7 +101,7 @@ public class PrimsMST {
         
         while (heap.getNumberOfNodes() > 0) {
 
-        	HeapNode u = heap.extractMin(); 
+            HeapNode u = heap.extractMin(); 
            
             Integer uIndex = (Integer)u.getData();
             int uIdx = uIndex.intValue();
@@ -103,7 +120,7 @@ public class PrimsMST {
                 long distV = nodes.get(vIdx).getKey();
                
                 if (inQ[vIdx] && (cost < distV)) {
-                    prev[vIdx] = uIndex.intValue();
+                    prev[vIdx] = uIdx;
                     heap.decreaseKey(nodes.get(vIdx), cost); 
                 }
             }
@@ -112,7 +129,7 @@ public class PrimsMST {
         //System.out.println(Arrays.toString(prev));
     }
     
-    public int[] getPrecessorArray() {
+    public int[] getPredeccessorArray() {
         if (prev == null) {
             return null;
         }
@@ -182,78 +199,6 @@ public class PrimsMST {
         
         return walk;
     }
-
-    /**
-     * NOT READY FOR USE - not tested yet
-       NOTE: consider sorting by decreasing y
-       then increasing x before Prim's for
-       best results.
-     * @return 
-     */
-    public int[] getPreOrderPostOrderWalk() {
-
-        //NOTE: not yet tested.
-        //  for best use, might need to order
-        //  (sort) points by decr Y, incr x before prims so that
-        //  children are in order...
-        //  other ordering might be necessary...
-        //  
-        
-        TIntObjectMap<TIntList> nodeMap = 
-            createReverseMap();
-
-        //level 0            [0]
-        //level 1      [1]            [6]
-        //level 2   [2]   [3]       [7] [8]
-        //level 3       [4][5]
-        // PRE  0, 1, 2,-1, 3, 4,-1, 5, -1, 6, 7,-1, 8, -1
-        // POST 2,-1, 4,-1, 5, 3, 1,-1,  7,-1, 8, 6, 0
-                        
-        LinkedList<Integer> pre = getPreOrderWalkOfTreeWithMarkers(nodeMap);
-        
-        LinkedList<Integer> post = getPostOrderWalkOfTreeWithMarkers(nodeMap);
-        
-        TIntSet added = new TIntHashSet();
-        TIntList output = new TIntArrayList();
-        
-        while (!pre.isEmpty() && !post.isEmpty()) {
-            while (!pre.isEmpty()) {
-                Integer node = pre.pollFirst();
-                int idx = node.intValue();
-                if (idx == -1) {
-                    break;
-                }
-                if (!added.contains(idx)) {
-                    output.add(idx);
-                    added.add(idx);
-                }
-            }
-            
-            // read forward until a -1 after an "add"
-            boolean foundMarker = false;
-            boolean foundAdd = false;
-            while (!foundMarker && !post.isEmpty()) {
-                Integer node = post.pollFirst();
-                int idx = node.intValue();
-                if (idx == -1) {
-                    if (foundAdd) {
-                        foundMarker = true;
-                    }
-                } else if (!added.contains(idx)) {
-                    output.add(idx);
-                    added.add(idx);
-                    foundAdd = true;
-                }
-            }
-        }
-        
-        int[] walk = new int[output.size()];
-        for (int i = 0; i < output.size(); ++i) {
-            walk[i] = output.get(i);
-        }
-        
-        return walk;
-    }   
     
     protected LinkedList<Integer> getPreOrderWalkOfTreeWithMarkers(
         TIntObjectMap<TIntList> nodeMap) {

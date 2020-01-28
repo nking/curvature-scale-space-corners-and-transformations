@@ -1,3 +1,8 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package algorithms.mst;
 
 import algorithms.compGeometry.convexHull.PolarAngleQuickSort;
@@ -18,21 +23,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertTrue;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 /**
  *
  * @author nichole
  */
-public class PrimsMSTTest extends TestCase {
+public class PrimsMSTFasterTest extends TestCase {
     
-    public PrimsMSTTest() {
+    public PrimsMSTFasterTest() {
     }
     
     /**
      * test created from Cormen et al. Chap 24, MST, Fig 23.4.
      * @throws Exception 
      */
-    public void est0() throws Exception {
+    public void test0() throws Exception {
         
         /*         / [b]           /[c]-- 7  -- [d]\
          *       4    |          2     \         |    9
@@ -40,19 +52,10 @@ public class PrimsMSTTest extends TestCase {
          *       8    |     7                    |   10
          *         \ [h] / -- 1  --[g]-- 2 -- \ [f]/
          *   
-         * letter  index        
-         *    a      0
-         *    b      1
-         *    c      2
-         *    d      3
-         *    e      4
-         *    f      5
-         *    g      6
-         *    h      7
-         *    i      8
+         *    a  b  c  d  e  f  g  h  i
+         *    0  1  2  3  4  5  6  7  8
          */
 
-        int nVertexes = 9;
         TIntObjectMap<TIntIntMap> adjCostMap 
             = new TIntObjectHashMap<TIntIntMap>();
         
@@ -107,28 +110,22 @@ public class PrimsMSTTest extends TestCase {
         map.put(2, 2);
         map.put(7, 7);
       
-        PrimsMST prims = new PrimsMST();
-        prims.calculateMinimumSpanningTree(
-            nVertexes, adjCostMap);                
+        PrimsMSTFaster prims = new PrimsMSTFaster();
+        prims.calculateMinimumSpanningTree(adjCostMap, 14);                
         
         /*         / [b]           /[c]-- 7  -- [d]\
          *       4               2     \              9
          *  [a]              [i]          4            [e]
          *       8                                  
          *         \ [h]   -- 1  --[g]-- 2 -- \ [f]
-         */
-        /*
-        0 1  
-        2 3  
-        2 5  
-        2 8  
-        3 4  
-        5 6  
-        6 7  
-        7 0  
-        */
         
-        int[] predecessorArray = prims.getPrecessorArray();
+         *    a  b  c  d  e  f  g  h  i
+         *    0  1  2  3  4  5  6  7  8
+        
+             -1, 0, 5, 2, 3, 6, 7, 0, 2
+         */
+        
+        int[] predecessorArray = prims.getPredeccessorArray();
         assertTrue(Arrays.equals(
             new int[]{-1, 0, 5, 2, 3, 6, 7, 0, 2}, 
             predecessorArray));
@@ -154,7 +151,7 @@ public class PrimsMSTTest extends TestCase {
         
     }
     
-    public void est2() throws Exception {
+    public void test2() throws Exception {
         
         /*
         testing a pre-order, post-order merged traversal.        
