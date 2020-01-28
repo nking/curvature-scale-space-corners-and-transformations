@@ -50,7 +50,8 @@ public class AStar {
     
     private int sentinel = Integer.MAX_VALUE;
     
-    private int maxDist = sentinel;
+    // this is recalculated in constructor
+    private int maxDist = sentinel - 1;
 
     // key is total estimate from srcIdx to destIdx for the given refIdx
     //    (that is the distance from srcIdx to refIdx + refIdx + heuristic)
@@ -126,6 +127,10 @@ public class AStar {
         for (int i = 0; i < points.length; ++i) {
             heuristics[i] = distBetween(i, destinationIndx);
         }
+        
+        maxDist = calculateMaxDistance();
+        
+        sentinel = maxDist + 1;
 
         initHeap();
         
@@ -136,15 +141,11 @@ public class AStar {
     private void initHeap() {
         
         int n = points.length;
-        
-        maxDist = calculateMaxDistance();
-        
-        int capacity = Math.max(n, maxDist + 1);
-        
+                
         int nBits = (int)Math.ceil(Math.log(maxDist/Math.log(2)));
         
-        //int capacity, int approxN, int maxNumberOfBits
-        heap = new MinHeapForRT2012(capacity, n, nBits);
+        //int maxValue, int approxN, int maxNumberOfBits
+        heap = new MinHeapForRT2012(sentinel, n, nBits);
 
         nodes = new HeapNode[n];
 
@@ -191,7 +192,7 @@ public class AStar {
 
                 int vIndx = vIndex.intValue();
 
-                if ((distFromS[uIndx] == sentinel) || (nodes[vIndx] == null)) {
+                if (nodes[vIndx] == null) {
                     vIndex = adj.poll();                    
                     continue;
                 }
@@ -200,8 +201,7 @@ public class AStar {
 
                 long uDistPlusCost = (distFromS[uIndx] + distUV);
 
-                long vDist = (distFromS[vIndex] == sentinel) ? sentinel : 
-                    distFromS[vIndex];
+                long vDist = distFromS[vIndex];
 
                 log.fine(points[uIndx].toString() + ":" + points[vIndx] + " "
                     + " dU=" + distFromS[uIndx] 
@@ -383,6 +383,10 @@ public class AStar {
             if (y > maxY) {
                 maxY = y;
             }
+        }
+        if (minX == Integer.MIN_VALUE && minY == Integer.MIN_VALUE && 
+            maxX == Integer.MAX_VALUE && maxY == Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE - 1;
         }
         int dX = maxX - minX + 1;
         int dY = maxY - minY + 1;

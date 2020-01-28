@@ -41,7 +41,7 @@ public class MinHeapForRT2012 {
     
     /**
      * 
-     * @param capacity estimate of maximum value to store.
+     * @param maxValue estimate of maximum value to store.
      * @param approxN approximate number of nodes expected
      * to be in the heap as a rough maximum at a given time.
      * (it's used to help determine which algorithm to use
@@ -58,7 +58,7 @@ public class MinHeapForRT2012 {
      * @param maxNumberOfBits
      * 
      */
-    public MinHeapForRT2012(int capacity, int approxN, int maxNumberOfBits) {
+    public MinHeapForRT2012(int maxValue, int approxN, int maxNumberOfBits) {
 
         //use yfasttrie if theres enough memory        
         long totalMemory = Runtime.getRuntime().totalMemory();
@@ -66,7 +66,7 @@ public class MinHeapForRT2012 {
         long heapUsage = mbean.getHeapMemoryUsage().getUsed();
         long avail = totalMemory - heapUsage;
 
-        long[] yftEstimate = YFastTrie.estimateSizeOnHeap(capacity, 
+        long[] yftEstimate = YFastTrie.estimateSizeOnHeap(maxValue, 
                 maxNumberOfBits);
         
         log.fine("avail=" + avail + " yftEst=" + yftEstimate[1] + " < " +
@@ -78,7 +78,7 @@ public class MinHeapForRT2012 {
             
             algorithm = 2;
             
-            heap2 = new YFastTrieWrapper(capacity);
+            heap2 = new YFastTrieWrapper(maxValue);
             
             heap1 = null;
             
@@ -86,7 +86,7 @@ public class MinHeapForRT2012 {
             
             algorithm = 1;
         
-            heap1 = new FibonacciHeapWrapper(approxN, capacity);
+            heap1 = new FibonacciHeapWrapper(approxN, maxValue);
         
             heap2 = null;
         }
