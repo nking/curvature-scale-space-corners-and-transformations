@@ -264,4 +264,25 @@ public class SimpleLinkedListNodeTest extends TestCase {
         assertTrue(keys.length == 12);
     }
     
+    public void testCopyConstructor() {
+        SimpleLinkedListNode s0 = new SimpleLinkedListNode(0);
+        s0.insert(1);
+        s0.insert(2);
+        
+        SimpleLinkedListNode s1 = s0.next;
+        SimpleLinkedListNode s2 = s1.next;
+        
+        SimpleLinkedListNode sCopy = new SimpleLinkedListNode(s0);
+        assertNotSame(s0, sCopy);
+        assertNotSame(s1, sCopy.next);
+        assertNotSame(s2, sCopy.next.next);
+        
+        assertEquals(s0.key, sCopy.key);
+        assertEquals(s0.n, sCopy.n);
+        assertEquals(s1.key, sCopy.next.key);
+        assertEquals(s1.n, sCopy.next.n);
+        assertEquals(s2.key, sCopy.next.next.key);
+        assertEquals(s2.n, sCopy.next.next.n);
+    }
+    
 }

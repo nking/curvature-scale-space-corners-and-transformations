@@ -37,7 +37,13 @@ public class TopologicalSort {
      * @param dag 
      */
     public TopologicalSort(SimpleLinkedListNode[] dag){
-        this.directedEdges = dag;        
+        if (dag == null || dag.length == 0) {
+            throw new IllegalArgumentException("dag cannot be null or empty");
+        }
+        directedEdges = dag.clone();
+        for (int i = 0; i < directedEdges.length; ++i) {
+            directedEdges[i] = new SimpleLinkedListNode(dag[i]);
+        }
     }
     
     /**
@@ -54,10 +60,9 @@ public class TopologicalSort {
          //DFS dfs = new DFS(this.directedEdges);
          //dfs.walk();
          DFSIterative dfs = new DFSIterative();
-         dfs.walk(this.directedEdges);
+         dfs.walk(directedEdges);
          int[] fIdxs = dfs.getOrderedEndIndexes();
          
-         fIdxs = Arrays.copyOf(fIdxs, fIdxs.length);
          reverse(fIdxs);
         
          /*

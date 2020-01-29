@@ -28,7 +28,7 @@ public class DFSIterative {
      *    node in the linked list, respectively.
      * for example, adjacent to node 3 is found via directedEdges[3] as all in the linked list.
      */
-    private SimpleLinkedListNode[] directedEdges;
+    private SimpleLinkedListNode[] g;
     
     /** 
      * holds state for whether a node has been visited.  0 = not visited,
@@ -63,20 +63,23 @@ public class DFSIterative {
      * the linked list.
      */
     public void walk(SimpleLinkedListNode[] directedEdges) {
-        if (directedEdges == null) {
-            throw new IllegalArgumentException("directedEdges cannot be null");
+        if (directedEdges == null || directedEdges.length == 0) {
+            throw new IllegalArgumentException("directedEdges cannot be null or empty");
         }
-        this.directedEdges = Arrays.copyOf(directedEdges, directedEdges.length);
-        visited = new int[directedEdges.length];
-        td = new int[directedEdges.length];
-        tf = new int[directedEdges.length];
-        predecessor = new int[directedEdges.length];
+        g = directedEdges.clone();
+        for (int i = 0; i < g.length; ++i) {
+            g[i] = new SimpleLinkedListNode(directedEdges[i]);
+        }
+        visited = new int[g.length];
+        td = new int[g.length];
+        tf = new int[g.length];
+        predecessor = new int[g.length];
         Arrays.fill(td, -1);
         Arrays.fill(tf, -1);
         Arrays.fill(predecessor, -1);
         time = 0;
         
-        for (int u = 0; u < directedEdges.length; u++) {
+        for (int u = 0; u < g.length; u++) {
             if (visited[u] == 0) {
                 walk(u);
             }
@@ -113,13 +116,13 @@ public class DFSIterative {
                     
                     //System.out.format("  0: push onto stack u=%d\n", current.node);
                             
-                    SimpleLinkedListNode next = directedEdges[current.node];
+                    SimpleLinkedListNode next = g[current.node];
                     
                     if (next != null && next.getKey() != -1) {
                         
                         int v = next.getKey();
                         
-                        directedEdges[current.node].delete(next);
+                        g[current.node].delete(next);
                                                       
                         if (visited[v] == 0) {
                             
@@ -144,14 +147,14 @@ public class DFSIterative {
                     //System.out.println(" 1: have all child links been visited?  snap="
                     //   + current.toString());
                     
-                    SimpleLinkedListNode next = directedEdges[current.node];
+                    SimpleLinkedListNode next = g[current.node];
                     if (next != null && next.getKey() != -1) {
                         
                         int v = next.getKey();
                         
                         //System.out.format(" 1: there is a child link %d\n", v);
                         
-                        directedEdges[current.node].delete(next);
+                        g[current.node].delete(next);
                         
                         current.stage = 1;
                         stack.push(current);
@@ -246,10 +249,10 @@ public class DFSIterative {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
         }
-        if (directedEdges == null) {
+        if (g == null) {
             return null;
         }
-        assert(a.length == directedEdges.length);
+        assert(a.length == g.length);
         a = Arrays.copyOf(a, a.length);
         int[] idxs = new int[a.length];
         for (int i = 0; i < idxs.length; ++i) {

@@ -45,7 +45,7 @@ public class DFS {
      *    node in the linked list, respectively.
      * for example, adjacent to node 3 is found via directedEdges[3] as all in the linked list.
      */
-    protected final SimpleLinkedListNode[] directedEdges;
+    protected final SimpleLinkedListNode[] g;
 
     /** 
      * holds state for whether a node has been visited.  0 = not visited,
@@ -79,17 +79,20 @@ public class DFS {
         if (directedEdges == null) {
             throw new IllegalArgumentException("directedEdges cannot be null");
         }
-        this.directedEdges = Arrays.copyOf(directedEdges, directedEdges.length);
-        this.visited = new int[directedEdges.length];
-        this.td = new int[directedEdges.length];
-        this.tf = new int[directedEdges.length];
-        this.predecessor = new int[directedEdges.length];
+        g = directedEdges.clone();
+        for (int i = 0; i < g.length; ++i) {
+            g[i] = new SimpleLinkedListNode(directedEdges[i]);
+        }
+        this.visited = new int[g.length];
+        this.td = new int[g.length];
+        this.tf = new int[g.length];
+        this.predecessor = new int[g.length];
         Arrays.fill(predecessor, -1);
     }
 
     public void walk() {
 
-        for (int u = 0; u < directedEdges.length; u++) {
+        for (int u = 0; u < g.length; u++) {
             if (visited[u] == 0) {
                 visit(u);
             }
@@ -104,7 +107,7 @@ public class DFS {
         //System.out.println("  visiting " + u + " to set td=" + time);
         td[u] = time;
 
-        SimpleLinkedListNode next = directedEdges[u];
+        SimpleLinkedListNode next = g[u];
         
         while (next != null && next.getKey() != -1) {
             int v = next.getKey();
@@ -146,10 +149,10 @@ public class DFS {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
         }
-        if (directedEdges == null) {
+        if (g == null) {
             return null;
         }
-        assert(a.length == directedEdges.length);
+        assert(a.length == g.length);
         a = Arrays.copyOf(a, a.length);
         int[] idxs = new int[a.length];
         for (int i = 0; i < idxs.length; ++i) {

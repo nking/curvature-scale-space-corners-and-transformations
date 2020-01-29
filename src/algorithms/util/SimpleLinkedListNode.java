@@ -246,5 +246,28 @@ public class SimpleLinkedListNode {
         return super.hashCode(); 
     }
 
+    public SimpleLinkedListNode(SimpleLinkedListNode other) {
+        if (other == null) {
+            return;
+        }
+        
+        this.key = other.key;
+        this.n = other.n;
+        
+        SimpleLinkedListNode otherNext = other.next;
+        SimpleLinkedListNode thisNext = this;
+        
+        while (otherNext != null) {
+            SimpleLinkedListNode cn = new SimpleLinkedListNode();
+            cn.key = otherNext.key;
+            cn.n = otherNext.n;
+            cn.next = otherNext.next;
+            
+            thisNext.next = cn;
+            thisNext = cn;
+            
+            otherNext = otherNext.getNext();
+        }
+    }
     
 }

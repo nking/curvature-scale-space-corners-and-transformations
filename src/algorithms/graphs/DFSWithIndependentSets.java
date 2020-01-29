@@ -45,7 +45,7 @@ public class DFSWithIndependentSets {
      *    node in the linked list, respectively.
      * for example, adjacent to node 3 is found via directedEdges[3] as all in the linked list.
      */
-    protected SimpleLinkedListNode[] directedEdges;
+    protected SimpleLinkedListNode[] g;
 
     /** 
      * holds state for whether a node has been visited.  0 = not visited,
@@ -100,11 +100,17 @@ public class DFSWithIndependentSets {
         if (directedEdges == null) {
             throw new IllegalArgumentException("directedEdges cannot be null");
         }
-        this.directedEdges = Arrays.copyOf(directedEdges, directedEdges.length);
-        visited = new int[directedEdges.length];
-        td = new int[directedEdges.length];
-        tf = new int[directedEdges.length];
-        predecessor = new int[directedEdges.length];
+        if (directedEdges == null) {
+            throw new IllegalArgumentException("directedEdges cannot be null");
+        }
+        g = directedEdges.clone();
+        for (int i = 0; i < g.length; ++i) {
+            g[i] = new SimpleLinkedListNode(directedEdges[i]);
+        }
+        visited = new int[g.length];
+        td = new int[g.length];
+        tf = new int[g.length];
+        predecessor = new int[g.length];
         Arrays.fill(td, -1);
         Arrays.fill(tf, -1);
         Arrays.fill(predecessor, -1);
@@ -114,7 +120,7 @@ public class DFSWithIndependentSets {
         
         disjointSetHelper = new DisjointSet2Helper();
                 
-        for (int u = 0; u < directedEdges.length; u++) {
+        for (int u = 0; u < g.length; u++) {
             if (visited[u] == 0) {
                 visit(u);
             } else {
@@ -137,7 +143,7 @@ public class DFSWithIndependentSets {
         
         addToMap(u, predecessor[u]);
 
-        SimpleLinkedListNode next = directedEdges[u];
+        SimpleLinkedListNode next = g[u];
         
         while (next != null && next.getKey() != -1) {
             int v = next.getKey();
@@ -380,10 +386,10 @@ public class DFSWithIndependentSets {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
         }
-        if (directedEdges == null) {
+        if (g == null) {
             return null;
         }
-        assert(a.length == directedEdges.length);
+        assert(a.length == g.length);
         a = Arrays.copyOf(a, a.length);
         int[] idxs = new int[a.length];
         for (int i = 0; i < idxs.length; ++i) {
