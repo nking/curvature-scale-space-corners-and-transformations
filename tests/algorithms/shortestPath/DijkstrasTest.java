@@ -83,6 +83,7 @@ public class DijkstrasTest extends TestCase {
          
          dest = 3;
          p = dijkstras.getShortestPathToVertex(dest);
+         assertTrue(Arrays.equals(new int[]{0, 3}, p));
          dist = dijkstras.getSumOfPath(p);
          assertEquals(5, dist);
          

@@ -115,15 +115,19 @@ public class Dijkstras {
                 continue;
             }
             
-            SimpleLinkedListNode next = g[u];
+            SimpleLinkedListNode vNode = g[u];
             
-            while (next != null && next.getKey() != -1) {
+            while (vNode != null && vNode.getKey() != -1) {
             
-                int v = next.getKey();
+                int v = vNode.getKey();
                 
                 if (!uWeights.containsKey(v)) {
                     throw new IllegalStateException("no weight found for edge " 
                     + u + " to " + v);
+                }
+                if (nodes[v] == null) {
+                    vNode = vNode.getNext();                   
+                    continue;
                 }
                 int wUV = uWeights.get(v);
             
@@ -137,9 +141,10 @@ public class Dijkstras {
                 if (dist[v] > dUPlusWUV) {
                     dist[v] = dUPlusWUV;
                     predecessor[v] = u;
+                    heap.decreaseKey(nodes[v], dUPlusWUV);
                 }
                 
-                next = next.getNext();
+                vNode = vNode.getNext();
             }
         }
     }
