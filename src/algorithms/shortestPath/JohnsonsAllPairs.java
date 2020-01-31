@@ -152,6 +152,8 @@ public class JohnsonsAllPairs {
                 int wUV = uWeights.get(v) + hv[u] - hv[v];
                 
                 uWeights.put(v, wUV);
+                
+                vNode = vNode.getNext();
             }
         }
         
@@ -199,7 +201,7 @@ public class JohnsonsAllPairs {
         for (int i = 0; i < g.length; ++i) {
             g2[i] = new SimpleLinkedListNode(g[i]);
         }
-        g2[nV] = new SimpleLinkedListNode(nV);
+        g2[nV] = new SimpleLinkedListNode();
         for (int i = 0; i < g.length; ++i) {
             g2[nV].insert(i);
         }
