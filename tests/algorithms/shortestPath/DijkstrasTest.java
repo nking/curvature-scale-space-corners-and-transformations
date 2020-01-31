@@ -43,11 +43,11 @@ public class DijkstrasTest extends TestCase {
          g[3].insert(1); g[3].insert(2); g[3].insert(4);
          g[4].insert(0); g[4].insert(2);
          TIntIntMap[] w = new TIntIntMap[5];
-         w[0] = new TIntIntHashMap(2); w[0].put(1, 10); w[0].put(3, 5);
-         w[1] = new TIntIntHashMap(2); w[1].put(2, 1); w[1].put(3, 2);
-         w[2] = new TIntIntHashMap(1); w[2].put(4, 4);
-         w[3] = new TIntIntHashMap(3); w[3].put(1, 3); w[3].put(2, 9); w[3].put(4, 2);
-         w[4] = new TIntIntHashMap(2); w[4].put(0, 7); w[4].put(2, 4);
+         w[0] = new TIntIntHashMap(); w[0].put(1, 10); w[0].put(3, 5);
+         w[1] = new TIntIntHashMap(); w[1].put(2, 1); w[1].put(3, 2);
+         w[2] = new TIntIntHashMap(); w[2].put(4, 4);
+         w[3] = new TIntIntHashMap(); w[3].put(1, 3); w[3].put(2, 9); w[3].put(4, 2);
+         w[4] = new TIntIntHashMap(); w[4].put(0, 7); w[4].put(2, 4);
          
          Dijkstras dijkstras = new Dijkstras();
          dijkstras.find(g, w, 0);

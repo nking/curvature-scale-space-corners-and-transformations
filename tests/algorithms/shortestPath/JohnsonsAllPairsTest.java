@@ -1,5 +1,6 @@
 package algorithms.shortestPath;
 
+import algorithms.shortestPath.JohnsonsAllPairs.G;
 import algorithms.util.SimpleLinkedListNode;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -16,10 +17,19 @@ public class JohnsonsAllPairsTest extends TestCase {
     
     public JohnsonsAllPairsTest() {
     }
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp(); 
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+    }
     
-    public void test0() {
-        
-        /*
+    private G createDataset() {
+                /*
         from Cormen at al. Fig 25.6
         
              edge     weight
@@ -40,21 +50,55 @@ public class JohnsonsAllPairsTest extends TestCase {
          for (int i = 0; i < g.length; ++i) {
              g[i] = new SimpleLinkedListNode();
          }
-         g[0].insert(1); g[0].insert(1); g[0].insert(2); g[0].insert(3);
-         g[1].insert(2); g[1].insert(3); g[1].insert(4);
-         g[2].insert(1); g[2].insert(1);
-         g[3].insert(2); g[3].insert(4);
-         g[4].insert(0); g[4].insert(0);g[4].insert(2);
+         g[0].insert(1); g[0].insert(2); g[0].insert(3);
+         g[1].insert(3); g[1].insert(4);
+         g[2].insert(1);
+         g[3].insert(4);
+         g[4].insert(0);g[4].insert(2);
          TIntIntMap[] w = new TIntIntMap[5];
-         w[0] = new TIntIntHashMap(3); w[0].put(1,3); w[0].put(2,8); w[0].put(3,-4);
-         w[1] = new TIntIntHashMap(2); w[1].put(3,7);w[1].put(4,1); 
-         w[2] = new TIntIntHashMap(1); w[2].put(1,4);
-         w[3] = new TIntIntHashMap(2); w[3].put(4,6);
-         w[4] = new TIntIntHashMap(2); w[4].put(0,2);w[4].put(2,-5);
+         w[0] = new TIntIntHashMap(); w[0].put(1,3); w[0].put(2,8); w[0].put(3,-4);
+         w[1] = new TIntIntHashMap(); w[1].put(3,7); w[1].put(4,1); 
+         w[2] = new TIntIntHashMap(); w[2].put(1,4);
+         w[3] = new TIntIntHashMap(); w[3].put(4,6);
+         w[4] = new TIntIntHashMap(); w[4].put(0,2); w[4].put(2,-5);
+
+         G graph = new G();
+         graph.g = g;
+         graph.w = w;
+         graph.newNode = -1;
          
-         
+         return graph;
+    }
+    
+    public void testInit() {
+        
+        G graph = createDataset();
+        
+        SimpleLinkedListNode[] g = graph.g;
+        TIntIntMap[] w = graph.w;
+        
+        assertEquals(5, g.length);
+        assertEquals(g.length, w.length);
+        
+        for (int u = 0; u < g.length; ++u) {            
+            SimpleLinkedListNode vNode = g[u];
+            TIntIntMap wUVMap = w[u];
+            while (vNode != null && vNode.getKey() != -1) {
+                int v = vNode.getKey();
+                assertTrue(wUVMap.containsKey(v));
+                
+                vNode = vNode.getNext();
+            }
+        }
+    }
+    
+    
+    public void est0() {
+        
+        G graph = createDataset();
+                  
          JohnsonsAllPairs j = new JohnsonsAllPairs();
-         boolean noNegativeCycles = j.find(g, w);
+         boolean noNegativeCycles = j.find(graph.g, graph.w);
          assertTrue(noNegativeCycles);
          
          int[] p;

@@ -41,10 +41,10 @@ public class DAGShortestPathTest extends TestCase {
          g[2].insert(3); g[2].insert(4); g[2].insert(5);
          g[3].insert(5);
          TIntIntMap[] w = new TIntIntMap[6];
-         w[0] = new TIntIntHashMap(2); w[0].put(1, 5); w[0].put(2, 3);
-         w[1] = new TIntIntHashMap(2); w[1].put(2, 2); w[1].put(3, 6);
-         w[2] = new TIntIntHashMap(3); w[2].put(3, 7); w[2].put(4, 4); w[2].put(5, 2);
-         w[3] = new TIntIntHashMap(1); w[3].put(5, 1);
+         w[0] = new TIntIntHashMap(); w[0].put(1, 5); w[0].put(2, 3);
+         w[1] = new TIntIntHashMap(); w[1].put(2, 2); w[1].put(3, 6);
+         w[2] = new TIntIntHashMap(); w[2].put(3, 7); w[2].put(4, 4); w[2].put(5, 2);
+         w[3] = new TIntIntHashMap(); w[3].put(5, 1);
          
          int src = 0;
          int dest = 4;

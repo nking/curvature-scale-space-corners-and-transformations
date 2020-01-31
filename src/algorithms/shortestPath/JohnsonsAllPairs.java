@@ -207,7 +207,7 @@ public class JohnsonsAllPairs {
         TIntIntMap[] w2 = new TIntIntMap[nV + 1];
         for (int i = 0; i < w.length; ++i) {
             if (w[i] != null) {
-                w2[i] = new TIntIntHashMap(w[i].size());
+                w2[i] = new TIntIntHashMap();
                 TIntIntIterator iter = w[i].iterator();
                 for (int j = 0; j < w[i].size(); ++j) {
                     iter.advance();
@@ -215,7 +215,7 @@ public class JohnsonsAllPairs {
                 }
             }
         }
-        w2[nV] = new TIntIntHashMap(nV);
+        w2[nV] = new TIntIntHashMap();
         for (int i = 0; i < w.length; ++i) {
             w2[nV].put(i, 0);
         }
