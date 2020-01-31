@@ -40,8 +40,6 @@ public class JohnsonsAllPairs {
         
     private int sentinel = Integer.MAX_VALUE;
     
-    public JohnsonsAllPairs() {
-    }
     
     /*
     compute G' where V[G'] = V[G] union S, and E[G'] = E[G] + (s,v),
@@ -65,7 +63,7 @@ public class JohnsonsAllPairs {
     */
     
     /**
-     * find the shortest paths between all pairs of vertices in an edge-weighted, directed graph. 
+     * 
      * @param graph directed weighted graph where the main index of the object array
      * is the vertex number, and each vertex has a linked list of outgoing 
      * edges connecting to the vertexes held in each linked list node key.
@@ -75,18 +73,15 @@ public class JohnsonsAllPairs {
      * @param weights the edge weights in format of outer array index being the
      * first vertex and the map within having a key being the 2nd vertex of the
      * edge with value being the edge weight.
-     * @return returns false if a negative cycle is present, else returns true 
-     * and the results are usable.
+     * 
      */
-    public boolean find(SimpleLinkedListNode[] graph, TIntIntMap[] weights) {
-        
+    public JohnsonsAllPairs(SimpleLinkedListNode[] graph, TIntIntMap[] weights) {
+            
         if (graph == null || graph.length == 0) {
             throw new IllegalArgumentException("graph cannot be null");
         }
         
-        init(graph, weights);
-        
-        return find();
+        init(graph, weights);        
     }
     
     private void init(SimpleLinkedListNode[] graph, TIntIntMap[] weights) {
@@ -117,7 +112,12 @@ public class JohnsonsAllPairs {
         //dist[src] = 0;
     }
     
-    private boolean find() {
+    /**
+     * find the shortest paths between all pairs of vertices in an edge-weighted, directed graph. 
+     * @return returns false if a negative cycle is present, else returns true 
+     * and the results are usable.
+     */
+    public boolean find() {
         
         G g2 = addZeroWeightNode();
         

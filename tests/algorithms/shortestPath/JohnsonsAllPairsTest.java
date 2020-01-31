@@ -96,8 +96,8 @@ public class JohnsonsAllPairsTest extends TestCase {
         
         G graph = createDataset();
                   
-         JohnsonsAllPairs j = new JohnsonsAllPairs();
-         boolean noNegativeCycles = j.find(graph.g, graph.w);
+         JohnsonsAllPairs j = new JohnsonsAllPairs(graph.g, graph.w);
+         boolean noNegativeCycles = j.find();
          assertTrue(noNegativeCycles);
          
          int[] p;
@@ -113,6 +113,56 @@ public class JohnsonsAllPairsTest extends TestCase {
          dist = j.getSumOfPath(p);
          assertEquals(expDist, dist);
          
+         src = 0;
+         dest = 1;
+         expDist = 1;
+         p = j.getShortestPathToVertex(src, dest);
+         assertTrue(Arrays.equals(new int[]{0, 3, 4, 2, 1}, p));
+         dist = j.getSumOfPath(p);
+         assertEquals(expDist, dist);
+         
+         src = 1;
+         dest = 2;
+         expDist = -4;
+         p = j.getShortestPathToVertex(src, dest);
+         assertTrue(Arrays.equals(new int[]{1, 4, 2}, p));
+         dist = j.getSumOfPath(p);
+         assertEquals(expDist, dist);
+         
+         src = 1;
+         dest = 3;
+         expDist = -1;
+         p = j.getShortestPathToVertex(src, dest);
+         assertTrue(Arrays.equals(new int[]{1, 4, 0, 3}, p));
+         dist = j.getSumOfPath(p);
+         assertEquals(expDist, dist);
+         
+         src = 2;
+         dest = 3;
+         expDist = 3;
+         p = j.getShortestPathToVertex(src, dest);
+         assertTrue(Arrays.equals(new int[]{2, 1, 4, 0, 3}, p));
+         dist = j.getSumOfPath(p);
+         assertEquals(expDist, dist);
+         
+         src = 4;
+         dest = 1;
+         expDist = -1;
+         p = j.getShortestPathToVertex(src, dest);
+         assertTrue(Arrays.equals(new int[]{4, 2, 1}, p));
+         dist = j.getSumOfPath(p);
+         assertEquals(expDist, dist);
+         
+         src = 3;
+         dest = 1;
+         expDist = 5;
+         p = j.getShortestPathToVertex(src, dest);
+         assertTrue(Arrays.equals(new int[]{3, 4, 2, 1}, p));
+         dist = j.getSumOfPath(p);
+         assertEquals(expDist, dist);
+         
+         // s  t  x  y  z
+         // 0  1  2  3  4
          
     }
 }
