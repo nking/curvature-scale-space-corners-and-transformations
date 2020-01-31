@@ -3,6 +3,7 @@ package algorithms.shortestPath;
 import algorithms.graphs.TopologicalSort;
 import algorithms.util.SimpleLinkedListNode;
 import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -142,10 +143,15 @@ public class DAGShortestPath {
     private void init(SimpleLinkedListNode[] dAG, TIntIntMap[] weights, int sourceVertex) {
         
         g = dAG.clone();
-        for (int i = 0; i < g.length; ++i) {
-            g[i] = new SimpleLinkedListNode(g[i]);
+        for (int i = 0; i < dAG.length; ++i) {
+            g[i] = new SimpleLinkedListNode(dAG[i]);
         }
-        w = Arrays.copyOf(weights, weights.length);
+        w = weights.clone();
+        for (int i = 0; i < weights.length; ++i) {
+            if (weights[i] != null) {
+                w[i] = new TIntIntHashMap(weights[i]);
+            }
+        }
         src = sourceVertex;
     
         dist = new int[g.length];
