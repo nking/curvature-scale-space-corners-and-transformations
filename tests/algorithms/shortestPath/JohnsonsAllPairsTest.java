@@ -12,27 +12,26 @@ import static junit.framework.TestCase.assertTrue;
  *
  * @author nichole
  */
-public class BellmanFordTest extends TestCase {
+public class JohnsonsAllPairsTest extends TestCase {
     
-    public BellmanFordTest() {
+    public JohnsonsAllPairsTest() {
     }
     
     public void test0() {
         
         /*
-        from Cormen at al. Fig 24.4
+        from Cormen at al. Fig 25.6
         
              edge     weight
-             s0 t1    6   
-             s0 y3    7
-             t1 x2    5
-             t1 y3    8
-             t1 z4    -4
-             x2 t1    -2
-             y3 x2    -3    
-             y3 z4    9     
-             z4 s0    2
-             z4 x2    7
+             s0 t1    3   
+             s0 x2    8
+             s0 y3    -4
+             t1 y3    7    
+             t1 z4    1
+             x2 t1    4   
+             y3 z4    6    
+             z4 s0    2 
+             z4 x2    -5
         
            s  t  x  y  z
            0  1  2  3  4
@@ -41,51 +40,36 @@ public class BellmanFordTest extends TestCase {
          for (int i = 0; i < g.length; ++i) {
              g[i] = new SimpleLinkedListNode();
          }
-         g[0].insert(1); g[0].insert(3);
+         g[0].insert(1); g[0].insert(1); g[0].insert(2); g[0].insert(3);
          g[1].insert(2); g[1].insert(3); g[1].insert(4);
-         g[2].insert(1);
+         g[2].insert(1); g[2].insert(1);
          g[3].insert(2); g[3].insert(4);
-         g[4].insert(0); g[4].insert(2);
+         g[4].insert(0); g[4].insert(0);g[4].insert(2);
          TIntIntMap[] w = new TIntIntMap[5];
-         w[0] = new TIntIntHashMap(2); w[0].put(1,6); w[0].put(3,7);
-         w[1] = new TIntIntHashMap(2); w[1].put(2,5); w[1].put(3,8); w[1].put(4,-4);
-         w[2] = new TIntIntHashMap(1); w[2].put(1,-2);
-         w[3] = new TIntIntHashMap(2); w[3].put(2,-3); w[3].put(4,9);
-         w[4] = new TIntIntHashMap(2); w[4].put(0,2); w[4].put(2,7);
+         w[0] = new TIntIntHashMap(3); w[0].put(1,3); w[0].put(2,8); w[0].put(3,-4);
+         w[1] = new TIntIntHashMap(2); w[1].put(3,7);w[1].put(4,1); 
+         w[2] = new TIntIntHashMap(1); w[2].put(1,4);
+         w[3] = new TIntIntHashMap(2); w[3].put(4,6);
+         w[4] = new TIntIntHashMap(2); w[4].put(0,2);w[4].put(2,-5);
          
-         int src = 0;
          
-         BellmanFord bf = new BellmanFord();
-         boolean noNegativeCycles = bf.find(g, w, src);
+         JohnsonsAllPairs j = new JohnsonsAllPairs();
+         boolean noNegativeCycles = j.find(g, w);
          assertTrue(noNegativeCycles);
          
          int[] p;
-         int dist, dest;
+         int dist, dest, src, expDist;
          // s  t  x  y  z
          // 0  1  2  3  4
          
-         dest = 1;
-         p = bf.getShortestPathToVertex(dest);
-         assertTrue(Arrays.equals(new int[]{0, 3, 2, 1}, p));
-         dist = bf.getSumOfPath(p);
-         assertEquals(2, dist);
-         
-         dest = 2;
-         p = bf.getShortestPathToVertex(dest);
-         assertTrue(Arrays.equals(new int[]{0, 3, 2}, p));
-         dist = bf.getSumOfPath(p);
-         assertEquals(4, dist);
-         
+         src = 0;
          dest = 3;
-         p = bf.getShortestPathToVertex(dest);
+         expDist = -4;
+         p = j.getShortestPathToVertex(src, dest);
          assertTrue(Arrays.equals(new int[]{0, 3}, p));
-         dist = bf.getSumOfPath(p);
-         assertEquals(7, dist);
+         dist = j.getSumOfPath(p);
+         assertEquals(expDist, dist);
          
-         dest = 4;
-         p = bf.getShortestPathToVertex(dest);
-         assertTrue(Arrays.equals(new int[]{0, 3, 2, 1, 4}, p));
-         dist = bf.getSumOfPath(p);
-         assertEquals(-2, dist);
+         
     }
 }
