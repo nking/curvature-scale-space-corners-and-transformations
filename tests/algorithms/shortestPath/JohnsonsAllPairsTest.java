@@ -92,7 +92,6 @@ public class JohnsonsAllPairsTest extends TestCase {
         }
     }
     
-    
     public void test0() {
         
         G graph = createDataset();

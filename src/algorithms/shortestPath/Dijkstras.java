@@ -62,7 +62,7 @@ public class Dijkstras {
     }
     
     /**
-     * find the single shortest path in dAG with edge weights w starting from s.
+     *
      * @param dAG directed acyclic graph where the main index of the object array
      * is the vertex number, and each vertex has a linked list of outgoing 
      * edges connecting to the vertexes held in each linked list node key.
@@ -74,7 +74,7 @@ public class Dijkstras {
      * edge with value being the edge weight.
      * @param sourceVertex the source vertex index
      */
-    public void find(SimpleLinkedListNode[] dAG, TIntIntMap[] weights, int sourceVertex) {
+    public Dijkstras(SimpleLinkedListNode[] dAG, TIntIntMap[] weights, int sourceVertex) {
         
         if (dAG == null || dAG.length == 0) {
             throw new IllegalArgumentException("dAG cannot be null");
@@ -94,12 +94,13 @@ public class Dijkstras {
                do relax(u, v, w)
         */ 
         
-        init(dAG, weights, sourceVertex);
-        
-        find();
+        init(dAG, weights, sourceVertex);        
     }
         
-    private void find() {
+    /**
+     *  find the single shortest path in dAG with edge weights w starting from s.
+     */
+    public void find() {
                                
         while (heap.getNumberOfNodes() > 0) {
 

@@ -55,8 +55,8 @@ public class BellmanFordTest extends TestCase {
          
          int src = 0;
          
-         BellmanFord bf = new BellmanFord();
-         boolean noNegativeCycles = bf.find(g, w, src);
+         BellmanFord bf = new BellmanFord(g, w, src);
+         boolean noNegativeCycles = bf.find();
          assertTrue(noNegativeCycles);
          
          int[] p;

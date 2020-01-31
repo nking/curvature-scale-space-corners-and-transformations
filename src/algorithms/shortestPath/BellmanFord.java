@@ -50,7 +50,7 @@ public class BellmanFord {
     private int maxValue = sentinel - 1;
     
     /**
-     * find the single shortest paths in dAG with edge weights w starting from s.
+     * 
      * @param dAG directed acyclic graph where the main index of the object array
      * is the vertex number, and each vertex has a linked list of outgoing 
      * edges connecting to the vertexes held in each linked list node key.
@@ -61,11 +61,9 @@ public class BellmanFord {
      * first vertex and the map within having a key being the 2nd vertex of the
      * edge with value being the edge weight.
      * @param sourceVertex the source vertex index
-     * @return returns false if a negative cycle is present, else returns true 
-     * and the results are usable.
      */
-    public boolean find(SimpleLinkedListNode[] dAG, TIntIntMap[] weights, int sourceVertex) {
-        
+    public BellmanFord(SimpleLinkedListNode[] dAG, TIntIntMap[] weights, int sourceVertex) {
+    
         if (dAG == null || dAG.length == 0) {
             throw new IllegalArgumentException("dAG cannot be null");
         }
@@ -75,10 +73,15 @@ public class BellmanFord {
         
         init(dAG, weights, sourceVertex);
         
-        return find();
     }
         
-    private boolean find() {
+    /**
+     * find the single shortest paths in dAG with edge weights w starting from s.
+     * 
+     * @return returns false if a negative cycle is present, else returns true 
+     * and the results are usable.
+     */
+    public boolean find() {
         /*
         init
         for i=1 to |V[G]| - 1

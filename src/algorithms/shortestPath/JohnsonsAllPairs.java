@@ -121,25 +121,25 @@ public class JohnsonsAllPairs {
         
         G g2 = addZeroWeightNode();
         
-        BellmanFord bf = new BellmanFord();
-        boolean noNegativeWgtCycle = bf.find(g2.g, g2.w, g2.newNode);
+        BellmanFord bf = new BellmanFord(g2.g, g2.w, g2.newNode);
+        boolean noNegativeWgtCycle = bf.find();
         if (!noNegativeWgtCycle) {
             return noNegativeWgtCycle;
         }
         
         // re-weight the graph:
         
-        int[] hv = Arrays.copyOf(bf.dist, bf.dist.length - 1);
+        int[] hv = Arrays.copyOf(bf.dist, bf.dist.length);
         
-        for (int u = 0; u < g.length; ++u) {
+        for (int u = 0; u < g2.g.length; ++u) {
             
-            TIntIntMap uWeights = w[u];
+            TIntIntMap uWeights = g2.w[u];
            
             if (uWeights == null) {
                 continue;
             }
             
-            SimpleLinkedListNode vNode = g[u];
+            SimpleLinkedListNode vNode = g2.g[u];
             
             while (vNode != null && vNode.getKey() != -1) {
             
@@ -165,28 +165,26 @@ public class JohnsonsAllPairs {
         */
         for (int u = 0; u < g.length; ++u) {
             
-            Dijkstras dijkstras = new Dijkstras();
+            Dijkstras dijkstras = new Dijkstras(g, g2.w, u);
             
-            dijkstras.find(g, w, u);
-            
-            for (int u2 = 0; u2 < g.length; ++u2) {
-                
-                SimpleLinkedListNode v2Node = g[u];
+            dijkstras.find();
+                            
+            SimpleLinkedListNode v2Node = g[u];
 
-                while (v2Node != null && v2Node.getKey() != -1) {
+            while (v2Node != null && v2Node.getKey() != -1) {
 
-                    int v2 = v2Node.getKey();
+                int v2 = v2Node.getKey();
 
-                    //do d(u,v) = delta_hat(u, v) + h(v) - h(u)
-                    dist[u][v2] = dijkstras.dist[v2] + hv[v2] - hv[u];
-                    
-                    System.arraycopy(dijkstras.predecessor, 0, predecessor[u], 
-                        0, dijkstras.predecessor.length);
-                    
-                    v2Node = v2Node.getNext();
-                }
+                //do d(u,v) = delta_hat(u, v) + h(v) - h(u)
+                dist[u][v2] = dijkstras.dist[v2] + hv[v2] - hv[u];
+
+                System.arraycopy(dijkstras.predecessor, 0, predecessor[u], 
+                    0, dijkstras.predecessor.length);
+
+                v2Node = v2Node.getNext();
             }
         }
+        
         return true;
     }
     

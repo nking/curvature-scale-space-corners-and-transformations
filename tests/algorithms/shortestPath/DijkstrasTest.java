@@ -49,8 +49,8 @@ public class DijkstrasTest extends TestCase {
          w[3] = new TIntIntHashMap(); w[3].put(1, 3); w[3].put(2, 9); w[3].put(4, 2);
          w[4] = new TIntIntHashMap(); w[4].put(0, 7); w[4].put(2, 4);
          
-         Dijkstras dijkstras = new Dijkstras();
-         dijkstras.find(g, w, 0);
+         Dijkstras dijkstras = new Dijkstras(g, w, 0);
+         dijkstras.find();
          
          int[] p;
          int dist, dest;
