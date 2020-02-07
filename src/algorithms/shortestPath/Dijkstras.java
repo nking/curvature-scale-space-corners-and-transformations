@@ -58,9 +58,6 @@ public class Dijkstras {
     // refs to nodes internal to heap for decrease key operations
     protected HeapNode[] nodes = null;
     
-    public Dijkstras() {
-    }
-    
     /**
      *
      * @param dAG directed acyclic graph where the main index of the object array

@@ -18,7 +18,9 @@ import java.util.Stack;
    average runtime is approx O(|E|), worst case runtime: O(|V| + |E|)
    worst case space needed: O(|V|)
 
-   implemented following Cormen et al. "Introduction To Algorithms"
+   implemented using recursion following Cormen et al. "Introduction To Algorithms"
+   then refactored to iterative w/ stack following advice in 
+   https://www.codeproject.com/Articles/418776/How-to-replace-recursive-functions-using-stack-and
 
  * @author nichole
  */

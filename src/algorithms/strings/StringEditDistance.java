@@ -3,6 +3,11 @@ package algorithms.strings;
 /**
  * find the number of insert, delete, and substitution operations to change
  * one string into another.
+
+   note, may add a method for normalized edit distance in future:
+     "An Efficient Uniform-Cost Normalized Edit Distance Algorithm"
+      by Arslan and Egecioglu, 1999
+      https://www.researchgate.net/publication/3820090_An_Efficient_Uniform-Cost_Normalized_Edit_Distance_Algorithm
  * 
  * @author nichole
  */
