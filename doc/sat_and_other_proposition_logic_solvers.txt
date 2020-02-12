@@ -1,0 +1,153 @@
+Propositional calculus:
+    from https://en.wikipedia.org/wiki/Propositional_calculus
+    a branch of logic. It is also called propositional logic, 
+    statement logic, sentential calculus, sentential logic, 
+    or sometimes zeroth-order logic. It deals with propositions 
+    (which can be true or false) and argument flow. Compound 
+    propositions are formed by connecting propositions by 
+    logical connectives. The propositions without logical 
+    connectives are called atomic propositions.
+    `A propositional formula consists of boolean variables and the 
+     connectives ^ (conjunction), _ (disjunction) and : (negation). 
+     It is satisfiable if, and only if, there is an assignment of 
+     values true and false to the variables such that the whole 
+     formula becomes true. A formula is said to be in conjunctive 
+     normal form (CNF) if, and only if, it is a conjunction of clauses. 
+     A clause is a disjunction of literals, and a literal is a variable
+     or a negation of a variable
+
+
+First-order logic (aka predicate logic, quantificational logic, 
+and first-order predicate calculus:
+    from https://en.wikipedia.org/wiki/First-order_logic
+    — is a collection of formal systems used in mathematics, 
+    philosophy, linguistics, and computer science. First-order 
+    logic uses quantified variables over non-logical objects 
+    and allows the use of sentences that contain variables, 
+    so that rather than propositions such as Socrates is a man 
+    one can have expressions in the form "there exists x such 
+    that x is Socrates and x is a man" and there exists is a 
+    quantifier while x is a variable.[1] This distinguishes it 
+    from propositional logic, which does not use quantifiers or 
+    relations;[2] in this sense, propositional logic is the 
+    foundation of first-order logic.
+
+conjunctive normal form (CNF):
+   aka clausal normal form
+   boolean logic of clauses as disjunction of literals, that is,
+   ANDs and ORs applied to clauses and literals and NOT can be 
+   applied to literals.
+     at least one
+     at most one
+     none
+     all 
+   SAT:
+     can solve shortest problem using boolean SAT
+       "Identifying the Shortest Path in Large Networks using Boolean Satisfiability"
+        by Aloul, Rawi, and Aboelaze
+         https://www.eecs.yorku.ca/~aboelaze/publication/ABA06.pdf
+     other problems, expressed in CNF:
+        "Programming in Propositional Logic or Reductions: Back to the Roots (Satisability)"
+        by Hermann Stamm-Wilbrandt
+        http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.32.3730&rep=rep1&type=pdf
+        The NP-completeness of SAT assures that any other NP-complete problem can be reduced [6]
+        to SAT by simulating any Turing machine solving this problem.
+     see Boolean SAT notes in private other code base and implementation following Davis-Putnam
+     and DPLL algorithms.   the network routing code needs revision...
+   
+
+Satisfiability Modulo Theories (SMT):
+    can be used to turn a linear arithmetic into constraints for proposition logic,
+    - Microsoft’s Z3 SMT
+    - many more listed on: 
+      https://en.wikipedia.org/wiki/Satisfiability_modulo_theories
+
+Answer set programming (ASP):
+    from https://en.wikipedia.org/wiki/Answer_set_programming
+    is a form of declarative programming oriented towards difficult 
+    (primarily NP-hard) search problems. It is based on the stable 
+    model (answer set) semantics of logic programming. In ASP, 
+    search problems are reduced to computing stable models, and 
+    answer set solvers—programs for generating stable models—are 
+    used to perform search. The computational process employed in 
+    the design of many answer set solvers is an enhancement of the 
+    DPLL algorithm and, in principle, it always terminates 
+    (unlike Prolog query evaluation, which may lead to an infinite loop).
+
+---------------------
+
+from Artificial Intelligence: A Modern Approach
+(Third edition) by Stuart Russell and Peter Norvig
+
+Constraint Satisfaction Problems (CSP):
+   n = number of variables (e.g. the 7 regions of Australia)
+   d = domain of each variable (e.g. for a vertex coloring problem, each region of Australia can be
+          minimally one of three colors).
+   Every solution must be a complete assignment and therefore appears at depth n. 
+   Furthermore, the search tree extends only to depth n. 
+   For these reasons, depth- first search algorithms are popular for CSPs. 
+
+   Types of CSP:
+     - discrete variables and finite domains
+     - discrete variables and infinite domains
+         constraints are needed for priorities.  boundaries are sometimes possible by rephrasing
+         the problem.
+         linear (over convex states) or non-linear constraints.
+     - continuous domains
+     - constraints can be unary, binary, or higher order (cryptarithmetic).
+         for the later, scripting languages use terms such as alldiff(vars).
+         the higher order constraints can usually be rephrased verbosely as binary constraints.
+         Note that alldiff can be implemented with efficient bipartite matching algorithms for the
+         constraints (weighted, uneven, optimized or just feasible, etc.)
+
+    CSP algorithms:
+       - breadth first search (bfs) has too large of a runtime for the d^n possible solutions because 
+         the branching factor leads to n!*d^n leaves.
+       - backtracking search is depth first search based (dfs) and is an uniformed algorithm. 
+         it selects values one variable at a time then backtracks when a variable has no legal 
+         values left to assign.
+       A better pattern than simple backtracking for the other algorithms, all tend to follow:
+         1. Selection of next variable to assign, and the order should of its values to try in its domain.
+         2. how the current variable assignments affect the remaining unassigned variables.
+         3. When a path fails, that is, a state is reached in which a 
+            variable has no legal values, can the search avoid repeating this failure in subsequent paths?
+       - minimum remaining value (a.k.a. most constrained value)
+         for Step 1., chooses the variable with the fewest “legal” values
+       - forward checking.  for tested examples, is 3 to 3000 times faster than backtracking search.
+         for Step 2., follows the variables associated with the just assigned variable via its constraints.
+         then deletes from those associated variables domains and values inconsistent with 
+         constraints using the just assigned variable.
+       - arc consistency is a type of constraint propagation in Step 2 that is stronger "forward checking".
+         It continues forward checking to examine for all values of the just assigned variable, 
+         that a consistent value for every associated value exists, not just removal of all inconsistent.
+         checking consistency in same way for the assigned variable and k number of associated variables
+         is called k-consistency and it gets to be computationally expensive in the worst case (factorial).
+       - ** min-conflicts in local search:
+         this tends to be the best performing for problems in part because it is independent of problem
+         size.  
+           function MIN-CONFLICTS(csp,max steps) returns a solution or failure 
+              inputs: csp, a constraint satisfaction problem
+                      max steps, the number of steps allowed before giving up
+              current ← an initial complete assignment 
+              for csp for i = 1 to max steps do
+                 if current is a solution for csp then return current
+                 var ← a randomly chosen, conflicted variable from VARIABLES[csp]
+                       (the variables associated w/ the current assigned variable thru
+                       constraints are tested by those constraints, and the set of those
+                       that conflict are gathered and chosen randomly from.)
+                 value ←the value v for var that minimizes CONFLICTS(var,v,current,csp) 
+                       (for var, loops over domain values v_i to v_max and tests the constrained
+                        associated variables for conflicts, counting them, and tracking the smallest number
+                        of conflicts.  the value v that is chosen is that with smallest number of
+                        constraint conflicts, or if there are more than one, chooses randomly between
+                        them.))
+                 set var = value in current
+                 invoke callback listeners of the updated csp solution in progress.
+              return failure
+       - ** cut-set conditioning:
+         Tree-structured problems can be solved in linear time. Cutset conditioning can reduce a 
+         general CSP to a tree-structured one and is very efficient if a small cutset can be found.
+       - tree decomposition:
+         ransform the CSP into a tree of subproblems and are efficient if the tree width of the 
+         constraint graph is small.   
+
