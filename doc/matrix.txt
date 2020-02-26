@@ -151,7 +151,12 @@ can use them for one form of data normalization as follows:
       --  the later is part of principal component analysis
    -- then scale the data to unit variance along each coordinate axis
 
---------------------------------------------------
+----------------------------------------------------------------------
+Matrix Factorizations
+   see the summary notes from Strang 
+
+----------------------------------------------------------------------
+
 from ""?
 
 tensor: 
