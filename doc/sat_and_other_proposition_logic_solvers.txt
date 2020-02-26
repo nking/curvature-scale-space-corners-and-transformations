@@ -17,6 +17,39 @@ Propositional calculus:
      A clause is a disjunction of literals, and a literal is a variable
      or a negation of a variable
 
+     Ʌ      AND (conjunction)
+     V      OR (disjunction)
+     ¬      NOT (negation)
+     ==>    IF-THEN
+                (a.k.a. implication, material condition: 
+                P==>Q means that if P is True, Q is True by implication.
+                If P is false, there is no implication.)
+     <==>   IF-AND-ONLY-IF
+                (a.k.a. biconditional, material equivalence: 
+                P<==>Q means it evaluates to True when P==>Q and Q==>P)
+     ∀      "For all" or "all"
+     Ǝ      "there exists" or "exists"
+     ∑      is the disjunction of all literals
+                so ∑S is the disjunction of set S which is a set of literals.
+                disjunctive normal form is cubes of ANDed literals with the cubes containing ORed literals
+     ∏      is the conjunction of all literals
+                so ∏S is the conjunction of set S literals
+
+     logical equivalences:
+        from Artificial Intelligence: A Modern Approach by Stuart Russell and Peter Norvig
+     (α ∧ β) ≡ (β ∧ α) commutativity of ∧
+     (α ∨ β) ≡ (β ∨ α) commutativity of ∨
+     ((α ∧ β) ∧ γ) ≡ (α ∧ (β ∧ γ)) associativity of ∧
+     ((α ∨ β) ∨ γ) ≡ (α ∨ (β ∨ γ)) associativity of ∨
+     ¬(¬α) ≡ α double-negation elimination
+     (α ⇒ β) ≡ (¬β ⇒ ¬α) contraposition
+     (α ⇒ β) ≡ (¬α ∨ β) implication elimination
+     (α ⇔ β) ≡ ((α ⇒ β) ∧ (β ⇒ α)) biconditional elimination
+     ¬(α ∧ β) ≡ (¬α ∨ ¬β) de Morgan
+     ¬(α ∨ β) ≡ (¬α ∧ ¬β) de Morgan
+     (α ∧ (β ∨ γ)) ≡ ((α ∧ β) ∨ (α ∧ γ)) distributivity of ∧ over ∨
+     (α ∨ (β ∧ γ)) ≡ ((α ∨ β) ∧ (α ∨ γ)) distributivity of ∨ over ∧
+
 
 First-order logic (aka predicate logic, quantificational logic, 
 and first-order predicate calculus:
@@ -28,9 +61,9 @@ and first-order predicate calculus:
     so that rather than propositions such as Socrates is a man 
     one can have expressions in the form "there exists x such 
     that x is Socrates and x is a man" and there exists is a 
-    quantifier while x is a variable.[1] This distinguishes it 
+    quantifier while x is a variable. This distinguishes it 
     from propositional logic, which does not use quantifiers or 
-    relations;[2] in this sense, propositional logic is the 
+    relations; in this sense, propositional logic is the 
     foundation of first-order logic.
 
 conjunctive normal form (CNF):
@@ -48,13 +81,13 @@ conjunctive normal form (CNF):
         by Aloul, Rawi, and Aboelaze
          https://www.eecs.yorku.ca/~aboelaze/publication/ABA06.pdf
      other problems, expressed in CNF:
-        "Programming in Propositional Logic or Reductions: Back to the Roots (Satisability)"
+        "Programming in Propositional Logic or Reductions: Back to the Roots (Satisfiability)"
         by Hermann Stamm-Wilbrandt
         http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.32.3730&rep=rep1&type=pdf
         The NP-completeness of SAT assures that any other NP-complete problem can be reduced [6]
         to SAT by simulating any Turing machine solving this problem.
-     see Boolean SAT notes in private other code base and implementation following Davis-Putnam
-     and DPLL algorithms.   the network routing code needs revision...
+     Note to self: see Boolean SAT notes in my private other code base and implementation following Davis-Putnam
+     and DPLL algorithms.  my network routing code needs revision...
    
 
 Satisfiability Modulo Theories (SMT):
@@ -78,7 +111,7 @@ Answer set programming (ASP):
 ---------------------
 
 from Artificial Intelligence: A Modern Approach
-(Third edition) by Stuart Russell and Peter Norvig
+(Second edition excerpt) by Stuart Russell and Peter Norvig
 
 Constraint Satisfaction Problems (CSP):
    n = number of variables (e.g. the 7 regions of Australia)
@@ -145,10 +178,15 @@ Constraint Satisfaction Problems (CSP):
                  set var = value in current
                  invoke callback listeners of the updated csp solution in progress.
               return failure
+            Can use min-conflicts heuristics w/ other search: best-first, simulated-annealing, 
+            tabu, hill climbing, backtracking.
+            Koutsoupias and Papadimitriou (1992, "On the greedy algorithm for satisfiability.") 
+            showed that a simple hill-climbing algorithm can solve almost all satisfiability 
+            problem instances very quickly, suggesting that hard problems are rare
        - ** cut-set conditioning:
          Tree-structured problems can be solved in linear time. Cutset conditioning can reduce a 
          general CSP to a tree-structured one and is very efficient if a small cutset can be found.
        - tree decomposition:
-         ransform the CSP into a tree of subproblems and are efficient if the tree width of the 
+         transform the CSP into a tree of subproblems. efficient if the tree width of the 
          constraint graph is small.   
 
