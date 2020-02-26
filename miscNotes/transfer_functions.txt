@@ -1,12 +1,12 @@
 In mathematics, an integral transform maps an equation from its original domain into another domain where it might be manipulated and solved much more easily than in the original domain. The solution is then mapped back to the original domain using the inverse of the integral transform.
-    The input of this transform is a functiuon f, 
+    The input of this transform is a function f, 
         and the output is another function Tf. 
         An integral transform is a particular kind of mathematical operator.
     There are numerous useful integral transforms. Each is specified by a choice of the 
         function K of two variables, the kernel function, integral kernel or nucleus of the transform.
         The term kernel is used in statistical analysis to refer to a window function. 
 
-    (Tf)(u) = integral_t1_to_t2( f(t) K(t, u) dt
+    (Tf)(u) = integral_t1_to_t2( f(t) K(t, u) dt )
 
 The Laplace Transform is useful for linear differential equations
 with discontinuous forcing functions.
@@ -72,7 +72,7 @@ From book "MANEUVERING AND CONTROL OF MARINE VEHICLES"
 The Laplace transform projects time-domain signals into a complex frequency-domain equivalent.
 The signal y(t) has transform Y (s) defined as follows:
 
-  Y (s) = L(y(t)) = integral_tau_from_0_to_inf ( y(tau) * e^(-s*tau)*dtau
+  Y (s) = L(y(t)) = integral_tau_from_0_to_inf ( y(tau) * e^(-s*tau)*dtau )
      where s is a complex variable, constrained within a region so that the integral converges.
 
 Note that the Laplace transform is linear, so it is distributive: 
