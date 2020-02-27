@@ -1,0 +1,20 @@
+"A factorization based algorithm for multi-image projective structure and motion"
+   by Sturm and Triggs, 2011
+
+The complete algorithm is composed of the following steps.
+1. Normalize the image coordinates, by applying transformations T_i
+   transformed points are centered at the origin and the mean distance from the origin is sqrt(2)
+   following Har95
+2. Estimate the fundamental matrices and epipoles with the method of [Har95].
+3. Determine the scale factors lambda_ip using equation (3)􏰑
+     Solving the vector equation (2) in least squares for lambda_ip􏰑in terms of lambda_jp
+     gives              (e_ij Ʌ q_ip) dot (F_ij * q_jp)
+            lambda_ip = -------------------------------
+                               ||e_ij Ʌ q_ip||^2
+4. Build the rescaled measurement matrix W .
+5. Balance W by column-wise and triplet-of-rows-wise scalar multiplications
+       (see Section 3.2)
+6. Compute the SVD of the balanced matrix W .
+7. From the SVD, recover projective motion and shape.
+8. Adapt projective motion, to account for the normalization transformations
+
