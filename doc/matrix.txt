@@ -156,6 +156,27 @@ Matrix Factorizations
    see the summary notes from Strang 
 
 ----------------------------------------------------------------------
+SVD Decomposition:
+    A V = U Σ
+       where A is an n x m matrix
+             V is the row space basis 
+             U is the column space basis 
+             Σ is the diagonal matrix 
+   The SVD chooses orthornomal bases U^-1 = U^T adn V^-1 = V^T) that
+      diagonalize A.
+
+   Unlike LU Decomposition and QR Decomposition, A does not have to be a square matrix.
+
+   If A is an invertible 2x2 matrix, then U represents reflection,
+      V represents rotation, and Σ represents stretching.
+
+   The U and V matrices contain orthonormal bases for all 4 subspaces:
+      first  r  columns  of V :  row space of A
+      last n-r  columns  of V :  null space of A
+      first  r  columns  of U :  column space of A
+      last m-r  columns  of U :  null space of A^T
+   
+----------------------------------------------------------------------
 
 from ""?
 
