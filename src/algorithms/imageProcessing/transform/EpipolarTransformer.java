@@ -41,6 +41,10 @@ import no.uib.cipr.matrix.SVD;
  * The 8-point algorithm matrix represents epipolar geometry, and can be
  * used with data from cameras whose characteristics are not known to solve
  * up to the projective transformation.
+ * ...a simple transformation (translation and scaling) of the points in 
+ * the image before formulating the linear equations leads to an enormous 
+ * improvement in the condition of the problem and hence of the stability 
+ * of the result...
  *
  * Some definitions:
     u^T*v represents the inner product
@@ -136,16 +140,17 @@ import no.uib.cipr.matrix.SVD;
  8-point solution except that is solves for the null space of the fundamental
  matrix and results in one or 3 solutions which can for some geometries
  be reduced to a single solution.
+ The nullspace is where Ax=0 in reduced echelon, that is, the free variable rows.
  The normalization and denormalization steps before and following the solution,
  are the same as in the 8-point solution.
- *
 
-    right epipolar lines:
-        fm * leftXY
-    left epipolar lines:
-        fm^T * rightXY
+ this from comments in the Hartley & Zisserman mattlab code vgg_F_from_7pts_2img:
+   Solutions for the 7-points are pruned by requirement that
+   scalars s in all equations s * cross(e1,u_1) == F*u_2 are positive.
+   In case of multiple solutions, F has one dimension
+   more such that F(:,:,n) is the n-th solution.
 
- * </pre>
+ </pre>
  *
  * @author nichole
  */

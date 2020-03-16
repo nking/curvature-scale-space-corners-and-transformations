@@ -8,7 +8,9 @@ their license is
      GNU General Public License version 3
 
 Note that currently missing are the 
- objcode and density classes.
+  objcode and density classes.
+
+the subject is a little like fpga programming with a quark soup theme.
    
 from the libquantum documentation:
      Density operator formalism
