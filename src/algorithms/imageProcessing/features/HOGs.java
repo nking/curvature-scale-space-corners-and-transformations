@@ -92,7 +92,7 @@ import java.util.Collection;
   and specialized methods for that specific to this project will be
   present in this class.
    
-  TODO: need to add an improved feature comparison method that considers the
+  TODO: improve distance function used in feature comparison method.  need to consider the
   empty bins significant too.  the error calculations in Histogram.java include
   that
 
