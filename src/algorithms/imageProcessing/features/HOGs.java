@@ -606,8 +606,8 @@ public class HOGs {
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      *
-     * calculate the difference of histA and histB (normalized by the maximum value
-       in their histograms).
+     * calculate the difference of featureA and featureB (normalized by the maximum value
+       in their vectors).
      * A result of 0 is maximally similar and a result of 1 is maximally dissimilar.
      *
      * Note that because the feature contains spatially ordered concatenation of
