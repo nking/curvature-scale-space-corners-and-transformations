@@ -14,7 +14,8 @@ package algorithms.imageProcessing;
  * From https://en.wikipedia.org/wiki/Summed_area_table
  * The algorithm was introduced to computer graphics in 1984 by Frank Crow 
  * for use with mipmaps. In computer vision it was popularized by 
- * Lewis[1] and then given the name "integral image" and prominently 
+ * Lewis (Fast template matching. 1995 Lewis, J.P.)
+ * and then given the name "integral image" and prominently 
  * used within the Viola–Jones object detection framework in 2001.
  * 
  * @author nichole

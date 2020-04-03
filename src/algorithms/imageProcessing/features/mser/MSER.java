@@ -15,6 +15,9 @@ His C++ code is an implementation of
 "Linear Time Maximally Stable Extremal Regions",
 by D. Nistér and H. Stewénius, ECCV 2008.
 
+..."MSER is a blob detector [...that] extracts stable connected regions 
+of some level sets from an image, and optionally fits ellipses to them"
+
 The C++ code has copyright:
 --------------------------
 GNU GENERAL PUBLIC LICENSE, Version 3
@@ -35,11 +38,9 @@ http://www.gnu.org/licenses/.
 Linear time Maximally Stable Extremal Regions (MSER) implementation as described
 in D. Nistér and H. Stewénius, "Linear Time Maximally Stable Extremal Regions",
 ECCV 2008.
-The functionality is similar to that of VLFeat MSER feature detector
-http://www.vlfeat.org/overview/mser.html but the code is several time faster.
-MSER is a blob detector, like the Laplacian of Gaussian used by the SIFT
-algorithm. It extracts stable connected regions of some level sets from an
-image, and optionally fits ellipses to them.
+
+MSER was originally described by  Matas el al 2002, "Robust wide baseline stereo from
+maximally stable extremal regions.",  British Machine Vision Conference, pp.  384–393
 
 The MSER class extracts maximally stable extremal regions
 from a grayscale (8 bits) image.

@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  * is a path in each direction between them.
  * 
  * Tarjan's strongly connected components algorithm traverses the graph once, 
- * using a stack in which the vertices are not remvoed unless found to be
+ * using a stack in which the vertices are not removed unless found to be
  * strongly connected.
  * 
  * Runtime complexity is O(|E| + |V|) (average?), and the worse case runtime

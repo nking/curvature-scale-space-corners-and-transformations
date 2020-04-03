@@ -420,6 +420,9 @@ public class EpipolarTransformer {
             if (solution == null) {
                 continue;
             }
+            
+            DenseMatrix validated = validateSolution(solution, 
+                normalizedXY1, normalizedXY2);
 
             DenseMatrix denormFundamentalMatrix =
                 MatrixUtil.multiply(t1Transpose,
@@ -430,13 +433,14 @@ public class EpipolarTransformer {
 
             denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
 
-            /*
-            DenseMatrix validated = validateSolution(denormFundamentalMatrix);
+            
+            
 
             if (validated != null) {
                 denormalizedSolutions.add(validated);
-            }*/
-                denormalizedSolutions.add(denormFundamentalMatrix);
+            }
+            
+            //denormalizedSolutions.add(denormFundamentalMatrix);
         }
 
         return denormalizedSolutions;
@@ -517,6 +521,15 @@ public class EpipolarTransformer {
         DenseMatrix rightXY) {
 
         /*
+        NOTE: the ' is mathematica syntax for conjugate transpose
+        
+        NOTE: vgg_contreps of a 3X1 vector e1 is
+            Y = [0      e1(3)  -e1(2)
+                -e1(3)  0      e1(1)
+                 e1(2) -e1(1)  0];
+        
+        NOTE: '.*' is mattlab notation to operate on each field
+        
         function OK = signs_OK(F,x1,x2)
         [u,s,v] = svd(F');
         e1 = v(:,3);
@@ -525,18 +538,20 @@ public class EpipolarTransformer {
         OK = all(s>0) | all(s<0);
 
         (F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
-        '.*' is mattlab notation to operate on each field
-
+        
         'sum' is a matlab function to sum for each column
 
         'all' is a function that returns '1' is all items are non-zero, else
             returns 0
         */
-
         double[][] leftRightEpipoles = calculateEpipoles(solution);
 
+        // 3 columns (x,y,1):
         double[] testE1 = leftRightEpipoles[0];
-
+        
+        //l1 = e1contreps*x1;
+        //  [x y ] [x0 x1 x2 x3 x4 x5 x6]
+        //         [y0 y1 y2 y3 y4 y5 y6]
         DenseMatrix l1 = leftXY.copy();
         for (int row = 0; row < testE1.length; ++row){
             for (int col = 0; col < l1.numColumns(); ++col) {
@@ -555,13 +570,22 @@ public class EpipolarTransformer {
             }
         }
 
+        int nGTZ = 0;
+        int nLTZ = 0;
         for (int i = 0; i < sum.length; ++i) {
             if (sum[i] == 0) {
                 return null;
+            } else if (sum[i] > 0) {
+                nGTZ++;
+            } else {
+                nLTZ++;
             }
         }
 
-        return solution;
+        if ((nGTZ > 0 && nLTZ == 0) || (nGTZ > 0 && nLTZ == 0)) {
+            return solution;
+        }
+        return null;
     }
 
     DenseMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
