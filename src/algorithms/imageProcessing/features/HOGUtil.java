@@ -178,9 +178,9 @@ public class HOGUtil {
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      * 
-     * calculate the intersection of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * calculate the difference of histA and histB (normalized by the maximum value
+       in their histograms).
+     * A result of 0 is maximally similar and a result of 1 is maximally dissimilar.
      * 
      The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
@@ -277,9 +277,9 @@ public class HOGUtil {
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      * 
-     * calculate the intersection of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * calculate the difference of histA and histB (normalized by the maximum value
+       in their histograms).
+     * A result of 0 is maximally similar and a result of 1 is maximally dissimilar.
      * 
      * The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
