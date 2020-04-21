@@ -93,6 +93,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
     
     their license information is in file lib/NETLIB-JAVA.txt
     </pre>
+
  * @author nichole
  */
 public class NormalizedCuts {
@@ -230,6 +231,8 @@ public class NormalizedCuts {
         }
         
         RAGCSubGraph nodesGraph = rag.createANodesGraph();
+
+        // TODO: should normalize matrix data before use to zero mean and unit variance.
         
         // add an edge to self for every node, weight = edge_max (which is 1.0 if not specified)
         // only doing this in the similarity matrix, not the graph adjacency map
