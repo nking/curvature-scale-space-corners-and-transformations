@@ -14,14 +14,26 @@ import thirdparty.fsu.random.QMCHaltonAdvanced;
  * NRegions are sampled using Quasi Monte Carlo
  * and each region is searched using local search LBFGs.
  * 
- * Note, there are a couple of other local search algorithms not yet 
- * implemented here which should be better for functions that have many
- * local minima, but LBFGS is a fast local search as it uses the
+ * LBFGS is a fast local search - it uses the
  * gradient provide by the function, which can be the first derivative or
  * a calculation using finite difference method.
  * 
  * Note that if one knows the function is convex, one can use LBFGS alone
  * to find the global minimum.
+
+     The algorithm uses low discripeancy sequences, a.k.a. quasi-random sequences.
+   from "Low Discrepancy Sequences for Monte Carlo Simulations on Reconfigurable Platforms"
+   2008, Dalal, Stefan, and Harwayne-Gidansky
+     The Cooper Union for the Advancement of Science and Art
+     51 Astor Place, New York, NY 10003
+       ...Low-discrepancy sequences, also known as “quasirandom” sequences, are numbers 
+       that are better equidistributed in a given volume than pseudo-random
+       numbers. Evaluation of high-dimensional integrals is commonly required in 
+       scientific fields as well as other areas (such as finance), and is 
+       performed by stochastic Monte Carlo simulations. Simulations which use 
+       quasirandom numbers can achieve faster convergence and better accuracy 
+       than simulations using conventional pseudo-random numbers. Such 
+       simulations are called Quasi-Monte Carlo.
  * 
  * @author nichole
  */

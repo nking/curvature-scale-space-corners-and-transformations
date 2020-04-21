@@ -18,10 +18,16 @@ if need to calculate stroke widths, could mask out all regions not possibly
 text and quickly hollow out insides of letters, then use a distance transform
 on the image or cropped image.
 
+-- normalize matrix data in NormalizedCuts to zero mean and unit variance when
+   create edge weights.
+   consider using power method when useful in NormalizedCuts.
 
 -- for the mser code where have needed to handle shifting of image for
 points near 0 and 180 boundaries, could instead adjust the algorithm
 to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
+   -- for serveral areas of the object finding and matching algorithms, need to
+      consider using different distance methods.  e.g. can use cosine similarity
+      for angle based differences.
 
 -- if update libquantum porting to 1.1.1,
    consider browsing Nielson's book which Cambridge publishing is no
