@@ -129,7 +129,7 @@ public class SummedAreaTable {
         for (int i = 0; i < w; ++i) {
             img2[i] = new double[h];
         }
-        
+            
         double[] sumAndN = new double[2];
         
         // extract the summed area of each dxd window centered on x,y
@@ -476,10 +476,28 @@ public class SummedAreaTable {
         int startY = y - r;
         int stopY = y + r;
         
-        if (stopX > (w - 1)) {
+        if (startX < 0) {
+            startX = 0;
+        }
+        if (startY < 0) {
+            startY = 0;
+        }
+        if (startX >= w) {
+            startX = w - 1;
+        }
+        if (startY >= h) {
+            startY = h - 1;
+        }
+        if (stopX < 0) {
+            stopX = 0;
+        }
+        if (stopY < 0) {
+            stopY = 0;
+        }
+        if (stopX >= w) {
             stopX = w - 1;
         }
-        if (stopY > (h - 1)) {
+        if (stopY >= h) {
             stopY = h - 1;
         }
               
