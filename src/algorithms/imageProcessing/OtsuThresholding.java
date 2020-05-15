@@ -333,6 +333,7 @@ public class OtsuThresholding {
         double[][] avgImg = imageProcessor.copy(img);
         
         int halfWindow = 1;
+    
         imageProcessor.applyCenteredMean2(avgImg, halfWindow);
         
         double min = MiscMath.findMin(img);

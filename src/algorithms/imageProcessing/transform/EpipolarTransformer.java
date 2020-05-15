@@ -3,8 +3,8 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.matrix.MatrixUtil;
 import algorithms.util.PairFloatArray;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -252,7 +252,8 @@ public class EpipolarTransformer {
     }
 
     /*
-    for 7-point algorithm:
+    Following the 7-point algorithm by R. Hartley and A. Zisserman, 
+    in their book "Multiple View Geometry in Computer Vision"
 
     (1) SVD of matrix A (as is done in 8-point algorithm)
         giving a matrix of rank 7
@@ -385,7 +386,7 @@ public class EpipolarTransformer {
         }
 
         // nCols = 9
-        DenseMatrix nullSpace = MatrixUtil.nullSpace(svd);
+        DenseMatrix nullSpace = algorithms.imageProcessing.util.MatrixUtil.nullSpace(svd);
 
 
         double[][] ff1 = new double[3][3];
@@ -422,7 +423,7 @@ public class EpipolarTransformer {
             }
             
             DenseMatrix validated = validateSolution(solution, 
-                normalizedXY1, normalizedXY2);
+                normalizedXY1.getXy(), normalizedXY2.getXy());
 
             DenseMatrix denormFundamentalMatrix =
                 MatrixUtil.multiply(t1Transpose,
@@ -1750,7 +1751,7 @@ public class EpipolarTransformer {
 
         //nData X 3
         // x1 times 1 = x1_x, x1_y, 1
-        DenseMatrix dX0 = MatrixUtil.multiplyPointwise(
+        DenseMatrix dX0 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
             x1T, x2RowT2);
         assert(dX0.numRows() == n);
         assert(dX0.numColumns() == 3);
@@ -1762,7 +1763,7 @@ public class EpipolarTransformer {
         
         //nData X 3
         // x1 times -x cooord of x2 = x1_x * x2_x, x1_y * x2_x, x2_x
-        DenseMatrix dX2 = MatrixUtil.multiplyPointwise(
+        DenseMatrix dX2 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
             x1T, x2RowT0);
         MatrixUtil.multiply(dX2, -1);
         assert(dX2.numColumns() == 3);
@@ -1775,14 +1776,14 @@ public class EpipolarTransformer {
         
         //nData X 3
         // x1 times 1 = x1_x, x1_y, 1
-        DenseMatrix dY1 = MatrixUtil.multiplyPointwise(
+        DenseMatrix dY1 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
             x1T, x2RowT2);
         assert(dY1.numColumns() == 3);
         assert(dY1.numRows() == n);
         
         //nData X 3
         // x1 times -y cooord x2 = of x1_x * y2_x, x1_y * y2_x, y2_x
-        DenseMatrix dY2 = MatrixUtil.multiplyPointwise(
+        DenseMatrix dY2 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
             x1T, x2RowT1);
         MatrixUtil.multiply(dY2, -1);
         assert(dY2.numColumns() == 3);

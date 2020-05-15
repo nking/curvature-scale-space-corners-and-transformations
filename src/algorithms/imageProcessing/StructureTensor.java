@@ -1,6 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 
 /**
  * create first derivative products and optionally second derivative
@@ -102,19 +102,19 @@ public class StructureTensor {
         float[] kernel = (sigma > 0) ? Gaussian1D.getKernel(sigma) : null;
         
         //Axx
-        dXSq = MatrixUtil.multiplyPointwise(gX, gX);
+        dXSq = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gX, gX);
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dXSq, kernel);
         }
         
         //Ayy
-        dYSq = MatrixUtil.multiplyPointwise(gY, gY);
+        dYSq = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gY, gY);
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dYSq, kernel);
         }
         
         //Axy
-        dXdY = MatrixUtil.multiplyPointwise(gX, gY);
+        dXdY = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gX, gY);
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dXdY, kernel);
         }
@@ -153,9 +153,9 @@ public class StructureTensor {
             
             // detA = Axx * Ayy - Axy ** 2
             
-            float[][] axxyy = MatrixUtil.multiplyPointwise(dXSq, dYSq);
+            float[][] axxyy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXSq, dYSq);
 
-            float[][] axyxy = MatrixUtil.multiplyPointwise(dXdY, dXdY);
+            float[][] axyxy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXdY, dXdY);
 
             detA = MatrixUtil.subtract(axxyy, axyxy);
         }

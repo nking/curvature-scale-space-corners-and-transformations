@@ -4,7 +4,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.matching.ErrorType;
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
@@ -81,7 +81,7 @@ public class EpipolarTransformerTest extends TestCase {
             // 3XN      3X3        3XN
             //normXY = tMatrix dot xy
             //  normXY * inv(tMatrix) = xy
-            DenseMatrix invT = MatrixUtil.inverse(
+            DenseMatrix invT = algorithms.imageProcessing.util.MatrixUtil.inverse(
                 normXY.getNormalizationMatrix());
             
             DenseMatrix denorm = 

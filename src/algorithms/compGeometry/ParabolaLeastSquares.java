@@ -1,6 +1,6 @@
 package algorithms.compGeometry;
 
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PolynomialFitter;
 import java.util.Arrays;

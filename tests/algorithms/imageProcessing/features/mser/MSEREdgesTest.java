@@ -24,7 +24,7 @@ public class MSEREdgesTest extends TestCase {
 
         //for (int i = 9; i < 10; ++i) {
         //for (int i = 25; i < 26; ++i) {
-        //for (int i = 0; i < 1; ++i) {
+        //for (int i = 29; i < 30; ++i) {
         for (int i = 0; i < 37; ++i) {
 
             switch(i) {

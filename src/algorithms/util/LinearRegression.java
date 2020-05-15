@@ -28,11 +28,16 @@ public class LinearRegression {
     }
     
     /**
-     * calculate the theil sen estimator for the set of points and return
+     * calculate the Theil-Sen estimator for the set of points and return
      * the yIntercept and slope that can be used to plot a line that is the
      * linear regression of the x and y points.
      * NOTE: a side effect of the method is that x and y become partially
      * sorted.
+       https://en.wikipedia.org/wiki/Theil%E2%80%93Sen_estimator
+       In non-parametric statistics, the Theil–Sen estimator is a method for 
+       robustly fitting a line to sample points in the plane (simple linear 
+       regression) by choosing the median of the slopes of all lines through pairs of points. 
+       ...  This estimator can be computed efficiently, and is insensitive to outliers. It can be significantly more accurate than non-robust simple linear regression (least squares) for skewed and heteroskedastic data, and competes well against least squares even for normally distributed data in terms of statistical power.[10] It has been called "the most popular nonparametric technique for estimating a linear trend".
      * @param x
      * @param y
      * @return 
@@ -96,6 +101,7 @@ public class LinearRegression {
         float yIntercept = y[medianIdx] - median * x[medianIdx];
         
         //the estimation of yIntercept needs to be improved:
+        // TODO: correct this to calculate yIntercept from  median of yi − mxi
         int np = 10;
         while (((medianIdx - np) < 0) || ((medianIdx + np) > (x.length - 1))) {
             np--;

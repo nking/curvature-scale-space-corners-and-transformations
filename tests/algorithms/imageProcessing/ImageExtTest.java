@@ -1,6 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 import java.awt.Color;
 import java.security.SecureRandom;
 import junit.framework.TestCase;

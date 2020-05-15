@@ -35,3 +35,10 @@ practically applied in the very high dimension familiar to finance, achieving
 remarkable results. Sobol’s sequence (with Antonov and Saleev’s optimization and Jaeckel or Joe and Kuo’s direction numbers) became a best practice
 in financial applications, which it remains to this day.
 
+---------------
+more on Monte Carlo, Sobol, lattice points, digital nets:
+https://people.cs.kuleuven.be/~dirk.nuyens/taiwan/QMC-practical-guide-20161107-2up.pdf
+
+code:
+https://people.cs.kuleuven.be/~dirk.nuyens/
+

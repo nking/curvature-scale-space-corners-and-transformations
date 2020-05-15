@@ -26,6 +26,7 @@ public class PeriodicFFTTest extends TestCase {
         
         //String fileName = "lab.gif";
         String fileName = "lena.jpg";
+        fileName = "t0.png";
         //String fileName = "tmp.png";
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);        

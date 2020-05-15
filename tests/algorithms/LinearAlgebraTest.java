@@ -1,6 +1,6 @@
 package algorithms;
 
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 import gnu.trove.list.TDoubleList;
 import java.util.Arrays;
 import java.util.Map;
@@ -126,7 +126,7 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println("check0_right=\n" + check0_right);
         System.out.println("check1_right=\n" + check1_right);
 
-        Object[] vecAndValues = MatrixUtil.eigenWithErrorFilter(m);
+        Object[] vecAndValues = algorithms.imageProcessing.util.MatrixUtil.eigenWithErrorFilter(m);
         assertNotNull(vecAndValues);
         DenseMatrix filteredVecs = (DenseMatrix) vecAndValues[0];
         TDoubleList filteredValues = (TDoubleList) vecAndValues[1];
