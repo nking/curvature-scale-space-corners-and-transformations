@@ -520,17 +520,17 @@ public class EpipolarTransformer {
     @SuppressWarnings({"unchecked"})
     private DenseMatrix validateSolution(DenseMatrix solution, DenseMatrix leftXY,
         DenseMatrix rightXY) {
-
-        /*
-        NOTE: the ' is mathematica syntax for conjugate transpose
         
+        /*        
         NOTE: vgg_contreps of a 3X1 vector e1 is
             Y = [0      e1(3)  -e1(2)
                 -e1(3)  0      e1(1)
                  e1(2) -e1(1)  0];
-        
         NOTE: '.*' is mattlab notation to operate on each field
-        
+        NOTE: the ' is mathematica syntax for conjugate transpose, a.k.a.
+               the Hermitian. it's a matrix with signs reversed for imaginary
+                components of complex numbers and then the matrix transposed.
+                
         function OK = signs_OK(F,x1,x2)
         [u,s,v] = svd(F');
         e1 = v(:,3);
@@ -545,28 +545,50 @@ public class EpipolarTransformer {
         'all' is a function that returns '1' is all items are non-zero, else
             returns 0
         */
-        double[][] leftRightEpipoles = calculateEpipoles(solution);
+        DenseMatrix solutionHermitian = MatrixUtil.transpose(solution);
+        double[][] leftRightEpipoles = calculateEpipoles(solutionHermitian);
 
         // 3 columns (x,y,1):
         double[] testE1 = leftRightEpipoles[0];
-        
-        //l1 = e1contreps*x1;
+        //vgg_contreps of a 3X1 vector e1 is
+        //    Y = [0      e1(3)  -e1(2)
+        //        -e1(3)  0      e1(1)
+        //         e1(2) -e1(1)  0];
         //  [x y ] [x0 x1 x2 x3 x4 x5 x6]
         //         [y0 y1 y2 y3 y4 y5 y6]
-        DenseMatrix l1 = leftXY.copy();
+        double[][] contrepsE1 = new double[3][3];
+        contrepsE1[0] = new double[]{0, testE1[2], -testE1[1]};
+        contrepsE1[1] = new double[]{-testE1[2], 0, testE1[0]};
+        contrepsE1[2] = new double[]{testE1[1], -testE1[0], 0};
+        
+        //l1 = e1contreps*x1;
+        
+        // 3 X 7
+        double[][] l1 = MatrixUtil.multiply(contrepsE1, MatrixUtil.convertToRowMajor(leftXY));
+
+        // s = sum( (F*x2) .* l1 );
+        // .* is mattlab notation 
+        // https://www.mathworks.com/help/matlab/ref/times.html
+        
+        // 3 X 7
+        DenseMatrix fx2 = MatrixUtil.multiply(solution, rightXY);
+        
+        // 3 x 7
+        DenseMatrix fx2l1 = fx2.copy();
         for (int row = 0; row < testE1.length; ++row){
-            for (int col = 0; col < l1.numColumns(); ++col) {
-                double value = testE1[row] * l1.get(row, col);
-                l1.set(row, col, value);
+            for (int col = 0; col < fx2.numColumns(); ++col) {
+                double value = fx2l1.get(row, col) * l1[row][col];
+                fx2l1.set(row, col, value);
             }
         }
-
-        double[] sum = new double[l1.numColumns()];
-        DenseMatrix t1 = MatrixUtil.multiply(solution, rightXY);
-        for (int row = 0; row < testE1.length; ++row){
-            for (int col = 0; col < t1.numColumns(); ++col) {
-                double value = l1.get(row, col) * t1.get(row, col);
-                t1.set(row, col, value);
+        
+        // mattlab sum function:
+        //    If A is a matrix, then sum(A) returns a row vector containing 
+        //    the sum of each column.
+        double[] sum = new double[fx2l1.numColumns()];
+        for (int row = 0; row < fx2l1.numRows(); ++row){
+            for (int col = 0; col < fx2l1.numColumns(); ++col) {
+                double value = fx2l1.get(row, col);
                 sum[col] += value;
             }
         }
@@ -583,7 +605,7 @@ public class EpipolarTransformer {
             }
         }
 
-        if ((nGTZ > 0 && nLTZ == 0) || (nGTZ > 0 && nLTZ == 0)) {
+        if ((nGTZ > 0 && nLTZ == 0) || (nLTZ > 0 && nGTZ == 0)) {
             return solution;
         }
         return null;

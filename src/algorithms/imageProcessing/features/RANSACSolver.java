@@ -91,6 +91,8 @@ public class RANSACSolver {
         DenseMatrix matchedLeftXY, DenseMatrix matchedRightXY,
         PairIntArray outputLeftXY, PairIntArray outputRightXY) {
 
+        //TODO: improve this method
+        
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
         }
