@@ -2,6 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.matrix.MatrixUtil;
 import algorithms.imageProcessing.transform.Util;
 import algorithms.util.ResourceFinder;
@@ -43,8 +44,17 @@ public class DistancesTest extends TestCase {
             leftTrueMatches, rightTrueMatches);
 
         assertNotNull(fm);
+        
+        System.out.println("fm (>7pts) =" + fm.toString());
 
-        double tolerance = 3;
+        double tolerance = 4;
+        
+        Distances distances = new Distances();
+        EpipolarTransformationFit fit = distances.calculateError(fm, xy1, xy2, 
+            ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
+        
+        assertEquals(leftTrueMatches.getN(), fit.getInlierIndexes().size());
+        
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
@@ -86,18 +96,15 @@ public class DistancesTest extends TestCase {
         //fm 7pt= -0.02  0.40  0.61
         //        -0.30 -0.03 -3.30
         //        -0.63  3.27  0.07
-        
-        double tol = 3;
+                
+        double tolerance = 4;
         
         Distances distances = new Distances();
         
-        //EpipolarTransformationFit fitE = distances.calculateEpipolarDistanceError(fm, xy1, xy2, tol);
+        EpipolarTransformationFit fit = distances.calculateError(fms.get(0), xy1, xy2, 
+            ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
         
-        EpipolarTransformationFit fitS = distances.calculateSampsonsError(
-            fms.get(0), xy1, xy2, tol);
-        
-        //assertNotNull(fitE);
-        assertNotNull(fitS);
+        assertEquals(leftTrueMatches.getN(), fit.getInlierIndexes().size());
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
@@ -203,7 +210,7 @@ public class DistancesTest extends TestCase {
         left.add(737, 305);   right.add(762, 335);
         left.add(84, 273);   right.add(60, 298);
      
-        /*
+        
         left.add(134, 24);   right.add(116, 12);
         left.add(134, 66);   right.add(116, 60);
         left.add(106, 204);   right.add(82, 220);
@@ -212,7 +219,11 @@ public class DistancesTest extends TestCase {
         left.add(100, 466);   right.add(76, 518);
         left.add(715, 286);   right.add(734, 316);
         left.add(736, 488);   right.add(761, 530);
-        */
+        left.add(80, 443);   right.add(51, 493);
+        left.add(204, 415);   right.add(189, 456);
+        left.add(507, 481);   right.add(501, 517);
+        left.add(817, 32);   right.add(850, 49);
+        
     }
     
     protected void getMertonCollege7TrueMatches(PairIntArray left, 

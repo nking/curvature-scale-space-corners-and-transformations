@@ -86,7 +86,7 @@ public class RANSACMultiplicitySolver {
            from the left's right match if more than one match is present.
         -- calculate the epipolar fundamental matrix from the 7
         -- evaluate the sample:
-           using Sampson's error:
+           using epipolar line distance error:
               if error < tolerance, stores the entire sample in consensus
         -- check whether to exit loop:
            recalculate expected iterations and compare to nIterations or max
@@ -103,7 +103,7 @@ public class RANSACMultiplicitySolver {
         
         int nPoints = matchedLeftXY.size();
         
-        ErrorType errorType = ErrorType.SAMPSONS;
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
                 
         SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
@@ -203,7 +203,6 @@ public class RANSACMultiplicitySolver {
                 continue;
             }
                         
-            // use Sampson's to estimate errors of sample
             EpipolarTransformationFit fit = null;
             
             for (DenseMatrix fm : fms) {

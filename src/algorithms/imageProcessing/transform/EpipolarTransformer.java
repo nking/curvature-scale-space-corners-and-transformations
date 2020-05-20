@@ -1463,9 +1463,9 @@ public class EpipolarTransformer {
 
         for (int i = 0; i < distances.getN(); ++i) {
 
-            float leftPtD = distances.getX(i);
+            float rightPtD = distances.getX(i);
 
-            float rightPtD = distances.getY(i);
+            float leftPtD = distances.getY(i);
 
             float dist = (float)Math.sqrt(leftPtD*leftPtD + rightPtD*rightPtD);
 
@@ -1499,33 +1499,11 @@ public class EpipolarTransformer {
     public EpipolarTransformationFit calculateErrorThenFilter(DenseMatrix fm,
         DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double tolerance) {
 
-        if (errorType.equals(ErrorType.SAMPSONS)) {
-            return calculateSampsonsErrorThenFilter(fm, x1, x2, tolerance);
-        } else {
+        //if (errorType.equals(ErrorType.SAMPSONS)) {
+        //    return calculateSampsonsErrorThenFilter(fm, x1, x2, tolerance);
+        //} else {
             return calculateEpipolarDistanceErrorThenFilter(fm, x1, x2, tolerance);
-        }
-    }
-
-    //follow errors w/ filter for degeneracy
-    public EpipolarTransformationFit calculateSampsonsErrorThenFilter(DenseMatrix fm,
-        DenseMatrix x1, DenseMatrix x2, double tolerance) {
-
-        Distances distances = new Distances();
-        EpipolarTransformationFit fit = distances.calculateSampsonsError(
-            fm, x1, x2, tolerance);
-        
-        List<Integer> outputInliers = fit.getInlierIndexes();
-        List<Double> outputDistances = fit.getErrors();
-
-        filterForDegenerate(x1, outputInliers, outputDistances);
-        filterForDegenerate(x2, outputInliers, outputDistances);
-
-        EpipolarTransformationFit fit2 = new EpipolarTransformationFit(fm,
-            outputInliers, ErrorType.SAMPSONS, outputDistances, tolerance);
-
-        fit2.setNMaxMatchable(x1.numColumns());
-
-        return fit2;
+        //}
     }
 
     private void filterForDegenerate(DenseMatrix xy1,

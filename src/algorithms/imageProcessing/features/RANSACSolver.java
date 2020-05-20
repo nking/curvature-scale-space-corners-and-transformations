@@ -130,7 +130,7 @@ public class RANSACSolver {
 
         int nPoints = matchedLeftXY.numColumns();
         
-        ErrorType errorType = ErrorType.SAMPSONS;
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
 
         EpipolarTransformer spTransformer = new EpipolarTransformer();
             

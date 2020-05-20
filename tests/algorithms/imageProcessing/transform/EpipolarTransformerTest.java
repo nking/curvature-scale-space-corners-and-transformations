@@ -1,8 +1,8 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.transform.Util;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.ResourceFinder;
@@ -27,7 +27,7 @@ public class EpipolarTransformerTest extends TestCase {
     public EpipolarTransformerTest() {
     }
     
-    public void estNormalization() throws Exception {
+    public void testNormalization() throws Exception {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -110,6 +110,7 @@ public class EpipolarTransformerTest extends TestCase {
         getMertonCollege10TrueMatches(leftTrueMatches, rightTrueMatches);
         
         EpipolarTransformer spTransformer = new EpipolarTransformer();
+        Distances distances = new Distances();
         
         DenseMatrix fm = spTransformer.calculateEpipolarProjection(
             leftTrueMatches, rightTrueMatches);
@@ -121,8 +122,7 @@ public class EpipolarTransformerTest extends TestCase {
         DenseMatrix matchedLeftXY = Util.rewriteInto3ColumnMatrix(leftTrueMatches);
         DenseMatrix matchedRightXY = Util.rewriteInto3ColumnMatrix(rightTrueMatches);
         
-        /*
-        EpipolarTransformationFit fit = spTransformer.calculateError(fm, matchedLeftXY, 
+        EpipolarTransformationFit fit = distances.calculateError(fm, matchedLeftXY, 
             matchedRightXY, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
         
         assertNotNull(fit);
@@ -141,50 +141,17 @@ public class EpipolarTransformerTest extends TestCase {
             assertTrue(error < tolerance);
         }
         
-        EpipolarTransformationFit fit2 = spTransformer.calculateError(fm, 
-            matchedLeftXY, matchedRightXY, ErrorType.SAMPSONS, tolerance);
-        
-        assertNotNull(fit2);
-        assertNotNull(fit2.getErrorType());
-        assertEquals(10, fit2.getErrors().size());
-        assertEquals(10, fit2.getInlierIndexes().size());
-        fit2.calculateErrorStatistics();
-        double mean2 = fit2.getMeanError();
-        double stdev2 = fit2.getStDevFromMean();
-        List<Double> errors2 = fit2.getErrors();
-        
-        assertTrue(mean2 < tolerance);
-        assertTrue(stdev2 < tolerance);
-        for (Double error : errors2) {
-            assertTrue(error < tolerance);
-        }
-        */
-        
-        String fileName1 = "merton_college_I_001.jpg";
-        String fileName2 = "merton_college_I_002.jpg";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        int image1Width = img1.getWidth();
-        int image1Height = img1.getHeight();
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        int image2Width = img2.getWidth();
-        int image2Height = img2.getHeight();
-
-        overplotEpipolarLines(fm, leftTrueMatches, rightTrueMatches,
-            img1, img2,
-            image1Width, image1Height, image2Width, image2Height,
-            Integer.valueOf(0).toString());
     }
     
-    public void est7Points() throws Exception {
+    public void test7Points() throws Exception {
             
         PairIntArray leftTrueMatches = new PairIntArray();
         PairIntArray rightTrueMatches = new PairIntArray();
         getMertonCollege7TrueMatches(leftTrueMatches, rightTrueMatches);
         
         EpipolarTransformer spTransformer = new EpipolarTransformer();
+        
+        Distances distances = new Distances();
         
         List<DenseMatrix> fms =
             spTransformer.calculateEpipolarProjectionFor7Points(leftTrueMatches, 
@@ -195,14 +162,12 @@ public class EpipolarTransformerTest extends TestCase {
         
         double tolerance = 3;
         
-        /*
         DenseMatrix matchedLeftXY = Util.rewriteInto3ColumnMatrix(leftTrueMatches);
         DenseMatrix matchedRightXY = Util.rewriteInto3ColumnMatrix(rightTrueMatches);
-        
         EpipolarTransformationFit fit = null;
         for (DenseMatrix fm : fms) {
             EpipolarTransformationFit fitI = 
-                spTransformer.calculateError(fm, matchedLeftXY, 
+                distances.calculateError(fm, matchedLeftXY, 
                     matchedRightXY, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
             if (fitI.isBetter(fit)) {
                 fit = fitI;
@@ -223,64 +188,25 @@ public class EpipolarTransformerTest extends TestCase {
             assertTrue(error < 0.01);
         }
         
-        EpipolarTransformationFit fit2 = null;
-        for (DenseMatrix fm : fms) {
-            EpipolarTransformationFit fitI = 
-                spTransformer.calculateError(fm, matchedLeftXY, 
-                    matchedRightXY, ErrorType.SAMPSONS, tolerance);
-            if (fitI.isBetter(fit2)) {
-                fit2 = fitI;
-            }
-        }
-        assertNotNull(fit2);
-        assertNotNull(fit2.getErrorType());
-        assertEquals(7, fit2.getErrors().size());
-        assertEquals(7, fit2.getInlierIndexes().size());
-        fit2.calculateErrorStatistics();
-        double mean2 = fit2.getMeanError();
-        double stdev2 = fit2.getStDevFromMean();
-        List<Double> errors2 = fit2.getErrors();
-        
-        assertTrue(mean2 < 0.01);
-        assertTrue(stdev2 < 0.01);
-        for (Double error : errors2) {
-            assertTrue(error < 0.01);
-        }
-        */
-        
-        String fileName1 = "merton_college_I_001.jpg";
-        String fileName2 = "merton_college_I_002.jpg";
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        int image1Width = img1.getWidth();
-        int image1Height = img1.getHeight();
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        int image2Width = img2.getWidth();
-        int image2Height = img2.getHeight();
-
-        overplotEpipolarLines(fms.get(0), leftTrueMatches, rightTrueMatches,
-            img1, img2,
-            image1Width, image1Height, image2Width, image2Height,
-            Integer.valueOf(7).toString());
     }
     
     /*
     for more datasets:
-    http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+    http://www.robots.ox.ac.uk/~vgg/data/
     */
     
-    private void overplotEpipolarLines(DenseMatrix fm, PairIntArray xy1,
-        PairIntArray xy2, Image img1, Image img2, int image1Width,
+    private void overplotEpipolarLines(DenseMatrix fm, PairFloatArray set1,
+        PairFloatArray set2, Image img1, Image img2, int image1Width,
         int image1Height, int image2Width, int image2Height, String outfileNumber) 
         throws IOException {
+
+        EpipolarTransformer st = new EpipolarTransformer();
         
         DenseMatrix input1 =
-            Util.rewriteInto3ColumnMatrix(xy1);
+            Util.rewriteInto3ColumnMatrix(set1);
 
         DenseMatrix input2 =
-            Util.rewriteInto3ColumnMatrix(xy2);
+            Util.rewriteInto3ColumnMatrix(set2);
 
         for (int ii = 0; ii < input1.numColumns(); ii++) {
             double x = input1.get(0, ii);

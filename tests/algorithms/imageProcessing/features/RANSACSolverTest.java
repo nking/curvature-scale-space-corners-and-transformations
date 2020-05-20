@@ -102,7 +102,7 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testSampsonErrors_stereo_01() {
+    public void testErrors_stereo_01() {
         
         // 1024 X 768
         String fileName1 = "merton_college_I_001.jpg";
@@ -212,7 +212,7 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testSampsonErrors_panoramic_01() {
+    public void testErrors_panoramic_01() {
         
         // 617 X 874
         String fileName1 = "brown_lowe_image1.jpg";
@@ -312,7 +312,7 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testSampsonErrors_moderateProjection_01() {
+    public void testErrors_moderateProjection_01() {
         
         // 480 X 640
         String fileName1 = "campus_010";
@@ -418,7 +418,7 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testSampsonErrors_moderateProjection_02() {
+    public void testErrors_moderateProjection_02() {
         
         // scaled versions of android 04 and 02
         
