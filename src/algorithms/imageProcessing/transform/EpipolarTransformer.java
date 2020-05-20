@@ -59,6 +59,14 @@ import no.uib.cipr.matrix.SVD;
 
     u_1 = (x_1, y_1, 1)^T
     u_2 = (x_2, y_2, 1)^T
+     
+    u_1   = x_1_i    x_1_i+1  ...    
+            y_1_i    y_1_i+1  ...
+            1        1        ...
+ 
+    u_2^T = x_2_i    y_2_i    1
+            x_2_i+1  y_2_i+1  1
+            ...      ...      ...
 
     x_1*x_2*F_1_1 + x_1*y_2*F_2_1 + x_1*F_3_1 + y_1*x_2*F_1_2 + y_1*y_2*F_2_2
         + y_1*F_3_2 + x_2*F_1_3 + y_2*F_2_3 + F_3_3 = 0
@@ -66,7 +74,9 @@ import no.uib.cipr.matrix.SVD;
     A * f = 0
 
     where A = x_1*x_2, x_1*y_2, x_1, y_1*x_2, y_1*y_2, y_1, x_2, y_2, 1
-
+             (which is each element of column 0 of u_1 dotted separately with
+             row 0 of u2_T)
+ 
     To avoid the trivial scale, ||f|| = 1 where f is the norm of f
 
     And we need least squares fits because the set may be over determined
@@ -144,14 +154,19 @@ import no.uib.cipr.matrix.SVD;
  The normalization and denormalization steps before and following the solution,
  are the same as in the 8-point solution.
 
- this from comments in the Hartley & Zisserman mattlab code vgg_F_from_7pts_2img:
+ this from comments in the Hartley & Zisserman matlab code vgg_F_from_7pts_2img:
    Solutions for the 7-points are pruned by requirement that
    scalars s in all equations s * cross(e1,u_1) == F*u_2 are positive.
    In case of multiple solutions, F has one dimension
    more such that F(:,:,n) is the n-th solution.
 
  </pre>
- *
+ NOTE:
+For "7-point" correspondences, consider implementing MLESAC.
+     "MLESAC: A new robust estimator with application to estimating image geometry"
+     by P. H. S. Torr and A. Zisserman
+     1996 http://www.robots.ox.ac.uk/~vgg/publications/papers/torr00.pdf
+ 
  * @author nichole
  */
 public class EpipolarTransformer {
@@ -526,7 +541,7 @@ public class EpipolarTransformer {
             Y = [0      e1(3)  -e1(2)
                 -e1(3)  0      e1(1)
                  e1(2) -e1(1)  0];
-        NOTE: '.*' is mattlab notation to operate on each field
+        NOTE: '.*' is matlab notation to operate on each field
         NOTE: the ' is mathematica syntax for conjugate transpose, a.k.a.
                the Hermitian. it's a matrix with signs reversed for imaginary
                 components of complex numbers and then the matrix transposed.
@@ -567,7 +582,7 @@ public class EpipolarTransformer {
         double[][] l1 = MatrixUtil.multiply(contrepsE1, MatrixUtil.convertToRowMajor(leftXY));
 
         // s = sum( (F*x2) .* l1 );
-        // .* is mattlab notation 
+        // .* is matlab notation 
         // https://www.mathworks.com/help/matlab/ref/times.html
         
         // 3 X 7
@@ -582,7 +597,7 @@ public class EpipolarTransformer {
             }
         }
         
-        // mattlab sum function:
+        // matlab sum function:
         //    If A is a matrix, then sum(A) returns a row vector containing 
         //    the sum of each column.
         double[] sum = new double[fx2l1.numColumns()];
@@ -613,6 +628,8 @@ public class EpipolarTransformer {
 
     DenseMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
 
+        //solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a3 = 0;
+        
         double a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
         double a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
         double a2 = calculateCubicRoot1stOrderCoefficientFor7Point(ff1, ff2);
