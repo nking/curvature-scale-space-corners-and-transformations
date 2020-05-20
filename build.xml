@@ -97,10 +97,10 @@
     <target name="clean"
         description="Delete dirs: build, doc/api, and src tree classes">
         <delete dir="${doc.dir}/api"/>
-        <delete>
+        <delete quiet="true">
             <fileset dir="${classes.dir}" />
         </delete>
-        <delete>
+        <delete quiet="true">
             <fileset dir="${log.dir}" includes="*" />
         </delete>
     </target>
