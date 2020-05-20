@@ -411,18 +411,18 @@ public class EpipolarTransformer {
         for (int i = 0; i < 3; i++) {
 
             ff1[i] = new double[3];
+            ff2[i] = new double[3];
+            
             ff1[i][0] = nullSpace.get((i * 3) + 0, 0);
             ff1[i][1] = nullSpace.get((i * 3) + 1, 0);
             ff1[i][2] = nullSpace.get((i * 3) + 2, 0);
-
-            ff2[i] = new double[3];
             ff2[i][0] = nullSpace.get((i * 3) + 0, 1);
             ff2[i][1] = nullSpace.get((i * 3) + 1, 1);
             ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
         }
 
-        //DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
-        DenseMatrix[] solutions = solveFor7Point2(ff1, ff2);
+        DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
+        //DenseMatrix[] solutions = solveFor7Point2(ff1, ff2);
         
         //denormalize:  F = (T_1)^T * F * T_2
         //    T_1 is normalizedXY1.getNormalizationMatrix();
@@ -443,19 +443,19 @@ public class EpipolarTransformer {
             
             DenseMatrix validated = validateSolution(solution, 
                 normalizedXY1.getXy(), normalizedXY2.getXy());
-
-            DenseMatrix denormFundamentalMatrix =
-                MatrixUtil.multiply(t1Transpose,
-                    MatrixUtil.multiply(solution, t2));
-
-            double s = 1./(denormFundamentalMatrix.get(2, 2) + eps);
-            MatrixUtil.multiply(denormFundamentalMatrix, s);
-
-            denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
-
             
             if (validated != null) {
-                denormalizedSolutions.add(validated);
+                
+                DenseMatrix denormFundamentalMatrix
+                        = MatrixUtil.multiply(t1Transpose,
+                                MatrixUtil.multiply(validated, t2));
+
+                double s = 1. / (denormFundamentalMatrix.get(2, 2) + eps);
+                MatrixUtil.multiply(denormFundamentalMatrix, s);
+
+                denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
+
+                denormalizedSolutions.add(denormFundamentalMatrix);
             }
             
             //denormalizedSolutions.add(denormFundamentalMatrix);
@@ -1027,17 +1027,13 @@ public class EpipolarTransformer {
 
         // keep the largest 2 values in sDiag to make the diagonal rank 2
         DenseMatrix d = new DenseMatrix(3, 3);
+        d = (DenseMatrix)d.zero();
         if (sDiag.length > 0) {
             d.set(0, 0, sDiag[0]);
-        } else {
-            d.set(0, 0, 0);
         }
         if (sDiag.length > 1) {
             d.set(1, 1, sDiag[1]);
-        } else {
-            d.set(1, 1, 0);
         }
-        d.set(2, 2, 0);
 
         /*
         multiply the terms:
