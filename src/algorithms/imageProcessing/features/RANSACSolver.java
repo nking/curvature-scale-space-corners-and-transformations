@@ -1,8 +1,10 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.Distances;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
+import algorithms.imageProcessing.transform.Util;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.Misc;
@@ -63,14 +65,12 @@ public class RANSACSolver {
             "the algorithms require 7 or more points.  matchedLeftXY.n=" 
             + matchedLeftXY.getN());
         }
-
-        EpipolarTransformer spTransformer = new EpipolarTransformer();
         
         DenseMatrix input1 =
-            spTransformer.rewriteInto3ColumnMatrix(matchedLeftXY);
+            Util.rewriteInto3ColumnMatrix(matchedLeftXY);
 
         DenseMatrix input2 =
-            spTransformer.rewriteInto3ColumnMatrix(matchedRightXY);
+            Util.rewriteInto3ColumnMatrix(matchedRightXY);
         
         return calculateEpipolarProjection(input1, input2,
             outputLeftXY, outputRightXY);
@@ -197,12 +197,14 @@ public class RANSACSolver {
                 continue;
             }
 
+            Distances distances = new Distances();
+            
             // use point dist to epipolar lines to estimate errors of sample
             EpipolarTransformationFit fit = null;
             
             for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    spTransformer.calculateError(fm, matchedLeftXY, 
+                    distances.calculateError(fm, matchedLeftXY, 
                         matchedRightXY, errorType, tolerance);
                 
                 if (fitI.isBetter(fit)) {
@@ -256,6 +258,8 @@ public class RANSACSolver {
             count++;
         }
 
+        Distances distances = new Distances();
+        
         EpipolarTransformationFit consensusFit = null;
         
         if (inliersRightXY.numColumns() == 7) {
@@ -268,7 +272,7 @@ public class RANSACSolver {
             EpipolarTransformationFit fit = null;
             for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    spTransformer.calculateError(fm, matchedLeftXY, 
+                    distances.calculateError(fm, matchedLeftXY, 
                         matchedRightXY, errorType, tolerance);
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
@@ -281,9 +285,9 @@ public class RANSACSolver {
             DenseMatrix fm = 
                 spTransformer.calculateEpipolarProjection(
                 inliersLeftXY, inliersRightXY);
-            
+                        
             EpipolarTransformationFit fit = 
-                spTransformer.calculateError(fm, matchedLeftXY, 
+                distances.calculateError(fm, matchedLeftXY, 
                     matchedRightXY, errorType, tolerance);
             
             consensusFit = fit;

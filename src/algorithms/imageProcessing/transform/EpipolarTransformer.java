@@ -9,6 +9,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -344,8 +345,8 @@ public class EpipolarTransformer {
         }
 
         return calculateEpipolarProjectionFor7Points(
-            rewriteInto3ColumnMatrix(pointsLeftXY),
-            rewriteInto3ColumnMatrix(pointsRightXY));
+            Util.rewriteInto3ColumnMatrix(pointsLeftXY),
+            Util.rewriteInto3ColumnMatrix(pointsRightXY));
     }
 
     /**
@@ -401,6 +402,7 @@ public class EpipolarTransformer {
         }
 
         // nCols = 9
+        // These are the last 2 columns of V
         DenseMatrix nullSpace = algorithms.imageProcessing.util.MatrixUtil.nullSpace(svd);
 
 
@@ -419,16 +421,18 @@ public class EpipolarTransformer {
             ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
         }
 
-        DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
-
+        //DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
+        DenseMatrix[] solutions = solveFor7Point2(ff1, ff2);
+        
         //denormalize:  F = (T_1)^T * F * T_2
         //    T_1 is normalizedXY1.getNormalizationMatrix();
         //    T2 is normalizedXY2.getNormalizationMatrix();
 
         List<DenseMatrix> denormalizedSolutions = new ArrayList<DenseMatrix>();
 
-        DenseMatrix t1Transpose = (DenseMatrix) normalizedXY1
-            .getNormalizationMatrix().transpose();
+        //DenseMatrix t1Transpose = (DenseMatrix) normalizedXY1
+        //    .getNormalizationMatrix().transpose();
+        DenseMatrix t1Transpose = MatrixUtil.transpose(normalizedXY1.getNormalizationMatrix());
         DenseMatrix t2 = normalizedXY2.getNormalizationMatrix();
 
         for (DenseMatrix solution : solutions) {
@@ -450,8 +454,6 @@ public class EpipolarTransformer {
             denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
 
             
-            
-
             if (validated != null) {
                 denormalizedSolutions.add(validated);
             }
@@ -661,6 +663,138 @@ public class EpipolarTransformer {
 
         return solutions;
     }
+    
+    /**
+     * This method is ported from the matlab code from the book
+     * @Book{Hartley2004,
+            author = "Hartley, R.~I. and Zisserman, A.",
+            title = "Multiple View Geometry in Computer Vision",
+            edition = "Second",
+            year = "2004",
+            publisher = "Cambridge University Press, ISBN: 0521540518"
+        }
+     * https://www.robots.ox.ac.uk/~vgg/hzbook/code/
+     * The code is available using the MIT license.
+     * 
+     * code VGG_SINGF_FROM_FF.m
+     * 
+     * @param ff1  3X3
+     * @param ff2  3X3
+     * @return 
+     */
+    DenseMatrix[] solveFor7Point2(double[][] ff1, double[][] ff2) {
+
+        double[][][] d = new double[2][2][2];
+        for (int i1 = 0; i1 < 2; ++i1) {
+            d[i1] = new double[2][2];
+            for (int i2 = 0; i2 < 2; ++i2) {
+                d[i1][i2] = new double[2];
+            }
+        }
+        
+        double[][] f1, f2, f3;
+        double[][] tempF = new double[3][3];
+        for (int i = 0; i < 3; ++i) {
+            tempF[i] = new double[3];
+        }
+        
+        for (int i1 = 0; i1 < 2; ++i1) {
+            if (i1 == 0) {
+                f1 = ff1;
+            } else {
+                f1 = ff2;
+            }
+            tempF[0][0] = f1[0][0];
+            tempF[0][1] = f1[1][0];
+            tempF[0][2] = f1[2][0];
+            for (int i2 = 0; i2 < 2; ++i2) {
+                if (i2 == 0) {
+                    f2 = ff1;
+                } else {
+                    f2 = ff2;
+                }
+                tempF[1][0] = f2[0][1];
+                tempF[1][1] = f2[1][1];
+                tempF[1][2] = f2[2][1];
+                for (int i3 = 0; i3 < 2; ++i3) {
+                    if (i3 == 0) {
+                        f3 = ff1;
+                    } else {
+                        f3 = ff2;
+                    }
+                    tempF[2][0] = f3[0][2];
+                    tempF[2][1] = f3[1][2];
+                    tempF[2][2] = f3[2][2];
+                    //d[i1][i2][i3] = det([F{i1}(:,1) F{i2}(:,2) F{i3}(:,3)]);
+                    d[i1][i2][i3] = algorithms.imageProcessing.util.MatrixUtil.determinant(tempF);
+                }
+            }
+        }
+        
+        //-D(2,1,1)+D(1,2,2)+D(1,1,1)+D(2,2,1)+D(2,1,2)-D(1,2,1)-D(1,1,2)-D(2,2,2)
+        double a0 = -d[1][0][0] + d[0][1][1] + d[0][0][0] + d[1][1][0]
+           + d[1][0][1] - d[0][1][0] - d[0][0][1] - d[1][1][1];
+        
+        //D(1,1,2)-2*D(1,2,2)-2*D(2,1,2)+D(2,1,1)-2*D(2,2,1)+D(1,2,1)+3*D(2,2,2)
+        double a1 = d[0][0][1] - 2.*d[0][1][1] - 2.*d[1][0][1] + d[1][0][0]
+           - 2.*d[1][1][0] + d[0][1][0] + 3.*d[1][1][1];
+                  
+        //D(2,2,1)+D(1,2,2)+D(2,1,2)-3*D(2,2,2)
+        double a2 = d[1][1][0] + d[0][1][1] + d[1][0][1] - 3.*d[1][1][1];
+                
+        //D(2,2,2)]
+        double a3 = d[1][1][1];
+                
+        //solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a3 = 0;
+        
+        double _a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
+        double _a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
+        double _a2 = calculateCubicRoot1stOrderCoefficientFor7Point(ff1, ff2);
+        double _a3 = calculateCubicRoot0thOrderCoefficientFor7Point(ff1, ff2);
+        
+        double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
+        
+        double[] _roots = MiscMath.solveCubicRoots(_a0, _a1, _a2, _a3);
+
+        
+        System.out.println("a0=" + a0);
+        System.out.println("a1=" + a1);
+        System.out.println("a2=" + a2);
+        System.out.println("a3=" + a3);
+        System.out.println("_a0=" + _a0);
+        System.out.println("_a1=" + _a1);
+        System.out.println("_a2=" + _a2);
+        System.out.println("_a3=" + _a3);
+        
+        System.out.println("roots=" + Arrays.toString(roots));
+        System.out.println("_roots=" + Arrays.toString(_roots));
+        System.out.flush();
+        
+        double[][] m = new double[3][];
+        for (int i = 0; i < 3; i++) {
+            m[i] = new double[3];
+        }
+
+        DenseMatrix[] solutions = new DenseMatrix[roots.length];
+
+        for (int i = 0; i < roots.length; i++) {
+
+            //Fi = a(i)*FF{1} + (1-a(i))*FF{2};
+
+            double a = roots[i];
+            double aa = 1. - a;
+            
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 3; col++) {
+                    m[row][col] = (a*ff1[row][col]) + (aa*ff2[row][col]);
+                }
+            }
+
+            solutions[i] = new DenseMatrix(m);
+        }
+
+        return solutions;
+    }
 
     private double calculateCubicRoot3rdOrderCoefficientFor7Point(
         double[][] ff1, double[][] ff2) {
@@ -845,6 +979,8 @@ public class EpipolarTransformer {
         DenseMatrix V = (DenseMatrix) svd.getVt().transpose();
 
         /*
+        DenseMatrix V = MatrixUtil.transpose(svd.getVt());
+
         System.out.println("A=" + aMatrix.toString());
         System.out.println("U=" + svd.getU().toString());
         System.out.println("S=" + Arrays.toString(svd.getS()));
@@ -902,20 +1038,17 @@ public class EpipolarTransformer {
             d.set(1, 1, 0);
         }
         d.set(2, 2, 0);
-        
-
-        V = svd.getVt();
 
         /*
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        DenseMatrix dDotV = MatrixUtil.multiply(d, V);
+        DenseMatrix dDotV = MatrixUtil.multiply(d, svd.getVt());
 
         // 3x3
         DenseMatrix theFundamentalMatrix = MatrixUtil.multiply(svd.getU(), dDotV);
 
-        //System.out.println("fm=" + theFundamentalMatrix.toString());
+        //System.out.println("fm before de-normalization=" + theFundamentalMatrix.toString());
 
         DenseMatrix denormFundamentalMatrix =
             denormalizeTheFundamentalMatrix(theFundamentalMatrix,
@@ -1009,6 +1142,20 @@ public class EpipolarTransformer {
 
         DenseMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, cen0, cen1);
 
+        /*
+        double[][] t = new double[3][];
+        t[0] = new double[]{scale,       0,     -centroidX*scale};
+        t[1] = new double[]{0,           scale, -centroidY*scale};
+        t[2] = new double[]{0,           0,           1};
+        DenseMatrix tMatrix = new DenseMatrix(t);
+        
+        xy is size 3 X nData
+        
+        (x_0*scale-centroidX*scale) ...for i=1 to n
+        (y_0*scale-centroidY*scale)
+        (1)
+        */
+        
         DenseMatrix normXY = new DenseMatrix(MatrixUtil.dot(tMatrix, xy));
 
         NormalizedXY normalizedXY = new NormalizedXY();
@@ -1089,100 +1236,9 @@ public class EpipolarTransformer {
     }
 
     /**
-     * write a matrix of size mRows = 3, nCols = xyPairs.getN()
-     * @param xyPairs
-     * @return
-     */
-    public DenseMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
-
-        DenseMatrix xy = new DenseMatrix(3, xyPairs.getN());
-
-        // rewrite xyPairs into a matrix of size 3 X xy.getN();
-        // row 0 is x
-        // row 1 is y
-        // row 2 is all 1's
-        for (int i = 0; i < xyPairs.getN(); i++) {
-            xy.set(0, i, xyPairs.getX(i));
-            xy.set(1, i, xyPairs.getY(i));
-            xy.set(2, i, 1);
-        }
-
-        return xy;
-    }
-
-    /**
-     * write a matrix of size mRows = 3, nCols = xyPairs.getN()
-     * @param xyPairs
-     * @return
-     */
-    public DenseMatrix rewriteInto3ColumnMatrix(List<PairInt> xyPairs) {
-
-        DenseMatrix xy = new DenseMatrix(3, xyPairs.size());
-
-        // rewrite xyPairs into a matrix of size 3 X xy.getN();
-        // row 0 is x
-        // row 1 is y
-        // row 2 is all 1's
-        for (int i = 0; i < xyPairs.size(); i++) {
-            PairInt p = xyPairs.get(i);
-            xy.set(0, i, p.getX());
-            xy.set(1, i, p.getY());
-            xy.set(2, i, 1);
-        }
-
-        return xy;
-    }
-
-    /**
-     * write a matrix of size mRows = 3, nCols = xyPairs.getN()
-     * @param xyPairs
-     * @return
-     */
-    public DenseMatrix rewriteFirstItemInto3ColumnMatrix(List<List<PairInt>> xyPairs) {
-
-        DenseMatrix xy = new DenseMatrix(3, xyPairs.size());
-
-        // rewrite xyPairs into a matrix of size 3 X xy.getN();
-        // row 0 is x
-        // row 1 is y
-        // row 2 is all 1's
-        for (int i = 0; i < xyPairs.size(); i++) {
-            List<PairInt> points = xyPairs.get(i);
-            PairInt p = points.get(0);
-            xy.set(0, i, p.getX());
-            xy.set(1, i, p.getY());
-            xy.set(2, i, 1);
-        }
-
-        return xy;
-    }
-
-    /**
-     * write a matrix of size mRows = 3, nCols = xyPairs.getN()
-     * @param xyPairs
-     * @return
-     */
-    public DenseMatrix rewriteInto3ColumnMatrix(PairIntArray xyPairs) {
-
-        DenseMatrix xy = new DenseMatrix(3, xyPairs.getN());
-
-        // rewrite xyPairs into a matrix of size 3 X xy.getN();
-        // row 0 is x
-        // row 1 is y
-        // row 2 is all 1's
-        for (int i = 0; i < xyPairs.getN(); i++) {
-            xy.set(0, i, xyPairs.getX(i));
-            xy.set(1, i, xyPairs.getY(i));
-            xy.set(2, i, 1);
-        }
-
-        return xy;
-    }
-
-    /**
-     * @param normXY1 a matrix of size 3 x nPoints, where 1st column is x,
+     * @param normXY1 a matrix of size 3 x nPoints, where 1st row is x,
      * second is y.
-     * @param normXY2 a matrix of size 3 x nPoints, where 1st column is x,
+     * @param normXY2 a matrix of size 3 x nPoints, where 1st row is x,
      * second is y.
      * @return
      */
@@ -1287,130 +1343,6 @@ public class EpipolarTransformer {
         return e;
     }
 
-    private EpipolarFeatureTransformationFit combineErrors(EpipolarTransformationFit
-        distanceErrors, EpipolarFeatureTransformationFit featureErrors) {
-
-        /*
-        in order to have the distance errors count as much as the SSD errors,
-        need to scale them up or SSD down by a factor.
-
-        will use the descriptor size and the average of the maximum SSD that
-        could be calculated and the minimum and make a factor for the
-        distances of SSDFactor/tolerance.
-        */
-
-        // sum square diffs / size = (d0*d0) + (d3*d3).../n
-        double maxSSD = 255. * 255.;
-
-        double distScaleFactor = (maxSSD/2.)/distanceErrors.getTolerance();
-
-        Map<Integer, Double> indexSSDErrorsMap = new HashMap<Integer, Double>();
-        Map<Integer, FeatureComparisonStat> indexFeatureMap =
-            new HashMap<Integer, FeatureComparisonStat>();
-        for (int i = 0; i < featureErrors.getInlierIndexes().size(); ++i) {
-            Integer index = featureErrors.getInlierIndexes().get(i);
-            indexSSDErrorsMap.put(index, featureErrors.getErrors().get(i));
-            indexFeatureMap.put(index,
-                featureErrors.getFeatureComparisonStats().get(i));
-        }
-
-        List<Integer> outputInliers = new ArrayList<Integer>();
-        List<Double> outputDistances = new ArrayList<Double>();
-        List<FeatureComparisonStat> fcs = new ArrayList<FeatureComparisonStat>();
-
-        for (int i = 0; i < distanceErrors.getInlierIndexes().size(); ++i) {
-            Integer index = distanceErrors.getInlierIndexes().get(i);
-            Double ssd = indexSSDErrorsMap.get(index);
-            if (ssd != null) {
-
-                outputInliers.add(index);
-
-                Double dist = distanceErrors.getErrors().get(i);
-                double cost = dist.doubleValue() * ssd.doubleValue();
-                outputDistances.add(Double.valueOf(cost));
-
-                fcs.add(indexFeatureMap.get(index));
-            }
-        }
-        double costTerm2 = 1./(double)outputDistances.size();
-        for (int i = 0; i < outputDistances.size(); ++i) {
-            double err = outputDistances.get(i).doubleValue() * costTerm2 * costTerm2
-                * distScaleFactor;
-            outputDistances.set(i, Double.valueOf(err));
-        }
-
-        EpipolarFeatureTransformationFit fit =
-            new EpipolarFeatureTransformationFit(
-            distanceErrors.getFundamentalMatrix(),
-            outputInliers, fcs,
-            distanceErrors.getErrorType(), outputDistances,
-            distanceErrors.getTolerance());
-
-        return fit;
-    }
-
-    /**
-     * extract a single row from the 3 rows present,
-     * transpose, then replicate that single column.
-     * the result should be m.columns X 3
-     * @param m
-     * @param row
-     * @return matrix of size nData X 3 (== m.numColumns X 3)
-     */
-    private DenseMatrix exRowTRepl(DenseMatrix m, int row) {
-
-         //repmat(X2(3,:)',1,3)
-        //   extract row 2 for all columns (== 1 X nData)
-        //   and transpose that (== nData X 1)
-        //   then replicate that column twice more
-
-        DenseMatrix repl = exRowRepl(m, row);
-
-        return MatrixUtil.transpose(repl);
-    }
-    
-    /**
-     * extract a single row from the 3 rows present,
-     * then replicate that single column.
-     * the result should be 3 X m.columns
-     * @param m
-     * @param row
-     * @return matrix of size 3 X nData (== 3 X m.numColumns)
-     */
-    private DenseMatrix exRowRepl(DenseMatrix m, int row) {
-
-         //repmat(X2(3,:),1,3)
-        //   extract row 2 for all columns (== 1 X nData)
-        //   then replicate that row twice more
-
-        int nCols = m.numColumns();
-
-        DenseMatrix out = new DenseMatrix(3, nCols);
-
-        for (int col = 0; col < m.numColumns(); ++col) {
-            double v = m.get(row, col);
-            for (int row2 = 0; row2 < 3; ++row2) {
-                out.set(row2, col, v);
-            }
-        }
-
-        return out;
-    }
-
-    private double[] sumMult(DenseMatrix m1, DenseMatrix m2) {
-
-        int n = m1.numColumns();
-        
-        double[] out = new double[n];
-        for (int i = 0; i < n; ++i) {
-            for (int row = 0; row < m1.numRows(); ++row) {
-                out[i] += (m1.get(row, i) * m2.get(row, i));
-            }
-        }
-        
-        return out;
-    }
-
     public static class NormalizedXY {
 
         /**
@@ -1504,73 +1436,6 @@ public class EpipolarTransformer {
      * @param tolerance
      * @return
      */
-    public EpipolarTransformationFit calculateEpipolarDistanceError(
-        DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints,
-        double tolerance) {
-
-        if (fm == null) {
-            throw new IllegalArgumentException("fm cannot be null");
-        }
-        if (leftPoints == null) {
-            throw new IllegalArgumentException("leftPoints cannot be null");
-        }
-        if (rightPoints == null) {
-            throw new IllegalArgumentException("rightPoints cannot be null");
-        }
-        int nRows = leftPoints.numRows();
-        if (nRows != rightPoints.numRows()) {
-            throw new IllegalArgumentException("matrices must have same number of rows");
-        }
-
-        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
-
-        PairFloatArray distances = calculateDistancesFromEpipolar(fm,
-            leftPoints, rightPoints);
-
-        List<Double> errors = new ArrayList<Double>();
-
-        List<Integer> inlierIndexes = new ArrayList<Integer>();
-
-        for (int i = 0; i < distances.getN(); ++i) {
-
-            float leftPtD = distances.getX(i);
-
-            float rightPtD = distances.getY(i);
-
-            float dist = (float)Math.sqrt(leftPtD*leftPtD + rightPtD*rightPtD);
-
-            if (dist > tolerance) {
-                continue;
-            }
-
-            inlierIndexes.add(Integer.valueOf(i));
-
-            errors.add(Double.valueOf(dist));
-        }
-
-        EpipolarTransformationFit fit = null;
-
-        if (errors.size() > 0) {
-            fit = new EpipolarTransformationFit(fm, inlierIndexes,
-                ErrorType.DIST_TO_EPIPOLAR_LINE, errors, tolerance);
-        } else {
-            fit = new EpipolarTransformationFit(fm, new ArrayList<Integer>(),
-                ErrorType.DIST_TO_EPIPOLAR_LINE, new ArrayList<Double>(), tolerance);
-        }
-
-        fit.setNMaxMatchable(leftPoints.numColumns());
-
-        return fit;
-    }
-
-    /**
-     * evaluate fit for already matched point lists
-     * @param fm
-     * @param leftPoints
-     * @param rightPoints
-     * @param tolerance
-     * @return
-     */
     public EpipolarTransformationFit calculateEpipolarDistanceErrorThenFilter(
         DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints,
         double tolerance) {
@@ -1591,9 +1456,11 @@ public class EpipolarTransformer {
 
         //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
 
-        PairFloatArray distances = calculateDistancesFromEpipolar(fm,
+        Distances distancesObj = new Distances();
+        
+        PairFloatArray distances = distancesObj.calculateDistancesFromEpipolar(fm,
             leftPoints, rightPoints);
-
+        
         List<Double> errors = new ArrayList<Double>();
 
         List<Integer> inlierIndexes = new ArrayList<Integer>();
@@ -1633,100 +1500,6 @@ public class EpipolarTransformer {
         return fit;
     }
 
-    /**
-     * find the distance of the given points from their respective projective
-     * epipolar lines.
-     * @param fm
-     * @param rightEpipolarLines
-     * @param leftEpipolarLines
-     * @param leftPoints
-     * @param rightPoints
-     * @param tolerance
-     * @return
-     */
-    public PairFloatArray calculateDistancesFromEpipolar(
-        DenseMatrix fm, DenseMatrix matchedLeftPoints,
-        DenseMatrix matchedRightPoints) {
-
-        if (fm == null) {
-            throw new IllegalArgumentException("fm cannot be null");
-        }
-        if (matchedLeftPoints == null) {
-            throw new IllegalArgumentException("matchedLeftPoints cannot be null");
-        }
-        if (matchedRightPoints == null) {
-            throw new IllegalArgumentException("rightPoints cannot be null");
-        }
-        int nRows = matchedLeftPoints.numRows();
-        if (nRows != matchedRightPoints.numRows()) {
-            throw new IllegalArgumentException("matrices must have same number of rows");
-        }
-
-        /*
-        u_2^T * F * u_1 = 0  where u are the x,y points in images _1 and _2
-        u_1 = (x_1, y_1, 1)^T
-        u_2 = (x_2, y_2, 1)^T
-        */
-
-        int n = matchedLeftPoints.numColumns();
-
-        PairFloatArray distances = new PairFloatArray(n);
-
-        DenseMatrix rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);
-
-        DenseMatrix leftEpipolarLines = MatrixUtil.multiply(fm.transpose(),
-            matchedRightPoints);
-
-        float[] output = new float[2];
-
-        for (int i = 0; i < matchedLeftPoints.numColumns(); i++) {
-
-            calculatePerpDistFromLines(matchedLeftPoints,
-                matchedRightPoints, 
-                rightEpipolarLines, leftEpipolarLines,
-                i, i, output);
-
-            distances.add(output[0], output[1]);
-        }
-
-        return distances;
-    }
-
-    public void calculatePerpDistFromLines(DenseMatrix leftPoints,
-        DenseMatrix rightPoints, 
-        DenseMatrix epipolarLinesFromLeft,
-        DenseMatrix epipolarLinesFromRight, 
-        int leftIdx, int rightIdx,
-        float[] output) {
-        
-        double a = epipolarLinesFromLeft.get(0, leftIdx);
-        double b = epipolarLinesFromLeft.get(1, leftIdx);
-        double c = epipolarLinesFromLeft.get(2, leftIdx);
-
-        double aplusb = Math.sqrt((a*a) + (b*b));
-
-        //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
-
-        double x = rightPoints.get(0, rightIdx);
-        double y = rightPoints.get(1, rightIdx);
-
-        double d = (a*x + b*y + c)/aplusb;
-
-        // find the reverse distance by projection:
-        double aRev = epipolarLinesFromRight.get(0, rightIdx);
-        double bRev = epipolarLinesFromRight.get(1, rightIdx);
-        double cRev = epipolarLinesFromRight.get(2, rightIdx);
-
-        double xL = leftPoints.get(0, leftIdx);
-        double yL = leftPoints.get(1, leftIdx);
-
-        double dRev = (aRev*xL + bRev*yL + cRev)/
-            Math.sqrt((aRev*aRev + bRev*bRev));
-
-        output[0] = (float)dRev;
-        output[1] = (float)d;
-    }
-
     public EpipolarTransformationFit calculateErrorThenFilter(DenseMatrix fm,
         DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double tolerance) {
 
@@ -1737,332 +1510,12 @@ public class EpipolarTransformer {
         }
     }
 
-    public EpipolarTransformationFit calculateError(DenseMatrix fm,
-        DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double tolerance) {
-
-        if (errorType.equals(ErrorType.SAMPSONS)) {
-            return calculateSampsonsError(fm, x1, x2, tolerance);
-        } else {
-            return calculateEpipolarDistanceError(fm, x1, x2, tolerance);
-        }
-    }
-
-    /**
-     Return the "algebraic distance" needed for use in calculating
-     Sampson's distance.
-     The algebraic distance has no geometrical significance,
-     (it isn't the perpendicular distance).
-     * The topic is discussed in
-     "The Development and Comparison of Robust Methods
-      for Estimating the Fundamental Matrix" by Torr and Murray, 1997
-      as Equation (2) on page 274.
-      The return here contains 2 matrices which contain parts of equation
-      2, formatted for use in calculating Sampson's distance.
-     <pre>
-     The method is adapted from code from the book
-     "Multiple View Geometry in Computer Vision" by 
-     Hartley and Zisserman, 2004.
-       
-     obtained from 
-     http://www.robots.ox.ac.uk/~vgg/hzbook/
-
-        license is MIT license
-
-        Acknowledgements: These functions are written by: David Capel,
-        Andrew Fitzgibbon, Peter Kovesi, Tomas Werner, Yoni Wexler,
-        and Andrew Zisserman
-     </pre>
-     * @param fm 3 X 3 matrix
-     * @param x1 3 X nData matrix
-     * @param x2 3 X nData matrix
-     * @return DX matrix of size nData X 3 is element 0
-     *         DY matrix of size nData X 3 is element 1
-     */
-    private DenseMatrix[] algebraicDistance(DenseMatrix fm, DenseMatrix x1,
-        DenseMatrix x2) {
-
-        // N = size(X1,2);
-        int n = x1.numColumns();
-
-        //repmat(X2(3,:)',1,3)
-        //   extract row 2 for all columns (== 1 X nData)
-        //   and transpose that (== nData X 1)
-        //   then replicate that column twice more
-        //   to make nData X 3 matrix
-        //X1' is nData X 3
-
-        // x coord of x2
-        DenseMatrix x2RowT0 = exRowTRepl(x2, 0);
-
-        // y coord of x2
-        DenseMatrix x2RowT1 = exRowTRepl(x2, 1);
-
-        DenseMatrix x2RowT2 = exRowTRepl(x2, 2);
-
-        DenseMatrix x1T = MatrixUtil.transpose(x1);
-
-        //nData X 3
-        // x1 times 1 = x1_x, x1_y, 1
-        DenseMatrix dX0 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
-            x1T, x2RowT2);
-        assert(dX0.numRows() == n);
-        assert(dX0.numColumns() == 3);
-
-        //nData X 3
-        DenseMatrix dX1 = new DenseMatrix(x2.numColumns(), 3);
-        assert(dX1.numColumns() == 3);
-        assert(dX1.numRows() == n);
-        
-        //nData X 3
-        // x1 times -x cooord of x2 = x1_x * x2_x, x1_y * x2_x, x2_x
-        DenseMatrix dX2 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
-            x1T, x2RowT0);
-        MatrixUtil.multiply(dX2, -1);
-        assert(dX2.numColumns() == 3);
-        assert(dX2.numRows() == n);
-        
-        //nData X 3
-        DenseMatrix dY0 = new DenseMatrix(x2.numColumns(), 3);
-        assert(dY0.numColumns() == 3);
-        assert(dY0.numRows() == n);
-        
-        //nData X 3
-        // x1 times 1 = x1_x, x1_y, 1
-        DenseMatrix dY1 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
-            x1T, x2RowT2);
-        assert(dY1.numColumns() == 3);
-        assert(dY1.numRows() == n);
-        
-        //nData X 3
-        // x1 times -y cooord x2 = of x1_x * y2_x, x1_y * y2_x, y2_x
-        DenseMatrix dY2 = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(
-            x1T, x2RowT1);
-        MatrixUtil.multiply(dY2, -1);
-        assert(dY2.numColumns() == 3);
-        assert(dY2.numRows() == n);
-        
-        // h = reshape(H',9,1);
-        //reshape draws all from column 0 to copy to column 0 of output, etc
-        DenseMatrix fmT = MatrixUtil.transpose(fm);
-        double[] h2 = new double[9];
-        int count = 0;
-        for (int col = 0; col < fmT.numColumns(); ++col) {
-            for (int row = 0; row < fmT.numRows(); ++row) {
-                h2[count] = fmT.get(row, col);
-                count++;
-            }
-        }
-        assert(count == 9);
-
-        // d = [Dx * h , Dy * h]';
-        //     [nData X 3, nData X 3, nData X 3] * 9 X 1, ...
-        //     results in [nData X 3 matrix, nData X 3 matrix]^T
-
-        //nData X 3
-        DenseMatrix dXAll = new DenseMatrix(n, 3);
-        //nData X 3
-        DenseMatrix dYAll = new DenseMatrix(n, 3);
-        assert(dX0.numRows() == n);
-        // dot each row of dX0 by first 3 elements of h2, etc
-        for (int row = 0; row < dX0.numRows(); ++row) {
-            double sumdX0 = 0;
-            double sumdX1 = 0;
-            double sumdX2 = 0;
-            double sumdY0 = 0;
-            double sumdY1 = 0;
-            double sumdY2 = 0;
-            for (int col = 0; col < dX0.numColumns(); ++col) {
-                sumdX0 = (dX0.get(row, col) * h2[col]);
-                sumdX1 = (dX1.get(row, col) * h2[col + 3]);
-                sumdX2 = (dX2.get(row, col) * h2[col + 6]);
-                sumdY0 = (dY0.get(row, col) * h2[col]);
-                sumdY1 = (dY1.get(row, col) * h2[col + 3]);
-                sumdY2 = (dY2.get(row, col) * h2[col + 6]);
-            }
-            // row, col=0 for dX0
-            // row, col=1 for dX1
-            // row, col=2 for dX2
-            dXAll.set(row, 0, sumdX0);
-            dXAll.set(row, 1, sumdX1);
-            dXAll.set(row, 2, sumdX2);
-            dYAll.set(row, 0, sumdY0);
-            dYAll.set(row, 1, sumdY1);
-            dYAll.set(row, 2, sumdY2);
-        }
-        
-        return new DenseMatrix[]{dXAll, dYAll};
-    }
-
-    /**
-     * calculate the Sampson's error for the correspondence and given
-     * fundamental matrix.
-     * 
-     <pre>
-     The method is adapted from code from the book
-     "Multiple View Geometry in Computer Vision" by 
-     Hartley and Zisserman, 2004.
-       
-     obtained from 
-     http://www.robots.ox.ac.uk/~vgg/hzbook/
-
-        license is MIT license
-
-        Acknowledgements: These functions are written by: David Capel,
-        Andrew Fitzgibbon, Peter Kovesi, Tomas Werner, Yoni Wexler,
-        and Andrew Zisserman
-     </pre>
-     
-     * @param fm
-     * @param x1
-     * @param x2
-     * @param tolerance .001
-     * @return 
-     */
-    public EpipolarTransformationFit calculateSampsonsError(DenseMatrix fm,
-        DenseMatrix x1, DenseMatrix x2, double tolerance) {
-
-        if (fm == null) {
-            throw new IllegalArgumentException("fm cannot be null");
-        }
-        if (x1 == null) {
-            throw new IllegalArgumentException("x1 cannot be null");
-        }
-        if (x2 == null) {
-            throw new IllegalArgumentException("x2 cannot be null");
-        }
-        if (fm.numRows() != 3 || fm.numColumns() != 3) {
-            throw new IllegalArgumentException("fm should have 3 rows and 3 columns");
-        }
-        if (x1.numRows() != 3 || x2.numRows() != 3) {
-            throw new IllegalArgumentException("x1 and x2 must "
-                + "have 3 rows");
-        }
-        if (x1.numColumns() != x2.numColumns()) {
-            throw new IllegalArgumentException("x1 and x2 must be same sizes");
-        }
-
-        int n = x1.numColumns();
-
-        /*        
-        geometric error of the final solution or the 7-point sample trial,
-        can be approximated by Sampson's error:
-             (x2_i * F * x1_i^T)^2                 (x2_i * F * x1_i^T)^2
-           ---------------------------------  +  ---------------------------
-             (F*x1_i^T)_x^2 + (F*x1_i^T)_y^2     (x2_i*F)_x^2 + (x2_i*F)_y^2
-        */
-        
-        // 3 X nData
-        // inverse of x and y coordinates
-        DenseMatrix p1 = exRowRepl(x1, 2); 
-        DenseMatrix p2 = exRowRepl(x2, 2);
-        assert(p1.numRows() == 3);
-        assert(p2.numRows() == 3);
-        assert(p1.numColumns() == n);
-        assert(p2.numColumns() == n);
-        for (int row = 0; row < 3; ++row) {
-            for (int col = 0; col < n; ++col) {
-                double v = p1.get(row, col)/(x1.get(row, col) + eps);
-                p1.set(row, col, v);
-                v = p2.get(row, col)/(x2.get(row, col) + eps);
-                p2.set(row, col, v);
-            }
-        }
-        
-        //DX matrix of size nData X 3, DY matrix of size nData X 3
-        DenseMatrix[] alg = algebraicDistance(fm, p1, p2);
-        assert(alg[0].numRows() == n);
-        assert(alg[0].numColumns() == 3);
-        assert(alg[1].numRows() == n);
-        assert(alg[1].numColumns() == 3);
-        
-        DenseMatrix g1 = new DenseMatrix(4, n);
-        DenseMatrix g2 = new DenseMatrix(4, n);
-        for (int i = 0; i < n; ++i) {
-            double v1 = fm.get(0, 0) - p2.get(0, i) * fm.get(2, 0);
-            double v2 = fm.get(1, 0) - p2.get(1, i) * fm.get(2, 0);
-            g1.set(0, i, v1);
-            g2.set(0, i, v2);
-            v1 = fm.get(0, 1) - p2.get(0, i) * fm.get(2, 1);
-            v2 = fm.get(1, 1) - p2.get(1, i) * fm.get(2, 1);
-            g1.set(1, i, v1);
-            g2.set(1, i, v2);
-            double v = -1 * p1.get(0, i) * fm.get(2, 0) 
-                - p1.get(1, i) * fm.get(2, 1) - fm.get(2, 2);
-            g1.set(2, i, v);
-            g2.set(3, i, v);
-        }
-        
-        // nData X 1        
-        double[] magG1 = sumMult(g1, g1);
-        double[] magG2 = sumMult(g2, g2);
-        assert(magG1.length == n);
-        assert(magG2.length == n);
-        for (int i = 0; i < n; ++i) {
-            magG1[i] = Math.sqrt(magG1[i]);
-            magG2[i] = Math.sqrt(magG2[i]);
-        }
-        // nData X 1
-        double[] magG1G2 = sumMult(g1, g2);
-        
-        double[] alpha = new double[n];
-        for (int i = 0; i < n; ++i) {
-            double v1 = magG1G2[i];
-            double v2 = magG1[i] * magG2[i];
-            double v = v1/(v2 + eps);
-            if (!(v < 1.)) {
-                System.out.format("v1=%.3f, v2=%.3f, v=%.3f\n", 
-                        (float)v1, (float)v2, (float)v);
-            }
-            assert(v < 1.);
-            alpha[i] = Math.acos(v);
-        }
-        
-        /*DX, which is alg[0]
-        // X1 times 1 * h[0:3]
-        // zeroes
-        // X1 times -x cooord of X2 * h[6:9]
-        
-        DY, which is alg[1]
-        // zeroes
-        // X1 times 1    * h[3:6]
-        // X1 times -y cooord of X2 * h[6:9]
-        
-        p1,p2 are inverse of x and y coords
-        
-        g1, g2 are composed of x and y inverse times fm
-        */
-        
-        List<Integer> outputInliers = new ArrayList<Integer>();
-        List<Double> outputDistances = new ArrayList<Double>();
-        
-        for (int i = 0; i < n; ++i) {
-            double d1 = alg[0].get(i, 0)/(magG1[i] + eps);
-            double d2 = alg[1].get(i, 1)/(magG2[i] + eps);
-            double d = (
-                (d1 * d1) + (d2 * d2) 
-                - (2. * d1 * d2 * Math.cos(alpha[i])/Math.sin(alpha[i])));
-            
-            //System.out.println("d=" + d);
-            
-            if (d < tolerance) {
-                outputInliers.add(Integer.valueOf(i));
-                outputDistances.add(Double.valueOf(d));
-            }
-        }
-      
-        EpipolarTransformationFit fit = new EpipolarTransformationFit(fm,
-            outputInliers, ErrorType.SAMPSONS, outputDistances, tolerance);
-
-        fit.setNMaxMatchable(x1.numColumns());
-
-        return fit;
-    }
-
     //follow errors w/ filter for degeneracy
     public EpipolarTransformationFit calculateSampsonsErrorThenFilter(DenseMatrix fm,
         DenseMatrix x1, DenseMatrix x2, double tolerance) {
 
-        EpipolarTransformationFit fit = calculateSampsonsError(
+        Distances distances = new Distances();
+        EpipolarTransformationFit fit = distances.calculateSampsonsError(
             fm, x1, x2, tolerance);
         
         List<Integer> outputInliers = fit.getInlierIndexes();
