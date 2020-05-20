@@ -210,8 +210,8 @@ public class EpipolarTransformer {
         }
 
         return calculateEpipolarProjection(
-            rewriteInto3ColumnMatrix(pointsLeftXY),
-            rewriteInto3ColumnMatrix(pointsRightXY));
+            Util.rewriteInto3ColumnMatrix(pointsLeftXY),
+            Util.rewriteInto3ColumnMatrix(pointsRightXY));
     }
 
     /**
@@ -828,6 +828,10 @@ public class EpipolarTransformer {
         */
         DenseMatrix aMatrix = new DenseMatrix(m);
 
+        //aMatrix is m x n  (== nData X 9)
+        // U   is  m X m     the left singular vectors, column-wise. Not available for partial decompositions
+        // S   is  min(m, n) the singular values (stored in descending order)
+        // V^T is  n X n     the right singular vectors, row-wise. Not available for partial decompositions
         SVD svd = null;
         try {
             svd = SVD.factorize(aMatrix);
@@ -840,12 +844,15 @@ public class EpipolarTransformer {
 
         DenseMatrix V = (DenseMatrix) svd.getVt().transpose();
 
-        // creates U as nXY1 x nXY1 matrix  (M X M)
-        //         D as length 3 array      (vector of len N)
-        //         V as 9 x 9 matrix        (N*N X N*N)
-
-        // mRows = 9; nCols = 9
-
+        /*
+        System.out.println("A=" + aMatrix.toString());
+        System.out.println("U=" + svd.getU().toString());
+        System.out.println("S=" + Arrays.toString(svd.getS()));
+        System.out.println("V^T=" + svd.getVt().toString());
+        System.out.println("V=" + V.toString());
+        System.out.flush();
+        */
+        
         // reshape V to 3x3  (just the last column)
 
         int vNCols = V.numColumns();
@@ -886,10 +893,16 @@ public class EpipolarTransformer {
         DenseMatrix d = new DenseMatrix(3, 3);
         if (sDiag.length > 0) {
             d.set(0, 0, sDiag[0]);
+        } else {
+            d.set(0, 0, 0);
         }
         if (sDiag.length > 1) {
             d.set(1, 1, sDiag[1]);
+        } else {
+            d.set(1, 1, 0);
         }
+        d.set(2, 2, 0);
+        
 
         V = svd.getVt();
 
