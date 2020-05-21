@@ -28,7 +28,7 @@ public class RANSACSolverTest extends TestCase {
     public RANSACSolverTest() {
     }
 
-    public void testRANSAC() throws Exception {
+    public void estRANSAC() throws Exception {
     
         //TODO: add the reference for this data here.
         
@@ -77,7 +77,7 @@ public class RANSACSolverTest extends TestCase {
         overplotEpipolarLines(fit.getFundamentalMatrix(), outputLeft, outputRight,
             img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
-            Integer.valueOf(0).toString()); 
+            "r" + Integer.valueOf(0).toString()); 
         
         int n = outputLeft.getN();
         
@@ -102,7 +102,7 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testErrors_stereo_01() {
+    public void estErrors_stereo_01() throws IOException {
         
         // 1024 X 768
         String fileName1 = "merton_college_I_001.jpg";
@@ -122,6 +122,21 @@ public class RANSACSolverTest extends TestCase {
         assertEquals(m2.getN(), out2.getN());
         
         DenseMatrix fm = fit.getFundamentalMatrix();
+        
+        
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+        overplotEpipolarLines(fit.getFundamentalMatrix(), m1, m2,
+            img1, img2, 
+            image1Width, image1Height, image2Width, image2Height, 
+            "r" + Integer.valueOf(1).toString()); 
+        
         /*
         System.out.print("fm.errors=");
         for (Double d : fit.getErrors()) {
@@ -138,6 +153,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         Distances distances = new Distances();
+        
+        double tolerance = 4;
         
         // the 2 distances:
         float[] outputDist = new float[2];
@@ -157,9 +174,9 @@ public class RANSACSolverTest extends TestCase {
             //  matrix, can expect these to be <0.001
             assertTrue(
                 Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < 0.01);
-            assertTrue(Math.abs(outputDist[0]) < 0.01);
-            assertTrue(Math.abs(outputDist[1]) < 0.01);
+                < tolerance);
+            assertTrue(Math.abs(outputDist[0]) < tolerance);
+            assertTrue(Math.abs(outputDist[1]) < tolerance);
         }
                 
         // some points which are matches, but aren't in the
@@ -212,11 +229,11 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testErrors_panoramic_01() {
+    public void estErrors_panoramic_01() throws IOException {
         
         // 617 X 874
-        String fileName1 = "brown_lowe_image1.jpg";
-        String fileName2 = "brown_lowe_image2.jpg";
+        String fileName1 = "brown_lowe_2003_image1.jpg";
+        String fileName2 = "brown_lowe_2003_image2.jpg";
         
         PairIntArray m1 = new PairIntArray(7);
         PairIntArray m2 = new PairIntArray(7);
@@ -232,6 +249,19 @@ public class RANSACSolverTest extends TestCase {
         assertEquals(m2.getN(), out2.getN());
         
         DenseMatrix fm = fit.getFundamentalMatrix();
+        
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+        overplotEpipolarLines(fit.getFundamentalMatrix(), m1, m2,
+            img1, img2, 
+            image1Width, image1Height, image2Width, image2Height, 
+            "r" + Integer.valueOf(2).toString());
         
         /*
         System.out.print("fm.errors=");
@@ -250,6 +280,8 @@ public class RANSACSolverTest extends TestCase {
 
         Distances distances = new Distances();
         
+        double tolerance = 4;
+        
         // the 2 distances:
         float[] outputDist = new float[2];
         for (int i = 0; i < m1.getN(); ++i) {
@@ -265,9 +297,9 @@ public class RANSACSolverTest extends TestCase {
                 fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
         
             assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < 0.001);
-            assertTrue(Math.abs(outputDist[0]) < 0.001);
-            assertTrue(Math.abs(outputDist[1]) < 0.001);
+                < tolerance);
+            assertTrue(Math.abs(outputDist[0]) < tolerance);
+            assertTrue(Math.abs(outputDist[1]) < tolerance);
         }
                 
         // some points which are matches, but aren't in the
@@ -312,37 +344,51 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testErrors_moderateProjection_01() {
+    public void testErrors_moderateProjection_01() throws IOException {
         
         // 480 X 640
-        String fileName1 = "campus_010";
-        String fileName2 = "campus_011";
+        String fileName1 = "campus_010.jpg";
+        String fileName2 = "campus_011.jpg";
         
-        PairIntArray m1 = new PairIntArray(7);
-        PairIntArray m2 = new PairIntArray(7);
-        populateWithCampusMatches7(m1, m2);
-                
+        PairIntArray m1 = new PairIntArray();
+        PairIntArray m2 = new PairIntArray();
+        populateWithCampusMatchesMoreThan7(m1, m2);
+            
         PairIntArray out1 = new PairIntArray(m1.getN());
         PairIntArray out2 = new PairIntArray(m1.getN());
+        
         RANSACSolver solver = new RANSACSolver();
+        
         EpipolarTransformationFit fit
             = solver.calculateEpipolarProjection(m1, m2, out1, out2);
 
-        assertEquals(m1.getN(), out1.getN());
-        assertEquals(m2.getN(), out2.getN());
-        
         DenseMatrix fm = fit.getFundamentalMatrix();
         
-        /*
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+        
+        overplotEpipolarLines(fm, m1, m2,
+            img1, img2, image1Width, image1Height, image2Width, image2Height, 
+            "r" + Integer.valueOf(3).toString());
+                
+        System.out.print("fm=" + fm.toString());
         System.out.print("fm.errors=");
         for (Double d : fit.getErrors()) {
             System.out.println(" " + d);
         }
-        System.out.println("");
-        */
-        System.out.println("fm tolerance = " 
-            + fit.getTolerance());
-                
+        System.out.println("");        
+        System.out.println("fm tolerance = " + fit.getTolerance());
+        System.out.flush();
+        
+        assertEquals(m1.getN(), out1.getN());
+        assertEquals(m2.getN(), out2.getN());
+        
         EpipolarTransformer eTransformer = new EpipolarTransformer();
         
         DenseMatrix m1m = Util.rewriteInto3ColumnMatrix(m1);
@@ -352,6 +398,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         Distances distances = new Distances();
+       
+        double tolerance = 4;
         
         // the 2 distances:
         float[] outputDist = new float[2];
@@ -366,59 +414,17 @@ public class RANSACSolverTest extends TestCase {
             System.out.println(String.format(
                 "fm dists=(%.2f)  unnorm dists=(%.2f, %.2f)", 
                 fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
+            System.out.flush();
         
             assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < 0.001);
-            assertTrue(Math.abs(outputDist[0]) < 0.001);
-            assertTrue(Math.abs(outputDist[1]) < 0.001);
-        }
-                
-        // some points which are matches, but aren't in the
-        // 7 points list:
-        /*
-        131, 153  389, 156
-        175, 350  439, 354
-        */
-        
-        PairIntArray points1 = new PairIntArray(4);
-        PairIntArray points2 = new PairIntArray(4);
-        points1.add(131, 153);   points2.add(389, 156);
-        points1.add(175, 350);   points2.add(439, 354);
-        // add a few bad matches
-        points1.add(131, 153);   points2.add(389, 156 + 10);
-        points1.add(175, 350);   points2.add(439, 354 + 10);
-        points1.add(131, 153);   points2.add(389, 156 + 100);
-        points1.add(175, 350);   points2.add(439, 354 + 100);
-        
-        DenseMatrix p1m = Util.rewriteInto3ColumnMatrix(points1);
-        DenseMatrix p2m = Util.rewriteInto3ColumnMatrix(points2);
-        
-        //3 X N
-        DenseMatrix p2EpipolarLines 
-            = MatrixUtil.multiply(fm, p1m);
-        DenseMatrix p1EpipolarLines 
-            = MatrixUtil.multiply(fm.transpose(), p2m);
-        
-        for (int i = 0; i < points1.getN(); ++i) {
-            int j = i;
-            
-            distances.calculatePerpDistFromLines(
-                p1m, p2m, 
-                p2EpipolarLines, p1EpipolarLines, 
-                i, j, outputDist);
-            
-            float dist = (Math.abs(outputDist[0]) + 
-                Math.abs(outputDist[1]))/2.f;
-            
-            System.out.println(String.format(
-                "extr: fm p unnorm dists=(%.2f, %.2f) ==> %.3f", 
-                outputDist[0], outputDist[1], dist));
-            
+                < tolerance);
+            assertTrue(Math.abs(outputDist[0]) < tolerance);
+            assertTrue(Math.abs(outputDist[1]) < tolerance);
         }
         
     }
     
-    public void testErrors_moderateProjection_02() {
+    public void estErrors_moderateProjection_02() {
         
         // scaled versions of android 04 and 02
         
@@ -432,6 +438,7 @@ public class RANSACSolverTest extends TestCase {
         EpipolarTransformationFit fit
             = solver.calculateEpipolarProjection(m1, m2, out1, out2);
 
+        
         assertEquals(m1.getN(), out1.getN());
         assertEquals(m2.getN(), out2.getN());
         
@@ -454,6 +461,8 @@ public class RANSACSolverTest extends TestCase {
 
         Distances distances = new Distances();
         
+        double tolerance = 4;
+        
         // the 2 distances:
         float[] outputDist = new float[2];
         for (int i = 0; i < m1.getN(); ++i) {
@@ -469,9 +478,9 @@ public class RANSACSolverTest extends TestCase {
                 fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
         
             assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < 0.001);
-            assertTrue(Math.abs(outputDist[0]) < 0.001);
-            assertTrue(Math.abs(outputDist[1]) < 0.001);
+                < tolerance);
+            assertTrue(Math.abs(outputDist[0]) < tolerance);
+            assertTrue(Math.abs(outputDist[1]) < tolerance);
         }
                 
         // some points which are matches, but aren't in the
@@ -595,6 +604,20 @@ public class RANSACSolverTest extends TestCase {
         xy1.add(172, 254);  xy2.add(433, 256);
         xy1.add(209, 337);  xy2.add(472, 342);
         xy1.add(84, 272);  xy2.add(345, 275);
+    }
+    
+    private void populateWithCampusMatchesMoreThan7(PairIntArray xy1,
+        PairIntArray xy2) {
+        
+        xy1.add(10, 336);  xy2.add(272, 339);
+        xy1.add(73, 206);  xy2.add(334, 212);
+        xy1.add(33, 126);  xy2.add(294, 134);
+        xy1.add(192, 103);  xy2.add(452, 101);
+        xy1.add(172, 254);  xy2.add(433, 256);
+        xy1.add(209, 337);  xy2.add(472, 342);
+        xy1.add(84, 272);  xy2.add(345, 275);
+        xy1.add(131, 153);  xy2.add(389, 156);
+        xy1.add(175, 350);  xy2.add(439, 354);
     }
     
     protected void getMertonCollege10TrueMatches(PairIntArray left, 

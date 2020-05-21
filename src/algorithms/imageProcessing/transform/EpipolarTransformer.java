@@ -437,26 +437,23 @@ public class EpipolarTransformer {
 
         for (DenseMatrix solution : solutions) {
 
-            if (solution == null) {
-                continue;
-            }
-            
             DenseMatrix validated = validateSolution(solution, 
                 normalizedXY1.getXy(), normalizedXY2.getXy());
             
-            if (validated != null) {
-                
-                DenseMatrix denormFundamentalMatrix
-                        = MatrixUtil.multiply(t1Transpose,
-                                MatrixUtil.multiply(validated, t2));
-
-                double s = 1. / (denormFundamentalMatrix.get(2, 2) + eps);
-                MatrixUtil.multiply(denormFundamentalMatrix, s);
-
-                denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
-
-                denormalizedSolutions.add(denormFundamentalMatrix);
+            if (validated == null) {
+                continue;
             }
+                            
+            DenseMatrix denormFundamentalMatrix
+                = MatrixUtil.multiply(t1Transpose,
+                MatrixUtil.multiply(validated, t2));
+
+            double s = 1. / (denormFundamentalMatrix.get(2, 2) + eps);
+            MatrixUtil.multiply(denormFundamentalMatrix, s);
+
+            denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
+
+            denormalizedSolutions.add(denormFundamentalMatrix);
             
             //denormalizedSolutions.add(denormFundamentalMatrix);
         }

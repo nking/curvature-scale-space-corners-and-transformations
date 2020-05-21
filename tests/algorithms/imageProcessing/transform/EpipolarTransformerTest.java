@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.transform.Util;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.matching.ErrorType;
