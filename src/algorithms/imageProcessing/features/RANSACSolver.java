@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.SubsetChooser;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Distances;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
@@ -9,10 +10,13 @@ import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
 
@@ -32,6 +36,8 @@ import no.uib.cipr.matrix.DenseMatrix;
  * @author nichole
  */
 public class RANSACSolver {
+    
+    //TODO: edit to be able to choose nSet = 8 or 7
 
     private boolean debug = true;
 
@@ -138,11 +144,12 @@ public class RANSACSolver {
 
         final int nSet = 7;
 
-        int nPoints = matchedLeftXY.numColumns();
+        final int nPoints = matchedLeftXY.numColumns();
         
         // n!/(k!*(n-k)!
-        long nPointsSubsets = MiscMath.computeNDivKTimesNMinusKExact(nPoints, nSet);
-
+        final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusKExact(nPoints, nSet);
+        boolean useAllSubsets = false;
+        
         SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
         log.info("SEED=" + seed + " nPoints=" + nPoints);
@@ -166,6 +173,7 @@ public class RANSACSolver {
         long nMaxIter;
         if (nPoints == nSet) {
             nMaxIter = 1;
+            useAllSubsets = true;
         } else {
             nMaxIter = RANSACAlgorithmIterations
                 .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
@@ -176,6 +184,7 @@ public class RANSACSolver {
 
         if (nMaxIter > nPointsSubsets) {
             nMaxIter = nPointsSubsets;
+            useAllSubsets = true;
         }
         
         int nIter = 0;
@@ -187,7 +196,6 @@ public class RANSACSolver {
         
         DenseMatrix bestSampleLeft = null;
         DenseMatrix bestSampleRight = null;
-        int[] bestSelectedIndexes = null;
         
         // initialize the unchanging 3rd dimension
         for (int i = 0; i < nSet; ++i) {
@@ -195,11 +203,22 @@ public class RANSACSolver {
             sampleRight.set(2, i, 1);
         }
         
+        SubsetChooser chooser = new SubsetChooser(nPoints, nSet);
+        
         Distances distances = new Distances();
         
         while (nIter < nMaxIter) {
             
-            MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
+            if (useAllSubsets) {
+                int chk = chooser.getNextSubset(selectedIndexes);
+                if (chk == -1) {
+                    throw new IllegalStateException("have overrun subsets in chooser.");
+                }                
+            } else {
+                MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
+            }
+            
+            Arrays.sort(selectedIndexes);
 
             int count = 0;
             
@@ -220,6 +239,9 @@ public class RANSACSolver {
             List<DenseMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
                 sampleLeft, sampleRight);
 
+            System.out.printf("%d out of %d iterations\n", nIter, nMaxIter);
+            System.out.flush();
+            
             if (fms == null || fms.isEmpty()) {
                 nIter++;
                 continue;
@@ -250,16 +272,18 @@ public class RANSACSolver {
             }
             
             if (fit.isBetter(bestFit)) {
+                int nb = (bestFit != null) ? bestFit.getInlierIndexes().size() : nSet+1;
+                int nf = fit.getInlierIndexes().size();
+                
                 bestFit = fit;
                 bestSampleLeft = sampleLeft.copy();
                 bestSampleRight = sampleRight.copy();
-                bestSelectedIndexes = Arrays.copyOf(selectedIndexes, nSet);
                 
                 System.out.println("**best fit: " + bestFit.toString());
                 System.out.flush();
                 
                 // recalculate nMaxIter
-                if (nMaxIter < nPointsSubsets && nMaxIter > 1) {
+                if ((nf > nb) && nMaxIter > 1) {
                     double outlierPercentI = 100.*
                         (double)(nPoints - bestFit.getInlierIndexes().size()) /
                         (double)nPoints;
@@ -271,6 +295,10 @@ public class RANSACSolver {
                         assert(outlierPercent < 50);
                         nMaxIter = RANSACAlgorithmIterations
                             .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
+                        if (nMaxIter > nPointsSubsets) {
+                            nMaxIter = nPointsSubsets;
+                            useAllSubsets = true;
+                        }
                     }
                 }
             }
@@ -349,7 +377,7 @@ public class RANSACSolver {
             log.fine("consensusFit=" + consensusFit.toString());
         }
         
-        if (consensusFit == null || usePreviousFM || !consensusFit.isBetter(bestFitAppliedToAll)) {
+        if (consensusFit == null || usePreviousFM || bestFitAppliedToAll.isBetter(consensusFit)) {
             log.fine("choosing the best fit applied to all instead of"
                 + " the subsequent consensus fit");
             consensusFit = bestFitAppliedToAll;
