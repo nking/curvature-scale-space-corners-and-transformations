@@ -52,10 +52,11 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray outputRight = new PairIntArray();
         
         RANSACSolver solver = new RANSACSolver();
-        
+        int tolerance = 4;
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             //leftTruePlusFalse, rightTruePlusFalse, outputLeft, outputRight);
-            leftTrueMatches, rightTrueMatches, outputLeft, outputRight);
+            leftTrueMatches, rightTrueMatches, outputLeft, outputRight,
+            tolerance);
         
         assertNotNull(fit);
         
@@ -115,8 +116,9 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out1 = new PairIntArray(m1.getN());
         PairIntArray out2 = new PairIntArray(m1.getN());
         RANSACSolver solver = new RANSACSolver();
+        int tolerance = 4;
         EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2);
+            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 
         assertEquals(m1.getN(), out1.getN());
         assertEquals(m2.getN(), out2.getN());
@@ -153,9 +155,7 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         Distances distances = new Distances();
-        
-        double tolerance = 4;
-        
+                
         // the 2 distances:
         float[] outputDist = new float[2];
         for (int i = 0; i < m1.getN(); ++i) {
@@ -242,8 +242,9 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out1 = new PairIntArray(m1.getN());
         PairIntArray out2 = new PairIntArray(m1.getN());
         RANSACSolver solver = new RANSACSolver();
+        int tolerance = 4;
         EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2);
+            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 
         assertEquals(m1.getN(), out1.getN());
         assertEquals(m2.getN(), out2.getN());
@@ -279,9 +280,7 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         Distances distances = new Distances();
-        
-        double tolerance = 4;
-        
+                
         // the 2 distances:
         float[] outputDist = new float[2];
         for (int i = 0; i < m1.getN(); ++i) {
@@ -358,9 +357,9 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out2 = new PairIntArray(m1.getN());
         
         RANSACSolver solver = new RANSACSolver();
-        
+        int tolerance = 4;
         EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2);
+            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 
         DenseMatrix fm = fit.getFundamentalMatrix();
         
@@ -398,9 +397,7 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         Distances distances = new Distances();
-       
-        double tolerance = 4;
-        
+               
         // the 2 distances:
         float[] outputDist = new float[2];
         for (int i = 0; i < m1.getN(); ++i) {
@@ -435,8 +432,9 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out1 = new PairIntArray(m1.getN());
         PairIntArray out2 = new PairIntArray(m1.getN());
         RANSACSolver solver = new RANSACSolver();
+        int tolerance = 4;
         EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2);
+            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 
         
         assertEquals(m1.getN(), out1.getN());
@@ -460,9 +458,7 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
 
         Distances distances = new Distances();
-        
-        double tolerance = 4;
-        
+                
         // the 2 distances:
         float[] outputDist = new float[2];
         for (int i = 0; i < m1.getN(); ++i) {

@@ -51,7 +51,7 @@ public class RANSACSolver {
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
         PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
+        PairIntArray outputLeftXY, PairIntArray outputRightXY, int tolerance) {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -73,7 +73,7 @@ public class RANSACSolver {
             Util.rewriteInto3ColumnMatrix(matchedRightXY);
         
         return calculateEpipolarProjection(input1, input2,
-            outputLeftXY, outputRightXY);
+            outputLeftXY, outputRightXY, tolerance);
     }
 
     /**
@@ -81,15 +81,18 @@ public class RANSACSolver {
      * assumption that some of the points in the matched lists are not
      * true matches.
      *
-     * @param matchedLeftXY
-     * @param matchedRightXY
+     * @param matchedLeftXY 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param matchedRightXY 
      * @param outputLeftXY
      * @param outputRightXY
+     * @param tolerance tolerance in distance from epipolar line for a point to 
+     * be an inlier in the final fit.
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
-        DenseMatrix matchedLeftXY, DenseMatrix matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
+        final DenseMatrix matchedLeftXY, final DenseMatrix matchedRightXY,
+        final PairIntArray outputLeftXY, final PairIntArray outputRightXY,
+        final int tolerance) {
 
         //TODO: improve this method
         
@@ -133,7 +136,7 @@ public class RANSACSolver {
         
         */
 
-        int nSet = 7;
+        final int nSet = 7;
 
         int nPoints = matchedLeftXY.numColumns();
         
@@ -148,9 +151,7 @@ public class RANSACSolver {
         ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
 
         EpipolarTransformer spTransformer = new EpipolarTransformer();
-            
-        int tolerance = 4;
-
+        
         // consensus indexes
         EpipolarTransformationFit bestFit = null;
         
@@ -163,7 +164,7 @@ public class RANSACSolver {
         int outlierPercent = 50;
         
         long nMaxIter;
-        if (nPoints == 7) {
+        if (nPoints == nSet) {
             nMaxIter = 1;
         } else {
             nMaxIter = RANSACAlgorithmIterations
@@ -184,11 +185,16 @@ public class RANSACSolver {
         DenseMatrix sampleLeft = new DenseMatrix(3, nSet);
         DenseMatrix sampleRight = new DenseMatrix(3, nSet);
         
+        DenseMatrix bestSampleLeft = null;
+        DenseMatrix bestSampleRight = null;
+        
         // initialize the unchanging 3rd dimension
         for (int i = 0; i < nSet; ++i) {
             sampleLeft.set(2, i, 1);
             sampleRight.set(2, i, 1);
         }
+        
+        Distances distances = new Distances();
         
         while (nIter < nMaxIter) {
             
@@ -217,19 +223,22 @@ public class RANSACSolver {
                 nIter++;
                 continue;
             }
-
-            Distances distances = new Distances();
             
             // use point dist to epipolar lines to estimate errors of sample
             EpipolarTransformationFit fit = null;
             
             for (DenseMatrix fm : fms) {
                 
+                // indexes within this refer to the sample data, not the larger matched data
                 EpipolarTransformationFit fitI = distances.calculateError(fm, 
-                    matchedLeftXY, matchedRightXY, errorType, tolerance);
-             
-                if (fitI.getInlierIndexes().size() == 7 &&
+                    sampleLeft, sampleRight, errorType, tolerance);
+                     
+                if (fitI.getInlierIndexes().size() == nSet &&
                     fitI.isBetter(fit)) {
+                    
+                    System.out.println("new local best fit: " + fitI.toString());
+                    System.out.flush();
+                    
                     fit = fitI;
                 }
             }
@@ -241,6 +250,11 @@ public class RANSACSolver {
             
             if (fit.isBetter(bestFit)) {
                 bestFit = fit;
+                bestSampleLeft = sampleLeft.copy();
+                bestSampleRight = sampleRight.copy();
+                
+                System.out.println("**best fit: " + bestFit.toString());
+                System.out.flush();
                 
                 // recalculate nMaxIter
                 if (nMaxIter < nPointsSubsets && nMaxIter > 1) {
@@ -266,29 +280,41 @@ public class RANSACSolver {
             log.info("no solution.  nIter=" + nIter);
             return null;
         }
+                
+        // -- use best fit epipolar projection on matched points
+        // -- remove outliers
+        // -- re-calculate epipolar projection from remaining
+        // -- return finished fit and errors
         
-        DenseMatrix currentFM = bestFit.getFundamentalMatrix();
+        EpipolarTransformationFit bestFitAppliedToAll 
+            = distances.calculateError(bestFit.getFundamentalMatrix(), 
+            matchedLeftXY, matchedRightXY, errorType, tolerance);
+                       
+        log.fine("bestFitAppliedToAll: " + bestFitAppliedToAll.toString());
         
-        EpipolarTransformationFit filtered = spTransformer
-            .calculateEpipolarDistanceErrorThenFilter(currentFM,
-            matchedLeftXY, matchedRightXY, tolerance);
-        
-        int nInliers = filtered.getInlierIndexes().size();
-        
-        if (nInliers < bestFit.getInlierIndexes().size()) {
-            // bug here  
+        if (bestFitAppliedToAll.getInlierIndexes().size() < bestFit.getInlierIndexes().size()) {
+            System.out.println("bestFit: " + bestFit.toString());
+            System.out.println("bestFitAppliedToAll: " + bestFitAppliedToAll.toString());
+            System.out.flush();
+            
+            // re-do to see diffs
+            EpipolarTransformationFit temp1 
+                = distances.calculateError(bestFit.getFundamentalMatrix(), 
+                bestSampleLeft, bestSampleRight, errorType, tolerance);
+            
+            EpipolarTransformationFit temp2 
+            = distances.calculateError(bestFit.getFundamentalMatrix(), 
+            matchedLeftXY, matchedRightXY, errorType, tolerance);
+            
             throw new IllegalStateException("error!");
         }
         
-        if (nInliers < 7) {
-            return bestFit;
-        }
-        
+        // create an inlier list for a new transformation 
+        int nInliers = bestFitAppliedToAll.getInlierIndexes().size();        
         DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);
         DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);
-        
         int count = 0;
-        for (Integer idx : filtered.getInlierIndexes()) {
+        for (Integer idx : bestFitAppliedToAll.getInlierIndexes()) {
             int idxInt = idx.intValue();            
             inliersLeftXY.set(0, count, matchedLeftXY.get(0, idxInt));
             inliersLeftXY.set(1, count, matchedLeftXY.get(1, idxInt));
@@ -298,51 +324,48 @@ public class RANSACSolver {
             inliersRightXY.set(2, count, 1);
             count++;
         }
-
-        Distances distances = new Distances();
         
         EpipolarTransformationFit consensusFit = null;
         
-        if (nInliers == 7) {
-            
+        boolean usePreviousFM = false;
+        
+        if (nInliers == nSet) {
             List<DenseMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
                 inliersLeftXY, inliersRightXY);
             if (fms == null || fms.isEmpty()) {
-                consensusFit = filtered;
+                usePreviousFM = true;
             } else {
                 for (DenseMatrix fm : fms) {
                     EpipolarTransformationFit fitI
-                        = distances.calculateError(fm, matchedLeftXY,
-                            matchedRightXY, errorType, tolerance);
+                        = distances.calculateError(fm, 
+                        matchedLeftXY, matchedRightXY, 
+                        errorType, tolerance);
                     if (fitI.isBetter(consensusFit)) {
                         consensusFit = fitI;
                     }
                 }
             }
-            
-        } else {
-            
+        } else {            
             DenseMatrix fm = spTransformer.calculateEpipolarProjection(
-                inliersLeftXY, inliersRightXY);
-                 
+                inliersLeftXY, inliersRightXY); 
             if (fm == null) {
-                fm = currentFM;
+                usePreviousFM = true;
+            } else {
+                consensusFit = distances.calculateError(fm, matchedLeftXY, 
+                    matchedRightXY, errorType, tolerance);  
             }
-            
-            consensusFit = distances.calculateError(fm, matchedLeftXY, 
-                matchedRightXY, errorType, tolerance);          
         }
         
-        if (consensusFit == null) {
-            return filtered;
+        if (consensusFit != null) {
+            log.fine("consensusFit=" + consensusFit.toString());
         }
-        if (!consensusFit.isBetter(filtered)) {
-            log.info("the smaller determined bestFit used to filtrer all "
-                + " was a better fit than the next consensus, so keeping"
-                + " the best fit instead");
-            consensusFit = filtered;
+        
+        if (consensusFit == null || usePreviousFM || !consensusFit.isBetter(bestFitAppliedToAll)) {
+            log.fine("choosing the best fit applied to all instead of"
+                + " the subsequent consensus fit");
+            consensusFit = bestFitAppliedToAll;
         }
-    
+        
         // write to output and convert the coordinate indexes to the original point indexes
         List<Integer> inlierIndexes = consensusFit.getInlierIndexes();
         for (int i = 0; i < inlierIndexes.size(); ++i) {

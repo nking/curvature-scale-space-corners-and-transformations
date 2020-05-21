@@ -1306,8 +1306,11 @@ public class PartialShapeMatcher2 {
         
         RANSACSolver solver = new RANSACSolver();
 
+        int tolerance = 4;
+        
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY,
+            tolerance);
 
         if (storeMatrix) {
             storedEpipolarFit = fit;

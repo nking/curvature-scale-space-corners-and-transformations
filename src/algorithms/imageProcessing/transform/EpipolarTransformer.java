@@ -1430,7 +1430,7 @@ public class EpipolarTransformer {
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarDistanceErrorThenFilter(
-        DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints,
+        final DenseMatrix fm, final DenseMatrix leftPoints, final DenseMatrix rightPoints,
         double tolerance) {
 
         if (fm == null) {
@@ -1475,8 +1475,7 @@ public class EpipolarTransformer {
             errors.add(Double.valueOf(dist));
         }
 
-        filterForDegenerate(leftPoints, inlierIndexes, errors);
-        filterForDegenerate(rightPoints, inlierIndexes, errors);
+        filterForDegenerate(leftPoints, rightPoints, inlierIndexes, errors);
 
         EpipolarTransformationFit fit = null;
 
@@ -1490,6 +1489,8 @@ public class EpipolarTransformer {
 
         fit.setNMaxMatchable(leftPoints.numColumns());
 
+        fit.calculateErrorStatistics();
+        
         return fit;
     }
 
@@ -1502,7 +1503,24 @@ public class EpipolarTransformer {
             return calculateEpipolarDistanceErrorThenFilter(fm, x1, x2, tolerance);
         //}
     }
-
+    
+    /**
+     * if a point maps to multiple indexes, that is, was matched to more than
+     * one point in the other image, the smallest error pair of points among the conflicting
+     * is kept.   NOTE, this could be improved with a bipartite matching of
+     * min cost between the degenerately mapped point pairs.
+     * @param xy1
+     * @param xy2
+     * @param outputInliers
+     * @param outputDistances 
+     */
+    private void filterForDegenerate(DenseMatrix xy1, DenseMatrix xy2,
+        List<Integer> outputInliers, List<Double> outputDistances) {
+        
+        filterForDegenerate(xy1, outputInliers, outputDistances);
+        filterForDegenerate(xy2, outputInliers, outputDistances);
+    }
+    
     private void filterForDegenerate(DenseMatrix xy1,
         List<Integer> outputInliers, List<Double> outputDistances) {
 
@@ -1525,7 +1543,7 @@ public class EpipolarTransformer {
             oIndexes.add(Integer.valueOf(i));
         }
 
-        List<Integer> remove = new ArrayList<Integer>();
+        List<Integer> removeListIndexes = new ArrayList<Integer>();
 
         for (Entry<PairInt, List<Integer>> entry : pointIndexes.entrySet()) {
 
@@ -1547,20 +1565,20 @@ public class EpipolarTransformer {
 
             assert(minIdx > -1);
 
-            for (Integer index : oIndexes) {
-                int idx = index.intValue();
+            for (int ii = 0; ii < oIndexes.size(); ++ii) {
+                int idx = oIndexes.get(ii);
                 if (idx == minIdx) {
                     continue;
                 }
-                remove.add(Integer.valueOf(idx));
+                removeListIndexes.add(Integer.valueOf(ii));
             }
         }
-        Collections.sort(remove);
+        Collections.sort(removeListIndexes);
 
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            int idx = remove.get(i);
-            outputDistances.remove(idx);
-            outputInliers.remove(idx);
+        for (int i = (removeListIndexes.size() - 1); i > -1; --i) {
+            int ii = removeListIndexes.get(i);
+            outputDistances.remove(ii);
+            outputInliers.remove(ii);
         }
     }
 
