@@ -58,6 +58,7 @@
         <echo message="compile:                    compile source files"/>
         <echo message="compileTests:               compile test files"/>
         <echo message="runTests:                   run tests"/>
+        <echo message="runTests2:                  run tests without recompiling"/>
         <echo message="runTest:                    run test with -Dtest=fully qualified name of test"/>
         <echo message="runTest2:                   run test without recompiling, -Dtest=fully qualified name of test"/>
         <echo message="debugTest:                  debug test with -Dtest= fqn of test and jdwp"/>
@@ -243,6 +244,38 @@
     </target>
 
     <target name="runTests" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
+        <record name="${logfile}" append="yes" loglevel="debug"/>
+        <echo message="running tests, output is in ${tests.out.dir}" />
+        <junit fork="false" showoutput="true" filtertrace="off" 
+            printsummary="yes" haltonerror="true" haltonfailure="true">
+            
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+            <formatter type="plain" usefile="true"/>
+            <sysproperty key="java.util.logging.config.file" 
+                value="${src.out.dir}/logging.properties"/>
+
+            <jvmarg value="-XX:-UseSplitVerifier" />
+
+            <jvmarg value="-enableassertions" />
+            
+            <batchtest fork="true" todir="${tests.out.dir}">
+                <fileset dir="${tests.out.dir}">
+                    <include name="**/*Test.class"/>
+               	    <exclude name= "**/*$*.class"/>
+               	    <exclude name= "**/*ForTests*.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+    
+    <target name="runTests2" if="junit.present" depends="debug,JUnit,compileTests2">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.out.dir}" />
         <junit fork="false" showoutput="true" filtertrace="off" 
