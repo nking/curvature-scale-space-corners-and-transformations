@@ -103,4 +103,15 @@ public class Util {
         return xy;
     }
 
+    public static String toString(DenseMatrix m) {
+        StringBuilder sb = new StringBuilder();
+        for (int r = 0; r < m.numRows(); ++r) {
+            StringBuilder line = new StringBuilder();
+            for (int c = 0; c < m.numColumns(); ++c) {
+                line.append(String.format("%.3e  ", m.get(r, c)));
+            }
+            sb.append(line).append("\n");
+        }
+        return sb.toString();
+    }
 }

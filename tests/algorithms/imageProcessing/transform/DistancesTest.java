@@ -151,7 +151,8 @@ public class DistancesTest extends TestCase {
         for (int ii = 0; ii < xy2.numColumns(); ii++) {
             clr = getColor(clr);
             DenseMatrix epipolarLinesInLeft = 
-                MatrixUtil.multiply(fm.transpose(), xy2);
+                MatrixUtil.multiply(
+                algorithms.matrix.MatrixUtil.transpose(fm), xy2);
             PairIntArray leftLine = spTransformer.getEpipolarLine(
                 epipolarLinesInLeft, image1Width, image1Height, ii);
             ImageIOHelper.addCurveToImage(leftLine, img1, 0,

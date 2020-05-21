@@ -152,7 +152,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
         
         DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
+            algorithms.matrix.MatrixUtil.transpose(fm), m2m);
 
         Distances distances = new Distances();
                 
@@ -208,7 +209,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix p2m = Util.rewriteInto3ColumnMatrix(points2);
         
         DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
-        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(fm.transpose(), p2m);
+        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(
+            algorithms.matrix.MatrixUtil.transpose(fm), p2m);
                 
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -277,7 +279,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
         
         DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
+           algorithms.matrix.MatrixUtil.transpose(fm), m2m);
 
         Distances distances = new Distances();
                 
@@ -322,7 +325,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix p2m = Util.rewriteInto3ColumnMatrix(points2);
         
         DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
-        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(fm.transpose(), p2m);
+        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(
+            algorithms.matrix.MatrixUtil.transpose(fm), p2m);
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -394,7 +398,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
         
         DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
+            algorithms.matrix.MatrixUtil.transpose(fm), m2m);
 
         Distances distances = new Distances();
                
@@ -455,7 +460,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
         
         DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(fm.transpose(), m2m);
+        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
+            algorithms.matrix.MatrixUtil.transpose(fm), m2m);
 
         Distances distances = new Distances();
                 
@@ -500,7 +506,8 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix p2m = Util.rewriteInto3ColumnMatrix(points2);
         
         DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
-        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(fm.transpose(), p2m);
+        DenseMatrix p1EpipolarLines = MatrixUtil.multiply(
+            algorithms.matrix.MatrixUtil.transpose(fm), p2m);
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -765,7 +772,8 @@ public class RANSACSolverTest extends TestCase {
         Color clr = null;
         for (int ii = 0; ii < input2.numColumns(); ii++) {
             clr = getColor(clr);
-            DenseMatrix epipolarLinesInLeft = MatrixUtil.multiply(fm.transpose(),
+            DenseMatrix epipolarLinesInLeft = MatrixUtil.multiply(
+                algorithms.matrix.MatrixUtil.transpose(fm),
                 input2);
             PairIntArray leftLine = spTransformer.getEpipolarLine(
                 epipolarLinesInLeft, image1Width, image1Height, ii);

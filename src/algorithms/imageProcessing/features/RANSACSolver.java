@@ -187,6 +187,7 @@ public class RANSACSolver {
         
         DenseMatrix bestSampleLeft = null;
         DenseMatrix bestSampleRight = null;
+        int[] bestSelectedIndexes = null;
         
         // initialize the unchanging 3rd dimension
         for (int i = 0; i < nSet; ++i) {
@@ -252,6 +253,7 @@ public class RANSACSolver {
                 bestFit = fit;
                 bestSampleLeft = sampleLeft.copy();
                 bestSampleRight = sampleRight.copy();
+                bestSelectedIndexes = Arrays.copyOf(selectedIndexes, nSet);
                 
                 System.out.println("**best fit: " + bestFit.toString());
                 System.out.flush();
@@ -293,20 +295,7 @@ public class RANSACSolver {
         log.fine("bestFitAppliedToAll: " + bestFitAppliedToAll.toString());
         
         if (bestFitAppliedToAll.getInlierIndexes().size() < bestFit.getInlierIndexes().size()) {
-            System.out.println("bestFit: " + bestFit.toString());
-            System.out.println("bestFitAppliedToAll: " + bestFitAppliedToAll.toString());
-            System.out.flush();
-            
-            // re-do to see diffs
-            EpipolarTransformationFit temp1 
-                = distances.calculateError(bestFit.getFundamentalMatrix(), 
-                bestSampleLeft, bestSampleRight, errorType, tolerance);
-            
-            EpipolarTransformationFit temp2 
-            = distances.calculateError(bestFit.getFundamentalMatrix(), 
-            matchedLeftXY, matchedRightXY, errorType, tolerance);
-            
-            throw new IllegalStateException("error!");
+            throw new IllegalStateException("error in states of best fits inliers!");
         }
         
         // create an inlier list for a new transformation 

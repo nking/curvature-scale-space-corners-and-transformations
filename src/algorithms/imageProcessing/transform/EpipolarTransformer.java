@@ -250,8 +250,8 @@ public class EpipolarTransformer {
 
         //the matrix convention is [mRows][nCols]
 
-        DenseMatrix fundamentalMatrix = (DenseMatrix)
-            calculateFundamentalMatrix(theLeftXY, theRightXY).transpose();
+        DenseMatrix fundamentalMatrix = algorithms.matrix.MatrixUtil.transpose(
+            calculateFundamentalMatrix(theLeftXY, theRightXY));
 
         return fundamentalMatrix;
     }
@@ -430,8 +430,6 @@ public class EpipolarTransformer {
 
         List<DenseMatrix> denormalizedSolutions = new ArrayList<DenseMatrix>();
 
-        //DenseMatrix t1Transpose = (DenseMatrix) normalizedXY1
-        //    .getNormalizationMatrix().transpose();
         DenseMatrix t1Transpose = MatrixUtil.transpose(normalizedXY1.getNormalizationMatrix());
         DenseMatrix t2 = normalizedXY2.getNormalizationMatrix();
 
@@ -973,7 +971,7 @@ public class EpipolarTransformer {
 
         //A is nData rows X 3 columns
 
-        DenseMatrix V = (DenseMatrix) svd.getVt().transpose();
+        DenseMatrix V = algorithms.matrix.MatrixUtil.transpose(svd.getVt());
 
         /*
         DenseMatrix V = MatrixUtil.transpose(svd.getVt());
@@ -1062,8 +1060,9 @@ public class EpipolarTransformer {
             and T2 is normalizedXY2.getNormalizationMatrix();
         */
 
-        DenseMatrix t1Transpose = (DenseMatrix) normalizedLeftXY
-            .getNormalizationMatrix().transpose();
+        DenseMatrix t1Transpose = 
+            algorithms.matrix.MatrixUtil.transpose(normalizedLeftXY
+            .getNormalizationMatrix());
         DenseMatrix t2 = normalizedRightXY.getNormalizationMatrix();
 
         DenseMatrix denormFundamentalMatrix =
@@ -1316,7 +1315,7 @@ public class EpipolarTransformer {
                 .log(Level.SEVERE, null, ex);
             return null;
         }
-        DenseMatrix V = (DenseMatrix) svdE.getVt().transpose();
+        DenseMatrix V = algorithms.matrix.MatrixUtil.transpose(svdE.getVt());
         double[] e1 = new double[V.numColumns()];
         double e1Div = V.get(2, 2);
         for (int i = 0; i < e1.length; i++) {

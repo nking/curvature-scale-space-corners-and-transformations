@@ -70,10 +70,6 @@ public class MatrixUtil {
         //System.out.println("left e=\n" + evd.getLeftEigenvectors().toString());
         //System.out.println("right e=\n" + rightEigenVectors.toString());
         
-        //System.out.println("leftT * M * right=\n" +
-        //    MatrixUtil.multiply(leftEigenVectors.transpose(),
-        //        MatrixUtil.multiply(m, rightEigenVectors)));
-        
         double[] eigenValues = evd.getRealEigenvalues();
         
         DenseMatrix d = new DenseMatrix(eigenValues.length, eigenValues.length);
@@ -935,7 +931,7 @@ public class MatrixUtil {
         double tol = singularThreshold(svd);
         
         //NXN
-        DenseMatrix vT = (DenseMatrix) svd.getVt().transpose();
+        DenseMatrix vT = algorithms.matrix.MatrixUtil.transpose(svd.getVt());
         
         int N = vT.numColumns();
         

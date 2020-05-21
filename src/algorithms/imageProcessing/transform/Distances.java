@@ -202,8 +202,9 @@ public class Distances {
         DenseMatrix rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);
 
         // F^T * u_2
-        DenseMatrix leftEpipolarLines = MatrixUtil.multiply(fm.transpose(),
-                matchedRightPoints);
+        DenseMatrix leftEpipolarLines = MatrixUtil.multiply(
+            algorithms.matrix.MatrixUtil.transpose(fm),
+            matchedRightPoints);
 
         float[] output = new float[2];
 
@@ -259,7 +260,7 @@ public class Distances {
         double yL = u1.get(1, leftIdx);
 
         double dRev = (aRev * xL + bRev * yL + cRev)
-                / Math.sqrt((aRev * aRev + bRev * bRev));
+                / Math.sqrt(aRev * aRev + bRev * bRev);
 
         output[0] = (float) dRev;
         output[1] = (float) d;

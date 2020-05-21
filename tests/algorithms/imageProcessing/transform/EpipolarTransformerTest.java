@@ -226,7 +226,8 @@ public class EpipolarTransformerTest extends TestCase {
         for (int ii = 0; ii < input2.numColumns(); ii++) {
             clr = getColor(clr);
             DenseMatrix epipolarLinesInLeft = 
-                MatrixUtil.multiply(fm.transpose(), input2);
+                MatrixUtil.multiply(
+                algorithms.matrix.MatrixUtil.transpose(fm), input2);
             PairIntArray leftLine = spTransformer.getEpipolarLine(
                 epipolarLinesInLeft, image1Width, image1Height, ii);
             ImageIOHelper.addCurveToImage(leftLine, img1, 0,

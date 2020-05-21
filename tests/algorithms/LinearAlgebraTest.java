@@ -92,8 +92,9 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println("right e=\n" + rightEigenVectors.toString());
         
         System.out.println("leftT * M * right=\n" +
-            MatrixUtil.multiply(leftEigenVectors.transpose(),
-                MatrixUtil.multiply(m, rightEigenVectors)));
+            MatrixUtil.multiply(
+                algorithms.matrix.MatrixUtil.transpose(leftEigenVectors),
+            MatrixUtil.multiply(m, rightEigenVectors)));
         
         System.out.println("expected values=\n" +
             new DenseMatrix(expectedEigValues).toString());
@@ -164,8 +165,9 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println("right e=\n" + rightEigenVectors2.toString());
         
         System.out.println("leftT * M * right=\n" +
-            MatrixUtil.multiply(leftEigenVectors2.transpose(),
-                MatrixUtil.multiply(m2, rightEigenVectors2)));
+            MatrixUtil.multiply(
+                algorithms.matrix.MatrixUtil.transpose(leftEigenVectors2),
+            MatrixUtil.multiply(m2, rightEigenVectors2)));
         
         System.out.println("expected values=" +
         (new DenseMatrix(expectedValues)).toString());
@@ -252,8 +254,9 @@ public class LinearAlgebraTest extends TestCase {
         System.out.println("right e=\n" + rightEigenVectors.toString());
          
         System.out.println("leftT * M * right=\n" +
-            MatrixUtil.multiply(leftEigenVectors.transpose(),
-                MatrixUtil.multiply(m, rightEigenVectors)));
+            MatrixUtil.multiply(
+                algorithms.matrix.MatrixUtil.transpose(leftEigenVectors),
+            MatrixUtil.multiply(m, rightEigenVectors)));
        
         DenseMatrix d = new DenseMatrix(eigenValues.length, eigenValues.length);
         for (int i = 0; i < eigenValues.length; ++i) {
