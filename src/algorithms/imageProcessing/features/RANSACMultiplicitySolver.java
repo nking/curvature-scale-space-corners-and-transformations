@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.matching.DegenerateFilter;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
@@ -158,6 +159,8 @@ public class RANSACMultiplicitySolver {
         DenseMatrix sampleLeft = new DenseMatrix(3, nSet);
         DenseMatrix sampleRight = new DenseMatrix(3, nSet);
         
+        DegenerateFilter filter = new DegenerateFilter();
+        
         log.info("nPoints=" + nPoints + " n including multiplicity=" + nAllMultiplicity);
         
         int tolerance = 3;
@@ -204,10 +207,10 @@ public class RANSACMultiplicitySolver {
             }
                         
             EpipolarTransformationFit fit = null;
-            
+                        
             for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    spTransformer.calculateErrorThenFilter(fm, 
+                    filter.calculateErrorThenFilter(fm, 
                         evalAllLeft, evalAllRight, errorType, tolerance);
                 
                 if (fitI.isBetter(fit)) {
@@ -275,9 +278,10 @@ public class RANSACMultiplicitySolver {
                 return null;
             }
             EpipolarTransformationFit fit = null;
+            
             for (DenseMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    spTransformer.calculateErrorThenFilter(fm,
+                    filter.calculateErrorThenFilter(fm,
                         inliersLeftXY, inliersRightXY, errorType, tolerance);
                 if (fitI.isBetter(bestFit)) {
                     fit = fitI;
@@ -291,7 +295,7 @@ public class RANSACMultiplicitySolver {
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 
-                spTransformer.calculateErrorThenFilter(fm,
+                filter.calculateErrorThenFilter(fm,
                     inliersLeftXY, inliersRightXY, errorType, tolerance);
             
             consensusFit = fit;

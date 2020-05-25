@@ -88,60 +88,6 @@ public class ImageProcessor5Test extends TestCase {
                 pointIndexMap.put(pixIdx, label);
             }
         }
-
-        TIntObjectMap<VeryLongBitString> adjMap = 
-            imageProcessor.createAdjacencyMap(pointIndexMap, 
-                mapOfSets, w, h);
-        
-        TIntObjectIterator<VeryLongBitString> iter = adjMap.iterator();
-        
-        for (int i = 0; i < adjMap.size(); ++i) {
-            iter.advance();
-            
-            int label = iter.key();
-            VeryLongBitString adj = iter.value();
-            int[] setBits = adj.getSetBits();
-            
-            //System.out.format("label=%d adj=%s\n", label, 
-            //    Arrays.toString(setBits));
-        }
-        
-        /*
-        
-        64
-        
-        56
-        
-        48
-        
-        40
-        
-        32
-            24  25   26   27   28   29   30  31
-        24
-            16  17   18   19   20   21   22  23
-        16
-            8   9    10   11   12   13   14  15
-        8
-            0   1    2    3    4    5    6   7
-        0   
-          0   8   16   24   32   40   48  56  64
-        */
-        
-        assertEquals(0, pointIndexMap.get((1 * w) + 1));
-        assertEquals(3, pointIndexMap.get((4 * w) + 25));
-        assertEquals(27, pointIndexMap.get((25 * w) + 25));
-    
-        int[] expected = new int[]{1, 8};
-        int[] found = adjMap.get(0).getSetBits();
-        //System.out.println("found=" + Arrays.toString(found));
-        assertTrue(Arrays.equals(expected, found));
-        
-        assertTrue(Arrays.equals(new int[]{6, 15}, 
-            adjMap.get(7).getSetBits()));
-        
-        assertTrue(Arrays.equals(new int[]{11, 18, 20, 27}, 
-            adjMap.get(19).getSetBits()));
     }
     
 }
