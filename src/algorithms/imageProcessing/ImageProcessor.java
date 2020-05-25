@@ -6224,105 +6224,18 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return theta;
     }
 
-    public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        TObjectIntMap<PairInt> pointIndexMap, List<Set<PairInt>> labeledPoints,
-        int imgWidth, int imgHeight) {
-
-        int n = labeledPoints.size();
-
-        TIntObjectMap<VeryLongBitString> output
-            = new TIntObjectHashMap<VeryLongBitString>();
-
-        int[] dxs = Misc.dx4;
-        int[] dys = Misc.dy4;
-
-        for (int label = 0; label < n; ++label) {
-            Set<PairInt> set = labeledPoints.get(label);
-            VeryLongBitString nbrs = new VeryLongBitString(n);
-
-            boolean aloSet = false;
-
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    if (x2 < 0 || y2 < 0 || x2 >= imgWidth || y2 >= imgHeight) {
-                        continue;
-                    }
-                    PairInt p2 = new PairInt(x2, y2);
-                    if (pointIndexMap.containsKey(p2)) {
-                        int label2 = pointIndexMap.get(p2);
-                        if (label2 != label) {
-                            nbrs.setBit(label2);
-                            aloSet = true;
-                        }
-                    }
-                }
-            }
-            if (aloSet) {
-                output.put(label, nbrs);
-            }
-        }
-
-        return output;
-    }
-
-    public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        TIntIntMap pointIndexMap, TIntObjectMap<TIntSet> labeledPoints,
-        int imgWidth, int imgHeight) {
-
-        int n = labeledPoints.size();
-
-        TIntObjectMap<VeryLongBitString> output
-            = new TIntObjectHashMap<VeryLongBitString>();
-
-        int[] dxs = Misc.dx4;
-        int[] dys = Misc.dy4;
-
-        TIntObjectIterator<TIntSet> iter = labeledPoints.iterator();
-
-        for (int i = 0; i < n; ++i) {
-
-            iter.advance();
-
-            int label = iter.key();
-            TIntSet pixIdxs = iter.value();
-
-            VeryLongBitString nbrs = new VeryLongBitString(n);
-
-            boolean aloSet = false;
-
-            TIntIterator iter2 = pixIdxs.iterator();
-            while (iter2.hasNext()) {
-                int pixIdx = iter2.next();
-                int y = pixIdx/imgWidth;
-                int x = pixIdx - (y * imgWidth);
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    if (x2 < 0 || y2 < 0 || x2 >= imgWidth || y2 >= imgHeight) {
-                        continue;
-                    }
-                    int pixIdx2 = (y2 * imgWidth) + x2;
-                    if (pointIndexMap.containsKey(pixIdx2)) {
-                        int label2 = pointIndexMap.get(pixIdx2);
-                        if (label2 != label) {
-                            nbrs.setBit(label2);
-                            aloSet = true;
-                        }
-                    }
-                }
-            }
-            if (aloSet) {
-                output.put(label, nbrs);
-            }
-        }
-
-        return output;
-    }
-
+    /**
+     * 
+     * @param pointIndexMap map with key=pixelIndex, value=label.
+     * @param labeledPoints list of point sets that are the edges of blobs.  NOTE
+     * that the indexes of the list are the labels and they are the same labels
+     * as present in pointIndexMap.  NOTE that pointIndexMap can have more 
+     * points than are present in labeledPoints, but the one context that this
+     * method was created for has same points in both data structures.
+     * @param imgWidth
+     * @param imgHeight
+     * @return a map with key=label, value = bitstring marking the neighboring labels.
+     */
     public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
         TIntIntMap pointIndexMap, List<TIntSet> labeledPoints,
         int imgWidth, int imgHeight) {
@@ -6335,14 +6248,13 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
 
+        // making an adjacency list for the labels
         for (int label = 0; label < n; ++label) {
 
             TIntSet pixIdxs = labeledPoints.get(label);
 
             VeryLongBitString nbrs = new VeryLongBitString(n);
-
-            boolean aloSet = false;
-
+            
             TIntIterator iter2 = pixIdxs.iterator();
             while (iter2.hasNext()) {
                 int pixIdx = iter2.next();
@@ -6359,58 +6271,14 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                         int label2 = pointIndexMap.get(pixIdx2);
                         if (label2 != label) {
                             nbrs.setBit(label2);
-                            aloSet = true;
                         }
                     }
                 }
             }
-            if (aloSet) {
-                output.put(label, nbrs);
-            }
+            output.put(label, nbrs);
         }
-
-        return output;
-    }
-
-    public TIntObjectMap<VeryLongBitString> createAdjacencyMap(
-        int[] labels, List<Set<PairInt>> labeledPoints,
-        int width, int height) {
-
-        int n = labeledPoints.size();
-
-        TIntObjectMap<VeryLongBitString> output
-            = new TIntObjectHashMap<VeryLongBitString>();
-
-        int[] dxs = Misc.dx4;
-        int[] dys = Misc.dy4;
-
-        for (int label = 0; label < n; ++label) {
-            Set<PairInt> set = labeledPoints.get(label);
-            VeryLongBitString nbrs = new VeryLongBitString(n);
-
-            boolean aloSet = false;
-
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    if (x2 < 0 || y2 < 0 || (x2 >= width) || (y2 >= height)) {
-                        continue;
-                    }
-                    int pixIdx = (y2 * width) + x2;
-                    int label2 = labels[pixIdx];
-                    if (label2 != label) {
-                        nbrs.setBit(label2);
-                        aloSet = true;
-                    }
-                }
-            }
-            if (aloSet) {
-                output.put(label, nbrs);
-            }
-        }
+        
+        assert(output.size() == labeledPoints.size());
 
         return output;
     }
