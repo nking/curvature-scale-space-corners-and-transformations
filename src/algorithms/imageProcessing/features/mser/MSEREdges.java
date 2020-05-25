@@ -71,7 +71,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
  *
  * NOTE that the default mode may change to the low contrast settings.
  *
- * Also note that their are fixed parameters tailored for the input images
+ * Also note that there are fixed parameters tailored for the input images
  * scaled to 256 X 256, especially for the use of merging
  * (see int[] mszs = ...).
  * 
@@ -114,11 +114,25 @@ public class MSEREdges {
     // uses.
     private List<List<Region>> origGsPtRegions = null;
 
-    // NOTE: the edges indexes do not correspond to the regions indexes
-    // list of sets of pixel indexes of boundaries of labeled sets
-    private List<TIntSet> edgeList = null;
+    
+    /**
+     * list of sets of labeled edges.  
+     * NOTE that the indexes of edgeList are implicitly the labels and are the 
+     * same labels present as the indexes of labeledSets.
+     * labeledEdges are the boundary pixels of the labeledSets.
+     * The values within the sets are the pixel indexes.
+     * NOTE that the lists of regions DO NOT HAVE the same labels as indexes.
+     */
+    private List<TIntSet> labeledEdges = null;
 
-    // list of sets of pixel indexes
+    /**
+     * list of sets of labeled blobs.  
+     * NOTE that the indexes of labeledSets are implicitly the labels and are the 
+     * same labels present as the indexes of labeledEdges.
+     * labeledEdges are the boundary pixels of the labeledSets.
+     * The values within the sets are the pixel indexes.
+     * NOTE that the lists of regions DO NOT HAVE the same labels as indexes.
+     */
     private List<TIntSet> labeledSets = null;
 
     private boolean debug = false;
@@ -179,7 +193,8 @@ public class MSEREdges {
         extractBoundaries();
 
         assert(labeledSets != null);
-        assert(getEdgeList() != null);
+        assert(labeledEdges != null);
+        assert(labeledEdges.size() == labeledSets.size());
 
         if (debug) {
             printEdges();
@@ -553,9 +568,9 @@ public class MSEREdges {
 
         int[] clr = new int[]{255, 0, 0};
 
-        for (int i = 0; i < getEdgeList().size(); ++i) {
+        for (int i = 0; i < labeledEdges.size(); ++i) {
             //int[] clr = ImageIOHelper.getNextRGB(i);
-            ImageIOHelper.addCurveToImage(getEdgeList().get(i), im, 0, clr[0],
+            ImageIOHelper.addCurveToImage(labeledEdges.get(i), im, 0, clr[0],
                 clr[1], clr[2]);
         }
         MiscDebug.writeImage(im, "_" + ts + "_edges_");
@@ -580,8 +595,8 @@ public class MSEREdges {
         long t0 = System.currentTimeMillis();
 
         assert(labeledSets != null);
-        assert(getEdgeList() != null);
-        assert(labeledSets.size() == getEdgeList().size());
+        assert(labeledEdges != null);
+        assert(labeledSets.size() == labeledEdges.size());
 
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -609,7 +624,6 @@ public class MSEREdges {
         for (int label = 0; label < labeledSets.size(); ++label) {
             
             TIntSet set = new TIntHashSet(labeledSets.get(label));
-            //set.removeAll(edgeList.get(label));
             
             TIntSet points = ip.naiveStripPacking(set, w, nPixPerCellDim);
         
@@ -654,22 +668,23 @@ public class MSEREdges {
         int[] indexes = new int[sizes.length];
         
         TIntIntMap pointIndexMap = new TIntIntHashMap();
-        for (int i = 0; i < labeledSets.size(); ++i) {
-            TIntSet pixIdxs = labeledSets.get(i);
+        for (int label = 0; label < labeledSets.size(); ++label) {
+            TIntSet pixIdxs = labeledSets.get(label);
             TIntIterator iter = pixIdxs.iterator();
             while (iter.hasNext()) {
                 int pixIdx = iter.next();
-                pointIndexMap.put(pixIdx, i);
+                pointIndexMap.put(pixIdx, label);
             }
-            sizes[i] = pixIdxs.size();
-            indexes[i] = i;
+            sizes[label] = pixIdxs.size();
+            indexes[label] = label;
         }
         
         QuickSort.sortBy1stArg(sizes, indexes);
         
         // -- making adjacency map using edgeList ---
+        // a map with key=label, value = bitstring marking the neighboring labels.
         TIntObjectMap<VeryLongBitString> adjMap = imageProcessor
-            .createAdjacencyMap(pointIndexMap, getEdgeList(), w, h);
+            .createAdjacencyMap(pointIndexMap, labeledEdges, w, h);
         
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
 
@@ -683,7 +698,7 @@ public class MSEREdges {
         
         int mCount = 0;
         int eCount = 0;
-
+        
         do {    
             eCount = 0;
             
@@ -698,7 +713,7 @@ public class MSEREdges {
 
                 // subtr edges from sets
                 TIntSet set1 = new TIntHashSet(labeledSets.get(label));
-                set1.removeAll(getEdgeList().get(label));
+                set1.removeAll(labeledEdges.get(label));
 
                 PairInt xy1 = centroidsMap.get(label);
 
@@ -720,7 +735,7 @@ public class MSEREdges {
 
                     // subtr edges from sets
                     TIntSet set2 = new TIntHashSet(labeledSets.get(label2));
-                    set2.removeAll(getEdgeList().get(label2));
+                    set2.removeAll(labeledEdges.get(label2));
 
                     //hog, hcot, and hgs
                     List<PatchUtil> pList2 = clrs.get(label2);
@@ -770,7 +785,9 @@ public class MSEREdges {
                     adjLabels.clearBit(label2);
 
                     VeryLongBitString adjLabels2 = adjMap.get(label2);
+   //editing: bug on next line   adjLabels2 is null 
                     adjLabels2.clearBit(label);
+                    
                     int[] setBits2 = adjLabels2.getSetBits();
                     for (int label2Adj : setBits2) {
                         VeryLongBitString adjLabel2Adj = adjMap.get(label2Adj);
@@ -784,17 +801,19 @@ public class MSEREdges {
 
                     VeryLongBitString union = adjLabels.or(adjLabels2);
                     adjMap.put(label, union);
-                    adjLabels = union;
+                    adjLabels = union;       
                     adjMap.remove(label2);
 
                     labeledSets.get(label).addAll(labeledSets.get(label2));
-                    getEdgeList().get(label).addAll(getEdgeList().get(label2));
+                    labeledEdges.get(label).addAll(labeledEdges.get(label2));
                     labeledSets.get(label2).clear();
-                    getEdgeList().get(label2).clear();
+                    labeledEdges.get(label2).clear();
+                    
+                    assert(labeledEdges.size() == labeledSets.size());
 
                     // subtr edges from sets
                     set1 = new TIntHashSet(labeledSets.get(label));
-                    set1.removeAll(getEdgeList().get(label));
+                    set1.removeAll(labeledEdges.get(label));
 
                     // debug
                     if (debug) {
@@ -816,6 +835,7 @@ public class MSEREdges {
                     //System.out.format(" ==> (%d,%d)\n", xy1.getX(), xy1.getY());
                     mCount++;
                     eCount++;
+                    
                 }
             }
         } while (eCount > 0);
@@ -830,7 +850,7 @@ public class MSEREdges {
         
         PerimeterFinder2 finder2 = new PerimeterFinder2();
         
-        getEdgeList().clear();
+        labeledEdges.clear();
         
         // redo the edgeList since the merged sets have embedded edges
         for (int i = 0; i < labeledSets.size(); ++i) {
@@ -838,13 +858,13 @@ public class MSEREdges {
             TIntSet embedded = new TIntHashSet();
             TIntSet outerBorder = new TIntHashSet();
             finder2.extractBorder2(set, embedded, outerBorder, w);
-            getEdgeList().add(outerBorder);
+            labeledEdges.add(outerBorder);
         }
         assert(getEdgeList().size() == labeledSets.size());
         
         if (debug) {
             Image imgCp = clrImg.copyImage();
-            ImageIOHelper.addAlternatingColorCurvesToImage3(getEdgeList(),
+            ImageIOHelper.addAlternatingColorCurvesToImage3(labeledEdges,
                 imgCp, 0);
             MiscDebug.writeImage(imgCp, "_" + ts + "_MERGED_");
         }
@@ -1257,7 +1277,7 @@ public class MSEREdges {
                 + " methods first");
         }
 
-        return getEdgeList();
+        return labeledEdges;
     }
 
     /**
@@ -1556,7 +1576,7 @@ public class MSEREdges {
      */
     private void thinTheBoundaries(int minGroupSize) {
 
-        if (this.labeledSets == null || this.getEdgeList() == null) {
+        if (this.labeledSets == null || this.labeledEdges == null) {
             throw new IllegalStateException("instance vars are null: "
                 + " labeledSets, edgeLists");
         }
@@ -1638,7 +1658,7 @@ public class MSEREdges {
             }
             if (reassign.isEmpty()) {
                 labeledSets = contigousSets2;
-                edgeList = edgeLists2;
+                labeledEdges = edgeLists2;
             } else {
                 labels = new int[clrImg.getNPixels()];
                 Arrays.fill(labels, -1);
@@ -1659,7 +1679,7 @@ public class MSEREdges {
                 assignTheUnassigned(contigousSets2, labels, hsvs, reassign);
 
                 labeledSets.clear();
-                getEdgeList().clear();
+                labeledEdges.clear();
 
                 for (int i = 0; i < contigousSets2.size(); ++i) {
                     TIntSet set = contigousSets2.get(i);
@@ -1669,7 +1689,7 @@ public class MSEREdges {
                         clrImg.getWidth());
 
                     labeledSets.add(set);
-                    getEdgeList().add(outerBorder);
+                    labeledEdges.add(outerBorder);
                 }
             }
             
@@ -1697,8 +1717,7 @@ public class MSEREdges {
      * then the set is excluded.
      * So the method uses a minGroupSize that does not include the boundary
      * pixels.
-     * @param edgePoints
-     * @param minGroupSize
+     * @param edgePixIdxs set of pixel indexes
      */
     private void populateEdgeLists(TIntSet edgePixIdxs) {
 
@@ -1710,7 +1729,7 @@ public class MSEREdges {
         // find clusters (contiguous pixels of value 0) between edges
         labeledSets = extractContiguousBetweenEdges(edgePixIdxs);
 
-        edgeList = new ArrayList<TIntSet>();
+        labeledEdges = new ArrayList<TIntSet>();
 
         PerimeterFinder2 finder2 = new PerimeterFinder2();
 
@@ -1721,7 +1740,7 @@ public class MSEREdges {
             TIntSet outerBorder = new TIntHashSet();
             finder2.extractBorder2(set, embedded, outerBorder, gsImg.getWidth());
 
-            getEdgeList().add(outerBorder);
+            labeledEdges.add(outerBorder);
         
             ne += outerBorder.size();
         }
@@ -1730,7 +1749,7 @@ public class MSEREdges {
             System.out.println(ne + " pixels in edgeList");
         }
 
-        assert(labeledSets.size() == getEdgeList().size());
+        assert(labeledSets.size() == labeledEdges.size());
 
         System.out.println(labeledSets.size() + " labeled sets");
     }
@@ -2349,7 +2368,7 @@ public class MSEREdges {
      * @return the edgeList
      */
     public List<TIntSet> getEdgeList() {
-        return edgeList;
+        return labeledEdges;
     }
 
     /**
