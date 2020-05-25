@@ -49,7 +49,7 @@ extract regions in parallel, each
 thread needs to have its own MSER class instance.
 * 
 * The java port of the C++ code just quoted is from this project is
-* by author nichole.
+* by Nichole King.
 * 
 * ---------
 * details of the Nistér and H. Stewénius version of the MSER algorithm.
@@ -78,11 +78,11 @@ thread needs to have its own MSER class instance.
       (where e ≈ 2n for four-connected images). 
 
 * ------
-* author nichole ported the C++ code of Charles Dubout to java 
+* nichole king ported the C++ code of Charles Dubout to java 
 * and added the use of bit vectors as 
 * recommended by Nister and Stewénius.
 * recently added the accumulated points also at the cost of space complexity
-* in order to use the Regions for patch matching and edges.
+* in order for other classes to use the Regions for patch matching and edges.
 */
 public class MSER {
 
@@ -97,26 +97,27 @@ public class MSER {
 
     /**
     constructor w/ the following default values:
-    @param[in] delta DELTA parameter of the MSER algorithm.
+    param[in] delta DELTA parameter of the MSER algorithm.
                Roughly speaking, the stability of a
 	       region is the relative variation of the region
                area when the intensity is changed by delta.
                (default delta = 2.0)
-    @param[in] minArea Minimum area of any stable region
+    param[in] minArea Minimum area of any stable region
                relative to the image domain area.
-               (double minArea = 0.0001)
-    @param[in] maxArea Maximum area of any stable region
+               (default minArea = 0.0001)
+    param[in] maxArea Maximum area of any stable region
                relative to the image domain area.
-               (double maxArea = 0.5)
-    @param[in] maxVariation Maximum variation (absolute
+               (default maxArea = 0.5)
+    param[in] maxVariation Maximum variation (absolute
                stability score) of the regions.
-               (double maxVariation = 0.5)
-    @param[in] minDiversity Minimum diversity of the regions.
+               (default maxVariation = 0.5)
+    param[in] minDiversity Minimum diversity of the regions.
                When the relative area of two
      	       nested regions is below this threshold,
                then only the most stable one is selected.
-               (double minDiversity = 0.33)
-    @param[in] eight Use 8-connected pixels instead of 4-connected.
+               (default minDiversity = 0.33)
+    param[in] eight Use 8-connected pixels instead of 4-connected.
+               (default eight = false).
     */
     public MSER() {
 
@@ -162,13 +163,6 @@ public class MSER {
         double maxVariation, double minDiversity,
         boolean eight) {
 
-        this.eight_ = eight;
-        this.delta_ = delta;
-        this.minArea_ = minArea;
-        this.maxArea_ = maxArea;
-        this.maxVariation_ = maxVariation;
-        this.minDiversity_ = minDiversity;
-       
         if (delta <= 0) {
             throw new IllegalArgumentException("delta must be > 0");
         }
@@ -190,6 +184,13 @@ public class MSER {
         if (minDiversity >= 1) {
             throw new IllegalArgumentException("minDiversity must be < 1");
         }
+        
+        this.eight_ = eight;
+        this.delta_ = delta;
+        this.minArea_ = minArea;
+        this.maxArea_ = maxArea;
+        this.maxVariation_ = maxVariation;
+        this.minDiversity_ = minDiversity;
     }
 
     /**
@@ -199,8 +200,8 @@ public class MSER {
       of the array is currently 2^27 -1, due to
       internal data structures and encoding, but this may change.
           
-      @param width Width of the image.
-      @param height Height of the image.
+      @param width input Width of the image.
+      @param height input Height of the image.
       @param regions output Detected MSER.
     */
     public void operator(int[] bits, int width, int height,
@@ -209,7 +210,7 @@ public class MSER {
         if (bits.length > ((1 << 27) - 1)) {
             
             throw new IllegalArgumentException("bits.length must be less than "
-                + " 27 bits currently.  just need to edit a variable to"
+                + " 2^27 currently.  just need to edit a variable to"
                 + " use long instead.  upper limit to bits.length would then"
                 + " be 31 bits - 1, limited by java language array length limit");
         }
@@ -242,6 +243,9 @@ public class MSER {
         int curLevel = bits[0];
         // set bit 0
         accessible.setBit(0);
+        
+        //System.out.println("curPixel " + curPixel + " level=" + curLevel + " priority=" + priority);
+        //System.out.println("accessible " + 0);
 
         // 3. Push an empty component with current level onto the component stack.
         //step_3:
@@ -269,23 +273,23 @@ public class MSER {
                 int neighborPixel = curPixel;
 
                 if (eight_) {
-                    //pix = row * w + col
+                    //pix = (row * w) + col
                     switch (curEdge) {
-                        case 0: if (x < width - 1) neighborPixel = curPixel + 1; break;
+                        case 0: if (x < width - 1) neighborPixel = curPixel + 1; break; 
                         case 1: if ((x < width - 1) && (y > 0)) neighborPixel = curPixel - width + 1; break;
-                        case 2: if (y > 0) neighborPixel = curPixel - width; break;
-                        case 3: if ((x > 0) && (y > 0)) neighborPixel = curPixel - width - 1; break;
-                        case 4: if (x > 0) neighborPixel = curPixel - 1; break;
+                        case 2: if (y > 0) neighborPixel = curPixel - width; break; 
+                        case 3: if ((x > 0) && (y > 0)) neighborPixel = curPixel - width - 1; break; 
+                        case 4: if (x > 0) neighborPixel = curPixel - 1; break; 
                         case 5: if ((x > 0) && (y < height - 1)) neighborPixel = curPixel + width - 1; break;
-                        case 6: if (y < height - 1) neighborPixel = curPixel + width; break;
-                        default: if ((x < width - 1) && (y < height - 1)) neighborPixel = curPixel + width + 1; break;
+                        case 6: if (y < height - 1) neighborPixel = curPixel + width; break; 
+                        default: if ((x < width - 1) && (y < height - 1)) neighborPixel = curPixel + width + 1; break; 
                     }
                 } else {
                     switch (curEdge) {
-                        case 0: if (x < width - 1) neighborPixel = curPixel + 1; break;
-                        case 1: if (y < height - 1) neighborPixel = curPixel + width; break;
-                        case 2: if (x > 0) neighborPixel = curPixel - 1; break;
-                        default: if (y > 0) neighborPixel = curPixel - width; break;
+                        case 0: if (x < width - 1) neighborPixel = curPixel + 1; break; 
+                        case 1: if (y < height - 1) neighborPixel = curPixel + width; break; 
+                        case 2: if (x > 0) neighborPixel = curPixel - 1; break; 
+                        default: if (y > 0) neighborPixel = curPixel - width; break; 
                     }
                 }
 
@@ -294,6 +298,8 @@ public class MSER {
 
                     int neighborLevel = bits[neighborPixel];
                     accessible.setBit(neighborPixel);
+                    
+                    //System.out.println(" accessible nb=" + neighborPixel + " nblvl=" + neighborLevel);
                     
                     if (neighborLevel >= curLevel) {
              
@@ -321,13 +327,15 @@ public class MSER {
                         curEdge = 0;
                         curLevel = neighborLevel;
 
+                        //System.out.println("curPixel " + curPixel + " level=" + curLevel + " priority=" + priority);
+                        
                         //continue step_3;
                         s3 = true;
                         
                         break;
                     }
                 }
-            } // end for loop over currEdge
+            } // end for loop over curEdge
 
             if (s3) {
 
@@ -335,6 +343,30 @@ public class MSER {
 
                 continue;
             }
+            /*the above code outlined for quick look at major branches:
+            while (true) {
+                for (; curEdge < (eight_ ? 8 : 4); ++curEdge) {
+                    if (neighborPixel != curPixel && accessible.isNotSet(neighborPixel)) {
+                        if (neighborLevel >= curLevel) {
+                        } else {
+                            s3 = true;
+                            break;
+                        }
+                    }
+                } // end for loop over curEdge
+                if (s3) {
+                    continue;
+                }
+                if (priority == 256) {
+                    regionStack.get(regionStack.size() - 1)
+                        .detect(...);
+                    return;
+                }
+                if (newPixelGreyLevel != curLevel) {
+                    processStack(newPixelGreyLevel, curPixel, regionStack);
+                }
+            }// end outer loop
+            */
 
             // 5. Accumulate the current pixel to the component at the top of the stack (water
             // saturates the current pixel).
@@ -359,8 +391,9 @@ public class MSER {
             if (boundaryPixels[priority].isEmpty()) {
                 boundaryPixelsIdx.clearBit(priority);
             }
+            // decode (curPixel << 4) | (curEdge + 1):
             curPixel = highestPriorityBP >> 4;
-            curEdge = highestPriorityBP & 15;
+            curEdge = highestPriorityBP & 15; // <--- NOTE: +1 remains here as incrementation for next loop value
            
             if (priority < 256 && boundaryPixels[priority].isEmpty()) {
                 int prev = priority;
@@ -374,7 +407,8 @@ public class MSER {
                     }
                 }             
             }
-           
+            //System.out.println("curPixel " + curPixel + " level=" + curLevel + " priority=" + priority);
+
             int newPixelGreyLevel = bits[curPixel];
 
             if (newPixelGreyLevel != curLevel) {
@@ -388,6 +422,10 @@ public class MSER {
                 // Then go to 4.
                 processStack(newPixelGreyLevel, curPixel, regionStack);
             }
+            /*System.out.println("Regions:");
+            for (Region r : regionStack) {
+                System.out.println(r.toString());
+            }*/
         }// end outer while loop
     }
 
@@ -437,15 +475,22 @@ public class MSER {
         } // 4. If(newPixelGreyLevel>top of stack grey-level) go to 1.
         while (newPixelGreyLevel > 
             regionStack.get(regionStack.size() - 1).level_);
+        
     }
 
     /**
-     * given 8 bit image, calculate the MSER regions.
+     * given 8 bit image, calculate the MSER regions using the default 
+     * sensitivity Threshold (sets instance variables to
+     * preset values for the threshold).
      * @param img
      * @return 
      */
     public List<List<Region>> findRegions(GreyscaleImage img) {
 
+        if (img.getMax() > ((1 <<8) - 1)) {
+            throw new IllegalArgumentException("img must be an 8 bit image");
+        }
+        
         int width = img.getWidth();
         int height = img.getHeight();
 
@@ -460,12 +505,30 @@ public class MSER {
     /**
      * given 8 bit image, calculate the MSER regions.
      * @param img
+     * @param delta DELTA parameter of the MSER algorithm.
+               Roughly speaking, the stability of a
+	       region is the relative variation of the region
+               area when the intensity is changed by delta.
+        @param minArea Minimum area of any stable region
+                   relative to the image domain area.
+        @param maxArea Maximum area of any stable region
+                   relative to the image domain area.
+        @param maxVariation Maximum variation (absolute
+                   stability score) of the regions.
+        @param minDiversity Minimum diversity of the regions.
+                   When the relative area of two
+                   nested regions is below this threshold,
+                   then only the most stable one is selected.
      * @return 
      */
     public List<List<Region>> findRegions(GreyscaleImage img,
         int delta, double minArea, double maxArea, double maxVariation,
         double minDiversity) {
 
+        if (img.getMax() > ((1 <<8) - 1)) {
+            throw new IllegalArgumentException("img must be an 8 bit image");
+        }
+        
         int width = img.getWidth();
         int height = img.getHeight();
 
@@ -484,6 +547,10 @@ public class MSER {
     
     public static int[] readIntoArray(GreyscaleImage img) {
         
+        if (img.getMax() > ((1 <<8) - 1)) {
+            throw new IllegalArgumentException("img must be an 8 bit image");
+        }
+        
         int width = img.getWidth();
         int height = img.getHeight();
 
@@ -498,10 +565,16 @@ public class MSER {
     /**
      * given 8 bit image, calculate the MSER regions.
      * @param img
+     * @param threshold sets the instance variables to preset values for sensitivity
+     * categories.
      * @return 
      */
     public List<List<Region>> findRegions(GreyscaleImage img, Threshold 
         threshold) {
+        
+        if (img.getMax() > ((1 <<8) - 1)) {
+            throw new IllegalArgumentException("img must be an 8 bit image");
+        }
 
         int width = img.getWidth();
         int height = img.getHeight();
@@ -514,6 +587,13 @@ public class MSER {
         return findRegions(greyscale, width, height, threshold);
     }
     
+    /**
+     * 
+     * @param greyscale array of image pixels in order idx = (row * width) + col.
+     * @param width
+     * @param height
+     * @return 
+     */
     public List<List<Region>> findRegions(int[] greyscale, int width,
         int height) {
         return findRegions(greyscale, width, height, 
@@ -597,7 +677,8 @@ public class MSER {
     }
     
     /**
-     * given 8 bit image, calculate the MSER regions.
+     * given 8 bit image, calculate the MSER regions.  uses 4-connected regions
+     * for the positive and negative image processing.
      * @param greyscale greyscale intensities of the image written so
      * that the array index is (row * imageWidth) + col.
      * Note, the input greyscale array is modified to invert it.
@@ -652,6 +733,8 @@ public class MSER {
     
     /**
      * given 8 bit image, calculate the MSER regions.
+     * uses 8-connected regions for the positive image processing and 
+     * 4-connected regions for the negative image processing.
      * @param greyscale greyscale intensities of the image written so
      * that the array index is (row * imageWidth) + col.
      * @param width image width

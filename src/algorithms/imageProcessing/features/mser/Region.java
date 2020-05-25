@@ -46,7 +46,7 @@ algorithm. It extracts stable connected regions of some level sets from an
 image, and optionally fits ellipses to them.
 * 
 * ------
-* author nichole ported the C++ code of Charles Dubout to java and added
+* Nichole King ported the C++ code of Charles Dubout to java and added
 * methods used in canonicalization.
 * 
 * The equals and hashcode have been tailored to consider the composite of
@@ -71,7 +71,7 @@ public class Region {
     int area_;
     
     /**
-     * First and second moments of the region (x, y, x^2, xy, y^2).
+     * First and second moments of the region as (x, y, x^2, xy, y^2).
      */
     double[] moments_;
 
@@ -97,6 +97,7 @@ public class Region {
      * constructor with default level = 256 and pixel=0.  255 is the maximum
      * values of any pixel used in MSER.  the default level is used when
      * instantiating MSER to start with a high component level.
+     * This constructor uses a default level of 256 and default pixel of 0.
      */
     public Region() {
         int level = 256;
@@ -105,8 +106,8 @@ public class Region {
     }
 
     /**
-     * @param level Level at which the region is processed (default level = 256)
-     * @param pixel Index of the initial pixel (y * width + x). (int pixel = 0)
+     * @param level Level at which the region is processed (default level is 256)
+     * @param pixel Index of the initial pixel = (y * width + x). (default pixel is 0)
      */
     public Region(int level, int pixel) {
         init(level, pixel);
@@ -145,7 +146,7 @@ public class Region {
         this.accY.add(y);
     }
 
-    public void merge(Region child) {
+    void merge(Region child) {
         assert(child.parent_ == null);
         assert(child.next_ == null);
 
@@ -165,7 +166,7 @@ public class Region {
         child.parent_ = this;
     }
 
-    public void detect(int delta, int minArea, int maxArea,
+    void detect(int delta, int minArea, int maxArea,
         double maxVariation, double minDiversity,
         List<Region> regions) {
 
@@ -174,7 +175,7 @@ public class Region {
         save(minDiversity, regions);
     }
 
-    public void process(int delta, int minArea, int maxArea,
+    private void process(int delta, int minArea, int maxArea,
         double maxVariation) {
 
         // Find the last parent with level not higher than level + delta
@@ -211,7 +212,7 @@ public class Region {
         }
     }
 
-    public boolean check(double variation, int area) {
+    private boolean check(double variation, int area) {
 
         if (area_ <= area) {
             return true;
@@ -230,7 +231,7 @@ public class Region {
         return true;
     }
 
-    public void save(double minDiversity, List<Region> regions) {
+    private void save(double minDiversity, List<Region> regions) {
 
         int minParentArea = 0;
         if (stable_) {
@@ -791,15 +792,36 @@ public class Region {
     
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("level_=").append(level_);
-        sb.append(" pixel_=").append(pixel_);
-        sb.append(" area_=").append(area_);
+        StringBuilder sb = new StringBuilder("");
+        sb.append("  level_=").append(level_);
+        sb.append("\n  pixel_=").append(pixel_);
+        sb.append("\n  area_=").append(area_);
         sb.append(" moments_=").append(Arrays.toString(moments_));
         sb.append(" variation_=").append(variation_);
         sb.append(" stable=").append(stable_);
+        sb.append("\n  (x,y)=");
+        for (int i = 0; i < accX.size(); ++i) {
+            sb.append(accX.get(i)).append(",").append(accY.get(i)).append(" ");
+        }
+        sb.append("\n  children=");
+        for (Region child = child_; child != null; child = child.next_) {
+            toStringChildren(child, "   ");
+        }
+        sb.append("\n");
         return sb.toString();
     }
+   
+    private String toStringChildren(Region c, String indent) {
+        StringBuilder sb = new StringBuilder("");
+        sb.append(indent).append("pixel=").append(c.pixel_)
+            .append("level=").append(c.level_);
+        for (Region child = c.child_; child != null; child = child.child_) {
+            toStringChildren(child, indent + "  ");
+        }
+        sb.append("\n");
+        return sb.toString();
+    }
+    
    
     public Set<PairInt> getAcc() {
         Set<PairInt> out = new HashSet<PairInt>();
