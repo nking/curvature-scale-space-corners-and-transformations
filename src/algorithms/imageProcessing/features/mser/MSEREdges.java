@@ -816,7 +816,7 @@ public class MSEREdges {
                     set1.removeAll(labeledEdges.get(label));
 
                     // debug
-                    if (debug) {
+                    if (false && debug) {
                         Image tmp = clrImg.copyImage();
                         ImageIOHelper.addAlternatingColorPointSetsToImage2(
                             labeledSets, 0, 0, 0, tmp);

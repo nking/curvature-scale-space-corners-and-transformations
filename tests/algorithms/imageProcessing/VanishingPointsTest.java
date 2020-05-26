@@ -238,7 +238,7 @@ System.out.println("index i=" + i);
             ImageExt img11 = img.createWithDimensions();
 
             VanishingPoints vp2 = new VanishingPoints();
-            vp2.setToDebug();
+            //vp2.setToDebug();
             //vp2.dbgImg = img.copyImage();
             vp2.find(contigSets, img.getWidth(), img.getHeight());
             //vp2.correctLinesWithGradient(products.getGradientXY());            

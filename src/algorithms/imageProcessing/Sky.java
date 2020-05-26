@@ -59,7 +59,7 @@ public class Sky {
         this.img = img.copyToImageExt();
         
         mserEdges = new MSEREdges(this.img);
-        mserEdges.setToDebug();
+        //mserEdges.setToDebug();
         mserEdges.extractAndMergeEdges();
         
     }
