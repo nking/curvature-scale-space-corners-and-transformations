@@ -164,7 +164,7 @@ public class MSEREdges {
         //   around from 255 to 0, but perceived as different can be
         //   found by comparing these two image's results, though
         //   there may be faster ways to achieve this.
-        this.ptImgShifted = copyAndShift(ptImg, thetaShift);
+        this.ptImgShifted = imageProcessor.copyAndShiftPolarAngleImage(ptImg, thetaShift);
 
         state = STATE.INITIALIZED;
     }
@@ -2122,24 +2122,7 @@ public class MSEREdges {
             }
         }
     }
-
-    private GreyscaleImage copyAndShift(GreyscaleImage polarImage, int valueShift) {
-
-        GreyscaleImage shiftedImg = polarImage.createWithDimensions();
-        for (int i = 0; i < polarImage.getNPixels(); ++i) {
-            int v = polarImage.getValue(i);
-            v += valueShift;
-            if (v < 0) {
-                v += 255;
-            } else if (v > 255) {
-                v -= 255;
-            }
-            shiftedImg.setValue(i, v);
-        }
-
-        return shiftedImg;
-    }
-
+    
     private void removeImageBorder(TIntSet pixIdxs, TIntSet outputRmvd,
         int width, int height) {
 

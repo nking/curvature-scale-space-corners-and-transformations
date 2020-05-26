@@ -5941,8 +5941,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
 
     /**
-     * create 3 images of the LCG color space where LCH is the
-     * luminosity, magnitude, and polar angle of CIE LUV color space.
+     * create 3 images of LCH where L, C, and H are the
+     * luminosity, magnitude, and polar angle of CIE LUV color space, respectively.
      * @param img
      * @return
      */
@@ -6432,6 +6432,34 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         }
     }
 
+    /**
+     * a utility method for polar theta images that have had their range
+     * scaled from 0 to 255.  This method copies the image and applies
+     * the valueShift amount to each pixel value and if result is larger than
+     * 255, subtracts 255 to wrap around to 0 again in the polar coordinates.
+     * NOTE: the algorithms that use this to compensate for the discontinuity
+     * from 255 to 0 can probably be changed to use a difference in angles.
+     * @param polarImage
+     * @param valueShift
+     * @return 
+     */
+    public GreyscaleImage copyAndShiftPolarAngleImage(GreyscaleImage polarImage, int valueShift) {
+
+        GreyscaleImage shiftedImg = polarImage.createWithDimensions();
+        for (int i = 0; i < polarImage.getNPixels(); ++i) {
+            int v = polarImage.getValue(i);
+            v += valueShift;
+            if (v < 0) {
+                v += 255;
+            } else if (v > 255) {
+                v -= 255;
+            }
+            shiftedImg.setValue(i, v);
+        }
+
+        return shiftedImg;
+    }
+    
     // TODO: implement the methods in
     // http://www.merl.com/publications/docs/TR2008-030.pdf
     // for an O(n) filter.

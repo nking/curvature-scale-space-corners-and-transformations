@@ -1580,6 +1580,70 @@ public class ORB {
 
         return combined;
     }
+    
+    /**
+     * combine key-point lists k1 and k2, removing redundancies, then
+     * create a combined Descriptors for the combined key-point's descriptors,
+     * and a combined orientations list for the same combined key-points.
+     * @param d1 descriptors from dataset 1
+     * @param k1 key-points from dataset 1
+     * @param o1 orientations from dataset 1
+     * @param d2 descriptors from dataset 2
+     * @param k2 key-points from dataset 2
+     * @param o2 orientations from dataset 2
+     * 
+     * @return a 3-dimensional array holding the combined Descriptors in the
+     * first element, the combined key-points in the second element, and the
+     * combined orientations in the third element.
+     * i.e. new Object[]{combinedDescriptors, combinedKeyPoints} with
+     */
+    public static Object[] combine(Descriptors d1, List<PairInt> k1, TDoubleList o1,
+        Descriptors d2, List<PairInt> k2, TDoubleList o2) {
+        
+        if (d1.descriptors.length != k1.size()) {
+            throw new IllegalArgumentException("d1.descriptors.length and k1.size must be the same");
+        }
+        if (d2.descriptors.length != k2.size()) {
+            throw new IllegalArgumentException("d2.descriptors.length and k2.size must be the same");
+        }
+        if (k1.size() != o1.size()) {
+            throw new IllegalArgumentException("k1.size and o1.size must be the same");
+        }
+        if (k2.size() != o2.size()) {
+            throw new IllegalArgumentException("k2.size and o2.size must be the same");
+        }
+        
+
+        Set<PairInt> k12 = new HashSet<PairInt>();
+        k12.addAll(k1);
+        k12.addAll(k2);
+        
+        int n = k12.size();
+        
+        List<PairInt> kCombined = new ArrayList<PairInt>(n);
+        Descriptors dCombined = new Descriptors();
+        dCombined.descriptors = new VeryLongBitString[n];
+        TDoubleList oCombined = new TDoubleArrayList();
+        
+        for (int idx = 0; idx < k1.size(); ++idx) {
+            dCombined.descriptors[idx] = d1.descriptors[idx].copy();
+            kCombined.add(k1.get(idx));
+            oCombined.add(o1.get(idx));
+            k12.remove(k1.get(idx));
+        }
+        for (int idx = 0; idx < k2.size(); ++idx) {
+            PairInt p = k2.get(idx);
+            if (k12.contains(p)) {
+                int j = kCombined.size();
+                dCombined.descriptors[j] = d2.descriptors[idx].copy();
+                kCombined.add(p);
+                oCombined.add(o2.get(idx));
+                k12.remove(p);
+            }
+        }
+
+        return new Object[]{dCombined, kCombined, oCombined};
+    }
 
     /**
      * get a list of each octave's keypoint rows as a combined list.
