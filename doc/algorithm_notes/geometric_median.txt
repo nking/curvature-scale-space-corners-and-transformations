@@ -20,12 +20,21 @@ calculating the geometric median:
      -- Input: (0, 0), (0, 0), (0, 12)
         Output: Geometric Median = (0, 0) with minimum distance = 12
 
+   and example evaluations for f and the derivative w.r.t. each dimension:
+   for nDimensions = 2:
+   f = summation_i=1_n( || X - obs_i || )/n
+       where || X - obs_i ||_2 is ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2)
+   df/dX_0 = (0.5/n) * ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(-1/2) * (-2*(X_0-obs_i_0))
+           = (-1./n) * (X_0-obs_i_0) / ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2)
+   df/dX_1 = (-1./n) * (X_1-obs_i_1) / ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2)
+
    can calculate geometric median (a.k.a. euclidean median) many different ways:
       0) for a nearly linear time implementation, looking at this and it's thesis:
          https://dl.acm.org/doi/pdf/10.1145/2897518.2897647
          ** https://www.cs.cmu.edu/~glmiller/Publications/Papers/PachockiPHD.pdf
          This is an "interior point method" so belongs in section 3) below as a
          convex optimization algorithm.  
+         (see page 3, Sect 1.2)
       1) least squares
          minimize  ||Ax - b||^2_2
          for A being size kXn, runtime complexity is k*n^2
@@ -37,20 +46,19 @@ calculating the geometric median:
               Note that for large matrices, ⃗x = V (R(U^T⃗b)) is much 
                  more efficient to compute. 
               Note the solution matrix used above, namely VRU^T, equals the pseudo-inverse A.
-           NOTE: cannot find further mention with pseudocode of using least squares
-           for the geometric median except *iteratively* (frequently referenced is Weiszfeld, but paper
-           is not open access).   It's the Fermat-Weber problem. see 3) below.
+           NOTE: to solve for b, need an iterative method for retrying values of b.
+           frequently referenced is Weiszfeld and the Fermat-Weber problem. see 3) below.
       2) linear programming... similar runtime for this
       3) any convex optimization algorithm.
          computation time (roughly) proportional to max{n^3, m*n^2, F}, 
          where F is cost of evaluating fi’s and their first and second derivatives
-         -- LBFGS is good high-dimensional data. starting point being the centroid?
+         -- LBFGS is good for high-dimensional data. starting point being the centroid?
             The linear time algorithm in 0) uses the Hessian rather than the gradient.
             The appeal to implementing it is not only its speed for high dimensions,
             but that the authors prove convergence for each method in the pseudocode.
              
          -- iteratively reweighted least squares (IRLS)
-            given points Z_I=(x_i, y_i)
+            given observed points Z_I=(x_i, y_i)
             and wanting to solve for X=(x_median, y_median)
             let weight w_i = 1/( || X-z_i || )
             note that the geometric median usually uses equal weights w_i=1/n
@@ -61,7 +69,8 @@ calculating the geometric median:
                X_(t+1) = summation_i=1_n( w_t*z_i ) / summation_i=1_n( w_t^2 )
 
             for L1 version given by Ostresh:
-               X_(t+1) = X_t - alpha*summation_i=1_n( w_t*z_i / || X-z_i || ) / summation_i=1_n( w_t / || X-z_i || )
+               X_(t+1) = X_t - alpha*summation_i=1_n( w_t*z_i / || X-z_i || ) / 
+                           summation_i=1_n( w_t / || X-z_i || )
 
             the gradient of the Riemannian sum-of-distances function is given by
                grad( f(X) ) = -summation_i=1_n( w_i*Log(X_i) / (X-z_i))
@@ -73,10 +82,10 @@ calculating the geometric median:
                            summation_i=1_n( w_i / (X-z_i))
                authors found alpha=1 leads to convergence
 
-          *IRLS provides the Weiszfeld algorithm for geometric median:
+          *IRLS, can use the Weiszfeld algorithm for geometric median:
              Two steps:
-               (1) w_i = 1/[max(|| X-z_i ||_2, δ)]
-               (2) X = (summation_i=1_n(w_i*X_i))/(summation_i=1_n(w_i))
+               (1) w_i = 1/[max(|| X-z_i ||_2, delta)]
+               (2) X = (summation_i=1_n(w_i*z_i))/(summation_i=1_n(w_i))
                            where (2) is derived from setting the deriv to zero for:
                                      X = minimum X in (summation_i=1_n(w_i*(z_i-X_i)^2))
              And a strategy for optimization:
@@ -84,8 +93,8 @@ calculating the geometric median:
                 fix X{x} and minimize f with respect to X{y}, 
                 and repeat:
                   for i ← 1, 2, . . .
-                     X{x}_i+1 = min_(X{x}) f(X, X{y}_i) . Optimize X{x} with X{y} fixed
                      X{y}_i+1 = min_(X{y}) f(X{x}_i+1, X{y}) . Optimize X{y} with X{x} fixed
+                     X{x}_i+1 = min_(X{x}) f(X, X{y}_i) . Optimize X{x} with X{y} fixed
 
          *ADMM is an augmented Lagrangian method which are used in constrained optimization problems.
             they add a penalty term to the objective and another term to mimic the Lagrange multiplier.
