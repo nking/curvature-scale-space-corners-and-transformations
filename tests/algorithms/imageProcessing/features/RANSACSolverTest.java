@@ -61,7 +61,7 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray outputRight = new PairIntArray();
         
         RANSACSolver solver = new RANSACSolver();
-        int tolerance = 4;
+        double tolerance = 4;
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             //leftTruePlusFalse, rightTruePlusFalse, outputLeft, outputRight);
             leftTrueMatches, rightTrueMatches, outputLeft, outputRight,
@@ -149,7 +149,7 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out1 = new PairIntArray(m1.getN());
         PairIntArray out2 = new PairIntArray(m1.getN());
         RANSACSolver solver = new RANSACSolver();
-        int tolerance = 4;
+        double tolerance = 4;
         EpipolarTransformationFit fit
             = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 
@@ -277,7 +277,7 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out1 = new PairIntArray(m1.getN());
         PairIntArray out2 = new PairIntArray(m1.getN());
         RANSACSolver solver = new RANSACSolver();
-        int tolerance = 4;
+        double tolerance = 4;
         EpipolarTransformationFit fit
             = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 
@@ -394,7 +394,7 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out2 = new PairIntArray(m1.getN());
         
         RANSACSolver solver = new RANSACSolver();
-        int tolerance = 4;
+        double tolerance = 4;
         EpipolarTransformationFit fit
             = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 
@@ -470,7 +470,7 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray out1 = new PairIntArray(m1.getN());
         PairIntArray out2 = new PairIntArray(m1.getN());
         RANSACSolver solver = new RANSACSolver();
-        int tolerance = 4;
+        double tolerance = 4;
         EpipolarTransformationFit fit
             = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
 

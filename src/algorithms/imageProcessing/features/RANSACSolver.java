@@ -6,17 +6,13 @@ import algorithms.imageProcessing.transform.Distances;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.transform.Util;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
 
@@ -57,7 +53,7 @@ public class RANSACSolver {
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
         PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY, int tolerance) {
+        PairIntArray outputLeftXY, PairIntArray outputRightXY, double tolerance) {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -98,7 +94,7 @@ public class RANSACSolver {
     public EpipolarTransformationFit calculateEpipolarProjection(
         final DenseMatrix matchedLeftXY, final DenseMatrix matchedRightXY,
         final PairIntArray outputLeftXY, final PairIntArray outputRightXY,
-        final int tolerance) {
+        final double tolerance) {
 
         //TODO: improve this method
         
@@ -127,12 +123,16 @@ public class RANSACSolver {
            percent of bad data.
            NOTE, the algorithm proceeds by assuming 50% bad data and improves
            that upon each best fitting sub-sample.
-           NOTE, the number of iterations is then re-calculated too.
-        -- once the best fitting sub-sample is found, that Fundamental
-           Matrix is used with all of the points to determine inliers for that
-           transformation.
-        -- that consensus of inliers are then used to re-compute a final Fundamental
-           Matrix.
+        -- for each iteration of solving epipolar transformation using a sample
+           of size 7, the resulting fundamental matrix is evaluated on the
+           all points of the dataset.
+           If the number of inliers is T or more, the fit is re-done with all
+           of the points, where 
+           T = (1. - outlierPercentage) * (total number of data points)
+           The best fitting for all iterations as defined by number of inliers 
+           and standard deviation from an epipolar line, is kept each time.
+        -- at the end of each iteration, the number of iterations is then 
+           re-calculated if it can be reduced.
         
         NOTE that the sub-samples are selected randomly from all possible
         sub-samples of the nPoints unless the number of all possible 
@@ -145,7 +145,7 @@ public class RANSACSolver {
         final int nSet = 7;
 
         final int nPoints = matchedLeftXY.numColumns();
-        
+                
         // n!/(k!*(n-k)!
         final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusKExact(nPoints, nSet);
         boolean useAllSubsets = false;
@@ -169,6 +169,7 @@ public class RANSACSolver {
         */
         
         int outlierPercent = 50;
+        int t = (int)Math.ceil((1. - outlierPercent)*nPoints);
         
         long nMaxIter;
         if (nPoints == nSet) {
@@ -193,10 +194,6 @@ public class RANSACSolver {
         
         DenseMatrix sampleLeft = new DenseMatrix(3, nSet);
         DenseMatrix sampleRight = new DenseMatrix(3, nSet);
-        
-        DenseMatrix bestSampleLeft = null;
-        DenseMatrix bestSampleRight = null;
-        
         // initialize the unchanging 3rd dimension
         for (int i = 0; i < nSet; ++i) {
             sampleLeft.set(2, i, 1);
@@ -252,16 +249,40 @@ public class RANSACSolver {
             
             for (DenseMatrix fm : fms) {
                 
-                // indexes within this refer to the sample data, not the larger matched data
                 EpipolarTransformationFit fitI = distances.calculateError(fm, 
-                    sampleLeft, sampleRight, errorType, tolerance);
+                    matchedLeftXY, matchedRightXY, errorType, tolerance);
                      
-                if (fitI.getInlierIndexes().size() == nSet &&
-                    fitI.isBetter(fit)) {
-                    
+                int nInliers = fitI.getInlierIndexes().size();
+                if (nInliers >= nSet && fitI.isBetter(fit)) {
+                                        
+                    if (nInliers > t && nInliers > nSet) {
+                        // redo the transformation with all inliers
+                        DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);
+                        DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);
+                        int countI = 0;
+                        for (Integer idx : fitI.getInlierIndexes()) {
+                            int idxInt = idx.intValue();
+                            inliersLeftXY.set(0, countI, matchedLeftXY.get(0, idxInt));
+                            inliersLeftXY.set(1, countI, matchedLeftXY.get(1, idxInt));
+                            inliersLeftXY.set(2, countI, 1);
+                            inliersRightXY.set(0, countI, matchedRightXY.get(0, idxInt));
+                            inliersRightXY.set(1, countI, matchedRightXY.get(1, idxInt));
+                            inliersRightXY.set(2, countI, 1);
+                            countI++;
+                        }
+                        DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
+                            inliersLeftXY, inliersRightXY);
+                        if (fm2 != null) {
+                            EpipolarTransformationFit fit2 = distances
+                                .calculateError(fm2, matchedLeftXY, matchedRightXY,
+                                errorType, tolerance);
+                            if (fit2 != null && fit2.isBetter(fitI)) {
+                                fitI = fit2;
+                            }
+                        }
+                    }
                     System.out.println("new local best fit: " + fitI.toString());
                     System.out.flush();
-                    
                     fit = fitI;
                 }
             }
@@ -270,14 +291,12 @@ public class RANSACSolver {
                 nIter++;
                 continue;
             }
-            
+                        
             if (fit.isBetter(bestFit)) {
                 int nb = (bestFit != null) ? bestFit.getInlierIndexes().size() : nSet+1;
                 int nf = fit.getInlierIndexes().size();
                 
                 bestFit = fit;
-                bestSampleLeft = sampleLeft.copy();
-                bestSampleRight = sampleRight.copy();
                 
                 System.out.println("**best fit: " + bestFit.toString());
                 System.out.flush();
@@ -311,80 +330,8 @@ public class RANSACSolver {
             return null;
         }
                 
-        // -- use best fit epipolar projection on matched points
-        // -- remove outliers
-        // -- re-calculate epipolar projection from remaining
-        // -- return finished fit and errors
-        
-        EpipolarTransformationFit bestFitAppliedToAll 
-            = distances.calculateError(bestFit.getFundamentalMatrix(), 
-            matchedLeftXY, matchedRightXY, errorType, tolerance);
-                       
-        log.fine("bestFitAppliedToAll: " + bestFitAppliedToAll.toString());
-        
-        if (bestFitAppliedToAll.getInlierIndexes().size() < bestFit.getInlierIndexes().size()) {
-            throw new IllegalStateException("error in states of best fits inliers!");
-        }
-        
-        // create an inlier list for a new transformation 
-        int nInliers = bestFitAppliedToAll.getInlierIndexes().size();        
-        DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);
-        DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);
-        int count = 0;
-        for (Integer idx : bestFitAppliedToAll.getInlierIndexes()) {
-            int idxInt = idx.intValue();            
-            inliersLeftXY.set(0, count, matchedLeftXY.get(0, idxInt));
-            inliersLeftXY.set(1, count, matchedLeftXY.get(1, idxInt));
-            inliersLeftXY.set(2, count, 1);
-            inliersRightXY.set(0, count, matchedRightXY.get(0, idxInt));
-            inliersRightXY.set(1, count, matchedRightXY.get(1, idxInt));
-            inliersRightXY.set(2, count, 1);
-            count++;
-        }
-        
-        EpipolarTransformationFit consensusFit = null;
-        
-        boolean usePreviousFM = false;
-        
-        if (nInliers == nSet) {
-            List<DenseMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
-                inliersLeftXY, inliersRightXY);
-            if (fms == null || fms.isEmpty()) {
-                usePreviousFM = true;
-            } else {
-                for (DenseMatrix fm : fms) {
-                    EpipolarTransformationFit fitI
-                        = distances.calculateError(fm, 
-                        matchedLeftXY, matchedRightXY, 
-                        errorType, tolerance);
-                    if (fitI.isBetter(consensusFit)) {
-                        consensusFit = fitI;
-                    }
-                }
-            }
-        } else {            
-            DenseMatrix fm = spTransformer.calculateEpipolarProjection(
-                inliersLeftXY, inliersRightXY); 
-            if (fm == null) {
-                usePreviousFM = true;
-            } else {
-                consensusFit = distances.calculateError(fm, matchedLeftXY, 
-                    matchedRightXY, errorType, tolerance);  
-            }
-        }
-        
-        if (consensusFit != null) {
-            log.fine("consensusFit=" + consensusFit.toString());
-        }
-        
-        if (consensusFit == null || usePreviousFM || bestFitAppliedToAll.isBetter(consensusFit)) {
-            log.fine("choosing the best fit applied to all instead of"
-                + " the subsequent consensus fit");
-            consensusFit = bestFitAppliedToAll;
-        }
-        
         // write to output and convert the coordinate indexes to the original point indexes
-        List<Integer> inlierIndexes = consensusFit.getInlierIndexes();
+        List<Integer> inlierIndexes = bestFit.getInlierIndexes();
         for (int i = 0; i < inlierIndexes.size(); ++i) {
             Integer index = inlierIndexes.get(i);
             int idx = index.intValue();
@@ -398,8 +345,30 @@ public class RANSACSolver {
       
         log.fine("nIter=" + nIter);
 
-        log.fine("final fit: " + consensusFit.toString());
+        log.fine("final fit: " + bestFit.toString());
 
-        return consensusFit;
+        return bestFit;
+    }
+    
+    /**
+     * if assume gaussian errors, for 1 degree of freedom (i.e. fitting
+     * a line, fundamental matrix, d^2 = 3.84*(st.dev^2)
+     * @param standardDeviation
+     * @return 
+     */
+    public static double estimateToleranceForDOF1(double standardDeviation) {
+        double d = Math.sqrt(3.84*standardDeviation*standardDeviation);
+        return d;
+    }
+    
+    /**
+     * if assume gaussian errors, for 2 degree of freedom (i.e. fitting
+     * a line, fundamental matrix, d^2 = 5.99*(st.dev^2)
+     * @param standardDeviation
+     * @return 
+     */
+    public static double estimateToleranceForDOF2(double standardDeviation) {
+        double d = Math.sqrt(5.99*standardDeviation*standardDeviation);
+        return d;
     }
 }

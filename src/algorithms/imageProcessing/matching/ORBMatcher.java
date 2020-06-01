@@ -557,7 +557,7 @@ public class ORBMatcher {
         
         RANSACSolver solver = new RANSACSolver();
         
-        int tolerance = 4;
+        double tolerance = 4;
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY,
