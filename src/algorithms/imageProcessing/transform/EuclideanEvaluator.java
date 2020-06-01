@@ -17,7 +17,7 @@ import java.util.Set;
 public class EuclideanEvaluator {
 
     public EuclideanTransformationFit evaluate(PairIntArray xy1, 
-        PairIntArray xy2, TransformationParameters params, int tolerance) {
+        PairIntArray xy2, TransformationParameters params, double tolerance) {
         
         if (xy1 == null) {
             throw new IllegalArgumentException("xy1 cannot be null");
@@ -61,11 +61,13 @@ public class EuclideanEvaluator {
         EuclideanTransformationFit fit = new EuclideanTransformationFit(
             params.copy(), inlierIndexes, distances, tolerance);
         
+        fit.calculateErrorStatistics();
+        
         return fit;
     }
     
     public EuclideanTransformationFit evaluate(List<FeatureComparisonStat> stats, 
-        TransformationParameters params, int tolerance) {
+        TransformationParameters params, double tolerance) {
         
         if (stats == null) {
             throw new IllegalArgumentException("xy1 cannot be null");
@@ -98,7 +100,7 @@ public class EuclideanEvaluator {
      */
     public float transformAndCalculateF1Score(Set<PairInt> templateSetToTransform, 
         Set<PairInt> set2, TransformationParameters params,
-        int tolerance) {
+        double tolerance) {
         
         Transformer transformer = new Transformer();
         
@@ -109,7 +111,7 @@ public class EuclideanEvaluator {
     }
     
     public float calculateF1Score(Set<PairInt> templateSet, Set<PairInt> set2, 
-        int tolerance) {
+        double tolerance) {
         
         /* matching the aggregated adaptive means points to
            the expected template points which have been transformed to the 
@@ -137,16 +139,23 @@ public class EuclideanEvaluator {
         int maxX = Math.max(minMaxXY[1], minMaxXY2[1]);
         int maxY = Math.max(minMaxXY[3], minMaxXY2[3]);
         
+        //TODO: find the intersection of points who are each other's
+        //     best nearest neighbor matched when transformed and
+        //     reverse transformed.
+        //     currently not evaluating for intersection with reverse best...
+        
         NearestNeighbor2D nn = new NearestNeighbor2D(set2, maxX, maxY);
         
         Set<PairInt> matched = new HashSet<PairInt>();
+        
+        int d = (int)Math.ceil(tolerance);
         
         int tPos = 0;
         int fPos = 0;
         int fNeg = 0;
         for (PairInt trP : templateSet) {
             Set<PairInt> closest = nn.findClosest(
-                trP.getX(), trP.getY(), tolerance);
+                trP.getX(), trP.getY(), d);
             if (closest == null || closest.isEmpty()) {
                 fPos++;
                 continue;

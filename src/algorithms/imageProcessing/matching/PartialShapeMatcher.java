@@ -2235,7 +2235,7 @@ public class PartialShapeMatcher {
         RANSACEuclideanSolver euclid =
             new RANSACEuclideanSolver();
         EuclideanTransformationFit fit = euclid.calculateEuclideanTransformation(
-            left, right, outLeft, outRight);
+            left, right, outLeft, outRight, 5);
 
         TransformationParameters params = (fit != null) ?
             fit.getTransformationParameters() : null;

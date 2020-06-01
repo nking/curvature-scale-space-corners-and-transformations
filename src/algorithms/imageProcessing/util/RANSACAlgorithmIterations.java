@@ -320,4 +320,62 @@ public class RANSACAlgorithmIterations {
         return (int)Math.ceil(m);
     }
     
+    /*
+    Get the number of subsamples needed for a subsample size of 7 within a larger sample,
+    where the number of subsamples is chosen sufficiently high to give 
+    a probability in excess of 95% that a good subsample is selected.
+    The number is calculated for percentages of bad data in the larger sample 
+    being 5%, 10%, 20%, 25%, 30%, 40%, and 50%.
+    
+    The method is from Section 6 of paper: 
+      "The Development and Comparison of Robust Method for Estimating the Fundamental Matrix"
+       by P H S TORR AND D W MURRAY
+       Int. J Computer Vision 24 (1997) pp271–300, , 1–32 ()
+       https://www.robots.ox.ac.uk/ActiveVision/Publications/torr_murray_ijcv1997/torr_murray_ijcv1997.pdf
+    
+    <pre>
+    for probablity gamma in excess of 95%:
+    let p = sub-sample size
+    let m = number of subsamples to achieve gamma probability
+    let eps = percentage of bad data
+    
+    gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    
+    table of m's for p=7 and eps from 5%to 50%:
+    
+    p |  5%  10%  20%  25%  30%  40%  50%
+    --------------------------------------
+    7 |  3   5    13   21   35   106  382
+    </pre>
+    */
+    public static int numberOfSubsamplesFor95PercentInliers(int outlierPercent,
+        int subSampleSize) {
+    
+        if (outlierPercent < 0) {
+            throw new IllegalArgumentException("outlierPercent must be non-negative");
+        }
+        if (outlierPercent > 50) {
+            throw new IllegalArgumentException("outlierPercent must be 50 percent or less");
+        }
+        if (subSampleSize < 0) {
+            throw new IllegalArgumentException("outlierPercent must be non-negative");
+        }
+        
+        /*
+        1 - gamma = (1 - (1 - eps)^p)^m
+           let Z = (1 - (1 - eps)^p)
+           let g = 1 - gamma
+        g = Z^m
+        log(g) = m*log(Z);       
+        m = log(g) / log(Z)
+        */
+        int p = subSampleSize;
+        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);
+        double g = 1. - 0.95;
+        
+        double m = Math.log(g) / Math.log(z);
+                
+        return (int)Math.ceil(m);
+    }
+    
 }

@@ -40,8 +40,7 @@ public class RANSACSolver {
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
-     * NOT COMPLETELY READY FOR USE YET
-     * calculate the epipolar projection among the given points with the
+     * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
      * true matches.
      *
@@ -79,7 +78,7 @@ public class RANSACSolver {
     }
 
     /**
-     * calculate the epipolar projection among the given points with the
+     * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
      * true matches.
      *
@@ -95,8 +94,6 @@ public class RANSACSolver {
         final DenseMatrix matchedLeftXY, final DenseMatrix matchedRightXY,
         final PairIntArray outputLeftXY, final PairIntArray outputRightXY,
         final double tolerance) {
-
-        //TODO: improve this method
         
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -110,7 +107,14 @@ public class RANSACSolver {
                 "the algorithms require 7 or more points."
                 + " matchedLeftXY.n=" + matchedLeftXY.numColumns());
         }
-        if (matchedLeftXY.numColumns() != matchedRightXY.numColumns()) {
+        if (matchedLeftXY.numRows() != 3) {
+            // cannot use this algorithm.
+            throw new IllegalArgumentException(
+                "the algorithms require 3 rows representing x, y, and '1' values."
+                + " matchedLeftXY.n=" + matchedLeftXY.numColumns());
+        }
+        if (matchedLeftXY.numColumns() != matchedRightXY.numColumns() ||
+            matchedLeftXY.numRows() != matchedRightXY.numRows()) {
             throw new IllegalArgumentException(
                 "matchedLeftXY and right bmust be the same size");
         }

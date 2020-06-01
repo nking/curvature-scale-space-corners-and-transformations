@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.SubsetChooser;
 import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
@@ -9,6 +10,7 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -31,7 +33,7 @@ public class RANSACEuclideanSolver {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    /**
+     /**
      * calculate the euclidean projection among the given points with the
      * assumption that some of the points in the matched lists are not
      * true matches.
@@ -44,7 +46,7 @@ public class RANSACEuclideanSolver {
      */
     public EuclideanTransformationFit calculateEuclideanTransformation(
         PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
+        PairIntArray outputLeftXY, PairIntArray outputRightXY, double tolerance) {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -52,83 +54,125 @@ public class RANSACEuclideanSolver {
         if (matchedRightXY == null) {
             throw new IllegalArgumentException("matchedRightXY cannot be null");
         }
-        if (matchedLeftXY.getN() < 2) {
+        if (matchedLeftXY.getN() < 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
-            "the algorithms require 2 or more points.  matchedLeftXY.n=" 
+            "the algorithms require 7 or more points.  matchedLeftXY.n=" 
             + matchedLeftXY.getN());
         }
-
+        
         /*
-        -- randomly sample 2 points from nPoints
-        -- calculate the transformation from the 2
-        -- evaluate all nPoints against the transformation and keep each point 
-           which has error < tolerance.   those points are a consensus of this 
-           model (the fundamental matrix)
-        -- if the number of points in the consensus is > required, exit loop,
-           else repeat (note that each consensus is stored separately for
-           each iteration.  note that the loop is terminated if the number of
-           iterations has exceeded a predetermined maximum.
-        -- after exit from the loop, the largest consensus is used to
-           re-calculate the fundamental matrix as the last result.
-           note that if there aren't enough points in a consensus to
-           calculate the transformation, the result is null.
+        -- the number of iterations for testing sub-samples of nPoints 
+           (each of size 2) and finding one to be a good sub-sample with an
+           excess of probability of 95% is estimated for a given
+           percent of bad data.
+           NOTE, the algorithm proceeds by assuming 50% bad data and improves
+           that upon each best fitting sub-sample.
+        -- for each iteration of solving epipolar transformation using a sample
+           of size 2, the resulting transformation is evaluated on the
+           all points of the dataset.
+           If the number of inliers is T or more, the fit is re-done with all
+           of the points, where 
+           T = (1. - outlierPercentage) * (total number of data points)
+           The best fitting for all iterations as defined by number of inliers 
+           and standard deviation from an epipolar line, is kept each time.
+        -- at the end of each iteration, the number of iterations is then 
+           re-calculated if it can be reduced.
+        
+        NOTE that the sub-samples are selected randomly from all possible
+        sub-samples of the nPoints unless the number of all possible 
+        sub-samples is smaller than the expected number of iterations for 95%
+        probability of a good sub-sample.  In the later case, all sub-samples
+        are tried.
+        
         */
 
-        int nSet = 2;
+        final int nSet = 2;
 
-        int nPoints = matchedLeftXY.getN();
+        final int nPoints = matchedLeftXY.getN();
+                
+        // n!/(k!*(n-k)!
+        final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusKExact(
+            nPoints, nSet);
+        boolean useAllSubsets = false;
+        
+        SecureRandom sr = Misc.getSecureRandom();
+        long seed = System.currentTimeMillis();
+        log.info("SEED=" + seed + " nPoints=" + nPoints);
+        sr.setSeed(seed);
         
         MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
         
         EuclideanEvaluator evaluator = new EuclideanEvaluator();
-            
-        SecureRandom sr = Misc.getSecureRandom();
-        long seed = System.currentTimeMillis();
-        log.fine("SEED=" + seed + " nPoints=" + nPoints);
-        sr.setSeed(seed);
-
-        int tolerance = 5;
-
+        
         // consensus indexes
         EuclideanTransformationFit bestFit = null;
         
-        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
-
         /*
         could consider a threshold max iteration based upon the image size such
         as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
         which uses 0.6% of the maximum image dimension.
         */
-        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.4);
-
-        if (nPoints == 2) {
+        
+        int outlierPercent = 50;
+        int t = (int)Math.ceil((1. - outlierPercent)*nPoints);
+        
+        long nMaxIter;
+        if (nPoints == nSet) {
             nMaxIter = 1;
+            useAllSubsets = true;
+        } else {
+            nMaxIter = RANSACAlgorithmIterations
+                .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
         }
+        
+        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
+        long nMaxIter2 = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 2, 0.5);
+        
+        System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
+            nMaxIter + " (n!/(k!*(n-k)!)=" + nPointsSubsets
+            + " nMaxIter2=" + nMaxIter2);
 
+        if (nMaxIter > nPointsSubsets) {
+            nMaxIter = nPointsSubsets;
+            useAllSubsets = true;
+        }
+        
         int nIter = 0;
         
         int[] selectedIndexes = new int[nSet];
         
         PairIntArray sampleLeft = new PairIntArray(nSet);
         PairIntArray sampleRight = new PairIntArray(nSet);
-        for (int i = 0; i < nSet; ++i) {
-            sampleLeft.add(0, 0);
-            sampleRight.add(0, 0);
-        }
-        assert(sampleLeft.getN() == nSet);
         
-        while ((nIter < nMaxIter) && (nIter < 2000)) {
+        SubsetChooser chooser = new SubsetChooser(nPoints, nSet);
+                
+        while (nIter < nMaxIter) {
             
-            MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
-            
-            for (int i = 0; i < selectedIndexes.length; ++i) {
-                int idx = selectedIndexes[i];
-                sampleLeft.set(i, matchedLeftXY.getX(idx), matchedLeftXY.getY(idx));
-                sampleRight.set(i, matchedRightXY.getX(idx), matchedRightXY.getY(idx));
+            if (useAllSubsets) {
+                int chk = chooser.getNextSubset(selectedIndexes);
+                if (chk == -1) {
+                    throw new IllegalStateException("have overrun subsets in chooser.");
+                }                
+            } else {
+                MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
             }
-            assert(sampleRight.getN() == nSet);
             
+            Arrays.sort(selectedIndexes);
+
+            int count = 0;
+            
+            for (int bitIndex : selectedIndexes) {
+
+                int idx = bitIndex;
+
+                sampleLeft.add(matchedLeftXY.getX(idx), matchedLeftXY.getY(idx));
+                                
+                sampleRight.add(matchedRightXY.getX(idx), matchedRightXY.getY(idx));
+                
+                count++;
+            }
+
             TransformationParameters params = tc.calulateEuclideanWithoutFilter(
                 sampleLeft, sampleRight, 0, 0);
 
@@ -137,87 +181,101 @@ public class RANSACEuclideanSolver {
                 continue;
             }
 
+            System.out.printf("%d out of %d iterations\n", nIter, nMaxIter);
+            System.out.flush();
+            
             EuclideanTransformationFit fit = evaluator.evaluate(matchedLeftXY,
                 matchedRightXY, params, tolerance);
-                    
-            if (fit == null) {
+            
+            assert(fit != null);
+                                    
+            int nInliers = fit.getInlierIndexes().size();
+            if (!fit.isBetter(bestFit)) {
                 nIter++;
                 continue;
             }
-               
+            
+            if (nInliers > nSet && nInliers > t) {
+                // redo the transformation with all inliers
+                PairIntArray inliersLeftXY = new PairIntArray(nInliers);
+                PairIntArray inliersRightXY = new PairIntArray(nInliers);
+                int countI = 0;
+                for (Integer idx : fit.getInlierIndexes()) {
+                    int idxInt = idx.intValue();
+                    inliersLeftXY.add(matchedLeftXY.getX(idxInt), matchedLeftXY.getY(idxInt));
+                    inliersRightXY.add(matchedRightXY.getX(idxInt), matchedRightXY.getY(idxInt));
+                    countI++;
+                }
+                
+                TransformationParameters params2 = tc.calulateEuclideanWithoutFilter(
+                    inliersLeftXY, inliersRightXY, 0, 0);
+                
+                EuclideanTransformationFit fit2 = evaluator.evaluate(matchedLeftXY,
+                    matchedRightXY, params2, tolerance);
+                
+                if (fit2 != null && fit2.isBetter(fit)) {
+                    fit = fit2;
+                }
+                System.out.println("new local best fit: " + fit2.toString());
+                System.out.flush();                
+            }
+                       
             if (fit.isBetter(bestFit)) {
+                int nb = (bestFit != null) ? bestFit.getInlierIndexes().size() : nSet+1;
+                int nf = fit.getInlierIndexes().size();
+                
                 bestFit = fit;
+                
+                System.out.println("**best fit: " + bestFit.toString());
+                System.out.flush();
+                
+                // recalculate nMaxIter
+                if ((nf > nb) && nMaxIter > 1) {
+                    double outlierPercentI = 100.*
+                        (double)(nPoints - bestFit.getInlierIndexes().size()) /
+                        (double)nPoints;
+                    if (outlierPercentI < outlierPercent) {
+                        outlierPercent = (int)Math.ceil(outlierPercentI);
+                        if (outlierPercent < 5) {
+                            outlierPercent = 5;
+                        }
+                        assert(outlierPercent < 50);
+                        nMaxIter = RANSACAlgorithmIterations
+                            .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
+                        if (nMaxIter > nPointsSubsets) {
+                            nMaxIter = nPointsSubsets;
+                            useAllSubsets = true;
+                        }
+                    }
+                }
             }
             
             nIter++;
-            
-            // recalculate nMaxIter
-            if ((bestFit != null) && ((nIter % 50) == 0)) {
-                
-                double ratio = (double)bestFit.getInlierIndexes().size()
-                    /(double)matchedLeftXY.getN();
-                
-                if (ratio >= 0.0000001 && (ratio <= 1.0)) {
-                    nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
-                        nSet, ratio);
-                }
-            }
         }
 
-        if (bestFit == null || bestFit.getInlierIndexes().isEmpty()) {
-            log.fine("no solution.  nIter=" + nIter);
+        if (bestFit == null) {
+            log.info("no solution.  nIter=" + nIter);
             return null;
-        } else {
-            log.fine("bestFit before consensus = " + bestFit.getTransformationParameters().toString());
         }
-
-        // store inliers in outputLeftXY and outputRightXY and redo the
-        // entire fit using only the inliers to determine the fundamental
-        // matrix.
-        int n = bestFit.getInlierIndexes().size();
-        PairIntArray inliersLeftXY = new PairIntArray(n);
-        PairIntArray inliersRightXY = new PairIntArray(n);
-        int count = 0;
-        for (Integer idx : bestFit.getInlierIndexes()) {            
-            int idxInt = idx.intValue(); 
-            inliersLeftXY.add(matchedLeftXY.getX(idxInt), matchedLeftXY.getY(idxInt));
-            inliersRightXY.add(matchedRightXY.getX(idxInt), matchedRightXY.getY(idxInt));            
-            count++;
-        }
-        assert(n == count);
-        assert(n == inliersLeftXY.getN());
-        
-        TransformationParameters params = tc.calulateEuclideanWithoutFilter(
-            inliersLeftXY, inliersRightXY, 0, 0);
-        
-        log.fine("consensusParams=" + params.toString());
-
-        EuclideanTransformationFit consensusFit = evaluator.evaluate(matchedLeftXY,
-            matchedRightXY, params, tolerance);
-        
-        if (consensusFit == null || consensusFit.getInlierIndexes().isEmpty()) {
-            log.fine("no consensus possible for given points");
-            return null;
-        } else {
-            log.fine("consensus nEval=" + consensusFit.getInlierIndexes().size());
-        }
-        
-        // inlierIndexes are w.r.t matchedLeftXY
-        List<Integer> inlierIndexes = consensusFit.getInlierIndexes();
+                
         // write to output and convert the coordinate indexes to the original point indexes
+        List<Integer> inlierIndexes = bestFit.getInlierIndexes();
         for (int i = 0; i < inlierIndexes.size(); ++i) {
             Integer index = inlierIndexes.get(i);
             int idx = index.intValue();
-            assert(idx < matchedLeftXY.getN());
-            outputLeftXY.add(matchedLeftXY.getX(idx), matchedLeftXY.getY(idx));
-            outputRightXY.add(matchedRightXY.getX(idx), matchedRightXY.getY(idx));
+            outputLeftXY.add(
+                (int)Math.round(matchedLeftXY.getX(idx)),
+                (int)Math.round(matchedLeftXY.getY(idx)));
+            outputRightXY.add(
+                (int)Math.round(matchedRightXY.getX(idx)),
+                (int)Math.round(matchedRightXY.getY(idx)));
         }
-        
+      
         log.fine("nIter=" + nIter);
 
-        log.fine("final fit: " + consensusFit.toString());
+        log.fine("final fit: " + bestFit.toString());
 
-        return consensusFit;
+        return bestFit;
     }
 
 }
