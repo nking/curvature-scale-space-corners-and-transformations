@@ -13,21 +13,36 @@ calculating the geometric median:
      even when up to half of the input data is arbitrarily corrupted.
      (https://dl.acm.org/doi/pdf/10.1145/2897518.2897647)
 
+   NOTE: for nDimensions == nPoints, is the centroid always a geometric-median?
+
    simple unit tests,
      these from https://www.geeksforgeeks.org/geometric-median/
      -- Input: (1, 1), (3, 3)
-        Output: Geometric Median = (2, 2) with minimum distance = 2.82843
+        Output: Geometric Median = (1,1) or (2, 2) or (3,3) with minimum distance = 2.82843
      -- Input: (0, 0), (0, 0), (0, 12)
         Output: Geometric Median = (0, 0) with minimum distance = 12
+     this from "Noniterative Solution of Some Fermat-Weber Location Problems"
+        https://www.researchgate.net/publication/220418355_Noniterative_Solution_of_Some_Fermat-Weber_Location_Problems
+     -- Input: (-20, 48), (-20, -48), (20, 0), (59, 0)
+        Output: Geometric Median = (0, 0) with minimum distance =
+           NOTE: start with (44, 0) to test for a Weiszfeld problem w/ demand points
 
    and example evaluations for f and the derivative w.r.t. each dimension:
    for nDimensions = 2:
    f = summation_i=1_n( || X - obs_i || )/n
        where || X - obs_i ||_2 is ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2)
-   df/dX_0 = (0.5/n) * ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(-1/2) * (-2*(X_0-obs_i_0))
-           = (-1./n) * (X_0-obs_i_0) / ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2)
-   df/dX_1 = (-1./n) * (X_1-obs_i_1) / ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2)
+   df/dX_0 = d/dx( (1/n)*summation_i=1_n( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2) ))
+           = (1/n)*(1/2)*2*(X_0-obs_i_0)*(1) 
+              / summation_i=1_n( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2) )
+           = (1./n)*(X_0-obs_i_0) / summation_i=1_n( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2) )
+   df/dX_1 = (1./n)*(X_1-obs_i_1) / summation_i=1_n( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2) )
 
+   d/dX_0 of df/dX_0 = (1./n) * (1) * (-1/2)*summation_i=1_n( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(-3/2) )
+                       *2*(X_0-obs_i_0)*(1)
+                     = (-1./n)*(X_0-obs_i_0) / summation_i=1_n( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(3/2) )
+   d/dX_1 of df/dX_0 = 0
+     ...
+      
    can calculate geometric median (a.k.a. euclidean median) many different ways:
       0) for a nearly linear time implementation, looking at this and it's thesis:
          https://dl.acm.org/doi/pdf/10.1145/2897518.2897647
@@ -58,19 +73,36 @@ calculating the geometric median:
             but that the authors prove convergence for each method in the pseudocode.
              
          -- iteratively reweighted least squares (IRLS)
-            given observed points Z_I=(x_i, y_i)
+            given observed points Z_I=(x_i, y_i) also noted as obs_{dimension_pointNumber} below.
             and wanting to solve for X=(x_median, y_median)
             let weight w_i = 1/( || X-z_i || )
             note that the geometric median usually uses equal weights w_i=1/n
 
-            the cost function to minimize C_w(X) = summation_i=1_n( w_i*|| X-z_i ||^2 )
-            set deriv to zero
-            then iterated updates of estimates of X in time steps t:
-               X_(t+1) = summation_i=1_n( w_t*z_i ) / summation_i=1_n( w_t^2 )
+            f = summation_i=1_n( w_i * || X - obs_i || )/n
+                where || X - obs_i ||_2 is ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(1/2)
+            df/dX_0 = summation_i=1_n( w_i * (X_0-obs_i_0) / ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 +...)^(1/2)
+            df/dX_1 = summation_i=1_n( w_i * (X_1-obs_i_1) / ( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 +...)^(1/2)
+                 find where df/dX_0 = df/dX_1 = 0
+                    X_0 = summation_i=1_n( w_i*obs_i_0 / || X - obs_i ||_2) /
+                             summation_i=1_n( w_i/|| X - obs_i ||_2)
+                    X_1 = summation_i=1_n( w_i*obs_i_1 / || X - obs_i ||_2) /
+                             summation_i=1_n( w_i/|| X - obs_i ||_2)
+                 but that is not closed form
 
-            for L1 version given by Ostresh:
-               X_(t+1) = X_t - alpha*summation_i=1_n( w_t*z_i / || X-z_i || ) / 
-                           summation_i=1_n( w_t / || X-z_i || )
+                 so Weiszfeld suggested an iterative closed form, similar to steepest descent method.
+                 the right hand side are populated using X_{t}
+                    X_0_(t+1) = (summation_i=1_n( w_i*obs_i_0 / || X - obs_i ||_2) ) /
+                                 (summation_i=1_n( w_i / || X - obs_i ||_2) ) 
+                    X_1_(t+1) = (summation_i=1_n( w_i*obs_i_1 / || X - obs_i ||_2) ) /
+                                 (summation_i=1_n( w_i / || X - obs_i ||_2) ) 
+
+           (which algorithm is this?):  iterated updates of estimates of X in time steps t:
+              X_(t+1) = summation_i=1_n( w_t*z_i ) / summation_i=1_n( w_t^2 )
+
+            for L1 version given by Ostresh, 1978, he proves converge for 0 <= alpha <= 2 and::
+               X_0_(t+1) = X_0_t - alpha * (summation_i=1_n( w_i*obs_i_0 / || X - obs_i ||_2) ) /
+                                              (summation_i=1_n( w_i / || X - obs_i ||_2) )
+               X_1_(t+1) = ...
 
             the gradient of the Riemannian sum-of-distances function is given by
                grad( f(X) ) = -summation_i=1_n( w_i*Log(X_i) / (X-z_i))
