@@ -185,6 +185,8 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
       -- importance sampling
          http://jrxv.net/x/16/ism.pdf
 
+  look into these for the Shape Matchers: Toeplitz matrix, cyclic matrix
+
 -- no priority:
    for jni bindings of the c++ dlib library, would like to automate
     the steps of compile, outlined by the MITIE project.
@@ -216,3 +218,4 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
      as a todo target for the interesting details, but essentially no
 G
      expected priority.
+

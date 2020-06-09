@@ -1480,6 +1480,8 @@ public class PartialShapeMatcher {
            to shift to different first point as reference,
            can shift down k-1 rows and left k-1 columns.
         */
+        
+        //TODO: look into Toeplitz matrix and cyclic matrix
 
         //log.fine("a1:");
         float[][] a1 = createDescriptorMatrix(p, p.getN());

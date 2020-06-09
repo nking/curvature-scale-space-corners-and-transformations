@@ -1572,6 +1572,8 @@ public class PartialShapeMatcher2 {
          10 11 12        03 00 01 02
          00 01 02        33 30 31 32  p_i_j - q_(i+3)_(j+3)
         */
+        
+        //TODO: look into Toeplitz matrix and cyclic matrix
 
         // --- make difference matrices ---
         int n1 = p.getN();
