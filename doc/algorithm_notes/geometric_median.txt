@@ -164,28 +164,6 @@ calculating the geometric median:
                      X{y}_i+1 = min_(X{y}) f(X{x}_i+1, X{y}) . Optimize X{y} with X{x} fixed
                      X{x}_i+1 = min_(X{x}) f(X, X{y}_i) . Optimize X{x} with X{y} fixed
 
-eps=1.e-17;delta=(100.*eps);
-mx=0.;my=6.; n=3; x0=0.;y0=0.; x1=0.;y1=0.; x2=0.;y2=12.;
-mx, my
-diffx0=x0-mx; diffy0=y0-my; diffx1=x1-mx; diffy1=y1-my; diffx2=x2-mx; diffy2=y2-my;
-wx0=1./max(math.fabs(diffx0), delta); wx1=1./max(math.fabs(diffx1), delta); wx2=1./max(math.fabs(diffx2), delta);
-wy0=1./max(math.fabs(diffy0), delta); wy1=1./max(math.fabs(diffy1), delta); wy2=1./max(math.fabs(diffy2), delta);
-wxsum = wx0+wx1+wx2; wysum=wy0+wy1+wy2;
-mx=(wx0*x0 + wx1*x1 + wx2*x2)/wxsum; my=(wy0*y0 + wy1*y1 + wy2*y2)/wysum;
-mx, my
-
-mx=1.;my=1.; n=2; x0=1.;y0=1.; x1=3.;y1=3.; 
-mx, my
-diffx0=x0-mx; diffy0=y0-my; diffx1=x1-mx; diffy1=y1-my; 
-wx0=1./max(math.fabs(diffx0), delta); wx1=1./max(math.fabs(diffx1), delta); 
-wy0=1./max(math.fabs(diffy0), delta); wy1=1./max(math.fabs(diffy1), delta); 
-wxsum = wx0+wx1; wysum=wy0+wy1;
-mx=(wx0*x0 + wx1*x1 )/wxsum; my=(wy0*y0 + wy1*y1 )/wysum;
-mx, my
-
-
-mx=(wx0*diffx0 + wx1*diffx1 + wx2*diffx2)/wxsum; my=(wy0*diffy0 + wy1*diffy1 + wy2*diffy2)/wysum;
-
          *ADMM is an augmented Lagrangian method which are used in constrained optimization problems.
             they add a penalty term to the objective and another term to mimic the Lagrange multiplier.
             alternating direction method of multipliers (ADMM) is a variant of the augmented Lagrangian 
