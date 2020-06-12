@@ -3,6 +3,7 @@ One method in cluster determination uses Bayesian Inference.
       the median posterior uses the geometric median.
 
 calculating the geometric median:
+   the weighted geometric-median is a.k.a. L1-median (though it uses the euclidean distance).
    definition: the point which minimizes the sum of the euclidean distance of that 
      point to all other points in the set.
      the sum is a convex function (i.e. local search will work).
@@ -24,8 +25,10 @@ calculating the geometric median:
      this from "Noniterative Solution of Some Fermat-Weber Location Problems"
         https://www.researchgate.net/publication/220418355_Noniterative_Solution_of_Some_Fermat-Weber_Location_Problems
      -- Input: (-20, 48), (-20, -48), (20, 0), (59, 0)
-        Output: Geometric Median = (0, 0) with minimum distance =
+        Output: Geometric Median = (20, 0) with minimum distance = 163.964
            NOTE: start with (44, 0) to test for a Weiszfeld problem w/ demand points
+           and use the same test for the weighted implementation to show that the
+           min is found (the weights can be each 1./nPoints).
 
    and example evaluations for f and the derivative w.r.t. each dimension:
    for nDimensions = 2:
@@ -41,8 +44,41 @@ calculating the geometric median:
                        *2*(X_0-obs_i_0)*(1)
                      = (-1./n)*(X_0-obs_i_0) / summation_i=1_n( (X_0-obs_i_0)^2 + (X_1-obs_i_1)^2 )^(3/2) )
    d/dX_1 of df/dX_0 = 0
+   Hessian d/dX of d/dX where p is nDimensions and I is the identity matrix of size pxp:
+                            ( (    I_p      )   ( (X - obs_i)*(X - obs_i)^T )
+           = summation_i=1_n( (-------------) - ( --------------------------)
+                            ( (||X - obs_i||)   (      ||X - obs_i||^3      )
+
      ...
-      
+   For the weighted geometric-median, there are 2 papers will use (combined with an improved Newton's method):
+     The Vardi-Zhang 2000 algorithm:
+       "The multivariate L1-median and associated data depth", Yehuda Vardi† and Cun-Hui Zhang
+       https://www.pnas.org/content/pnas/97/4/1423.full.pdf
+     This review which compares several algorithms, including Vardi-Zhang 2000:
+       "A comparison of algorithms for the multivariate L1-median",
+       Heinrich Fritz, Peter Filzmoser, Christophe Croux
+       https://feb.kuleuven.be/public/u0017833/PDF-FILES/l1medianR2.pdf
+       (eqns (7)-(11) are Vardi-Zhang)
+     
+     let X be the geometric-median
+     let n be the number of observations obs_i
+     let M be the L1-median:
+        M is a function of observed data obs_i and multiplicites eta_i
+           where eta_i are used to make weights.  
+        M = argmin of C(X)
+           where C(X) = summation_i_1_to_n( eta_i*d_i(X) )
+           where d_i is the euclidean distance between a point obs_i and X in all dimensions.
+     ==> X=M iff T(X)=X iff r(X)<=eta(X)􏰌􏰅 
+           where eta(X) = eta_i if X=obs_i, i.e. geometric-median is a point in the set obs
+                        else eta(X) = 0;
+           where r(X) = ||R̃(X)||
+           where R̃(X) = summation_over_obs_except_X( eta_i*(obs_i-X)/||obs_i-X|| )
+           where T(X) = (1-(eta(X)/r(X))) * T̃(X) + X*math.min(1, (eta(X)/r(X)))
+             where 0/0 = 0 in the computation of eta(X)/r(X),
+           where T̃(X) = summation_over_obs_except_X( eta_i*(obs_i)/||obs_i-X|| )
+                         / summation_over_obs_except_X( eta_i/||obs_i-X|| )
+
+-----
    can calculate geometric median (a.k.a. euclidean median) many different ways:
       0) for a nearly linear time implementation, looking at this and it's thesis:
          https://dl.acm.org/doi/pdf/10.1145/2897518.2897647
@@ -128,10 +164,40 @@ calculating the geometric median:
                      X{y}_i+1 = min_(X{y}) f(X{x}_i+1, X{y}) . Optimize X{y} with X{x} fixed
                      X{x}_i+1 = min_(X{x}) f(X, X{y}_i) . Optimize X{x} with X{y} fixed
 
+eps=1.e-17;delta=(100.*eps);
+mx=0.;my=6.; n=3; x0=0.;y0=0.; x1=0.;y1=0.; x2=0.;y2=12.;
+mx, my
+diffx0=x0-mx; diffy0=y0-my; diffx1=x1-mx; diffy1=y1-my; diffx2=x2-mx; diffy2=y2-my;
+wx0=1./max(math.fabs(diffx0), delta); wx1=1./max(math.fabs(diffx1), delta); wx2=1./max(math.fabs(diffx2), delta);
+wy0=1./max(math.fabs(diffy0), delta); wy1=1./max(math.fabs(diffy1), delta); wy2=1./max(math.fabs(diffy2), delta);
+wxsum = wx0+wx1+wx2; wysum=wy0+wy1+wy2;
+mx=(wx0*x0 + wx1*x1 + wx2*x2)/wxsum; my=(wy0*y0 + wy1*y1 + wy2*y2)/wysum;
+mx, my
+
+mx=1.;my=1.; n=2; x0=1.;y0=1.; x1=3.;y1=3.; 
+mx, my
+diffx0=x0-mx; diffy0=y0-my; diffx1=x1-mx; diffy1=y1-my; 
+wx0=1./max(math.fabs(diffx0), delta); wx1=1./max(math.fabs(diffx1), delta); 
+wy0=1./max(math.fabs(diffy0), delta); wy1=1./max(math.fabs(diffy1), delta); 
+wxsum = wx0+wx1; wysum=wy0+wy1;
+mx=(wx0*x0 + wx1*x1 )/wxsum; my=(wy0*y0 + wy1*y1 )/wysum;
+mx, my
+
+
+mx=(wx0*diffx0 + wx1*diffx1 + wx2*diffx2)/wxsum; my=(wy0*diffy0 + wy1*diffy1 + wy2*diffy2)/wysum;
+
          *ADMM is an augmented Lagrangian method which are used in constrained optimization problems.
             they add a penalty term to the objective and another term to mimic the Lagrange multiplier.
             alternating direction method of multipliers (ADMM) is a variant of the augmented Lagrangian 
             scheme that uses partial updates for the dual variables.
                minimize summation_i=1_n( ||X-z_i||_2 )
                see page 218 of book "Numerical Algorithms" by Solomon 
+
+-------
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2735114/
+
+These algorithms do not generalize beyond Euclidean spaces. A more general iterative algorithm due to Weiszfeld (1937) and later improved by Kuhn and Kuenne (1962) and Ostresh (1978) converges to the optimal solution in Euclidean spaces (Kuhn, 1973), and was subsequently generalized to Banach spaces by Eckhardt (1980).
+
+-----
+For real numbers, the arithmetic mean is a Fréchet mean, using the usual Euclidean distance as the distance function. The median is also a Fréchet mean, using the square root of the Euclidean distance, i.e. the taxicab distance.
 
