@@ -91,6 +91,9 @@ to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
 
 (2) read the remote sensing paper
 
+-- consider using Median Absolute Deviation for outlier removal where I have used
+   standard deviation of the mean.
+
 -- consider making a greyscale MSEREdges
 
 -- consider implementing a affine transformation class
@@ -139,9 +142,6 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 
 -- consider implementing a mean shift algorithm
 
--- fix the ransac iterator estimate that has a limit of
-    (1790?)
-
 -- read more on "Simultaneous Localization and Mapping, or SLAM"
      
 -- consider following the implementation of disparity maps for stereo images
@@ -187,35 +187,4 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 
   look into these for the Shape Matchers: Toeplitz matrix, cyclic matrix
 
--- no priority:
-   for jni bindings of the c++ dlib library, would like to automate
-    the steps of compile, outlined by the MITIE project.
-    dependencies (but for automated platform independence):
-      -- swig:
-         swig is platform specific and depends upon another platform 
-           specific library called PCRE (needed to make pearl bindings).
-         to automate the installation if needed and then the use of swig
-            to compiJle, a possibility is the use of 2 maven2 plugins:
-               -- freehep-swig-plugin 
-               -- freehep-nar-plugin 
-            the swig plugin requires some additional configuration for
-            the download and there is only a small amount of documentation 
-            on that.
-            -- missing is the information that PCRE needs to be downloaded
-               also so that would need to be added to the configuration
-               if possible.
-            A caveat to this is that these numerous steps to a mvn target
-              checking for swig and dependencies and installing them with
-              nar when needed would have to be tested for all platforms.
-      -- nar:
-            writing the nar commands to use swig and cmake would have to
-            include the platform specific details present in the
-            MITIE README.md file, espec for windows.
-            this builds archive files so would be an offline step to
-            provide os specific dependencies (which can do if convert 
-            project to maven build system)
-     cannot easily test on all platforms at this time, so will leave this
-     as a todo target for the interesting details, but essentially no
-G
-     expected priority.
 

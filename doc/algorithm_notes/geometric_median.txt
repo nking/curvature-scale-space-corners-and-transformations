@@ -65,7 +65,7 @@ calculating the geometric median:
      let M be the L1-median:
         M is a function of observed data obs_i and multiplicites eta_i
            where eta_i are used to make weights.  
-        M = argmin of C(X)
+        M = argmin X of C(X)
            where C(X) = summation_i_1_to_n( eta_i*d_i(X) )
            where d_i is the euclidean distance between a point obs_i and X in all dimensions.
      ==> X=M iff T(X)=X iff r(X)<=eta(X)􏰌􏰅 
@@ -77,7 +77,9 @@ calculating the geometric median:
              where 0/0 = 0 in the computation of eta(X)/r(X),
            where T̃(X) = summation_over_obs_except_X( eta_i*(obs_i)/||obs_i-X|| )
                          / summation_over_obs_except_X( eta_i/||obs_i-X|| )
-
+                        (and was derived by setting derivatives to zero)
+         NOTE: after iterative algorithm solves M, the test
+               X=M iff T(X)=X iff r(X)<=eta(X) is performed.
 -----
    can calculate geometric median (a.k.a. euclidean median) many different ways:
       0) for a nearly linear time implementation, looking at this and it's thesis:
