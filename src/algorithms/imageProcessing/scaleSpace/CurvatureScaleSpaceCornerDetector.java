@@ -4,7 +4,7 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.features.CornerRegion;
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
@@ -317,7 +317,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
         
             double[][] d = no.uib.cipr.matrix.Matrices.getArray(m);
             double det = MatrixUtil.determinant(d);
-            double trace = MatrixUtil.trace(d);
+            double trace = algorithms.imageProcessing.util.MatrixUtil.trace(d);
         
             double dt = det/trace;
             //System.out.println("det/trace=" + dt);

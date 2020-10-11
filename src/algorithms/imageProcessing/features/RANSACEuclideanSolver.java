@@ -239,7 +239,7 @@ public class RANSACEuclideanSolver {
                         if (outlierPercent < 5) {
                             outlierPercent = 5;
                         }
-                        assert(outlierPercent < 50);
+                        assert(outlierPercent <= 50);
                         nMaxIter = RANSACAlgorithmIterations
                             .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
                         if (nMaxIter > nPointsSubsets) {

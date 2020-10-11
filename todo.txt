@@ -187,4 +187,4 @@ http://web.stanford.edu/~bgirod/pdfs/Chandrasekhar_CVPR2009.pdf
 
   look into these for the Shape Matchers: Toeplitz matrix, cyclic matrix
 
-
+-- consider impl Siegel Repeated Median estimator in LinearRegression.java

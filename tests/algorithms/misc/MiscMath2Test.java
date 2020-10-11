@@ -45,7 +45,7 @@ public class MiscMath2Test extends TestCase {
         for (int i = 0; i < 31; ++i) {
             int v = 1 << i;
             String bs = Integer.toBinaryString(v);
-            int nb = MiscMath.numberOfBitsWOB(v);
+            int nb = MiscMath0.numberOfBitsWOB(v);
             
             //System.out.println("i=" + i + " nb=" + nb);
             assertEquals(bs.length(), nb);
@@ -54,7 +54,7 @@ public class MiscMath2Test extends TestCase {
             int v = 1 << i;
             String bs = Integer.toBinaryString(v);
             v *= -1;
-            int nb = MiscMath.numberOfBitsWOB(v);
+            int nb = MiscMath0.numberOfBitsWOB(v);
             
             //System.out.println("bs=" + bs + " nb=" + nb);
             assertEquals(bs.length(), nb);

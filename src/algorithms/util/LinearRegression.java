@@ -28,6 +28,7 @@ public class LinearRegression {
     }
     
     /**
+    TODO: consider implementing Siegel Repeated Median estimator in this class too.
      * calculate the Theil-Sen estimator for the set of points and return
      * the yIntercept and slope that can be used to plot a line that is the
      * linear regression of the x and y points.

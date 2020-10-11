@@ -4,6 +4,7 @@ One method in cluster determination uses Bayesian Inference.
 
 calculating the geometric median:
    the weighted geometric-median is a.k.a. L1-median (though it uses the euclidean distance).
+   a.k.a. spatial median.  a.k.a. L1-estimator.
    definition: the point which minimizes the sum of the euclidean distance of that 
      point to all other points in the set.
      the sum is a convex function (i.e. local search will work).
@@ -134,7 +135,7 @@ calculating the geometric median:
                     X_1_(t+1) = (summation_i=1_n( w_i*obs_i_1 / || X - obs_i ||_2) ) /
                                  (summation_i=1_n( w_i / || X - obs_i ||_2) ) 
 
-           (which algorithm is this?):  iterated updates of estimates of X in time steps t:
+            iterated updates of estimates of X in time steps t:
               X_(t+1) = summation_i=1_n( w_t*z_i ) / summation_i=1_n( w_t^2 )
 
             for L1 version given by Ostresh, 1978, he proves converge for 0 <= alpha <= 2 and::

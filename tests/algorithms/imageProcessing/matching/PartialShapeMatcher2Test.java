@@ -225,8 +225,10 @@ public class PartialShapeMatcher2Test extends TestCase {
 
         String fileName1 = "";
 
-        for (int type = 0; type < 2; ++type) {
-            for (int i = 0; i < 4; ++i) {
+        //for (int type = 0; type < 2; ++type) {
+        for (int type = 1; type < 2; ++type) {
+            //for (int i = 0; i < 4; ++i) {
+            for (int i = 2; i < 3; ++i) {
                 
                 int dp = 2;
 
@@ -273,7 +275,7 @@ public class PartialShapeMatcher2Test extends TestCase {
                 PairIntArray q = extractOrderedBoundary(img);
                 plot(q, (i+1)*100 + 1);
 
-                log.info("matching " + fileName0Root
+                log.info("type=" + type + " i=" + i + " matching " + fileName0Root
                 + " to " + fileName1Root + " (" + p.getN()
                 + " points to " + q.getN() + " points");
 

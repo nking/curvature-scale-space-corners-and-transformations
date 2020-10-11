@@ -1049,103 +1049,6 @@ public class MatrixUtil {
     }
     
     /**
-     * using cofactors and minors of the matrix, return the determinant.
-     * in practice one can use any row as the primary set of cofactors or
-     * any column.  this method may be optimized in the future, but for now,
-     * uses the first column as the cofactors.
-     *
-     * e.g.    | 1  -5  2 |         | 3 4 |         | 7 4 |         | 7 3 |
-     *         | 7   3  4 |  =  1 * | 1 5 |  +  5 * | 2 5 |  +  2 * | 2 1 |  = 11 
-        + 135 + 2 = 148
-     *         | 2   1  5 |
-     */
-    public static double determinant(Matrix m) {
-
-        double[][] a = no.uib.cipr.matrix.Matrices.getArray(m);
-        
-        return determinant(a);
-    }
-    
-    /**
-     * using cofactors and minors of the matrix, return the determinant.
-     * in practice one can use any row as the primary set of cofactors or
-     * any column.  this method may be optimized in the future, but for now,
-     * uses the first column as the cofactors.
-     *
-     * e.g.    | 1  -5  2 |         | 3 4 |         | 7 4 |         | 7 3 |
-     *         | 7   3  4 |  =  1 * | 1 5 |  +  5 * | 2 5 |  +  2 * | 2 1 |  = 11 
-        + 135 + 2 = 148
-     *         | 2   1  5 |
-     */
-    public static double determinant(double[][] m) {
-
-        if (m == null || m.length == 0) {
-            throw new IllegalArgumentException("m cannot be null or empty");
-        }
-        if (m.length != m[0].length) {
-            throw new IllegalArgumentException("m must be a square");
-        }
-        if (m.length == 1) {
-            return m[0][0];
-        } else if (m.length == 2) {
-            double s = ( m[0][0]*m[1][1] ) - ( m[0][1]*m[1][0] );
-            return s;
-        } else {
-            double s = 0.0;
-            // use 1st row as cofactors and minors
-            for (int i = 0; i < m.length; i++) {
-
-                double[][] n = copyExcept(m, i, 0);
-                
-                double tmp = m[i][0] * determinant(n);
-                                
-                if ((i & 1) == 0) {
-                    s +=  tmp;
-                } else {
-                    s -=  tmp;
-                }
-            }
-            return s;
-        }
-    }
-    
-    /**
-     * create copy of matrix m except row and col
-     * @param m
-     * @param i
-     * @param i0
-     * @return
-     */
-    private static double[][] copyExcept(double[][] m, int col, int row) {
-
-        double[][] n = new double[m.length - 1][m.length - 1];
-
-        int nr = 0;
-        int nc = 0;
-
-        for (int mCol = 0; mCol < m.length; mCol++) {
-            if (mCol == col) {
-                continue;
-            }
-
-            n[nc] = new double[m.length - 1];
-            
-            nr = 0;
-            for (int mRow = 0; mRow < m[0].length; mRow++) {
-                if (mRow == row) {
-                    continue;
-                }
-
-                n[nc][nr] = m[mCol][mRow];
-                nr++;
-            }
-            nc++;
-        }
-
-        return n;
-    }
-
-    /**
      * find the equation for which A * A^(-1) = the identity matrix
      *
      *             1
@@ -1161,81 +1064,11 @@ public class MatrixUtil {
             
         double[][] m2 = imageProcessor.copyToDouble2D(m);
            
-        double[][] invM2 = inverse(m2);
+        double[][] invM2 = algorithms.matrix.MatrixUtil.inverse(m2);
         
         DenseMatrix invM = new DenseMatrix(invM2);
         
         return invM;
-    }
-    
-    /**
-     * find the equation for which A * A^(-1) = the identity matrix
-     *
-     *             1
-     * A^(-1) =  ------ C^(T)  where C_ij = cofactor of a_ij
-     *            det A
-     *
-     * @param m
-     * @return
-     */
-    public static double[][] inverse(double[][] m) {
-
-        // create cofactor of matrix:
-        double[][] cofactor = createCofactor(m);
-
-        double[][] cofactorTransposed = algorithms.matrix.MatrixUtil.transpose(cofactor);
-
-        double det = determinant(m);
-
-        algorithms.matrix.MatrixUtil.multiply(cofactorTransposed, 1./det);
-
-        return cofactorTransposed;
-    }
-    
-    /*
-         * e.g.    | 1  -5  2 |         | 3 4 |         | 7 4 |         | 7 3 |
-         *         | 7   3  4 |  =  1 * | 1 5 |  +  5 * | 2 5 |  +  2 * | 2 1 |  = 11 + 135 + 2 =
- 148
-         *         | 2   1  5 |
-         *
-         *          3 4     7  4    7  3
-         *          1 5     2  5    2  1
-         * 
-         *         -5 2     1  2    1 -5
-         *          1 5     2  5    2  1
-         *
-         *         -5 2     1  2    1 -5
-         *          3 4     7  4    7  3
-    */
-    public static double[][] createCofactor(double[][] m) {
-
-        int ncols = m.length;
-        int nrows = m[0].length;
-
-        double[][] cofactor = new double[ncols][nrows];
-
-        for (int i = 0; i < ncols; i++) {
-            
-            cofactor[i] = new double[nrows];
-
-            boolean si = ((i & 1) == 1); // sign is -
-
-            for (int j = 0; j < nrows; j++) {
-
-                boolean sj = ((j & 1) == 1); // sign is -
-
-                double[][] n = copyExcept(m, i, j);
-
-                double cfctr = determinant(n);
-
-                if (si ^ sj) { // XOR if either is 1 but not both
-                    cfctr = -1*cfctr;
-                }
-
-                cofactor[i][j] = cfctr;
-            }
-         }
-        return cofactor;
     }
    
     /**

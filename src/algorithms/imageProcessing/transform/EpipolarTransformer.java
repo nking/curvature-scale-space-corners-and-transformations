@@ -50,8 +50,6 @@ import no.uib.cipr.matrix.SVD;
  * Some definitions:
     u^T*v represents the inner product
     u*v^T is a matrix
-    the norm of a vector f is the square root of the sum or squares of its
-        entries.
     u_1 is the (x,y) points from image 1 and u_2 are the matched (x,y) points
         from image 2.
 
@@ -721,7 +719,7 @@ public class EpipolarTransformer {
                     tempF[2][1] = f3[1][2];
                     tempF[2][2] = f3[2][2];
                     //d[i1][i2][i3] = det([F{i1}(:,1) F{i2}(:,2) F{i3}(:,3)]);
-                    d[i1][i2][i3] = algorithms.imageProcessing.util.MatrixUtil.determinant(tempF);
+                    d[i1][i2][i3] = MatrixUtil.determinant(tempF);
                 }
             }
         }
