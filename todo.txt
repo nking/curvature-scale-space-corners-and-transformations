@@ -29,6 +29,10 @@ to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
       consider using different distance methods.  e.g. can use cosine similarity
       for angle based differences.
 
+-- for the object matching w/ HOG variations and MSER, consider making an R-Tree or
+   and R*-Tree with primary node characteristic being the dominant orientation
+   to reduce the number of comparisons between image sets.
+
 -- if update libquantum porting to 1.1.1,
    consider browsing Nielson's book which Cambridge publishing is no
    longer selling:
