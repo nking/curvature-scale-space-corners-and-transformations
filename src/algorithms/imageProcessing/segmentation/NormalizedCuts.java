@@ -21,6 +21,9 @@ import no.uib.cipr.matrix.sparse.ArpackSym;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 
 /**
+TODO: one day, revise this code to follow the paper implementation more closely
+      (e.g. using the Lanczos method based on power method) and improvements since the publication.
+
  * A hierarchical segmentation method that determines graph cuts
  * which maximize the difference between regions and minimize the differences
  * within a region using
@@ -39,6 +42,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
         smallest eigenvalues.
       3. Use the eigenvector with the second smallest
         eigenvalue to bipartition the graph.
+        NOTE: The second smallest eigenvalue of D-W is sometimes known as the Fiedler value.
       4. Decide if the current partition should be subdivided
         and recursively repartition the segmented parts if
         necessary
@@ -312,8 +316,9 @@ public class NormalizedCuts {
             }
                             
             // 2nd smallest eigenvector
-            //NOTE: improve upon thisone day, following "splitting point" of page 892:3 of paper
+            //NOTE: improve upon this one day, following "splitting point" of page 892:3 of paper
             //  and K-way cut on page 893
+            // NOTE: The second smallest eigenvalue of D-W is sometimes known as the Fiedler value.
             int m = w.numRows();
             //int nEig = 2;
             int nEig = Math.min(100, m - 2);
