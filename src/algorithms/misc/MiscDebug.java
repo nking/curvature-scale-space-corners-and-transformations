@@ -1,6 +1,6 @@
 package algorithms.misc;
 
-import algorithms.CountingSort;
+import algorithms.sort.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;

@@ -306,37 +306,6 @@ public class MiscMathTest extends TestCase {
         assertTrue(result.compareTo(expected) == 0);
     }
     
-    public void testcomputeNDivKTimesNMinusK() throws Exception {
-        
-        int n, k;
-        long nComb;
-        
-        n = 6;
-        k = 2;
-        nComb = MiscMath.computeNDivKTimesNMinusK(n, k);
-        assertEquals(15, nComb);
-        
-        n = 2;
-        k = 1;
-        nComb = MiscMath.computeNDivKTimesNMinusK(n, k);
-        assertEquals(2, nComb);
-        
-        n = (int)Math.sqrt(Integer.MAX_VALUE);
-        k = 2;
-        nComb = MiscMath.computeNDivKTimesNMinusK(n, k);
-        assertEquals(((n*(n-1))/2), nComb);
-        
-        n = (int)Math.sqrt(Integer.MAX_VALUE);
-        k = 2;
-        nComb = MiscMath.computeNDivKTimesNMinusKBigInteger(n, k);
-        assertEquals(((n*(n-1))/2), nComb);
-        
-    }
-    
-    /*
-    protected static long computeNDivKTimesNMinusKBigInteger(int n, int k) {
-    */
-
     public void testReadSetBits() throws Exception {
 
         List<Integer> setBits = new ArrayList<Integer>();

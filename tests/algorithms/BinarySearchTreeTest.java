@@ -1,6 +1,6 @@
 package algorithms;
 
-import algorithms.imageProcessing.HeapNode;
+import algorithms.heapsAndPQs.HeapNode;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.security.SecureRandom;

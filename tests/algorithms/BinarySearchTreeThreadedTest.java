@@ -1,6 +1,6 @@
 package algorithms;
 
-import algorithms.imageProcessing.HeapNode;
+import algorithms.heapsAndPQs.HeapNode;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashSet;

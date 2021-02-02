@@ -8,7 +8,7 @@ import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
-import algorithms.util.VeryLongBitString;
+import algorithms.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;

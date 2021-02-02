@@ -1,6 +1,6 @@
 package thirdparty.libquantum;
 
-import algorithms.util.GreatestCommonDenominator;
+import algorithms.misc.GreatestCommonDenominator;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -70,11 +70,11 @@ public class ShorTest extends TestCase {
         
         log.info("testEuclidModularMethods");
         
-        int[] factors;
+        long[] factors;
                                       //14 * x = 30 % 100
                                       //       = 30
         //GreatestCommonDenominator.gcdModularLinearEqnSolver(14, 30, 100);
-        int mcd = GreatestCommonDenominator.gcdModularLinearEqnSolver(78, 99, 99);
+        long mcd = GreatestCommonDenominator.gcdModularLinearEqnSolver(78, 99, 99);
         assertEquals(mcd, 3);
         
         factors = GreatestCommonDenominator.extendedEuclid(78, 99);

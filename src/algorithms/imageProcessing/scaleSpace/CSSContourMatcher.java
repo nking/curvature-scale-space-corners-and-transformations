@@ -1,7 +1,7 @@
 package algorithms.imageProcessing.scaleSpace;
 
-import algorithms.imageProcessing.Heap;
-import algorithms.imageProcessing.HeapNode;
+import algorithms.heapsAndPQs.Heap;
+import algorithms.heapsAndPQs.HeapNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

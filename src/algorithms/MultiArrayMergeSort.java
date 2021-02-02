@@ -1,6 +1,6 @@
 package algorithms;
 
-import algorithms.misc.MiscSorter;
+import algorithms.sort.MiscSorter;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
 

@@ -1,7 +1,7 @@
 package algorithms.mst;
 
-import algorithms.imageProcessing.Heap;
-import algorithms.imageProcessing.HeapNode;
+import algorithms.heapsAndPQs.Heap;
+import algorithms.heapsAndPQs.HeapNode;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;

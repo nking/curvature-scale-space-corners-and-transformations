@@ -1,24 +1,16 @@
 package algorithms.imageProcessing.segmentation;
 
-import algorithms.QuickSort;
 import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.HeapNode;
+import algorithms.heapsAndPQs.HeapNode;
 import algorithms.misc.Misc;
-import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**

@@ -40,6 +40,12 @@ TODO: one day, revise this code to follow the paper implementation more closely
         the similarity between the two nodes.
       2. Solve (D - W)*x = lambda*D*x for eigenvectors with the
         smallest eigenvalues.
+        (NOTE from mmds.org book chap 10, is that since the Laplacian is symmetric, the
+         2nd smallest value is the minimum of x^T * L * x where x is [x1, x2, . . . , xn] 
+         is a column vector with n components, and the minimum is taken under the constraints:
+         the length of x = 1 (ie. sum of (x_i)^2 = 1), and x is orthogonal to the
+         eigenvector associated with the smallest eigenvalue (which is eigenvalue=0 and eigenvector
+         is all 1's).
       3. Use the eigenvector with the second smallest
         eigenvalue to bipartition the graph.
         NOTE: The second smallest eigenvalue of D-W is sometimes known as the Fiedler value.

@@ -5,7 +5,7 @@ import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.VeryLongBitString;
+import algorithms.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;

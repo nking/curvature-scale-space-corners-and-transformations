@@ -151,7 +151,7 @@ public class RANSACSolver {
         final int nPoints = matchedLeftXY.numColumns();
                 
         // n!/(k!*(n-k)!
-        final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusKExact(nPoints, nSet);
+        final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(nPoints, nSet);
         boolean useAllSubsets = false;
         
         SecureRandom sr = Misc.getSecureRandom();

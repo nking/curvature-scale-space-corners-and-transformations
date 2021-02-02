@@ -4,7 +4,7 @@ import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.HeapNode;
+import algorithms.heapsAndPQs.HeapNode;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.misc.Misc;

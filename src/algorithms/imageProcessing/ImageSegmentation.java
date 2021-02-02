@@ -1,10 +1,9 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.heapsAndPQs.Heap;
+import algorithms.heapsAndPQs.HeapNode;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
-import algorithms.imageProcessing.segmentation.LabelToColorHelper;
-import algorithms.imageProcessing.segmentation.NormalizedCuts;
-import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -12,7 +11,6 @@ import algorithms.util.PairIntArray;
 import gnu.trove.set.TIntSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;

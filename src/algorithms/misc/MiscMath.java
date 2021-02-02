@@ -1,6 +1,6 @@
 package algorithms.misc;
 
-import algorithms.CountingSort;
+import algorithms.sort.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
@@ -10,13 +10,8 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.list.array.TDoubleArrayList;
-import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.set.TIntSet;
-import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -571,38 +566,7 @@ public class MiscMath {
      */
     public static long computeNDivKTimesNMinusK(int n, int k) {
 
-        if (n == k) {
-            return 1;
-        }
-        
-        if (k > 12 || n > 12) {
-            return computeNDivKTimesNMinusKBigInteger(n, k);
-        }
-
-        double result = 1;
-        for (int i = n; i > (n-k); i--) {
-            result *= i;
-        }
-        double divisor = factorial(k);
-        
-        result = result/divisor;
-        
-        return Math.round(result);
-    }
-    
-    /**
-     * compute n!/k!(n-k)!.  Note that if n or k are larger than 12,
-     * computeNDivKTimesNMinusKBigIntegerExact is used and in that case,
-     * if the result is larger than Long.MAX_VALUE an exception is thrown.
-     *
-     * @param n
-     * @param k
-     * @return
-     * @throws ArithmeticException thrown when result is out of range of type long
-     */
-    public static long computeNDivKTimesNMinusKExact(int n, int k) {
-
-        return MiscMath0.computeNDivKTimesNMinusKExact(n, k);
+        return MiscMath0.computeNDivKTimesNMinusK(n, k);
     }
     
     /**
@@ -624,18 +588,7 @@ public class MiscMath {
      */
     public static BigInteger factorialBigInteger(int n) {
 
-        BigInteger result = BigInteger.ONE;
-
-        for (int i = 2; i <= n; i++) {
-            
-            byte[] bytes = MiscMath.writeToBigEndianBytes(i);
-            
-            BigInteger v = new BigInteger(bytes);
-            
-            result = result.multiply(v);
-        }
-        
-        return result;
+        return MiscMath0.factorialBigInteger(n);
     }
     
     /**
@@ -1619,41 +1572,7 @@ public class MiscMath {
         
         return new float[]{maxX, maxY};
     }
-    
-    /**
-     * computes n!/(k!(n-k)!) and if result overflows a long, returns Long.MAX_VALUE.
-     * 
-     * @param n
-     * @param k
-     * @return 
-     */
-    protected static long computeNDivKTimesNMinusKBigInteger(int n, int k) {
-        
-        BigInteger result = computeNDivKTimesNMinusKBigIntegerExact(n, k);
-        
-        // work around for failure of result.compareTo(BigInteger.valueOf(Long.MAX_VALUE))
-        if (result.bitLength() > 62) {
-            return Long.MAX_VALUE;
-        }
-        
-        if (result.bitLength() > 63) {
-            throw new ArithmeticException("the result will not fit in a long");
-        }
-        return result.longValue();
-    }
-    
-    /**
-     * compute n!/k!(n-k)!
-     * @param n
-     * @param k
-     * @return 
-     * @throws ArithmeticException thrown when result is out of range of type long
-     */
-    protected static BigInteger computeNDivKTimesNMinusKBigIntegerExact(int n, int k) {
-        
-        return MiscMath0.computeNDivKTimesNMinusKBigIntegerExact(n, k);
-    }
-
+   
     /**
      * rescale a to values between vi and vf, inclusive
      * @param a

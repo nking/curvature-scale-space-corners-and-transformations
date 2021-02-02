@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import algorithms.VeryLongBitString;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashSet;

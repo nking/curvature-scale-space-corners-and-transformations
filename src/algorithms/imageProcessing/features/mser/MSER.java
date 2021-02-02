@@ -1,7 +1,7 @@
 package algorithms.imageProcessing.features.mser;
 
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.util.VeryLongBitString;
+import algorithms.VeryLongBitString;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;

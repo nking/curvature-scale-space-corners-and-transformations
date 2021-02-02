@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import algorithms.VeryLongBitString;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

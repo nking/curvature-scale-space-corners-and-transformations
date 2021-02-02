@@ -1,6 +1,6 @@
 package algorithms;
 
-import algorithms.imageProcessing.HeapNode;
+import algorithms.heapsAndPQs.HeapNode;
 import java.lang.reflect.Array;
 import java.util.Stack;
 

@@ -1,4 +1,4 @@
-        package algorithms.bipartite;
+package algorithms.bipartite;
 
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIntIterator;

@@ -23,7 +23,8 @@ import java.util.logging.Logger;
  * A class to hold numbers that can be larger than 64 bits after adds.
  * 
  * The class was created w/ Pascal's triangle as a use case in order to be able
- * to print out numbers larger than ((1<<63) -1) for level >= 64.
+ * to print out numbers larger than ((1<<63) -1) for level >= 64 and an operation
+ * pattern that does not create a new instance for each result.
  * 
  * the core of the constructor and add methods were started with
  *     http://www.cs.utexas.edu/users/djimenez/utsa/cs3343/lecture20.html
