@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RANSACSolver.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">RANSACSolver.java</span></div><h1>RANSACSolver.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
 
+import algorithms.SubsetChooser;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.Distances;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.imageProcessing.transform.Util;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
@@ -29,15 +31,16 @@ import no.uib.cipr.matrix.DenseMatrix;
  *
  * @author nichole
  */
-<span class="fc" id="L32">public class RANSACSolver {</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">public class RANSACSolver {</span>
+    
+    //TODO: edit to be able to choose nSet = 8 or 7
 
-<span class="fc" id="L34">    private boolean debug = true;</span>
+<span class="fc" id="L38">    private boolean debug = true;</span>
 
-<span class="fc" id="L36">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L40">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     /**
-     * NOT COMPLETELY READY FOR USE YET
-     * calculate the epipolar projection among the given points with the
+     * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
      * true matches.
      *
@@ -49,272 +52,328 @@ import no.uib.cipr.matrix.DenseMatrix;
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
         PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
+        PairIntArray outputLeftXY, PairIntArray outputRightXY, double tolerance) {
 
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (matchedLeftXY == null) {</span>
-<span class="nc" id="L55">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (matchedLeftXY == null) {</span>
+<span class="nc" id="L58">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (matchedRightXY == null) {</span>
-<span class="nc" id="L58">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (matchedRightXY == null) {</span>
+<span class="nc" id="L61">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (matchedLeftXY.getN() &lt; 7) {</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (matchedLeftXY.getN() &lt; 7) {</span>
             // cannot use this algorithm.
-<span class="nc" id="L62">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L65">            throw new IllegalArgumentException(</span>
             &quot;the algorithms require 7 or more points.  matchedLeftXY.n=&quot; 
-<span class="nc" id="L64">            + matchedLeftXY.getN());</span>
+<span class="nc" id="L67">            + matchedLeftXY.getN());</span>
         }
-
-<span class="fc" id="L67">        EpipolarTransformer spTransformer = new EpipolarTransformer();</span>
         
-<span class="fc" id="L69">        DenseMatrix input1 =</span>
-<span class="fc" id="L70">            spTransformer.rewriteInto3ColumnMatrix(matchedLeftXY);</span>
+<span class="fc" id="L70">        DenseMatrix input1 =</span>
+<span class="fc" id="L71">            Util.rewriteInto3ColumnMatrix(matchedLeftXY);</span>
 
-<span class="fc" id="L72">        DenseMatrix input2 =</span>
-<span class="fc" id="L73">            spTransformer.rewriteInto3ColumnMatrix(matchedRightXY);</span>
+<span class="fc" id="L73">        DenseMatrix input2 =</span>
+<span class="fc" id="L74">            Util.rewriteInto3ColumnMatrix(matchedRightXY);</span>
         
-<span class="fc" id="L75">        return calculateEpipolarProjection(input1, input2,</span>
-            outputLeftXY, outputRightXY);
+<span class="fc" id="L76">        return calculateEpipolarProjection(input1, input2,</span>
+            outputLeftXY, outputRightXY, tolerance);
     }
 
     /**
-     * calculate the epipolar projection among the given points with the
+     * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
      * true matches.
      *
-     * @param matchedLeftXY
-     * @param matchedRightXY
+     * @param matchedLeftXY 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param matchedRightXY 
      * @param outputLeftXY
      * @param outputRightXY
+     * @param tolerance tolerance in distance from epipolar line for a point to 
+     * be an inlier in the final fit.
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
-        DenseMatrix matchedLeftXY, DenseMatrix matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
-
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (matchedLeftXY == null) {</span>
-<span class="nc" id="L95">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
+        final DenseMatrix matchedLeftXY, final DenseMatrix matchedRightXY,
+        final PairIntArray outputLeftXY, final PairIntArray outputRightXY,
+        final double tolerance) {
+        
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (matchedLeftXY == null) {</span>
+<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (matchedRightXY == null) {</span>
-<span class="nc" id="L98">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (matchedRightXY == null) {</span>
+<span class="nc" id="L102">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (matchedLeftXY.numColumns() &lt; 7) {</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (matchedLeftXY.numColumns() &lt; 7) {</span>
             // cannot use this algorithm.
-<span class="nc" id="L102">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L106">            throw new IllegalArgumentException(</span>
                 &quot;the algorithms require 7 or more points.&quot;
-<span class="nc" id="L104">                + &quot; matchedLeftXY.n=&quot; + matchedLeftXY.numColumns());</span>
+<span class="nc" id="L108">                + &quot; matchedLeftXY.n=&quot; + matchedLeftXY.numColumns());</span>
         }
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (matchedLeftXY.numColumns() != matchedRightXY.numColumns()) {</span>
-<span class="nc" id="L107">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (matchedLeftXY.numRows() != 3) {</span>
+            // cannot use this algorithm.
+<span class="nc" id="L112">            throw new IllegalArgumentException(</span>
+                &quot;the algorithms require 3 rows representing x, y, and '1' values.&quot;
+<span class="nc" id="L114">                + &quot; matchedLeftXY.n=&quot; + matchedLeftXY.numColumns());</span>
+        }
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (matchedLeftXY.numColumns() != matchedRightXY.numColumns() ||</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            matchedLeftXY.numRows() != matchedRightXY.numRows()) {</span>
+<span class="nc" id="L118">            throw new IllegalArgumentException(</span>
                 &quot;matchedLeftXY and right bmust be the same size&quot;);
         }
 
         /*
-        -- randomly sample 7 points from nPoints
-        -- calculate the epipolar fundamental matrix from the 7
-        -- evaluate all nPoints against the epipolar projected lines
-           and keep each point which has error &lt; tolerance.
-           those points are a consensus of this model (the fundamental matrix)
-        -- if the number of points in the consensus is &gt; required, exit loop,
-           else repeat (note that each consensus is stored separately for
-           each iteration.  note that the loop is terminated if the number of
-           iterations has exceeded a predetermined maximum.
-        -- after exit from the loop, the largest consensus is used to
-           re-calculate the fundamental matrix as the last result.
-           note that if there aren't enough points in a consensus to
-           calculate the fundamental matrix, the result is null.
+        Using 7 point samples for epipolar transformation fits.
+        -- the number of iterations for testing sub-samples of nPoints 
+           (each of size 7) and finding one to be a good sub-sample with an
+           excess of probability of 95% is estimated for a given
+           percent of bad data.
+           NOTE, the algorithm proceeds by assuming 50% bad data and improves
+           that upon each best fitting sub-sample.
+        -- for each iteration of solving epipolar transformation using a sample
+           of size 7, the resulting fundamental matrix is evaluated on the
+           all points of the dataset.
+           If the number of inliers is T or more, the fit is re-done with all
+           of the points, where 
+           T = (1. - outlierPercentage) * (total number of data points)
+           The best fitting for all iterations as defined by number of inliers 
+           and standard deviation from an epipolar line, is kept each time.
+        -- at the end of each iteration, the number of iterations is then 
+           re-calculated if it can be reduced.
+        
+        NOTE that the sub-samples are selected randomly from all possible
+        sub-samples of the nPoints unless the number of all possible 
+        sub-samples is smaller than the expected number of iterations for 95%
+        probability of a good sub-sample.  In the later case, all sub-samples
+        are tried.
+        
         */
 
-<span class="fc" id="L127">        int nSet = 7;</span>
+<span class="fc" id="L149">        final int nSet = 7;</span>
 
-<span class="fc" id="L129">        int nPoints = matchedLeftXY.numColumns();</span>
+<span class="fc" id="L151">        final int nPoints = matchedLeftXY.numColumns();</span>
+                
+        // n!/(k!*(n-k)!
+<span class="fc" id="L154">        final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(nPoints, nSet);</span>
+<span class="fc" id="L155">        boolean useAllSubsets = false;</span>
         
-<span class="fc" id="L131">        ErrorType errorType = ErrorType.SAMPSONS;</span>
+<span class="fc" id="L157">        SecureRandom sr = Misc.getSecureRandom();</span>
+<span class="fc" id="L158">        long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L159">        log.info(&quot;SEED=&quot; + seed + &quot; nPoints=&quot; + nPoints);</span>
+<span class="fc" id="L160">        sr.setSeed(seed);</span>
 
-<span class="fc" id="L133">        EpipolarTransformer spTransformer = new EpipolarTransformer();</span>
-            
-<span class="fc" id="L135">        SecureRandom sr = Misc.getSecureRandom();</span>
-<span class="fc" id="L136">        long seed = System.currentTimeMillis();</span>
-<span class="fc" id="L137">        log.info(&quot;SEED=&quot; + seed + &quot; nPoints=&quot; + nPoints);</span>
-<span class="fc" id="L138">        sr.setSeed(seed);</span>
+<span class="fc" id="L162">        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;</span>
 
-<span class="fc" id="L140">        int tolerance = 5;</span>
-
+<span class="fc" id="L164">        EpipolarTransformer spTransformer = new EpipolarTransformer();</span>
+        
         // consensus indexes
-<span class="fc" id="L143">        EpipolarTransformationFit bestFit = null;</span>
+<span class="fc" id="L167">        EpipolarTransformationFit bestFit = null;</span>
         
-<span class="fc" id="L145">        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();</span>
-
         /*
         could consider a threshold max iteration based upon the image size such
         as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
         which uses 0.6% of the maximum image dimension.
         */
-<span class="fc" id="L152">        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.5);</span>
-
-<span class="fc bfc" id="L154" title="All 2 branches covered.">        if (nPoints == 7) {</span>
-<span class="fc" id="L155">            nMaxIter = 1;</span>
+        
+<span class="fc" id="L175">        int outlierPercent = 50;</span>
+<span class="fc" id="L176">        int t = (int)Math.ceil((1. - outlierPercent)*nPoints);</span>
+        
+        long nMaxIter;
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (nPoints == nSet) {</span>
+<span class="fc" id="L180">            nMaxIter = 1;</span>
+<span class="fc" id="L181">            useAllSubsets = true;</span>
+        } else {
+<span class="fc" id="L183">            nMaxIter = RANSACAlgorithmIterations</span>
+<span class="fc" id="L184">                .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);</span>
         }
-<span class="fc" id="L157">        System.out.println(&quot;nPoints=&quot; + nPoints + &quot; estimate for nMaxIter=&quot; +</span>
-            nMaxIter);
+        
+<span class="fc" id="L187">        System.out.println(&quot;nPoints=&quot; + nPoints + &quot; estimate for nMaxIter=&quot; +</span>
+            nMaxIter + &quot; (n!/(k!*(n-k)!)=&quot; + nPointsSubsets);
 
-<span class="fc" id="L160">        int nIter = 0;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (nMaxIter &gt; nPointsSubsets) {</span>
+<span class="fc" id="L191">            nMaxIter = nPointsSubsets;</span>
+<span class="fc" id="L192">            useAllSubsets = true;</span>
+        }
         
-<span class="fc" id="L162">        int[] selectedIndexes = new int[nSet];</span>
+<span class="fc" id="L195">        int nIter = 0;</span>
         
-<span class="fc" id="L164">        DenseMatrix sampleLeft = new DenseMatrix(3, nSet);</span>
-<span class="fc" id="L165">        DenseMatrix sampleRight = new DenseMatrix(3, nSet);</span>
+<span class="fc" id="L197">        int[] selectedIndexes = new int[nSet];</span>
         
-<span class="pc bpc" id="L167" title="1 of 4 branches missed.">        while ((nIter &lt; nMaxIter) &amp;&amp; (nIter &lt; 2000)) {</span>
+<span class="fc" id="L199">        DenseMatrix sampleLeft = new DenseMatrix(3, nSet);</span>
+<span class="fc" id="L200">        DenseMatrix sampleRight = new DenseMatrix(3, nSet);</span>
+        // initialize the unchanging 3rd dimension
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        for (int i = 0; i &lt; nSet; ++i) {</span>
+<span class="fc" id="L203">            sampleLeft.set(2, i, 1);</span>
+<span class="fc" id="L204">            sampleRight.set(2, i, 1);</span>
+        }
+        
+<span class="fc" id="L207">        SubsetChooser chooser = new SubsetChooser(nPoints, nSet);</span>
+        
+<span class="fc" id="L209">        Distances distances = new Distances();</span>
+        
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        while (nIter &lt; nMaxIter) {</span>
             
-<span class="fc" id="L169">            MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);</span>
-
-<span class="fc" id="L171">            int count = 0;</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            if (useAllSubsets) {</span>
+<span class="fc" id="L214">                int chk = chooser.getNextSubset(selectedIndexes);</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">                if (chk == -1) {</span>
+<span class="nc" id="L216">                    throw new IllegalStateException(&quot;have overrun subsets in chooser.&quot;);</span>
+                }                
+<span class="fc" id="L218">            } else {</span>
+<span class="fc" id="L219">                MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);</span>
+            }
             
-<span class="fc bfc" id="L173" title="All 2 branches covered.">            for (int bitIndex : selectedIndexes) {</span>
+<span class="fc" id="L222">            Arrays.sort(selectedIndexes);</span>
 
-<span class="fc" id="L175">                int idx = bitIndex;</span>
+<span class="fc" id="L224">            int count = 0;</span>
+            
+<span class="fc bfc" id="L226" title="All 2 branches covered.">            for (int bitIndex : selectedIndexes) {</span>
 
-<span class="fc" id="L177">                sampleLeft.set(0, count, matchedLeftXY.get(0, idx));</span>
-<span class="fc" id="L178">                sampleLeft.set(1, count, matchedLeftXY.get(1, idx));</span>
-<span class="fc" id="L179">                sampleLeft.set(2, count, 1);</span>
+<span class="fc" id="L228">                int idx = bitIndex;</span>
+
+<span class="fc" id="L230">                sampleLeft.set(0, count, matchedLeftXY.get(0, idx));</span>
+<span class="fc" id="L231">                sampleLeft.set(1, count, matchedLeftXY.get(1, idx));</span>
                                 
-<span class="fc" id="L181">                sampleRight.set(0, count, matchedRightXY.get(0, idx));</span>
-<span class="fc" id="L182">                sampleRight.set(1, count, matchedRightXY.get(1, idx));</span>
-<span class="fc" id="L183">                sampleRight.set(2, count, 1);</span>
+<span class="fc" id="L233">                sampleRight.set(0, count, matchedRightXY.get(0, idx));</span>
+<span class="fc" id="L234">                sampleRight.set(1, count, matchedRightXY.get(1, idx));</span>
                 
-<span class="fc" id="L185">                count++;</span>
+<span class="fc" id="L236">                count++;</span>
             }
 
             // determine matrix from 7 points.
-<span class="fc" id="L189">            List&lt;DenseMatrix&gt; fms =</span>
-<span class="fc" id="L190">                spTransformer.calculateEpipolarProjectionFor7Points(sampleLeft, </span>
-                    sampleRight);
+<span class="fc" id="L240">            List&lt;DenseMatrix&gt; fms = spTransformer.calculateEpipolarProjectionFor7Points(</span>
+                sampleLeft, sampleRight);
 
-<span class="pc bpc" id="L193" title="2 of 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
-<span class="nc" id="L194">                nIter++;</span>
-<span class="nc" id="L195">                continue;</span>
+<span class="fc" id="L243">            System.out.printf(&quot;%d out of %d iterations\n&quot;, nIter, nMaxIter);</span>
+<span class="fc" id="L244">            System.out.flush();</span>
+            
+<span class="pc bpc" id="L246" title="1 of 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
+<span class="fc" id="L247">                nIter++;</span>
+<span class="fc" id="L248">                continue;</span>
             }
-
+            
             // use point dist to epipolar lines to estimate errors of sample
-<span class="fc" id="L199">            EpipolarTransformationFit fit = null;</span>
+<span class="fc" id="L252">            EpipolarTransformationFit fit = null;</span>
             
-<span class="fc bfc" id="L201" title="All 2 branches covered.">            for (DenseMatrix fm : fms) {</span>
-<span class="fc" id="L202">                EpipolarTransformationFit fitI = </span>
-<span class="fc" id="L203">                    spTransformer.calculateError(fm, matchedLeftXY, </span>
-                        matchedRightXY, errorType, tolerance);
+<span class="fc bfc" id="L254" title="All 2 branches covered.">            for (DenseMatrix fm : fms) {</span>
                 
-<span class="fc bfc" id="L206" title="All 2 branches covered.">                if (fitI.isBetter(fit)) {</span>
-<span class="fc" id="L207">                    fit = fitI;</span>
+<span class="fc" id="L256">                EpipolarTransformationFit fitI = distances.calculateError(fm, </span>
+                    matchedLeftXY, matchedRightXY, errorType, tolerance);
+                     
+<span class="fc" id="L259">                int nInliers = fitI.getInlierIndexes().size();</span>
+<span class="pc bpc" id="L260" title="1 of 4 branches missed.">                if (nInliers &gt;= nSet &amp;&amp; fitI.isBetter(fit)) {</span>
+                                        
+<span class="pc bpc" id="L262" title="1 of 4 branches missed.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
+                        // redo the transformation with all inliers
+<span class="fc" id="L264">                        DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);</span>
+<span class="fc" id="L265">                        DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);</span>
+<span class="fc" id="L266">                        int countI = 0;</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">                        for (Integer idx : fitI.getInlierIndexes()) {</span>
+<span class="fc" id="L268">                            int idxInt = idx.intValue();</span>
+<span class="fc" id="L269">                            inliersLeftXY.set(0, countI, matchedLeftXY.get(0, idxInt));</span>
+<span class="fc" id="L270">                            inliersLeftXY.set(1, countI, matchedLeftXY.get(1, idxInt));</span>
+<span class="fc" id="L271">                            inliersLeftXY.set(2, countI, 1);</span>
+<span class="fc" id="L272">                            inliersRightXY.set(0, countI, matchedRightXY.get(0, idxInt));</span>
+<span class="fc" id="L273">                            inliersRightXY.set(1, countI, matchedRightXY.get(1, idxInt));</span>
+<span class="fc" id="L274">                            inliersRightXY.set(2, countI, 1);</span>
+<span class="fc" id="L275">                            countI++;</span>
+<span class="fc" id="L276">                        }</span>
+<span class="fc" id="L277">                        DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(</span>
+                            inliersLeftXY, inliersRightXY);
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">                        if (fm2 != null) {</span>
+<span class="fc" id="L280">                            EpipolarTransformationFit fit2 = distances</span>
+<span class="fc" id="L281">                                .calculateError(fm2, matchedLeftXY, matchedRightXY,</span>
+                                errorType, tolerance);
+<span class="pc bpc" id="L283" title="1 of 4 branches missed.">                            if (fit2 != null &amp;&amp; fit2.isBetter(fitI)) {</span>
+<span class="fc" id="L284">                                fitI = fit2;</span>
+                            }
+                        }
+                    }
+<span class="fc" id="L288">                    System.out.println(&quot;new local best fit: &quot; + fitI.toString());</span>
+<span class="fc" id="L289">                    System.out.flush();</span>
+<span class="fc" id="L290">                    fit = fitI;</span>
                 }
-<span class="fc" id="L209">            }</span>
+<span class="fc" id="L292">            }</span>
             
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">            if (fit == null) {</span>
-<span class="nc" id="L212">                nIter++;</span>
-<span class="nc" id="L213">                continue;</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if (fit == null) {</span>
+<span class="nc" id="L295">                nIter++;</span>
+<span class="nc" id="L296">                continue;</span>
             }
-            
-<span class="fc bfc" id="L216" title="All 2 branches covered.">            if (fit.isBetter(bestFit)) {</span>
-<span class="fc" id="L217">                bestFit = fit;</span>
-            }
-            
-<span class="fc" id="L220">            nIter++;</span>
-            
-            // recalculate nMaxIter
-<span class="pc bpc" id="L223" title="1 of 4 branches missed.">            if ((bestFit != null) &amp;&amp; ((nIter % 10) == 0)) {</span>
-<span class="fc" id="L224">                double ratio = (double)bestFit.getInlierIndexes().size()</span>
-<span class="fc" id="L225">                    /(double)matchedLeftXY.numColumns();</span>
-<span class="pc bpc" id="L226" title="1 of 4 branches missed.">                if (ratio &gt;= 0.0000001 &amp;&amp; (ratio &lt;= 1.0)) {</span>
-<span class="fc" id="L227">                    nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, </span>
-                        nSet, ratio);
+                        
+<span class="fc bfc" id="L299" title="All 2 branches covered.">            if (fit.isBetter(bestFit)) {</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">                int nb = (bestFit != null) ? bestFit.getInlierIndexes().size() : nSet+1;</span>
+<span class="fc" id="L301">                int nf = fit.getInlierIndexes().size();</span>
+                
+<span class="fc" id="L303">                bestFit = fit;</span>
+                
+<span class="fc" id="L305">                System.out.println(&quot;**best fit: &quot; + bestFit.toString());</span>
+<span class="fc" id="L306">                System.out.flush();</span>
+                
+                // recalculate nMaxIter
+<span class="pc bpc" id="L309" title="1 of 4 branches missed.">                if ((nf &gt; nb) &amp;&amp; nMaxIter &gt; 1) {</span>
+<span class="fc" id="L310">                    double outlierPercentI = 100.*</span>
+<span class="fc" id="L311">                        (double)(nPoints - bestFit.getInlierIndexes().size()) /</span>
+                        (double)nPoints;
+<span class="fc bfc" id="L313" title="All 2 branches covered.">                    if (outlierPercentI &lt; outlierPercent) {</span>
+<span class="fc" id="L314">                        outlierPercent = (int)Math.ceil(outlierPercentI);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">                        if (outlierPercent &lt; 5) {</span>
+<span class="fc" id="L316">                            outlierPercent = 5;</span>
+                        }
+<span class="pc bpc" id="L318" title="3 of 4 branches missed.">                        assert(outlierPercent &lt; 50);</span>
+<span class="fc" id="L319">                        nMaxIter = RANSACAlgorithmIterations</span>
+<span class="fc" id="L320">                            .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">                        if (nMaxIter &gt; nPointsSubsets) {</span>
+<span class="nc" id="L322">                            nMaxIter = nPointsSubsets;</span>
+<span class="nc" id="L323">                            useAllSubsets = true;</span>
+                        }
+                    }
                 }
             }
-<span class="fc" id="L231">        }</span>
+            
+<span class="fc" id="L329">            nIter++;</span>
+<span class="fc" id="L330">        }</span>
 
-<span class="pc bpc" id="L233" title="2 of 4 branches missed.">        if (bestFit == null || bestFit.getInlierIndexes().isEmpty()) {</span>
-<span class="nc" id="L234">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
-<span class="nc" id="L235">            return null;</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L333">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
+<span class="nc" id="L334">            return null;</span>
         }
-
-        // store inliers in outputLeftXY and outputRightXY and redo the
-        // entire fit using only the inliers to determine the fundamental
-        // matrix.
-<span class="fc" id="L241">        int n = bestFit.getInlierIndexes().size();</span>
-<span class="fc" id="L242">        DenseMatrix inliersLeftXY = new DenseMatrix(3, n);</span>
-<span class="fc" id="L243">        DenseMatrix inliersRightXY = new DenseMatrix(3, n);</span>
-        
-<span class="fc" id="L245">        int count = 0;</span>
-<span class="fc bfc" id="L246" title="All 2 branches covered.">        for (Integer idx : bestFit.getInlierIndexes()) {</span>
-<span class="fc" id="L247">            int idxInt = idx.intValue();            </span>
-<span class="fc" id="L248">            inliersLeftXY.set(0, count, matchedLeftXY.get(0, idxInt));</span>
-<span class="fc" id="L249">            inliersLeftXY.set(1, count, matchedLeftXY.get(1, idxInt));</span>
-<span class="fc" id="L250">            inliersLeftXY.set(2, count, 1);</span>
-<span class="fc" id="L251">            inliersRightXY.set(0, count, matchedRightXY.get(0, idxInt));</span>
-<span class="fc" id="L252">            inliersRightXY.set(1, count, matchedRightXY.get(1, idxInt));</span>
-<span class="fc" id="L253">            inliersRightXY.set(2, count, 1);</span>
-<span class="fc" id="L254">            count++;</span>
-<span class="fc" id="L255">        }</span>
-
-<span class="fc" id="L257">        EpipolarTransformationFit consensusFit = null;</span>
-        
-<span class="fc bfc" id="L259" title="All 2 branches covered.">        if (inliersRightXY.numColumns() == 7) {</span>
-            
-<span class="fc" id="L261">            List&lt;DenseMatrix&gt; fms = spTransformer.calculateEpipolarProjectionFor7Points(</span>
-                inliersLeftXY, inliersRightXY);
-<span class="pc bpc" id="L263" title="2 of 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
-<span class="nc" id="L264">                return null;</span>
-            }
-<span class="fc" id="L266">            EpipolarTransformationFit fit = null;</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">            for (DenseMatrix fm : fms) {</span>
-<span class="fc" id="L268">                EpipolarTransformationFit fitI = </span>
-<span class="fc" id="L269">                    spTransformer.calculateError(fm, matchedLeftXY, </span>
-                        matchedRightXY, errorType, tolerance);
-<span class="fc bfc" id="L271" title="All 2 branches covered.">                if (fitI.isBetter(fit)) {</span>
-<span class="fc" id="L272">                    fit = fitI;</span>
-                }
-<span class="fc" id="L274">            }</span>
-<span class="fc" id="L275">            consensusFit = fit;</span>
-            
-<span class="fc" id="L277">        } else {</span>
-            
-<span class="fc" id="L279">            DenseMatrix fm = </span>
-<span class="fc" id="L280">                spTransformer.calculateEpipolarProjection(</span>
-                inliersLeftXY, inliersRightXY);
-            
-<span class="fc" id="L283">            EpipolarTransformationFit fit = </span>
-<span class="fc" id="L284">                spTransformer.calculateError(fm, matchedLeftXY, </span>
-                    matchedRightXY, errorType, tolerance);
-            
-<span class="fc" id="L287">            consensusFit = fit;</span>
-        }
-    
+                
         // write to output and convert the coordinate indexes to the original point indexes
-<span class="fc" id="L291">        List&lt;Integer&gt; inlierIndexes = consensusFit.getInlierIndexes();</span>
-<span class="fc bfc" id="L292" title="All 2 branches covered.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
-<span class="fc" id="L293">            Integer index = inlierIndexes.get(i);</span>
-<span class="fc" id="L294">            int idx = index.intValue();</span>
-<span class="fc" id="L295">            outputLeftXY.add(</span>
-<span class="fc" id="L296">                (int)Math.round(matchedLeftXY.get(0, idx)),</span>
-<span class="fc" id="L297">                (int)Math.round(matchedLeftXY.get(1, idx)));</span>
-<span class="fc" id="L298">            outputRightXY.add(</span>
-<span class="fc" id="L299">                (int)Math.round(matchedRightXY.get(0, idx)),</span>
-<span class="fc" id="L300">                (int)Math.round(matchedRightXY.get(1, idx)));</span>
+<span class="fc" id="L338">        List&lt;Integer&gt; inlierIndexes = bestFit.getInlierIndexes();</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
+<span class="fc" id="L340">            Integer index = inlierIndexes.get(i);</span>
+<span class="fc" id="L341">            int idx = index.intValue();</span>
+<span class="fc" id="L342">            outputLeftXY.add(</span>
+<span class="fc" id="L343">                (int)Math.round(matchedLeftXY.get(0, idx)),</span>
+<span class="fc" id="L344">                (int)Math.round(matchedLeftXY.get(1, idx)));</span>
+<span class="fc" id="L345">            outputRightXY.add(</span>
+<span class="fc" id="L346">                (int)Math.round(matchedRightXY.get(0, idx)),</span>
+<span class="fc" id="L347">                (int)Math.round(matchedRightXY.get(1, idx)));</span>
         }
-        
-        /*
-        to approximate the error in using this fundamental matrix to estimate
-        distances to epipolar lines,
-        will calculate distances from the outputleftXY to 
-            offsets from outputReightXY where the offsets are
-            the same value as &quot;tolerance&quot; and applied in 45 degree
-            directions to get roughly near perpendicular to the epipolar
-            line.
-        */
-        
-<span class="fc" id="L313">        log.fine(&quot;nIter=&quot; + nIter);</span>
+      
+<span class="fc" id="L350">        log.fine(&quot;nIter=&quot; + nIter);</span>
 
-<span class="fc" id="L315">        log.fine(&quot;final fit: &quot; + consensusFit.toString());</span>
+<span class="fc" id="L352">        log.fine(&quot;final fit: &quot; + bestFit.toString());</span>
 
-<span class="fc" id="L317">        return consensusFit;</span>
+<span class="fc" id="L354">        return bestFit;</span>
+    }
+    
+    /**
+     * if assume gaussian errors, for 1 degree of freedom (i.e. fitting
+     * a line, fundamental matrix, d^2 = 3.84*(st.dev^2)
+     * @param standardDeviation
+     * @return 
+     */
+    public static double estimateToleranceForDOF1(double standardDeviation) {
+<span class="nc" id="L364">        double d = Math.sqrt(3.84*standardDeviation*standardDeviation);</span>
+<span class="nc" id="L365">        return d;</span>
+    }
+    
+    /**
+     * if assume gaussian errors, for 2 degree of freedom (i.e. fitting
+     * a line, fundamental matrix, d^2 = 5.99*(st.dev^2)
+     * @param standardDeviation
+     * @return 
+     */
+    public static double estimateToleranceForDOF2(double standardDeviation) {
+<span class="nc" id="L375">        double d = Math.sqrt(5.99*standardDeviation*standardDeviation);</span>
+<span class="nc" id="L376">        return d;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

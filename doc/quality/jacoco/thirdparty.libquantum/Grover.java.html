@@ -70,7 +70,7 @@ Implementation of Grover's search algorithm
         
         //NOTE: none of the quantum api methods has to check for unique
         //   quantum numbers before making a change, that is they do not 
-        //   necessarily pauli exclusion principle,
+        //   necessarily check pauli exclusion principle, or check for Cooper pairs
         
         /*
          function f(x)
@@ -256,7 +256,7 @@ Implementation of Grover's search algorithm
         
         //NOTE: since none of the quantum api methods has to check for unique
         //   quantum numbers before making a change, that is they do not 
-        //   necessarily obey the pauli exclusion principle, 
+        //   necessarily check pauli exclusion principle, or check for Cooper pairs
         //   it should be just as valid to
         //   use test and set bit operations alone rather than
         //   purely test and toggle bit operations as nicely demonstrated
@@ -521,7 +521,7 @@ Implementation of Grover's search algorithm
         
         //NOTE: since none of the quantum api methods has to check for unique
         //   quantum numbers before making a change, that is they do not 
-        //   necessarily pauli exclusion principle, 
+        //   necessarily check pauli exclusion principle, or check for Cooper pairs
         //   it should be just as valid to
         //   use test and set pr clear bit operations rather than
         //   purely test and toggle bit operations as nicely demonstrated

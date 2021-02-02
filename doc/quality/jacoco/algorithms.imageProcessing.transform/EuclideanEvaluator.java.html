@@ -17,7 +17,7 @@ import java.util.Set;
 <span class="fc" id="L17">public class EuclideanEvaluator {</span>
 
     public EuclideanTransformationFit evaluate(PairIntArray xy1, 
-        PairIntArray xy2, TransformationParameters params, int tolerance) {
+        PairIntArray xy2, TransformationParameters params, double tolerance) {
         
 <span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (xy1 == null) {</span>
 <span class="nc" id="L23">            throw new IllegalArgumentException(&quot;xy1 cannot be null&quot;);</span>
@@ -61,29 +61,31 @@ import java.util.Set;
 <span class="fc" id="L61">        EuclideanTransformationFit fit = new EuclideanTransformationFit(</span>
 <span class="fc" id="L62">            params.copy(), inlierIndexes, distances, tolerance);</span>
         
-<span class="fc" id="L64">        return fit;</span>
+<span class="fc" id="L64">        fit.calculateErrorStatistics();</span>
+        
+<span class="fc" id="L66">        return fit;</span>
     }
     
     public EuclideanTransformationFit evaluate(List&lt;FeatureComparisonStat&gt; stats, 
-        TransformationParameters params, int tolerance) {
+        TransformationParameters params, double tolerance) {
         
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (stats == null) {</span>
-<span class="nc" id="L71">            throw new IllegalArgumentException(&quot;xy1 cannot be null&quot;);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (stats == null) {</span>
+<span class="nc" id="L73">            throw new IllegalArgumentException(&quot;xy1 cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L74">        PairIntArray xy1 = new PairIntArray(stats.size());</span>
-<span class="nc" id="L75">        PairIntArray xy2 = new PairIntArray(stats.size());</span>
+<span class="nc" id="L76">        PairIntArray xy1 = new PairIntArray(stats.size());</span>
+<span class="nc" id="L77">        PairIntArray xy2 = new PairIntArray(stats.size());</span>
         
-<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
             
-<span class="nc" id="L79">            PairInt p1 = stat.getImg1Point().copy();</span>
-<span class="nc" id="L80">            PairInt p2 = stat.getImg2Point().copy();</span>
+<span class="nc" id="L81">            PairInt p1 = stat.getImg1Point().copy();</span>
+<span class="nc" id="L82">            PairInt p2 = stat.getImg2Point().copy();</span>
             
-<span class="nc" id="L82">            xy1.add(p1.getX(), p1.getY());</span>
-<span class="nc" id="L83">            xy2.add(p2.getX(), p2.getY());</span>
-<span class="nc" id="L84">        }</span>
+<span class="nc" id="L84">            xy1.add(p1.getX(), p1.getY());</span>
+<span class="nc" id="L85">            xy2.add(p2.getX(), p2.getY());</span>
+<span class="nc" id="L86">        }</span>
         
-<span class="nc" id="L86">        return evaluate(xy1, xy2, params, tolerance);</span>
+<span class="nc" id="L88">        return evaluate(xy1, xy2, params, tolerance);</span>
     }
    
     /**
@@ -98,18 +100,18 @@ import java.util.Set;
      */
     public float transformAndCalculateF1Score(Set&lt;PairInt&gt; templateSetToTransform, 
         Set&lt;PairInt&gt; set2, TransformationParameters params,
-        int tolerance) {
+        double tolerance) {
         
-<span class="nc" id="L103">        Transformer transformer = new Transformer();</span>
+<span class="nc" id="L105">        Transformer transformer = new Transformer();</span>
         
-<span class="nc" id="L105">        Set&lt;PairInt&gt; templateSet = transformer.applyTransformation2(</span>
+<span class="nc" id="L107">        Set&lt;PairInt&gt; templateSet = transformer.applyTransformation2(</span>
             params, templateSetToTransform);
         
-<span class="nc" id="L108">        return calculateF1Score(templateSet, set2, tolerance);</span>
+<span class="nc" id="L110">        return calculateF1Score(templateSet, set2, tolerance);</span>
     }
     
     public float calculateF1Score(Set&lt;PairInt&gt; templateSet, Set&lt;PairInt&gt; set2, 
-        int tolerance) {
+        double tolerance) {
         
         /* matching the aggregated adaptive means points to
            the expected template points which have been transformed to the 
@@ -132,55 +134,62 @@ import java.util.Set;
         F_n:     : all the points remaining in aggInner that were not matched
         */
         
-<span class="fc" id="L135">        int[] minMaxXY = MiscMath.findMinMaxXY(set2);</span>
-<span class="fc" id="L136">        int[] minMaxXY2 = MiscMath.findMinMaxXY(templateSet);</span>
-<span class="fc" id="L137">        int maxX = Math.max(minMaxXY[1], minMaxXY2[1]);</span>
-<span class="fc" id="L138">        int maxY = Math.max(minMaxXY[3], minMaxXY2[3]);</span>
+<span class="fc" id="L137">        int[] minMaxXY = MiscMath.findMinMaxXY(set2);</span>
+<span class="fc" id="L138">        int[] minMaxXY2 = MiscMath.findMinMaxXY(templateSet);</span>
+<span class="fc" id="L139">        int maxX = Math.max(minMaxXY[1], minMaxXY2[1]);</span>
+<span class="fc" id="L140">        int maxY = Math.max(minMaxXY[3], minMaxXY2[3]);</span>
         
-<span class="fc" id="L140">        NearestNeighbor2D nn = new NearestNeighbor2D(set2, maxX, maxY);</span>
+        //TODO: find the intersection of points who are each other's
+        //     best nearest neighbor matched when transformed and
+        //     reverse transformed.
+        //     currently not evaluating for intersection with reverse best...
         
-<span class="fc" id="L142">        Set&lt;PairInt&gt; matched = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L147">        NearestNeighbor2D nn = new NearestNeighbor2D(set2, maxX, maxY);</span>
         
-<span class="fc" id="L144">        int tPos = 0;</span>
-<span class="fc" id="L145">        int fPos = 0;</span>
-<span class="fc" id="L146">        int fNeg = 0;</span>
-<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (PairInt trP : templateSet) {</span>
-<span class="fc" id="L148">            Set&lt;PairInt&gt; closest = nn.findClosest(</span>
-<span class="fc" id="L149">                trP.getX(), trP.getY(), tolerance);</span>
-<span class="pc bpc" id="L150" title="1 of 4 branches missed.">            if (closest == null || closest.isEmpty()) {</span>
-<span class="fc" id="L151">                fPos++;</span>
-<span class="fc" id="L152">                continue;</span>
+<span class="fc" id="L149">        Set&lt;PairInt&gt; matched = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L151">        int d = (int)Math.ceil(tolerance);</span>
+        
+<span class="fc" id="L153">        int tPos = 0;</span>
+<span class="fc" id="L154">        int fPos = 0;</span>
+<span class="fc" id="L155">        int fNeg = 0;</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        for (PairInt trP : templateSet) {</span>
+<span class="fc" id="L157">            Set&lt;PairInt&gt; closest = nn.findClosest(</span>
+<span class="fc" id="L158">                trP.getX(), trP.getY(), d);</span>
+<span class="pc bpc" id="L159" title="1 of 4 branches missed.">            if (closest == null || closest.isEmpty()) {</span>
+<span class="fc" id="L160">                fPos++;</span>
+<span class="fc" id="L161">                continue;</span>
             }
-<span class="fc" id="L154">            boolean found = false;</span>
-<span class="pc bpc" id="L155" title="1 of 2 branches missed.">            for (PairInt p : closest) {</span>
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                if (!matched.contains(p)) {</span>
-<span class="fc" id="L157">                    found = true;</span>
-<span class="fc" id="L158">                    matched.add(p);</span>
-<span class="fc" id="L159">                    tPos++;</span>
-<span class="fc" id="L160">                    break;</span>
+<span class="fc" id="L163">            boolean found = false;</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">            for (PairInt p : closest) {</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">                if (!matched.contains(p)) {</span>
+<span class="fc" id="L166">                    found = true;</span>
+<span class="fc" id="L167">                    matched.add(p);</span>
+<span class="fc" id="L168">                    tPos++;</span>
+<span class="fc" id="L169">                    break;</span>
                 }
-<span class="nc" id="L162">            }</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">            if (!found) {</span>
-<span class="nc" id="L164">                fPos++;</span>
+<span class="nc" id="L171">            }</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">            if (!found) {</span>
+<span class="nc" id="L173">                fPos++;</span>
             }
-<span class="fc" id="L166">        }</span>
+<span class="fc" id="L175">        }</span>
         
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (set2.size() &gt; tPos) {</span>
-<span class="fc" id="L169">            fNeg = set2.size() - tPos;</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (set2.size() &gt; tPos) {</span>
+<span class="fc" id="L178">            fNeg = set2.size() - tPos;</span>
         }
      
-<span class="fc" id="L172">        return fMeasure(tPos, fPos, fNeg, 1.0f);</span>
+<span class="fc" id="L181">        return fMeasure(tPos, fPos, fNeg, 1.0f);</span>
     }
     
     protected float fMeasure(int tPos, int fPos, int fNeg, float beta) {
         
-<span class="fc" id="L177">        float betaSq = beta * beta;</span>
+<span class="fc" id="L186">        float betaSq = beta * beta;</span>
         
-<span class="fc" id="L179">        float precision = (float)tPos/(float)(tPos + fPos);</span>
-<span class="fc" id="L180">        float recall = (float)tPos/(float)(tPos + fNeg);</span>
-<span class="fc" id="L181">        float f = (1.f + betaSq) * precision * recall/((betaSq * precision) + recall);</span>
+<span class="fc" id="L188">        float precision = (float)tPos/(float)(tPos + fPos);</span>
+<span class="fc" id="L189">        float recall = (float)tPos/(float)(tPos + fNeg);</span>
+<span class="fc" id="L190">        float f = (1.f + betaSq) * precision * recall/((betaSq * precision) + recall);</span>
 
-<span class="fc" id="L183">        return f;</span>
+<span class="fc" id="L192">        return f;</span>
     }
        
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BitVectorRepresentation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">BitVectorRepresentation.java</span></div><h1>BitVectorRepresentation.java</h1><pre class="source lang-java linenums">package algorithms.util;
 
+import algorithms.VeryLongBitString;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -10,15 +11,15 @@ import java.util.Set;
  */
 public class BitVectorRepresentation {
     
-<span class="fc" id="L13">    private final Map&lt;PairInt, Integer&gt; pointIndexLookup = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="fc" id="L14">    private final Map&lt;PairInt, Integer&gt; pointIndexLookup = new HashMap&lt;PairInt, Integer&gt;();</span>
     
-<span class="fc" id="L15">    public BitVectorRepresentation(Set&lt;PairInt&gt; points) {</span>
+<span class="fc" id="L16">    public BitVectorRepresentation(Set&lt;PairInt&gt; points) {</span>
         
         // enumerate the points
-<span class="fc bfc" id="L18" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L19">            pointIndexLookup.put(p, Integer.valueOf(pointIndexLookup.size()));</span>
-<span class="fc" id="L20">        }</span>
-<span class="fc" id="L21">    }</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L20">            pointIndexLookup.put(p, Integer.valueOf(pointIndexLookup.size()));</span>
+<span class="fc" id="L21">        }</span>
+<span class="fc" id="L22">    }</span>
     
     /**
      * given a subset of the points this instance was constructed with, 
@@ -28,18 +29,18 @@ public class BitVectorRepresentation {
      */
     public VeryLongBitString createBitstring(Set&lt;PairInt&gt; subset) {
                 
-<span class="fc" id="L31">        VeryLongBitString result = new VeryLongBitString(pointIndexLookup.size());</span>
+<span class="fc" id="L32">        VeryLongBitString result = new VeryLongBitString(pointIndexLookup.size());</span>
         
-<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (PairInt p : subset) {</span>
-<span class="fc" id="L34">            Integer v = pointIndexLookup.get(p);</span>
-<span class="pc bpc" id="L35" title="1 of 2 branches missed.">            if (v == null) {</span>
-<span class="nc" id="L36">                throw new IllegalArgumentException(</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        for (PairInt p : subset) {</span>
+<span class="fc" id="L35">            Integer v = pointIndexLookup.get(p);</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">            if (v == null) {</span>
+<span class="nc" id="L37">                throw new IllegalArgumentException(</span>
                     &quot;a point in subset was not present in constructor's points&quot;);
             }
-<span class="fc" id="L39">            result.setBit(v.intValue());</span>
-<span class="fc" id="L40">        }</span>
+<span class="fc" id="L40">            result.setBit(v.intValue());</span>
+<span class="fc" id="L41">        }</span>
         
-<span class="fc" id="L42">        return result;</span>
+<span class="fc" id="L43">        return result;</span>
     }
     
 }

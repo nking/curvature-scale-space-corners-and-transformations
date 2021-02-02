@@ -4,7 +4,7 @@ import algorithms.misc.MiscMath;
 
 /**
  * estimates the number of iterations for a RANSAC type algorithm that 
- * should be used to ensure with 99% certainty that a set of points is 
+ * should be used to ensure with 99% certainty or other that a set of points is 
  * findable as a subset of n matchable points.
 &lt;pre&gt;
 nPoints is the number of points that contain true and false matches.
@@ -100,36 +100,36 @@ simplified below.
         int nPoints, int nPointsIncludingDegenerate, int sampleSize, 
         double expectedFractionTruePoints) {
         
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (sampleSize &lt; 1) {</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (sampleSize &lt; 1) {</span>
 <span class="nc" id="L104">            throw new IllegalArgumentException(&quot;sampleSize must be &gt; 0&quot;);</span>
         }
-<span class="pc bpc" id="L106" title="2 of 4 branches missed.">        if (nPoints &lt; 1 || (nPoints &gt; 1789) ) {</span>
+<span class="nc bnc" id="L106" title="All 4 branches missed.">        if (nPoints &lt; 1 || (nPoints &gt; 1789) ) {</span>
 <span class="nc" id="L107">            throw new IllegalArgumentException(&quot;nPoints must be a positive &quot; +</span>
             &quot; number &lt; 1790 or even smaller considering multiplicity&quot;);
         }
-<span class="pc bpc" id="L110" title="2 of 4 branches missed.">        if (expectedFractionTruePoints &lt; 0.0000001 || expectedFractionTruePoints &gt; 1.0) {</span>
+<span class="nc bnc" id="L110" title="All 4 branches missed.">        if (expectedFractionTruePoints &lt; 0.0000001 || expectedFractionTruePoints &gt; 1.0) {</span>
 <span class="nc" id="L111">            throw new IllegalArgumentException(</span>
             &quot;expectedFractionTruePoints must be larger than 0 and less than 1&quot;);
         }
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (nPoints &lt;= sampleSize) {</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (nPoints &lt;= sampleSize) {</span>
 <span class="nc" id="L115">            throw new IllegalArgumentException(&quot;nPoints must be larger than sampleSize&quot;);</span>
         }
         
-<span class="fc" id="L118">        double pSample = calculateTrueSampleProbabilityForMultiplyMatched(nPoints, </span>
+<span class="nc" id="L118">        double pSample = calculateTrueSampleProbabilityForMultiplyMatched(nPoints, </span>
             nPointsIncludingDegenerate, sampleSize, expectedFractionTruePoints);
 
         long nIter;
         
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (pSample == 0) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (pSample == 0) {</span>
 <span class="nc" id="L124">            return Long.MAX_VALUE;</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        } else if (pSample &lt; 1E-16) {</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        } else if (pSample &lt; 1E-16) {</span>
             // return naive estimate
-<span class="fc" id="L127">            return Math.round(1./pSample);</span>
+<span class="nc" id="L127">            return Math.round(1./pSample);</span>
         } else {
-<span class="fc" id="L129">            nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;</span>
+<span class="nc" id="L129">            nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;</span>
         }
         
-<span class="fc" id="L132">        return nIter;</span>
+<span class="nc" id="L132">        return nIter;</span>
     }
     
     /**
@@ -168,19 +168,19 @@ simplified below.
         
 <span class="fc" id="L169">        double factor = 1;</span>
         
-<span class="fc bfc" id="L171" title="All 2 branches covered.">        if (nTruePoints &gt;= sampleSize) {        </span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (nTruePoints &gt;= sampleSize) {        </span>
 <span class="fc bfc" id="L172" title="All 2 branches covered.">            for (int i = 0; i &lt; sampleSize; ++i) {</span>
 <span class="fc" id="L173">                factor *= (nTruePoints - i)/(double)(nPoints - i);</span>
             }            
         } else {
             //know that the number is still smaller than (1./nPoints)^sampleSize.
             //For nTruePoints of 1, looks like (1./nPoints)*(1./(nPoints-sampleSize))^(sampleSize-1)
-<span class="fc bfc" id="L178" title="All 2 branches covered.">            for (int i = 0; i &lt; (int)nTruePoints; ++i) {</span>
-<span class="fc" id="L179">                factor *= (nTruePoints - i)/(double)(nPoints - i);</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">            for (int i = 0; i &lt; (int)nTruePoints; ++i) {</span>
+<span class="nc" id="L179">                factor *= (nTruePoints - i)/(double)(nPoints - i);</span>
             }
-<span class="fc bfc" id="L181" title="All 2 branches covered.">            if (nPoints != sampleSize) {</span>
-<span class="fc" id="L182">                int pow = (sampleSize - (int)nTruePoints);</span>
-<span class="fc" id="L183">                factor *= Math.pow((1./(nPoints - sampleSize)), pow);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            if (nPoints != sampleSize) {</span>
+<span class="nc" id="L182">                int pow = (sampleSize - (int)nTruePoints);</span>
+<span class="nc" id="L183">                factor *= Math.pow((1./(nPoints - sampleSize)), pow);</span>
             }
         }
         
@@ -254,16 +254,129 @@ simplified below.
 <span class="fc" id="L254">        double pSampleSingle = calculateTrueSampleProbability(nPoints, sampleSize, </span>
             expectedFractionTruePoints);
         
-<span class="fc" id="L257">        double nCombinationsSingle = MiscMath.computeNDivKTimesNMinusK(nPoints, sampleSize);</span>
+<span class="nc" id="L257">        double nCombinationsSingle = MiscMath.computeNDivKTimesNMinusK(nPoints, sampleSize);</span>
         
-<span class="fc" id="L259">        double nCombinationsMultiple = </span>
-<span class="fc" id="L260">            MiscMath.computeNDivKTimesNMinusK(nAllMultiplicity, sampleSize);</span>
+<span class="nc" id="L259">        double nCombinationsMultiple = </span>
+<span class="nc" id="L260">            MiscMath.computeNDivKTimesNMinusK(nAllMultiplicity, sampleSize);</span>
         
-<span class="fc" id="L262">        double pSampleMultiple = pSampleSingle * </span>
+<span class="nc" id="L262">        double pSampleMultiple = pSampleSingle * </span>
             (nCombinationsSingle/nCombinationsMultiple);
 
-<span class="fc" id="L265">        return pSampleMultiple;</span>
+<span class="nc" id="L265">        return pSampleMultiple;</span>
     }
 
+    
+    /*
+    Get the number of subsamples needed for a subsample size of 7 within a larger sample,
+    where the number of subsamples is chosen sufficiently high to give 
+    a probability in excess of 95% that a good subsample is selected.
+    The number is calculated for percentages of bad data in the larger sample 
+    being 5%, 10%, 20%, 25%, 30%, 40%, and 50%.
+    
+    The method is from Section 6 of paper: 
+      &quot;The Development and Comparison of Robust Method for Estimating the Fundamental Matrix&quot;
+       by P H S TORR AND D W MURRAY
+       Int. J Computer Vision 24 (1997) pp271–300, , 1–32 ()
+       https://www.robots.ox.ac.uk/ActiveVision/Publications/torr_murray_ijcv1997/torr_murray_ijcv1997.pdf
+    
+    &lt;pre&gt;
+    for probablity gamma in excess of 95%:
+    let p = sub-sample size
+    let m = number of subsamples to achieve gamma probability
+    let eps = percentage of bad data
+    
+    gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    
+    table of m's for p=7 and eps from 5%to 50%:
+    
+    p |  5%  10%  20%  25%  30%  40%  50%
+    --------------------------------------
+    7 |  3   5    13   21   35   106  382
+    &lt;/pre&gt;
+    */
+    public static int numberOfSubsamplesOfSize7For95PercentInliers(int outlierPercent) {
+    
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">        if (outlierPercent &lt; 0) {</span>
+<span class="nc" id="L300">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
+        }
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">        if (outlierPercent &gt; 50) {</span>
+<span class="nc" id="L303">            throw new IllegalArgumentException(&quot;outlierPercent must be 50 percent or less&quot;);</span>
+        }
+        
+        /*
+        1 - gamma = (1 - (1 - eps)^p)^m
+           let Z = (1 - (1 - eps)^p)
+           let g = 1 - gamma
+        g = Z^m
+        log(g) = m*log(Z);       
+        m = log(g) / log(Z)
+        */
+<span class="fc" id="L314">        int p = 7;</span>
+<span class="fc" id="L315">        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);</span>
+<span class="fc" id="L316">        double g = 1. - 0.95;</span>
+        
+<span class="fc" id="L318">        double m = Math.log(g) / Math.log(z);</span>
+                
+<span class="fc" id="L320">        return (int)Math.ceil(m);</span>
+    }
+    
+    /*
+    Get the number of subsamples needed for a subsample size of 7 within a larger sample,
+    where the number of subsamples is chosen sufficiently high to give 
+    a probability in excess of 95% that a good subsample is selected.
+    The number is calculated for percentages of bad data in the larger sample 
+    being 5%, 10%, 20%, 25%, 30%, 40%, and 50%.
+    
+    The method is from Section 6 of paper: 
+      &quot;The Development and Comparison of Robust Method for Estimating the Fundamental Matrix&quot;
+       by P H S TORR AND D W MURRAY
+       Int. J Computer Vision 24 (1997) pp271–300, , 1–32 ()
+       https://www.robots.ox.ac.uk/ActiveVision/Publications/torr_murray_ijcv1997/torr_murray_ijcv1997.pdf
+    
+    &lt;pre&gt;
+    for probablity gamma in excess of 95%:
+    let p = sub-sample size
+    let m = number of subsamples to achieve gamma probability
+    let eps = percentage of bad data
+    
+    gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    
+    table of m's for p=7 and eps from 5%to 50%:
+    
+    p |  5%  10%  20%  25%  30%  40%  50%
+    --------------------------------------
+    7 |  3   5    13   21   35   106  382
+    &lt;/pre&gt;
+    */
+    public static int numberOfSubsamplesFor95PercentInliers(int outlierPercent,
+        int subSampleSize) {
+    
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">        if (outlierPercent &lt; 0) {</span>
+<span class="nc" id="L355">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
+        }
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">        if (outlierPercent &gt; 50) {</span>
+<span class="nc" id="L358">            throw new IllegalArgumentException(&quot;outlierPercent must be 50 percent or less&quot;);</span>
+        }
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">        if (subSampleSize &lt; 0) {</span>
+<span class="nc" id="L361">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
+        }
+        
+        /*
+        1 - gamma = (1 - (1 - eps)^p)^m
+           let Z = (1 - (1 - eps)^p)
+           let g = 1 - gamma
+        g = Z^m
+        log(g) = m*log(Z);       
+        m = log(g) / log(Z)
+        */
+<span class="fc" id="L372">        int p = subSampleSize;</span>
+<span class="fc" id="L373">        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);</span>
+<span class="fc" id="L374">        double g = 1. - 0.95;</span>
+        
+<span class="fc" id="L376">        double m = Math.log(g) / Math.log(z);</span>
+                
+<span class="fc" id="L378">        return (int)Math.ceil(m);</span>
+    }
+    
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

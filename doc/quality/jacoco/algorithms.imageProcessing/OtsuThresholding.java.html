@@ -333,11 +333,12 @@ import java.util.Set;
 <span class="fc" id="L333">        double[][] avgImg = imageProcessor.copy(img);</span>
         
 <span class="fc" id="L335">        int halfWindow = 1;</span>
-<span class="fc" id="L336">        imageProcessor.applyCenteredMean2(avgImg, halfWindow);</span>
+    
+<span class="fc" id="L337">        imageProcessor.applyCenteredMean2(avgImg, halfWindow);</span>
         
-<span class="fc" id="L338">        double min = MiscMath.findMin(img);</span>
-<span class="fc" id="L339">        double max = MiscMath.findMax(img);</span>
-<span class="fc" id="L340">        double binWidth = (max - min + 1.)/(double)nBins;</span>
+<span class="fc" id="L339">        double min = MiscMath.findMin(img);</span>
+<span class="fc" id="L340">        double max = MiscMath.findMax(img);</span>
+<span class="fc" id="L341">        double binWidth = (max - min + 1.)/(double)nBins;</span>
 
         /*
         -- histogram from a mean image made from summed table
@@ -354,37 +355,37 @@ import java.util.Set;
             area table for it sparsely for the calcs below.
         */
         
-<span class="fc" id="L357">        double[][] p = new double[nBins][];</span>
-<span class="fc bfc" id="L358" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
-<span class="fc" id="L359">            p[i] = new double[nBins];</span>
+<span class="fc" id="L358">        double[][] p = new double[nBins][];</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
+<span class="fc" id="L360">            p[i] = new double[nBins];</span>
         }
-<span class="fc" id="L361">        Set&lt;PairInt&gt; pSet = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L362" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L363" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc" id="L364">                double v = img[i][j];</span>
-<span class="fc" id="L365">                int binInt = (int)((v - min)/binWidth);</span>
-<span class="fc" id="L366">                v = avgImg[i][j];</span>
-<span class="fc" id="L367">                int binAvg = (int)((v - min)/binWidth);</span>
-<span class="fc" id="L368">                PairInt pair = new PairInt(binInt, binAvg);</span>
-<span class="fc" id="L369">                pSet.add(pair);</span>
-<span class="fc" id="L370">                p[binInt][binAvg]++;</span>
+<span class="fc" id="L362">        Set&lt;PairInt&gt; pSet = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L365">                double v = img[i][j];</span>
+<span class="fc" id="L366">                int binInt = (int)((v - min)/binWidth);</span>
+<span class="fc" id="L367">                v = avgImg[i][j];</span>
+<span class="fc" id="L368">                int binAvg = (int)((v - min)/binWidth);</span>
+<span class="fc" id="L369">                PairInt pair = new PairInt(binInt, binAvg);</span>
+<span class="fc" id="L370">                pSet.add(pair);</span>
+<span class="fc" id="L371">                p[binInt][binAvg]++;</span>
             }
         }
         
-<span class="pc bpc" id="L374" title="3 of 4 branches missed.">        assert(assertSums(p, nPix));</span>
+<span class="pc bpc" id="L375" title="3 of 4 branches missed.">        assert(assertSums(p, nPix));</span>
                 
-<span class="fc" id="L376">        double minP = Double.MAX_VALUE;</span>
+<span class="fc" id="L377">        double minP = Double.MAX_VALUE;</span>
         // finish array of probabilities
-<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (PairInt pair : pSet) {</span>
-<span class="fc" id="L379">            int i = pair.getX();</span>
-<span class="fc" id="L380">            int j = pair.getY();</span>
-<span class="fc" id="L381">            p[i][j] /= nPix;</span>
-<span class="fc bfc" id="L382" title="All 2 branches covered.">            if (p[i][j] &lt; minP) {</span>
-<span class="fc" id="L383">                minP = p[i][j];</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">        for (PairInt pair : pSet) {</span>
+<span class="fc" id="L380">            int i = pair.getX();</span>
+<span class="fc" id="L381">            int j = pair.getY();</span>
+<span class="fc" id="L382">            p[i][j] /= nPix;</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">            if (p[i][j] &lt; minP) {</span>
+<span class="fc" id="L384">                minP = p[i][j];</span>
             }
-<span class="fc" id="L385">        }</span>
+<span class="fc" id="L386">        }</span>
         
-<span class="pc bpc" id="L387" title="3 of 4 branches missed.">        assert(assertSums(p, 1));</span>
+<span class="pc bpc" id="L388" title="3 of 4 branches missed.">        assert(assertSums(p, 1));</span>
         
         /*
        for any given point in P_i_j, noted as (s, t) where s is i and t is j,
@@ -444,63 +445,63 @@ import java.util.Set;
         */
         
         // summed area table for p_i_j
-<span class="fc" id="L447">        SummedAreaTable summed = new SummedAreaTable();</span>
-<span class="fc" id="L448">        double[][] pTable = summed.createAbsoluteSummedAreaTable(p);</span>
+<span class="fc" id="L448">        SummedAreaTable summed = new SummedAreaTable();</span>
+<span class="fc" id="L449">        double[][] pTable = summed.createAbsoluteSummedAreaTable(p);</span>
         
-<span class="pc bpc" id="L450" title="3 of 4 branches missed.">        assert(allAreRealNumbers(pTable));</span>
+<span class="pc bpc" id="L451" title="3 of 4 branches missed.">        assert(allAreRealNumbers(pTable));</span>
         
-<span class="fc" id="L452">        double[] binFactors = new double[nBins];</span>
-<span class="fc bfc" id="L453" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
-<span class="fc" id="L454">            binFactors[i] = i * binWidth + min;</span>
+<span class="fc" id="L453">        double[] binFactors = new double[nBins];</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
+<span class="fc" id="L455">            binFactors[i] = i * binWidth + min;</span>
         }     
         
         //TODO: this needs corrections to avoid overrunning
         // bounds of table data type.
         
-<span class="fc" id="L460">        double mTotalI = 0;</span>
-<span class="fc" id="L461">        double mTotalJ = 0;</span>
+<span class="fc" id="L461">        double mTotalI = 0;</span>
+<span class="fc" id="L462">        double mTotalJ = 0;</span>
         
         // the other 2 summed area tables.
-<span class="fc" id="L464">        double[][] iPTable = new double[nBins][];</span>
-<span class="fc" id="L465">        double[][] jPTable = new double[nBins][];</span>
-<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
-<span class="fc" id="L467">            iPTable[i] = new double[nBins];</span>
-<span class="fc" id="L468">            jPTable[i] = new double[nBins];</span>
+<span class="fc" id="L465">        double[][] iPTable = new double[nBins][];</span>
+<span class="fc" id="L466">        double[][] jPTable = new double[nBins][];</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
+<span class="fc" id="L468">            iPTable[i] = new double[nBins];</span>
+<span class="fc" id="L469">            jPTable[i] = new double[nBins];</span>
             
-<span class="fc" id="L470">            double iFactor = binFactors[i];</span>
+<span class="fc" id="L471">            double iFactor = binFactors[i];</span>
             
-<span class="fc bfc" id="L472" title="All 2 branches covered.">            for (int j = 0; j &lt; nBins; ++j) {</span>
-<span class="fc" id="L473">                double jFactor = binFactors[j];</span>
+<span class="fc bfc" id="L473" title="All 2 branches covered.">            for (int j = 0; j &lt; nBins; ++j) {</span>
+<span class="fc" id="L474">                double jFactor = binFactors[j];</span>
                 
-<span class="fc" id="L475">                mTotalI += (iFactor * p[i][j]);</span>
-<span class="fc" id="L476">                mTotalJ += (jFactor * p[i][j]);</span>
+<span class="fc" id="L476">                mTotalI += (iFactor * p[i][j]);</span>
+<span class="fc" id="L477">                mTotalJ += (jFactor * p[i][j]);</span>
                                 
-<span class="fc" id="L478">                double iv = 0;</span>
-<span class="fc" id="L479">                double jv = 0;</span>
-<span class="fc bfc" id="L480" title="All 4 branches covered.">                if (i &gt; 0 &amp;&amp; j &gt; 0) {</span>
-<span class="fc" id="L481">                    iv = iPTable[i - 1][j] + iPTable[i][j - 1] </span>
+<span class="fc" id="L479">                double iv = 0;</span>
+<span class="fc" id="L480">                double jv = 0;</span>
+<span class="fc bfc" id="L481" title="All 4 branches covered.">                if (i &gt; 0 &amp;&amp; j &gt; 0) {</span>
+<span class="fc" id="L482">                    iv = iPTable[i - 1][j] + iPTable[i][j - 1] </span>
                         - iPTable[i - 1][j - 1] 
                         + iFactor*p[i][j];
-<span class="fc" id="L484">                    jv = jPTable[i - 1][j] + jPTable[i][j - 1] </span>
+<span class="fc" id="L485">                    jv = jPTable[i - 1][j] + jPTable[i][j - 1] </span>
                         - jPTable[i - 1][j - 1] 
                         + jFactor*p[i][j];
-<span class="fc bfc" id="L487" title="All 2 branches covered.">                } else if (i &gt; 0) {</span>
-<span class="fc" id="L488">                    iv = iPTable[i - 1][j] + iFactor*p[i][j];</span>
-<span class="fc" id="L489">                    jv = jPTable[i - 1][j] + jFactor*p[i][j];</span>
-<span class="fc bfc" id="L490" title="All 2 branches covered.">                } else if (j &gt; 0) {</span>
-<span class="fc" id="L491">                    iv = iPTable[i][j - 1] + iFactor*p[i][j];</span>
-<span class="fc" id="L492">                    jv = jPTable[i][j - 1] + jFactor*p[i][j];</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">                } else if (i &gt; 0) {</span>
+<span class="fc" id="L489">                    iv = iPTable[i - 1][j] + iFactor*p[i][j];</span>
+<span class="fc" id="L490">                    jv = jPTable[i - 1][j] + jFactor*p[i][j];</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">                } else if (j &gt; 0) {</span>
+<span class="fc" id="L492">                    iv = iPTable[i][j - 1] + iFactor*p[i][j];</span>
+<span class="fc" id="L493">                    jv = jPTable[i][j - 1] + jFactor*p[i][j];</span>
                 } else {
-<span class="pc bpc" id="L494" title="5 of 6 branches missed.">                    assert(i == 0 &amp;&amp; j == 0);</span>
-<span class="fc" id="L495">                    iv = iFactor*p[0][0];</span>
-<span class="fc" id="L496">                    jv = jFactor*p[0][0];</span>
+<span class="pc bpc" id="L495" title="5 of 6 branches missed.">                    assert(i == 0 &amp;&amp; j == 0);</span>
+<span class="fc" id="L496">                    iv = iFactor*p[0][0];</span>
+<span class="fc" id="L497">                    jv = jFactor*p[0][0];</span>
                 }
-<span class="fc" id="L498">                iPTable[i][j] = iv;</span>
-<span class="fc" id="L499">                jPTable[i][j] = jv;</span>
-<span class="pc bpc" id="L500" title="3 of 4 branches missed.">                assert(!Double.isNaN(iPTable[i][j]));</span>
-<span class="pc bpc" id="L501" title="3 of 4 branches missed.">                assert(!Double.isNaN(jPTable[i][j]));</span>
-<span class="pc bpc" id="L502" title="3 of 4 branches missed.">                assert(Double.isFinite(iPTable[i][j]));</span>
-<span class="pc bpc" id="L503" title="3 of 4 branches missed.">                assert(Double.isFinite(jPTable[i][j]));</span>
+<span class="fc" id="L499">                iPTable[i][j] = iv;</span>
+<span class="fc" id="L500">                jPTable[i][j] = jv;</span>
+<span class="pc bpc" id="L501" title="3 of 4 branches missed.">                assert(!Double.isNaN(iPTable[i][j]));</span>
+<span class="pc bpc" id="L502" title="3 of 4 branches missed.">                assert(!Double.isNaN(jPTable[i][j]));</span>
+<span class="pc bpc" id="L503" title="3 of 4 branches missed.">                assert(Double.isFinite(iPTable[i][j]));</span>
+<span class="pc bpc" id="L504" title="3 of 4 branches missed.">                assert(Double.isFinite(jPTable[i][j]));</span>
                 
                 /*System.out.println(String.format(
                 &quot;pair=(%.2f,%.2f)  w=%.2f  iv=%.2f  jv=%.2f&quot;,
@@ -531,78 +532,78 @@ import java.util.Set;
                       i=s to nBins-1 and j=t to nBins-1
         */
                 
-<span class="fc" id="L534">        double[] sAndNPix = new double[2];</span>
+<span class="fc" id="L535">        double[] sAndNPix = new double[2];</span>
         
-<span class="fc" id="L536">        PairInt maxPair = null;</span>
-<span class="fc" id="L537">        double maxTrace = Double.MIN_VALUE;</span>
-<span class="fc bfc" id="L538" title="All 2 branches covered.">        for (PairInt pair : pSet) {</span>
-<span class="fc" id="L539">            int s = pair.getX();</span>
-<span class="fc" id="L540">            int t = pair.getY();</span>
+<span class="fc" id="L537">        PairInt maxPair = null;</span>
+<span class="fc" id="L538">        double maxTrace = Double.MIN_VALUE;</span>
+<span class="fc bfc" id="L539" title="All 2 branches covered.">        for (PairInt pair : pSet) {</span>
+<span class="fc" id="L540">            int s = pair.getX();</span>
+<span class="fc" id="L541">            int t = pair.getY();</span>
            
             double w0, m0I, m0J, w1, m1I, m1J;
             
-<span class="fc" id="L544">            summed.extractWindowFromSummedAreaTable(</span>
+<span class="fc" id="L545">            summed.extractWindowFromSummedAreaTable(</span>
                 pTable, s, nBins - 1, t, nBins - 1, sAndNPix);
-<span class="fc" id="L546">            w1 = sAndNPix[0];</span>
-<span class="fc" id="L547">            summed.extractWindowFromSummedAreaTable(</span>
+<span class="fc" id="L547">            w1 = sAndNPix[0];</span>
+<span class="fc" id="L548">            summed.extractWindowFromSummedAreaTable(</span>
                 iPTable, s, nBins - 1, t, nBins - 1, sAndNPix);
-<span class="fc" id="L549">            m1I = sAndNPix[0];</span>
-<span class="fc" id="L550">            summed.extractWindowFromSummedAreaTable(</span>
+<span class="fc" id="L550">            m1I = sAndNPix[0];</span>
+<span class="fc" id="L551">            summed.extractWindowFromSummedAreaTable(</span>
                 jPTable, s, nBins - 1, t, nBins - 1, sAndNPix);
-<span class="fc" id="L552">            m1J = sAndNPix[0];</span>
+<span class="fc" id="L553">            m1J = sAndNPix[0];</span>
             
-<span class="fc bfc" id="L554" title="All 4 branches covered.">            if (s &gt; 0 &amp;&amp; t &gt; 0) {</span>
-<span class="fc" id="L555">                w0 = pTable[s - 1][t - 1];</span>
-<span class="fc" id="L556">                m0I = iPTable[s - 1][t - 1];</span>
-<span class="fc" id="L557">                m0J = jPTable[s - 1][t - 1];</span>
-<span class="fc bfc" id="L558" title="All 2 branches covered.">            } else if (s &gt; 0) {</span>
-<span class="pc bpc" id="L559" title="3 of 4 branches missed.">                assert(t == 0);</span>
-<span class="fc" id="L560">                w0 = pTable[s - 1][t];</span>
-<span class="fc" id="L561">                m0I = iPTable[s - 1][t];</span>
-<span class="fc" id="L562">                m0J = jPTable[s - 1][t];</span>
-<span class="fc bfc" id="L563" title="All 2 branches covered.">            } else if (t &gt; 0) {</span>
-<span class="pc bpc" id="L564" title="3 of 4 branches missed.">                assert(s == 0);</span>
-<span class="fc" id="L565">                w0 = pTable[s][t - 1];</span>
-<span class="fc" id="L566">                m0I = iPTable[s][t - 1];</span>
-<span class="fc" id="L567">                m0J = jPTable[s][t - 1];</span>
+<span class="fc bfc" id="L555" title="All 4 branches covered.">            if (s &gt; 0 &amp;&amp; t &gt; 0) {</span>
+<span class="fc" id="L556">                w0 = pTable[s - 1][t - 1];</span>
+<span class="fc" id="L557">                m0I = iPTable[s - 1][t - 1];</span>
+<span class="fc" id="L558">                m0J = jPTable[s - 1][t - 1];</span>
+<span class="fc bfc" id="L559" title="All 2 branches covered.">            } else if (s &gt; 0) {</span>
+<span class="pc bpc" id="L560" title="3 of 4 branches missed.">                assert(t == 0);</span>
+<span class="fc" id="L561">                w0 = pTable[s - 1][t];</span>
+<span class="fc" id="L562">                m0I = iPTable[s - 1][t];</span>
+<span class="fc" id="L563">                m0J = jPTable[s - 1][t];</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">            } else if (t &gt; 0) {</span>
+<span class="pc bpc" id="L565" title="3 of 4 branches missed.">                assert(s == 0);</span>
+<span class="fc" id="L566">                w0 = pTable[s][t - 1];</span>
+<span class="fc" id="L567">                m0I = iPTable[s][t - 1];</span>
+<span class="fc" id="L568">                m0J = jPTable[s][t - 1];</span>
             } else {
                 // i == 0 and j == 0
-<span class="pc bpc" id="L570" title="3 of 4 branches missed.">                assert(s == 0);</span>
-<span class="pc bpc" id="L571" title="3 of 4 branches missed.">                assert(t == 0);</span>
-<span class="fc" id="L572">                w0 = p[s][t];</span>
-<span class="fc" id="L573">                m0I = iPTable[s][t];</span>
-<span class="fc" id="L574">                m0J = jPTable[s][t];</span>
+<span class="pc bpc" id="L571" title="3 of 4 branches missed.">                assert(s == 0);</span>
+<span class="pc bpc" id="L572" title="3 of 4 branches missed.">                assert(t == 0);</span>
+<span class="fc" id="L573">                w0 = p[s][t];</span>
+<span class="fc" id="L574">                m0I = iPTable[s][t];</span>
+<span class="fc" id="L575">                m0J = jPTable[s][t];</span>
             }
-<span class="pc bpc" id="L576" title="3 of 4 branches missed.">            assert(w0 &lt;= 1.);</span>
-<span class="fc" id="L577">            m0I /= w0;</span>
-<span class="fc" id="L578">            m0J /= w0;</span>
-<span class="fc" id="L579">            m1I /= w1;</span>
-<span class="fc" id="L580">            m1J /= w1;</span>
+<span class="pc bpc" id="L577" title="3 of 4 branches missed.">            assert(w0 &lt;= 1.);</span>
+<span class="fc" id="L578">            m0I /= w0;</span>
+<span class="fc" id="L579">            m0J /= w0;</span>
+<span class="fc" id="L580">            m1I /= w1;</span>
+<span class="fc" id="L581">            m1J /= w1;</span>
             
             /*
             tr(S_b) = w_0 * ((m_0_i - m_total_i)^2 + (m_0_j - m_total_j)^2) 
                   + w_1 * ((m_1_i - m_total_i)^2 + (m_1_j - m_total_j)^2)
             */
-<span class="fc" id="L586">            double a = m0I - mTotalI;</span>
-<span class="fc" id="L587">            a *= a;</span>
-<span class="fc" id="L588">            double b = m0J - mTotalJ;</span>
-<span class="fc" id="L589">            b *= b;</span>
-<span class="fc" id="L590">            double c = m1I - mTotalI;</span>
-<span class="fc" id="L591">            c *= c;</span>
-<span class="fc" id="L592">            double d = m1J - mTotalJ;</span>
-<span class="fc" id="L593">            d *= d;</span>
+<span class="fc" id="L587">            double a = m0I - mTotalI;</span>
+<span class="fc" id="L588">            a *= a;</span>
+<span class="fc" id="L589">            double b = m0J - mTotalJ;</span>
+<span class="fc" id="L590">            b *= b;</span>
+<span class="fc" id="L591">            double c = m1I - mTotalI;</span>
+<span class="fc" id="L592">            c *= c;</span>
+<span class="fc" id="L593">            double d = m1J - mTotalJ;</span>
+<span class="fc" id="L594">            d *= d;</span>
             
             double trace;
-<span class="pc bpc" id="L596" title="1 of 4 branches missed.">            if (w0 == 0 &amp;&amp; w1 == 0) {</span>
-<span class="nc" id="L597">                continue;</span>
-<span class="fc bfc" id="L598" title="All 2 branches covered.">            } else if (w0 == 0) {</span>
-<span class="fc" id="L599">                trace = w1 * (c + d);</span>
-<span class="pc bpc" id="L600" title="1 of 2 branches missed.">            } else if (w1 == 0) {</span>
-<span class="nc" id="L601">                trace = w0 * (a + b);</span>
+<span class="pc bpc" id="L597" title="1 of 4 branches missed.">            if (w0 == 0 &amp;&amp; w1 == 0) {</span>
+<span class="nc" id="L598">                continue;</span>
+<span class="fc bfc" id="L599" title="All 2 branches covered.">            } else if (w0 == 0) {</span>
+<span class="fc" id="L600">                trace = w1 * (c + d);</span>
+<span class="pc bpc" id="L601" title="1 of 2 branches missed.">            } else if (w1 == 0) {</span>
+<span class="nc" id="L602">                trace = w0 * (a + b);</span>
             } else {
-<span class="fc" id="L603">                trace = w0 * (a + b) + w1 * (c + d);</span>
+<span class="fc" id="L604">                trace = w0 * (a + b) + w1 * (c + d);</span>
             }
-<span class="pc bpc" id="L605" title="3 of 4 branches missed.">            assert(!Double.isNaN(trace));</span>
+<span class="pc bpc" id="L606" title="3 of 4 branches missed.">            assert(!Double.isNaN(trace));</span>
             
             /*System.out.println(String.format(
                 &quot;thresh=(%.2f,%.2f)  tr=%.2f&quot;,
@@ -610,56 +611,56 @@ import java.util.Set;
                 (float)((pair.getY() * binWidth) + min),
                 (float)trace));*/
             
-<span class="fc bfc" id="L613" title="All 2 branches covered.">            if (trace &gt; maxTrace) {</span>
-<span class="fc" id="L614">                maxTrace = trace;</span>
-<span class="fc" id="L615">                maxPair = pair;</span>
+<span class="fc bfc" id="L614" title="All 2 branches covered.">            if (trace &gt; maxTrace) {</span>
+<span class="fc" id="L615">                maxTrace = trace;</span>
+<span class="fc" id="L616">                maxPair = pair;</span>
             }
-<span class="fc" id="L617">        }</span>
+<span class="fc" id="L618">        }</span>
         
-<span class="fc bfc" id="L619" title="All 2 branches covered.">        if (maxPair == null) {</span>
-<span class="pc bpc" id="L620" title="1 of 2 branches missed.">            if (pSet.isEmpty()) {</span>
-<span class="nc" id="L621">                return 0;</span>
+<span class="fc bfc" id="L620" title="All 2 branches covered.">        if (maxPair == null) {</span>
+<span class="pc bpc" id="L621" title="1 of 2 branches missed.">            if (pSet.isEmpty()) {</span>
+<span class="nc" id="L622">                return 0;</span>
             }
-<span class="fc" id="L623">            maxPair = pSet.iterator().next();</span>
+<span class="fc" id="L624">            maxPair = pSet.iterator().next();</span>
         }
         
-<span class="fc" id="L626">        double thresh = (maxPair.getX() * binWidth) + min;</span>
-<span class="fc" id="L627">        thresh += (binWidth/2);</span>
+<span class="fc" id="L627">        double thresh = (maxPair.getX() * binWidth) + min;</span>
+<span class="fc" id="L628">        thresh += (binWidth/2);</span>
         
         //System.out.println(&quot;==&gt; &quot; + thresh);
         
-<span class="fc" id="L631">        return thresh;</span>
+<span class="fc" id="L632">        return thresh;</span>
     }
 
     private boolean allAreRealNumbers(double[][] a) {
         
-<span class="nc" id="L636">        int w = a.length;</span>
-<span class="nc" id="L637">        int h = a[0].length;</span>
-<span class="nc bnc" id="L638" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L639" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="nc bnc" id="L640" title="All 2 branches missed.">                if (Double.isNaN(a[i][j])) {</span>
-<span class="nc" id="L641">                    return false;</span>
+<span class="nc" id="L637">        int w = a.length;</span>
+<span class="nc" id="L638">        int h = a[0].length;</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="nc bnc" id="L640" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="nc bnc" id="L641" title="All 2 branches missed.">                if (Double.isNaN(a[i][j])) {</span>
+<span class="nc" id="L642">                    return false;</span>
                 }
-<span class="nc bnc" id="L643" title="All 2 branches missed.">                if (Double.isInfinite(a[i][j])) {</span>
-<span class="nc" id="L644">                    return false;</span>
+<span class="nc bnc" id="L644" title="All 2 branches missed.">                if (Double.isInfinite(a[i][j])) {</span>
+<span class="nc" id="L645">                    return false;</span>
                 }
             }
         }
-<span class="nc" id="L648">        return true;</span>
+<span class="nc" id="L649">        return true;</span>
     }
 
     private boolean assertSums(double[][] a, double expectedSum) {
         
-<span class="nc" id="L653">        int w = a.length;</span>
-<span class="nc" id="L654">        int h = a[0].length;</span>
-<span class="nc" id="L655">        double sum = 0;</span>
-<span class="nc bnc" id="L656" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="nc bnc" id="L657" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="nc" id="L658">                double v = a[i][j];</span>
-<span class="nc" id="L659">                sum += v;</span>
+<span class="nc" id="L654">        int w = a.length;</span>
+<span class="nc" id="L655">        int h = a[0].length;</span>
+<span class="nc" id="L656">        double sum = 0;</span>
+<span class="nc bnc" id="L657" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="nc bnc" id="L658" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="nc" id="L659">                double v = a[i][j];</span>
+<span class="nc" id="L660">                sum += v;</span>
             }
         }
-<span class="nc bnc" id="L662" title="All 2 branches missed.">        return (Math.abs(expectedSum - sum) &lt; 0.0001);</span>
+<span class="nc bnc" id="L663" title="All 2 branches missed.">        return (Math.abs(expectedSum - sum) &lt; 0.0001);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

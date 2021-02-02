@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PolynomialFitter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.util</a> &gt; <span class="el_source">PolynomialFitter.java</span></div><h1>PolynomialFitter.java</h1><pre class="source lang-java linenums">package algorithms.util;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -20,9 +19,9 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
  * 
  * @author nichole
  */
-<span class="fc" id="L23">public class PolynomialFitter {</span>
+<span class="fc" id="L22">public class PolynomialFitter {</span>
     
-<span class="fc" id="L25">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L24">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
     /**
      * plot the points and 2nd order curve given the coefficients.
@@ -41,44 +40,44 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
                 
         // shape the rainbow points into a more even ribbon
         
-<span class="fc" id="L44">        float[] xP = new float[points.size()];</span>
-<span class="fc" id="L45">        float[] yP = new float[xP.length];</span>
-<span class="fc" id="L46">        int i = 0;</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L48">            float x = p.getX();</span>
-<span class="fc" id="L49">            xP[i] = x;</span>
-<span class="fc" id="L50">            yP[i] = p.getY();</span>
-<span class="fc" id="L51">            i++;</span>
-<span class="fc" id="L52">        }</span>
+<span class="fc" id="L43">        float[] xP = new float[points.size()];</span>
+<span class="fc" id="L44">        float[] yP = new float[xP.length];</span>
+<span class="fc" id="L45">        int i = 0;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L47">            float x = p.getX();</span>
+<span class="fc" id="L48">            xP[i] = x;</span>
+<span class="fc" id="L49">            yP[i] = p.getY();</span>
+<span class="fc" id="L50">            i++;</span>
+<span class="fc" id="L51">        }</span>
         
-<span class="fc" id="L54">        float[] minXYMaxXY = determineGoodEndPoints(coefficients, points);</span>
-<span class="fc" id="L55">        float xMin = minXYMaxXY[0];</span>
-<span class="fc" id="L56">        float xMax = minXYMaxXY[2];</span>
+<span class="fc" id="L53">        float[] minXYMaxXY = determineGoodEndPoints(coefficients, points);</span>
+<span class="fc" id="L54">        float xMin = minXYMaxXY[0];</span>
+<span class="fc" id="L55">        float xMax = minXYMaxXY[2];</span>
         
-<span class="fc" id="L58">        int nCurve = 100;</span>
-<span class="fc" id="L59">        float dx = (xMax - xMin)/(float)nCurve;</span>
-<span class="fc" id="L60">        float[] xPoly = new float[nCurve];</span>
-<span class="fc" id="L61">        float[] yPoly = new float[xPoly.length];</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (i = 0; i &lt; nCurve; i++) {</span>
-<span class="fc" id="L63">            xPoly[i] = xMin + i*dx;</span>
-<span class="fc" id="L64">            yPoly[i] = coefficients[0] + coefficients[1]*xPoly[i] </span>
+<span class="fc" id="L57">        int nCurve = 100;</span>
+<span class="fc" id="L58">        float dx = (xMax - xMin)/(float)nCurve;</span>
+<span class="fc" id="L59">        float[] xPoly = new float[nCurve];</span>
+<span class="fc" id="L60">        float[] yPoly = new float[xPoly.length];</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (i = 0; i &lt; nCurve; i++) {</span>
+<span class="fc" id="L62">            xPoly[i] = xMin + i*dx;</span>
+<span class="fc" id="L63">            yPoly[i] = coefficients[0] + coefficients[1]*xPoly[i] </span>
                 + coefficients[2]*xPoly[i]*xPoly[i];
         }
         
         try {
-<span class="fc" id="L69">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0, </span>
+<span class="fc" id="L68">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(0, </span>
                 plotXMax, 0, plotYMax);
-<span class="fc" id="L71">            plotter.addPlot(xP, yP, xPoly, yPoly, plotLabel);</span>
+<span class="fc" id="L70">            plotter.addPlot(xP, yP, xPoly, yPoly, plotLabel);</span>
             
-<span class="fc" id="L73">            String fileName = plotter.writeFile(Integer.valueOf(plotNumber));</span>
+<span class="fc" id="L72">            String fileName = plotter.writeFile(Integer.valueOf(plotNumber));</span>
             
-<span class="fc" id="L75">            return fileName;</span>
+<span class="fc" id="L74">            return fileName;</span>
             
-<span class="nc" id="L77">        } catch (IOException e) {</span>
-<span class="nc" id="L78">            Logger.getLogger(PolynomialFitter.class.getName()).severe(e.getMessage());</span>
+<span class="nc" id="L76">        } catch (IOException e) {</span>
+<span class="nc" id="L77">            Logger.getLogger(PolynomialFitter.class.getName()).severe(e.getMessage());</span>
         }
         
-<span class="nc" id="L81">        return null;</span>
+<span class="nc" id="L80">        return null;</span>
     }
     
     /**
@@ -102,87 +101,87 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
         */
         
         // sort points by x then y
-<span class="fc" id="L105">        int[] x = new int[points.size()];</span>
-<span class="fc" id="L106">        int[] y = new int[x.length];</span>
-<span class="fc" id="L107">        int i = 0;</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L109">            x[i] = p.getX();</span>
-<span class="fc" id="L110">            y[i] = p.getY();</span>
-<span class="fc" id="L111">            i++;</span>
-<span class="fc" id="L112">        }</span>
+<span class="fc" id="L104">        int[] x = new int[points.size()];</span>
+<span class="fc" id="L105">        int[] y = new int[x.length];</span>
+<span class="fc" id="L106">        int i = 0;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L108">            x[i] = p.getX();</span>
+<span class="fc" id="L109">            y[i] = p.getY();</span>
+<span class="fc" id="L110">            i++;</span>
+<span class="fc" id="L111">        }</span>
         //O(N*lg_2(N))
-<span class="fc" id="L114">        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);</span>
+<span class="fc" id="L113">        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);</span>
         
         // average of central 10 or so median
-<span class="fc" id="L117">        int mid = points.size() &gt;&gt; 1;</span>
+<span class="fc" id="L116">        int mid = points.size() &gt;&gt; 1;</span>
         float medianX;
         float medianY;
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (points.size() &lt; 10) {</span>
-<span class="nc" id="L121">            medianX = x[points.size()/2];</span>
-<span class="nc" id="L122">            medianY = y[points.size()/2];</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (points.size() &lt; 10) {</span>
+<span class="nc" id="L120">            medianX = x[points.size()/2];</span>
+<span class="nc" id="L121">            medianY = y[points.size()/2];</span>
         } else {
-<span class="fc" id="L124">            double sumX = 0;</span>
-<span class="fc" id="L125">            double sumY = 0;</span>
-<span class="fc" id="L126">            int nMed = 5;</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">            for (i = (mid - nMed); i &lt;= (mid + nMed); i++) {</span>
-<span class="fc" id="L128">                sumX += x[i];</span>
-<span class="fc" id="L129">                sumY += y[i];</span>
+<span class="fc" id="L123">            double sumX = 0;</span>
+<span class="fc" id="L124">            double sumY = 0;</span>
+<span class="fc" id="L125">            int nMed = 5;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            for (i = (mid - nMed); i &lt;= (mid + nMed); i++) {</span>
+<span class="fc" id="L127">                sumX += x[i];</span>
+<span class="fc" id="L128">                sumY += y[i];</span>
             }
-<span class="fc" id="L131">            medianX = (float)sumX/(float)(2*nMed);</span>
-<span class="fc" id="L132">            medianY = (float)sumY/(float)(2*nMed);</span>
+<span class="fc" id="L130">            medianX = (float)sumX/(float)(2*nMed);</span>
+<span class="fc" id="L131">            medianY = (float)sumY/(float)(2*nMed);</span>
         }
         
         // find the furthest points that have the smallest residuals on each side
-<span class="fc" id="L136">        int minX = -1;</span>
-<span class="fc" id="L137">        int yForMinX = -1;</span>
-<span class="fc" id="L138">        int maxX = -1;</span>
-<span class="fc" id="L139">        int yForMaxX = -1;</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (int half = 0; half &lt; 2; half++) {</span>
-<span class="fc" id="L141">            double minResid = Double.MAX_VALUE;</span>
-<span class="fc" id="L142">            int minResidIdx = -1;</span>
-<span class="fc" id="L143">            double distFromMedianSq = Double.MIN_VALUE;</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (half == 0) {</span>
-<span class="fc bfc" id="L145" title="All 2 branches covered.">                for (i = 0; i &lt; mid; ++i) {</span>
-<span class="fc" id="L146">                    float yV = coefficients[0] * (coefficients[1] * x[i]) +</span>
+<span class="fc" id="L135">        int minX = -1;</span>
+<span class="fc" id="L136">        int yForMinX = -1;</span>
+<span class="fc" id="L137">        int maxX = -1;</span>
+<span class="fc" id="L138">        int yForMaxX = -1;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int half = 0; half &lt; 2; half++) {</span>
+<span class="fc" id="L140">            double minResid = Double.MAX_VALUE;</span>
+<span class="fc" id="L141">            int minResidIdx = -1;</span>
+<span class="fc" id="L142">            double distFromMedianSq = Double.MIN_VALUE;</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            if (half == 0) {</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                for (i = 0; i &lt; mid; ++i) {</span>
+<span class="fc" id="L145">                    float yV = coefficients[0] * (coefficients[1] * x[i]) +</span>
                         (coefficients[2] * x[i] * x[i]);
-<span class="fc" id="L148">                    double resid = Math.abs(y[i] - yV);</span>
+<span class="fc" id="L147">                    double resid = Math.abs(y[i] - yV);</span>
 
-<span class="fc" id="L150">                    double distX = x[i] - medianX;</span>
-<span class="fc" id="L151">                    double distY = y[i] - medianY;</span>
+<span class="fc" id="L149">                    double distX = x[i] - medianX;</span>
+<span class="fc" id="L150">                    double distY = y[i] - medianY;</span>
 
-<span class="fc" id="L153">                    double distSq = (distX * distX) + (distY * distY);</span>
+<span class="fc" id="L152">                    double distSq = (distX * distX) + (distY * distY);</span>
 
-<span class="pc bpc" id="L155" title="1 of 4 branches missed.">                    if ((resid &lt; minResid) &amp;&amp; (distSq &gt;= distFromMedianSq)) {</span>
-<span class="fc" id="L156">                        minResid = resid;</span>
-<span class="fc" id="L157">                        minResidIdx = i;</span>
-<span class="fc" id="L158">                        distFromMedianSq = distSq;</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">                    if ((resid &lt; minResid) &amp;&amp; (distSq &gt;= distFromMedianSq)) {</span>
+<span class="fc" id="L155">                        minResid = resid;</span>
+<span class="fc" id="L156">                        minResidIdx = i;</span>
+<span class="fc" id="L157">                        distFromMedianSq = distSq;</span>
                     }
                 }
-<span class="fc" id="L161">                minX = x[minResidIdx];</span>
-<span class="fc" id="L162">                yForMinX = y[minResidIdx];</span>
+<span class="fc" id="L160">                minX = x[minResidIdx];</span>
+<span class="fc" id="L161">                yForMinX = y[minResidIdx];</span>
             } else {
-<span class="fc bfc" id="L164" title="All 2 branches covered.">                for (i = (points.size() - 1); i &gt; mid; --i) {</span>
-<span class="fc" id="L165">                    float yV = coefficients[0] * (coefficients[1] * x[i]) +</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">                for (i = (points.size() - 1); i &gt; mid; --i) {</span>
+<span class="fc" id="L164">                    float yV = coefficients[0] * (coefficients[1] * x[i]) +</span>
                         (coefficients[2] * x[i] * x[i]);
-<span class="fc" id="L167">                    double resid = Math.abs(y[i] - yV);</span>
+<span class="fc" id="L166">                    double resid = Math.abs(y[i] - yV);</span>
 
-<span class="fc" id="L169">                    double distX = x[i] - medianX;</span>
-<span class="fc" id="L170">                    double distY = y[i] - medianY;</span>
+<span class="fc" id="L168">                    double distX = x[i] - medianX;</span>
+<span class="fc" id="L169">                    double distY = y[i] - medianY;</span>
 
-<span class="fc" id="L172">                    double distSq = (distX * distX) + (distY * distY);</span>
+<span class="fc" id="L171">                    double distSq = (distX * distX) + (distY * distY);</span>
 
-<span class="fc bfc" id="L174" title="All 4 branches covered.">                    if ((resid &lt; minResid) &amp;&amp; (distSq &gt;= distFromMedianSq)) {</span>
-<span class="fc" id="L175">                        minResid = resid;</span>
-<span class="fc" id="L176">                        minResidIdx = i;</span>
-<span class="fc" id="L177">                        distFromMedianSq = distSq;</span>
+<span class="fc bfc" id="L173" title="All 4 branches covered.">                    if ((resid &lt; minResid) &amp;&amp; (distSq &gt;= distFromMedianSq)) {</span>
+<span class="fc" id="L174">                        minResid = resid;</span>
+<span class="fc" id="L175">                        minResidIdx = i;</span>
+<span class="fc" id="L176">                        distFromMedianSq = distSq;</span>
                     }
                 }
-<span class="fc" id="L180">                maxX = x[minResidIdx];</span>
-<span class="fc" id="L181">                yForMaxX = y[minResidIdx];</span>
+<span class="fc" id="L179">                maxX = x[minResidIdx];</span>
+<span class="fc" id="L180">                yForMaxX = y[minResidIdx];</span>
             }
         } 
         
-<span class="fc" id="L185">        return new float[]{minX, yForMinX, maxX, yForMaxX};</span>
+<span class="fc" id="L184">        return new float[]{minX, yForMinX, maxX, yForMaxX};</span>
     }
     
     /**
@@ -198,12 +197,12 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
      */
     public static double calcResiduals(float[] coefficients, Set&lt;PairInt&gt; points) {
         
-<span class="pc bpc" id="L201" title="2 of 4 branches missed.">        if (points == null || points.isEmpty()) {</span>
-<span class="nc" id="L202">            return Double.POSITIVE_INFINITY;</span>
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">        if (points == null || points.isEmpty()) {</span>
+<span class="nc" id="L201">            return Double.POSITIVE_INFINITY;</span>
         }
         
-<span class="pc bpc" id="L205" title="2 of 4 branches missed.">        if (coefficients == null || (coefficients.length != 3)) {</span>
-<span class="nc" id="L206">            return Double.POSITIVE_INFINITY;</span>
+<span class="pc bpc" id="L204" title="2 of 4 branches missed.">        if (coefficients == null || (coefficients.length != 3)) {</span>
+<span class="nc" id="L205">            return Double.POSITIVE_INFINITY;</span>
         }
                 
         //float[] minXYMaxXY = determineGoodEndPoints(coefficients,points);
@@ -212,25 +211,25 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
         
         // these can be large, so use abs value instead of sum of squares
         
-<span class="fc" id="L215">        double sum = 0;</span>
+<span class="fc" id="L214">        double sum = 0;</span>
         
-<span class="fc bfc" id="L217" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (PairInt p : points) {</span>
             
-<span class="fc" id="L219">            double x = p.getX();</span>
+<span class="fc" id="L218">            double x = p.getX();</span>
             
-<span class="fc" id="L221">            double y = p.getY();         </span>
+<span class="fc" id="L220">            double y = p.getY();         </span>
             
-<span class="fc" id="L223">            double yPoly = coefficients[0] + (coefficients[1]*x) </span>
+<span class="fc" id="L222">            double yPoly = coefficients[0] + (coefficients[1]*x) </span>
                 + (coefficients[2]*x*x);
             
-<span class="fc" id="L226">            double diff = y - yPoly;</span>
+<span class="fc" id="L225">            double diff = y - yPoly;</span>
             
-<span class="fc" id="L228">            sum += Math.abs(diff);</span>
-<span class="fc" id="L229">        }</span>
+<span class="fc" id="L227">            sum += Math.abs(diff);</span>
+<span class="fc" id="L228">        }</span>
         
-<span class="fc" id="L231">        sum /= (double)points.size();</span>
+<span class="fc" id="L230">        sum /= (double)points.size();</span>
         
-<span class="fc" id="L233">        return sum;</span>
+<span class="fc" id="L232">        return sum;</span>
     }
 
     /**
@@ -246,12 +245,12 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
      */
     public double[] calcResidualsForAvg(float[] coefficients, Set&lt;PairInt&gt; points) {
         
-<span class="nc bnc" id="L249" title="All 4 branches missed.">        if (points == null || points.isEmpty()) {</span>
-<span class="nc" id="L250">            return new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};</span>
+<span class="nc bnc" id="L248" title="All 4 branches missed.">        if (points == null || points.isEmpty()) {</span>
+<span class="nc" id="L249">            return new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};</span>
         }
         
-<span class="nc bnc" id="L253" title="All 4 branches missed.">        if (coefficients == null || (coefficients.length != 3)) {</span>
-<span class="nc" id="L254">            return new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">        if (coefficients == null || (coefficients.length != 3)) {</span>
+<span class="nc" id="L253">            return new double[]{Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};</span>
         }
                 
         //float[] minXYMaxXY = determineGoodEndPoints(coefficients,points);
@@ -260,43 +259,43 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
         
         // these can be large, so use abs value instead of sum of squares
         
-<span class="nc" id="L263">        double sum = 0;</span>
+<span class="nc" id="L262">        double sum = 0;</span>
         
-<span class="nc bnc" id="L265" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        for (PairInt p : points) {</span>
             
-<span class="nc" id="L267">            double x = p.getX();</span>
+<span class="nc" id="L266">            double x = p.getX();</span>
             
-<span class="nc" id="L269">            double y = p.getY();            </span>
+<span class="nc" id="L268">            double y = p.getY();            </span>
             
-<span class="nc" id="L271">            double yPoly = coefficients[0] + (coefficients[1]*x) </span>
+<span class="nc" id="L270">            double yPoly = coefficients[0] + (coefficients[1]*x) </span>
                 + (coefficients[2]*x*x);
             
-<span class="nc" id="L274">            double diff = y - yPoly;</span>
+<span class="nc" id="L273">            double diff = y - yPoly;</span>
             
-<span class="nc" id="L276">            sum += diff;</span>
-<span class="nc" id="L277">        }</span>
+<span class="nc" id="L275">            sum += diff;</span>
+<span class="nc" id="L276">        }</span>
         
-<span class="nc" id="L279">        double avg = sum/(double)points.size();</span>
+<span class="nc" id="L278">        double avg = sum/(double)points.size();</span>
         
-<span class="nc" id="L281">        sum = 0;</span>
+<span class="nc" id="L280">        sum = 0;</span>
         
-<span class="nc bnc" id="L283" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        for (PairInt p : points) {</span>
             
-<span class="nc" id="L285">            double x = p.getX();</span>
+<span class="nc" id="L284">            double x = p.getX();</span>
             
-<span class="nc" id="L287">            double y = p.getY();</span>
+<span class="nc" id="L286">            double y = p.getY();</span>
             
-<span class="nc" id="L289">            double yPoly = coefficients[0] + (coefficients[1]*x) </span>
+<span class="nc" id="L288">            double yPoly = coefficients[0] + (coefficients[1]*x) </span>
                 + (coefficients[2]*x*x);
             
-<span class="nc" id="L292">            double diff = (y - yPoly) - avg;</span>
+<span class="nc" id="L291">            double diff = (y - yPoly) - avg;</span>
             
-<span class="nc" id="L294">            sum += (diff * diff);</span>
-<span class="nc" id="L295">        }</span>
+<span class="nc" id="L293">            sum += (diff * diff);</span>
+<span class="nc" id="L294">        }</span>
         
-<span class="nc" id="L297">        double stDev = Math.sqrt(sum/((double)points.size() - 1.0));</span>
+<span class="nc" id="L296">        double stDev = Math.sqrt(sum/((double)points.size() - 1.0));</span>
                 
-<span class="nc" id="L299">        return new double[]{avg, stDev};</span>
+<span class="nc" id="L298">        return new double[]{avg, stDev};</span>
     }
     
     /**
@@ -308,11 +307,11 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
      */
     public float[] solveAfterRandomSampling(Set&lt;PairInt&gt; points) {
         
-<span class="nc" id="L311">        SecureRandom sr = new SecureRandom();</span>
+<span class="nc" id="L310">        SecureRandom sr = new SecureRandom();</span>
         
-<span class="nc" id="L313">        sr.setSeed(System.currentTimeMillis());</span>
+<span class="nc" id="L312">        sr.setSeed(System.currentTimeMillis());</span>
         
-<span class="nc" id="L315">        return solveAfterRandomSampling(points, sr);</span>
+<span class="nc" id="L314">        return solveAfterRandomSampling(points, sr);</span>
     }
     
     /**
@@ -327,35 +326,35 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
     protected float[] solveAfterRandomSampling(Set&lt;PairInt&gt; points,
         SecureRandom sr) {
         
-<span class="nc bnc" id="L330" title="All 2 branches missed.">        int n = (points.size() &gt; 2500) ? 2500 : points.size();</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        int n = (points.size() &gt; 2500) ? 2500 : points.size();</span>
         
-<span class="nc" id="L332">        List&lt;PairInt&gt; tmp = new ArrayList&lt;PairInt&gt;(points);</span>
+<span class="nc" id="L331">        List&lt;PairInt&gt; tmp = new ArrayList&lt;PairInt&gt;(points);</span>
         
-<span class="nc" id="L334">        int[] indexes = new int[n];</span>
-<span class="nc bnc" id="L335" title="All 2 branches missed.">        if (n != points.size()) {</span>
-<span class="nc" id="L336">            MiscMath.chooseRandomly(sr, indexes, points.size());</span>
+<span class="nc" id="L333">        int[] indexes = new int[n];</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">        if (n != points.size()) {</span>
+<span class="nc" id="L335">            MiscMath.chooseRandomly(sr, indexes, points.size());</span>
         } else {
-<span class="nc bnc" id="L338" title="All 2 branches missed.">            for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L339">                indexes[i] = i;</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L338">                indexes[i] = i;</span>
             }
         }
         
-<span class="nc" id="L343">        float[] xP = new float[n];</span>
-<span class="nc" id="L344">        float[] yP = new float[xP.length];</span>
-<span class="nc" id="L345">        int i = 0;</span>
-<span class="nc bnc" id="L346" title="All 2 branches missed.">        for (int idx : indexes) {</span>
-<span class="nc" id="L347">            PairInt p = tmp.get(idx);</span>
-<span class="nc" id="L348">            xP[i] = p.getX();</span>
-<span class="nc" id="L349">            yP[i] = p.getY();</span>
-<span class="nc" id="L350">            i++;</span>
+<span class="nc" id="L342">        float[] xP = new float[n];</span>
+<span class="nc" id="L343">        float[] yP = new float[xP.length];</span>
+<span class="nc" id="L344">        int i = 0;</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">        for (int idx : indexes) {</span>
+<span class="nc" id="L346">            PairInt p = tmp.get(idx);</span>
+<span class="nc" id="L347">            xP[i] = p.getX();</span>
+<span class="nc" id="L348">            yP[i] = p.getY();</span>
+<span class="nc" id="L349">            i++;</span>
         }
-<span class="nc" id="L352">        tmp = null;</span>
+<span class="nc" id="L351">        tmp = null;</span>
         
         // y = c0*1 + c1*x[i] + c2*x[i]*x[i]
-<span class="nc" id="L355">        float[] coeff = solveOLS(xP, yP, 2);</span>
-<span class="nc" id="L356">        Misc.reverse(coeff);</span>
+<span class="nc" id="L354">        float[] coeff = solveOLS(xP, yP, 2);</span>
+<span class="nc" id="L355">        Misc.reverse(coeff);</span>
         
-<span class="nc" id="L358">        return coeff;</span>
+<span class="nc" id="L357">        return coeff;</span>
     }
     
     /**
@@ -397,43 +396,43 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
             then solve R*c = Q*Y
         
         */
-<span class="fc" id="L400">        int m = dataX.length;</span>
+<span class="fc" id="L399">        int m = dataX.length;</span>
         
         //int polyDegree = 2;
         
-<span class="fc" id="L404">        int n = polyDegree + 1;</span>
+<span class="fc" id="L403">        int n = polyDegree + 1;</span>
         
-<span class="fc" id="L406">        DenseMatrix y = new DenseMatrix(m, 1);</span>
+<span class="fc" id="L405">        DenseMatrix y = new DenseMatrix(m, 1);</span>
         
-<span class="fc" id="L408">        DenseMatrix x = new DenseMatrix(m, n);</span>
+<span class="fc" id="L407">        DenseMatrix x = new DenseMatrix(m, n);</span>
                 
-<span class="fc bfc" id="L410" title="All 2 branches covered.">        for (int i = 0; i &lt; m; i++) {</span>
-<span class="fc" id="L411">            y.set(i, 0, dataY[i]);</span>
-<span class="fc" id="L412">            float ip = 1.f;</span>
-<span class="fc bfc" id="L413" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
-<span class="fc" id="L414">                x.set(i, j, ip);</span>
-<span class="fc" id="L415">                ip *= dataX[i];</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">        for (int i = 0; i &lt; m; i++) {</span>
+<span class="fc" id="L410">            y.set(i, 0, dataY[i]);</span>
+<span class="fc" id="L411">            float ip = 1.f;</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L413">                x.set(i, j, ip);</span>
+<span class="fc" id="L414">                ip *= dataX[i];</span>
             }
         }
         
         // same size as x, that is (m, n)
-<span class="fc" id="L420">        QR qrDecomp = no.uib.cipr.matrix.QR.factorize(x);</span>
+<span class="fc" id="L419">        QR qrDecomp = no.uib.cipr.matrix.QR.factorize(x);</span>
         
-<span class="pc bpc" id="L422" title="1 of 2 branches missed.">        if (qrDecomp == null) {</span>
-<span class="nc" id="L423">            return null;</span>
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">        if (qrDecomp == null) {</span>
+<span class="nc" id="L422">            return null;</span>
         }
        
         //nCols=X.length, nRows=X.length
-<span class="fc" id="L427">        DenseMatrix q = qrDecomp.getQ();</span>
+<span class="fc" id="L426">        DenseMatrix q = qrDecomp.getQ();</span>
         
         //symmetric matrix of size min(m, n) on a side
-<span class="fc" id="L430">        UpperTriangDenseMatrix r = qrDecomp.getR();</span>
+<span class="fc" id="L429">        UpperTriangDenseMatrix r = qrDecomp.getR();</span>
         
         //nCols=X.length, nRows=X.length
-<span class="fc" id="L433">        DenseMatrix qqT = MatrixUtil.transpose(q);</span>
+<span class="fc" id="L432">        DenseMatrix qqT = MatrixUtil.transpose(q);</span>
         
         //size n X 1
-<span class="fc" id="L436">        DenseMatrix qty = MatrixUtil.multiply(qqT, y);</span>
+<span class="fc" id="L435">        DenseMatrix qty = MatrixUtil.multiply(qqT, y);</span>
         
         // R\*(Q^T * y) --&gt; Moore-Penrose pseudoinverse(r) * Q^T * y
         // r is UpperTriangDenseMatrix (right upper)
@@ -442,16 +441,16 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
         //System.out.println(&quot;qty=&quot; + qty.toString());
         
         // size is min(m, n) X 1
-<span class="fc" id="L445">        float[] c = new float[n];</span>
-<span class="fc bfc" id="L446" title="All 2 branches covered.">        for (int i = (n - 1); i &gt;= 0; i--) {</span>
-<span class="fc" id="L447">            c[i] = (float)qty.get(i, 0);</span>
-<span class="fc bfc" id="L448" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; n; j++) {</span>
-<span class="fc" id="L449">                c[i] -= c[j] * r.get(i, j);</span>
+<span class="fc" id="L444">        float[] c = new float[n];</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">        for (int i = (n - 1); i &gt;= 0; i--) {</span>
+<span class="fc" id="L446">            c[i] = (float)qty.get(i, 0);</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; n; j++) {</span>
+<span class="fc" id="L448">                c[i] -= c[j] * r.get(i, j);</span>
             }
-<span class="fc" id="L451">            c[i] /= r.get(i, i);</span>
+<span class="fc" id="L450">            c[i] /= r.get(i, i);</span>
         }
         
-<span class="fc" id="L454">        return c;</span>
+<span class="fc" id="L453">        return c;</span>
     }
     
     public double[] solve2ndOrderML(double[] dataX, double[] dataY) {
@@ -467,68 +466,68 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
         return init;
         */
         
-<span class="nc" id="L470">        throw new UnsupportedOperationException(&quot;not yet impl&quot;);</span>
+<span class="nc" id="L469">        throw new UnsupportedOperationException(&quot;not yet impl&quot;);</span>
     }
     
     private double calcUniformLogPrior(float[] coeffs, float[] lower,
         float[] upper) {
         
-<span class="nc" id="L476">        int n = coeffs.length;</span>
+<span class="nc" id="L475">        int n = coeffs.length;</span>
         
-<span class="nc bnc" id="L478" title="All 4 branches missed.">        if (n != lower.length || n != upper.length) {</span>
-<span class="nc" id="L479">            throw new IllegalArgumentException(&quot;all input argumnets must be&quot;</span>
+<span class="nc bnc" id="L477" title="All 4 branches missed.">        if (n != lower.length || n != upper.length) {</span>
+<span class="nc" id="L478">            throw new IllegalArgumentException(&quot;all input argumnets must be&quot;</span>
                 + &quot; same length&quot;);
         }
         
-<span class="nc" id="L483">        boolean t0 = true;</span>
+<span class="nc" id="L482">        boolean t0 = true;</span>
         
-<span class="nc bnc" id="L485" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc" id="L486">            float c = coeffs[i];</span>
-<span class="nc bnc" id="L487" title="All 4 branches missed.">            if (c &lt; lower[i] || c &gt; upper[i]) {</span>
-<span class="nc" id="L488">                t0 = false;</span>
-<span class="nc" id="L489">                break;</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L485">            float c = coeffs[i];</span>
+<span class="nc bnc" id="L486" title="All 4 branches missed.">            if (c &lt; lower[i] || c &gt; upper[i]) {</span>
+<span class="nc" id="L487">                t0 = false;</span>
+<span class="nc" id="L488">                break;</span>
             }
         }
         
-<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (t0) {</span>
-<span class="nc" id="L494">            return 0.;</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">        if (t0) {</span>
+<span class="nc" id="L493">            return 0.;</span>
         } 
         
-<span class="nc" id="L497">        return Double.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L496">        return Double.NEGATIVE_INFINITY;</span>
     }
     
     private double calcUniformLogProbability(float[] coeffs, float[] x, float[] y,
         float[] yerr) {
         
-<span class="nc" id="L503">        throw new UnsupportedOperationException(&quot;not yet impl&quot;);</span>
+<span class="nc" id="L502">        throw new UnsupportedOperationException(&quot;not yet impl&quot;);</span>
     }
     
     // lambda = -2 * result
     public static double calcLogLikelihood(float[] coeffs, float[] x, float[] y,
         float[] yerr) {
         
-<span class="nc" id="L510">        float[] model = Misc.generate(coeffs, x);</span>
+<span class="nc" id="L509">        float[] model = Misc.generate(coeffs, x);</span>
        
-<span class="nc" id="L512">        float[] diff = MatrixUtil.subtract(y, model);</span>
+<span class="nc" id="L511">        float[] diff = MatrixUtil.subtract(y, model);</span>
         
-<span class="nc" id="L514">        float[] mnAndStDev = MiscMath.getAvgAndStDev(diff);</span>
+<span class="nc" id="L513">        float[] mnAndStDev = MiscMath.getAvgAndStDev(diff);</span>
         
-<span class="nc" id="L516">        float sigma = mnAndStDev[1] * mnAndStDev[1];</span>
+<span class="nc" id="L515">        float sigma = mnAndStDev[1] * mnAndStDev[1];</span>
          
-<span class="nc" id="L518">        int n = x.length;</span>
+<span class="nc" id="L517">        int n = x.length;</span>
         
         if (true) {
             
-<span class="nc" id="L522">            double dotProd = 0;</span>
-<span class="nc bnc" id="L523" title="All 2 branches missed.">            for (int i = 0; i &lt; diff.length; ++i) {</span>
-<span class="nc" id="L524">                dotProd += (diff[i] * diff[i]);</span>
+<span class="nc" id="L521">            double dotProd = 0;</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">            for (int i = 0; i &lt; diff.length; ++i) {</span>
+<span class="nc" id="L523">                dotProd += (diff[i] * diff[i]);</span>
             }
 
-<span class="nc" id="L527">            double f</span>
-<span class="nc" id="L528">                = Math.pow((1.0 / (2.0 * Math.PI * sigma)), n / 2.)</span>
-<span class="nc" id="L529">                * Math.exp(-1. * (dotProd / (2. * sigma)));</span>
+<span class="nc" id="L526">            double f</span>
+<span class="nc" id="L527">                = Math.pow((1.0 / (2.0 * Math.PI * sigma)), n / 2.)</span>
+<span class="nc" id="L528">                * Math.exp(-1. * (dotProd / (2. * sigma)));</span>
 
-<span class="nc" id="L531">            return Math.log(f);</span>
+<span class="nc" id="L530">            return Math.log(f);</span>
         
         } else {
 

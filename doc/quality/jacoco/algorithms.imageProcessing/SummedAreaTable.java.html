@@ -14,74 +14,75 @@
  * From https://en.wikipedia.org/wiki/Summed_area_table
  * The algorithm was introduced to computer graphics in 1984 by Frank Crow 
  * for use with mipmaps. In computer vision it was popularized by 
- * Lewis[1] and then given the name &quot;integral image&quot; and prominently 
+ * Lewis (Fast template matching. 1995 Lewis, J.P.)
+ * and then given the name &quot;integral image&quot; and prominently 
  * used within the Viola–Jones object detection framework in 2001.
  * 
  * @author nichole
  */
-<span class="fc" id="L22">public class SummedAreaTable {</span>
+<span class="fc" id="L23">public class SummedAreaTable {</span>
     
     public GreyscaleImage createAbsoluteSummedAreaTable(GreyscaleImage img) {
 
-<span class="fc" id="L26">        int w = img.getWidth();</span>
-<span class="fc" id="L27">        int h = img.getHeight();</span>
+<span class="fc" id="L27">        int w = img.getWidth();</span>
+<span class="fc" id="L28">        int h = img.getHeight();</span>
 
-<span class="fc" id="L29">        GreyscaleImage out = img.copyToFullRangeIntImage();</span>
-<span class="fc" id="L30">        applyAbsoluteValue(out);</span>
+<span class="fc" id="L30">        GreyscaleImage out = img.copyToFullRangeIntImage();</span>
+<span class="fc" id="L31">        applyAbsoluteValue(out);</span>
         
-<span class="fc bfc" id="L32" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L33" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc bfc" id="L34" title="All 4 branches covered.">                if (x &gt; 0 &amp;&amp; y &gt; 0) {</span>
-<span class="fc" id="L35">                    int v = out.getValue(x - 1, y) + out.getValue(x, y - 1) </span>
-<span class="fc" id="L36">                        - out.getValue(x - 1, y - 1);</span>
-<span class="fc" id="L37">                    out.setValue(x, y, out.getValue(x, y) + v);</span>
-<span class="fc bfc" id="L38" title="All 2 branches covered.">                } else if (x &gt; 0) {</span>
-<span class="fc" id="L39">                    int v = out.getValue(x - 1, y);</span>
-<span class="fc" id="L40">                    out.setValue(x, y, out.getValue(x, y) + v);</span>
-<span class="fc bfc" id="L41" title="All 2 branches covered.">                } else if (y &gt; 0) {</span>
-<span class="fc" id="L42">                    int v = out.getValue(x, y - 1);</span>
-<span class="fc" id="L43">                    out.setValue(x, y, out.getValue(x, y) + v);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L35" title="All 4 branches covered.">                if (x &gt; 0 &amp;&amp; y &gt; 0) {</span>
+<span class="fc" id="L36">                    int v = out.getValue(x - 1, y) + out.getValue(x, y - 1) </span>
+<span class="fc" id="L37">                        - out.getValue(x - 1, y - 1);</span>
+<span class="fc" id="L38">                    out.setValue(x, y, out.getValue(x, y) + v);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                } else if (x &gt; 0) {</span>
+<span class="fc" id="L40">                    int v = out.getValue(x - 1, y);</span>
+<span class="fc" id="L41">                    out.setValue(x, y, out.getValue(x, y) + v);</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">                } else if (y &gt; 0) {</span>
+<span class="fc" id="L43">                    int v = out.getValue(x, y - 1);</span>
+<span class="fc" id="L44">                    out.setValue(x, y, out.getValue(x, y) + v);</span>
                 }
             }
         }
 
-<span class="fc" id="L48">        return out;</span>
+<span class="fc" id="L49">        return out;</span>
     }
     
     public double[][] createAbsoluteSummedAreaTable(double[][] img) {
 
-<span class="fc" id="L53">        int w = img.length;</span>
-<span class="fc" id="L54">        int h = img[0].length;</span>
+<span class="fc" id="L54">        int w = img.length;</span>
+<span class="fc" id="L55">        int h = img[0].length;</span>
         
-<span class="fc" id="L56">        ImageProcessor imp = new ImageProcessor();</span>
+<span class="fc" id="L57">        ImageProcessor imp = new ImageProcessor();</span>
 
-<span class="fc" id="L58">        double[][] out = imp.copy(img);</span>
+<span class="fc" id="L59">        double[][] out = imp.copy(img);</span>
         //applyAbsoluteValue
-<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc" id="L62">                double v = out[x][y];</span>
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                if (v &lt; 0) {</span>
-<span class="nc" id="L64">                    out[x][y] *= -1;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc" id="L63">                double v = out[x][y];</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">                if (v &lt; 0) {</span>
+<span class="nc" id="L65">                    out[x][y] *= -1;</span>
                 }
             }
         }
         
-<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc bfc" id="L71" title="All 4 branches covered.">                if (x &gt; 0 &amp;&amp; y &gt; 0) {</span>
-<span class="fc" id="L72">                    double v = out[x - 1][y] + out[x][y - 1] - out[x - 1][y - 1];</span>
-<span class="fc" id="L73">                    out[x][y] += v;</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">                } else if (x &gt; 0) {</span>
-<span class="fc" id="L75">                    double v = out[x - 1][y];</span>
-<span class="fc" id="L76">                    out[x][y] += v;</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">                } else if (y &gt; 0) {</span>
-<span class="fc" id="L78">                    double v = out[x][y - 1];</span>
-<span class="fc" id="L79">                    out[x][y] += v;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L72" title="All 4 branches covered.">                if (x &gt; 0 &amp;&amp; y &gt; 0) {</span>
+<span class="fc" id="L73">                    double v = out[x - 1][y] + out[x][y - 1] - out[x - 1][y - 1];</span>
+<span class="fc" id="L74">                    out[x][y] += v;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">                } else if (x &gt; 0) {</span>
+<span class="fc" id="L76">                    double v = out[x - 1][y];</span>
+<span class="fc" id="L77">                    out[x][y] += v;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">                } else if (y &gt; 0) {</span>
+<span class="fc" id="L79">                    double v = out[x][y - 1];</span>
+<span class="fc" id="L80">                    out[x][y] += v;</span>
                 }
             }
         }
 
-<span class="fc" id="L84">        return out;</span>
+<span class="fc" id="L85">        return out;</span>
     }
     
      /**
@@ -92,25 +93,25 @@
     public GreyscaleImage applyMeanOfWindowFromSummedAreaTable(
         GreyscaleImage imgS, int d) {
         
-<span class="fc" id="L95">        int w = imgS.getWidth();</span>
-<span class="fc" id="L96">        int h = imgS.getHeight();</span>
+<span class="fc" id="L96">        int w = imgS.getWidth();</span>
+<span class="fc" id="L97">        int h = imgS.getHeight();</span>
         
-<span class="fc" id="L98">        GreyscaleImage img2 = imgS.createFullRangeIntWithDimensions();</span>
+<span class="fc" id="L99">        GreyscaleImage img2 = imgS.createFullRangeIntWithDimensions();</span>
         
-<span class="fc" id="L100">        int[] sumAndN = new int[2];</span>
+<span class="fc" id="L101">        int[] sumAndN = new int[2];</span>
         
         // extract the summed area of each dxd window centered on x,y
         // and divide by number of pixels
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc" id="L106">                extractWindowFromSummedAreaTable(imgS, x, y, d, sumAndN);</span>
-<span class="fc" id="L107">                int nPix = sumAndN[1];</span>
-<span class="fc" id="L108">                int v = sumAndN[0]/nPix;</span>
-<span class="fc" id="L109">                img2.setValue(x, y, v);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc" id="L107">                extractWindowFromSummedAreaTable(imgS, x, y, d, sumAndN);</span>
+<span class="fc" id="L108">                int nPix = sumAndN[1];</span>
+<span class="fc" id="L109">                int v = sumAndN[0]/nPix;</span>
+<span class="fc" id="L110">                img2.setValue(x, y, v);</span>
             }
         }
 
-<span class="fc" id="L113">        return img2;</span>
+<span class="fc" id="L114">        return img2;</span>
     }
     
     /**
@@ -121,28 +122,28 @@
     public double[][] applyMeanOfWindowFromSummedAreaTable(double[][] imgS, 
         int d) {
         
-<span class="fc" id="L124">        int w = imgS.length;</span>
-<span class="fc" id="L125">        int h = imgS[0].length;</span>
+<span class="fc" id="L125">        int w = imgS.length;</span>
+<span class="fc" id="L126">        int h = imgS[0].length;</span>
         
-<span class="fc" id="L127">        double[][] img2 = new double[w][];</span>
-<span class="fc bfc" id="L128" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc" id="L129">            img2[i] = new double[h];</span>
+<span class="fc" id="L128">        double[][] img2 = new double[w][];</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L130">            img2[i] = new double[h];</span>
         }
-        
-<span class="fc" id="L132">        double[] sumAndN = new double[2];</span>
+            
+<span class="fc" id="L133">        double[] sumAndN = new double[2];</span>
         
         // extract the summed area of each dxd window centered on x,y
         // and divide by number of pixels
-<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc" id="L138">                extractWindowFromSummedAreaTable(imgS, x, y, d, sumAndN);</span>
-<span class="fc" id="L139">                double nPix = sumAndN[1];</span>
-<span class="fc" id="L140">                double v = sumAndN[0]/nPix;</span>
-<span class="fc" id="L141">                img2[x][y] = v;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc" id="L139">                extractWindowFromSummedAreaTable(imgS, x, y, d, sumAndN);</span>
+<span class="fc" id="L140">                double nPix = sumAndN[1];</span>
+<span class="fc" id="L141">                double v = sumAndN[0]/nPix;</span>
+<span class="fc" id="L142">                img2[x][y] = v;</span>
             }
         }
 
-<span class="fc" id="L145">        return img2;</span>
+<span class="fc" id="L146">        return img2;</span>
     }
     
     /**
@@ -162,71 +163,71 @@
     public void extractWindowFromSummedAreaTable(GreyscaleImage imgS, 
         int startX, int stopX, int startY, int stopY, int output[]) {
         
-<span class="fc" id="L165">        int w = imgS.getWidth();</span>
-<span class="fc" id="L166">        int h = imgS.getHeight();</span>
+<span class="fc" id="L166">        int w = imgS.getWidth();</span>
+<span class="fc" id="L167">        int h = imgS.getHeight();</span>
         int v;
                 
-<span class="fc bfc" id="L169" title="All 4 branches covered.">        if (startX == 0 &amp;&amp; startY == 0) {</span>
-<span class="pc bpc" id="L170" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L171">                output[1] = 1;</span>
-<span class="nc" id="L172">                v = imgS.getValue(stopX, stopY);</span>
-<span class="nc" id="L173">                output[0] = v;</span>
-<span class="pc bpc" id="L174" title="2 of 4 branches missed.">            } else if (stopX &gt; startX &amp;&amp; stopY &gt; startY) {</span>
-<span class="fc" id="L175">                output[1] = (stopX + 1) * (stopY + 1);</span>
-<span class="fc" id="L176">                v = imgS.getValue(stopX, stopY);</span>
-<span class="fc" id="L177">                output[0] = v;</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">            } else if (stopX &gt; startX) {</span>
+<span class="fc bfc" id="L170" title="All 4 branches covered.">        if (startX == 0 &amp;&amp; startY == 0) {</span>
+<span class="pc bpc" id="L171" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L172">                output[1] = 1;</span>
+<span class="nc" id="L173">                v = imgS.getValue(stopX, stopY);</span>
+<span class="nc" id="L174">                output[0] = v;</span>
+<span class="pc bpc" id="L175" title="2 of 4 branches missed.">            } else if (stopX &gt; startX &amp;&amp; stopY &gt; startY) {</span>
+<span class="fc" id="L176">                output[1] = (stopX + 1) * (stopY + 1);</span>
+<span class="fc" id="L177">                v = imgS.getValue(stopX, stopY);</span>
+<span class="fc" id="L178">                output[0] = v;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">            } else if (stopX &gt; startX) {</span>
                 //startY==0 &amp;&amp; stopY=0
-<span class="nc" id="L180">                output[1] = (stopX + 1);</span>
-<span class="nc" id="L181">                v = imgS.getValue(stopX, stopY);</span>
-<span class="nc" id="L182">                output[0] = v;</span>
-<span class="nc bnc" id="L183" title="All 2 branches missed.">            } else if (stopY &gt; startY) {</span>
-<span class="nc" id="L184">                output[1] = (stopY + 1);</span>
-<span class="nc" id="L185">                v = imgS.getValue(stopX, stopY);</span>
-<span class="nc" id="L186">                output[0] = v;</span>
+<span class="nc" id="L181">                output[1] = (stopX + 1);</span>
+<span class="nc" id="L182">                v = imgS.getValue(stopX, stopY);</span>
+<span class="nc" id="L183">                output[0] = v;</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            } else if (stopY &gt; startY) {</span>
+<span class="nc" id="L185">                output[1] = (stopY + 1);</span>
+<span class="nc" id="L186">                v = imgS.getValue(stopX, stopY);</span>
+<span class="nc" id="L187">                output[0] = v;</span>
             }
-<span class="fc bfc" id="L188" title="All 4 branches covered.">        } else if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
-<span class="fc" id="L189">            output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="fc bfc" id="L189" title="All 4 branches covered.">        } else if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
+<span class="fc" id="L190">            output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L191">            v = imgS.getValue(stopX, stopY)</span>
-<span class="fc" id="L192">                - imgS.getValue(startX - 1, stopY)</span>
-<span class="fc" id="L193">                - imgS.getValue(stopX, startY - 1)</span>
-<span class="fc" id="L194">                + imgS.getValue(startX - 1, startY - 1);</span>
+<span class="fc" id="L192">            v = imgS.getValue(stopX, stopY)</span>
+<span class="fc" id="L193">                - imgS.getValue(startX - 1, stopY)</span>
+<span class="fc" id="L194">                - imgS.getValue(stopX, startY - 1)</span>
+<span class="fc" id="L195">                + imgS.getValue(startX - 1, startY - 1);</span>
                 
-<span class="fc" id="L196">            output[0] = v;</span>
+<span class="fc" id="L197">            output[0] = v;</span>
             
-<span class="fc bfc" id="L198" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
             //startY == 0
-<span class="pc bpc" id="L200" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L201">                output[1] = 1;</span>
-<span class="nc" id="L202">                v = imgS.getValue(stopX, stopY);</span>
+<span class="pc bpc" id="L201" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L202">                output[1] = 1;</span>
+<span class="nc" id="L203">                v = imgS.getValue(stopX, stopY);</span>
                 
-<span class="nc" id="L204">                output[0] = v;</span>
+<span class="nc" id="L205">                output[0] = v;</span>
             } else {
-<span class="fc" id="L206">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="fc" id="L207">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L208">                v = imgS.getValue(stopX, stopY)</span>
-<span class="fc" id="L209">                    - imgS.getValue(startX - 1, stopY);</span>
+<span class="fc" id="L209">                v = imgS.getValue(stopX, stopY)</span>
+<span class="fc" id="L210">                    - imgS.getValue(startX - 1, stopY);</span>
                 
-<span class="fc" id="L211">                output[0] = v;</span>
+<span class="fc" id="L212">                output[0] = v;</span>
             }       
-<span class="pc bpc" id="L213" title="1 of 2 branches missed.">        } else if (startY &gt; 0) {</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">        } else if (startY &gt; 0) {</span>
             //startX == 0
-<span class="pc bpc" id="L215" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L216">                output[1] = 1;</span>
-<span class="nc" id="L217">                v = imgS.getValue(stopX, stopY);</span>
+<span class="pc bpc" id="L216" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L217">                output[1] = 1;</span>
+<span class="nc" id="L218">                v = imgS.getValue(stopX, stopY);</span>
                 
-<span class="nc" id="L219">                output[0] = v;</span>
+<span class="nc" id="L220">                output[0] = v;</span>
             } else {
-<span class="fc" id="L221">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="fc" id="L222">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L223">                v = imgS.getValue(stopX, stopY)</span>
-<span class="fc" id="L224">                    - imgS.getValue(stopX, startY - 1);</span>
+<span class="fc" id="L224">                v = imgS.getValue(stopX, stopY)</span>
+<span class="fc" id="L225">                    - imgS.getValue(stopX, startY - 1);</span>
                 
-<span class="fc" id="L226">                output[0] = v;</span>
+<span class="fc" id="L227">                output[0] = v;</span>
             }   
         }
-<span class="fc" id="L229">    }</span>
+<span class="fc" id="L230">    }</span>
     
     /**
      * extract the sum of a window bound by given start and stop coordinates
@@ -245,53 +246,53 @@
     public void extractWindowFromSummedAreaTable(double[][] imgS, 
         int startX, int stopX, int startY, int stopY, double[] output) {
       
-<span class="fc bfc" id="L248" title="All 4 branches covered.">        if (startX == 0 &amp;&amp; startY == 0) {</span>
-<span class="pc bpc" id="L249" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L250">                output[1] = 1;</span>
-<span class="nc" id="L251">                output[0] = imgS[stopX][stopY];</span>
-<span class="pc bpc" id="L252" title="2 of 4 branches missed.">            } else if (stopX &gt; startX &amp;&amp; stopY &gt; startY) {</span>
-<span class="fc" id="L253">                output[1] = (stopX + 1) * (stopY + 1);</span>
-<span class="fc" id="L254">                output[0] = imgS[stopX][stopY];</span>
-<span class="nc bnc" id="L255" title="All 2 branches missed.">            } else if (stopX &gt; startX) {</span>
+<span class="fc bfc" id="L249" title="All 4 branches covered.">        if (startX == 0 &amp;&amp; startY == 0) {</span>
+<span class="pc bpc" id="L250" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L251">                output[1] = 1;</span>
+<span class="nc" id="L252">                output[0] = imgS[stopX][stopY];</span>
+<span class="pc bpc" id="L253" title="2 of 4 branches missed.">            } else if (stopX &gt; startX &amp;&amp; stopY &gt; startY) {</span>
+<span class="fc" id="L254">                output[1] = (stopX + 1) * (stopY + 1);</span>
+<span class="fc" id="L255">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            } else if (stopX &gt; startX) {</span>
                 //startY==0 &amp;&amp; stopY=0
-<span class="nc" id="L257">                output[1] = (stopX + 1);</span>
-<span class="nc" id="L258">                output[0] = imgS[stopX][stopY];</span>
-<span class="nc bnc" id="L259" title="All 2 branches missed.">            } else if (stopY &gt; startY) {</span>
-<span class="nc" id="L260">                output[1] = (stopY + 1);</span>
-<span class="nc" id="L261">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc" id="L258">                output[1] = (stopX + 1);</span>
+<span class="nc" id="L259">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            } else if (stopY &gt; startY) {</span>
+<span class="nc" id="L261">                output[1] = (stopY + 1);</span>
+<span class="nc" id="L262">                output[0] = imgS[stopX][stopY];</span>
             }
-<span class="fc bfc" id="L263" title="All 4 branches covered.">        } else if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
-<span class="fc" id="L264">            output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="fc bfc" id="L264" title="All 4 branches covered.">        } else if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
+<span class="fc" id="L265">            output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L266">            output[0] = imgS[stopX][stopY]</span>
+<span class="fc" id="L267">            output[0] = imgS[stopX][stopY]</span>
                 - imgS[startX - 1][stopY]
                 - imgS[stopX][startY - 1]
                 + imgS[startX - 1][startY - 1];
                 
-<span class="fc bfc" id="L271" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
             //startY == 0
-<span class="pc bpc" id="L273" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L274">                output[1] = 1;</span>
-<span class="nc" id="L275">                output[0] = imgS[stopX][stopY];</span>
+<span class="pc bpc" id="L274" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L275">                output[1] = 1;</span>
+<span class="nc" id="L276">                output[0] = imgS[stopX][stopY];</span>
             } else {
-<span class="fc" id="L277">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="fc" id="L278">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L279">                output[0] = imgS[stopX][stopY]</span>
+<span class="fc" id="L280">                output[0] = imgS[stopX][stopY]</span>
                     - imgS[startX - 1][stopY];
             }       
-<span class="fc bfc" id="L282" title="All 2 branches covered.">        } else if (startY &gt; 0) {</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">        } else if (startY &gt; 0) {</span>
             //startX == 0
-<span class="pc bpc" id="L284" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L285">                output[1] = 1;</span>
-<span class="nc" id="L286">                output[0] = imgS[stopX][stopY];</span>
+<span class="pc bpc" id="L285" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L286">                output[1] = 1;</span>
+<span class="nc" id="L287">                output[0] = imgS[stopX][stopY];</span>
             } else {
-<span class="fc" id="L288">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="fc" id="L289">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L290">                output[0] = imgS[stopX][stopY]</span>
+<span class="fc" id="L291">                output[0] = imgS[stopX][stopY]</span>
                     - imgS[stopX][startY - 1];
             }   
         }
-<span class="fc" id="L294">    }</span>
+<span class="fc" id="L295">    }</span>
     
     /**
      * extract the sum of a window bound by given start and stop coordinates
@@ -310,56 +311,56 @@
     public void extractWindowFromSummedAreaTable(float[][] imgS, 
         int startX, int stopX, int startY, int stopY, float output[]) {
         
-<span class="fc" id="L313">        int w = imgS.length;</span>
-<span class="fc" id="L314">        int h = imgS[0].length;</span>
+<span class="fc" id="L314">        int w = imgS.length;</span>
+<span class="fc" id="L315">        int h = imgS[0].length;</span>
         
-<span class="pc bpc" id="L316" title="1 of 4 branches missed.">        if (startX == 0 &amp;&amp; startY == 0) {</span>
-<span class="pc bpc" id="L317" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L318">                output[1] = 1;</span>
-<span class="nc" id="L319">                output[0] = imgS[stopX][stopY];</span>
-<span class="pc bpc" id="L320" title="2 of 4 branches missed.">            } else if (stopX &gt; startX &amp;&amp; stopY &gt; startY) {</span>
-<span class="fc" id="L321">                output[1] = (stopX + 1) * (stopY + 1);</span>
-<span class="fc" id="L322">                output[0] = imgS[stopX][stopY];</span>
-<span class="nc bnc" id="L323" title="All 2 branches missed.">            } else if (stopX &gt; startX) {</span>
+<span class="pc bpc" id="L317" title="1 of 4 branches missed.">        if (startX == 0 &amp;&amp; startY == 0) {</span>
+<span class="pc bpc" id="L318" title="3 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L319">                output[1] = 1;</span>
+<span class="nc" id="L320">                output[0] = imgS[stopX][stopY];</span>
+<span class="pc bpc" id="L321" title="2 of 4 branches missed.">            } else if (stopX &gt; startX &amp;&amp; stopY &gt; startY) {</span>
+<span class="fc" id="L322">                output[1] = (stopX + 1) * (stopY + 1);</span>
+<span class="fc" id="L323">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            } else if (stopX &gt; startX) {</span>
                 //startY==0 &amp;&amp; stopY=0
-<span class="nc" id="L325">                output[1] = (stopX + 1);</span>
-<span class="nc" id="L326">                output[0] = imgS[stopX][stopY];</span>
-<span class="nc bnc" id="L327" title="All 2 branches missed.">            } else if (stopY &gt; startY) {</span>
-<span class="nc" id="L328">                output[1] = (stopY + 1);</span>
-<span class="nc" id="L329">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc" id="L326">                output[1] = (stopX + 1);</span>
+<span class="nc" id="L327">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">            } else if (stopY &gt; startY) {</span>
+<span class="nc" id="L329">                output[1] = (stopY + 1);</span>
+<span class="nc" id="L330">                output[0] = imgS[stopX][stopY];</span>
             }
-<span class="pc bpc" id="L331" title="2 of 4 branches missed.">        } else if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
-<span class="fc" id="L332">            output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="pc bpc" id="L332" title="2 of 4 branches missed.">        } else if (startX &gt; 0 &amp;&amp; startY &gt; 0) {</span>
+<span class="fc" id="L333">            output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="fc" id="L334">            output[0] = imgS[stopX][stopY]</span>
+<span class="fc" id="L335">            output[0] = imgS[stopX][stopY]</span>
                 - imgS[startX - 1][stopY]
                 - imgS[stopX][startY - 1]
                 + imgS[startX - 1][startY - 1];
                 
-<span class="nc bnc" id="L339" title="All 2 branches missed.">        } else if (startX &gt; 0) {</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">        } else if (startX &gt; 0) {</span>
             //startY == 0
-<span class="nc bnc" id="L341" title="All 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L342">                output[1] = 1;</span>
-<span class="nc" id="L343">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc bnc" id="L342" title="All 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L343">                output[1] = 1;</span>
+<span class="nc" id="L344">                output[0] = imgS[stopX][stopY];</span>
             } else {
-<span class="nc" id="L345">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="nc" id="L346">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="nc" id="L347">                output[0] = imgS[stopX][stopY]</span>
+<span class="nc" id="L348">                output[0] = imgS[stopX][stopY]</span>
                     - imgS[startX - 1][stopY];
             }       
-<span class="nc bnc" id="L350" title="All 2 branches missed.">        } else if (startY &gt; 0) {</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">        } else if (startY &gt; 0) {</span>
             //startX == 0
-<span class="nc bnc" id="L352" title="All 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
-<span class="nc" id="L353">                output[1] = 1;</span>
-<span class="nc" id="L354">                output[0] = imgS[stopX][stopY];</span>
+<span class="nc bnc" id="L353" title="All 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="nc" id="L354">                output[1] = 1;</span>
+<span class="nc" id="L355">                output[0] = imgS[stopX][stopY];</span>
             } else {
-<span class="nc" id="L356">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
+<span class="nc" id="L357">                output[1] = ((stopX - startX) + 1) * ((stopY - startY) + 1);</span>
 
-<span class="nc" id="L358">                output[0] = imgS[stopX][stopY]</span>
+<span class="nc" id="L359">                output[0] = imgS[stopX][stopY]</span>
                     - imgS[stopX][startY - 1];
             }   
         }
-<span class="fc" id="L362">    }</span>
+<span class="fc" id="L363">    }</span>
     
     /**
      * extract the sum of a window centered at (x,y) of x dimension d and y
@@ -377,62 +378,62 @@
     public void extractWindowFromSummedAreaTable(GreyscaleImage imgS, 
         int x, int y, int d, int output[]) {
         
-<span class="pc bpc" id="L380" title="2 of 4 branches missed.">        if (output == null || output.length != 2) {</span>
-<span class="nc" id="L381">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L381" title="2 of 4 branches missed.">        if (output == null || output.length != 2) {</span>
+<span class="nc" id="L382">            throw new IllegalArgumentException(</span>
                 &quot;output must be initialized to size 2&quot;);
         }
         
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (d &lt; 0) {</span>
-<span class="nc" id="L386">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">        if (d &lt; 0) {</span>
+<span class="nc" id="L387">            throw new IllegalArgumentException(</span>
                 &quot;d must be a non-negative number&quot;);
         }
         
-<span class="fc" id="L390">        int w = imgS.getWidth();</span>
-<span class="fc" id="L391">        int h = imgS.getHeight();</span>
+<span class="fc" id="L391">        int w = imgS.getWidth();</span>
+<span class="fc" id="L392">        int h = imgS.getHeight();</span>
         
-<span class="pc bpc" id="L393" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
-<span class="nc" id="L394">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+<span class="pc bpc" id="L394" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L395">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
                 + &quot;image. x=&quot; + x + &quot; y=&quot; + y + &quot; w=&quot; + w + &quot; h=&quot; + h);
         }
         
-<span class="fc" id="L398">        final int r = (d &gt;&gt; 1);</span>
+<span class="fc" id="L399">        final int r = (d &gt;&gt; 1);</span>
         
-<span class="fc" id="L400">        int startX = x - r;</span>
-<span class="fc" id="L401">        int stopX = x + r;</span>
-<span class="fc" id="L402">        int startY = y - r;</span>
-<span class="fc" id="L403">        int stopY = y + r;</span>
-<span class="fc bfc" id="L404" title="All 2 branches covered.">        if ((r &amp; 1) == 0) {</span>
-<span class="fc" id="L405">            startX--;</span>
-<span class="fc" id="L406">            startY--;</span>
+<span class="fc" id="L401">        int startX = x - r;</span>
+<span class="fc" id="L402">        int stopX = x + r;</span>
+<span class="fc" id="L403">        int startY = y - r;</span>
+<span class="fc" id="L404">        int stopY = y + r;</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">        if ((r &amp; 1) == 0) {</span>
+<span class="fc" id="L406">            startX--;</span>
+<span class="fc" id="L407">            startY--;</span>
         }
-<span class="fc bfc" id="L408" title="All 2 branches covered.">        if (startX &lt; 0) {</span>
-<span class="fc" id="L409">            startX = 0;</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">        if (startX &lt; 0) {</span>
+<span class="fc" id="L410">            startX = 0;</span>
         }
-<span class="fc bfc" id="L411" title="All 2 branches covered.">        if (startY &lt; 0) {</span>
-<span class="fc" id="L412">            startY = 0;</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">        if (startY &lt; 0) {</span>
+<span class="fc" id="L413">            startY = 0;</span>
         }
-<span class="pc bpc" id="L414" title="1 of 2 branches missed.">        if (startX &gt;= w) {</span>
-<span class="nc" id="L415">            startX = w - 1;</span>
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">        if (startX &gt;= w) {</span>
+<span class="nc" id="L416">            startX = w - 1;</span>
         }
-<span class="pc bpc" id="L417" title="1 of 2 branches missed.">        if (startY &gt;= h) {</span>
-<span class="nc" id="L418">            startY = h - 1;</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">        if (startY &gt;= h) {</span>
+<span class="nc" id="L419">            startY = h - 1;</span>
         }
-<span class="pc bpc" id="L420" title="1 of 2 branches missed.">        if (stopX &lt; 0) {</span>
-<span class="nc" id="L421">            stopX = 0;</span>
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">        if (stopX &lt; 0) {</span>
+<span class="nc" id="L422">            stopX = 0;</span>
         }
-<span class="pc bpc" id="L423" title="1 of 2 branches missed.">        if (stopY &lt; 0) {</span>
-<span class="nc" id="L424">            stopY = 0;</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">        if (stopY &lt; 0) {</span>
+<span class="nc" id="L425">            stopY = 0;</span>
         }
-<span class="fc bfc" id="L426" title="All 2 branches covered.">        if (stopX &gt;= w) {</span>
-<span class="fc" id="L427">            stopX = w - 1;</span>
+<span class="fc bfc" id="L427" title="All 2 branches covered.">        if (stopX &gt;= w) {</span>
+<span class="fc" id="L428">            stopX = w - 1;</span>
         }
-<span class="fc bfc" id="L429" title="All 2 branches covered.">        if (stopY &gt;= h) {</span>
-<span class="fc" id="L430">            stopY = h - 1;</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">        if (stopY &gt;= h) {</span>
+<span class="fc" id="L431">            stopY = h - 1;</span>
         }
               
-<span class="fc" id="L433">        extractWindowFromSummedAreaTable(imgS, startX, stopX, startY,  </span>
+<span class="fc" id="L434">        extractWindowFromSummedAreaTable(imgS, startX, stopX, startY,  </span>
             stopY, output);
-<span class="fc" id="L435">    }</span>
+<span class="fc" id="L436">    }</span>
     
     /**
      * extract the sum of a window centered at (x,y) of x dimension d and y
@@ -450,51 +451,69 @@
     public void extractWindowFromSummedAreaTable(double[][] imgS, 
         int x, int y, int d, double output[]) {
         
-<span class="pc bpc" id="L453" title="2 of 4 branches missed.">        if (output == null || output.length != 2) {</span>
-<span class="nc" id="L454">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L454" title="2 of 4 branches missed.">        if (output == null || output.length != 2) {</span>
+<span class="nc" id="L455">            throw new IllegalArgumentException(</span>
                 &quot;output must be initialized to size 2&quot;);
         }
         
-<span class="pc bpc" id="L458" title="1 of 2 branches missed.">        if (d &lt; 0) {</span>
-<span class="nc" id="L459">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (d &lt; 0) {</span>
+<span class="nc" id="L460">            throw new IllegalArgumentException(</span>
                 &quot;d must be a non-negative number&quot;);
         }
         
-<span class="fc" id="L463">        int w = imgS.length;</span>
-<span class="fc" id="L464">        int h = imgS[0].length;</span>
+<span class="fc" id="L464">        int w = imgS.length;</span>
+<span class="fc" id="L465">        int h = imgS[0].length;</span>
         
-<span class="pc bpc" id="L466" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
-<span class="nc" id="L467">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
+<span class="pc bpc" id="L467" title="4 of 8 branches missed.">        if (x &lt; 0 || y &lt; 0 || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="nc" id="L468">            throw new IllegalArgumentException(&quot;x or y is out of bounds of &quot;</span>
                 + &quot;image. x=&quot; + x + &quot; y=&quot; + y + &quot; w=&quot; + w + &quot; h=&quot; + h);
         }
         
-<span class="fc" id="L471">        final int r = (d &gt;&gt; 1);</span>
+<span class="fc" id="L472">        final int r = (d &gt;&gt; 1);</span>
         
-<span class="fc" id="L473">        int startX = x - r;</span>
-<span class="fc" id="L474">        int stopX = x + r;</span>
-<span class="fc" id="L475">        int startY = y - r;</span>
-<span class="fc" id="L476">        int stopY = y + r;</span>
+<span class="fc" id="L474">        int startX = x - r;</span>
+<span class="fc" id="L475">        int stopX = x + r;</span>
+<span class="fc" id="L476">        int startY = y - r;</span>
+<span class="fc" id="L477">        int stopY = y + r;</span>
         
-<span class="fc bfc" id="L478" title="All 2 branches covered.">        if (stopX &gt; (w - 1)) {</span>
-<span class="fc" id="L479">            stopX = w - 1;</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">        if (startX &lt; 0) {</span>
+<span class="fc" id="L480">            startX = 0;</span>
         }
-<span class="fc bfc" id="L481" title="All 2 branches covered.">        if (stopY &gt; (h - 1)) {</span>
-<span class="fc" id="L482">            stopY = h - 1;</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        if (startY &lt; 0) {</span>
+<span class="fc" id="L483">            startY = 0;</span>
+        }
+<span class="pc bpc" id="L485" title="1 of 2 branches missed.">        if (startX &gt;= w) {</span>
+<span class="nc" id="L486">            startX = w - 1;</span>
+        }
+<span class="pc bpc" id="L488" title="1 of 2 branches missed.">        if (startY &gt;= h) {</span>
+<span class="nc" id="L489">            startY = h - 1;</span>
+        }
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">        if (stopX &lt; 0) {</span>
+<span class="nc" id="L492">            stopX = 0;</span>
+        }
+<span class="pc bpc" id="L494" title="1 of 2 branches missed.">        if (stopY &lt; 0) {</span>
+<span class="nc" id="L495">            stopY = 0;</span>
+        }
+<span class="fc bfc" id="L497" title="All 2 branches covered.">        if (stopX &gt;= w) {</span>
+<span class="fc" id="L498">            stopX = w - 1;</span>
+        }
+<span class="fc bfc" id="L500" title="All 2 branches covered.">        if (stopY &gt;= h) {</span>
+<span class="fc" id="L501">            stopY = h - 1;</span>
         }
               
-<span class="fc" id="L485">        extractWindowFromSummedAreaTable(imgS, startX, stopX, startY,  </span>
+<span class="fc" id="L504">        extractWindowFromSummedAreaTable(imgS, startX, stopX, startY,  </span>
             stopY, output);
-<span class="fc" id="L487">    }</span>
+<span class="fc" id="L506">    }</span>
     
     private void applyAbsoluteValue(GreyscaleImage img) {
-<span class="fc" id="L490">        int w = img.getWidth();</span>
-<span class="fc" id="L491">        int h = img.getHeight();</span>
-<span class="fc bfc" id="L492" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L493" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc" id="L494">                int v = img.getValue(x, y);</span>
-<span class="fc" id="L495">                img.setValue(x, y, Math.abs(v));</span>
+<span class="fc" id="L509">        int w = img.getWidth();</span>
+<span class="fc" id="L510">        int h = img.getHeight();</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L512" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc" id="L513">                int v = img.getValue(x, y);</span>
+<span class="fc" id="L514">                img.setValue(x, y, Math.abs(v));</span>
             }
         }
-<span class="fc" id="L498">    }</span>
+<span class="fc" id="L517">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

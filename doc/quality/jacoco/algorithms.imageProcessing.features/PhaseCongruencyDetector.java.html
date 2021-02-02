@@ -930,120 +930,120 @@ import java.util.logging.Logger;
             //cFinder.setToDebug();
 <span class="fc" id="L931">            cFinder.setThreshholdFactor(1.f);</span>
 <span class="fc" id="L932">            cFinder.setMinimumNumberInCluster(1);</span>
-<span class="fc" id="L933">            cFinder.calculateBackgroundSeparation();</span>
-<span class="fc" id="L934">            cFinder.findClusters();</span>
-<span class="fc" id="L935">            List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
-<span class="fc" id="L936">            final int n = groupList.size();</span>
+<span class="nc" id="L933">            cFinder.calculateBackgroundSeparation();</span>
+<span class="nc" id="L934">            cFinder.findClusters();</span>
+<span class="nc" id="L935">            List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
+<span class="nc" id="L936">            final int n = groupList.size();</span>
 
-<span class="fc" id="L938">            float[] clusterSizes = new float[n];</span>
-<span class="fc" id="L939">            Image dbg = new Image(nCols, nRows);</span>
-<span class="fc bfc" id="L940" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L941">                TLongSet groupPixs = groupList.get(i);</span>
-<span class="fc" id="L942">                clusterSizes[i] = groupPixs.size();</span>
-<span class="fc" id="L943">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="nc" id="L938">            float[] clusterSizes = new float[n];</span>
+<span class="nc" id="L939">            Image dbg = new Image(nCols, nRows);</span>
+<span class="nc bnc" id="L940" title="All 2 branches missed.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L941">                TLongSet groupPixs = groupList.get(i);</span>
+<span class="nc" id="L942">                clusterSizes[i] = groupPixs.size();</span>
+<span class="nc" id="L943">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
                 
-<span class="fc" id="L945">                TLongIterator iter3 = groupPixs.iterator();</span>
-<span class="fc bfc" id="L946" title="All 2 branches covered.">                while (iter3.hasNext()) {</span>
-<span class="fc" id="L947">                    long pixIdx = iter3.next();</span>
-<span class="fc" id="L948">                    ph.toPixelCoords(pixIdx, h, xy);</span>
+<span class="nc" id="L945">                TLongIterator iter3 = groupPixs.iterator();</span>
+<span class="nc bnc" id="L946" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
+<span class="nc" id="L947">                    long pixIdx = iter3.next();</span>
+<span class="nc" id="L948">                    ph.toPixelCoords(pixIdx, h, xy);</span>
                     
-<span class="fc" id="L950">                    ImageIOHelper.addPointToImage(xy[1], xy[0], dbg,</span>
+<span class="nc" id="L950">                    ImageIOHelper.addPointToImage(xy[1], xy[0], dbg,</span>
                         1, clr[0], clr[1], clr[2]);
-<span class="fc" id="L952">                }</span>
+<span class="nc" id="L952">                }</span>
             }
-<span class="fc" id="L954">            MiscDebug.writeImage(dbg, &quot;_a_noise_clusters_&quot;);</span>
+<span class="nc" id="L954">            MiscDebug.writeImage(dbg, &quot;_a_noise_clusters_&quot;);</span>
             
-<span class="fc" id="L956">            HistogramHolder hist = Histogram.createSimpleHistogram(</span>
+<span class="nc" id="L956">            HistogramHolder hist = Histogram.createSimpleHistogram(</span>
                 0, 40, 20, clusterSizes, 
-<span class="fc" id="L958">                Errors.populateYErrorsBySqrt(clusterSizes));</span>
-<span class="fc" id="L959">            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
-<span class="pc bpc" id="L960" title="3 of 4 branches missed.">            assert(peakIdx != -1); </span>
-<span class="fc" id="L961">            float sizeLimit = hist.getXHist()[peakIdx];</span>
-<span class="pc bpc" id="L962" title="1 of 2 branches missed.">            if (peakIdx &lt; (hist.getXHist().length - 2)) {</span>
-<span class="fc" id="L963">                sizeLimit = hist.getXHist()[peakIdx + 2];</span>
+<span class="nc" id="L958">                Errors.populateYErrorsBySqrt(clusterSizes));</span>
+<span class="nc" id="L959">            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc bnc" id="L960" title="All 4 branches missed.">            assert(peakIdx != -1); </span>
+<span class="nc" id="L961">            float sizeLimit = hist.getXHist()[peakIdx];</span>
+<span class="nc bnc" id="L962" title="All 2 branches missed.">            if (peakIdx &lt; (hist.getXHist().length - 2)) {</span>
+<span class="nc" id="L963">                sizeLimit = hist.getXHist()[peakIdx + 2];</span>
             }
             
-<span class="fc" id="L966">            System.out.println(&quot;nClusters=&quot; + n </span>
-<span class="fc" id="L967">                + &quot; peakHist y=&quot; + hist.getYHist()[peakIdx] </span>
-<span class="fc" id="L968">                + &quot; peakHist x=&quot; + hist.getXHist()[peakIdx] </span>
-<span class="fc" id="L969">                + &quot; nPix=&quot; + img.getNPixels() + </span>
+<span class="nc" id="L966">            System.out.println(&quot;nClusters=&quot; + n </span>
+<span class="nc" id="L967">                + &quot; peakHist y=&quot; + hist.getYHist()[peakIdx] </span>
+<span class="nc" id="L968">                + &quot; peakHist x=&quot; + hist.getXHist()[peakIdx] </span>
+<span class="nc" id="L969">                + &quot; nPix=&quot; + img.getNPixels() + </span>
                 &quot; peakX/nPix=&quot; + 
-<span class="fc" id="L971">                hist.getXHist()[peakIdx]/(float)img.getNPixels() +</span>
+<span class="nc" id="L971">                hist.getXHist()[peakIdx]/(float)img.getNPixels() +</span>
                 &quot; peakY/nPix=&quot; + 
-<span class="fc" id="L973">                (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()</span>
+<span class="nc" id="L973">                (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()</span>
                 + &quot; peakY/peakX=&quot; +
-<span class="fc" id="L975">                (float)hist.getYHist()[peakIdx]/hist.getXHist()[peakIdx]</span>
+<span class="nc" id="L975">                (float)hist.getYHist()[peakIdx]/hist.getXHist()[peakIdx]</span>
             );
             
             try {
-<span class="fc" id="L979">                hist.plotHistogram(&quot;cluster sizes&quot;, &quot;_cluster_sizes_&quot;);</span>
+<span class="nc" id="L979">                hist.plotHistogram(&quot;cluster sizes&quot;, &quot;_cluster_sizes_&quot;);</span>
 <span class="nc" id="L980">            } catch (IOException ex) {</span>
 <span class="nc" id="L981">                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="fc" id="L982">            }</span>
+<span class="nc" id="L982">            }</span>
 
-<span class="fc" id="L984">            int[] dist = new int[n];           </span>
-<span class="fc" id="L985">            int[] indexes = new int[n];</span>
-<span class="fc" id="L986">            int count = 0;</span>
-<span class="fc bfc" id="L987" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L988">                TLongSet groupPixs = groupList.get(i);</span>
-<span class="fc bfc" id="L989" title="All 2 branches covered.">                if (groupPixs.size() &gt; sizeLimit) {</span>
-<span class="fc" id="L990">                    continue;</span>
+<span class="nc" id="L984">            int[] dist = new int[n];           </span>
+<span class="nc" id="L985">            int[] indexes = new int[n];</span>
+<span class="nc" id="L986">            int count = 0;</span>
+<span class="nc bnc" id="L987" title="All 2 branches missed.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L988">                TLongSet groupPixs = groupList.get(i);</span>
+<span class="nc bnc" id="L989" title="All 2 branches missed.">                if (groupPixs.size() &gt; sizeLimit) {</span>
+<span class="nc" id="L990">                    continue;</span>
                 }
-<span class="fc" id="L992">                int sumD = 0;</span>
-<span class="fc" id="L993">                int countD = 0;</span>
+<span class="nc" id="L992">                int sumD = 0;</span>
+<span class="nc" id="L993">                int countD = 0;</span>
                 
-<span class="fc" id="L995">                TLongIterator iter3 = groupPixs.iterator();</span>
-<span class="fc bfc" id="L996" title="All 2 branches covered.">                while (iter3.hasNext()) {</span>
-<span class="fc" id="L997">                    long pixIdx = iter3.next();</span>
-<span class="fc" id="L998">                    ph.toPixelCoords(pixIdx, h, xy);</span>
-<span class="pc bpc" id="L999" title="3 of 4 branches missed.">                    if (noisePoints.contains(new PairInt(xy[1], xy[0])) </span>
+<span class="nc" id="L995">                TLongIterator iter3 = groupPixs.iterator();</span>
+<span class="nc bnc" id="L996" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
+<span class="nc" id="L997">                    long pixIdx = iter3.next();</span>
+<span class="nc" id="L998">                    ph.toPixelCoords(pixIdx, h, xy);</span>
+<span class="nc bnc" id="L999" title="All 4 branches missed.">                    if (noisePoints.contains(new PairInt(xy[1], xy[0])) </span>
                         &amp;&amp; dt[xy[1]][xy[0]] &gt; 0) {
 <span class="nc" id="L1001">                        sumD += dt[xy[1]][xy[0]];</span>
 <span class="nc" id="L1002">                        countD++;</span>
                     }
-<span class="fc" id="L1004">                }</span>
+<span class="nc" id="L1004">                }</span>
                 
-<span class="pc bpc" id="L1006" title="1 of 2 branches missed.">                if (countD &gt; 0) {</span>
+<span class="nc bnc" id="L1006" title="All 2 branches missed.">                if (countD &gt; 0) {</span>
 <span class="nc" id="L1007">                    indexes[count] = i;</span>
 <span class="nc" id="L1008">                    sumD /= countD;</span>
 <span class="nc" id="L1009">                    dist[count] = sumD;</span>
 <span class="nc" id="L1010">                    count++;</span>
                 }
             }
-<span class="fc" id="L1013">            indexes = Arrays.copyOf(indexes, count);</span>
-<span class="fc" id="L1014">            dist = Arrays.copyOf(dist, count);</span>
+<span class="nc" id="L1013">            indexes = Arrays.copyOf(indexes, count);</span>
+<span class="nc" id="L1014">            dist = Arrays.copyOf(dist, count);</span>
             
             // sort by decr dist
-<span class="fc" id="L1017">            QuickSort.descendingSort(dist, indexes);</span>
+<span class="nc" id="L1017">            QuickSort.descendingSort(dist, indexes);</span>
             
-<span class="pc bpc" id="L1019" title="1 of 2 branches missed.">            if (doPlot) {</span>
+<span class="nc bnc" id="L1019" title="All 2 branches missed.">            if (doPlot) {</span>
                 //histogram of point distances
-<span class="fc" id="L1021">                float[] values = new float[n];</span>
-<span class="pc bpc" id="L1022" title="1 of 2 branches missed.">                for (int i = 0; i &lt; dist.length; ++i) {</span>
+<span class="nc" id="L1021">                float[] values = new float[n];</span>
+<span class="nc bnc" id="L1022" title="All 2 branches missed.">                for (int i = 0; i &lt; dist.length; ++i) {</span>
 <span class="nc" id="L1023">                    values[i] = dist[i];</span>
                 }
                 //TODO: consider xmax based on image size
-<span class="fc" id="L1026">                hist = Histogram.createSimpleHistogram(</span>
+<span class="nc" id="L1026">                hist = Histogram.createSimpleHistogram(</span>
                     0, 400, 20, values,
-<span class="fc" id="L1028">                    Errors.populateYErrorsBySqrt(values));</span>
+<span class="nc" id="L1028">                    Errors.populateYErrorsBySqrt(values));</span>
 
                 try {
-<span class="fc" id="L1031">                    hist.plotHistogram(&quot;dist from edges&quot;, &quot;_noise_distances_&quot;);</span>
+<span class="nc" id="L1031">                    hist.plotHistogram(&quot;dist from edges&quot;, &quot;_noise_distances_&quot;);</span>
 <span class="nc" id="L1032">                } catch (IOException ex) {</span>
 <span class="nc" id="L1033">                    Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="fc" id="L1034">                }</span>
+<span class="nc" id="L1034">                }</span>
             }
 
-<span class="fc" id="L1037">            int end = 100;</span>
-<span class="pc bpc" id="L1038" title="1 of 2 branches missed.">            if (end &gt; dist.length) {</span>
-<span class="fc" id="L1039">                end = dist.length;</span>
+<span class="nc" id="L1037">            int end = 100;</span>
+<span class="nc bnc" id="L1038" title="All 2 branches missed.">            if (end &gt; dist.length) {</span>
+<span class="nc" id="L1039">                end = dist.length;</span>
             }
 
-<span class="fc" id="L1042">            int np = 0;</span>
+<span class="nc" id="L1042">            int np = 0;</span>
 
-<span class="fc" id="L1044">            List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="fc" id="L1045">            Image dbg0 = new Image(nCols, nRows);</span>
-<span class="pc bpc" id="L1046" title="1 of 2 branches missed.">            for (int i = 0; i &lt; end; ++i) {</span>
+<span class="nc" id="L1044">            List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="nc" id="L1045">            Image dbg0 = new Image(nCols, nRows);</span>
+<span class="nc bnc" id="L1046" title="All 2 branches missed.">            for (int i = 0; i &lt; end; ++i) {</span>
 <span class="nc bnc" id="L1047" title="All 2 branches missed.">                if (dist[i] &lt; distMinimum) {</span>
 <span class="nc" id="L1048">                    break;</span>
                 }
@@ -1066,19 +1066,19 @@ import java.util.logging.Logger;
 <span class="nc" id="L1066">                subsetNoise.add(set2);</span>
 <span class="nc" id="L1067">                np += set2.size();</span>
             }
-<span class="fc bfc" id="L1069" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc bfc" id="L1070" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="fc" id="L1071">                    int v = thinnedLowNz[row][col];</span>
-<span class="fc bfc" id="L1072" title="All 2 branches covered.">                    if (v &gt; 0) {</span>
-<span class="fc" id="L1073">                        dbg0.setRGB(col, row, 255, 255, 255);</span>
+<span class="nc bnc" id="L1069" title="All 2 branches missed.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="nc" id="L1071">                    int v = thinnedLowNz[row][col];</span>
+<span class="nc bnc" id="L1072" title="All 2 branches missed.">                    if (v &gt; 0) {</span>
+<span class="nc" id="L1073">                        dbg0.setRGB(col, row, 255, 255, 255);</span>
                     }
                 }
             }
-<span class="fc" id="L1077">            MiscDebug.writeImage(dbg0, &quot;_a_texture_candidates_&quot;);</span>
+<span class="nc" id="L1077">            MiscDebug.writeImage(dbg0, &quot;_a_texture_candidates_&quot;);</span>
          
-<span class="fc" id="L1079">            System.out.println(&quot;np=&quot; + np);</span>
+<span class="nc" id="L1079">            System.out.println(&quot;np=&quot; + np);</span>
             
-<span class="fc" id="L1081">            products.setSubsetNoise(subsetNoise);</span>
+<span class="nc" id="L1081">            products.setSubsetNoise(subsetNoise);</span>
         }
 
 <span class="fc" id="L1084">        long t1 = System.currentTimeMillis();</span>
@@ -1623,8 +1623,8 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1623" title="All 2 branches covered.">                for (int i = 0; i &lt; w; ++i) {</span>
 <span class="fc bfc" id="L1624" title="All 2 branches covered.">                    for (int j = 0; j &lt; h; ++j) {</span>
 <span class="fc" id="L1625">                        double t = threshImg[i][j];</span>
-<span class="pc bpc" id="L1626" title="3 of 4 branches missed.">                        if (imgCp[i][j] &gt; t &amp;&amp; imgCp[i][j] &gt; t1) {</span>
-<span class="nc" id="L1627">                            imgCp[i][j] = 255.;</span>
+<span class="fc bfc" id="L1626" title="All 4 branches covered.">                        if (imgCp[i][j] &gt; t &amp;&amp; imgCp[i][j] &gt; t1) {</span>
+<span class="fc" id="L1627">                            imgCp[i][j] = 255.;</span>
                         } else {
 <span class="fc" id="L1629">                            imgCp[i][j] = 0;</span>
                         }
@@ -1667,7 +1667,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L1667">                    tLow0 = tLow;</span>
                 }
 
-<span class="pc bpc" id="L1670" title="1 of 4 branches missed.">                if (v &lt; tHigh0 || v &lt; tLow) {</span>
+<span class="fc bfc" id="L1670" title="All 4 branches covered.">                if (v &lt; tHigh0 || v &lt; tLow) {</span>
 <span class="fc" id="L1671">                    continue;</span>
                 }
 
@@ -1681,8 +1681,8 @@ import java.util.logging.Logger;
 <span class="nc" id="L1681">                        continue;</span>
                     }
 <span class="fc" id="L1683">                    double v2 = img[x2][y2];</span>
-<span class="pc bpc" id="L1684" title="1 of 2 branches missed.">                    if (v2 &gt; tLow0) {</span>
-<span class="nc" id="L1685">                        img2[x2][y2] = 255;</span>
+<span class="fc bfc" id="L1684" title="All 2 branches covered.">                    if (v2 &gt; tLow0) {</span>
+<span class="fc" id="L1685">                        img2[x2][y2] = 255;</span>
                     }
                 }
             }

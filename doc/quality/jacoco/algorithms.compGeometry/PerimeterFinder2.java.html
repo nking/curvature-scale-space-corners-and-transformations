@@ -9,7 +9,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PixelHelper;
 import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.VeryLongBitString;
+import algorithms.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.map.TIntIntMap;

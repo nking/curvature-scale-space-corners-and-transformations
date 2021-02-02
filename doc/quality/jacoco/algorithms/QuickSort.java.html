@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QuickSort.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">QuickSort.java</span></div><h1>QuickSort.java</h1><pre class="source lang-java linenums">package algorithms;
 
-import algorithms.misc.MiscSorter;
+import algorithms.sort.MiscSorter;
 import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
@@ -867,8 +867,8 @@ import java.util.List;
 <span class="pc bpc" id="L867" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
 <span class="nc" id="L868">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
         }
-<span class="fc bfc" id="L870" title="All 2 branches covered.">        if (a.length &lt; 2) {</span>
-<span class="fc" id="L871">            return;</span>
+<span class="pc bpc" id="L870" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L871">            return;</span>
         }
         
 <span class="fc bfc" id="L874" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
@@ -1378,8 +1378,8 @@ import java.util.List;
 <span class="nc" id="L1378">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
         }
         
-<span class="fc bfc" id="L1381" title="All 2 branches covered.">        if (a.length &lt; 2) {</span>
-<span class="fc" id="L1382">            return;</span>
+<span class="pc bpc" id="L1381" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L1382">            return;</span>
         }
         
 <span class="fc bfc" id="L1385" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
@@ -1502,8 +1502,8 @@ import java.util.List;
 <span class="nc" id="L1502">            throw new IllegalArgumentException(&quot;a and b must be the same length&quot;);</span>
         }
         
-<span class="fc bfc" id="L1505" title="All 2 branches covered.">        if (a.length &lt; 2) {</span>
-<span class="fc" id="L1506">            return;</span>
+<span class="pc bpc" id="L1505" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L1506">            return;</span>
         }
         
 <span class="fc bfc" id="L1509" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>

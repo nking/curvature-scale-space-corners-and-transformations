@@ -4,7 +4,7 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.features.CornerRegion;
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
@@ -317,7 +317,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
 <span class="fc" id="L318">            double[][] d = no.uib.cipr.matrix.Matrices.getArray(m);</span>
 <span class="fc" id="L319">            double det = MatrixUtil.determinant(d);</span>
-<span class="fc" id="L320">            double trace = MatrixUtil.trace(d);</span>
+<span class="fc" id="L320">            double trace = algorithms.imageProcessing.util.MatrixUtil.trace(d);</span>
         
 <span class="fc" id="L322">            double dt = det/trace;</span>
             //System.out.println(&quot;det/trace=&quot; + dt);

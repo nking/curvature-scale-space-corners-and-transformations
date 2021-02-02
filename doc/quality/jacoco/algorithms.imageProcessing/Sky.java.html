@@ -5,7 +5,7 @@ import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.OneDIntArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.VeryLongBitString;
+import algorithms.VeryLongBitString;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -59,7 +59,7 @@ public class Sky {
 <span class="fc" id="L59">        this.img = img.copyToImageExt();</span>
         
 <span class="fc" id="L61">        mserEdges = new MSEREdges(this.img);</span>
-<span class="fc" id="L62">        mserEdges.setToDebug();</span>
+        //mserEdges.setToDebug();
 <span class="fc" id="L63">        mserEdges.extractAndMergeEdges();</span>
         
 <span class="fc" id="L65">    }</span>
@@ -666,18 +666,18 @@ public class Sky {
                         
                         // prefer those without any purple if exist
 <span class="fc bfc" id="L668" title="All 2 branches covered.">                        boolean doNotSet = maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="pc bpc" id="L669" title="1 of 4 branches missed.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
+<span class="fc bfc" id="L669" title="All 4 branches covered.">                            normPTCHs.get(maxAvgIdx).a[5] == 0.0 &amp;&amp;</span>
                             norm[5] &gt; 0;
                         
-<span class="pc bpc" id="L672" title="1 of 2 branches missed.">                        if (!doNotSet) {</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">                        if (!doNotSet) {</span>
 <span class="fc" id="L673">                            maxAvgIfBlue = avg;</span>
 <span class="fc" id="L674">                            maxAvgIdx = idx;</span>
                         }
                         
 <span class="pc bpc" id="L677" title="1 of 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="fc bfc" id="L678" title="All 2 branches covered.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
-<span class="fc" id="L679">                        maxAvgIfBlue = avg;</span>
-<span class="fc" id="L680">                        maxAvgIdx = idx;</span>
+<span class="pc bpc" id="L678" title="1 of 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
+<span class="nc" id="L679">                        maxAvgIfBlue = avg;</span>
+<span class="nc" id="L680">                        maxAvgIdx = idx;</span>
                     }
                 }
 <span class="fc" id="L683">            }</span>

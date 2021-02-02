@@ -92,7 +92,7 @@ import java.util.Collection;
   and specialized methods for that specific to this project will be
   present in this class.
    
-  TODO: need to add an improved feature comparison method that considers the
+  TODO: improve distance function used in feature comparison method.  need to consider the
   empty bins significant too.  the error calculations in Histogram.java include
   that
 
@@ -268,7 +268,7 @@ import java.util.Collection;
 <span class="fc" id="L268">        int stopX = x + r;</span>
 <span class="fc" id="L269">        int startX = x - r;</span>
 <span class="fc" id="L270">        int startY = y - r;</span>
-<span class="fc bfc" id="L271" title="All 2 branches covered.">        if ((h &amp; 1) == 0) {</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">        if ((h &amp; 1) == 0) {</span>
 <span class="fc" id="L272">            startX--;</span>
 <span class="fc" id="L273">            startY--;            </span>
         }
@@ -538,9 +538,9 @@ import java.util.Collection;
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      * 
-     * calculate the intersection of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * calculate the difference of histA and histB (normalized by the maximum value
+       in their histograms).
+     * A result of 0 is maximally similar and a result of 1 is maximally disssimilar.
      * 
      The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
@@ -606,9 +606,9 @@ import java.util.Collection;
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      *
-     * calculate the difference of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * calculate the difference of featureA and featureB (normalized by the maximum value
+       in their vectors).
+     * A result of 0 is maximally similar and a result of 1 is maximally dissimilar.
      *
      * Note that because the feature contains spatially ordered concatenation of
      * histograms, the registration of featureA and featureB to the same 

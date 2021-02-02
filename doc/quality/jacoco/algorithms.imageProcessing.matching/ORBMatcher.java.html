@@ -8,7 +8,7 @@ import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
-import algorithms.util.VeryLongBitString;
+import algorithms.VeryLongBitString;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -115,7 +115,7 @@ import java.util.Set;
 <span class="fc" id="L115">        int[][] matches = greedyMatch(keypoints1, keypoints2, cost, </span>
             hogs1, hogs2, orientations1, orientations2);
 
-<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (matches.length &lt; 7) {</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">        if (matches.length &lt; 7) {</span>
 
 <span class="fc" id="L120">            QuadInt[] qs = new QuadInt[matches.length];</span>
 <span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int i = 0; i &lt; matches.length; ++i) {</span>
@@ -132,28 +132,28 @@ import java.util.Set;
         }
         
         // ransac to remove outliers
-<span class="fc" id="L135">        PairIntArray outputLeftXY = new PairIntArray(matches.length);</span>
-<span class="fc" id="L136">        PairIntArray outputRightXY = new PairIntArray(matches.length);</span>
-<span class="fc" id="L137">        EpipolarTransformationFit fit </span>
-<span class="fc" id="L138">            = removeOutliersWithRANSAC(matches, </span>
+<span class="nc" id="L135">        PairIntArray outputLeftXY = new PairIntArray(matches.length);</span>
+<span class="nc" id="L136">        PairIntArray outputRightXY = new PairIntArray(matches.length);</span>
+<span class="nc" id="L137">        EpipolarTransformationFit fit </span>
+<span class="nc" id="L138">            = removeOutliersWithRANSAC(matches, </span>
             keypoints1, keypoints2, outputLeftXY, outputRightXY);
         
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (fit == null) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (fit == null) {</span>
 <span class="nc" id="L142">            return null;</span>
         }
                 
-<span class="fc" id="L145">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
-<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
-<span class="fc" id="L147">            QuadInt q = new QuadInt(</span>
-<span class="fc" id="L148">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
-<span class="fc" id="L149">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
+<span class="nc" id="L145">        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        for (int i = 0; i &lt; outputLeftXY.getN(); ++i) {</span>
+<span class="nc" id="L147">            QuadInt q = new QuadInt(</span>
+<span class="nc" id="L148">                outputLeftXY.getX(i), outputLeftXY.getY(i), </span>
+<span class="nc" id="L149">                outputRightXY.getX(i), outputRightXY.getY(i)</span>
             );
-<span class="fc" id="L151">            qs[i] = q;</span>
+<span class="nc" id="L151">            qs[i] = q;</span>
         }
 
-<span class="fc" id="L154">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
+<span class="nc" id="L154">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
         
-<span class="fc" id="L156">        return qs;</span>
+<span class="nc" id="L156">        return qs;</span>
     }
     
     /**
@@ -301,7 +301,7 @@ import java.util.Set;
 <span class="fc" id="L301">            int idx2 = index12.getY();</span>
 <span class="fc" id="L302">            PairInt p1 = keypoints1.get(idx1);</span>
 <span class="fc" id="L303">            PairInt p2 = keypoints2.get(idx2);</span>
-<span class="fc bfc" id="L304" title="All 4 branches covered.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
+<span class="pc bpc" id="L304" title="1 of 4 branches missed.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
 <span class="fc" id="L305">                continue;</span>
             }
             //System.out.println(&quot;p1=&quot; + p1 + &quot; &quot; + &quot; p2=&quot; + p2 + &quot; cost=&quot; + costs[i]);
@@ -557,14 +557,17 @@ import java.util.Set;
         
 <span class="fc" id="L558">        RANSACSolver solver = new RANSACSolver();</span>
         
-<span class="fc" id="L560">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
-            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+<span class="fc" id="L560">        double tolerance = 4;</span>
+        
+<span class="fc" id="L562">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY,
+            tolerance);
 
-<span class="fc" id="L563">        return fit;        </span>
+<span class="fc" id="L566">        return fit;        </span>
     }
 
     private static int[][] attemptMatchesUsingEuclidean(int[][] matches, List&lt;PairInt&gt; keypoints1, List&lt;PairInt&gt; keypoints2, int[][] cost) {
-<span class="nc" id="L567">        throw new UnsupportedOperationException(&quot;Not supported yet.&quot;); //To change body of generated methods, choose Tools | Templates.</span>
+<span class="nc" id="L570">        throw new UnsupportedOperationException(&quot;Not supported yet.&quot;); //To change body of generated methods, choose Tools | Templates.</span>
     }
 
 }

@@ -428,8 +428,8 @@ import java.util.List;
      */
     public float[] rgbToCIELUV(int r, int g, int b) {
 
-<span class="pc bpc" id="L431" title="3 of 6 branches missed.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
-<span class="nc" id="L432">            return new float[]{0, 0, 0};</span>
+<span class="fc bfc" id="L431" title="All 6 branches covered.">        if ((r == 0) &amp;&amp; (g == 0) &amp;&amp; (b == 0)) {</span>
+<span class="fc" id="L432">            return new float[]{0, 0, 0};</span>
         }
         
 <span class="fc" id="L435">        float[] a = _rgbToCIEXYZ2((float)r/255.f, (float)g/255.f, (float)b/255.f);</span>

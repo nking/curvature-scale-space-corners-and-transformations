@@ -55,8 +55,8 @@ import java.util.Collection;
 <span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (orientationA == 180) {</span>
 <span class="nc" id="L56">            orientationA = 0;</span>
         }
-<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (orientationB == 180) {</span>
-<span class="fc" id="L59">            orientationB = 0;</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (orientationB == 180) {</span>
+<span class="nc" id="L59">            orientationB = 0;</span>
         }
 
 <span class="fc" id="L62">        int nBins = histA.length;</span>
@@ -178,9 +178,9 @@ import java.util.Collection;
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      * 
-     * calculate the intersection of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * calculate the difference of histA and histB (normalized by the maximum value
+       in their histograms).
+     * A result of 0 is maximally similar and a result of 1 is maximally dissimilar.
      * 
      The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
@@ -277,9 +277,9 @@ import java.util.Collection;
     /**
      * CAVEAT: small amount of testing done, not yet throughly tested.
      * 
-     * calculate the intersection of histA and histB which have already
-     * been normalized to the same scale.
-     * A result of 0 is maximally dissimilar and a result of 1 is maximally similar.
+     * calculate the difference of histA and histB (normalized by the maximum value
+       in their histograms).
+     * A result of 0 is maximally similar and a result of 1 is maximally dissimilar.
      * 
      * The orientations are needed to compare the correct rotated bins to one another.
      * Internally, orientation of 90 leads to no shift for rotation,
@@ -617,7 +617,7 @@ import java.util.Collection;
                 
 <span class="fc bfc" id="L618" title="All 2 branches covered.">        } else if (startX &gt; 0) {</span>
             //startY == 0
-<span class="fc bfc" id="L620" title="All 4 branches covered.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
+<span class="pc bpc" id="L620" title="1 of 4 branches missed.">            if (stopX == startX &amp;&amp; stopY == startY) {</span>
 <span class="fc" id="L621">                outputN[0] = 1;</span>
 <span class="fc" id="L622">                System.arraycopy(histograms[(int)ph.toPixelIndex(stopX, stopY, w)], 0, </span>
                     output, 0, output.length);

@@ -537,25 +537,25 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="fc" id="L537">                nodeColors[0][i] = hsb[0];</span>
 <span class="fc" id="L538">                nodeColors[1][i] = hsb[1];</span>
 <span class="fc" id="L539">                nodeColors[2][i] = hsb[2];</span>
-<span class="pc bpc" id="L540" title="1 of 2 branches missed.">            } else if (colorSpace.equals(ColorSpace.CIELAB)) {</span>
-<span class="nc" id="L541">                float[] lab = cieC.rgbToCIELAB1931(</span>
-<span class="nc" id="L542">                    Math.round(nodeColors[0][i]), </span>
-<span class="nc" id="L543">                    Math.round(nodeColors[1][i]), </span>
-<span class="nc" id="L544">                    Math.round(nodeColors[2][i]));</span>
-<span class="nc" id="L545">                nodeColors[0][i] = lab[0];</span>
-<span class="nc" id="L546">                nodeColors[1][i] = lab[1];</span>
-<span class="nc" id="L547">                nodeColors[2][i] = lab[2];</span>
-<span class="pc bfc" id="L548" title="All 2 branches covered.">            } else if (colorSpace.equals(ColorSpace.POLAR_CIELAB)) {</span>
-<span class="fc" id="L549">                int polarT = imageProcessor.calculateCIELABTheta(</span>
-<span class="fc" id="L550">                    Math.round(nodeColors[0][i]), </span>
-<span class="fc" id="L551">                    Math.round(nodeColors[1][i]), </span>
-<span class="fc" id="L552">                    Math.round(nodeColors[2][i]), 255</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">            } else if (colorSpace.equals(ColorSpace.CIELAB)) {</span>
+<span class="fc" id="L541">                float[] lab = cieC.rgbToCIELAB1931(</span>
+<span class="fc" id="L542">                    Math.round(nodeColors[0][i]), </span>
+<span class="fc" id="L543">                    Math.round(nodeColors[1][i]), </span>
+<span class="fc" id="L544">                    Math.round(nodeColors[2][i]));</span>
+<span class="fc" id="L545">                nodeColors[0][i] = lab[0];</span>
+<span class="fc" id="L546">                nodeColors[1][i] = lab[1];</span>
+<span class="fc" id="L547">                nodeColors[2][i] = lab[2];</span>
+<span class="pc bpc" id="L548" title="1 of 2 branches missed.">            } else if (colorSpace.equals(ColorSpace.POLAR_CIELAB)) {</span>
+<span class="nc" id="L549">                int polarT = imageProcessor.calculateCIELABTheta(</span>
+<span class="nc" id="L550">                    Math.round(nodeColors[0][i]), </span>
+<span class="nc" id="L551">                    Math.round(nodeColors[1][i]), </span>
+<span class="nc" id="L552">                    Math.round(nodeColors[2][i]), 255</span>
                 );
                 // TODO: make a graph for 1-D color space.
                 //  this is a quick fudge to look at results
-<span class="fc" id="L556">                nodeColors[0][i] = polarT;</span>
-<span class="fc" id="L557">                nodeColors[1][i] = polarT;</span>
-<span class="fc" id="L558">                nodeColors[2][i] = polarT;</span>
+<span class="nc" id="L556">                nodeColors[0][i] = polarT;</span>
+<span class="nc" id="L557">                nodeColors[1][i] = polarT;</span>
+<span class="nc" id="L558">                nodeColors[2][i] = polarT;</span>
             }
         }
         

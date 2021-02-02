@@ -21,6 +21,9 @@ import no.uib.cipr.matrix.sparse.ArpackSym;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 
 /**
+TODO: one day, revise this code to follow the paper implementation more closely
+      (e.g. using the Lanczos method based on power method) and improvements since the publication.
+
  * A hierarchical segmentation method that determines graph cuts
  * which maximize the difference between regions and minimize the differences
  * within a region using
@@ -29,6 +32,27 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
  * implementation of the algorithm of
  * &quot;Normalized Cuts and Image Segmentation&quot;
         by Jianbo Shi and Jitendra Malik
+
+    grouping algorithm:
+      1. Given an image or image sequence, set up a
+        weighted graph G(V; E) and set the weight on
+        the edge connecting two nodes to be a measure of
+        the similarity between the two nodes.
+      2. Solve (D - W)*x = lambda*D*x for eigenvectors with the
+        smallest eigenvalues.
+        (NOTE from mmds.org book chap 10, is that since the Laplacian is symmetric, the
+         2nd smallest value is the minimum of x^T * L * x where x is [x1, x2, . . . , xn] 
+         is a column vector with n components, and the minimum is taken under the constraints:
+         the length of x = 1 (ie. sum of (x_i)^2 = 1), and x is orthogonal to the
+         eigenvector associated with the smallest eigenvalue (which is eigenvalue=0 and eigenvector
+         is all 1's).
+      3. Use the eigenvector with the second smallest
+        eigenvalue to bipartition the graph.
+        NOTE: The second smallest eigenvalue of D-W is sometimes known as the Fiedler value.
+      4. Decide if the current partition should be subdivided
+        and recursively repartition the segmented parts if
+        necessary
+
          
     Much of the logic here is adopted from the scipy skimage 
     implementation of normalized cuts.
@@ -79,45 +103,46 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
     
     their license information is in file lib/NETLIB-JAVA.txt
     &lt;/pre&gt;
+
  * @author nichole
  */
-<span class="fc" id="L84">public class NormalizedCuts {</span>
+<span class="fc" id="L109">public class NormalizedCuts {</span>
     
     //TODO: needs to be edited to use spatial location and adjacency
     //   map.  look at DNCuts
     
-<span class="fc" id="L89">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L114">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
     // number of normalized cuts to perform before 
     // determining optimal among them.
     // cannot be smaller than 2
-<span class="fc" id="L94">    private int numCuts = 3;//5;</span>
+<span class="fc" id="L119">    private int numCuts = 3;//5;</span>
 
-<span class="fc" id="L96">    private ColorSpace colorSpace = ColorSpace.RGB;</span>
+<span class="fc" id="L121">    private ColorSpace colorSpace = ColorSpace.RGB;</span>
     
-<span class="fc" id="L98">    private ColorOption colorOption = ColorOption.RGB;</span>
+<span class="fc" id="L123">    private ColorOption colorOption = ColorOption.RGB;</span>
     
     private enum ColorOption {
         RGB, HSV, LOW_THRESHOLD_RGB, LOW_THRESHOLD_HSV, HSV_COLOR_HISTOGRAMS,
         CIELAB, POLAR_CIELAB
     }
     
-<span class="fc" id="L105">    private double thresh = 0.06;</span>
-<span class="fc" id="L106">    double sigma = 22;</span>
+<span class="fc" id="L130">    private double thresh = 0.06;</span>
+<span class="fc" id="L131">    double sigma = 22;</span>
 
     public void setThreshold(double thresh) {
-<span class="nc" id="L109">        this.thresh = thresh;</span>
-<span class="nc" id="L110">    }</span>
+<span class="nc" id="L134">        this.thresh = thresh;</span>
+<span class="nc" id="L135">    }</span>
     public void setSigma(double sigma) {
-<span class="nc" id="L112">        this.sigma = sigma;</span>
-<span class="nc" id="L113">    }</span>
+<span class="nc" id="L137">        this.sigma = sigma;</span>
+<span class="nc" id="L138">    }</span>
     public void setToLowThresholdRGB() {
-<span class="nc" id="L115">        colorOption = ColorOption.LOW_THRESHOLD_RGB;</span>
-<span class="nc" id="L116">        colorSpace = ColorSpace.RGB;</span>
+<span class="nc" id="L140">        colorOption = ColorOption.LOW_THRESHOLD_RGB;</span>
+<span class="nc" id="L141">        colorSpace = ColorSpace.RGB;</span>
         // for superpixels w/ n=200
-<span class="nc" id="L118">        thresh = 1.e-16;</span>
-<span class="nc" id="L119">        sigma = 1.7320508;</span>
-<span class="nc" id="L120">    }</span>
+<span class="nc" id="L143">        thresh = 1.e-16;</span>
+<span class="nc" id="L144">        sigma = 1.7320508;</span>
+<span class="nc" id="L145">    }</span>
     
     /**
      * NOTE: pre-processing to filter out largest discrepant
@@ -125,55 +150,55 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
      * may improve results.
      */
     public void setToColorHistogramsOfHSV() {
-<span class="nc" id="L128">        colorOption = ColorOption.HSV_COLOR_HISTOGRAMS;</span>
-<span class="nc" id="L129">        colorSpace = ColorSpace.HSV;</span>
-<span class="nc" id="L130">        thresh = 0.5;</span>
-<span class="nc" id="L131">        sigma = 1.732;</span>
-<span class="nc" id="L132">    }</span>
+<span class="nc" id="L153">        colorOption = ColorOption.HSV_COLOR_HISTOGRAMS;</span>
+<span class="nc" id="L154">        colorSpace = ColorSpace.HSV;</span>
+<span class="nc" id="L155">        thresh = 0.5;</span>
+<span class="nc" id="L156">        sigma = 1.732;</span>
+<span class="nc" id="L157">    }</span>
     
     public void setToLowThresholdHSV() {
-<span class="nc" id="L135">        colorOption = ColorOption.LOW_THRESHOLD_HSV;</span>
-<span class="nc" id="L136">        colorSpace = ColorSpace.HSV;</span>
+<span class="nc" id="L160">        colorOption = ColorOption.LOW_THRESHOLD_HSV;</span>
+<span class="nc" id="L161">        colorSpace = ColorSpace.HSV;</span>
         // for superpixels w/ n=200  thresh=0.05, sigma=0.1
-<span class="nc" id="L138">        thresh = 5e-6; //1e-13 and 0.001 or 5e-6 and 0.0025</span>
-<span class="nc" id="L139">        sigma = 0.0025; //change smaller</span>
-<span class="nc" id="L140">    }</span>
+<span class="nc" id="L163">        thresh = 5e-6; //1e-13 and 0.001 or 5e-6 and 0.0025</span>
+<span class="nc" id="L164">        sigma = 0.0025; //change smaller</span>
+<span class="nc" id="L165">    }</span>
    
     public void setColorSpaceToRGB() {
-<span class="nc" id="L143">        colorOption = ColorOption.RGB;</span>
-<span class="nc" id="L144">        colorSpace = ColorSpace.RGB;</span>
+<span class="nc" id="L168">        colorOption = ColorOption.RGB;</span>
+<span class="nc" id="L169">        colorSpace = ColorSpace.RGB;</span>
         // for superpixels w/ n=200 thresh=0.06 sigma=22
-<span class="nc" id="L146">        thresh = 0.06;</span>
-<span class="nc" id="L147">        sigma = 22;</span>
-<span class="nc" id="L148">    }</span>
+<span class="nc" id="L171">        thresh = 0.06;</span>
+<span class="nc" id="L172">        sigma = 22;</span>
+<span class="nc" id="L173">    }</span>
     
     public void setColorSpaceToHSV() {
-<span class="nc" id="L151">        colorOption = ColorOption.HSV;</span>
-<span class="nc" id="L152">        colorSpace = ColorSpace.HSV;</span>
+<span class="nc" id="L176">        colorOption = ColorOption.HSV;</span>
+<span class="nc" id="L177">        colorSpace = ColorSpace.HSV;</span>
         // for superpixels w/ n=200  thresh=0.05, sigma=0.1
-<span class="nc" id="L154">        thresh = 0.05;</span>
-<span class="nc" id="L155">        sigma = 0.1;</span>
-<span class="nc" id="L156">    }</span>
+<span class="nc" id="L179">        thresh = 0.05;</span>
+<span class="nc" id="L180">        sigma = 0.1;</span>
+<span class="nc" id="L181">    }</span>
     
     public void setColorSpaceToCIELAB() {
-<span class="nc" id="L159">        colorOption = ColorOption.CIELAB;</span>
-<span class="nc" id="L160">        colorSpace = ColorSpace.CIELAB;</span>
+<span class="fc" id="L184">        colorOption = ColorOption.CIELAB;</span>
+<span class="fc" id="L185">        colorSpace = ColorSpace.CIELAB;</span>
         // for superpixels w/ n=200 
-<span class="nc" id="L162">        thresh = 0.06; </span>
-<span class="nc" id="L163">        sigma = 10;</span>
-<span class="nc" id="L164">    }</span>
+<span class="fc" id="L187">        thresh = 0.06; </span>
+<span class="fc" id="L188">        sigma = 10;</span>
+<span class="fc" id="L189">    }</span>
     
     /**
      * NOTE: this one especially, should improve when location
      * and adjacency maps are used in the similarity score
      */
     public void setColorSpaceToPolarCIELAB() {
-<span class="fc" id="L171">        colorOption = ColorOption.POLAR_CIELAB;</span>
-<span class="fc" id="L172">        colorSpace = ColorSpace.POLAR_CIELAB;</span>
+<span class="nc" id="L196">        colorOption = ColorOption.POLAR_CIELAB;</span>
+<span class="nc" id="L197">        colorSpace = ColorSpace.POLAR_CIELAB;</span>
         // for superpixels w/ n=200 
-<span class="fc" id="L174">        thresh = 0.01; </span>
-<span class="fc" id="L175">        sigma = 4.;//4: 5</span>
-<span class="fc" id="L176">    }</span>
+<span class="nc" id="L199">        thresh = 0.01; </span>
+<span class="nc" id="L200">        sigma = 4.;//4: 5</span>
+<span class="nc" id="L201">    }</span>
     
     /**
      * using the recursive 2-way Ncut pattern in normalized cuts 
@@ -190,48 +215,50 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
     public int[] normalizedCut(ImageExt img, int[] labels) {
        
         // compress labels
-<span class="fc" id="L193">        int[] labels2 = Arrays.copyOf(labels, labels.length);</span>
-<span class="fc" id="L194">        LabelToColorHelper.condenseLabels(labels2);</span>
-<span class="fc" id="L195">        labels = labels2;</span>
+<span class="fc" id="L218">        int[] labels2 = Arrays.copyOf(labels, labels.length);</span>
+<span class="fc" id="L219">        LabelToColorHelper.condenseLabels(labels2);</span>
+<span class="fc" id="L220">        labels = labels2;</span>
         
         //TODO: note, as authors mention, the edge weights with values &gt; 0.01
         // are significant and the remaining are zeroes of different precision
         
-<span class="fc" id="L200">        log.fine(&quot;input labels=&quot; + Arrays.toString(labels));</span>
+<span class="fc" id="L225">        log.fine(&quot;input labels=&quot; + Arrays.toString(labels));</span>
         
-<span class="fc" id="L202">        RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(</span>
+<span class="fc" id="L227">        RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(</span>
             img, labels);
 
-<span class="fc" id="L205">        log.info(&quot;rag.nNodes=&quot; + rag.getNumberOfRegions() + &quot; at start&quot;);</span>
+<span class="fc" id="L230">        log.info(&quot;rag.nNodes=&quot; + rag.getNumberOfRegions() + &quot; at start&quot;);</span>
          
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        if (colorOption.equals(ColorOption.LOW_THRESHOLD_HSV)) {</span>
-<span class="nc" id="L208">            rag.populateEdgesWithLowThreshHSVSimilarity(sigma);</span>
-<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        } else if (colorOption.equals(ColorOption.LOW_THRESHOLD_RGB)) {</span>
-<span class="nc" id="L210">            rag.populateEdgesWithLowThreshRGBSimilarity(sigma);</span>
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        } else if (colorOption.equals(ColorOption.HSV_COLOR_HISTOGRAMS)) {</span>
-<span class="nc" id="L212">            rag.populateEdgesWithHSVColorHistogramSimilarity(sigma);</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">        if (colorOption.equals(ColorOption.LOW_THRESHOLD_HSV)) {</span>
+<span class="nc" id="L233">            rag.populateEdgesWithLowThreshHSVSimilarity(sigma);</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        } else if (colorOption.equals(ColorOption.LOW_THRESHOLD_RGB)) {</span>
+<span class="nc" id="L235">            rag.populateEdgesWithLowThreshRGBSimilarity(sigma);</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        } else if (colorOption.equals(ColorOption.HSV_COLOR_HISTOGRAMS)) {</span>
+<span class="nc" id="L237">            rag.populateEdgesWithHSVColorHistogramSimilarity(sigma);</span>
         } else {
-<span class="fc" id="L214">            rag.populateEdgesWithColorSimilarity(colorSpace,</span>
+<span class="fc" id="L239">            rag.populateEdgesWithColorSimilarity(colorSpace,</span>
                 sigma);
         }
         
-<span class="fc" id="L218">        RAGCSubGraph nodesGraph = rag.createANodesGraph();</span>
+<span class="fc" id="L243">        RAGCSubGraph nodesGraph = rag.createANodesGraph();</span>
+
+        // TODO: should normalize matrix data before use to zero mean and unit variance.
         
         // add an edge to self for every node, weight = edge_max (which is 1.0 if not specified)
         // only doing this in the similarity matrix, not the graph adjacency map
-<span class="fc" id="L222">        FlexCompRowMatrix w = nodesGraph.getEdgeMatrix();</span>
-<span class="fc" id="L223">        int n = nodesGraph.getNumberOfNodes();</span>
-<span class="fc bfc" id="L224" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L225">            w.set(i, i, 1.0);</span>
+<span class="fc" id="L249">        FlexCompRowMatrix w = nodesGraph.getEdgeMatrix();</span>
+<span class="fc" id="L250">        int n = nodesGraph.getNumberOfNodes();</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L252">            w.set(i, i, 1.0);</span>
         }
         
-<span class="fc" id="L228">        performNormalizedCuts(nodesGraph);</span>
+<span class="fc" id="L255">        performNormalizedCuts(nodesGraph);</span>
         
-<span class="fc" id="L230">        int[] labeled = rag.relabelUsingNodes();</span>
+<span class="fc" id="L257">        int[] labeled = rag.relabelUsingNodes();</span>
         
-<span class="fc" id="L232">        labelTheUnlabeled(labeled);</span>
+<span class="fc" id="L259">        labelTheUnlabeled(labeled);</span>
         
-<span class="fc" id="L234">        return labeled;</span>
+<span class="fc" id="L261">        return labeled;</span>
     }
     
      /**
@@ -243,8 +270,8 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
       */
     private void performNormalizedCuts(RAGCSubGraph graph) {
         
-<span class="fc" id="L246">        nCutRelabel(graph);        </span>
-<span class="fc" id="L247">    }</span>
+<span class="fc" id="L273">        nCutRelabel(graph);        </span>
+<span class="fc" id="L274">    }</span>
 
     /**
      * perform 2-way recursive splitting of graph
@@ -253,53 +280,56 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
      */
     private void nCutRelabel(RAGCSubGraph graph) {
         
-<span class="fc" id="L256">        FlexCompRowMatrix w = graph.getEdgeMatrix();</span>
-<span class="fc bfc" id="L257" title="All 2 branches covered.">        if (w.numRows() &lt; 5) {</span>
-<span class="fc" id="L258">            return;</span>
+<span class="fc" id="L283">        FlexCompRowMatrix w = graph.getEdgeMatrix();</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        if (w.numRows() &lt; 5) {</span>
+<span class="fc" id="L285">            return;</span>
         }
         
-<span class="fc" id="L261">        FlexCompRowMatrix d = createD(w, graph);</span>
+<span class="fc" id="L288">        FlexCompRowMatrix d = createD(w, graph);</span>
         
-<span class="fc" id="L263">        log.fine(&quot;w.nnz=&quot; + MatrixUtil.countNodes(w));</span>
+<span class="fc" id="L290">        log.fine(&quot;w.nnz=&quot; + MatrixUtil.countNodes(w));</span>
         
-<span class="pc bpc" id="L265" title="1 of 2 branches missed.">        if (w.numRows()&gt; 2) {</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        if (w.numRows()&gt; 2) {</span>
         
-<span class="fc" id="L267">            FlexCompRowMatrix d2 = (FlexCompRowMatrix) d.copy();</span>
-<span class="fc" id="L268">            Iterator&lt;MatrixEntry&gt; iter = d.iterator();</span>
-<span class="fc bfc" id="L269" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L270">                MatrixEntry entry = iter.next();</span>
-<span class="fc" id="L271">                int col = entry.column();</span>
-<span class="fc" id="L272">                int row = entry.row();</span>
-<span class="fc" id="L273">                double v = entry.get();</span>
-<span class="pc bpc" id="L274" title="1 of 2 branches missed.">                v = (v == 0) ? Double.MAX_VALUE : 1./Math.sqrt(v);</span>
-<span class="fc" id="L275">                d2.set(col, row, v);</span>
-<span class="fc" id="L276">            }</span>
+<span class="fc" id="L294">            FlexCompRowMatrix d2 = (FlexCompRowMatrix) d.copy();</span>
+<span class="fc" id="L295">            Iterator&lt;MatrixEntry&gt; iter = d.iterator();</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L297">                MatrixEntry entry = iter.next();</span>
+<span class="fc" id="L298">                int col = entry.column();</span>
+<span class="fc" id="L299">                int row = entry.row();</span>
+<span class="fc" id="L300">                double v = entry.get();</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">                v = (v == 0) ? Double.MAX_VALUE : 1./Math.sqrt(v);</span>
+<span class="fc" id="L302">                d2.set(col, row, v);</span>
+<span class="fc" id="L303">            }</span>
         
             //D^(-1/2)(D - W)D^(-1/2)z = lamdba z;
             // tmp = diag - w
             // tmp = d2 mult tmp mult d2
-<span class="fc" id="L281">            FlexCompRowMatrix tmp = MatrixUtil.sparseMatrixSubtract(d, w);</span>
-<span class="fc" id="L282">            tmp = MatrixUtil.sparseMatrixMultiply(d2, tmp);        </span>
-<span class="fc" id="L283">            tmp = MatrixUtil.sparseMatrixMultiply(tmp, d2);</span>
+<span class="fc" id="L308">            FlexCompRowMatrix tmp = MatrixUtil.sparseMatrixSubtract(d, w);</span>
+<span class="fc" id="L309">            tmp = MatrixUtil.sparseMatrixMultiply(d2, tmp);        </span>
+<span class="fc" id="L310">            tmp = MatrixUtil.sparseMatrixMultiply(tmp, d2);</span>
 
             // PRECISION CORRECTIONS needed for perfectly symmetric matrix
-<span class="fc" id="L286">            FlexCompRowMatrix tmp2 = (FlexCompRowMatrix) tmp.copy();</span>
-<span class="fc" id="L287">            iter = tmp2.iterator();</span>
-<span class="fc bfc" id="L288" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L289">                MatrixEntry entry = iter.next();</span>
-<span class="fc" id="L290">                int col = entry.column();</span>
-<span class="fc" id="L291">                int row = entry.row();</span>
-<span class="fc" id="L292">                double v = entry.get();</span>
-<span class="fc" id="L293">                tmp.set(col, row, v);</span>
-<span class="fc" id="L294">                tmp.set(row, col, v);</span>
-<span class="fc" id="L295">            }</span>
+<span class="fc" id="L313">            FlexCompRowMatrix tmp2 = (FlexCompRowMatrix) tmp.copy();</span>
+<span class="fc" id="L314">            iter = tmp2.iterator();</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L316">                MatrixEntry entry = iter.next();</span>
+<span class="fc" id="L317">                int col = entry.column();</span>
+<span class="fc" id="L318">                int row = entry.row();</span>
+<span class="fc" id="L319">                double v = entry.get();</span>
+<span class="fc" id="L320">                tmp.set(col, row, v);</span>
+<span class="fc" id="L321">                tmp.set(row, col, v);</span>
+<span class="fc" id="L322">            }</span>
                             
             // 2nd smallest eigenvector
-<span class="fc" id="L298">            int m = w.numRows();</span>
+            //NOTE: improve upon this one day, following &quot;splitting point&quot; of page 892:3 of paper
+            //  and K-way cut on page 893
+            // NOTE: The second smallest eigenvalue of D-W is sometimes known as the Fiedler value.
+<span class="fc" id="L328">            int m = w.numRows();</span>
             //int nEig = 2;
-<span class="fc" id="L300">            int nEig = Math.min(100, m - 2);</span>
+<span class="fc" id="L330">            int nEig = Math.min(100, m - 2);</span>
 
-<span class="fc" id="L302">            log.fine(&quot;nEigen =&quot; + nEig + &quot; eig input=&quot; + tmp.toString());</span>
+<span class="fc" id="L332">            log.fine(&quot;nEigen =&quot; + nEig + &quot; eig input=&quot; + tmp.toString());</span>
 
             /*
             info status:
@@ -309,50 +339,50 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
             */
 //TODO: when have a return tpe,
 // catch errors here and return a default
-<span class="fc" id="L312">            ArpackSym arpackSym = new ArpackSym(tmp);</span>
-<span class="fc" id="L313">            Map&lt;Double, DenseVectorSub&gt; rMap = null;</span>
+<span class="fc" id="L342">            ArpackSym arpackSym = new ArpackSym(tmp);</span>
+<span class="fc" id="L343">            Map&lt;Double, DenseVectorSub&gt; rMap = null;</span>
             try {
-<span class="fc" id="L315">                rMap = arpackSym.solve(nEig, ArpackSym.Ritz.SM);</span>
-<span class="nc" id="L316">            } catch (Throwable t) {</span>
-<span class="nc" id="L317">                log.severe(&quot;ERROR: &quot; +  &quot;array size=&quot; +</span>
-<span class="nc" id="L318">                    &quot; rows=&quot; + tmp.numRows() +</span>
-<span class="nc" id="L319">                    &quot; cols=&quot; + tmp.numColumns()</span>
-<span class="nc" id="L320">                    + &quot; =&gt; &quot; + t.getMessage()</span>
+<span class="fc" id="L345">                rMap = arpackSym.solve(nEig, ArpackSym.Ritz.SM);</span>
+<span class="nc" id="L346">            } catch (Throwable t) {</span>
+<span class="nc" id="L347">                log.severe(&quot;ERROR: &quot; +  &quot;array size=&quot; +</span>
+<span class="nc" id="L348">                    &quot; rows=&quot; + tmp.numRows() +</span>
+<span class="nc" id="L349">                    &quot; cols=&quot; + tmp.numColumns()</span>
+<span class="nc" id="L350">                    + &quot; =&gt; &quot; + t.getMessage()</span>
                 );
-<span class="nc" id="L322">                return;</span>
-<span class="fc" id="L323">            }</span>
+<span class="nc" id="L352">                return;</span>
+<span class="fc" id="L353">            }</span>
 
-<span class="fc" id="L325">            double secondSmallestEigenValue = find2ndSmallestEigenValue(rMap);</span>
-<span class="fc" id="L326">            DenseVectorSub eigenVector = rMap.get(Double.valueOf(secondSmallestEigenValue));</span>
+<span class="fc" id="L355">            double secondSmallestEigenValue = find2ndSmallestEigenValue(rMap);</span>
+<span class="fc" id="L356">            DenseVectorSub eigenVector = rMap.get(Double.valueOf(secondSmallestEigenValue));</span>
             
-<span class="pc bpc" id="L328" title="1 of 2 branches missed.">            if (eigenVector != null) {</span>
+<span class="pc bpc" id="L358" title="1 of 2 branches missed.">            if (eigenVector != null) {</span>
            
-<span class="fc" id="L330">                log.finest(&quot;secondSmallestEigenValue=&quot; + secondSmallestEigenValue);</span>
+<span class="fc" id="L360">                log.finest(&quot;secondSmallestEigenValue=&quot; + secondSmallestEigenValue);</span>
 
-<span class="fc" id="L332">                log.finest(&quot;eigen vector size=&quot; + eigenVector.size());</span>
+<span class="fc" id="L362">                log.finest(&quot;eigen vector size=&quot; + eigenVector.size());</span>
 
-<span class="fc" id="L334">                log.finest(&quot;eigenVector=&quot; + eigenVector);</span>
+<span class="fc" id="L364">                log.finest(&quot;eigenVector=&quot; + eigenVector);</span>
 
-<span class="fc" id="L336">                MinCut minCut = getMinNCut(eigenVector, d, w);</span>
+<span class="fc" id="L366">                MinCut minCut = getMinNCut(eigenVector, d, w);</span>
 
-<span class="pc bpc" id="L338" title="1 of 2 branches missed.">                if (minCut != null) {</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">                if (minCut != null) {</span>
 
-<span class="fc" id="L340">                    log.fine(&quot;mCut=&quot; + minCut.mCut);</span>
-<span class="fc" id="L341">                    log.fine(&quot;cut=&quot; + Arrays.toString(minCut.minMask));</span>
-<span class="fc" id="L342">                    log.info(&quot;mCut=&quot; + minCut.mCut + &quot; thresh=&quot; + thresh);</span>
+<span class="fc" id="L370">                    log.fine(&quot;mCut=&quot; + minCut.mCut);</span>
+<span class="fc" id="L371">                    log.fine(&quot;cut=&quot; + Arrays.toString(minCut.minMask));</span>
+<span class="fc" id="L372">                    log.info(&quot;mCut=&quot; + minCut.mCut + &quot; thresh=&quot; + thresh);</span>
                     
-<span class="fc bfc" id="L344" title="All 2 branches covered.">                    if (minCut.mCut &lt; thresh) {</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">                    if (minCut.mCut &lt; thresh) {</span>
 
-<span class="fc" id="L346">                        RAGCSubGraph[] subGraphs = graph.partition(minCut.minMask);</span>
+<span class="fc" id="L376">                        RAGCSubGraph[] subGraphs = graph.partition(minCut.minMask);</span>
 
-<span class="fc" id="L348">                        log.fine(&quot;len(sub1)=&quot; + subGraphs[0].getNumberOfNodes());</span>
+<span class="fc" id="L378">                        log.fine(&quot;len(sub1)=&quot; + subGraphs[0].getNumberOfNodes());</span>
 
-<span class="fc" id="L350">                        log.fine(&quot;len(sub2)=&quot; + subGraphs[1].getNumberOfNodes());</span>
+<span class="fc" id="L380">                        log.fine(&quot;len(sub2)=&quot; + subGraphs[1].getNumberOfNodes());</span>
 
-<span class="fc" id="L352">                        nCutRelabel(subGraphs[1]);</span>
-<span class="fc" id="L353">                        nCutRelabel(subGraphs[0]);</span>
+<span class="fc" id="L382">                        nCutRelabel(subGraphs[1]);</span>
+<span class="fc" id="L383">                        nCutRelabel(subGraphs[0]);</span>
 
-<span class="fc" id="L355">                        return;</span>
+<span class="fc" id="L385">                        return;</span>
                     }
                 }
             }
@@ -364,11 +394,11 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
         # Assign `ncut label` by picking any label from the existing nodes, since
         # `labels` are unique, `new_label` is also unique.
         */
-<span class="fc" id="L367">        int label = graph.getNodes().get(0).getLabel();</span>
-<span class="fc bfc" id="L368" title="All 2 branches covered.">        for (NormalizedCutsNode node : graph.getNodes()) {</span>
-<span class="fc" id="L369">            node.setNCutsLabel(label);</span>
-<span class="fc" id="L370">        } </span>
-<span class="fc" id="L371">    }</span>
+<span class="fc" id="L397">        int label = graph.getNodes().get(0).getLabel();</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        for (NormalizedCutsNode node : graph.getNodes()) {</span>
+<span class="fc" id="L399">            node.setNCutsLabel(label);</span>
+<span class="fc" id="L400">        } </span>
+<span class="fc" id="L401">    }</span>
 
     /**
      * Use the eigenvector with the second smallest eigenvalue to bipartition 
@@ -380,17 +410,17 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
         DenseVectorSub eigenVector, FlexCompRowMatrix d, 
         FlexCompRowMatrix w) {
         
-<span class="fc" id="L383">        double minEV = Double.MAX_VALUE;</span>
-<span class="fc" id="L384">        double maxEV = Double.MIN_VALUE;</span>
-<span class="fc bfc" id="L385" title="All 2 branches covered.">        for (VectorEntry entry : eigenVector) {</span>
-<span class="fc" id="L386">            double v = entry.get();</span>
-<span class="fc bfc" id="L387" title="All 2 branches covered.">            if (minEV &gt; v) {</span>
-<span class="fc" id="L388">                minEV = v;</span>
+<span class="fc" id="L413">        double minEV = Double.MAX_VALUE;</span>
+<span class="fc" id="L414">        double maxEV = Double.MIN_VALUE;</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">        for (VectorEntry entry : eigenVector) {</span>
+<span class="fc" id="L416">            double v = entry.get();</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">            if (minEV &gt; v) {</span>
+<span class="fc" id="L418">                minEV = v;</span>
             }
-<span class="fc bfc" id="L390" title="All 2 branches covered.">            if (maxEV &lt; v) {</span>
-<span class="fc" id="L391">                maxEV = v;</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">            if (maxEV &lt; v) {</span>
+<span class="fc" id="L421">                maxEV = v;</span>
             }
-<span class="fc" id="L393">        }</span>
+<span class="fc" id="L423">        }</span>
         
         /*
         &quot;In the ideal case, the eigenvector should only take on two discrete 
@@ -439,47 +469,47 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
         */
         
         // 1e-5 * abs(b) + 1e-8
-<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if ((maxEV - minEV) &lt; ((1e-5)*Math.abs(minEV) + 1e-8)) {</span>
-<span class="nc" id="L443">            return null;</span>
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">        if ((maxEV - minEV) &lt; ((1e-5)*Math.abs(minEV) + 1e-8)) {</span>
+<span class="nc" id="L473">            return null;</span>
         }
         
         //min_mask = np.zeros_like(ev, dtype=np.bool)
-<span class="fc" id="L447">        boolean[] minMask = null;</span>
+<span class="fc" id="L477">        boolean[] minMask = null;</span>
         
-<span class="fc" id="L449">        double mCut = Double.MAX_VALUE;</span>
+<span class="fc" id="L479">        double mCut = Double.MAX_VALUE;</span>
         
-<span class="fc" id="L451">        double delta = (maxEV - minEV)/(double)numCuts;</span>
-<span class="fc" id="L452">        double t = minEV;</span>
-<span class="fc bfc" id="L453" title="All 2 branches covered.">        while (t &lt; maxEV) {</span>
+<span class="fc" id="L481">        double delta = (maxEV - minEV)/(double)numCuts;</span>
+<span class="fc" id="L482">        double t = minEV;</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">        while (t &lt; maxEV) {</span>
             
-<span class="fc" id="L455">            boolean[] mask = new boolean[eigenVector.size()];</span>
-<span class="fc bfc" id="L456" title="All 2 branches covered.">            for (int i = 0; i &lt; mask.length; ++i) {</span>
-<span class="fc bfc" id="L457" title="All 2 branches covered.">                mask[i] = (eigenVector.get(i) &gt; t) ? true : false;</span>
+<span class="fc" id="L485">            boolean[] mask = new boolean[eigenVector.size()];</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">            for (int i = 0; i &lt; mask.length; ++i) {</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">                mask[i] = (eigenVector.get(i) &gt; t) ? true : false;</span>
             }
             
-<span class="fc" id="L460">            double cost = nCutCost(mask, d, w);</span>
+<span class="fc" id="L490">            double cost = nCutCost(mask, d, w);</span>
             
-<span class="pc bpc" id="L462" title="1 of 2 branches missed.">            if (Double.isNaN(cost)) {</span>
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">            if (Double.isNaN(cost)) {</span>
                 // happens when mask has all same values
-<span class="nc" id="L464">                break;</span>
+<span class="nc" id="L494">                break;</span>
             }
             
-<span class="fc" id="L467">            log.fine(&quot;cut.length=&quot; + mask.length + &quot; cost=&quot; + cost + </span>
-<span class="fc" id="L468">                &quot;  cut_mask=&quot; + Arrays.toString(mask));</span>
+<span class="fc" id="L497">            log.fine(&quot;cut.length=&quot; + mask.length + &quot; cost=&quot; + cost + </span>
+<span class="fc" id="L498">                &quot;  cut_mask=&quot; + Arrays.toString(mask));</span>
             
-<span class="fc bfc" id="L470" title="All 2 branches covered.">            if (cost &lt; mCut) {</span>
-<span class="fc" id="L471">                mCut = cost;</span>
-<span class="fc" id="L472">                minMask = mask;</span>
+<span class="fc bfc" id="L500" title="All 2 branches covered.">            if (cost &lt; mCut) {</span>
+<span class="fc" id="L501">                mCut = cost;</span>
+<span class="fc" id="L502">                minMask = mask;</span>
             }
             
-<span class="fc" id="L475">            t += delta;</span>
-<span class="fc" id="L476">        }</span>
+<span class="fc" id="L505">            t += delta;</span>
+<span class="fc" id="L506">        }</span>
        
-<span class="fc" id="L478">        MinCut m = new MinCut();</span>
-<span class="fc" id="L479">        m.minMask = minMask;</span>
-<span class="fc" id="L480">        m.mCut = mCut;</span>
+<span class="fc" id="L508">        MinCut m = new MinCut();</span>
+<span class="fc" id="L509">        m.minMask = minMask;</span>
+<span class="fc" id="L510">        m.mCut = mCut;</span>
     
-<span class="fc" id="L482">        return m;</span>
+<span class="fc" id="L512">        return m;</span>
     }
     
     private class MinCut {
@@ -517,65 +547,65 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
      */
     private double nCutCost(boolean[] cut, FlexCompRowMatrix d, FlexCompRowMatrix w) {
 
-<span class="fc" id="L520">        double cutCost = 0;</span>
-<span class="fc bfc" id="L521" title="All 2 branches covered.">        for (MatrixEntry entry : w) {</span>
-<span class="fc" id="L522">            int row = entry.row();</span>
-<span class="fc" id="L523">            int col = entry.column();</span>
+<span class="fc" id="L550">        double cutCost = 0;</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">        for (MatrixEntry entry : w) {</span>
+<span class="fc" id="L552">            int row = entry.row();</span>
+<span class="fc" id="L553">            int col = entry.column();</span>
             // it's a summetric matrix so only count edges once
-<span class="fc bfc" id="L525" title="All 2 branches covered.">            if (row &lt;= col) {</span>
-<span class="fc bfc" id="L526" title="All 2 branches covered.">                if (cut[col] != cut[row]) {</span>
-<span class="fc" id="L527">                    cutCost += entry.get();</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">            if (row &lt;= col) {</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">                if (cut[col] != cut[row]) {</span>
+<span class="fc" id="L557">                    cutCost += entry.get();</span>
                 }
             }
-<span class="fc" id="L530">        } </span>
+<span class="fc" id="L560">        } </span>
         
-<span class="fc" id="L532">        double sumAssocA = 0;</span>
-<span class="fc" id="L533">        double sumAssocB = 0;</span>
-<span class="fc bfc" id="L534" title="All 2 branches covered.">        for (MatrixEntry entry : d) {</span>
-<span class="fc" id="L535">            int i = entry.row();</span>
-<span class="fc" id="L536">            double v = entry.get();</span>
-<span class="fc bfc" id="L537" title="All 2 branches covered.">            if (cut[i]) {</span>
-<span class="fc" id="L538">                sumAssocA += v;</span>
+<span class="fc" id="L562">        double sumAssocA = 0;</span>
+<span class="fc" id="L563">        double sumAssocB = 0;</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">        for (MatrixEntry entry : d) {</span>
+<span class="fc" id="L565">            int i = entry.row();</span>
+<span class="fc" id="L566">            double v = entry.get();</span>
+<span class="fc bfc" id="L567" title="All 2 branches covered.">            if (cut[i]) {</span>
+<span class="fc" id="L568">                sumAssocA += v;</span>
             } else {
-<span class="fc" id="L540">                sumAssocB += v;</span>
+<span class="fc" id="L570">                sumAssocB += v;</span>
             }
-<span class="fc" id="L542">        }</span>
+<span class="fc" id="L572">        }</span>
         
-<span class="fc" id="L544">        return (cutCost / sumAssocA) + (cutCost / sumAssocB);</span>
+<span class="fc" id="L574">        return (cutCost / sumAssocA) + (cutCost / sumAssocB);</span>
     }
     
     private double find2ndSmallestEigenValue(Map&lt;Double, DenseVectorSub&gt; eig) {
         
-<span class="fc" id="L549">        int n = eig.size();</span>
-<span class="pc bpc" id="L550" title="1 of 2 branches missed.">        if (n &lt; 2) {</span>
-<span class="nc" id="L551">            return -1;</span>
+<span class="fc" id="L579">        int n = eig.size();</span>
+<span class="pc bpc" id="L580" title="1 of 2 branches missed.">        if (n &lt; 2) {</span>
+<span class="nc" id="L581">            return -1;</span>
         }
         
-<span class="fc" id="L554">        double min1 = Double.MAX_VALUE;</span>
-<span class="fc" id="L555">        double min2 = Double.MAX_VALUE;</span>
+<span class="fc" id="L584">        double min1 = Double.MAX_VALUE;</span>
+<span class="fc" id="L585">        double min2 = Double.MAX_VALUE;</span>
         
-<span class="fc bfc" id="L557" title="All 2 branches covered.">        for (Entry&lt;Double, DenseVectorSub&gt; entry : eig.entrySet()) {</span>
-<span class="fc" id="L558">            double v = entry.getKey().doubleValue();</span>
-<span class="fc bfc" id="L559" title="All 2 branches covered.">            if (min1 == Double.MAX_VALUE) {</span>
-<span class="fc" id="L560">                min1 = v;</span>
-<span class="fc bfc" id="L561" title="All 2 branches covered.">            } else if (min2 == Double.MAX_VALUE) {</span>
-<span class="pc bpc" id="L562" title="1 of 2 branches missed.">                if (v &lt;= min1) {</span>
-<span class="fc" id="L563">                    min2 = min1;</span>
-<span class="fc" id="L564">                    min1 = v;</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">        for (Entry&lt;Double, DenseVectorSub&gt; entry : eig.entrySet()) {</span>
+<span class="fc" id="L588">            double v = entry.getKey().doubleValue();</span>
+<span class="fc bfc" id="L589" title="All 2 branches covered.">            if (min1 == Double.MAX_VALUE) {</span>
+<span class="fc" id="L590">                min1 = v;</span>
+<span class="fc bfc" id="L591" title="All 2 branches covered.">            } else if (min2 == Double.MAX_VALUE) {</span>
+<span class="pc bpc" id="L592" title="1 of 2 branches missed.">                if (v &lt;= min1) {</span>
+<span class="fc" id="L593">                    min2 = min1;</span>
+<span class="fc" id="L594">                    min1 = v;</span>
                 } else {
-<span class="nc" id="L566">                    min2 = v;</span>
+<span class="nc" id="L596">                    min2 = v;</span>
                 }
             } else {
-<span class="pc bpc" id="L569" title="1 of 2 branches missed.">                if (v &lt;= min1) {</span>
-<span class="fc" id="L570">                    min2 = min1;</span>
-<span class="fc" id="L571">                    min1 = v;</span>
-<span class="nc bnc" id="L572" title="All 2 branches missed.">                } else if (v &lt; min2) {</span>
-<span class="nc" id="L573">                    min2 = v;</span>
+<span class="pc bpc" id="L599" title="1 of 2 branches missed.">                if (v &lt;= min1) {</span>
+<span class="fc" id="L600">                    min2 = min1;</span>
+<span class="fc" id="L601">                    min1 = v;</span>
+<span class="nc bnc" id="L602" title="All 2 branches missed.">                } else if (v &lt; min2) {</span>
+<span class="nc" id="L603">                    min2 = v;</span>
                 }
             }
-<span class="fc" id="L576">        }</span>
+<span class="fc" id="L606">        }</span>
         
-<span class="fc" id="L578">        return min2;</span>
+<span class="fc" id="L608">        return min2;</span>
     }        
     
     private FlexCompRowMatrix createD(FlexCompRowMatrix w, RAGCSubGraph graph) {
@@ -583,16 +613,16 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
         //D is an N X N diagonal matrix with d on the diagonal
         //    d(i) = summation over j of w(i, j) where w is &quot;weight&quot; of the edge
         //    and j is over all nodes
-<span class="fc" id="L586">        FlexCompRowMatrix d = new FlexCompRowMatrix(w.numRows(), w.numColumns());</span>
+<span class="fc" id="L616">        FlexCompRowMatrix d = new FlexCompRowMatrix(w.numRows(), w.numColumns());</span>
         
-<span class="fc bfc" id="L588" title="All 2 branches covered.">        for (MatrixEntry entry : w) {</span>
-<span class="fc" id="L589">            int col = entry.column();</span>
-<span class="fc" id="L590">            double v0 = entry.get();</span>
-<span class="fc" id="L591">            double v1 = d.get(col, col);</span>
-<span class="fc" id="L592">            d.set(col, col, (v0 + v1));</span>
-<span class="fc" id="L593">        }</span>
+<span class="fc bfc" id="L618" title="All 2 branches covered.">        for (MatrixEntry entry : w) {</span>
+<span class="fc" id="L619">            int col = entry.column();</span>
+<span class="fc" id="L620">            double v0 = entry.get();</span>
+<span class="fc" id="L621">            double v1 = d.get(col, col);</span>
+<span class="fc" id="L622">            d.set(col, col, (v0 + v1));</span>
+<span class="fc" id="L623">        }</span>
         
-<span class="fc" id="L595">        return d;</span>
+<span class="fc" id="L625">        return d;</span>
     }
     
     /**
@@ -604,24 +634,24 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
      */
     private void labelTheUnlabeled(int[] labels) {
         
-<span class="fc" id="L607">        int maxLabel = Integer.MIN_VALUE;</span>
-<span class="fc" id="L608">        TIntSet unlabeled = new TIntHashSet();</span>
-<span class="fc bfc" id="L609" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
-<span class="fc bfc" id="L610" title="All 2 branches covered.">            if (labels[i] == -1) {</span>
-<span class="fc" id="L611">                unlabeled.add(i);</span>
+<span class="fc" id="L637">        int maxLabel = Integer.MIN_VALUE;</span>
+<span class="fc" id="L638">        TIntSet unlabeled = new TIntHashSet();</span>
+<span class="fc bfc" id="L639" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">            if (labels[i] == -1) {</span>
+<span class="fc" id="L641">                unlabeled.add(i);</span>
             }
-<span class="fc bfc" id="L613" title="All 2 branches covered.">            if (labels[i] &gt; maxLabel) {</span>
-<span class="fc" id="L614">                maxLabel = labels[i];</span>
+<span class="fc bfc" id="L643" title="All 2 branches covered.">            if (labels[i] &gt; maxLabel) {</span>
+<span class="fc" id="L644">                maxLabel = labels[i];</span>
             }
         }
-<span class="pc bpc" id="L617" title="1 of 2 branches missed.">        if (unlabeled.size() &gt; 0) {</span>
-<span class="fc" id="L618">            maxLabel++;</span>
-<span class="fc" id="L619">            TIntIterator iter = unlabeled.iterator();</span>
-<span class="fc bfc" id="L620" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L621">                int idx = iter.next();</span>
-<span class="fc" id="L622">                labels[idx] = maxLabel; </span>
-<span class="fc" id="L623">            }</span>
+<span class="fc bfc" id="L647" title="All 2 branches covered.">        if (unlabeled.size() &gt; 0) {</span>
+<span class="fc" id="L648">            maxLabel++;</span>
+<span class="fc" id="L649">            TIntIterator iter = unlabeled.iterator();</span>
+<span class="fc bfc" id="L650" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L651">                int idx = iter.next();</span>
+<span class="fc" id="L652">                labels[idx] = maxLabel; </span>
+<span class="fc" id="L653">            }</span>
         }
-<span class="fc" id="L625">    }</span>
+<span class="fc" id="L655">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

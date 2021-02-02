@@ -44,7 +44,10 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
 <span class="fc" id="L44">        String str = super.toString();</span>
 <span class="fc" id="L45">        StringBuilder sb = new StringBuilder(str);</span>
 <span class="fc" id="L46">        sb.append(&quot; tol=&quot;).append(tolerance);</span>
-<span class="fc" id="L47">        return sb.toString();</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (fundamentalMatrix != null) {</span>
+<span class="fc" id="L48">            sb.append(&quot; fm=&quot; + fundamentalMatrix.toString());</span>
+        }
+<span class="fc" id="L50">        return sb.toString();</span>
     }
     
     

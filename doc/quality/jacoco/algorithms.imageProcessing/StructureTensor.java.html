@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StructureTensor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">StructureTensor.java</span></div><h1>StructureTensor.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.matrix.MatrixUtil;
 
 /**
  * create first derivative products and optionally second derivative
@@ -102,19 +102,19 @@ public class StructureTensor {
 <span class="fc bfc" id="L102" title="All 2 branches covered.">        float[] kernel = (sigma &gt; 0) ? Gaussian1D.getKernel(sigma) : null;</span>
         
         //Axx
-<span class="fc" id="L105">        dXSq = MatrixUtil.multiplyPointwise(gX, gX);</span>
+<span class="fc" id="L105">        dXSq = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gX, gX);</span>
 <span class="fc bfc" id="L106" title="All 2 branches covered.">        if (kernel != null) {</span>
 <span class="fc" id="L107">            imageProcessor.applyKernelTwo1Ds(dXSq, kernel);</span>
         }
         
         //Ayy
-<span class="fc" id="L111">        dYSq = MatrixUtil.multiplyPointwise(gY, gY);</span>
+<span class="fc" id="L111">        dYSq = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gY, gY);</span>
 <span class="fc bfc" id="L112" title="All 2 branches covered.">        if (kernel != null) {</span>
 <span class="fc" id="L113">            imageProcessor.applyKernelTwo1Ds(dYSq, kernel);</span>
         }
         
         //Axy
-<span class="fc" id="L117">        dXdY = MatrixUtil.multiplyPointwise(gX, gY);</span>
+<span class="fc" id="L117">        dXdY = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gX, gY);</span>
 <span class="fc bfc" id="L118" title="All 2 branches covered.">        if (kernel != null) {</span>
 <span class="fc" id="L119">            imageProcessor.applyKernelTwo1Ds(dXdY, kernel);</span>
         }
@@ -153,9 +153,9 @@ public class StructureTensor {
             
             // detA = Axx * Ayy - Axy ** 2
             
-<span class="fc" id="L156">            float[][] axxyy = MatrixUtil.multiplyPointwise(dXSq, dYSq);</span>
+<span class="fc" id="L156">            float[][] axxyy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXSq, dYSq);</span>
 
-<span class="fc" id="L158">            float[][] axyxy = MatrixUtil.multiplyPointwise(dXdY, dXdY);</span>
+<span class="fc" id="L158">            float[][] axyxy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXdY, dXdY);</span>
 
 <span class="fc" id="L160">            detA = MatrixUtil.subtract(axxyy, axyxy);</span>
         }
