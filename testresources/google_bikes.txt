@@ -1,0 +1,8 @@
+from https://www.flickr.com/photos/raidokaldma/10103474805/in/photolist-goNX4t-rERYVx-g1Z7af-o2cvBq-cMEbDw-bAviKg-cMEbs3-EiuxgR-8FmYtk-23AXqRS-K2ymK9-n6syPG-awhgCz-n6syYu-aCwFdr-fFU4yd-n6qFvc-dJNFdy-6DBd9S-dvRKLj-oMirqH-jSrLun-62hNbR-23AY5JW-5aVAP8-qeFw4J-qJ4Uz2-7321Mx-rgKoRe-pFKrs2-cQW6dj-fuscR-aANLAj-iNR7bo-5Yh1hM-cxdxVb-W6pfBo-nQeqNC-d1tRJG-o6m4Za-fDt4JS-NJXGc-m6JBbb-5n8r6C-g218SU-o4CsvK-o2Anam-fv7uD-dRYr3y-mJCzZ
+license 
+   https://creativecommons.org/licenses/by-sa/2.0/
+   which is Attribution-ShareAlike 2.0 Generic (CC BY-SA 2.0)
+       You are free to:
+        Share — copy and redistribute the material in any medium or format
+        Adapt — remix, transform, and build upon the material
+        for any purpose, even commercially.

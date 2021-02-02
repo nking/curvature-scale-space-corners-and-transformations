@@ -1,0 +1,3 @@
+2 images from the ETHZ-80 dataset
+
+http://datasets.d2.mpi-inf.mpg.de/eth80/eth80-cropped256.tgz
