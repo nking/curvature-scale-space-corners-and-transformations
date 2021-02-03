@@ -288,7 +288,7 @@ public class RANSACEuclideanSolverTest extends TestCase {
         System.out.println("");        
         System.out.flush();
         
-        assertTrue(out1.getN() >= (m1.getN()*0.5));
+        assertTrue(out1.getN() >= (int)Math.floor((m1.getN()*0.45)));
         assertEquals(m1.getN(), m2.getN());
         
         // -------------------------                
