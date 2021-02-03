@@ -188,9 +188,9 @@ public class RANSACEuclideanSolverTest extends TestCase {
             img1, img2, 
             "reuclidean_" + Integer.valueOf(2).toString()); 
         
-    //System.out.println("out1.n=" + out1.getN() + ", m1.n/2=" + m1.getN()*.5 + ", m2.n=" + m2.getN());
+        System.out.println("out1.n=" + out1.getN() + ", m1.n/2=" + m1.getN()*.5 + ", m2.n=" + m2.getN());
     
-        assertTrue(out1.getN() >= (m1.getN()*0.45));
+        assertTrue(out1.getN() >= (int)Math.floor(m1.getN()*0.45));
         assertEquals(m1.getN(), m2.getN());
         for (double error : fit.getErrors()) {
             assertTrue(error <= tolerance);
