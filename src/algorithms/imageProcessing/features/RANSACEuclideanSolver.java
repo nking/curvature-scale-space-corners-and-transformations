@@ -61,39 +61,18 @@ public class RANSACEuclideanSolver {
             + matchedLeftXY.getN());
         }
         
-        /*
-        -- the number of iterations for testing sub-samples of nPoints 
-           (each of size 2) and finding one to be a good sub-sample with an
-           excess of probability of 95% is estimated for a given
-           percent of bad data.
-           NOTE, the algorithm proceeds by assuming 50% bad data and improves
-           that upon each best fitting sub-sample.
-        -- for each iteration of solving epipolar transformation using a sample
-           of size 2, the resulting transformation is evaluated on the
-           all points of the dataset.
-           If the number of inliers is T or more, the fit is re-done with all
-           of the points, where 
-           T = (1. - outlierPercentage) * (total number of data points)
-           The best fitting for all iterations as defined by number of inliers 
-           and standard deviation from an epipolar line, is kept each time.
-        -- at the end of each iteration, the number of iterations is then 
-           re-calculated if it can be reduced.
-        
-        NOTE that the sub-samples are selected randomly from all possible
-        sub-samples of the nPoints unless the number of all possible 
-        sub-samples is smaller than the expected number of iterations for 95%
-        probability of a good sub-sample.  In the later case, all sub-samples
-        are tried.
-        
-        */
-
         final int nSet = 2;
 
         final int nPoints = matchedLeftXY.getN();
                 
         // n!/(k!*(n-k)!
-        final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(
+        long nPointsSubsets;
+        try {
+            nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(
             nPoints, nSet);
+        } catch (java.lang.ArithmeticException ex) {
+            nPointsSubsets = Long.MAX_VALUE;
+        }
         boolean useAllSubsets = false;
         
         SecureRandom sr = Misc.getSecureRandom();
@@ -116,22 +95,18 @@ public class RANSACEuclideanSolver {
         
         int outlierPercent = 50;
         int t = (int)Math.ceil((1. - outlierPercent)*nPoints);
-        
+      
         long nMaxIter;
         if (nPoints == nSet) {
             nMaxIter = 1;
             useAllSubsets = true;
         } else {
             nMaxIter = RANSACAlgorithmIterations
-                .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
+                .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
         }
         
-        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
-        long nMaxIter2 = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 2, 0.5);
-        
         System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
-            nMaxIter + " (n!/(k!*(n-k)!)=" + nPointsSubsets
-            + " nMaxIter2=" + nMaxIter2);
+            nMaxIter + " (n!/(k!*(n-k)!)=" + nPointsSubsets);
 
         if (nMaxIter > nPointsSubsets) {
             nMaxIter = nPointsSubsets;

@@ -249,10 +249,9 @@ public class PointSamplingTest extends TestCase {
         
         Set<PairInt> points = getWikipediaDBScanExampleData();
         
-        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
-
-        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(
-            points.size(), 7, 0.5);
+        int outlierPercent = 50;
+        long nMaxIter = RANSACAlgorithmIterations
+              .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
         
         int numCellsPerDimensions = 6;
         
