@@ -48,14 +48,23 @@ import no.uib.cipr.matrix.SVD;
  * of the result...
  *
  * Some definitions:
-    u^T*v represents the inner product
-    u*v^T is a matrix
+    vectors are treated as columns unless noted otherwise.
+    vector as a row uses notation u^T.
+    u^T*v represents the inner product.
+    u*v^T is a matrix.
     u_1 is the (x,y) points from image 1 and u_2 are the matched (x,y) points
         from image 2.
 
     the fundamental matrix is defined:
-        u_2^T * F * u_1 = 0  where u are the x,y points in images _1 and _2
-
+        u_2^T * F * u_1 = 0  
+        where u are the x,y points in images _1 and _2
+        and F is a 3 × 3 matrix of rank 2
+        
+    An explanation of the derivation of the fundamental matrix can be found in
+    Zhengyou Zhang. "Determining the Epipolar Geometry and its Uncertainty: A
+    Review". RR-2927, INRIA. 1996. ffinria-00073771
+    equations (1) and (2) 
+    
     u_1 = (x_1, y_1, 1)^T
     u_2 = (x_2, y_2, 1)^T
      
@@ -75,10 +84,13 @@ import no.uib.cipr.matrix.SVD;
     where A = x_1*x_2, x_1*y_2, x_1, y_1*x_2, y_1*y_2, y_1, x_2, y_2, 1
              (which is each element of column 0 of u_1 dotted separately with
              row 0 of u2_T)
+    and f is a nine-vector containing the entries of the matrix F
  
     To avoid the trivial scale, ||f|| = 1 where f is the norm of f
 
-    And we need least squares fits because the set may be over determined
+    the rank of f is then 8.
+    if A is longer than 8, the system is over-determined (over specified) and
+    so must be solved using least squares.  the set may be over determined
     and not have a zero solution.
 
     we want the vector f that minimizes ||A*f|| subject to the constraint
@@ -91,6 +103,9 @@ import no.uib.cipr.matrix.SVD;
     are real and positive or zero.
     This eigenvector is what he calls the least eigenvector of A^T*A and
     it is found via the Jacobi algorithm or Singular Value Decomposition.
+    NOTE: A^T*A is V * D * D^T * V^T
+      and A*A^T is U * D * D^T * U^T
+      adn that for the SVD of A^T*A and that of A*A^T the U and V vectors equal one another.
 
     The solved for matrix will in general not have rank 2 and needs to, so
     further corrections are necessary:
@@ -105,6 +120,20 @@ import no.uib.cipr.matrix.SVD;
  (1) Transforming the coordinates:
 
      Normalization for isotropic scaling.
+     1) The points are translated so that their centroid is at
+        the origin.
+     2) The points are then scaled so that the average distance
+        from the origin is equal to 2 .
+     3) This transformation is applied to each of the two images independently.
+
+     NOTE: if needed to use non-isotropic scaling (e.g. rectangular pixels, etc):
+     transform the points so that
+     1) Their centroid is at the origin.
+     2) The principal moments are both equal to unity
+      
+     
+     scaling the coordinate so that the homogeneous coordinates are on the 
+     average equal to unity will improve the condition of the matrix A^T*A.
 
      utrans = T * u ==> u = utrans * inv(T)
 
@@ -130,7 +159,7 @@ import no.uib.cipr.matrix.SVD;
 
  (4) make the fundamental matrix have a rank of 2
      by performing a svd and then reconstructing with the two largest
-     singular values.
+     singular values (similar to dimensionality reduction)
          [U,D,V] = svd(F,0);
          F = U * diag([D(1,1) D(2,2) 0]) * V^T;
 

@@ -544,10 +544,10 @@ public class MatrixUtil {
     }
     
     /**
-     * multiply matrix m by the transpose of n
+     * multiply matrix p by the transpose of n
      * @param p
      * @param n
-     * @return 
+     * @return matrix of size (p.length) X (n.length)
      */
     public static double[][] multiplyByTranspose(double[][] p, double[][] n) {
 
@@ -591,7 +591,7 @@ public class MatrixUtil {
         (p6*x1 + p7*y1 + p8*1)  (p6*x2 + p7*y2 + p8*1)
         */
         
-        double[][] c = new double[prows][];
+        double[][] c = new double[prows][nrows];
        
         for (int row = 0; row < prows; row++) {
             c[row] = new double[nrows];
