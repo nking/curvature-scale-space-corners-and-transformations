@@ -154,7 +154,7 @@ import no.uib.cipr.matrix.SVD;
 
  (3) compute linear least square solution to the least eigenvector of f.
      solve A = U * D * V^T   for A*f = [..x...]*f = 0
-     A has rank 8.  f has rank 2.
+     A has rank 8.  F has rank 2.
      calculate [U,D,V] from svd(A)
 
  (4) make the fundamental matrix have a rank of 2
@@ -203,6 +203,12 @@ public class EpipolarTransformer {
     
     private static double eps = 1e-12;
 
+    //TODO:
+    //after epipoles have been determined, should add a method here to see
+    //        if any of the correspondences are within a pixel of the epipoles.
+    //                Torr & Murray 1997 suggest removal of such points
+    //                as they are unstable constraints (p 6).
+                     
     /**
      * calculate the fundamental matrix for the given matched left and
      * right correspondence of 8 or more matched points.
@@ -432,7 +438,6 @@ public class EpipolarTransformer {
         // These are the last 2 columns of V
         DenseMatrix nullSpace = algorithms.imageProcessing.util.MatrixUtil.nullSpace(svd);
 
-
         double[][] ff1 = new double[3][3];
         double[][] ff2 = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -443,6 +448,7 @@ public class EpipolarTransformer {
             ff1[i][0] = nullSpace.get((i * 3) + 0, 0);
             ff1[i][1] = nullSpace.get((i * 3) + 1, 0);
             ff1[i][2] = nullSpace.get((i * 3) + 2, 0);
+            
             ff2[i][0] = nullSpace.get((i * 3) + 0, 1);
             ff2[i][1] = nullSpace.get((i * 3) + 1, 1);
             ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
@@ -565,15 +571,16 @@ public class EpipolarTransformer {
             Y = [0      e1(3)  -e1(2)
                 -e1(3)  0      e1(1)
                  e1(2) -e1(1)  0];
+        (looks like the skew-symmetric of e1)
         NOTE: '.*' is matlab notation to operate on each field
         NOTE: the ' is mathematica syntax for conjugate transpose, a.k.a.
                the Hermitian. it's a matrix with signs reversed for imaginary
                 components of complex numbers and then the matrix transposed.
                 
         function OK = signs_OK(F,x1,x2)
-        [u,s,v] = svd(F');
+        [u,s,v] = svd(F'); where F' is the conjugate transpose of F
         e1 = v(:,3);
-        l1 = vgg_contreps(e1)*x1;
+        l1 = vgg_contreps(e1) * x1;
         s = sum( (F*x2) .* l1 );
         OK = all(s>0) | all(s<0);
 
@@ -992,7 +999,15 @@ public class EpipolarTransformer {
         try {
             svd = SVD.factorize(aMatrix);
         } catch (NotConvergedException e) {
-            log.severe(e.getMessage());
+            //SVD(A).U is the same as SVD(AA^T).U
+            //SVD(A).V is the same as SVD(A^TA).V
+            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
+            //    and sqrt( SVD(A^TA) eigenvalues )
+            /*try { 
+                svd = SVD.factorize(new DenseMatrix());
+            } catch (NotConvergedException ex) {
+                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+            }*/
             return null;
         }
 
@@ -1011,8 +1026,12 @@ public class EpipolarTransformer {
         System.out.flush();
         */
         
-        // reshape V to 3x3  (just the last column)
-
+        /*        
+        set f to be the eigenvector associated with the smallest eigenvalue
+        (which is the last row of V^T or the last column of V).
+         the smallest eigenvalue determines the plane of closest fit.
+         */
+        
         int vNCols = V.numColumns();
 
         double[][] ff = new double[3][3];
@@ -1028,6 +1047,10 @@ public class EpipolarTransformer {
         by performing a svd and then reconstructing with the two largest
         singular values.
             [U,D,V] = svd(F,0);
+        (a.k.a. dimension reduction.  
+        see Chap 11 of book "Mining of Massive Datasets" 
+        by Jure Leskovec, Anand Rajaraman, Jeff Ullman
+        http://www.mmds.org/
 
         From [U,D,V] we create:
             F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
@@ -1035,7 +1058,15 @@ public class EpipolarTransformer {
         try {
             svd = SVD.factorize(fMatrix);
         } catch (NotConvergedException e) {
-            log.severe(e.getMessage());
+            //SVD(A).U is the same as SVD(AA^T).U
+            //SVD(A).V is the same as SVD(A^TA).V
+            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
+            //    and sqrt( SVD(A^TA) eigenvalues )
+            /*try { 
+                svd = SVD.factorize(new DenseMatrix());
+            } catch (NotConvergedException ex) {
+                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+            }*/
             return null;
         }
 
@@ -1057,15 +1088,20 @@ public class EpipolarTransformer {
             d.set(1, 1, sDiag[1]);
         }
 
+        // dimension reduction in this case zeroes out instead of reducing the
+        // sizes of the matrices.  if wanted to reduce the size:
+        //   remove the last column of U and the last row of V and
+        //   the last item in the diagonal of S
+                        
         /*
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
         DenseMatrix dDotV = MatrixUtil.multiply(d, svd.getVt());
 
-        // 3x3
+        // 3x3 with rank 2
         DenseMatrix theFundamentalMatrix = MatrixUtil.multiply(svd.getU(), dDotV);
-
+ 
         //System.out.println("fm before de-normalization=" + theFundamentalMatrix.toString());
 
         DenseMatrix denormFundamentalMatrix =
@@ -1333,7 +1369,15 @@ public class EpipolarTransformer {
              e1 = last column of V divided by it's last item
              e2 = last column of U divided by it's last item
 
+        NOTE:
+            SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
+        
+        coords of epipole e’ (==e2) w.r.t. left image coords (==img1) is where 
+        the right camera is w.r.t. left image coords=
+            svd(F^T*F).u[2]/svd(F^T*F).u[2][2]
         */
+                
         SVD svdE;
         try {
             svdE = SVD.factorize(fundamentalMatrix);
@@ -1342,17 +1386,24 @@ public class EpipolarTransformer {
                 .log(Level.SEVERE, null, ex);
             return null;
         }
-        DenseMatrix V = algorithms.matrix.MatrixUtil.transpose(svdE.getVt());
-        double[] e1 = new double[V.numColumns()];
-        double e1Div = V.get(2, 2);
+        
+        DenseMatrix u = svdE.getU();
+        DenseMatrix vT = svdE.getVt();
+        assert(u.numColumns() == 3);
+        assert(u.numRows() == 3);
+        assert(vT.numColumns() == 3);
+        assert(vT.numRows() == 3);
+        
+        double[] e1 = new double[u.numRows()];
+        double e1Div = u.get(2, 2);
         for (int i = 0; i < e1.length; i++) {
-            e1[i] = V.get(i, 2)/e1Div;
+            e1[i] = u.get(i, 2)/e1Div;
         }
-        DenseMatrix U = svdE.getU();
-        double[] e2 = new double[U.numColumns()];
-        double e2Div = U.get(2, 2);
+        
+        double[] e2 = new double[vT.numColumns()];
+        double e2Div = vT.get(2, 2);
         for (int i = 0; i < e2.length; i++) {
-            e2[i] = U.get(i, 2)/e2Div;
+            e2[i] = vT.get(2, i)/e2Div;
         }
 
         double[][] e = new double[2][];
