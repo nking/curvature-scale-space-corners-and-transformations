@@ -43,12 +43,11 @@ public class EpipolarTransformationFit extends AbstractTransformationFit {
     public String toString() {
         String str = super.toString();
         StringBuilder sb = new StringBuilder(str);
-        sb.append(" tol=").append(tolerance);
+        sb.append("\n  tol=").append(tolerance);
         if (fundamentalMatrix != null) {
-            sb.append(" fm=" + fundamentalMatrix.toString());
+            sb.append("\n  fm=\n").append(_toString(fundamentalMatrix, "%.3e"));
         }
         return sb.toString();
     }
-    
-    
+   
 }

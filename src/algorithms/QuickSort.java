@@ -2242,6 +2242,14 @@ public class QuickSort {
         }
     }
     
+    /**
+     * sorts a, b, and c by the values of a only
+     * @param a
+     * @param b
+     * @param c
+     * @param idxLo
+     * @param idxHi 
+     */
     public static void sort(float[] a, float[] b, float[] c, int idxLo, 
         int idxHi) {
         

@@ -6,6 +6,7 @@ import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.PairFloatArray;
 import algorithms.misc.MiscMath;
+import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
@@ -103,9 +104,9 @@ import no.uib.cipr.matrix.SVD;
     are real and positive or zero.
     This eigenvector is what he calls the least eigenvector of A^T*A and
     it is found via the Jacobi algorithm or Singular Value Decomposition.
-    NOTE: A^T*A is V * D * D^T * V^T
-      and A*A^T is U * D * D^T * U^T
-      adn that for the SVD of A^T*A and that of A*A^T the U and V vectors equal one another.
+    NOTE:
+        SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+        SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
 
     The solved for matrix will in general not have rank 2 and needs to, so
     further corrections are necessary:
@@ -188,6 +189,10 @@ import no.uib.cipr.matrix.SVD;
    In case of multiple solutions, F has one dimension
    more such that F(:,:,n) is the n-th solution.
 
+ NOTE: the epipolar lines in right image are the projections of the left image
+ points  = F * x1
+ The epipolar lines in left image are the projections of the  right image 
+ points  = F^T * x2
  </pre>
  NOTE:
 For "7-point" correspondences, consider implementing MLESAC.
@@ -251,8 +256,10 @@ public class EpipolarTransformer {
     /**
      * calculate the epipolar projection for a set of 8 or more matched points.
      *
-     * @param theLeftXY
-     * @param theRightXY
+     * @param theLeftXY double array with x points on row 0, y points on row 1, 
+     *     and 1's on row 2.  the number of columns is the number of data points.
+     * @param theRightXY double array with x points on row 0, y points on row 1, 
+     *     and 1's on row 2.  the number of columns is the number of data points.
      * @return
      */
     public DenseMatrix calculateEpipolarProjection(
@@ -579,23 +586,31 @@ public class EpipolarTransformer {
                 
         function OK = signs_OK(F,x1,x2)
         [u,s,v] = svd(F'); where F' is the conjugate transpose of F
-        e1 = v(:,3);
+        e1 = v(:,3); (NLK this is == the svd(F).u
         l1 = vgg_contreps(e1) * x1;
         s = sum( (F*x2) .* l1 );
         OK = all(s>0) | all(s<0);
 
         (F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
-        
+ 
+ //NLK: e2^T*F = 0  and F*e1 = 0
+ // l_1 = F^T * x2
+ // l_2 =   F * x1 
+ // e1 = last column of U / last item of that column
+ // e2 = last row of V / last item of that row
+               
         'sum' is a matlab function to sum for each column
 
         'all' is a function that returns '1' is all items are non-zero, else
             returns 0
         */
-        DenseMatrix solutionHermitian = MatrixUtil.transpose(solution);
-        double[][] leftRightEpipoles = calculateEpipoles(solutionHermitian);
+        
+ //editing here
+        
+        double[][] leftRightEpipoles = calculateEpipoles(solution);
 
         // 3 columns (x,y,1):
-        double[] testE1 = leftRightEpipoles[0];
+        double[] testE1 = leftRightEpipoles[0];  // NOTE: this is normalized
         //vgg_contreps of a 3X1 vector e1 is
         //    Y = [0      e1(3)  -e1(2)
         //        -e1(3)  0      e1(1)
@@ -990,91 +1005,101 @@ public class EpipolarTransformer {
         calculate [U,D,V] from svd(A):
         */
         DenseMatrix aMatrix = new DenseMatrix(m);
-
+        
+        System.out.printf("matrix A dimensions = %d x %d\n", m.length, m[0].length);
+        
         //aMatrix is m x n  (== nData X 9)
-        // U   is  m X m     the left singular vectors, column-wise. Not available for partial decompositions
+        // U   is  m X m     the left singular vectors, **column-wise**
         // S   is  min(m, n) the singular values (stored in descending order)
-        // V^T is  n X n     the right singular vectors, row-wise. Not available for partial decompositions
+        // V^T is  n X n     the right singular vectors, **row-wise**
         SVD svd = null;
+        DenseMatrix vT = null;
         try {
             svd = SVD.factorize(aMatrix);
+            vT = svd.getVt();
         } catch (NotConvergedException e) {
-            //SVD(A).U is the same as SVD(AA^T).U
-            //SVD(A).V is the same as SVD(A^TA).V
+            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
+            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
             //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
             //    and sqrt( SVD(A^TA) eigenvalues )
-            /*try { 
-                svd = SVD.factorize(new DenseMatrix());
+            try { 
+                svd = SVD.factorize(new DenseMatrix(aTa));
+                vT = svd.getVt();
             } catch (NotConvergedException ex) {
                 Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
-            }*/
-            return null;
+                return null;
+            }
         }
-
-        //A is nData rows X 3 columns
-
-        DenseMatrix V = algorithms.matrix.MatrixUtil.transpose(svd.getVt());
-
-        /*
-        DenseMatrix V = MatrixUtil.transpose(svd.getVt());
-
-        System.out.println("A=" + aMatrix.toString());
-        System.out.println("U=" + svd.getU().toString());
-        System.out.println("S=" + Arrays.toString(svd.getS()));
-        System.out.println("V^T=" + svd.getVt().toString());
-        System.out.println("V=" + V.toString());
-        System.out.flush();
-        */
         
         /*        
         set f to be the eigenvector associated with the smallest eigenvalue
         (which is the last row of V^T or the last column of V).
          the smallest eigenvalue determines the plane of closest fit.
          */
-        
-        int vNCols = V.numColumns();
+      
+        int n = vT.numRows();
+        assert(n == 9);
+        assert(vT.numColumns() == 9);
 
+        // dimensions of V are nxn and n=9
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
             ff[i] = new double[3];
-            ff[i][0] = V.get((i * 3) + 0, vNCols - 1);
-            ff[i][1] = V.get((i * 3) + 1, vNCols - 1);
-            ff[i][2] = V.get((i * 3) + 2, vNCols - 1);
+          
+            ff[i][0] = vT.get(n - 1, (i * 3) + 0);
+            ff[i][1] = vT.get(n - 1, (i * 3) + 1);
+            ff[i][2] = vT.get(n - 1, (i * 3) + 2);            
         }
         DenseMatrix fMatrix = new DenseMatrix(ff);
 
         /* make the fundamental matrix have a rank of 2
-        by performing a svd and then reconstructing with the two largest
+        by performing svd and reconstruction with the two largest
         singular values.
             [U,D,V] = svd(F,0);
         (a.k.a. dimension reduction.  
         see Chap 11 of book "Mining of Massive Datasets" 
         by Jure Leskovec, Anand Rajaraman, Jeff Ullman
-        http://www.mmds.org/
+        http://www.mmds.org/)
 
         From [U,D,V] we create:
             F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
         */
+        
+        vT = null;
+        DenseMatrix u = null;
+        double[] sDiag = null;
+        svd = null;
         try {
             svd = SVD.factorize(fMatrix);
+            vT = svd.getVt();
+            u = svd.getU();
+            sDiag = svd.getS();
         } catch (NotConvergedException e) {
-            //SVD(A).U is the same as SVD(AA^T).U
-            //SVD(A).V is the same as SVD(A^TA).V
+            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(ff), ff);
+            double[][] aaT = MatrixUtil.multiply(ff, MatrixUtil.transpose(ff));
+            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
             //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
             //    and sqrt( SVD(A^TA) eigenvalues )
-            /*try { 
-                svd = SVD.factorize(new DenseMatrix());
+            try { 
+                svd = SVD.factorize(new DenseMatrix(aTa));
+                vT = svd.getVt();
+                sDiag = svd.getS();
+                sDiag[0] = Math.sqrt(sDiag[0]);
+                sDiag[1] = Math.sqrt(sDiag[1]);
+                
+                svd = SVD.factorize(new DenseMatrix(aaT));
+                u = svd.getU();
             } catch (NotConvergedException ex) {
                 Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
-            }*/
-            return null;
+                return null;
+            }
         }
 
         // creates U as 3 x 3 matrix
         //         D as length 3 array
         //         V as 3 x 3 matrix
-
-        double[] sDiag = svd.getS();
 
         //F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
 
@@ -1097,13 +1122,46 @@ public class EpipolarTransformer {
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        DenseMatrix dDotV = MatrixUtil.multiply(d, svd.getVt());
+        DenseMatrix dDotV = MatrixUtil.multiply(d, vT);
 
         // 3x3 with rank 2
-        DenseMatrix theFundamentalMatrix = MatrixUtil.multiply(svd.getU(), dDotV);
+        DenseMatrix theFundamentalMatrix = MatrixUtil.multiply(u, dDotV);
  
-        //System.out.println("fm before de-normalization=" + theFundamentalMatrix.toString());
+        System.out.printf("fm before de-normalization FM=\n%s\n", 
+            _toString(theFundamentalMatrix, "%.3e"));
 
+        {
+            // print the distances
+            Distances distances = new Distances();
+            
+            double d0 = 0;
+            double d1 = 0;
+            double[] dSqSampson = 
+                distances.calculateEpipolarSampsonsDistanceSquared(
+                theFundamentalMatrix, normalizedXY1.getXy(), normalizedXY2.getXy());
+            
+            PairFloatArray dEp = distances.calculateDistancesFromEpipolar(
+                theFundamentalMatrix, normalizedXY1.getXy(), normalizedXY2.getXy());
+            
+            System.out.printf("distances\nsampson^2=\n  %s\nep^2=\n", 
+                FormatArray.toString(dSqSampson, " %.3e"));
+            for (int j = 0; j < dEp.getN(); ++j) {
+                double d2 = dEp.getX(j) * dEp.getX(j) + dEp.getY(j) * dEp.getY(j);
+                if (j > 0) {
+                    System.out.printf(", ");
+                }
+                System.out.printf("%.3e", d2);
+                d0 += dSqSampson[j];
+                d1 += d2;
+            }
+            System.out.println();
+            d0 = Math.sqrt(d0);
+            d1 = Math.sqrt(d1);
+            System.out.printf("Total dist_sampson=%.3e\n", d0);
+            System.out.printf("Total dist_perp=%.3e\n", d1);
+            System.out.flush();
+        }
+        
         DenseMatrix denormFundamentalMatrix =
             denormalizeTheFundamentalMatrix(theFundamentalMatrix,
                 normalizedXY1, normalizedXY2);
@@ -1149,7 +1207,7 @@ public class EpipolarTransformer {
      origin is sqrt(2) pixels.
 
 
-     * @param xyPair
+     * @param xy
      * @return
      */
     @SuppressWarnings({"unchecked"})
@@ -1165,8 +1223,6 @@ public class EpipolarTransformer {
         c) the transformation is applied to each of the 2 images separately.
         */
 
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
         int n = xy.numColumns();
 
         //x is xy[0], y is xy[1], xy[2] is all 1's
@@ -1179,23 +1235,23 @@ public class EpipolarTransformer {
         cen0 /= (double)n;
         cen1 /= (double)n;
 
-        double mean = 0;
+        double stDev = 0;
 
+        // using a euclidean distance, chosen for expected use on images with square pixels
         for (int i = 0; i < n; i++) {
             double diffX = xy.get(0, i) - cen0;
             double diffY = xy.get(1, i) - cen1;
-            double dist = Math.sqrt((diffX * diffX) + (diffY * diffY));
-            mean += dist;
+            double dist = (diffX * diffX) + (diffY * diffY);
+            stDev += dist;
         }
 
-        mean /= (double)n;
+        stDev = Math.sqrt(stDev/(n - 1.));
 
-        /*
-        mean * factor = sqrt(2)
-        */
-        double scaleFactor = Math.sqrt(2)/mean;
-
+        //stDev * factor = sqrt(2)
+        double scaleFactor = Math.sqrt(2)/stDev;
+        
         DenseMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, cen0, cen1);
+        //DenseMatrix tMatrix = createScaleTranslationMatrix(1, 0, 0);
 
         /*
         double[][] t = new double[3][];
@@ -1210,8 +1266,8 @@ public class EpipolarTransformer {
         (y_0*scale-centroidY*scale)
         (1)
         */
-        
-        DenseMatrix normXY = new DenseMatrix(MatrixUtil.dot(tMatrix, xy));
+                        
+        DenseMatrix normXY = new DenseMatrix(MatrixUtil.multiply(tMatrix, xy));
 
         NormalizedXY normalizedXY = new NormalizedXY();
         normalizedXY.setCentroidXY(new double[]{cen0, cen1});
@@ -1224,7 +1280,7 @@ public class EpipolarTransformer {
     /**
      * create a matrix to be applied on the left side of the dot operator
      * with a matrix of points to transform the points by scale and translation.
-     * @param scale
+     * @param scale (this is actually sqrt(2)/stDev)
      * @param centroidX
      * @param centroidY
      * @return
@@ -1393,7 +1449,8 @@ public class EpipolarTransformer {
         assert(u.numRows() == 3);
         assert(vT.numColumns() == 3);
         assert(vT.numRows() == 3);
-        
+        // e1 = last column of U / last item of that column
+        // e2 = last row of V / last item of that row
         double[] e1 = new double[u.numRows()];
         double e1Div = u.get(2, 2);
         for (int i = 0; i < e1.length; i++) {
@@ -1507,4 +1564,17 @@ public class EpipolarTransformer {
     }
     */
 
+    private String _toString(DenseMatrix a, String decimalFormat) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < a.numRows(); ++i) {
+            for (int j = 0; j < a.numColumns(); ++j) {
+                sb.append(String.format(decimalFormat, a.get(i, j)));
+                if (j < (a.numColumns() - 1)) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
 }

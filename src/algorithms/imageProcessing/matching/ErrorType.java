@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.matching;
 
 public enum ErrorType {
-    //SAMPSONS, 
+    SAMPSONS,
     DIST_TO_EPIPOLAR_LINE
 }

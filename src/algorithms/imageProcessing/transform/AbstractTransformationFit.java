@@ -3,6 +3,7 @@ package algorithms.imageProcessing.transform;
 import algorithms.misc.MiscMath;
 import java.util.ArrayList;
 import java.util.List;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  *
@@ -197,6 +198,20 @@ public abstract class AbstractTransformationFit implements ITransformationFit {
         return inlierIndexes;
     }
 
+    public String _toString(DenseMatrix a, String decimalFormat) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < a.numRows(); ++i) {
+            for (int j = 0; j < a.numColumns(); ++j) {
+                sb.append(String.format(decimalFormat, a.get(i, j)));
+                if (j < (a.numColumns()-1)) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+    
     @Override
     public String toString() {
         
@@ -205,8 +220,10 @@ public abstract class AbstractTransformationFit implements ITransformationFit {
         sb.append("nMatchedPoints=").append(Long.toString(inlierIndexes.size()))
             .append(" nMaxMatchable=").append(Long.toString(nMaxMatchable))
             .append(" tolerance=").append(Double.toString(tolerance))
-            .append(" meanDistFromModel=").append(Double.toString(meanError))
-            .append(" stDevFromMean=").append(Double.toString(stDevFromMean));
+            .append(" meanDistFromModel=")
+                .append(String.format("%.3e", meanError))
+            .append(" stDevFromMean=")
+                .append(String.format("%.3e", stDevFromMean));
         
         return sb.toString();
     }

@@ -5,6 +5,7 @@ import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.PairFloatArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,12 +98,12 @@ public class Distances {
      * row 0 is x, row 1 is y, row 2 is all 1's
      * @param rightPoints points from right image in matrix of size 3 X nPoints.
      * row 0 is x, row 1 is y, row 2 is all 1's
-     * @param tolerance
+     * @param threshhold
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarDistanceError(
             DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints,
-            double tolerance) {
+            double threshhold) {
 
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -120,7 +121,7 @@ public class Distances {
 
         //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
         PairFloatArray distances = calculateDistancesFromEpipolar(fm,
-                leftPoints, rightPoints);
+            leftPoints, rightPoints);
 
         List<Double> errors = new ArrayList<Double>();
 
@@ -134,7 +135,7 @@ public class Distances {
 
             float dist = (float) Math.sqrt(leftPtD * leftPtD + rightPtD * rightPtD);
 
-            if (dist > tolerance) {
+            if (dist > threshhold) {
                 continue;
             }
 
@@ -147,10 +148,10 @@ public class Distances {
 
         if (errors.size() > 0) {
             fit = new EpipolarTransformationFit(fm, inlierIndexes,
-                    ErrorType.DIST_TO_EPIPOLAR_LINE, errors, tolerance);
+                    ErrorType.DIST_TO_EPIPOLAR_LINE, errors, threshhold);
         } else {
             fit = new EpipolarTransformationFit(fm, new ArrayList<Integer>(),
-                    ErrorType.DIST_TO_EPIPOLAR_LINE, new ArrayList<Double>(), tolerance);
+                    ErrorType.DIST_TO_EPIPOLAR_LINE, new ArrayList<Double>(), threshhold);
         }
 
         fit.setNMaxMatchable(leftPoints.numColumns());
@@ -159,7 +160,74 @@ public class Distances {
 
         return fit;
     }
+    
+    /**
+     * evaluate fit for already matched point lists
+     *
+     * @param fm
+     * @param leftPoints points from left image in matrix of size 3 X nPoints.
+     * row 0 is x, row 1 is y, row 2 is all 1's
+     * @param rightPoints points from right image in matrix of size 3 X nPoints.
+     * row 0 is x, row 1 is y, row 2 is all 1's
+     * @param threshhold
+     * @return
+     */
+    public EpipolarTransformationFit calculateSampsonsError(
+            DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints,
+            double threshhold) {
 
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        int nRows = leftPoints.numRows();
+        if (nRows != rightPoints.numRows()) {
+            throw new IllegalArgumentException("matrices must have same number of rows");
+        }
+
+        double[] distSquared = calculateEpipolarSampsonsDistanceSquared(fm, 
+            leftPoints, rightPoints);
+
+        List<Double> errors = new ArrayList<Double>();
+
+        List<Integer> inlierIndexes = new ArrayList<Integer>();
+
+        double d;
+        for (int i = 0; i < distSquared.length; ++i) {
+
+            d = Math.sqrt(distSquared[i]);
+            
+            if (d > threshhold) {
+                continue;
+            }
+
+            inlierIndexes.add(Integer.valueOf(i));
+
+            errors.add(d);
+        }
+
+        EpipolarTransformationFit fit = null;
+
+        if (errors.size() > 0) {
+            fit = new EpipolarTransformationFit(fm, inlierIndexes,
+                    ErrorType.SAMPSONS, errors, threshhold);
+        } else {
+            fit = new EpipolarTransformationFit(fm, new ArrayList<Integer>(),
+                    ErrorType.SAMPSONS, new ArrayList<Double>(), threshhold);
+        }
+
+        fit.setNMaxMatchable(leftPoints.numColumns());
+
+        fit.calculateErrorStatistics();
+
+        return fit;
+    }
+    
     /**
      * find the distance of the given points from their respective projective
      * epipolar lines.
@@ -198,7 +266,7 @@ public class Distances {
 
         PairFloatArray distances = new PairFloatArray(n);
 
-        // F * u_1
+        // F * u_1 = 3 x n
         DenseMatrix rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);
 
         // F^T * u_2
@@ -215,6 +283,102 @@ public class Distances {
                     i, i, output);
 
             distances.add(output[0], output[1]);
+        }
+
+        return distances;
+    }
+    
+    /**
+     Samspon's distance measures the distance between a correspondence pair
+     and its Sampson correction (Torr and Zissermann, 1997).
+     Torr & Murray 1997 describe the Sampson distance further:
+     "it represents the sum of squares of the algebraic residuals divided by 
+     their standard deviations" and provides a first order fit to the 
+     Kendall & Stuart (1983) minimization of the orthogonal distance of each 
+     point to a curve/surface of the maximum likelihood solution. 
+     * 
+     perpendicular geometric distances...
+     <pre>
+     implemented from eqn 11 from Fathy, Husseina, & Tolbaa, 2017
+     "Fundamental Matrix Estimation: A Study of Error Criteria"
+     https://arxiv.org/pdf/1706.07886.pdf
+     which references Torr and Zisserman 1997, 
+     Machine Vision and Applications 9 (5), 321–333,
+     " Performance characterization of fundamental matrix estimation under image 
+     degradation"
+     
+     </pre>
+     * @param fm
+     * @param x1 points from left image in matrix of size 3 X
+     * nPoints. row 0 is x, row 1 is y, row 2 is all 1's
+     * @param x2 points from right image in matrix of size 3 X
+     * nPoints. row 0 is x, row 1 is y, row 2 is all 1's
+     * @return double array of length [n]
+     */
+    public double[] calculateEpipolarSampsonsDistanceSquared(
+        DenseMatrix fm, DenseMatrix x1, DenseMatrix x2) {
+
+        int m = fm.numRows();
+        int n = x1.numColumns();
+        if (m != 3 || fm.numColumns() != 3) {
+            throw new IllegalArgumentException("fm must be 3x3");
+        }
+        if (x1.numRows() != 3 || x2.numRows() != 3) {
+            throw new IllegalArgumentException("x1 and x2 must have 3 rows");
+        }
+        if (x2.numColumns() != n) {
+            throw new IllegalArgumentException("x1 and x2 must have the same number of columns");
+        }
+        
+        /*
+        R_i = u2_i^T * F * u1_i
+        
+        line2_i = F * u1_i = (a2_i, b2_i, c2_i)
+        
+        line1_i = F^T * u2_i = (a1_i, b1_i, c1_i)
+        
+        (dist_i)^2 = (R_i)^2 / ( (a1_i)^2 + (b1_i)^2 + (a2_i)^2 + (b2_i)^2 ) 
+        */
+        
+        double[] distances = new double[n];
+
+        // 3 x n.  left points projected onto right image
+        DenseMatrix fX1 = MatrixUtil.multiply(fm, x1);
+
+        // 3 X n.  right points projected onto left image
+        DenseMatrix fTX2 = MatrixUtil.multiply(algorithms.matrix.MatrixUtil.transpose(fm),
+            x2);
+        
+        /*R_i is found in (row i, col i) of the result of u2^T * F * u1                                          \\//
+        >> x2_00  x2_10  x2_20   *  f00 f01 f02  *  x1_00  x1_01
+           x2_01  x2_11  x2_21      f10 f11 f12     x1_10  x1_11
+                                    f20 f21 f22     x1_20  x1_21
+        
+        e.g. R_0 = (x2_00*f00 + x2_10*f10 + x2_20*f20) * x1_00   
+                    + (x2_00*f01 + x2_10*f11 + x2_20*f21) * x1_10
+                    + (x2_00*f02 + x2_10*f12 + x2_20*f22) * x1_20
+        */
+        DenseMatrix r = MatrixUtil.multiply(MatrixUtil.transpose(x2), fm);
+        r = MatrixUtil.multiply(r, x1);
+
+        double a1, b1, c1, a2, b2, c2, denom, ri;
+        for (int i = 0; i < x1.numColumns(); i++) {
+            
+            a1 = fTX2.get(0, i);
+            b1 = fTX2.get(1, i);
+            c1 = fTX2.get(2, i);
+            
+            a2 = fX1.get(0, i);
+            b2 = fX1.get(1, i);
+            c2 = fX1.get(2, i);
+
+            denom = a1*a1 + b1*b1 + a2*a2 + b2*b2;
+
+            ri = r.get(i, i);
+            ri *= ri;
+            ri /= denom;
+           
+            distances[i] = ri;
         }
 
         return distances;
@@ -239,6 +403,8 @@ public class Distances {
             DenseMatrix fu1, DenseMatrix invFu2,
             int leftIdx, int rightIdx, float[] output) {
 
+        // see references for eqn (1) of within Fathy et al. 2017,
+        // "Fundamental Matrix Estimation: A Study of Error Criteria"
         double a = fu1.get(0, leftIdx);
         double b = fu1.get(1, leftIdx);
         double c = fu1.get(2, leftIdx);
@@ -267,11 +433,149 @@ public class Distances {
     }
 
     public EpipolarTransformationFit calculateError(DenseMatrix fm,
-            DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double tolerance) {
+            DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double threshhold) {
 
-        //if (errorType.equals(ErrorType.SAMPSONS)) {
-        //    return calculateSampsonsError(fm, x1, x2, tolerance);
-        //} else {
-        return calculateEpipolarDistanceError(fm, x1, x2, tolerance);
+        if (errorType.equals(ErrorType.SAMPSONS)) {
+            return calculateSampsonsError(fm, x1, x2, threshhold);
+        } else {
+            return calculateEpipolarDistanceError(fm, x1, x2, threshhold);
+        }
+    }
+    
+    /**
+     * performs repmat(X(rowToTransposeAndReplicate,:)',1,3)
+     * @param x matrix of size 3 X N.
+     * @param rowToTransposeAndReplicate
+     * @return matrix of size N X 3
+     */
+    private double[][] repmat3(double[][] x, int rowToTransposeAndReplicate) {
+        int n = x[0].length;
+        double[][] out = new double[n][3];
+        for (int i = 0; i < n; ++i) {
+            out[i] = new double[3];
+            out[i][0] = x[rowToTransposeAndReplicate][i];
+            out[i][1] = x[rowToTransposeAndReplicate][i];
+            out[i][2] = x[rowToTransposeAndReplicate][i];
+        }
+        return out;
+    }
+    
+    /**
+     * performs repmat(X(rowToReplicate,:),3,1)
+     * @param x matrix of size 3XN
+     * @param rowToReplicate
+     * @return matrix of size 3 X N
+     */
+    private double[][] repmat_3(double[][] x, int rowToReplicate) {
+        int n = x[0].length;
+        double[][] out = new double[3][n];
+        out[0] = Arrays.copyOf(x[rowToReplicate], x[rowToReplicate].length);
+        out[1] = Arrays.copyOf(out[0], out[0].length);
+        out[2] = Arrays.copyOf(out[0], out[0].length);
+        return out;
+    }
+    
+    /**
+     * make an array composed of the concatenation of a, b, and c horizontally
+     * as blocks of columns.
+     * @param a
+     * @param b
+     * @param c
+     * @return concatenated array of size [a.length][a[0].length + b[0].length + c[0].length]
+     */
+    private double[][] concatenateAsColumnBlocks(double[][] a, double[][] b, double[][] c) {
+        int n0 = a[0].length;
+        int n1 = b[0].length;
+        int n2 = c[0].length;
+        int m = a.length;
+        if (b.length != m || c.length != m) {
+            throw new IllegalArgumentException("a, b, and c must have same number of rows");
+        }
+        int n = n0 + n1 + n2;
+        int j, nc;
+        double[][] out = new double[m][n];
+        for (int i = 0; i < m; ++i) {
+            out[i] = new double[n];
+            nc = 0;
+            for (j = 0; j < n0; ++j) {
+                out[i][nc] = a[i][j];
+                nc++;
+            }
+            for (j = 0; j < n1; ++j) {
+                out[i][nc] = b[i][j];
+                nc++;
+            }
+            for (j = 0; j < n2; ++j) {
+                out[i][nc] = c[i][j];
+                nc++;
+            }
+        }
+        return out;
+    }
+    
+    /**
+     * make an array composed of the concatenation of a, b, and c vertically
+     * as blocks of rows.
+     * @param a
+     * @param b
+     * @param c
+     * @return concatenated array of size [a.length + b.length + c.length][a[0].length]
+     */
+    private double[][] concatenateAsRowBlocks(double[][] a, double[][] b, double[][] c, double[][] d) {
+        int m0 = a.length;
+        int m1 = b.length;
+        int m2 = c.length;
+        int m3 = d.length;
+        int n = a[0].length;
+        if (b[0].length != n || c[0].length != n || d[0].length != n) {
+            throw new IllegalArgumentException("a, b, c and d must have same number of columns");
+        }
+        int m = m0 + m1 + m2 + m3;
+        int i;
+        double[][] out = new double[m][n];        
+        int mc = 0;
+        for (i = 0; i < m0; ++i) {
+            out[mc] = Arrays.copyOf(a[i], n);
+            mc++;
+        }
+        for (i = 0; i < m1; ++i) {
+            out[mc] = Arrays.copyOf(b[i], n);
+            mc++;
+        }
+        for (i = 0; i < m2; ++i) {
+            out[mc] = Arrays.copyOf(c[i], n);
+            mc++;
+        }
+        for (i = 0; i < m3; ++i) {
+            out[mc] = Arrays.copyOf(d[i], n);
+            mc++;
+        }
+        
+        return out;
+    }
+    
+    /**
+     * make an array composed of the concatenation of a, b, and c vertically
+     * as rows.
+     * @param a
+     * @param b
+     * @param c
+     * @return concatenated array of size [4][a.length + b.length + c.length]
+     */
+    private double[][] concatenateAsRows(double[] a, double[] b, double[] c, double[] d) {
+        int m0 = a.length;
+        int m1 = b.length;
+        int m2 = c.length;
+        int m3 = d.length;
+        if (m1 != m0 || m2 != m0 || m3 != m0) {
+            throw new IllegalArgumentException("a, b, c and d must have same lengths");
+        }
+        double[][] out = new double[4][m0];        
+        out[0] = Arrays.copyOf(a, m0);
+        out[1] = Arrays.copyOf(b, m0);
+        out[2] = Arrays.copyOf(c, m0);
+        out[3] = Arrays.copyOf(d, m0);
+        
+        return out;
     }
 }

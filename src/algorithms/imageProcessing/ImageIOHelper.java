@@ -735,17 +735,17 @@ public class ImageIOHelper {
         return null;
     }
     
-    public static void writeOutputImage(String filePath, Image data) 
+    public static String writeOutputImage(String filePath, Image data) 
         throws IOException {
         
-        writeOutputImage(filePath, data,  BufferedImage.TYPE_INT_RGB);       
+        return writeOutputImage(filePath, data,  BufferedImage.TYPE_INT_RGB);       
     }
     
-    public static void writeOutputImage(String filePath, Image data, 
+    public static String writeOutputImage(String filePath, Image data, 
         final int imageType) throws IOException {
                 
         if (data == null) {
-            return;
+            return "";
         }
         if (filePath == null) {
             throw new IllegalArgumentException("filePath cannot be null");
@@ -767,6 +767,7 @@ public class ImageIOHelper {
         
         ImageIO.write(outputImage, "PNG", new File(filePath));
         
+        return filePath.toString();
     }
     
     public static void writeOutputImage(String filePath, GreyscaleImage data) 

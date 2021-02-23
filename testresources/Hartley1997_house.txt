@@ -1,0 +1,7 @@
+images of Hartley 1997 house are copies of Figure 1 of the paper
+Hartley 1997, PAMI VOL. 19, NO. 6, JUNE 1997
+"In Defense of the Eight-Point Algorithm"
+
+The images are used in this project for educational purposes
+in unit tests.
+

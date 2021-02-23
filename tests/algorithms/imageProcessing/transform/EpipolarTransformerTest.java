@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.SVD;
+import org.junit.Test;
 
 /**
  *
