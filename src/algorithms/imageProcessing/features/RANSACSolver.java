@@ -235,7 +235,9 @@ public class RANSACSolver {
                 
                 count++;
             }
-
+            
+//TODO: edit here to return data structure that includes normalized
+        
             // determine matrix from 7 points.
             List<DenseMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
                 sampleLeft, sampleRight);
@@ -251,40 +253,93 @@ public class RANSACSolver {
             // use point dist to epipolar lines to estimate errors of sample
             EpipolarTransformationFit fit = null;
             
-            for (DenseMatrix fm : fms) {
+            double chiSqStatFactor = 7.82;
+            int plunder;
+            int bestPlunderCost = Integer.MAX_VALUE;
+            int bestPlunderIdx = -1;
+            
+            for (int fIdx = 0; fIdx < fms.size(); ++fIdx) {
                 
-                EpipolarTransformationFit fitI = distances.calculateError(fm, 
-                    matchedLeftXY, matchedRightXY, errorType, tolerance);
-                     
+                DenseMatrix fm = fms.get(fIdx);
+                
+                // this uses a threshold of chiSqStatFactor * standard deviation
+                //   of the mean of the distances to remove outliers
+                EpipolarTransformationFit fitI = distances.calculateError2(fm, 
+                    matchedLeftXY, matchedRightXY, errorType, chiSqStatFactor);
+                      
                 int nInliers = fitI.getInlierIndexes().size();
-                if (nInliers >= nSet && fitI.isBetter(fit)) {
-                                        
-                    if (nInliers > t && nInliers > nSet) {
-                        // redo the transformation with all inliers
-                        DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);
-                        DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);
-                        int countI = 0;
-                        for (Integer idx : fitI.getInlierIndexes()) {
-                            int idxInt = idx.intValue();
-                            inliersLeftXY.set(0, countI, matchedLeftXY.get(0, idxInt));
-                            inliersLeftXY.set(1, countI, matchedLeftXY.get(1, idxInt));
-                            inliersLeftXY.set(2, countI, 1);
-                            inliersRightXY.set(0, countI, matchedRightXY.get(0, idxInt));
-                            inliersRightXY.set(1, countI, matchedRightXY.get(1, idxInt));
-                            inliersRightXY.set(2, countI, 1);
-                            countI++;
-                        }
-                        DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
-                            inliersLeftXY, inliersRightXY);
-                        if (fm2 != null) {
-                            EpipolarTransformationFit fit2 = distances
-                                .calculateError(fm2, matchedLeftXY, matchedRightXY,
-                                errorType, tolerance);
-                            if (fit2 != null && fit2.isBetter(fitI)) {
-                                fitI = fit2;
-                            }
+                int nOutliers = nSet - nInliers;
+                
+                /*
+                The plunder-dl scoring can be used for comparison between different models.
+                for example, comparing results of the 7-point and 8-point 
+                solutions or comparing 7-point projection to 6-point affine, etc.
+                
+                plunder-dl is from equation 33 of
+                Torr, Zisserman, & Maybank 1996, 
+                “Robust Detection of Degenerate Configurations whilst Estimating 
+                the Fundamental Matrix"
+                https://www.robots.ox.ac.uk/~phst/Papers/CVIU97/m.ps.gz
+                 EQN 33: PL = DOF + (4*n_o + n_i dimension of model)
+                               where n_i = number of inliers
+                               n_o = number of outliers
+                               DOF = 7 for this solver
+                n=7               PL = DOF + 4*n_o + n_i* (model_dimension)
+                     ni=7, no=0   PL = 7   + 0     + 0 * md
+                     ni=5, no=2   PL = 7   + 8     + 8 * md
+                     ni=4, no=3   PL = 7   + 12    + 28 * md
+                PLUNDER stands for Pick Least UNDEgenerate Randomly, Description Length
+                
+                For nPoints=8, model_dimension = 1.
+                for nPoints=7 amd only 1 solution in the cubic constraints, model_dimension=2,
+                else for nPoints=7, model_dimension = 3.
+                
+                Will use model_dimension=2 here and keep the smallest pluder score.
+                */
+                
+                // fitI.isBetter() : comparison to other fit by the number of 
+                //     inliers, else if tie, mean of errors, else if tie, 
+                //     mean of standard deviation of mean of errors, else 
+                //     returns false.
+                plunder = 7 + 4*nOutliers + 3*nInliers;
+                
+                if (nInliers >= nSet && (plunder <= bestPlunderCost) 
+                    && fitI.isBetter(fit)) {
+           
+                    bestPlunderCost = plunder;
+                    bestPlunderIdx = fIdx;
+                    
+ //TODO: continue revising from here
+ 
+                    // redo the transformation with all inliers
+                    DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);
+                    DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);
+                    int countI = 0;
+                    for (Integer idx : fitI.getInlierIndexes()) {
+                        int idxInt = idx.intValue();
+                        inliersLeftXY.set(0, countI, matchedLeftXY.get(0, idxInt));
+                        inliersLeftXY.set(1, countI, matchedLeftXY.get(1, idxInt));
+                        inliersLeftXY.set(2, countI, 1);
+                        inliersRightXY.set(0, countI, matchedRightXY.get(0, idxInt));
+                        inliersRightXY.set(1, countI, matchedRightXY.get(1, idxInt));
+                        inliersRightXY.set(2, countI, 1);
+                        countI++;
+                    }
+
+                    DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
+                        inliersLeftXY, inliersRightXY);
+
+                    if (fm2 != null) {
+
+                        EpipolarTransformationFit fit2 = distances
+                            .calculateError(fm2, matchedLeftXY, matchedRightXY,
+                            errorType, tolerance);
+
+                        if (fit2 != null && fit2.isBetter(fitI)) {
+                            fitI = fit2;
                         }
                     }
+                    
                     System.out.println("new local best fit: " + fitI.toString());
                     System.out.flush();
                     fit = fitI;

@@ -33,9 +33,8 @@ import no.uib.cipr.matrix.SVD;
  * and the solution for having 8 or more matched points between the images.
  * Both use numerical conditioning and recipes suggested by Hartley
  * (see reference below).
- *
- * Following:
- *
+ * 
+ * For the 8-point algorithm:
  * IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, VOL. 19,
  * NO. 6, JUNE 1997
  * "In Defense of the Eight-Point Algorithm" by Richard Hartley
@@ -135,25 +134,11 @@ import no.uib.cipr.matrix.SVD;
      
      scaling the coordinate so that the homogeneous coordinates are on the 
      average equal to unity will improve the condition of the matrix A^T*A.
-
-     utrans = T * u ==> u = utrans * inv(T)
-
-     u_2^T * F * u_1 = 0
-
-        becomes   utrans_2^T * inv(T_2) * F * inv(T_1) * utrans_1 = 0
-
-        and inv(T_2) * F * inv(T_1) is the fundamental matrix for
-        utrans_2 < -- > utrans_1 which when found, will be subsequently
-        denormalized.
-
-    a) points are translated so that their centroid is at the origin.
-    b) points are then scaled so that the average distance from the
-       origin is sqrt(2)
-    c) the transformation is applied to each of the 2 images separately.
+     I talso allows use of error calculations such as Sampson's.
 
  (2) build matrix A with the normalized x,y points
 
- (3) compute linear least square solution to the least eigenvector of f.
+ (3) compute linear least square solution to the least eigenvector of f:
      solve A = U * D * V^T   for A*f = [..x...]*f = 0
      A has rank 8.  F has rank 2.
      calculate [U,D,V] from svd(A)
@@ -174,9 +159,22 @@ import no.uib.cipr.matrix.SVD;
      lines for points in image 1 and find their nearest points in image 2
      and measure the perpendicular distance from the epipolar line for
      those nearest points.
+     NOTE: This is best done using normalized coordinates and fundamental matrix,
+     after step (4) and before step (5).
 
- The 7-point algorithm is also implemented below and is similar to the
- 8-point solution except that is solves for the null space of the fundamental
+For the 7-point algorithm:
+references are:
+  the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
+from a version of http://www.robots.ox.ac.uk/~vgg/hzbook/code/ which is part
+of the supplementary material for their book "Multiple View Geometry in Computer Vision
+Second Edition"
+   and Hartley, R. I. (1994a). Projective reconstruction and invariants from 
+multiple images. PAMI, 16(10):1036–1041
+   and Torr, P. H. S. and Murray, D. (1997). 
+"The development and comparison of robust meth- ods for estimating the 
+fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
+
+ The 7-point algorithm solves for the null space of the fundamental
  matrix and results in one or 3 solutions which can for some geometries
  be reduced to a single solution.
  The nullspace is where Ax=0 in reduced echelon, that is, the free variable rows.
@@ -207,13 +205,7 @@ public class EpipolarTransformer {
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     private static double eps = 1e-12;
-
-    //TODO:
-    //after epipoles have been determined, should add a method here to see
-    //        if any of the correspondences are within a pixel of the epipoles.
-    //                Torr & Murray 1997 suggest removal of such points
-    //                as they are unstable constraints (p 6).
-                     
+    
     /**
      * calculate the fundamental matrix for the given matched left and
      * right correspondence of 8 or more matched points.
@@ -308,12 +300,22 @@ public class EpipolarTransformer {
     }
 
     /*
-    Following the 7-point algorithm by R. Hartley and A. Zisserman, 
-    in their book "Multiple View Geometry in Computer Vision"
+    the 7-point algorithm.
+    references are:
+      the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
+    from a version of http://www.robots.ox.ac.uk/~vgg/hzbook/code/ which is part
+    of the supplementary material for their book "Multiple View Geometry in Computer Vision
+    Second Edition"
+       and Hartley, R. I. (1994a). Projective reconstruction and invariants from 
+    multiple images. PAMI, 16(10):1036–1041
+       and Torr, P. H. S. and Murray, D. (1997). 
+    "The development and comparison of robust meth- ods for estimating the 
+    fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
 
-    (1) SVD of matrix A (as is done in 8-point algorithm)
-        giving a matrix of rank 7
-    (2) The homogeneous system AX = 0 : X is the null space of matrix A.
+    (1) Transform the coordinates using unit normal standaridization.
+
+    (2) build matrix A with the normalized x,y points.
+    (3) The homogeneous system AX = 0 : X is the null space of matrix A.
         The system is nullable because rank 7 < number of columns, 9.
 
         The nullable system must have a solution other than trivial where
@@ -358,7 +360,16 @@ public class EpipolarTransformer {
     /**
      * calculate the epipolar projection for a set of matched points that are
      * at 7 points in length.
-     *
+     * references are:
+          the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
+        from a version of http://www.robots.ox.ac.uk/~vgg/hzbook/code/ which is part
+        of the supplementary material for their book "Multiple View Geometry in Computer Vision
+        Second Edition"
+           and Hartley, R. I. (1994a). Projective reconstruction and invariants from 
+        multiple images. PAMI, 16(10):1036–1041
+           and Torr, P. H. S. and Murray, D. (1997). 
+        "The development and comparison of robust meth- ods for estimating the 
+        fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
      * @param pointsLeftXY
      * @param pointsRightXY
      * @return
@@ -390,8 +401,220 @@ public class EpipolarTransformer {
     }
 
     /**
-     * calculate the epipolar projection for a set of matched points that are
-     * at 7 points in length.
+     * calculate the epipolar projection for 7 correspondences.
+     * references are:
+          the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
+        from a version of http://www.robots.ox.ac.uk/~vgg/hzbook/code/ which is part
+        of the supplementary material for their book "Multiple View Geometry in Computer Vision
+        Second Edition"
+           and Hartley, R. I. (1994a). Projective reconstruction and invariants from 
+        multiple images. PAMI, 16(10):1036–1041
+           and Torr, P. H. S. and Murray, D. (1997). 
+        "The development and comparison of robust methods for estimating the 
+        fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
+     *
+     * @param theLeftXY
+     * @param theRightXY
+     * @return
+     */
+    public FundamentalMatrixStructures calculateBestEpipolarProjectionFor7Points(
+        DenseMatrix theLeftXY, DenseMatrix theRightXY) {
+
+        if (theLeftXY == null) {
+            throw new IllegalArgumentException("refactorLeftXY cannot be null");
+        }
+        if (theRightXY == null) {
+            throw new IllegalArgumentException("refactorRightXY cannot be null");
+        }
+        if (theLeftXY.numRows() != theRightXY.numRows()) {
+            throw new IllegalArgumentException(
+                "theLeftXY and theRightXY must be same size");
+        }
+        if (theLeftXY.numColumns() != theRightXY.numColumns()) {
+            throw new IllegalArgumentException(
+                "theLeftXY and theRightXY must be same size");
+        }
+
+        if (theLeftXY.numColumns() != 7) {
+            // cannot use this algorithm.
+            throw new IllegalArgumentException(
+                "the 7-point problem requires 7 points."
+                + " theLeftXY.n=" + theLeftXY.numColumns());
+        }
+
+        //x is xy[0], y is xy[1], xy[2] is all 1's
+        NormalizedXY normalizedXY1 = normalize(theLeftXY);
+
+        NormalizedXY normalizedXY2 = normalize(theRightXY);
+
+        double[][] m = createFundamentalMatrix(
+            normalizedXY1.getXy(), normalizedXY2.getXy());
+
+        DenseMatrix aMatrix = new DenseMatrix(m);
+        SVD svd = null;
+        DenseMatrix vT = null;
+        try {
+            svd = SVD.factorize(aMatrix);
+            vT = svd.getVt();
+        } catch (NotConvergedException e) {
+            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
+            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
+            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
+            //    and sqrt( SVD(A^TA) eigenvalues )
+            try { 
+                svd = SVD.factorize(new DenseMatrix(aTa));
+                vT = svd.getVt();
+            } catch (NotConvergedException ex) {
+                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+                return null;
+            }
+        }
+
+        // U   is 7x7
+        // V^T is 9X9
+        // A*V = U*s
+        
+        //for i <=r:
+        //    A*v_i = σ*u_i
+        //for i >r:
+        //    A*v_i = 0 and A^T*u_i = 0
+
+        int n = vT.numRows();
+        assert(n == 9);
+                
+        double[][] ff1 = new double[3][3];
+        double[][] ff2 = new double[3][3];
+        for (int i = 0; i < 3; i++) {
+
+            ff1[i] = new double[3];
+            ff2[i] = new double[3];
+            
+            ff1[i][0] = vT.get(n - 1, (i * 3) + 0);
+            ff1[i][1] = vT.get(n - 1, (i * 3) + 1);
+            ff1[i][2] = vT.get(n - 1, (i * 3) + 2);
+            
+            ff2[i][0] = vT.get(n - 2, (i * 3) + 0);
+            ff2[i][1] = vT.get(n - 2, (i * 3) + 1);
+            ff2[i][2] = vT.get(n - 2, (i * 3) + 2);
+        }
+        
+        DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
+        
+        EpipolarTransformationFit fit = null;
+            
+        double chiSqStatFactor = 7.82;
+        int plunder;
+        int bestPlunderCost = Integer.MAX_VALUE;
+        DenseMatrix bestSolution = null;
+        EpipolarTransformationFit bestFit = null;
+        
+        Distances distances = new Distances();
+        
+        for (DenseMatrix solution : solutions) {
+
+            // chirality (cheirality) check
+            DenseMatrix validated = validateSolution(solution, 
+                normalizedXY1.getXy(), normalizedXY2.getXy());
+            
+            if (validated == null) {
+                continue;
+            }
+         
+            fit = distances.calculateError2(validated, 
+                normalizedXY1.getXy(), normalizedXY2.getXy(), 
+                ErrorType.SAMPSONS, chiSqStatFactor);
+                      
+            int nInliers = fit.getInlierIndexes().size();
+            int nOutliers = 7 - nInliers;
+                
+            /*
+                The plunder-dl scoring can be used for comparison between different models.
+                for example, comparing results of the 7-point and 8-point 
+                solutions or comparing 7-point projection to 6-point affine, etc.
+                
+                plunder-dl is from equation 33 of
+                Torr, Zisserman, & Maybank 1996, 
+                “Robust Detection of Degenerate Configurations whilst Estimating 
+                the Fundamental Matrix"
+                https://www.robots.ox.ac.uk/~phst/Papers/CVIU97/m.ps.gz
+                 EQN 33: PL = DOF + (4*n_o + n_i dimension of model)
+                               where n_i = number of inliers
+                               n_o = number of outliers
+                               DOF = 7 for this solver
+                n=7               PL = DOF + 4*n_o + n_i* (model_dimension)
+                     ni=7, no=0   PL = 7   + 0     + 0 * md
+                     ni=5, no=2   PL = 7   + 8     + 8 * md
+                     ni=4, no=3   PL = 7   + 12    + 28 * md
+                PLUNDER stands for Pick Least UNDEgenerate Randomly, Description Length
+                
+                For nPoints=8, model_dimension = 1.
+                for nPoints=7 amd only 1 solution in the cubic constraints, model_dimension=2,
+                else for nPoints=7, model_dimension = 3.
+                
+                Will use model_dimension=2 here and keep the smallest pluder score.
+                */
+                
+                // fitI.isBetter() : comparison to other fit by the number of 
+                //     inliers, else if tie, mean of errors, else if tie, 
+                //     mean of standard deviation of mean of errors, else 
+                //     returns false.
+            plunder = 7 + 4*nOutliers + 3*nInliers;
+            
+            if (plunder <= bestPlunderCost) {
+                // fit.isBetter() : comparison to other fit by the number of 
+                //     inliers, else if tie, mean of errors, else if tie, 
+                //     mean of standard deviation of mean of errors, else 
+                //     returns false.            
+                if (fit.isBetter(bestFit)) {
+                    bestPlunderCost = plunder;
+                    bestSolution = validated;
+                    bestFit = fit;
+                }
+            }
+        }
+        
+        if (bestSolution == null) {
+            return null;
+        }
+        
+        //denormalize:  F = (T_1)^T * F * T_2
+        //    T_1 is normalizedXY1.getNormalizationMatrix();
+        //    T2 is normalizedXY2.getNormalizationMatrix();
+        DenseMatrix t1Transpose = MatrixUtil.transpose(normalizedXY1.getNormalizationMatrix());
+        DenseMatrix t2 = normalizedXY2.getNormalizationMatrix();
+                 
+        DenseMatrix denormFundamentalMatrix = MatrixUtil.multiply(t1Transpose,
+            MatrixUtil.multiply(bestSolution, t2));
+
+        double s = 1. / (denormFundamentalMatrix.get(2, 2) + eps);
+        MatrixUtil.multiply(denormFundamentalMatrix, s);
+
+        denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
+
+        FundamentalMatrixStructures fms = new FundamentalMatrixStructures();
+        fms.fm = denormFundamentalMatrix;
+        fms.x1 = theLeftXY;
+        fms.x2 = theRightXY;
+        fms.normalizedFM = bestSolution;
+        fms.normalizedX1 = normalizedXY1;
+        fms.normalizedX2 = normalizedXY2;
+
+        return fms;
+    }
+    
+    /**
+     * calculate the epipolar projection for 7 correspondences.
+     * references are:
+          the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
+        from a version of http://www.robots.ox.ac.uk/~vgg/hzbook/code/ which is part
+        of the supplementary material for their book "Multiple View Geometry in Computer Vision
+        Second Edition"
+           and Hartley, R. I. (1994a). Projective reconstruction and invariants from 
+        multiple images. PAMI, 16(10):1036–1041
+           and Torr, P. H. S. and Murray, D. (1997). 
+        "The development and comparison of robust methods for estimating the 
+        fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
      *
      * @param theLeftXY
      * @param theRightXY
@@ -433,18 +656,37 @@ public class EpipolarTransformer {
 
         DenseMatrix aMatrix = new DenseMatrix(m);
         SVD svd = null;
-
+        DenseMatrix vT = null;
         try {
             svd = SVD.factorize(aMatrix);
-        } catch (Throwable t) {
-            System.err.println(t.getMessage());
-            return null;
+            vT = svd.getVt();
+        } catch (NotConvergedException e) {
+            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
+            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
+            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
+            //    and sqrt( SVD(A^TA) eigenvalues )
+            try { 
+                svd = SVD.factorize(new DenseMatrix(aTa));
+                vT = svd.getVt();
+            } catch (NotConvergedException ex) {
+                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+                return null;
+            }
         }
 
-        // nCols = 9
-        // These are the last 2 columns of V
-        DenseMatrix nullSpace = algorithms.imageProcessing.util.MatrixUtil.nullSpace(svd);
+        // U   is 7x7
+        // V^T is 9X9
+        // A*V = U*s
+        
+        //for i <=r:
+        //    A*v_i = σ*u_i
+        //for i >r:
+        //    A*v_i = 0 and A^T*u_i = 0
 
+        int n = vT.numRows();
+        assert(n == 9);
+                
         double[][] ff1 = new double[3][3];
         double[][] ff2 = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -452,17 +694,16 @@ public class EpipolarTransformer {
             ff1[i] = new double[3];
             ff2[i] = new double[3];
             
-            ff1[i][0] = nullSpace.get((i * 3) + 0, 0);
-            ff1[i][1] = nullSpace.get((i * 3) + 1, 0);
-            ff1[i][2] = nullSpace.get((i * 3) + 2, 0);
+            ff1[i][0] = vT.get(n - 1, (i * 3) + 0);
+            ff1[i][1] = vT.get(n - 1, (i * 3) + 1);
+            ff1[i][2] = vT.get(n - 1, (i * 3) + 2);
             
-            ff2[i][0] = nullSpace.get((i * 3) + 0, 1);
-            ff2[i][1] = nullSpace.get((i * 3) + 1, 1);
-            ff2[i][2] = nullSpace.get((i * 3) + 2, 1);
+            ff2[i][0] = vT.get(n - 2, (i * 3) + 0);
+            ff2[i][1] = vT.get(n - 2, (i * 3) + 1);
+            ff2[i][2] = vT.get(n - 2, (i * 3) + 2);
         }
-
+        
         DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
-        //DenseMatrix[] solutions = solveFor7Point2(ff1, ff2);
         
         //denormalize:  F = (T_1)^T * F * T_2
         //    T_1 is normalizedXY1.getNormalizationMatrix();
@@ -475,13 +716,14 @@ public class EpipolarTransformer {
 
         for (DenseMatrix solution : solutions) {
 
+            // chirality (cheirality) check
             DenseMatrix validated = validateSolution(solution, 
                 normalizedXY1.getXy(), normalizedXY2.getXy());
             
             if (validated == null) {
                 continue;
             }
-                            
+                                        
             DenseMatrix denormFundamentalMatrix
                 = MatrixUtil.multiply(t1Transpose,
                 MatrixUtil.multiply(validated, t2));
@@ -491,9 +733,7 @@ public class EpipolarTransformer {
 
             denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
 
-            denormalizedSolutions.add(denormFundamentalMatrix);
-            
-            //denormalizedSolutions.add(denormFundamentalMatrix);
+            denormalizedSolutions.add(denormFundamentalMatrix);            
         }
 
         return denormalizedSolutions;
@@ -568,6 +808,8 @@ public class EpipolarTransformer {
     * A transform is cheirality-reversing for a given point if it swaps the
     * point from the front to the back of the camera, or vice-versa.
     * Otherwise it is called cheirality-preserving.
+    * 
+    * note: alternate spelling is chirality.
     */
     @SuppressWarnings({"unchecked"})
     private DenseMatrix validateSolution(DenseMatrix solution, DenseMatrix leftXY,
@@ -592,21 +834,20 @@ public class EpipolarTransformer {
         OK = all(s>0) | all(s<0);
 
         (F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
- 
- //NLK: e2^T*F = 0  and F*e1 = 0
- // l_1 = F^T * x2
- // l_2 =   F * x1 
- // e1 = last column of U / last item of that column
- // e2 = last row of V / last item of that row
                
         'sum' is a matlab function to sum for each column
 
         'all' is a function that returns '1' is all items are non-zero, else
             returns 0
+        
+        //NLK: without having transposed F:
+         // e2^T*F = 0  and F*e1 = 0
+         // F^T * x2 = leftEpipolarLines
+         // F * x1 = rightEpipolarLines
+         // e1 = last column of U / last item of that column
+         // e2 = last row of V / last item of that row
         */
-        
- //editing here
-        
+                
         double[][] leftRightEpipoles = calculateEpipoles(solution);
 
         // 3 columns (x,y,1):
@@ -628,32 +869,27 @@ public class EpipolarTransformer {
         double[][] l1 = MatrixUtil.multiply(contrepsE1, MatrixUtil.convertToRowMajor(leftXY));
 
         // s = sum( (F*x2) .* l1 );
-        // .* is matlab notation 
-        // https://www.mathworks.com/help/matlab/ref/times.html
         
-        // 3 X 7
-        DenseMatrix fx2 = MatrixUtil.multiply(solution, rightXY);
+        // 3X3 * 3X7 
+        //  3 X 7
+        DenseMatrix fX2 = MatrixUtil.multiply(solution, rightXY);
         
         // 3 x 7
-        DenseMatrix fx2l1 = fx2.copy();
-        for (int row = 0; row < testE1.length; ++row){
-            for (int col = 0; col < fx2.numColumns(); ++col) {
-                double value = fx2l1.get(row, col) * l1[row][col];
-                fx2l1.set(row, col, value);
-            }
-        }
+        double[][] fX2l1 = MatrixUtil.elementwiseMultiplication(
+            MatrixUtil.convertToRowMajor(fX2), l1);
         
         // matlab sum function:
         //    If A is a matrix, then sum(A) returns a row vector containing 
         //    the sum of each column.
-        double[] sum = new double[fx2l1.numColumns()];
-        for (int row = 0; row < fx2l1.numRows(); ++row){
-            for (int col = 0; col < fx2l1.numColumns(); ++col) {
-                double value = fx2l1.get(row, col);
-                sum[col] += value;
+        double[] sum = new double[fX2l1[0].length];
+        for (int row = 0; row < fX2l1.length; ++row){
+            for (int col = 0; col < fX2l1[0].length; ++col) {
+                sum[col] += fX2l1[row][col];
             }
         }
 
+        //'all' is a function that returns '1' is all items are non-zero, else
+        //    returns 0
         int nGTZ = 0;
         int nLTZ = 0;
         for (int i = 0; i < sum.length; ++i) {
@@ -699,138 +935,6 @@ public class EpipolarTransformer {
             for (int row = 0; row < 3; row++) {
                 for (int col = 0; col < 3; col++) {
                     m[row][col] = a*ff1[row][col] + (1. - a)*ff2[row][col];
-                }
-            }
-
-            solutions[i] = new DenseMatrix(m);
-        }
-
-        return solutions;
-    }
-    
-    /**
-     * This method is ported from the matlab code from the book
-     * @Book{Hartley2004,
-            author = "Hartley, R.~I. and Zisserman, A.",
-            title = "Multiple View Geometry in Computer Vision",
-            edition = "Second",
-            year = "2004",
-            publisher = "Cambridge University Press, ISBN: 0521540518"
-        }
-     * https://www.robots.ox.ac.uk/~vgg/hzbook/code/
-     * The code is available using the MIT license.
-     * 
-     * code VGG_SINGF_FROM_FF.m
-     * 
-     * @param ff1  3X3
-     * @param ff2  3X3
-     * @return 
-     */
-    DenseMatrix[] solveFor7Point2(double[][] ff1, double[][] ff2) {
-
-        double[][][] d = new double[2][2][2];
-        for (int i1 = 0; i1 < 2; ++i1) {
-            d[i1] = new double[2][2];
-            for (int i2 = 0; i2 < 2; ++i2) {
-                d[i1][i2] = new double[2];
-            }
-        }
-        
-        double[][] f1, f2, f3;
-        double[][] tempF = new double[3][3];
-        for (int i = 0; i < 3; ++i) {
-            tempF[i] = new double[3];
-        }
-        
-        for (int i1 = 0; i1 < 2; ++i1) {
-            if (i1 == 0) {
-                f1 = ff1;
-            } else {
-                f1 = ff2;
-            }
-            tempF[0][0] = f1[0][0];
-            tempF[0][1] = f1[1][0];
-            tempF[0][2] = f1[2][0];
-            for (int i2 = 0; i2 < 2; ++i2) {
-                if (i2 == 0) {
-                    f2 = ff1;
-                } else {
-                    f2 = ff2;
-                }
-                tempF[1][0] = f2[0][1];
-                tempF[1][1] = f2[1][1];
-                tempF[1][2] = f2[2][1];
-                for (int i3 = 0; i3 < 2; ++i3) {
-                    if (i3 == 0) {
-                        f3 = ff1;
-                    } else {
-                        f3 = ff2;
-                    }
-                    tempF[2][0] = f3[0][2];
-                    tempF[2][1] = f3[1][2];
-                    tempF[2][2] = f3[2][2];
-                    //d[i1][i2][i3] = det([F{i1}(:,1) F{i2}(:,2) F{i3}(:,3)]);
-                    d[i1][i2][i3] = MatrixUtil.determinant(tempF);
-                }
-            }
-        }
-        
-        //-D(2,1,1)+D(1,2,2)+D(1,1,1)+D(2,2,1)+D(2,1,2)-D(1,2,1)-D(1,1,2)-D(2,2,2)
-        double a0 = -d[1][0][0] + d[0][1][1] + d[0][0][0] + d[1][1][0]
-           + d[1][0][1] - d[0][1][0] - d[0][0][1] - d[1][1][1];
-        
-        //D(1,1,2)-2*D(1,2,2)-2*D(2,1,2)+D(2,1,1)-2*D(2,2,1)+D(1,2,1)+3*D(2,2,2)
-        double a1 = d[0][0][1] - 2.*d[0][1][1] - 2.*d[1][0][1] + d[1][0][0]
-           - 2.*d[1][1][0] + d[0][1][0] + 3.*d[1][1][1];
-                  
-        //D(2,2,1)+D(1,2,2)+D(2,1,2)-3*D(2,2,2)
-        double a2 = d[1][1][0] + d[0][1][1] + d[1][0][1] - 3.*d[1][1][1];
-                
-        //D(2,2,2)]
-        double a3 = d[1][1][1];
-                
-        //solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a3 = 0;
-        
-        double _a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
-        double _a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
-        double _a2 = calculateCubicRoot1stOrderCoefficientFor7Point(ff1, ff2);
-        double _a3 = calculateCubicRoot0thOrderCoefficientFor7Point(ff1, ff2);
-        
-        double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
-        
-        double[] _roots = MiscMath.solveCubicRoots(_a0, _a1, _a2, _a3);
-
-        
-        System.out.println("a0=" + a0);
-        System.out.println("a1=" + a1);
-        System.out.println("a2=" + a2);
-        System.out.println("a3=" + a3);
-        System.out.println("_a0=" + _a0);
-        System.out.println("_a1=" + _a1);
-        System.out.println("_a2=" + _a2);
-        System.out.println("_a3=" + _a3);
-        
-        System.out.println("roots=" + Arrays.toString(roots));
-        System.out.println("_roots=" + Arrays.toString(_roots));
-        System.out.flush();
-        
-        double[][] m = new double[3][];
-        for (int i = 0; i < 3; i++) {
-            m[i] = new double[3];
-        }
-
-        DenseMatrix[] solutions = new DenseMatrix[roots.length];
-
-        for (int i = 0; i < roots.length; i++) {
-
-            //Fi = a(i)*FF{1} + (1-a(i))*FF{2};
-
-            double a = roots[i];
-            double aa = 1. - a;
-            
-            for (int row = 0; row < 3; row++) {
-                for (int col = 0; col < 3; col++) {
-                    m[row][col] = (a*ff1[row][col]) + (aa*ff2[row][col]);
                 }
             }
 
@@ -1140,13 +1244,14 @@ public class EpipolarTransformer {
                 distances.calculateEpipolarSampsonsDistanceSquared(
                 theFundamentalMatrix, normalizedXY1.getXy(), normalizedXY2.getXy());
             
-            PairFloatArray dEp = distances.calculateDistancesFromEpipolar(
+            double[][] dEp = distances.calculateDistancesFromEpipolar(
                 theFundamentalMatrix, normalizedXY1.getXy(), normalizedXY2.getXy());
+            assert(dSqSampson.length == dEp[0].length);
             
             System.out.printf("distances\nsampson^2=\n  %s\nep^2=\n", 
                 FormatArray.toString(dSqSampson, " %.3e"));
-            for (int j = 0; j < dEp.getN(); ++j) {
-                double d2 = dEp.getX(j) * dEp.getX(j) + dEp.getY(j) * dEp.getY(j);
+            for (int j = 0; j < dSqSampson.length; ++j) {
+                double d2 = dEp[0][j] * dEp[0][j] + dEp[1][j] * dEp[1][j];
                 if (j > 0) {
                     System.out.printf(", ");
                 }
@@ -1435,16 +1540,37 @@ public class EpipolarTransformer {
         */
                 
         SVD svdE;
+        DenseMatrix u = null;
+        DenseMatrix vT = null;
+        double[] sDiag = null;
         try {
             svdE = SVD.factorize(fundamentalMatrix);
-        } catch (NotConvergedException ex) {
-            Logger.getLogger(EpipolarTransformer.class.getName())
-                .log(Level.SEVERE, null, ex);
-            return null;
+            vT = svdE.getVt();
+            u = svdE.getU();
+            sDiag = svdE.getS();
+        } catch (NotConvergedException e) {
+            double[][] fm = MatrixUtil.convertToRowMajor(fundamentalMatrix);
+            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(fm), fm);
+            double[][] aaT = MatrixUtil.multiply(fm, MatrixUtil.transpose(fm));
+            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
+            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
+            //    and sqrt( SVD(A^TA) eigenvalues )
+            try { 
+                svdE = SVD.factorize(new DenseMatrix(aTa));
+                vT = svdE.getVt();
+                sDiag = svdE.getS();
+                sDiag[0] = Math.sqrt(sDiag[0]);
+                sDiag[1] = Math.sqrt(sDiag[1]);
+                
+                svdE = SVD.factorize(new DenseMatrix(aaT));
+                u = svdE.getU();
+            } catch (NotConvergedException ex) {
+                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+                return null;
+            }
         }
         
-        DenseMatrix u = svdE.getU();
-        DenseMatrix vT = svdE.getVt();
         assert(u.numColumns() == 3);
         assert(u.numRows() == 3);
         assert(vT.numColumns() == 3);
@@ -1468,6 +1594,15 @@ public class EpipolarTransformer {
         e[1] = e2;
 
         return e;
+    }
+    
+    public static class FundamentalMatrixStructures {
+        public DenseMatrix fm = null;
+        public DenseMatrix x1 = null;
+        public DenseMatrix x2 = null;
+        public DenseMatrix normalizedFM = null;
+        public NormalizedXY normalizedX1 = null;
+        public NormalizedXY normalizedX2 = null;
     }
 
     public static class NormalizedXY {

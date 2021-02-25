@@ -3,6 +3,7 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.EpipolarTransformer.FundamentalMatrixStructures;
 import algorithms.matrix.MatrixUtil;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
@@ -94,6 +95,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
         System.out.printf("expected FM=\n%s\n", FormatArray.toString(expectedFM, "%.3e"));
             
+        EpipolarTransformer tr = new EpipolarTransformer();
+        
         for (int tst = 0; tst < 2; tst++) {
             
             if (tst == 1) {
@@ -108,10 +111,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             DenseMatrix x2M = new DenseMatrix(x2);
             DenseMatrix fm = null;
 
-
-            EpipolarTransformer tr = new EpipolarTransformer();
-            fm = tr.calculateEpipolarProjection(x1M, x2M);
-
+            //fm = tr.calculateEpipolarProjection(x1M, x2M);
+            
             //List<DenseMatrix> fms = tr.calculateEpipolarProjectionFor7Points(x1M, x2M);
             //fm = fms.get(0);
 

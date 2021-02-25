@@ -3,6 +3,7 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,7 +92,10 @@ public class Distances {
     }
 
     /**
-     * evaluate fit for already matched point lists
+     * evaluate fit for the distances of each correspondence point to the
+     * epipolar line for it projected from it's pair in the other image.
+      Luong et al. 1993, "On determining the fundamental matrix?: analysis of 
+     different methods and experimental results"
      *
      * @param fm
      * @param leftPoints points from left image in matrix of size 3 X nPoints.
@@ -120,28 +124,24 @@ public class Distances {
         }
 
         //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
-        PairFloatArray distances = calculateDistancesFromEpipolar(fm,
+        double[][] distances = calculateDistancesFromEpipolar(fm,
             leftPoints, rightPoints);
 
+        double[] combinedDist = combineDistances(distances);
+                        
         List<Double> errors = new ArrayList<Double>();
 
         List<Integer> inlierIndexes = new ArrayList<Integer>();
 
-        for (int i = 0; i < distances.getN(); ++i) {
+        for (int i = 0; i < combinedDist.length; ++i) {
 
-            float leftPtD = distances.getX(i);
-
-            float rightPtD = distances.getY(i);
-
-            float dist = (float) Math.sqrt(leftPtD * leftPtD + rightPtD * rightPtD);
-
-            if (dist > threshhold) {
+            if (combinedDist[i] > threshhold) {
                 continue;
             }
 
             inlierIndexes.add(Integer.valueOf(i));
 
-            errors.add(Double.valueOf(dist));
+            errors.add(Double.valueOf(combinedDist[i]));
         }
 
         EpipolarTransformationFit fit = null;
@@ -162,6 +162,7 @@ public class Distances {
     }
     
     /**
+     * For use upon data that have been unit normal standardized.
      * evaluate fit for already matched point lists
      *
      * @param fm
@@ -229,19 +230,180 @@ public class Distances {
     }
     
     /**
-     * find the distance of the given points from their respective projective
-     * epipolar lines.
+     * given the fundamental matrix solution and the correspondence pairs,
+     * use the Luong et al. 1993 distance for each correspondence pair as
+     * the closest distance of a point from the projected epipolar line of
+     * its pair.   The standard deviation of the errors,
+     * and the chi-squared statistic factor are used to remove
+     * outliers and return the results.
+      Luong et al. 1993, "On determining the fundamental matrix?: analysis of 
+      different methods and experimental results".
+      NOTE: there may be other references for this method.
      *
+     * @param fm
+     * @param leftPoints points from left image in matrix of size 3 X nPoints.
+     * row 0 is x, row 1 is y, row 2 is all 1's
+     * @param rightPoints points from right image in matrix of size 3 X nPoints.
+     * row 0 is x, row 1 is y, row 2 is all 1's
+     * @param chiSquaredStatFactor
+     * @return
+     */
+    public EpipolarTransformationFit calculateEpipolarDistanceError2(
+            DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints,
+            double chiSquaredStatFactor) {
+
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        int nRows = leftPoints.numRows();
+        if (nRows != rightPoints.numRows()) {
+            throw new IllegalArgumentException("matrices must have same number of rows");
+        }
+
+        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
+        double[][] distances = calculateDistancesFromEpipolar(fm,
+            leftPoints, rightPoints);
+        
+        double[] combinedDist = combineDistances(distances);
+        
+        double[] meanAndStDev = MiscMath.getAvgAndStDev(combinedDist);
+        
+        double t = chiSquaredStatFactor * meanAndStDev[1];
+        
+        List<Double> errors = new ArrayList<Double>();
+
+        List<Integer> inlierIndexes = new ArrayList<Integer>();
+
+        for (int i = 0; i < combinedDist.length; ++i) {
+
+            if (combinedDist[i] > t) {
+                continue;
+            }
+
+            inlierIndexes.add(Integer.valueOf(i));
+
+            errors.add(combinedDist[i]);
+        }
+
+        EpipolarTransformationFit fit = null;
+
+        if (errors.size() > 0) {
+            fit = new EpipolarTransformationFit(fm, inlierIndexes,
+                ErrorType.DIST_TO_EPIPOLAR_LINE, errors, t);
+        } else {
+            fit = new EpipolarTransformationFit(fm, new ArrayList<Integer>(),
+                ErrorType.DIST_TO_EPIPOLAR_LINE, new ArrayList<Double>(), t);
+        }
+
+        fit.setNMaxMatchable(leftPoints.numColumns());
+
+        fit.calculateErrorStatistics();
+
+        return fit;
+    }
+    
+    /**
+     * For use upon data that have been unit normal standardized.
+     * given the fundamental matrix solution and the correspondence pairs,
+     * use the Sampson distance as an error for each correspondence pair, then use
+     * the standard deviation of the errors,
+     * and the chi-squared statistic factor to remove
+     * outliers and return the results.
+     *
+     * @param fm
+     * @param leftPoints points from left image in matrix of size 3 X nPoints.
+     * row 0 is x, row 1 is y, row 2 is all 1's
+     * @param rightPoints points from right image in matrix of size 3 X nPoints.
+     * row 0 is x, row 1 is y, row 2 is all 1's
+     * @param chiSquaredStatFactor
+     * @return
+     */
+    public EpipolarTransformationFit calculateSampsonsError2(
+        DenseMatrix fm, DenseMatrix leftPoints, DenseMatrix rightPoints,
+        double chiSquaredStatFactor) {
+
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        int nRows = leftPoints.numRows();
+        if (nRows != rightPoints.numRows()) {
+            throw new IllegalArgumentException("matrices must have same number of rows");
+        }
+
+        // dist^2:
+        double[] dist = calculateEpipolarSampsonsDistanceSquared(fm, 
+            leftPoints, rightPoints);
+        for (int i = 0; i < dist.length; ++i) {
+            dist[i] = Math.sqrt(dist[i]);
+        }
+        
+        double[] meanAndStDev = MiscMath.getAvgAndStDev(dist);
+        
+        double t = chiSquaredStatFactor * meanAndStDev[1];
+
+        List<Double> errors = new ArrayList<Double>();
+
+        List<Integer> inlierIndexes = new ArrayList<Integer>();
+
+        double d;
+        for (int i = 0; i < dist.length; ++i) {
+
+            d = dist[i];
+            
+            if (d > t) {
+                continue;
+            }
+
+            inlierIndexes.add(Integer.valueOf(i));
+
+            errors.add(d);
+        }
+
+        EpipolarTransformationFit fit = null;
+
+        if (errors.size() > 0) {
+            fit = new EpipolarTransformationFit(fm, inlierIndexes,
+                ErrorType.SAMPSONS, errors, t);
+        } else {
+            fit = new EpipolarTransformationFit(fm, new ArrayList<Integer>(),
+                ErrorType.SAMPSONS, new ArrayList<Double>(), t);
+        }
+
+        fit.setNMaxMatchable(leftPoints.numColumns());
+
+        fit.calculateErrorStatistics();
+
+        return fit;
+    }
+    
+    /**
+     * find the distance of the given points from their respective projected
+     * epipolar lines.
+     Luong et al. 1993, "On determining the fundamental matrix?: analysis of 
+     different methods and experimental results"
+     
      * @param fm
      * @param matchedLeftPoints points from left image in matrix of size 3 X
      * nPoints. row 0 is x, row 1 is y, row 2 is all 1's
      * @param matchedRightPoints points from right image in matrix of size 3 X
      * nPoints. row 0 is x, row 1 is y, row 2 is all 1's
-     * @return
+     * @return array of size[2][matchedLeftPoints.numColumns()]
      */
-    public PairFloatArray calculateDistancesFromEpipolar(
-            DenseMatrix fm, DenseMatrix matchedLeftPoints,
-            DenseMatrix matchedRightPoints) {
+    public double[][] calculateDistancesFromEpipolar(
+        DenseMatrix fm, DenseMatrix matchedLeftPoints,
+        DenseMatrix matchedRightPoints) {
 
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -264,7 +426,9 @@ public class Distances {
          */
         int n = matchedLeftPoints.numColumns();
 
-        PairFloatArray distances = new PairFloatArray(n);
+        double[][] distances = new double[2][n];
+        distances[0] = new double[n];
+        distances[1] = new double[n];
 
         // F * u_1 = 3 x n
         DenseMatrix rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);
@@ -279,17 +443,19 @@ public class Distances {
         for (int i = 0; i < matchedLeftPoints.numColumns(); i++) {
 
             calculatePerpDistFromLines(matchedLeftPoints, matchedRightPoints,
-                    rightEpipolarLines, leftEpipolarLines,
-                    i, i, output);
+                rightEpipolarLines, leftEpipolarLines,
+                i, i, output);
 
-            distances.add(output[0], output[1]);
+            distances[0][i] = output[0];
+            distances[1][i] = output[1];
         }
 
         return distances;
     }
     
     /**
-     Samspon's distance measures the distance between a correspondence pair
+     * For use upon data that have been unit normal standardized.
+     Sampson's distance measures the distance between a correspondence pair
      and its Sampson correction (Torr and Zissermann, 1997).
      Torr & Murray 1997 describe the Sampson distance further:
      "it represents the sum of squares of the algebraic residuals divided by 
@@ -443,6 +609,29 @@ public class Distances {
     }
     
     /**
+     * given the fundamental matrix solution and the correspondence pairs,
+     * use the errorType to calculate errors for each point, then use
+     * the standard deviation and the chi-squared statistic factor to remove
+     * outliers and return the results.
+     * 
+     * @param fm
+     * @param x1
+     * @param x2
+     * @param errorType
+     * @param chiSqStatFactor
+     * @return 
+     */
+    public EpipolarTransformationFit calculateError2(DenseMatrix fm,
+            DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double chiSqStatFactor) {
+
+        if (errorType.equals(ErrorType.SAMPSONS)) {
+            return calculateSampsonsError2(fm, x1, x2, chiSqStatFactor);
+        } else {
+            return calculateEpipolarDistanceError2(fm, x1, x2, chiSqStatFactor);
+        }
+    }
+    
+    /**
      * performs repmat(X(rowToTransposeAndReplicate,:)',1,3)
      * @param x matrix of size 3 X N.
      * @param rowToTransposeAndReplicate
@@ -577,5 +766,15 @@ public class Distances {
         out[3] = Arrays.copyOf(d, m0);
         
         return out;
+    }
+
+    private double[] combineDistances(double[][] distances) {
+        double[] c = new double[distances[0].length];
+        double d;
+        for (int i = 0; i < distances[0].length; ++i) {
+            d = distances[0][i]*distances[0][i] + distances[1][i]*distances[1][i];
+            c[i] = Math.sqrt(d);
+        }
+        return c;
     }
 }
