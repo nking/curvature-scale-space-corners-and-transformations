@@ -308,9 +308,7 @@ public class RANSACSolver {
            
                     bestPlunderCost = plunder;
                     bestPlunderIdx = fIdx;
-                    
- //TODO: continue revising from here
- 
+                     
                     // redo the transformation with all inliers
                     DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);
                     DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);
@@ -325,18 +323,21 @@ public class RANSACSolver {
                         inliersRightXY.set(2, countI, 1);
                         countI++;
                     }
+                    
+                    if (nInliers > 7) {
 
-                    DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
-                        inliersLeftXY, inliersRightXY);
+                        DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
+                            inliersLeftXY, inliersRightXY);
 
-                    if (fm2 != null) {
+                        if (fm2 != null) {
 
-                        EpipolarTransformationFit fit2 = distances
-                            .calculateError(fm2, matchedLeftXY, matchedRightXY,
-                            errorType, tolerance);
+                            EpipolarTransformationFit fit2 = distances
+                                .calculateError(fm2, matchedLeftXY, matchedRightXY,
+                                errorType, tolerance);
 
-                        if (fit2 != null && fit2.isBetter(fitI)) {
-                            fitI = fit2;
+                            if (fit2 != null && fit2.isBetter(fitI)) {
+                                fitI = fit2;
+                            }
                         }
                     }
                     
