@@ -6,6 +6,7 @@ import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.features.RANSACEuclideanSolver;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
+import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import no.uib.cipr.matrix.DenseMatrix;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
@@ -1291,37 +1293,55 @@ public class PartialShapeMatcher2 {
         
         TObjectIntMap<PairInt> pPointIndexMap = new TObjectIntHashMap<PairInt>();
         
-        PairIntArray matchedLeftXY = new PairIntArray(n);
-        PairIntArray matchedRightXY = new PairIntArray(n);
+        double[][] left = new double[3][n];
+        double[][] right = new double[3][n];
+        for (int i = 0; i < 3; ++i) {
+            left[i] = new double[n];
+            right[i] = new double[n];
+        }
+        Arrays.fill(left[2], 1.0);
+        Arrays.fill(right[2], 1.0);
         for (int i = 0; i < n; ++i) {
             int idx1 = best.idx1s.get(i);
             int idx2 = best.idx2s.get(i);
-            matchedLeftXY.add(p.getX(idx1), p.getY(idx1));
-            matchedRightXY.add(q.getX(idx2), q.getY(idx2));
+            left[0][i] = p.getX(idx1);
+            left[1][i] = p.getY(idx1);
+            right[0][i] = q.getX(idx2);
+            right[1][i] = q.getY(idx2);
             pPointIndexMap.put(new PairInt(p.getX(idx1), p.getY(idx1)), i);
         }
         
-        PairIntArray outputLeftXY = new PairIntArray();
-        PairIntArray outputRightXY = new PairIntArray();
+        // normalize left and right
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
+        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
         
         RANSACSolver solver = new RANSACSolver();
-
-        double tolerance = 4;
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY,
-            tolerance);
-
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+        
         if (storeMatrix) {
+            DenseMatrix denormFM = EpipolarTransformer
+                .denormalizeTheFundamentalMatrix(fit.getFundamentalMatrix(), 
+                normXY1.getNormalizationMatrix(), normXY2.getNormalizationMatrix());
+            fit.setFundamentalMatrix(denormFM);
             storedEpipolarFit = fit;
         }
         
-        if (outputLeftXY.getN() < matchedLeftXY.getN()) {
-            int nOut = outputLeftXY.getN();
+        List<Integer> inliers = fit.getInlierIndexes();
+        
+        if (inliers.size() < n) {
+            int nOut = inliers.size();
             TIntSet present = new TIntHashSet();
             for (int i = 0; i < nOut; ++i) {
-                PairInt p1 = new PairInt(outputLeftXY.getX(i),
-                    outputLeftXY.getY(i));
+                int idx = inliers.get(i);
+                PairInt p1 = new PairInt(left[0][idx], right[0][idx]);
                 int lIdx = pPointIndexMap.get(p1);
                 present.add(lIdx);
             }

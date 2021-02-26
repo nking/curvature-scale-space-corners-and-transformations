@@ -2,8 +2,8 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.ErrorType;
-import algorithms.imageProcessing.transform.EpipolarTransformer.FundamentalMatrixStructures;
 import algorithms.matrix.MatrixUtil;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 import org.junit.Test;
@@ -94,24 +95,76 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             }
         }
         System.out.printf("expected FM=\n%s\n", FormatArray.toString(expectedFM, "%.3e"));
-            
+        
+        
+        // ----- ransac
+        DenseMatrix x1M = new DenseMatrix(x1);
+        DenseMatrix x2M = new DenseMatrix(x2);
+        
+        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(x1M);
+        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(x2M);
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
+        
+        double tolerance = 1; //3.84 5.99 7.82        
+        boolean useToleranceAsStatFactor = false;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        RANSACSolver solver = new RANSACSolver();
+        EpipolarTransformationFit fitR = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+        
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fitR.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
+                
+        x1M = extractIndices(x1M, fitR.inlierIndexes);
+        x2M = extractIndices(x2M, fitR.inlierIndexes);
+        overplotEpipolarLines(fm, x1M, x2M, img1, img2, 
+            image1Width, image1Height, image2Width, image2Height, 
+            "hartley97_house__RANSAC");
+        System.out.println("RANSAC fit=" + fitR.toString());
+        System.out.println("RANSAC inlier indexes=" + 
+            Arrays.toString(fitR.inlierIndexes.toArray()));
+        System.out.println("RANSAC errors=" + 
+            Arrays.toString(fitR.errors.toArray()));
+        // -- end ransac
+        
+        Distances distances = new Distances();
         EpipolarTransformer tr = new EpipolarTransformer();
+        EpipolarTransformationFit fit = null;
+        int[] indexesToUse = null;
         
         for (int tst = 0; tst < 2; tst++) {
             
-            if (tst == 1) {
+            if (tst == 0) {
+                indexesToUse = new int[leftM.numColumns()];
+                for (int i = 0; i < indexesToUse.length; ++i) {
+                    indexesToUse[i] = i;
+                }
+            } else if (tst == 1) {
                 // redo for only the first 8 points which are not as "generally distributed":
-                x1 = MatrixUtil.copySubMatrix(x1, 0, 2, 0, 7);
-                x2 = MatrixUtil.copySubMatrix(x2, 0, 2, 0, 7);
+                indexesToUse = new int[8];
+                for (int i = 0; i < indexesToUse.length; ++i) {
+                    indexesToUse[i] = i;
+                }
             }
             
             System.out.printf("%d points in Hartley 1997 house\n============\n", x1[0].length);
         
-            DenseMatrix x1M = new DenseMatrix(x1);
-            DenseMatrix x2M = new DenseMatrix(x2);
-            DenseMatrix fm = null;
+            x1M = (DenseMatrix) Matrices.getSubMatrix(leftM, new int[]{0,1,2}, indexesToUse);
+            x2M = (DenseMatrix) Matrices.getSubMatrix(rightM, new int[]{0,1,2}, indexesToUse);
 
-            //fm = tr.calculateEpipolarProjection(x1M, x2M);
+            useToleranceAsStatFactor = true;
+            tolerance = 3.88;
+            
+            DenseMatrix normalizedFM = tr.calculateEpipolarProjection(x1M, x2M);
+
+            assertNotNull(normalizedFM);
+                
+            fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+                normalizedFM, normXY1.getNormalizationMatrix(),
+                normXY2.getNormalizationMatrix());
             
             //List<DenseMatrix> fms = tr.calculateEpipolarProjectionFor7Points(x1M, x2M);
             //fm = fms.get(0);
@@ -123,17 +176,19 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
                 image1Width, image1Height, image2Width, image2Height, 
                 "hartley97_house__" + tst);
 
-            Distances distances = new Distances();
-
-            double tolerance = 2;
-
-            EpipolarTransformationFit fit = distances.calculateError(fm, x1M, 
-                x2M, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
-            System.out.println("epipolar fit=" + fit.toString());
-
-            fit = distances.calculateError(fm, x1M, 
-                x2M, ErrorType.SAMPSONS, tolerance);
-            System.out.println("samspon errors=" + fit.toString());
+            if (useToleranceAsStatFactor) {
+                fit = distances.calculateError2(normalizedFM,
+                    //x1M, x2M, 
+                    leftM, rightM,
+                    errorType, tolerance);
+            } else {
+                fit = distances.calculateError(normalizedFM,
+                    //x1M, x2M, 
+                    leftM, rightM,
+                    errorType, tolerance);
+            }
+        
+            System.out.println("errors=" + fit.toString());
         }
     }
     
@@ -186,26 +241,33 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         DenseMatrix x1M = new DenseMatrix(x1);
         DenseMatrix x2M = new DenseMatrix(x2);
         
-        DenseMatrix fm = null;
-        EpipolarTransformer tr = new EpipolarTransformer();
-        //fm = tr.calculateEpipolarProjection(x1M, x2M);
-        List<DenseMatrix> fms = tr.calculateEpipolarProjectionFor7Points(
-           x1M, x2M);
-        fm = fms.get(0);
+        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(x1M);
+        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(x2M);
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
         
-        System.out.printf("de-normalized FM=\n%s\n", 
-            FormatArray.toString(fm, "%.3e"));
+        double tolerance = 1; //3.84 5.99 7.82        
+        boolean useToleranceAsStatFactor = false;
+        ErrorType errorType = ErrorType.SAMPSONS;
         
+        RANSACSolver solver = new RANSACSolver();
+        EpipolarTransformationFit fitR = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+        
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fitR.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
+                
+        x1M = extractIndices(x1M, fitR.inlierIndexes);
+        x2M = extractIndices(x2M, fitR.inlierIndexes);
         overplotEpipolarLines(fm, x1M, x2M, img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
-            "nc_book"); 
-        
-        //Distances distances = new Distances();
-        
-        //DenseMatrix matchedLeftXY = Util.rewriteInto3ColumnMatrix(leftTrueMatches);
-        
-        //EpipolarTransformationFit fit = distances.calculateError(fm, matchedLeftXY, 
-        //    matchedRightXY, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
+            "nc__RANSAC");
+        System.out.println("RANSAC fit=" + fitR.toString());
+        System.out.println("RANSAC inlier indexes=" + 
+            Arrays.toString(fitR.inlierIndexes.toArray()));
+        System.out.println("RANSAC errors=" + 
+            Arrays.toString(fitR.errors.toArray()));
         
         /*PolygonAndPointPlotter plotter = 
             new PolygonAndPointPlotter(0, 512, 0, 512);
@@ -607,6 +669,19 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             e.printStackTrace();
             System.out.println(e.getMessage());
         }
+    }
+
+    private DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
+        DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());
+        int r = 0;
+        for (int i = 0; i < inlierIndexes.size(); ++i) {
+            int idx = inlierIndexes.get(i);
+            for (int j = 0; j < m.numRows(); ++j) {
+                out.add(j, r, m.get(j, idx));
+            }
+            r++;
+        }
+        return out;
     }
 
 }

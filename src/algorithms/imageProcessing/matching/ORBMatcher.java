@@ -9,15 +9,18 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.VeryLongBitString;
+import algorithms.imageProcessing.transform.EpipolarTransformer;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import no.uib.cipr.matrix.DenseMatrix;
 
 /**
  * a class to hold various methods related to matching
@@ -131,22 +134,22 @@ public class ORBMatcher {
             return qs;
         }
         
-        // ransac to remove outliers
-        PairIntArray outputLeftXY = new PairIntArray(matches.length);
-        PairIntArray outputRightXY = new PairIntArray(matches.length);
-        EpipolarTransformationFit fit 
-            = removeOutliersWithRANSAC(matches, 
-            keypoints1, keypoints2, outputLeftXY, outputRightXY);
+        // ransac to remove outliers.  
+        //     note, the method normalizes a copy of the matched points for the algorithm
+        EpipolarTransformationFit fit = removeOutliersWithRANSAC(matches, 
+            keypoints1, keypoints2);
         
         if (fit == null) {
             return null;
         }
-                
-        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];
-        for (int i = 0; i < outputLeftXY.getN(); ++i) {
+         
+        List<Integer> inliers = fit.getInlierIndexes();
+        QuadInt[] qs = new QuadInt[inliers.size()];
+        for (int i = 0; i < inliers.size(); ++i) {
+            int idx = inliers.get(i);
             QuadInt q = new QuadInt(
-                outputLeftXY.getX(i), outputLeftXY.getY(i), 
-                outputRightXY.getX(i), outputRightXY.getY(i)
+                keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),
+                keypoints2.get(idx).getX(), keypoints2.get(idx).getY()
             );
             qs[i] = q;
         }
@@ -218,22 +221,22 @@ public class ORBMatcher {
             return qs;
         }
         
-        // ransac to remove outliers
-        PairIntArray outputLeftXY = new PairIntArray(matches.length);
-        PairIntArray outputRightXY = new PairIntArray(matches.length);
-        EpipolarTransformationFit fit 
-            = removeOutliersWithRANSAC(matches, 
-            keypoints1, keypoints2, outputLeftXY, outputRightXY);
+        // ransac to remove outliers.
+        //NOTE: the fundamental matrix in the fit has not been de-normalized.
+        EpipolarTransformationFit fit = removeOutliersWithRANSAC(matches, 
+            keypoints1, keypoints2);
         
         if (fit == null) {
             return null;
         }
-                
-        QuadInt[] qs = new QuadInt[outputLeftXY.getN()];
-        for (int i = 0; i < outputLeftXY.getN(); ++i) {
+         
+        List<Integer> inliers = fit.getInlierIndexes();
+        QuadInt[] qs = new QuadInt[inliers.size()];
+        for (int i = 0; i < inliers.size(); ++i) {
+            int idx = inliers.get(i);
             QuadInt q = new QuadInt(
-                outputLeftXY.getX(i), outputLeftXY.getY(i), 
-                outputRightXY.getX(i), outputRightXY.getY(i)
+                keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),
+                keypoints2.get(idx).getX(), keypoints2.get(idx).getY()
             );
             qs[i] = q;
         }
@@ -539,35 +542,57 @@ public class ORBMatcher {
         return (int) Math.sqrt(diffX * diffX + diffY * diffY);
     }
 
+    /**
+     * calculate the fundamental matrix given the correspondence matches.
+     * the correspondence is normalized and the fundamental matrix is calculated,
+     * then the errors are estimated using the Sampson's distance as errors
+     * and a 3.8*sigma as inlier threshold.
+     * @param matches
+     * @param keypoints1
+     * @param keypoints2
+     * @return epipolar fit to the matches.  note that the correspondence
+     * is unit standard normalized and the fundamental matrix returned
+     * in the fit is not de-normalized.
+     */
     private static EpipolarTransformationFit 
         removeOutliersWithRANSAC(int[][] matches, 
-        List<PairInt> keypoints1, List<PairInt> keypoints2,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
+        List<PairInt> keypoints1, List<PairInt> keypoints2) {
         
         int n0 = matches.length;
         
-        PairIntArray matchedLeftXY = new PairIntArray(n0);
-        PairIntArray matchedRightXY = new PairIntArray(n0);
+        double[][] left = new double[3][n0];
+        double[][] right = new double[3][n0];
+        for (int i = 0; i < 3; ++i) {
+            left[i] = new double[n0];
+            right[i] = new double[n0];
+        }
+        Arrays.fill(left[2], 1.0);
+        Arrays.fill(right[2], 1.0);
         for (int i = 0; i < n0; ++i) {
             int idx1 = matches[i][0];
             int idx2 = matches[i][1];
-            matchedLeftXY.add(keypoints1.get(idx1));
-            matchedRightXY.add(keypoints2.get(idx2));
+            left[0][i] = keypoints1.get(idx1).getX();
+            left[1][i] = keypoints1.get(idx1).getY();
+            right[0][i] = keypoints2.get(idx2).getX();
+            right[1][i] = keypoints2.get(idx2).getY();
         }
+    
+        // normalize left and right
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
+        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
         
         RANSACSolver solver = new RANSACSolver();
         
-        double tolerance = 4;
-        
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY,
-            tolerance);
-
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);                
+        
         return fit;        
-    }
-
-    private static int[][] attemptMatchesUsingEuclidean(int[][] matches, List<PairInt> keypoints1, List<PairInt> keypoints2, int[][] cost) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

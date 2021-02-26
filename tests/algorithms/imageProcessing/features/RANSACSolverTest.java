@@ -6,6 +6,7 @@ import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Distances;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
+import algorithms.imageProcessing.transform.EpipolarTransformer.NormalizedXY;
 import algorithms.imageProcessing.transform.Util;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.PairFloatArray;
@@ -13,6 +14,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -43,35 +45,32 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray rightTrueMatches = new PairIntArray();
         getMertonCollege10TrueMatches(leftTrueMatches, rightTrueMatches);
         
-        /*
-        PairIntArray leftFalseMatches = new PairIntArray();
-        PairIntArray rightFalseMatches = new PairIntArray();
-        getMertonCollegeFalseMatch1(leftFalseMatches, rightFalseMatches);
-        getMertonCollegeFalseMatch2(leftFalseMatches, rightFalseMatches);
-        getMertonCollegeFalseMatch3(leftFalseMatches, rightFalseMatches);
+        double[][] left = convertToDouble(leftTrueMatches);
+        double[][] right = convertToDouble(leftTrueMatches);
         
-        PairIntArray leftTruePlusFalse = leftTrueMatches.copy();
-        PairIntArray rightTruePlusFalse = rightTrueMatches.copy();
-        getMertonCollegeFalseMatch1(leftTruePlusFalse, rightTruePlusFalse);
-        getMertonCollegeFalseMatch2(leftTruePlusFalse, rightTruePlusFalse);
-        getMertonCollegeFalseMatch3(leftTruePlusFalse, rightTruePlusFalse);
-        */
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
         
-        PairIntArray outputLeft = new PairIntArray(); 
-        PairIntArray outputRight = new PairIntArray();
+        NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
+        NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
+        
         
         RANSACSolver solver = new RANSACSolver();
-        double tolerance = 4;
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            //leftTruePlusFalse, rightTruePlusFalse, outputLeft, outputRight);
-            leftTrueMatches, rightTrueMatches, outputLeft, outputRight,
-            tolerance);
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
         
         assertNotNull(fit);
         
-        log.info("fit=" + fit.toString());
-        log.info(" fm=" + fit.getFundamentalMatrix().toString());
+        log.info("normalized fit=" + fit.toString());
+        log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
+        
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -84,18 +83,18 @@ public class RANSACSolverTest extends TestCase {
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
 
-        overplotEpipolarLines(fit.getFundamentalMatrix(), 
-            //outputLeft, outputRight,
-            leftTrueMatches, rightTrueMatches,
+        overplotEpipolarLines(fm, leftTrueMatches, rightTrueMatches,
             img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
             "r" + Integer.valueOf(0).toString()); 
         
-        int n = outputLeft.getN();
+        List<Integer> inliers = fit.getInlierIndexes();
+        
+        int n = inliers.size();
         
         log.info("leftTrueMatches=" + leftTrueMatches.getN());
         log.info("rightTrueMatches=" + rightTrueMatches.getN());
-        log.info("outputRight=" + outputRight.getN());
+        log.info("outputRight=" + n);
         
         /*
         solution when all 10 are given and the first randomly chosen among
@@ -106,21 +105,12 @@ public class RANSACSolverTest extends TestCase {
         */
         
         List<Double> errors = fit.getErrors();
-        if (leftTrueMatches.getN() != outputLeft.getN()) {
-            EpipolarTransformer spTransformer = new EpipolarTransformer();
-            DenseMatrix fm = spTransformer.calculateEpipolarProjection(
-                leftTrueMatches, rightTrueMatches);
-            Distances d = new Distances();
-            EpipolarTransformationFit fit0 = d.calculateEpipolarDistanceError(fm, 
-               Util.rewriteInto3ColumnMatrix(leftTrueMatches),
-               Util.rewriteInto3ColumnMatrix(rightTrueMatches), tolerance); 
+        if (leftTrueMatches.getN() != inliers.size()) {
             
-            overplotEpipolarLines(fit0.getFundamentalMatrix(), 
-                    //outputLeft, outputRight,
-                    leftTrueMatches, rightTrueMatches,
-            img1, img2, 
-            image1Width, image1Height, image2Width, image2Height, 
-            "rr" + Integer.valueOf(0).toString()); 
+            overplotEpipolarLines(fm, leftTrueMatches, rightTrueMatches,
+                img1, img2, 
+                image1Width, image1Height, image2Width, image2Height, 
+                "rr_merton"); 
         }
         
         for (double error : errors) {
@@ -146,18 +136,34 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray m2 = new PairIntArray(7);
         populateWithMertonMatches7(m1, m2);
                 
-        PairIntArray out1 = new PairIntArray(m1.getN());
-        PairIntArray out2 = new PairIntArray(m1.getN());
+        double[][] left = convertToDouble(m1);
+        double[][] right = convertToDouble(m2);
+        
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
+        NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
+        
+        
         RANSACSolver solver = new RANSACSolver();
-        double tolerance = 4;
-        EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+        
+        assertNotNull(fit);
+        assertEquals(m1.getN(), fit.getInlierIndexes().size());
+        assertEquals(m1.getN(), m2.getN());
+        
+        log.info("normalized fit=" + fit.toString());
+        log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
-        assertEquals(m1.getN(), out1.getN());
-        assertEquals(m2.getN(), out2.getN());
-        
-        DenseMatrix fm = fit.getFundamentalMatrix();
-        
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
+                
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
@@ -167,50 +173,22 @@ public class RANSACSolverTest extends TestCase {
         Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
-        overplotEpipolarLines(fit.getFundamentalMatrix(), m1, m2,
+        overplotEpipolarLines(fm, m1, m2,
             img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
-            "r" + Integer.valueOf(1).toString()); 
+            "r_merton"); 
+         
+        List<Double> errors = fit.getErrors();
         
-        /*
-        System.out.print("fm.errors=");
-        for (Double d : fit.getErrors()) {
-            System.out.println(" " + d);
-        }
-        System.out.println("");
-        */
-        EpipolarTransformer eTransformer = new EpipolarTransformer();
+        double thresh = tolerance * fit.getStDevFromMean();
         
-        DenseMatrix m1m = Util.rewriteInto3ColumnMatrix(m1);
-        DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
-        
-        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
-            algorithms.matrix.MatrixUtil.transpose(fm), m2m);
-
-        Distances distances = new Distances();
-                
-        // the 2 distances:
-        float[] outputDist = new float[2];
-        for (int i = 0; i < m1.getN(); ++i) {
-            int j = i;
+        for (int i = 0; i < errors.size(); ++i) {
             
-            distances.calculatePerpDistFromLines(
-                m1m, m2m, 
-                m2EpipolarLines, m1EpipolarLines, 
-                i, j, outputDist);
-                        
-            System.out.println(String.format(
-                "fm dists=(%.4f)  unnorm dists=(%.4f, %.4f)", 
-                fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
-        
             // if normalize the points and use the normalized
             //  matrix, can expect these to be <0.001
             assertTrue(
-                Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < tolerance);
-            assertTrue(Math.abs(outputDist[0]) < tolerance);
-            assertTrue(Math.abs(outputDist[1]) < tolerance);
+                Math.abs(errors.get(i).doubleValue()) 
+                < thresh);
         }
                 
         // some points which are matches, but aren't in the
@@ -244,7 +222,10 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
         DenseMatrix p1EpipolarLines = MatrixUtil.multiply(
             algorithms.matrix.MatrixUtil.transpose(fm), p2m);
-                
+          
+        Distances distances = new Distances();
+        float[] outputDist = new float[2];
+        
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
             
@@ -273,18 +254,34 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray m1 = new PairIntArray(7);
         PairIntArray m2 = new PairIntArray(7);
         populateWithBrownAndLoweMatches7(m1, m2);
-                
-        PairIntArray out1 = new PairIntArray(m1.getN());
-        PairIntArray out2 = new PairIntArray(m1.getN());
-        RANSACSolver solver = new RANSACSolver();
-        double tolerance = 4;
-        EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
-
-        assertEquals(m1.getN(), out1.getN());
-        assertEquals(m2.getN(), out2.getN());
+          
+        double[][] left = convertToDouble(m1);
+        double[][] right = convertToDouble(m2);
         
-        DenseMatrix fm = fit.getFundamentalMatrix();
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
+        NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
+        
+        
+        RANSACSolver solver = new RANSACSolver();
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+        
+        assertNotNull(fit);
+        assertEquals(m1.getN(), fit.getInlierIndexes().size());
+        assertEquals(m1.getN(), m2.getN());
+        
+        log.info("normalized fit=" + fit.toString());
+        log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
+
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
@@ -294,47 +291,18 @@ public class RANSACSolverTest extends TestCase {
         Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
-        overplotEpipolarLines(fit.getFundamentalMatrix(), m1, m2,
+        
+        overplotEpipolarLines(fm, m1, m2,
             img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
-            "r" + Integer.valueOf(2).toString());
+            "r_brown_lowe");
         
-        /*
-        System.out.print("fm.errors=");
-        for (Double d : fit.getErrors()) {
-            System.out.println(" " + d);
-        }
-        System.out.println("");
-        */
-        EpipolarTransformer eTransformer = new EpipolarTransformer();
+        List<Double> errors = fit.getErrors();
         
-        DenseMatrix m1m = Util.rewriteInto3ColumnMatrix(m1);
-        DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
+        double thresh = tolerance * fit.getStDevFromMean();
         
-        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
-           algorithms.matrix.MatrixUtil.transpose(fm), m2m);
-
-        Distances distances = new Distances();
-                
-        // the 2 distances:
-        float[] outputDist = new float[2];
-        for (int i = 0; i < m1.getN(); ++i) {
-            int j = i;
-            
-            distances.calculatePerpDistFromLines(
-                m1m, m2m, 
-                m2EpipolarLines, m1EpipolarLines, 
-                i, j, outputDist);
-                        
-            System.out.println(String.format(
-                "fm dists=(%.2f)  unnorm dists=(%.2f, %.2f)", 
-                fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
-        
-            assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < tolerance);
-            assertTrue(Math.abs(outputDist[0]) < tolerance);
-            assertTrue(Math.abs(outputDist[1]) < tolerance);
+        for (int i = 0; i < errors.size(); ++i) {
+            assertTrue(Math.abs(errors.get(i).doubleValue()) < thresh);
         }
                 
         // some points which are matches, but aren't in the
@@ -360,6 +328,9 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
         DenseMatrix p1EpipolarLines = MatrixUtil.multiply(
             algorithms.matrix.MatrixUtil.transpose(fm), p2m);
+         
+        Distances distances = new Distances();
+        float[] outputDist = new float[2];
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -390,15 +361,33 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray m2 = new PairIntArray();
         populateWithCampusMatchesMoreThan7(m1, m2);
             
-        PairIntArray out1 = new PairIntArray(m1.getN());
-        PairIntArray out2 = new PairIntArray(m1.getN());
+        double[][] left = convertToDouble(m1);
+        double[][] right = convertToDouble(m2);
+        
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
+        NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
+        
         
         RANSACSolver solver = new RANSACSolver();
-        double tolerance = 4;
-        EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+        
+        assertNotNull(fit);
+        assertEquals(m1.getN(), fit.getInlierIndexes().size());
+        assertEquals(m1.getN(), m2.getN());
+        
+        log.info("normalized fit=" + fit.toString());
+        log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
-        DenseMatrix fm = fit.getFundamentalMatrix();
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
@@ -411,7 +400,7 @@ public class RANSACSolverTest extends TestCase {
         
         overplotEpipolarLines(fm, m1, m2,
             img1, img2, image1Width, image1Height, image2Width, image2Height, 
-            "r" + Integer.valueOf(3).toString());
+            "r_campus_moderate");
                 
         System.out.print("fm=" + fm.toString());
         System.out.print("fm.errors=");
@@ -422,39 +411,15 @@ public class RANSACSolverTest extends TestCase {
         System.out.println("fm tolerance = " + fit.getTolerance());
         System.out.flush();
         
-        assertEquals(m1.getN(), out1.getN());
-        assertEquals(m2.getN(), out2.getN());
+        assertEquals(m1.getN(), fit.getInlierIndexes().size());
+        assertEquals(m2.getN(), m1.getN());
         
-        EpipolarTransformer eTransformer = new EpipolarTransformer();
+        List<Double> errors = fit.getErrors();
         
-        DenseMatrix m1m = Util.rewriteInto3ColumnMatrix(m1);
-        DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
+        double thresh = tolerance * fit.getStDevFromMean();
         
-        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
-            algorithms.matrix.MatrixUtil.transpose(fm), m2m);
-
-        Distances distances = new Distances();
-               
-        // the 2 distances:
-        float[] outputDist = new float[2];
-        for (int i = 0; i < m1.getN(); ++i) {
-            int j = i;
-            
-            distances.calculatePerpDistFromLines(
-                m1m, m2m, 
-                m2EpipolarLines, m1EpipolarLines, 
-                i, j, outputDist);
-                        
-            System.out.println(String.format(
-                "fm dists=(%.2f)  unnorm dists=(%.2f, %.2f)", 
-                fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
-            System.out.flush();
-        
-            assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < tolerance);
-            assertTrue(Math.abs(outputDist[0]) < tolerance);
-            assertTrue(Math.abs(outputDist[1]) < tolerance);
+        for (int i = 0; i < errors.size(); ++i) {
+            assertTrue(Math.abs(errors.get(i).doubleValue()) < thresh);
         }
         
     }
@@ -467,55 +432,40 @@ public class RANSACSolverTest extends TestCase {
         PairIntArray m2 = new PairIntArray(7);
         populateWithAndroid0402SmallMatches7(m1, m2);
                 
-        PairIntArray out1 = new PairIntArray(m1.getN());
-        PairIntArray out2 = new PairIntArray(m1.getN());
+        double[][] left = convertToDouble(m1);
+        double[][] right = convertToDouble(m2);
+        
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
+        NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
+        
+        
         RANSACSolver solver = new RANSACSolver();
-        double tolerance = 4;
-        EpipolarTransformationFit fit
-            = solver.calculateEpipolarProjection(m1, m2, out1, out2, tolerance);
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+        
+        assertNotNull(fit);
+        assertEquals(m1.getN(), fit.getInlierIndexes().size());
+        assertEquals(m1.getN(), m2.getN());
+        
+        log.info("normalized fit=" + fit.toString());
+        log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
         
-        assertEquals(m1.getN(), out1.getN());
-        assertEquals(m2.getN(), out2.getN());
+        List<Double> errors = fit.getErrors();
         
-        DenseMatrix fm = fit.getFundamentalMatrix();
+        double thresh = tolerance * fit.getStDevFromMean();
         
-        /*
-        System.out.print("fm.errors=");
-        for (Double d : fit.getErrors()) {
-            System.out.println(" " + d);
-        }
-        System.out.println("");
-        */       
-        EpipolarTransformer eTransformer = new EpipolarTransformer();
-        
-        DenseMatrix m1m = Util.rewriteInto3ColumnMatrix(m1);
-        DenseMatrix m2m = Util.rewriteInto3ColumnMatrix(m2);
-        
-        DenseMatrix m2EpipolarLines = MatrixUtil.multiply(fm, m1m);
-        DenseMatrix m1EpipolarLines = MatrixUtil.multiply(
-            algorithms.matrix.MatrixUtil.transpose(fm), m2m);
-
-        Distances distances = new Distances();
-                
-        // the 2 distances:
-        float[] outputDist = new float[2];
-        for (int i = 0; i < m1.getN(); ++i) {
-            int j = i;
-            
-            distances.calculatePerpDistFromLines(
-                m1m, m2m, 
-                m2EpipolarLines, m1EpipolarLines, 
-                i, j, outputDist);
-                        
-            System.out.println(String.format(
-                "fm dists=(%.2f)  unnorm dists=(%.2f, %.2f)", 
-                fit.getErrors().get(i).floatValue(), outputDist[0], outputDist[1]));
-        
-            assertTrue(Math.abs(fit.getErrors().get(i).doubleValue()) 
-                < tolerance);
-            assertTrue(Math.abs(outputDist[0]) < tolerance);
-            assertTrue(Math.abs(outputDist[1]) < tolerance);
+        for (int i = 0; i < errors.size(); ++i) {
+            assertTrue(Math.abs(errors.get(i).doubleValue()) < thresh);
         }
                 
         // some points which are matches, but aren't in the
@@ -541,6 +491,9 @@ public class RANSACSolverTest extends TestCase {
         DenseMatrix p2EpipolarLines = MatrixUtil.multiply(fm, p1m);
         DenseMatrix p1EpipolarLines = MatrixUtil.multiply(
             algorithms.matrix.MatrixUtil.transpose(fm), p2m);
+        
+        Distances distances = new Distances();
+        float[] outputDist = new float[2];
         
         for (int i = 0; i < points1.getN(); ++i) {
             int j = i;
@@ -850,5 +803,19 @@ public class RANSACSolverTest extends TestCase {
         } else {
             return Color.ORANGE;
         }
+    }
+
+    private double[][] convertToDouble(PairIntArray a) {
+        int n = a.getN();
+        double[][] out = new double[3][n];
+        for (int i = 0; i < 3; ++i) {
+            out[i] = new double[n];
+        }
+        Arrays.fill(out[2], 1);
+        for (int i = 0; i < n; ++i) {
+            out[0][i] = a.getX(i);
+            out[1][i] = a.getY(i);
+        }
+        return out;
     }
 }

@@ -352,6 +352,8 @@ public class Distances {
         double[] meanAndStDev = MiscMath.getAvgAndStDev(dist);
         
         double t = chiSquaredStatFactor * meanAndStDev[1];
+        
+        //System.out.printf("t=%.3e\n", t);
 
         List<Double> errors = new ArrayList<Double>();
 
@@ -599,7 +601,7 @@ public class Distances {
     }
 
     public EpipolarTransformationFit calculateError(DenseMatrix fm,
-            DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double threshhold) {
+        DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double threshhold) {
 
         if (errorType.equals(ErrorType.SAMPSONS)) {
             return calculateSampsonsError(fm, x1, x2, threshhold);
@@ -622,7 +624,8 @@ public class Distances {
      * @return 
      */
     public EpipolarTransformationFit calculateError2(DenseMatrix fm,
-            DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double chiSqStatFactor) {
+            DenseMatrix x1, DenseMatrix x2, ErrorType errorType, 
+            double chiSqStatFactor) {
 
         if (errorType.equals(ErrorType.SAMPSONS)) {
             return calculateSampsonsError2(fm, x1, x2, chiSqStatFactor);

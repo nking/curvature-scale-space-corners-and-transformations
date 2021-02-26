@@ -3,13 +3,15 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.EpipolarTransformer.NormalizedXY;
 import algorithms.matrix.MatrixUtil;
 import algorithms.imageProcessing.transform.Util;
+import algorithms.util.FormatArray;
 import algorithms.util.ResourceFinder;
-import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.awt.Color;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -34,27 +36,46 @@ public class DistancesTest extends TestCase {
         getMertonCollegeMoreThan7TrueMatches(leftTrueMatches, rightTrueMatches);
 
         DenseMatrix xy1 = Util.rewriteInto3ColumnMatrix(leftTrueMatches);
-
         DenseMatrix xy2 = Util.rewriteInto3ColumnMatrix(rightTrueMatches);
 
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        
+        NormalizedXY normXY1 = EpipolarTransformer.normalize(xy1);
+        NormalizedXY normXY2 = EpipolarTransformer.normalize(xy2);
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
         
         EpipolarTransformer spTransformer = new EpipolarTransformer();
 
-        DenseMatrix fm = spTransformer.calculateEpipolarProjection(
-            leftTrueMatches, rightTrueMatches);
+        DenseMatrix normalizedFM 
+            = spTransformer.calculateEpipolarProjection(leftM, rightM);
 
-        assertNotNull(fm);
-        
-        System.out.println("fm (>7pts) =" + fm.toString());
-
-        double tolerance = 4;
+        assertNotNull(normalizedFM);
+                
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            normalizedFM, normXY1.getNormalizationMatrix(),
+            normXY2.getNormalizationMatrix());
         
         Distances distances = new Distances();
-        EpipolarTransformationFit fit = distances.calculateError(fm, xy1, xy2, 
-            ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
+        EpipolarTransformationFit fit = null;
+        if (useToleranceAsStatFactor) {
+            fit = distances.calculateError2(normalizedFM,
+                leftM, rightM, errorType, tolerance);
+        } else {
+            fit = distances.calculateError(normalizedFM,
+                leftM, rightM, errorType, tolerance);
+        }
         
         assertEquals(leftTrueMatches.getN(), fit.getInlierIndexes().size());
         
+        System.out.println("fm normalized (>7pts) =" + 
+            FormatArray.toString(normalizedFM, "%.3e"));
+        
+        System.out.println("fm de-normalized (>7pts) =" + 
+            FormatArray.toString(fm, "%.3e"));
+
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
@@ -85,26 +106,67 @@ public class DistancesTest extends TestCase {
         DenseMatrix xy1 = Util.rewriteInto3ColumnMatrix(leftTrueMatches);
         DenseMatrix xy2 = Util.rewriteInto3ColumnMatrix(rightTrueMatches);
         
-        EpipolarTransformer et = new EpipolarTransformer();
+        NormalizedXY normXY1 = EpipolarTransformer.normalize(xy1);
+        NormalizedXY normXY2 = EpipolarTransformer.normalize(xy2);
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
         
-        List<DenseMatrix> fms = et.calculateEpipolarProjectionFor7Points(xy1, xy2);
-        for (DenseMatrix fm : fms) {
-            System.out.println("fm 7pt=" + fm.toString());
-            System.out.flush();
+        EpipolarTransformer spTransformer = new EpipolarTransformer();
+
+        List<DenseMatrix> normalizedFMs 
+            = spTransformer.calculateEpipolarProjectionFor7Points(leftM, rightM);
+
+        assertNotNull(normalizedFMs);
+        assertFalse(normalizedFMs.isEmpty());
+         
+        
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
+        Distances distances = new Distances();
+        
+        List<DenseMatrix> denormalizedFMs = new ArrayList<DenseMatrix>();
+        List<EpipolarTransformationFit> fits = new ArrayList<EpipolarTransformationFit>();
+        
+        EpipolarTransformationFit bestFit = null;
+        int bestFitIdx = -1;
+        
+        for (DenseMatrix nfm : normalizedFMs) {
+            DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+                nfm, normXY1.getNormalizationMatrix(),
+                normXY2.getNormalizationMatrix());
+            denormalizedFMs.add(fm);
+            
+            EpipolarTransformationFit fit = null;
+            if (useToleranceAsStatFactor) {
+                fit = distances.calculateError2(nfm,
+                        leftM, rightM, errorType, tolerance);
+            } else {
+                fit = distances.calculateError(nfm,
+                        leftM, rightM, errorType, tolerance);
+            }
+            
+            fits.add(fit);
+            
+            if (fit.isBetter(bestFit)) {
+                bestFit = fit;
+                bestFitIdx = fits.size() - 1;
+            }
         }
+        
+        assertEquals(leftTrueMatches.getN(), bestFit.getInlierIndexes().size());
+                
+        System.out.println("fm normalized (>7pts) =" + 
+            FormatArray.toString(normalizedFMs.get(bestFitIdx), "%.3e"));
+        
+        System.out.println("fm de-normalized (>7pts) =" + 
+            FormatArray.toString(denormalizedFMs.get(bestFitIdx), "%.3e"));
         
         //fm 7pt= -0.02  0.40  0.61
         //        -0.30 -0.03 -3.30
         //        -0.63  3.27  0.07
-                
-        double tolerance = 4;
-        
-        Distances distances = new Distances();
-        
-        EpipolarTransformationFit fit = distances.calculateError(fms.get(0), xy1, xy2, 
-            ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
-        
-        assertEquals(leftTrueMatches.getN(), fit.getInlierIndexes().size());
+                        
+        assertEquals(leftTrueMatches.getN(), bestFit.getInlierIndexes().size());
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
@@ -117,9 +179,9 @@ public class DistancesTest extends TestCase {
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
         
-        overplotEpipolarLines(fms.get(0), xy1, xy2,
+        overplotEpipolarLines(normalizedFMs.get(bestFitIdx), xy1, xy2,
             img1, img2, image1Width, image1Height, image2Width, image2Height, 
-            Integer.valueOf(7).toString()); 
+            "_merton_7pt_"); 
     }
     
     /*

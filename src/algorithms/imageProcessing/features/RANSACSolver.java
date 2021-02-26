@@ -24,11 +24,38 @@ import no.uib.cipr.matrix.DenseMatrix;
  *
  * <pre>
  * useful reading:
+ * add references in comments below here..
+ * 
  * http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
  * and
  * http://www.dtic.mil/dtic/tr/fulltext/u2/a460585.pdf
  * </pre>
  *
+ * Note: to compare different geometric model results:
+ * <pre>
+    The plunder-dl scoring can be used for comparison between different models.
+    for example, comparing results of the 7-point and 8-point 
+    solutions or comparing 7-point projection to 6-point affine, etc.
+
+    plunder-dl is from equation 33 of
+    Torr, Zisserman, & Maybank 1996, 
+    “Robust Detection of Degenerate Configurations whilst Estimating 
+    the Fundamental Matrix"
+    https://www.robots.ox.ac.uk/~phst/Papers/CVIU97/m.ps.gz
+     EQN 33: PL = DOF + (4*n_o + n_i dimension of model)
+                   where n_i = number of inliers
+                   n_o = number of outliers
+                   DOF = 7 for this solver
+    n=7               PL = DOF + 4*n_o + n_i* (model_dimension)
+         ni=7, no=0   PL = 7   + 0     + 0 * md
+         ni=5, no=2   PL = 7   + 8     + 8 * md
+         ni=4, no=3   PL = 7   + 12    + 28 * md
+    PLUNDER stands for Pick Least UNDEgenerate Randomly, Description Length
+
+    For nPoints=8, model_dimension = 1.
+    for nPoints=7 amd only 1 solution in the cubic constraints, model_dimension=2,
+    else for nPoints=7, model_dimension = 3.
+ * </pre>
  * @author nichole
  */
 public class RANSACSolver {
@@ -42,84 +69,51 @@ public class RANSACSolver {
     /**
      * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
-     * true matches.
+     * true matches.   NOTE: for best results, one should perform unit standard
+     * normalization on the correspondence first.
      *
-     * @param matchedLeftXY
-     * @param matchedRightXY
-     * @param outputLeftXY
-     * @param outputRightXY
-     * @return
-     */
-    public EpipolarTransformationFit calculateEpipolarProjection(
-        PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY, double tolerance) {
-
-        if (matchedLeftXY == null) {
-            throw new IllegalArgumentException("matchedLeftXY cannot be null");
-        }
-        if (matchedRightXY == null) {
-            throw new IllegalArgumentException("matchedRightXY cannot be null");
-        }
-        if (matchedLeftXY.getN() < 7) {
-            // cannot use this algorithm.
-            throw new IllegalArgumentException(
-            "the algorithms require 7 or more points.  matchedLeftXY.n=" 
-            + matchedLeftXY.getN());
-        }
-        
-        DenseMatrix input1 =
-            Util.rewriteInto3ColumnMatrix(matchedLeftXY);
-
-        DenseMatrix input2 =
-            Util.rewriteInto3ColumnMatrix(matchedRightXY);
-        
-        return calculateEpipolarProjection(input1, input2,
-            outputLeftXY, outputRightXY, tolerance);
-    }
-
-    /**
-     * calculate the epipolar transformation among the given points with the
-     * assumption that some of the points in the matched lists are not
-     * true matches.
-     *
-     * @param matchedLeftXY 3 X nData matrix with rows being x, y, and 1's respectively
-     * @param matchedRightXY 
-     * @param outputLeftXY
-     * @param outputRightXY
+     * @param leftCorres left correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param rightCorres right correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param errorType algorithm used to evaluate the fit of the fundamental matrix solutions.
+     * @param useToleranceAsStatFactor if set to false, tolerance is used as
+     * a fixed number in outlier removal, else if set to true, tolerance
+     * is used as the chi-squared statistic factor for the standard deviation
+     * of errors use in outlier removal.
      * @param tolerance tolerance in distance from epipolar line for a point to 
-     * be an inlier in the final fit.
+     * be an inlier in the final fit.   NOTE: if useToleranceAsStatFactor is true,
+     * it is interpreted as a chiSqStatFactor which is then used as 
+     * tolerance = tolerance * standard deviation of the mean distance errors.
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
-        final DenseMatrix matchedLeftXY, final DenseMatrix matchedRightXY,
-        final PairIntArray outputLeftXY, final PairIntArray outputRightXY,
-        final double tolerance) {
+        final DenseMatrix leftCorres, final DenseMatrix rightCorres,
+        ErrorType errorType,
+        boolean useToleranceAsStatFactor, final double tolerance) {
         
-        if (matchedLeftXY == null) {
-            throw new IllegalArgumentException("matchedLeftXY cannot be null");
-        }
-        if (matchedRightXY == null) {
-            throw new IllegalArgumentException("matchedRightXY cannot be null");
-        }
-        if (matchedLeftXY.numColumns() < 7) {
+        int nPoints = leftCorres.numColumns();
+        final int nSet = 7;
+        
+        if (nPoints < nSet) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the algorithms require 7 or more points."
-                + " matchedLeftXY.n=" + matchedLeftXY.numColumns());
+                + " leftCorres.n=" + leftCorres.numColumns());
         }
-        if (matchedLeftXY.numRows() != 3) {
+        if (leftCorres.numRows() != 3) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the algorithms require 3 rows representing x, y, and '1' values."
-                + " matchedLeftXY.n=" + matchedLeftXY.numColumns());
+                + " leftCorres.n=" + leftCorres.numColumns());
         }
-        if (matchedLeftXY.numColumns() != matchedRightXY.numColumns() ||
-            matchedLeftXY.numRows() != matchedRightXY.numRows()) {
+        if (leftCorres.numColumns() != rightCorres.numColumns() ||
+            leftCorres.numRows() != rightCorres.numRows()) {
             throw new IllegalArgumentException(
-                "matchedLeftXY and right bmust be the same size");
+                "leftCorres and rightCorres bmust be the same size");
         }
 
-        /*
+        /*        
         Using 7 point samples for epipolar transformation fits.
         -- the number of iterations for testing sub-samples of nPoints 
            (each of size 7) and finding one to be a good sub-sample with an
@@ -132,7 +126,7 @@ public class RANSACSolver {
            all points of the dataset.
            If the number of inliers is T or more, the fit is re-done with all
            of the points, where 
-           T = (1. - outlierPercentage) * (total number of data points)
+               T = (1. - outlierPercentage) * (total number of data points)
            The best fitting for all iterations as defined by number of inliers 
            and standard deviation from an epipolar line, is kept each time.
         -- at the end of each iteration, the number of iterations is then 
@@ -145,11 +139,7 @@ public class RANSACSolver {
         are tried.
         
         */
-
-        final int nSet = 7;
-
-        final int nPoints = matchedLeftXY.numColumns();
-                
+       
         // n!/(k!*(n-k)!
         final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(nPoints, nSet);
         boolean useAllSubsets = false;
@@ -159,11 +149,9 @@ public class RANSACSolver {
         log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
-        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
-
         EpipolarTransformer spTransformer = new EpipolarTransformer();
-        
-        // consensus indexes
+                
+        // consensus best fit and inlier indexes
         EpipolarTransformationFit bestFit = null;
         
         /*
@@ -180,6 +168,11 @@ public class RANSACSolver {
             nMaxIter = 1;
             useAllSubsets = true;
         } else {
+            /* The number of subsamples required to ensure T >= 0.95 
+            for given outlierPercent as fraction of contaminated data, 
+            where T is the probability that all the data 
+            points selected in one subsample are non-outliers.
+            */
             nMaxIter = RANSACAlgorithmIterations
                 .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
         }
@@ -227,126 +220,77 @@ public class RANSACSolver {
 
                 int idx = bitIndex;
 
-                sampleLeft.set(0, count, matchedLeftXY.get(0, idx));
-                sampleLeft.set(1, count, matchedLeftXY.get(1, idx));
+                sampleLeft.set(0, count, leftCorres.get(0, idx));
+                sampleLeft.set(1, count, leftCorres.get(1, idx));
                                 
-                sampleRight.set(0, count, matchedRightXY.get(0, idx));
-                sampleRight.set(1, count, matchedRightXY.get(1, idx));
+                sampleRight.set(0, count, rightCorres.get(0, idx));
+                sampleRight.set(1, count, rightCorres.get(1, idx));
                 
                 count++;
             }
             
-//TODO: edit here to return data structure that includes normalized
-        
-            // determine matrix from 7 points.
-            List<DenseMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
-                sampleLeft, sampleRight);
-
-            System.out.printf("%d out of %d iterations\n", nIter, nMaxIter);
-            System.out.flush();
+            // calculates 7-point solutions then filters using chirality checks.
+            List<DenseMatrix> fms = spTransformer
+                .calculateEpipolarProjectionFor7Points(sampleLeft, sampleRight);
             
             if (fms == null || fms.isEmpty()) {
                 nIter++;
                 continue;
             }
             
-            // use point dist to epipolar lines to estimate errors of sample
+            // evaluate fms solutions on all points and keep best and compare
+            // that to best overall solution
+            
             EpipolarTransformationFit fit = null;
             
-            double chiSqStatFactor = 7.82;
-            int plunder;
-            int bestPlunderCost = Integer.MAX_VALUE;
-            int bestPlunderIdx = -1;
-            
-            for (int fIdx = 0; fIdx < fms.size(); ++fIdx) {
+            // fit.isBetter() : comparison to other fit by the number of 
+            //     inliers, else if tie, mean of errors, else if tie, 
+            //     mean of standard deviation of mean of errors, else 
+            //     returns false
+            for (DenseMatrix fm : fms) {
                 
-                DenseMatrix fm = fms.get(fIdx);
+                EpipolarTransformationFit fitI = null;
+                // evaluate all points using the solution from the sub-sample
+                if (useToleranceAsStatFactor) {
+                    fitI = distances.calculateError2(fm,
+                        leftCorres, rightCorres, errorType, tolerance);
+                } else {
+                    fitI = distances.calculateError(fm,
+                        leftCorres, rightCorres, errorType, tolerance);
+                }
                 
-                // this uses a threshold of chiSqStatFactor * standard deviation
-                //   of the mean of the distances to remove outliers
-                EpipolarTransformationFit fitI = distances.calculateError2(fm, 
-                    matchedLeftXY, matchedRightXY, errorType, chiSqStatFactor);
-                      
                 int nInliers = fitI.getInlierIndexes().size();
-                int nOutliers = nSet - nInliers;
-                
-                /*
-                The plunder-dl scoring can be used for comparison between different models.
-                for example, comparing results of the 7-point and 8-point 
-                solutions or comparing 7-point projection to 6-point affine, etc.
-                
-                plunder-dl is from equation 33 of
-                Torr, Zisserman, & Maybank 1996, 
-                “Robust Detection of Degenerate Configurations whilst Estimating 
-                the Fundamental Matrix"
-                https://www.robots.ox.ac.uk/~phst/Papers/CVIU97/m.ps.gz
-                 EQN 33: PL = DOF + (4*n_o + n_i dimension of model)
-                               where n_i = number of inliers
-                               n_o = number of outliers
-                               DOF = 7 for this solver
-                n=7               PL = DOF + 4*n_o + n_i* (model_dimension)
-                     ni=7, no=0   PL = 7   + 0     + 0 * md
-                     ni=5, no=2   PL = 7   + 8     + 8 * md
-                     ni=4, no=3   PL = 7   + 12    + 28 * md
-                PLUNDER stands for Pick Least UNDEgenerate Randomly, Description Length
-                
-                For nPoints=8, model_dimension = 1.
-                for nPoints=7 amd only 1 solution in the cubic constraints, model_dimension=2,
-                else for nPoints=7, model_dimension = 3.
-                
-                Will use model_dimension=2 here and keep the smallest pluder score.
-                */
-                
-                // fitI.isBetter() : comparison to other fit by the number of 
-                //     inliers, else if tie, mean of errors, else if tie, 
-                //     mean of standard deviation of mean of errors, else 
-                //     returns false.
-                plunder = 7 + 4*nOutliers + 3*nInliers;
-                
-                if (nInliers >= nSet && (plunder <= bestPlunderCost) 
-                    && fitI.isBetter(fit)) {
-           
-                    bestPlunderCost = plunder;
-                    bestPlunderIdx = fIdx;
-                     
-                    // redo the transformation with all inliers
-                    DenseMatrix inliersLeftXY = new DenseMatrix(3, nInliers);
-                    DenseMatrix inliersRightXY = new DenseMatrix(3, nInliers);
-                    int countI = 0;
-                    for (Integer idx : fitI.getInlierIndexes()) {
-                        int idxInt = idx.intValue();
-                        inliersLeftXY.set(0, countI, matchedLeftXY.get(0, idxInt));
-                        inliersLeftXY.set(1, countI, matchedLeftXY.get(1, idxInt));
-                        inliersLeftXY.set(2, countI, 1);
-                        inliersRightXY.set(0, countI, matchedRightXY.get(0, idxInt));
-                        inliersRightXY.set(1, countI, matchedRightXY.get(1, idxInt));
-                        inliersRightXY.set(2, countI, 1);
-                        countI++;
-                    }
-                    
-                    if (nInliers > 7) {
-
+                if (nInliers >= nSet && fitI.isBetter(fit)) {
+                    if (nInliers > t && nInliers > nSet) {
+                        // redo the FM transformation with all inliers
+                        DenseMatrix inliersLeftXY = EpipolarTransformer
+                            .extractIndices(leftCorres, fitI.getInlierIndexes());
+                        DenseMatrix inliersRightXY = EpipolarTransformer
+                            .extractIndices(rightCorres, fitI.getInlierIndexes());
+                        
                         DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
                             inliersLeftXY, inliersRightXY);
-
+                        
                         if (fm2 != null) {
-
-                            EpipolarTransformationFit fit2 = distances
-                                .calculateError(fm2, matchedLeftXY, matchedRightXY,
-                                errorType, tolerance);
-
+                            EpipolarTransformationFit fit2 = null;
+                            if (useToleranceAsStatFactor) {
+                                fit2 = distances.calculateError2(fm2,
+                                    leftCorres, rightCorres, errorType, tolerance);
+                            } else {
+                                fit2 = distances.calculateError(fm2,
+                                    leftCorres, rightCorres, errorType, tolerance);
+                            }
                             if (fit2 != null && fit2.isBetter(fitI)) {
                                 fitI = fit2;
                             }
                         }
                     }
-                    
                     System.out.println("new local best fit: " + fitI.toString());
                     System.out.flush();
                     fit = fitI;
                 }
             }
-            
+                        
             if (fit == null) {
                 nIter++;
                 continue;
@@ -380,55 +324,21 @@ public class RANSACSolver {
                         }
                     }
                 }
-            }
+            }                
             
             nIter++;
         }
-
+        
         if (bestFit == null) {
             log.info("no solution.  nIter=" + nIter);
             return null;
         }
-                
-        // write to output and convert the coordinate indexes to the original point indexes
-        List<Integer> inlierIndexes = bestFit.getInlierIndexes();
-        for (int i = 0; i < inlierIndexes.size(); ++i) {
-            Integer index = inlierIndexes.get(i);
-            int idx = index.intValue();
-            outputLeftXY.add(
-                (int)Math.round(matchedLeftXY.get(0, idx)),
-                (int)Math.round(matchedLeftXY.get(1, idx)));
-            outputRightXY.add(
-                (int)Math.round(matchedRightXY.get(0, idx)),
-                (int)Math.round(matchedRightXY.get(1, idx)));
-        }
-      
+        
         log.fine("nIter=" + nIter);
-
-        log.fine("final fit: " + bestFit.toString());
+        
+        log.fine("final best fit to all points: " + bestFit.toString());
 
         return bestFit;
     }
     
-    /**
-     * if assume gaussian errors, for 1 degree of freedom (i.e. fitting
-     * a line, fundamental matrix, d^2 = 3.84*(st.dev^2)
-     * @param standardDeviation
-     * @return 
-     */
-    public static double estimateToleranceForDOF1(double standardDeviation) {
-        double d = Math.sqrt(3.84*standardDeviation*standardDeviation);
-        return d;
-    }
-    
-    /**
-     * if assume gaussian errors, for 2 degree of freedom (i.e. fitting
-     * a line, fundamental matrix, d^2 = 5.99*(st.dev^2)
-     * @param standardDeviation
-     * @return 
-     */
-    public static double estimateToleranceForDOF2(double standardDeviation) {
-        double d = Math.sqrt(5.99*standardDeviation*standardDeviation);
-        return d;
-    }
 }
