@@ -80,6 +80,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
         int image2Width = img2.getWidth();
         int image2Height = img2.getHeight();
+        Image _img1 = img1.copyImage();
+        Image _img2 = img2.copyImage();
         
         //overplotSVD(x1, img1, "tmp_nc_01_svd");
         
@@ -106,9 +108,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
         
-        double tolerance = 1; //3.84 5.99 7.82        
-        boolean useToleranceAsStatFactor = false;
-        ErrorType errorType = ErrorType.SAMPSONS;
+        double tolerance = 3.84;// 5.99 7.82        
+        boolean useToleranceAsStatFactor = true;
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fitR = solver.calculateEpipolarProjection(
@@ -136,6 +138,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         int[] indexesToUse = null;
         
         for (int tst = 0; tst < 2; tst++) {
+            img1 = _img1.copyImage();
+            img2 = _img2.copyImage();
+            
+            //in un-normalized units:
+            x1M = new DenseMatrix(x1);
+            x2M = new DenseMatrix(x2);
             
             if (tst == 0) {
                 indexesToUse = new int[leftM.numColumns()];
@@ -152,13 +160,20 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             
             System.out.printf("%d points in Hartley 1997 house\n============\n", x1[0].length);
         
-            x1M = (DenseMatrix) Matrices.getSubMatrix(leftM, new int[]{0,1,2}, indexesToUse);
-            x2M = (DenseMatrix) Matrices.getSubMatrix(rightM, new int[]{0,1,2}, indexesToUse);
+            //un-normalized coordinates
+            x1M = new DenseMatrix(Matrices.getSubMatrix(x1M, new int[]{0,1,2}, indexesToUse));
+            x2M = new DenseMatrix(Matrices.getSubMatrix(x2M, new int[]{0,1,2}, indexesToUse));
 
-            useToleranceAsStatFactor = true;
-            tolerance = 3.88;
+            //noremalized coordinates
+            DenseMatrix normX1M = new DenseMatrix(
+                Matrices.getSubMatrix(normXY1.getXy(), new int[]{0,1,2}, indexesToUse));
+            DenseMatrix normX2M = new DenseMatrix(
+                Matrices.getSubMatrix(normXY2.getXy(), new int[]{0,1,2}, indexesToUse));
             
-            DenseMatrix normalizedFM = tr.calculateEpipolarProjection(x1M, x2M);
+            useToleranceAsStatFactor = false;
+            tolerance = 2;
+            
+            DenseMatrix normalizedFM = tr.calculateEpipolarProjection(normX1M, normX2M);
 
             assertNotNull(normalizedFM);
                 
@@ -178,13 +193,11 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
 
             if (useToleranceAsStatFactor) {
                 fit = distances.calculateError2(normalizedFM,
-                    //x1M, x2M, 
-                    leftM, rightM,
+                    normXY1.getXy(), normXY2.getXy(),
                     errorType, tolerance);
             } else {
                 fit = distances.calculateError(normalizedFM,
-                    //x1M, x2M, 
-                    leftM, rightM,
+                    normXY1.getXy(), normXY2.getXy(),
                     errorType, tolerance);
             }
         
