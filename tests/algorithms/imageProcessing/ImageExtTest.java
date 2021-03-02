@@ -162,7 +162,7 @@ public class ImageExtTest extends TestCase {
             rgbToLumaMatrix[0] = new double[]{0.256, 0.504, 0.098};
             rgbToLumaMatrix[1] = new double[]{-0.148, -0.291, 0.439};
             rgbToLumaMatrix[2] = new double[]{0.439, -0.368, -0.072};
-            double[] yuv = MatrixUtil.multiply(rgbToLumaMatrix, 
+            double[] yuv = MatrixUtil.multiplyMatrixByColumnVector(rgbToLumaMatrix, 
                 new double[]{r, g, b});
 
             assertTrue(Math.abs(img.getCIEX(x, y) - cieXY[0]) < 0.01);
@@ -248,7 +248,7 @@ public class ImageExtTest extends TestCase {
                     rgbToLumaMatrix[0] = new double[]{0.256, 0.504, 0.098};
                     rgbToLumaMatrix[1] = new double[]{-0.148, -0.291, 0.439};
                     rgbToLumaMatrix[2] = new double[]{0.439, -0.368, -0.072};
-                    double[] expectedYUV = MatrixUtil.multiply(rgbToLumaMatrix,
+                    double[] expectedYUV = MatrixUtil.multiplyMatrixByColumnVector(rgbToLumaMatrix,
                         new double[]{expectedR, expectedG, expectedB});
 
                     assertTrue(Math.abs(img.getCIEX(index) - expectedCIEXY[0]) < 0.01);

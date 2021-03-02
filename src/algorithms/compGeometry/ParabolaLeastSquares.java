@@ -169,7 +169,7 @@ public class ParabolaLeastSquares {
         UpperTriangDenseMatrix r = qr.getR();
         
         Matrix qT = algorithms.matrix.MatrixUtil.transpose(q);
-        double[] qTY = MatrixUtil.multiply(qT, getRHSVector());
+        double[] qTY = MatrixUtil.multiplyMatrixByColumnVector(qT, getRHSVector());
         float[] c = new float[3];
         for (int i = (3 - 1); i >= 0; i--) {
             c[i] = (float)qTY[i];

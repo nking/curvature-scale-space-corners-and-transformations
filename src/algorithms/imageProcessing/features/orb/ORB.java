@@ -356,7 +356,7 @@ public class ORB {
     }
   
     /**
-     * @param image in col major format
+     * @param img in col major format
      * @return float array of pyramid images in row major format
      */
     private List<TwoDFloatArray> buildPyramid(GreyscaleImage img) {

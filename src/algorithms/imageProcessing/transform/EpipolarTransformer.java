@@ -655,12 +655,18 @@ public class EpipolarTransformer {
         
         //NLK: without having transposed F:
          // e2^T*F = 0  and F*e1 = 0
-         // F^T * x2 = leftEpipolarLines
-         // F * x1 = rightEpipolarLines
+         // F^T * x2 = leftEpipolarLines, that is lines in left image 
+                       due to epipolar projection of right points
+         // F * x1 = rightEpipolarLines, that is lines in right image 
+                       due to epipolar projection of left points
          // e1 = last column of U / last item of that column
+         //    = the left image position of the epipolar projection of the right camera center
          // e2 = last row of V / last item of that row
+         //    = the right image position of the epipolar projection of the left camera center
         */
                 
+        // row 0 = e1 = right camera center projected into left image reference frame
+        // row 1 = e2 = left camera center projected into right image reference frame
         double[][] leftRightEpipoles = calculateEpipoles(solution);
 
         // 3 columns (x,y,1):
@@ -719,6 +725,151 @@ public class EpipolarTransformer {
             return solution;
         }
         return null;
+    }
+    
+    /**
+     * Determine the camera matrices of an image pair up to a scene 
+     * homography, given their fundamental matrix using algorithm
+     * of Hartley and Zisserman 2004.
+     * <pre>
+     * If x2'*F*x1 = 0 for any pair of image points x1 and x2,
+         then the camera matrices of the image pair are 
+         P1 = [I 0] (as 3x4 matrix) and P2 = vgg_P_from_F(F), up to a scene homography.
+     * </pre>
+     * algorithm follows source code for vgg_P_from_F.m 
+     * adapted from this site and license:
+     *
+     * based upon code within  www.robots.ox.ac.uk/~vgg/hzbook/code/
+        MIT License
+        License for
+        "MATLAB Functions for Multiple View Geometry"
+
+        Copyright (c) 1995-2005 Visual Geometry Group
+        Department of Engineering Science
+        University of Oxford
+        http://www.robots.ox.ac.uk/~vgg/
+        Permission is hereby granted, free of charge, to any person obtaining a
+        * copy of this software and associated documentation files
+        * (the "Software"), to deal in the Software without restriction,
+        * including without limitation the rights to use, copy, modify, merge,
+        * publish, distribute, sublicense, and/or sell copies of the Software,
+        * and to permit persons to whom the Software is furnished to do so,
+        * subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included
+        * in all copies or substantial portions of the Software.
+
+        The software is provided "as is", without warranty of any kind, express
+        * or implied, including but not limited to the warranties of
+        * merchantability, fitness for a particular purpose and noninfringement.
+        * In no event shall the authors or copyright holders be liable for any
+        * claim, damages or other liability, whether in an action of contract,
+        * tort or otherwise, arising from, out of or in connection with the
+        * software or the use or other dealings in the software.
+
+       
+        %%%%%%%%%%%%%%%%%%%%%%%%%
+     * @param f fundamental matrix in format 3x3
+     * @return camera matrices in format 3x4
+    */
+    @SuppressWarnings({"unchecked"})
+    public DenseMatrix pFromF(DenseMatrix f) {
+        
+        /*
+         // e2^T*F = 0  and F*e1 = 0
+         // F^T * x2 = leftEpipolarLines, that is lines in left image 
+                       due to epipolar projection of right points
+         // F * x1 = rightEpipolarLines, that is lines in right image 
+                       due to epipolar projection of left points
+         // e1 = last column of U / last item of that column
+         //    = the left image position of the epipolar projection of the right camera center
+         // e2 = last row of V / last item of that row
+         //    = the right image position of the epipolar projection of the left camera center
+        */
+        
+        /*        
+        NOTE: vgg_contreps of a 3X1 vector e1 is
+            Y = [0      e1(3)  -e1(2)
+                -e1(3)  0      e1(1)
+                 e1(2) -e1(1)  0];
+        (looks like the skew-symmetric of e1)
+              
+        function P = vgg_P_from_F(F)
+        [U,S,V] = svd(F);
+        e = U(:,3);
+        P = [-vgg_contreps(e)*F e];
+        return
+        */
+        SVD svdE;
+        DenseMatrix u = null;
+        DenseMatrix vT = null;
+        double[] sDiag = null;
+        try {
+            svdE = SVD.factorize(f);
+            vT = svdE.getVt();
+            u = svdE.getU();
+            sDiag = svdE.getS();
+        } catch (NotConvergedException e) {
+            double[][] fm = MatrixUtil.convertToRowMajor(f);
+            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(fm), fm);
+            double[][] aaT = MatrixUtil.multiply(fm, MatrixUtil.transpose(fm));
+            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
+            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
+            //    and sqrt( SVD(A^TA) eigenvalues )
+            try { 
+                svdE = SVD.factorize(new DenseMatrix(aTa));
+                vT = svdE.getVt();
+                sDiag = svdE.getS();
+                sDiag[0] = Math.sqrt(sDiag[0]);
+                sDiag[1] = Math.sqrt(sDiag[1]);
+                
+                svdE = SVD.factorize(new DenseMatrix(aaT));
+                u = svdE.getU();
+            } catch (NotConvergedException ex) {
+                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+                return null;
+            }
+        }
+        
+        assert(u.numColumns() == 3);
+        assert(u.numRows() == 3);
+        assert(vT.numColumns() == 3);
+        assert(vT.numRows() == 3);
+        // e1 = last column of U but not normalized by the last item of that column
+        double[] e1 = new double[u.numRows()];
+        for (int i = 0; i < e1.length; i++) {
+            e1[i] = u.get(i, 2);
+        }
+        
+        //vgg_contreps of a 3X1 vector e1 is
+        //    Y = [0      e1(3)  -e1(2)
+        //        -e1(3)  0      e1(1)
+        //         e1(2) -e1(1)  0];
+        double[][] contrepsE1 = new double[3][3];
+        contrepsE1[0] = new double[]{0, e1[2], -e1[1]};
+        contrepsE1[1] = new double[]{-e1[2], 0, e1[0]};
+        contrepsE1[2] = new double[]{e1[1], -e1[0], 0};
+        
+        /*NOTE:  contrepsE1 * e1 = 0
+            and  e1^T * contrepsE1 = 0
+        */
+        
+        double[][] P = MatrixUtil.copy(contrepsE1);
+        MatrixUtil.multiply(P, -1);
+        
+        // 3X3
+        P = MatrixUtil.multiply(P, MatrixUtil.convertToRowMajor(f));
+        
+        // append e onto last column of P
+        double[][] out = new double[P.length][P[0].length + 1];
+        for (int row = 0; row < P.length; ++row){
+            out[row] = new double[P[0].length + 1];
+            System.arraycopy(P[row], 0, out[row], 0, P[0].length);
+            out[row][P[0].length] = e1[row];
+        }
+
+        return new DenseMatrix(out);
     }
 
     DenseMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
@@ -1204,8 +1355,13 @@ public class EpipolarTransformer {
     /**
      * calculate the epipoles of the fundamental matrix and return them as
      * an array with left epipole in column 0 and right epipole in column 1.
+     The left epipole is e1 = the left image position of the epipolar projection 
+     of the right camera center.  It is the last column of U / last item of that 
+     column.
+     The right epipole e2 = the right image position of the epipolar projection 
+     of the left camera center.  It is the last row of V / last item of that row.
      * @param fundamentalMatrix
-     * @return
+     * @return a matrix holding whose first row holds e1 and 2nd row holds e2.
      */
     @SuppressWarnings({"unchecked"})
     double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {
@@ -1272,6 +1428,13 @@ public class EpipolarTransformer {
                 return null;
             }
         }
+        
+        /*
+            The left epipole is e1 = last column of U / last item of that column
+         It is  the left image position of the epipolar projection of the right camera center
+         The right epipole e2 = last row of V / last item of that row
+         It is the right image position of the epipolar projection of the left camera center
+        */
         
         assert(u.numColumns() == 3);
         assert(u.numRows() == 3);

@@ -33,6 +33,8 @@ to always take the minimum of i_1 - i_2 and i_1+180 - i_2...
    and R*-Tree with primary node characteristic being the dominant orientation
    to reduce the number of comparisons between image sets.
 
+-- review and improve the ORB code
+
 -- if update libquantum porting to 1.1.1,
    consider browsing Nielson's book which Cambridge publishing is no
    longer selling:

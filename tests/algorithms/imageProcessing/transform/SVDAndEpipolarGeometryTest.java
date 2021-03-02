@@ -1,17 +1,23 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.RANSACSolver;
+import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.matrix.MatrixUtil;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import algorithms.util.LinearRegression;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
+import gnu.trove.list.TIntList;
 import java.awt.Color;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -36,7 +42,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
     public SVDAndEpipolarGeometryTest() {
     }
     
-    public void testHartley_house() throws Exception {
+    public void estHartley_house() throws Exception {
         
         int m = 3;
         int n = 16;//8;
@@ -82,10 +88,6 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         int image2Height = img2.getHeight();
         Image _img1 = img1.copyImage();
         Image _img2 = img2.copyImage();
-        
-        //overplotSVD(x1, img1, "tmp_nc_01_svd");
-        
-        //overplotSVD(x2, img2, "tmp_nc_02_svd");
         
         DenseMatrix expectedFM  = new DenseMatrix(3, 3);
         expectedFM.set(0, 0, -9.796e-8); expectedFM.set(0, 1, 1.473e-6); expectedFM.set(0, 2, -6.660e-4);
@@ -205,13 +207,25 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
     }
     
-    public void _testNC() throws Exception {
+    
+    public void testNC() throws Exception {
         
         int m = 3;
-        int n = 8;
+        int n = 24;
         
         double[][] x1 = new double[m][n];
         double[][] x2 = new double[m][n];
+        
+        /*
+        NOTE: because we know ahead of time that the objects to match in the
+        images have corners (unlike the android statues), one could use a 
+        corner detector and then HOGs to make a correspondence list.
+        
+        If the objects do not necessarily have corners, this project has
+        code to use MSER to find candidate objects, then HOGs to match
+        those.   One could make a correspondence list after that if still
+        useful.
+        */
         
         /*
         SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
@@ -219,18 +233,18 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         */
         
         x1[0] = new double[]{262, 316, 260, 284, 234, 177, 216
-           , 220
+           , 220, 248, 248, 319, 159, 176, 407, 393, 119, 117, 428, 427, 112, 109, 425, 256, 411
         };
         x1[1] = new double[]{356, 342, 305, 279, 217, 76, 63
-            , 158
+            , 158, 27, 46, 36, 54, 76, 64, 85,       115, 141, 120, 147, 320, 375, 333, 192, 213
         };
         x1[2] = new double[n];  Arrays.fill(x1[2], 1.0);
         
         x2[0] = new double[]{156, 191, 153, 167, 135, 97, 119
-                , 125
+            , 125, 137, 137, 183, 87, 97, 248, 238, 71, 70, 267, 267, 73, 74, 272,    147, 256
         };
         x2[1] = new double[]{308, 301, 270, 249, 202, 97, 83
-                , 156
+            , 156, 51,  65,   49,  83, 97, 61,  81, 130, 149, 110, 134, 276, 315, 299, 180, 192
         };
         x2[2] = new double[n];  Arrays.fill(x2[2], 1.0);
         
@@ -259,9 +273,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
         
-        double tolerance = 1; //3.84 5.99 7.82        
-        boolean useToleranceAsStatFactor = false;
-        ErrorType errorType = ErrorType.SAMPSONS;
+        double tolerance = 3.84; //3.84 5.99 7.82        
+        boolean useToleranceAsStatFactor = true;
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fitR = solver.calculateEpipolarProjection(
@@ -277,10 +291,46 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             image1Width, image1Height, image2Width, image2Height, 
             "nc__RANSAC");
         System.out.println("RANSAC fit=" + fitR.toString());
-        System.out.println("RANSAC inlier indexes=" + 
-            Arrays.toString(fitR.inlierIndexes.toArray()));
-        System.out.println("RANSAC errors=" + 
-            Arrays.toString(fitR.errors.toArray()));
+        //System.out.println("RANSAC inlier indexes=" + 
+        //    Arrays.toString(fitR.inlierIndexes.toArray()));
+        //System.out.println("RANSAC errors=" + 
+        //    Arrays.toString(fitR.errors.toArray()));
+        
+        System.out.printf("de-normalized FM=\n%s\n", 
+            FormatArray.toString(fm, "%.3e"));
+        
+        /*
+        pixel width = 1.4e-3mm
+        image dimensions originally 4032x3024, 
+            then divided by 7.875 to 512x384, 300 dpi
+        FOV = 77 degrees = 1.344 radians
+        focal length = (4032/2.) / tan(1.344/2.)
+                     ~ 1604 pixels = 2.245 mm
+
+        intrinsic camera matrix 
+        K = | 1604     0  2016 |
+            |    0  1604  1512 |
+            |    0     0     1 |
+        */
+        double[][] k = new double[3][3];
+        k[0] = new double[]{1604, 0, 2016};
+        k[1] = new double[]{0, 1604, 1512};
+        k[2]= new double[]{0, 0, 1};
+        
+        EpipolarTransformer tr = new EpipolarTransformer();
+        DenseMatrix p2 = tr.pFromF(fm);
+        System.out.printf("P2=\n%s\n", 
+            FormatArray.toString(p2, "%.3e"));
+        /*
+        from Szeliski Sect 7.2 Structure From Motion:
+        Note that the absolute distance between the two cameras can never be recovered
+        from pure image measurements alone, regardless of how many cameras or points
+        are used. Knowledge about absolute camera and point positions or distances,
+        often called ground control points in photogrammetry, is always required to
+        establish the final scale, position, and orientation.
+                */
+        
+        
         
         /*PolygonAndPointPlotter plotter = 
             new PolygonAndPointPlotter(0, 512, 0, 512);
