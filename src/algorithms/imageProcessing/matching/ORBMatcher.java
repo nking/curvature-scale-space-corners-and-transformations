@@ -587,10 +587,12 @@ public class ORBMatcher {
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
         
+        boolean reCalcIterations = false;
         RANSACSolver solver = new RANSACSolver();
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);                
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+            reCalcIterations);                
         
         return fit;        
     }

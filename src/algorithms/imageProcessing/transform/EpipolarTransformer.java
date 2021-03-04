@@ -265,15 +265,19 @@ public class EpipolarTransformer {
         System.out.printf("matrix A dimensions = %d x %d\n", m.length, m[0].length);
         
         //aMatrix is m x n  (== nData X 9)
-        // U   is  m X m     the left singular vectors, **column-wise**
+        // U   is  m X m = nData X nData the left singular vectors, **column-wise**
         // S   is  min(m, n) the singular values (stored in descending order)
-        // V^T is  n X n     the right singular vectors, **row-wise**
+        // V^T is  n X n = 9x9    the right singular vectors, **row-wise**
         SVD svd = null;
         DenseMatrix vT = null;
+        DenseMatrix u = null;
+        double[] sDiag = null;
+        
         try {
             svd = SVD.factorize(aMatrix);
             vT = svd.getVt();
         } catch (NotConvergedException e) {
+        
             double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
             //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
             //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
@@ -298,14 +302,14 @@ public class EpipolarTransformer {
         assert(n == 9);
         assert(vT.numColumns() == 9);
 
-        // dimensions of V are nxn and n=9
+        // dimensions of V are nxn and n=9.  smallet eigenvector is last row of v^T and A
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
             ff[i] = new double[3];
           
             ff[i][0] = vT.get(n - 1, (i * 3) + 0);
             ff[i][1] = vT.get(n - 1, (i * 3) + 1);
-            ff[i][2] = vT.get(n - 1, (i * 3) + 2);            
+            ff[i][2] = vT.get(n - 1, (i * 3) + 2);
         }
         DenseMatrix fMatrix = new DenseMatrix(ff);
 
@@ -323,8 +327,8 @@ public class EpipolarTransformer {
         */
         
         vT = null;
-        DenseMatrix u = null;
-        double[] sDiag = null;
+        u = null;
+        sDiag = null;
         svd = null;
         try {
             svd = SVD.factorize(fMatrix);
@@ -450,13 +454,13 @@ public class EpipolarTransformer {
      * NOTE that for best results, the method should be given unit standard
      * normalized coordinates.
      * references are:
-          the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
+        (1) the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
         from a version of http://www.robots.ox.ac.uk/~vgg/hzbook/code/ which is part
         of the supplementary material for their book "Multiple View Geometry in Computer Vision
         Second Edition"
-           and Hartley, R. I. (1994a). Projective reconstruction and invariants from 
+        (2) Section IVa of Hartley, R. I. (1994a). Projective reconstruction and invariants from 
         multiple images. PAMI, 16(10):1036–1041
-           and Torr, P. H. S. and Murray, D. (1997). 
+        (3) Torr, P. H. S. and Murray, D. (1997). 
         "The development and comparison of robust methods for estimating the 
         fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
      * @param leftXY
@@ -625,7 +629,7 @@ public class EpipolarTransformer {
     * note: alternate spelling is chirality.
     */
     @SuppressWarnings({"unchecked"})
-    private DenseMatrix validateSolution(DenseMatrix solution, DenseMatrix leftXY,
+    DenseMatrix validateSolution(DenseMatrix solution, DenseMatrix leftXY,
         DenseMatrix rightXY) {
         
         /*        

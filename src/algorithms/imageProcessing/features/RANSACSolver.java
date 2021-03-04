@@ -85,12 +85,16 @@ public class RANSACSolver {
      * be an inlier in the final fit.   NOTE: if useToleranceAsStatFactor is true,
      * it is interpreted as a chiSqStatFactor which is then used as 
      * tolerance = tolerance * standard deviation of the mean distance errors.
+     * @param reCalcIterations if true, upon each better fit found, the 
+     * outlier percentage is re-estimated and then the number of iterations necessary for 95%
+     * probability that sample has all good points.
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
         final DenseMatrix leftCorres, final DenseMatrix rightCorres,
         ErrorType errorType,
-        boolean useToleranceAsStatFactor, final double tolerance) {
+        boolean useToleranceAsStatFactor, final double tolerance,
+        boolean reCalcIterations) {
         
         int nPoints = leftCorres.numColumns();
         final int nSet = 7;
@@ -285,8 +289,8 @@ public class RANSACSolver {
                             }
                         }
                     }
-                    System.out.println("new local best fit: " + fitI.toString());
-                    System.out.flush();
+                    //System.out.println(" new local best fit: " + fitI.toString());
+                    //System.out.flush();
                     fit = fitI;
                 }
             }
@@ -302,14 +306,13 @@ public class RANSACSolver {
                 
                 bestFit = fit;
                 
-                System.out.println("**best fit: " + bestFit.toString());
-                System.out.flush();
+                //System.out.println("**best fit: " + bestFit.toString());
+                //System.out.flush();
                 
                 // recalculate nMaxIter
-                if ((nf > nb) && nMaxIter > 1) {
+                if (reCalcIterations && (nf > nb) && nMaxIter > 1) {
                     double outlierPercentI = 100.*
-                        (double)(nPoints - bestFit.getInlierIndexes().size()) /
-                        (double)nPoints;
+                        (double)(nPoints - bestFit.getInlierIndexes().size()) / (double)nPoints;
                     if (outlierPercentI < outlierPercent) {
                         outlierPercent = (int)Math.ceil(outlierPercentI);
                         if (outlierPercent < 5) {
@@ -334,7 +337,7 @@ public class RANSACSolver {
             return null;
         }
         
-        log.fine("nIter=" + nIter);
+        log.info("nIter=" + nIter);
         
         log.fine("final best fit to all points: " + bestFit.toString());
 

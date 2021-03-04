@@ -1296,11 +1296,13 @@ public class PartialShapeMatcher {
         EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
+        boolean reCalcIterations = false;
         
         RANSACSolver solver = new RANSACSolver();
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
         
         if (storeMatrix) {
             DenseMatrix denormFM = EpipolarTransformer

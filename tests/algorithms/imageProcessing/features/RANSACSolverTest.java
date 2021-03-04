@@ -56,11 +56,12 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        
+        boolean reCalcIterations = false;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
         
         assertNotNull(fit);
         
@@ -147,11 +148,12 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        
+        boolean reCalcIterations = false;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());
@@ -266,11 +268,12 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        
+        boolean reCalcIterations = false;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());
@@ -372,11 +375,12 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        
+        boolean reCalcIterations = false;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());
@@ -443,11 +447,12 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        
+        boolean reCalcIterations = false;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance);
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());
