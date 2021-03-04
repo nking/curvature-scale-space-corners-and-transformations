@@ -265,7 +265,7 @@ public class EpipolarTransformer {
         */
         DenseMatrix aMatrix = new DenseMatrix(m);
         
-        System.out.printf("matrix A dimensions = %d x %d\n", m.length, m[0].length);
+        //System.out.printf("matrix A dimensions = %d x %d\n", m.length, m[0].length);
         
         //aMatrix is m x n  (== nData X 9)
         // U   is  m X m = nData X nData the left singular vectors, **column-wise**

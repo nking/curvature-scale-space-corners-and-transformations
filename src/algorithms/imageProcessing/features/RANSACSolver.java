@@ -233,6 +233,11 @@ public class RANSACSolver {
                 count++;
             }
             
+            if (EpipolarTransformer.isDegenerate(sampleLeft, sampleRight)) {
+                nIter++;
+                continue;
+            }
+            
             // calculates 7-point solutions then filters using chirality checks.
             List<DenseMatrix> fms = spTransformer
                 .calculateEpipolarProjectionFor7Points(sampleLeft, sampleRight);

@@ -275,20 +275,15 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
         
-        EpipolarTransformer tr = new EpipolarTransformer();
-        DenseMatrix normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
-                
         double tolerance = 3.84; //3.84 5.99 7.82        
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.SAMPSONS;
         EpipolarTransformationFit fitR = null;
         boolean reCalcIterations = false;
-        /*RANSACSolver solver = new RANSACSolver();
-        fitR = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
-        */
-        //DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
+        EpipolarTransformer tr = new EpipolarTransformer();
+        
+        /*DenseMatrix normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
+        DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
         
         Distances distances = new Distances();
         if (useToleranceAsStatFactor) {
@@ -297,7 +292,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         } else {
             fitR = distances.calculateError(normalizedFM, leftM, rightM,
                     errorType, tolerance);
-        }
+        }*/
+        
+        RANSACSolver solver = new RANSACSolver();
+        fitR = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
         
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
             fitR.getFundamentalMatrix(), 

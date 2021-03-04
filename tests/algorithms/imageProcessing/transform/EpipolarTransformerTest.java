@@ -425,6 +425,69 @@ public class EpipolarTransformerTest extends TestCase {
         return out;
     }
     
+    public void testIsDegenerate() {
+
+        /* euler transformations
+        
+        about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   sin φ    0 |    |     1       0       0 |  |  cos ψ  sin ψ    0 |
+            |-sin φ   cos φ    0 |    |     0   cos θ   sin θ |  | -sin ψ  cos ψ    0 |
+            |     0       0    1 |    |     0  -sin θ   cos θ |  |      0      0    1 |
+        
+        */
+        /*               
+             (0,15,1)
+               (2.5,10,1)  (7.5,10,1)
+                    (5, 5, 1)                   
+        
+        */
+        
+        double[][] x1 = new double[3][4];
+        x1[0] = new double[]{5, 2.5,   7.5, 0};// x's
+        x1[1] = new double[]{5,  10,   10, 15};// y's
+        x1[2] = new double[]{1,   1,    1,  1};// z's
+        
+        double psi = 10.*Math.PI/180;
+        double[][] tPitch = new double[3][3];
+        tPitch[0] = new double[]{Math.cos(psi),  Math.sin(psi), 0};
+        tPitch[1] = new double[]{-Math.sin(psi), Math.cos(psi), 0};
+        tPitch[2] = new double[]{0,                          0, 1};
+        
+        double tx = 100;
+        double[][] tTransX = new double[3][3];
+        tTransX[0] = new double[]{1, 0, tx};
+        tTransX[1] = new double[]{0, 1,  0};
+        tTransX[2] = new double[]{0, 0,  1};
+        
+        double[][] x2 = MatrixUtil.multiply(tPitch, x1);
+        x2 = MatrixUtil.multiply(tTransX, x2);        
+        
+        DenseMatrix x1M = new DenseMatrix(x1);
+        DenseMatrix x2M = new DenseMatrix(x2);
+        
+        boolean d = EpipolarTransformer.isDegenerate(x1M, x2M);
+        assertTrue(d);
+    
+        /*               
+                     (5,15,1)
+               (2.5,10,1)  (7.5,10,1)
+                    (5, 5, 1)                   
+        
+        */
+        x1[0] = new double[]{5, 2.5,   7.5, 5};// x's
+        x1[1] = new double[]{5,  10,   10, 15};// y's
+        x1[2] = new double[]{1,   1,    1,  1};// z's
+        
+        x2 = MatrixUtil.multiply(tPitch, x1);
+        x2 = MatrixUtil.multiply(tTransX, x2);        
+        
+        x1M = new DenseMatrix(x1);
+        x2M = new DenseMatrix(x2);
+        
+        d = EpipolarTransformer.isDegenerate(x1M, x2M);
+        assertFalse(d);
+    }
+    
     public static void main(String[] args) {
         
         try {
