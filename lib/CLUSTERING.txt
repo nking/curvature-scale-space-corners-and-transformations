@@ -1,0 +1,5 @@
+com.climbwithyourfeet.clustering.jar is a package from
+https://github.com/nking/two-point-correlation
+
+nking/shared is licensed under the MIT License
+for Nichole King

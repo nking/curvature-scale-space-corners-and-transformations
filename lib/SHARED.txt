@@ -1,0 +1,5 @@
+com.climbwithyourfeet.shared.jar is a package from
+https://github.com/nking/shared
+
+nking/shared is licensed under the MIT License
+for Nichole King
