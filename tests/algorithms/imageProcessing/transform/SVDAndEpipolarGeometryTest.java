@@ -371,9 +371,21 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
               y_img = v/w
         */
         
+        // p1 = [I | 0]; p2 = [ [e2}_x * F | e2 ]
+        // x1 = P1*X
+        // x2 = P2*X
+        //  ====> X = pseudoInv(p2) * x2
+        //            4X3 3XN --> 4XN
         DenseMatrix p2 = tr.pFromF(fm);
         System.out.printf("P2=\n%s\n", 
             FormatArray.toString(p2, "%.3e"));
+        //double[][] p2Inv = MatrixUtil.pseudoinverseRankDeficient(MatrixUtil.convertToRowMajor(p2));
+        double[][] p2Inv = MatrixUtil.pseudoinverseFullRank(MatrixUtil.convertToRowMajor(p2));
+        
+        double[][] XW = MatrixUtil.multiply(p2Inv, 
+            MatrixUtil.convertToRowMajor(x2M));
+        System.out.printf("X=\n%s\n", FormatArray.toString(XW, " %.0f"));
+        
         /*
         from Szeliski Sect 7.2 Structure From Motion:
         Note that the absolute distance between the two cameras can never be recovered

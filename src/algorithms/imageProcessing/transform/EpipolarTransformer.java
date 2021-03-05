@@ -849,23 +849,17 @@ public class EpipolarTransformer {
             e1[i] = u.get(i, 2);
         }
         
-        //vgg_contreps of a 3X1 vector e1 is
+        //-1* vgg_contreps of a 3X1 vector e1 is the skewSymmetric
         //    Y = [0      e1(3)  -e1(2)
         //        -e1(3)  0      e1(1)
         //         e1(2) -e1(1)  0];
         double[][] contrepsE1 = new double[3][3];
-        contrepsE1[0] = new double[]{0, e1[2], -e1[1]};
-        contrepsE1[1] = new double[]{-e1[2], 0, e1[0]};
-        contrepsE1[2] = new double[]{e1[1], -e1[0], 0};
-        
-        /*NOTE:  contrepsE1 * e1 = 0
-            and  e1^T * contrepsE1 = 0
-        */
-        
-        double[][] P = MatrixUtil.copy(contrepsE1);
-        MatrixUtil.multiply(P, -1);
+        contrepsE1[0] = new double[]{0, -e1[2], e1[1]};
+        contrepsE1[1] = new double[]{e1[2], 0, -e1[0]};
+        contrepsE1[2] = new double[]{-e1[1], e1[0], 0};
         
         // 3X3
+        double[][] P = MatrixUtil.copy(contrepsE1);
         P = MatrixUtil.multiply(P, MatrixUtil.convertToRowMajor(f));
         
         // append e onto last column of P
