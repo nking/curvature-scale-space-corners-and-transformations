@@ -386,6 +386,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // roughly, would expect for the projection, 
         //    a translation in x of about 100-150 pixels at image plane
         //   and a rotation around y between 30 and 45 degrees.
+        // After have applied a scaling of the image by factor 1./7.875
+        MatrixUtil.multiply(k, (1./7.875));
         
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
@@ -464,8 +466,36 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
         System.out.printf("det(R1)=%.3e\n", detR1);
         System.out.printf("det(R2)=%.3e\n", detR2);
+        System.out.println("R1 results in transformed positive Z so R1 is the rot matrix, not R2");
         System.out.flush();
         
+        
+        // editing
+        //(256, 192) -> (147, 180)
+        //(411, 213) -> (256, 192)
+        double[][] a = new double[3][2];      
+        a[0] = new double[]{256, 411};    
+        a[1] = new double[]{192, 213};  
+        a[2] = new double[]{1, 1};
+        printTransformation(a, -35., 50, -100); // -35 degrees is -0.61 radians
+        
+        /* euler transformations
+        
+        about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   sin φ    0 |    |     1       0       0 |  |  cos ψ  sin ψ    0 |
+            |-sin φ   cos φ    0 |    |     0   cos θ   sin θ |  | -sin ψ  cos ψ    0 |
+            |     0       0    1 |    |     0  -sin θ   cos θ |  |      0      0    1 |
+        
+        */
+        //tan = sin/cos
+        double estimatedRotR1 = Math.atan(R1[0][1]/R1[0][0]) * (180./Math.PI);
+        System.out.printf("estimated rotation about y axis from R1 =%.2f\n", estimatedRotR1);
+        double estimatedRotR2 = Math.atan(R2[0][1]/R2[0][0]) * (180./Math.PI);
+        System.out.printf("estimated rotation about y axis from R2 =%.2f \n", estimatedRotR2);
+        
+        // check the components of this one
+        double estimatedRotP2 = Math.atan(p2.get(0, 1)/p2.get(0, 0)) * (180./Math.PI);
+        System.out.printf("estimated rotation about y axis from P2=%.2f\n", estimatedRotP2);
     }
     
     public void _testMisc() throws Exception {
@@ -869,4 +899,33 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         return out;
     }
 
+    private void printTransformation(double[][] a,
+        double r_z, double t_x, double t_y) {
+        
+         /* euler transformations
+        
+        about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   sin φ    0 |    |     1       0       0 |  |  cos ψ  sin ψ    0 |
+            |-sin φ   cos φ    0 |    |     0   cos θ   sin θ |  | -sin ψ  cos ψ    0 |
+            |     0       0    1 |    |     0  -sin θ   cos θ |  |      0      0    1 |
+        
+        */
+        
+        double psi = r_z*Math.PI/180;
+        double[][] tPitch = new double[3][3];
+        tPitch[0] = new double[]{Math.cos(psi),  Math.sin(psi), 0};
+        tPitch[1] = new double[]{-Math.sin(psi), Math.cos(psi), 0};
+        tPitch[2] = new double[]{0,                          0, 1};
+        
+        double[][] tTransX = new double[3][3];
+        tTransX[0] = new double[]{1, 0, t_x};
+        tTransX[1] = new double[]{0, 1,  t_y};
+        tTransX[2] = new double[]{0, 0,  1};
+        
+        double[][] a2 = MatrixUtil.multiply(tPitch, a);
+        a2 = MatrixUtil.multiply(tTransX, a2);
+        
+        System.out.printf("transformed: \n%s\n",
+            FormatArray.toString(a2, "%.3e"));
+    }
 }
