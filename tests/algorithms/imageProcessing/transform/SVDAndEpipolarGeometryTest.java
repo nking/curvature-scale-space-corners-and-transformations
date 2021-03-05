@@ -346,6 +346,31 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         k[1] = new double[]{0, 1604, 1512};
         k[2]= new double[]{0, 0, 1};
         
+        /*
+        3 by 4 matrix P = K * [R | T]
+        
+        M_intr is K with negative focal lengths
+                     | -f_x      0  o_x |
+            M_intr = |    0   -f_y  o_y |
+                     |    0      0    1 |
+        
+        M_extr = [R | T ].  can see DOF=11
+                  | r00  r01  r02  t_x |     | R_0^T  t_x |
+               =  | r10  r11  r12  t_y |  =  | R_1^T  t_y |
+                  | r20  r21  r22  t_z |     | R_2^T  t_z |
+        
+        projective matrix is P, called M here
+            M = M_intr * M_extr
+        
+        using projective space:
+           | u |                      | X_w |
+           | v | =  M_intr * M_extr * | Y_w |
+           | w |                      | Z_w |
+                                      |   1 |
+        where x_img = u/w
+              y_img = v/w
+        */
+        
         DenseMatrix p2 = tr.pFromF(fm);
         System.out.printf("P2=\n%s\n", 
             FormatArray.toString(p2, "%.3e"));
@@ -358,19 +383,84 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         establish the final scale, position, and orientation.
                 */
         
+        // a quick look at
+        // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
+        double[][] _fm = MatrixUtil.convertToRowMajor(fm);
         
-        /*PolygonAndPointPlotter plotter = 
-            new PolygonAndPointPlotter(0, 512, 0, 512);
-        plotter.addPlotWithLines(float[] xPoints, float[] yPoints, 
-            float[] xLinePairs, float[] yLinePairs, String plotLabel);
-        */
+        double[][] k2TF = MatrixUtil.multiply(MatrixUtil.transpose(k), _fm);
+        double[][] k2TFK1 = MatrixUtil.multiply(k2TF, k);
         
-        /*PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        plotter.addPlot(0, 512, 0, image1Height,
-            xPoints, yPoints, null, null, xPoints, yPoints,
-            "X fft_" + fileNameRoot);
-        */
+        System.out.printf("E=\n%s\n", FormatArray.toString(k2TFK1, "%.3e"));
+        
+        SVD svdE;
+        DenseMatrix u = null;
+        DenseMatrix vT = null;
+        double[] sDiag = null;
+        try {
+            svdE = SVD.factorize(fm);
+            vT = svdE.getVt();
+            u = svdE.getU();
+            sDiag = svdE.getS();
+        } catch (NotConvergedException e) {
+            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(_fm), _fm);
+            double[][] aaT = MatrixUtil.multiply(_fm, MatrixUtil.transpose(_fm));
+            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
+            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
+            //    and sqrt( SVD(A^TA) eigenvalues )
+            //try { 
+                svdE = SVD.factorize(new DenseMatrix(aTa));
+                vT = svdE.getVt();
+                sDiag = svdE.getS();
+                sDiag[0] = Math.sqrt(sDiag[0]);
+                sDiag[1] = Math.sqrt(sDiag[1]);
+                
+                svdE = SVD.factorize(new DenseMatrix(aaT));
+                u = svdE.getU();
+            //} catch (NotConvergedException ex) {
+            //}
+        }
+        
+        double[][] _u = MatrixUtil.convertToRowMajor(u);
+        assert(u.numColumns() == 3 && u.numRows() == 3);
+        double[][] _vT = MatrixUtil.convertToRowMajor(vT);
+
+        double[][] w = new double[3][3];
+        w[0] = new double[]{0, -1, 0};
+        w[1] = new double[]{1, 0, 0};
+        w[2] = new double[]{0, 0, 1};
+
+        double[][] R1 = MatrixUtil.multiply(_u, w);
+        R1 = MatrixUtil.multiply(R1, _vT);
+
+        double[][] R2 = MatrixUtil.multiply(_u, MatrixUtil.transpose(w));
+        R2 = MatrixUtil.multiply(R2, _vT);
+
+        double[] t1 = Matrices.getColumn(u, 2).getData();
+
+        double[] t2 = Matrices.getColumn(u, 2).getData();
+        MatrixUtil.multiply(t2, -1);
+
+        // solution 1:  R1 and T1
+        // solution 2:  R1 and T2
+        // solution 3:  R2 and T2
+        // solution 4:  R2 and T1
+
+        // valid equation has det(R) = 1 (rotation and reflection)
+        double detR1 = MatrixUtil.determinant(R1);
+        double detR2 = MatrixUtil.determinant(R2);
+
+        //Compute 3D point using triangulation, valid solution has positive Z value
+        // (Note: negative Z means point is behind the camera )
+
+        System.out.printf("R1=\n%s\n", FormatArray.toString(R1, "%.3e"));
+        System.out.printf("R2=\n%s\n", FormatArray.toString(R2, "%.3e"));
+        System.out.printf("t1=\n%s\n", FormatArray.toString(t1, "%.3e"));
+        System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
+        System.out.printf("det(R1)=%.3e\n", detR1);
+        System.out.printf("det(R2)=%.3e\n", detR2);
+        System.out.flush();
         
     }
     
