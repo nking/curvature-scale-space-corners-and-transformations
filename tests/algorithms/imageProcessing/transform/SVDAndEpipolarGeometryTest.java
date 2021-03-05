@@ -383,6 +383,10 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         establish the final scale, position, and orientation.
                 */
         
+        // roughly, would expect for the projection, 
+        //    a translation in x of about 100-150 pixels at image plane
+        //   and a rotation around y between 30 and 45 degrees.
+        
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
