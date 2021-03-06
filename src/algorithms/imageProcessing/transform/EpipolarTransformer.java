@@ -13,6 +13,7 @@ import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
+import algorithms.matrix.MatrixUtil.SVDProducts;
 
 /**
  * class to solve for the epipoles for two images with stereo projection
@@ -271,28 +272,12 @@ public class EpipolarTransformer {
         // U   is  m X m = nData X nData the left singular vectors, **column-wise**
         // S   is  min(m, n) the singular values (stored in descending order)
         // V^T is  n X n = 9x9    the right singular vectors, **row-wise**
-        SVD svd = null;
-        DenseMatrix vT = null;
-        DenseMatrix u = null;
-        double[] sDiag = null;
-        
+        SVDProducts svd = null;
         try {
-            svd = SVD.factorize(aMatrix);
-            vT = svd.getVt();
-        } catch (NotConvergedException e) {
-        
-            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
-            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
-            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
-            //    and sqrt( SVD(A^TA) eigenvalues )
-            try { 
-                svd = SVD.factorize(new DenseMatrix(aTa));
-                vT = svd.getVt();
-            } catch (NotConvergedException ex) {
-                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
-                return null;
-            }
+            svd = MatrixUtil.performSVD(aMatrix);
+        } catch (NotConvergedException e) {            
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
+            return null;
         }
         
         /*        
@@ -301,18 +286,18 @@ public class EpipolarTransformer {
          the smallest eigenvalue determines the plane of closest fit.
          */
       
-        int n = vT.numRows();
+        int n = svd.vT.length;
         assert(n == 9);
-        assert(vT.numColumns() == 9);
+        assert(svd.vT[0].length == 9);
 
         // dimensions of V are nxn and n=9.  smallet eigenvector is last row of v^T and A
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
             ff[i] = new double[3];
           
-            ff[i][0] = vT.get(n - 1, (i * 3) + 0);
-            ff[i][1] = vT.get(n - 1, (i * 3) + 1);
-            ff[i][2] = vT.get(n - 1, (i * 3) + 2);
+            ff[i][0] = svd.vT[n - 1][(i * 3) + 0];
+            ff[i][1] = svd.vT[n - 1][(i * 3) + 1];
+            ff[i][2] = svd.vT[n - 1][(i * 3) + 2];
         }
         DenseMatrix fMatrix = new DenseMatrix(ff);
 
@@ -329,37 +314,14 @@ public class EpipolarTransformer {
             F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
         */
         
-        vT = null;
-        u = null;
-        sDiag = null;
         svd = null;
         try {
-            svd = SVD.factorize(fMatrix);
-            vT = svd.getVt();
-            u = svd.getU();
-            sDiag = svd.getS();
-        } catch (NotConvergedException e) {
-            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(ff), ff);
-            double[][] aaT = MatrixUtil.multiply(ff, MatrixUtil.transpose(ff));
-            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
-            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
-            //    and sqrt( SVD(A^TA) eigenvalues )
-            try { 
-                svd = SVD.factorize(new DenseMatrix(aTa));
-                vT = svd.getVt();
-                sDiag = svd.getS();
-                sDiag[0] = Math.sqrt(sDiag[0]);
-                sDiag[1] = Math.sqrt(sDiag[1]);
-                
-                svd = SVD.factorize(new DenseMatrix(aaT));
-                u = svd.getU();
-            } catch (NotConvergedException ex) {
-                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
-                return null;
-            }
+            svd = MatrixUtil.performSVD(fMatrix);
+        } catch (NotConvergedException e) {            
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
+            return null;
         }
-
+       
         // creates U as 3 x 3 matrix
         //         D as length 3 array
         //         V as 3 x 3 matrix
@@ -369,11 +331,11 @@ public class EpipolarTransformer {
         // keep the largest 2 values in sDiag to make the diagonal rank 2
         DenseMatrix d = new DenseMatrix(3, 3);
         d = (DenseMatrix)d.zero();
-        if (sDiag.length > 0) {
-            d.set(0, 0, sDiag[0]);
+        if (svd.s.length > 0) {
+            d.set(0, 0, svd.s[0]);
         }
-        if (sDiag.length > 1) {
-            d.set(1, 1, sDiag[1]);
+        if (svd.s.length > 1) {
+            d.set(1, 1, svd.s[1]);
         }
 
         // dimension reduction in this case zeroes out instead of reducing the
@@ -385,10 +347,10 @@ public class EpipolarTransformer {
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        DenseMatrix dDotV = MatrixUtil.multiply(d, vT);
+        DenseMatrix dDotV = MatrixUtil.multiply(d, new DenseMatrix(svd.vT));
 
         // 3x3 with rank 2
-        DenseMatrix fm = MatrixUtil.multiply(u, dDotV);
+        DenseMatrix fm = MatrixUtil.multiply(new DenseMatrix(svd.u), dDotV);
  
         return fm;
     }
@@ -1397,37 +1359,13 @@ public class EpipolarTransformer {
         the right camera is w.r.t. left image coords=
             svd(F^T*F).u[2]/svd(F^T*F).u[2][2]
         */
-                
-        SVD svdE;
-        DenseMatrix u = null;
-        DenseMatrix vT = null;
-        double[] sDiag = null;
+             
+        SVDProducts svdE = null;
         try {
-            svdE = SVD.factorize(fundamentalMatrix);
-            vT = svdE.getVt();
-            u = svdE.getU();
-            sDiag = svdE.getS();
-        } catch (NotConvergedException e) {
-            double[][] fm = MatrixUtil.convertToRowMajor(fundamentalMatrix);
-            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(fm), fm);
-            double[][] aaT = MatrixUtil.multiply(fm, MatrixUtil.transpose(fm));
-            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
-            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
-            //    and sqrt( SVD(A^TA) eigenvalues )
-            try { 
-                svdE = SVD.factorize(new DenseMatrix(aTa));
-                vT = svdE.getVt();
-                sDiag = svdE.getS();
-                sDiag[0] = Math.sqrt(sDiag[0]);
-                sDiag[1] = Math.sqrt(sDiag[1]);
-                
-                svdE = SVD.factorize(new DenseMatrix(aaT));
-                u = svdE.getU();
-            } catch (NotConvergedException ex) {
-                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
-                return null;
-            }
+            svdE = MatrixUtil.performSVD(fundamentalMatrix);
+        } catch (NotConvergedException e) {            
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
+            return null;
         }
         
         /*
@@ -1437,22 +1375,22 @@ public class EpipolarTransformer {
          It is the right image position of the epipolar projection of the left camera center
         */
         
-        assert(u.numColumns() == 3);
-        assert(u.numRows() == 3);
-        assert(vT.numColumns() == 3);
-        assert(vT.numRows() == 3);
+        assert(svdE.u[0].length == 3);
+        assert(svdE.u.length == 3);
+        assert(svdE.vT[0].length == 3);
+        assert(svdE.vT.length == 3);
         // e1 = last column of U / last item of that column
         // e2 = last row of V / last item of that row
-        double[] e1 = new double[u.numRows()];
-        double e1Div = u.get(2, 2);
+        double[] e1 = new double[svdE.u.length];
+        double e1Div = svdE.u[2][2];
         for (int i = 0; i < e1.length; i++) {
-            e1[i] = u.get(i, 2)/e1Div;
+            e1[i] = svdE.u[i][2]/e1Div;
         }
         
-        double[] e2 = new double[vT.numColumns()];
-        double e2Div = vT.get(2, 2);
+        double[] e2 = new double[svdE.vT[0].length];
+        double e2Div = svdE.vT[2][2];
         for (int i = 0; i < e2.length; i++) {
-            e2[i] = vT.get(2, i)/e2Div;
+            e2[i] = svdE.vT[2][i]/e2Div;
         }
 
         double[][] e = new double[2][];

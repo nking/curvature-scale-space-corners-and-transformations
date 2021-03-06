@@ -9,6 +9,7 @@ import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.matrix.MatrixUtil;
+import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import algorithms.util.LinearRegression;
@@ -345,6 +346,18 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         k[0] = new double[]{1604, 0, 2016};
         k[1] = new double[]{0, 1604, 1512};
         k[2]= new double[]{0, 0, 1};
+       
+        double[][] kScaled = MatrixUtil.copy(k);
+        MatrixUtil.multiply(kScaled, (1./7.875));
+        
+        // a quick look at
+        // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+        
+        double[][] _fm = MatrixUtil.convertToRowMajor(fm);
+        double[][] k2TF = MatrixUtil.multiply(MatrixUtil.transpose(kScaled), _fm);
+        double[][] k2TFK1 = MatrixUtil.multiply(k2TF, kScaled);
+        double[][] _essentialM = k2TFK1;
+        System.out.printf("E=\n%s\n", FormatArray.toString(_essentialM, "%.3e"));
         
         /*
         3 by 4 matrix P = K * [R | T]
@@ -361,7 +374,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         projective matrix is P, called M here
             M = M_intr * M_extr
-        
+                
         using projective space:
            | u |                      | X_w |
            | v | =  M_intr * M_extr * | Y_w |
@@ -376,9 +389,24 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // x2 = P2*X
         //  ====> X = pseudoInv(p2) * x2
         //            4X3 3XN --> 4XN
-        DenseMatrix p2 = tr.pFromF(fm);
-        System.out.printf("P2=\n%s\n", 
-            FormatArray.toString(p2, "%.3e"));
+        
+        //DenseMatrix p2 = tr.pFromF(fm);
+        DenseMatrix p2 = tr.pFromF(new DenseMatrix(_essentialM));
+        System.out.printf("P2=\n%s\n",  FormatArray.toString(p2, "%.3e"));
+        
+        {
+            SVDProducts svdP = MatrixUtil.performSVD(p2);
+            
+            System.out.printf("SVD(p2).U==\n%s\n", FormatArray.toString(
+                svdP.u, " %.3e"));
+            System.out.printf("SVD(p2).V^T==\n%s\n", FormatArray.toString(
+                svdP.vT, " %.3e"));
+            
+            // smallest eigenvalue's eigenvector in svdP is the
+            //   camera center c (or rather, c*R I think...)
+            
+        }
+        
         //double[][] p2Inv = MatrixUtil.pseudoinverseRankDeficient(MatrixUtil.convertToRowMajor(p2));
         double[][] p2Inv = MatrixUtil.pseudoinverseFullRank(MatrixUtil.convertToRowMajor(p2));
         
@@ -399,65 +427,27 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         //    a translation in x of about 100-150 pixels at image plane
         //   and a rotation around y between 30 and 45 degrees.
         // After have applied a scaling of the image by factor 1./7.875
-        MatrixUtil.multiply(k, (1./7.875));
         
-        // a quick look at
-        // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
-        double[][] _fm = MatrixUtil.convertToRowMajor(fm);
+        SVDProducts svdE = MatrixUtil.performSVD(_essentialM);
         
-        double[][] k2TF = MatrixUtil.multiply(MatrixUtil.transpose(k), _fm);
-        double[][] k2TFK1 = MatrixUtil.multiply(k2TF, k);
-        
-        System.out.printf("E=\n%s\n", FormatArray.toString(k2TFK1, "%.3e"));
-        
-        SVD svdE;
-        DenseMatrix u = null;
-        DenseMatrix vT = null;
-        double[] sDiag = null;
-        try {
-            svdE = SVD.factorize(fm);
-            vT = svdE.getVt();
-            u = svdE.getU();
-            sDiag = svdE.getS();
-        } catch (NotConvergedException e) {
-            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(_fm), _fm);
-            double[][] aaT = MatrixUtil.multiply(_fm, MatrixUtil.transpose(_fm));
-            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
-            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
-            //    and sqrt( SVD(A^TA) eigenvalues )
-            //try { 
-                svdE = SVD.factorize(new DenseMatrix(aTa));
-                vT = svdE.getVt();
-                sDiag = svdE.getS();
-                sDiag[0] = Math.sqrt(sDiag[0]);
-                sDiag[1] = Math.sqrt(sDiag[1]);
-                
-                svdE = SVD.factorize(new DenseMatrix(aaT));
-                u = svdE.getU();
-            //} catch (NotConvergedException ex) {
-            //}
-        }
-        
-        double[][] _u = MatrixUtil.convertToRowMajor(u);
-        assert(u.numColumns() == 3 && u.numRows() == 3);
-        double[][] _vT = MatrixUtil.convertToRowMajor(vT);
+        assert(svdE.u[0].length == 3 && svdE.u.length == 3);
 
         double[][] w = new double[3][3];
         w[0] = new double[]{0, -1, 0};
         w[1] = new double[]{1, 0, 0};
         w[2] = new double[]{0, 0, 1};
 
-        double[][] R1 = MatrixUtil.multiply(_u, w);
-        R1 = MatrixUtil.multiply(R1, _vT);
+        double[][] R1 = MatrixUtil.multiply(svdE.u, w);
+        R1 = MatrixUtil.multiply(R1, svdE.vT);
 
-        double[][] R2 = MatrixUtil.multiply(_u, MatrixUtil.transpose(w));
-        R2 = MatrixUtil.multiply(R2, _vT);
+        double[][] R2 = MatrixUtil.multiply(svdE.u, MatrixUtil.transpose(w));
+        R2 = MatrixUtil.multiply(R2, svdE.vT);
 
-        double[] t1 = Matrices.getColumn(u, 2).getData();
+        DenseMatrix uM = new DenseMatrix(svdE.u);
+        double[] t1 = Matrices.getColumn(uM, 2).getData();
 
-        double[] t2 = Matrices.getColumn(u, 2).getData();
+        double[] t2 = Matrices.getColumn(uM, 2).getData();
         MatrixUtil.multiply(t2, -1);
 
         // solution 1:  R1 and T1
@@ -478,7 +468,6 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
         System.out.printf("det(R1)=%.3e\n", detR1);
         System.out.printf("det(R2)=%.3e\n", detR2);
-        System.out.println("R1 results in transformed positive Z so R1 is the rot matrix, not R2");
         System.out.flush();
         
         
