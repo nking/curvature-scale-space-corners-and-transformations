@@ -349,6 +349,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
        
         double[][] kScaled = MatrixUtil.copy(k);
         MatrixUtil.multiply(kScaled, (1./7.875));
+        System.out.printf("K/7.875=\n%s\n", FormatArray.toString(kScaled, "%.3e"));
         
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
@@ -383,37 +384,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         where x_img = u/w
               y_img = v/w
         */
-        
-        // p1 = [I | 0]; p2 = [ [e2}_x * F | e2 ]
-        // x1 = P1*X
-        // x2 = P2*X
-        //  ====> X = pseudoInv(p2) * x2
-        //            4X3 3XN --> 4XN
-        
-        //DenseMatrix p2 = tr.pFromF(fm);
-        DenseMatrix p2 = tr.pFromF(new DenseMatrix(_essentialM));
-        System.out.printf("P2=\n%s\n",  FormatArray.toString(p2, "%.3e"));
-        
-        {
-            SVDProducts svdP = MatrixUtil.performSVD(p2);
-            
-            System.out.printf("SVD(p2).U==\n%s\n", FormatArray.toString(
-                svdP.u, " %.3e"));
-            System.out.printf("SVD(p2).V^T==\n%s\n", FormatArray.toString(
-                svdP.vT, " %.3e"));
-            
-            // smallest eigenvalue's eigenvector in svdP is the
-            //   camera center c (or rather, c*R I think...)
-            
-        }
-        
-        //double[][] p2Inv = MatrixUtil.pseudoinverseRankDeficient(MatrixUtil.convertToRowMajor(p2));
-        double[][] p2Inv = MatrixUtil.pseudoinverseFullRank(MatrixUtil.convertToRowMajor(p2));
-        
-        double[][] XW = MatrixUtil.multiply(p2Inv, 
-            MatrixUtil.convertToRowMajor(x2M));
-        System.out.printf("X=\n%s\n", FormatArray.toString(XW, " %.0f"));
-        
+
         /*
         from Szeliski Sect 7.2 Structure From Motion:
         Note that the absolute distance between the two cameras can never be recovered
@@ -488,11 +459,58 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             |     0       0    1 |    |     0  -sin θ   cos θ |  |      0      0    1 |
         
         */
-        //tan = sin/cos
-        double estimatedRotR1 = Math.atan(R1[0][1]/R1[0][0]) * (180./Math.PI);
-        System.out.printf("estimated rotation about y axis from R1 =%.2f\n", estimatedRotR1);
-        double estimatedRotR2 = Math.atan(R2[0][1]/R2[0][0]) * (180./Math.PI);
-        System.out.printf("estimated rotation about y axis from R2 =%.2f \n", estimatedRotR2);
+        
+        
+        //DenseMatrix p2 = tr.pFromF(fm);
+        DenseMatrix p2 = tr.pFromF(new DenseMatrix(_essentialM));
+        System.out.printf("P2=\n%s\n",  FormatArray.toString(p2, "%.3e"));
+        
+        {
+            SVDProducts svdP = MatrixUtil.performSVD(p2);
+            
+            System.out.printf("SVD(p2).U==\n%s\n", FormatArray.toString(
+                svdP.u, " %.3e"));
+            System.out.printf("SVD(p2).V^T==\n%s\n", FormatArray.toString(
+                svdP.vT, " %.3e"));
+            
+            // smallest eigenvalue's eigenvector in svdP is the
+            //   camera center c (or rather, c*R I think...)
+            
+        }
+                
+        // p1 = [I | 0]; p2 = [ [e2}_x * F | e2 ]
+        // x1 = P1*X
+        // x2 = P2*X
+        //  ====> X = pseudoInv(p2) * x2
+        //            4X3 3XN --> 4XN
+        
+        //pseudoinverse(A) = inverse(A^T*A) * A^T
+        double[][] p2Inv = MatrixUtil.pseudoinverseFullRank(MatrixUtil.convertToRowMajor(p2));
+        
+        double[][] XW = MatrixUtil.multiply(p2Inv, 
+            MatrixUtil.convertToRowMajor(x2M));
+        System.out.printf("X from inv(P2)*x2=\n%s\n", FormatArray.toString(XW, " %.0f"));
+         
+        boolean goodSoln, allZsPos;
+        XW = transformx(R1, t1, x2M);
+        allZsPos = allZsArePositive(XW);
+        goodSoln = (Math.abs(detR1 - 1.) < 1e-5) && allZsPos;
+        System.out.printf("Good Solution=%b\nX from inv(|[R1|t1])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
+         
+        XW = transformx(R1, t2, x2M);
+        allZsPos = allZsArePositive(XW);
+        goodSoln = (Math.abs(detR1 - 1.) < 1e-5) && allZsPos;
+        System.out.printf("Good Solution=%b\nX from inv(|[R1|t2])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
+        
+        XW = transformx(R2, t1, x2M);
+        allZsPos = allZsArePositive(XW);
+        goodSoln = (Math.abs(detR2 - 1.) < 1e-5) && allZsPos;
+        System.out.printf("Good Solution=%b\nX from inv(|[R2|t1])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
+        
+        XW = transformx(R2, t2, x2M);
+        allZsPos = allZsArePositive(XW);
+        goodSoln = (Math.abs(detR2 - 1.) < 1e-5) && allZsPos;
+        System.out.printf("Good Solution=%b\nX from inv(|[R2|t2])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
         
         // check the components of this one
         double estimatedRotP2 = Math.atan(p2.get(0, 1)/p2.get(0, 0)) * (180./Math.PI);
@@ -928,5 +946,36 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         System.out.printf("transformed: \n%s\n",
             FormatArray.toString(a2, "%.3e"));
+    }
+
+    private double[][] transformx(double[][] R, double[] t, DenseMatrix x) throws NotConvergedException {
+        double[][] P = concatenateColumns(R, t);
+        double[][] pInv = MatrixUtil.pseudoinverseFullRank(P);
+        
+        double[][] XW = MatrixUtil.multiply(pInv, 
+            MatrixUtil.convertToRowMajor(x));
+        return XW;
+    }
+    
+    private double[][] concatenateColumns(double[][] a, double[] b) {
+        assertTrue(a.length == b.length);
+        double[][] out = new double[a.length][a[0].length + 1];
+        for (int i = 0; i < a.length; ++i) {
+            out[i] = new double[a[0].length + 1];
+            for (int j = 0; j < a[i].length; ++j) {
+                out[i][j] = a[i][j];
+            }
+            out[i][a[0].length] = b[i];
+        }
+        return out;
+    }
+
+    private boolean allZsArePositive(double[][] XW) {
+        for (int i = 0; i < XW[0].length; ++i) {
+            if (XW[2][i] < 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }
