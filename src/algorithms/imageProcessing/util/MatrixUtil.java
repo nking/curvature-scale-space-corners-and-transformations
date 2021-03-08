@@ -37,7 +37,8 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 import no.uib.cipr.matrix.sparse.SparseVector;
 
 /**
- *
+ *TODO: revisit this class and move contents to the other MatrixUtil class from 
+ * project called 'shared'
  * @author nichole
  */
 public class MatrixUtil {
@@ -791,7 +792,22 @@ public class MatrixUtil {
         return a2;
     }
     
-    public static double[] extractRawPitchRollFromRotation(DenseMatrix rotMatrix) {
+    /**
+     * extract yaw, pitch, and roll from a 3X3 rotation matrix
+     * <pre>
+     euler transformations
+        
+        about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0       0    1 |    |     0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+        
+        
+    </pre>
+     * @param rotMatrix
+     * @return 
+     */
+    /*public static double[] extractRawPitchRollFromRotation(DenseMatrix rotMatrix) {
         
         double yaw = Math.atan2(rotMatrix.get(1, 0), rotMatrix.get(0, 0));
         
@@ -802,7 +818,7 @@ public class MatrixUtil {
         double roll = Math.atan2(rotMatrix.get(2, 1), rotMatrix.get(2, 2));
         
         return new double[]{yaw, pitch, roll};
-    }
+    }*/
     
     public static DenseMatrix calculateRotationMatrix(double yaw,
         double pitch, double roll) {

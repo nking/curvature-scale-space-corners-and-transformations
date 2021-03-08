@@ -478,7 +478,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             
         }
                 
-        // p1 = [I | 0]; p2 = [ [e2}_x * F | e2 ]
+        // p1 = [I | 0]; p2 = [ [e2]_x * F | e2 ]
         // x1 = P1*X
         // x2 = P2*X
         //  ====> X = pseudoInv(p2) * x2
@@ -515,6 +515,33 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // check the components of this one
         double estimatedRotP2 = Math.atan(p2.get(0, 1)/p2.get(0, 0)) * (180./Math.PI);
         System.out.printf("estimated rotation about y axis from P2=%.2f\n", estimatedRotP2);
+        
+        // ========= http://www.cs.cmu.edu/~16385/s17/Slides/13.1_Stereo_Rectification.pdf
+        double[][] eEpipoles = tr.calculateEpipoles(new DenseMatrix(_essentialM));
+        double[] rRect1 = eEpipoles[0];
+        double rRect2Denom = Math.sqrt(eEpipoles[0][0]*eEpipoles[0][0] + 
+            eEpipoles[0][1]*eEpipoles[0][1]);
+        double[] rRect2 = new double[]{-eEpipoles[0][1]/rRect2Denom, eEpipoles[0][0]/rRect2Denom, 0};
+        double[] rRect3 = MatrixUtil.crossProduct(rRect1, rRect1);
+        double[][] rRect = new double[3][3];
+        rRect[0] = rRect1;
+        rRect[1] = rRect2;
+        rRect[2] = rRect3;
+        
+        System.out.printf("rRect=\n%s\n", FormatArray.toString(rRect, "%.3e"));
+        
+        // this should be [1, 0, 0]
+        double[] rRectE1 = MatrixUtil.multiplyMatrixByColumnVector(rRect, eEpipoles[0]);
+        
+        System.out.printf("rRect*E1=\n%s\n", FormatArray.toString(rRectE1, "%.3e"));
+        
+        // [x’ y’ z’] = rRect * [x y z]
+        //   (  f/z’ * ’[x’ y’ z’]  )
+        // *may need to alter the focal length (inside K) to keep points within the original image size
+        
+        // [x  y  z] = R * rRect * [x'  y'  z'] where R is the correct solution 
+        //     of the 4 previous R1 and R2 combinations with T1 and T2 above
+        
     }
     
     public void _testMisc() throws Exception {
@@ -921,20 +948,20 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
     private void printTransformation(double[][] a,
         double r_z, double t_x, double t_y) {
         
-         /* euler transformations
+        /* euler transformations
         
         about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   sin φ    0 |    |     1       0       0 |  |  cos ψ  sin ψ    0 |
-            |-sin φ   cos φ    0 |    |     0   cos θ   sin θ |  | -sin ψ  cos ψ    0 |
-            |     0       0    1 |    |     0  -sin θ   cos θ |  |      0      0    1 |
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0       0    1 |    |     0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
         
         */
         
         double psi = r_z*Math.PI/180;
         double[][] tPitch = new double[3][3];
-        tPitch[0] = new double[]{Math.cos(psi),  Math.sin(psi), 0};
-        tPitch[1] = new double[]{-Math.sin(psi), Math.cos(psi), 0};
-        tPitch[2] = new double[]{0,                          0, 1};
+        tPitch[0] = new double[]{Math.cos(psi), 0,  Math.sin(psi)};
+        tPitch[1] = new double[]{0,             0, 1};
+        tPitch[2] = new double[]{-Math.sin(psi), Math.cos(psi), 0};
         
         double[][] tTransX = new double[3][3];
         tTransX[0] = new double[]{1, 0, t_x};
