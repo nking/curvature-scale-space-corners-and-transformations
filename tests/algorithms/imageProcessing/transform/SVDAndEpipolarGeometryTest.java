@@ -351,6 +351,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
        
         double[][] kScaled = MatrixUtil.copy(k);
         MatrixUtil.multiply(kScaled, (1./7.875));
+        kScaled[2][2] = 1.;
         System.out.printf("K/7.875=\n%s\n", FormatArray.toString(kScaled, "%.3e"));
         
         // a quick look at
@@ -451,7 +452,15 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         a[0] = new double[]{256, 411};    
         a[1] = new double[]{192, 213};  
         a[2] = new double[]{1, 1};
-        printTransformation(a, -35., 50, -100); // -35 degrees is -0.61 radians
+        
+        PairIntArray xy1 = new PairIntArray();
+        xy1.add(256, 192);
+        xy1.add(411, 213);
+        PairIntArray xy2 = new PairIntArray();
+        xy2.add(147, 180);
+        xy2.add(256, 192);
+        printTransformation(xy1, xy2, 1.2); // -35 degrees is -0.61 radians
+                
         
         /* euler transformations
         
@@ -1046,8 +1055,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         return out;
     }
 
-    private void printTransformation(double[][] a,
-        double r_z, double t_x, double t_y) {
+    private void printTransformation(PairIntArray xy1, PairIntArray xy2, double scale) {
         
         /* euler transformations
         
@@ -1057,23 +1065,11 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             |     0       0    1 |    |     0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
         
         */
+        MatchedPointsTransformationCalculator c = new MatchedPointsTransformationCalculator();
+        TransformationParameters params =  c.calulateEuclideanGivenScale(
+            scale, xy1, xy2, xy1.getX(0), xy1.getY(0));
         
-        double psi = r_z*Math.PI/180;
-        double[][] tPitch = new double[3][3];
-        tPitch[0] = new double[]{Math.cos(psi), 0,  Math.sin(psi)};
-        tPitch[1] = new double[]{0,             0, 1};
-        tPitch[2] = new double[]{-Math.sin(psi), Math.cos(psi), 0};
-        
-        double[][] tTransX = new double[3][3];
-        tTransX[0] = new double[]{1, 0, t_x};
-        tTransX[1] = new double[]{0, 1,  t_y};
-        tTransX[2] = new double[]{0, 0,  1};
-        
-        double[][] a2 = MatrixUtil.multiply(tPitch, a);
-        a2 = MatrixUtil.multiply(tTransX, a2);
-        
-        System.out.printf("transformed: \n%s\n",
-            FormatArray.toString(a2, "%.3e"));
+        System.out.printf("transformation params: \n%s\n", params.toString());
     }
 
     private double[][] transformx(double[][] R, double[] t, DenseMatrix x) throws NotConvergedException {
