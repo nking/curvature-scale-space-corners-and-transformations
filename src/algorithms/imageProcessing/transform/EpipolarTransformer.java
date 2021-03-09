@@ -97,8 +97,8 @@ import algorithms.matrix.MatrixUtil.SVDProducts;
     This eigenvector is what he calls the least eigenvector of A^T*A and
     it is found via the Jacobi algorithm or Singular Value Decomposition.
     NOTE:
-        SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-        SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
+        SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
+        SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U
 
     The solved for matrix will in general not have rank 2 and needs to, so
     further corrections are necessary:
@@ -458,8 +458,8 @@ public class EpipolarTransformer {
             vT = svd.getVt();
         } catch (NotConvergedException e) {
             double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
-            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
+            //SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
+            //SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U
             //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
             //    and sqrt( SVD(A^TA) eigenvalues )
             try { 
@@ -597,7 +597,7 @@ public class EpipolarTransformer {
     DenseMatrix validateSolution(DenseMatrix solution, DenseMatrix leftXY,
         DenseMatrix rightXY) {
         
-        /*        
+        /*
         NOTE: vgg_contreps of a 3X1 vector e1 is
             Y = [0      e1(3)  -e1(2)
                 -e1(3)  0      e1(1)
@@ -769,59 +769,37 @@ public class EpipolarTransformer {
         P = [-vgg_contreps(e)*F e];
         return
         */
-        SVD svdE;
-        DenseMatrix u = null;
-        DenseMatrix vT = null;
-        double[] sDiag = null;
+        EpipolarTransformer tr = new EpipolarTransformer();
+        
+        SVDProducts svdE = null;
         try {
-            svdE = SVD.factorize(f);
-            vT = svdE.getVt();
-            u = svdE.getU();
-            sDiag = svdE.getS();
-        } catch (NotConvergedException e) {
-            double[][] fm = MatrixUtil.convertToRowMajor(f);
-            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(fm), fm);
-            double[][] aaT = MatrixUtil.multiply(fm, MatrixUtil.transpose(fm));
-            //SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U 
-            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
-            //    and sqrt( SVD(A^TA) eigenvalues )
-            try { 
-                svdE = SVD.factorize(new DenseMatrix(aTa));
-                vT = svdE.getVt();
-                sDiag = svdE.getS();
-                sDiag[0] = Math.sqrt(sDiag[0]);
-                sDiag[1] = Math.sqrt(sDiag[1]);
-                
-                svdE = SVD.factorize(new DenseMatrix(aaT));
-                u = svdE.getU();
-            } catch (NotConvergedException ex) {
-                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
-                return null;
-            }
+            svdE = MatrixUtil.performSVD(f);
+        } catch (NotConvergedException ex) {
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
         }
         
-        assert(u.numColumns() == 3);
-        assert(u.numRows() == 3);
-        assert(vT.numColumns() == 3);
-        assert(vT.numRows() == 3);
-        // e1 = last column of U but not normalized by the last item of that column
-        double[] e1 = new double[u.numRows()];
-        for (int i = 0; i < e1.length; i++) {
-            e1[i] = u.get(i, 2);
+        assert(svdE.u[0].length == 3);
+        assert(svdE.u.length == 3);
+        assert(svdE.vT[0].length == 3);
+        assert(svdE.vT.length == 3);
+        // e2 = last column of U but not normalized by the last item of that column
+        double[] e2 = new double[svdE.u.length];
+        for (int i = 0; i < e2.length; i++) {
+            e2[i] = svdE.u[i][2];
         }
         
-        //-1* vgg_contreps of a 3X1 vector e1 is the skewSymmetric
-        //    Y = [0      e1(3)  -e1(2)
-        //        -e1(3)  0      e1(1)
-        //         e1(2) -e1(1)  0];
-        double[][] contrepsE1 = new double[3][3];
-        contrepsE1[0] = new double[]{0, -e1[2], e1[1]};
-        contrepsE1[1] = new double[]{e1[2], 0, -e1[0]};
-        contrepsE1[2] = new double[]{-e1[1], e1[0], 0};
+        //-1* vgg_contreps of a 3X1 vector e is the skewSymmetric
+        //    Y = [0      e(3)  -e(2)
+        //        -e(3)  0      e(1)
+        //         e(2) -e(1)  0];
+        double[][] contrepsE2 = new double[3][3];
+        contrepsE2[0] = new double[]{0, -e2[2], e2[1]};
+        contrepsE2[1] = new double[]{e2[2], 0, -e2[0]};
+        contrepsE2[2] = new double[]{-e2[1], e2[0], 0};
         
         // 3X3
-        double[][] P = MatrixUtil.copy(contrepsE1);
+        double[][] P = MatrixUtil.copy(contrepsE2);
         P = MatrixUtil.multiply(P, MatrixUtil.convertToRowMajor(f));
         
         // append e onto last column of P
@@ -829,7 +807,7 @@ public class EpipolarTransformer {
         for (int row = 0; row < P.length; ++row){
             out[row] = new double[P[0].length + 1];
             System.arraycopy(P[row], 0, out[row], 0, P[0].length);
-            out[row][P[0].length] = e1[row];
+            out[row][P[0].length] = e2[row];
         }
 
         return new DenseMatrix(out);
@@ -1324,7 +1302,10 @@ public class EpipolarTransformer {
      The right epipole e2 = the right image position of the epipolar projection 
      of the left camera center.  It is the last row of V / last item of that row.
      * @param fundamentalMatrix
-     * @return a matrix holding whose first row holds e1 and 2nd row holds e2.
+     * @return a matrix holding whose first row holds e1 and 2nd row holds e2
+     * where e1 = the left image position of the epipolar projection 
+     of the right camera center and e2 = the right image position of the epipolar projection 
+     of the left camera center.
      */
     @SuppressWarnings({"unchecked"})
     double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {
@@ -1335,9 +1316,14 @@ public class EpipolarTransformer {
             | a |
             | b |
             | c |
+        
+        slope = -a/b
+        x intercept = -c/a
+        y intercept = -c/b
+        
         The line can be rewritten in slope, intercept form:
             y = intercept + slope * x
-              = -(c/b) - slope*(a/b)*x
+              = -(c/b) - (a/b)*x
 
         written as homogenization form of lines:
             | -a/b |
@@ -1345,16 +1331,16 @@ public class EpipolarTransformer {
 
 
         From u_2^T * F * u_1 = 0
-
+        
+        NOTE:
+            SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
+            SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U
+        
         epipoles:
              [U,D,V] = svd(denormalized FundamentalMatrix);
-             e1 = last column of V divided by it's last item
+             e1 = last column of V divided by it's last item <---
              e2 = last column of U divided by it's last item
 
-        NOTE:
-            SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-            SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
-        
         coords of epipole e’ (==e2) w.r.t. left image coords (==img1) is where 
         the right camera is w.r.t. left image coords=
             svd(F^T*F).u[2]/svd(F^T*F).u[2][2]
@@ -1379,18 +1365,19 @@ public class EpipolarTransformer {
         assert(svdE.u.length == 3);
         assert(svdE.vT[0].length == 3);
         assert(svdE.vT.length == 3);
+        
         // e1 = last column of U / last item of that column
-        // e2 = last row of V / last item of that row
-        double[] e1 = new double[svdE.u.length];
-        double e1Div = svdE.u[2][2];
-        for (int i = 0; i < e1.length; i++) {
-            e1[i] = svdE.u[i][2]/e1Div;
+        // e1 = last row of V / last item of that row
+        double[] e2 = new double[svdE.u.length];
+        double e2Div = svdE.u[2][2];
+        for (int i = 0; i < e2.length; i++) {
+            e2[i] = svdE.u[i][2]/e2Div;
         }
         
-        double[] e2 = new double[svdE.vT[0].length];
-        double e2Div = svdE.vT[2][2];
-        for (int i = 0; i < e2.length; i++) {
-            e2[i] = svdE.vT[2][i]/e2Div;
+        double[] e1 = new double[svdE.vT[0].length];
+        double e1Div = svdE.vT[2][2];
+        for (int i = 0; i < e1.length; i++) {
+            e1[i] = svdE.vT[2][i]/e1Div;
         }
 
         double[][] e = new double[2][];

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
@@ -231,8 +232,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         */
         
         /*
-        SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-        SVD(A).V == SVD(A^TA).V == SVD(A^TA).U  
+        SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
+        SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U  
         */
         
         x1[0] = new double[]{262, 316, 260, 284, 234, 177, 216
@@ -336,15 +337,16 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         FOV = 77 degrees = 1.344 radians
         focal length = (4032/2.) / tan(1.344/2.)
                      ~ 1604 pixels = 2.245 mm
-
+           //NOTE: a webstie mentioned a focal length of 27 mm whichis 19286 pixels
         intrinsic camera matrix 
         K = | 1604     0  2016 |
             |    0  1604  1512 |
             |    0     0     1 |
         */
+        double f = 1604;
         double[][] k = new double[3][3];
-        k[0] = new double[]{1604, 0, 2016};
-        k[1] = new double[]{0, 1604, 1512};
+        k[0] = new double[]{f, 0, 2016};
+        k[1] = new double[]{0, f, 1512};
         k[2]= new double[]{0, 0, 1};
        
         double[][] kScaled = MatrixUtil.copy(k);
@@ -490,55 +492,135 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         double[][] XW = MatrixUtil.multiply(p2Inv, 
             MatrixUtil.convertToRowMajor(x2M));
         System.out.printf("X from inv(P2)*x2=\n%s\n", FormatArray.toString(XW, " %.0f"));
-         
+        
+        // save the first that pass the tests for Z>=0.
+        double[][] R = null;
+        double[] T = null;
+        String goodSolnLabel = null;
+        
+        double eps = 1.e-5;
         boolean goodSoln, allZsPos;
         XW = transformx(R1, t1, x2M);
         allZsPos = allZsArePositive(XW);
-        goodSoln = (Math.abs(detR1 - 1.) < 1e-5) && allZsPos;
+        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
         System.out.printf("Good Solution=%b\nX from inv(|[R1|t1])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
-         
+        if (goodSoln && R == null) {
+            goodSolnLabel = "R1, T1";
+            R = R1;
+            T = t1;
+        } 
+        
         XW = transformx(R1, t2, x2M);
         allZsPos = allZsArePositive(XW);
-        goodSoln = (Math.abs(detR1 - 1.) < 1e-5) && allZsPos;
+        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
         System.out.printf("Good Solution=%b\nX from inv(|[R1|t2])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
+        if (goodSoln && R == null) {
+            goodSolnLabel = "R1, T2";
+            R = R1;
+            T = t2;
+        } 
         
         XW = transformx(R2, t1, x2M);
         allZsPos = allZsArePositive(XW);
-        goodSoln = (Math.abs(detR2 - 1.) < 1e-5) && allZsPos;
+        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
         System.out.printf("Good Solution=%b\nX from inv(|[R2|t1])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
+        if (goodSoln && R == null) {
+            goodSolnLabel = "R2, T1";
+            R = R2;
+            T = t1;
+        } 
         
         XW = transformx(R2, t2, x2M);
         allZsPos = allZsArePositive(XW);
-        goodSoln = (Math.abs(detR2 - 1.) < 1e-5) && allZsPos;
+        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
         System.out.printf("Good Solution=%b\nX from inv(|[R2|t2])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
+        if (goodSoln && R == null) {
+            goodSolnLabel = "R2, T2";
+            R = R2;
+            T = t2;
+        } 
         
         // check the components of this one
         double estimatedRotP2 = Math.atan(p2.get(0, 1)/p2.get(0, 0)) * (180./Math.PI);
         System.out.printf("estimated rotation about y axis from P2=%.2f\n", estimatedRotP2);
         
+        if (R == null) {
+            //TODO: wrap the solution finiding in a retry.  may need a retry loop for adjusting f
+            // once a good solution is found too.
+            return;
+        }
+        System.out.println("choosing solution: " + goodSolnLabel);
+        System.out.flush();
+        
         // ========= http://www.cs.cmu.edu/~16385/s17/Slides/13.1_Stereo_Rectification.pdf
         double[][] eEpipoles = tr.calculateEpipoles(new DenseMatrix(_essentialM));
-        double[] rRect1 = eEpipoles[0];
-        double rRect2Denom = Math.sqrt(eEpipoles[0][0]*eEpipoles[0][0] + 
-            eEpipoles[0][1]*eEpipoles[0][1]);
-        double[] rRect2 = new double[]{-eEpipoles[0][1]/rRect2Denom, eEpipoles[0][0]/rRect2Denom, 0};
-        double[] rRect3 = MatrixUtil.crossProduct(rRect1, rRect1);
+        
+        double lp1NormForT = Math.abs(T[0]) + Math.abs(T[1]) + Math.abs(T[2]);
+        double rRect2Denom = Math.sqrt(T[0]*T[0] + T[1]*T[1]);
+        double[] rRect1 = new double[]{T[0]/lp1NormForT, T[1]/lp1NormForT, T[2]/lp1NormForT};
+        double[] rRect2 = new double[]{-T[1]/rRect2Denom, T[0]/rRect2Denom, 0};
+        
+        //double[] rRect1 = eEpipoles[0];
+        //double rRect2Denom = Math.sqrt(eEpipoles[0][0]*eEpipoles[0][0] + 
+        //    eEpipoles[0][1]*eEpipoles[0][1]);
+        //double[] rRect2 = new double[]{-eEpipoles[0][1]/rRect2Denom, eEpipoles[0][0]/rRect2Denom, 0};
+        double[] rRect3 = MatrixUtil.crossProduct(rRect1, rRect2);
         double[][] rRect = new double[3][3];
         rRect[0] = rRect1;
         rRect[1] = rRect2;
         rRect[2] = rRect3;
         
-        System.out.printf("rRect=\n%s\n", FormatArray.toString(rRect, "%.3e"));
+        double[] e1Norm = Arrays.copyOf(eEpipoles[0], eEpipoles[0].length);
+        MatrixUtil.multiply(e1Norm, 1./e1Norm[2]);
+        double[] e2Norm = Arrays.copyOf(eEpipoles[1], eEpipoles[1].length);
+        MatrixUtil.multiply(e2Norm, 1./e2Norm[2]);
+        System.out.printf("e1=\n%s\n", FormatArray.toString(eEpipoles[0], "%.3f"));
+        System.out.printf("e2=\n%s\n", FormatArray.toString(eEpipoles[1], "%.3f"));
+        System.out.printf("e1_normalized=\n%s\n", 
+            FormatArray.toString(e1Norm, "%.3f"));
+        System.out.printf("e2_normalized=\n%s\n", 
+            FormatArray.toString(e2Norm, "%.3f"));
+                
+        System.out.printf("rRect=\n%s\n", FormatArray.toString(rRect, "%.3f"));
         
         // this should be [1, 0, 0]
-        double[] rRectE1 = MatrixUtil.multiplyMatrixByColumnVector(rRect, eEpipoles[0]);
+        double[] rRectE1 = MatrixUtil.multiplyMatrixByColumnVector(rRect, 
+            rRect1);
         
-        System.out.printf("rRect*E1=\n%s\n", FormatArray.toString(rRectE1, "%.3e"));
+        System.out.printf("rRect*e2=\n%s\n", FormatArray.toString(rRectE1, "%.3f"));
+        
+        /* paused here
         
         // [x’ y’ z’] = rRect * [x y z]
         //   (  f/z’ * ’[x’ y’ z’]  )
         // *may need to alter the focal length (inside K) to keep points within the original image size
+        Image img2Rect = img2.createWithDimensions();
+        double[] coords = new double[]{0, 0, 1};
+        double[] coordsR;
+        int i2, j2;
         
+        ///bounds (0,0)  (0, imageWidth-1, imageHeight-1)
+        coords[0] = image2Width-1; coords[1] = image2Height-1;
+        coordsR = MatrixUtil.multiplyMatrixByColumnVector(rRect, coords);
+        // normalize by f/coordsR[2]
+        //norm = 1./coordsR[2];
+        //coordsRNorm[0] = coordsR[0] * norm; coordsRNorm[1] = coordsR[1] * norm;
+        System.out.printf("     coordsR=%s\n",
+            FormatArray.toString(coordsR, "%.3e"));
+        
+        for (int i = 1; i < image2Width; ++i) {
+            coords[0] = i;
+            for (int j = 1; j < image2Height; ++j) {
+                coords[1] = j;
+                coordsR = MatrixUtil.multiplyMatrixByColumnVector(rRect, coords);
+                i2 = (int)Math.round(coordsR[0]);
+                j2 = (int)Math.round(coordsR[1]);
+                if (i2>0 && j2>0 && i2 < image2Width && j2 < image2Height) {
+                    img2Rect.setRGB(i2, j2, img2.getRGB(i, j));
+                }
+            }
+        }
+        */
         // [x  y  z] = R * rRect * [x'  y'  z'] where R is the correct solution 
         //     of the 4 previous R1 and R2 combinations with T1 and T2 above
         
@@ -578,10 +660,29 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         SVD svd_ffT = SVD.factorize(new DenseMatrix(ffT));
         SVD svd_fTf = SVD.factorize(new DenseMatrix(fTf));
         
-        System.out.printf("SVD(F):\nU=%s\nV^T=%s\n\n", svd_f.getU().toString(), svd_f.getVt().toString());
-        System.out.printf("SVD(F^T):\nU=%s\nV^T=%s\n\n", svd_fT.getU().toString(), svd_fT.getVt().toString());
-        System.out.printf("SVD(FF^T):\nU=%s\nV^T=%s\n\n", svd_ffT.getU().toString(), svd_ffT.getVt().toString());
-        System.out.printf("SVD(F^TF):\nU=%s\nV^T=%s\n\n", svd_fTf.getU().toString(), svd_fTf.getVt().toString());
+        System.out.printf("SVD(F):\nU=\n%s\nV^T=\n%s\n\n", 
+            FormatArray.toString(svd_f.getU(), "%.4f"), 
+            FormatArray.toString(svd_f.getVt(), "%.4f"));
+        System.out.printf("SVD(F^T):\nU=\n%s\nV^T=\n%s\n\n", 
+            FormatArray.toString(svd_fT.getU(), "%.4f"), 
+            FormatArray.toString(svd_fT.getVt(), "%.4f"));
+        System.out.printf("SVD(FF^T):\nU=\n%s\nV^T=\n%s\n\n", 
+            FormatArray.toString(svd_ffT.getU(), "%.4f"), 
+            FormatArray.toString(svd_ffT.getVt(), "%.4f"));
+        System.out.printf("SVD(F^TF):\nU=\n%s\nV^T=\n%s\nD=\n%s\n\n", 
+            FormatArray.toString(svd_fTf.getU(), "%.4f"), 
+            FormatArray.toString(svd_fTf.getVt(), "%.4f"),
+            FormatArray.toString(svd_fTf.getS(), "%.4f"));
+        EVD evd_fTF = EVD.factorize(new DenseMatrix(fTf));
+        System.out.printf("EVD(F^TF):\nU=\n%s\nV^T=\n%s\nD=\n%s\n\n", 
+            FormatArray.toString(evd_fTF.getLeftEigenvectors(), "%.4f"), 
+            FormatArray.toString(evd_fTF.getRightEigenvectors(), "%.4f"),
+            FormatArray.toString(evd_fTF.getRealEigenvalues(), "%.4f"));
+        
+        EpipolarTransformer tr = new EpipolarTransformer();
+        double[][] leftRightE = tr.calculateEpipoles(new DenseMatrix(F));
+        System.out.printf("e1 from F = \n%s\n", FormatArray.toString(leftRightE[0], "%.4f"));
+        System.out.printf("e2 from F = \n%s\n", FormatArray.toString(leftRightE[1], "%.4f"));
         System.out.flush();
     }
    
@@ -663,8 +764,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
 
         /*
-        SVD(A).U == SVD(AA^T).U == SVD(AA^T).V
-        SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
+        SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
+        SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U
         */
         
         //double[][] input1Sq = MatrixUtil.multiply(input1, MatrixUtil.transpose(input1));
@@ -998,8 +1099,11 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
     }
 
     private boolean allZsArePositive(double[][] XW) {
+        return allOfDimensionArePositive(XW, 2);
+    }
+    private boolean allOfDimensionArePositive(double[][] XW, final int dimension) {
         for (int i = 0; i < XW[0].length; ++i) {
-            if (XW[2][i] < 0) {
+            if (XW[dimension][i] < 0) {
                 return false;
             }
         }
