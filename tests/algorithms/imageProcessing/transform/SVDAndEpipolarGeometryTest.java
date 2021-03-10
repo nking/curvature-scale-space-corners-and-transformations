@@ -9,6 +9,7 @@ import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.matrix.MatrixUtil;
+import algorithms.matrix.MatrixUtil.QAndR;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
@@ -327,8 +328,21 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
         System.out.println();
         
+        double[][] _fm = MatrixUtil.convertToRowMajor(fm);
+        
+        if (true) {
+            // fix the solution to examine K
+            _fm[0] = new double[]{-6.8953e-07, -3.0114e-05, 1.0035e-02};
+            _fm[1] = new double[]{3.0463e-05, 8.1546e-07, -1.7030e-02};
+            _fm[2] = new double[]{-8.3055e-03, 1.1229e-02, 1.0000e+00};
+            fm = new DenseMatrix(_fm);
+        }
+        
         System.out.printf("de-normalized FM=\n%s\n", 
-            FormatArray.toString(fm, "%.3e"));
+            FormatArray.toString(fm, "%.4e"));
+        
+        //TODO: implement algorithm in section 3.3 of Hartley 1992 
+        // "Estimation of Relative Camera Positions for Uncalibrated Cameras"
         
         /*
         pixel width = 1.4e-3mm
@@ -343,21 +357,25 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             |    0  1604  1512 |
             |    0     0     1 |
         */
-        double f = 1604;
+        // 
+        double focalLength = 1604;//1604;  19286?
+        double xC = 4032./2.;
+        double yC = 3024./2.;
+        double scale1 = 1./7.875;
         double[][] k = new double[3][3];
-        k[0] = new double[]{f, 0, 2016};
-        k[1] = new double[]{0, f, 1512};
+        k[0] = new double[]{-focalLength, 0, xC};
+        k[1] = new double[]{0, -focalLength, yC};
         k[2]= new double[]{0, 0, 1};
        
         double[][] kScaled = MatrixUtil.copy(k);
-        MatrixUtil.multiply(kScaled, (1./7.875));
+        MatrixUtil.multiply(kScaled, scale1);
         kScaled[2][2] = 1.;
         System.out.printf("K/7.875=\n%s\n", FormatArray.toString(kScaled, "%.3e"));
         
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
-        double[][] _fm = MatrixUtil.convertToRowMajor(fm);
+        
         double[][] k2TF = MatrixUtil.multiply(MatrixUtil.transpose(kScaled), _fm);
         double[][] k2TFK1 = MatrixUtil.multiply(k2TF, kScaled);
         double[][] _essentialM = k2TFK1;
@@ -407,10 +425,17 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         assert(svdE.u[0].length == 3 && svdE.u.length == 3);
 
+        
+        // same as Hartley1992's E^T
         double[][] w = new double[3][3];
         w[0] = new double[]{0, -1, 0};
         w[1] = new double[]{1, 0, 0};
         w[2] = new double[]{0, 0, 1};
+        double[][] eH92 = MatrixUtil.transpose(w);
+        double[][] zH92 = new double[3][3];
+        zH92[0] = new double[]{0, -1, 0};
+        zH92[1] = new double[]{1, 0, 0};
+        zH92[2] = new double[]{0, 0, 0};
 
         double[][] R1 = MatrixUtil.multiply(svdE.u, w);
         R1 = MatrixUtil.multiply(R1, svdE.vT);
@@ -423,7 +448,18 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
 
         double[] t2 = Matrices.getColumn(uM, 2).getData();
         MatrixUtil.multiply(t2, -1);
-
+        
+        // R1Hartley92 is the same as R2 of Kitani's lecture notes
+        // R2Hartley92 is the same as R1 of Kitani's lecture notes
+        double[][] R1Hartley92 = MatrixUtil.multiply(svdE.u, eH92);
+        R1Hartley92 = MatrixUtil.multiply(R1Hartley92, svdE.vT);
+        double[][] R2Hartley92 = MatrixUtil.multiply(svdE.u, w);
+        R2Hartley92 = MatrixUtil.multiply(R2Hartley92, svdE.vT);
+        double[][] SHartley92 = MatrixUtil.multiply(MatrixUtil.transpose(svdE.vT), zH92);
+        SHartley92 = MatrixUtil.multiply(SHartley92, svdE.vT);
+        double[][] Q1Hartley92 = MatrixUtil.multiply(R1Hartley92, SHartley92);
+        double[][] Q2Hartley92 = MatrixUtil.multiply(R2Hartley92, SHartley92);
+        
         // solution 1:  R1 and T1
         // solution 2:  R1 and T2
         // solution 3:  R2 and T2
@@ -441,7 +477,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("t1=\n%s\n", FormatArray.toString(t1, "%.3e"));
         System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
         System.out.printf("det(R1)=%.3e\n", detR1);
-        System.out.printf("det(R2)=%.3e\n", detR2);
+        System.out.printf("det(R2)=%.3e\n\n", detR2);
+        System.out.printf("R1_Hartly92=\n%s\n", FormatArray.toString(R1Hartley92, "%.3e"));
+        System.out.printf("R2_Hartely92=\n%s\n", FormatArray.toString(R2Hartley92, "%.3e"));
+        System.out.printf("S_Hartly92=\n%s\n", FormatArray.toString(SHartley92, "%.3e"));
+        System.out.printf("Q1_Hartly92=\n%s\n", FormatArray.toString(Q1Hartley92, "%.3e"));
+        System.out.printf("Q2_Hartly92=\n%s\n", FormatArray.toString(Q2Hartley92, "%.3e"));
         System.out.flush();
         
         
@@ -465,10 +506,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         /* euler transformations
         
         about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   sin φ    0 |    |     1       0       0 |  |  cos ψ  sin ψ    0 |
-            |-sin φ   cos φ    0 |    |     0   cos θ   sin θ |  | -sin ψ  cos ψ    0 |
-            |     0       0    1 |    |     0  -sin θ   cos θ |  |      0      0    1 |
-        
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0       0    1 |    |     0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |        
         */
         
         
@@ -550,7 +590,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         } 
         
         // check the components of this one
-        double estimatedRotP2 = Math.atan(p2.get(0, 1)/p2.get(0, 0)) * (180./Math.PI);
+        double estimatedRotP2 = Math.atan(p2.get(0, 2)/p2.get(0, 0)) * (180./Math.PI);
         System.out.printf("estimated rotation about y axis from P2=%.2f\n", estimatedRotP2);
         
         if (R == null) {
@@ -559,7 +599,11 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             return;
         }
         System.out.println("choosing solution: " + goodSolnLabel);
+        //double estimatedRotY = Math.atan(R[0][2]/R[0][0]) * (180./Math.PI);
+        double estimatedRotY = Math.atan(-R[2][0]/R[2][2]) * (180./Math.PI);
+        System.out.printf("estimated rotation about y axis from R=%.2f\n", estimatedRotY);
         System.out.flush();
+        
         
         // ========= http://www.cs.cmu.edu/~16385/s17/Slides/13.1_Stereo_Rectification.pdf
         double[][] eEpipoles = tr.calculateEpipoles(new DenseMatrix(_essentialM));
@@ -579,25 +623,19 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         rRect[1] = rRect2;
         rRect[2] = rRect3;
         
-        double[] e1Norm = Arrays.copyOf(eEpipoles[0], eEpipoles[0].length);
-        MatrixUtil.multiply(e1Norm, 1./e1Norm[2]);
-        double[] e2Norm = Arrays.copyOf(eEpipoles[1], eEpipoles[1].length);
-        MatrixUtil.multiply(e2Norm, 1./e2Norm[2]);
         System.out.printf("e1=\n%s\n", FormatArray.toString(eEpipoles[0], "%.3f"));
         System.out.printf("e2=\n%s\n", FormatArray.toString(eEpipoles[1], "%.3f"));
-        System.out.printf("e1_normalized=\n%s\n", 
-            FormatArray.toString(e1Norm, "%.3f"));
-        System.out.printf("e2_normalized=\n%s\n", 
-            FormatArray.toString(e2Norm, "%.3f"));
                 
         System.out.printf("rRect=\n%s\n", FormatArray.toString(rRect, "%.3f"));
         
         // this should be [1, 0, 0]
         double[] rRectE1 = MatrixUtil.multiplyMatrixByColumnVector(rRect, 
             rRect1);
-        
-        System.out.printf("rRect*e2=\n%s\n", FormatArray.toString(rRectE1, "%.3f"));
-        
+        System.out.printf("Expecting [1, 0, 0]:\n");
+        System.out.printf("rRect*rRect[0]=\n%s\n", FormatArray.toString(rRectE1, "%.3f"));
+        rRectE1 = MatrixUtil.multiplyMatrixByColumnVector(rRect, 
+            eEpipoles[0]);
+        System.out.printf("rRect*e1=\n%s\n", FormatArray.toString(rRectE1, "%.3f"));
         /* paused here
         
         // [x’ y’ z’] = rRect * [x y z]
@@ -1069,7 +1107,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         TransformationParameters params =  c.calulateEuclideanGivenScale(
             scale, xy1, xy2, xy1.getX(0), xy1.getY(0));
         
-        System.out.printf("transformation params: \n%s\n", params.toString());
+        // roation about z-axis:
+        System.out.printf("transformation params (rot is for z-axis): \n%s\n", params.toString());
+        
     }
 
     private double[][] transformx(double[][] R, double[] t, DenseMatrix x) throws NotConvergedException {
