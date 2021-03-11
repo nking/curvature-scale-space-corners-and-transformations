@@ -340,6 +340,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         System.out.printf("de-normalized FM=\n%s\n", 
             FormatArray.toString(fm, "%.4e"));
+        double[][] fEpipoles = tr.calculateEpipoles(fm);
+        
+        System.out.printf("FM e1 = %s\n", 
+                FormatArray.toString(fEpipoles[0], "%.4e"));
+        System.out.printf("FM e2 = %s\n", 
+                FormatArray.toString(fEpipoles[1], "%.4e"));
         
         //TODO: implement algorithm in section 3.3 of Hartley 1992 
         // "Estimation of Relative Camera Positions for Uncalibrated Cameras"
@@ -358,7 +364,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             |    0     0     1 |
         */
         // 
-        double focalLength = 1604;//1604;  19286?
+        double focalLength = 1604;//1604;  19286
+        System.out.printf("focal Length=%.1f pixels\n", focalLength);
         double xC = 4032./2.;
         double yC = 3024./2.;
         double scale1 = 1./7.875;
@@ -371,6 +378,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         MatrixUtil.multiply(kScaled, scale1);
         kScaled[2][2] = 1.;
         System.out.printf("K/7.875=\n%s\n", FormatArray.toString(kScaled, "%.3e"));
+        
+        
+        printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC, scale1);
         
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
@@ -425,6 +435,10 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         assert(svdE.u[0].length == 3 && svdE.u.length == 3);
 
+        System.out.printf("SVD.u=\n%s", FormatArray.toString(svdE.u, "%.3e"));
+        System.out.printf("det(SVD.u)=%.2f\n", MatrixUtil.determinant(svdE.u));
+        System.out.printf("SVD.vT=\n%s", FormatArray.toString(svdE.vT, "%.3e"));
+        System.out.printf("det(SVD.vT)=%.2f\n", MatrixUtil.determinant(svdE.vT));
         
         // same as Hartley1992's E^T
         double[][] w = new double[3][3];
@@ -604,13 +618,25 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("estimated rotation about y axis from R=%.2f\n", estimatedRotY);
         System.out.flush();
         
+                
+        /* http://www.cs.cmu.edu/~16385/s17/Slides/13.1_Stereo_Rectification.pdf
+        1. Compute E to get R
+              Estimate E using the 8 point algorithm (SVD)
+              Estimate the epipole e (SVD of E)
+              Build Rrect from e
+              Decompose E into R and T
+              Set R1 = R_rect and R2 = R * R_rect
+        2. Rotate right image by R
+        3. Rotate both images by Rrect
+        4. Scale both images by H
+              ?? Rectified points as p = f/z’[x’ y’ z’]
+        */
         
-        // ========= http://www.cs.cmu.edu/~16385/s17/Slides/13.1_Stereo_Rectification.pdf
         double[][] eEpipoles = tr.calculateEpipoles(new DenseMatrix(_essentialM));
         
-        double lp1NormForT = Math.abs(T[0]) + Math.abs(T[1]) + Math.abs(T[2]);
+        double normForT = Math.sqrt(T[0]*T[0] + T[1]*T[1] + T[2]*T[2]);
         double rRect2Denom = Math.sqrt(T[0]*T[0] + T[1]*T[1]);
-        double[] rRect1 = new double[]{T[0]/lp1NormForT, T[1]/lp1NormForT, T[2]/lp1NormForT};
+        double[] rRect1 = new double[]{T[0]/normForT, T[1]/normForT, T[2]/normForT};
         double[] rRect2 = new double[]{-T[1]/rRect2Denom, T[0]/rRect2Denom, 0};
         
         //double[] rRect1 = eEpipoles[0];
@@ -636,25 +662,27 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         rRectE1 = MatrixUtil.multiplyMatrixByColumnVector(rRect, 
             eEpipoles[0]);
         System.out.printf("rRect*e1=\n%s\n", FormatArray.toString(rRectE1, "%.3f"));
-        /* paused here
+        
         
         // [x’ y’ z’] = rRect * [x y z]
         //   (  f/z’ * ’[x’ y’ z’]  )
         // *may need to alter the focal length (inside K) to keep points within the original image size
         Image img2Rect = img2.createWithDimensions();
         double[] coords = new double[]{0, 0, 1};
-        double[] coordsR;
+        double[] coordsRect;
         int i2, j2;
         
         ///bounds (0,0)  (0, imageWidth-1, imageHeight-1)
         coords[0] = image2Width-1; coords[1] = image2Height-1;
-        coordsR = MatrixUtil.multiplyMatrixByColumnVector(rRect, coords);
-        // normalize by f/coordsR[2]
-        //norm = 1./coordsR[2];
-        //coordsRNorm[0] = coordsR[0] * norm; coordsRNorm[1] = coordsR[1] * norm;
-        System.out.printf("     coordsR=%s\n",
-            FormatArray.toString(coordsR, "%.3e"));
+        coordsRect = MatrixUtil.multiplyMatrixByColumnVector(rRect, coords);
+        System.out.printf("\ncoordsR=%s\n",
+            FormatArray.toString(coordsRect, "%.3e"));
+        coords[0] = 1; coords[1] = 1;
+        coordsRect = MatrixUtil.multiplyMatrixByColumnVector(rRect, coords);
         
+        System.out.printf("\ncoordsR=%s\n",
+            FormatArray.toString(coordsRect, "%.3e"));
+        /* paused here
         for (int i = 1; i < image2Width; ++i) {
             coords[0] = i;
             for (int j = 1; j < image2Height; ++j) {
@@ -731,6 +759,15 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("e1 from F = \n%s\n", FormatArray.toString(leftRightE[0], "%.4f"));
         System.out.printf("e2 from F = \n%s\n", FormatArray.toString(leftRightE[1], "%.4f"));
         System.out.flush();
+        
+        /*
+        NOTE: when images are finally rectified, one should find
+            FM_rect = 0   0   0
+                      0   0  -1
+                      0   1   0
+        
+            using H = 
+        */
     }
    
     /*
@@ -1144,5 +1181,54 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             }
         }
         return true;
+    }
+
+    private void printMonasseRectification(DenseMatrix fm, double[][] fEpipoles, 
+        DenseMatrix x1M, DenseMatrix x2M, 
+        double focalLength, double xC, double yC, double scale1) {
+        
+        double[][] k = new double[3][3];
+        k[0] = new double[]{focalLength, 0, xC};
+        k[1] = new double[]{0, focalLength, yC};
+        k[2]= new double[]{0, 0, 1};
+        
+        double[][] kT = MatrixUtil.transpose(k);
+       
+        double[][] kScaled = MatrixUtil.copy(k);
+        MatrixUtil.multiply(kScaled, scale1);
+        kScaled[2][2] = 1.;
+        
+        
+        double[][] fEpipolesGoal1 = MatrixUtil.copy(fEpipoles);
+        fEpipolesGoal1[0][2] = 0;
+        fEpipolesGoal1[1][2] = 0;
+        
+        double[][] fEpipolesGoal2 = MatrixUtil.copy(fEpipolesGoal1);
+        for (int i = 0; i < 2; ++i) {
+           fEpipolesGoal2[i][0] = 1;
+           fEpipolesGoal2[i][1] = 0;
+        }
+        
+        double[] a = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipoles[0]);
+        double[] b = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipolesGoal1[0]);
+        
+        double aLength = 0;
+        double bLength = 0;
+        for (int i = 0; i < a.length; ++i) {
+            aLength += (a[i]*a[i]);
+            bLength += (b[i]*b[i]);
+        }
+        double ab = aLength*bLength;
+        double aDotB[] = MatrixUtil.elementwiseMultiplication(a, b);
+        double aCrossB[] = MatrixUtil.crossProduct(a, b);
+        double[] theta = new double[aDotB.length];
+        double[] rot = new double[aDotB.length];
+        for (int i = 0; i < theta.length; ++i) {
+            theta[i] = Math.acos(aDotB[i]/ab);
+            rot[i] = Math.acos(aCrossB[i]/ab);
+        }
+        
+        // Rodrigues formula for small rotations:
+        
     }
 }
