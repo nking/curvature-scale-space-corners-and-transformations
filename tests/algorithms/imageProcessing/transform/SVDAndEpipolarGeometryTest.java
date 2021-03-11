@@ -309,9 +309,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
                 
         x1M = extractIndices(x1M, fitR.inlierIndexes);
         x2M = extractIndices(x2M, fitR.inlierIndexes);
-        overplotEpipolarLines(fm, x1M, x2M, img1, img2, 
-            image1Width, image1Height, image2Width, image2Height, 
-            "nc__RANSAC");
+        
         System.out.println("RANSAC fit=" + fitR.toString());
         
         //System.out.println("RANSAC inlier indexes=" + 
@@ -332,16 +330,21 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         if (true) {
             // fix the solution to examine K
-            _fm[0] = new double[]{-6.8953e-07, -3.0114e-05, 1.0035e-02};
-            _fm[1] = new double[]{3.0463e-05, 8.1546e-07, -1.7030e-02};
-            _fm[2] = new double[]{-8.3055e-03, 1.1229e-02, 1.0000e+00};
+            _fm[0] = new double[]{5.8661e-07, -3.9359e-05, 9.2096e-03};
+            _fm[1] = new double[]{3.6772e-05, 1.6925e-06, -1.8747e-02};
+            _fm[2] = new double[]{-8.1094e-03, 1.2621e-02, 1.0000e+00};
             fm = new DenseMatrix(_fm);
         }
+        
+        overplotEpipolarLines(fm, x1M, x2M, img1, img2, 
+            image1Width, image1Height, image2Width, image2Height, 
+            "nc__RANSAC");
         
         System.out.printf("de-normalized FM=\n%s\n", 
             FormatArray.toString(fm, "%.4e"));
         double[][] fEpipoles = tr.calculateEpipoles(fm);
         
+        //512x384
         System.out.printf("FM e1 = %s\n", 
                 FormatArray.toString(fEpipoles[0], "%.4e"));
         System.out.printf("FM e2 = %s\n", 
@@ -368,7 +371,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("focal Length=%.1f pixels\n", focalLength);
         double xC = 4032./2.;
         double yC = 3024./2.;
-        double scale1 = 1./7.875;
+        double scale1 = 512./4032.;// 1./7.875;
         double[][] k = new double[3][3];
         k[0] = new double[]{-focalLength, 0, xC};
         k[1] = new double[]{0, -focalLength, yC};
@@ -386,10 +389,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
+        double[][] kInv = MatrixUtil.pseudoinverseFullRank(kScaled);
+        //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(kScaled);
         
-        double[][] k2TF = MatrixUtil.multiply(MatrixUtil.transpose(kScaled), _fm);
-        double[][] k2TFK1 = MatrixUtil.multiply(k2TF, kScaled);
-        double[][] _essentialM = k2TFK1;
+        double[][] k2TF = MatrixUtil.multiply(kInv, _fm);
+        double[][] k2T_F_K1 = MatrixUtil.multiply(k2TF, kScaled);
+        double[][] _essentialM = k2T_F_K1;
         System.out.printf("E=\n%s\n", FormatArray.toString(_essentialM, "%.3e"));
         
         /*
@@ -1186,7 +1191,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
 
     private void printMonasseRectification(DenseMatrix fm, double[][] fEpipoles, 
         DenseMatrix x1M, DenseMatrix x2M, 
-        double focalLength, double xC, double yC, double scale1) {
+        double focalLength, double xC, double yC, double scale1) throws NotConvergedException {
         
         double[][] k = new double[3][3];
         k[0] = new double[]{focalLength, 0, xC};
@@ -1196,10 +1201,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         double[][] kScaled = MatrixUtil.copy(k);
         MatrixUtil.multiply(kScaled, scale1);
         kScaled[2][2] = 1.;
-        
-        // paused here.. numbers might be too large
-        
-        double[][] kT = MatrixUtil.transpose(kScaled);
+                
+        double[][] kInv = MatrixUtil.pseudoinverseFullRank(kScaled);
+        //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(kScaled);
         
         double[][] fEpipolesGoal1 = MatrixUtil.copy(fEpipoles);
         fEpipolesGoal1[0][2] = 0;
@@ -1211,44 +1215,46 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
            fEpipolesGoal2[i][1] = 0;
         }
         
-        double[] a = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipoles[0]);
-        double[] b = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipolesGoal1[0]);
+        double[] a = MatrixUtil.multiplyMatrixByColumnVector(kInv, fEpipoles[0]);
+        double[] b = MatrixUtil.multiplyMatrixByColumnVector(kInv, fEpipolesGoal1[0]);
         
-        double aLength = 0;
-        double bLength = 0;
-        for (int i = 0; i < a.length; ++i) {
-            aLength += (a[i]*a[i]);
-            bLength += (b[i]*b[i]);
-        }
+        double aLength = MatrixUtil.lPSum(a, 2);
+        double bLength = MatrixUtil.lPSum(b, 2);
         double ab = aLength*bLength;
         double aDotB = MatrixUtil.innerProduct(a, b);
         double[] aCrossB = MatrixUtil.crossProduct(a, b);
         double theta = Math.acos(aDotB/ab);
         double sinTheta = Math.sin(theta);
         double oneMinusCosTheta = 1. - Math.cos(theta);
-        double[] rot = new double[3];
-        for (int i = 0; i < rot.length; ++i) {
-            rot[i] = Math.acos(aCrossB[i]/ab);
+        double[] rotAxis = new double[3];
+        for (int i = 0; i < rotAxis.length; ++i) {
+            rotAxis[i] = Math.acos(aCrossB[i]/ab);
         }
-        
+        System.out.printf("t rotation axis=\n%s\n", 
+            FormatArray.toString(rotAxis, "%.3e"));
         
         // Rodrigues formula for small rotations:
         //   R(θ,t) = I + sinθ * [t]_× + (1−cosθ)*([t]_x)^2
         //      is [t]_x)^2 defined by power series P^(2*k+ 1) = ((-1)^k) *P?
         //      still reading...
-        double[][] skewSymT = MatrixUtil.skewSymmetric(rot);
+        double[][] skewSymT = MatrixUtil.skewSymmetric(rotAxis);
         double[][] skewSymTT;// = skewSymT;//MatrixUtil.multiply(skewSymT, skewSymT);
         // Dai 2015, "Euler–Rodrigues formula variations, quaternion conjugation and intrinsic connections"
         // https://www.sciencedirect.com/science/article/pii/S0094114X15000415
         // the squared symmetric matrix given by eqn 14 is
         // s*s^T - I where s is the original vector
-        // PAUSED HERE:  if that's correct, corrections for angles > PI needed?
-        skewSymTT = MatrixUtil.outerProduct(rot, rot);
+        
+        // elsewhere, a definition with vector length squared times identity:
+        //    [u×]2 = u ⊗ u − ||u||2 * I
+        //       where ⊗ is the outer product
+        double rotAxisLength = MatrixUtil.lPSum(rotAxis, 2);
+        skewSymTT = MatrixUtil.outerProduct(rotAxis, rotAxis);
         for (int i = 0; i < skewSymTT.length; ++i) {
-            skewSymTT[i][i] -= 1;
+            //skewSymTT[i][i] -= 1;
+            skewSymTT[i][i] -= (rotAxisLength*rotAxisLength);
         }
                 
-        System.out.printf("acos(aXb/(|a||b|))=\n%s\n", FormatArray.toString(rot, "%.4e"));
+        System.out.printf("acos(aXb/(|a||b|))=\n%s\n", FormatArray.toString(rotAxis, "%.4e"));
         System.out.printf("skewSymT=\n%s\n", FormatArray.toString(skewSymT, "%.4e"));
         System.out.printf("skewSymTT=\n%s\n", FormatArray.toString(skewSymTT, "%.4e"));
         
@@ -1263,63 +1269,37 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
         System.out.printf("R_theta_t=\n%s\n", FormatArray.toString(R_theta_t, "%.4e"));
         
-        /*
-        double cTheta = Math.cos(theta);
-        double sTheta = Math.sin(theta);
-        // eqn 16 of Dai paper:
-        R_theta_t[0] = new double[]{
-            rot[0]*rot[0] + (1.-rot[0]*rot[0])*cTheta,
-            rot[0]*rot[1]*(1-cTheta) - rot[2]*sTheta,
-            rot[0]*rot[2]*(1-cTheta) + rot[1]*sTheta};
-        R_theta_t[1] = new double[]{
-            rot[0]*rot[1]*(1-cTheta) + rot[2]*sTheta,
-            rot[1]*rot[1] + (1.-rot[1]*rot[1])*cTheta,
-            rot[1]*rot[2]*(1-cTheta) - rot[0]*sTheta
-        };
-        R_theta_t[2] = new double[]{
-            rot[0]*rot[2]*(1-cTheta) - rot[1]*sTheta,
-            rot[1]*rot[2]*(1-cTheta) + rot[0]*sTheta,
-            rot[2]*rot[2] + (1-rot[2]*rot[2])*cTheta
-        };
-        System.out.printf("*=> R_theta_t=\n%s\n", FormatArray.toString(R_theta_t, "%.4e"));
-        */
+ 
+        double[] aRight = MatrixUtil.multiplyMatrixByColumnVector(kInv, fEpipoles[1]);
+        double[] bRight = MatrixUtil.multiplyMatrixByColumnVector(kInv, fEpipolesGoal1[1]);
         
-        double[] aRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipoles[1]);
-        double[] bRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipolesGoal1[1]);
-        
-        double aLengthRight = 0;
-        double bLengthRight = 0;
-        for (int i = 0; i < a.length; ++i) {
-            aLengthRight += (aRight[i]*aRight[i]);
-            bLengthRight += (bRight[i]*bRight[i]);
-        }
-        double abRight = aLengthRight*bLengthRight;
+        double aLengthRight = MatrixUtil.lPSum(aRight, 2);
+        double bLengthRight = MatrixUtil.lPSum(bRight, 2);
+        double abRight = aLengthRight * bLengthRight;
         double aDotBRight = MatrixUtil.innerProduct(aRight, bRight);
         double[] aCrossBRight = MatrixUtil.crossProduct(aRight, bRight);
         double thetaRight = Math.acos(aDotBRight/abRight);
         double sinThetaRight = Math.sin(thetaRight);
         double oneMinusCosThetaRight = 1. - Math.cos(thetaRight);
-        double[] rotRight = new double[3];
-        for (int i = 0; i < rotRight.length; ++i) {
-            rotRight[i] = Math.acos(aCrossBRight[i]/abRight);
+        double[] rotAxisRight = new double[3];
+        for (int i = 0; i < rotAxisRight.length; ++i) {
+            rotAxisRight[i] = Math.acos(aCrossBRight[i]/abRight);
         }
-        
+
         // Rodrigues formula for small rotations, but this angle is  large
         //   R(θ,t) = I + sinθ * [t]_× + (1−cosθ)*([t]_x)^2
         //      is [t]_x)^2 defined by power series P^(2*k+ 1) = ((-1)^k) *P?
         //      still reading...
-        double[][] skewSymTRight = MatrixUtil.skewSymmetric(rotRight);
+        double rotAxisLengthRight = MatrixUtil.lPSum(rotAxisRight, 2);
+        double[][] skewSymTRight = MatrixUtil.skewSymmetric(rotAxisRight);
         double[][] skewSymTTRight;// = skewSymTRight;//MatrixUtil.multiply(skewSymTRight, skewSymTRight);
-        // Dai 2015, "Euler–Rodrigues formula variations, quaternion conjugation and intrinsic connections"
-        // https://www.sciencedirect.com/science/article/pii/S0094114X15000415
-        // the squared symmetric matrix given by eqn 14 is
-        // s*s^T - I where s is the original vector
-        // PAUSED HERE:  if that's correct, corrections for angles > PI needed?
-        skewSymTTRight = MatrixUtil.outerProduct(rotRight, rotRight);
+        skewSymTTRight = MatrixUtil.outerProduct(rotAxisRight, rotAxisRight);
         for (int i = 0; i < skewSymTT.length; ++i) {
-            skewSymTTRight[i][i] -= 1;
+            //skewSymTTRight[i][i] -= 1;
+            skewSymTTRight[i][i] -= (rotAxisLengthRight*rotAxisLengthRight);
         }
         
+        System.out.printf("acos(aXb/(|a||b|)) Right =\n%s\n", FormatArray.toString(rotAxisRight, "%.4e"));
         System.out.printf("skewSymTRight=\n%s\n", FormatArray.toString(skewSymTRight, "%.4e"));
         System.out.printf("skewSymTTRight=\n%s\n", FormatArray.toString(skewSymTTRight, "%.4e"));
         
@@ -1333,32 +1313,16 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
                     + oneMinusCosThetaRight * skewSymTTRight[i][j]);
             }
         }
-        
-        /*double cThetaRight = Math.cos(thetaRight);
-        double sThetaRight = Math.sin(thetaRight);
-        // eqn 16 of Dai paper:
-        R_theta_tRight[0] = new double[]{
-            rotRight[0]*rotRight[0] + (1.-rotRight[0]*rotRight[0])*cThetaRight,
-            rotRight[0]*rotRight[1]*(1-cThetaRight) - rotRight[2]*sThetaRight,
-            rotRight[0]*rotRight[2]*(1-cThetaRight) + rotRight[1]*sThetaRight};
-        R_theta_tRight[1] = new double[]{
-            rotRight[0]*rotRight[1]*(1-cThetaRight) + rotRight[2]*sThetaRight,
-            rotRight[1]*rotRight[1] + (1.-rotRight[1]*rotRight[1])*cThetaRight,
-            rotRight[1]*rotRight[2]*(1-cThetaRight) - rotRight[0]*sThetaRight
-        };
-        R_theta_tRight[2] = new double[]{
-            rotRight[0]*rotRight[2]*(1-cThetaRight) - rotRight[1]*sThetaRight,
-            rotRight[1]*rotRight[2]*(1-cThetaRight) + rotRight[0]*sThetaRight,
-            rotRight[2]*rotRight[2] + (1-rotRight[2]*rotRight[2])*cThetaRight
-        };
-        System.out.printf("*=> R_theta_t_Right=\n%s\n", FormatArray.toString(R_theta_tRight, "%.4e"));
-        */
-        
+        System.out.printf("R_theta_t Right=\n%s\n", FormatArray.toString(R_theta_tRight, "%.4e"));
+
+        System.out.printf("K*K^T=\n%s\n", 
+            FormatArray.toString(MatrixUtil.multiply(kScaled, kInv), "%.4e"));
+
         double[][] H1Left = MatrixUtil.multiply(kScaled, R_theta_t);
-        H1Left = MatrixUtil.multiply(H1Left, kT);
+        H1Left = MatrixUtil.multiply(H1Left, kInv);
         
         double[][] H1Right = MatrixUtil.multiply(kScaled, R_theta_tRight);
-        H1Right = MatrixUtil.multiply(H1Right, kT);
+        H1Right = MatrixUtil.multiply(H1Right, kInv);
         
         System.out.printf("H1_left=\n%s\n", FormatArray.toString(H1Left, "%.4e"));
         
@@ -1368,6 +1332,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             FormatArray.toString(
                 MatrixUtil.multiplyMatrixByColumnVector(H1Left, fEpipoles[0]),
             "%.4e"));
+        
+        System.out.println("-----------");
     }
 
     private void printMallonWhelanRectification(
