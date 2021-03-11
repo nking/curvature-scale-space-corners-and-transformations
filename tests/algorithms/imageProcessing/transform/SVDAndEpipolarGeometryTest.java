@@ -1237,8 +1237,17 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         //      is [t]_x)^2 defined by power series P^(2*k+ 1) = ((-1)^k) *P?
         //      still reading...
         double[][] skewSymT = MatrixUtil.skewSymmetric(rot);
-        double[][] skewSymTT = skewSymT;//MatrixUtil.multiply(skewSymT, skewSymT);
-        
+        double[][] skewSymTT;// = skewSymT;//MatrixUtil.multiply(skewSymT, skewSymT);
+        // Dai 2015, "Euler–Rodrigues formula variations, quaternion conjugation and intrinsic connections"
+        // https://www.sciencedirect.com/science/article/pii/S0094114X15000415
+        // the squared symmetric matrix given by eqn 14 is
+        // s*s^T - I where s is the original vector
+        // PAUSED HERE:  if that's correct, corrections for angles > PI needed
+        skewSymTT = MatrixUtil.outerProduct(rot, rot);
+        for (int i = 0; i < skewSymTT.length; ++i) {
+            skewSymTT[i][i] -= 1;
+        }
+                
         System.out.printf("acos(aXb/(|a||b|))=\n%s\n", FormatArray.toString(rot, "%.4e"));
         System.out.printf("skewSymT=\n%s\n", FormatArray.toString(skewSymT, "%.4e"));
         System.out.printf("skewSymTT=\n%s\n", FormatArray.toString(skewSymTT, "%.4e"));
@@ -1252,8 +1261,27 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
                 R_theta_t[i][j] += (sinTheta*skewSymT[i][j] + oneMinusCosTheta*skewSymTT[i][j]);
             }
         }
-     
         System.out.printf("R_theta_t=\n%s\n", FormatArray.toString(R_theta_t, "%.4e"));
+        
+        double cTheta = Math.cos(theta);
+        double sTheta = Math.sin(theta);
+        // eqn 16 of Dai paper:
+        R_theta_t[0] = new double[]{
+            rot[0]*rot[0] + (1.-rot[0]*rot[0])*cTheta,
+            rot[0]*rot[1]*(1-cTheta) - rot[2]*sTheta,
+            rot[0]*rot[2]*(1-cTheta) + rot[1]*sTheta};
+        R_theta_t[1] = new double[]{
+            rot[0]*rot[1]*(1-cTheta) + rot[2]*sTheta,
+            rot[1]*rot[1] + (1.-rot[1]*rot[1])*cTheta,
+            rot[1]*rot[2]*(1-cTheta) - rot[0]*sTheta
+        };
+        R_theta_t[2] = new double[]{
+            rot[0]*rot[2]*(1-cTheta) - rot[1]*sTheta,
+            rot[1]*rot[2]*(1-cTheta) + rot[0]*sTheta,
+            rot[2]*rot[2] + (1-rot[2]*rot[2])*cTheta
+        };
+        System.out.printf("*=> R_theta_t=\n%s\n", FormatArray.toString(R_theta_t, "%.4e"));
+
         
         double[] aRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipoles[1]);
         double[] bRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipolesGoal1[1]);
@@ -1280,8 +1308,17 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         //      is [t]_x)^2 defined by power series P^(2*k+ 1) = ((-1)^k) *P?
         //      still reading...
         double[][] skewSymTRight = MatrixUtil.skewSymmetric(rotRight);
-        double[][] skewSymTTRight = skewSymTRight;//MatrixUtil.multiply(skewSymTRight, skewSymTRight);
-
+        double[][] skewSymTTRight;// = skewSymTRight;//MatrixUtil.multiply(skewSymTRight, skewSymTRight);
+        // Dai 2015, "Euler–Rodrigues formula variations, quaternion conjugation and intrinsic connections"
+        // https://www.sciencedirect.com/science/article/pii/S0094114X15000415
+        // the squared symmetric matrix given by eqn 14 is
+        // s*s^T - I where s is the original vector
+        // PAUSED HERE:  if that's correct, corrections for angles > PI needed
+        skewSymTTRight = MatrixUtil.outerProduct(rotRight, rotRight);
+        for (int i = 0; i < skewSymTT.length; ++i) {
+            skewSymTTRight[i][i] -= 1;
+        }
+        
         System.out.printf("skewSymTRight=\n%s\n", FormatArray.toString(skewSymTRight, "%.4e"));
         System.out.printf("skewSymTTRight=\n%s\n", FormatArray.toString(skewSymTTRight, "%.4e"));
         
@@ -1295,6 +1332,26 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
                     + oneMinusCosTheta*skewSymTTRight[i][j]);
             }
         }
+        
+        double cThetaRight = Math.cos(thetaRight);
+        double sThetaRight = Math.sin(thetaRight);
+        // eqn 16 of Dai paper:
+        R_theta_tRight[0] = new double[]{
+            rotRight[0]*rotRight[0] + (1.-rotRight[0]*rotRight[0])*cThetaRight,
+            rotRight[0]*rotRight[1]*(1-cThetaRight) - rotRight[2]*sThetaRight,
+            rotRight[0]*rotRight[2]*(1-cThetaRight) + rotRight[1]*sThetaRight};
+        R_theta_tRight[1] = new double[]{
+            rotRight[0]*rotRight[1]*(1-cThetaRight) + rotRight[2]*sThetaRight,
+            rotRight[1]*rotRight[1] + (1.-rotRight[1]*rotRight[1])*cThetaRight,
+            rotRight[1]*rotRight[2]*(1-cThetaRight) - rotRight[0]*sThetaRight
+        };
+        R_theta_tRight[2] = new double[]{
+            rotRight[0]*rotRight[2]*(1-cThetaRight) - rotRight[1]*sThetaRight,
+            rotRight[1]*rotRight[2]*(1-cThetaRight) + rotRight[0]*sThetaRight,
+            rotRight[2]*rotRight[2] + (1-rotRight[2]*rotRight[2])*cThetaRight
+        };
+        System.out.printf("*=> R_theta_t_Right=\n%s\n", FormatArray.toString(R_theta_tRight, "%.4e"));
+
         
         double[][] H1Left = MatrixUtil.multiply(kScaled, R_theta_t);
         H1Left = MatrixUtil.multiply(H1Left, kT);
