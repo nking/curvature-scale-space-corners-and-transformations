@@ -1242,7 +1242,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // https://www.sciencedirect.com/science/article/pii/S0094114X15000415
         // the squared symmetric matrix given by eqn 14 is
         // s*s^T - I where s is the original vector
-        // PAUSED HERE:  if that's correct, corrections for angles > PI needed
+        // PAUSED HERE:  if that's correct, corrections for angles > PI needed?
         skewSymTT = MatrixUtil.outerProduct(rot, rot);
         for (int i = 0; i < skewSymTT.length; ++i) {
             skewSymTT[i][i] -= 1;
@@ -1263,6 +1263,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
         System.out.printf("R_theta_t=\n%s\n", FormatArray.toString(R_theta_t, "%.4e"));
         
+        /*
         double cTheta = Math.cos(theta);
         double sTheta = Math.sin(theta);
         // eqn 16 of Dai paper:
@@ -1281,7 +1282,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             rot[2]*rot[2] + (1-rot[2]*rot[2])*cTheta
         };
         System.out.printf("*=> R_theta_t=\n%s\n", FormatArray.toString(R_theta_t, "%.4e"));
-
+        */
         
         double[] aRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipoles[1]);
         double[] bRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipolesGoal1[1]);
@@ -1313,7 +1314,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // https://www.sciencedirect.com/science/article/pii/S0094114X15000415
         // the squared symmetric matrix given by eqn 14 is
         // s*s^T - I where s is the original vector
-        // PAUSED HERE:  if that's correct, corrections for angles > PI needed
+        // PAUSED HERE:  if that's correct, corrections for angles > PI needed?
         skewSymTTRight = MatrixUtil.outerProduct(rotRight, rotRight);
         for (int i = 0; i < skewSymTT.length; ++i) {
             skewSymTTRight[i][i] -= 1;
@@ -1328,12 +1329,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
         for (int i = 0; i < R_theta_tRight.length; ++i) {
             for (int j = 0; j < R_theta_tRight[i].length; ++j) {
-                R_theta_tRight[i][j] += (sinTheta*skewSymTRight[i][j] 
-                    + oneMinusCosTheta*skewSymTTRight[i][j]);
+                R_theta_tRight[i][j] += (sinThetaRight * skewSymTRight[i][j] 
+                    + oneMinusCosThetaRight * skewSymTTRight[i][j]);
             }
         }
         
-        double cThetaRight = Math.cos(thetaRight);
+        /*double cThetaRight = Math.cos(thetaRight);
         double sThetaRight = Math.sin(thetaRight);
         // eqn 16 of Dai paper:
         R_theta_tRight[0] = new double[]{
@@ -1351,7 +1352,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             rotRight[2]*rotRight[2] + (1-rotRight[2]*rotRight[2])*cThetaRight
         };
         System.out.printf("*=> R_theta_t_Right=\n%s\n", FormatArray.toString(R_theta_tRight, "%.4e"));
-
+        */
         
         double[][] H1Left = MatrixUtil.multiply(kScaled, R_theta_t);
         H1Left = MatrixUtil.multiply(H1Left, kT);
