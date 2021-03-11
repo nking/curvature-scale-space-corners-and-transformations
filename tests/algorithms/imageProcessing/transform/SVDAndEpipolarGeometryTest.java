@@ -379,6 +379,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         kScaled[2][2] = 1.;
         System.out.printf("K/7.875=\n%s\n", FormatArray.toString(kScaled, "%.3e"));
         
+        printMallonWhelanRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC, scale1);
         
         printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC, scale1);
         
@@ -1229,18 +1230,26 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         for (int i = 0; i < rot.length; ++i) {
             rot[i] = Math.acos(aCrossB[i]/ab);
         }
-        double[][] skewSymT = MatrixUtil.skewSymmetric(rot);
-        double[][] skewSymTT = MatrixUtil.multiply(skewSymT, skewSymT);
+        
         
         // Rodrigues formula for small rotations:
         //   R(θ,t) = I + sinθ * [t]_× + (1−cosθ)*([t]_x)^2
+        //      is [t]_x)^2 defined by power series P^(2*k+ 1) = ((-1)^k) *P?
+        //      still reading...
+        double[][] skewSymT = MatrixUtil.skewSymmetric(rot);
+        double[][] skewSymTT = skewSymT;//MatrixUtil.multiply(skewSymT, skewSymT);
+        
+        System.out.printf("acos(aXb/(|a||b|))=\n%s\n", FormatArray.toString(rot, "%.4e"));
+        System.out.printf("skewSymT=\n%s\n", FormatArray.toString(skewSymT, "%.4e"));
+        System.out.printf("skewSymTT=\n%s\n", FormatArray.toString(skewSymTT, "%.4e"));
+        
         double[][] R_theta_t = MatrixUtil.zeros(3, 3);
         for (int i = 0; i < R_theta_t.length; ++i) {
             R_theta_t[i][i] = 1;
         }
         for (int i = 0; i < R_theta_t.length; ++i) {
             for (int j = 0; j < R_theta_t[i].length; ++j) {
-                R_theta_t[i][i] += (sinTheta*skewSymT[i][j] + oneMinusCosTheta*skewSymTT[i][j]);
+                R_theta_t[i][j] += (sinTheta*skewSymT[i][j] + oneMinusCosTheta*skewSymTT[i][j]);
             }
         }
      
@@ -1265,18 +1274,24 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         for (int i = 0; i < rotRight.length; ++i) {
             rotRight[i] = Math.acos(aCrossBRight[i]/abRight);
         }
-        double[][] skewSymTRight = MatrixUtil.skewSymmetric(rotRight);
-        double[][] skewSymTTRight = MatrixUtil.multiply(skewSymTRight, skewSymTRight);
         
-        // Rodrigues formula for small rotations:
+        // Rodrigues formula for small rotations, but this angle is  large
         //   R(θ,t) = I + sinθ * [t]_× + (1−cosθ)*([t]_x)^2
+        //      is [t]_x)^2 defined by power series P^(2*k+ 1) = ((-1)^k) *P?
+        //      still reading...
+        double[][] skewSymTRight = MatrixUtil.skewSymmetric(rotRight);
+        double[][] skewSymTTRight = skewSymTRight;//MatrixUtil.multiply(skewSymTRight, skewSymTRight);
+
+        System.out.printf("skewSymTRight=\n%s\n", FormatArray.toString(skewSymTRight, "%.4e"));
+        System.out.printf("skewSymTTRight=\n%s\n", FormatArray.toString(skewSymTTRight, "%.4e"));
+        
         double[][] R_theta_tRight = MatrixUtil.zeros(3, 3);
         for (int i = 0; i < R_theta_tRight.length; ++i) {
             R_theta_tRight[i][i] = 1;
         }
         for (int i = 0; i < R_theta_tRight.length; ++i) {
             for (int j = 0; j < R_theta_tRight[i].length; ++j) {
-                R_theta_tRight[i][i] += (sinTheta*skewSymTRight[i][j] 
+                R_theta_tRight[i][j] += (sinTheta*skewSymTRight[i][j] 
                     + oneMinusCosTheta*skewSymTTRight[i][j]);
             }
         }
@@ -1290,6 +1305,22 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("H1_left=\n%s\n", FormatArray.toString(H1Left, "%.4e"));
         
         System.out.printf("H1_right=\n%s\n", FormatArray.toString(H1Right, "%.4e"));
+     
+        System.out.printf("H1_left * eLeft =\n%s\n", 
+            FormatArray.toString(
+                MatrixUtil.multiplyMatrixByColumnVector(H1Left, fEpipoles[0]),
+            "%.4e"));
+    }
+
+    private void printMallonWhelanRectification(
+        DenseMatrix fm, double[][] fEpipoles,
+        DenseMatrix x1M, DenseMatrix x2M, 
+        double focalLength, double xC, double yC, double scale1) {
         
+        /*
+        Projective Rectification from the
+Fundamental Matrix
+John Mallon ∗ Paul F. Whelan
+        */
     }
 }
