@@ -1191,13 +1191,14 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         k[0] = new double[]{focalLength, 0, xC};
         k[1] = new double[]{0, focalLength, yC};
         k[2]= new double[]{0, 0, 1};
-        
-        double[][] kT = MatrixUtil.transpose(k);
-       
+               
         double[][] kScaled = MatrixUtil.copy(k);
         MatrixUtil.multiply(kScaled, scale1);
         kScaled[2][2] = 1.;
         
+        // paused here.. numbers might be too large
+        
+        double[][] kT = MatrixUtil.transpose(kScaled);
         
         double[][] fEpipolesGoal1 = MatrixUtil.copy(fEpipoles);
         fEpipolesGoal1[0][2] = 0;
@@ -1219,16 +1220,76 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             bLength += (b[i]*b[i]);
         }
         double ab = aLength*bLength;
-        double aDotB[] = MatrixUtil.elementwiseMultiplication(a, b);
-        double aCrossB[] = MatrixUtil.crossProduct(a, b);
-        double[] theta = new double[aDotB.length];
-        double[] rot = new double[aDotB.length];
-        for (int i = 0; i < theta.length; ++i) {
-            theta[i] = Math.acos(aDotB[i]/ab);
+        double aDotB = MatrixUtil.innerProduct(a, b);
+        double[] aCrossB = MatrixUtil.crossProduct(a, b);
+        double theta = Math.acos(aDotB/ab);
+        double sinTheta = Math.sin(theta);
+        double oneMinusCosTheta = 1. - Math.cos(theta);
+        double[] rot = new double[3];
+        for (int i = 0; i < rot.length; ++i) {
             rot[i] = Math.acos(aCrossB[i]/ab);
         }
+        double[][] skewSymT = MatrixUtil.skewSymmetric(rot);
+        double[][] skewSymTT = MatrixUtil.multiply(skewSymT, skewSymT);
         
         // Rodrigues formula for small rotations:
+        //   R(θ,t) = I + sinθ * [t]_× + (1−cosθ)*([t]_x)^2
+        double[][] R_theta_t = MatrixUtil.zeros(3, 3);
+        for (int i = 0; i < R_theta_t.length; ++i) {
+            R_theta_t[i][i] = 1;
+        }
+        for (int i = 0; i < R_theta_t.length; ++i) {
+            for (int j = 0; j < R_theta_t[i].length; ++j) {
+                R_theta_t[i][i] += (sinTheta*skewSymT[i][j] + oneMinusCosTheta*skewSymTT[i][j]);
+            }
+        }
+     
+        System.out.printf("R_theta_t=\n%s\n", FormatArray.toString(R_theta_t, "%.4e"));
+        
+        double[] aRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipoles[1]);
+        double[] bRight = MatrixUtil.multiplyMatrixByColumnVector(kT, fEpipolesGoal1[1]);
+        
+        double aLengthRight = 0;
+        double bLengthRight = 0;
+        for (int i = 0; i < a.length; ++i) {
+            aLengthRight += (aRight[i]*aRight[i]);
+            bLengthRight += (bRight[i]*bRight[i]);
+        }
+        double abRight = aLengthRight*bLengthRight;
+        double aDotBRight = MatrixUtil.innerProduct(aRight, bRight);
+        double[] aCrossBRight = MatrixUtil.crossProduct(aRight, bRight);
+        double thetaRight = Math.acos(aDotBRight/abRight);
+        double sinThetaRight = Math.sin(thetaRight);
+        double oneMinusCosThetaRight = 1. - Math.cos(thetaRight);
+        double[] rotRight = new double[3];
+        for (int i = 0; i < rotRight.length; ++i) {
+            rotRight[i] = Math.acos(aCrossBRight[i]/abRight);
+        }
+        double[][] skewSymTRight = MatrixUtil.skewSymmetric(rotRight);
+        double[][] skewSymTTRight = MatrixUtil.multiply(skewSymTRight, skewSymTRight);
+        
+        // Rodrigues formula for small rotations:
+        //   R(θ,t) = I + sinθ * [t]_× + (1−cosθ)*([t]_x)^2
+        double[][] R_theta_tRight = MatrixUtil.zeros(3, 3);
+        for (int i = 0; i < R_theta_tRight.length; ++i) {
+            R_theta_tRight[i][i] = 1;
+        }
+        for (int i = 0; i < R_theta_tRight.length; ++i) {
+            for (int j = 0; j < R_theta_tRight[i].length; ++j) {
+                R_theta_tRight[i][i] += (sinTheta*skewSymTRight[i][j] 
+                    + oneMinusCosTheta*skewSymTTRight[i][j]);
+            }
+        }
+        
+        double[][] H1Left = MatrixUtil.multiply(kScaled, R_theta_t);
+        H1Left = MatrixUtil.multiply(H1Left, kT);
+        
+        double[][] H1Right = MatrixUtil.multiply(kScaled, R_theta_tRight);
+        H1Right = MatrixUtil.multiply(H1Right, kT);
+        
+        System.out.printf("H1_left=\n%s\n", FormatArray.toString(H1Left, "%.4e"));
+        
+        System.out.printf("H1_right=\n%s\n", FormatArray.toString(H1Right, "%.4e"));
         
     }
 }
