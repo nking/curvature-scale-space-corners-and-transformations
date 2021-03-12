@@ -330,9 +330,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         if (true) {
             // fix the solution to examine K
-            _fm[0] = new double[]{5.8661e-07, -3.9359e-05, 9.2096e-03};
-            _fm[1] = new double[]{3.6772e-05, 1.6925e-06, -1.8747e-02};
-            _fm[2] = new double[]{-8.1094e-03, 1.2621e-02, 1.0000e+00};
+            _fm[0] = new double[]{1.2831e-06, -3.4998e-05, 8.0134e-03};
+            _fm[1] = new double[]{3.3363e-05, 1.2759e-06, -1.6849e-02};
+            _fm[2] = new double[]{-7.5786e-03, 1.1214e-02, 1.0000e+00};
             fm = new DenseMatrix(_fm);
         }
         
@@ -349,7 +349,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
                 FormatArray.toString(fEpipoles[0], "%.4e"));
         System.out.printf("FM e2 = %s\n", 
                 FormatArray.toString(fEpipoles[1], "%.4e"));
-        
+       
         //TODO: implement algorithm in section 3.3 of Hartley 1992 
         // "Estimation of Relative Camera Positions for Uncalibrated Cameras"
         
@@ -365,35 +365,133 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         K = | 1604     0  2016 |
             |    0  1604  1512 |
             |    0     0     1 |
+        
+        for the image scaled to 512x384:
+        intrinsic camera matrix 
+        K = | 321.8     0  256 |
+            |    0  321.8  192 |
+            |    0      0     1 |
         */
-        // 
-        double focalLength = 1604;//1604;  19286
+        double fov = 77.*(Math.PI/180.);
+        double xC = image1Width/2.;
+        double yC = image1Height/2.;
+        double focalLength = xC / Math.tan( fov / 2.);
         System.out.printf("focal Length=%.1f pixels\n", focalLength);
-        double xC = 4032./2.;
-        double yC = 3024./2.;
-        double scale1 = 512./4032.;// 1./7.875;
+        
         double[][] k = new double[3][3];
         k[0] = new double[]{-focalLength, 0, xC};
         k[1] = new double[]{0, -focalLength, yC};
         k[2]= new double[]{0, 0, 1};
        
-        double[][] kScaled = MatrixUtil.copy(k);
-        MatrixUtil.multiply(kScaled, scale1);
-        kScaled[2][2] = 1.;
-        System.out.printf("K/7.875=\n%s\n", FormatArray.toString(kScaled, "%.3e"));
+        System.out.printf("K for 512x384=\n%s\n", FormatArray.toString(k, "%.3e"));
         
-        printMallonWhelanRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC, scale1);
         
-        printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC, scale1);
+         
+        /*
+        For an arbitrarily placed point of interest u0 and
+        epipole p, the required mapping H is a product 
+            H=GRT where T is a translation taking the point u0 to
+        the origin, R is a rotation about the origin taking the
+        epipole p0 to a point (f, 0, 1)^T on the x axis, and G
+        is the mapping just considered taking (f, 0, 1)^T to infinity. 
+        The composite mapping is to first order a rigid
+        transformation in the neighbourhood of u0.
+        */ 
+        double[][] g = new double[3][3];
+        g[0] = new double[]{1, 0, 0};
+        g[1] = new double[]{0, 1, 0};
+        g[2]= new double[]{-1./focalLength, 0, 1};        
+        double[] gc = MatrixUtil.multiplyMatrixByColumnVector(g, 
+            new double[]{focalLength, 0, 1});
+        System.out.printf("G * [f,0,1]^T = (expecting [%.0f, 0, 0])\n  %s\n", 
+            focalLength, FormatArray.toString(gc, "%.4e"));
+        gc = MatrixUtil.multiplyMatrixByColumnVector(g, 
+            new double[]{10, 90, 1});
+        System.out.printf("G * [10,90,1]^T = (expecting [10,90,%.3e])\n  %s\n", 
+            (1.-(10./focalLength)), FormatArray.toString(gc, "%.4e"));
+        
+        /*
+        epipole p0 (ex, ey, 1)^T on the x axis, and G
+        is the mapping taking it to infinity (ex, 0, 0)^T to infinity. 
+        The composite mapping is to first order a rigid
+        transformation in the neighbourhood of u0.
+        
+        Mallon & Whelan 2005, "Projective Rectification from the Fundamental Matrix"
+        
+        Rectification can be described by a transformation that sends the epipoles to
+        infinity, hence the epipolar lines become parallel with each other. 
+        Additionally, we ensure that corresponding points have the same 
+        y coordinate by mapping the epipoles in the direction e = (1, 0, 0)^T 
+        or equivalently e = (e_x, 0, 0)^T
+        
+        The fundamental matrix for the rectified images would be:
+                 | 0  0   0 |
+        F_rect = | 0  0  -1 |
+                 | 0  1   0 |
+        
+        When the homography H (actually H_Left and H_Right) 
+        are found for the rectifications, new image coordinates are 
+            m_Left_rect = H_Left * m_Left
+        and 
+            m_Right_rect = H_Right * m_Right
+
+        m_Right_rect^T * F_rect * m_Left = 0
+        
+        H_Right_rect^T * F_rect * H_Left = F
+        
+        
+                 |    1         0    0 |     |  1   0   0  |
+        H_left = | -e[1]/e[0]   1    0 |  =  | h21  1   0  |
+                 | -1/e[0]      0    1 |     | h31  0   1  |
+        where e is the left epipole here
+        
+        And for H_Right, need to solve homography for the rows 
+        containing h21 and h31 for right matrix.
+        
+                  |    1             0          0      |
+        H_right = |  h21_right  h22_right   h23_right  |
+                  |  h31_right  h32_right   h33_right  |
+        
+        
+        Then write out: H_Right_rect^T * F_rect * H_Left = F
+        
+         |    1             0          0      |   | 0  0  0 |     |  1   0   0  |
+         |  h21_right  h22_right   h23_right  | * | 0  0 -1 |  *  | h21  1   0  |  = F
+         |  h31_right  h32_right   h33_right  |   | 0  1  0 |     | h31  0   1  |
+        
+         | (h21 * h31_right - h31 * h21_right)*h31_right   -h21_right |           | f11  f12  f13 |
+         | (h21 * h32_right - h31 * h22_right)*h32_right   -h22_right | = alpha * | f21  f22  f23 |
+         | (h21 * h33_right - h31 * h23_right)*h33_right   -h23_right |           | f31  f32  f33 |
+        
+         where alpha ia an arbitrary scale factor.
+        
+        have params in F, h21, h31 : 11 params
+        solving for H_right params :  6 params
+        
+        so need to group terms further and use least squares or other 
+        
+        PAUSED here
+        */
+        g = new double[3][3];
+        g[0] = new double[]{1, 0, 0};
+        g[1] = new double[]{-fEpipoles[0][1]/fEpipoles[0][0], 1, 0};
+        g[2]= new double[]{-1./fEpipoles[0][0], 0, 1}; 
+        gc = MatrixUtil.multiplyMatrixByColumnVector(g, fEpipoles[0]);
+        System.out.printf("G * e1 = (expecting [%.4e,0,0])\n  %s\n", 
+            fEpipoles[0][0], FormatArray.toString(gc, "%.4e"));
+        
+        printMallonWhelanRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
+        
+        printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
-        double[][] kInv = MatrixUtil.pseudoinverseFullRank(kScaled);
-        //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(kScaled);
+        double[][] kInv = MatrixUtil.pseudoinverseFullRank(k);
+        //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(k);
         
         double[][] k2TF = MatrixUtil.multiply(kInv, _fm);
-        double[][] k2T_F_K1 = MatrixUtil.multiply(k2TF, kScaled);
+        double[][] k2T_F_K1 = MatrixUtil.multiply(k2TF, k);
         double[][] _essentialM = k2T_F_K1;
         System.out.printf("E=\n%s\n", FormatArray.toString(_essentialM, "%.3e"));
         
@@ -1191,24 +1289,33 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
 
     private void printMonasseRectification(DenseMatrix fm, double[][] fEpipoles, 
         DenseMatrix x1M, DenseMatrix x2M, 
-        double focalLength, double xC, double yC, double scale1) throws NotConvergedException {
+        double focalLength, double xC, double yC) throws NotConvergedException {
+        
+        double[][] _fm = MatrixUtil.convertToRowMajor(fm);
+        double[] fme = MatrixUtil.multiplyMatrixByColumnVector(_fm, fEpipoles[0]);
+        double[] fmTe2 = MatrixUtil.multiplyMatrixByColumnVector(
+            MatrixUtil.transpose(_fm), fEpipoles[1]);
+        System.out.printf("F*e= (expecting 0)\n  %s\n", FormatArray.toString(fme, "%.4e"));
+        System.out.printf("F^T*e2= (expecting 0)\n  %s\n", FormatArray.toString(fmTe2, "%.4e"));
         
         double[][] k = new double[3][3];
         k[0] = new double[]{focalLength, 0, xC};
         k[1] = new double[]{0, focalLength, yC};
         k[2]= new double[]{0, 0, 1};
                
-        double[][] kScaled = MatrixUtil.copy(k);
-        MatrixUtil.multiply(kScaled, scale1);
-        kScaled[2][2] = 1.;
-                
-        double[][] kInv = MatrixUtil.pseudoinverseFullRank(kScaled);
-        //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(kScaled);
+        double[][] kInv = MatrixUtil.pseudoinverseFullRank(k);
+        //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(k);
         
+        System.out.printf("KInverse full rank=\n  %s\n", FormatArray.toString(kInv, "%.4e"));
+        System.out.printf("KInverse rank deficient=\n  %s\n\n", 
+            FormatArray.toString(MatrixUtil.pseudoinverseRankDeficient(k), "%.4e"));
+        
+        // (ex, exy, 0)
         double[][] fEpipolesGoal1 = MatrixUtil.copy(fEpipoles);
         fEpipolesGoal1[0][2] = 0;
         fEpipolesGoal1[1][2] = 0;
         
+        // (1, 0, 0) or (ex, 0, 0)
         double[][] fEpipolesGoal2 = MatrixUtil.copy(fEpipolesGoal1);
         for (int i = 0; i < 2; ++i) {
            fEpipolesGoal2[i][0] = 1;
@@ -1316,12 +1423,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("R_theta_t Right=\n%s\n", FormatArray.toString(R_theta_tRight, "%.4e"));
 
         System.out.printf("K*K^T=\n%s\n", 
-            FormatArray.toString(MatrixUtil.multiply(kScaled, kInv), "%.4e"));
+            FormatArray.toString(MatrixUtil.multiply(k, kInv), "%.4e"));
 
-        double[][] H1Left = MatrixUtil.multiply(kScaled, R_theta_t);
+        double[][] H1Left = MatrixUtil.multiply(k, R_theta_t);
         H1Left = MatrixUtil.multiply(H1Left, kInv);
         
-        double[][] H1Right = MatrixUtil.multiply(kScaled, R_theta_tRight);
+        double[][] H1Right = MatrixUtil.multiply(k, R_theta_tRight);
         H1Right = MatrixUtil.multiply(H1Right, kInv);
         
         System.out.printf("H1_left=\n%s\n", FormatArray.toString(H1Left, "%.4e"));
@@ -1339,7 +1446,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
     private void printMallonWhelanRectification(
         DenseMatrix fm, double[][] fEpipoles,
         DenseMatrix x1M, DenseMatrix x2M, 
-        double focalLength, double xC, double yC, double scale1) {
+        double focalLength, double xC, double yC) {
         
         /*
         Projective Rectification from the
