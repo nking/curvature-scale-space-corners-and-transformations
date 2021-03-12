@@ -397,19 +397,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         The composite mapping is to first order a rigid
         transformation in the neighbourhood of u0.
         */ 
-        double[][] g = new double[3][3];
-        g[0] = new double[]{1, 0, 0};
-        g[1] = new double[]{0, 1, 0};
-        g[2]= new double[]{-1./focalLength, 0, 1};        
-        double[] gc = MatrixUtil.multiplyMatrixByColumnVector(g, 
-            new double[]{focalLength, 0, 1});
-        System.out.printf("G * [f,0,1]^T = (expecting [%.0f, 0, 0])\n  %s\n", 
-            focalLength, FormatArray.toString(gc, "%.4e"));
-        gc = MatrixUtil.multiplyMatrixByColumnVector(g, 
-            new double[]{10, 90, 1});
-        System.out.printf("G * [10,90,1]^T = (expecting [10,90,%.3e])\n  %s\n", 
-            (1.-(10./focalLength)), FormatArray.toString(gc, "%.4e"));
-        
+   
         /*
         epipole p0 (ex, ey, 1)^T on the x axis, and G
         is the mapping taking it to infinity (ex, 0, 0)^T to infinity. 
@@ -452,33 +440,93 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         H_right = |  h21_right  h22_right   h23_right  |
                   |  h31_right  h32_right   h33_right  |
         
+        if F were not imperfect:
+           H_Right_rect^T * F_rect * H_Left = alpha * F
+           F_rect * H_Left = alpha * (H_Right_rect^T)^-1 * F
+           F_rect * H_Left = alpha * H_Right_rect * F
+           F_rect * H_Left * F^T = alpha * H_Right_rect
+         ==> alpha * H_Right_rect = F_rect * H_Left * F^T
         
-        Then write out: H_Right_rect^T * F_rect * H_Left = F
+        Need least squares or other to robustly solve.
+        see Malon and Whelan "Projective Rectification from the Fundamental Matrix", eqn (4)
+        this from Malon & Whelan is different than what I have by factoring the matrices:
+         | (h21 * h31_right - h31 * h21_right)*h31_right   -h21_right |           | f11  f12  f13 |
+         | (h21 * h32_right - h31 * h22_right)*h32_right   -h22_right | = alpha * | f21  f22  f23 |
+         | (h21 * h33_right - h31 * h23_right)*h33_right   -h23_right |           | f31  f32  f33 |
+        
+        expressing F as a scalar alpha * F where alpha is an arbitrary scale factor.
+        
+        
+        write out: H_Right_rect^T * F_rect * H_Left = F
         
          |    1             0          0      |   | 0  0  0 |     |  1   0   0  |
          |  h21_right  h22_right   h23_right  | * | 0  0 -1 |  *  | h21  1   0  |  = F
          |  h31_right  h32_right   h33_right  |   | 0  1  0 |     | h31  0   1  |
         
-         | (h21 * h31_right - h31 * h21_right)*h31_right   -h21_right |           | f11  f12  f13 |
-         | (h21 * h32_right - h31 * h22_right)*h32_right   -h22_right | = alpha * | f21  f22  f23 |
-         | (h21 * h33_right - h31 * h23_right)*h33_right   -h23_right |           | f31  f32  f33 |
+         |   0    0          0         |     |  1   0   0  |
+         |   0   h23_right  -h22_right |  *  | h21  1   0  |  = F
+         |   0   h33_right  -h32_right |     | h31  0   1  |
+
+         | 0                                 0          0          |
+         | h23_right*h21 + -h22_right*h31    h23_right  -h22_right |  =  F
+         | h33_right*h21 + -h32_right*h31    h33_right  -h32_right |
         
-         where alpha ia an arbitrary scale factor.
+        The 9 terms are then:
+           0 = alpha*f11
+           0 = alpha*f12
+           0 = alpha*f13
+           h23_right*h21 + -h22_right*h31 = alpha*f21
+           h23_right = alpha*f22
+           -h22_right = alpha*f23
+           h33_right*h21 + -h32_right*h31 = alpha*f31
+           h33_right = alpha*f32
+           -h32_right = alpha*f33
         
-        have params in F, h21, h31 : 11 params
-        solving for H_right params :  6 params
+        Rewritten:
+            alpha = (h23_right*h21 + -h22_right*h31)/f21
+            alpha = (h33_right*h21 + -h32_right*h31)/f31
+            alpha = (h23_right)/f22
+            alpha = (h33_right)/f32
+            alpha = (-h22_right)/f23
+            alpha = (-h32_right)/f33
+
+        Setting the top 2 equal to one another as they have all the terms:
+            (h23_right*h21 + -h22_right*h31)/f21 = (h33_right*h21 + -h32_right*h31)/f31
+        Grouping h_right terms to solve for:
+            (h23_right*h21 + -h22_right*h31)/f21 - (h33_right*h21 + -h32_right*h31)/f31 = 0
+            h23_right * (h21/f21) + -h22_right*(h31/f21) + -h33_right*(h21/f31) + h32_right*(h31/f31) = 0
         
-        so need to group terms further and use least squares or other 
+        Neglecting alpha, the quick solution to h_right terms are 4 eqns of
+        closed form:
         
-        PAUSED here
+            B is 1X4, p is 4X1
+            B = (h21/f21),   -(h31/f21) -(h21/f31) (h31/f31)
+            p = h23_right, h22_right, h33_right, h32_right
+        
+        then solve for alpha w/ multiple eqns:
+            alpha = (h23_right*h21 + -h22_right*h31)/f21
+                  = p1*h21/f21 - p2*h31/f21
+            alpha = (h23_right)/f22
+                  = p1/f22
+            alpha = (-h22_right)/f23
+                  = p2/f23
+            alpha = (h33_right*h21 + -h32_right*h31)/f31
+                  = p3*h21/f31 - p4*h31/f31
+            alpha = (h33_right)/f32
+                  = p3/f32
+            alpha = (-h32_right)/f33
+                  = -p4/f33
+
+                | h21/f21  -h31/f21  0         0       |        | p1 |
+                | 1/f22       0      0         0       |      * | p2 |
+                | 0        1/f23     0         0       |        | p3 |
+                | 0           0      h21/f31   h31/f31 |        | p4 |
+                | 0           0      1/f32     0       |
+                | 0           0      0         -1/f33  |
+
+        paused here
         */
-        g = new double[3][3];
-        g[0] = new double[]{1, 0, 0};
-        g[1] = new double[]{-fEpipoles[0][1]/fEpipoles[0][0], 1, 0};
-        g[2]= new double[]{-1./fEpipoles[0][0], 0, 1}; 
-        gc = MatrixUtil.multiplyMatrixByColumnVector(g, fEpipoles[0]);
-        System.out.printf("G * e1 = (expecting [%.4e,0,0])\n  %s\n", 
-            fEpipoles[0][0], FormatArray.toString(gc, "%.4e"));
+        
         
         printMallonWhelanRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
