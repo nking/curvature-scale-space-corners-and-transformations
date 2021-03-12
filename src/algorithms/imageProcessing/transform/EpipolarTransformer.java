@@ -77,7 +77,8 @@ import algorithms.matrix.MatrixUtil.SVDProducts;
     where A = x_1*x_2, x_1*y_2, x_1, y_1*x_2, y_1*y_2, y_1, x_2, y_2, 1
              (which is each element of column 0 of u_1 dotted separately with
              row 0 of u2_T)
-    and f is a nine-vector containing the entries of the matrix F
+             A is nData X 9
+    and f is a nine-vector (size 9X1) containing the entries of the matrix F
  
     To avoid the trivial scale, ||f|| = 1 where f is the norm of f
 

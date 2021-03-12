@@ -449,83 +449,71 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         Need least squares or other to robustly solve.
         see Malon and Whelan "Projective Rectification from the Fundamental Matrix", eqn (4)
-        this from Malon & Whelan is different than what I have by factoring the matrices:
-         | (h21 * h31_right - h31 * h21_right)*h31_right   -h21_right |           | f11  f12  f13 |
-         | (h21 * h32_right - h31 * h22_right)*h32_right   -h22_right | = alpha * | f21  f22  f23 |
-         | (h21 * h33_right - h31 * h23_right)*h33_right   -h23_right |           | f31  f32  f33 |
+         | (h21 * h31_right - h31 * h21_right)  h31_right   -h21_right |           | f11  f12  f13 |
+         | (h21 * h32_right - h31 * h22_right)  h32_right   -h22_right | = alpha * | f21  f22  f23 |
+         | (h21 * h33_right - h31 * h23_right)  h33_right   -h23_right |           | f31  f32  f33 |
         
         expressing F as a scalar alpha * F where alpha is an arbitrary scale factor.
         
-        
+        Stepping thru to get to same result:
         write out: H_Right_rect^T * F_rect * H_Left = F
         
-         |    1             0          0      |   | 0  0  0 |     |  1   0   0  |
-         |  h21_right  h22_right   h23_right  | * | 0  0 -1 |  *  | h21  1   0  |  = F
-         |  h31_right  h32_right   h33_right  |   | 0  1  0 |     | h31  0   1  |
-        
-         |   0    0          0         |     |  1   0   0  |
-         |   0   h23_right  -h22_right |  *  | h21  1   0  |  = F
-         |   0   h33_right  -h32_right |     | h31  0   1  |
+         |    1        h21_right   h31_right  |   | 0  0  0 |     |  1   0   0  |
+         |    0        h22_right   h32_right  | * | 0  0 -1 |  *  | h21  1   0  |  = F
+         |    0        h23_right   h33_right  |   | 0  1  0 |     | h31  0   1  |
 
-         | 0                                 0          0          |
-         | h23_right*h21 + -h22_right*h31    h23_right  -h22_right |  =  F
-         | h33_right*h21 + -h32_right*h31    h33_right  -h32_right |
-        
+         |    1        h21_right   h31_right  |   |  0     0    0 |           | f11  f12  f13 |
+         |    0        h22_right   h32_right  | * | -h31   0   -1 | = alpha * | f21  f22  f23 |
+         |    0        h23_right   h33_right  |   |  h21   1    0 |           | f31  f32  f33 |
+
+         | (-h31 * h21_right + h21 * h31_right)  h31_right  -h21_right|           | f11  f12  f13 |
+         | (-h31 * h22_right + h21 * h32_right)  h32_right  -h22_right| = alpha * | f21  f22  f23 |
+         | (-h31 * h23_right + h21 * h33_right)  h33_right  -h23_right|           | f31  f32  f33 |
+
+        Let p = h21_right, h22_right, h23_right, h31_right, h32_right, h33_right, alpha
+                1          2          3          4          5          6          7          
+       
         The 9 terms are then:
-           0 = alpha*f11
-           0 = alpha*f12
-           0 = alpha*f13
-           h23_right*h21 + -h22_right*h31 = alpha*f21
-           h23_right = alpha*f22
-           -h22_right = alpha*f23
-           h33_right*h21 + -h32_right*h31 = alpha*f31
-           h33_right = alpha*f32
-           -h32_right = alpha*f33
+           (-h31 * p1 + h21 * p4) = p7 * f11
+           p4 = p7 * f12
+           -p1 = p7 * f13
+           (-h31 * p2 + h21 * p5) = p7 * f21
+           p5 = p7 * f22
+           -p2 = p7 * f23
+           (-h31 * p3 + h21 * p6) = p7 * f31
+           p6 = p7 * f32
+           -p3 = p7 * f33
         
         Rewritten:
-            alpha = (h23_right*h21 + -h22_right*h31)/f21
-            alpha = (h33_right*h21 + -h32_right*h31)/f31
-            alpha = (h23_right)/f22
-            alpha = (h33_right)/f32
-            alpha = (-h22_right)/f23
-            alpha = (-h32_right)/f33
+           (-h31 * p1 + h21 * p4) - p7 * f11 = 0
+           p4 - p7 * f12 = 0
+           -p1 - p7 * f13 = 0
+           (-h31 * p2 + h21 * p5) - p7 * f21 = 0
+           p5 - p7 * f22 = 0
+           -p2 - p7 * f23 = 0
+           (-h31 * p3 + h21 * p6) - p7 * f31 = 0
+           p6 - p7 * f32 = 0
+           -p3 - p7 * f33 = 0
 
-        Setting the top 2 equal to one another as they have all the terms:
-            (h23_right*h21 + -h22_right*h31)/f21 = (h33_right*h21 + -h32_right*h31)/f31
-        Grouping h_right terms to solve for:
-            (h23_right*h21 + -h22_right*h31)/f21 - (h33_right*h21 + -h32_right*h31)/f31 = 0
-            h23_right * (h21/f21) + -h22_right*(h31/f21) + -h33_right*(h21/f31) + h32_right*(h31/f31) = 0
+        write out B as factor of the 7 p terms:
         
-        Neglecting alpha, the quick solution to h_right terms are 4 eqns of
-        closed form:
-        
-            B is 1X4, p is 4X1
-            B = (h21/f21),   -(h31/f21) -(h21/f31) (h31/f31)
-            p = h23_right, h22_right, h33_right, h32_right
-        
-        then solve for alpha w/ multiple eqns:
-            alpha = (h23_right*h21 + -h22_right*h31)/f21
-                  = p1*h21/f21 - p2*h31/f21
-            alpha = (h23_right)/f22
-                  = p1/f22
-            alpha = (-h22_right)/f23
-                  = p2/f23
-            alpha = (h33_right*h21 + -h32_right*h31)/f31
-                  = p3*h21/f31 - p4*h31/f31
-            alpha = (h33_right)/f32
-                  = p3/f32
-            alpha = (-h32_right)/f33
-                  = -p4/f33
-
-                | h21/f21  -h31/f21  0         0       |        | p1 |
-                | 1/f22       0      0         0       |      * | p2 |
-                | 0        1/f23     0         0       |        | p3 |
-                | 0           0      h21/f31   h31/f31 |        | p4 |
-                | 0           0      1/f32     0       |
-                | 0           0      0         -1/f33  |
 
         paused here
         */
+        
+        double[][] hLeft = new double[3][3];
+        hLeft[0] = new double[]{1, 0, 0};
+        hLeft[1] = new double[]{-fEpipoles[0][1]/fEpipoles[0][0], 1, 0};
+        hLeft[2] = new double[]{-1./fEpipoles[0][0], 0, 1}; 
+        double[] he = MatrixUtil.multiplyMatrixByColumnVector(hLeft, fEpipoles[0]);
+        System.out.printf("h * e1 = (expecting [%.4e,0,0])\n  %s\n", 
+            fEpipoles[0][0], FormatArray.toString(he, "%.4e"));
+        
+        double[][] frect = new double[3][];
+        frect[0] = new double[]{0, 0, 0};
+        frect[1] = new double[]{0, 0, -1};
+        frect[2] = new double[]{0, 1, 0};
+       
         
         
         printMallonWhelanRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
