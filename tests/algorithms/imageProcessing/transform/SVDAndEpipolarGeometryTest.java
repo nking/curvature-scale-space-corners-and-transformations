@@ -473,7 +473,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         Let p = h21_right, h22_right, h23_right, h31_right, h32_right, h33_right, alpha
                 1          2          3          4          5          6          7          
        
-        The 9 terms are then:
+        The 9 equations are then:
            (-h31 * p1 + h21 * p4) = p7 * f11
            p4 = p7 * f12
            -p1 = p7 * f13
@@ -495,10 +495,25 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
            p6 - p7 * f32 = 0
            -p3 - p7 * f33 = 0
 
-        write out B as factor of the 7 p terms:
         
-
-        paused here
+        write out B as factor of the 7 p terms, 9X7:
+          p1     p2     p3     p4      p5     p6      p7
+        -----    ----  ----   -----   -----   ----   -----
+        -h31                   h21                   -f11
+                               1                     -f12
+        -1                                           -f13
+                -h31                   h21           -f21
+                                        1            -f22
+                -1                                   -f23
+                       -h31                  h21     -f31
+                                             1       -f32
+                       -1                            -f33
+        
+        B is sparse, but small...
+        
+        B * p = 0
+        The orthogonal to the best fit to B can be found by the smallest eigenvector
+            of SVD of B, but it is sensitive to outliers.
         */
         
         double[][] hLeft = new double[3][3];
