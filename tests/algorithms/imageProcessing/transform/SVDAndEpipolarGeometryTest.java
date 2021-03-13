@@ -1541,11 +1541,11 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         for (int i = 0; i < n; i++) {          
             p[i] = svd.vT[n - 1][i];
         }
-        
-        //NOTE: could also perform dimension reduction on p to rank 2 by using
-        //    SVD here.
+        System.out.printf("p=%s\n", FormatArray.toString(p, "%.4e"));
         
         double alpha = p[6];
+        
+        System.out.printf("arbitrary scale factor alpha=%.4e\n    (dividing f by it normalizes the matrix)\n", alpha);
         
         double[][] hRight = new double[3][3];
         hRight[0] = new double[]{1, 0, 0};
@@ -1570,5 +1570,15 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         System.out.printf("original F = \n  %s\n", 
             FormatArray.toString(_fm, "%.4e"));
+        
+        EpipolarTransformer tr = new EpipolarTransformer();
+        double[][] fCheckEpipoles = tr.calculateEpipoles(new DenseMatrix(fCheck));
+        
+        System.out.printf("check left epipole = \n  %s\n",
+            FormatArray.toString(fCheckEpipoles[0], "%.4e"));
+        System.out.printf("check right epipole = \n  %s\n",
+            FormatArray.toString(fCheckEpipoles[1], "%.4e"));
+        
+        // paused here. may be errors above
     }
 }
