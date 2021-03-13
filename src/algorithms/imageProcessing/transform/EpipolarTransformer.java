@@ -291,7 +291,7 @@ public class EpipolarTransformer {
         assert(n == 9);
         assert(svd.vT[0].length == 9);
 
-        // dimensions of V are nxn and n=9.  smallet eigenvector is last row of v^T and A
+        // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
         double[][] ff = new double[3][3];
         for (int i = 0; i < 3; i++) {
             ff[i] = new double[3];

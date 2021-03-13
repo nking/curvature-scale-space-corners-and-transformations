@@ -397,141 +397,37 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         The composite mapping is to first order a rigid
         transformation in the neighbourhood of u0.
         */ 
-   
+        double[][] g = new double[3][3];
+        g[0] = new double[]{1, 0, 0};
+        g[1] = new double[]{0, 1, 0};
+        g[2]= new double[]{-1./focalLength, 0, 1};        
+        double[] gc = MatrixUtil.multiplyMatrixByColumnVector(g, 
+            new double[]{focalLength, 0, 1});
+        System.out.printf("G * [f,0,1]^T = (expecting [%.0f, 0, 0])\n  %s\n", 
+            focalLength, FormatArray.toString(gc, "%.4e"));
+        gc = MatrixUtil.multiplyMatrixByColumnVector(g, 
+            new double[]{10, 90, 1});
+        System.out.printf("G * [10,90,1]^T = (expecting [10,90,%.3e])\n  %s\n", 
+            (1.-(10./focalLength)), FormatArray.toString(gc, "%.4e"));
+        
+        double[][] invG = MatrixUtil.pseudoinverseRankDeficient(g);
+        System.out.printf("G = \n  %s\n", FormatArray.toString(g, "%.4e"));
+        System.out.printf("G * G^-1 = \n  %s\n", FormatArray.toString(
+            MatrixUtil.multiply(g, invG), "%.4e"));
+        System.out.printf("G^-1 * G = \n  %s\n", FormatArray.toString(
+            MatrixUtil.multiply(invG, g), "%.4e"));
+        
         /*
+        Hartley 1999, "Theory and Practice of Projective Rectification"
+        http://www.cs.ait.ac.th/~mdailey/cvreadings/Hartley-Rectify.pdf
+        
         epipole p0 (ex, ey, 1)^T on the x axis, and G
         is the mapping taking it to infinity (ex, 0, 0)^T to infinity. 
         The composite mapping is to first order a rigid
         transformation in the neighbourhood of u0.
-        
-        Mallon & Whelan 2005, "Projective Rectification from the Fundamental Matrix"
-        
-        Rectification can be described by a transformation that sends the epipoles to
-        infinity, hence the epipolar lines become parallel with each other. 
-        Additionally, we ensure that corresponding points have the same 
-        y coordinate by mapping the epipoles in the direction e = (1, 0, 0)^T 
-        or equivalently e = (e_x, 0, 0)^T
-        
-        The fundamental matrix for the rectified images would be:
-                 | 0  0   0 |
-        F_rect = | 0  0  -1 |
-                 | 0  1   0 |
-        
-        When the homography H (actually H_Left and H_Right) 
-        are found for the rectifications, new image coordinates are 
-            m_Left_rect = H_Left * m_Left
-        and 
-            m_Right_rect = H_Right * m_Right
-
-        m_Right_rect^T * F_rect * m_Left = 0
-        
-        H_Right_rect^T * F_rect * H_Left = F
-        
-        
-                 |    1         0    0 |     |  1   0   0  |
-        H_left = | -e[1]/e[0]   1    0 |  =  | h21  1   0  |
-                 | -1/e[0]      0    1 |     | h31  0   1  |
-        where e is the left epipole here
-        
-        And for H_Right, need to solve homography for the rows 
-        containing h21 and h31 for right matrix.
-        
-                  |    1             0          0      |
-        H_right = |  h21_right  h22_right   h23_right  |
-                  |  h31_right  h32_right   h33_right  |
-        
-        if F were not imperfect:
-           H_Right_rect^T * F_rect * H_Left = alpha * F
-           F_rect * H_Left = alpha * (H_Right_rect^T)^-1 * F
-           F_rect * H_Left = alpha * H_Right_rect * F
-           F_rect * H_Left * F^T = alpha * H_Right_rect
-         ==> alpha * H_Right_rect = F_rect * H_Left * F^T
-        
-        Need least squares or other to robustly solve.
-        see Malon and Whelan "Projective Rectification from the Fundamental Matrix", eqn (4)
-         | (h21 * h31_right - h31 * h21_right)  h31_right   -h21_right |           | f11  f12  f13 |
-         | (h21 * h32_right - h31 * h22_right)  h32_right   -h22_right | = alpha * | f21  f22  f23 |
-         | (h21 * h33_right - h31 * h23_right)  h33_right   -h23_right |           | f31  f32  f33 |
-        
-        expressing F as a scalar alpha * F where alpha is an arbitrary scale factor.
-        
-        Stepping thru to get to same result:
-        write out: H_Right_rect^T * F_rect * H_Left = F
-        
-         |    1        h21_right   h31_right  |   | 0  0  0 |     |  1   0   0  |
-         |    0        h22_right   h32_right  | * | 0  0 -1 |  *  | h21  1   0  |  = F
-         |    0        h23_right   h33_right  |   | 0  1  0 |     | h31  0   1  |
-
-         |    1        h21_right   h31_right  |   |  0     0    0 |           | f11  f12  f13 |
-         |    0        h22_right   h32_right  | * | -h31   0   -1 | = alpha * | f21  f22  f23 |
-         |    0        h23_right   h33_right  |   |  h21   1    0 |           | f31  f32  f33 |
-
-         | (-h31 * h21_right + h21 * h31_right)  h31_right  -h21_right|           | f11  f12  f13 |
-         | (-h31 * h22_right + h21 * h32_right)  h32_right  -h22_right| = alpha * | f21  f22  f23 |
-         | (-h31 * h23_right + h21 * h33_right)  h33_right  -h23_right|           | f31  f32  f33 |
-
-        Let p = h21_right, h22_right, h23_right, h31_right, h32_right, h33_right, alpha
-                1          2          3          4          5          6          7          
-       
-        The 9 equations are then:
-           (-h31 * p1 + h21 * p4) = p7 * f11
-           p4 = p7 * f12
-           -p1 = p7 * f13
-           (-h31 * p2 + h21 * p5) = p7 * f21
-           p5 = p7 * f22
-           -p2 = p7 * f23
-           (-h31 * p3 + h21 * p6) = p7 * f31
-           p6 = p7 * f32
-           -p3 = p7 * f33
-        
-        Rewritten:
-           (-h31 * p1 + h21 * p4) - p7 * f11 = 0
-           p4 - p7 * f12 = 0
-           -p1 - p7 * f13 = 0
-           (-h31 * p2 + h21 * p5) - p7 * f21 = 0
-           p5 - p7 * f22 = 0
-           -p2 - p7 * f23 = 0
-           (-h31 * p3 + h21 * p6) - p7 * f31 = 0
-           p6 - p7 * f32 = 0
-           -p3 - p7 * f33 = 0
-
-        
-        write out B as factor of the 7 p terms, 9X7:
-          p1     p2     p3     p4      p5     p6      p7
-        -----    ----  ----   -----   -----   ----   -----
-        -h31                   h21                   -f11
-                               1                     -f12
-        -1                                           -f13
-                -h31                   h21           -f21
-                                        1            -f22
-                -1                                   -f23
-                       -h31                  h21     -f31
-                                             1       -f32
-                       -1                            -f33
-        
-        B is sparse, but small...
-        
-        B * p = 0
-        The orthogonal to the best fit to B can be found by the smallest eigenvector
-            of SVD of B, but it is sensitive to outliers.
         */
         
-        double[][] hLeft = new double[3][3];
-        hLeft[0] = new double[]{1, 0, 0};
-        hLeft[1] = new double[]{-fEpipoles[0][1]/fEpipoles[0][0], 1, 0};
-        hLeft[2] = new double[]{-1./fEpipoles[0][0], 0, 1}; 
-        double[] he = MatrixUtil.multiplyMatrixByColumnVector(hLeft, fEpipoles[0]);
-        System.out.printf("h * e1 = (expecting [%.4e,0,0])\n  %s\n", 
-            fEpipoles[0][0], FormatArray.toString(he, "%.4e"));
-        
-        double[][] frect = new double[3][];
-        frect[0] = new double[]{0, 0, 0};
-        frect[1] = new double[]{0, 0, -1};
-        frect[2] = new double[]{0, 1, 0};
-       
-        
-        
-        printMallonWhelanRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
+        printMallonWhelanRectification(_fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
         printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
@@ -1495,14 +1391,184 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
     }
 
     private void printMallonWhelanRectification(
-        DenseMatrix fm, double[][] fEpipoles,
+        double[][] _fm, double[][] fEpipoles,
         DenseMatrix x1M, DenseMatrix x2M, 
-        double focalLength, double xC, double yC) {
+        double focalLength, double xC, double yC) throws NotConvergedException {
         
         /*
-        Projective Rectification from the
-Fundamental Matrix
-John Mallon ∗ Paul F. Whelan
+        
+        Mallon & Whelan 2005, "Projective Rectification from the Fundamental Matrix"
+        http://doras.dcu.ie/4662/1/JM_IVC_2005.pdf
+        
+        Rectification can be described by a transformation that sends the epipoles to
+        infinity, hence the epipolar lines become parallel with each other. 
+        Additionally, we ensure that corresponding points have the same 
+        y coordinate by mapping the epipoles in the direction e = (1, 0, 0)^T 
+        or equivalently e = (e_x, 0, 0)^T
+        
+        The fundamental matrix for the rectified images would be:
+                 | 0  0   0 |
+        F_rect = | 0  0  -1 |
+                 | 0  1   0 |
+        
+        When the homography H (actually H_Left and H_Right) 
+        are found for the rectifications, new image coordinates are 
+            m_Left_rect = H_Left * m_Left
+        and 
+            m_Right_rect = H_Right * m_Right
+
+        m_Right_rect^T * F_rect * m_Left = 0
+        
+        H_Right_rect^T * F_rect * H_Left = F
+        
+        
+                 |    1         0    0 |     |  1   0   0  |
+        H_left = | -e[1]/e[0]   1    0 |  =  | h21  1   0  |
+                 | -1/e[0]      0    1 |     | h31  0   1  |
+        where e is the left epipole here
+        
+        And for H_Right, need to solve homography for the rows 
+        containing h21 and h31 for right matrix.
+        
+                  |    1             0          0      |
+        H_right = |  h21_right  h22_right   h23_right  |
+                  |  h31_right  h32_right   h33_right  |
+        
+        if F were not imperfect:
+           H_Right_rect^T * F_rect * H_Left = alpha * F
+           F_rect * H_Left = alpha * (H_Right_rect^T)^-1 * F
+           F_rect * H_Left = alpha * H_Right_rect * F
+           F_rect * H_Left * F^T = alpha * H_Right_rect
+         ==> alpha * H_Right_rect = F_rect * H_Left * F^T
+        
+        Need least squares or other to robustly solve.
+        see Malon and Whelan "Projective Rectification from the Fundamental Matrix", eqn (4)
+         | (h21 * h31_right - h31 * h21_right)  h31_right   -h21_right |           | f11  f12  f13 |
+         | (h21 * h32_right - h31 * h22_right)  h32_right   -h22_right | = alpha * | f21  f22  f23 |
+         | (h21 * h33_right - h31 * h23_right)  h33_right   -h23_right |           | f31  f32  f33 |
+        
+        expressing F as a scalar alpha * F where alpha is an arbitrary scale factor.
+        
+        Stepping thru to get to same result:
+        write out: H_Right_rect^T * F_rect * H_Left = F
+        
+         |    1        h21_right   h31_right  |   | 0  0  0 |     |  1   0   0  |
+         |    0        h22_right   h32_right  | * | 0  0 -1 |  *  | h21  1   0  |  = F
+         |    0        h23_right   h33_right  |   | 0  1  0 |     | h31  0   1  |
+
+         |    1        h21_right   h31_right  |   |  0     0    0 |           | f11  f12  f13 |
+         |    0        h22_right   h32_right  | * | -h31   0   -1 | = alpha * | f21  f22  f23 |
+         |    0        h23_right   h33_right  |   |  h21   1    0 |           | f31  f32  f33 |
+
+         | (-h31 * h21_right + h21 * h31_right)  h31_right  -h21_right|           | f11  f12  f13 |
+         | (-h31 * h22_right + h21 * h32_right)  h32_right  -h22_right| = alpha * | f21  f22  f23 |
+         | (-h31 * h23_right + h21 * h33_right)  h33_right  -h23_right|           | f31  f32  f33 |
+
+        Let p = h21_right, h22_right, h23_right, h31_right, h32_right, h33_right, alpha
+                1          2          3          4          5          6          7          
+       
+        The 9 equations are then:
+           (-h31 * p1 + h21 * p4) = p7 * f11
+           p4 = p7 * f12
+           -p1 = p7 * f13
+           (-h31 * p2 + h21 * p5) = p7 * f21
+           p5 = p7 * f22
+           -p2 = p7 * f23
+           (-h31 * p3 + h21 * p6) = p7 * f31
+           p6 = p7 * f32
+           -p3 = p7 * f33
+        
+        Rewritten:
+           (-h31 * p1 + h21 * p4) - p7 * f11 = 0
+           p4 - p7 * f12 = 0
+           -p1 - p7 * f13 = 0
+           (-h31 * p2 + h21 * p5) - p7 * f21 = 0
+           p5 - p7 * f22 = 0
+           -p2 - p7 * f23 = 0
+           (-h31 * p3 + h21 * p6) - p7 * f31 = 0
+           p6 - p7 * f32 = 0
+           -p3 - p7 * f33 = 0
+
+        
+        write out B as factor of the 7 p terms, 9X7:
+          p1     p2     p3     p4      p5     p6      p7
+        -----    ----  ----   -----   -----   ----   -----
+         -h31                   h21                   -f11
+                               1                     -f12
+        -1                                           -f13
+                -h31                   h21           -f21
+                                        1            -f22
+                -1                                   -f23
+                       -h31                  h21     -f31
+                                             1       -f32
+                       -1                            -f33
+         
+        B * p = 0
+        The orthogonal to the best fit to B can be found by the smallest eigenvector
+            of SVD of B, but it is sensitive to outliers.
         */
+        
+        double[][] hLeft = new double[3][3];
+        hLeft[0] = new double[]{1, 0, 0};
+        hLeft[1] = new double[]{-fEpipoles[0][1]/fEpipoles[0][0], 1, 0};
+        hLeft[2] = new double[]{-1./fEpipoles[0][0], 0, 1}; 
+        double[] he = MatrixUtil.multiplyMatrixByColumnVector(hLeft, fEpipoles[0]);
+        System.out.printf("h * e1 = (expecting [%.4e,0,0])\n  %s\n", 
+            fEpipoles[0][0], FormatArray.toString(he, "%.4e"));
+        
+        double[][] B = new double[9][7];
+        for (int i = 0; i < 9; ++i) {
+            B[i] = new double[7];
+        }
+        B[0][0] = -hLeft[2][0];  B[0][3] = -hLeft[1][0]; B[0][6] = -_fm[0][0];
+        B[1][3] = 1;                                     B[1][6] = -_fm[0][1];
+        B[2][0] = -1;                                    B[2][6] = _fm[0][2];
+        B[3][1] = -hLeft[2][0];  B[3][4] = -hLeft[1][0]; B[3][6] = _fm[1][0];
+        B[4][4] = -1;                                    B[4][6] = _fm[1][1];
+        B[5][1] = -1;                                    B[5][6] = _fm[1][2];
+        B[6][2] = -hLeft[2][0];  B[6][5] = -hLeft[1][0]; B[6][6] = _fm[2][0];
+        B[7][5] = 1;                                     B[7][6] = _fm[2][1];
+        B[8][2] = -1;                                    B[8][6] = _fm[2][2];
+        
+        SVDProducts svd = MatrixUtil.performSVD(B);
+        
+        int n = svd.vT.length;
+        assert(n == 7);
+        assert(svd.vT[0].length == 7);
+
+        // dimensions of V are nxn and n=7.  smallest eigenvector is last row of v^T and A
+        double[] p = new double[n];
+        for (int i = 0; i < n; i++) {          
+            p[i] = svd.vT[n - 1][i];
+        }
+        
+        //NOTE: could also perform dimension reduction on p to rank 2 by using
+        //    SVD here.
+        
+        double alpha = p[6];
+        
+        double[][] hRight = new double[3][3];
+        hRight[0] = new double[]{1, 0, 0};
+        hRight[1] = new double[]{p[0], p[1], p[2]};
+        hRight[2] = new double[]{p[3], p[4], p[5]};
+        
+        double[][] frect = new double[3][3];
+        frect[0] = new double[]{0, 0, 0};
+        frect[1] = new double[]{0, 0, -1};
+        frect[2]= new double[]{0, 1, 0}; 
+        
+        double[][] fCheck = MatrixUtil.multiply(
+            MatrixUtil.transpose(hRight), frect);
+        fCheck = MatrixUtil.multiply(fCheck, hLeft);
+        
+        System.out.printf("H'^T * F_rect * H = \n%s\n", 
+            FormatArray.toString(fCheck, "  %.4e"));
+        
+        MatrixUtil.multiply(fCheck, 1./fCheck[2][2]);
+        System.out.printf("normalized H'^T * F_rect * H = \n%s\n", 
+            FormatArray.toString(fCheck, "  %.4e"));
+        
+        System.out.printf("original F = \n  %s\n", 
+            FormatArray.toString(_fm, "%.4e"));
     }
 }
