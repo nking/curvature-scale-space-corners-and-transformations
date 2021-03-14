@@ -14,6 +14,7 @@ import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 import algorithms.matrix.MatrixUtil.SVDProducts;
+import algorithms.util.FormatArray;
 
 /**
  * class to solve for the epipoles for two images with stereo projection
@@ -147,7 +148,7 @@ import algorithms.matrix.MatrixUtil.SVDProducts;
      The related part of the normalization equation: inv(T_2) * F * inv(T_1)
      so denormalizing is:
 
-         F = (T_1)^T * F * T_2
+         F = (T_2)^T * F * T_1
 
  (6) estimate the error in the fundamental matrix by calculating epipolar
      lines for points in image 1 and find their nearest points in image 2
@@ -280,6 +281,11 @@ public class EpipolarTransformer {
             Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
+        
+        //when condition numbr is large, the 2 smallest eigenvalues are close to on another
+        //and that makes their eigenvectors sensitive to small pertubations.
+        double conditionNumber = svd.s[0]/svd.s[svd.s.length-2];
+        log.fine("conditionNumber=" + conditionNumber);
         
         /*        
         set f to be the eigenvector associated with the smallest eigenvalue
@@ -454,9 +460,11 @@ public class EpipolarTransformer {
         DenseMatrix aMatrix = new DenseMatrix(m);
         SVD svd = null;
         DenseMatrix vT = null;
+        double[] s = null;
         try {
             svd = SVD.factorize(aMatrix);
             vT = svd.getVt();
+            s = svd.getS();
         } catch (NotConvergedException e) {
             double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
             //SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
@@ -466,6 +474,12 @@ public class EpipolarTransformer {
             try { 
                 svd = SVD.factorize(new DenseMatrix(aTa));
                 vT = svd.getVt();
+                s = svd.getS();
+                for (int i = 0; i < s.length; ++i) {
+                    if (s[i] > 0) {
+                        s[i] = Math.sqrt(s[i]);
+                    }
+                }
             } catch (NotConvergedException ex) {
                 Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
                 return null;
@@ -481,6 +495,11 @@ public class EpipolarTransformer {
         //for i >r:
         //    A*v_i = 0 and A^T*u_i = 0
 
+        //when condition numbr is large, the 2 smallest eigenvalues are close to on another
+        //and that makes their eigenvectors sensitive to small pertubations.
+        double conditionNumber = s[0]/s[s.length-2];
+        log.fine("conditionNumber=" + conditionNumber);
+        
         int n = vT.numRows();
         assert(n == 9);
         assert(svd.getU().numRows() == nSet);
@@ -502,13 +521,13 @@ public class EpipolarTransformer {
         }
         
         DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
-        
-        EpipolarTransformationFit fit = null;
-        
+                
         List<DenseMatrix> validatedFM = new ArrayList<DenseMatrix>();
         
         for (DenseMatrix solution : solutions) {
 
+            //System.out.printf("validating FM=\n%s\n", FormatArray.toString(solution, "%.3e"));  
+ 
             // chirality (cheirality) check
             DenseMatrix validated = validateSolution(solution, leftXY, rightXY);
             
@@ -638,7 +657,7 @@ public class EpipolarTransformer {
         // row 0 = e1 = right camera center projected into left image reference frame
         // row 1 = e2 = left camera center projected into right image reference frame
         double[][] leftRightEpipoles = calculateEpipoles(solution);
-
+        
         // 3 columns (x,y,1):
         double[] testE1 = leftRightEpipoles[0];  // NOTE: this is normalized
         //vgg_contreps of a 3X1 vector e1 is
@@ -1004,64 +1023,10 @@ public class EpipolarTransformer {
         DenseMatrix normalizedFundamentalMatrix,
         NormalizedXY normalizedLeftXY, NormalizedXY normalizedRightXY) {
 
-        /*
-        denormalize
-            F = (T_1)^T * F * T_2
-            where T_1 is normalizedXY1.getNormalizationMatrix();
-            and T2 is normalizedXY2.getNormalizationMatrix();
-        */
-
-        DenseMatrix t1Transpose = 
-            algorithms.matrix.MatrixUtil.transpose(normalizedLeftXY
-            .getNormalizationMatrix());
-        DenseMatrix t2 = normalizedRightXY.getNormalizationMatrix();
-
-        DenseMatrix denormFundamentalMatrix =
-            MatrixUtil.multiply(t1Transpose,
-                MatrixUtil.multiply(normalizedFundamentalMatrix, t2));
-
-        double factor = 1./(denormFundamentalMatrix.get(2, 2) + eps);
-        MatrixUtil.multiply(denormFundamentalMatrix, factor);
-
-        return denormFundamentalMatrix;
-    }
-    
-    /**
-     packages the x, y coordinates into a data structure that is used for 
-     normalized coordinates, but does not perform normalization.
-     The transformation included as a centroid of 0 and scale of 1.
-     
-     * @param xy
-     * @return
-     */
-    @SuppressWarnings({"unchecked"})
-    NormalizedXY formatForAlreadyNormalized(DenseMatrix xy) {
-
-        double scale = 1;
-        double cenX = 0;
-        double cenY = 0;   
-        DenseMatrix tMatrix = createScaleTranslationMatrix(scale, cenX, cenY);
-
-        /*
-        double[][] t = new double[3][];
-        t[0] = new double[]{scale,       0,     -centroidX*scale};
-        t[1] = new double[]{0,           scale, -centroidY*scale};
-        t[2] = new double[]{0,           0,           1};
-        DenseMatrix tMatrix = new DenseMatrix(t);
-        
-        xy is size 3 X nData
-        
-        (x_0*scale-centroidX*scale) ...for i=1 to n
-        (y_0*scale-centroidY*scale)
-        (1)
-        */
-        
-        NormalizedXY normalizedXY = new NormalizedXY();
-        normalizedXY.setCentroidXY(new double[]{cenX, cenY});
-        normalizedXY.setNormMatrix(tMatrix);
-        normalizedXY.setXy(xy);
-
-        return normalizedXY;
+        return denormalizeTheFundamentalMatrix(normalizedFundamentalMatrix, 
+            normalizedLeftXY.getNormalizationMatrices(), 
+            normalizedRightXY.getNormalizationMatrices());
+       
     }
 
     /**
@@ -1103,59 +1068,43 @@ public class EpipolarTransformer {
         cen0 /= (double)n;
         cen1 /= (double)n;
 
-        double stDev = 0;
-
-        // using a euclidean distance, chosen for expected use on images with square pixels
+        double scale = 0;
+        double diffX, diffY;
         for (int i = 0; i < n; i++) {
-            double diffX = xy.get(0, i) - cen0;
-            double diffY = xy.get(1, i) - cen1;
-            double dist = (diffX * diffX) + (diffY * diffY);
-            stDev += dist;
+            diffX = xy.get(0, i) - cen0;
+            diffY = xy.get(1, i) - cen1;
+            scale += (diffX*diffX + diffY*diffY);
         }
-
-        stDev = Math.sqrt(stDev/(n - 1.));
-
-        //stDev * factor = sqrt(2)
-        double scaleFactor = Math.sqrt(2)/stDev;
+        //scale: root mean square distance of (x,y) to origin is sqrt(2)
+        scale = Math.sqrt(scale/(2.*(n-1)));
         
-        DenseMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, cen0, cen1);
-        //DenseMatrix tMatrix = createScaleTranslationMatrix(1, 0, 0);
-
-        /*
-        double[][] t = new double[3][];
-        t[0] = new double[]{scale,       0,     -centroidX*scale};
-        t[1] = new double[]{0,           scale, -centroidY*scale};
-        t[2] = new double[]{0,           0,           1};
-        DenseMatrix tMatrix = new DenseMatrix(t);
+        NormalizationTransformations tMatrices = createScaleTranslationMatrices(
+            scale, cen0, cen1);
+       
+        DenseMatrix normXY = MatrixUtil.multiply(new DenseMatrix(tMatrices.t), xy);
         
-        xy is size 3 X nData
-        
-        (x_0*scale-centroidX*scale) ...for i=1 to n
-        (y_0*scale-centroidY*scale)
-        (1)
-        */
-                        
-        DenseMatrix normXY = new DenseMatrix(MatrixUtil.multiply(tMatrix, xy));
-
         NormalizedXY normalizedXY = new NormalizedXY();
-        normalizedXY.setCentroidXY(new double[]{cen0, cen1});
-        normalizedXY.setNormMatrix(tMatrix);
+        normalizedXY.setNormMatrices(tMatrices);
         normalizedXY.setXy(normXY);
 
         return normalizedXY;
     }
 
     /**
-     * create a matrix to be applied on the left side of the dot operator
-     * with a matrix of points to transform the points by scale and translation.
-     * @param scale (this is actually sqrt(2)/stDev)
+     * create 2 scale and translation matrices to normalize homogeneous 2D coordinates
+     * by multiplying on the left side, and to de-normalize the normalized
+     * coordinates by multiplying on the left side.
+     * The normalization matrix transforms x by (x - centroidX)/scale and similarly transforms y.
+     * The de-normalization matrix can be used to multiply by scale and add the centroid.
+     * @param scale
      * @param centroidX
      * @param centroidY
      * @return
      */
-    protected static DenseMatrix createScaleTranslationMatrix(double scale,
+    protected static NormalizationTransformations createScaleTranslationMatrices(
+        double scale,
         double centroidX, double centroidY) {
-
+        
         /*
         scale, rotate, then translate.
         let xc = x centroid
@@ -1181,68 +1130,81 @@ public class EpipolarTransformer {
         y[0]  y[1]  y[2]  y[3]
         1      1      1     1
 
-        Formatting the scale and translation into a matrix that can be used
-        with dot operator to transform the points.
-        Because the xy points have the x and y along rows, this new transformation
-        matrix must be used on the left side of the dot operation.
+        t * xy = tranformed xy
+                
+        to reverse the operation, that is de-normalize, need division by scale, 
+        then addition of centroid    
+        
+        Revisiting Hartley’s Normalized Eight-Point Algorithm
+        Chojnacki et al. 2003
+        
+                | 1/s   0  0 |   | 1  0  -xc |
+            T = |  0  1/s  0 | * | 0  1  -yc |
+                |  0    0  1 |   | 0  0   1  |
 
-           t dot xy = tranformed xy
+                   | 1  0  xc |   | s  0   0 |
+            T^-1 = | 0  1  yc | * | 0  s   0 |
+                   | 0  0   1 |   | 0  0   1 |
 
-        t00     t01      t02
-        t10     t11      t12
-        0        0        1
+                          | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |
+            T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |
+                          | 0  0   1 |   | 0    0    1 |   | xc yc 1 |
 
-        t00*x[0] + t01*y[0] + t02*1 = x[0]*s - xc*s
-                         0
-             => t00 = s
-             => t01 = 0
-             => t02 = -xc*s
-
-        t10*x[0] + t11*y[0] + t12*1 = y[0]*s - yc*s
-            0
-             => t10 = 0
-             => t11 = s
-             => t12 = -yc*s
+                          | s^2 + xc^2   xc*yc       xc |
+                        = | yc*xc        s^2 + yc^2  yc |
+                          | xc           yc          1  |
         */
-
+        
         double[][] t = new double[3][];
-        t[0] = new double[]{scale,       0,     -centroidX*scale};
-        t[1] = new double[]{0,           scale, -centroidY*scale};
+        t[0] = new double[]{1./scale,       0,     -centroidX/scale};
+        t[1] = new double[]{0,           1./scale, -centroidY/scale};
         t[2] = new double[]{0,           0,           1};
-        DenseMatrix tMatrix = new DenseMatrix(t);
 
-        return tMatrix;
+        double[][] d = new double[3][];
+        d[0] = new double[]{scale,       0,     centroidX};
+        d[1] = new double[]{0,           scale, centroidY};
+        d[2] = new double[]{0,           0,           1};
+        
+        NormalizationTransformations nt = new NormalizationTransformations();
+        nt.t = t;
+        nt.tDenorm = d;
+        
+        return nt;
     }
     
     /**
      * 
-     * @param fm the normalized fundamental matrix, that is the solution for
-     * the fundamental metrix using the normalized correspondence.
-     * @param tMatrix1 the transformation matrix used to perform normalization
-     * on the left correspondence.  The matrix includes terms for the x and y 
-     * centroids and scalings.
-     * @param tMatrix2 the transformation matrix used to perform normalization
-     * on the right correspondence.  The matrix includes terms for the x and y 
-     * centroids and scalings.
+     * @param normalizedFundamentalMatrix the normalized fundamental matrix, that is the solution for
+     * the fundamental matrix using the normalized correspondence.
+     * @param leftNT the transformations created for normalization and de-normalization
+     * of the left image coordinates.
+     * @param rightNT the transformations created for normalization and de-normalization
+     * of the right image coordinates.
+     * 
      * @return 
      */
-    public static DenseMatrix denormalizeTheFundamentalMatrix(DenseMatrix fm,
-        DenseMatrix tMatrix1, DenseMatrix tMatrix2) {
+    public static DenseMatrix denormalizeTheFundamentalMatrix(
+        DenseMatrix normalizedFundamentalMatrix,
+        NormalizationTransformations leftNT, NormalizationTransformations rightNT) {
+
+        //denormalized FM = transpose(T2) * FM_normalized * T1
         
-        //denormalize:  F = (T_1)^T * F * T_2
-        //    T_1 is normalizedXY1.getNormalizationMatrix();
-        //    T2 is normalizedXY2.getNormalizationMatrix();
-        DenseMatrix t1Transpose = MatrixUtil.transpose(tMatrix1);
-        DenseMatrix t2 = tMatrix2;
+        DenseMatrix t2T = new DenseMatrix(
+            MatrixUtil.transpose(rightNT.t));
+            //rightNT.tDenorm);
 
-        DenseMatrix denormFundamentalMatrix = MatrixUtil.multiply(t1Transpose,
-            MatrixUtil.multiply(fm, t2));
+        DenseMatrix t1 = new DenseMatrix(leftNT.t);
 
-        double s = 1. / (denormFundamentalMatrix.get(2, 2) + eps);
-        MatrixUtil.multiply(denormFundamentalMatrix, s);
-
-        denormFundamentalMatrix = (DenseMatrix) denormFundamentalMatrix.transpose();
+        DenseMatrix denormFundamentalMatrix =
+            MatrixUtil.multiply(t2T, MatrixUtil.multiply(normalizedFundamentalMatrix, t1));
         
+        /*
+        // editing
+        //TODO: review sizes and orders of matrices up to this point
+        */
+        double factor = 1./(denormFundamentalMatrix.get(2, 2) + eps);
+        MatrixUtil.multiply(denormFundamentalMatrix, factor);
+
         return denormFundamentalMatrix;
     }
 
@@ -1273,13 +1235,14 @@ public class EpipolarTransformer {
         (2) each row in matrix A:
             x_1*x_2,  x_1*y_2,  x_1,  y_1*x_2,  y_1*y_2,  y_1,  x_2,  y_2,  1
         */
+        double x1, x2, y1, y2;
         double[][] a = new double[nXY1][9];
         for (int i = 0; i < nXY1; i++) {
             a[i] = new double[9];
-            double x1 = normXY1.get(0, i);
-            double x2 = normXY2.get(0, i);
-            double y1 = normXY1.get(1, i);
-            double y2 = normXY2.get(1, i);
+            x1 = normXY1.get(0, i);
+            x2 = normXY2.get(0, i);
+            y1 = normXY1.get(1, i);
+            y2 = normXY2.get(1, i);
             a[i][0] = x1 * x2;
             a[i][1] = x1 * y2;
             a[i][2] = x1;
@@ -1388,6 +1351,23 @@ public class EpipolarTransformer {
         return e;
     }
     
+    public static class NormalizationTransformations {
+        /**
+         * a normalization matrix which subtracts a centroid and divides by a scale factor
+         * to each of x and y.
+         * The matrix is 3X3.  can use as t*xy where xy is size 3XN.
+         */
+        public double[][] t = null;
+        
+        /**
+         * a de-normalization matrix which multiplies by a scale factor and adds 
+         * a centroid to each of x and y
+         * to each of x and y.
+         * the matrix is 3X3. can use as t*xy where xy is size 3XN.
+         */
+        public double[][] tDenorm = null;
+    } 
+    
     public static class NormalizedXY {
 
         /**
@@ -1395,37 +1375,21 @@ public class EpipolarTransformer {
          * and the last column is place holder 1's
          */
         private DenseMatrix xy = null;
-
-        private double[] centroidXY = null;
-
-        private DenseMatrix normalizationMatrix = null;
-
-        /**
-         * @return the centroidXY
-         */
-        public double[] getCentroidXY() {
-            return centroidXY;
-        }
-
-        /**
-         * @param centroidXY the centroidXY to set
-         */
-        public void setCentroidXY(double[] centroidXY) {
-            this.centroidXY = centroidXY;
-        }
+        
+        private NormalizationTransformations normalizationMatrices = null;
 
         /**
          * @return the factor
          */
-        public DenseMatrix getNormalizationMatrix() {
-            return normalizationMatrix;
+        public NormalizationTransformations getNormalizationMatrices() {
+            return normalizationMatrices;
         }
 
         /**
-         * @param normMatrix holding the scale and offsets to apply to x, y
+         * @param normMatrices holding the scale and centroid offsets to apply to x, y
          */
-        public void setNormMatrix(DenseMatrix normMatrix) {
-            this.normalizationMatrix = normMatrix;
+        public void setNormMatrices(NormalizationTransformations normMatrices) {
+            this.normalizationMatrices = normMatrices;
         }
 
         /**

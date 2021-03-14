@@ -55,8 +55,8 @@ public class DistancesTest extends TestCase {
         assertNotNull(normalizedFM);
                 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            normalizedFM, normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+            normalizedFM, normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
         
         Distances distances = new Distances();
         EpipolarTransformationFit fit = null;
@@ -133,8 +133,8 @@ public class DistancesTest extends TestCase {
         
         for (DenseMatrix nfm : normalizedFMs) {
             DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-                nfm, normXY1.getNormalizationMatrix(),
-                normXY2.getNormalizationMatrix());
+                nfm, normXY1.getNormalizationMatrices(),
+                normXY2.getNormalizationMatrices());
             denormalizedFMs.add(fm);
             
             EpipolarTransformationFit fit = null;

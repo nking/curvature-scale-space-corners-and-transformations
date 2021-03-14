@@ -559,7 +559,7 @@ public class Distances {
      * @param u2 points from right image in matrix of size 3 X nPoints. row 0 is
      * x, row 1 is y, row 2 is all 1's
      * @param fu1
-     * @param invFu2
+     * @param fTu2
      * @param leftIdx
      * @param rightIdx
      * @param output an output variable to hold as element 0, the distance of
@@ -568,7 +568,7 @@ public class Distances {
      * image point at leftIdx.
      */
     public void calculatePerpDistFromLines(DenseMatrix u1, DenseMatrix u2,
-            DenseMatrix fu1, DenseMatrix invFu2,
+            DenseMatrix fu1, DenseMatrix fTu2,
             int leftIdx, int rightIdx, float[] output) {
 
         // see references for eqn (1) of within Fathy et al. 2017,
@@ -586,9 +586,9 @@ public class Distances {
         double d = (a * x + b * y + c) / aplusb;
 
         // find the reverse distance by projection:
-        double aRev = invFu2.get(0, rightIdx);
-        double bRev = invFu2.get(1, rightIdx);
-        double cRev = invFu2.get(2, rightIdx);
+        double aRev = fTu2.get(0, rightIdx);
+        double bRev = fTu2.get(1, rightIdx);
+        double cRev = fTu2.get(2, rightIdx);
 
         double xL = u1.get(0, leftIdx);
         double yL = u1.get(1, leftIdx);

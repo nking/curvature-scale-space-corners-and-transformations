@@ -3,7 +3,10 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.EpipolarTransformer.NormalizationTransformations;
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscMath;
+import algorithms.util.FormatArray;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
@@ -30,7 +33,158 @@ public class EpipolarTransformerTest extends TestCase {
     public EpipolarTransformerTest() {
     }
     
-    public void testNormalization() throws Exception {
+    public void testNormalization0() throws Exception {
+        
+        int m = 3;
+        int n = 24;
+        
+        double[][] x1 = new double[m][n];
+        double[][] x2 = new double[m][n];
+        x1[0] = new double[]{262, 316, 260, 284, 234, 177, 216
+           , 220, 248, 248, 319, 159, 176, 407, 393, 119, 117, 428, 427, 112, 109, 425, 256, 411
+        };
+        x1[1] = new double[]{356, 342, 305, 279, 217, 76, 63
+            , 158, 27, 46, 36, 54, 76, 64, 85,       115, 141, 120, 147, 320, 375, 333, 192, 213
+        };
+        x1[2] = new double[n];  Arrays.fill(x1[2], 1.0);
+        
+        x2[0] = new double[]{156, 191, 153, 167, 135, 97, 119
+            , 125, 137, 137, 183, 87, 97, 248, 238, 71, 70, 267, 267, 73, 74, 272,    147, 256
+        };
+        x2[1] = new double[]{308, 301, 270, 249, 202, 97, 83
+            , 156, 51,  65,   49,  83, 97, 61,  81, 130, 149, 110, 134, 276, 315, 299, 180, 192
+        };
+        x2[2] = new double[n];  Arrays.fill(x2[2], 1.0);
+        
+        DenseMatrix x1M = new DenseMatrix(x1);
+        DenseMatrix x2M = new DenseMatrix(x2);
+        
+        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(x1M);
+        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(x2M);
+        DenseMatrix leftNorm = normXY1.getXy();
+        DenseMatrix rightNorm = normXY2.getXy();
+        double[][] _leftNorm = MatrixUtil.convertToRowMajor(leftNorm);
+        double[][] _rightNorm = MatrixUtil.convertToRowMajor(rightNorm);
+         
+        double tol = 1e-5;
+        double tol2 = 1.e-2;
+        double sqrt2 = Math.sqrt(2);
+        
+        double[] meanAndStDevLeftX = MiscMath.getAvgAndStDev(_leftNorm[0]);
+        double[] meanAndStDevLeftY = MiscMath.getAvgAndStDev(_leftNorm[1]);
+        double[] meanAndStDevRightX = MiscMath.getAvgAndStDev(_rightNorm[0]);
+        double[] meanAndStDevRightY = MiscMath.getAvgAndStDev(_rightNorm[1]);
+        System.out.printf("mn&stDev left X=%s\n", FormatArray.toString(meanAndStDevLeftX, "%.3f"));
+        System.out.printf("mn&stDev left Y=%s\n", FormatArray.toString(meanAndStDevLeftY, "%.3f"));
+        System.out.printf("mn&stDev right X=%s\n", FormatArray.toString(meanAndStDevRightX, "%.3f"));
+        System.out.printf("mn&stDev right Y=%s\n", FormatArray.toString(meanAndStDevRightY, "%.3f"));
+
+        double rmsLeft = Math.sqrt(meanAndStDevLeftX[1] * meanAndStDevLeftX[1] +
+            meanAndStDevLeftY[1]*meanAndStDevLeftY[1]);
+        double rmsRight = Math.sqrt(meanAndStDevRightX[1] * meanAndStDevLeftX[1] +
+            meanAndStDevLeftY[1]*meanAndStDevRightY[1]);
+        System.out.printf("rmsLeft=%.4e  rmsRight=%.4e\n sqrt(2)=%.4e\n", rmsLeft, rmsRight, sqrt2);
+        
+        assertTrue(Math.abs(meanAndStDevLeftX[0]) < tol);
+        assertTrue(Math.abs(meanAndStDevLeftY[0]) < tol);
+        assertTrue(Math.abs(rmsLeft - sqrt2) < tol2);
+        
+        assertTrue(Math.abs(meanAndStDevRightX[0]) < tol);
+        assertTrue(Math.abs(meanAndStDevRightY[0]) < tol);
+        assertTrue(Math.abs(rmsRight - sqrt2) < tol2);
+      
+        
+        NormalizationTransformations leftNT = normXY1.getNormalizationMatrices();
+        NormalizationTransformations rightNT = normXY2.getNormalizationMatrices();
+       
+        double diffX, diffY,diffZ;
+        
+        double[][] x1Denorm = MatrixUtil.multiply(leftNT.tDenorm, _leftNorm);
+        double[][] x2Denorm = MatrixUtil.multiply(rightNT.tDenorm, _rightNorm);
+        
+        for (int j = 0; j < x2[0].length; ++j) {
+            diffX = Math.abs(x2[0][j]- x2Denorm[0][j]);
+            diffY = Math.abs(x2[1][j]- x2Denorm[1][j]);
+            diffZ = Math.abs(x2[2][j]- x2Denorm[2][j]);
+            assertTrue(diffX < tol);
+            assertTrue(diffY < tol);
+            assertTrue(diffZ < tol);
+            diffX = Math.abs(x1[0][j]- x1Denorm[0][j]);
+            diffY = Math.abs(x1[1][j]- x1Denorm[1][j]);
+            diffZ = Math.abs(x1[2][j]- x1Denorm[2][j]);
+            assertTrue(diffX < tol);
+            assertTrue(diffY < tol);
+            assertTrue(diffZ < tol);
+        }
+        
+        /*
+          u1_normalized = T1 * u1
+          u2_normalized = T2 * u2
+
+          denormalized u1 = T1^-1 * u1_normalized and similar foru2
+
+          FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
+
+          Revisiting Hartley’s Normalized Eight-Point Algorithm
+          Chojnacki et al. 2003
+
+        * denormalized FM = transpose(T2) * FM_normalized * T1
+        
+          print condition number:  largest eigenvalue/2nd smallest eigenvalue.
+          when condition numbr is arge, the 2 smallest eigenvalues are close to on another
+            and that makes their eigenvectors sensitive to small pertubations.
+
+          u2^T * FM * u1 = u2_normalized^T * FM_normalized * u1_normalized = residual
+
+              | 1/s   0  0 |   | 1  0  -xc |   | 1/s    0   -s*xc |
+          T = |  0  1/s  0 | * | 0  1  -yc | = |   0  1/s   -s*yc |
+              |  0    0  1 |   | 0  0   1  |   |   0    0      1  |
+
+                 | 1  0  xc |   | s  0   0 |
+          T^-1 = | 0  1  yc | * | 0  s   0 |
+                 | 0  0   1 |   | 0  0   1 |
+   
+                        | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |
+          T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |
+                        | 0  0   1 |   | 0    0    1 |   | xc yc 1 |
+
+                        | s^2 + xc^2   xc*yc       xc |
+                      = | yc*xc        s^2 + yc^2  yc |
+                        | xc           yc          1  |
+        */
+       
+        //---- test a fundamental matrix.
+        //       the values for x1, y1, x2, and y2 in the fundamental matrix can be tested
+        /*
+        The fundamental matrix terms solved for by the orthogonal component of best fit to A:
+            A[i][0] = x1 * x2; <— FM[0][0]
+            A[i][1] = x1 * y2; <— FM[1][0]
+            A[i][2] = x1;      <— FM[2][0]  <======
+            A[i][3] = y1 * x2; <— FM[0][1]
+            A[i][4] = y1 * y2; <— FM[1][1]
+            A[i][5] = y1;      <— FM[2][1]  <======
+            A[i][6] = x2;      <— FM[0][2]  <======
+            A[i][7] = y2;      <— FM[1][2]  <======
+            A[i][8] = 1;         
+        */
+        
+        /*
+        hartley 1997 house 
+        [junit] expected de-normalized FM=
+    [junit] 4.144e-06, -6.231e-05, 2.817e-02 
+    [junit] 2.684e-05, -4.437e-07, -3.188e-01 
+    [junit] -3.852e-02, 3.274e-01, 1.000e+00
+        
+        before de-normalization:
+        [junit] 9.773e-02, 2.826e+00, 1.605e+00
+    [junit] -2.847e+00, -1.889e-01, -3.970e+00
+    [junit] -1.521e+00, 3.753e+00, -6.851e-02
+        */
+        
+    }
+    
+    /*
+    public void _testNormalization() throws Exception {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -45,10 +199,10 @@ public class EpipolarTransformerTest extends TestCase {
         double eps = 0.00001;
         
         double sqrtTwo = Math.sqrt(2);
-        /*
-        x_transformed = xc*s + ((x - xc)*s) + tX = x*s - xc
-        y_transformed = yc*s + ((y - yc)*s) + tY = y*s - yc
-        */
+        
+        //x_transformed = xc*s + ((x - xc)*s) + tX = x*s - xc
+        //y_transformed = yc*s + ((y - yc)*s) + tY = y*s - yc
+        
         int nTests = 1;
         int nPoints = 100;
         
@@ -105,6 +259,7 @@ public class EpipolarTransformerTest extends TestCase {
             }
         }
     }
+    
     
     public void testMoreThan7Points() throws Exception {
             
@@ -274,6 +429,7 @@ public class EpipolarTransformerTest extends TestCase {
             image1Width, image1Height, image2Width, image2Height, 
             "e_merton_college_7pts" + Integer.valueOf(0).toString()); 
     }
+    */
     
     /*
     for more datasets:

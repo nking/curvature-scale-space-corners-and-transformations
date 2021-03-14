@@ -1307,7 +1307,7 @@ public class PartialShapeMatcher {
         if (storeMatrix) {
             DenseMatrix denormFM = EpipolarTransformer
                 .denormalizeTheFundamentalMatrix(fit.getFundamentalMatrix(), 
-                normXY1.getNormalizationMatrix(), normXY2.getNormalizationMatrix());
+                normXY1.getNormalizationMatrices(), normXY2.getNormalizationMatrices());
             fit.setFundamentalMatrix(denormFM);
             storedEpipolarFit = fit;
         }

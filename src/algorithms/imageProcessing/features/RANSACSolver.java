@@ -182,7 +182,7 @@ public class RANSACSolver {
         }
         
         System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
-            nMaxIter + " (n!/(k!*(n-k)!)=" + nPointsSubsets);
+            nMaxIter + ", (n!/(k!*(n-k)!)=" + nPointsSubsets);
 
         if (nMaxIter > nPointsSubsets) {
             nMaxIter = nPointsSubsets;

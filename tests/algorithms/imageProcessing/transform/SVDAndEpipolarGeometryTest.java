@@ -45,7 +45,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
     public SVDAndEpipolarGeometryTest() {
     }
     
-    public void estHartley_house() throws Exception {
+    public void testHartley_house() throws Exception {
         
         int m = 3;
         int n = 16;//8;
@@ -117,33 +117,58 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
         boolean reCalcIterations = false;
-        
-        RANSACSolver solver = new RANSACSolver();
-        EpipolarTransformationFit fitR = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
-        
-        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fitR.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
-                
-        x1M = extractIndices(x1M, fitR.inlierIndexes);
-        x2M = extractIndices(x2M, fitR.inlierIndexes);
-        overplotEpipolarLines(fm, x1M, x2M, img1, img2, 
-            image1Width, image1Height, image2Width, image2Height, 
-            "hartley97_house__RANSAC");
-        System.out.println("RANSAC fit=" + fitR.toString());
-        System.out.println("RANSAC inlier indexes=" + 
-            Arrays.toString(fitR.inlierIndexes.toArray()));
-        System.out.println("RANSAC errors=" + 
-            Arrays.toString(fitR.errors.toArray()));
-        // -- end ransac
-        
+
+        DenseMatrix normalizedFM = null;
         Distances distances = new Distances();
         EpipolarTransformer tr = new EpipolarTransformer();
         EpipolarTransformationFit fit = null;
-        int[] indexesToUse = null;
         
+        /*        
+        RANSACSolver solver = new RANSACSolver();
+        fit = solver.calculateEpipolarProjection(
+            leftM, rightM, 
+            errorType, useToleranceAsStatFactor, tolerance,
+            reCalcIterations);
+        */
+        
+        normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
+        if (useToleranceAsStatFactor) {
+            fit = distances.calculateError2(normalizedFM,
+                normXY1.getXy(), normXY2.getXy(),
+                errorType, tolerance);
+        } else {
+            fit = distances.calculateError(normalizedFM,
+                normXY1.getXy(), normXY2.getXy(),
+                errorType, tolerance);
+        }
+        
+        System.out.printf("FM=\n%s\n", 
+            FormatArray.toString(fit.getFundamentalMatrix(), "%.3e"));
+        
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            fit.getFundamentalMatrix(), 
+            normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
+        
+        System.out.printf("de-normalized FM=\n%s\n", 
+            FormatArray.toString(fm, "%.3e"));
+        
+        x1M = extractIndices(x1M, fit.inlierIndexes);
+        x2M = extractIndices(x2M, fit.inlierIndexes);
+        
+        overplotEpipolarLines(fm, x1M, x2M, img1, img2, 
+            image1Width, image1Height, image2Width, image2Height, 
+            "hartley97_house__RANSAC");
+        System.out.println("RANSAC fit=" + fit.toString());
+        System.out.println("RANSAC inlier indexes=" + 
+            Arrays.toString(fit.inlierIndexes.toArray()));
+        System.out.println("RANSAC errors=" + 
+            Arrays.toString(fit.errors.toArray()));
+        // -- end ransac
+        
+        
+        int[] indexesToUse = null;
+        /*
         for (int tst = 0; tst < 2; tst++) {
             img1 = _img1.copyImage();
             img2 = _img2.copyImage();
@@ -180,13 +205,13 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             useToleranceAsStatFactor = false;
             tolerance = 2;
             
-            DenseMatrix normalizedFM = tr.calculateEpipolarProjection(normX1M, normX2M);
+            normalizedFM = tr.calculateEpipolarProjection(normX1M, normX2M);
 
             assertNotNull(normalizedFM);
                 
             fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-                normalizedFM, normXY1.getNormalizationMatrix(),
-                normXY2.getNormalizationMatrix());
+                normalizedFM, normXY1.getNormalizationMatrices(),
+                normXY2.getNormalizationMatrices());
             
             //List<DenseMatrix> fms = tr.calculateEpipolarProjectionFor7Points(x1M, x2M);
             //fm = fms.get(0);
@@ -209,11 +234,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             }
         
             System.out.println("errors=" + fit.toString());
-        }
+        }*/
+        
     }
     
     
-    public void testNC() throws Exception {
+    public void _testNC() throws Exception {
         
         int m = 3;
         int n = 24;
@@ -236,7 +262,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
         SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U  
         */
-        
+        //(256, 192) in left is (147, 180) in right
+        //(411, 213) in left is (256, 192) in right
         x1[0] = new double[]{262, 316, 260, 284, 234, 177, 216
            , 220, 248, 248, 319, 159, 176, 407, 393, 119, 117, 428, 427, 112, 109, 425, 256, 411
         };
@@ -277,6 +304,10 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(x2M);
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
+        //System.out.printf("Tnorm1=\n%s\n", 
+        //    FormatArray.toString(normXY1.getNormalizationMatrix(), "%.4e"));
+        //System.out.printf("Tnorm2=\n%s\n", 
+        //    FormatArray.toString(normXY2.getNormalizationMatrix(), "%.4e"));
         
         double tolerance = 3.84; //3.84 5.99 7.82        
         boolean useToleranceAsStatFactor = true;
@@ -304,8 +335,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
             fitR.getFundamentalMatrix(), 
-            normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+            normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
                 
         x1M = extractIndices(x1M, fitR.inlierIndexes);
         x2M = extractIndices(x2M, fitR.inlierIndexes);
@@ -328,7 +359,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         double[][] _fm = MatrixUtil.convertToRowMajor(fm);
         
-        if (true) {
+        if (false) {
             // fix the solution to examine K
             _fm[0] = new double[]{1.2831e-06, -3.4998e-05, 8.0134e-03};
             _fm[1] = new double[]{3.3363e-05, 1.2759e-06, -1.6849e-02};
@@ -343,6 +374,26 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("de-normalized FM=\n%s\n", 
             FormatArray.toString(fm, "%.4e"));
         double[][] fEpipoles = tr.calculateEpipoles(fm);
+        
+        //nPoints X nPoints
+        double[][] x2TFx1 = MatrixUtil.multiply(
+            MatrixUtil.transpose(x2), _fm);
+        x2TFx1 = MatrixUtil.multiply(x2TFx1, x1);
+        double[][] x2TFx1N = MatrixUtil.multiply(
+            MatrixUtil.transpose(MatrixUtil.convertToRowMajor(normXY2.getXy())), 
+            MatrixUtil.convertToRowMajor(fitR.getFundamentalMatrix()));
+        x2TFx1N = MatrixUtil.multiply(x2TFx1N, MatrixUtil.convertToRowMajor(normXY1.getXy()));
+        double eps = 0;
+        double epsN = 0;
+        for (int i = 0; i < x2TFx1.length; ++i) {
+            for (int j = 0; j < x2TFx1[i].length; ++j) {
+                eps += (x2TFx1[i][j] * x2TFx1[i][j]);
+                epsN += (x2TFx1N[i][j] * x2TFx1N[i][j]);
+            }
+        }
+        eps = Math.sqrt(eps);
+        epsN = Math.sqrt(epsN);
+        System.out.printf("error eps=x2^T*F*x1=%.4e, and for normalized=%.4e\n", eps, epsN);
         
         //512x384
         System.out.printf("FM e1 = %s\n", 
@@ -427,7 +478,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         transformation in the neighbourhood of u0.
         */
         
-        printMallonWhelanRectification(_fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
+        printMallonWhelanStereoRectification(_fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
         printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
@@ -612,7 +663,6 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         double[] T = null;
         String goodSolnLabel = null;
         
-        double eps = 1.e-5;
         boolean goodSoln, allZsPos;
         XW = transformx(R1, t1, x2M);
         allZsPos = allZsArePositive(XW);
@@ -1390,7 +1440,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.println("-----------");
     }
 
-    private void printMallonWhelanRectification(
+    private void printMallonWhelanStereoRectification(
         double[][] _fm, double[][] fEpipoles,
         DenseMatrix x1M, DenseMatrix x2M, 
         double focalLength, double xC, double yC) throws NotConvergedException {
@@ -1399,6 +1449,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         Mallon & Whelan 2005, "Projective Rectification from the Fundamental Matrix"
         http://doras.dcu.ie/4662/1/JM_IVC_2005.pdf
+        http://www.cipa.dcu.ie/papers/ivc_2005_jm.pdf
         
         Rectification can be described by a transformation that sends the epipoles to
         infinity, hence the epipolar lines become parallel with each other. 
@@ -1579,6 +1630,53 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("check right epipole = \n  %s\n",
             FormatArray.toString(fCheckEpipoles[1], "%.4e"));
         
-        // paused here. may be errors above
+        double[] fme = MatrixUtil.multiplyMatrixByColumnVector(fCheck, fCheckEpipoles[0]);
+        double[] fmTe2 = MatrixUtil.multiplyMatrixByColumnVector(
+            MatrixUtil.transpose(fCheck), fCheckEpipoles[1]);
+        System.out.printf("check F*e= (expecting 0)\n  %s\n", FormatArray.toString(fme, "%.4e"));
+        System.out.printf("check F^T*e2= (expecting 0)\n  %s\n", FormatArray.toString(fmTe2, "%.4e"));
+        
+        // use homography on the coordinates and plot image if bounds transformations
+        //   look reasonable
+        
+        // x1 transformed = h_left * x1
+        double[][] x1Bounds = new double[3][2];
+        x1Bounds[0] = new double[]{0, xC*2};
+        x1Bounds[1] = new double[]{0, yC*2};
+        x1Bounds[2] = new double[]{1, 1};
+        double[][] x1BoundsTr = MatrixUtil.multiply(hLeft,x1Bounds);
+        System.out.printf("x1BoundsTr=\n  %s\n", FormatArray.toString(x1BoundsTr, "%.4e"));
+
+        // x2 transformed = h_right * x2
+        double[][] x2Bounds = new double[3][2];
+        x2Bounds[0] = new double[]{0, xC*2};
+        x2Bounds[1] = new double[]{0, yC*2};
+        x2Bounds[2] = new double[]{1, 1};
+        double[][] x2BoundsTr = MatrixUtil.multiply(hRight, x2Bounds);
+        System.out.printf("x2BoundsTr=\n  %s\n", FormatArray.toString(x2BoundsTr, "%.4e"));
+        
+        // middle points in each image:
+        //(256, 192) in left is (147, 180) in right
+        //(411, 213) in left is (256, 192) in right
+        double[][] midImg1Img2_left = new double[3][2];
+        midImg1Img2_left[0] = new double[]{256, 411};
+        midImg1Img2_left[1] = new double[]{192, 213};
+        midImg1Img2_left[2] = new double[]{1, 1};
+        double[][] x1midImg1Img2Tr_left = MatrixUtil.multiply(hLeft, midImg1Img2_left);
+        System.out.printf("mid points of image1 and 2 transformed in image 1 coords=\n  %s\n", 
+            FormatArray.toString(x1midImg1Img2Tr_left, "%.4e"));
+
+        double[][] midImg1Img2_right = new double[3][2];
+        midImg1Img2_right[0] = new double[]{147, 256};
+        midImg1Img2_right[1] = new double[]{180, 192};
+        midImg1Img2_right[2] = new double[]{1, 1};
+        double[][] x1midImg1Img2Tr_right = MatrixUtil.multiply(hRight, midImg1Img2_right);
+        System.out.printf("mid points of image1 and 2 transformed in image 2 coords=\n  %s\n", 
+            FormatArray.toString(x1midImg1Img2Tr_right, "%.4e"));
+
+        //y-axis collapsing... algorithm is meant for stereo pairs only
+                
+        
+        System.out.println("------");
     }
 }

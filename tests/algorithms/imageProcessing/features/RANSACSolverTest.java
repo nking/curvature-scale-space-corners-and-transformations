@@ -69,8 +69,8 @@ public class RANSACSolverTest extends TestCase {
         log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
@@ -163,8 +163,8 @@ public class RANSACSolverTest extends TestCase {
         log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
                 
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -283,8 +283,8 @@ public class RANSACSolverTest extends TestCase {
         log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
@@ -390,8 +390,8 @@ public class RANSACSolverTest extends TestCase {
         log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
         
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
@@ -462,8 +462,8 @@ public class RANSACSolverTest extends TestCase {
         log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
         
         List<Double> errors = fit.getErrors();
         
