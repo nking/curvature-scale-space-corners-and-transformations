@@ -121,19 +121,16 @@ public class EpipolarTransformerTest extends TestCase {
           u1_normalized = T1 * u1
           u2_normalized = T2 * u2
 
-          denormalized u1 = T1^-1 * u1_normalized and similar foru2
+          denormalized u1 = T1^-1 * u1_normalized 
+              and similarly for u2
 
           FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
 
           Revisiting Hartley’s Normalized Eight-Point Algorithm
           Chojnacki et al. 2003
 
-        * denormalized FM = transpose(T2) * FM_normalized * T1
+      ==> denormalized FM = transpose(T2) * FM_normalized * T1
         
-          print condition number:  largest eigenvalue/2nd smallest eigenvalue.
-          when condition numbr is arge, the 2 smallest eigenvalues are close to on another
-            and that makes their eigenvectors sensitive to small pertubations.
-
           u2^T * FM * u1 = u2_normalized^T * FM_normalized * u1_normalized = residual
 
               | 1/s   0  0 |   | 1  0  -xc |   | 1/s    0   -s*xc |

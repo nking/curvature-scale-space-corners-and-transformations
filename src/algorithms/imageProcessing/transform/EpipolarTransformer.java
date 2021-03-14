@@ -182,10 +182,44 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
    In case of multiple solutions, F has one dimension
    more such that F(:,:,n) is the n-th solution.
 
- NOTE: the epipolar lines in right image are the projections of the left image
- points  = F * x1
- The epipolar lines in left image are the projections of the  right image 
- points  = F^T * x2
+  NOTE: the normalization suggested by Hartely is explored further in 
+  Chojnacki et al. 2003,  "Revisiting Hartley’s Normalized Eight-Point Algorithm"
+  
+  Some excerpts:
+   
+     xc is the centroid of x coordinates.
+     yc is the centroid of y coordinates.
+     s is the root mean square distance of (x-xc,y-yc) to origin divided by sqrt(2)
+  
+         | 1/s   0  0 |   | 1  0  -xc |   | 1/s    0   -s*xc |
+     T = |  0  1/s  0 | * | 0  1  -yc | = |   0  1/s   -s*yc |
+         |  0    0  1 |   | 0  0   1  |   |   0    0      1  | 
+
+            | 1  0  xc |   | s  0   0 |  
+     T^-1 = | 0  1  yc | * | 0  s   0 |  
+            | 0  0   1 |   | 0  0   1 |  
+
+                   | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |  
+     T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |  
+                   | 0  0   1 |   | 0    0    1 |   | xc yc 1 |
+
+                   | s^2 + xc^2   xc*yc       xc | 
+                 = | yc*xc        s^2 + yc^2  yc | 
+                   | xc           yc          1  |  
+  
+     u1_normalized = T1 * u1 
+     u2_normalized = T2 * u2 
+
+     denormalization should be : T2^T * F_normalized * T1 which is in the corrected code.
+
+     denormalized u1 = T1^-1 * u1_normalized and similar foru2
+
+     FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
+
+     denormalized FM = transpose(T2) * FM_normalized * T1 
+
+     u2^T * FM * u1 = u2_normalized^T * FM_normalized * u1_normalized = residual
+  
  </pre>
  
  <pre>
@@ -1189,19 +1223,13 @@ public class EpipolarTransformer {
 
         //denormalized FM = transpose(T2) * FM_normalized * T1
         
-        DenseMatrix t2T = new DenseMatrix(
-            MatrixUtil.transpose(rightNT.t));
-            //rightNT.tDenorm);
+        DenseMatrix t2T = new DenseMatrix(MatrixUtil.transpose(rightNT.t));
 
         DenseMatrix t1 = new DenseMatrix(leftNT.t);
 
         DenseMatrix denormFundamentalMatrix =
             MatrixUtil.multiply(t2T, MatrixUtil.multiply(normalizedFundamentalMatrix, t1));
         
-        /*
-        // editing
-        //TODO: review sizes and orders of matrices up to this point
-        */
         double factor = 1./(denormFundamentalMatrix.get(2, 2) + eps);
         MatrixUtil.multiply(denormFundamentalMatrix, factor);
 
