@@ -45,7 +45,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
     public SVDAndEpipolarGeometryTest() {
     }
     
-    public void testHartley_house() throws Exception {
+    public void _testHartley_house() throws Exception {
         
         int m = 3;
         int n = 16;//8;
@@ -113,6 +113,11 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
         
+        System.out.printf("T_left=\n%s\n", FormatArray.toString(normXY1.getNormalizationMatrices().t, "%.4e"));
+        System.out.printf("T_right=\n%s\n", FormatArray.toString(normXY2.getNormalizationMatrices().t, "%.4e"));
+        System.out.printf("T_denorm_left=\n%s\n", FormatArray.toString(normXY1.getNormalizationMatrices().tDenorm, "%.4e"));
+        System.out.printf("T_denorm_right=\n%s\n", FormatArray.toString(normXY2.getNormalizationMatrices().tDenorm, "%.4e"));
+        
         double tolerance = 3.84;// 5.99 7.82        
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
@@ -168,7 +173,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         
         int[] indexesToUse = null;
-        /*
+        
         for (int tst = 0; tst < 2; tst++) {
             img1 = _img1.copyImage();
             img2 = _img2.copyImage();
@@ -234,15 +239,15 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             }
         
             System.out.println("errors=" + fit.toString());
-        }*/
+        }
         
     }
     
     
-    public void _testNC() throws Exception {
+    public void testNC() throws Exception {
         
         int m = 3;
-        int n = 24;
+        int n = 28;
         
         double[][] x1 = new double[m][n];
         double[][] x2 = new double[m][n];
@@ -266,17 +271,21 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         //(411, 213) in left is (256, 192) in right
         x1[0] = new double[]{262, 316, 260, 284, 234, 177, 216
            , 220, 248, 248, 319, 159, 176, 407, 393, 119, 117, 428, 427, 112, 109, 425, 256, 411
+           , 395, 125, 425, 148
         };
         x1[1] = new double[]{356, 342, 305, 279, 217, 76, 63
             , 158, 27, 46, 36, 54, 76, 64, 85,       115, 141, 120, 147, 320, 375, 333, 192, 213
+            , 371, 241, 282, 210
         };
         x1[2] = new double[n];  Arrays.fill(x1[2], 1.0);
         
         x2[0] = new double[]{156, 191, 153, 167, 135, 97, 119
             , 125, 137, 137, 183, 87, 97, 248, 238, 71, 70, 267, 267, 73, 74, 272,    147, 256
+            , 249, 78, 270, 87
         };
         x2[1] = new double[]{308, 301, 270, 249, 202, 97, 83
             , 156, 51,  65,   49,  83, 97, 61,  81, 130, 149, 110, 134, 276, 315, 299, 180, 192
+            , 330, 222, 253, 199
         };
         x2[2] = new double[n];  Arrays.fill(x2[2], 1.0);
         
@@ -304,6 +313,14 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(x2M);
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
+        double leftScale = 1./normXY1.getNormalizationMatrices().t[0][0];
+        double rightScale = 1./normXY2.getNormalizationMatrices().t[0][0];
+        System.out.printf("Left: Scale=%.3e, xc=%.3e yc=%.3e\n",
+            leftScale, -1.*leftScale*normXY1.getNormalizationMatrices().t[0][2],
+            -1.*leftScale*normXY1.getNormalizationMatrices().t[1][2]);
+        System.out.printf("Right: Scale=%.3e, xc=%.3e yc=%.3e\n",
+            rightScale, -1.*rightScale*normXY2.getNormalizationMatrices().t[0][2],
+            -1.*rightScale*normXY2.getNormalizationMatrices().t[1][2]);
         //System.out.printf("Tnorm1=\n%s\n", 
         //    FormatArray.toString(normXY1.getNormalizationMatrix(), "%.4e"));
         //System.out.printf("Tnorm2=\n%s\n", 
@@ -316,7 +333,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         boolean reCalcIterations = false;
         EpipolarTransformer tr = new EpipolarTransformer();
         
-        /*DenseMatrix normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
+        /*
+        DenseMatrix normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
         DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
         
         Distances distances = new Distances();
@@ -326,18 +344,19 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         } else {
             fitR = distances.calculateError(normalizedFM, leftM, rightM,
                     errorType, tolerance);
-        }*/
-        
+        }
+        */
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
                 reCalcIterations);
         
+        
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
             fitR.getFundamentalMatrix(), 
             normXY1.getNormalizationMatrices(),
             normXY2.getNormalizationMatrices());
-                
+              
         x1M = extractIndices(x1M, fitR.inlierIndexes);
         x2M = extractIndices(x2M, fitR.inlierIndexes);
         
@@ -357,13 +376,14 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         }
         System.out.println();
         
+        // this is de-normalized
         double[][] _fm = MatrixUtil.convertToRowMajor(fm);
         
         if (false) {
             // fix the solution to examine K
-            _fm[0] = new double[]{1.2831e-06, -3.4998e-05, 8.0134e-03};
-            _fm[1] = new double[]{3.3363e-05, 1.2759e-06, -1.6849e-02};
-            _fm[2] = new double[]{-7.5786e-03, 1.1214e-02, 1.0000e+00};
+            _fm[0] = new double[]{1.6478e-06, -3.1865e-05, 7.9317e-03};
+            _fm[1] = new double[]{2.9880e-05, 2.4477e-06, -1.6453e-02};
+            _fm[2] = new double[]{-7.4202e-03, 1.0644e-02, 1.0000e+00};
             fm = new DenseMatrix(_fm);
         }
         
