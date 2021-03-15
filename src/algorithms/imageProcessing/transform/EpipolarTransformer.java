@@ -182,6 +182,23 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
    In case of multiple solutions, F has one dimension
    more such that F(:,:,n) is the n-th solution.
 
+  note:
+    because translation is not a linear transformation (see Strang Chap 7)
+       one has to keep it as a separate tranformation matrix when
+       performing operations on a sequence of matrices such as inverse
+       and transpose operations.
+
+    translation matrix: inverse changes the signs of the elements.
+
+    rotation matrix: inverse is the transpose of rotation matrix.
+
+    (A*B*C)^-1 = (C^-1) * (B^-1) * (A^-1)
+
+    also, when A * A^(-1) = I, one can use:
+                    1
+        A^(-1) =  ------ C^(T)  where C_ij = cofactor of a_ij
+                   det A
+
   NOTE: the normalization suggested by Hartely is explored further in 
   Chojnacki et al. 2003,  "Revisiting Hartley’s Normalized Eight-Point Algorithm"
   
@@ -190,23 +207,7 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
      xc is the centroid of x coordinates.
      yc is the centroid of y coordinates.
      s is the root mean square distance of (x-xc,y-yc) to origin divided by sqrt(2)
-  
-         | 1/s   0  0 |   | 1  0  -xc |   | 1/s    0   -s*xc |
-     T = |  0  1/s  0 | * | 0  1  -yc | = |   0  1/s   -s*yc |
-         |  0    0  1 |   | 0  0   1  |   |   0    0      1  | 
-
-            | 1  0  xc |   | s  0   0 |  
-     T^-1 = | 0  1  yc | * | 0  s   0 |  
-            | 0  0   1 |   | 0  0   1 |  
-
-                   | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |  
-     T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |  
-                   | 0  0   1 |   | 0    0    1 |   | xc yc 1 |
-
-                   | s^2 + xc^2   xc*yc       xc | 
-                 = | yc*xc        s^2 + yc^2  yc | 
-                   | xc           yc          1  |  
-  
+    
      u1_normalized = T1 * u1 
      u2_normalized = T2 * u2 
 
@@ -220,6 +221,35 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
 
      u2^T * FM * u1 = u2_normalized^T * FM_normalized * u1_normalized = residual
   
+              | 1/s   0  0 |   | 1  0  -xc |   | 1/s    0   -xc/s |
+          T = |  0  1/s  0 | * | 0  1  -yc | = |   0  1/s   -yc/s |
+              |  0    0  1 |   | 0  0   1  |   |   0    0      1  |
+
+                 | 1  0  xc |   | s  0   0 |   | s   0  xc |
+          T^-1 = | 0  1  yc | * | 0  s   0 | = | 0   s  yc |
+                 | 0  0   1 |   | 0  0   1 |   | 0   0   1 |
+   
+                        | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |
+          T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |
+                        | 0  0   1 |   | 0    0    1 |   | xc yc 1 |
+
+                        | s^2 + xc^2   xc*yc       xc |
+                      = | yc*xc        s^2 + yc^2  yc |
+                        | xc           yc          1  |
+        
+                                  | s  0   0 |   | 1  0  0 |   |  s   0   0 |
+        from that can see  T^-T = | 0  s   0 | * | 0  1  0 | = |  0   s   0 |
+                                  | 0  0   1 |   | xc yc 1 |   | xc  yc   1 |
+        
+              |  1    0    0 |   | 1/s   0  0 |   |   1/s    0    0 |
+        T^T = |  0    1    0 | * |  0  1/s  0 | = |     0   1/s   0 |
+              |-xc  -yc    1 |   |  0    0  1 |   | -xc/s  -yc/s  1 |
+        
+                   ( | 1/s   0  0 | )^-1     |  1    0    0 |   |  s  0   0 |
+        (T^T)^-1 = ( |  0  1/s  0 | )     *  |  0    1    0 | = |  0  s   0 |
+                   ( |  0    0  1 | )        | xc   yc    1 |   | xc  yc  1 |
+        
+        can see that (T^-1)^T = (T^T)^-1        
  </pre>
  
  <pre>
