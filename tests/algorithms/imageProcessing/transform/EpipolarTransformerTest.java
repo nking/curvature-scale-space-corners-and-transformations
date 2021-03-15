@@ -145,6 +145,7 @@ public class EpipolarTransformerTest extends TestCase {
           denormalized u2 = T2^-1 * u2_normalized
 
           FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
+            with caveat about centroid and normalization details...
 
       ==> denormalized FM = transpose(T2) * FM_normalized * T1
         
@@ -181,22 +182,6 @@ public class EpipolarTransformerTest extends TestCase {
         can see that (T^-1)^T = (T^T)^-1         
         */
        
-        //---- test a fundamental matrix
-        // FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
-        //       the values for x1, y1, x2, and y2 in the fundamental matrix can be tested
-        /*
-        The fundamental matrix terms solved for by the orthogonal component of best fit to A:
-            A[i][0] = x1 * x2; <— FM[0][0]
-            A[i][1] = x1 * y2; <— FM[1][0]
-            A[i][2] = x1;      <— FM[2][0]  <======
-            A[i][3] = y1 * x2; <— FM[0][1]
-            A[i][4] = y1 * y2; <— FM[1][1]
-            A[i][5] = y1;      <— FM[2][1]  <======
-            A[i][6] = x2;      <— FM[0][2]  <======
-            A[i][7] = y2;      <— FM[1][2]  <======
-            A[i][8] = 1;         
-        */
-        
         /*
         hartley 1997 house 
         
@@ -222,89 +207,93 @@ public class EpipolarTransformerTest extends TestCase {
             [junit] -8.895e-05, 6.490e-06, 1.246e-01 
             [junit] 1.920e-02, -1.255e-01, 1.000e+00 
         
-        paused here
+        [junit] T_left=
+        [junit] 9.3917e-03, 0.0000e+00, -2.0586e+00 <== xc1=-219.19
+        [junit] 0.0000e+00, 9.3917e-03, -2.0539e+00 <== yc=-218.69
+        [junit] 0.0000e+00, 0.0000e+00, 1.0000e+00 
+        [junit] 
+        [junit] T_right=
+        [junit] 9.3503e-03, 0.0000e+00, -2.0132e+00 <== -215.31
+        [junit] 0.0000e+00, 9.3503e-03, -2.0401e+00 <== -218.19
+        [junit] 0.0000e+00, 0.0000e+00, 1.0000e+00
+        
         */
         
+        double factor;
+        
+        // normalized
+        double[][] fm0 = new double[3][3];
+        fm0[0] = new double[]{-2.430e-03, -5.531e-02, 3.050e-02};
+        fm0[1] = new double[]{6.257e-02, -4.565e-03, -7.036e-01};
+        fm0[2] = new double[]{-3.560e-03, 7.049e-01, -2.492e-04};
+        double[][] fm00 = MatrixUtil.copy(fm0);
+        factor = 1./(fm00[2][2]);
+        MatrixUtil.multiply(fm00, factor);
+        
+        //de-normalized
+        double[][] dfm0 = new double[3][3];
+        dfm0[0] = new double[]{3.455e-06, 7.863e-05, -2.257e-02};
+        dfm0[1] = new double[]{-8.895e-05, 6.490e-06, 1.246e-01};
+        dfm0[2] = new double[]{1.920e-02, -1.255e-01, 1.000e+00};
+        
+        double[][] tLeft = new double[3][3];
+        tLeft[0] = new double[]{9.3917e-03, 0.0000e+00, -2.0586e+00};
+        tLeft[1] = new double[]{0.0000e+00, 9.3917e-03, -2.0539e+00};
+        tLeft[2] = new double[]{0.0000e+00, 0.0000e+00, 1.0000e+00};
+        
+        double[][] tRight = new double[3][3];
+        tRight[0] = new double[]{9.3503e-03, 0.0000e+00, -2.0132e+00};
+        tRight[1] = new double[]{0.0000e+00, 9.3503e-03, -2.0401e+00};
+        tRight[2] = new double[]{0.0000e+00, 0.0000e+00, 1.0000e+00};
+        
+        double[][] tLeftInv = new double[3][3]; 
+        tLeftInv[0] = new double[]{1.0648e+02, 0.0000e+00, 2.1919e+02};
+        tLeftInv[1] = new double[]{0.0000e+00, 1.0648e+02, 2.1869e+02};
+        tLeftInv[2] = new double[]{0.0000e+00, 0.0000e+00, 1.0000e+00};
+        
+        double[][] tRightInv = new double[3][3]; 
+        tRightInv[0] = new double[]{1.0695e+02, 0.0000e+00, 2.1531e+02};
+        tRightInv[1] = new double[]{0.0000e+00, 1.0695e+02, 2.1819e+02};
+        tRightInv[2] = new double[]{0.0000e+00, 0.0000e+00, 1.0000e+00};
+        double[][] tRightInvTranspose = MatrixUtil.transpose(tRightInv);
+        
+        tol = 1e-2;
+        //denormalized FM = transpose(T2) * FM_normalized * T1
+        double[][] dfm0Tst = MatrixUtil.multiply(MatrixUtil.transpose(tRight), fm0);
+        dfm0Tst = MatrixUtil.multiply(dfm0Tst, tLeft);
+        factor = 1./(dfm0Tst[2][2]);
+        double[][] dfm0Tst0 = MatrixUtil.copy(dfm0Tst);
+        MatrixUtil.multiply(dfm0Tst0, factor);
+        assertTrue(assertSimilar(dfm0, dfm0Tst0, tol));
+        
+        //FM_normalized = inverse(transpose(T2)) * denormalized FM * inverse(T1)
+        double[][] fm0Tst = MatrixUtil.multiply(tRightInvTranspose, dfm0Tst);
+        fm0Tst = MatrixUtil.multiply(fm0Tst, tLeftInv);
+        factor = 1./(fm0Tst[2][2]);
+        MatrixUtil.multiply(fm0Tst, factor);
+        // factor of 1.2 between them
+        //assertTrue(assertSimilar(fm00, fm0Tst, tol));
+        
+        double[][] dfm0Tst2 = MatrixUtil.multiply(MatrixUtil.transpose(tRight), fm0Tst);
+        dfm0Tst2 = MatrixUtil.multiply(dfm0Tst2, tLeft);
+        factor = 1./(dfm0Tst2[2][2]);
+        MatrixUtil.multiply(dfm0Tst2, factor);
+        assertTrue(assertSimilar(dfm0, dfm0Tst2, tol));
     }
-    
-    /*
-    public void _testNormalization() throws Exception {
-        
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        log.info("SEED=" + seed);
-        sr.setSeed(seed);
-        
-        EpipolarTransformer sTransformer = new EpipolarTransformer();
-        
-        int w = 300;
-        int h = 400;
-        
-        double eps = 0.00001;
-        
-        double sqrtTwo = Math.sqrt(2);
-        
-        //x_transformed = xc*s + ((x - xc)*s) + tX = x*s - xc
-        //y_transformed = yc*s + ((y - yc)*s) + tY = y*s - yc
-        
-        int nTests = 1;
-        int nPoints = 100;
-        
-        DenseMatrix xy = new DenseMatrix(3, nPoints);
-        
-        for (int i = 0; i < nTests; ++i) {
-            
-            for (int j = 0; j < nPoints; ++j) {
-                int x = sr.nextInt(w);
-                int y = sr.nextInt(h);
-                xy.set(0, j, x);
-                xy.set(1, j, y);
-                xy.set(2, j, 1);
-            }
-          
-            EpipolarTransformer.NormalizedXY normXY = EpipolarTransformer.normalize(xy);
-            
-            DenseMatrix xy2 = normXY.getXy();
-            assertEquals(nPoints, xy2.numColumns());
-            assertEquals(3, xy2.numRows());            
-                   
-            double avgDist = 0;
-            for (int j = 0; j < nPoints; ++j) {
-                double xt = xy2.get(0, j);
-                double yt = xy2.get(1, j);
-                // trnsformed center is 0,0 so their coords are their distances
-                avgDist += Math.sqrt(xt*xt + yt*yt);
-            }
-            avgDist /= (double)nPoints;
-            //System.out.println("mean dist^2=" + avgDist);
-            assertTrue(avgDist <= (sqrtTwo + eps));
-                       
-            // 3XN      3X3        3XN
-            //normXY = tMatrix dot xy
-            //  normXY * inv(tMatrix) = xy
-            DenseMatrix invT = algorithms.imageProcessing.util.MatrixUtil.inverse(
-                normXY.getNormalizationMatrix());
-            
-            DenseMatrix denorm = 
-                MatrixUtil.multiply(invT, normXY.getXy());
-            
-            for (int j = 0; j < nPoints; ++j) {
-                double x = xy.get(0, j);
-                double y = xy.get(1, j);
-                
-                double x2 = denorm.get(0, j);
-                double y2 = denorm.get(1, j);
-                
-                assertTrue(Math.abs(x - x2) < eps);
-                assertTrue(Math.abs(y - y2) < eps);
-                
-                //System.out.println("x=" + x + " y=" + y);
-                //System.out.println("    x2=" + x2 + " y2=" + y2);
+    private boolean assertSimilar(double[][] a, double[][] b, double tol) {
+        double diff;
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                diff = Math.abs(a[i][j] - b[i][j]);
+                if (diff > tol) {
+                    return false;
+                }
             }
         }
+        return true;
     }
     
-    
+     
     public void testMoreThan7Points() throws Exception {
             
         PairIntArray leftTrueMatches = new PairIntArray();
@@ -326,9 +315,9 @@ public class EpipolarTransformerTest extends TestCase {
 
         assertNotNull(normalizedFM);
         
-        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            normalizedFM, normXY1.getNormalizationMatrix(),
-            normXY2.getNormalizationMatrix());
+        DenseMatrix fm = spTransformer.denormalizeTheFundamentalMatrix(
+            normalizedFM, normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
                 
         
         boolean useToleranceAsStatFactor = true;//false;
@@ -402,9 +391,7 @@ public class EpipolarTransformerTest extends TestCase {
 
         assertNotNull(normalizedFMs);
         assertFalse(normalizedFMs.isEmpty());
-        
-        
-        
+                
         boolean useToleranceAsStatFactor = false;
         final double tolerance = 3;
         
@@ -418,9 +405,9 @@ public class EpipolarTransformerTest extends TestCase {
         int bestFitIdx = -1;
         
         for (DenseMatrix nfm : normalizedFMs) {
-            DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-                nfm, normXY1.getNormalizationMatrix(),
-                normXY2.getNormalizationMatrix());
+            DenseMatrix fm = spTransformer.denormalizeTheFundamentalMatrix(
+                nfm, normXY1.getNormalizationMatrices(),
+                normXY2.getNormalizationMatrices());
             denormalizedFMs.add(fm);
             
             EpipolarTransformationFit fit = null;
@@ -473,7 +460,7 @@ public class EpipolarTransformerTest extends TestCase {
             image1Width, image1Height, image2Width, image2Height, 
             "e_merton_college_7pts" + Integer.valueOf(0).toString()); 
     }
-    */
+    
     
     /*
     for more datasets:
