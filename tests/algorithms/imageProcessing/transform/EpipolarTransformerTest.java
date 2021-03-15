@@ -199,15 +199,30 @@ public class EpipolarTransformerTest extends TestCase {
         
         /*
         hartley 1997 house 
-        [junit] expected de-normalized FM=
-    [junit] 4.144e-06, -6.231e-05, 2.817e-02 
-    [junit] 2.684e-05, -4.437e-07, -3.188e-01 
-    [junit] -3.852e-02, 3.274e-01, 1.000e+00
         
-        before de-normalization:
-        [junit] 9.773e-02, 2.826e+00, 1.605e+00
-    [junit] -2.847e+00, -1.889e-01, -3.970e+00
-    [junit] -1.521e+00, 3.753e+00, -6.851e-02
+        temporary test until have external examples to test.
+        
+        checking that results of this code make sense in terms of the matrix operations
+        above.
+        
+            FM of Hartley 1997 in his publication:
+            [junit] 4.144e-06, -6.231e-05, 2.817e-02 
+            [junit] 2.684e-05, -4.437e-07, -3.188e-01 
+            [junit] -3.852e-02, 3.274e-01, 1.000e+00 
+            [junit] 
+            
+            this code's normalized FM=
+            [junit] -2.430e-03, -5.531e-02, 3.050e-02 
+            [junit] 6.257e-02, -4.565e-03, -7.036e-01 
+            [junit] -3.560e-03, 7.049e-01, -2.492e-04 
+            [junit] 
+            
+            this code's de-normalized FM=
+            [junit] 3.455e-06, 7.863e-05, -2.257e-02 
+            [junit] -8.895e-05, 6.490e-06, 1.246e-01 
+            [junit] 1.920e-02, -1.255e-01, 1.000e+00 
+        
+        paused here
         */
         
     }
