@@ -1497,6 +1497,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         H_left = | -e[1]/e[0]   1    0 |  =  | h21  1   0  |
                  | -1/e[0]      0    1 |     | h31  0   1  |
         where e is the left epipole here
+        (right camera principal point projected into left image.  
+        it's the smallest eigenvecto rin SVD(F).V)
         
         And for H_Right, need to solve homography for the rows 
         containing h21 and h31 for right matrix.
@@ -1591,15 +1593,15 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         for (int i = 0; i < 9; ++i) {
             B[i] = new double[7];
         }
-        B[0][0] = -hLeft[2][0];  B[0][3] = -hLeft[1][0]; B[0][6] = -_fm[0][0];
+        B[0][0] = -hLeft[2][0];  B[0][3] =  hLeft[1][0]; B[0][6] = -_fm[0][0];
         B[1][3] = 1;                                     B[1][6] = -_fm[0][1];
-        B[2][0] = -1;                                    B[2][6] = _fm[0][2];
-        B[3][1] = -hLeft[2][0];  B[3][4] = -hLeft[1][0]; B[3][6] = _fm[1][0];
-        B[4][4] = -1;                                    B[4][6] = _fm[1][1];
-        B[5][1] = -1;                                    B[5][6] = _fm[1][2];
-        B[6][2] = -hLeft[2][0];  B[6][5] = -hLeft[1][0]; B[6][6] = _fm[2][0];
-        B[7][5] = 1;                                     B[7][6] = _fm[2][1];
-        B[8][2] = -1;                                    B[8][6] = _fm[2][2];
+        B[2][0] = -1;                                    B[2][6] = -_fm[0][2];
+        B[3][1] = -hLeft[2][0];  B[3][4] =  hLeft[1][0]; B[3][6] = -_fm[1][0];
+        B[4][4] = 1;                                     B[4][6] = -_fm[1][1];
+        B[5][1] = -1;                                    B[5][6] = -_fm[1][2];
+        B[6][2] = -hLeft[2][0];  B[6][5] = hLeft[1][0]; B[6][6] = -_fm[2][0];
+        B[7][5] = 1;                                     B[7][6] = -_fm[2][1];
+        B[8][2] = -1;                                    B[8][6] = -_fm[2][2];
         
         SVDProducts svd = MatrixUtil.performSVD(B);
         
@@ -1607,6 +1609,10 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         assert(n == 7);
         assert(svd.vT[0].length == 7);
 
+        // u is 9x9. v is 7x7
+        
+  //paused here.  reviewing for error above 
+  
         // dimensions of V are nxn and n=7.  smallest eigenvector is last row of v^T and A
         double[] p = new double[n];
         for (int i = 0; i < n; i++) {          
@@ -1623,10 +1629,16 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         hRight[1] = new double[]{p[0], p[1], p[2]};
         hRight[2] = new double[]{p[3], p[4], p[5]};
         
+        // e2^T*h2   = [1X3] * [3X3] = [1X3]
+        double[] e2Th2 = MatrixUtil.multiplyRowVectorByMatrix(
+            fEpipoles[1], hRight);
+        System.out.printf("e2^T * h2 = (expecting [%.4e,0,0])\n  %s\n", 
+            fEpipoles[1][0], FormatArray.toString(e2Th2, "%.4e"));
+        
         double[][] frect = new double[3][3];
         frect[0] = new double[]{0, 0, 0};
         frect[1] = new double[]{0, 0, -1};
-        frect[2]= new double[]{0, 1, 0}; 
+        frect[2] = new double[]{0, 1, 0}; 
         
         double[][] fCheck = MatrixUtil.multiply(
             MatrixUtil.transpose(hRight), frect);
