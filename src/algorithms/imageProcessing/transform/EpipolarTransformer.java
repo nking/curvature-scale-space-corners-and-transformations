@@ -188,9 +188,12 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
        performing operations on a sequence of matrices such as inverse
        and transpose operations.
 
-    translation matrix: inverse changes the signs of the elements.
+    translation matrix: inverse changes the signs of the translation elements,
+        but not the diagonal
 
     rotation matrix: inverse is the transpose of rotation matrix.
+     
+    scaling matrix: inverse is performed on each element, that is, the reciprocal.
 
     (A*B*C)^-1 = (C^-1) * (B^-1) * (A^-1)
 
@@ -211,7 +214,7 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
      u1_normalized = T1 * u1 
      u2_normalized = T2 * u2 
 
-     denormalization should be : T2^T * F_normalized * T1 which is in the corrected code.
+     denormalized F = T2^T * F_normalized * T1
 
      denormalized u1 = T1^-1 * u1_normalized and similar foru2
 

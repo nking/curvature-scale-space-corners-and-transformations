@@ -498,9 +498,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         transformation in the neighbourhood of u0.
         */
         
-        printMallonWhelanStereoRectification(_fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
+        //printMallonWhelanStereoRectification(_fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
-        printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
+        //printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
         // a quick look at
         // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
@@ -1308,6 +1308,13 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         DenseMatrix x1M, DenseMatrix x2M, 
         double focalLength, double xC, double yC) throws NotConvergedException {
         
+        //TODO: apply this to a stereo image set which have not been recitifed
+        
+        /*
+        Monasse, Morel, and Tang 2011
+        "Three-step image rectification"
+        https://core.ac.uk/download/pdf/48342838.pdf
+        */
         double[][] _fm = MatrixUtil.convertToRowMajor(fm);
         double[] fme = MatrixUtil.multiplyMatrixByColumnVector(_fm, fEpipoles[0]);
         double[] fmTe2 = MatrixUtil.multiplyMatrixByColumnVector(
@@ -1464,7 +1471,9 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         double[][] _fm, double[][] fEpipoles,
         DenseMatrix x1M, DenseMatrix x2M, 
         double focalLength, double xC, double yC) throws NotConvergedException {
-        
+ 
+        //TODO: apply this to a true stereo image pair  that haven't been recitifed yet
+ 
         /*
         
         Mallon & Whelan 2005, "Projective Rectification from the Fundamental Matrix"
@@ -1562,7 +1571,6 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
            p6 - p7 * f32 = 0
            -p3 - p7 * f33 = 0
 
-        
         write out B as factor of the 7 p terms, 9X7:
           p1     p2     p3     p4      p5     p6      p7
         -----    ----  ----   -----   -----   ----   -----
@@ -1593,17 +1601,32 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         for (int i = 0; i < 9; ++i) {
             B[i] = new double[7];
         }
+        /*
+ right: h21    h22    h23   h31      h32    h33     alpha
+        p1     p2     p3     p4      p5     p6      p7
+        -----  ----  ----   -----   -----   ----   -----
+         -h31                h21                   -f11
+                             1                     -f12
+        -1                                         -f13
+               -h31                  h21           -f21
+                                      1            -f22
+               -1                                  -f23
+                     -h31                  h21     -f31
+                                           1       -f32
+                     -1                            -f33
+        */
         B[0][0] = -hLeft[2][0];  B[0][3] =  hLeft[1][0]; B[0][6] = -_fm[0][0];
         B[1][3] = 1;                                     B[1][6] = -_fm[0][1];
         B[2][0] = -1;                                    B[2][6] = -_fm[0][2];
         B[3][1] = -hLeft[2][0];  B[3][4] =  hLeft[1][0]; B[3][6] = -_fm[1][0];
         B[4][4] = 1;                                     B[4][6] = -_fm[1][1];
         B[5][1] = -1;                                    B[5][6] = -_fm[1][2];
-        B[6][2] = -hLeft[2][0];  B[6][5] = hLeft[1][0]; B[6][6] = -_fm[2][0];
+        B[6][2] = -hLeft[2][0];  B[6][5] =  hLeft[1][0]; B[6][6] = -_fm[2][0];
         B[7][5] = 1;                                     B[7][6] = -_fm[2][1];
         B[8][2] = -1;                                    B[8][6] = -_fm[2][2];
         
         SVDProducts svd = MatrixUtil.performSVD(B);
+        System.out.printf("SVD(B).s=%s\n", FormatArray.toString(svd.s, "%.3e"));
         
         int n = svd.vT.length;
         assert(n == 7);
