@@ -8,6 +8,7 @@ import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
+import algorithms.imageProcessing.transform.Reconstruction.ReconstructionResults;
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.QAndR;
 import algorithms.matrix.MatrixUtil.SVDProducts;
@@ -128,14 +129,13 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         EpipolarTransformer tr = new EpipolarTransformer();
         EpipolarTransformationFit fit = null;
         
-        /*        
+                
         RANSACSolver solver = new RANSACSolver();
         fit = solver.calculateEpipolarProjection(
             leftM, rightM, 
             errorType, useToleranceAsStatFactor, tolerance,
             reCalcIterations);
-        */
-        
+        /*
         normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
         if (useToleranceAsStatFactor) {
             fit = distances.calculateError2(normalizedFM,
@@ -145,7 +145,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             fit = distances.calculateError(normalizedFM,
                 normXY1.getXy(), normXY2.getXy(),
                 errorType, tolerance);
-        }
+        }*/
         
         System.out.printf("FM=\n%s\n", 
             FormatArray.toString(fit.getFundamentalMatrix(), "%.3e"));
@@ -254,13 +254,13 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         /*
         NOTE: because we know ahead of time that the objects to match in the
-        images have corners (unlike the android statues), one could use a 
+        images have corners (unlike the round android statues), one could use a 
         corner detector and then HOGs to make a correspondence list.
         
-        If the objects do not necessarily have corners, this project has
+        In cases that do not have corners, this project has
         code to use MSER to find candidate objects, then HOGs to match
-        those.   One could make a correspondence list after that if still
-        useful.
+        those.   One could make a correspondence list after those matches
+        (and the projection derived from them) if needed.
         */
         
         /*
@@ -315,10 +315,10 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         DenseMatrix rightM = normXY2.getXy();
         double leftScale = 1./normXY1.getNormalizationMatrices().t[0][0];
         double rightScale = 1./normXY2.getNormalizationMatrices().t[0][0];
-        System.out.printf("Left: Scale=%.3e, xc=%.3e yc=%.3e\n",
+        System.out.printf("Left pts normalization: Scale=%.3e, xc=%.3e yc=%.3e\n",
             leftScale, -1.*leftScale*normXY1.getNormalizationMatrices().t[0][2],
             -1.*leftScale*normXY1.getNormalizationMatrices().t[1][2]);
-        System.out.printf("Right: Scale=%.3e, xc=%.3e yc=%.3e\n",
+        System.out.printf("Right pts normalization: Scale=%.3e, xc=%.3e yc=%.3e\n",
             rightScale, -1.*rightScale*normXY2.getNormalizationMatrices().t[0][2],
             -1.*rightScale*normXY2.getNormalizationMatrices().t[1][2]);
         //System.out.printf("Tnorm1=\n%s\n", 
@@ -359,6 +359,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
               
         x1M = extractIndices(x1M, fitR.inlierIndexes);
         x2M = extractIndices(x2M, fitR.inlierIndexes);
+        x1 = MatrixUtil.convertToRowMajor(x1M);
+        x2 = MatrixUtil.convertToRowMajor(x2M);
         
         System.out.println("RANSAC fit=" + fitR.toString());
         
@@ -394,6 +396,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         System.out.printf("de-normalized FM=\n%s\n", 
             FormatArray.toString(fm, "%.4e"));
         double[][] fEpipoles = tr.calculateEpipoles(fm);
+        
         
         //nPoints X nPoints
         double[][] x2TFx1 = MatrixUtil.multiply(
@@ -502,124 +505,12 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         //printMonasseRectification(fm, fEpipoles, x1M, x2M, focalLength, xC, yC);
         
-        // a quick look at
-        // http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
-        
-        double[][] kInv = MatrixUtil.pseudoinverseFullRank(k);
-        //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(k);
-        
-        double[][] k2TF = MatrixUtil.multiply(kInv, _fm);
-        double[][] k2T_F_K1 = MatrixUtil.multiply(k2TF, k);
-        double[][] _essentialM = k2T_F_K1;
-        System.out.printf("E=\n%s\n", FormatArray.toString(_essentialM, "%.3e"));
-        
-        /*
-        3 by 4 matrix P = K * [R | T]
-        
-        M_intr is K with negative focal lengths
-                     | -f_x      0  o_x |
-            M_intr = |    0   -f_y  o_y |
-                     |    0      0    1 |
-        
-        M_extr = [R | T ].  can see DOF=11
-                  | r00  r01  r02  t_x |     | R_0^T  t_x |
-               =  | r10  r11  r12  t_y |  =  | R_1^T  t_y |
-                  | r20  r21  r22  t_z |     | R_2^T  t_z |
-        
-        projective matrix is P, called M here
-            M = M_intr * M_extr
-                
-        using projective space:
-           | u |                      | X_w |
-           | v | =  M_intr * M_extr * | Y_w |
-           | w |                      | Z_w |
-                                      |   1 |
-        where x_img = u/w
-              y_img = v/w
-        */
-
-        /*
-        from Szeliski Sect 7.2 Structure From Motion:
-        Note that the absolute distance between the two cameras can never be recovered
-        from pure image measurements alone, regardless of how many cameras or points
-        are used. Knowledge about absolute camera and point positions or distances,
-        often called ground control points in photogrammetry, is always required to
-        establish the final scale, position, and orientation.
-                */
         
         // roughly, would expect for the projection, 
         //    a translation in x of about 100-150 pixels at image plane
         //   and a rotation around y between 30 and 45 degrees.
         // After have applied a scaling of the image by factor 1./7.875
         
-        
-        SVDProducts svdE = MatrixUtil.performSVD(_essentialM);
-        
-        assert(svdE.u[0].length == 3 && svdE.u.length == 3);
-
-        System.out.printf("SVD.u=\n%s", FormatArray.toString(svdE.u, "%.3e"));
-        System.out.printf("det(SVD.u)=%.2f\n", MatrixUtil.determinant(svdE.u));
-        System.out.printf("SVD.vT=\n%s", FormatArray.toString(svdE.vT, "%.3e"));
-        System.out.printf("det(SVD.vT)=%.2f\n", MatrixUtil.determinant(svdE.vT));
-        
-        // same as Hartley1992's E^T
-        double[][] w = new double[3][3];
-        w[0] = new double[]{0, -1, 0};
-        w[1] = new double[]{1, 0, 0};
-        w[2] = new double[]{0, 0, 1};
-        double[][] eH92 = MatrixUtil.transpose(w);
-        double[][] zH92 = new double[3][3];
-        zH92[0] = new double[]{0, -1, 0};
-        zH92[1] = new double[]{1, 0, 0};
-        zH92[2] = new double[]{0, 0, 0};
-
-        double[][] R1 = MatrixUtil.multiply(svdE.u, w);
-        R1 = MatrixUtil.multiply(R1, svdE.vT);
-
-        double[][] R2 = MatrixUtil.multiply(svdE.u, MatrixUtil.transpose(w));
-        R2 = MatrixUtil.multiply(R2, svdE.vT);
-
-        DenseMatrix uM = new DenseMatrix(svdE.u);
-        double[] t1 = Matrices.getColumn(uM, 2).getData();
-
-        double[] t2 = Matrices.getColumn(uM, 2).getData();
-        MatrixUtil.multiply(t2, -1);
-        
-        // R1Hartley92 is the same as R2 of Kitani's lecture notes
-        // R2Hartley92 is the same as R1 of Kitani's lecture notes
-        double[][] R1Hartley92 = MatrixUtil.multiply(svdE.u, eH92);
-        R1Hartley92 = MatrixUtil.multiply(R1Hartley92, svdE.vT);
-        double[][] R2Hartley92 = MatrixUtil.multiply(svdE.u, w);
-        R2Hartley92 = MatrixUtil.multiply(R2Hartley92, svdE.vT);
-        double[][] SHartley92 = MatrixUtil.multiply(MatrixUtil.transpose(svdE.vT), zH92);
-        SHartley92 = MatrixUtil.multiply(SHartley92, svdE.vT);
-        double[][] Q1Hartley92 = MatrixUtil.multiply(R1Hartley92, SHartley92);
-        double[][] Q2Hartley92 = MatrixUtil.multiply(R2Hartley92, SHartley92);
-        
-        // solution 1:  R1 and T1
-        // solution 2:  R1 and T2
-        // solution 3:  R2 and T2
-        // solution 4:  R2 and T1
-
-        // valid equation has det(R) = 1 (rotation and reflection)
-        double detR1 = MatrixUtil.determinant(R1);
-        double detR2 = MatrixUtil.determinant(R2);
-
-        //Compute 3D point using triangulation, valid solution has positive Z value
-        // (Note: negative Z means point is behind the camera )
-
-        System.out.printf("R1=\n%s\n", FormatArray.toString(R1, "%.3e"));
-        System.out.printf("R2=\n%s\n", FormatArray.toString(R2, "%.3e"));
-        System.out.printf("t1=\n%s\n", FormatArray.toString(t1, "%.3e"));
-        System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
-        System.out.printf("det(R1)=%.3e\n", detR1);
-        System.out.printf("det(R2)=%.3e\n\n", detR2);
-        System.out.printf("R1_Hartly92=\n%s\n", FormatArray.toString(R1Hartley92, "%.3e"));
-        System.out.printf("R2_Hartely92=\n%s\n", FormatArray.toString(R2Hartley92, "%.3e"));
-        System.out.printf("S_Hartly92=\n%s\n", FormatArray.toString(SHartley92, "%.3e"));
-        System.out.printf("Q1_Hartly92=\n%s\n", FormatArray.toString(Q1Hartley92, "%.3e"));
-        System.out.printf("Q2_Hartly92=\n%s\n", FormatArray.toString(Q2Hartley92, "%.3e"));
-        System.out.flush();
         
         
         // editing
@@ -647,7 +538,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             |     0       0    1 |    |     0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |        
         */
         
-        
+        /*
         //DenseMatrix p2 = tr.pFromF(fm);
         DenseMatrix p2 = tr.pFromF(new DenseMatrix(_essentialM));
         System.out.printf("P2=\n%s\n",  FormatArray.toString(p2, "%.3e"));
@@ -663,83 +554,16 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             // smallest eigenvalue's eigenvector in svdP is the
             //   camera center c (or rather, c*R I think...)
             
-        }
+        }*/
                 
         // p1 = [I | 0]; p2 = [ [e2]_x * F | e2 ]
         // x1 = P1*X
         // x2 = P2*X
-        //  ====> X = pseudoInv(p2) * x2
-        //            4X3 3XN --> 4XN
+       
+        // paused here
+        ReconstructionResults rr = Reconstruction.calculateReconstruction(k, k, x1, x2);
+        double[] T = rr.k2ExtrTrans;
         
-        //pseudoinverse(A) = inverse(A^T*A) * A^T
-        double[][] p2Inv = MatrixUtil.pseudoinverseFullRank(MatrixUtil.convertToRowMajor(p2));
-        
-        double[][] XW = MatrixUtil.multiply(p2Inv, 
-            MatrixUtil.convertToRowMajor(x2M));
-        System.out.printf("X from inv(P2)*x2=\n%s\n", FormatArray.toString(XW, " %.0f"));
-        
-        // save the first that pass the tests for Z>=0.
-        double[][] R = null;
-        double[] T = null;
-        String goodSolnLabel = null;
-        
-        boolean goodSoln, allZsPos;
-        XW = transformx(R1, t1, x2M);
-        allZsPos = allZsArePositive(XW);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
-        System.out.printf("Good Solution=%b\nX from inv(|[R1|t1])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R1, T1";
-            R = R1;
-            T = t1;
-        } 
-        
-        XW = transformx(R1, t2, x2M);
-        allZsPos = allZsArePositive(XW);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
-        System.out.printf("Good Solution=%b\nX from inv(|[R1|t2])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R1, T2";
-            R = R1;
-            T = t2;
-        } 
-        
-        XW = transformx(R2, t1, x2M);
-        allZsPos = allZsArePositive(XW);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
-        System.out.printf("Good Solution=%b\nX from inv(|[R2|t1])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R2, T1";
-            R = R2;
-            T = t1;
-        } 
-        
-        XW = transformx(R2, t2, x2M);
-        allZsPos = allZsArePositive(XW);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && allZsPos;
-        System.out.printf("Good Solution=%b\nX from inv(|[R2|t2])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R2, T2";
-            R = R2;
-            T = t2;
-        } 
-        
-        // check the components of this one
-        double estimatedRotP2 = Math.atan(p2.get(0, 2)/p2.get(0, 0)) * (180./Math.PI);
-        System.out.printf("estimated rotation about y axis from P2=%.2f\n", estimatedRotP2);
-        
-        if (R == null) {
-            //TODO: wrap the solution finiding in a retry.  may need a retry loop for adjusting f
-            // once a good solution is found too.
-            return;
-        }
-        System.out.println("choosing solution: " + goodSolnLabel);
-        //double estimatedRotY = Math.atan(R[0][2]/R[0][0]) * (180./Math.PI);
-        double estimatedRotY = Math.atan(-R[2][0]/R[2][2]) * (180./Math.PI);
-        System.out.printf("estimated rotation about y axis from R=%.2f\n", estimatedRotY);
-        System.out.flush();
-        
-                
         /* http://www.cs.cmu.edu/~16385/s17/Slides/13.1_Stereo_Rectification.pdf
         1. Compute E to get R
               Estimate E using the 8 point algorithm (SVD)
@@ -752,9 +576,17 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         4. Scale both images by H
               ?? Rectified points as p = f/z’[x’ y’ z’]
         */
+         
+        
+        System.out.printf("K for 512x384=\n%s\n", FormatArray.toString(k, "%.3e"));
+        
+        //Essential matrix: E = K2^T * FM * K1
+        double[][] k2T = MatrixUtil.transpose(k);
+        double[][] _essentialM = MatrixUtil.multiply(k2T, _fm);
+        _essentialM = MatrixUtil.multiply(_essentialM, k);
         
         double[][] eEpipoles = tr.calculateEpipoles(new DenseMatrix(_essentialM));
-        
+                
         double normForT = Math.sqrt(T[0]*T[0] + T[1]*T[1] + T[2]*T[2]);
         double rRect2Denom = Math.sqrt(T[0]*T[0] + T[1]*T[1]);
         double[] rRect1 = new double[]{T[0]/normForT, T[1]/normForT, T[2]/normForT};
@@ -1290,18 +1122,6 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             out[i][a[0].length] = b[i];
         }
         return out;
-    }
-
-    private boolean allZsArePositive(double[][] XW) {
-        return allOfDimensionArePositive(XW, 2);
-    }
-    private boolean allOfDimensionArePositive(double[][] XW, final int dimension) {
-        for (int i = 0; i < XW[0].length; ++i) {
-            if (XW[dimension][i] < 0) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private void printMonasseRectification(DenseMatrix fm, double[][] fEpipoles, 

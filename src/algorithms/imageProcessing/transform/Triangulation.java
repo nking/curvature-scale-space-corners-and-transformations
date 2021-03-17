@@ -46,10 +46,11 @@ public class Triangulation {
     /**
      * given the camera matrix as intrinsic and extrinsic matrices for 2 images
      * and given the matching correspondence of points between the 2 images,
-     * calculate the real world coordinates.
+     * calculate the real world coordinate of the observations.
      * 
      * <pre>
-     * 
+     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     * add references here
      * </pre>
      * @param k1 intrinsic camera matrix for image 1 in units of pixels.
      * @param r1 the rotation matrix for the extrinsic camera matrix for image 1.
@@ -58,12 +59,12 @@ public class Triangulation {
      * @param r2 the rotation matrix for the extrinsic camera matrix for image 2.
      * @param t2 the translation vector for the extrinsic camera matrix for image 2.
      * @param x1 the image 1 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
+     * N is the number of points.  all points are observations of real world point X.
      * @param x2 the image 2 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
+     * N is the number of points. .  all points are observations of real world point X.
      * @return 
      */
-    public static double[][] calculateWCSPoints(
+    public static double[] calculateWCSPoints(
         double[][] k1, double[][] r1, double[] t1,
         double[][] k2, double[][] r2, double[] t2,
         double[][] x1, double[][] x2) {
@@ -95,11 +96,14 @@ public class Triangulation {
         }
         
         /*
+        following CMU lectures of Kris Kitani:
+        http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+        
         camera matrix P = intrinsic camera matrix times extrinsic camera matrix.
         
-        note that the extrinsic matrix has a trnaslation component, and that
-        translation is not a linear transformation (see String chap 7), so
-        the translation is kept seperate in most use of it to allow further operation
+        note that the extrinsic matrix has a translation component, and that
+        translation is not a linear transformation (see Strang chap 7), so
+        the translation is kept seperate in most use of it to allow further operations
         to be performed that require rotation and translation to be treated separately.
         
         K = intrinsic camera matrix.
@@ -109,7 +113,7 @@ public class Triangulation {
         the '|' is a seperation symbol in the matrix to denotate that the 
             content to the right of it is concatenated to the matrix as column vectors.
         
-        Note that the world coordinates can be seen to go through a trnaslation
+        Note that the world coordinates can be seen to go through a translation
         then a rotation represented by the extrinsic camera matrix to result in
         homogenous coordinates in the camera reference frame.
             X_c = R * (X_wcs - t)
@@ -199,7 +203,7 @@ public class Triangulation {
         
         double u1x, u1y, u2x, u2y;
         double[] tmp;
-        double[][] a = new double[4*n][1];
+        double[][] a = new double[4*n][4];
         for (int i = 0; i < 4*n; i+=4) {
             u1x = x1[0][i];
             u1y = x1[1][i];
@@ -227,10 +231,12 @@ public class Triangulation {
             a[i+3] = MatrixUtil.subtract(camera2[0], tmp);
         }
         
+        // A is  N X 4
+        // A^T*A is 4 X 4
         //TODO: make an efficient multiplier for a^T*a in MatrixUtil:
         double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(a), a);
-        assert(aTa.length == 4*n);
-        assert(aTa[0].length == 4*n);
+        assert(aTa.length == 4);
+        assert(aTa[0].length == 4);
         
         SVD svd = null;
         try {
@@ -241,24 +247,11 @@ public class Triangulation {
         }
         
         double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());
-        assert(vT.length == 4*n);
-        assert(vT[0].length == 4*n);
+        assert(vT.length == 4);
+        assert(vT[0].length == 4);
         
         // eigenvector corresponding to smallest eigenvector is last row in svd.V^T
-        double[][] X = new double[4][n];
-        for (int i = 0; i < 4; ++i) {
-            X[i] = new double[n];
-        }
-        
-        // write down each column of X before proceeding to next row
-        int c = 0;
-        int nl = vT.length - 1;
-        for (int i = 0; i < n; ++i, c+=4) {
-            X[0][i] = vT[nl][c];
-            X[1][i] = vT[nl][c + 1];
-            X[2][i] = vT[nl][c + 2];
-            X[3][i] = vT[nl][c + 3];
-        }
+        double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);
         
         return X;
     }
@@ -297,7 +290,7 @@ public class Triangulation {
         for (int i = 0; i < 3; ++i) {
             kExtr[i] = new double[4];
             System.arraycopy(r[i], 0, kExtr[i], 0, 3);
-            kExtr[i][4] = rt[i];
+            kExtr[i][3] = rt[i];
         }
         
         double[][] p = MatrixUtil.multiply(k, kExtr);
