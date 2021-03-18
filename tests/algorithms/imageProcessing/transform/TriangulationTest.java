@@ -150,13 +150,13 @@ public class TriangulationTest extends TestCase {
      * Test of calculateWCSPoint method, of class Triangulation.
      */
     public void testCalculateWCSPoint2() {
-        /*
-        test data from:
-        http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
         
-        choosing a point that is in left01.jpg and right01.jpg
-        (307, 159)  (184, 172)
-        */
+        //test data from:
+        //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html        
+        // "Fifth calibration example - Calibrating a stereo system, stereo image rectification and 3D stereo triangulation"
+        // by Jean-Yves Bouguet
+        // Camera Calibration Toolbox for Matlab
+        
         double[][] k1Intr = Triangulation.createIntrinsicCameraMatrix(533.07, 341.6, 234.3);
         double[][] k2Intr = Triangulation.createIntrinsicCameraMatrix(536.7, 326.5, 249.3);
         
@@ -169,14 +169,13 @@ public class TriangulationTest extends TestCase {
         
         System.out.printf("k2ExtrRot\n=%s\n", FormatArray.toString(k2ExtrRot, "%.3e"));
         
-        
-        // line 3 last point in image 1
+        //choosing a point that is in left01.jpg and right01.jpg
+        //(307, 159)  (184, 172)
         double[][] x1 = new double[3][1];
         x1[0] = new double[]{307};
         x1[1] = new double[]{159};
         x1[2] = new double[]{1};
         
-        // line 3 last point in image 2
         double[][] x2 = new double[3][1];
         x2[0] = new double[]{184};
         x2[1] = new double[]{172};
