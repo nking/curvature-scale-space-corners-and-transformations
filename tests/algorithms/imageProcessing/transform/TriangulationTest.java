@@ -172,14 +172,14 @@ public class TriangulationTest extends TestCase {
         
         // line 3 last point in image 1
         double[][] x1 = new double[3][1];
-        x1[0] = new double[]{169.96948547603384};
-        x1[1] = new double[]{444.042108267029};
+        x1[0] = new double[]{307};
+        x1[1] = new double[]{159};
         x1[2] = new double[]{1};
         
         // line 3 last point in image 2
         double[][] x2 = new double[3][1];
-        x2[0] = new double[]{183.11454542957057};
-        x2[1] = new double[]{443.2278534824685};
+        x2[0] = new double[]{184};
+        x2[1] = new double[]{172};
         x2[2] = new double[]{1};
                         
         double[] xw = Triangulation.calculateWCSPoint(
@@ -194,9 +194,41 @@ public class TriangulationTest extends TestCase {
         //     = (99*534)/((341-169.97)-(326.5-183.1))
         //     = 1913
         //
-        // Also, xw is 2.8271e-01, -3.5573e-01, 8.9081e-01, 1.8453e-04
-        //   xw[0]/xw[3], xw[1]/xw[3], xw[2]/xw[3] 
-        //     = 558.906764876914, -659.9922465594108, 1734.7354138398914
+        // Also, xw=-6.414e-02, -1.390e-01, -9.882e-01, 1.933e-03
+        //   xw[0]/xw[3], xw[1]/xw[3], xw[2]/xw[3] =
+        //     = -33.18158303155717, -71.9089498189343, -511.2260734609415
+        // The value 511 fits with their figure
+    
+        MatrixUtil.multiply(xw, 1./xw[xw.length - 1]);
+        System.out.printf("   =%s\n\n", FormatArray.toString(xw, "%.3e"));
         
+        assertTrue(Math.abs(Math.abs(xw[2]) - 425) < 100);
+        
+        //a correspondence closer to middle of image 1: (345, 188)  (215,238)
+        x1 = new double[3][1];
+        x1[0] = new double[]{345};
+        x1[1] = new double[]{188};
+        x1[2] = new double[]{1};
+        
+        // line 3 last point in image 2
+        x2 = new double[3][1];
+        x2[0] = new double[]{215};
+        x2[1] = new double[]{238};
+        x2[2] = new double[]{1};
+                        
+        xw = Triangulation.calculateWCSPoint(
+            k1Intr, k1ExtrRot, k1ExtrTrans,
+            k2Intr, k2ExtrRot, k2ExtrTrans,
+            x1, x2);
+        
+        System.out.printf("xw=%s\n\n", FormatArray.toString(xw, "%.3e"));
+        
+        //xw=6.670e-03, -5.187e-02, -9.986e-01, 2.102e-03
+        // xw[0]/xw[3], xw[1]/xw[3], xw[2]/xw[3] = (3.173168411037107, -24.676498572787818, -475.07136060894385)
+    
+        MatrixUtil.multiply(xw, 1./xw[xw.length - 1]);
+        System.out.printf("   =%s\n\n", FormatArray.toString(xw, "%.3e"));
+        
+        assertTrue(Math.abs(Math.abs(xw[2]) - 425) < 100);
     }
 }
