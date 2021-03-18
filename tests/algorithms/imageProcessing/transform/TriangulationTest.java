@@ -187,10 +187,16 @@ public class TriangulationTest extends TestCase {
             k2Intr, k2ExtrRot, k2ExtrTrans,
             x1, x2);
         
-        // expecting Z near 400
-        //   get depth from disparity...
-        
         System.out.printf("xw=%s\n\n", FormatArray.toString(xw, "%.3e"));
          
+        // very rough depth from disparity without rectification
+        //   z = (baseline * focalLength) / (differences of x displacements from centers of their images)
+        //     = (99*534)/((341-169.97)-(326.5-183.1))
+        //     = 1913
+        //
+        // Also, xw is 2.8271e-01, -3.5573e-01, 8.9081e-01, 1.8453e-04
+        //   xw[0]/xw[3], xw[1]/xw[3], xw[2]/xw[3] 
+        //     = 558.906764876914, -659.9922465594108, 1734.7354138398914
+        
     }
 }
