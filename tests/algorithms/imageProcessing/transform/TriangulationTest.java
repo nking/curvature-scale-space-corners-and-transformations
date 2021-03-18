@@ -157,11 +157,11 @@ public class TriangulationTest extends TestCase {
         choosing a point that is in left01.jpg and right01.jpg
         (307, 159)  (184, 172)
         */
-        double[][] k1Intr = Triangulation.createIntrinsicCameraMatrix(-533.07, 341.6, 234.3);
-        double[][] k2Intr = Triangulation.createIntrinsicCameraMatrix(-536.7, 326.5, 249.3);
+        double[][] k1Intr = Triangulation.createIntrinsicCameraMatrix(533.07, 341.6, 234.3);
+        double[][] k2Intr = Triangulation.createIntrinsicCameraMatrix(536.7, 326.5, 249.3);
         
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
-        double[] k1ExtrTrans = new double[]{0, 0, 1}; // check this
+        double[] k1ExtrTrans = new double[]{0, 0, 0};
         
         double[][] k2ExtrRot = Triangulation.createRodriguesFormulaRotationMatrix(
             new double[]{0.00611, 0.00409, -0.00359});
@@ -185,6 +185,8 @@ public class TriangulationTest extends TestCase {
             k1Intr, k1ExtrRot, k1ExtrTrans,
             k2Intr, k2ExtrRot, k2ExtrTrans,
             x1, x2);
+        
+        // expecting Z
         
         System.out.printf("xw=%s\n", FormatArray.toString(xw, "%.3e"));
             

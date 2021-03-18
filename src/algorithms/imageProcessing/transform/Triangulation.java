@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -275,7 +276,22 @@ public class Triangulation {
         // eigenvector corresponding to smallest eigenvector is last row in svd.V^T
         double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);
         
-        //TODO: determine scale factor alpha presumably
+
+        System.out.printf("x1=\n%s\n", FormatArray.toString(x1, "%.4e"));
+        System.out.printf("camera1=\n%s\n", FormatArray.toString(camera1, "%.4e"));
+        System.out.printf("X=\n%s\n", FormatArray.toString(X, "%.4e"));
+        
+        
+        double[] x1Rev = MatrixUtil.multiplyMatrixByColumnVector(camera1, X);
+        
+        double[] x2Rev = MatrixUtil.multiplyMatrixByColumnVector(camera2, X);
+        
+        double alpha = ((1./x1Rev[2]) + (1./x2Rev[2]))/2.;
+        
+        System.out.printf("x1Rev=\n%s\n", FormatArray.toString(x1Rev, "%.4e"));
+        System.out.printf("x2Rev=\n%s\n", FormatArray.toString(x2Rev, "%.4e"));
+        
+        MatrixUtil.multiply(X, alpha);
                 
         return X;
     }
