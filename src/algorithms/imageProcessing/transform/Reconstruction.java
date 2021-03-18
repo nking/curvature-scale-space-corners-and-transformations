@@ -177,45 +177,15 @@ public class Reconstruction {
         double[][] Q1Hartley92 = MatrixUtil.multiply(R1Hartley92, SHartley92);
         double[][] Q2Hartley92 = MatrixUtil.multiply(R2Hartley92, SHartley92);
         */
-        
-        // solution 1:  R1 and T1
-        // solution 2:  R1 and T2
-        // solution 3:  R2 and T2
-        // solution 4:  R2 and T1
-        double[][] rSelected = MatrixUtil.zeros(3, 3);
-        double[] tSelected = new double[3];
-        double[] XW = chooseRAndT(x1, x2, k1, k2,
-            R1, R2, t1, t2, rSelected, tSelected);
-        editing
-        if (XW == null) {
-            return null;
-        }
-        
-        double[][] i3 = new double[3][3];
-        for (int i = 0; i < 3; ++i) {
-            i3[i] = new double[3];
-            i3[i][i] = 1;
-        }
-        
-        ReconstructionResults rr = new ReconstructionResults();
-        rr.XW = XW;
-        rr.k2ExtrRot = rSelected;
-        rr.k2ExtrTrans = tSelected;
-        rr.k2Intr = k2;
-        rr.k1ExtrRot = i3;
-        rr.k1ExtrTrans = new double[tSelected.length];
-        rr.k1Intr = k1;
-
-        //Compute 3D point using triangulation, valid solution has positive Z value
-        // (Note: negative Z means point is behind the camera )
-        /*
+        double detR1 = MatrixUtil.determinant(R1);
+        double detR2 = MatrixUtil.determinant(R2);
         System.out.printf("R1=\n%s\n", FormatArray.toString(R1, "%.3e"));
         System.out.printf("R2=\n%s\n", FormatArray.toString(R2, "%.3e"));
         System.out.printf("t1=\n%s\n", FormatArray.toString(t1, "%.3e"));
         System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
         System.out.printf("det(R1)=%.3e\n", detR1);
         System.out.printf("det(R2)=%.3e\n\n", detR2);
-        System.out.printf("R1_Hartly92=\n%s\n", FormatArray.toString(R1Hartley92, "%.3e"));
+        /*System.out.printf("R1_Hartly92=\n%s\n", FormatArray.toString(R1Hartley92, "%.3e"));
         System.out.printf("R2_Hartely92=\n%s\n", FormatArray.toString(R2Hartley92, "%.3e"));
         System.out.printf("S_Hartly92=\n%s\n", FormatArray.toString(SHartley92, "%.3e"));
         System.out.printf("Q1_Hartly92=\n%s\n", FormatArray.toString(Q1Hartley92, "%.3e"));
@@ -223,7 +193,29 @@ public class Reconstruction {
         System.out.flush();
         */
         
-        return null;
+        // solution 1:  R1 and T1
+        // solution 2:  R1 and T2
+        // solution 3:  R2 and T2
+        // solution 4:  R2 and T1
+        double[][] rSelected = MatrixUtil.zeros(3, 3);
+        double[] tSelected = new double[3];
+        double[][] XW = chooseRAndT(x1, x2, k1, k2,
+            R1, R2, t1, t2, rSelected, tSelected);
+        
+        if (XW == null) {
+            return null;
+        }
+                
+        ReconstructionResults rr = new ReconstructionResults();
+        rr.XW = XW;
+        rr.k2ExtrRot = rSelected;
+        rr.k2ExtrTrans = tSelected;
+        rr.k2Intr = k2;
+        rr.k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
+        rr.k1ExtrTrans = new double[tSelected.length];
+        rr.k1Intr = k1;
+
+        return rr;
     }
 
     private static DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
@@ -257,14 +249,28 @@ public class Reconstruction {
      * @return the real world coordinates of the projection of x1 and x2 using
      * triangulation. else null if no valid solution was found
      */
-    private static double[][] chooseRAndT(double[][] x1, double[][] x2, double[][] k1, double[][] k2,
+    private static double[][] chooseRAndT(double[][] x1, double[][] x2, 
+        double[][] k1, double[][] k2,
         double[][] R1, double[][] R2, double[] t1, double[] t2, 
         double[][] rSelected, double[] tSelected) {
     
-        // valid equation has det(R) = 1 (rotation and reflection)
+        int n = x1[0].length;
+        
+        // for this model, for the first image, the camera extrinsics are
+        //    R = I and t = [0], which leaves all rotation and translation in
+        //    the 2nd camera extrinsics w.r.t. the first.
+        double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
+        double[] k1ExtrTrans = new double[3];
+        
+        // valid equation has det(R) = 1
         //   if =-1, its a reflection
         double detR1 = MatrixUtil.determinant(R1);
         double detR2 = MatrixUtil.determinant(R2);
+        
+        //Compute 3D point using triangulation, valid solution has positive Z value
+        // (Note: negative Z means point is behind the camera )
+        boolean detR1Pos1 = Math.abs(detR1 - 1.) < 1e-4;
+        boolean detR2Pos1 = Math.abs(detR2 - 1.) < 1e-4;
         
         // save the first that pass the tests for Z>=0.
         double[][] R = null;
@@ -272,54 +278,98 @@ public class Reconstruction {
         double[][] XW;
         double[] XWPt;
         String goodSolnLabel = null;
+        String label =null;
         
+        XWPt = new double[4];
+        XW = new double[3][n];
+        for (int i = 0; i < 3; ++i) {
+            XW[i] = new double[n];
+        }
+            
+        double[][] rTst = null;
+        double[] tTst = null;
+        double[][] x1Pt = new double[3][1];
+        double[][] x2Pt = new double[3][1];
+        int i, j, ii;
+        for (i = 0; i < 3; ++i) {
+            x1Pt[i] = new double[1];
+            x2Pt[i] = new double[1];
+        }
         
         boolean goodSoln;
-        
-        editing here to iterate over each correspondence pair
-        
-        // check R1 and t1
-        XWPt = Triangulation.calculateWCSPoints(k1, R1, t1, k2, R2, t2, x1Pt, x2Pt);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && (XW[3] > 0);
-        System.out.printf("Good Solution=%b\nX from inv(|[R1|t1])*x2=\n%s\n", 
-            goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R1, T1";
-            R = R1;
-            T = t1;
-        } 
-        
-        // check R1 and t2
-        XWPt = Triangulation.calculateWCSPoints(k1, R1, t2, k2, R2, t2, x1Pt, x2Pt);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && (XW[3] > 0);
-        System.out.printf("Good Solution=%b\nX from inv(|[R1|t2])*x2=\n%s\n", 
-            goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R1, T2";
-            R = R1;
-            T = t2;
-        } 
-        
-        // check R2 and t1
-        XWPt = Triangulation.calculateWCSPoints(k1, R2, t1, k2, R2, t2, x1Pt, x2Pt);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && (XW[3] > 0);
-        System.out.printf("Good Solution=%b\nX from inv(|[R2|t1])*x2=\n%s\n", 
-            goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R2, T1";
-            R = R2;
-            T = t1;
-        } 
-        
-        // check R2 and t2
-        XW = Triangulation.calculateWCSPoints(k1, R2, t2, k2, R2, t2, x1Pt, x2Pt);
-        goodSoln = ((Math.abs(detR1) - 1.) < 1e-5) && (XW[3] > 0);
-        System.out.printf("Good Solution=%b\nX from inv(|[R2|t2])*x2=\n%s\n", goodSoln, FormatArray.toString(XW, " %.0f"));
-        if (goodSoln && R == null) {
-            goodSolnLabel = "R2, T2";
-            R = R2;
-            T = t2;
-        } 
+        for (j = 0; j < 4; ++j) {
+            goodSoln = true;
+            switch(j) {
+                case 0: {
+                    if (!detR1Pos1) {
+                        goodSoln = false;
+                        break;
+                    }
+                    label = "R1, T1";
+                    rTst = R1;
+                    tTst = t1;
+                    break;
+                }
+                case 1: {
+                    if (!detR1Pos1) {
+                        goodSoln = false;
+                        break;
+                    }
+                    label = "R1, T2";
+                    rTst = R1;
+                    tTst = t2;
+                    break;
+                }
+                case 2: {
+                    if (!detR2Pos1) {
+                        goodSoln = false;
+                        break;
+                    }
+                    label = "R2, T1";
+                    rTst = R2;
+                    tTst = t1;
+                    break;
+                }
+                default: {
+                    if (!detR2Pos1) {
+                        goodSoln = false;
+                        break;
+                    }
+                    label = "R2, T2";
+                    rTst = R2;
+                    tTst = t2;
+                    break;
+                }
+            }
+            if (!goodSoln) {
+                continue;
+            }
+            for (i = 0; i < n; ++i) {
+                for (ii = 0; ii < 3; ++ii) {
+                    x1Pt[ii][0] = x1[ii][i];
+                    x2Pt[ii][0] = x2[ii][i];
+                }
+                //
+                XWPt = Triangulation.calculateWCSPoint(
+                    k1, k1ExtrRot, k1ExtrTrans, 
+                    k2, rTst, tTst, 
+                    x1Pt, x2Pt);
+                if (XWPt[3] < 0) {
+                    goodSoln = false;
+                    // break out of i loop
+                    break;
+                }
+                for (ii = 0; ii < 4; ++ii) {
+                    XW[ii][i] = XWPt[ii];
+                } 
+            }
+            if (goodSoln) {
+                goodSolnLabel = label;
+                R = rTst;
+                T = tTst;
+                break;
+            }
+        }
         
         if (R == null) {
             //TODO: wrap the solution finiding in a retry.  may need a retry loop for adjusting f
@@ -327,7 +377,8 @@ public class Reconstruction {
             return null;
         }
         
-        for (int i = 0; i < R.length; ++i) {
+        // copy into output variables:
+        for (i = 0; i < R.length; ++i) {
             System.arraycopy(R[i], 0, rSelected[i], 0, R[i].length);
         }
         System.arraycopy(T, 0, tSelected, 0, T.length);
@@ -336,20 +387,10 @@ public class Reconstruction {
         //double estimatedRotY = Math.atan(R[0][2]/R[0][0]) * (180./Math.PI);
         double estimatedRotY = Math.atan(-R[2][0]/R[2][2]) * (180./Math.PI);
         System.out.printf("estimated rotation about y axis from R=%.2f\n", estimatedRotY);
+        System.out.printf("X_WCS=\n%s\n", FormatArray.toString(XW, "%.3e"));
         System.out.flush();
         
         return XW;
     }
  
-    public static boolean allZsArePositive(double[][] XW) {
-        return allOfDimensionArePositive(XW, 2);
-    }
-    public static boolean allOfDimensionArePositive(double[][] XW, final int dimension) {
-        for (int i = 0; i < XW[0].length; ++i) {
-            if (XW[dimension][i] < 0) {
-                return false;
-            }
-        }
-        return true;
-    }
 }

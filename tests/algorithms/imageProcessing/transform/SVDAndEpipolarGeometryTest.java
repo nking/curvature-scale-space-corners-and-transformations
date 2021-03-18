@@ -561,6 +561,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // x2 = P2*X
        
         // paused here
+        
+        
         ReconstructionResults rr = Reconstruction.calculateReconstruction(k, k, x1, x2);
         double[] T = rr.k2ExtrTrans;
         
@@ -1102,15 +1104,6 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
     }
 
-    private double[][] transformx(double[][] R, double[] t, DenseMatrix x) throws NotConvergedException {
-        double[][] P = concatenateColumns(R, t);
-        double[][] pInv = MatrixUtil.pseudoinverseFullRank(P);
-        
-        double[][] XW = MatrixUtil.multiply(pInv, 
-            MatrixUtil.convertToRowMajor(x));
-        return XW;
-    }
-    
     private double[][] concatenateColumns(double[][] a, double[] b) {
         assertTrue(a.length == b.length);
         double[][] out = new double[a.length][a[0].length + 1];
