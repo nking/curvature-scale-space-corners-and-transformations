@@ -169,6 +169,7 @@ public class TriangulationTest extends TestCase {
         
         System.out.printf("k2ExtrRot\n=%s\n", FormatArray.toString(k2ExtrRot, "%.3e"));
         
+        
         // line 3 last point in image 1
         double[][] x1 = new double[3][1];
         x1[0] = new double[]{169.96948547603384};
@@ -180,16 +181,16 @@ public class TriangulationTest extends TestCase {
         x2[0] = new double[]{183.11454542957057};
         x2[1] = new double[]{443.2278534824685};
         x2[2] = new double[]{1};
-        
+                        
         double[] xw = Triangulation.calculateWCSPoint(
             k1Intr, k1ExtrRot, k1ExtrTrans,
             k2Intr, k2ExtrRot, k2ExtrTrans,
             x1, x2);
         
-        // expecting Z
+        // expecting Z near 400
+        //   get depth from disparity...
         
-        System.out.printf("xw=%s\n", FormatArray.toString(xw, "%.3e"));
-            
-            
+        System.out.printf("xw=%s\n\n", FormatArray.toString(xw, "%.3e"));
+         
     }
 }

@@ -279,9 +279,14 @@ public class Triangulation {
 
         System.out.printf("x1=\n%s\n", FormatArray.toString(x1, "%.4e"));
         System.out.printf("camera1=\n%s\n", FormatArray.toString(camera1, "%.4e"));
-        System.out.printf("X=\n%s\n", FormatArray.toString(X, "%.4e"));
+        System.out.printf("x2=\n%s\n", FormatArray.toString(x2, "%.4e"));
+        System.out.printf("camera2=\n%s\n", FormatArray.toString(camera2, "%.4e"));
+        System.out.printf("X=\n%s\n\n", FormatArray.toString(X, "%.4e"));
+        
+        // can see that the constraint ||X||^2 = 1 is preserved
         
         
+        /*
         double[] x1Rev = MatrixUtil.multiplyMatrixByColumnVector(camera1, X);
         
         double[] x2Rev = MatrixUtil.multiplyMatrixByColumnVector(camera2, X);
@@ -292,7 +297,8 @@ public class Triangulation {
         System.out.printf("x2Rev=\n%s\n", FormatArray.toString(x2Rev, "%.4e"));
         
         MatrixUtil.multiply(X, alpha);
-                
+        */
+        
         return X;
     }
 
