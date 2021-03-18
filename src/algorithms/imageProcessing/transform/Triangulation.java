@@ -24,48 +24,6 @@ import no.uib.cipr.matrix.SVD;
 public class Triangulation {
     
     /**
-     *  create camera intrinsic matrix k with assumptions of square pixels
-     * and no skew.  the focal length and optical centers should be in units of pixels.
-     * NOTE that given the field of view (FOV) and the image dimensions,
-     * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
-     * @param focalLength focal length of camera in units of pixels.
-     * @param xC x coordinate of camera optical center in image pixel coordinates.
-     * @param yC y coordinate of camera optical center in image pixel coordinates.
-     * @return intrinsic camera matrix in units of pixels.
-     */
-    public static double[][] createIntrinsicCameraMatrix(double focalLength,
-        double xC, double yC) {
-        
-        double[][] k = new double[3][3];
-        k[0] = new double[]{-focalLength, 0, xC};
-        k[1] = new double[]{0, -focalLength, yC};
-        k[2]= new double[]{0, 0, 1};
-        
-        return k;
-    }
-    
-    /**
-     *  create the inverse of camera intrinsic matrix k with assumptions of square pixels
-     * and no skew.  the focal length and optical centers should be in units of pixels.
-     * NOTE that given the field of view (FOV) and the image dimensions,
-     * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
-     * @param focalLength focal length of camera in units of pixels.
-     * @param xC x coordinate of camera optical center in image pixel coordinates.
-     * @param yC y coordinate of camera optical center in image pixel coordinates.
-     * @return intrinsic camera matrix in units of pixels.
-     */
-    public static double[][] createIntrinsicCameraMatrixInverse(double focalLength,
-        double xC, double yC) {
-        
-        double[][] k = new double[3][3];
-        k[0] = new double[]{-1./focalLength, 0, -xC};
-        k[1] = new double[]{0, -1./focalLength, -yC};
-        k[2]= new double[]{0, 0, 1};
-        
-        return k;
-    }
-    
-    /**
      * given the camera matrix as intrinsic and extrinsic matrices for 2 images
      * and given the matching correspondence of points between the 2 images,
      * calculate the real world coordinate of the observations.
@@ -219,9 +177,9 @@ public class Triangulation {
         */
         
         // 3 x 4
-        double[][] camera1 = createCamera(k1, r1, t1);
+        double[][] camera1 = Camera.createCamera(k1, r1, t1);
         
-        double[][] camera2 = createCamera(k2, r2, t2);
+        double[][] camera2 = Camera.createCamera(k2, r2, t2);
         
         double u1x, u1y, u2x, u2y;
         double[] tmp;
@@ -301,47 +259,4 @@ public class Triangulation {
         
         return X;
     }
-
-    /**
-     * 
-     * @param k camera intrinsics matrix of size 3 x 3.
-     * @param r camera extrinsics rotation matrix of size 3 x 3.
-     * @param t camera extrinsics translation vector of length 2.
-     * @return the camera matrix resulting from intrinsic and extrinsic parameters.
-     * the size is 3 x 4.
-     */
-    private static double[][] createCamera(double[][] k, double[][] r, double[] t) {
-        if (k.length != 3 || k[0].length != 3) {
-            throw new IllegalArgumentException("k must be 3 x 3");
-        }
-        if (r.length != 3 || r[0].length != 3) {
-            throw new IllegalArgumentException("r must be 3 x 3");
-        }
-        if (t.length != 3) {
-            throw new IllegalArgumentException("t must be length 3");
-        }
-        
-        /*
-            4x4     
-        [ R  -R*t ]
-        [ 0   1   ]
-        
-        P = K * R * [I | -t]
-        
-        alternately, can write as P = K * [ R | -R*t]
-        */
-        double[] rt = MatrixUtil.multiplyMatrixByColumnVector(r, t);
-        
-        double[][] kExtr = new double[3][4];
-        for (int i = 0; i < 3; ++i) {
-            kExtr[i] = new double[4];
-            System.arraycopy(r[i], 0, kExtr[i], 0, 3);
-            kExtr[i][3] = rt[i];
-        }
-        
-        double[][] p = MatrixUtil.multiply(k, kExtr);
-        
-        return p;
-    }
-
 }

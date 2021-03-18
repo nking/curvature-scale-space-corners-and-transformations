@@ -109,7 +109,7 @@ public class TriangulationTest extends TestCase {
         
         
         */
-        double[][] k1Intr = Triangulation.createIntrinsicCameraMatrix(830.3, 307, 206.6);
+        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(830.3, 307, 206.6);
         double[][] k2Intr = Arrays.copyOf(k1Intr, k1Intr.length);
         
         double[][] k1ExtrRot = new double[3][3];
@@ -157,8 +157,8 @@ public class TriangulationTest extends TestCase {
         // by Jean-Yves Bouguet
         // Camera Calibration Toolbox for Matlab
         
-        double[][] k1Intr = Triangulation.createIntrinsicCameraMatrix(533.07, 341.6, 234.3);
-        double[][] k2Intr = Triangulation.createIntrinsicCameraMatrix(536.7, 326.5, 249.3);
+        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.07, 341.6, 234.3);
+        double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.7, 326.5, 249.3);
         
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
