@@ -38,6 +38,42 @@ public class Reconstruction {
         double[] k1ExtrTrans;
         double[][] k2ExtrRot;
         double[] k2ExtrTrans;
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("XW=\n");
+            if (XW != null) {
+                sb.append(FormatArray.toString(XW, "%.4e"));
+            }
+            sb.append("k1 intrinsic=\n");
+            if (k1Intr != null) {
+                sb.append(FormatArray.toString(k1Intr, "%.4e"));
+            }
+            sb.append("k1 extrinsic rotation=\n");
+            if (k1ExtrRot != null) {
+                sb.append(FormatArray.toString(k1ExtrRot, "%.4e"));
+            }
+            sb.append("k1 extrinsic translation=\n");
+            if (k1ExtrTrans != null) {
+                sb.append(FormatArray.toString(k1ExtrTrans, "%.4e"));
+                sb.append("\n");
+            }
+            sb.append("k2 intrinsic=\n");
+            if (k2Intr != null) {
+                sb.append(FormatArray.toString(k2Intr, "%.4e"));
+            }
+            sb.append("k2 extrinsic rotation=\n");
+            if (k2ExtrRot != null) {
+                sb.append(FormatArray.toString(k2ExtrRot, "%.4e"));
+            }
+            sb.append("k2 extrinsic translation=\n");
+            if (k2ExtrTrans != null) {
+                sb.append(FormatArray.toString(k2ExtrTrans, "%.4e"));
+                sb.append("\n");
+            }
+            return sb.toString();
+        }
     }
     
     /**
@@ -137,10 +173,12 @@ public class Reconstruction {
         
         assert(svdE.u[0].length == 3 && svdE.u.length == 3);
 
+        double detV = MatrixUtil.determinant(svdE.vT);
+        
         System.out.printf("SVD.u=\n%s", FormatArray.toString(svdE.u, "%.3e"));
         System.out.printf("det(SVD.u)=%.2f\n", MatrixUtil.determinant(svdE.u));
         System.out.printf("SVD.vT=\n%s", FormatArray.toString(svdE.vT, "%.3e"));
-        System.out.printf("det(SVD.vT)=%.2f\n", MatrixUtil.determinant(svdE.vT));
+        System.out.printf("det(SVD.vT)=%.2f\n", detV);
         
         // same as Hartley1992's E^T
         double[][] w = new double[3][3];
@@ -281,8 +319,8 @@ public class Reconstruction {
         String label =null;
         
         XWPt = new double[4];
-        XW = new double[3][n];
-        for (int i = 0; i < 3; ++i) {
+        XW = new double[4][n];
+        for (int i = 0; i < 4; ++i) {
             XW[i] = new double[n];
         }
             
@@ -354,7 +392,7 @@ public class Reconstruction {
                     k1, k1ExtrRot, k1ExtrTrans, 
                     k2, rTst, tTst, 
                     x1Pt, x2Pt);
-                if (XWPt[3] < 0) {
+                if (XWPt[2] < 0) {
                     goodSoln = false;
                     // break out of i loop
                     break;
@@ -386,7 +424,7 @@ public class Reconstruction {
         System.out.println("choosing solution: " + goodSolnLabel);
         //double estimatedRotY = Math.atan(R[0][2]/R[0][0]) * (180./Math.PI);
         double estimatedRotY = Math.atan(-R[2][0]/R[2][2]) * (180./Math.PI);
-        System.out.printf("estimated rotation about y axis from R=%.2f\n", estimatedRotY);
+        System.out.printf("estimated rotation in degrees about y axis from R=%.2f\n", estimatedRotY);
         System.out.printf("X_WCS=\n%s\n", FormatArray.toString(XW, "%.3e"));
         System.out.flush();
         
