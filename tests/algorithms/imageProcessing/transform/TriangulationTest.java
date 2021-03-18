@@ -163,7 +163,7 @@ public class TriangulationTest extends TestCase {
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
         
-        double[][] k2ExtrRot = Triangulation.createRodriguesFormulaRotationMatrix(
+        double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
             new double[]{0.00611, 0.00409, -0.00359});
         double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
         
