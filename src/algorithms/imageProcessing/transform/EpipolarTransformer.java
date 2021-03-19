@@ -1322,15 +1322,16 @@ public class EpipolarTransformer {
      * calculate the epipoles of the fundamental matrix and return them as
      * an array with left epipole in column 0 and right epipole in column 1.
      The left epipole is e1 = the left image position of the epipolar projection 
-     of the right camera center.  It is the last column of U / last item of that 
+     of the right camera center.  It is the last column of V / last item of that 
      column.
      The right epipole e2 = the right image position of the epipolar projection 
-     of the left camera center.  It is the last row of V / last item of that row.
+     of the left camera center.  It is the last row of U / last item of that row.
      * @param fundamentalMatrix
      * @return a matrix holding whose first row holds e1 and 2nd row holds e2
      * where e1 = the left image position of the epipolar projection 
-     of the right camera center and e2 = the right image position of the epipolar projection 
-     of the left camera center.
+     of the right camera center (= last column of V) 
+     and e2 = the right image position of the epipolar projection 
+     of the left camera center (= last column of U).
      */
     @SuppressWarnings({"unchecked"})
     double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {

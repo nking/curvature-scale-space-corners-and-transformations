@@ -39,7 +39,7 @@ public class ReconstructionTest extends TestCase {
         //double[] k2ExtrTransRev = Arrays.copyOf(k2ExtrTrans, k2ExtrTrans.length);
         //MatrixUtil.multiply(k2ExtrTransRev, -1);
         
-        System.out.printf("k2ExtrRot\n=%s\n", FormatArray.toString(k2ExtrRot, "%.3e"));
+        //System.out.printf("k2ExtrRot\n=%s\n", FormatArray.toString(k2ExtrRot, "%.3e"));
                         
         
         double[][] x1 = new double[3][8];
@@ -53,10 +53,20 @@ public class ReconstructionTest extends TestCase {
         x2[2] = new double[]{1, 1, 1, 1, 1, 1, 1, 1};
         
         Reconstruction.ReconstructionResults rr = Reconstruction
-            .calculateReconstruction(k1Intr, k2Intr, x1, x2);
+            //.calculateReconstruction(x1, x2);
+            .calculateReconstructionWithIntrinsic(k1Intr, k2Intr, x1, x2);
+            //.calculateReconstruction(camera1, camera2, x1, x2);
         
         System.out.printf("results=%s\n\n", rr.toString());
         
+        System.out.println("XW points normalized by last coordinates:");
+        double[] pt = new double[4];
+        for (int j = 0; j < rr.XW[0].length; ++j) {    
+            for (int i = 0; i < rr.XW.length; ++i) {
+                pt[i] = rr.XW[i][j]/rr.XW[3][j];
+            }
+            System.out.printf("%s\n", FormatArray.toString(pt, "%.3e"));
+        }
         
     }
 }
