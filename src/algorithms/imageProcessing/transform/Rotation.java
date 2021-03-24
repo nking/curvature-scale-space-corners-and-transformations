@@ -1,13 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
-import algorithms.util.FormatArray;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.NotConvergedException;
-import no.uib.cipr.matrix.SVD;
 
 /**
  * a utility class holding euler rotations and rodrigues formula.

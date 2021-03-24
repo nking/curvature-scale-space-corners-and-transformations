@@ -1,29 +1,20 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.features.RANSACSolver;
-import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.ErrorType;
-import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.imageProcessing.transform.Reconstruction.ReconstructionResults;
 import algorithms.matrix.MatrixUtil;
-import algorithms.matrix.MatrixUtil.QAndR;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import algorithms.util.LinearRegression;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
-import gnu.trove.list.TIntList;
 import java.awt.Color;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -33,7 +24,6 @@ import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
-import org.junit.Test;
 
 /**
  *

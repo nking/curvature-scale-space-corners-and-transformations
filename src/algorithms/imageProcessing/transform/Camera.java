@@ -50,6 +50,38 @@ public class Camera {
         
         return k;
     }
+    
+    /**
+     *  create the inverse of camera intrinsic matrix k.
+     * The multiplicative elements such as focal length,
+     * are inverted, and the translation elements are multiplied by -1.
+     * then the matrix is transposed.
+     * @param kIntr intrinsic camera matrix.
+     * @return intrinsic camera matrix inverse.
+     */
+    public static double[][] createIntrinsicCameraMatrixInverse(double[][] kIntr) {
+        
+        /*
+        double[][] kInv = new double[3][3];
+        kInv[0] = new double[]{1./kIntr[0][0], 0, -1*kIntr[0][2]};
+        kInv[1] = new double[]{0, 1./kIntr[1][1], -1*kIntr[1][2]};
+        kInv[2]= new double[]{0, 0, 1};
+        */
+        double[][] kInv = MatrixUtil.copy(kIntr);
+        int i, j;
+        double tol = 1e-7;
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 2; ++j) {
+                if (Math.abs(kIntr[i][j]) > tol) {
+                    kInv[i][j] = 1./kInv[i][j];
+                }
+            }
+        }
+        kInv[0][2] *= -1;                    
+        kInv[1][2] *= -1;
+        
+        return MatrixUtil.transpose(kInv);
+    }
    
     /**
      * 

@@ -315,7 +315,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
             
             DenseMatrix m = createAutoCorrelationMatrix(x, y);
         
-            double[][] d = no.uib.cipr.matrix.Matrices.getArray(m);
+            double[][] d = MatrixUtil.convertToRowMajor(m);
             double det = MatrixUtil.determinant(d);
             double trace = algorithms.imageProcessing.util.MatrixUtil.trace(d);
         

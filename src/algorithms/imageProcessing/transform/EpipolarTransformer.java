@@ -1157,6 +1157,65 @@ public class EpipolarTransformer {
         return normalizedXY;
     }
 
+       /**
+     normalize the x,y coordinates as recommended by Hartley 1997 and return
+     the matrix and coordinates.
+     does not modify the state of this transformer instance.
+
+     the normalized coordinates have an origin = centroid of
+     the points and a scale equal to the standard deviation of the
+     mean subtracted coordinates.
+
+     * @param xy
+     * @return
+     */
+    @SuppressWarnings({"unchecked"})
+    public static NormalizedXY normalizeUsingUnitStandard(DenseMatrix xy) {
+
+        /*
+        format points such that the applied translation
+        and scaling have the effect of:
+
+        a) points are translated so that their centroid is at the origin.
+        b) points are then scaled so that the average distance from the
+           origin is sqrt(2)
+        c) the transformation is applied to each of the 2 images separately.
+        */
+
+        int n = xy.numColumns();
+
+        //x is xy[0], y is xy[1], xy[2] is all 1's
+        double cen0 = 0;
+        double cen1 = 0;
+        for (int i = 0; i < n; ++i) {
+            cen0 += xy.get(0, i);
+            cen1 += xy.get(1, i);
+        }
+        cen0 /= (double)n;
+        cen1 /= (double)n;
+
+        double scale = 0;
+        double diffX, diffY;
+        for (int i = 0; i < n; i++) {
+            diffX = xy.get(0, i) - cen0;
+            diffY = xy.get(1, i) - cen1;
+            scale += (diffX*diffX + diffY*diffY);
+        }
+        //scale: root mean square distance of (x,y) to origin is sqrt(2)
+        scale = Math.sqrt(scale/(n-1.));
+        
+        NormalizationTransformations tMatrices = createScaleTranslationMatrices(
+            scale, cen0, cen1);
+       
+        DenseMatrix normXY = MatrixUtil.multiply(new DenseMatrix(tMatrices.t), xy);
+        
+        NormalizedXY normalizedXY = new NormalizedXY();
+        normalizedXY.setNormMatrices(tMatrices);
+        normalizedXY.setXy(normXY);
+
+        return normalizedXY;
+    }
+
     /**
      * create 2 scale and translation matrices to normalize homogeneous 2D coordinates
      * by multiplying on the left side, and to de-normalize the normalized

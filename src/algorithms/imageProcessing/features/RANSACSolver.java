@@ -179,6 +179,7 @@ public class RANSACSolver {
             */
             nMaxIter = RANSACAlgorithmIterations
                 .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
+            
         }
         
         System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
