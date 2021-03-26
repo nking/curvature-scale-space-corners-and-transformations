@@ -177,11 +177,16 @@ public class TriangulationTest extends TestCase {
         // note: radial distortion should be corrected:  use on the original coordinates:
         //     x_corrected = x*(1 + k1*r^2 + k2r^4) where r is distance of point from cc.
         
+        double[] k1IntrTrans = new double[]{-341.6, -234.3, 0};
+        double[] k2IntrTrans = new double[]{-326.5, -249.3, 0};
+        double[] k1IntrTransInv = Arrays.copyOf(k1IntrTrans, k1IntrTrans.length);
+        MatrixUtil.multiply(k1IntrTransInv, -1);
+        double[] k2IntrTransInv = Arrays.copyOf(k2IntrTrans, k2IntrTrans.length);
+        MatrixUtil.multiply(k2IntrTransInv, -1);
         
-   //check: Xc_1_right = R * Xc_1_left + T
-        
-        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.07, 341.6, 234.3);
-        double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.7, 326.5, 249.3);
+        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.07, k1IntrTrans[0], k1IntrTrans[1]);
+        double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.7, k2IntrTrans[0], k2IntrTrans[1]);
+        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(536.7, -326.5, -249.3);
         
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
@@ -207,6 +212,29 @@ public class TriangulationTest extends TestCase {
         x2[1] = new double[]{172};
         x2[2] = new double[]{1};
           
+        double[] x1c, x2c;
+        
+        x1c = MatrixUtil.extractColumn(x1, 0);
+        x1c = MatrixUtil.add(x1c, k1IntrTrans);
+        x2c = MatrixUtil.extractColumn(x2, 0);
+        x2c = MatrixUtil.add(x2c, k2IntrTrans);
+        System.out.printf("x1c=%s\n", FormatArray.toString(x1c, "%.3e"));
+        System.out.printf("x2c=%s\n", FormatArray.toString(x2c, "%.3e"));
+        
+        //check: Xc_1_right = R * Xc_1_left + T
+        // can see need to subtract center of image 1 from coords then add center of image 2
+        double[] tmp = MatrixUtil.multiplyMatrixByColumnVector(k2ExtrRot, x1c);
+        tmp = MatrixUtil.add(tmp, k2ExtrTrans);
+        System.out.printf("?? %s\n", FormatArray.toString(tmp, "%.4e"));
+        tmp = MatrixUtil.add(tmp, k2IntrTransInv);
+        System.out.printf("==> %s\n", FormatArray.toString(tmp, "%.4e")); //1.9179e+02, 1.7495e+02, 2.0417e+00
+        MatrixUtil.multiply(tmp, 1./tmp[2]);
+        System.out.printf("*?? %s\n", FormatArray.toString(tmp, "%.4e"));
+        
+        double[] trans = MatrixUtil.subtract(x2c, x1c);            
+        System.out.printf("?? trans = %s\n", FormatArray.toString(trans, "%.4e"));
+        //  result = -1.0790e+02, -2.0000e+00, 0.0000e+00
+        
         // correct for radial distortions:
         /*double r2, distortion;
         for (int i = 0; i < x1[0].length; ++i) {
@@ -273,7 +301,23 @@ public class TriangulationTest extends TestCase {
         x2[0] = new double[]{215};
         x2[1] = new double[]{238};
         x2[2] = new double[]{1};
-                        
+                  
+        x1c = MatrixUtil.extractColumn(x1, 0);
+        x1c = MatrixUtil.add(x1c, k1IntrTrans);
+        x2c = MatrixUtil.extractColumn(x2, 0);
+        x2c = MatrixUtil.add(x2c, k2IntrTrans);
+        System.out.printf("x1c=%s\n", FormatArray.toString(x1c, "%.3e"));
+        System.out.printf("x2c=%s\n", FormatArray.toString(x2c, "%.3e"));
+        
+        //check: Xc_1_right = R * Xc_1_left + T
+        tmp = MatrixUtil.multiplyMatrixByColumnVector(k2ExtrRot, x1c);
+        tmp = MatrixUtil.add(tmp, k2ExtrTrans);
+        System.out.printf("?? %s\n", FormatArray.toString(tmp, "%.4e"));
+        tmp = MatrixUtil.add(tmp, k2IntrTransInv);
+        System.out.printf("==> %s\n", FormatArray.toString(tmp, "%.4e"));
+        MatrixUtil.multiply(tmp, 1./tmp[2]);
+        System.out.printf("*?? %s\n", FormatArray.toString(tmp, "%.4e"));
+        
         xw = Triangulation.calculateWCSPoint(
             k1Intr, k1ExtrRot, k1ExtrTrans,
             k2Intr, k2ExtrRot, k2ExtrTrans,
@@ -286,6 +330,12 @@ public class TriangulationTest extends TestCase {
     
         MatrixUtil.multiply(xw, 1./xw[xw.length - 1]);
         System.out.printf("   =%s\n\n", FormatArray.toString(xw, "%.3e"));
+        
+        expectedX1 = MatrixUtil.multiply(camera1Inv, x1);
+        expectedX2 = MatrixUtil.multiply(camera2Inv, x2);
+        
+        System.out.printf("camera1^-1 * x1=\n%s\n", FormatArray.toString(expectedX1, "%.3e"));
+        System.out.printf("camera2^-1 * x2=\n%s\n", FormatArray.toString(expectedX2, "%.3e"));
         
         assertTrue(Math.abs(Math.abs(xw[2]) - 425) < 150);
     }
