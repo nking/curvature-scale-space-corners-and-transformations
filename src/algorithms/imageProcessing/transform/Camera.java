@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import java.util.Arrays;
 
 /**
  * utility methods for camera intrinsic and extrinsic matrices.
@@ -80,7 +81,7 @@ public class Camera {
         kInv[0][2] *= -1;                    
         kInv[1][2] *= -1;
         
-        return MatrixUtil.transpose(kInv);
+        return kInv;
     }
    
     /**
@@ -125,4 +126,64 @@ public class Camera {
         return p;
     }
 
+    /**
+     * not ready for use.  a quick rough method to estimate the 3D homogeneous point
+     * from the 2D-homogenous point and this inverse camera matrix, with caveat 
+     * about missing information on the last dimension.  
+     * One should use reconstruction methods instead of this method.
+     * to use:
+     * <pre>
+     * double[][] X = MatrixUtil.multiply(cameraInv, x);
+     * then divide each column by the 3rd row.
+     * </pre>
+     * 
+     * @param k camera intrinsics matrix of size 3 x 3.
+     * @param r camera extrinsics rotation matrix of size 3 x 3.
+     * @param t camera extrinsics translation vector of length 2.
+     * @return the inverse camera matrix resulting from intrinsic and extrinsic parameters.
+     * the size is 4x3
+     */
+    public static double[][] createCameraInverse(double[][] k, double[][] r, double[] t) {
+        if (k.length != 3 || k[0].length != 3) {
+            throw new IllegalArgumentException("k must be 3 x 3");
+        }
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3 x 3");
+        }
+        if (t.length != 3) {
+            throw new IllegalArgumentException("t must be length 3");
+        }
+        
+        /*
+        translation matrix: inverse changes the signs of the translation elements, but not the diagonal.
+        rotation matrix: inverse is the transpose of rotation matrix.
+        scaling matrix: inverse is performed on each element, that is, the reciprocal.
+        */
+                
+        double[] tInv = Arrays.copyOf(t, t.length);
+        tInv[0] *= -1;
+        tInv[1] *= -1;
+                
+        double[] rTInv = MatrixUtil.multiplyMatrixByColumnVector(r, tInv);
+        
+        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k);
+        
+        /*           
+        inverse of   K * R * [I | -t]             
+            
+        is  | r  | r*tInv ]^T  * kInv
+        */
+        
+        double[][] cInv = new double[3][4];
+        for (int i = 0; i < 3; ++i) {
+            cInv[i] = new double[4];
+            System.arraycopy(r[i], 0, cInv[i], 0, 3);
+            cInv[i][3] = rTInv[i];
+        }
+        cInv = MatrixUtil.transpose(cInv);
+        
+        cInv = MatrixUtil.multiply(cInv, kInv);
+        
+        return cInv;
+    }
 }

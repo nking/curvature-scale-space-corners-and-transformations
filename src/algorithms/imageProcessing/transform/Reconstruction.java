@@ -213,8 +213,8 @@ public class Reconstruction {
                     errorType, tolerance);
         }
         */
-  // paused here to edit      
- //see sect 7.21 of szeliski 
+  
+        // see sect 7.21 of szeliski 
                 
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(
@@ -237,16 +237,16 @@ public class Reconstruction {
         
         //(2) compute the camera matrices P1, P2 from FM.
         
-        MatrixUtil.SVDProducts svdE = MatrixUtil.performSVD(_fm);
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(_fm);
         
-        assert(svdE.u[0].length == 3 && svdE.u.length == 3);
+        assert(svd.u[0].length == 3 && svd.u.length == 3);
 
-        double detV = MatrixUtil.determinant(svdE.vT);
+        double detV = MatrixUtil.determinant(svd.vT);
         
-        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(svdE.u, "%.3e"));
-        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svdE.s, "%.3e"));
-        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(svdE.vT, "%.3e"));
-        System.out.printf("det(SVD.u)=%.2f\n", MatrixUtil.determinant(svdE.u));
+        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(svd.u, "%.3e"));
+        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svd.s, "%.3e"));
+        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(svd.vT, "%.3e"));
+        System.out.printf("det(SVD.u)=%.2f\n", MatrixUtil.determinant(svd.u));
         System.out.printf("det(SVD.vT)=%.2f\n", detV);
         
         //NOTE: the last column vector in u is the smallest
@@ -260,16 +260,39 @@ public class Reconstruction {
             camera1[i][i] = 1;
         }
         
+        double[][] r90 = new double[3][3];
+        r90[0] = new double[]{0, -1, 0};
+        r90[1] = new double[]{1, 0, 0};
+        r90[2] = new double[]{0, 0, 1};        
+        double[][] r90T = MatrixUtil.transpose(r90);
+        double[] s = Arrays.copyOf(svd.s, svd.s.length);
+        s[2] = s[1];
+        
+        double[][] homog = MatrixUtil.multiply(svd.u, r90T);
+        homog = MatrixUtil.multiplyByDiagonal(homog, s);
+        homog = MatrixUtil.multiply(homog, svd.vT);
+        
         // e1 is the left image view of the projected right camera nadir (= last col in V)
         // e2 is the right image view of the projected left camera nadir (= last col in U)
         double[][] epipoles = tr.calculateEpipoles(fm);
         
-        double[] e2NotNormalized = MatrixUtil.transpose(svdE.u)[2];
+        double[] e2NotNormalized = MatrixUtil.transpose(svd.u)[2];
         
         System.out.printf("e1=%s\n", FormatArray.toString(epipoles[0], "%.3e"));
         System.out.printf("e2=%s\n", FormatArray.toString(epipoles[1], "%.3e"));
         
-        // camera matrix P2 for right image = [ [e2_x] * F | e2 ]
+        // Szeleski: P2 =[homog ̃| e1]
+        double[][] camera2 = MatrixUtil.zeros(3, 4);
+        for (int i = 0; i < 3; ++i) {
+            camera2[i] = new double[4];
+            System.arraycopy(homog[i], 0, camera2[i], 0, 3);
+            camera2[i][3] = e2NotNormalized[i];//epipoles[1][i];
+        }
+        
+        System.out.printf("Szeliski camera2:\n%s\n", FormatArray.toString(camera2, "%.3e"));
+                
+        // Hartley & Zisserman: camera matrix P2 for right image = [ [e2_x] * F | e2 ]
+        
         /*
         double[][] e2SkewSym = MatrixUtil.skewSymmetric(epipoles[1]);
         double[][] k2R = MatrixUtil.multiply(e2SkewSym, _fm);
@@ -286,13 +309,14 @@ public class Reconstruction {
             = MatrixUtil.skewSymmetric(epipoles[1]);
         MatrixUtil.multiply(e2SkewSym, -1);
         double[][] k2R = MatrixUtil.multiply(e2SkewSym, _fm);
-        double[][] camera2 = new double[3][4];
+        double[][] camera2HZ = new double[3][4];
         for (int i = 0; i < 3; ++i) {
-            camera2[i] = new double[4];
-            System.arraycopy(k2R[i], 0, camera2[i], 0, 3);
+            camera2HZ[i] = new double[4];
+            System.arraycopy(k2R[i], 0, camera2HZ[i], 0, 3);
             //camera2[i][3] = e2NotNormalized[i];
-            camera2[i][3] = epipoles[1][i];
+            camera2HZ[i][3] = epipoles[1][i];
         }
+        System.out.printf("Hartley & Zisserman camera2:\n%s\n", FormatArray.toString(camera2HZ, "%.3e"));
         
             // can extract intrinsic and rotation from left 3 columns of camera2
             //    matrix using RQ decomposition
@@ -302,7 +326,6 @@ public class Reconstruction {
             double[][] k2Intr = MatrixUtil.convertToRowMajor(rq.getR());
             MatrixUtil.multiply(k2Intr, 1./k2Intr[2][2]);
             double[][] k2ExtrRot = MatrixUtil.convertToRowMajor(rq.getQ());
-            System.out.printf("camera2=\n%s\n", FormatArray.toString(camera2, "%.3e"));
             System.out.printf("  decomposed into intrinsic=\n   %s\n", FormatArray.toString(k2Intr, "%.3e"));
             System.out.printf("  decomposed into extrinsic rotation=\n   %s\n", FormatArray.toString(k2ExtrRot, "%.3e"));
             
@@ -437,6 +460,8 @@ public class Reconstruction {
         r90[1] = new double[]{1, 0, 0};
         r90[2] = new double[]{0, 0, 1};
         
+  //TODO: recovering expected rotation angle... looks incorrect
+          
         //positive 90 transposed
         double[][] r90T = MatrixUtil.transpose(r90);
         
@@ -471,12 +496,19 @@ public class Reconstruction {
         double detR3 = MatrixUtil.determinant(R3);
         double detR4 = MatrixUtil.determinant(R4);
         
+        double[][] R3N = MatrixUtil.copy(R3);
+        MatrixUtil.multiply(R3N, 1./R3N[2][2]);
+        double[][] R4N = MatrixUtil.copy(R4);
+        MatrixUtil.multiply(R4N, 1./R4N[2][2]);
+        
         System.out.printf("t1=\n%s\n", FormatArray.toString(t1, "%.3e"));
         System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
         System.out.printf("R1=\n%s\n", FormatArray.toString(R1, "%.3e"));
         System.out.printf("R2=\n%s\n", FormatArray.toString(R2, "%.3e"));
         System.out.printf("R3=\n%s\n", FormatArray.toString(R3, "%.3e"));
+        System.out.printf("R3N=\n%s\n", FormatArray.toString(R3N, "%.3e"));
         System.out.printf("R4=\n%s\n", FormatArray.toString(R4, "%.3e"));
+        System.out.printf("R4N=\n%s\n", FormatArray.toString(R4N, "%.3e"));
         System.out.printf("det(R1)=%.3e\n", detR1);
         System.out.printf("det(R2)=%.3e\n\n", detR2);
         System.out.printf("det(R3)=%.3e\n", detR3);

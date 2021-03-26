@@ -197,11 +197,14 @@ public class Triangulation {
      * It has intrinsic and extrinsic components.
      * @param camera2 camera matrix for image 2 in units of pixels.  
      * It has intrinsic and extrinsic components.
-     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
-     * N is the number of points.  all points are observations of real world point X.
-     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
-     * N is the number of points. .  all points are observations of real world point X.
-     * @return the point coordinates in world coordinate reference frame
+     * @param x1 the image 1 set of measurements of real world point X.
+     * The corresponding measurements of the same point in image 2 are in x2.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @param x2 the image 2 set of measurements of real world point X.
+     * The corresponding measurements of the same point in image 1 are in x1.
+     * format is 3 x N where
+     * N is the number of measurements.
      */
     public static double[] calculateWCSPoint(
         double[][] camera1, double[][] camera2,
@@ -353,10 +356,9 @@ public class Triangulation {
             a[j+3] = MatrixUtil.subtract(camera2[0], tmp);
         }
         
-        // A is  N X 4
+        // A is  4*N X 4
         // A^T*A is 4 X 4
-        //TODO: make an efficient multiplier for a^T*a in MatrixUtil:
-        double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(a), a);
+        double[][] aTa = MatrixUtil.createATransposedTimesA(a);
         assert(aTa.length == 4);
         assert(aTa[0].length == 4);
         
@@ -383,20 +385,22 @@ public class Triangulation {
         System.out.printf("X=\n%s\n\n", FormatArray.toString(X, "%.4e"));
         
         // can see that the constraint ||X||^2 = 1 is preserved
-        
-        
-        /*
+                
         double[] x1Rev = MatrixUtil.multiplyMatrixByColumnVector(camera1, X);
-        
-        double[] x2Rev = MatrixUtil.multiplyMatrixByColumnVector(camera2, X);
-        
+        double[] x2Rev = MatrixUtil.multiplyMatrixByColumnVector(camera2, X);        
         double alpha = ((1./x1Rev[2]) + (1./x2Rev[2]))/2.;
         
-        System.out.printf("x1Rev=\n%s\n", FormatArray.toString(x1Rev, "%.4e"));
-        System.out.printf("x2Rev=\n%s\n", FormatArray.toString(x2Rev, "%.4e"));
+        MatrixUtil.multiply(x1Rev, 1./x1Rev[2]);
+        MatrixUtil.multiply(x2Rev, 1./x2Rev[2]);
         
-        MatrixUtil.multiply(X, alpha);
-        */
+        System.out.printf("x1Rev=\n%s\n", FormatArray.toString(x1Rev, "%.4e"));
+        System.out.printf("x1=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(x1, 0), "%.4e"));
+        System.out.printf("x2Rev=\n%s\n", FormatArray.toString(x2Rev, "%.4e"));        
+        System.out.printf("x2=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(x2, 0), "%.4e"));
+        //System.out.printf("alpha=\n%.3e\n", alpha);
+        //MatrixUtil.multiply(X, alpha);
+        
+        
         
         return X;
     }
