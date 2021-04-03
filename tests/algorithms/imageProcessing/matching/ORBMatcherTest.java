@@ -256,11 +256,13 @@ public class ORBMatcherTest extends TestCase {
 
                 Object[] combined1 = ORB.combine(d1c, kp1c, orb1c.getOrientationsList().get(0), d1csh, kp1csh, o1csh);
                 Descriptors combined1D = (Descriptors)combined1[0];
+                @SuppressWarnings("unchecked")
                 List<PairInt> combined1K = (List<PairInt>)combined1[1];
                 TDoubleList combined1O = (TDoubleList)combined1[2];
 
                 Object[] combined2 = ORB.combine(d2c, kp2c, orb2c.getOrientationsList().get(0), d2csh, kp2csh, o2csh);
                 Descriptors combined2D = (Descriptors)combined2[0];
+                @SuppressWarnings("unchecked")
                 List<PairInt> combined2K = (List<PairInt>)combined2[1];
                 TDoubleList combined2O = (TDoubleList)combined2[2];
 

@@ -136,7 +136,7 @@ public final class StdRandom {
      * Returns a random real number uniformly in [0, 1).
      * 
      * @return     a random real number uniformly in [0, 1)
-     * @deprecated Replaced by {@link #uniform()}.
+     * @Deprecated Replaced by {@link #uniform()}.
      */
     @Deprecated
     public static double random() {

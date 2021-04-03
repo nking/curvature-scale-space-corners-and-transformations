@@ -186,7 +186,7 @@ public class TriangulationTest extends TestCase {
         
         double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.07, k1IntrTrans[0], k1IntrTrans[1]);
         double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.7, k2IntrTrans[0], k2IntrTrans[1]);
-        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(536.7, -326.5, -249.3);
+        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(536.7, k2IntrTrans[0], k2IntrTrans[1]);
         
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
@@ -221,9 +221,11 @@ public class TriangulationTest extends TestCase {
         System.out.printf("x1c=%s\n", FormatArray.toString(x1c, "%.3e"));
         System.out.printf("x2c=%s\n", FormatArray.toString(x2c, "%.3e"));
         
+        double[] tmp;
         //check: Xc_1_right = R * Xc_1_left + T
-        // can see need to subtract center of image 1 from coords then add center of image 2
-        double[] tmp = MatrixUtil.multiplyMatrixByColumnVector(k2ExtrRot, x1c);
+        // can see need to subtract center of image 1 from coords then add center of image 2.
+        // can also see that the extrinsic translation is in units of image pixels,
+        tmp = MatrixUtil.multiplyMatrixByColumnVector(k2ExtrRot, x1c);
         tmp = MatrixUtil.add(tmp, k2ExtrTrans);
         System.out.printf("?? %s\n", FormatArray.toString(tmp, "%.4e"));
         tmp = MatrixUtil.add(tmp, k2IntrTransInv);

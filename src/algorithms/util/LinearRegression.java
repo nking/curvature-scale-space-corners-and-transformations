@@ -406,7 +406,7 @@ public class LinearRegression {
             for (int j = (medianIdx - np); j <= (medianIdx + np); j++) {
                 sum += (y[idxs[j]] - median * x[idxs[j]]);
             }
-            yIntercept = sum/((double)(2.*np + 1.));
+            yIntercept = sum/(2.*np + 1.);
         }
         
         return new double[]{yIntercept, median};

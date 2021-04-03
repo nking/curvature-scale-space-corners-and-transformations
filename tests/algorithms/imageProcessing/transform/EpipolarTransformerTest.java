@@ -315,7 +315,7 @@ public class EpipolarTransformerTest extends TestCase {
 
         assertNotNull(normalizedFM);
         
-        DenseMatrix fm = spTransformer.denormalizeTheFundamentalMatrix(
+        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
             normalizedFM, normXY1.getNormalizationMatrices(),
             normXY2.getNormalizationMatrices());
                 
@@ -405,7 +405,7 @@ public class EpipolarTransformerTest extends TestCase {
         int bestFitIdx = -1;
         
         for (DenseMatrix nfm : normalizedFMs) {
-            DenseMatrix fm = spTransformer.denormalizeTheFundamentalMatrix(
+            DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
                 nfm, normXY1.getNormalizationMatrices(),
                 normXY2.getNormalizationMatrices());
             denormalizedFMs.add(fm);

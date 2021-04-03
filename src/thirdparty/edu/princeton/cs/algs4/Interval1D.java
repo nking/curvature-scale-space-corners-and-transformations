@@ -81,7 +81,7 @@ public class Interval1D {
      * Returns the left endpoint of this interval.
      *
      * @return the left endpoint of this interval
-     * @deprecated Replaced by {@link #min()}.
+     * @Deprecated Replaced by {@link #min()}.
      */
     public double left() { 
         return min;
@@ -90,7 +90,7 @@ public class Interval1D {
     /**
      * Returns the right endpoint of this interval.
      * @return the right endpoint of this interval
-     * @deprecated Replaced by {@link #max()}.
+     * @Deprecated Replaced by {@link #max()}.
      */
     public double right() { 
         return max;

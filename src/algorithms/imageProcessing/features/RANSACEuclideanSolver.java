@@ -239,11 +239,11 @@ public class RANSACEuclideanSolver {
             Integer index = inlierIndexes.get(i);
             int idx = index.intValue();
             outputLeftXY.add(
-                (int)Math.round(matchedLeftXY.getX(idx)),
-                (int)Math.round(matchedLeftXY.getY(idx)));
+                Math.round(matchedLeftXY.getX(idx)),
+                Math.round(matchedLeftXY.getY(idx)));
             outputRightXY.add(
-                (int)Math.round(matchedRightXY.getX(idx)),
-                (int)Math.round(matchedRightXY.getY(idx)));
+                Math.round(matchedRightXY.getX(idx)),
+                Math.round(matchedRightXY.getY(idx)));
         }
       
         log.fine("nIter=" + nIter);

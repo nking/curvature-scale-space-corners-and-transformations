@@ -248,7 +248,7 @@ public class CSSCornerMaker {
      * @param theEdges
      * @param outEdgeScaleSpaceMaps
      * @return 
-     * @deprecated 
+     * @Deprecated 
      */
     public List<CornerArray> findCornersInScaleSpaceMaps(
         final List<PairIntArray> theEdges,
