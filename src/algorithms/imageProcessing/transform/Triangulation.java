@@ -266,7 +266,7 @@ public class Triangulation {
         
         x = alpha * P * X 
             where alpha is a scale factor and so the projection is in the same
-               direction.
+               direction.  it's 1./(depth of point)
         
                     [ p1  p1  p3  p4  ]   [ X ]
         x = alpha * [ p5  p6  p7  p8  ] * [ Y ]

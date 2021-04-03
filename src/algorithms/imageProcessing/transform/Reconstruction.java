@@ -77,7 +77,26 @@ public class Reconstruction {
         }
     }
     
-      /**
+    public static class CameraExtrinsics {
+        double[][] rot;
+        double[] trans;
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("rot=\n");
+            if (rot != null) {
+                sb.append(FormatArray.toString(rot, "%.4e"));
+            }
+            sb.append("trans=\n");
+            if (trans != null) {
+                sb.append(FormatArray.toString(trans, "%.4e"));
+            }
+            return sb.toString();
+        }
+    }
+    
+     /**
      * given correspondence between two images calculate the camera
      * parameters, and the real world position.
      * 
@@ -583,6 +602,256 @@ public class Reconstruction {
         rr.k1Intr = k1;
 
         return rr;
+    }
+    
+     /**
+     * given correspondence between two images calculate the extrinsic camera
+     * parameters.
+     * 
+     * Can construct the essential matrix with the 2nd camera extrinsics: [R | R*t ]
+     * 
+     * <pre>
+     * following CMU lectures of Kris Kinai at 
+     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+     * 
+     * add other references here
+     * </pre>
+     * @param k1 intrinsic camera matrix for image 1 in units of pixels.
+     * @param k2 intrinsic camera matrix for image 2 in units of pixels.
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @return 
+     */
+    public static CameraExtrinsics[] calculateCameraExtrinsics(
+        double[][] k1, double[][] k2,
+        double[][] x1, double[][] x2) throws NotConvergedException {
+        
+        if (x1.length != 3 || x2.length != 3) {
+            throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
+        }
+        int n = x1[0].length;
+        if (x2[0].length != n) {
+            throw new IllegalArgumentException("x1 and x2 must be same dimensions");
+        }
+        
+        /*
+        http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+        
+        (1) compute fundamental mat5rix FM from the correspondence x1, x2
+        (2) compute the camera matrices P1, P2 from FM.
+        (3) For each point correspondence, compute the point X in 3D space (triangularization)
+        */
+        
+        double[][] k1IntrInv = Camera.createIntrinsicCameraMatrixInverse(k1);
+        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(k2);
+        
+        // the direction of the points is calculated by K^-1 * x
+        double[][] x1Direction = MatrixUtil.multiply(k1IntrInv, x1);
+        double[][] x2Direction = MatrixUtil.multiply(k2IntrInv, x2);
+        
+        DenseMatrix x1M = new DenseMatrix(x1Direction);
+        DenseMatrix x2M = new DenseMatrix(x2Direction);
+        
+        EpipolarTransformer.NormalizedXY normXY1 
+            = EpipolarTransformer.normalizeUsingUnitStandard(x1M);
+        EpipolarTransformer.NormalizedXY normXY2 
+            = EpipolarTransformer.normalizeUsingUnitStandard(x2M);
+        
+        DenseMatrix leftM = normXY1.getXy();
+        DenseMatrix rightM = normXY2.getXy();
+        
+        double tolerance = 3.84; //3.84 5.99 7.82        
+        boolean useToleranceAsStatFactor = true;
+        ErrorType errorType = ErrorType.SAMPSONS;
+        EpipolarTransformationFit fitR = null;
+        boolean reCalcIterations = false;
+        
+        DenseMatrix normalizedE;
+        
+        EpipolarTransformer tr = new EpipolarTransformer();
+        
+        /*
+        normalizedE = tr.calculateEpipolarProjection(leftM, rightM);
+        DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
+        
+        Distances distances = new Distances();
+        if (useToleranceAsStatFactor) {
+            fitR = distances.calculateError2(vNFM, leftM, rightM,
+                    errorType, tolerance);
+        } else {
+            fitR = distances.calculateError(vNFM, leftM, rightM,
+                    errorType, tolerance);
+        }*/
+        
+        RANSACSolver solver = new RANSACSolver();
+        fitR = solver.calculateEpipolarProjection(
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations);
+        
+        System.out.println("RANSAC fit=" + fitR.toString());
+        
+        normalizedE = fitR.getFundamentalMatrix();
+        
+        DenseMatrix essentialM = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+            normalizedE, normXY1.getNormalizationMatrices(),
+            normXY2.getNormalizationMatrices());
+                
+        double[][] _essentialMatrix = MatrixUtil.convertToRowMajor(essentialM);
+        
+        MatrixUtil.SVDProducts svdE = MatrixUtil.performSVD(_essentialMatrix);
+        
+        assert(svdE.u[0].length == 3 && svdE.u.length == 3);
+        
+        double detU = MatrixUtil.determinant(svdE.u);
+        double detV = MatrixUtil.determinant(svdE.vT);
+        
+        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(svdE.u, "%.3e"));
+        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svdE.s, "%.3e"));
+        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(svdE.vT, "%.3e"));
+        System.out.printf("det(SVD.u)=%.2f\n", detU);
+        System.out.printf("det(SVD.vT)=%.2f\n", detV);
+        
+        /*
+        szeliski:
+        Once an estimate for the essential matrix E has been recovered, 
+        the direction of the translation vector t can be estimated. 
+        Note that the absolute distance between the two cameras can never 
+        be recovered from pure image measurements alone, regardless of 
+        how many cameras or points are used. Knowledge about absolute 
+        camera and point positions or distances, of- ten called ground 
+        control points in photogrammetry, is always required to 
+        establish the final scale, position, and orientation.
+        */
+        double[] t1 = MatrixUtil.extractColumn(svdE.u, 2);
+        double[] t2 = Arrays.copyOf(t1, t1.length);
+        MatrixUtil.multiply(t2, -1); 
+        
+        //negative 90 transposed
+        double[][] r90 = new double[3][3];
+        r90[0] = new double[]{0, -1, 0};
+        r90[1] = new double[]{1, 0, 0};
+        r90[2] = new double[]{0, 0, 1};
+        
+  //TODO: recovering expected rotation angle... looks incorrect
+          
+        //positive 90 transposed
+        double[][] r90T = MatrixUtil.transpose(r90);
+        
+        //R = ±U R^T±90^T V^T
+        double[][] uNegative = MatrixUtil.copy(svdE.u);
+        MatrixUtil.multiply(uNegative, -1.);
+        
+        double[][] R1 = MatrixUtil.multiply(svdE.u, r90T);
+        R1 = MatrixUtil.multiply(R1, svdE.vT);
+        
+        double[][] R2 = MatrixUtil.multiply(svdE.u, r90);
+        R2 = MatrixUtil.multiply(R2, svdE.vT);
+        
+        double[][] R3 = MatrixUtil.multiply(uNegative, r90T);
+        R3 = MatrixUtil.multiply(R3, svdE.vT);
+        
+        double[][] R4 = MatrixUtil.multiply(uNegative, r90);
+        R4 = MatrixUtil.multiply(R4, svdE.vT);
+        
+        // det(R)=1 is a proper rotation matrix.  rotation angles are counterclockwise.
+        //           it's a special orthogonal matrix and provides the
+        //           defining matrix representation of the group of proper n-dimensional rotations, denoted
+        //           by SO(n). http://scipp.ucsc.edu/~haber/ph251/rotreflect_17.pdf
+        // det(R)=-1 is an improper rotation matrix representing rotations that
+        //           require mirrors.
+        //           The most general improper rotation matrix is a product of a proper rotation by an
+        //           angle θ about some axis nˆ and a mirror reflection through a plane that passes through
+        //           the origin and is perpendicular to nˆ.  NOTE: nˆ is determined by
+        //           the right hand rule.
+        double detR1 = MatrixUtil.determinant(R1);
+        double detR2 = MatrixUtil.determinant(R2);
+        double detR3 = MatrixUtil.determinant(R3);
+        double detR4 = MatrixUtil.determinant(R4);
+        
+        double[][] R3N = MatrixUtil.copy(R3);
+        MatrixUtil.multiply(R3N, 1./R3N[2][2]);
+        double[][] R4N = MatrixUtil.copy(R4);
+        MatrixUtil.multiply(R4N, 1./R4N[2][2]);
+        
+        System.out.printf("t1=\n%s\n", FormatArray.toString(t1, "%.3e"));
+        System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
+        System.out.printf("R1=\n%s\n", FormatArray.toString(R1, "%.3e"));
+        System.out.printf("R2=\n%s\n", FormatArray.toString(R2, "%.3e"));
+        System.out.printf("R3=\n%s\n", FormatArray.toString(R3, "%.3e"));
+        System.out.printf("R3N=\n%s\n", FormatArray.toString(R3N, "%.3e"));
+        System.out.printf("R4=\n%s\n", FormatArray.toString(R4, "%.3e"));
+        System.out.printf("R4N=\n%s\n", FormatArray.toString(R4N, "%.3e"));
+        System.out.printf("det(R1)=%.3e\n", detR1);
+        System.out.printf("det(R2)=%.3e\n\n", detR2);
+        System.out.printf("det(R3)=%.3e\n", detR3);
+        System.out.printf("det(R4)=%.3e\n\n", detR4);
+        
+        double tol = 1.e-5;
+        
+        // keep the 2 that have det(R) == 1 
+        double[][] rot1 = null; 
+        double[][] rot2 = null;
+        if (Math.abs(detR1 - 1.) < tol) {
+            rot1 = R1;
+        }
+        if (Math.abs(detR2 - 1.) < tol) {
+            if (rot1 == null) {
+                rot1 = R2;
+            } else {
+                rot2 = R2;
+            }
+        }
+        if (Math.abs(detR3 - 1.) < tol) {
+            if (rot1 == null) {
+                rot1 = R3;
+            } else {
+                rot2 = R3;
+            }
+        }
+        if (Math.abs(detR4 - 1.) < tol) {
+            if (rot1 == null) {
+                rot1 = R4;
+            } else {
+                rot2 = R4;
+            }
+        }
+        
+        if (rot1 == null && rot2 == null) {
+            return null;
+        }
+        
+        //then of the 4 possible choices find the one with largest number of positive Z.
+          
+        //NOTE: the last column vector in u is the smallest
+        //    eigenvector.  it is epipole2, that is, the right image position 
+        //    of the epipolar projection of the left camera center.
+        //    it's int the left null space of E.
+           
+        x1M = extractIndices(new DenseMatrix(x1), fitR.inlierIndexes);
+        x2M = extractIndices(new DenseMatrix(x2), fitR.inlierIndexes);
+        x1 = MatrixUtil.convertToRowMajor(x1M);
+        x2 = MatrixUtil.convertToRowMajor(x2M);
+        
+       // solution 1:  Rot1 and T1
+        // solution 2:  Rot1 and T2
+        // solution 3:  Rot2 and T2
+        // solution 4:  Rot2 and T1
+        double[][] rSelected = MatrixUtil.zeros(3, 3);
+        double[] tSelected = new double[3];
+        double[][] XW = chooseRAndT(x1, x2, k1, k2,
+            rot1, rot2, t1, t2, rSelected, tSelected);
+        
+        CameraExtrinsics c1 = new CameraExtrinsics();
+        c1.rot = MatrixUtil.createIdentityMatrix(3);
+        c1.trans = new double[]{0, 0, 0};
+          
+        CameraExtrinsics c2 = new CameraExtrinsics();
+        c2.rot = rSelected;
+        c2.trans = tSelected;
+        
+        return new CameraExtrinsics[]{c1, c2};
     }
 
     /**
