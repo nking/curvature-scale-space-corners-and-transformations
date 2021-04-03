@@ -2,7 +2,10 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.CubicRootSolver;
+import algorithms.misc.PolynomialRootSolver;
+import algorithms.util.PolynomialFitter;
 import java.util.Arrays;
+import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  * utility methods for camera intrinsic and extrinsic matrices.
@@ -212,7 +215,7 @@ public class Camera {
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
         
-        double[][] cc = cc = MatrixUtil.copy(xC);
+        double[][] cc = MatrixUtil.copy(xC);
         for (int i = 0; i < xC[0].length; ++i) {
             // normalized pinhole projection X_c/Z_c and 
             cc[0][i] /= xC[2][i];
@@ -222,6 +225,7 @@ public class Camera {
         if (rCoeffs != null) {
             // input and output cc are in camera reference frame
             cc = applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1]);
+            //TODO: consider implementing the higher order terms to include tangential
         }
          
         focalLength = Math.abs(focalLength);
@@ -251,7 +255,7 @@ public class Camera {
      * @return pixels in the reference frame of 
      */
     public static double[][] pixelToCameraCoordinates(double[][] x, double[] rCoeffs,
-        double focalLength, double centerX, double centerY) {
+        double focalLength, double centerX, double centerY) throws NotConvergedException {
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
         
@@ -265,6 +269,7 @@ public class Camera {
         
         if (rCoeffs != null) {
             pix = removeRadialDistortion(pix, rCoeffs[0], rCoeffs[1]);
+            //TODO: consider implementing the higher order terms to include tangential
         }
                 
         return pix;
@@ -371,7 +376,6 @@ public class Camera {
             throw new IllegalArgumentException("xC.length must be 3");
         }
         
-        // normalize the coordinates by last dimension, which is probably already been done
         double[][] distorted = MatrixUtil.copy(xC);
         
         double r, r2, fr;
@@ -482,13 +486,12 @@ public class Camera {
     @return undistorted points in the camera reference frame.  Format is 3XN where N is the
     number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
     */
-    static double[][] removeRadialDistortion(double[][] xC, double k1, double k2) {
+    static double[][] removeRadialDistortion(double[][] xC, double k1, double k2) throws NotConvergedException {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
         }
                 
-        // normalize the coordinates by last dimension
         double[][] corrected = MatrixUtil.copy(xC);
         
         /*
@@ -524,18 +527,29 @@ public class Camera {
             q = (2.*a3/27.) - (a*b/3.) + c;
             
             double[] rBar = CubicRootSolver.solveUsingDepressedCubic(p, q);
-            if (rBar.length == 1) {
+            if (rBar == null || rBar.length == 0) {
+                //k2*r^3 +k1*r^2 + r - r_d = 0
+                rBar = PolynomialRootSolver.realRoots(new double[]{k2, k1, 1, -rd});
+                if (rBar == null || rBar.length == 0) {
+                    //TODO: consider how to handle this case
+                    r = 0;
+                }
+                r = rBar[0];
+            } else if (rBar.length == 1) {
                 r = rBar[0] - (a/3.);
+                // check solution: 
+                //  k2*r^3 +k1*r^2 +r - r_d = 0
+                double chk = k2 * r * r * r + k1 * r * r + r - rd;
+                assert(Math.abs(chk) < tol);
             } else {
                 assert(rBar.length == 3);
                 r = rBar[1] - (a/3.);
+                // check solution: 
+                //  k2*r^3 +k1*r^2 +r - r_d = 0
+                double chk = k2 * r * r * r + k1 * r * r + r - rd;
+                assert(Math.abs(chk) < tol);
             }
-            
-            // check solution: 
-            //  k2*r^3 +k1*r^2 +r - r_d = 0
-            double chk = k2 * r*r*r + k1*r*r + r - rd;
-            assert(Math.abs(chk) < tol);
-            
+                        
             fr = 1 + k1*r + k2*r*r;
                   
             // eqn (5) from Ma et al. 2004
