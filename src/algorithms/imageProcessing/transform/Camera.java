@@ -277,7 +277,8 @@ public class Camera {
     
     /**
     apply radial distortion to distortion-free camera centered coordinates using 
-    the algorithm of Ma, Chen & Moore (which is Ma et al. 2003).
+    the algorithm of Ma, Chen & Moore (which is Ma et al. 2003) for the
+    distortion function expressed as f(r) = 1 + k1*r + k2*r^2;
     In terms of the variables outlined below, the algorithm input is
     (x, y), k1, k2, and cameraIntrinsics and the output is (x_d, y_d).
     
@@ -396,7 +397,8 @@ public class Camera {
     /**
     apply radial distortion correction to points in the camera reference frame.
     This method is used by pixelToCameraCoordinates().
-    The algorithm follows Ma, Chen, & Moore 2004.
+    The algorithm follows Ma, Chen, & Moore 2004 to correct the distortion
+    estimated as f(r) = 1 + k1*r + k2*r^2;
     In terms of the variables outlined in comments below, the algorithm input is
     distorted points as a double array of (x_d, x_d), and the radial distortion
     coefficients k1, k2.  The output is a a double array of (x, y).
