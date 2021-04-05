@@ -3,7 +3,6 @@ package algorithms.imageProcessing.transform;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.CubicRootSolver;
 import algorithms.misc.PolynomialRootSolver;
-import algorithms.util.PolynomialFitter;
 import java.util.Arrays;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -202,7 +201,7 @@ public class Camera {
      * @param xC distortion-free camera centered coordinates. 
      * format is 3XN for N points.  
      * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
-     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
+     * @param rCoeffs radial distortion vector of length 2
      * distortion vector of length 5.  can be null to skip lens distortion correction.
      * @param focalLength focal length of camera in units of pixels.
      * @param centerX x coordinate of camera optical center in image pixel coordinates.
@@ -225,7 +224,7 @@ public class Camera {
         if (rCoeffs != null) {
             // input and output cc are in camera reference frame
             cc = applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1]);
-            //TODO: consider implementing the higher order terms to include tangential
+            //TODO: consider implementing tangential too.  see Me et al. 2004 Section 5(b)
         }
          
         focalLength = Math.abs(focalLength);
@@ -335,12 +334,8 @@ public class Camera {
           c = −r_d/k2
           p = b − (a^2/3)
           q = (2a^3)/27 − ab/3 + c
-        discriminator delta = (q/2)^2 + (p/3)^3
-           delta .gt. 0 there is 1 real root
-           delta .eq. 0 has a multiple root
-           delta .lt. 0 there are 3 real roots and the middle one is what is 
-                     needed since the first root is at a negative radius 
-                     and the third lies beyond the positive turning point
+        then use depressed cubic root to solve for r_bar.
+        r = r_bar = (a/3)
     
         After r is determined, (u,v) can be calculated from (Eqn 5) which is
            u_d - u_0 = (u−u_0) * f(r)
@@ -379,7 +374,7 @@ public class Camera {
         
         double[][] distorted = MatrixUtil.copy(xC);
         
-        double r, r2, fr;
+        double r, r2, fr, signx, signy, c2p1, fx, fy;
         int i;
                 
         for (i = 0; i < distorted[0].length; ++i) {
@@ -387,8 +382,19 @@ public class Camera {
             r = Math.sqrt(r2);
             //f(r) = (1 + k1*r + k2*r^2)
             fr = 1 + k1*r + k2*r2;
-            distorted[0][i] *= fr;
-            distorted[1][i] *= fr;
+            //distorted[0][i] *= fr;
+            //distorted[1][i] *= fr;
+            
+            // following Ma et al. 2004 Table 2,column 3 for model #3:
+            // where c = y_d/x_d = y/x
+            // f(x) = (1 + k1*math.sqrt(1+c^2)*x*sign(x) + k2*(1+c^2)*x^2)
+            c2p1 = Math.pow(distorted[1][i]/distorted[0][i], 2.) + 1;
+            signx = (distorted[0][i] < 0) ? -1 : 0;
+            signy = (distorted[1][i] < 0) ? -1 : 0;
+            fx = 1 + (k1*Math.sqrt(c2p1)*distorted[0][i]*signx) + (k2*c2p1*distorted[0][i]*distorted[0][i]);
+            fy = 1 + (k1*Math.sqrt(c2p1)*distorted[1][i]*signy) + (k2*c2p1*distorted[1][i]*distorted[1][i]);
+            distorted[0][i] *= fx;
+            distorted[1][i] *= fy;
         }
                 
         return distorted;
@@ -440,7 +446,7 @@ public class Camera {
          x_d = x * f(r)
          y_d = y * f(r)
     
-    ==> Radial Undistortion:
+    ==> Radial Undistortion, Section 2.2 of Ma et al. 2004:
         solve for cubic roots
         https://en.wikipedia.org/wiki/Cubic_equation#Reduction_to_a_depressed_cubic
         though authors use Pearson's 1983 version of 
@@ -456,12 +462,8 @@ public class Camera {
           c = −r_d/k2
           p = b − (a^2/3)
           q = (2a^3)/27 − ab/3 + c
-        discriminator delta = (q/2)^2 + (p/3)^3
-           delta .gt. 0 there is 1 real root
-           delta .eq. 0 has a multiple root
-           delta .lt. 0 there are 3 real roots and the middle one is what is 
-                     needed since the first root is at a negative radius 
-                     and the third lies beyond the positive turning point
+        then use depressed cubic root to solve for r_bar.
+        r = r_bar = (a/3)
     
         After r is determined, (u,v) can be calculated from (Eqn 5) which is
            u_d - u_0 = (u−u_0) * f(r)
@@ -481,12 +483,14 @@ public class Camera {
         pincushion distortion to a positive value of k1.
          
     </pre>
-    @param xC distorted points in the camera reference frame.  format is 3XN where N is the
+    @param xC distorted points in the camera reference frame, preseumably 
+    already center subtracted.  format is 3XN where N is the
     number of points.  These are (x_d, x_d) pairs in terms of Table 1 in Ma et al. 2004.
     @param k1 first radial distortion coefficient
     @param k2 second radial distortion coefficient
     @return undistorted points in the camera reference frame.  Format is 3XN where N is the
     number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
+    @throws no.uib.cipr.matrix.NotConvergedException
     */
     static double[][] removeRadialDistortion(double[][] xC, double k1, double k2) throws NotConvergedException {
         
@@ -507,12 +511,6 @@ public class Camera {
           c = −r_d/k2
           p = b − (a^2/3)
           q = (2a^3)/27 − ab/3 + c
-        discriminator delta = (q/2)^2 + (p/3)^3
-           delta .gt. 0 there is 1 real root
-           delta .eq. 0 has a multiple root
-           delta .lt. 0 there are 3 real roots and the middle one is what is 
-                     needed since the first root is at a negative radius 
-                     and the third lies beyond the positive turning point
         */
         
         double a = k1/k2;
@@ -524,9 +522,15 @@ public class Camera {
         int i;
         for (i = 0; i < xC[0].length; ++i) {
             rd = Math.sqrt(corrected[0][i]*corrected[0][i] + corrected[1][i]*corrected[1][i]);
+            if (Math.abs(rd) < tol) {
+                continue;
+            }
             c = -rd/k2;
             p = b - (a2/3.);
             q = (2.*a3/27.) - (a*b/3.) + c;
+            
+            // Ma et al. 2004 expect rd = 0, r=0 when cubic root discriminant = 0.
+            //   so consider whether to continue use cubic root for that case
             
             double[] rBar = CubicRootSolver.solveUsingDepressedCubic(p, q);
             if (rBar == null || rBar.length == 0) {
@@ -545,6 +549,14 @@ public class Camera {
                 assert(Math.abs(chk) < tol);
             } else {
                 assert(rBar.length == 3);
+                if ((Math.pow(q/2., 2) + Math.pow(p/3., 3)) < tol) {
+                    //from Ma et al 2004:
+                    //if ∆<0,then there are three solutions [Pearson, 1983]. 
+                    //In general, the middle one is what we need, since the 
+                    //first root is at a negative radius and the third lies 
+                    //beyond the positive turning point 
+                    Arrays.sort(rBar);
+                }
                 r = rBar[1] - (a/3.);
                 // check solution: 
                 //  k2*r^3 +k1*r^2 +r - r_d = 0
