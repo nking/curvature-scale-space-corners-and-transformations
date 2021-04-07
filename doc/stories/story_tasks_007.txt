@@ -1,0 +1,280 @@
+Lacking an app to keep these in, making a temporary file while
+implementing...
+
+=====================================================================
+Story: Implementing a camera self-calibration algorithm by Ma, Chen, & Moore
+ 
+    summary: given features from N images in image pixel coordinates and
+      given the features in the world coordinate system, estimates
+      the camera intrinsic and extrinsic parameters.
+
+    time estimate: 
+        minimum: 1 day
+        maximum: 2 days
+
+    amount of time used: 
+
+    state of completion: at requirements stage
+
+    comments regarding state:
+
+    comments:
+
+---------------------------------------------------------------------
+Task 1: Write the stub for the main class CameraCalibration and the
+        unit test for it.
+
+   goal: 
+
+   time estimate: minimum  hour, maximum  day
+  
+   amount of time used:  hours
+
+   state of completion: 
+
+   comments:
+              
+   details:  
+       Camera Calibration main method:
+          input:  n, coordsI, coordsW
+            n is the number of points in each image which is the
+              same for all images.
+            coordsI holds the image coordinates in pixels of 
+               features present in all images ordered in the same
+               manner and paried with features in coordsW.  
+               It is a 2 dimensional double array of format
+               3 X (N*n) where N is the number of images.
+               the first row is the x coordinates, the second row
+               is the y coordinates, and the third row is "1"'s.
+            coordsW holds the world coordinates of features, ordered
+               by the same feeatures in the images.
+               the first row is the X coordinates, the second row
+               is the Y coordinates, and the third row is assumed to
+               be zero as the scale factor is lost in the homography..
+          output: camera intrinsic parameters, camera extrinsic parameters
+          
+          responsibilities:
+             - asserts arguments: 
+                N >= 3 where N is the number of images.
+                input are consistent
+             - for each image: invokes homography solution with a solver using SVD
+             - given all homographies: estimates intrinsic parameters with a solver using SVD
+             - for each image: estimates extrinsic parameters and then corrects the rotation
+                matrix so that it is an orthogonal matrix (unitary matrix) using SVD products
+             - for all coords and homographies: estimates radial distortion coefficients 
+                with a solver using linear least squares (SVD...DLT)
+             - improves the intrinsic and extrinsic estimates by optimization:
+                  minimum residual of the given image points and the projection of the
+                  world coordinates using current camera estimates.
+                  -> LBFGS is in this project already and doesn't need the gradient or hessian,
+                     can use finite difference.
+
+       CameraCalibrationTest data 
+          images are 3042 X 3504 (previously 3042x4032)
+          errors likely > 8 pixels
+          
+                img2       img1         img3
+          #1 560, 532     680, 720     744, 808
+          #2 2428, 512    2208, 896    2284, 528
+          #3 1484, 856    1508, 1100   1416, 1000
+          #4 1488, 1708   1520, 1856   1428, 1784
+          #5 1228, 1896   1296, 2012   1220, 1952
+          #6 2136, 1908   2028, 2000   2012, 1972
+          #7 620, 2800    704, 2940    788, 2718
+          #8 2364, 2844   2208, 2780   2272, 2928
+          
+          expecting 
+             focalLength ~ 1604 pixels = 2.245 mm
+             no skew
+             xc=1521
+             yc=1752
+             little to no radial distortion (if was present, it is already removed)
+             rotation between images = 23.4 degrees
+             translation between images = 18 cm
+          
+          other information:
+            pixel width = 1.4e-3mm
+            FOV = 77 degrees = 1.344 radians
+
+---------------------------------------------------------------------
+Task 2: Implement the method that solves for the homography matrix H
+
+   goal: given the image and world coordinates of features, calculates
+       the homography matrix H.
+
+   time estimate: minimum  hour, maximum  day
+  
+   amount of time used:  hours
+
+   state of completion: 
+
+   comments:
+              H =   [ h11 h12 h13 ]
+                    [ h21 h22 h23 ]
+                    [ h31 h32 h33 ]
+              H^T = [ h11 h21 h31 ]
+                    [ h12 h22 h32 ]
+                    [ h13 h23 h33 ]
+          
+              Let h_i be the ith column vector of H:
+                  h_i = ]h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+                        [h_i_2]
+                        [h_i_3]
+              
+   details:  
+          homography solver method:
+            input: coordsI_i, coordsW_i 
+               where coordsI_i holds the image coordinates in pixels of features present in image i
+               and coordsW_i holds the world coordinates of features present in image 1 corresponding
+               to the same features and order of coordsI_i
+            output: double array of H, the projection matrix
+            responsibilities:
+              -creates matrix L, and finds the solution to x as orthogonal to L by using the SVD(L)
+               to find the eigenvector belonging to the smallest eigenvalue.
+              -reformats x into 3x3 H to return
+              
+---------------------------------------------------------------------
+Task 3: implement the intrinsic parameters solver
+
+   goal: 
+
+   time estimate: minimum  hour, maximum  day
+  
+   amount of time used:  hours
+
+   state of completion: 
+
+   comments:
+              
+   details:  
+            input: H as (3*NImages)x3 homography, projection matrices
+              where each image homography is stacked row-wise
+            output: camera intrinsic parameters
+            responsibilities:
+              - for each H:
+                    form a matrix V_i_j out of the first 2 columns of each H matrix
+                    and stack them by rows, into a matrix called V
+              - perform SVD(V) to get right singular vector of V associated with the smallest singular value
+                as the solution to b.
+              - b holds the contents of the upper right triangle of B 
+                where B = A^-T * A^-1 known as the absolute conic.
+              - the intrinsic parameters are extraction from combinations of the solved 
+                for B and other coefficients.
+          
+---------------------------------------------------------------------
+Task 4: implement the extrinsic parameters solver
+
+   goal: 
+
+   time estimate: minimum  hour, maximum  day
+  
+   amount of time used:  hours
+
+   state of completion: 
+
+   comments:
+              
+   details:  
+          extrinsic parameters solver method:
+            input: intrinsicInverse_i, H_i
+              where intrinsicInverse_i is the inverse matrix of the camera intrinsic parameters
+              and H_i is the homography for the image.
+            output: estimated camera extrinsic parameters
+            responsibilities:
+              - estimates extrinsic parameters from combinations of A^-1 and columns of H
+              - for the rotation matrix, matrix is made into a unitary matrix by
+                SVD(R).U * SVD(R)*V^T
+---------------------------------------------------------------------
+Task 5: implement the method to estimate the radial distortion coefficients
+
+   goal: 
+
+   time estimate: minimum  hour, maximum  day
+  
+   amount of time used:  hours
+
+   state of completion: 
+
+   comments:
+              
+   details:  
+          radial parameters solver method:
+            input: coordI, coordsW, Hs
+            output: radial distortion parameters k1, k2
+            responsibilities:
+              - given 
+                 the ideal projected undistorted image points (u, v) 
+                   calculate from eqn (17) which is derived from eqn (15)
+          
+                then populate D and d below:
+          
+                then using linear least squares: k = (D^T*D)^-1 * d
+          
+                --------
+                eqn (17)
+                       h11*X_w + h13*Y_W + h13
+                   u = -----------------------
+                       h31*X_w + h32*Y_W + h33
+           
+                       h21*X_w + h23*Y_W + h23
+                   v = -----------------------
+                       h31*X_w + h32*Y_W + h33
+           
+                eqn(8):
+                 u + (u-u_0)*[k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2] = u_d
+                 v + (v-v_0)*[k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2] = v_d
+                
+                 [k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2]*(u-u_0) + u = u_d
+                 [k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2]*(v-v_0) + v = v_d
+                
+                 [ [(x^2 + y^2)   (x^2+y^2)^2]*(u-u_0)   u ] * [k1] = u_d
+                 [ [(x^2 + y^2)   (x^2+y^2)^2]*(v-v_0)   v ]   [k2] = v_d
+                                                               [1 ]
+                
+                  ==> D = [ [(x^2 + y^2)   (x^2+y^2)^2]*(u-u_0)   u ]
+                          [ [(x^2 + y^2)   (x^2+y^2)^2]*(v-v_0)   v ]
+                          [ next point on 2 rows                    ]
+                          [...                                      ]
+          
+                  ==> d =[u_d]
+                         [v_d]
+                         [u_d for next point]
+                         [v_d for next point]
+                         [...]
+                
+---------------------------------------------------------------------
+Task 6: implement the method for parameter optimization
+
+   goal: 
+
+   time estimate: minimum  hour, maximum  day
+  
+   amount of time used:  hours
+
+   state of completion: 
+
+   comments:
+              
+   details:  
+          parameter optimization method:
+            input: imageC, worldC, intrinsic, extrinsic, radial distortion
+            output: intrinsic and exrinsic
+            responsibilities:
+              - given 
+                  minimum residual of the given image points and the projection of the
+                  world coordinates using current camera estimates.
+                  -> LBFGS is in this project already and doesn't need the gradient or hessian,
+                     can use finite difference.
+          
+                thirdparty.dlib.optimization.Helper.CentralDifferences f2 
+                   = new Helper.CentralDifferences(f, 1.e-7);
+                double fLower = -10;
+                LBFGSOptimization opt = new LBFGSOptimization();
+                double min = opt.findMin(searchStrategy, 
+                    stopStrategy, f2, init, fLower);
+          
+                need to create f to implement IFunction.
+                An example for a different objective is Helper.FunctionPoly
+          
+---------------------------------------------------------------------
+=====================================================================
