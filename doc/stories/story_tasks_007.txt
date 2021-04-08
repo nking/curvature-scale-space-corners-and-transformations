@@ -233,6 +233,7 @@ Task 5: implement the method to estimate the radial distortion coefficients
                        h31*X_w + h32*Y_W + h33
            
                 eqn(8):
+                 NOTE:it uses equation #4 of Ma et al. 2004 Table 2
                  u + (u-u_0)*[k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2] = u_d
                  v + (v-v_0)*[k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2] = v_d
                 
