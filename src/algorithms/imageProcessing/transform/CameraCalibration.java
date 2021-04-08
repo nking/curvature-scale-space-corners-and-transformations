@@ -1,6 +1,10 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.matrix.MatrixUtil;
+import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.CubicRootSolver;
 import algorithms.misc.PolynomialRootSolver;
 import java.util.Arrays;
@@ -25,12 +29,341 @@ import no.uib.cipr.matrix.NotConvergedException;
  */
 public class CameraCalibration {
     
-    /*
-    need data for N images where data is n features in each
-    image as image coordinates and world coordinates.
-    At least N=3 images are required.    
-    */
+    /**
+     * 
+     * @param n n is the number of points in each image which is the
+              same for all images.
+     * @param coordsI  holds the image coordinates in pixels of
+               features present in all images ordered in the same
+               manner and paired with features in coordsW.
+               It is a 2 dimensional double array of format
+               3 X (N*n) where N is the number of images.
+               the first row is the x coordinates, the second row
+               is the y coordinates, and the third row is "1"'s.
+     * @param coordsW holds the world coordinates of features, ordered
+               by the same features in the images.
+               the first row is the X coordinates, the second row
+               is the Y coordinates, and the third row is assumed to
+               be zero as the scale factor is lost in the homography.
+               It is a 2 dimensional double array of format
+               3 X n
+     * @return camera intrinsic parameters, extrinsic parameters, and radial
+     * distortion coefficients
+     */
+    public static CameraMatrices estimateCamera(int n, double[][] coordsI, 
+        double[][] coordsW) throws NotConvergedException {
+        
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI must have 3 rows.");
+        }
+        int nImages = coordsI[0].length/n;
+        if (coordsI[0].length != nImages*n) {
+            throw new IllegalArgumentException("coordsI must have nImages * n features as the number of columns");
+        }
+        if (coordsW.length != 3) {
+            throw new IllegalArgumentException("coordsW must have 3 rows.");
+        }
+        
+        //TODO: consider normalizing coordsI by coordsI[2][*] if the last row
+        //      is not already 1's
+        
+        //(1) for each image: invoke homography solver using SVD
+        double[][] h = MatrixUtil.zeros(nImages*3, 3);
+        
+        double[][] g, cI;
+        int i, i2;
+        for (i = 0; i < nImages; ++i) {
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 3, i, i+n);
+            g = solveForHomography(cI, coordsW);
+            
+            /*
+            h image 0
+            h image 1
+            h image 2
+            */
+            for (i2 = 0; i2 < 3; ++i2) {
+                System.arraycopy(g[i2], 0, h[i+i2], 0, g[i2].length);
+            }
+        }
+        
+        //(2) for all homographies, solve for the camera intrinsic parameters
+        CameraIntrinsicParameters kIntr = solveForIntrinsic(h);
+        
+        CameraMatrices cameraMatrices = new CameraMatrices();
+        cameraMatrices.setIntrinsics(kIntr);
+        
+        //(3) for each image homography and inverse intrinsic parameter matrix,
+        //    estimate the extrinsic parameters for the pose of the camera for that image.
+        Camera.CameraExtrinsicParameters kExtr;
+        
+        for (i = 0; i < nImages; ++i) {
+            cI = MatrixUtil.copySubMatrix(h, 3*i, 3+3*i, 0, 3);
+            kExtr = solveForExtrinsic(kIntr, cI);
+            cameraMatrices.addExtrinsics(kExtr);
+        }
+        
+        // (4) estimate the radial distortion coefficients
+        
+        // (5) optimization to improve the parameter estimates
+        
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
     
+    /**
+     * for a given set of feature coordinates in image reference frame and in
+     * world coordinate system, calculates the homography following the 
+     * algorithm in Ma et al. 2003.
+     * @param coordsI holds the image coordinates in pixels of features present in image i
+     * @param coordsW holds the world coordinates of features present in image 1 corresponding
+               to the same features and order of coordsI_i
+     * @return the homography, projection matrix
+     */
+    static double[][] solveForHomography(double[][] coordsI, double[][] coordsW) throws NotConvergedException {
+        
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI must have 3 rows.");
+        }
+        if (coordsW.length != 3) {
+            throw new IllegalArgumentException("coordsW must have 3 rows.");
+        }
+        int n = coordsI.length;
+        if (coordsW[0].length != n) {
+            throw new IllegalArgumentException("coordsW must have same number of rows as coordsI.");
+        }
+        
+        /*
+        creates matrix L, and finds the solution to x as orthogonal to L by using the SVD(L)
+           to find the eigenvector belonging to the smallest eigenvalue.
+          -reformats x into 3x3 H to return
+        */
+        
+        // Section 6.1 of Ma et al. 2003
+        
+        /*
+          H =   [ h11 h12 h13 ]
+                [ h21 h22 h23 ]
+                [ h31 h32 h33 ]
+          H^T = [ h11 h21 h31 ]
+                [ h12 h22 h32 ]
+                [ h13 h23 h33 ]
+
+          Let h_i be the ith column vector of H:
+              h_i = ]h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+                    [h_i_2]
+                    [h_i_3]
+        */
+        
+        // 2*n X 9       
+        double u, v, X, Y;
+        double[][] ell = new double[2*n][9];
+        for (int i = 0; i < n; ++i) {
+            u = coordsI[0][i];
+            v = coordsI[1][i];
+            X = coordsW[0][i];
+            Y = coordsW[1][i];
+            ell[2*i] = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};
+            ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
+        }
+        
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
+        
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
+        double[] xOrth = svd.vT[svd.vT.length - 1];
+        
+        double[][] h = new double[3][3];
+        for (int i = 0; i < 3; i++) {
+            h[i] = new double[3];
+            h[i][0] = xOrth[(i * 3) + 0];
+            h[i][1] = xOrth[(i * 3) + 1];
+            h[i][2] = xOrth[(i * 3) + 2];
+        }
+        
+        return h;
+    }
+    
+    /**
+     * estimate the camera intrinsic parameters from the image homographies.
+     * @param h H as (3*NImages)x3 homography, projection matrices
+              where each image homography is stacked row-wise
+     * @return the camera intrinsic parameters.
+     */
+    static CameraIntrinsicParameters solveForIntrinsic(double[][] h) throws NotConvergedException {
+        
+        if (h[0].length != 3) {
+            throw new IllegalArgumentException("h must have 3 columns");
+        }
+        
+        // Section 6.3 of Ma et al. 2003
+        
+        /*
+          H =   [ h11 h12 h13 ]
+                [ h21 h22 h23 ]
+                [ h31 h32 h33 ]
+          H^T = [ h11 h21 h31 ]
+                [ h12 h22 h32 ]
+                [ h13 h23 h33 ]
+
+        Let h_i be the ith column vector of H:
+              h_i = [h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+                    [h_i_2]
+                    [h_i_3]
+        
+        - for each H:
+                    form a matrix V_i_j out of the first 2 columns of each H matrix
+                    and stack them by rows, into a matrix called V
+              - perform SVD(V) to get right singular vector of V associated with the smallest singular value
+                as the solution to b.
+              - b holds the contents of the upper right triangle of B
+                where B = A^-T * A^-1 known as the absolute conic.
+              - the intrinsic parameters are extracted from combinations of the solved
+                for B and other coefficients.
+        
+        b = [B11, B12, B22, B13, B23, B33]^T
+        */
+        
+        int n = h.length/3;
+        
+        // 2*nImages X 6
+        double[][] v = new double[2*n][6];
+        
+        //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T 
+        for (int i = 0; i < n; ++i) {
+            // h_i is the ith column vector of H
+            // h11 = column 0 of h, first element: h[0][0]
+            // h12 = column 0 of h, 2nd element:   h[1][0]
+            // h13 = column 0 of h, 3rd element:   h[2][0]
+            // h21 = column 1 of h, first element: h[0][1]
+            // h22 = column 1 of h, 2nd element:   h[1][1]
+            // h23 = column 1 of h, 3rd element:   h[2][1]
+            
+            //V12 = [h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23, 
+            //       h13*h22 + h12*h23, h13*h23]T 
+            v[2*i] = new double[]{
+                h[0+3*i][0]*h[0+3*1][1],
+                h[0+3*i][0]*h[1+3*1][1] + h[1+3*i][0]*h[0+3*1][1],
+                h[1+3*i][0]*h[1+3*1][1],
+                h[2+3*i][0]*h[0+3*1][1] + h[0+3*i][0]*h[2+3*1][1],
+                h[2+3*i][0]*h[1+3*1][1] + h[1+3*i][0]*h[2+3*1][1],
+                h[2+3*i][0]*h[2+3*1][1]
+            };
+            
+            //V11 = [
+            // h11*h11 , 
+            // h11*h12 + h12*h11, 
+            // h12*h12, 
+            // h13*h11 + h11*h13, 
+            // h13*h12 + h12*h13, 
+            // h13*h13]T
+            v[2*i + 1] = new double[]{
+                h[0+3*i][0]*h[0+3*1][0] - v[2*i][0],
+                h[0+3*i][0]*h[1+3*1][0] + h[1+3*i][0]*h[0+3*1][0] - v[2*i][1],
+                h[1+3*1][0]*h[1+3*1][0] - v[2*i][2],
+                h[2+3*i][0]*h[0+3*1][0] + h[0+3*i][0]*h[2+3*1][0] - v[2*i][3],
+                h[2+3*i][0]*h[1+3*1][0] + h[1+3*i][0]*h[2+3*1][0] - v[2*i][4],
+                h[2+3*i][0]*h[2+3*i][0] - v[2*i][5]
+            };
+        }
+        
+        //Vb = 0 and b = [B11, B12, B22, B13, B23, B33]^T
+        SVDProducts svd = MatrixUtil.performSVD(v);
+        
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
+        double[] b = svd.vT[svd.vT.length - 1];
+        
+        /*
+        double[][] B = MatrixUtil.zeros(3, 3);
+        B[0][0] = b[0];
+        B[0][1] = b[1];
+        B[1][1] = b[2];
+        B[0][2] = b[3];
+        B[1][2] = b[4];
+        B[2][2] = b[5];
+        */
+        
+        //       0    1    2    3    4    5
+        //b = [B11, B12, B22, B13, B23, B33]^T
+        
+        //Ma et al. 2003 eqn (26)
+        // v0 = (B12*B13 - B11*B23)/(B11*B22 - B12*B12)
+        // lambda = B33 - (B13*B13 - v0*(B12*B13 - B11*B23))/B11
+        // alpha = sqrt( lambda/B11 )
+        // beta = sqrt( lambda*B11 / (B11*B22 - B12*B12) )
+        // gamma = -B12*alpha*alpha*beta / lambda
+        // u0 = (gamma*v0/beta) - B13*alpha*alpha/lambda
+        
+        double v0 = (b[1]*b[3] - b[0]*b[4])/(b[0]*b[2] - b[1]*b[1]);
+        double lambda = b[5] - (b[3]*b[3] - v0*(b[1]*b[3] - b[0]*b[4]))/b[0];
+        double alpha = Math.sqrt(lambda / b[0]);
+        double beta = Math.sqrt( lambda*b[0] / (b[0]*b[2] - b[1]*b[1]) );
+        double gamma = -b[1]*alpha*alpha*beta / lambda;
+        double u0 = (gamma*v0/beta) - b[3]*alpha*alpha/lambda;
+        
+        double[][] kIntr = Camera.createIntrinsicCameraMatrix(
+            alpha, beta, u0, v0, gamma);
+            
+        CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
+        intrinsics.setIntrinsic(kIntr);
+        intrinsics.setLambda(lambda);
+        
+        return intrinsics;
+    }
+    
+    
+    /**
+     * estimate the extrinsic parameters
+     * @param kIntr camera intrinsic parameters
+     * @param h homography for the projection for an image
+     * @return 
+     */
+    private static Camera.CameraExtrinsicParameters solveForExtrinsic(
+        CameraIntrinsicParameters kIntr, double[][] h) throws NotConvergedException {
+        
+        double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());
+        
+        //h_i is the ith column vector of H
+        //r1 = λ * A^−1 * h1
+        //r2 = λ * A^−1 * h2
+        //r3 = r1×r2
+        // t = λ * A^−1 * h3
+        
+        double[] h1 = MatrixUtil.extractColumn(h, 0);
+        double[] h2 = MatrixUtil.extractColumn(h, 1);
+        double[] h3 = MatrixUtil.extractColumn(h, 2);
+        
+        //λ = 1/||A−1h1||2 = 1/||A−1h2||2
+        double lambda = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, h1));
+        double lambda2 = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, h2));
+        
+        double[][] r1M = MatrixUtil.copy(kIntrInv);
+        MatrixUtil.multiply(r1M, lambda);
+        double[][] r2M = MatrixUtil.copy(r1M);
+        double[][] tM = MatrixUtil.copy(r1M);
+        
+        double[] r1 = MatrixUtil.multiplyMatrixByColumnVector(r1M, h1);
+        double[] r2 = MatrixUtil.multiplyMatrixByColumnVector(r2M, h2);
+        double[] t = MatrixUtil.multiplyMatrixByColumnVector(tM, h3);
+        
+        double[] r3 = MatrixUtil.crossProduct(r1, r2);
+        
+        double[][] r = MatrixUtil.zeros(3, 3);
+        for (int row = 0; row < 3; ++row) {
+            r[row][0] = r1[row];
+            r[row][1] = r2[row];
+            r[row][2] = r3[row];
+        }
+        
+        SVDProducts svd = MatrixUtil.performSVD(r);
+        
+        r = MatrixUtil.multiply(svd.u, svd.vT);
+        
+        CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
+        kExtr.setRotation(r);
+        kExtr.setTranslation(t);
+        
+        return kExtr;
+    }
+
     
     /**
     apply radial distortion to distortion-free camera centered coordinates using 
@@ -243,7 +576,7 @@ public class CameraCalibration {
         pincushion distortion to a positive value of k1.
          
     </pre>
-    TODO: implement Ma et al. 2004 Tabe 2, #6.
+    TODO: implement Ma et al. 2004 Table 2, #6.
     @param xC distorted points in the camera reference frame, preseumably 
     already center subtracted.  format is 3XN where N is the
     number of points.  These are (x_d, x_d) pairs in terms of Table 1 in Ma et al. 2004.
@@ -340,4 +673,13 @@ public class CameraCalibration {
                 
         return corrected;
     }
+
+    private static double sumOfSquares(double[] m) {
+        double sum = 0;
+        for (int i = 0; i < m.length; ++i) {
+            sum += (m[i]*m[i]);
+        }
+        return sum;
+    }
+
 }

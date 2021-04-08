@@ -2,7 +2,8 @@ Lacking an app to keep these in, making a temporary file while
 implementing...
 
 =====================================================================
-Story: Implementing a camera self-calibration algorithm by Ma, Chen, & Moore
+Story: Implementing a camera self-calibration algorithm by Ma, Chen, & Moore 2003
+       "Camera Calibration: a USU Implementation"
  
     summary: given features from N images in image pixel coordinates and
       given the features in the world coordinate system, estimates
@@ -28,9 +29,9 @@ Task 1: Write the stub for the main class CameraCalibration and the
 
    time estimate: minimum  hour, maximum  day
   
-   amount of time used:  hours
+   amount of time used:  (began near noon 4/7)
 
-   state of completion: 
+   state of completion: currently implementing
 
    comments:
               
@@ -41,13 +42,13 @@ Task 1: Write the stub for the main class CameraCalibration and the
               same for all images.
             coordsI holds the image coordinates in pixels of 
                features present in all images ordered in the same
-               manner and paried with features in coordsW.  
+               manner and paired with features in coordsW.  
                It is a 2 dimensional double array of format
                3 X (N*n) where N is the number of images.
                the first row is the x coordinates, the second row
                is the y coordinates, and the third row is "1"'s.
             coordsW holds the world coordinates of features, ordered
-               by the same feeatures in the images.
+               by the same features in the images.
                the first row is the X coordinates, the second row
                is the Y coordinates, and the third row is assumed to
                be zero as the scale factor is lost in the homography..
@@ -82,6 +83,16 @@ Task 1: Write the stub for the main class CameraCalibration and the
           #6 2136, 1908   2028, 2000   2012, 1972
           #7 620, 2800    704, 2940    788, 2718
           #8 2364, 2844   2208, 2780   2272, 2928
+
+          features in WCS
+          #1 -11, 14, 41.5
+          #2  11, 14, 41.5
+          #3   0, 9.7, 41.5
+          #4   0, 0, 41.5
+          #5 -3.7, -3, 41.5
+          #6 -8, -3, 41.5
+          #7 -11, -14, 41.5
+          #8  11, -14, 41.5
           
           expecting 
              focalLength ~ 1604 pixels = 2.245 mm
@@ -102,11 +113,11 @@ Task 2: Implement the method that solves for the homography matrix H
    goal: given the image and world coordinates of features, calculates
        the homography matrix H.
 
-   time estimate: minimum  hour, maximum  day
+   time estimate: minimum  30 min, maximum 0.5 day
   
-   amount of time used:  hours
+   amount of time used:  30 min
 
-   state of completion: 
+   state of completion: implemented, not tested
 
    comments:
               H =   [ h11 h12 h13 ]
@@ -117,7 +128,7 @@ Task 2: Implement the method that solves for the homography matrix H
                     [ h13 h23 h33 ]
           
               Let h_i be the ith column vector of H:
-                  h_i = ]h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+                  h_i = [h_i_1]^T = [h_i_1  h_i_2  h_i_3]
                         [h_i_2]
                         [h_i_3]
               
@@ -129,7 +140,8 @@ Task 2: Implement the method that solves for the homography matrix H
                to the same features and order of coordsI_i
             output: double array of H, the projection matrix
             responsibilities:
-              -creates matrix L, and finds the solution to x as orthogonal to L by using the SVD(L)
+              -creates matrix L (Sect 6.1 of Ma et al. 2003), 
+               and finds the solution to x as orthogonal to L by using the SVD(L)
                to find the eigenvector belonging to the smallest eigenvalue.
               -reformats x into 3x3 H to return
               
@@ -138,11 +150,11 @@ Task 3: implement the intrinsic parameters solver
 
    goal: 
 
-   time estimate: minimum  hour, maximum  day
+   time estimate: minimum  hour, maximum 1/2 day
   
-   amount of time used:  hours
+   amount of time used: 2 hours
 
-   state of completion: 
+   state of completion: implemented but not tested
 
    comments:
               
@@ -158,7 +170,7 @@ Task 3: implement the intrinsic parameters solver
                 as the solution to b.
               - b holds the contents of the upper right triangle of B 
                 where B = A^-T * A^-1 known as the absolute conic.
-              - the intrinsic parameters are extraction from combinations of the solved 
+              - the intrinsic parameters are extracted from combinations of the solved 
                 for B and other coefficients.
           
 ---------------------------------------------------------------------
@@ -168,9 +180,9 @@ Task 4: implement the extrinsic parameters solver
 
    time estimate: minimum  hour, maximum  day
   
-   amount of time used:  hours
+   amount of time used: 1 hour
 
-   state of completion: 
+   state of completion: implemented but not tested
 
    comments:
               

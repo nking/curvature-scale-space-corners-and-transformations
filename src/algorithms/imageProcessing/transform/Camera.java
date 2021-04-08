@@ -1,9 +1,9 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
-import algorithms.misc.CubicRootSolver;
-import algorithms.misc.PolynomialRootSolver;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
@@ -27,8 +27,30 @@ public class Camera {
         double centerX, double centerY) {
         
         double[][] k = new double[3][3];
-        k[0] = new double[]{-focalLength, 0, centerX};
-        k[1] = new double[]{0, -focalLength, centerY};
+        k[0] = new double[]{focalLength, 0, centerX};
+        k[1] = new double[]{0, focalLength, centerY};
+        k[2]= new double[]{0, 0, 1};
+        
+        return k;
+    }
+    
+    /**
+     *  create camera intrinsic matrix k.  the focal length and optical centers should be in units of pixels.
+     * NOTE that given the field of view (FOV) and the image dimensions,
+     * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
+     * @param focalLengthX focal length of camera in units of pixels along x axis.
+     * @param focalLengthY focal length of camera in units of pixels along y axis.
+     * @param centerX x coordinate of principal point in pixels, usually image center.
+     * @param centerY y coordinate of principal point in pixels, usually image center.
+     * @param skew camera skew
+     * @return intrinsic camera matrix in units of pixels.
+     */
+    public static double[][] createIntrinsicCameraMatrix(double focalLengthX,
+        double focalLengthY, double centerX, double centerY, double skew) {
+        
+        double[][] k = new double[3][3];
+        k[0] = new double[]{focalLengthX, skew, centerX};
+        k[1] = new double[]{0, focalLengthY, centerY};
         k[2]= new double[]{0, 0, 1};
         
         return k;
@@ -48,8 +70,8 @@ public class Camera {
         double centerX, double centerY) {
         
         double[][] k = new double[3][3];
-        k[0] = new double[]{-1./focalLength, 0, -centerX/focalLength};
-        k[1] = new double[]{0, -1./focalLength, -centerY/focalLength};
+        k[0] = new double[]{1./focalLength, 0, -centerX/focalLength};
+        k[1] = new double[]{0, 1./focalLength, -centerY/focalLength};
         k[2]= new double[]{0, 0, 1};
         
         return k;
@@ -230,7 +252,7 @@ public class Camera {
         
         double[][] cameraIntr = Camera.createIntrinsicCameraMatrix(focalLength, centerX, centerY);
                        
-        cc = MatrixUtil.multiply(cc, cameraIntr);
+        cc = MatrixUtil.multiply(cameraIntr, cc);
         
         return cc;
     }
@@ -272,5 +294,122 @@ public class Camera {
         return pix;
     }
     
+    public static class CameraIntrinsicParameters {
+        private double[][] intrinsic;
+        private double lambda;
+        /**
+         * @return the intrinsic parameters
+         */
+        public double[][] getIntrinsic() {
+            return intrinsic;
+        }
+        /**
+         * @param intrinsic the intrinsic parameters to set
+         */
+        public void setIntrinsic(double[][] intrinsic) {
+            this.intrinsic = intrinsic;
+        }
+
+        /**
+         * @return the lambda the scale factor used in projection
+         */
+        public double getLambda() {
+            return lambda;
+        }
+
+        /**
+         * @param lambda the lambda to set for scale factor of projection
+         */
+        public void setLambda(double lambda) {
+            this.lambda = lambda;
+        }
+        
+    }
     
+    public static class CameraExtrinsicParameters {
+        private double[][] rotation;
+        private double[] translation;
+
+        /**
+         * @return the rotation
+         */
+        public double[][] getRotation() {
+            return rotation;
+        }
+
+        /**
+         * @param rotation the rotation to set
+         */
+        public void setRotation(double[][] rotation) {
+            this.rotation = rotation;
+        }
+
+        /**
+         * @return the translation
+         */
+        public double[] getTranslation() {
+            return translation;
+        }
+
+        /**
+         * @param translation the translation to set
+         */
+        public void setTranslation(double[] translation) {
+            this.translation = translation;
+        }
+    }
+    
+    public static class CameraMatrices {
+        private CameraIntrinsicParameters intrinsics;
+        private List<CameraExtrinsicParameters> extrinsics = new ArrayList<CameraExtrinsicParameters>();
+        private double[] radialDistortion;
+        
+        /**
+         * @return the radialDistortion
+         */
+        public double[] getRadialDistortion() {
+            return radialDistortion;
+        }
+
+        /**
+         * @param radialDistortion the radialDistortion to set
+         */
+        public void setRadialDistortion(double[] radialDistortion) {
+            this.radialDistortion = radialDistortion;
+        }
+
+        /**
+         * @return the intrinsics
+         */
+        public CameraIntrinsicParameters getIntrinsics() {
+            return intrinsics;
+        }
+
+        /**
+         * @param intrinsics the intrinsics to set
+         */
+        public void setIntrinsics(CameraIntrinsicParameters intrinsics) {
+            this.intrinsics = intrinsics;
+        }
+
+        /**
+         * @return the extrinsics
+         */
+        public List<CameraExtrinsicParameters> getExtrinsics() {
+            return extrinsics;
+        }
+
+        /**
+         * @param extrinsics the extrinsics to set
+         */
+        public void addExtrinsics(CameraExtrinsicParameters extrinsics) {
+            this.extrinsics.add(extrinsics);
+        }
+        /**
+         * @param extrinsics the extrinsics to set
+         */
+        public void addExtrinsics(List<CameraExtrinsicParameters> extrinsics) {
+            this.extrinsics.addAll(extrinsics);
+        }
+    }
 }
