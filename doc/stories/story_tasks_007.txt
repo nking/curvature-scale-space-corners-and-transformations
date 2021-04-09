@@ -205,7 +205,7 @@ Task 5: implement the method to estimate the radial distortion coefficients
   
    amount of time used:  1 hour so far
 
-   state of completion: 
+   state of completion: in the design stage
 
    comments:
               
@@ -278,7 +278,7 @@ Task 6: implement the method for parameter optimization
   
    amount of time used:  4 hours so far
 
-   state of completion: 
+   state of completion: in the design stage
 
    comments:
               
