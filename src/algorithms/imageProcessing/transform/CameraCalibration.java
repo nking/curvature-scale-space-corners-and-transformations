@@ -16,6 +16,10 @@ import no.uib.cipr.matrix.NotConvergedException;
  * Following the algorithm os Ma, Chen, & Moore 2003 in 
  * "Camera Calibration: a USU Implementation" available as a preprint
  * at arXiv.
+ * Note that Ma et al. 2003 algorithm is based upon Zhang 1999 
+ * "Flexible Camera Calibration By Viewing a Plane From Unknown Orientations"
+ * available at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/zhan99.pdf
+ * 
  * <pre>
  * "one image observed by a camera can provide 2 constraints about this camera’s 
  * intrinsic parameters that are regarded to be unchanged here. 
@@ -103,6 +107,16 @@ public class CameraCalibration {
         }
         
         // (4) estimate the radial distortion coefficients
+        //     NOTE: implementing radial distortion as equation #3 of Table 2 of Ma et al. 2004
+        //           which uses f_r = 1 + k_1*r + k_2*r^2 because it is lower order
+        //           and can be used more easily with other radial coeffificent conventions.
+        //           The Ma et al. 2003 equation (8) here uses in contrast, equation #4 of
+        //           Table 2 Ma et al. 2004 (f_r = 1 + k_1*r^2 + k_2*r^4) presumably
+        //           because the model fit statistics were better.
+        // Also note that the a et al. 2003 paper found that the non-linear optimization
+        //    works just as well with initial estimates of 0 for the radial
+        //    distortion coefficients, so one can exclude this method.
+        
         
         // (5) optimization to improve the parameter estimates
         
@@ -248,7 +262,7 @@ public class CameraCalibration {
                 h[2+3*i][0]*h[1+3*i][1] + h[1+3*i][0]*h[2+3*i][1],
                 h[2+3*i][0]*h[2+3*i][1]
             };
-            
+              
             //V11 = [
             // h11*h11 , 
             // h11*h12 + h12*h11, 
@@ -320,7 +334,7 @@ public class CameraCalibration {
     private static Camera.CameraExtrinsicParameters solveForExtrinsic(
         CameraIntrinsicParameters kIntr, double[][] h) throws NotConvergedException {
         
-        double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());
+        double[][] aInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());
         
         //h_i is the ith column vector of H
         //r1 = λ * A^−1 * h1
@@ -333,10 +347,10 @@ public class CameraCalibration {
         double[] h3 = MatrixUtil.extractColumn(h, 2);
         
         //λ = 1/||A−1h1||2 = 1/||A−1h2||2
-        double lambda = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, h1));
-        double lambda2 = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, h2));
+        double lambda = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h1));
+        double lambda2 = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h2));
         
-        double[][] r1M = MatrixUtil.copy(kIntrInv);
+        double[][] r1M = MatrixUtil.copy(aInv);
         MatrixUtil.multiply(r1M, lambda);
         double[][] r2M = MatrixUtil.copy(r1M);
         double[][] tM = MatrixUtil.copy(r1M);
@@ -364,15 +378,15 @@ public class CameraCalibration {
         
         return kExtr;
     }
-
     
     /**
     apply radial distortion to distortion-free camera centered coordinates using 
     the algorithm of Ma, Chen & Moore (which is Ma et al. 2003) for the
-    distortion function expressed as f(r) = 1 + k1*r + k2*r^2;
+    distortion function expressed as f(r) = 1 + k1*r + k2*r^2 (which is 
+    equation #3 in Table 2 of Ma et al. 2004).
     In terms of the variables outlined below, the algorithm input is
     (x, y), k1, k2, and cameraIntrinsics and the output is (x_d, y_d).
-    
+    TODO: consider overloading this method to implement equation #4. 
     <pre>
     Ma, Chen & Moore 2004, "Rational Radial Distortion Models of Camera Lenses 
     with Analytical Solution for Distortion Correction."
@@ -449,7 +463,6 @@ public class CameraCalibration {
     NOTE that Drap et al. also apply the camera intrinsics, but they use a 
     focal length of "1".
     * 
-    TODO: implement Ma et al. 2004 Tabe 2, #6.
     </pre>
     @param xC distortion-free camera centered coordinates.  format is 3XN where N is the
     number of points.
@@ -475,7 +488,8 @@ public class CameraCalibration {
             r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
             r = Math.sqrt(r2);
             //f(r) = (1 + k1*r + k2*r^2)
-            fr = 1 + k1*r + k2*r2;
+            //fr = 1 + k1*r + k2*r2;
+            // x_d = x*f_r:
             //distorted[0][i] *= fr;
             //distorted[1][i] *= fr;
             
@@ -498,11 +512,11 @@ public class CameraCalibration {
     apply radial distortion correction to points in the camera reference frame.
     This method is used by pixelToCameraCoordinates().
     The algorithm follows Ma, Chen, & Moore 2004 to correct the distortion
-    estimated as f(r) = 1 + k1*r + k2*r^2;
+    estimated as f(r) = 1 + k1*r + k2*r^2 (eqn #3 in Table 2 of Ma et al. 2004)
     In terms of the variables outlined in comments below, the algorithm input is
     distorted points as a double array of (x_d, x_d), and the radial distortion
     coefficients k1, k2.  The output is a a double array of (x, y).
-    
+    TODO: consider overloading this method to implement equation #4. 
     <pre>
     Ma, Chen & Moore 2004, "Rational Radial Distortion Models of Camera Lenses 
     with Analytical Solution for Distortion Correction."
@@ -533,8 +547,9 @@ public class CameraCalibration {
                            [1  ]
     
     ==> To Apply Radial Distorion, given coefficients k1, k2 and coordinates
-      (eqn 7) r_d = r * f(r) = r*(1 + k1*r + k2*r^2 + k3*r^3 + ...)
+      (eqn 7) r_d = r * f(r) 
       (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r + k2*r^2)
+              This is equation #3 in Table 2 of Ma et al. 2004
     
       Ma et al. 2003 distortion model:
          x_d = x * f(r)
@@ -577,8 +592,7 @@ public class CameraCalibration {
         pincushion distortion to a positive value of k1.
          
     </pre>
-    TODO: implement Ma et al. 2004 Table 2, #6.
-    @param xC distorted points in the camera reference frame, preseumably 
+    @param xC distorted points in the camera reference frame, presumably 
     already center subtracted.  format is 3XN where N is the
     number of points.  These are (x_d, x_d) pairs in terms of Table 1 in Ma et al. 2004.
     @param k1 first radial distortion coefficient
