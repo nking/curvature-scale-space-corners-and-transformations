@@ -416,7 +416,7 @@ Task 6: implement the method for parameter optimization
                    -- considering fixing intrinsic parameters and solve for extrinsic using pose algorithm
                       then use all parameters for projection to estimate ~m and store the total sum of squared sums of residuals.
                       And iterate: change intrinsic, solve extrinsic w/ pose, estimate ~m, store residual and params if min...
-                      (note that pose is the algorithm above solving L*m.)
+                      (note that pose is the algorithm above, solving L*m.)
 
 
 ---------------------------------------------------------------------
