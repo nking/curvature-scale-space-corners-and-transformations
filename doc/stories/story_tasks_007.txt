@@ -278,7 +278,7 @@ Task 6: implement the method for parameter optimization
    goal: given all of the parameters estimated above as the initial estimates,
          use non-linear optimization to get the final estimated values.
 
-         the objective function is the reproduction error composed of the observed
+         the objective function is the reprojection error composed of the observed
          points in the image plane and their predicted projections from the
          estimated parameters in the projection matrix and the measured points 
          in the world coordinate system.
@@ -309,7 +309,7 @@ Task 6: implement the method for parameter optimization
               - given all of the parameters estimated above as the initial estimates,
                 use non-linear optimization to get the final estimated values.
 
-                the objective function is the reproduction error composed of the observed
+                the objective function is the reprojection error composed of the observed
                 points in the image plane and their predicted projections from the
                 estimated parameters in the projection matrix and the measured points 
                 in the world coordinate system.
@@ -351,7 +351,8 @@ Task 6: implement the method for parameter optimization
                is outlined slightly differently from one another:
 
                (a) lecture notes of Gordon Wetzstein at Stanford University,
-                   EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino"
+                   EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
+                   https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
                (b) Chapter 6 of Richard Szeliski 2010 "Computer Vision: Algorithms and Applications"
 
            (2) One could reform the projection equations as separate steps in a chain of transformations
@@ -365,7 +366,7 @@ Task 6: implement the method for parameter optimization
                obtain all of the required partial derivatives using the chain rule."
                ..."The one special case in this formulation that can be considerably simplified 
                is the computation of the rotation update. Instead of directly computing the 
-               derivatives of the 3⇥3 rotation matrix R(q) as a function of the unit 
+               derivatives of the 3X3 rotation matrix R(q) as a function of the unit 
                quaternion entries, you can prepend the incremental rotation matrix deltaR(omega) 
                given in Equation (2.35) to the current rotation matrix and compute the
                partial derivative of the transform with respect to these parameters, which 
@@ -409,7 +410,7 @@ Task 6: implement the method for parameter optimization
                       see Section 4.2 of Gleicher & Witkin 1992 "Through-the-Lens Camera Control"
 
 
-           (3) Alternatively, iteratively solving for parameters in an order suggested by the depndencies, essentially.
+           (3) Alternatively, iteratively solving for parameters in an order suggested by the dependencies, essentially.
 
               looking at M contents to consider which parameters in which order in the optimization iterations:
               NOTE that instead of derivatives would use gradients estimated from finite differences for each iteration.
