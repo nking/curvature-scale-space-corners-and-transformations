@@ -11,7 +11,7 @@ Story: Implementing a camera self-calibration algorithm by Ma, Chen, & Moore 200
 
     time estimate: 
         minimum: 1 day
-        maximum: 2 days
+        maximum: 2 days for Tasks 1-5.  Task 6 is 5 days max.  Total max should be ~7 days.
 
     amount of time used: 
 
@@ -127,7 +127,7 @@ Task 2: Implement the method that solves for the homography matrix H
                     [ h12 h22 h32 ]
                     [ h13 h23 h33 ]
           
-              Let h_i be the ith column vector of H:
+              Let h_i be the ith row of H:
                   h_i = [h_i_1]^T = [h_i_1  h_i_2  h_i_3]
                         [h_i_2]
                         [h_i_3]
@@ -176,23 +176,25 @@ Task 3: implement the intrinsic parameters solver
 ---------------------------------------------------------------------
 Task 4: implement the extrinsic parameters solver
 
-   goal: 
+   goal: need a reasonably accurate and fast method to solve for
+         camera extrinsic parameters (a.k.a. P-n-P)
 
    time estimate: minimum  hour, maximum  day
   
-   amount of time used: 1 hour
+   amount of time used: 1 hour.
 
    state of completion: implemented but not tested
 
    comments:
+      completed the version in Ma et al. 2003
               
    details:  
-          extrinsic parameters solver method:
-            input: intrinsicInverse_i, H_i
+      Ma et al. 2003  extrinsic parameters solver method:
+          input: intrinsicInverse_i, H_i
               where intrinsicInverse_i is the inverse matrix of the camera intrinsic parameters
               and H_i is the homography for the image.
-            output: estimated camera extrinsic parameters
-            responsibilities:
+          output: estimated camera extrinsic parameters
+          responsibilities:
               - estimates extrinsic parameters from combinations of A^-1 and columns of H
               - for the rotation matrix, matrix is made into a unitary matrix by
                 SVD(R).U * SVD(R)*V^T
@@ -272,112 +274,144 @@ Task 5: implement the method to estimate the radial distortion coefficients
 ---------------------------------------------------------------------
 Task 6: implement the method for parameter optimization
 
-   goal: 
+   goal: given all of the parameters estimated above as the initial estimates,
+         use non-linear optimization to get the final estimated values.
 
-   time estimate: minimum  hour, maximum  day
+         the objective function is the reproduction error composed of the observed
+         points in the image plane and their predicted projections from the
+         estimated parameters in the projection matrix and the measured points 
+         in the world coordinate system.
+
+         objective function L = summation_i=1_to_N( summation_j=1_to_n(
+           || m_i_j - ~m(A, k1, k2, R_i, t_i, M_j) ||^2
+           where N is the number of images, n is the number of features (a.k.a. points),
+           m_i_j is the image i coordinate of feature j,
+           ~m(...) is the projacetion given it's arguments,
+           M_i = [Xw,Yw,1]T is the feature in world coordinate space with Zw=0
+
+   time estimate: minimum 8 hours, maximum ?  day
   
-   amount of time used:  4 hours so far
+   amount of time used:  3 days so far on background reading and algorithm details.
 
-   state of completion: in the design stage
+   state of completion: in the design stage. 
 
    comments:
-              
+      the notes below are following the Ma et al. 2003 algorithm, then other references
+      in more detail.  5 methods are suggested.
+      This task will implement algorithm (1)(a).
+
    details:  
           parameter optimization method:
             input: imageC, worldC, intrinsic, extrinsic, radial distortion
             output: intrinsic and exrinsic
             responsibilities:
-              - given 
-                  minimum residual of the given image points and the projection of the
-                  world coordinates using current camera estimates.
-                  -> LBFGS is in this project already and doesn't need the gradient or hessian,
-                     can use finite difference.
-          
-                thirdparty.dlib.optimization.Helper.CentralDifferences f2 
-                   = new Helper.CentralDifferences(f, 1.e-7);
-                double fLower = -10;
-                LBFGSOptimization opt = new LBFGSOptimization();
-                double min = opt.findMin(searchStrategy, 
-                    stopStrategy, f2, init, fLower);
-          
-                need to create f to implement IFunction.
-                An example for a different objective is Helper.FunctionPoly
-             - the objective function is
-                 J = summation_i=0_to_N-1( summation_j=0_to_n-1( || m_i_j - ~m(A,k1,k2,R_i,t_i,M_j) ||^2 ) )
-                   where N is the number of images, and
-                         n is the number of features
-                         m_i_j is the feature in the image plane, measured
-                         M_i = [Xw,Yw,1]T is the feature in world coordinate space
-                         ~m is the projection of point Mj in image i
+              - given all of the parameters estimated above as the initial estimates,
+                use non-linear optimization to get the final estimated values.
+
+                the objective function is the reproduction error composed of the observed
+                points in the image plane and their predicted projections from the
+                estimated parameters in the projection matrix and the measured points 
+                in the world coordinate system.
+
+                objective function L = summation_i=1_to_N( summation_j=1_to_n(
+                  || m_i_j - ~m(A, k1, k2, R_i, t_i, M_j) ||^2
+                  where N is the number of images, n is the number of features (a.k.a. points),
+                  m_i_j is the image i coordinate of feature j,
+                  ~m(...) is the projetion given it's arguments,
+                  M_i = [Xw,Yw,1]T is the feature in world coordinate space with Zw=0
+
+                The authors use Matlab's fminunc which finds the minimum of an unconstrained
+                multivariate function, it's using BFGS.
 
            for the objective function need to predict the image point [u,v,1]T to compare to
            the measured [u,v,1]T, so need to predict the distorted image coordinates
-           [u_d,v_d,1]^T
+           [u_d,v_d,1]^T or undistort the observed image coordinates.
 
-               from: http://16720.courses.cs.cmu.edu/lec/transformations.pdf
-               using pose, that is Perspective n-Point (PnP)
+           to remove the distortion from the observed image points:
+              // put x into camera coordinates reference frame:
+              double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
+              // remove radial distortion:
+              pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], rCoeffs[1]);
+              // transform back into image reference frame:
+              pix = MatrixUtil.multiply(cameraIntr, cc);
 
-               let M be the projection matrix, and [X_C_i, Y_C_i, Z_C_i] be the
-                  point (a.k.a. feature) in world coordinate space (a.k.a. world scene)
-                
-                  and [u_i,v_i,1] is the same as in the Ma et al. papers as image coordinates
-
-               NOTE: the measured feature coordinates in the image may have distortion
-                 from the camera, so distortion should be removed at this stage.
-                 the pattern used is present already in CameraCalibration.java, but
-                 for the coordinates in the camera reference frame, so need to
-                    // put x into camera coordinates reference frame:
-                    double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
-                    // remove radial distortion:
-                    pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], rCoeffs[1]);
-                    // transform back into image reference frame:
-                    pix = MatrixUtil.multiply(cameraIntr, cc);
-
-               then continue with the projection:
+           to minimize the objective function w/ non-linear optimization, could 
+           (1) use Levenberg-Marquardt (L-M) over BFGS because it uses the Jacobian 
+               and an estimated Hessian to inform step sizes and use L-M over 
+               Gauss-Newton because it has a damping term which ensures 
+               the positive definite of the coefficient matrix.
                
-               [u_i,v_i,1] = M * [X_C_i,Y_C_i,Z_C_i]
+               A summary of the L-M algorithm  can be found in several sources.
+               Insightful comments: a lecture by Danping Zou @Shanghai Jiao Tong University ,
+               EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+               http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
 
-                           = m00 m01 m02 * X_C_i
-                             m10 m11 m12   Y_C_i
-                             m20 m21 m22   Z_C_i
+               An L-M approach to minimizing the reprojection error of the perspective projection
+               is outlined slightly differently from one another:
 
-                        u_i= (m00*X_C_i + m01*Y_C_i + m02*Z_C_i)
-                        v_i= (m10*X_C_i + m11*Y_C_i + m12*Z_C_i)
-                          1= (m20*X_C_i + m21*Y_C_i + m22*Z_C_i)
+               (a) lecture notes of Gordon Wetzstein at Stanford University,
+                   EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino"
+               (b) Chapter 6 of Richard Szeliski 2010 "Computer Vision: Algorithms and Applications"
 
-               let m_1 be row 0 of M, following the notation in the lecture
-                     then u_i = m_1 dot [X_C_i, Y_C_i, Z_C_i]
-                      and v_i = m_1 dot [X_C_i, Y_C_i, Z_C_i]
-                      and   1 = m_3 dot [X_C_i, Y_C_i, Z_C_i]
-                     normalizing by the last row:
-                         u_i = (m_1 dot [X_C_i, Y_C_i, Z_C_i]) / (m_3 dot [X_C_i, Y_C_i, Z_C_i])
-                         v_i = (m_2 dot [X_C_i, Y_C_i, Z_C_i]) / (m_3 dot [X_C_i, Y_C_i, Z_C_i])
+           (2) One could reform the projection equations as separate steps in a chain of transformations
+               and iteratively minimize the robustified linearized reprojection errors for each step
+               (Section 6.2.2 of Szeliski 2010 on pose) simmilar to back-propogation in neural 
+               networks (Bishop 2006)..
+               "The advantage of this chained set of transformations is that each one has a 
+               simple partial derivative with respect both to its parameters and to its input. 
+               Thus, once the predicted value of x ̃i has been computed based on the 3D point 
+               location pi and the current values of the pose parameters (cj,qj,k), we can 
+               obtain all of the required partial derivatives using the chain rule."
+               ..."The one special case in this formulation that can be considerably simplified 
+               is the computation of the rotation update. Instead of directly computing the 
+               derivatives of the 3⇥3 rotation matrix R(q) as a function of the unit 
+               quaternion entries, you can prepend the incremental rotation matrix deltaR(omega) 
+               given in Equation (2.35) to the current rotation matrix and compute the
+               partial derivative of the transform with respect to these parameters, which 
+               results in a simple cross product of the backward chaining partial derivative 
+               and the outgoing 3D vector (2.36)"
+                  NOTE: perturbations are summarized in the Danping Zou lecture
+                  http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
 
-               let X_i be [X_C_i, Y_C_i, Z_C_i]
+                      write the projection equations as
+                         x_i = f(X_i;R,t,K)
+                      and iteratively minimize the robustified linearized reprojection errors
+                         E_NLP = summation_i( rho( (d(f)/d(R))*deltaR + (d(f)/d(t))*deltat + (d(f)/d(K))*deltaK - resid_i)
+                         where resid_i = x ̃i - xˆi is the current residual vector (2D error in predicted position) 
+                         and the partial derivatives are with respect to the unknown pose parameters 
+                         (rotation, translation, and optionally intrinsic calibration)
+                      An easier to understand (and implement) version of the above non-linear regression 
+                      problem can be constructed by re-writing the projection equations as a concatenation 
+                      of simpler steps, each of which transforms a 4D homogeneous coordinate X_i by a 
+                      simple transformation such as translation, rotation, or perspective division (Figure 6.5). 
+                      The resulting projection equations can be written as
+                         y_1 = f_T(X_i;c_j) = X_i - c_j,   where c_j is camera center
+                         y_2 = f_R(y_1;q_j) = R(q_j)*y_1
+                         y_3 = f_P(y_2) = y_2/z_2
+                         x_i = f_C(y_3; k) = K(k) * y_3
 
-               then following the notation of the lecture:
-                  u_i = m_1^T X_i/(m_3^T X_i)
-                  and
-                  v_i = m_2^T X_i/(m_3^T X_i)
-   
-               then m_1^T*X_i - (m_3^T*X_i)*u_i = 0
-               and
-                    m_2^T*X_i - (m_3^T*X_i)*v_i = 0
+                      Note that in these equations, we have indexed the camera centers cj and camera rotation 
+                      quaternions q_j by an index j, in case more than one pose of the calibration object 
+                      is being used (see also Section 7.4.) We are also using the camera center cj instead 
+                      of the world translation t_j , since this is a more natural parameter to estimate.
 
-               form into L*m=0 (based on noise-free case)
-                   [ X_i     0  X_i*u_i ] * [ m_1 ] = 0
-                   [   0   X_i  X_i*v_i ]   [ m_2 ]
-                                            [ m_3 ]
-              can add the other features by continuing to fill L as pairs of rows for each feature. 
+                      The advantage of this chained set of transformations is that each one has a 
+                      simple partial derivative with respect both to its parameters and to its input. 
+                      Thus, once the predicted value of x ̃i has been computed based on the 3D point 
+                      location X_i and the current values of the pose parameters (c_j,q_j,k), 
+                      we can obtain all of the required partial derivatives using the chain rule
+                          d(resid_i)/d(param_k) = (d(resid_i)/d(y_k))*(d(y_k)/d(param_k))
+                          
+                      The rotation partial derivative, espec. can be simplified:
+                          eqn 2.35 d(R(ω)*v)/d(ω^T) = -[v]_x
 
-              to solve for [m_1, m_2, m_3] can use one of these methods:
-              (a) assume noise, and solve for ||L*m||^2 which minimizes ||m||^2=1
-                   by SVD(L).v^T[last row] which is the right singular eigenvector belonging
-                   to the smallest eigenvalue 
-              (b) non-linear optimization to minimize the difference between observed and model:
-                   (u_i - ((m_1^T X_i)/(m_3^T X_i)))^2 + (v_i - ((m_2^T X_i)/(m_3^T X_i)))^2
+                      see Section 4.2 of Gleicher & Witkin 1992 "Through-the-Lens Camera Control"
+
+
+           (3) Alternatively, iteratively solving for parameters in an order suggested by the depndencies, essentially.
 
               looking at M contents to consider which parameters in which order in the optimization iterations:
+              NOTE that instead of derivatives would use gradients estimated from finite differences for each iteration.
 
               M as m_1 is K * [R | t ] * X where t is actually -R*translation
                    m_2
@@ -412,12 +446,41 @@ Task 6: implement the method for parameter optimization
                ==> m13 = (alpha*t_x + gamma*t_y + u_0*t_z)                          alpha and t_x and gamma
                    -- considering: next optimizing for r11, r12, t_x, alpha, and gamma which minimizes m_1
 
-               OR 
-                   -- considering fixing intrinsic parameters and solve for extrinsic using pose algorithm
-                      then use all parameters for projection to estimate ~m and store the total sum of squared sums of residuals.
-                      And iterate: change intrinsic, solve extrinsic w/ pose, estimate ~m, store residual and params if min...
-                      (note that pose is the algorithm above, solving L*m.)
 
+---------------------------------------------------------------------
+Task 7: implement the extrinsic parameters solver of Moreno-Noguer et al. 2007
 
+   goal: implement a fast accurate P-n-P algorithm.
+         The Moerno-Noguer et al. 2007 algorithm is a non-iterative solution 
+         to the PnP problem — the estimation of the pose of a calibrated 
+         camera from n 3D-to-2D point correspondences—whose computational 
+         complexity grows linearly with n.
+
+   time estimate: minimum  hour, maximum  day
+  
+   amount of time used:
+
+   state of completion: in design stage
+
+   priority: low as Task 4 has same goal and is already implemented.
+
+   comments:
+       implementing an algorithm recommended in Section 6.2.1 of Szeliski as
+       a fast reasonably accurate P-n-P algorithm to be used before refinement
+       with an iterative solution.  
+       The P-n-P algorithm determines the position and orientation of a camera given its
+       intrinsic parameters and a set of n correspondences between
+       3D points and their 2D projections.
+
+       How does this compare to the method already implemented above from Ma et al. 2003?
+       And both compared to the DLT method in the project as CameraPose.calculatePose()?
+
+       haven't read the paper yet...
+              
+   details:  
+      Moreno-Noguer et al. 2007  extrinsic parameters solver method:
+          input: 
+          output: estimated camera extrinsic parameters
+          responsibilities:
 ---------------------------------------------------------------------
 =====================================================================

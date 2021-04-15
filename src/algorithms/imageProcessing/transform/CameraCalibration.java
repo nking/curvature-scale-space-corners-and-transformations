@@ -162,7 +162,7 @@ public class CameraCalibration {
                 [ h12 h22 h32 ]
                 [ h13 h23 h33 ]
 
-          Let h_i be the ith column vector of H:
+          Let h_i be the ith row of H:
               h_i = ]h_i_1]^T = [h_i_1  h_i_2  h_i_3]
                     [h_i_2]
                     [h_i_3]
@@ -177,7 +177,7 @@ public class CameraCalibration {
             X = coordsW[0][i];
             Y = coordsW[1][i];
             // eqn(15) of Ma et al. 2003
-            ell[2*i] = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};
+            ell[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};
             ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
         }
         
@@ -326,6 +326,7 @@ public class CameraCalibration {
     
     
     /**
+     * following Ma et al. 2003
      * estimate the extrinsic parameters
      * @param kIntr camera intrinsic parameters
      * @param h homography for the projection for an image
@@ -349,6 +350,8 @@ public class CameraCalibration {
         //λ = 1/||A−1h1||2 = 1/||A−1h2||2
         double lambda = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h1));
         double lambda2 = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h2));
+        //double scaleFactor = 2./(Math.sqrt(sumOfSquares(h1)) + Math.sqrt(sumOfSquares(h1)));
+        System.out.printf("lambda1=%.3e, lambda2=%.3e\n", lambda, lambda2);
         
         double[][] r1M = MatrixUtil.copy(aInv);
         MatrixUtil.multiply(r1M, lambda);
@@ -371,6 +374,117 @@ public class CameraCalibration {
         SVDProducts svd = MatrixUtil.performSVD(r);
         
         r = MatrixUtil.multiply(svd.u, svd.vT);
+        
+        CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
+        kExtr.setRotation(r);
+        kExtr.setTranslation(t);
+        
+        return kExtr;
+    }
+    
+    /**
+     * following Wetzstein "EE 267 Virtual Reality Course Notes: 6-DOF Pose 
+     * Tracking with the VRduino"
+     * estimate the extrinsic parameters
+     * @param kIntr camera intrinsic parameters
+     * @param coordsI holds the image coordinates in pixels of features present in image i
+     * @param coordsW holds the world coordinates of features present in image 1 corresponding
+               to the same features and order of coordsI_i
+     * @return 
+     */
+    private static Camera.CameraExtrinsicParameters solveForExtrinsic2(
+        CameraIntrinsicParameters kIntr, double[] kRadial, 
+        double[][] coordsI, double[][] coordsW) throws NotConvergedException {
+        
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI length should be 3");
+        }
+        int n = coordsI.length;
+        if (coordsW[0].length != n) {
+            throw new IllegalArgumentException("coordsW must have same number of rows as coordsI.");
+        }
+        if (n < 4) {
+            throw new IllegalArgumentException("coordsI[0].length cannot be less than 4");
+        }
+        
+        // convert to camera centered coordinates
+        double[][] xc = Camera.pixelToCameraCoordinates(coordsI, kRadial, kIntr.getIntrinsic());
+        
+        // normalize by last coordinate:
+        for (int i = 0; i < xc[0].length; ++i) {
+            xc[0][i] /= xc[2][i];
+            xc[1][i] /= xc[2][i];
+        }
+        
+        // 2*n X 8       
+        double u, v, X, Y;
+        double[][] a = new double[2*n][8];
+        for (int i = 0; i < n; ++i) {
+            u = xc[0][i];
+            v = xc[1][i];
+            X = coordsW[0][i];
+            Y = coordsW[1][i];
+            // eqn(10) of lecture notes
+            a[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y};
+            a[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y};
+        }
+        
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(a);
+        
+        // vT is 8X8  last row in vT is the eigenvector for the smallest eigenvalue
+        double[] h = svd.vT[svd.vT.length - 1];
+        
+        double[][] h3x3 = new double[3][3];
+        for (int i = 0; i < 3; i++) {
+            h3x3[i] = new double[3];
+            h3x3[i][0] = h[(i * 3) + 0];
+            h3x3[i][1] = h[(i * 3) + 1];
+            h3x3[i][2] = h[(i * 3) + 2];
+        }
+        
+        double[] hcol1 = MatrixUtil.extractColumn(h3x3, 0);
+        double[] hcol2 = MatrixUtil.extractColumn(h3x3, 1);
+        double[] hcol3 = MatrixUtil.extractColumn(h3x3, 2);
+                
+        double s = 2./(Math.sqrt(sumOfSquares(hcol1)) + Math.sqrt(sumOfSquares(hcol2)));
+
+        // translational component of the camera pose:
+        double[] t = Arrays.copyOf(hcol3, hcol3.length);
+        MatrixUtil.multiply(t, s);
+        t[2] *= -1;
+        
+        // estimate rotation from the homography
+        
+        // column 1:
+        double[] r1 = Arrays.copyOf(hcol1, hcol1.length);
+        MatrixUtil.multiply(r1, 1./Math.sqrt(sumOfSquares(hcol1)));
+        
+        //extract the second column of the rotation matrix r2 from the homography, 
+        //but we have to make sure that it is orthogonal to the first column. 
+        //We can enforce that as follows
+        double[] r2 = Arrays.copyOf(hcol2, hcol2.length);
+        r2[2] *= -1;
+        
+        double r1doth2 = MatrixUtil.innerProduct(r1, hcol2);
+        for (int i = 0; i < r2.length; ++i) {
+            r2[i] -= (r1[i] * r1doth2);
+        }
+        r2 = MatrixUtil.normalizeL2(r2);
+        
+        // check that r1 dot r2 = 0;
+        double chk = MatrixUtil.innerProduct(r1, r2);
+        assert(Math.abs(chk) < 1.e-3);
+        
+        // r3 is r1 cross r2
+        double[] r3 = MatrixUtil.crossProduct(r1, r2);
+        
+        
+        double[][] r = MatrixUtil.zeros(3, 3);
+        for (int row = 0; row < 3; ++row) {
+            r[row][0] = r1[row];
+            r[row][1] = r2[row];
+            r[row][2] = r3[row];
+        }
         
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);

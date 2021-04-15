@@ -2,6 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
 import java.util.Arrays;
+import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  * a utility class holding euler rotations and rodrigues formula.
@@ -114,6 +115,20 @@ public class Rotation {
         return rot;
     }
     
+    /**
+     * given v as an array of rotations about x, y, and z, calculate the 
+     * rotation matrix.
+     * NOTE: if computing the partial derivative of Rotation elsewhere, 
+     * can use d(R(ω)*v)/d(ω^T) = -[v]_x (see Equation (2.35) of Szeliski 2010).
+     * <pre>
+     * references:
+     *    Dmitry Berenson https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
+     *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
+     *    Rodriguez’s formula (Ayache 1989)
+     * </pre>
+     * @param v
+     * @return 
+     */
     public static double[][] createRodriguesFormulaRotationMatrix(double[] v) {
         if (v.length != 3) {
             throw new IllegalArgumentException("v length must be 3");
@@ -215,5 +230,35 @@ public class Rotation {
         }
         
         return r;
+    }
+
+    /**
+     * determine the rotation between measurements x1 and x2 when both datasets
+     * have the same center, that is, there is no translation between them,
+     * only rotation.
+     * (see Golub & van Loan "Matrix Computations" 11.12.4,
+     * Szeliski 2010, Sect 6.1.5).
+     * @param x1 a set of measurements having same center as x2, that is,
+     * there is no translation between them, only rotation.
+     * the expected format is nData X nDimensions.
+     * @param x2 another set of measurements having same center as x1, that is,
+     * there is no translation between them, only rotation.
+     * the expected format is nData X nDimensions.
+     * @return
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     */
+    public static double[][] procrustesAlgorithmForRotation(double[][] x1, double[][] x2) 
+        throws NotConvergedException {
+        int m = x1.length;
+        int p = x1[0].length;
+        if (x2.length != m || x2[0].length != p) {
+            throw new IllegalArgumentException("x1 and x2 must have same sizes");
+        }
+        // minimize || x1 - x2*Q ||_F
+        //    subject to Q^T * Q = I_P
+        double[][] c = MatrixUtil.multiply(MatrixUtil.transpose(x2), x1);
+        MatrixUtil.SVDProducts svdC = MatrixUtil.performSVD(c);
+        double[][] q = MatrixUtil.multiply(svdC.u, svdC.vT);
+        return q;
     }
 }

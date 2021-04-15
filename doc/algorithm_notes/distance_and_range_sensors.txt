@@ -1,0 +1,88 @@
+3D range measurements:
+   - current best by accuracy, efficiency, data acquisition methods for cost 
+     use time-of-flight (TOF) technology
+     (from Review on Three Dimensional (3-D) Acquisition and Range Imaging Techniques. 
+     by Aboali et al 2017.
+     Available from: https://www.researchgate.net/publication/318046846_Review_on_Three_Dimensional_3-D_Acquisition_and_Range_Imaging_Techniques).
+
+using resources including electromagnetic  wave,  sound  wave,  ultrasonic,  
+   laser, light ray, and more. 
+variety of systems including laser, radar, sonar, ultrasonoscope, 
+   imaging systems,  (etc.).  
+
+Among these,  Laser Detection and Ranging (LADAR), a system  of 
+   transmitting,  detecting, processing,  and  receiving  of  
+   an  electromagnetic  wave  that reflects  from  targets.  
+   The point measurements are from one viewpoint.
+   the process is expensive and time-consuming.
+The Laser range  finder (LRF), operates with the time of   
+   flight principle,  by transmitting laser pulse onto the 
+   surface object and receiving the reflected pulse to 
+   measure the time between sending and receiving  pulse [14]. 
+On 3D  Laser  Scanner,  the  concept  of operation  is  similar  to  LADAR.  
+   However,  the  system  has been  generated  for  the  aim  
+   of  3D  digital  measurement, visualization, and documentation, 
+   it’s capable of  capturing 3D  digital  information  and  obtaining  
+   images  with   high accuracy and speed [15]. 
+Another typical system is the Light Detection   and   Ranging   (LIDAR), 
+   a system   for   terrain mapping, forest and vegetation measurement.  
+   LIDAR has the ability  of  detect  various  reflections  from  
+   only  a  single  laser pulse [16]. 
+Radio   Frequency   Identification   (RFID), an automatic tracking 
+   and identification technology that utilized small tags  
+   (transponders)  which  are  attached  to a physical object, 
+   where the tags contain a store information. The system can 
+   be used as automatic tracking for people, machine, cash, 
+   airport baggage, train, shipping, cars, containers, automobile, 
+   and  more [17].  
+Radio  Detection  and  Ranging  (RADAR),  a unique technology of 
+   detection that utilized radio wave to be transmitted  
+   and  reflected back  by  objects  in  order  to  obtain angle, 
+   velocity, range, and properties of targets. 
+   It has various types and utilization involving detect ships, 
+   guided missiles, aircraft, spacecraft, and  weather  formations [18].  
+Thermal Imaging is another technology of sensing objects based on of 
+   temperature scale difference, these technologies able to detect the  
+   heat  given  by  the  desired targets.  A  wide  range  of applications 
+   has utilized the concept of thermal imaging such as  mining  industry,  
+   firefighting,  planes,  military,  medical applications.  
+Global Positioning  System  (GPS),  space-based system  that  determined 
+   the accurate  position  and  provides timely information of the 
+   desired location anywhere on earth and   under  all-weather  conditions.  
+   The  GPS  provides  to commercial users,  civil,  and  military  with  
+   high  capabilities worldwide [19]. 
+Ultrasound technologies based on the sound wave is other approach of 
+   distances measurement and objects detection. They transmit 
+   high-frequency sound pulse by using transducer probe, which 
+   considers as main part of ultrasound technology machine. 
+   Then, the reflected waves received back by same transducer probe [20]. 
+(3D) cameras: these systems found their ways into a wide set of  global  
+   applications  [21].  
+Stereo  Vision,  Structure Light,  and  Time-of –Flight  are  the  most  
+   common  principles [22].  
+   stereo vision has been used in different ways in the making of movies since the mid 1800's.
+Stereo vision correspondence between points can be complex.
+
+Structured Light: The light emitting source (20) projects light pattern 
+   which can be (multi stripe, stripe, single spot, binary, sine wave, 
+   and any complex pattern) toward the desired 3D object.  
+   Then, the light is distorted by the 3D object and detected by the 
+   camera (18) at a high data acquisition rate.  
+   Analysis of the distortions of structured light, but occlusion is a problem,
+   and shadows
+
+Photogrammetry  is  a method for precise three-dimensional (3D) measurements, 
+   by taking Photographs from two or more locations known as (the lines  of  sight)  
+   and  measuring  the  point  of  interest  for  each photograph.  
+   The interaction of these lines of sight pairs can be triangulated then to 
+   produce (3D) coordinate of the point of on target object.  
+   A remote sensing and high-speed imaging are  may be  employed  by  Photogrammetry  
+   for  the  aim  of detecting, recording, and measure three-dimensional  
+   motion and complex 2D fields [57]. 
+   types: Aerial Photogrammetry - camera parameters are well known. topological mapping...
+          close range Photogrammetry - proximity distances are well known. 3D modeling...
+dels, but perhaps it’s not utilized for  topographical  mapping.  However,  the  concept  of  this technique is applied to a diverse set of applications including Heritage,   city   modeling,   architecture,   medical imaging, security, anthropometric analysis, databases, face recognition, and more. [58]. Figure 3 illustrates the operating Photogrammetry principle.  
+
+(16) (PDF) Review on Three Dimensional (3-D) Acquisition and Range Imaging Techniques. Available from: https://www.researchgate.net/publication/318046846_Review_on_Three_Dimensional_3-D_Acquisition_and_Range_Imaging_Techniques [accessed Mar 06 2020].
+
+

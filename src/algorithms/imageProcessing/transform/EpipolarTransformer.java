@@ -1472,6 +1472,64 @@ public class EpipolarTransformer {
         return e;
     }
     
+    /**
+     * convert the fundamental matrix into the essential matrix.
+     * @param k1 camera 1 intrinsics matrix.
+     * @param k2 camera 2 intrinsics matrix.
+     * @param fm the fundamental matrix in the reference frame of the original image space
+     * of pixel coordinates.
+     * @return the essential matrix in the reference frame of normalized image
+     * coordinates (origin is optical center of the image).
+     */
+    public static double[][] createEssentialFromFundamentalMatrix(
+        double[][] k1, double[][] k2, double[][] fm) throws NotConvergedException {
+        
+        // E = K2^T * F * K1
+        //   then SVD(E) to reform E:
+        //   E = U * [1 0 0] * V^T
+        //           [0 1 0]
+        //           [0 0 0]
+        double[][] k2T = MatrixUtil.transpose(k2);
+        
+        double[][] em = MatrixUtil.multiply(k2T, fm);
+        em = MatrixUtil.multiply(em, k1);
+        
+        System.out.printf("E before:\n%s\n", FormatArray.toString(em, "%.3e"));
+        
+        SVDProducts svd = MatrixUtil.performSVD(new DenseMatrix(em));
+        double[][] d = MatrixUtil.createIdentityMatrix(3);
+        d[2][2] = 0;
+        em = MatrixUtil.multiply(svd.u, d);
+        em = MatrixUtil.multiply(em, svd.vT);
+        
+        System.out.printf("E:\n%s\n", FormatArray.toString(em, "%.3e"));
+        
+        return em;
+    }
+    
+    /**
+     * convert the essential matrix into the fundamental matrix using 
+     * F= K2^-T * E * K1^-1
+     * @param k1 camera 1 intrinsics matrix.
+     * @param k2 camera 2 intrinsics matrix.
+     * @param em the essential matrix in the reference frame of normalized image
+     * coordinates (origin is optical center of the image)
+     * @return the fundamental matrix .
+     */
+    public static double[][] createFundamentalFromEssentialMatrix(
+        double[][] k1, double[][] k2, double[][] em) {
+        
+        // F= K2^-T * E * K1^-1
+        double[][] k1Inv = Camera.createIntrinsicCameraMatrixInverse(k1);
+        double[][] k2Inv = Camera.createIntrinsicCameraMatrixInverse(k2);
+        double[][] k2InvT = MatrixUtil.transpose(k2Inv);
+        
+        double[][] fm = MatrixUtil.multiply(k2InvT, em);
+        fm = MatrixUtil.multiply(fm, k1Inv);
+        
+        return fm;
+    }
+    
     public static class NormalizationTransformations {
         /**
          * a normalization matrix which subtracts a centroid and divides by a scale factor

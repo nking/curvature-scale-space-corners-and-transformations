@@ -9,6 +9,18 @@ import no.uib.cipr.matrix.NotConvergedException;
 /**
  * utility methods for camera intrinsic and extrinsic matrices.
  * 
+ * KIntrinsic is the camera intrinsic parameters
+ * KExtrinsic is the camera extrinsic parameters, specifically, the camera
+ * position and orientation in world coordinates.
+ * 
+ * to project the world coordinate system point into the camera frame
+ * canonical form,
+ * multiply it by the extrinsic matrix (which will translate the
+ * coordinates and rotate them).
+ * 
+ * to project the camera frame coordinate system into the image frame,
+ * multiply it by the intrinsic matrix.
+ * 
  * @author nichole
  */
 public class Camera {
@@ -18,7 +30,10 @@ public class Camera {
      * and no skew.  the focal length and optical centers should be in units of pixels.
      * NOTE that given the field of view (FOV) and the image dimensions,
      * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
-     * @param focalLength focal length of camera in units of pixels.
+     * @param focalLength focal length of camera in units of pixels.  NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
      * @param centerX x coordinate of principal point in pixels, usually image center.
      * @param centerY y coordinate of principal point in pixels, usually image center.
      * @return intrinsic camera matrix in units of pixels.
@@ -39,7 +54,15 @@ public class Camera {
      * NOTE that given the field of view (FOV) and the image dimensions,
      * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
      * @param focalLengthX focal length of camera in units of pixels along x axis.
+     * NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
      * @param focalLengthY focal length of camera in units of pixels along y axis.
+     * NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
      * @param centerX x coordinate of principal point in pixels, usually image center.
      * @param centerY y coordinate of principal point in pixels, usually image center.
      * @param skew camera skew
@@ -62,6 +85,10 @@ public class Camera {
      * NOTE that given the field of view (FOV) and the image dimensions,
      * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
      * @param focalLength focal length of camera in units of pixels.
+     * NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
      * @param centerX x coordinate of principal point in pixels, usually image center.
      * @param centerY y coordinate of principal point in pixels, usually image center.
      * @return intrinsic camera matrix in units of pixels.
@@ -257,7 +284,7 @@ public class Camera {
         return cc;
     }
     
-    /* converts pixel coordinates to camera coordinates by transforming them to camera 
+    /** converts pixel coordinates to camera coordinates by transforming them to camera 
     reference frame then removing radial distortion.
     The radial distortion removal follows Ma et al. 2004.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
@@ -265,7 +292,7 @@ public class Camera {
     Also useful reading is NVM Tools by Alex Locher
     https://github.com/alexlocher/nvmtools.git
     
-     * @param xC points in the camera centered reference frame. 
+     * @param x points in the camera centered reference frame. 
      * format is 3XN for N points.  
      * @param rCoeffs radial distortion vector of length 2 or radial and tangential
      * distortion vector of length 5.  can be null to skip lens distortion correction.
@@ -292,6 +319,77 @@ public class Camera {
         }
                 
         return pix;
+    }
+    
+    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    reference frame then removing radial distortion.
+    The radial distortion removal follows Ma et al. 2004.
+    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
+    and the output is a double array of (x, y).
+    Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+    
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points.  
+     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * @param kIntrinsic camera intrinsic parameters.  note, it's expected that the focal length is positive
+     * 
+     * @return pixels in the reference frame of 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     */
+    public static double[][] pixelToCameraCoordinates(double[][] x, double[] rCoeffs,
+        double[][] kIntrinsic) throws NotConvergedException {
+        
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+                
+        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntrinsic);
+        
+        // put x into camera coordinates reference frame:
+        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
+        
+        if (rCoeffs != null) {
+            pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], rCoeffs[1]);
+        }
+                
+        return pix;
+    }
+    
+    /**
+     * transform 2D pixel measurements x_i to unit norm 3D directions
+     * <pre>
+     * references Szeliski 2010, eqn (6.36)
+     * </pre>
+     * @param x 2D pixel measurements in format 3XN where the rows are x, y, and "1"'s
+     * and the columns are each point in the N points.
+     * @param k camera intrinsic parameters
+     * @return 
+     */
+    public static double[][] transformToUnitNormDirections(double[][] x, 
+        CameraIntrinsicParameters k) {
+        
+        if (x.length != 3) {
+            throw new IllegalArgumentException("x length must be 3");
+        }
+        
+        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k.intrinsic);
+        
+        //(K^-1 * x_i)/(||K^-1 * x_i||)
+        double[][] norm = MatrixUtil.multiply(kInv, x);
+                
+        int i, j;
+        double sum = 0;
+        for (j = 0; j < norm.length; ++j) {
+            sum = 0;
+            for (i = 0; i < norm.length; ++i) {
+                sum += (norm[i][j]*norm[i][j]);
+            }
+            sum = Math.sqrt(sum);
+            for (i = 0; i < norm.length; ++i) {
+                norm[i][j] /= sum;
+            }
+        }
+        return norm;
     }
     
     public static class CameraIntrinsicParameters {
