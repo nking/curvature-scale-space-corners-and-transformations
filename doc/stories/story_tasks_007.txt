@@ -11,7 +11,8 @@ Story: Implementing a camera self-calibration algorithm by Ma, Chen, & Moore 200
 
     time estimate: 
         minimum: 1 day
-        maximum: 2 days for Tasks 1-5.  Task 6 is 5 days max.  Total max should be ~7 days.
+        maximum: 2 days for Tasks 1-5.  Task 6 is 5 days max.  Testing max ~2 days.
+                 Total max should be ~9 days.
 
     amount of time used: 
 
