@@ -285,6 +285,8 @@ For "7-point" correspondences, consider implementing MLESAC.
      by P. H. S. Torr and A. Zisserman
      1996 http://www.robots.ox.ac.uk/~vgg/publications/papers/torr00.pdf
  
+ TODO: implement Nister's 5-point algorithm to determine the essential matrix 
+ * for the case where arguments are the camera intrinsic parameters and the correspondence.
  * @author nichole
  */
 public class EpipolarTransformer {

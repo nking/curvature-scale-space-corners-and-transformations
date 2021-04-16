@@ -19,6 +19,14 @@ import no.uib.cipr.matrix.SVD;
  * http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
  * add other references here
  * </pre>
+ * 
+ * TODO: implement a method using minimization of the re-projection error by
+ * non-linear optimization such as Levenberg-Marquardt.
+ * 
+ * TODO: construct a method that might be better placed in reconstruction:
+ * given camera intrinsic parameters and 2-view correspondences: first calculate
+ * the essential matrix, then extract the cameras extrinsic parameters from
+ * them, then use triangulation to get the WCS coordinates.
  * @author nichole
  */
 public class Triangulation {
@@ -107,7 +115,7 @@ public class Triangulation {
         
         P = K * R * [I | -t]
         
-        alternately, can write as P = K * [ R | -R*t]
+        or, can write as P = K * [ R | -R*t]
         
         -----------------------------------
         since data are noisy, these equalities need to be solved as best fit:

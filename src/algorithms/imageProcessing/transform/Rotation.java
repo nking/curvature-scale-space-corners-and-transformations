@@ -261,4 +261,32 @@ public class Rotation {
         double[][] q = MatrixUtil.multiply(svdC.u, svdC.vT);
         return q;
     }
+    
+    /**
+     * extract the rotation angles from the given euler rotation matrix assumed
+     * to be a result of R_z(theta_z) * R_x(theta_x) * R_y(theta_y).
+     * NOTE: Note, however, that this way of extracting of the Euler angles is 
+     * ambiguous. Even though whatever angles you extract this way will result 
+     * in the correct rotation matrix, if the latter was generated from a 
+     * set of Euler angles in the first place, you are not guaranteed to get 
+     * exactly those back.
+     <pre>
+     the method is from equation (37) from 
+     lecture notes of Gordon Wetzstein at Stanford University,
+     EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
+     https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
+     </pre>
+     * @param r euler rotation matrix assumed
+     * to be a result of R_z(theta_z) * R_x(theta_x) * R_y(theta_y)
+     * @return theta_x, theta_y, theta_z
+     */
+    public static double[] extractRotation(double[][] r) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3x3");
+        }
+        double thetaX = Math.asin(r[2][1]);
+        double thetaY = Math.atan2(-r[2][0], r[2][2]);
+        double thetaZ = Math.atan2(-r[0][1], r[1][1]);
+        return new double[]{thetaX, thetaY, thetaZ};
+    }
 }
