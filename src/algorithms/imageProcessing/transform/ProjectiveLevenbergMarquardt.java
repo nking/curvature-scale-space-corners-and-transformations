@@ -4,6 +4,8 @@ import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.matrix.MatrixUtil;
+import java.util.Arrays;
+import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  * iterative non-linear optimization using Levenberg-Marquardt algorithm
@@ -30,7 +32,8 @@ public class ProjectiveLevenbergMarquardt {
      * @return 
      */
     public static CameraMatrices solve(double[][] imageC, double[][] worldC, 
-        CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, double[] kRadial) {
+        CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
+        double[] kRadial, int nMaxIter) throws NotConvergedException {
         
         int n = imageC[0].length;
         
@@ -39,6 +42,15 @@ public class ProjectiveLevenbergMarquardt {
         }
         if (worldC[0].length != n) {
             throw new IllegalArgumentException("imageC[0].length must equal worldC[0].length");
+        }
+        
+        double[] b = new double[2*n];
+        final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kRadial, kIntr.getIntrinsic());
+        for (int i = 0; i < n; ++i) {
+            xn[0][i] /= xn[2][i];
+            xn[1][i] /= xn[2][i];
+            b[2*i] = xn[0][i];
+            b[2*i + 1] = xn[1][i];
         }
         
         //TODO: consider adding constraints suggestded in Seliski 2010:
@@ -51,8 +63,55 @@ public class ProjectiveLevenbergMarquardt {
         double[] thetas = Rotation.extractRotation(r);
         double[] t = kExtr.getTranslation();
         
-        // equation (19)
+        // equation (19).  size is 1 X 9
         double[] h = new double[]{r[0][0], r[0][1], t[0], r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], t[2]};
+       
+        // equation 20.  length is 2*N
+        double[] fgp = map(worldC, h);
+        
+        // length is 2*N
+        double[] bMinusFGP = MatrixUtil.subtract(b, fgp);
+        
+        // size is (2N) X 6
+        double[][] j = calculateJ(worldC, h, thetas);
+        
+        // size is 6 X 6
+        //double[][] jTJ = MatrixUtil.createATransposedTimesA(j);
+        // size is (2N) X 6
+        double[][] jT = MatrixUtil.transpose(j);
+        // size is 6 X 6
+        double[][] jTJ = MatrixUtil.multiply(jT, j);
+        
+        double lambda = maxDiag(jTJ);
+        
+        // the residual, that is, the evaulation of the objective which is the 
+        //   re-projection error.
+        double f = evaluateObjective(bMinusFGP);
+        double fPrev;
+        
+        // from a different lecture:: delta p LM: (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p)))
+        // length is 6
+        double[] deltaPLM = calculateDeltaPLM(jTJ, jT, lambda, bMinusFGP);
+        
+        //from eqn (22) : inv( J^T J + λ diag(J^TJ)) · (b−f)
+        double[] deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);
+        
+        double eps = 1.e-5;
+        
+        // gain ratio:
+        //gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
+        //     where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+        //gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+        double gainRatio = calculateGainRatio(f/2., fPrev/2.,
+            deltaPLM22, lambda, jT, bMinusFGP, eps);
+        
+        // loop stopping conditions:
+        //   step length vanishes:  deltaPLM --> 0
+        //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
+        double[] stepLengthCheck = deltaPLM22;
+        double[] gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(
+            jT, MatrixUtil.subtract(b, fgp));
+        MatrixUtil.multiply(gradientCheck, -1.);
         
         /*
         Initialization: A = J^T*J, lambda=max{a_i_i}
@@ -61,8 +120,8 @@ public class ProjectiveLevenbergMarquardt {
           a) Solve (A + lambda*I)*(delta x) = J^T*r to get delta x_LM
           b) x = x + (delta x_LM)
           c) Adjust the damping parameter by checking the gain ratio
-             1. rho > 0 Good approximation, decrease the damping parameter
-             2. rho <= 0 Bad approximation, increase the damping parameter
+             1. gain > 0 Good approximation, decrease the damping parameter
+             2. gain <= 0 Bad approximation, increase the damping parameter
         
         where r_i(x) = y_i - h_i(x) where y_i are the measurements
            and h_i(x) are the projections.
@@ -78,6 +137,71 @@ public class ProjectiveLevenbergMarquardt {
         */
         
         throw new UnsupportedOperationException("not yet complete");
+    }
+    
+    /**
+     * map the homography matrix to the projected 2D point coordinates of our the reference points.
+     * eqn (20)
+     * @param worldC
+     * @param h
+     * @return 
+     */
+    static double[] map(double[][] worldC, double[] h) {
+        
+        int n = worldC[0].length;
+        
+        double[] f = new double[2*n];
+        
+        double sum = 0;
+        int i, j;
+        double X, Y, s;
+        for (i = 0; i < n; ++i) {
+            X = worldC[0][i];
+            Y = worldC[1][i];
+            s = h[6] * X + h[7] * Y + h[8];
+            
+            f[2*i] = (h[0] * X + h[1] * Y + h[2])/s;
+            f[2*i+1] = ((h[3] * X + h[4] * Y + h[5])/s);            
+        }
+        
+        return f;
+    }
+    
+    /**
+     * evaluate the objective (|| b − f (g (p)) ||_2)^2
+     * eqn (21)
+     * @param bMinusFGP array b - f(g(p))
+     * @return 
+     */
+    static double evaluateObjective(double[] bMinusFGP) {
+        
+        int n = b.length;
+        
+        double sum = 0;
+        int i, j;
+        double r;
+        for (i = 0; i < n; ++i) {
+            sum += (bMinusFGP[i] * bMinusFGP[i]);
+        }
+        
+        return sum;
+    }
+    
+    /**
+     * 
+     * @param worldC
+     * @param h
+     * @param thetas
+     * @return matrix size (@N) X 6
+     */
+    static double[][] calculateJ(double[][] worldC, double[] h, double[] thetas) {
+        //(2N) X 9
+        double[][] jF = calculateJF(worldC, h);
+        //9 X 6
+        double[][] jG = calculateJG(thetas);
+        // (@N)X6)
+        double[][] j = MatrixUtil.multiply(jF, jG);
+        return j;
     }
     
     /**
@@ -152,5 +276,102 @@ public class ProjectiveLevenbergMarquardt {
         jG[8] = new double[]{0, 0, 0, 0, 0, -1};
         
         return jG;
+    }
+
+    private static double maxDiag(double[][] a) {
+        double max = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < a.length; ++i) {
+            if (a[i][i] > max) {
+                max = a[i][i];
+            }
+        }
+        return max;
+    }
+
+    /**
+     *                          6X6  * (6 * (2N)) * (2NX1) = 6 X (2N) * (2NX1) = 6X1
+     * calculate the step as (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p))
+     * @param jTJ
+     * @param lambda
+     * @param jT
+     * @return an array of length 6 
+     * @throws NotConvergedException 
+     */
+    private static double[] calculateDeltaPLM(double[][] jTJ, double[][] jT, 
+        double lambda, double[] bMinusF) throws NotConvergedException {
+        
+        // (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p))
+        double[][] identity = MatrixUtil.createIdentityMatrix(6);
+        MatrixUtil.multiply(identity, lambda);
+        // 6 X 6
+        double[][] a = MatrixUtil.elementwiseAdd(jTJ, identity);
+        double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
+        
+        double[][] pt1 = MatrixUtil.multiply(aInv, jT);
+        double[] step = MatrixUtil.multiplyMatrixByColumnVector(pt1, bMinusF);
+        
+        return step;
+    }
+    
+    /**
+     * calculate the step as inv( J^T J + λ diag(J^TJ)) · (b−f)
+     * @param jTJ
+     * @param lambda
+     * @param bMinusF
+     * @return an array of length 6
+     * @throws NotConvergedException 
+     */
+    private static double[] calculateDeltaPLM(double[][] jTJ, 
+        double lambda, double[] bMinusF) throws NotConvergedException {
+       
+        int i, j;
+        // J^T J + λ diag(J^TJ)
+        // 6 X 6
+        double[][] a = MatrixUtil.copy(jTJ);
+        for (i = 0; i < 6; ++i) {
+            a[i][i] += (lambda*(jTJ[i][i]));
+        }
+        
+        double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
+                
+        double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, bMinusF);
+        
+        return step;
+    }
+
+    /**
+     * gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
+             where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+       gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+     * @param f
+     * @param fPrev
+     * @param deltaPLM
+     * @param lambda
+     * @param jT
+     * @param bMinusFGP
+     * @return 
+     */
+    private static double calculateGainRatio(double f, double fPrev, 
+        double[] deltaPLM, double lambda, double[][] jT, double[] bMinusFGP,
+        double eps) {
+             
+        //      1X6          *            ( 6X1   +   6 X (2N) * (2NX1) )
+        //      1X6                        6X1 
+        //  1X1
+        //(delta p LM)^T * (lambda * (delta p LM) + J^T * (b - fgp))
+        double[] pt1 = Arrays.copyOf(deltaPLM, deltaPLM.length);
+        MatrixUtil.multiply(pt1, lambda);
+        double[] pt2 = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
+        pt2 = MatrixUtil.add(pt1, pt2);
+        
+        double ell = MatrixUtil.innerProduct(deltaPLM, pt2);
+        
+        if (Math.abs(ell) < eps) {
+            return Double.POSITIVE_INFINITY;
+        }
+        
+        double gain = (f - fPrev)/ell;
+        
+        return gain;
     }
 }
