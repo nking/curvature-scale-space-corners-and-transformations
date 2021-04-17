@@ -4,6 +4,7 @@ import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import java.util.Arrays;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -11,6 +12,7 @@ import no.uib.cipr.matrix.NotConvergedException;
  * iterative non-linear optimization using Levenberg-Marquardt algorithm
  * to minimize the re-projection error of perspective projection.
  * 
+ * TODO: consider implementing the Szeliski 2010 chapter 6 equations (6.44)-(6.47)
  * @author nichole
  */
 public class ProjectiveLevenbergMarquardt {
@@ -23,7 +25,11 @@ public class ProjectiveLevenbergMarquardt {
      * Jacobian provided in the lecture notes 
      * of Gordon Wetzstein at Stanford University,
        EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
-       https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
+       https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf.
+       
+       NOTE:the invoking code could wrap this in a larger iteration as feedback to 
+       optimize the camera intrinsic parameters and radial distortion parameters
+       also.
      * @param imageC
      * @param worldC
      * @param kIntr
@@ -33,7 +39,7 @@ public class ProjectiveLevenbergMarquardt {
      */
     public static CameraMatrices solve(double[][] imageC, double[][] worldC, 
         CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
-        double[] kRadial, int nMaxIter) throws NotConvergedException {
+        double[] kRadial, final int nMaxIter) throws NotConvergedException {
         
         int n = imageC[0].length;
         
@@ -75,18 +81,17 @@ public class ProjectiveLevenbergMarquardt {
         // size is (2N) X 6
         double[][] j = calculateJ(worldC, h, thetas);
         
-        // size is 6 X 6
-        //double[][] jTJ = MatrixUtil.createATransposedTimesA(j);
         // size is (2N) X 6
         double[][] jT = MatrixUtil.transpose(j);
         // size is 6 X 6
         double[][] jTJ = MatrixUtil.multiply(jT, j);
         
         double lambda = maxDiag(jTJ);
+        double lambdaF = 2;
         
         // the residual, that is, the evaulation of the objective which is the 
         //   re-projection error.
-        double f = evaluateObjective(bMinusFGP);
+        double f = Double.POSITIVE_INFINITY;
         double fPrev;
         
         // from a different lecture:: delta p LM: (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p)))
@@ -96,22 +101,79 @@ public class ProjectiveLevenbergMarquardt {
         //from eqn (22) : inv( J^T J + λ diag(J^TJ)) · (b−f)
         double[] deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);
         
+        System.out.printf("delta0=%s\ndelta1=%s\n", FormatArray.toString(deltaPLM, "%.3e"),
+            FormatArray.toString(deltaPLM22, "%.3e"));
+        
         double eps = 1.e-5;
         
         // gain ratio:
         //gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
         //     where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
         //gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-        double gainRatio = calculateGainRatio(f/2., fPrev/2.,
-            deltaPLM22, lambda, jT, bMinusFGP, eps);
+        double gainRatio;
         
         // loop stopping conditions:
         //   step length vanishes:  deltaPLM --> 0
         //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
-        double[] stepLengthCheck = deltaPLM22;
-        double[] gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(
-            jT, MatrixUtil.subtract(b, fgp));
-        MatrixUtil.multiply(gradientCheck, -1.);
+        double[] stepLengthCheck;
+        double[] gradientCheck;
+        
+        int nIter = 0;
+        while (nIter < nMaxIter) {
+            
+            nIter++;
+            
+            fPrev = f;
+            f = evaluateObjective(bMinusFGP);
+            
+            // ===== calculate step ========
+            j = calculateJ(worldC, h, thetas); //(2N) X 6
+            jT = MatrixUtil.transpose(j);
+            jTJ = MatrixUtil.multiply(jT, j);
+            deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);
+            
+            // ======= stopping conditions ============
+            stepLengthCheck = deltaPLM22;
+            gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, 
+                MatrixUtil.subtract(b, fgp));
+            MatrixUtil.multiply(gradientCheck, -1.);            
+            if (isNegligible(stepLengthCheck, eps) || !isNegligible(stepLengthCheck, eps)) {
+                break;
+            }
+            
+            
+            // ======= revise parameters =======
+            
+            // add deltaPM22 to p, which is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+            updateBySteps(thetas, t, deltaPLM22);
+            
+            updateH(h, thetas, t);
+                        
+            fgp = map(worldC, h);
+            bMinusFGP = MatrixUtil.subtract(b, fgp);
+            
+            // ====== change lambda ======
+            if (nIter > 1) {
+                gainRatio = calculateGainRatio(f/2., fPrev/2.,
+                    deltaPLM22, lambda, jT, bMinusFGP, eps);
+                if (gainRatio > 0) {
+                    // near the minimimum, whichis good
+                    // decrease lambda
+            //TODO: check these... just browsed the paper, didn't read it   
+                    // from Lourakis & Argyros 2005, 
+                    // "Is Levenberg-Marquardt the Most Efficient Optimization Algorithm for Implementing Bundle Adjustment?"
+                    lambda *= Math.max(1./3., 1.-Math.pow(2*gainRatio - 1, 3.));
+                    lambdaF = 2;
+                } else {
+                    // increase lambda
+                    // from Lourakis & Argyros 2005, 
+                    // "Is Levenberg-Marquardt the Most Efficient Optimization Algorithm for Implementing Bundle Adjustment?"
+                    lambda *= lambdaF;
+                    lambdaF *= 2;
+                }
+            }
+            
+        }
         
         /*
         Initialization: A = J^T*J, lambda=max{a_i_i}
@@ -175,7 +237,7 @@ public class ProjectiveLevenbergMarquardt {
      */
     static double evaluateObjective(double[] bMinusFGP) {
         
-        int n = b.length;
+        int n = bMinusFGP.length;
         
         double sum = 0;
         int i, j;
@@ -192,7 +254,7 @@ public class ProjectiveLevenbergMarquardt {
      * @param worldC
      * @param h
      * @param thetas
-     * @return matrix size (@N) X 6
+     * @return matrix size (2N) X 6
      */
     static double[][] calculateJ(double[][] worldC, double[] h, double[] thetas) {
         //(2N) X 9
@@ -373,5 +435,59 @@ public class ProjectiveLevenbergMarquardt {
         double gain = (f - fPrev)/ell;
         
         return gain;
+    }
+
+    private static boolean isNegligible(double[] c, double eps) {
+        for (int i = 0; i < c.length; ++i) {
+            if (Math.abs(c[i]) > eps) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 
+     * @param h input and output variable homography to be updated with given
+     * rotation angles and translations.
+     * @param thetas
+     * @param t 
+     */
+    private static void updateH(double[] h, double[] thetas, double[] t) {
+        // equation (19).  size is 1 X 9
+        
+        double cx = Math.cos(thetas[0]);
+        double cy = Math.cos(thetas[1]);
+        double cz = Math.cos(thetas[2]);
+        double sx = Math.sin(thetas[0]);
+        double sy = Math.sin(thetas[1]);
+        double sz = Math.sin(thetas[2]);
+        
+        h[0] = cy*cz - sx*sy*sz;
+        h[1] = -cx*sz;
+        h[2] = t[0];
+        h[3] = cy*sz + sx*sy*cz;
+        h[4] = cx*cz;
+        h[5] = t[1];
+        h[6] = cx*sy;
+        h[7] = -sx;
+        h[9] = -t[2];
+    }
+
+    /**
+     * update thetas and t by deltaPLM22
+     * @param thetas input and output array holding euler rotation angles 
+     *    theta_x, theta_y, theta_
+     * @param t input and output array holding translation vector in x,y,z. 
+     * @param deltaPLM22 
+     */
+    private static void updateBySteps(double[] thetas, double[] t, double[] deltaPLM22) {
+        int i;
+        for (i = 0; i < 3; ++i) {
+            thetas[i] += deltaPLM22[i];
+        }
+        for (i = 0; i < 3; ++i) {
+            t[i] += deltaPLM22[i+3];
+        }
     }
 }

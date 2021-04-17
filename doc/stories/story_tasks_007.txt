@@ -278,7 +278,7 @@ Task 6: implement the method for parameter optimization
    goal: given all of the parameters estimated above as the initial estimates,
          use non-linear optimization to get the final estimated values.
 
-         the objective function is the reprojection error composed of the observed
+         the objective function is the re-projection error composed of the observed
          points in the image plane and their predicted projections from the
          estimated parameters in the projection matrix and the measured points 
          in the world coordinate system.
@@ -298,7 +298,7 @@ Task 6: implement the method for parameter optimization
 
    comments:
       the notes below are following the Ma et al. 2003 algorithm, then other references
-      in more detail.  5 methods are suggested.
+      in more detail.  3 methods are suggested.
       This task will implement algorithm (1)(a).
 
    details:  
@@ -309,7 +309,7 @@ Task 6: implement the method for parameter optimization
               - given all of the parameters estimated above as the initial estimates,
                 use non-linear optimization to get the final estimated values.
 
-                the objective function is the reprojection error composed of the observed
+                the objective function is the re-projection error composed of the observed
                 points in the image plane and their predicted projections from the
                 estimated parameters in the projection matrix and the measured points 
                 in the world coordinate system.
@@ -347,16 +347,17 @@ Task 6: implement the method for parameter optimization
                EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
                http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
 
-               An L-M approach to minimizing the reprojection error of the perspective projection
+               An L-M approach to minimizing the re-projection error of the perspective projection
                is outlined slightly differently from one another:
 
                (a) lecture notes of Gordon Wetzstein at Stanford University,
                    EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
                    https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
                (b) Chapter 6 of Richard Szeliski 2010 "Computer Vision: Algorithms and Applications"
+                   equations (6.44)-(6.47)
 
-           (2) One could reform the projection equations as separate steps in a chain of transformations
-               and iteratively minimize the robustified linearized reprojection errors for each step
+               One could reform the projection equations as separate steps in a chain of transformations
+               and iteratively minimize the robustified linearized re-projection errors for each step
                (Section 6.2.2 of Szeliski 2010 on pose) simmilar to back-propogation in neural 
                networks (Bishop 2006)..
                "The advantage of this chained set of transformations is that each one has a 
@@ -377,7 +378,7 @@ Task 6: implement the method for parameter optimization
 
                       write the projection equations as
                          x_i = f(X_i;R,t,K)
-                      and iteratively minimize the robustified linearized reprojection errors
+                      and iteratively minimize the robustified linearized re-projection errors
                          E_NLP = summation_i( rho( (d(f)/d(R))*deltaR + (d(f)/d(t))*deltat + (d(f)/d(K))*deltaK - resid_i)
                          where resid_i = x ̃i - xˆi is the current residual vector (2D error in predicted position) 
                          and the partial derivatives are with respect to the unknown pose parameters 
@@ -410,7 +411,7 @@ Task 6: implement the method for parameter optimization
                       see Section 4.2 of Gleicher & Witkin 1992 "Through-the-Lens Camera Control"
 
 
-           (3) Alternatively, iteratively solving for parameters in an order suggested by the dependencies, essentially.
+           (2) Alternatively, iteratively solving for parameters in an order suggested by the dependencies, essentially.
 
               looking at M contents to consider which parameters in which order in the optimization iterations:
               NOTE that instead of derivatives would use gradients estimated from finite differences for each iteration.
@@ -447,6 +448,10 @@ Task 6: implement the method for parameter optimization
                ==> m12 = (alpha*r12 + gamma*r22 + u_0*r32)                          alpha and r12 and gamma
                ==> m13 = (alpha*t_x + gamma*t_y + u_0*t_z)                          alpha and t_x and gamma
                    -- considering: next optimizing for r11, r12, t_x, alpha, and gamma which minimizes m_1
+
+               could use finite difference as the gradient in an LBFGS solution, though one would
+               expect it would take longer to converge as its missing derivative information to guide
+               the step size.
 
 
 ---------------------------------------------------------------------
