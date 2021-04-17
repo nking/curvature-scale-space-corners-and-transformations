@@ -37,7 +37,7 @@ public class ProjectiveLevenbergMarquardt {
      * @param kRadial
      * @return 
      */
-    public static CameraMatrices solve(double[][] imageC, double[][] worldC, 
+    public static CameraExtrinsicParameters solve(double[][] imageC, double[][] worldC, 
         CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
         double[] kRadial, final int nMaxIter) throws NotConvergedException {
         
@@ -132,7 +132,7 @@ public class ProjectiveLevenbergMarquardt {
             j = calculateJ(worldC, h, thetas); //(2N) X 6
             jT = MatrixUtil.transpose(j);
             jTJ = MatrixUtil.multiply(jT, j);
-            deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);
+            deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);        
             
             // ======= stopping conditions ============
             stepLengthCheck = deltaPLM22;
@@ -142,6 +142,12 @@ public class ProjectiveLevenbergMarquardt {
             if (isNegligible(stepLengthCheck, tolP) || !isNegligible(gradientCheck, tolG)) {
                 break;
             }
+            
+             //TODO: consider whether to accept or reject step?
+             // comments from: https://arxiv.org/pdf/1201.5885
+             //           Transtruma & Sethna 2012
+            // the qualitative effect of the damping term is to modify the 
+            // eigenvalues of the matrix JT J + λDT D to be at least λ
             
             
             // ======= revise parameters =======
@@ -159,19 +165,12 @@ public class ProjectiveLevenbergMarquardt {
                 gainRatio = calculateGainRatio(f/2., fPrev/2.,
                     deltaPLM22, lambda, jT, bMinusFGP, eps);
                 if (gainRatio > 0) {
-                    // near the minimimum, whichis good
+                    // near the minimimum, which is good
                     // decrease lambda
-            //TODO: check these... just browsed the paper, didn't read it   
-                    // from Lourakis & Argyros 2005, 
-                    // "Is Levenberg-Marquardt the Most Efficient Optimization Algorithm for Implementing Bundle Adjustment?"
-                    lambda *= Math.max(1./3., 1.-Math.pow(2*gainRatio - 1, 3.));
-                    lambdaF = 2;
+                    lambda /= lambdaF;
                 } else {
                     // increase lambda
-                    // from Lourakis & Argyros 2005, 
-                    // "Is Levenberg-Marquardt the Most Efficient Optimization Algorithm for Implementing Bundle Adjustment?"
                     lambda *= lambdaF;
-                    lambdaF *= 2;
                 }
             }
             
