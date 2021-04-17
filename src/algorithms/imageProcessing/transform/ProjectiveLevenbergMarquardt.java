@@ -117,6 +117,8 @@ public class ProjectiveLevenbergMarquardt {
         //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
         double[] stepLengthCheck;
         double[] gradientCheck;
+        final double tolP = 1.e-3;
+        final double tolG = 1.e-3;
         
         int nIter = 0;
         while (nIter < nMaxIter) {
@@ -137,7 +139,7 @@ public class ProjectiveLevenbergMarquardt {
             gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, 
                 MatrixUtil.subtract(b, fgp));
             MatrixUtil.multiply(gradientCheck, -1.);            
-            if (isNegligible(stepLengthCheck, eps) || !isNegligible(stepLengthCheck, eps)) {
+            if (isNegligible(stepLengthCheck, tolP) || !isNegligible(gradientCheck, tolG)) {
                 break;
             }
             
