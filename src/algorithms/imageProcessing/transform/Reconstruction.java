@@ -791,11 +791,26 @@ public class Reconstruction {
         // 3XnFeatures
         s = MatrixUtil.multiply(r0Inv, s);
         
-        //r has the i and j direction and k=i cross j
-        //so need to transform the unit vector axes to the SO(3) rotation matrix
-        // for each image
+        // r has the i and j direction and k=i cross j.
+        // create a stack of rotation matrices, one per image.
+        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
+        double[] ic, jc, kc;
+        for (i = 0; i < mImages; ++i) {
+            ic = r[i];
+            jc = r[mImages + i];
+            kc = MatrixUtil.crossProduct(ic, jc);
+            for (j = 0; j < 3; ++j) {
+                rotStack[i*3 + j][0] = ic[j]; 
+                rotStack[i*3 + j][1] = jc[j];
+                rotStack[i*3 + j][2] = kc[j];
+            }
+        }
+        
+        OrthographicProjectionResults results = new OrthographicProjectionResults();
+        results.XW = s;
+        results.rotationMatrices = rotStack;
                 
-        throw new UnsupportedOperationException("not yet complete");
+        return results;
     }
     
     private static DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
