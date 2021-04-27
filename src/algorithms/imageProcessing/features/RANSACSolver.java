@@ -88,13 +88,16 @@ public class RANSACSolver {
      * @param reCalcIterations if true, upon each better fit found, the 
      * outlier percentage is re-estimated and then the number of iterations necessary for 95%
      * probability that sample has all good points.
+     * @param calibrated if true, solves for the Essential Matrix, else solves
+     * for the Fundamental Matrix.  The difference is in the diagonal used for
+     * dimension reduction.
      * @return
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
         final DenseMatrix leftCorres, final DenseMatrix rightCorres,
         ErrorType errorType,
         boolean useToleranceAsStatFactor, final double tolerance,
-        boolean reCalcIterations) {
+        boolean reCalcIterations, boolean calibrated) {
         
         int nPoints = leftCorres.numColumns();
         final int nSet = 7;
@@ -279,7 +282,7 @@ public class RANSACSolver {
                             .extractIndices(rightCorres, fitI.getInlierIndexes());
                         
                         DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
-                            inliersLeftXY, inliersRightXY);
+                            inliersLeftXY, inliersRightXY, calibrated);
                         
                         if (fm2 != null) {
                             EpipolarTransformationFit fit2 = null;

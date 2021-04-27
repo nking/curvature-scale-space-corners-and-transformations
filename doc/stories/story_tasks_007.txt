@@ -293,6 +293,7 @@ Task 6: implement the method for parameter optimization
    time estimate: minimum 8 hours, maximum ?  day
   
    amount of time used:  3 days so far on background reading and algorithm details.
+**may revise again to implement Lu et al. also
 
    state of completion: in the design stage. 
 
@@ -411,7 +412,23 @@ Task 6: implement the method for parameter optimization
                       see Section 4.2 of Gleicher & Witkin 1992 "Through-the-Lens Camera Control"
 
 
-           (2) Alternatively, iteratively solving for parameters in an order suggested by the dependencies, essentially.
+           (2) Lu et al. is recommended as a very accurate algorithm, 
+               which is fast in comparison with other iterative ones but slow compared to 
+               non-iterative methods.
+               C. P. Lu, G. D. Hager, and E. Mjolsness 2000 PAMI, 22(6):610–622. 
+               "Fast and globally convergent pose estimation from video images."
+
+               comment from Moerno-Noguer:
+               "Lu et al.’s approach relies on an initial estimation of the camera pose 
+               based on a weak-perspective assumption (object far from the lens), 
+               which can lead to instabilities when the assumption is not satisfied. 
+               This happens when the points of the object are projected onto a small 
+               region on the side of the image...our [Moreno-Noguer et al.'s] algorithm 
+               can be used to initialize Lu et al.'s"
+
+
+           (3) Alternatively, iteratively solving for parameters in an order suggested 
+               by the dependencies, essentially.
 
               looking at M contents to consider which parameters in which order in the optimization iterations:
               NOTE that instead of derivatives would use gradients estimated from finite differences for each iteration.
@@ -479,10 +496,7 @@ Task 7: implement the extrinsic parameters solver of Moreno-Noguer et al. 2007
        intrinsic parameters and a set of n correspondences between
        3D points and their 2D projections.
 
-       How does this compare to the method already implemented above from Ma et al. 2003?
-       And both compared to the DLT method in the project as CameraPose.calculatePose()?
-
-       haven't read the paper yet...
+       https://github.com/cvlab-epfl/EPnP/tree/master/cpp
               
    details:  
       Moreno-Noguer et al. 2007  extrinsic parameters solver method:

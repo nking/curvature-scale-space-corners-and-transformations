@@ -124,7 +124,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         fit = solver.calculateEpipolarProjection(
             leftM, rightM, 
             errorType, useToleranceAsStatFactor, tolerance,
-            reCalcIterations);
+            reCalcIterations, false);
         /*
         normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
         if (useToleranceAsStatFactor) {
@@ -200,7 +200,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             useToleranceAsStatFactor = false;
             tolerance = 2;
             
-            normalizedFM = tr.calculateEpipolarProjection(normX1M, normX2M);
+            normalizedFM = tr.calculateEpipolarProjection(normX1M, normX2M, false);
 
             assertNotNull(normalizedFM);
                 
@@ -339,7 +339,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
+                reCalcIterations, false);
         
         
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(

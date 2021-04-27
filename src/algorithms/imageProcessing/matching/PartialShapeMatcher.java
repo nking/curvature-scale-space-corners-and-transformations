@@ -1302,7 +1302,7 @@ public class PartialShapeMatcher {
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
+                reCalcIterations, false);
         
         if (storeMatrix) {
             DenseMatrix denormFM = EpipolarTransformer

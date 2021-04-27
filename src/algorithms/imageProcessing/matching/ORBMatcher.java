@@ -592,7 +592,7 @@ public class ORBMatcher {
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-            reCalcIterations);                
+            reCalcIterations, false);                
         
         return fit;        
     }

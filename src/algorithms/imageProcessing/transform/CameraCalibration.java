@@ -44,6 +44,8 @@ public class CameraCalibration {
                3 X (N*n) where N is the number of images.
                the first row is the x coordinates, the second row
                is the y coordinates, and the third row is "1"'s.
+               The columns hold each image in order and within each image's
+               columns are the features presented in the same order in each image.
      * @param coordsW holds the world coordinates of features, ordered
                by the same features in the images.
                the first row is the X coordinates, the second row
@@ -54,7 +56,7 @@ public class CameraCalibration {
      * @return camera intrinsic parameters, extrinsic parameters, and radial
      * distortion coefficients
      */
-    public static CameraMatrices estimateCamera(int n, double[][] coordsI, 
+    public static CameraMatrices estimateCamera(final int n, double[][] coordsI, 
         double[][] coordsW) throws NotConvergedException {
         
         if (coordsI.length != 3) {
@@ -71,26 +73,33 @@ public class CameraCalibration {
         //TODO: consider normalizing coordsI by coordsI[2][*] if the last row
         //      is not already 1's
         
-        //(1) for each image: invoke homography solver using SVD
+        //(1) for each image: invoke homography solver using SVD on a (2N)X9 DLT
+        //    where the homographies are the projections of the 3D points onto the images
+        //    and the model plane has Z=0 (hence the (2N)X9 DLT instead of (2N)X12 DLT)
         double[][] h = MatrixUtil.zeros(nImages*3, 3);
         
         double[][] g, cI;
         int i, i2;
         for (i = 0; i < nImages; ++i) {
-            cI = MatrixUtil.copySubMatrix(coordsI, 0, 3, i, i+n);
+            
+            //                                    ri,rf,ci,cf
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 3, i*n, i*n + n);
+            
+            //3X3  and contains intrinsic camera information from the point-to-point mappings
             g = solveForHomography(cI, coordsW);
             
             /*
-            h image 0
-            h image 1
-            h image 2
+            h image 0// 3X3 in rows 0:3
+            h image 1// 3X3 in rows 3:6
+            h image 2// 3X3 in rows 6:9
             */
             for (i2 = 0; i2 < 3; ++i2) {
-                System.arraycopy(g[i2], 0, h[i+i2], 0, g[i2].length);
+                System.arraycopy(g[i2], 0, h[i*3 + i2], 0, g[i2].length);
             }
         }
         
-        //(2) for all homographies, solve for the camera intrinsic parameters
+        //(2) using all homographies, solve for the camera intrinsic parameters
+        // this is where at least 3 points are needed per image to euqal the number of unknown intrinsic parameters.
         CameraIntrinsicParameters kIntr = solveForIntrinsic(h);
         
         CameraMatrices cameraMatrices = new CameraMatrices();
@@ -101,8 +110,14 @@ public class CameraCalibration {
         Camera.CameraExtrinsicParameters kExtr;
         
         for (i = 0; i < nImages; ++i) {
-            cI = MatrixUtil.copySubMatrix(h, 3*i, 3+3*i, 0, 3);
-            kExtr = solveForExtrinsic(kIntr, cI);
+            //                               ri,      rf,ci,cf
+            g = MatrixUtil.copySubMatrix(h, 3*i, 3*i + 3, 0, 3);
+            
+            //NOTE: here, internal to solveForExtrinsic() would be a different place 
+            // where one could remove radial distortion.
+            // the method forms the image of the "absolute conic"
+            kExtr = solveForExtrinsic(kIntr, g);
+            
             cameraMatrices.addExtrinsics(kExtr);
         }
         
@@ -113,14 +128,31 @@ public class CameraCalibration {
         //           The Ma et al. 2003 equation (8) here uses in contrast, equation #4 of
         //           Table 2 Ma et al. 2004 (f_r = 1 + k_1*r^2 + k_2*r^4) presumably
         //           because the model fit statistics were better.
-        // Also note that the a et al. 2003 paper found that the non-linear optimization
+        // Also note that the Ma et al. 2003 paper found that the non-linear optimization
         //    works just as well with initial estimates of 0 for the radial
         //    distortion coefficients, so one can exclude this method.
-        
+        editing
         
         // (5) optimization to improve the parameter estimates
         
-        
+        // ============ iterate over the above steps after non-linear optimization
+        //  for extrinsic parameters.
+        double[] kRadial = new double[2];
+        CameraExtrinsicParameters extrinsic;
+        int nMaxIter = 100;
+        for (i = 0; i < nImages; ++i) {
+            
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 3, i, i+n);
+            
+            kExtr = cameraMatrices.getExtrinsics().get(i);
+            
+            // improve the extrinsic parameter estimates:
+            extrinsic = ProjectiveLevenbergMarquardt.solve(cI, coordsW, kIntr, 
+                kExtr, kRadial, nMaxIter);
+            
+            cameraMatrices.getExtrinsics().set(i, extrinsic);
+        }        
+            
         throw new UnsupportedOperationException("not yet implemented");
     }
     
@@ -327,13 +359,38 @@ public class CameraCalibration {
     
     /**
      * following Ma et al. 2003
-     * estimate the extrinsic parameters
+     * estimate the extrinsic parameters from the image of the absolute conic.
      * @param kIntr camera intrinsic parameters
      * @param h homography for the projection for an image
      * @return 
      */
-    private static Camera.CameraExtrinsicParameters solveForExtrinsic(
+    static Camera.CameraExtrinsicParameters solveForExtrinsic(
         CameraIntrinsicParameters kIntr, double[][] h) throws NotConvergedException {
+        
+        // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+        // homogeneous repr of a point is x_vec = (x, y, 1)^T
+        // equation f a line is ell = a*x + b*y + c = 0;
+        // line rewritten in homogeneous coordinatrs is x_vec^T * ell.
+        // general conic in 3 dimensions is a*x^2 + b*x*y + c*y^2 + d*x*z + e*y*z + f*z^2 = 0.
+        //     rewritten using 2D homogenouse coords, quadratice form: x_vec^T * C * x_vec = 0
+        //                  [a   b/2   d/2 ]
+        //        where C = [b/2   c   c/2 ]
+        //                  [d/2 c/2     f ]
+        //        C has 6 variable, 5 DOF, so need 5 points
+        //     can then reformat x_vec^T * C * x_vec = 0 into
+        //        the "design matrix" * "the carrier vector" = 0
+        //               A * c = 0
+        //        c = SVD(A).V^T[n-1], the eigenvector assoc w/ smallest eigenvalue.
+        //
+        //        there are 3 cases for the smallest eigenvalue of SVD(A):
+        //          (1) SVD(A).s[5] == 0, and n=5, then a conic xists that
+        //              fits the data exactly
+        //          (2) SVD(A).s[5] >=0, and n > 5, then the value is the goodness of fit
+        //          (3) n < 5, the conic is undetermined and requires other means to solve.
+        //        
+        
+        // points at infinity, a.k.a. ideal points, have the form (x, y, 0)^T
+        // the line at infinity is (0, 0, 1)^T.
         
         double[][] aInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());
         
@@ -595,28 +652,29 @@ public class CameraCalibration {
         
         double[][] distorted = MatrixUtil.copy(xC);
         
-        double r, r2, fr, signx, signy, c2p1, fx, fy;
+        double r, r2, fr;
+        //double signx, signy, c2p1, fx, fy;
         int i;
-                
+        
         for (i = 0; i < distorted[0].length; ++i) {
             r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
             r = Math.sqrt(r2);
             //f(r) = (1 + k1*r + k2*r^2)
-            //fr = 1 + k1*r + k2*r2;
+            fr = 1 + k1*r + k2*r2;
             // x_d = x*f_r:
-            //distorted[0][i] *= fr;
-            //distorted[1][i] *= fr;
+            distorted[0][i] *= fr;
+            distorted[1][i] *= fr;
             
             // following Ma et al. 2004 Table 2,column 3 for model #3:
             // where c = y_d/x_d = y/x
             // f(x) = (1 + k1*math.sqrt(1+c^2)*x*sign(x) + k2*(1+c^2)*x^2)
-            c2p1 = Math.pow(distorted[1][i]/distorted[0][i], 2.) + 1;
-            signx = (distorted[0][i] < 0) ? -1 : 0;
-            signy = (distorted[1][i] < 0) ? -1 : 0;
-            fx = 1 + (k1*Math.sqrt(c2p1)*distorted[0][i]*signx) + (k2*c2p1*distorted[0][i]*distorted[0][i]);
-            fy = 1 + (k1*Math.sqrt(c2p1)*distorted[1][i]*signy) + (k2*c2p1*distorted[1][i]*distorted[1][i]);
-            distorted[0][i] *= fx;
-            distorted[1][i] *= fy;
+            //c2p1 = Math.pow(distorted[1][i]/distorted[0][i], 2.) + 1;
+            //signx = (distorted[0][i] < 0) ? -1 : 0;
+            //signy = (distorted[1][i] < 0) ? -1 : 0;
+            //fx = 1 + (k1*Math.sqrt(c2p1)*distorted[0][i]*signx) + (k2*c2p1*distorted[0][i]*distorted[0][i]);
+            //fy = 1 + (k1*Math.sqrt(c2p1)*distorted[1][i]*signy) + (k2*c2p1*distorted[1][i]*distorted[1][i]);
+            //distorted[0][i] *= fx;
+            //distorted[1][i] *= fy;
         }
                 
         return distorted;
@@ -724,7 +782,7 @@ public class CameraCalibration {
         double[][] corrected = MatrixUtil.copy(xC);
         
         /*
-        from k2*r^3 +k1*r^2 + r - r_d = 0
+        from k2*r^3 + k1*r^2 + r - r_d = 0
         solve 
            r_bar^3 + r_bar*p + q = 0
         where 
@@ -741,6 +799,7 @@ public class CameraCalibration {
         double a3 = a2*a;
         double b = 1./k2;
         double rd, c, p, q, r, fr;
+        //double c2p1, signx, signy, fx, fy;
         double tol = 1e-5;
         int i;
         for (i = 0; i < xC[0].length; ++i) {
@@ -786,9 +845,7 @@ public class CameraCalibration {
                 double chk = k2 * r * r * r + k1 * r * r + r - rd;
                 assert(Math.abs(chk) < tol);
             }
-                        
-            fr = 1 + k1*r + k2*r*r;
-                  
+                                    
             // eqn (5) from Ma et al. 2004
             //u = u0 + ((ud - u0)/fr);
             //v = v0 + ((vd - v0)/fr);
@@ -796,8 +853,161 @@ public class CameraCalibration {
             // and the radial distortion w.r.t image reference frame
             // so presumably should use eqn (4) instead
             // eqn 4): xd = x *f(r) ==> x = x_d/f(r)
+            fr = 1 + k1*r + k2*r*r;
             corrected[0][i] /= fr;
             corrected[1][i] /= fr;
+            
+            
+            // following Ma et al. 2004 Table 2,column 3 for model #3:
+            // where c = y_d/x_d = y/x
+            // f(x) = (1 + k1*math.sqrt(1+c^2)*x*sign(x) + k2*(1+c^2)*x^2)
+            //c2p1 = Math.pow(corrected[1][i]/corrected[0][i], 2.) + 1;
+            //signx = (corrected[0][i] < 0) ? -1 : 0;
+            //signy = (corrected[1][i] < 0) ? -1 : 0;
+            //fx = 1 + (k1*Math.sqrt(c2p1)*corrected[0][i]*signx) + (k2*c2p1*corrected[0][i]*corrected[0][i]);
+            //fy = 1 + (k1*Math.sqrt(c2p1)*corrected[1][i]*signy) + (k2*c2p1*corrected[1][i]*corrected[1][i]);
+            //corrected[0][i] /= fx;
+            //corrected[1][i] /= fy;
+        }
+                
+        return corrected;
+    }
+    
+    /**
+    apply radial distortion correction to points in the camera reference frame.
+    This method is used by pixelToCameraCoordinates4().
+    The algorithm follows Ma, Chen, & Moore 2004 to correct the distortion
+    estimated as f(r) = 1 + k1*r^2 + k2*r^4 (eqn #4 in Table 2 of Ma et al. 2004)
+    In terms of the variables outlined in comments below, the algorithm input is
+    distorted points as a double array of (x_d, x_d), and the radial distortion
+    coefficients k1, k2.  The output is a a double array of (x, y).
+    TODO: consider overloading this method to implement equation #4. 
+    <pre>
+    Ma, Chen & Moore 2004, "Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction."
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+
+    and the projection equation variables:
+    [X_c,Y_c,Z_c]^T denotes a point in the camera frame which is related to the 
+        corresponding point 
+    [X_w, Y_w, Z_w]^T in the world reference frame 
+        by
+    P_c = R P_w + t
+    R is thr rotation matrix
+    t is the translation vector
+    
+    lambda * [u] = K [R|t] [X_w] = K [X_c]
+             [v]           [Y_w]     [Y_c]
+             [1]           [Z_w]     [Z_c]
+                           [1  ]
+    
+    ==> To Apply Radial Distorion, given coefficients k1, k2 and coordinates
+      (eqn 7) r_d = r * f(r) 
+      (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r^2 + k2*r^4)
+              This is equation #4 in Table 2 of Ma et al. 2004
+    
+      Ma et al. 2003 distortion model:
+         x_d = x * f(r)
+         y_d = y * f(r)
+     
+    ==> Radial Undistortion, Section 2.2 of Ma et al. 2004:
+        using rf(r) and f(r) from #4 in Table 2
+        f(r) = 1 + k1*r^2 + k2*r^4
+        
+        solving for the roots of:
+        k2*r^5 + k1*r^3 + r - rd = 0.
+    
+        by using the companion matrix and svd
+    
+        After r is determined, (u,v) can be calculated from (Eqn 5) which is
+           u_d - u_0 = (u−u_0) * f(r)
+           v_d − v_0 = (v−v_0) * f(r)
+          
+    Useful reading is also:
+    Drap et al, "An Exact Formula for Calculating Inverse Radial Lens Distortions"
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a negative value of k1.
+        pincushion distortion to a positive value of k1.
+         
+    </pre>
+    @param xC distorted points in the camera reference frame, presumably 
+    already center subtracted.  format is 3XN where N is the
+    number of points.  These are (x_d, x_d) pairs in terms of Table 1 in Ma et al. 2004.
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @return undistorted points in the camera reference frame.  Format is 3XN where N is the
+    number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
+    @throws no.uib.cipr.matrix.NotConvergedException
+    */
+    static double[][] removeRadialDistortion4(double[][] xC, double k1, double k2) throws NotConvergedException {
+        
+        if (xC.length != 3) {
+            throw new IllegalArgumentException("xC.length must be 3");
+        }
+                
+        double[][] corrected = MatrixUtil.copy(xC);
+        
+        //from k2*r^5 + k1*r^3 + r - rd = 0.
+  
+        double rd, r, fr;
+        //double c2p1, fx, fy;
+        double tol = 1e-5;
+        int i;
+        double[] roots;
+        double[] coeffs = new double[]{k2, 0, k1, 0, 1, 0};
+        for (i = 0; i < xC[0].length; ++i) {
+            rd = Math.sqrt(corrected[0][i]*corrected[0][i] + corrected[1][i]*corrected[1][i]);
+            if (Math.abs(rd) < tol) {
+                continue;
+            }
+            coeffs[5] = -rd;
+            
+            roots = PolynomialRootSolver.realRoots(coeffs);
+            
+            if (roots == null || roots.length == 0) {
+                //TODO: consider how to handle this case
+                r = 0;
+            } else {
+                // TODO: revisit this
+                r = roots[0];
+            }
+                                          
+            // eqn (5) from Ma et al. 2004
+            //u = u0 + ((ud - u0)/fr);
+            //v = v0 + ((vd - v0)/fr);
+            // but points are currently in image reference frame as xd, yd
+            // and the radial distortion w.r.t image reference frame
+            // so presumably should use eqn (4) instead
+            // eqn 4): xd = x *f(r) ==> x = x_d/f(r)
+            fr = 1 + k1*r*r + k2*Math.pow(r, 4.);
+            corrected[0][i] /= fr;
+            corrected[1][i] /= fr;
+            
+            // following Ma et al. 2004 Table 2,column 3 for model #3:
+            // where c = y_d/x_d = y/x
+            // f(x) = (1 + k1*math.sqrt(1+c^2)*x*sign(x) + k2*(1+c^2)*x^2)
+            //c2p1 = Math.pow(corrected[1][i]/corrected[0][i], 2.) + 1;
+            //fx = 1 + (k1*c2p1*Math.pow(corrected[0][i], 2)) + (k2*c2p1*Math.pow(corrected[0][i], 4));
+            //fy = 1 + (k1*c2p1*Math.pow(corrected[1][i], 2)) + (k2*c2p1*Math.pow(corrected[1][i], 4));
+            //corrected[0][i] /= fx;
+            //corrected[1][i] /= fy;
         }
                 
         return corrected;

@@ -305,10 +305,13 @@ public class EpipolarTransformer {
      * @param rightXY right image correspondence in format of 
      * double array with x points on row 0, y points on row 1, 
      *     and 1's on row 2.  the number of columns is the number of data points.
+     * @param calibrated if true, solves for the Essential Matrix, else solves for the
+     * Fundamental matrix.  The difference is only in the diagonal used for
+     * dimension reduction.
      * @return
      */
     public DenseMatrix calculateEpipolarProjection(
-        DenseMatrix leftXY, DenseMatrix rightXY) {
+        DenseMatrix leftXY, DenseMatrix rightXY, boolean calibrated) {
 
         if (leftXY.numColumns() != rightXY.numColumns() || leftXY.numRows() != rightXY.numRows()) {
             throw new IllegalArgumentException(
@@ -407,13 +410,25 @@ public class EpipolarTransformer {
         // keep the largest 2 values in sDiag to make the diagonal rank 2
         DenseMatrix d = new DenseMatrix(3, 3);
         d = (DenseMatrix)d.zero();
-        if (svd.s.length > 0) {
-            d.set(0, 0, svd.s[0]);
-        }
-        if (svd.s.length > 1) {
-            d.set(1, 1, svd.s[1]);
-        }
-
+        if (calibrated) {
+            //from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+            // refers to Ma, Soatto, Kosecka, and Sastry 2003
+            // "An Invitation to 3D Vision From Images to Geometric Models", p. 114
+            // if this is solving the Essential matrix instead of the Fundamental 
+            //    Matrix, the diagonal is 
+            // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
+            double sig = (svd.s[0] + svd.s[1])/2.;
+            d.set(0, 0, sig);
+            d.set(1, 1, sig);
+        } else {
+            if (svd.s.length > 0) {
+                d.set(0, 0, svd.s[0]);
+            }
+            if (svd.s.length > 1) {
+                d.set(1, 1, svd.s[1]);
+            }
+        }        
+        
         // dimension reduction in this case zeroes out instead of reducing the
         // sizes of the matrices.  if wanted to reduce the size:
         //   remove the last column of U and the last row of V and
@@ -1315,7 +1330,9 @@ public class EpipolarTransformer {
         DenseMatrix normalizedFundamentalMatrix,
         NormalizationTransformations leftNT, NormalizationTransformations rightNT) {
 
-        //denormalized FM = transpose(T2) * FM_normalized * T1
+        //NOTE: denormalized x2 = transpose(normalized x2) * transpose(T2^1)
+        //      denormalized x1 = (T1^-1) * (normalized x1)
+        //      denormalized FM = transpose(T2) * FM_normalized * T1
         
         DenseMatrix t2T = new DenseMatrix(MatrixUtil.transpose(rightNT.t));
 

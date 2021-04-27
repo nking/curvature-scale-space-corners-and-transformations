@@ -1,5 +1,7 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.transform.Camera.CameraParameters;
+import algorithms.imageProcessing.transform.Camera.CameraProjection;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
@@ -98,7 +100,7 @@ public class Triangulation {
         R = rotation matrix (see euler roration matrix).
         t = translation vector.
         I = identity matrix.  it's size 3x3 here.
-        the '|' is a seperation symbol in the matrix to denotate that the 
+        the '|' is a separation symbol in the matrix to denotate that the 
             content to the right of it is concatenated to the matrix as column vectors.
         
         Note that the world coordinates can be seen to go through a translation
@@ -192,7 +194,7 @@ public class Triangulation {
         return calculateWCSPoint(camera1, camera2, x1, x2);
     }
     
-     /**
+    /**
      * given the camera matrix as intrinsic and extrinsic matrices for 2 images
      * and given the matching correspondence of points between the 2 images,
      * calculate the real world coordinate of the observations.
@@ -210,6 +212,65 @@ public class Triangulation {
      * format is 3 x N where
      * N is the number of measurements.
      * @param x2 the image 2 set of measurements of real world point X.
+     * The corresponding measurements of the same point in image 1 are in x1.
+     * format is 3 x N where
+     * N is the number of measurements.
+     */
+    public static double[] calculateWCSPoint(
+        CameraParameters camera1, CameraParameters camera2,
+        double[][] x1, double[][] x2) {
+        
+        return calculateWCSPoint(camera1.createProjectionMatrix(),
+            camera2.createProjectionMatrix(), x1, x2);
+    }
+    
+    /**
+     * given the camera projection matrix as intrinsic times extrinsic matrices for 2 images
+     * and given the matching correspondence of points between the 2 images,
+     * calculate the real world coordinate of the observations.
+     * 
+     * <pre>
+     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     * add references here
+     * </pre>
+     * @param camera1 camera matrix for image 1 in units of pixels.  
+     * It has intrinsic and extrinsic components.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels.  
+     * It has intrinsic and extrinsic components. the size is 3X4.
+     * @param x1 the image 1 set of measurements of 1 real world point X.
+     * The corresponding measurements of the same point in image 2 are in x2.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @param x2 the image 2 set of measurements of 1 real world point X.
+     * The corresponding measurements of the same point in image 1 are in x1.
+     * format is 3 x N where
+     * N is the number of measurements.
+     */
+    public static double[] calculateWCSPoint(
+        CameraProjection camera1, CameraProjection camera2,
+        double[][] x1, double[][] x2) {
+        
+        return calculateWCSPoint(camera1.getP(), camera2.getP(), x1, x2);
+    }
+    
+     /**
+     * given the camera projection matrix as intrinsic times extrinsic matrices for 2 images
+     * and given the matching correspondence of points between the 2 images,
+     * calculate the real world coordinate of the observations.
+     * 
+     * <pre>
+     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     * add references here
+     * </pre>
+     * @param camera1 camera matrix for image 1 in units of pixels.  
+     * It has intrinsic and extrinsic components.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels.  
+     * It has intrinsic and extrinsic components. the size is 3X4.
+     * @param x1 the image 1 set of measurements of 1 real world point X.
+     * The corresponding measurements of the same point in image 2 are in x2.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @param x2 the image 2 set of measurements of 1 real world point X.
      * The corresponding measurements of the same point in image 1 are in x1.
      * format is 3 x N where
      * N is the number of measurements.
@@ -322,17 +383,17 @@ public class Triangulation {
         
         can concatenate the 2 rows for the 2nd image in A_i:
         
-        [ y1 * p1vec_3^T - p1vec_2^T ]           [ 0 ]
-        [ p1vec_1^T - x1 * p1vec_3^T ] * Xvec  = [ 0 ]
-        [ y2 * p2vec_3^T - p2vec_2^T ]           [ 0 ]
-        [ p2vec_1^T - x2 * p2vec_3^T ]           [ 0 ]
+        [  y1 * p1vec_3^T - p1vec_2^T ]           [ 0 ]
+        [ -x1 * p1vec_3^T + p1vec_1^T ] * Xvec  = [ 0 ]
+        [  y2 * p2vec_3^T - p2vec_2^T ]           [ 0 ]
+        [ -x2 * p2vec_3^T + p2vec_1^T ]           [ 0 ]
         
         solve Xvec in A * Xvec = 0 by minimizing ||A*x||^2 subject to ||x||^2 = 1
         
         Solution is the eigenvector corresponding to smallest eigenvalue of A^T*A.
         
         */
-        
+                
         double u1x, u1y, u2x, u2y;
         double[] tmp;
         double[][] a = new double[4*n][4];
@@ -411,5 +472,210 @@ public class Triangulation {
         
         
         return X;
+    }
+    
+    /**
+     * given a feature in 2 cameras and the rotation and translation between
+     * the cameras, estimate the depths and universal scale factor to 
+     * return the estimates of the 3-D position.
+     <pre>
+     The algorithm follows Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+     who refers to Ma, Soatto, Kosecka, and Sastry 2003
+     "An Invitation to 3D Vision From Images to Geometric Models":
+     </pre>
+     * @param r rotation of camera 2 with respect to camera 1
+     * @param t the translation of camera 2 with respect to camera 1
+     * @param x1 coordinates of feature in image 1.   the array should be length
+     * @param x2 coordinates of feature in image 1.   the array should be length
+     * @return the estimated position of the 3-D point as 2 estimates which should be the same.
+     * The depths and universal scale factors are returned also.
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     */
+    public static WCSResults calculateDepths(double[][] r, double[] t,
+        double[] x1, double[] x2) throws NotConvergedException {
+        
+        // X_2 = R * X_1 + gamma * T where gamma is the universal scale factor
+        //
+        // lambda_2 * x_2 = lambda_1 * R * x_1 + gamma * T
+        //
+        // multiply both sides by skew symmetric of x_2 = [x_2]_x to use the property that 
+        //     [x_2]_x * x_2 = 0 (i.e. cross product is 0).
+        //
+        //  [x_2]_x * lambda_2 * x_2 = [x_2]_x * lambda_1 * R * x_1 + [x_2]_x * gamma * T
+        //  0 = [x_2]_x * lambda_1 * R * x_1 + [x_2]_x * gamma * T
+        //
+        // then [ [x_2]_x * R * x_1   [x_2]_x * T ] * [ lambda_1 ] = 0
+        //                                            [   gamma  ]
+        //          sizes are [ 3X2 ] * [ 2X1 ] = [ 3X1 ]
+        //
+        // let M = the matrix on right hand side.
+        //    this assumes no noise in data
+        //  then [lambda_1, gamma] = SVD(M).V^T[last row]
+        //  
+        //  then X_1 = lambda_1 * x_1
+        // 
+        //  Then back to the transformation by extrinsic parameters:
+        //      lambda_2 * x_2 = lambda_1 * R * x_1 + gamma * T
+        //  multiply both sides by skew symmetric of x_1 = [x_1]_x
+        //      [x_1]_x * lambda_2 * x_2   =   [x_1]_x * lambda_1 * R * x_1   +   [x_1]_x * gamma * T
+        //      [x_1]_x * lambda_2 * x_2   =    0  +   [x_1]_x * gamma * T
+        //      [x_1]_x * lambda_2 * x_2  -  [x_1]_x * gamma * T = 0
+        //     where gamma is known
+        //  
+        // then [ [x_1]_x * x_2   -[x_1]_x * gamma * T ] * [ lambda_2 ] = 0
+        //                                                 [   1  ]
+        //       sizes are [ 3X2 ] * [ 2X1 ] = [ 3X1 ]
+        // then [lambda_2, 1] = SVD(M).V^T[last row]
+        // X_2 = lambda_2 * x_2
+        // 
+        // and assert that X_2 = R * X_1 + gamma * T
+        
+        double[][] x1SkewSym = MatrixUtil.skewSymmetric(x1);
+        double[][] x2SkewSym = MatrixUtil.skewSymmetric(x2);
+        
+        double[] M1Col0 = MatrixUtil.multiplyMatrixByColumnVector(
+            MatrixUtil.multiply(x2SkewSym, r), x1
+        );
+        double[] M1Col1 = MatrixUtil.multiplyMatrixByColumnVector(x2SkewSym, t);
+        double[][] M = new double[3][2];
+        int i;
+        for (i = 0; i < 3; ++i) {
+            M[i] = new double[]{M1Col0[i], M1Col1[i]};
+        }
+        
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(M);
+        double lambda1 = svd.vT[svd.vT.length - 1][0];
+        double gamma = svd.vT[svd.vT.length - 1][1];
+        
+        double[] X1 = Arrays.copyOf(x2, x2.length);
+        MatrixUtil.multiply(X1, lambda1);
+        
+        // [ [x_1]_x * x_2   -[x_1]_x * gamma * T ]
+        M1Col0 = MatrixUtil.multiplyMatrixByColumnVector(x1SkewSym, x2);
+        M1Col1 = MatrixUtil.multiplyMatrixByColumnVector(x1SkewSym, t);
+        MatrixUtil.multiply(M1Col1, -gamma);
+        for (i = 0; i < 3; ++i) {
+            M[i] = new double[]{M1Col0[i], M1Col1[i]};
+        }
+        svd = MatrixUtil.performSVD(M);
+        double lambda2 = svd.vT[svd.vT.length - 1][0];
+        double one = svd.vT[svd.vT.length - 1][1];
+        assert(Math.abs(one) - 1 < 1e-2);
+        
+        double[] X2 = Arrays.copyOf(x2, x2.length);
+        MatrixUtil.multiply(X2, lambda1);
+        
+        //assert that X_2 = R * X_1 + gamma * T
+        double[] gt = Arrays.copyOf(t, t.length);
+        MatrixUtil.multiply(gt, gamma);
+        double[] checkX2 = MatrixUtil.multiplyMatrixByColumnVector(r, X1);
+        checkX2 = MatrixUtil.add(checkX2, gt);
+        
+        for (i = 0; i < X2.length; ++i) {
+            assert(Math.abs(X2[i] - checkX2[i]) < 1.e-2);
+        }
+        
+        WCSResults w = new WCSResults();
+        w.setX1(X1);
+        w.setX2(X2);
+        w.setDepth1(lambda1);
+        w.setDepth2(lambda2);
+        w.setUniversalScaleFactor(gamma);
+        
+        return w;
+    }
+    
+    public static class WCSResults {
+        /**
+         * the 3-D position of point x1 (which should be the same as X2)
+         */
+        private double[] X1;
+        /**
+         * the 3-D position of point x2 (which should be the same as X1)
+         */
+        private double[] X2;
+        /**
+         * the depth of X1
+         */
+        private double depth1;
+        /**
+         * the depth of X2
+         */
+        private double depth2;
+        /**
+         * the universal scale factor which is applied to the translation between camera positions
+         */
+        private double universalScaleFactor;
+
+        /**
+         * @return the X1
+         */
+        public double[] getX1() {
+            return X1;
+        }
+
+        /**
+         * @param X1 the X1 to set
+         */
+        public void setX1(double[] X1) {
+            this.X1 = X1;
+        }
+
+        /**
+         * @return the X2
+         */
+        public double[] getX2() {
+            return X2;
+        }
+
+        /**
+         * @param X2 the X2 to set
+         */
+        public void setX2(double[] X2) {
+            this.X2 = X2;
+        }
+
+        /**
+         * @return the depth1
+         */
+        public double getDepth1() {
+            return depth1;
+        }
+
+        /**
+         * @param depth1 the depth1 to set
+         */
+        public void setDepth1(double depth1) {
+            this.depth1 = depth1;
+        }
+
+        /**
+         * @return the depth2
+         */
+        public double getDepth2() {
+            return depth2;
+        }
+
+        /**
+         * @param depth2 the depth2 to set
+         */
+        public void setDepth2(double depth2) {
+            this.depth2 = depth2;
+        }
+
+        /**
+         * @return the universalScaleFactor
+         */
+        public double getUniversalScaleFactor() {
+            return universalScaleFactor;
+        }
+
+        /**
+         * @param universalScaleFactor the universalScaleFactor to set
+         */
+        public void setUniversalScaleFactor(double universalScaleFactor) {
+            this.universalScaleFactor = universalScaleFactor;
+        }
+        
     }
 }

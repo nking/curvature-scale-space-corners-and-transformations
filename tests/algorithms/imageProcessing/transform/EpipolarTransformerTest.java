@@ -311,7 +311,7 @@ public class EpipolarTransformerTest extends TestCase {
         DenseMatrix rightM = normXY2.getXy();
         
         DenseMatrix normalizedFM = spTransformer.calculateEpipolarProjection(
-            leftM, rightM);
+            leftM, rightM, false);
 
         assertNotNull(normalizedFM);
         

@@ -199,7 +199,13 @@ public class ProjectiveLevenbergMarquardt {
               ell(delta x_LM) = - (delta x)^T * (lambda * (delta x_LM) + J^T*r)
         */
         
-        throw new UnsupportedOperationException("not yet complete");
+        // ===== create rotation matrix from thetas
+        CameraExtrinsicParameters extrinsic = new CameraExtrinsicParameters();
+        extrinsic.setRotation(Rotation.createEulerRotationMatrix(thetas[0], 
+            thetas[1], thetas[2]));
+        extrinsic.setTranslation(t);
+        
+        return extrinsic;
     }
     
     /**

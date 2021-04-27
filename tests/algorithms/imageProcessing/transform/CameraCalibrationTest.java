@@ -2,7 +2,6 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
 import junit.framework.TestCase;
-import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  *
@@ -13,7 +12,11 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testCalibration() {
+    public void testCalibration0() {
+        use data in ~/Downloads/zhang_data/
+    }
+    
+    public void testCalibration2() {
         
         // number of features
         int n = 8;

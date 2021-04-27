@@ -61,7 +61,7 @@ public class RANSACSolverTest extends TestCase {
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
+                reCalcIterations, false);
         
         assertNotNull(fit);
         
@@ -153,7 +153,7 @@ public class RANSACSolverTest extends TestCase {
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
+                reCalcIterations, false);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());
@@ -273,7 +273,7 @@ public class RANSACSolverTest extends TestCase {
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
+                reCalcIterations, false);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());
@@ -380,7 +380,7 @@ public class RANSACSolverTest extends TestCase {
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
+                reCalcIterations, false);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());
@@ -452,7 +452,7 @@ public class RANSACSolverTest extends TestCase {
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations);
+                reCalcIterations, false);
         
         assertNotNull(fit);
         assertEquals(m1.getN(), fit.getInlierIndexes().size());

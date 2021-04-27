@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -286,7 +287,8 @@ public class Camera {
     
     /** converts pixel coordinates to camera coordinates by transforming them to camera 
     reference frame then removing radial distortion.
-    The radial distortion removal follows Ma et al. 2004.
+    The radial distortion removal follows Ma et al. 2004 for model #3 in Table 2,
+    * f(r) = 1 +k1*r + k2*r^2.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
     and the output is a double array of (x, y).
     Also useful reading is NVM Tools by Alex Locher
@@ -321,9 +323,77 @@ public class Camera {
         return pix;
     }
     
+    /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
+    reference frame then applying Lp2-normalization.
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points. 
+     * @param intrinsic 
+     * @return pixels transformed to camera coordinate reerence frame then 
+     * Lp2-normalized.
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     */
+    public static double[][] pixelToNormalizedCameraCoordinates(double[][] x,
+        CameraIntrinsicParameters intrinsic) throws NotConvergedException {
+        
+        double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(intrinsic.getIntrinsic());
+        
+        // the direction of the points is calculated by K^-1 * x
+        double[][] xDirection = MatrixUtil.multiply(kIntrInv, x);
+        double sum;
+        int i;
+        for (int col = 0; col < x[0].length; ++col) {
+            sum = (x[0][col]*x[0][col]) + (x[1][col]*x[1][col]) + (x[2][col]*x[2][col]);
+            sum = Math.sqrt(sum);
+            for (i = 0; i < 3; ++i) {
+                xDirection[i][col] /= sum;
+            }
+        }
+                
+        return xDirection;
+    }
+    
+     /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    reference frame then removing radial distortion.
+    The radial distortion removal follows Ma et al. 2004 for model #4 in Table 2,
+    * f(r) = 1 +k1*r^2 + k2*r^4.
+    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
+    and the output is a double array of (x, y).
+    Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+    
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points.  
+     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * @param focalLength focal length of camera in units of pixels.
+     * @param centerX x coordinate of principal point in pixels, usually image center.
+     * @param centerY y coordinate of principal point in pixels, usually image center.
+     * @return pixels in the reference frame of 
+     */
+    public static double[][] pixelToCameraCoordinates4(double[][] x, double[] rCoeffs,
+        double focalLength, double centerX, double centerY) throws NotConvergedException {
+        
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+        
+        focalLength = Math.abs(focalLength);
+        
+        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(
+            focalLength, centerX, centerY);
+        
+        // put x into camera coordinates reference frame:
+        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
+        
+        if (rCoeffs != null) {
+            pix = CameraCalibration.removeRadialDistortion4(pix, rCoeffs[0], rCoeffs[1]);
+        }
+                
+        return pix;
+    }
+    
     /** converts pixel coordinates to camera coordinates by transforming them to camera 
     reference frame then removing radial distortion.
-    The radial distortion removal follows Ma et al. 2004.
+    The radial distortion removal follows Ma et al. 2004 for model #3 in Table 2,
+    * f(r) = 1 +k1*r + k2*r^2.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
     and the output is a double array of (x, y).
     Also useful reading is NVM Tools by Alex Locher
@@ -350,6 +420,41 @@ public class Camera {
         
         if (rCoeffs != null) {
             pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], rCoeffs[1]);
+        }
+                
+        return pix;
+    }
+    
+    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    reference frame then removing radial distortion.
+    The radial distortion removal follows Ma et al. 2004 for model #4 in Table 2,
+    * f(r) = 1 +k1*r^2 + k2*r^4.
+    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
+    and the output is a double array of (x, y).
+    Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+    
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points.  
+     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * @param kIntrinsic camera intrinsic parameters.  note, it's expected that the focal length is positive
+     * 
+     * @return pixels in the reference frame of 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     */
+    public static double[][] pixelToCameraCoordinates4(double[][] x, double[] rCoeffs,
+        double[][] kIntrinsic) throws NotConvergedException {
+        
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+                
+        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntrinsic);
+        
+        // put x into camera coordinates reference frame:
+        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
+        
+        if (rCoeffs != null) {
+            pix = CameraCalibration.removeRadialDistortion4(pix, rCoeffs[0], rCoeffs[1]);
         }
                 
         return pix;
@@ -395,6 +500,14 @@ public class Camera {
     public static class CameraIntrinsicParameters {
         private double[][] intrinsic;
         private double lambda;
+        
+        public CameraIntrinsicParameters(double[][] k) {
+            this.intrinsic = k;
+        }
+        
+        public CameraIntrinsicParameters() {
+        }
+        
         /**
          * @return the intrinsic parameters
          */
@@ -422,6 +535,69 @@ public class Camera {
             this.lambda = lambda;
         }
         
+    }
+    
+    public static class CameraProjection {
+        /**
+         * the projection matrix of a camera which is a 3X4 matrix of
+         * intrinsic times extrinsic parameter matrices
+         */
+        private double[][] p;
+        public CameraProjection(double[][] projection) {
+            this.p = projection;
+        }
+
+        /**
+         * @return the p
+         */
+        public double[][] getP() {
+            return p;
+        }
+
+        /**
+         * @param p the p to set
+         */
+        public void setP(double[][] p) {
+            this.p = p;
+        }
+    }
+    
+    public static class CameraParameters {
+        private final CameraIntrinsicParameters intrinsicParameters;
+        private final CameraExtrinsicParameters extrinsicParameters;
+
+        public CameraParameters(CameraIntrinsicParameters intrinsics,
+                CameraExtrinsicParameters extrinsics) {
+            this.intrinsicParameters = intrinsics;
+            this.extrinsicParameters = extrinsics;
+        }
+        
+        public double[][] createProjectionMatrix() {
+            
+            double[][] rt = new double[3][4];
+            int i, j;
+            for (i = 0; i < 3; ++i) {
+                rt[i] = new double[4];
+                System.arraycopy(extrinsicParameters.rotation[i], 0, rt[i], 0, 3);
+                rt[i][3] = extrinsicParameters.translation[i];
+            }
+            
+            double[][] p = MatrixUtil.multiply(intrinsicParameters.getIntrinsic(), rt);
+            return p;
+        }
+        /**
+         * @return the intrinsicParameters
+         */
+        public CameraIntrinsicParameters getIntrinsicParameters() {
+            return intrinsicParameters;
+        }
+
+        /**
+         * @return the extrinsicParameters
+         */
+        public CameraExtrinsicParameters getExtrinsicParameters() {
+            return extrinsicParameters;
+        }
     }
     
     public static class CameraExtrinsicParameters {
@@ -454,6 +630,20 @@ public class Camera {
          */
         public void setTranslation(double[] translation) {
             this.translation = translation;
+        }
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("rot=\n");
+            if (rotation != null) {
+                sb.append(FormatArray.toString(rotation, "%.4e"));
+            }
+            sb.append("trans=\n");
+            if (translation != null) {
+                sb.append(FormatArray.toString(translation, "%.4e"));
+            }
+            return sb.toString();
         }
     }
     

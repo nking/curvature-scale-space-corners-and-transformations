@@ -50,7 +50,7 @@ public class DistancesTest extends TestCase {
         EpipolarTransformer spTransformer = new EpipolarTransformer();
 
         DenseMatrix normalizedFM 
-            = spTransformer.calculateEpipolarProjection(leftM, rightM);
+            = spTransformer.calculateEpipolarProjection(leftM, rightM, false);
 
         assertNotNull(normalizedFM);
                 
