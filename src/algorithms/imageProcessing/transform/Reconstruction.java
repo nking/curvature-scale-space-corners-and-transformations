@@ -547,7 +547,7 @@ public class Reconstruction {
     }
     
     /**
-     * recover the 3-D coordinates in WCS and the projection matrices 
+     * recover the 3-D coordinates in WCS and the rotation matrices 
      * from pairs of corresponding
      * un-calibrated image points, that is, points in the image reference frame in pixels.
      * assumes an orthographic camera model.
@@ -562,7 +562,7 @@ public class Reconstruction {
      * 
      * lectures of Deva Ramanan at http://16720.courses.cs.cmu.edu/lec/sfm.pdf
      * .
-     * Tomasi & Kanade 1992, "Shape and motion from image streams under 
+     * Tomasi & Kanade 1991, "Shape and motion from image streams under 
      * orthography: a factorization method", International journal of computer vision 
      * 
      * Higham, 1988, “Computing a Nearest Symmetric Positive Semidefinite Matrix,” 
@@ -573,10 +573,13 @@ public class Reconstruction {
      * http://note.sonots.com/?plugin=attach&refer=SciSoftware%2FFactorization&openfile=Factorization.pdf
      * </pre>
      * NOTE: could overload this method to enable handling of occlusion 
-     * following Section 5 of Tomasi & Kanade 1992, but might want to alter the
+     * following Section 5 of Tomasi & Kanade 1991, but might want to alter the
      * algorithm to use geometric median in place of centroid so that the
      * "centers" are not as affected by removing or adding a point.
-     * 
+     * NOTE: comments from Poelman & Kanade 1992:
+     * Orthographic projection does not account for the apparent change in size 
+     * of an object as it moves toward or away from the camera, nor the different 
+     * angle from which an object is viewed as it moves parallel to the image plane.
      * @param x the image coordinates of feature correspondences in 2 or more
      * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
      * and row 1 holds the y-coordinates and each image's features are given
@@ -658,7 +661,7 @@ public class Reconstruction {
         // 3XnFeatures
         double[][] sC = MatrixUtil.multiply(sqrts3, vT3);
         
-        // see Fig 3.1 of Tomasi & Kanade 1992 or Fig 2. of Belongie lecture notes
+        // see Fig 3.1 of Tomasi & Kanade 1991 or Fig 2. of Belongie lecture notes
         
         // Belongie Section 16.4.4 (c)
         // Seo Step 3 - Metric Constraints
@@ -678,7 +681,7 @@ public class Reconstruction {
         sC = [s_C_1  ...  s_C_m]
         */
         
-        // constraints: enforce image axes to be ortthonogal and length 1
+        // constraints: enforce image axes to be orthonogal and length 1
         //    that is, the the rows of rC must have unit norm
         //    and the i_f's of rC must be perpendicular to the j_f’s where f is the
         //    image number(== frame number).
@@ -696,7 +699,68 @@ public class Reconstruction {
         Seo notes reference Morita and Kanade for solving Q.
          T. Morita and T. Kanade, A Sequential Factorization Method for Recovering Shape and Motion
          from Image Streams, Pattern Analysis and Machine Intelligence, IEEE Transactions on, vol. 19,
-         no.8, pp.858-867, Aug 1997        
+         no.8, pp.858-867, Aug 1997    
+        
+        http://note.sonots.com/SciSoftware/Factorization.html#cse252b
+        
+          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1
+          eqn (2)  (`j_f)^T * Q * Q^T * (`j_f) = 1
+          eqn (3)  (`i_f)^T * Q * Q^T * (`j_f) = 0
+
+        let L = Q*Q^T.  it's symmetric and square:
+            L = [ l1 l2 l3 ]
+                [ l2 l4 l5 ]
+                [ l3 l5 l6 ]
+
+        the knowns are `i_f and `j_f, so we are solving for the 6 unknowns in L.
+
+        expand the terms:
+
+        eqn(1):
+        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ if_0 ] = 1
+                             [ l2 l4 l5 ]   [ if_1 ]
+                             [ l3 l5 l6 ]   [ if_2 ]
+        eqn(2):
+        jf_0  jf_1  jf_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 1
+                             [ l2 l4 l5 ]   [ jf_1 ]
+                             [ l3 l5 l6 ]   [ jf_2 ]
+        eqn(3):
+        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 0
+                             [ l2 l4 l5 ]   [ jf_1 ]
+                             [ l3 l5 l6 ]   [ jf_2 ]
+        
+        (if0*l1 + if1*l2 + if2*l3)*if0 + (if0*l2 + if1*l4 + if2*l5)*if1 + (if0*l3 + if1*l5 + if2*l6)*if2   = 1
+        (jf0*l1 + jf1*l2 + jf2*l3)*jf0 + (jf0*l2 + jf1*l4 + jf2*l5)*jf1 + (jf0*l3 + jf1*l5 + jf2*l6)*if2   = 1
+        (if0*l1 + if1*l2 + if2*l3)*jf0 + (if0*l2 + if1*l4 + if2*l5)*jf1 + (if0*l3 + if1*l5 + if2*l6)*jf2   = 0
+
+        rewriting:
+        l1*if0*if0 + l2*if1*if0 + l3*if2*if0 + l2*if0*if1 + l4*if1*if1 + l5*if2*if1 + l3*if0*if2 + l5*if1*if2 + l6*if2*if2   = 1
+        l1*jf0*jf0 + l2*jf1*jf0 + l3*jf2*jf0 + l2*jf0*jf1 + l4*jf1*jf1 + l5*jf2*jf1 + l3*jf0*jf2 + l5*jf1*jf2 + l6*jf2*jf2   = 1
+        l1*if0*jf0 + l2*if1*jf0 + l3*if2*jf0 + l2*if0*jf1 + l4*if1*jf1 + l5*if2*jf1 + l3*if0*jf2 + l5*if1*jf2 + l6*if2*jf2   = 0
+
+        factor out the L terms, linearly
+        l1           l2                    l3                    l4           l5                    l6         const
+        (if0*if0)    (if1*if0 + if0*if1)   (if2*if0 + if0*if2)   (if1*if1)    (if2*if1 + if1*if2)   (if2*if2)   1
+        (jf0*jf0)    (jf1*jf0 + jf0*jf1)   (jf2*jf0 + jf0*jf2)   (jf1*jf1)    (jf2*jf1 + jf1*jf2)   (jf2*jf2)   1
+        (if0*jf0)    (if1*jf0 + if0*jf1)   (if2*jf0 + if0*jf2)   (if1*jf1)    (if2*jf1 + if1*jf2)   (if2*jf2)   0
+
+        since the terms in the rows have a similar pattern, can write the equation more concisely using
+        a function to generate them:
+           g(a,b) = [a0*b0         ]
+                    [a0*b1 + a1*b0 ]
+                    [a0*b2 + a2*b0 ]
+                    [a1*b1         ]
+                    [a1*b2 + a2*b1 ]
+                    [a2*b2         ]
+
+        the G = [ g(i_0, i_0)^T       ]   L_vectorized = [l1]    c = [2*F rows of 1]
+                [ ...each row thru F  ]                  [l2]        [F rows of 0  ]
+                [ g(j_0, j_0)^T       ]                  [l3]
+                [ ...each row thru F  ]                  [l4]
+                [ g(i_0, j_0)^T       ]                  [l5]
+                [ ...each row thru F  ]                  [l6]
+
+        G*L_vectorized = c ==>  L_vectorized = G^-1 * c
         */
         
         double[] c = new double[3*mImages];
@@ -786,10 +850,9 @@ public class Reconstruction {
         // with orthographic, can only reocver rotation, not translation
         //(2*mImages)X3
         r = MatrixUtil.multiply(r, r0);
-        double[][] r0Inv = MatrixUtil.pseudoinverseRankDeficient(r0);
         // s now holds the world reference frame coordinates
         // 3XnFeatures
-        s = MatrixUtil.multiply(r0Inv, s);
+        s = MatrixUtil.multiply(MatrixUtil.transpose(r0), s);
         
         // r has the i and j direction and k=i cross j.
         // create a stack of rotation matrices, one per image.
@@ -811,6 +874,177 @@ public class Reconstruction {
         results.rotationMatrices = rotStack;
                 
         return results;
+    }
+    
+    /*
+    from Szeliski 2010 and Poelman & Kanade 1992:
+    Para-perspective provides a more accurate projection model than scaled 
+    orthography, without incurring the added complexity of per-pixel perspective 
+    division, which invalidates traditional factoriza- tion methods 
+    (Poelman and Kanade 1997).
+    
+    Scaled orthographic projection, sometimes referred to as "weak perspective", 
+    accounts for the scaling effect of an object as it moves towards and away 
+    from the camera. Paraperspective projection, first introduced by Ohta in 
+    [4] and named by Aloimonos in [1], accounts for the scaling effect as well 
+    as the different angle from which an object is viewed as it moves in a 
+    direction parallel to the image plane.
+
+    */
+    
+    /**
+     * recover the 3-D coordinates in WCS and the projection matrices 
+     * from pairs of corresponding
+     * un-calibrated image points, that is, points in the image reference frame in pixels.
+     * assumes a para-perspective camera model.
+     *
+     * <pre>
+     * references:
+     * 
+     * Poelman & Kanade 1992, "A Paraperspective Factorization Method for Shape 
+     * and Motion Recovery" 
+     * 
+     * </pre>
+     * 
+     * @param x the image coordinates of feature correspondences in 2 or more
+     * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
+     * and row 1 holds the y-coordinates and each image's features are given
+     * before the next and the features are ordered in the same manner within
+     * all images.
+     * for example: row 0 = [img_0_feature_0, ... img_0_feature_n-1, ... img_m-1_feature_0,...
+     *     img_m-1_feature_n-1].
+     * @param mImages the number of images in x.
+     * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
+     */
+    public static ProjectionResults calculateParaperspectiveReconstruction(
+        double[][] x, int mImages) throws NotConvergedException {
+                        
+        if (x.length != 2) {
+            throw new IllegalArgumentException("x.length must be 2");
+        }
+        if ((x[0].length % mImages) != 0) {
+            throw new IllegalArgumentException("x must have a multiple of mImages as the number of columns");
+        }
+        int nFeatures = x[0].length / mImages;
+        
+        //2mn >= 8m + 3n – 12
+        if ((2*mImages * nFeatures) < (8*mImages +3*nFeatures - 12)) {
+            throw new IllegalArgumentException("more points are necessary:"
+                + "2 * mImages * nFeatures >= 8 * mImages + 3 * nFeatures – 12");
+        }
+        // for mImages=2, need 4 features
+        
+        /*
+                 3 constraints:
+
+         eqn(15) of paper:
+                 |m_f|^2/(1+x_f^2) - |n_f|^2/(1+y_f^2) = 0
+         eqn(17) of paper:
+                 m_f dot n_f = x_f * y*f * 0.5 * ( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2) )
+         eqn(18) of paper:
+                 |m_0|=1
+
+         those are 2*F + 1 equations as metric constraints
+
+         from the SVD of the registered measurement matrix, there is M and S
+         `M is size 2*F X 3
+         `M = vectorized( m_0, m_1, ... m_{F-1}, n_0, n_1, ... n_{F-1},
+
+         let M = `M*A where A is a 3X3 matrix, and as before, Q = symmetric matrix, but Q=A^T*A.
+
+         Equations (15), (17), and (18) give us 2F+ 1 equations,
+         We compute the 3 X 3 matrix A such that M = `M*A best satisfies these metric constraints
+         in the least sum-of-squares error sense.
+
+         This is a simple problem because the constraints are linear in the 6 unique elements
+         of the symmetric 3 x 3 matrix Q = A^TA.
+
+         Thus we compute Q by solving the overconstrained linear system of 2F + 1 equations
+         in 6 variables defined by the metric constraints, ...
+
+             [ q1  q2  q3 ]
+         Q = [ q2  q4  q5 ]
+             [ q3  q5  q6 ]
+
+         m_f = `m_f * Q = [`mf0  `mf1  `mf2] * [ q1  q2  q3 ]
+                                               [ q2  q4  q5 ]
+                                               [ q3  q5  q6 ]
+                        = [ (q1*`mf0 + q2*`mf1 + q3*`mf2 )  (q2*`mf0 + q4*`mf1 + q5*`mf2 )  (q3*`mf0 + q5*`mf1 + q6*`mf2 ) ]
+
+         |vector| is the magnitude of a vector = square root of the sum of squares of its components.
+        
+         as an aside, in case can simplify any future steps with this:
+         and Q*Q = q1*q1 + q2*q2 + q3*q3   q1*q2 + q2*q4 + q3*q5   q1*q3 + q2*q5 + q3*q6
+                   q1*q2 + q2*q4 + q3*q5   q2*q2 + q4*q4 + q5*q5   q2*q3 + q4*q5 + q5*q6
+                   q1*q3 + q2*q5 + q3*q6   q2*q3 + q4*q5 + q5*q6   q3*q3 + q5*q5 + q6*q6
+                 = Q_col0 dot Q_col0   Q_col0 dot Q_col1  Q_col0 dot Q_col2
+                   Q_col0 dot Q_col1   Q_col1 dot Q_col1  Q_col1 dot Q_col2
+                   Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
+
+
+         expand |m_f|^2/(1+x_f^2) :
+             (1/(1+x_f^2)) * [ (q1*`mf0 + q2*`mf1 + q3*`mf2 )^2 + (q2*`mf0 + q4*`mf1 + q5*`mf2 )^2 + (q3*`mf0 + q5*`mf1 + q6*`mf2 )^2 ]
+             (1/(1+x_f^2)) * [ (q1*`mf0*q1*`mf0 + q1*`mf0*q2*`mf1 + q1*`mf0*q3*`mf2)
+                              + (q2*`mf1*q1*`mf0 + q2*`mf1*q2*`mf1 + q2*`mf1*q3*`mf2)
+                              + (q3*`mf2*q1*`mf0 + q3*`mf2*q2*`mf1 + q3*`mf2*q3*`mf2)
+                              + (q2*`mf0*q2*`mf0 + q2*`mf0*q4*`mf1 + q2*`mf0*q5*`mf2 )
+                              + (q4*`mf1*q2*`mf0 + q4*`mf1*q4*`mf1 + q4*`mf1*q5*`mf2 )
+                              + (q5*`mf2*q2*`mf0 + q5*`mf2*q4*`mf1 + q5*`mf2*q5*`mf2 )
+                              + (q3*`mf0*q3*`mf0 + q3*`mf0*q5*`mf1 + q3*`mf0*q6*`mf2 )
+                              + (q5*`mf1*q3*`mf0 + q5*`mf1*q5*`mf1 + q5*`mf1*q6*`mf2 )
+                              + (q6*`mf2*q3*`mf0 + q6*`mf2*q5*`mf1 + q6*`mf2*q6*`mf2 ) ]
+
+             (1/(1+x_f^2))  * [ (q1*`mf0*q1*`mf0 + q1*`mf0*q2*`mf1 + q1*`mf0*q3*`mf2)
+                              + (q1*`mf0*q2*`mf1 + q2*`mf1*q2*`mf1 + q2*`mf1*q3*`mf2)
+                              + (q1*`mf0*q3*`mf2 + q2*`mf1*q3*`mf2 + q3*`mf2*q3*`mf2)
+                              + (q2*`mf0*q2*`mf0 + q2*`mf0*q4*`mf1 + q2*`mf0*q5*`mf2 )
+                              + (q2*`mf0*q4*`mf1 + q4*`mf1*q4*`mf1 + q4*`mf1*q5*`mf2 )
+                              + (q2*`mf0*q5*`mf2 + q4*`mf1*q5*`mf2 + q5*`mf2*q5*`mf2 )
+                              + (q3*`mf0*q3*`mf0 + q3*`mf0*q5*`mf1 + q3*`mf0*q6*`mf2 )
+                              + (q3*`mf0*q5*`mf1 + q5*`mf1*q5*`mf1 + q5*`mf1*q6*`mf2 )
+                              + (q3*`mf0*q6*`mf2 + q6*`mf2*q5*`mf1 + q6*`mf2*q6*`mf2 ) ]
+        
+                          (1/(1+x_f^2))  * [ q1*q1*`mf0*`mf0 + q1*q2*`mf0*`mf1 + q1*q3*`mf0*`mf2
+                              + q1*q2*`mf0*`mf1 + q2*q2*`mf1*`mf1 + q2*q3*`mf1*`mf2
+                              + q1*q3*`mf0*`mf2 + q2*q3*`mf1*`mf2 + q3*q3*`mf2*`mf2
+                              + q2*q2*`mf0*`mf0 + q2*q4*`mf0*`mf1 + q2*q5*`mf0*`mf2
+                              + q2*q4*`mf0*`mf1 + q4*q4*`mf1*`mf1 + q4*q5*`mf1*`mf2
+                              + q2*q5*`mf0*`mf2 + q4*q5*`mf1*`mf2 + q5*q5*`mf2*`mf2
+                              + q3*q3*`mf0*`mf0 + q3*q5*`mf0*`mf1 + q3*q6*`mf0*`mf2
+                              + q3*q5*`mf0*`mf1 + q5*q5*`mf1*`mf1 + q5*q6*`mf1*`mf2
+                              + q3*q6*`mf0*`mf2 + q6*q5*`mf2*`mf1 + q6*q6*`mf2*`mf2 ]
+
+             (1/(1+x_f^2))  * [ q1*q1*`mf0*`mf0 + q2*q2*`mf0*`mf0 + q3*q3*`mf0*`mf0
+                              + q1*q2*`mf0*`mf1 + q2*q4*`mf0*`mf1 + q3*q5*`mf0*`mf1   <== 1st 3 lines of addition are:
+                              + q1*q3*`mf0*`mf2 + q2*q5*`mf0*`mf2 + q3*q6*`mf0*`mf2       [ `mf0*`mf0  `mf0*`mf1  `mf0*`mf2 ] * [Q^2_col0]
+
+                              + q1*q2*`mf0*`mf1 + q2*q4*`mf0*`mf1 + q3*q5*`mf0*`mf1   <== 2nd 3 lines of addition are:
+                              + q2*q2*`mf1*`mf1 + q4*q4*`mf1*`mf1 + q5*q5*`mf1*`mf1       [ `mf0*`mf1  `mf1*`mf1  `mf1*`mf2 ] * [Q^2_col1]
+                              + q2*q3*`mf1*`mf2 + q4*q5*`mf1*`mf2 + q5*q6*`mf1*`mf2
+
+                              + q1*q3*`mf0*`mf2 + q2*q5*`mf0*`mf2 + q3*q6*`mf0*`mf2   <== 3rd 3 lines of addition are:
+                              + q2*q3*`mf1*`mf2 + q4*q5*`mf1*`mf2 + q5*q6*`mf1*`mf2       [ `mf0*`mf2  `mf1*`mf2  `mf2*`mf2 ] * [Q^2_col2]
+                              + q3*q3*`mf2*`mf2 + q5*q5*`mf2*`mf2 + q6*q6*`mf2*`mf2 ]
+
+             let z0 = [ `mf0*`mf0  `mf0*`mf1  `mf0*`mf2 ]
+                 z1 = [ `mf0*`mf1  `mf1*`mf1  `mf1*`mf2 ]
+                 z2 = [ `mf0*`mf2  `mf1*`mf2  `mf2*`mf2 ]
+             (1/(1+x_f^2))  * [ z0 z1 z2] * [Q^2_col0]
+                                            [Q^2_col1]
+                                            [Q^2_col2]
+
+         reminder of Q*Q:
+                 = q1*q1 + q2*q2 + q3*q3   q1*q2 + q2*q4 + q3*q5   q1*q3 + q2*q5 + q3*q6
+                   q1*q2 + q2*q4 + q3*q5   q2*q2 + q4*q4 + q5*q5   q2*q3 + q4*q5 + q5*q6
+                   q1*q3 + q2*q5 + q3*q6   q2*q3 + q4*q5 + q5*q6   q3*q3 + q5*q5 + q6*q6
+                 = Q_col0 dot Q_col0   Q_col0 dot Q_col1  Q_col0 dot Q_col2
+                   Q_col0 dot Q_col1   Q_col1 dot Q_col1  Q_col1 dot Q_col2
+                   Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
+        
+        paused here
+        */
+        
+        throw new UnsupportedOperationException("not yet finished");
     }
     
     private static DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
