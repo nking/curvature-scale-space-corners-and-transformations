@@ -935,7 +935,7 @@ public class Reconstruction {
         // for mImages=2, need 4 features
         
         /*
-                 3 constraints:
+         3 constraints:
 
          eqn(15) of paper:
                  |m_f|^2/(1+x_f^2) - |n_f|^2/(1+y_f^2) = 0
@@ -981,6 +981,13 @@ public class Reconstruction {
                    Q_col0 dot Q_col1   Q_col1 dot Q_col1  Q_col1 dot Q_col2
                    Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
 
+        NOTE: below are the expanded details of the multiplication.
+        The result can be rewritten using notation:
+        |m_f|^2 = `m_f*Q*Q^T*`m_f^T where m_f is a 1X3 vector and Q is a 3X3 symmetric matrix
+                = `m_f*Q^2*`m_f^T
+                = [`m_f*Q[:][0]^2 `m_f*Q[:][1]^2 `m_f*Q[:][2]^2] * `m_f^T
+                = ['m_f[0]*`m_f*Q[:][0]^2 + 'm_f[1]*`m_f*Q[:][1]^2 + 'm_f[2]*`m_f*Q[:][2]^2]
+        
 
          expand |m_f|^2/(1+x_f^2) :
              (1/(1+x_f^2)) * [ (q1*`mf0 + q2*`mf1 + q3*`mf2 )^2 + (q2*`mf0 + q4*`mf1 + q5*`mf2 )^2 + (q3*`mf0 + q5*`mf1 + q6*`mf2 )^2 ]
@@ -1081,9 +1088,9 @@ public class Reconstruction {
 
                  square to use the same factorization by Q^2?
 
-             let v0 = [ `m_0[0]*`mf0  `m_0[0]*`m_0[1]  `m_0[0*`m_0[2] ]
-                 v1 = [ `m_0[0]*`mf1  `m_0[1]*`m_0[1]  `m_0[1*`m_0[2] ]
-                 v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2*`m_0[2] ]
+             let v0 = [ `m_0[0]*`mf0  `m_0[0]*`m_0[1]  `m_0[0]*`m_0[2] ]
+                 v1 = [ `m_0[0]*`mf1  `m_0[1]*`m_0[1]  `m_0[1]*`m_0[2] ]
+                 v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2]*`m_0[2] ]
              |m_0|^2 = [ v0 v1 v2] * [Q^2_col0]
                                      [Q^2_col1]
                                      [Q^2_col2]
