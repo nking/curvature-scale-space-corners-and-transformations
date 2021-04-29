@@ -1097,6 +1097,46 @@ public class Reconstruction {
                                      [Q^2_col1]
                                      [Q^2_col2]
         
+        --------------------------------
+        Paraperspeetive Motion Recovery
+        --------------------------------
+        eqn(19) :
+         `i_f = z_f * m_f + x_f * `k_f
+         `j_f = z_f * n_f + y_f * `k_f
+
+         Since the `i, `j, `k  produced must be orthonormal,
+            they can be written as functions of only 3 rotational variables.
+            We can then view the problem as, for each frame f,
+              solving an overconstrained system of 6 equations
+              (the expansion of (19) to each of its vector components)
+              in 4 variables (the 3 rotational variables and zs).
+            In other words, using `i_f cross `j_f = `k_f
+              and   `i_f dot `j_f = 0
+              can reduce the 6 eqns of eqn(19) into functions of just one vector, `i_f or `j_f
+              and then back-substitute for `j_f and `k_f:
+              `i_f[0] = z_f * m_f[0] + x_f * `k_f[0]
+              `i_f[1] = z_f * m_f[1] + x_f * `k_f[1]
+              `i_f[2] = z_f * m_f[2] + x_f * `k_f[2]
+              `j_f[0] = z_f * n_f[0] + y_f * `k_f[0]
+              `j_f[1] = z_f * n_f[1] + y_f * `k_f[1]
+              `j_f[2] = z_f * n_f[2] + y_f * `k_f[2]
+        
+          `i_f cross `j_f = `k_f:
+             = [0        -`i_f[2]  `i_f[1] * [`j_f[0]] = [`k_f[0]]
+               [`i_f[2]        0  -`i_f[0]   [`j_f[1]]   [`k_f[1]]
+               [-`i_f[1]  `i_f[0]       0]   [`j_f[2]]   [`k_f[2]]
+             = [ `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]] = [`k_f[0]]
+               [-`i_f[0]*`j_f[2] + `i_f[2]*`j_f[0]] = [`k_f[1]]
+               [ `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]] = [`k_f[2]]
+
+          substitute `k_f into the 6 eqns of eqn (19):
+          `i_f[0] = z_f * m_f[0] + x_f * (`i_f[1]*`j_f[2] - `i_f[2]*`j_f[1])
+          `i_f[1] = z_f * m_f[1] + x_f * (-`i_f[0]*`j_f[2] + `i_f[2]*`j_f[0])
+          `i_f[2] = z_f * m_f[2] + x_f * (`i_f[0]*`j_f[1] - `i_f[1]*`j_f[0])
+          `j_f[0] = z_f * n_f[0] + y_f * (`i_f[1]*`j_f[2] - `i_f[2]*`j_f[1])
+          `j_f[1] = z_f * n_f[1] + y_f * (-`i_f[0]*`j_f[2] + `i_f[2]*`j_f[0])
+          `j_f[2] = z_f * n_f[2] + y_f * (`i_f[0]*`j_f[1] - `i_f[1]*`j_f[0])
+           
         */
         
         throw new UnsupportedOperationException("not yet finished");
