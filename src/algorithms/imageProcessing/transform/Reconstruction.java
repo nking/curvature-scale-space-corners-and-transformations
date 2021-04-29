@@ -1041,7 +1041,53 @@ public class Reconstruction {
                    Q_col0 dot Q_col1   Q_col1 dot Q_col1  Q_col1 dot Q_col2
                    Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
         
-        paused here
+        paused here, need to review this:
+    
+             let z0 = [ `mf0*`mf0  `mf0*`mf1  `mf0*`mf2 ]
+                 z1 = [ `mf1*`mf0  `mf1*`mf1  `mf1*`mf2 ]
+                 z2 = [ `mf2*`mf0  `mf2*`mf1  `mf2*`mf2 ]
+             let y0 = [ `nf0*`nf0  `nf0*`nf1  `nf0*`nf2 ]
+                 y1 = [ `nf1*`nf0  `nf1*`nf1  `nf1*`nf2 ]
+                 y2 = [ `nf2*`nf0  `nf2*`nf1  `nf2*`nf2 ]
+             let w0 = [ `mf0*`nf0  `mf0*`nf1  `mf0*`nf2 ]
+                 w1 = [ `mf1*`nf0  `mf1*`nf1  `mf1*`nf2 ]
+                 w2 = [ `mf2*`nf0  `mf2*`nf1  `mf2*`nf2 ]
+             let c2 = (x_f*y_f*0.5)
+
+        factoring the constraints to separate Q unknowns from m and n knowns:
+         eqn(15) of paper:
+                 |m_f|^2/(1+x_f^2) - |n_f|^2/(1+y_f^2) = 0
+
+             (1/(1+x_f^2)) * [ z0 z1 z2] * [Q^2_col0]  -  (1/(1+y_f^2)) * [ y0 y1 y2] * [Q^2_col0] = 0
+                                           [Q^2_col1]                                   [Q^2_col1]
+                                           [Q^2_col2]                                   [Q^2_col2]
+
+             [ z0/(1+x_f^2)  z1/(1+x_f^2)  z2/(1+x_f^2)  -y0/(1+y_f^2)  -y1/(1+y_f^2)  -y2/(1+y_f^2) ] * [Q^2_col0] = 0
+                                                                                                         [Q^2_col1]
+                                                                                                         [Q^2_col2]
+
+         eqn(17) of paper:
+                 m_f dot n_f = x_f*y_f*0.5 * ( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2) )
+
+                 [ w0 w1 w2] * [Q^2_col0] - c2 * [ z0 z1 z2] * [Q^2_col0]  -  c2 * [ y0 y1 y2] * [Q^2_col0] = 0
+                               [Q^2_col1]                      [Q^2_col1]                        [Q^2_col1]
+                               [Q^2_col2]                      [Q^2_col2]                        [Q^2_col2]
+
+                 [ w0  w1  w2  -z0*c2  -z1*c2  -z2*c2  -y0*c2  -y1*c2  -y2*c2 ] * [Q^2_col0] = 0
+                                                                                  [Q^2_col1]
+                                                                                  [Q^2_col2]
+         eqn(18) of paper:
+                 |m_0|=1
+
+                 square to use the same factorization by Q^2?
+
+             let v0 = [ `m_0[0]*`mf0  `m_0[0]*`m_0[1]  `m_0[0*`m_0[2] ]
+                 v1 = [ `m_0[0]*`mf1  `m_0[1]*`m_0[1]  `m_0[1*`m_0[2] ]
+                 v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2*`m_0[2] ]
+             |m_0|^2 = [ v0 v1 v2] * [Q^2_col0]
+                                     [Q^2_col1]
+                                     [Q^2_col2]
+        
         */
         
         throw new UnsupportedOperationException("not yet finished");
