@@ -1110,10 +1110,7 @@ public class Reconstruction {
               solving an overconstrained system of 6 equations
               (the expansion of (19) to each of its vector components)
               in 4 variables (the 3 rotational variables and zs).
-            In other words, using `i_f cross `j_f = `k_f
-              and   `i_f dot `j_f = 0
-              can reduce the 6 eqns of eqn(19) into functions of just one vector, `i_f or `j_f
-              and then back-substitute for `j_f and `k_f:
+            
               `i_f[0] = z_f * m_f[0] + x_f * `k_f[0]
               `i_f[1] = z_f * m_f[1] + x_f * `k_f[1]
               `i_f[2] = z_f * m_f[2] + x_f * `k_f[2]
@@ -1150,6 +1147,8 @@ public class Reconstruction {
             0                    1              0              0            -y_f           0           -z_f * n_f[1]
             0                    0              1              0              0           -y_f         -z_f * n_f[2]
            
+         also, as in eqn (17), use arithmetic mean for (1/z_f^2):
+           z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
         */
         
         throw new UnsupportedOperationException("not yet finished");
