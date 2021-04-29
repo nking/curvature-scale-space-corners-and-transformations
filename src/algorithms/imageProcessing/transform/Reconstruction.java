@@ -982,12 +982,14 @@ public class Reconstruction {
                    Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
 
         NOTE: below are the expanded details of the multiplication.
-        The result can be rewritten using notation:
-        |m_f|^2 = `m_f*Q*Q^T*`m_f^T where m_f is a 1X3 vector and Q is a 3X3 symmetric matrix
-                = `m_f*Q^2*`m_f^T
-                = [`m_f*Q[:][0]^2 `m_f*Q[:][1]^2 `m_f*Q[:][2]^2] * `m_f^T
-                = ['m_f[0]*`m_f*Q[:][0]^2 + 'm_f[1]*`m_f*Q[:][1]^2 + 'm_f[2]*`m_f*Q[:][2]^2]
-        
+        The result can be rewritten using other notation:
+        since need the dot product of vector `m_f*Q with itself, can use the inner product
+        of the vector multiplied by its transpose:
+            |m_f|^2 = `m_f*Q*Q^T*`m_f^T where m_f is a 1X3 vector and Q is a 3X3 symmetric matrix
+                    = `m_f*Q^2*`m_f^T
+                    = [`m_f*Q^2[:][0] `m_f*Q^2[:][1] `m_f*Q^2[:][2]] * `m_f^T
+                    = ['m_f[0]*`m_f*Q^2[:][0] + 'm_f[1]*`m_f*Q^2[:][1] + 'm_f[2]*`m_f*Q^2[:][2]]
+
 
          expand |m_f|^2/(1+x_f^2) :
              (1/(1+x_f^2)) * [ (q1*`mf0 + q2*`mf1 + q3*`mf2 )^2 + (q2*`mf0 + q4*`mf1 + q5*`mf2 )^2 + (q3*`mf0 + q5*`mf1 + q6*`mf2 )^2 ]
