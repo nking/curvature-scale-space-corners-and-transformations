@@ -916,7 +916,7 @@ public class Reconstruction {
      * @param mImages the number of images in x.
      * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
      */
-    public static ProjectionResults calculateParaperspectiveReconstruction(
+    public static ParaperspectiveProjectionResults calculateParaperspectiveReconstruction(
         double[][] x, int mImages) throws NotConvergedException {
                         
         if (x.length != 2) {
@@ -935,6 +935,10 @@ public class Reconstruction {
         // for mImages=2, need 4 features
         
         /*
+        ------------------------------------------------------------------
+        Paraperspective Decomposition of the registered measurement matrix
+        ------------------------------------------------------------------
+        
          3 constraints:
 
          eqn(15) of paper:
@@ -1049,9 +1053,7 @@ public class Reconstruction {
                  = Q_col0 dot Q_col0   Q_col0 dot Q_col1  Q_col0 dot Q_col2
                    Q_col0 dot Q_col1   Q_col1 dot Q_col1  Q_col1 dot Q_col2
                    Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
-        
-        paused here, need to review this:
-    
+            
              let z0 = [ `mf0*`mf0  `mf0*`mf1  `mf0*`mf2 ]
                  z1 = [ `mf1*`mf0  `mf1*`mf1  `mf1*`mf2 ]
                  z2 = [ `mf2*`mf0  `mf2*`mf1  `mf2*`mf2 ]
@@ -1098,7 +1100,7 @@ public class Reconstruction {
                                      [Q^2_col2]
         
         --------------------------------
-        Paraperspeetive Motion Recovery
+        Paraperspective Motion Recovery
         --------------------------------
         eqn(19) :
          `i_f = z_f * m_f + x_f * `k_f
@@ -1140,6 +1142,7 @@ public class Reconstruction {
 
        factor:
           jf0                  jf1             jf2            kf0           kf1            kf2         const
+        --------------------------------------------------------------------------------------------------------------------
          (x_f/y_f)               0              0            -x_f             0            0           m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) - z_f * m_f[0]
             0                 (x_f/y_f)         0              0            -x_f           0           m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
             0                    0           (x_f/y_f)         0              0           -x_f         m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
@@ -1191,6 +1194,85 @@ public class Reconstruction {
          * rotation for image 1 will be in rows [3, 6), etc.
          */
         double[][] rotationMatrices;
+    }
+    
+    public static class ParaperspectiveProjectionResults {
+        /**
+         * world coordinate system points
+         */
+        private double[][] XW;
+        
+        /**
+         * the rotation matrices (as extrinsic parameters) stacked along rows for each image.
+         * so rotation for image 0 will be in rows [0, 3);
+         * rotation for image 1 will be in rows [3, 6), etc.
+         */
+        private double[][] rotationMatrices;
+        
+        /**
+         * the translation vectors (as extrinsic parameters) 
+         * stacked along rows for each image.
+         * 
+         */
+        private double[][] translationVectors;
+
+        /**
+         * @return the XW
+         */
+        public double[][] getXW() {
+            return XW;
+        }
+
+        /**
+         * @param XW the XW to set
+         */
+        public void setXW(double[][] XW) {
+            this.XW = XW;
+        }
+
+        /**
+         * @return the rotationMatrices (as extrinsic parameters) 
+         * stacked along rows for each image.
+         * so rotation for image 0 will be in rows [0, 3);
+         * rotation for image 1 will be in rows [3, 6), etc.
+         */
+        public double[][] getRotationStack() {
+            return rotationMatrices;
+        }
+
+        /**
+         * @param rotationMatrices the rotationMatrices to set.
+         * the rotation matrices (as extrinsic parameters) stacked along rows for each image.
+         * so rotation for image 0 will be in rows [0, 3);
+         * rotation for image 1 will be in rows [3, 6), etc.
+         */
+        public void setRotationStack(double[][] rotationMatrices) {
+            this.rotationMatrices = rotationMatrices;
+        }
+
+        /**
+         * @return the translationVectors
+         */
+        public double[][] getTranslationVectorStack() {
+            return translationVectors;
+        }
+
+        /**
+         * @param translationVectors the translationVectors to set
+         */
+        public void setTranslationVectorStack(double[][] translationVectors) {
+            this.translationVectors = translationVectors;
+        }
+        
+        public double[][] getExtrinsicProjection(int imageNumber) {
+            double[][] p = new double[3][4];
+            for (int i = 0; i < 3; ++i) {
+                p[i] = new double[4];
+                System.arraycopy(rotationMatrices[imageNumber*3 + i], 0, p[i], 0, 3);
+                p[i][4] = translationVectors[imageNumber][i];
+            }
+            return p;
+        }
     }
 
     public static class ReconstructionResults {
