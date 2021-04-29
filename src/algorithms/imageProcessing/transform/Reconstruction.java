@@ -1121,21 +1121,34 @@ public class Reconstruction {
               `j_f[1] = z_f * n_f[1] + y_f * `k_f[1]
               `j_f[2] = z_f * n_f[2] + y_f * `k_f[2]
         
-          `i_f cross `j_f = `k_f:
-             = [0        -`i_f[2]  `i_f[1] * [`j_f[0]] = [`k_f[0]]
-               [`i_f[2]        0  -`i_f[0]   [`j_f[1]]   [`k_f[1]]
-               [-`i_f[1]  `i_f[0]       0]   [`j_f[2]]   [`k_f[2]]
-             = [ `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]] = [`k_f[0]]
-               [-`i_f[0]*`j_f[2] + `i_f[2]*`j_f[0]] = [`k_f[1]]
-               [ `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]] = [`k_f[2]]
+          using the equalities of `k_f terms:
+           ==> `i_f[0] = `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f)
+           ==> `i_f[1] = `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f)
+           ==> `i_f[2] = `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f)
 
-          substitute `k_f into the 6 eqns of eqn (19):
-          `i_f[0] = z_f * m_f[0] + x_f * (`i_f[1]*`j_f[2] - `i_f[2]*`j_f[1])
-          `i_f[1] = z_f * m_f[1] + x_f * (-`i_f[0]*`j_f[2] + `i_f[2]*`j_f[0])
-          `i_f[2] = z_f * m_f[2] + x_f * (`i_f[0]*`j_f[1] - `i_f[1]*`j_f[0])
-          `j_f[0] = z_f * n_f[0] + y_f * (`i_f[1]*`j_f[2] - `i_f[2]*`j_f[1])
-          `j_f[1] = z_f * n_f[1] + y_f * (-`i_f[0]*`j_f[2] + `i_f[2]*`j_f[0])
-          `j_f[2] = z_f * n_f[2] + y_f * (`i_f[0]*`j_f[1] - `i_f[1]*`j_f[0])
+        rewrite the 6 eqns of (19)
+          `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) = z_f * m_f[0] + x_f * `k_f[0]
+          `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f) = z_f * m_f[1] + x_f * `k_f[1]
+          `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f) = z_f * m_f[2] + x_f * `k_f[2]
+          `j_f[0] = z_f * n_f[0] + y_f * `k_f[0]
+          `j_f[1] = z_f * n_f[1] + y_f * `k_f[1]
+          `j_f[2] = z_f * n_f[2] + y_f * `k_f[2]
+        rewrite again:
+          `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) - z_f * m_f[0] - x_f * `k_f[0] = 0
+          `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f) - z_f * m_f[1] - x_f * `k_f[1] = 0
+          `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f) - z_f * m_f[2] - x_f * `k_f[2] = 0
+          `j_f[0] - z_f * n_f[0] - y_f * `k_f[0] = 0
+          `j_f[1] - z_f * n_f[1] - y_f * `k_f[1] = 0
+          `j_f[2] - z_f * n_f[2] - y_f * `k_f[2] = 0
+
+       factor:
+          jf0                  jf1             jf2            kf0           kf1            kf2         const
+         (x_f/y_f)               0              0            -x_f             0            0           m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) - z_f * m_f[0]
+            0                 (x_f/y_f)         0              0            -x_f           0           m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
+            0                    0           (x_f/y_f)         0              0           -x_f         m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
+            1                    0              0            -y_f             0            0           -z_f * n_f[0]
+            0                    1              0              0            -y_f           0           -z_f * n_f[1]
+            0                    0              1              0              0           -y_f         -z_f * n_f[2]
            
         */
         
