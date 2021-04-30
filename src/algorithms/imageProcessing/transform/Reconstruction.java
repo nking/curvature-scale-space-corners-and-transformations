@@ -830,8 +830,21 @@ public class Reconstruction {
         double[][] r = MatrixUtil.multiply(rC, q);
         double[][] s = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);
         
-        // Align the first camera reference system with the world reference system
-        //
+        /*
+        from Tomasi & Kanade 1992:
+        If desired, align the first camera reference system with the world 
+        reference system by forming the products R*R_0 and R_0^T*S, 
+        where the orthonormal matrix R_0 = [i1 j1 k1] rotates the first camera 
+        reference system into the identity matrix
+        
+        i0x i0y i0z    *  r0ix  r0jx  r0kx   = (i0 dot r0i)  (i0 dot r0j) (i0 dot r0k)
+        i1x i1y i1z       r0iy  r0jy  r0ky
+        i2x i2y i2z       r0iz  r0jz  r0kz
+        i3x i3y i3z
+        ...
+        j0x j0y j0z
+        j1x j1y j1z
+        */
         double[] i1 = Arrays.copyOf(r[0], r[0].length);
         double i1Norm = MatrixUtil.lPSum(i1, 2);
         MatrixUtil.multiply(i1, 1./i1Norm);
@@ -847,7 +860,7 @@ public class Reconstruction {
             r0[i] = new double[]{i1[i], j1[i], k1[i]};
         }
         
-        // with orthographic, can only reocver rotation, not translation
+        // with orthographic, can only recover rotation, not translation
         //(2*mImages)X3
         r = MatrixUtil.multiply(r, r0);
         // s now holds the world reference frame coordinates
@@ -1341,11 +1354,11 @@ public class Reconstruction {
            
          also, as in eqn (17), use arithmetic mean for (1/z_f^2):
            z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
+        
+         
         */
         // TODO: revisit this for most robust solution
-        double[][] jfStack = new double[mImages][3];
-        double[][] kfStack = new double[mImages][3];
-        double[][] ifStack = new double[mImages][3];
+        double[][] _M2 = new double[3*mImages][3]; // holding all i_f, then j_f, then k_f
         double xDivY, zf, mfsq, nfsq, tmp;
         double[] mf, nf;
         double[] zfs = new double[mImages];
@@ -1370,34 +1383,95 @@ public class Reconstruction {
             tmp = (mfsq/(1. + xf*xf)) + (nfsq/(1. + yf*yf));
             zf = Math.sqrt(2./tmp);
             zfs[i] = zf;
-               
-            // length is 7, including the constants
+              
             g2[0] = new double[]{xDivY, 0, 0, -xf, 0, 0};
-            cs[0] = (mf[0]*zf - nf[0]*(zf*xDivY) - zf*mf[0]);
+            cs[0] = (-mf[0]*zf + nf[0]*(zf*xDivY) + zf*mf[0]);
             g2[1] = new double[]{0, xDivY, 0, 0, -xf, 0,};
-            cs[1] = (mf[1]*zf - nf[1]*(zf*xDivY) - zf*mf[1]);
+            cs[1] = (-mf[1]*zf + nf[1]*(zf*xDivY) + zf*mf[1]);
             g2[2] = new double[]{0, 0, xDivY, 0, 0, -xf};
-            cs[2] = (mf[2]*zf - nf[2]*(zf*xDivY) - zf*mf[2]);
+            cs[2] = (-mf[2]*zf + nf[2]*(zf*xDivY) + zf*mf[2]);
             g2[3] = new double[]{1, 0, 0, -yf, 0, 0};
-            cs[3] = -zf*nf[0];
+            cs[3] = zf*nf[0];
             g2[4] = new double[]{0, 1, 0, 0, -yf, 0};
-            cs[4] = -zf*nf[1];
+            cs[4] = zf*nf[1];
             g2[5] = new double[]{0, 0, 1, 0, 0, -yf};
-            cs[5] = -zf*nf[2];
+            cs[5] = zf*nf[2];
             
             g2Inv = MatrixUtil.pseudoinverseRankDeficient(g2);
             i2Vector = MatrixUtil.multiplyMatrixByColumnVector(g2Inv, cs);
             assert(i2Vector.length == 6);
             
-            jfStack[i] = new double[]{i2Vector[0], i2Vector[1], i2Vector[2]}; 
-            kfStack[i] = new double[]{i2Vector[3], i2Vector[4], i2Vector[5]}; 
-            
-            ifStack[i] = MatrixUtil.crossProduct(jfStack[i], kfStack[i]);
-            
+            // j_f
+            _M2[mImages + i] = new double[]{i2Vector[0], i2Vector[1], i2Vector[2]}; 
+            // k_f
+            _M2[2*mImages + i] = new double[]{i2Vector[3], i2Vector[4], i2Vector[5]};
+            // i_f
+            _M2[i] = MatrixUtil.crossProduct(_M2[mImages + i], _M2[2*mImages + i]);            
         }
-                
-        // align the worldaxeswiththefirstframescameraaxes
-                
+           
+        /*
+        from Tomasi & Kanade 1992:
+        If desired, align the ^Lfirst camera reference system with the world
+        reference system by forming the products R*R_0 and R_0^T*S,
+        where the orthonormal matrix R_0 = [i1 j1 k1] rotates the ^Lfirst camera
+        reference system into the identity matrix
+
+        i0x i0y i0z    *  r0ix  r0jx  r0kx   = (i0 dot r0i)  (i0 dot r0j) (i0 dot r0k)
+        i1x i1y i1z       r0iy  r0jy  r0ky
+        i2x i2y i2z       r0iz  r0jz  r0kz
+        i3x i3y i3z
+        ...
+        j0x j0y j0z
+        j1x j1y j1z
+        */
+        double[] i1 = Arrays.copyOf(_M2[0], _M2[0].length);
+        double i1Norm = MatrixUtil.lPSum(i1, 2);
+        MatrixUtil.multiply(i1, 1./i1Norm);
+        double[] j1 = Arrays.copyOf(_M2[mImages], _M2[mImages].length);
+        double j1Norm = MatrixUtil.lPSum(j1, 2);
+        MatrixUtil.multiply(j1, 1./j1Norm);
+        double[] k1 = Arrays.copyOf(_M2[2*mImages], _M2[2*mImages].length);
+        double k1Norm = MatrixUtil.lPSum(k1, 2);
+        MatrixUtil.multiply(k1, 1./k1Norm);
+
+        double[][] r0 = new double[3][3];
+        for (i = 0; i < 3; ++i) {
+            r0[i] = new double[]{i1[i], j1[i], k1[i]};
+        }
+        _M2 = MatrixUtil.multiply(_M2, r0);
+        _S = MatrixUtil.multiply(MatrixUtil.transpose(r0), _S);
+        
+        /*
+        Poelman & Kanade, last paragraph, Sect 3.4:
+        All that remain to be computed are the translations for each frame. 
+        We calculate the depth z_f from (15).  
+        Once we know we x_f, y_f, z_f, `i_f, `j_f, `k_f 
+        we can calculate `t_f using (4) and (5).
+        
+                eqn(4):
+            z_f = -t_f dot k_f
+        eqn (5):
+            x_f = (-1/z_f)*(t_f dot i_f)
+            and
+            y_f = (-1/z_f)*(t_f dot j_f)
+
+        use z_f equalities:
+            z_f = -t_f dot k_f
+                = -tf[0]*kf[0] + -tf[1]*kf[1] + -tf[2]*kf[2]
+
+            z_f = (-1/x_f) * (t_f dot i_f)
+                = -(1/xf)*tf[0]*if[0] + -(1/xf)*tf[1]*if[1] + -(1/xf)*tf[2]*if[2]
+
+            z_f = (-1/y_f) * (t_f dot j_f)
+                = -(1/yf)*tf[0]*jf[0] + -(1/yf)*tf[1]*jf[1] + -(1/yf)*tf[2]*jf[2]
+            
+        factor:
+           tf[0]           tf[1]           tf[2]         const
+           -------------------------------------------
+           -kf[0]          -kf[1]         -kf[2]         -zf
+           -(1/xf)*if[0]   -(1/xf)*if[1]  -(1/xf)*if[2]  -zf
+           -(1/yf)*jf[0]   -(1/yf)*jf[1]  -(1/yf)*jf[2]  -zf
+        */
         editing
         
         throw new UnsupportedOperationException("not yet finished");
