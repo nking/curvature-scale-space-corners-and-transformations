@@ -1342,8 +1342,46 @@ public class Reconstruction {
          also, as in eqn (17), use arithmetic mean for (1/z_f^2):
            z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
         */
-        
-        
+        double xDivY, zf, mfsq, nfsq, tmp;
+        double[] mf, nf;
+        double[][] g2 = new double[6*mImages][7];
+        for (i = 0; i < mImages; ++i) {
+            xf = t[i];
+            yf = t[mImages + i];
+            xDivY = xf/yf;
+            mf = _M[i];
+            nf = _M[mImages + i];
+            
+            mfsq = 0;
+            nfsq = 0;
+            for (j = 0; j < mf.length; ++j) {
+                mfsq += (mf[j]*mf[j]);
+                nfsq += (nf[j]*nf[j]);
+            }
+            //z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
+            tmp = (mfsq/(1. + xf*xf)) + (nfsq/(1. + yf*yf));
+            zf = Math.sqrt(2./tmp);
+                    
+            // length is 7, including the constants
+            g2[6*i + 0] = new double[]{
+                xDivY, 0, 0, -xf, 0, 0, (mf[0]*zf - nf[0]*(zf*xDivY) - zf*mf[0])
+            };
+            g2[6*i + 1] = new double[]{
+                0, xDivY, 0, 0, -xf, 0, (mf[1]*zf - nf[1]*(zf*xDivY) - zf*mf[1])
+            };
+            g2[6*i + 2] = new double[]{
+                0, 0, xDivY, 0, 0, -xf, (mf[2]*zf - nf[2]*(zf*xDivY) - zf*mf[2])
+            };
+            g2[6*i + 3] = new double[]{
+                1, 0, 0, -yf, 0, 0, -zf*nf[0]
+            };
+            g2[6*i + 4] = new double[]{
+                0, 1, 0, 0, -yf, 0, -zf*nf[1]
+            };
+            g2[6*i + 5] = new double[]{
+                0, 0, 1, 0, 0, -yf, -zf*nf[2]
+            };
+        }
         
         editing
         
