@@ -1342,9 +1342,17 @@ public class Reconstruction {
          also, as in eqn (17), use arithmetic mean for (1/z_f^2):
            z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
         */
+        // TODO: revisit this for most robust solution
+        double[][] jfStack = new double[mImages][3];
+        double[][] kfStack = new double[mImages][3];
+        double[][] ifStack = new double[mImages][3];
         double xDivY, zf, mfsq, nfsq, tmp;
         double[] mf, nf;
-        double[][] g2 = new double[6*mImages][7];
+        double[] zfs = new double[mImages];
+        double[] cs = new double[6];
+        double[][] g2 = new double[6][6];
+        double[][] g2Inv;
+        double[] i2Vector;
         for (i = 0; i < mImages; ++i) {
             xf = t[i];
             yf = t[mImages + i];
@@ -1361,28 +1369,35 @@ public class Reconstruction {
             //z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
             tmp = (mfsq/(1. + xf*xf)) + (nfsq/(1. + yf*yf));
             zf = Math.sqrt(2./tmp);
-                    
+            zfs[i] = zf;
+               
             // length is 7, including the constants
-            g2[6*i + 0] = new double[]{
-                xDivY, 0, 0, -xf, 0, 0, (mf[0]*zf - nf[0]*(zf*xDivY) - zf*mf[0])
-            };
-            g2[6*i + 1] = new double[]{
-                0, xDivY, 0, 0, -xf, 0, (mf[1]*zf - nf[1]*(zf*xDivY) - zf*mf[1])
-            };
-            g2[6*i + 2] = new double[]{
-                0, 0, xDivY, 0, 0, -xf, (mf[2]*zf - nf[2]*(zf*xDivY) - zf*mf[2])
-            };
-            g2[6*i + 3] = new double[]{
-                1, 0, 0, -yf, 0, 0, -zf*nf[0]
-            };
-            g2[6*i + 4] = new double[]{
-                0, 1, 0, 0, -yf, 0, -zf*nf[1]
-            };
-            g2[6*i + 5] = new double[]{
-                0, 0, 1, 0, 0, -yf, -zf*nf[2]
-            };
+            g2[0] = new double[]{xDivY, 0, 0, -xf, 0, 0};
+            cs[0] = (mf[0]*zf - nf[0]*(zf*xDivY) - zf*mf[0]);
+            g2[1] = new double[]{0, xDivY, 0, 0, -xf, 0,};
+            cs[1] = (mf[1]*zf - nf[1]*(zf*xDivY) - zf*mf[1]);
+            g2[2] = new double[]{0, 0, xDivY, 0, 0, -xf};
+            cs[2] = (mf[2]*zf - nf[2]*(zf*xDivY) - zf*mf[2]);
+            g2[3] = new double[]{1, 0, 0, -yf, 0, 0};
+            cs[3] = -zf*nf[0];
+            g2[4] = new double[]{0, 1, 0, 0, -yf, 0};
+            cs[4] = -zf*nf[1];
+            g2[5] = new double[]{0, 0, 1, 0, 0, -yf};
+            cs[5] = -zf*nf[2];
+            
+            g2Inv = MatrixUtil.pseudoinverseRankDeficient(g2);
+            i2Vector = MatrixUtil.multiplyMatrixByColumnVector(g2Inv, cs);
+            assert(i2Vector.length == 6);
+            
+            jfStack[i] = new double[]{i2Vector[0], i2Vector[1], i2Vector[2]}; 
+            kfStack[i] = new double[]{i2Vector[3], i2Vector[4], i2Vector[5]}; 
+            
+            ifStack[i] = MatrixUtil.crossProduct(jfStack[i], kfStack[i]);
+            
         }
-        
+                
+        // align the worldaxeswiththefirstframescameraaxes
+                
         editing
         
         throw new UnsupportedOperationException("not yet finished");
