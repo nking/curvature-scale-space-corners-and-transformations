@@ -1448,7 +1448,7 @@ public class Reconstruction {
         Once we know we x_f, y_f, z_f, `i_f, `j_f, `k_f 
         we can calculate `t_f using (4) and (5).
         
-                eqn(4):
+        eqn(4):
             z_f = -t_f dot k_f
         eqn (5):
             x_f = (-1/z_f)*(t_f dot i_f)
@@ -1472,9 +1472,60 @@ public class Reconstruction {
            -(1/xf)*if[0]   -(1/xf)*if[1]  -(1/xf)*if[2]  -zf
            -(1/yf)*jf[0]   -(1/yf)*jf[1]  -(1/yf)*jf[2]  -zf
         */
-        editing
+        double[][] trans = new double[mImages][3];
+        double[][] tf = MatrixUtil.zeros(3, 3);
+        double[][] g3Inv;
+        double[] i3Vector;
+        cs = new double[3];
+        for (i = 0; i < mImages; ++i) {
+            xf = t[i];
+            yf = t[mImages + i];
+            zf = zfs[i];
+            
+            // i_f[i] is _M2[i]
+            // j_f[i] is _M2[mImages + i]
+            // k_f[i] is _M2[2*mImages + i]
+            tf[0][0] = -_M2[2*mImages + i][0];
+            tf[0][1] = -_M2[2*mImages + i][1];
+            tf[0][2] = -_M2[2*mImages + i][2];
+            
+            tf[1][0] = _M2[i][0]*(-1./xf);
+            tf[1][1] = _M2[i][1]*(-1./xf);
+            tf[1][2] = _M2[i][2]*(-1./xf);
+            
+            tf[2][0] = _M2[mImages + i][0]*(-1./yf);
+            tf[2][1] = _M2[mImages + i][1]*(-1./yf);
+            tf[2][2] = _M2[mImages + i][2]*(-1./yf);
+            
+            Arrays.fill(cs, zf);
+            
+            g3Inv = MatrixUtil.pseudoinverseRankDeficient(tf);
+            i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);
+            assert(i3Vector.length == 3);
+            
+            trans[i] = new double[]{i3Vector[0], i3Vector[1], i3Vector[2]};
+        }
         
-        throw new UnsupportedOperationException("not yet finished");
+        // reshape _M2 into a stack of rotation matrices, one per image.
+        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
+        double[] ic, jc, kc;
+        for (i = 0; i < mImages; ++i) {
+            ic = _M2[i];
+            jc = _M2[mImages + i];
+            kc = _M2[2*mImages + i];
+            for (j = 0; j < 3; ++j) {
+                rotStack[i*3 + j][0] = ic[j]; 
+                rotStack[i*3 + j][1] = jc[j];
+                rotStack[i*3 + j][2] = kc[j];
+            }
+        }
+        
+        ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();
+        results.XW = _S;
+        results.rotationMatrices = rotStack;
+        results.translationVectors = trans;
+          
+        return results;        
     }
     
     private static DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
