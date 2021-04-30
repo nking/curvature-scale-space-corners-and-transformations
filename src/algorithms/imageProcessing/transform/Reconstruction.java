@@ -150,6 +150,7 @@ public class Reconstruction {
     */
             
      /**
+      * TODO: proof read and write test for this.
      * given correspondence between two images calculate the camera
      * parameters, and the real world position.
      * 
@@ -222,6 +223,7 @@ public class Reconstruction {
     }
     
     /**
+     * TODO: proof read and write test for this.
      * recover the 3-D coordinates in WCS from pairs of corresponding
      * un-calibrated image points, that is, points in the image reference frame in pixels.
      * 
@@ -506,6 +508,7 @@ public class Reconstruction {
     }
 
      /**
+      * TODO: proof read and write test for this.
      * given correspondence between two images calculate the extrinsic camera
      * parameters, and the real world position.  This is called reconstruction
      * with calibrated cameras where the calibration refers to having the intrinsic
@@ -547,6 +550,7 @@ public class Reconstruction {
     }
     
     /**
+     * TODO: proof read and write test for this.
      * recover the 3-D coordinates in WCS and the rotation matrices 
      * from pairs of corresponding
      * un-calibrated image points, that is, points in the image reference frame in pixels.
@@ -890,7 +894,8 @@ public class Reconstruction {
     }
     
     /*
-    from Szeliski 2010 and Poelman & Kanade 1992:
+    TODO: proof read and write test for this.
+    from Szeliski 2010 and Poelman & Kanade 1992 (year?  a few published translations with different years):
     Para-perspective provides a more accurate projection model than scaled 
     orthography, without incurring the added complexity of per-pixel perspective 
     division, which invalidates traditional factoriza- tion methods 
@@ -906,6 +911,7 @@ public class Reconstruction {
     */
     
     /**
+     * TODO: proof read and write test for this.
      * recover the 3-D coordinates in WCS and the projection matrices 
      * from pairs of corresponding
      * un-calibrated image points, that is, points in the image reference frame in pixels.
@@ -952,7 +958,6 @@ public class Reconstruction {
         //     where V is rows of each image's y coordinates (size os mImages X nFeatures).
         // create matrix t which holds the centroids of each row of W
         // create matrix WC = W - t
-        
         double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);
         double[] t = new double[2*mImages];
         int i, j;
@@ -1354,8 +1359,6 @@ public class Reconstruction {
            
          also, as in eqn (17), use arithmetic mean for (1/z_f^2):
            z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
-        
-         
         */
         // TODO: revisit this for most robust solution
         double[][] _M2 = new double[3*mImages][3]; // holding all i_f, then j_f, then k_f
