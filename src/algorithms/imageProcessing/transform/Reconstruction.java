@@ -901,7 +901,7 @@ public class Reconstruction {
      * <pre>
      * references:
      * 
-     * Poelman & Kanade 1992, "A Paraperspective Factorization Method for Shape 
+     * Poelman & Kanade 1997, "A Paraperspective Factorization Method for Shape 
      * and Motion Recovery" 
      * 
      * </pre>
@@ -934,9 +934,61 @@ public class Reconstruction {
         }
         // for mImages=2, need 4 features
         
+        // create matrix W composed of U and V 
+        //     where U is rows of each image's x coordinates (size os mImages X nFeatures).
+        //     where V is rows of each image's y coordinates (size os mImages X nFeatures).
+        // create matrix t which holds the centroids of each row of W
+        // create matrix WC = W - t
+        
+        double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);
+        double[] t = new double[2*mImages];
+        int i, j;
+        int m, n, xCol, vRow;
+        for (m = 0; m < mImages; ++m) {
+            vRow = mImages + m;
+            for (n = 0; n < nFeatures; ++n) {
+                xCol = m * nFeatures + n;
+                w[m][n] = x[0][xCol];
+                t[m] += x[0][xCol];
+                w[vRow][n] = x[1][xCol];
+                t[vRow] += x[1][xCol];
+            }
+            t[m] /= (double)nFeatures;
+            t[vRow] /= (double)nFeatures;
+        }
+        
+        //registered measurement matrix:
+        double[][] wC = MatrixUtil.copy(w);
+        for (i = 0; i < t.length; ++i) {
+            for (n = 0; n < nFeatures; ++n) {
+                wC[i][n] -= t[i];
+            }
+        }
+        
+        SVDProducts svd = MatrixUtil.performSVD(wC);
+        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length, 0, 3);
+        double[][] s3 = MatrixUtil.zeros(3, 3);
+        s3[0][0] = svd.s[0];
+        s3[1][1] = svd.s[1];
+        s3[2][2] = svd.s[2];
+        double[][] sqrts3 = MatrixUtil.zeros(3, 3);
+        s3[0][0] = Math.sqrt(svd.s[0]);
+        s3[1][1] = Math.sqrt(svd.s[1]);
+        s3[2][2] = Math.sqrt(svd.s[2]);
+        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 3, 0, svd.vT[0].length);
+        
+        // if this is large, then the noise contribution can be ignored (cholesky not necessary)
+        double sRatio = svd.s[2]/svd.s[3];
+        System.out.printf("svd.s[2]/svd.s[3]=%.3e\n", sRatio);
+                
+        // (2*mImages)X3
+        double[][] mC = MatrixUtil.multiply(u3, sqrts3);
+        // 3XnFeatures
+        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);
+        
         /*
         ------------------------------------------------------------------
-        Paraperspective Decomposition of the registered measurement matrix
+        Paraperspective Normalization
         ------------------------------------------------------------------
         
          3 constraints:
@@ -962,7 +1014,7 @@ public class Reconstruction {
 
          This is a simple problem because the constraints are linear in the 6 unique elements
          of the symmetric 3 x 3 matrix Q = A^TA.
-
+        
          Thus we compute Q by solving the overconstrained linear system of 2F + 1 equations
          in 6 variables defined by the metric constraints, ...
 
@@ -1073,9 +1125,9 @@ public class Reconstruction {
                                            [Q^2_col1]                                   [Q^2_col1]
                                            [Q^2_col2]                                   [Q^2_col2]
 
-             [ z0/(1+x_f^2)  z1/(1+x_f^2)  z2/(1+x_f^2)  -y0/(1+y_f^2)  -y1/(1+y_f^2)  -y2/(1+y_f^2) ] * [Q^2_col0] = 0
-                                                                                                         [Q^2_col1]
-                                                                                                         [Q^2_col2]
+             [ (z0/(1+x_f^2) -y0/(1+y_f^2))  (z1/(1+x_f^2) -y1/(1+y_f^2))  (z2/(1+x_f^2) -y2/(1+y_f^2)) ] * [Q^2_col0] = 0
+                                                                                                            [Q^2_col1]
+                                                                                                            [Q^2_col2]
 
          eqn(17) of paper:
                  m_f dot n_f = x_f*y_f*0.5 * ( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2) )
@@ -1084,9 +1136,9 @@ public class Reconstruction {
                                [Q^2_col1]                      [Q^2_col1]                        [Q^2_col1]
                                [Q^2_col2]                      [Q^2_col2]                        [Q^2_col2]
 
-                 [ w0  w1  w2  -z0*c2  -z1*c2  -z2*c2  -y0*c2  -y1*c2  -y2*c2 ] * [Q^2_col0] = 0
-                                                                                  [Q^2_col1]
-                                                                                  [Q^2_col2]
+                 [ (w0 -z0*c2 -y0*c2)  (w1 -z1*c2 -y1*c2)  (w2 -z2*c2 -y2*c2)] * [Q^2_col0] = 0
+                                                                                 [Q^2_col1]
+                                                                                 [Q^2_col2]
          eqn(18) of paper:
                  |m_0|=1
 
@@ -1095,10 +1147,110 @@ public class Reconstruction {
              let v0 = [ `m_0[0]*`mf0  `m_0[0]*`m_0[1]  `m_0[0]*`m_0[2] ]
                  v1 = [ `m_0[0]*`mf1  `m_0[1]*`m_0[1]  `m_0[1]*`m_0[2] ]
                  v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2]*`m_0[2] ]
-             |m_0|^2 = [ v0 v1 v2] * [Q^2_col0]
+             |m_0|^2 = [ v0 v1 v2] * [Q^2_col0] = 1
                                      [Q^2_col1]
                                      [Q^2_col2]
+        */
         
+        double[][] g = new double[2*mImages + 1][9];
+        double[] z0 = new double[3];
+        double[] z1 = new double[3];
+        double[] z2 = new double[3];
+        double[] y0 = new double[3];
+        double[] y1 = new double[3];
+        double[] y2 = new double[3];
+        double[] w0 = new double[3];
+        double[] w1 = new double[3];
+        double[] w2 = new double[3];
+        double c2, xf, yf, divXf, divYf;
+        
+        for (i = 0; i < mImages; ++i) {
+            xf = t[i];
+            yf = t[mImages + i];
+            
+            z0[0] = mC[i][0] * mC[i][0]; 
+            z0[1] = mC[i][0] * mC[i][1];
+            z0[2] = mC[i][0] * mC[i][2];
+            
+            z1[0] = mC[i][1] * mC[i][0]; 
+            z1[1] = mC[i][1] * mC[i][1];
+            z1[2] = mC[i][1] * mC[i][2];
+            
+            z2[0] = mC[i][2] * mC[i][0]; 
+            z2[1] = mC[i][2] * mC[i][1];
+            z2[2] = mC[i][2] * mC[i][2];
+            
+            y0[0] = mC[mImages + i][0] * mC[mImages + i][0];
+            y0[1] = mC[mImages + i][0] * mC[mImages + i][1];
+            y0[2] = mC[mImages + i][0] * mC[mImages + i][2];
+            
+            y1[0] = mC[mImages + i][1] * mC[mImages + i][0];
+            y1[1] = mC[mImages + i][1] * mC[mImages + i][1];
+            y1[2] = mC[mImages + i][1] * mC[mImages + i][2];
+            
+            y2[0] = mC[mImages + i][2] * mC[mImages + i][0];
+            y2[1] = mC[mImages + i][2] * mC[mImages + i][1];
+            y2[2] = mC[mImages + i][2] * mC[mImages + i][2];
+            
+            w0[0] = mC[i][0] * mC[mImages + i][0];
+            w0[1] = mC[i][0] * mC[mImages + i][1];
+            w0[2] = mC[i][0] * mC[mImages + i][2];
+            
+            w1[0] = mC[i][1] * mC[mImages + i][0];
+            w1[1] = mC[i][1] * mC[mImages + i][1];
+            w1[2] = mC[i][1] * mC[mImages + i][2];
+            
+            w2[0] = mC[i][2] * mC[mImages + i][0];
+            w2[1] = mC[i][2] * mC[mImages + i][1];
+            w2[2] = mC[i][2] * mC[mImages + i][2];
+            
+            c2 = 0.5*xf*yf;
+            
+            divXf = 1./(1.+xf*xf);
+            divYf = 1./(1.+yf*yf);
+            
+            // length 9
+            // eqn(15) of paper is the 1st mImages rows of g
+            //   [ (z0/(1+x_f^2) -y0/(1+y_f^2))  (z1/(1+x_f^2) -y1/(1+y_f^2))  (z2/(1+x_f^2) -y2/(1+y_f^2)) ] ... = 0
+            g[i] = new double[9]; // g is (2*mImages + 1) X 9;
+            for (j = 0; j < 3; ++j) { 
+                g[i][j] = (z0[j]*divXf - y0[j]*divYf);                
+                g[i][3+j] = (z1[j]*divXf - y1[j]*divYf);
+                g[i][6+j] = (z2[j]*divXf - y2[j]*divYf);                
+            }
+            
+            //eqn(17) of paper is the 2nd mImages rows of g
+            //  [ (w0 -z0*c2 -y0*c2)  (w1 -z1*c2 -y1*c2)  (w2 -z2*c2 -y2*c2)] ... = 0
+            g[mImages + i] = new double[9]; // g is (2*mImages + 1) X 9;
+            for (j = 0; j < 3; ++j) { 
+                g[mImages + i][j] = (w0[j] - z0[j]*c2 - y0[j]*c2);                
+                g[mImages + i][3+j] = (w1[j] - z1[j]*c2 - y1[j]*c2);
+                g[mImages + i][6+j] = (w2[j] - z2[j]*c2 - y2[j]*c2);               
+            }
+        }
+        
+        //let v0 = [ `m_0[0]*`mf0  `m_0[0]*`m_0[1]  `m_0[0]*`m_0[2] ]
+        //    v1 = [ `m_0[0]*`mf1  `m_0[1]*`m_0[1]  `m_0[1]*`m_0[2] ]
+        //    v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2]*`m_0[2] ]
+        // length 9
+        // [ v0 v1 v2 ] = 1
+        i = 0;
+        double[] v0 = new double[] {
+           mC[i][0] * mC[i][0], mC[i][0] * mC[i][1], mC[i][0] * mC[i][2]};
+        double[] v1 = new double[] {
+            mC[i][1] * mC[i][0], mC[i][1] * mC[i][1], mC[i][1] * mC[i][2]};
+        double[] v2 = new double[] {
+            mC[i][2] * mC[i][0], mC[i][2] * mC[i][1], mC[i][2] * mC[i][2]};
+        g[2*mImages] = new double[9]; // g is (2*mImages + 1) X 9;
+        for (j = 0; j < 3; ++j) { 
+            g[2*mImages][j] = v0[j];                
+            g[2*mImages][3+j] = v1[j];
+            g[2*mImages][6+j] = v2[j];               
+        }
+        
+        paused here
+                
+        /*
         --------------------------------
         Paraperspective Motion Recovery
         --------------------------------
@@ -1153,6 +1305,10 @@ public class Reconstruction {
          also, as in eqn (17), use arithmetic mean for (1/z_f^2):
            z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
         */
+        
+        
+        
+        editing
         
         throw new UnsupportedOperationException("not yet finished");
     }
