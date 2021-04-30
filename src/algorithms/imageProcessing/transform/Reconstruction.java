@@ -792,7 +792,7 @@ public class Reconstruction {
         ell[2] = new double[]{iVector[2], iVector[4], iVector[5]};
         
         // Q can be determined :
-        //   as the squaare root of ell,
+        //   as the square root of ell,
         //   or with the Cholesky decomposition
         //   or with eigendecomposition
         
@@ -1248,8 +1248,45 @@ public class Reconstruction {
             g[2*mImages][6+j] = v2[j];               
         }
         
-        paused here
-                
+        double[] c = new double[2*mImages + 1];
+        c[2*mImages] = 1;
+        
+        double[][] gInv = MatrixUtil.pseudoinverseFullRank(g);
+        double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);
+        assert(iVector.length == 9);
+        
+        // 3X3
+        double[][] ell = new double[3][3];
+        ell[0] = new double[]{iVector[0], iVector[1], iVector[2]};
+        ell[1] = new double[]{iVector[1], iVector[3], iVector[4]};
+        ell[2] = new double[]{iVector[2], iVector[4], iVector[5]};
+
+        // Q can be determined :
+        //   as the square root of ell,
+        //   or with the Cholesky decomposition
+        //   or with eigendecomposition
+
+        double eps = 1e-5;
+
+        SymmDenseEVD evd = SymmDenseEVD.factorize(new DenseMatrix(ell));
+        double[][] ellSigmaSqrt = MatrixUtil.zeros(evd.getEigenvalues().length, evd.getEigenvalues().length);
+        for (i = 0; i < ellSigmaSqrt.length; ++i) {
+            if (ellSigmaSqrt[i][i] < 0) {
+                // replace with very small value
+                ellSigmaSqrt[i][i] = eps;
+            } else {
+                ellSigmaSqrt[i][i] = Math.sqrt(ellSigmaSqrt[i][i]);
+            }
+        }
+        double[][] lEig = MatrixUtil.convertToRowMajor(evd.getEigenvectors());
+        // 3X3
+        double[][] q = MatrixUtil.multiply(lEig, ellSigmaSqrt);
+        
+        // (2*mImages)X3
+        double[][] _M = MatrixUtil.multiply(mC, q);
+        // 3XnFeatures
+        double[][] _S = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);
+                        
         /*
         --------------------------------
         Paraperspective Motion Recovery
