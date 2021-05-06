@@ -265,7 +265,7 @@ public class Reconstruction {
      * (e.g. subtract the image center or centroid of points).
      * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
      */
-    public static ReconstructionResults2 calculateProjectiveReconstruction(
+    public static ProjectionResults calculateProjectiveReconstruction(
         double[][] x1, double[][] x2) throws NotConvergedException {
                         
         if (x1.length != 3 || x2.length != 3) {
@@ -502,10 +502,15 @@ public class Reconstruction {
         
         System.out.printf("Belongie reconstruction\n%s\n", FormatArray.toString(XWB, "%.3e"));
         
-        ReconstructionResults2 rr = new ReconstructionResults2();
-        rr.P1 = P1;
-        rr.P2 = P2K;
+        ProjectionResults rr = new ProjectionResults();
         rr.XW = XWK;
+        rr.projectionMatrices = MatrixUtil.zeros(3*2, 4);
+        for (i = 0; i < 3; ++i) {
+            System.arraycopy(P1.getP()[i], 0, rr.projectionMatrices[i], 0, 4);
+        }
+        for (i = 0; i < 3; ++i) {
+            System.arraycopy(P2K.getP()[i], 0, rr.projectionMatrices[3 + i], 0, 4);
+        }
         return rr;
     }
    
@@ -558,7 +563,7 @@ public class Reconstruction {
      * @param mImages the number of images in x.
      * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
      */
-    public static ProjectiveProjectionResults calculateParaperspectiveReconstruction(
+    public static ProjectionResults calculateProjectiveReconstruction(
         double[][] x, int mImages) throws NotConvergedException {
                         
         if (x.length != 2) {
@@ -648,6 +653,16 @@ public class Reconstruction {
             
             fm = MatrixUtil.convertToRowMajor(fit.getFundamentalMatrix());
             
+            /*
+            TODO: consider keeping only the inliers in a future version that handles
+            occlusion.  by imputation or applied factorization or other means...
+            x1M = extractIndices(x1M, fitR.inlierIndexes);
+            x2M = extractIndices(x2M, fitR.inlierIndexes);
+            x1 = MatrixUtil.convertToRowMajor(x1M);
+            x2 = MatrixUtil.convertToRowMajor(x2M);
+            int nFeaturesI = x1[0].length;
+            */
+            
             // note: e12 is not normalized by last component
             calculateLeftEpipole(fit.getFundamentalMatrix(), e12);
             
@@ -725,46 +740,60 @@ public class Reconstruction {
         // if the number of images is larger than 10 or the number of features
         //   is greater than 30, will use cur decomposition
         double[][] u, vT;
-        //double[] s;
-        double[][] wRescaled;
+        double[][] s;
+        //double[][] wRescaled;
         if (mImages > 10 || nFeatures > 30) {
             CUR cur = CURDecomposition.calculateDecomposition(w, 4);
             SVDProducts curSVD = cur.getApproximateSVD();
             u = curSVD.u;
             vT = curSVD.vT;
-            //s = curSVD.s;
-            wRescaled = cur.getResult();
+            s = curSVD.sigma;
+            
+            // Sturm & Triggs divide by the largest eigenvalue:
+            MatrixUtil.multiply(s, 1./s[0][0]);
+            
+            //wRescaled = cur.getResult();
         } else {
             SVDProducts svd = MatrixUtil.performSVD(w);
             
             //reduce rank to 4
-            double[][] u4 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length, 0, 4);
-            double[][] s4 = MatrixUtil.zeros(4, 4);
+            u = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length, 0, 4);
+            vT = MatrixUtil.copySubMatrix(svd.vT, 0, 4, 0, svd.vT[0].length);
             
-            editing here
-            // divide by the largest eigenvalue:
-            MatrixUtil.multiply(svd.s, 1./svd.s[0]);
-        
-            s4[0][0] = svd.s[0];
-            s4[1][1] = svd.s[1];
-            s4[2][2] = svd.s[2];
-            s4[3][3] = svd.s[3];
-            double[][] sqrts4 = MatrixUtil.zeros(4, 4);
-            s4[0][0] = Math.sqrt(svd.s[0]);
-            s4[1][1] = Math.sqrt(svd.s[1]);
-            s4[2][2] = Math.sqrt(svd.s[2]);
-            s4[3][3] = Math.sqrt(svd.s[3]);
-            double[][] vT4 = MatrixUtil.copySubMatrix(svd.vT, 0, 4, 0, svd.vT[0].length);
+            s = MatrixUtil.zeros(4, 4);
+            s[0][0] = svd.s[0];
+            s[1][1] = svd.s[1];
+            s[2][2] = svd.s[2];
+            s[3][3] = svd.s[3];
+            
+            /*double[][] sqrts4 = MatrixUtil.zeros(4, 4);
+            sqrts4[0][0] = Math.sqrt(svd.s[0]);
+            sqrts4[1][1] = Math.sqrt(svd.s[1]);
+            sqrts4[2][2] = Math.sqrt(svd.s[2]);
+            sqrts4[3][3] = Math.sqrt(svd.s[3]);
 
             u = MatrixUtil.multiply(u4, sqrts4);
             vT = MatrixUtil.multiply(sqrts4, vT4);
             wRescaled = MatrixUtil.multiply(u, vT);
+            */
+            
+            // Sturm & Triggs divide by the largest eigenvalue:
+            MatrixUtil.multiply(s, 1./s[0][0]);
         }
         
         //Ps = fliplr(U(:,1:4));
         //Xs = flipud(S(1:4,1:4)*V(:,1:4)');
+        
+        double[][] ps = MatrixUtil.copy(u);
+        MatrixUtil.flipLR(ps);
+        double[][] XW = MatrixUtil.multiply(s, vT);
+        MatrixUtil.flipUD(XW);
    
-        throw new UnsupportedOperationException("not yet finished");
+        ProjectionResults rr = new ProjectionResults();
+        rr.XW = XW;
+        rr.projectionMatrices = ps;
+        
+        return rr;
     }
 
      /**
@@ -915,9 +944,9 @@ public class Reconstruction {
         s3[1][1] = svd.s[1];
         s3[2][2] = svd.s[2];
         double[][] sqrts3 = MatrixUtil.zeros(3, 3);
-        s3[0][0] = Math.sqrt(svd.s[0]);
-        s3[1][1] = Math.sqrt(svd.s[1]);
-        s3[2][2] = Math.sqrt(svd.s[2]);
+        sqrts3[0][0] = Math.sqrt(svd.s[0]);
+        sqrts3[1][1] = Math.sqrt(svd.s[1]);
+        sqrts3[2][2] = Math.sqrt(svd.s[2]);
         double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 3, 0, svd.vT[0].length);
         
         // if this is large, then the noise contribution can be ignored (cholesky not necessary)
@@ -1256,9 +1285,9 @@ public class Reconstruction {
         s3[1][1] = svd.s[1];
         s3[2][2] = svd.s[2];
         double[][] sqrts3 = MatrixUtil.zeros(3, 3);
-        s3[0][0] = Math.sqrt(svd.s[0]);
-        s3[1][1] = Math.sqrt(svd.s[1]);
-        s3[2][2] = Math.sqrt(svd.s[2]);
+        sqrts3[0][0] = Math.sqrt(svd.s[0]);
+        sqrts3[1][1] = Math.sqrt(svd.s[1]);
+        sqrts3[2][2] = Math.sqrt(svd.s[2]);
         double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 3, 0, svd.vT[0].length);
         
         // if this is large, then the noise contribution can be ignored (cholesky not necessary)
@@ -1897,18 +1926,34 @@ public class Reconstruction {
         outputPoint[2] = x[2][idx];
     }
     
+    public static class ProjectionResults {
+        /**
+         * world coordinate system points in matrix of size 4 X nFeatures.
+         * The points are stacked along columns sequentially.
+         */
+        public double[][] XW;
+        
+        /**
+         * the projection matrices stacked along rows for each image.
+         * so projection for image 0 will be in rows [0, 3);
+         * projection for image 1 will be in rows [3, 6), etc.
+         * This matrix's size is 3*nImages X 4
+         */
+        public double[][] projectionMatrices;
+    }
+    
     public static class OrthographicProjectionResults {
         /**
          * world coordinate system points
          */
-        double[][] XW;
+        public double[][] XW;
         
         /**
          * the rotation matrices stacked along rows for each image.
          * so rotation for image 0 will be in rows [0, 3);
          * rotation for image 1 will be in rows [3, 6), etc.
          */
-        double[][] rotationMatrices;
+        public double[][] rotationMatrices;
     }
     
     public static class ParaperspectiveProjectionResults {
@@ -2036,27 +2081,4 @@ public class Reconstruction {
         }
     }
     
-    public static class ReconstructionResults2 {
-        double[][] XW;
-        CameraProjection P1;
-        CameraProjection P2;
-        
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("XW=\n");
-            if (XW != null) {
-                sb.append(FormatArray.toString(XW, "%.4e"));
-            }
-            sb.append("projection matrix for camera 1=\n");
-            if (P1 != null) {
-                sb.append(FormatArray.toString(P1.getP(), "%.4e"));
-            }
-            sb.append("projection matrix for camera 2=\n");
-            if (P2 != null) {
-                sb.append(FormatArray.toString(P2.getP(), "%.4e"));
-            }
-            return sb.toString();
-        }
-    }
 }
