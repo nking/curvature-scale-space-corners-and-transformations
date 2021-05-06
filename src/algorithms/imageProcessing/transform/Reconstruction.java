@@ -781,14 +781,48 @@ public class Reconstruction {
             MatrixUtil.multiply(s, 1./s[0][0]);
         }
         
-        //Ps = fliplr(U(:,1:4));
-        //Xs = flipud(S(1:4,1:4)*V(:,1:4)');
-        
+        //Ps = fliplr(U(:,1:4));             // 3*MImages X 4
+        //Xs = flipud(S(1:4,1:4)*V(:,1:4)'); // 4 X 4*mImages
         double[][] ps = MatrixUtil.copy(u);
         MatrixUtil.flipLR(ps);
         double[][] XW = MatrixUtil.multiply(s, vT);
         MatrixUtil.flipUD(XW);
    
+        //denormalize ps.  ps = ps * T^-1
+        // tt is the normalization centroidX, centroidY, and sigma values applied to x1 and x2:
+        /*
+                 | 1  0  xc |   | s  0   0 |   | s   0  xc |
+          T^-1 = | 0  1  yc | * | 0  s   0 | = | 0   s  yc |
+                 | 0  0   1 |   | 0  0   1 |   | 0   0   1 |
+        */
+        double[][] tInv = MatrixUtil.zeros(3, 3);
+        tInv[2][2] = 1;
+        double ts, txc, tyc;
+        double[] p0, p1, p2;
+        double[][] p = MatrixUtil.zeros(3, 4);
+        for (i = 0; i < mImages; ++i) {
+            txc = tt[3*i];
+            tyc = tt[3*i + 1];
+            ts = tt[3*i + 2];
+            tInv[0][0] = ts;
+            tInv[1][1] = ts;
+            tInv[0][2] = txc;
+            tInv[1][2] = tyc;
+            
+            p0 = ps[3*mImages];
+            p1 = ps[3*mImages + 1];
+            p2 = ps[3*mImages + 2];
+            System.arraycopy(p0, 0, p[0], 0, 4);
+            System.arraycopy(p1, 0, p[1], 0, 4);
+            System.arraycopy(p2, 0, p[2], 0, 4);
+            
+            p = MatrixUtil.multiply(p, tInv);
+            
+            System.arraycopy(p[0], 0, ps[3*mImages], 0, 4);
+            System.arraycopy(p[1], 0, ps[3*mImages + 1], 0, 4);
+            System.arraycopy(p[2], 0, ps[3*mImages + 2], 0, 4);
+        }
+        
         ProjectionResults rr = new ProjectionResults();
         rr.XW = XW;
         rr.projectionMatrices = ps;

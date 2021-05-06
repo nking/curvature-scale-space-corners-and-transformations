@@ -1123,6 +1123,7 @@ public class EpipolarTransformer {
      the mean square distance of the normalized points from the
      origin is sqrt(2) pixels.
 
+     normalized xy = T * xy
 
      * @param xy
      * @return
