@@ -1173,7 +1173,7 @@ public class EpipolarTransformer {
 
         return normalizedXY;
     }
-
+    
        /**
      normalize the x,y coordinates as recommended by Hartley 1997 and return
      the matrix and coordinates.
@@ -1218,7 +1218,6 @@ public class EpipolarTransformer {
             diffY = xy.get(1, i) - cen1;
             scale += (diffX*diffX + diffY*diffY);
         }
-        //scale: root mean square distance of (x,y) to origin is sqrt(2)
         scale = Math.sqrt(scale/(n-1.));
         
         NormalizationTransformations tMatrices = createScaleTranslationMatrices(
@@ -1458,19 +1457,12 @@ public class EpipolarTransformer {
             return null;
         }
         
-        /*
-            The left epipole is e1 = last column of U / last item of that column
-         It is  the left image position of the epipolar projection of the right camera center
-         The right epipole e2 = last row of V / last item of that row
-         It is the right image position of the epipolar projection of the left camera center
-        */
-        
         assert(svdE.u[0].length == 3);
         assert(svdE.u.length == 3);
         assert(svdE.vT[0].length == 3);
         assert(svdE.vT.length == 3);
         
-        // e1 = last column of U / last item of that column
+        // e2 = last column of U / last item of that column
         // e1 = last row of V / last item of that row
         double[] e2 = new double[svdE.u.length];
         double e2Div = svdE.u[2][2];

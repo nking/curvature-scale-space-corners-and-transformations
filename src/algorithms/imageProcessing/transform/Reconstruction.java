@@ -1,5 +1,7 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.dimensionReduction.CURDecomposition;
+import algorithms.dimensionReduction.CURDecomposition.CUR;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
@@ -506,6 +508,264 @@ public class Reconstruction {
         rr.XW = XWK;
         return rr;
     }
+   
+    /**
+     * TODO: proof read the algorithm and write test for this.
+     * for the case of un-calibrated cameras viewing the same scene features,
+     * recover the 3-D coordinates in WCS and the projection matrices 
+     * from pairs of corresponding
+     * un-calibrated image points, that is, points in the image reference frame in pixels.
+     * 
+     * The method implements the Sturm & Triggs 1996 algorithm: 
+     "a method for the recovery of projective shape and motion from multiple 
+     images of a scene by the factorization of a matrix containing the images 
+     of all points in all views. This factorization is only possible when the
+     image points are correctly scaled. The major technical contribution of 
+     this paper is a practical method for the recovery of these scalings, 
+     using only fundamental matrices and epipoles estimated from the image data."
+     "[it is a] closed form solutions, not iterative bundle-adjustment..."
+     * <pre>
+     * references:
+     * 
+     * Sturm and Triggs 1996, 
+    "A Factorization Based Algorithm for Multi-Image Projective Structure and Motion"
+     https://link.springer.com/content/pdf/10.1007/3-540-61123-1_183.pdf
+    
+    see also proj_recons_fsvd.m from http://lear.inrialpes.fr/people/triggs/src/
+    which has a very liberal copyright in the file COPYRIGHT
+    Copyright Bill Triggs (http://www.inrialpes.fr/movi/people/Triggs),
+    INRIA (http://www.inria.fr) and CNRS (http://www.cnrs.fr),
+    1995-2002. All rights reserved.
+
+    You may use and distribute [*] this work with or without modification,
+    for any purpose and without fee or royalty, subject to the following
+    conditions:
+       (see file COPYRIGHT)
+    
+     * </pre>
+     * 
+     * NOTE: Sturm & Triggs 1996 state in their code, "% The projective output 
+     frame is numerically well-conditioned, but otherwise *completely* 
+     arbitrary. It has *no* relation to any Euclidean frame.
+     * 
+     * @param x the image coordinates of feature correspondences in 2 or more
+     * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
+     * and row 1 holds the y-coordinates and each image's features are given
+     * before the next and the features are ordered in the same manner within
+     * all images.
+     * for example: row 0 = [img_0_feature_0, ... img_0_feature_n-1, ... img_m-1_feature_0,...
+     *     img_m-1_feature_n-1].
+     * @param mImages the number of images in x.
+     * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
+     */
+    public static ProjectiveProjectionResults calculateParaperspectiveReconstruction(
+        double[][] x, int mImages) throws NotConvergedException {
+                        
+        if (x.length != 2) {
+            throw new IllegalArgumentException("x.length must be 2");
+        }
+        if ((x[0].length % mImages) != 0) {
+            throw new IllegalArgumentException("x must have a multiple of mImages as the number of columns");
+        }
+        int nFeatures = x[0].length / mImages;
+        
+        // need at least 7 points in each image for the point version of fundamental
+        // matrix.
+        // not implementing the line version as Triggs in another paper states
+        //    that they may be more affected by outliers
+        if (nFeatures < 7) {
+            throw new IllegalArgumentException("need at least 7 points per image");
+        }
+        
+        /*
+        3.3 Outline of the Algorithm
+        The complete algorithm is composed of the following steps.
+        i. Normalize the image coordinates, by applying transformations Ti.
+        2. Estimate the fundamental matrices and epipoles with the method of [Har95].
+        3. Determine the scale factors Aip using equation (3).
+        4. Build the rescaled measurement matrix W.
+        5. Balance W by column-wise and "triplet-of-rows"-wise scalar mutliplications.
+        6. Compute the SVD of the balanced matrix W.
+        7. From the SVD, recover projective motion and shape.
+        8. Adapt projective motion, to account for the normalization transformations Ti of
+        step 1.
+        */
+        
+        // following proj_recons_fsvd.m
+        //    pairs of image sets can be formed either by using the first
+        //    image as x1 for all images, or chaining them all together.
+        // i.e. [(0,1), (0, 2), (0,3)] or [(0,1), (1,2), (2,3)].
+        // choosing the later here.
+        
+        RANSACSolver ransac = new RANSACSolver();
+        double[] e12 = new double[3];
+        EpipolarTransformationFit fit;
+        double[][] fm;
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
+        boolean useToleranceAsStatFactor = true;
+        double tolerance = 3.84;
+        // TODO: estimate this:
+        boolean recalcIterations = (nFeatures > 100 || (mImages > 10 && nFeatures > 20));
+        boolean calibrated = false;
+        
+        int i, j;
+        // image pairs extracted from x:
+        double[][] x1, x2;
+        // the normalization centroidX, centroidY, and sigma values applied to x1 and x2:
+        double[] tt = new double[3*mImages];
+        
+        // use a reference depth of 1 for first image's features, as have no measurements for any depths to bootstrap from.
+        double[][] lambdas = MatrixUtil.zeros(mImages, nFeatures);
+        Arrays.fill(lambdas[0], 1.);
+        
+        x1 = extractAndNormalize(x, 0, nFeatures, tt);
+        DenseMatrix x1M, x2M;
+        x1M = new DenseMatrix(x1);
+        double[] x1p = new double[3];
+        double[] x2p = new double[3];
+        double[] x2e, tmp;
+        double tmp2, x2esq;
+        
+        // format x into shape W (3*mImages X nFeatures):
+        //  row 0:2 = image 1 points where row 0 is the x coordinates, row 1 is the y coordinates
+        //  row 3:5 = image 2 points
+        double[][] w = MatrixUtil.zeros(3*mImages, nFeatures);
+        System.arraycopy(x1[0], 0, w[0], 0, nFeatures);
+        System.arraycopy(x1[1], 0, w[1], 0, nFeatures);
+        System.arraycopy(x1[2], 0, w[2], 0, nFeatures);
+        
+        for (i = 1; i < mImages; ++i) {
+            
+            x2 = extractAndNormalize(x, i, nFeatures, tt);
+            x2M = new DenseMatrix(x2);
+            
+            System.arraycopy(x2[0], 0, w[i*3], 0, nFeatures);
+            System.arraycopy(x2[1], 0, w[i*3+1], 0, nFeatures);
+            System.arraycopy(x2[2], 0, w[i*3+2], 0, nFeatures);
+            
+            fit = ransac.calculateEpipolarProjection(x1M, x2M, errorType, 
+                useToleranceAsStatFactor, tolerance, recalcIterations, calibrated);
+            
+            fm = MatrixUtil.convertToRowMajor(fit.getFundamentalMatrix());
+            
+            // note: e12 is not normalized by last component
+            calculateLeftEpipole(fit.getFundamentalMatrix(), e12);
+            
+            for (j = 0; j < nFeatures; ++j) {
+                extractColumn(x1, j, x1p);
+                extractColumn(x2, j, x2p);
+                
+                //xe = cross(x2_j, e12);  // same as x2 cross -e21
+                x2e = MatrixUtil.crossProduct(x2p, e12);
+                
+                //lambda(i,j) = lambda(x1,j) * abs((x1_j' * FM * xe) / (xe' *xe));
+                //    note: epipolar line2 = x1_j' * FM
+                x2esq = MatrixUtil.innerProduct(x2e, x2e);
+                
+                tmp = MatrixUtil.multiplyRowVectorByMatrix(x1p, fm);
+                
+                tmp2 = MatrixUtil.innerProduct(tmp, x2e);
+                lambdas[i][j] = lambdas[i-1][j] * Math.abs(tmp2/x2esq);
+            }
+            
+            x1 = x2;
+            x1M = x2M;
+        }
+        
+        /*
+        4. Build the rescaled measurement matrix W.
+        5. Balance W by column-wise and "triplet-of-rows"-wise scalar mutliplications.
+        
+        as stated in Sturm & Triggs 1996 Section 3.2, the balancing of the
+        rescaled measurement matrix by Q's then P's can be replaced by
+        balancing the m x n matrix lambdas instead of W because of the simplification
+        of working with normalized image coordinates Q.
+        The balance operations are demonstrated in proj_recons_fsvd.m
+        */
+        double eps = 1.e-11;
+        double[] lambdaj;
+        int k;
+        // authors find 2 iterations is heuristically enough:
+        for (i = 0; i < 2; ++i) {
+            for (j = 0; j < nFeatures; ++j) {
+                lambdaj = MatrixUtil.extractColumn(lambdas, j);
+                tmp2 = MatrixUtil.lPSum(lambdaj, 2);
+                if (Math.abs(tmp2) < eps) { 
+                    tmp2 = eps;
+                }
+                for (k = 0; k < mImages; ++k) {
+                    lambdas[k][j] = lambdaj[k] / tmp2;
+                }
+            }
+            for (k = 0; k < mImages; ++k) {
+                tmp2 = MatrixUtil.lPSum(lambdas[k], 2);
+                if (Math.abs(tmp2) < eps) { 
+                    tmp2 = eps;
+                }
+                MatrixUtil.multiply(lambdas[k], 1./tmp2);
+            }
+        }
+        
+        // rescale the image points
+        for (i = 0; i < mImages; ++i) {
+            for (j = 0; j < nFeatures; ++j) {
+                w[3*i + 0][j] *= lambdas[i][j];
+                w[3*i + 1][j] *= lambdas[i][j];
+                w[3*i + 2][j] *= lambdas[i][j];
+            }
+        }
+        
+        /*
+        6. Compute the SVD of the balanced matrix W.
+        7. From the SVD, recover projective motion and shape.
+        8. Adapt projective motion, to account for the normalization transformations Ti of
+        step 1.
+        */
+        
+        // if the number of images is larger than 10 or the number of features
+        //   is greater than 30, will use cur decomposition
+        double[][] u, vT;
+        //double[] s;
+        double[][] wRescaled;
+        if (mImages > 10 || nFeatures > 30) {
+            CUR cur = CURDecomposition.calculateDecomposition(w, 4);
+            SVDProducts curSVD = cur.getApproximateSVD();
+            u = curSVD.u;
+            vT = curSVD.vT;
+            //s = curSVD.s;
+            wRescaled = cur.getResult();
+        } else {
+            SVDProducts svd = MatrixUtil.performSVD(w);
+            
+            //reduce rank to 4
+            double[][] u4 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length, 0, 4);
+            double[][] s4 = MatrixUtil.zeros(4, 4);
+            
+            editing here
+            // divide by the largest eigenvalue:
+            MatrixUtil.multiply(svd.s, 1./svd.s[0]);
+        
+            s4[0][0] = svd.s[0];
+            s4[1][1] = svd.s[1];
+            s4[2][2] = svd.s[2];
+            s4[3][3] = svd.s[3];
+            double[][] sqrts4 = MatrixUtil.zeros(4, 4);
+            s4[0][0] = Math.sqrt(svd.s[0]);
+            s4[1][1] = Math.sqrt(svd.s[1]);
+            s4[2][2] = Math.sqrt(svd.s[2]);
+            s4[3][3] = Math.sqrt(svd.s[3]);
+            double[][] vT4 = MatrixUtil.copySubMatrix(svd.vT, 0, 4, 0, svd.vT[0].length);
+
+            u = MatrixUtil.multiply(u4, sqrts4);
+            vT = MatrixUtil.multiply(sqrts4, vT4);
+            wRescaled = MatrixUtil.multiply(u, vT);
+        }
+        
+        //Ps = fliplr(U(:,1:4));
+        //Xs = flipud(S(1:4,1:4)*V(:,1:4)');
+   
+        throw new UnsupportedOperationException("not yet finished");
+    }
 
      /**
       * TODO: proof read and write test for this.
@@ -550,7 +810,8 @@ public class Reconstruction {
     }
     
     /**
-     * TODO: proof read and write test for this.
+     * TODO: proof read the algorithm and write test for this.
+     * for the case where the cameras are viewing small, distant scenes,
      * recover the 3-D coordinates in WCS and the rotation matrices 
      * from pairs of corresponding
      * un-calibrated image points, that is, points in the image reference frame in pixels.
@@ -575,6 +836,10 @@ public class Reconstruction {
      * a great summary of the above:
      * http://note.sonots.com/SciSoftware/Factorization.html#cse252b
      * http://note.sonots.com/?plugin=attach&refer=SciSoftware%2FFactorization&openfile=Factorization.pdf
+     * 
+     * and a derivation of the geometry of the tracking equation:
+     * Birchfield 1997, "Derivation of Kanade-Lucas-Tomasi Tracking Equation"
+     * http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.185.413&rep=rep1&type=pdf
      * </pre>
      * NOTE: could overload this method to enable handling of occlusion 
      * following Section 5 of Tomasi & Kanade 1991, but might want to alter the
@@ -911,7 +1176,8 @@ public class Reconstruction {
     */
     
     /**
-     * TODO: proof read and write test for this.
+     * TODO: proof read the algorithm and write test for this.
+     * for the case where the cameras are viewing small, distant scenes,
      * recover the 3-D coordinates in WCS and the projection matrices 
      * from pairs of corresponding
      * un-calibrated image points, that is, points in the image reference frame in pixels.
@@ -1554,6 +1820,81 @@ public class Reconstruction {
             a[2]*b[2]
         };
         return gT;
+    }
+
+    private static double[][] extractAndNormalize(double[][] x, int imageNumber, 
+        int nFeatures, double[] outputNorm) {
+        
+        double[][] xN = new double[3][nFeatures];
+        xN[0] = new double[nFeatures];
+        xN[1] = new double[nFeatures];
+        xN[2] = new double[nFeatures];
+        Arrays.fill(xN[2], 1);
+        
+        int imageIdx = (x.length/nFeatures)*imageNumber;
+        
+        double cen0 = 0;
+        double cen1 = 0;
+        for (int i = 0; i < nFeatures; ++i) {
+            cen0 += x[0][imageIdx + i];
+            cen1 += x[0][imageIdx + i];
+        }
+        cen0 /= (double)nFeatures;
+        cen1 /= (double)nFeatures;
+
+        double scale = 0;
+        double diffX, diffY;
+        for (int i = 0; i < nFeatures; ++i) {
+            diffX = x[0][imageIdx + i] - cen0;
+            diffY = x[0][imageIdx + i] - cen1;
+            scale += (diffX*diffX + diffY*diffY);
+        }
+        scale = Math.sqrt(scale/(2.*(nFeatures - 1.)));
+        // to use std dev instead: scale = Math.sqrt(scale/(n-1.));
+        
+        outputNorm[imageNumber*3 + 0] = cen0;
+        outputNorm[imageNumber*3 + 1] = cen1;
+        outputNorm[imageNumber*3 + 2] = scale;
+        
+        for (int i = 0; i < nFeatures; ++i) {
+            xN[0][i] = (x[0][imageIdx + i] - cen0)/scale;
+            xN[1][i] = (x[1][imageIdx + i] - cen1)/scale;
+        }
+        
+        return xN;
+    }
+
+    private static void calculateLeftEpipole(DenseMatrix fundamentalMatrix,
+        double[] outputE01) throws NotConvergedException {
+        
+        if (outputE01.length != 3) {
+            throw new IllegalArgumentException("outputE01 length must be 3");
+        }
+        
+        SVDProducts svdE = MatrixUtil.performSVD(fundamentalMatrix);
+        
+        /*
+         The left epipole is e1 = last column of U / last item of that column
+         It is  the left image position of the epipolar projection of the right camera center
+         The right epipole e2 = last row of V / last item of that row
+         It is the right image position of the epipolar projection of the left camera center
+        */
+        
+        assert(svdE.u[0].length == 3);
+        assert(svdE.u.length == 3);
+        assert(svdE.vT[0].length == 3);
+        assert(svdE.vT.length == 3);
+        
+        //double e1Div = svdE.vT[2][2];
+        for (int i = 0; i < 3; i++) {
+            outputE01[i] = svdE.vT[2][i];///e1Div;
+        }
+    }
+
+    private static void extractColumn(double[][] x, int idx, double[] outputPoint) {
+        outputPoint[0] = x[0][idx];
+        outputPoint[1] = x[1][idx];
+        outputPoint[2] = x[2][idx];
     }
     
     public static class OrthographicProjectionResults {
