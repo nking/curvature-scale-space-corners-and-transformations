@@ -204,11 +204,11 @@ Task 5: implement the method to estimate the radial distortion coefficients
 
    goal: 
 
-   time estimate: minimum  hour, maximum  day
+   time estimate: minimum 1 hour, maximum 1 day
   
-   amount of time used:  1 hour so far
+   amount of time used:  3 hours
 
-   state of completion: in the design stage
+   state of completion: implemented, but not tested
 
    comments:
               
@@ -217,15 +217,6 @@ Task 5: implement the method to estimate the radial distortion coefficients
             input: coordI, coordsW, Hs
             output: radial distortion parameters k1, k2
             responsibilities:
-              - given 
-                 the ideal projected undistorted image points (u, v) 
-                   calculate from eqn (17) which is derived from eqn (15)
-          
-                then populate D and d below:
-          
-                then using linear least squares: k = (D^T*D)^-1 * d
-          
-                --------
                 eqn (17)
                        h11*X_w + h13*Y_W + h13
                    u = -----------------------
@@ -235,42 +226,36 @@ Task 5: implement the method to estimate the radial distortion coefficients
                    v = -----------------------
                        h31*X_w + h32*Y_W + h33
            
-                eqn(8) below starting with "u + ...":
-                 NOTE:it uses equation #4 of Ma et al. 2004 Table 2
-                      #4: f_r = 1 + k_1*r^2 + k_2*r^4
-                          and ud−u0 = (u−u0)*f_r
-                      can edit to use the lower order equation #3:
-                      #3: f_r = 1 + k_1*r + k_2*r^2, but would use column 3 of Table 2 of Ma et al. too
-                 NOTE: [x,y,1] = A^-1 * [u, v, 1]
-                 NOTE: the center subtracted [x,y,1] is [x_c, y_c, 1]
-                 NOTE: [x_c, y_c, 1] = -(u-u_0)*[s_x,s_y] where s is the pixel size in mm
-                 NOTE: [x_c, y_c] = (f/Z_C)*[X_c,Y_c] if ignoring R and t
-                     ==>presumably want to estimate [x,y] from [X_c,Y_c,Z_c] and f.
-                        knowing that the radial distortion is applied to the centered
-                        camera coordinates, one must assume the x^2 + y^2 are
-                        the centered (x_c^2 + y_c^2), else would
-                              add [x_0,y_0] determined from A^-1 * [u_0, v_0, 1]
+                eqn (8) of Ma, Chen & Moore "Camera Calibration"
+                   ud = u + (u−u0)*f_r
+                   vd = v + (v−v0)*f_r
+        
+                uses equation #4 of Ma et al. 2004 Table 2
+                    #4: f_r = 1 + k_1*r^2 + k_2*r^4
+                            = 1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
+        
+                    (ud, vd) are Real observed distorted image points
+                    (u, v) Ideal projected undistorted image points
+                    [x,y,1] = A^-1 * [u, v, 1]
+        
+                Given n points in nImages, we can stack all equations together
+                to obtain totally 2Nn equations in matrix form as 
+                Dk = d, where k = [k1, k2]^T . 
+
+                The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d = pseudoInv(D)*d.
+        
+                     ud = u + (u−u0)*f_r
+                     vd = v + (v−v0)*f_r
+                     f_r =  1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
+        
+                     0 = -ud + u + (u -u0)*(1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2)
+                     0 = -ud + 2*u - u0 + k1*((u-u0)*(x^2 + y^2)) + k2*((u-u0)*(x^2 + y^2)^2)
              
-                 u + (u-u_0)*[k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2] = u_d
-                 v + (v-v_0)*[k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2] = v_d
-                
-                 [k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2]*(u-u_0) + u = u_d
-                 [k_1*(x^2 + y^2) + k_2*(x^2+y^2)^2]*(v-v_0) + v = v_d
-                
-                 [ [(x^2 + y^2)   (x^2+y^2)^2]*(u-u_0)   u ] * [k1] = u_d
-                 [ [(x^2 + y^2)   (x^2+y^2)^2]*(v-v_0)   v ]   [k2] = v_d
-                                                               [1 ]
-                
-                  ==> D = [ [(x^2 + y^2)   (x^2+y^2)^2]*(u-u_0)   u ]
-                          [ [(x^2 + y^2)   (x^2+y^2)^2]*(v-v_0)   v ]
-                          [ next point on 2 rows                    ]
-                          [...                                      ]
-          
-                  ==> d =[u_d]
-                         [v_d]
-                         [u_d for next point]
-                         [v_d for next point]
-                         [...]
+                       k1                   k2                       const
+                      ----------------------------------------------------------
+                D = [ (u-u0)*(x^2 + y^2)    (u-u0)*(x^2 + y^2)^2 ]   d = [ ud - 2*u + u0 ]
+                    [ (v-v0)*(x^2 + y^2)    (v-v0)*(x^2 + y^2)^2 ]       [ vd - 2*v + v0 ]
+        
 
 ---------------------------------------------------------------------
 Task 6: implement the method for parameter optimization
