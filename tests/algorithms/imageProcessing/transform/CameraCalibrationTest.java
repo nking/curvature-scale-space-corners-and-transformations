@@ -1,7 +1,13 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.transform.Camera.CameraMatrices;
+import static algorithms.imageProcessing.transform.CameraCalibration.solveForIntrinsic;
 import algorithms.matrix.MatrixUtil;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  *
@@ -12,11 +18,62 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testCalibration0() {
-        use data in ~/Downloads/zhang_data/
+    public void testCalibration0() throws IOException, NotConvergedException {
+        // see testresources/zhang1998/README.txt
+        
+        int nFeatures = 256;
+        int nImages = 5;
+        
+        // 3 X 256
+        double[][] coordsW = Zhang98Data.getFeatureWCS();
+        assertEquals(3, coordsW.length);
+        assertEquals(nFeatures, coordsW[0].length);
+        
+        //3 X (256*5)
+        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
+        assertEquals(3, coordsI.length);
+        assertEquals(nFeatures*nImages, coordsI[0].length);
+        
+        double[][] h = CameraCalibration.solveForHomographies(
+            coordsI, coordsW, nFeatures, nImages);
+        
+        //(2) using all homographies, solve for the camera intrinsic parameters
+        // this is where at least 3 points are needed per image to euqal the number of unknown intrinsic parameters.
+        Camera.CameraIntrinsicParameters kIntr = CameraCalibration.solveForIntrinsic(h);
+        
+        double alphaE = 871.445;
+        double gammaE = 0.2419;
+        double u0E = 300.7676;
+        double betaE = 871.1251;
+        double v0E = 220.8684;
+        double k1E = 0.1371;
+        double k2E = -2.0101;
+        
+        double alpha = kIntr.getIntrinsic()[0][0];
+        double gamma = kIntr.getIntrinsic()[0][1];
+        double u0 = kIntr.getIntrinsic()[0][2];
+        double beta = kIntr.getIntrinsic()[1][1];
+        double v0 = kIntr.getIntrinsic()[1][2];
+        double k1 = 0;
+        double k2 = 0;
+        
+        assertTrue(Math.abs(alphaE - alpha) < 0.1);
+        assertTrue(Math.abs(gammaE - gamma) < 0.1);
+        assertTrue(Math.abs(u0E - u0) < 0.1);
+        assertTrue(Math.abs(betaE - beta) < 0.1);
+        assertTrue(Math.abs(v0E - v0) < 0.1);
+        
+        CameraMatrices cameraMatrices = new CameraMatrices();
+        cameraMatrices.setIntrinsics(kIntr);
+        
+        List<Camera.CameraExtrinsicParameters> extrinsics = 
+            CameraCalibration.solveForExtrinsics(kIntr, h, nImages);
+        cameraMatrices.getExtrinsics().addAll(extrinsics);
+        
+        
     }
     
-    public void testCalibration2() {
+    public void estCalibration2() throws NotConvergedException {
         
         // number of features
         int n = 8;
@@ -58,7 +115,7 @@ public class CameraCalibrationTest extends TestCase {
         
         assertNotNull(c);
         
-        double[][] kIntr = c.getIntrinsic();
+        double[][] kIntr = c.getIntrinsics().getIntrinsic();
         assertNotNull(kIntr);
         assertEquals(3, kIntr.length);
         assertEquals(3, kIntr[0].length);
@@ -68,7 +125,7 @@ public class CameraCalibrationTest extends TestCase {
         double centerX = kIntr[0][2];
         double centerY = kIntr[1][2];
         double skew = kIntr[0][1];
-        
+        /*
         double[][] collatedRotation = c.getCollatedRotation;
        
         double[][] collatedTranslation = c.getCollatedTranslation();
@@ -79,6 +136,6 @@ public class CameraCalibrationTest extends TestCase {
         assertEquals(3, h0.length);
         assertEquals(3, h0[0].length);
         //TODO: assert characteristics of h0
-        
+        */
     }
 }

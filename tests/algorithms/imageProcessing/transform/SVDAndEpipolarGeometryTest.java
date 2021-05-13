@@ -502,7 +502,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // After have applied a scaling of the image by factor 1./7.875
         
         
-        
+/*     
         // editing
         //(256, 192) -> (147, 180)
         //(411, 213) -> (256, 192)
@@ -518,7 +518,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         xy2.add(147, 180);
         xy2.add(256, 192);
         printTransformation(xy1, xy2, 1.2); // -35 degrees is -0.61 radians
-                
+*/                
         
         /* euler transformations
         
@@ -553,8 +553,8 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         // paused here
         
         
-        ReconstructionResults rr = Reconstruction.calculateReconstruction(k, k, x1, x2);
-        double[] T = rr.k2ExtrTrans;
+//        ReconstructionResults rr = Reconstruction.calculateReconstruction(k, k, x1, x2);
+//        double[] T = rr.k2ExtrTrans;
         
         /* http://www.cs.cmu.edu/~16385/s17/Slides/13.1_Stereo_Rectification.pdf
         1. Compute E to get R
@@ -569,7 +569,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
               ?? Rectified points as p = f/z’[x’ y’ z’]
         */
          
-        
+/*        
         System.out.printf("K for 512x384=\n%s\n", FormatArray.toString(k, "%.3e"));
         
         //Essential matrix: E = K2^T * FM * K1
@@ -627,22 +627,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         System.out.printf("\ncoordsR=%s\n",
             FormatArray.toString(coordsRect, "%.3e"));
-        /* paused here
-        for (int i = 1; i < image2Width; ++i) {
-            coords[0] = i;
-            for (int j = 1; j < image2Height; ++j) {
-                coords[1] = j;
-                coordsR = MatrixUtil.multiplyMatrixByColumnVector(rRect, coords);
-                i2 = (int)Math.round(coordsR[0]);
-                j2 = (int)Math.round(coordsR[1]);
-                if (i2>0 && j2>0 && i2 < image2Width && j2 < image2Height) {
-                    img2Rect.setRGB(i2, j2, img2.getRGB(i, j));
-                }
-            }
-        }
-        */
-        // [x  y  z] = R * rRect * [x'  y'  z'] where R is the correct solution 
-        //     of the 4 previous R1 and R2 combinations with T1 and T2 above
+*/        
         
     }
     

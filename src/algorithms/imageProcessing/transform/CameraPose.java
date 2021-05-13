@@ -175,7 +175,7 @@ public class CameraPose {
         control points in photogrammetry.
         */
                    
-        // last column in svdE.u is the first epipole and is the direction of vector t
+        // last column in svdE.u is the second epipole and is the direction of vector t
         double[] t1 = MatrixUtil.extractColumn(svdE.u, 2);
         double[] t2 = Arrays.copyOf(t1, t1.length);
         MatrixUtil.multiply(t2, -1); 
@@ -214,11 +214,17 @@ public class CameraPose {
         
         //NOTE: from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
         // refers to Ma, Soatto, Kosecka, and Sastry 2003
-        // "An Invitation to 3D Vision From Images to Geometric Models":
+        // "An Invitation to 3D Vision From Images to Geometric Models", Eqn (5.9):
         // R1 = U * (r90)^T * V^T
         // R2 = U * (r90) * V^T
-        // T1 = U * (r90)^T * diag(1, 1, 0) * V^T
-        // T2 = U * (r90) * diag(1, 1, 0) * V^T
+        // T1 = U * (r90)^T * diag(1, 1, 0) * V^T  <== last term should be U^T
+        // T2 = U * (r90) * diag(1, 1, 0) * V^T    <== last term should be U^T
+        double[][] t1M = MatrixUtil.multiply(svdE.u, r90T);
+        t1M = MatrixUtil.multiplyByDiagonal(t1M, new double[]{1, 1, 0});
+        t1M = MatrixUtil.multiply(t1M, MatrixUtil.transpose(svdE.u));
+        double[][] t2M = MatrixUtil.multiply(svdE.u, r90);
+        t2M = MatrixUtil.multiplyByDiagonal(t2M, new double[]{1, 1, 0});
+        t2M = MatrixUtil.multiply(t2M, MatrixUtil.transpose(svdE.u));
         
         // det(R)=1 is a proper rotation matrix.  rotation angles are counterclockwise.
         //           it's a special orthogonal matrix and provides the
@@ -248,6 +254,8 @@ public class CameraPose {
         System.out.printf("R3N=\n%s\n", FormatArray.toString(R3N, "%.3e"));
         System.out.printf("R4=\n%s\n", FormatArray.toString(R4, "%.3e"));
         System.out.printf("R4N=\n%s\n", FormatArray.toString(R4N, "%.3e"));
+        System.out.printf("t1M=\n%s\n", FormatArray.toString(t1M, "%.3e"));
+        System.out.printf("t2M=\n%s\n", FormatArray.toString(t2M, "%.3e"));
         System.out.printf("det(R1)=%.3e\n", detR1);
         System.out.printf("det(R2)=%.3e\n\n", detR2);
         System.out.printf("det(R3)=%.3e\n", detR3);
@@ -306,9 +314,7 @@ public class CameraPose {
         double[][] rSelected = MatrixUtil.zeros(3, 3);
         double[] tSelected = new double[3];
         double[][] XW = MatrixUtil.zeros(4, x1[0].length);
-        chooseRAndT(x1, x2, k1, k2, rot1, rot2, t1, t2, rSelected, tSelected, XW);
-        
-        editing
+        chooseRAndT(x1, x2, k1, k2, rot1, rot2, t1, t2, rSelected, tSelected, XW);        
         
         Camera.CameraExtrinsicParameters c1 = new Camera.CameraExtrinsicParameters();
         c1.setRotation(MatrixUtil.createIdentityMatrix(3));

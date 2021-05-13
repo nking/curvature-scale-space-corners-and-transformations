@@ -7,7 +7,10 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.CubicRootSolver;
 import algorithms.misc.PolynomialRootSolver;
+import algorithms.util.FormatArray;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
@@ -15,7 +18,7 @@ import no.uib.cipr.matrix.NotConvergedException;
  * or more of the same objects with different camera poses.
  * Following the algorithm os Ma, Chen, & Moore 2003 in 
  * "Camera Calibration: a USU Implementation" available as a preprint
- * at arXiv.
+ * at arXiv  https://arxiv.org/pdf/cs/0307072
  * Note that Ma et al. 2003 algorithm is based upon Zhang 1999 
  * "Flexible Camera Calibration By Viewing a Plane From Unknown Orientations"
  * available at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/zhan99.pdf
@@ -46,11 +49,13 @@ public class CameraCalibration {
                is the y coordinates, and the third row is "1"'s.
                The columns hold each image in order and within each image's
                columns are the features presented in the same order in each image.
+               In Table 1 of Ma, Chen, & Moore 2003 "Camera Calibration"
+               these are the (u_d, v_d) pairs.
      * @param coordsW holds the world coordinates of features, ordered
                by the same features in the images.
                the first row is the X coordinates, the second row
-               is the Y coordinates, and the third row is assumed to
-               be zero as the scale factor is lost in the homography.
+               is the Y coordinates, and the third row is 1's 
+               (Z_w = 0, the scale factor is lost in the homography).
                It is a 2 dimensional double array of format
                3 X n
      * @return camera intrinsic parameters, extrinsic parameters, and radial
@@ -70,33 +75,20 @@ public class CameraCalibration {
             throw new IllegalArgumentException("coordsW must have 3 rows.");
         }
         
+        int i;
+        
+        // the normalization centroidX, centroidY, and sigma values applied to x1 and x2:
+        //double[] tt = new double[3*nImages];        
+        //coordsI = extractAndNormalize(coordsI, 0, n, tt);
+        
         //TODO: consider normalizing coordsI by coordsI[2][*] if the last row
         //      is not already 1's
         
         //(1) for each image: invoke homography solver using SVD on a (2N)X9 DLT
         //    where the homographies are the projections of the 3D points onto the images
         //    and the model plane has Z=0 (hence the (2N)X9 DLT instead of (2N)X12 DLT)
-        double[][] h = MatrixUtil.zeros(nImages*3, 3);
+        double[][] h = solveForHomographies(coordsI, coordsW, n, nImages);
         
-        double[][] g, cI;
-        int i, i2;
-        for (i = 0; i < nImages; ++i) {
-            
-            //                                    ri,rf,ci,cf
-            cI = MatrixUtil.copySubMatrix(coordsI, 0, 3, i*n, i*n + n);
-            
-            //3X3  and contains intrinsic camera information from the point-to-point mappings
-            g = solveForHomography(cI, coordsW);
-            
-            /*
-            h image 0// 3X3 in rows 0:3
-            h image 1// 3X3 in rows 3:6
-            h image 2// 3X3 in rows 6:9
-            */
-            for (i2 = 0; i2 < 3; ++i2) {
-                System.arraycopy(g[i2], 0, h[i*3 + i2], 0, g[i2].length);
-            }
-        }
         
         //(2) using all homographies, solve for the camera intrinsic parameters
         // this is where at least 3 points are needed per image to euqal the number of unknown intrinsic parameters.
@@ -105,44 +97,56 @@ public class CameraCalibration {
         CameraMatrices cameraMatrices = new CameraMatrices();
         cameraMatrices.setIntrinsics(kIntr);
         
-        //(3) for each image homography and inverse intrinsic parameter matrix,
-        //    estimate the extrinsic parameters for the pose of the camera for that image.
-        Camera.CameraExtrinsicParameters kExtr;
-        
-        for (i = 0; i < nImages; ++i) {
-            //                               ri,      rf,ci,cf
-            g = MatrixUtil.copySubMatrix(h, 3*i, 3*i + 3, 0, 3);
-            
-            //NOTE: here, internal to solveForExtrinsic() would be a different place 
-            // where one could remove radial distortion.
-            // the method forms the image of the "absolute conic"
-            kExtr = solveForExtrinsic(kIntr, g);
-            
-            cameraMatrices.addExtrinsics(kExtr);
-        }
+        List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics(kIntr, h, nImages);
+        cameraMatrices.getExtrinsics().addAll(extrinsics);
         
         // (4) estimate the radial distortion coefficients
-        //     NOTE: implementing radial distortion as equation #3 of Table 2 of Ma et al. 2004
-        //           which uses f_r = 1 + k_1*r + k_2*r^2 because it is lower order
-        //           and can be used more easily with other radial coeffificent conventions.
-        //           The Ma et al. 2003 equation (8) here uses in contrast, equation #4 of
-        //           Table 2 Ma et al. 2004 (f_r = 1 + k_1*r^2 + k_2*r^4) presumably
-        //           because the model fit statistics were better.
-        // Also note that the Ma et al. 2003 paper found that the non-linear optimization
-        //    works just as well with initial estimates of 0 for the radial
-        //    distortion coefficients, so one can exclude this method.
-        editing
+        //     NOTE: There are a couple of radial functions which are commonly
+        //           used.
+        //           (a) f_r = 1 + k_1*r^2 + k_2*r^4
+        //               which is Eqn #4 of Table 2 of Ma et al. 2004.
+        //               Ma et al. 2004 statistics for it were among the best
+        //               so they use it in their algorithms.
+        //           (b) f_r = 1 + k_1*r + k_2*r^2
+        //               which is Eqn #3 of Table 2 of Ma et al. 2004.
+        //               it's a lower order function so may be a better choice
+        //               for some data.
+        //               Ma, Chen, Moore 2003 prefer (b) to (a) because:
+        //                  (I) Low order fitting, better for fixed-point implementation
+        //                  (II) Explicit inverse function with no numerical iterations 
+        //                  (IV) Better accuracy than radial distortion model (a)
+        //             
+        //    NOTE: The Ma et al. 2003 paper found that the non-linear optimization
+        //          works just as well with initial estimates of 0 for the radial
+        //          distortion coefficients, so one can exclude this step.
+        //
+        //    NOTE: Ma, Soatta, Kosecka, & Sastry (year 2012? 2004?) have 
+        //          specified f(r) in terms of a center of radial distortion 
+        //          which is not necessarily the image centerin Section (3.3.3)
+        
+        // Using the estimated intrinsic and extrinsic parameters, 
+        //  we can get the ideal projected image points Along with the real 
+        //  observed image points, we can estimate the 
+        // two distortion coefficients (k1,k2)
+        
+        // calculating the projected world coordinates using eqn (17)
+        double[] u = new double[n*nImages];
+        double[] v = new double[n*nImages];
+        calculateProjected(coordsW, h, u, v);
+                
+        double[] kRadial = estimateRadialDistortion(coordsI, u, v, cameraMatrices);
         
         // (5) optimization to improve the parameter estimates
         
         // ============ iterate over the above steps after non-linear optimization
         //  for extrinsic parameters.
-        double[] kRadial = new double[2];
+        double[][] cI;
+        CameraExtrinsicParameters kExtr;
         CameraExtrinsicParameters extrinsic;
         int nMaxIter = 100;
         for (i = 0; i < nImages; ++i) {
             
-            cI = MatrixUtil.copySubMatrix(coordsI, 0, 3, i, i+n);
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, n*i, n*(i + 1)-1);
             
             kExtr = cameraMatrices.getExtrinsics().get(i);
             
@@ -173,7 +177,7 @@ public class CameraCalibration {
         if (coordsW.length != 3) {
             throw new IllegalArgumentException("coordsW must have 3 rows.");
         }
-        int n = coordsI.length;
+        int n = coordsI[0].length;
         if (coordsW[0].length != n) {
             throw new IllegalArgumentException("coordsW must have same number of rows as coordsI.");
         }
@@ -217,6 +221,7 @@ public class CameraCalibration {
         
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] xOrth = svd.vT[svd.vT.length - 1];
+        //h00, h01, h02, h10, h11, h12,h20,h21,h22
         
         double[][] h = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -240,6 +245,8 @@ public class CameraCalibration {
         if (h[0].length != 3) {
             throw new IllegalArgumentException("h must have 3 columns");
         }
+        
+        System.out.printf("h=\n%s\n", FormatArray.toString(h, "%.3e"));
         
         // Section 6.3 of Ma et al. 2003
         
@@ -273,7 +280,8 @@ public class CameraCalibration {
         
         // 2*nImages X 6
         double[][] v = new double[2*n][6];
-        
+        double[] v22 = new double[6];
+        double h11, h12, h13, h21, h22, h23;
         //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T 
         for (int i = 0; i < n; ++i) {
             // h_i is the ith column vector of H
@@ -283,18 +291,19 @@ public class CameraCalibration {
             // h21 = column 1 of h, first element: h[0][1]
             // h22 = column 1 of h, 2nd element:   h[1][1]
             // h23 = column 1 of h, 3rd element:   h[2][1]
+            h11 = h[0+3*i][0]; h12 = h[1+3*i][0]; h13 = h[2+3*i][0];
+            h21 = h[0+3*i][1]; h22 = h[1+3*i][1]; h23 = h[2+3*i][1];
+            
+            //h11 = h[0+3*i][0]; h12 = h[0+3*i][1]; h13 = h[0+3*i][2];
+            //h21 = h[1+3*i][0]; h22 = h[1+3*i][1]; h23 = h[1+3*i][2];
             
             //V12 = [h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23, 
             //       h13*h22 + h12*h23, h13*h23]T 
             v[2*i] = new double[]{
-                h[0+3*i][0]*h[0+3*i][1],
-                h[0+3*i][0]*h[1+3*i][1] + h[1+3*i][0]*h[0+3*i][1],
-                h[1+3*i][0]*h[1+3*i][1],
-                h[2+3*i][0]*h[0+3*i][1] + h[0+3*i][0]*h[2+3*i][1],
-                h[2+3*i][0]*h[1+3*i][1] + h[1+3*i][0]*h[2+3*i][1],
-                h[2+3*i][0]*h[2+3*i][1]
+                h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23, 
+                h13*h22 + h12*h23, h13*h23
             };
-              
+             
             //V11 = [
             // h11*h11 , 
             // h11*h12 + h12*h11, 
@@ -302,14 +311,34 @@ public class CameraCalibration {
             // h13*h11 + h11*h13, 
             // h13*h12 + h12*h13, 
             // h13*h13]T
+            // 2nd row is V11 - V12
+            /*v[2*i + 1] = new double[]{
+                h11*h11           - v[2*i][0],
+                h11*h12 + h12*h11 - v[2*i][1],
+                h12*h12           - v[2*i][2],
+                h13*h11 + h11*h13 - v[2*i][3],
+                h13*h12 + h12*h13 - v[2*i][4],
+                h13*h13           - v[2*i][5]
+            };*/
+            
+            //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T
+            v22[0] = h21*h21;
+            v22[1] = h21*h22 + h22*h21;
+            v22[2] = h22*h22;
+            v22[3] = h23*h21 + h21*h23;
+            v22[4] = h23*h22 + h22*h23;
+            v22[5] = h23*h23;
+             
+            // v11 - v22; Zhang 99 eqn(8)
             v[2*i + 1] = new double[]{
-                h[0+3*i][0]*h[0+3*i][0] - v[2*i][0],
-                h[0+3*i][0]*h[1+3*i][0] + h[1+3*i][0]*h[0+3*i][0] - v[2*i][1],
-                h[1+3*i][0]*h[1+3*i][0] - v[2*i][2],
-                h[2+3*i][0]*h[0+3*i][0] + h[0+3*i][0]*h[2+3*i][0] - v[2*i][3],
-                h[2+3*i][0]*h[1+3*i][0] + h[1+3*i][0]*h[2+3*i][0] - v[2*i][4],
-                h[2+3*i][0]*h[2+3*i][0] - v[2*i][5]
+                h11*h11           - v22[0],
+                h11*h12 + h12*h11 - v22[1],
+                h12*h12           - v22[2],
+                h13*h11 + h11*h13 - v22[3],
+                h13*h12 + h12*h13 - v22[4],
+                h13*h13           - v22[5]
             };
+            
         }
         
         //Vb = 0 and b = [B11, B12, B22, B13, B23, B33]^T
@@ -330,21 +359,28 @@ public class CameraCalibration {
         
         //       0    1    2    3    4    5
         //b = [B11, B12, B22, B13, B23, B33]^T
+        System.out.printf("b=%s\n", FormatArray.toString(b, "%.3e"));
+        double B11 = b[0];
+        double B12 = b[1];
+        double B22 = b[2];
+        double B13 = b[3];
+        double B23 = b[4];
+        double B33 = b[5];
+        //Zhang 99 Appendix B; Ma et al. 2003 eqn (26)
+        double v0 = (B12*B13 - B11*B23)/(B11*B22 - B12*B12);
+        double lambda = B33 - ((B13*B13 + v0*(B12*B13 - B11*B23))/B11);
+        double alpha = Math.sqrt(lambda/B11);
+        double beta = Math.sqrt( lambda*B11 / (B11*B22 - B12*B12) );
+        double gamma = -B12*alpha*alpha*beta / lambda;
+        double u0 = (gamma*v0/beta) - (B13*alpha*alpha/lambda);
+        //u0 = (gamma*v0/alpha) - (B13*alpha*alpha/lambda);
         
-        //Ma et al. 2003 eqn (26)
-        // v0 = (B12*B13 - B11*B23)/(B11*B22 - B12*B12)
-        // lambda = B33 - (B13*B13 - v0*(B12*B13 - B11*B23))/B11
-        // alpha = sqrt( lambda/B11 )
-        // beta = sqrt( lambda*B11 / (B11*B22 - B12*B12) )
-        // gamma = -B12*alpha*alpha*beta / lambda
-        // u0 = (gamma*v0/beta) - B13*alpha*alpha/lambda
-        
-        double v0 = (b[1]*b[3] - b[0]*b[4])/(b[0]*b[2] - b[1]*b[1]);
-        double lambda = b[5] - (b[3]*b[3] - v0*(b[1]*b[3] - b[0]*b[4]))/b[0];
-        double alpha = Math.sqrt(lambda / b[0]);
-        double beta = Math.sqrt( lambda*b[0] / (b[0]*b[2] - b[1]*b[1]) );
-        double gamma = -b[1]*alpha*alpha*beta / lambda;
-        double u0 = (gamma*v0/beta) - b[3]*alpha*alpha/lambda;
+        System.out.printf("v0=%.4e (exp=220.866)\n", v0);
+        System.out.printf("lambda=%.4e\n", lambda);
+        System.out.printf("alpha=%.4e\n", alpha);
+        System.out.printf("beta=%.4e\n", beta);
+        System.out.printf("gamma=%.4e\n", gamma);
+        System.out.printf("u0=%.4e\n", u0);
         
         double[][] kIntr = Camera.createIntrinsicCameraMatrix(
             alpha, beta, u0, v0, gamma);
@@ -456,7 +492,7 @@ public class CameraCalibration {
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI length should be 3");
         }
-        int n = coordsI.length;
+        int n = coordsI[0].length;
         if (coordsW[0].length != n) {
             throw new IllegalArgumentException("coordsW must have same number of rows as coordsI.");
         }
@@ -1019,6 +1055,207 @@ public class CameraCalibration {
             sum += (m[i]*m[i]);
         }
         return sum;
+    }
+
+    /**
+     * calculate the projection of world features in coordsW by the
+     * homography h into the image plane, storing the results in ud and vd.
+     * The method follows eqn (17) of Ma, Chen, & Moore 2003 "Camera Calibration".
+     * @param coordsW the coordinates of the features in world reference frame.
+     *    size is 3 X n.
+     * @param h the homography.  size is (nImages*3) X 3
+     * @param u output projected image x coordinates for all images.
+     *     length is (n*nImages).
+     * @param v output projected image y coordinated for all images.
+     *     length is  (n*nImages).
+     */
+    private static void calculateProjected(double[][] coordsW, double[][] h, 
+        double[] u, double[] v) {
+        
+        // number of features
+        int n = coordsW[0].length;
+        int nImages = h.length/3;
+        
+        //ud, vd are 1 X (n*nImages)
+        //h is nImages*3 X 3
+        //coordsW is 3 X n
+        
+        // eqn (17) denom = h[2][0]*X_w + h[2][1]*Y_w + h[2][2]
+        //          ud = (h[0][0]*X_w + h[0][1]*Y_w + h[0][2])/denom
+        //          vd = (h[1][0]*X_w + h[1][1]*Y_w + h[1][2])/denom
+        
+        double[] xw1 = new double[3];
+        xw1[2] = 1;
+        double denom;
+        double[] h0, h1, h2;
+        int i, j;
+        for (i = 0; i < nImages; ++i) {
+            h0 = h[nImages*3 + 0];
+            h1 = h[nImages*3 + 1];
+            h2 = h[nImages*3 + 2];
+            for (j = 0; j < n; ++j) { // n features
+                xw1[0] = coordsW[0][3*i + j];
+                xw1[1] = coordsW[1][3*i + j];
+                denom = MatrixUtil.innerProduct(h2, xw1);
+                u[3*i + j] = MatrixUtil.innerProduct(h0, xw1);
+                u[3*i + j] /= denom;
+                v[3*i + j] = MatrixUtil.innerProduct(h1, xw1);
+                v[3*i + j] /= denom;
+            }
+        }        
+    }
+
+    /**
+     * 
+     * @param uvD (ud, vd) are the Real observed distorted image points.
+     * uvD holds the features in each image in pixel coordinates ordered 
+     * such that all features of one image are followed by all features
+     * of the next image.
+               It is a 2 dimensional double array of format
+               3 X (N*n) where N is the number of images.
+               the first row is the x coordinates, the second row
+               is the y coordinates, and the third row is "1"'s.
+               The columns hold each image in order and within each image's
+               columns are the features presented in the same order in each image.
+               In Table 1 of Ma, Chen, & Moore 2003 "Camera Calibration"
+               these are the (u_d, v_d) pairs.
+     * @param u x image coordinates.  array length is n*nImages
+     * @param v y image coordinates.  array length is n*nImages
+     * @param cameraMatrices data structure holding the camera intrinsic parameters
+     * and the extrinsic parameter matrices for each image.
+     * @return 
+     */
+    private static double[] estimateRadialDistortion(double[][] uvD, 
+        double[] u, double[] v, 
+        CameraMatrices cameraMatrices) throws NotConvergedException {
+        
+        int nImages = cameraMatrices.getExtrinsics().size();
+        int nFeatures = u.length/nImages;
+        
+        /* 
+        eqn (8) of Ma, Chen & Moore "Camera Calibration"
+           ud = u + (u−u0)*f_r
+           vd = v + (v−v0)*f_r
+        
+        uses equation #4 of Ma et al. 2004 Table 2
+            #4: f_r = 1 + k_1*r^2 + k_2*r^4
+                    = 1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
+        
+            (ud, vd) are Real observed distorted image points
+            (u, v) Ideal projected undistorted image points
+            [x,y,1] = A^-1 * [u, v, 1]
+        
+        Given n points in nImages, we can stack all equations together
+        to obtain 2Nn equations in matrix form as 
+            Dk = d, where k = [k1, k2]^T . 
+        The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d.
+                                                     = pseudoInv(D) * d
+             ud = u + (u−u0)*f_r
+             vd = v + (v−v0)*f_r
+             f_r =  1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
+        
+             0 = -ud + u + (u -u0)*(1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2)
+             0 = -ud + 2*u - u0 + k1*((u-u0)*(x^2 + y^2)) + k2*((u-u0)*(x^2 + y^2)^2)
+             
+               k1                   k2                       const
+              ----------------------------------------------------------
+        D = [ (u-u0)*(x^2 + y^2)    (u-u0)*(x^2 + y^2)^2 ]   d = [ ud - 2*u + u0 ]
+            [ (v-v0)*(x^2 + y^2)    (v-v0)*(x^2 + y^2)^2 ]       [ vd - 2*v + v0 ]
+        
+       The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d.
+                                                      (2X2nN * 2nNX2)^-1 * (2X2nN) * (2nNX1)
+                                                      (2X2)              * (2X2nN) * (2nNX1)
+                                                      (2X2nN) * (2nNX1) = 2X1
+        */
+        
+        int i, j;
+        double ui, vi, udi, vdi, xi, yi, r2, r4;
+        double u0=0; double v0=0;
+        double[][] xy;
+        double[][] dM = new double[2*nFeatures*nImages][2];
+        double[] dV = new double[2*nFeatures*nImages];
+        for (i = 0; i < nImages; ++i) {
+            xy = MatrixUtil.copySubMatrix(uvD, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);
+            xy = Camera.pixelToCameraCoordinates(xy, null, cameraMatrices.getIntrinsics().getIntrinsic());
+            for (j = 0; j < nFeatures; ++j) {
+                ui = u[nFeatures*i + j];
+                vi = u[nFeatures*i + j];
+                udi = uvD[0][nFeatures*i + j];
+                vdi = uvD[1][nFeatures*i + j];
+                xi = xy[0][j];
+                yi = xy[1][j];
+                r2 = xi*xi + yi*yi;
+                r4 = r2*r2;
+                // e.g. nFeatures=3
+                //i:0 j:0          idx=0, idy=1
+                //i:0 j:1          idx=2, idy=3
+                //i:0 j:2          idx=4, idy=5
+                //i:1 j:0  idx=6, idy=7
+                //i:1 j:1  idx=8, idy=9
+                dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r2, (ui-u0)*r4};
+                dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r2, (vi-v0)*r4};
+                dV[2*nFeatures*i + 2*j] = udi - 2*ui + u0;
+                dV[2*nFeatures*i + 2*j + 1] = vdi - 2*vi + v0;
+            }
+        }
+           
+        //k = (D^T*D)^−1*D^T*d = pseudoInv(D) * d
+        double[][] dInv = MatrixUtil.pseudoinverseFullRank(dM);
+        double[] k = MatrixUtil.multiplyMatrixByColumnVector(dInv, dV);
+        
+        return k;
+    }
+
+    static double[][] solveForHomographies(double[][] coordsI, 
+        double[][] coordsW, int n, int nImages) throws NotConvergedException {
+        
+        double[][] h = MatrixUtil.zeros(nImages*3, 3);
+        
+        double[][] g, cI;
+        int i, i2;
+        for (i = 0; i < nImages; ++i) {
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, n*i, n*(i + 1)-1);
+            
+            //3X3  and contains intrinsic camera information from the point-to-point mappings
+            g = solveForHomography(cI, coordsW);
+            
+            /*
+            h image 0// 3X3 in rows 0:3
+            h image 1// 3X3 in rows 3:6
+            h image 2// 3X3 in rows 6:9
+            */
+            for (i2 = 0; i2 < 3; ++i2) {
+                System.arraycopy(g[i2], 0, h[i*3 + i2], 0, g[i2].length);
+            }
+        }
+        
+        return h;
+    }
+
+    static List<CameraExtrinsicParameters> solveForExtrinsics(
+        CameraIntrinsicParameters kIntr, double[][] h, int nImages) throws NotConvergedException {
+        
+        List<CameraExtrinsicParameters> list = new ArrayList<CameraExtrinsicParameters>();
+        //(3) for each image homography and inverse intrinsic parameter matrix,
+        //    estimate the extrinsic parameters for the pose of the camera for that image.
+        CameraExtrinsicParameters kExtr;
+        
+        int i;
+        double[][] g;
+        
+        for (i = 0; i < nImages; ++i) {
+            //                               ri,      rf,ci,cf
+            g = MatrixUtil.copySubMatrix(h, 3*i, 3*i + 2, 0, 2);
+            
+            //NOTE: here, internal to solveForExtrinsic() would be a different place 
+            // where one could remove radial distortion.
+            // the method forms the image of the "absolute conic"
+            kExtr = solveForExtrinsic(kIntr, g);
+            
+            list.add(kExtr);
+        }
+        
+        return list;
     }
 
 }

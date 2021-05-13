@@ -149,8 +149,14 @@ public class Reconstruction {
                 X_P is SVD(M).V^T[last row]
            for the case where there is noise, the SVD solution is the initial
                 values for a non-linear optimization method.
+    
+    NOTE: to solve affine reconstruction for the case of pure translation, 
+    see Example 6.6 of Ma, Soatto, Kosecká, & Shankar Sastry book
+    "Invitation to 3D".
+    For the case of pure rotation, see Example 6.10.
+    
     */
-            
+    
      /**
       * TODO: proof read and write test for this.
      * given correspondence between two images calculate the camera
@@ -230,7 +236,7 @@ public class Reconstruction {
      * un-calibrated image points, that is, points in the image reference frame in pixels.
      * 
      * This is also called Projective Structure From Motion for the
-     * Two-camera case.
+     * Two-camera case.   it's a distorted version of euclidean 3d.
      * 
      * NOTE that because the camera calibration, that is, intrinsic parameters,
      * are not known, only the projective reconstruction is possible,,
@@ -274,6 +280,9 @@ public class Reconstruction {
         int n0 = x1[0].length;
         if (x2[0].length != n0) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
+        }
+        if (n0 < 7) {
+            throw new IllegalArgumentException("need at least 7 points for the uncalirated camera (s) 2 view solution");
         }
         
         /*
@@ -396,7 +405,8 @@ public class Reconstruction {
         //    note that slide 59 of http://16720.courses.cs.cmu.edu/lec/sfm.pdf
         //    also uses the Hartley & Zisserman: version of P2 and refers to proof in 
         //    Forsyth & Ponce Sec 8.3
-        // Belongie uses P2 = [ [e2]_x^T * F | e2 ]
+        // Belongie uses P2 = [ [e2]_x^T * F | e2 ] and so does Ma et al. textbook (msks, "Invitation to 3D"
+        // 
         
         // NOTE: not necessary to normalize the epipoles by the last value
         
@@ -509,7 +519,7 @@ public class Reconstruction {
             System.arraycopy(P1.getP()[i], 0, rr.projectionMatrices[i], 0, 4);
         }
         for (i = 0; i < 3; ++i) {
-            System.arraycopy(P2K.getP()[i], 0, rr.projectionMatrices[3 + i], 0, 4);
+            System.arraycopy(P2B.getP()[i], 0, rr.projectionMatrices[3 + i], 0, 4);
         }
         return rr;
     }
@@ -757,8 +767,8 @@ public class Reconstruction {
             SVDProducts svd = MatrixUtil.performSVD(w);
             
             //reduce rank to 4
-            u = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length, 0, 4);
-            vT = MatrixUtil.copySubMatrix(svd.vT, 0, 4, 0, svd.vT[0].length);
+            u = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 3);
+            vT = MatrixUtil.copySubMatrix(svd.vT, 0, 3, 0, svd.vT[0].length-1);
             
             s = MatrixUtil.zeros(4, 4);
             s[0][0] = svd.s[0];
@@ -788,7 +798,7 @@ public class Reconstruction {
         double[][] XW = MatrixUtil.multiply(s, vT);
         MatrixUtil.flipUD(XW);
    
-        //denormalize ps.  ps = ps * T^-1
+        //denormalize ps.  = ps * T^-1
         // tt is the normalization centroidX, centroidY, and sigma values applied to x1 and x2:
         /*
                  | 1  0  xc |   | s  0   0 |   | s   0  xc |
@@ -972,7 +982,7 @@ public class Reconstruction {
         }
         
         SVDProducts svd = MatrixUtil.performSVD(wC);
-        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length, 0, 3);
+        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);
         double[][] s3 = MatrixUtil.zeros(3, 3);
         s3[0][0] = svd.s[0];
         s3[1][1] = svd.s[1];
@@ -981,7 +991,7 @@ public class Reconstruction {
         sqrts3[0][0] = Math.sqrt(svd.s[0]);
         sqrts3[1][1] = Math.sqrt(svd.s[1]);
         sqrts3[2][2] = Math.sqrt(svd.s[2]);
-        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 3, 0, svd.vT[0].length);
+        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);
         
         // if this is large, then the noise contribution can be ignored (cholesky not necessary)
         double sRatio = svd.s[2]/svd.s[3];
@@ -1313,7 +1323,7 @@ public class Reconstruction {
         }
         
         SVDProducts svd = MatrixUtil.performSVD(wC);
-        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length, 0, 3);
+        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);
         double[][] s3 = MatrixUtil.zeros(3, 3);
         s3[0][0] = svd.s[0];
         s3[1][1] = svd.s[1];
@@ -1322,7 +1332,7 @@ public class Reconstruction {
         sqrts3[0][0] = Math.sqrt(svd.s[0]);
         sqrts3[1][1] = Math.sqrt(svd.s[1]);
         sqrts3[2][2] = Math.sqrt(svd.s[2]);
-        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 3, 0, svd.vT[0].length);
+        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);
         
         // if this is large, then the noise contribution can be ignored (cholesky not necessary)
         double sRatio = svd.s[2]/svd.s[3];

@@ -54,7 +54,7 @@ public class RotationTest extends TestCase {
         double[][] q = new double[2][2];
         q[0] = new double[]{0.9999, -0.0126};
         q[1] = new double[]{0.0126, 0.9999};
-        double[][] orthogRot = Alignment.procrustesAlgorithmForRotation(a, b);
+        double[][] orthogRot = Rotation.procrustesAlgorithmForRotation(a, b);
         TestCase.assertEquals(q.length, orthogRot.length);
         double diff;
         double tol = 1.0E-4;
@@ -125,7 +125,7 @@ public class RotationTest extends TestCase {
                 x2[i][j] -= k2ExtrTrans[j];
             }
         }
-        double[][] orthogRot = Alignment.procrustesAlgorithmForRotation(MatrixUtil.transpose(x1), MatrixUtil.transpose(x2));
+        double[][] orthogRot = Rotation.procrustesAlgorithmForRotation(MatrixUtil.transpose(x1), MatrixUtil.transpose(x2));
         System.out.printf("rotation from Procrustes algorithm\n=%s\n", FormatArray.toString(orthogRot, "%.3e"));
     }
     

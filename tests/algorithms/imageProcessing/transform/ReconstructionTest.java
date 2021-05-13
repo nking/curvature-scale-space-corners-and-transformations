@@ -78,9 +78,7 @@ public class ReconstructionTest extends TestCase {
         x2[1] = new double[]{168, 331, 372, 401, 78, 295, 302, 134, 52, 318};
         x2[2] = new double[]{1, 1, 1, 1, 1, 1, 1, 1,  1, 1};
         
-        Reconstruction.ReconstructionResults rr = Reconstruction
-            .calculateReconstructionWithIntrinsic(k1Intr, k2Intr, x1, x2);
-        
+        /*
         System.out.printf("results=%s\n\n", rr.toString());
         
   //multiply by focal length?  or K?   see if triangulation in szeliski has advice
@@ -93,6 +91,6 @@ public class ReconstructionTest extends TestCase {
             }
             System.out.printf("%s\n", FormatArray.toString(pt, "%.3e"));
         }
-        
+        */
     }
 }
