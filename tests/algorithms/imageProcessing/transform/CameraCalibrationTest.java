@@ -3,6 +3,7 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import static algorithms.imageProcessing.transform.CameraCalibration.solveForIntrinsic;
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -54,8 +55,6 @@ public class CameraCalibrationTest extends TestCase {
         double u0 = kIntr.getIntrinsic()[0][2];
         double beta = kIntr.getIntrinsic()[1][1];
         double v0 = kIntr.getIntrinsic()[1][2];
-        double k1 = 0;
-        double k2 = 0;
         
         assertTrue(Math.abs(alphaE - alpha) < 0.1);
         assertTrue(Math.abs(gammaE - gamma) < 0.1);
@@ -70,7 +69,14 @@ public class CameraCalibrationTest extends TestCase {
             CameraCalibration.solveForExtrinsics(kIntr, h, nImages);
         cameraMatrices.getExtrinsics().addAll(extrinsics);
         
-        
+        double[] u = new double[nFeatures*nImages];
+        double[] v = new double[nFeatures*nImages];
+        CameraCalibration.calculateProjected(coordsW, h, u, v);
+                
+        double[] kRadial = CameraCalibration.estimateRadialDistortion(coordsI, u, v, cameraMatrices);
+        double k1 = kRadial[0];
+        double k2 = kRadial[1];
+        System.out.printf("k=\n%s\n", FormatArray.toString(kRadial, "%.4e"));
     }
     
     public void estCalibration2() throws NotConvergedException {

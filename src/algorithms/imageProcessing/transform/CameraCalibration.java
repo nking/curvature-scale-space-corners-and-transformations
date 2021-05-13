@@ -1069,14 +1069,14 @@ public class CameraCalibration {
      * @param v output projected image y coordinated for all images.
      *     length is  (n*nImages).
      */
-    private static void calculateProjected(double[][] coordsW, double[][] h, 
+    static void calculateProjected(double[][] coordsW, double[][] h, 
         double[] u, double[] v) {
         
         // number of features
         int n = coordsW[0].length;
         int nImages = h.length/3;
         
-        //ud, vd are 1 X (n*nImages)
+        //u, v are 1 X (n*nImages)
         //h is nImages*3 X 3
         //coordsW is 3 X n
         
@@ -1090,17 +1090,17 @@ public class CameraCalibration {
         double[] h0, h1, h2;
         int i, j;
         for (i = 0; i < nImages; ++i) {
-            h0 = h[nImages*3 + 0];
-            h1 = h[nImages*3 + 1];
-            h2 = h[nImages*3 + 2];
+            h0 = h[i*3 + 0];
+            h1 = h[i*3 + 1];
+            h2 = h[i*3 + 2];
             for (j = 0; j < n; ++j) { // n features
-                xw1[0] = coordsW[0][3*i + j];
-                xw1[1] = coordsW[1][3*i + j];
+                xw1[0] = coordsW[0][j];
+                xw1[1] = coordsW[1][j];
                 denom = MatrixUtil.innerProduct(h2, xw1);
-                u[3*i + j] = MatrixUtil.innerProduct(h0, xw1);
-                u[3*i + j] /= denom;
-                v[3*i + j] = MatrixUtil.innerProduct(h1, xw1);
-                v[3*i + j] /= denom;
+                u[i*n + j] = MatrixUtil.innerProduct(h0, xw1);
+                u[i*n + j] /= denom;
+                v[i*n + j] = MatrixUtil.innerProduct(h1, xw1);
+                v[i*n + j] /= denom;
             }
         }        
     }
@@ -1125,7 +1125,7 @@ public class CameraCalibration {
      * and the extrinsic parameter matrices for each image.
      * @return 
      */
-    private static double[] estimateRadialDistortion(double[][] uvD, 
+    static double[] estimateRadialDistortion(double[][] uvD, 
         double[] u, double[] v, 
         CameraMatrices cameraMatrices) throws NotConvergedException {
         
