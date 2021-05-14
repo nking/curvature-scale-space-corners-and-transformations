@@ -261,7 +261,7 @@ public class Camera {
      * In terms of Table 1 of Ma et al. 2004, this is a double array of (u_d, v_d)
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
         note that if rCoeffs is null or empty, no radial distortion is applied.
      */
     public static double[][] cameraToPixelCoordinates(double[][] xC, double[] rCoeffs,
@@ -336,7 +336,7 @@ public class Camera {
      * @param centerY y coordinate of principal point in pixels, usually image center.
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
         note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return pixels in the reference frame of 
      * @throws no.uib.cipr.matrix.NotConvergedException 
@@ -376,7 +376,7 @@ public class Camera {
      * @param kIntrinsic camera intrinsic parameters.  note, it's expected that the focal length is positive
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
         note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return pixels in the reference frame of 
      * @throws no.uib.cipr.matrix.NotConvergedException 

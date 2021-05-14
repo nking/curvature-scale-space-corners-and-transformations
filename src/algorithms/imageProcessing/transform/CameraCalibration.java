@@ -60,7 +60,7 @@ public class CameraCalibration {
                3 X n
        @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,
-    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
      * @return camera intrinsic parameters, extrinsic parameters, and radial
      * distortion coefficients
      */
@@ -488,7 +488,7 @@ public class CameraCalibration {
                to the same features and order of coordsI_i
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,
-    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
     * note that if rCoeffs is null or empty, no radial distortion is applied.
      * @return 
      * @throws no.uib.cipr.matrix.NotConvergedException 
@@ -689,7 +689,7 @@ public class CameraCalibration {
     @param k2 second radial distortion coefficient
     @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,
-    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
     @return  distorted camera centered coordinates in format 3XN where N is
     the number of points.
     In terms of Table 1 of Chen et al. 2004, this is a double array of (x_d, y_d).
@@ -1144,7 +1144,7 @@ public class CameraCalibration {
      * and the extrinsic parameter matrices for each image.
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,
-    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
      * @return 
      */
     static double[] solveForRadialDistortion(double[][] uvD, 
@@ -1317,7 +1317,7 @@ public class CameraCalibration {
      * @param coordsW
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,
-    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
     * note that if rCoeffs is null or empty, no radial distortion is applied.
      * @return
      * @throws NotConvergedException 

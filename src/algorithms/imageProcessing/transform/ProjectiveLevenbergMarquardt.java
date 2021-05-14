@@ -35,9 +35,9 @@ public class ProjectiveLevenbergMarquardt {
      * @param kIntr
      * @param kExtr
      * @param kRadial
-     * param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
         note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return 
      */
@@ -56,7 +56,7 @@ public class ProjectiveLevenbergMarquardt {
         
         double[] b = new double[2*n];
         final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kRadial, 
-            kIntr.getIntrinsic(),useR2R4);
+            kIntr.getIntrinsic(), useR2R4);
         for (int i = 0; i < n; ++i) {
             xn[0][i] /= xn[2][i];
             xn[1][i] /= xn[2][i];
@@ -75,7 +75,8 @@ public class ProjectiveLevenbergMarquardt {
         double[] t = kExtr.getTranslation();
         
         // equation (19).  size is 1 X 9
-        double[] h = new double[]{r[0][0], r[0][1], t[0], r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], t[2]};
+        double[] h = new double[]{r[0][0], r[0][1], t[0], 
+            r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], -t[2]};
        
         // equation 20.  length is 2*N
         double[] fgp = map(worldC, h);
@@ -170,7 +171,7 @@ public class ProjectiveLevenbergMarquardt {
                 gainRatio = calculateGainRatio(f/2., fPrev/2.,
                     deltaPLM22, lambda, jT, bMinusFGP, eps);
                 if (gainRatio > 0) {
-                    // near the minimimum, which is good
+                    // near the minimimum, which is good.
                     // decrease lambda
                     lambda /= lambdaF;
                 } else {
@@ -214,8 +215,8 @@ public class ProjectiveLevenbergMarquardt {
     }
     
     /**
-     * map the homography matrix to the projected 2D point coordinates of our the reference points.
-     * eqn (20)
+     * map the homography matrix to the projected 2D point coordinates of the 
+     * world reference points eqn (20).
      * @param worldC
      * @param h
      * @return 
@@ -288,26 +289,38 @@ public class ProjectiveLevenbergMarquardt {
         
         int n = worldC[0].length;
         
- //TODO: assert worldC[2][*] = be 0 for local device frame
+        if (n < 4) {
+            throw new IllegalArgumentException("need at least 4 features in worldC");
+        }
+        
+        //TODO: assert worldC[2][*] = 1 for local device frame
+        assert(Math.abs(worldC[2][0] - 1.) < 1e-5);
         
         // (2*n) X 9
         double[][] jF = MatrixUtil.zeros(2*n, 9);
         int i, j;
-        double x, y, s1, s2,s1sq;
+        double x, y, s1, s2, d, dsq;
         for (i = 0; i < n; ++i) {
             x = worldC[0][i];
             y = worldC[1][i];
-            s1 = h[6] * x + h[7] * y + h[8];
-            s2 = h[0] * x + h[1] * y + h[2];
-            s1sq = s1*s1;
+            d = h[6] * x + h[7] * y + h[8];
+            s1 = h[0] * x + h[1] * y + h[2];
+            s2 = h[3] * x + h[4] * y + h[5];
+            dsq = s1*s1;
             
-            jF[0][i] = x/s1;
-            jF[1][i] = y/s1;
-            jF[2][i] = 1./s1;
-            //jF[3][i] = 0; jF[4][i] = 0; jF[5][i] = 0;
-            jF[6][i] = -(s2/s1sq)*x;
-            jF[7][i] = -(s2/s1sq)*y;
-            jF[8][i] = -(s2/s1sq);
+            jF[0][2*i] = x/d;
+            jF[1][2*i] = y/d;
+            jF[2][2*i] = 1./d;
+            jF[6][2*i] = -(s1/dsq)*x;
+            jF[7][2*i] = -(s1/dsq)*y;
+            jF[8][2*i] = -(s1/dsq);
+            
+            jF[3][2*i + 1] = x/d;
+            jF[4][2*i + 1] = y/d;
+            jF[5][2*i + 1] = 1./d;
+            jF[6][2*i + 1] = -(s2/dsq)*x;
+            jF[7][2*i + 1] = -(s2/dsq)*y;
+            jF[8][2*i + 1] = -(s2/dsq);
         }
         return jF;
     }
@@ -365,7 +378,7 @@ public class ProjectiveLevenbergMarquardt {
     /**
      *                          6X6  * (6 * (2N)) * (2NX1) = 6 X (2N) * (2NX1) = 6X1
      * calculate the step as (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p))
-     * @param jTJ
+     * @param jTJ 
      * @param lambda
      * @param jT
      * @return an array of length 6 
@@ -398,8 +411,10 @@ public class ProjectiveLevenbergMarquardt {
     private static double[] calculateDeltaPLM(double[][] jTJ, 
         double lambda, double[] bMinusF) throws NotConvergedException {
        
+        //inv( J^T J + λ diag(J^TJ)) · (b−f)
+        
         int i, j;
-        // J^T J + λ diag(J^TJ)
+        // J^T J + λ diag(J^TJ)     
         // 6 X 6
         double[][] a = MatrixUtil.copy(jTJ);
         for (i = 0; i < 6; ++i) {
