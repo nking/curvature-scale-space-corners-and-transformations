@@ -134,7 +134,7 @@ public class CameraCalibration {
         double[] v = new double[n*nImages];
         calculateProjected(coordsW, h, u, v);
                 
-        double[] kRadial = estimateRadialDistortion(coordsI, u, v, cameraMatrices);
+        double[] kRadial = solveForRadialDistortion(coordsI, u, v, cameraMatrices);
         
         // (5) optimization to improve the parameter estimates
         
@@ -446,15 +446,13 @@ public class CameraCalibration {
         //double scaleFactor = 2./(Math.sqrt(sumOfSquares(h1)) + Math.sqrt(sumOfSquares(h1)));
         System.out.printf("lambda1=%.3e, lambda2=%.3e\n", lambda, lambda2);
         
-        double[][] r1M = MatrixUtil.copy(aInv);
-        MatrixUtil.multiply(r1M, lambda);
-        double[][] r2M = MatrixUtil.copy(r1M);
-        double[][] tM = MatrixUtil.copy(r1M);
+        double[][] lambdaAInv = MatrixUtil.copy(aInv);
+        MatrixUtil.multiply(lambdaAInv, lambda);
         
-        double[] r1 = MatrixUtil.multiplyMatrixByColumnVector(r1M, h1);
-        double[] r2 = MatrixUtil.multiplyMatrixByColumnVector(r2M, h2);
-        double[] t = MatrixUtil.multiplyMatrixByColumnVector(tM, h3);
         
+        double[] r1 = MatrixUtil.multiplyMatrixByColumnVector(lambdaAInv, h1);
+        double[] r2 = MatrixUtil.multiplyMatrixByColumnVector(lambdaAInv, h2);
+        double[] t = MatrixUtil.multiplyMatrixByColumnVector(lambdaAInv, h3);
         double[] r3 = MatrixUtil.crossProduct(r1, r2);
         
         double[][] r = MatrixUtil.zeros(3, 3);
@@ -480,12 +478,14 @@ public class CameraCalibration {
      * Tracking with the VRduino"
      * estimate the extrinsic parameters
      * @param kIntr camera intrinsic parameters
+     * @param kRadial an array holding the 2 radial distortion coefficients, or a null array
      * @param coordsI holds the image coordinates in pixels of features present in image i
      * @param coordsW holds the world coordinates of features present in image 1 corresponding
                to the same features and order of coordsI_i
      * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
      */
-    private static Camera.CameraExtrinsicParameters solveForExtrinsic2(
+    static CameraExtrinsicParameters solveForExtrinsic2(
         CameraIntrinsicParameters kIntr, double[] kRadial, 
         double[][] coordsI, double[][] coordsW) throws NotConvergedException {
         
@@ -509,7 +509,8 @@ public class CameraCalibration {
             xc[1][i] /= xc[2][i];
         }
         
-        // 2*n X 8       
+        // 2*n X 8 
+        // making it 2*n X 9 by adding the -u and -v columns onto end of rowsto use SVD instead of psuedoinverse
         double u, v, X, Y;
         double[][] a = new double[2*n][8];
         for (int i = 0; i < n; ++i) {
@@ -517,28 +518,22 @@ public class CameraCalibration {
             v = xc[1][i];
             X = coordsW[0][i];
             Y = coordsW[1][i];
-            // eqn(10) of lecture notes
-            a[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y};
-            a[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y};
+            // eqn(10) of lecture notes   same homography as above, but missing the last column for -u and -v
+            a[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};
+            a[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
         }
         
         MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(a);
         
         // vT is 8X8  last row in vT is the eigenvector for the smallest eigenvalue
+        // making if 9x9 now
         double[] h = svd.vT[svd.vT.length - 1];
         
-        double[][] h3x3 = new double[3][3];
-        for (int i = 0; i < 3; i++) {
-            h3x3[i] = new double[3];
-            h3x3[i][0] = h[(i * 3) + 0];
-            h3x3[i][1] = h[(i * 3) + 1];
-            h3x3[i][2] = h[(i * 3) + 2];
-        }
+        // check the order here
+        double[] hcol1 = new double[]{h[0], h[3], h[6]};
+        double[] hcol2 = new double[]{h[1], h[4], h[7]};
+        double[] hcol3 = new double[]{h[2], h[5], h[8]};
         
-        double[] hcol1 = MatrixUtil.extractColumn(h3x3, 0);
-        double[] hcol2 = MatrixUtil.extractColumn(h3x3, 1);
-        double[] hcol3 = MatrixUtil.extractColumn(h3x3, 2);
-                
         double s = 2./(Math.sqrt(sumOfSquares(hcol1)) + Math.sqrt(sumOfSquares(hcol2)));
 
         // translational component of the camera pose:
@@ -548,9 +543,12 @@ public class CameraCalibration {
         
         // estimate rotation from the homography
         
+        double denom = sumOfSquares(hcol1);
+        
         // column 1:
         double[] r1 = Arrays.copyOf(hcol1, hcol1.length);
-        MatrixUtil.multiply(r1, 1./Math.sqrt(sumOfSquares(hcol1)));
+        MatrixUtil.multiply(r1, 1./denom);
+        r1[2] *= -1;
         
         //extract the second column of the rotation matrix r2 from the homography, 
         //but we have to make sure that it is orthogonal to the first column. 
@@ -578,6 +576,10 @@ public class CameraCalibration {
             r[row][1] = r2[row];
             r[row][2] = r3[row];
         }
+        
+        // unit norm:
+        SVDProducts svd2 = MatrixUtil.performSVD(r);
+        r = MatrixUtil.multiply(svd2.u, svd2.vT);
         
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
@@ -680,7 +682,7 @@ public class CameraCalibration {
     the number of points.
     In terms of Table 1 of Chen et al. 2004, this is a double array of (x_d, y_d).
     */
-    public static double[][] applyRadialDistortion(double[][] xC, double k1, double k2) {
+    static double[][] applyRadialDistortion(double[][] xC, double k1, double k2) {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
@@ -1125,7 +1127,7 @@ public class CameraCalibration {
      * and the extrinsic parameter matrices for each image.
      * @return 
      */
-    static double[] estimateRadialDistortion(double[][] uvD, 
+    static double[] solveForRadialDistortion(double[][] uvD, 
         double[] u, double[] v, 
         CameraMatrices cameraMatrices) throws NotConvergedException {
         
@@ -1251,6 +1253,46 @@ public class CameraCalibration {
             // where one could remove radial distortion.
             // the method forms the image of the "absolute conic"
             kExtr = solveForExtrinsic(kIntr, g);
+            
+            list.add(kExtr);
+        }
+        
+        return list;
+    }
+    
+    /**
+     * following EE 267 Virtual Reality Course Notes: 6-DOF Pose Tracking with the VRduino
+       by Gordon Wetzstein
+     * @param kIntr
+     * @param coordsI
+     * @param coordsW
+     * @return
+     * @throws NotConvergedException 
+     */
+    static List<CameraExtrinsicParameters> solveForExtrinsics2(
+        CameraIntrinsicParameters kIntr, double[][] coordsI, double[][] coordsW) 
+        throws NotConvergedException {
+        
+        int nFeatures = coordsW[0].length;
+        int nImages = coordsI[0].length/nFeatures;
+        
+        double[] kRadial = null;
+        
+        List<CameraExtrinsicParameters> list = new ArrayList<CameraExtrinsicParameters>();
+        //(3) for each image homography and inverse intrinsic parameter matrix,
+        //    estimate the extrinsic parameters for the pose of the camera for that image.
+        CameraExtrinsicParameters kExtr;
+        
+        int i;
+        double[][] cI;
+        
+        for (i = 0; i < nImages; ++i) {
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);
+            
+            //NOTE: here, internal to solveForExtrinsic() would be a different place 
+            // where one could remove radial distortion.
+            // the method forms the image of the "absolute conic"
+            kExtr = solveForExtrinsic2(kIntr, kRadial, cI, coordsW);
             
             list.add(kExtr);
         }

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import static algorithms.imageProcessing.transform.CameraCalibration.solveForIntrinsic;
 import algorithms.matrix.MatrixUtil;
@@ -55,6 +56,7 @@ public class CameraCalibrationTest extends TestCase {
         double u0 = kIntr.getIntrinsic()[0][2];
         double beta = kIntr.getIntrinsic()[1][1];
         double v0 = kIntr.getIntrinsic()[1][2];
+        double[] kRadial = null;
         
         assertTrue(Math.abs(alphaE - alpha) < 0.1);
         assertTrue(Math.abs(gammaE - gamma) < 0.1);
@@ -69,11 +71,25 @@ public class CameraCalibrationTest extends TestCase {
             CameraCalibration.solveForExtrinsics(kIntr, h, nImages);
         cameraMatrices.getExtrinsics().addAll(extrinsics);
         
+        List<Camera.CameraExtrinsicParameters> extrinsics2 = CameraCalibration.solveForExtrinsics2(
+            kIntr, coordsI, coordsW);
+        
+        CameraExtrinsicParameters ex1, ex2;
+        for (int i = 0; i < nImages; ++i) {
+            ex1 = extrinsics.get(i);
+            ex2 = extrinsics2.get(i);
+            System.out.printf("\nimg %d:\n", i);
+            System.out.printf("   r1=\n%s\n", FormatArray.toString(ex1.getRotation(), "%.3e"));
+            System.out.printf("   r2=\n%s\n", FormatArray.toString(ex2.getRotation(), "%.3e"));
+            System.out.printf("   t1=\n%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e"));
+            System.out.printf("   t2=\n%s\n", FormatArray.toString(ex2.getTranslation(), "%.3e"));
+        }
+        
         double[] u = new double[nFeatures*nImages];
         double[] v = new double[nFeatures*nImages];
         CameraCalibration.calculateProjected(coordsW, h, u, v);
                 
-        double[] kRadial = CameraCalibration.estimateRadialDistortion(coordsI, u, v, cameraMatrices);
+        kRadial = CameraCalibration.solveForRadialDistortion(coordsI, u, v, cameraMatrices);
         double k1 = kRadial[0];
         double k2 = kRadial[1];
         System.out.printf("k=\n%s\n", FormatArray.toString(kRadial, "%.4e"));
