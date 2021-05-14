@@ -253,14 +253,19 @@ public class Camera {
      * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
      * @param rCoeffs radial distortion vector of length 2
      * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * if 
      * @param focalLength focal length of camera in units of pixels.
      * @param centerX x coordinate of principal point in pixels, usually image center.
      * @param centerY y coordinate of principal point in pixels, usually image center.
      * @return pixels in the reference frame of image with distortion applied.
      * In terms of Table 1 of Ma et al. 2004, this is a double array of (u_d, v_d)
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        note that if rCoeffs is null or empty, no radial distortion is applied.
      */
     public static double[][] cameraToPixelCoordinates(double[][] xC, double[] rCoeffs,
-        double focalLength, double centerX, double centerY) {
+        double focalLength, double centerX, double centerY, boolean useR2R4) {
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
         
@@ -271,9 +276,10 @@ public class Camera {
             cc[1][i] /= xC[2][i];
         }
         
-        if (rCoeffs != null) {
+        if (rCoeffs != null && rCoeffs.length > 0) {
             // input and output cc are in camera reference frame
-            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1]);
+            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1],
+                useR2R4);
         }
          
         focalLength = Math.abs(focalLength);
@@ -285,45 +291,7 @@ public class Camera {
         return cc;
     }
     
-    /** converts pixel coordinates to camera coordinates by transforming them to camera 
-    reference frame then removing radial distortion.
-    The radial distortion removal follows Ma et al. 2004 for model #3 in Table 2,
-    * f(r) = 1 +k1*r + k2*r^2.
-    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
-    and the output is a double array of (x, y).
-    Also useful reading is NVM Tools by Alex Locher
-    https://github.com/alexlocher/nvmtools.git
-    
-     * @param x points in the camera centered reference frame. 
-     * format is 3XN for N points.  
-     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
-     * distortion vector of length 5.  can be null to skip lens distortion correction.
-     * @param focalLength focal length of camera in units of pixels.
-     * @param centerX x coordinate of principal point in pixels, usually image center.
-     * @param centerY y coordinate of principal point in pixels, usually image center.
-     * @return pixels in the reference frame of 
-     */
-    public static double[][] pixelToCameraCoordinates(double[][] x, double[] rCoeffs,
-        double focalLength, double centerX, double centerY) throws NotConvergedException {
-        
-        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
-        
-        focalLength = Math.abs(focalLength);
-        
-        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(
-            focalLength, centerX, centerY);
-        
-        // put x into camera coordinates reference frame:
-        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
-        
-        if (rCoeffs != null) {
-            pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], rCoeffs[1]);
-        }
-                
-        return pix;
-    }
-    
-    /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
+     /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
     reference frame then applying Lp2-normalization.
      * @param x points in the camera centered reference frame. 
      * format is 3XN for N points. 
@@ -352,10 +320,8 @@ public class Camera {
         return xDirection;
     }
     
-     /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    /** converts pixel coordinates to camera coordinates by transforming them to camera 
     reference frame then removing radial distortion.
-    The radial distortion removal follows Ma et al. 2004 for model #4 in Table 2,
-    * f(r) = 1 +k1*r^2 + k2*r^4.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
     and the output is a double array of (x, y).
     Also useful reading is NVM Tools by Alex Locher
@@ -368,10 +334,16 @@ public class Camera {
      * @param focalLength focal length of camera in units of pixels.
      * @param centerX x coordinate of principal point in pixels, usually image center.
      * @param centerY y coordinate of principal point in pixels, usually image center.
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return pixels in the reference frame of 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
      */
-    public static double[][] pixelToCameraCoordinates4(double[][] x, double[] rCoeffs,
-        double focalLength, double centerX, double centerY) throws NotConvergedException {
+    public static double[][] pixelToCameraCoordinates(double[][] x, double[] rCoeffs,
+        double focalLength, double centerX, double centerY, boolean useR2R4) 
+        throws NotConvergedException {
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
         
@@ -384,80 +356,38 @@ public class Camera {
         double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
         
         if (rCoeffs != null) {
-            pix = CameraCalibration.removeRadialDistortion4(pix, rCoeffs[0], rCoeffs[1]);
-        }
-                
-        return pix;
-    }
-    
-    /** converts pixel coordinates to camera coordinates by transforming them to camera 
-    reference frame then removing radial distortion.
-    The radial distortion removal follows Ma et al. 2004 for model #3 in Table 2,
-    * f(r) = 1 +k1*r + k2*r^2.
-    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
-    and the output is a double array of (x, y).
-    Also useful reading is NVM Tools by Alex Locher
-    https://github.com/alexlocher/nvmtools.git
-    
-     * @param x points in the camera centered reference frame. 
-     * format is 3XN for N points.  
-     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
-     * distortion vector of length 5.  can be null to skip lens distortion correction.
-     * @param kIntrinsic camera intrinsic parameters.  note, it's expected that the focal length is positive
-     * 
-     * @return pixels in the reference frame of 
-     * @throws no.uib.cipr.matrix.NotConvergedException 
-     */
-    public static double[][] pixelToCameraCoordinates(double[][] x, double[] rCoeffs,
-        double[][] kIntrinsic) throws NotConvergedException {
-        
-        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
-                
-        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntrinsic);
-        
-        // put x into camera coordinates reference frame:
-        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
-        
-        if (rCoeffs != null) {
             pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], rCoeffs[1]);
         }
                 
         return pix;
     }
     
-    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    /** 
+       converts pixel coordinates to camera coordinates by transforming them to camera 
     reference frame then removing radial distortion.
-    The radial distortion removal follows Ma et al. 2004 for model #4 in Table 2,
-    * f(r) = 1 +k1*r^2 + k2*r^4.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
     and the output is a double array of (x, y).
     Also useful reading is NVM Tools by Alex Locher
     https://github.com/alexlocher/nvmtools.git
-    
      * @param x points in the camera centered reference frame. 
      * format is 3XN for N points.  
      * @param rCoeffs radial distortion vector of length 2 or radial and tangential
      * distortion vector of length 5.  can be null to skip lens distortion correction.
      * @param kIntrinsic camera intrinsic parameters.  note, it's expected that the focal length is positive
-     * 
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return pixels in the reference frame of 
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
-    public static double[][] pixelToCameraCoordinates4(double[][] x, double[] rCoeffs,
-        double[][] kIntrinsic) throws NotConvergedException {
+    public static double[][] pixelToCameraCoordinates(double[][] x, double[] rCoeffs,
+        double[][] kIntrinsic, boolean useR2R4) throws NotConvergedException {
         
-        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
-                
-        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntrinsic);
-        
-        // put x into camera coordinates reference frame:
-        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
-        
-        if (rCoeffs != null) {
-            pix = CameraCalibration.removeRadialDistortion4(pix, rCoeffs[0], rCoeffs[1]);
-        }
-                
-        return pix;
+        double focalLength = kIntrinsic[0][0];
+        double centerX = kIntrinsic[0][2]; 
+        double centerY = kIntrinsic[1][2];
+        return pixelToCameraCoordinates(x, rCoeffs, focalLength, centerX, centerY, useR2R4);
     }
     
     /**

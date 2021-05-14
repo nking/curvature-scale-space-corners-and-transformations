@@ -35,8 +35,9 @@ public class CameraTest extends TestCase {
         //    centerX, centerY);
         
         double[] rCoeffs = null;
+        boolean useR2R4 = false;
         double[][] xC = Camera.pixelToCameraCoordinates(x, rCoeffs, focalLength, 
-             centerX, centerY);
+             centerX, centerY, useR2R4);
         assertEquals(eX.length, xC.length);
         assertEquals(eX[0].length, xC[0].length);
         for (int i = 0; i < eX.length; ++i) {
@@ -47,9 +48,8 @@ public class CameraTest extends TestCase {
         }
         
         
-        
         double[][] xCP = Camera.cameraToPixelCoordinates(xC, rCoeffs, 
-            focalLength, centerX, centerY);
+            focalLength, centerX, centerY, useR2R4);
         
         assertEquals(x.length, xCP.length);
         assertEquals(x[0].length, xCP[0].length);

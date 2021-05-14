@@ -23,6 +23,9 @@ public class CameraCalibrationTest extends TestCase {
     public void testCalibration0() throws IOException, NotConvergedException {
         // see testresources/zhang1998/README.txt
         
+        // they use f(r) = 1 + k1*rk2*r^2:
+        boolean useR2R4 = false;
+        
         int nFeatures = 256;
         int nImages = 5;
         
@@ -72,7 +75,7 @@ public class CameraCalibrationTest extends TestCase {
         cameraMatrices.getExtrinsics().addAll(extrinsics);
         
         List<Camera.CameraExtrinsicParameters> extrinsics2 = CameraCalibration.solveForExtrinsics2(
-            kIntr, coordsI, coordsW);
+            kIntr, coordsI, coordsW, useR2R4);
         
         CameraExtrinsicParameters ex1, ex2;
         for (int i = 0; i < nImages; ++i) {
@@ -89,13 +92,16 @@ public class CameraCalibrationTest extends TestCase {
         double[] v = new double[nFeatures*nImages];
         CameraCalibration.calculateProjected(coordsW, h, u, v);
                 
-        kRadial = CameraCalibration.solveForRadialDistortion(coordsI, u, v, cameraMatrices);
+        kRadial = CameraCalibration.solveForRadialDistortion(coordsI, u, v, 
+            cameraMatrices, useR2R4);
         double k1 = kRadial[0];
         double k2 = kRadial[1];
         System.out.printf("k=\n%s\n", FormatArray.toString(kRadial, "%.4e"));
     }
     
     public void estCalibration2() throws NotConvergedException {
+        
+        boolean useR2R4 = false;
         
         // number of features
         int n = 8;
@@ -109,7 +115,8 @@ public class CameraCalibrationTest extends TestCase {
         coordsW[1] = new double[]{14,  14, 9.7, 0, -3, -3, -14, -14};
         coordsW[2] = new double[]{41.5, 41.5, 41.5, 41.5, 41.5, 41.5, 41.5, 41.5};
         
-        CameraMatrices c = CameraCalibration.estimateCamera(n, coordsI, coordsW);
+        CameraMatrices c = CameraCalibration.estimateCamera(n, coordsI, coordsW,
+            useR2R4);
         
         /*
         expecting

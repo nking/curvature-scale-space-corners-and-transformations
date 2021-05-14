@@ -35,11 +35,15 @@ public class ProjectiveLevenbergMarquardt {
      * @param kIntr
      * @param kExtr
      * @param kRadial
+     * param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return 
      */
     public static CameraExtrinsicParameters solve(double[][] imageC, double[][] worldC, 
         CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
-        double[] kRadial, final int nMaxIter) throws NotConvergedException {
+        double[] kRadial, final int nMaxIter, boolean useR2R4) throws NotConvergedException {
         
         int n = imageC[0].length;
         
@@ -51,7 +55,8 @@ public class ProjectiveLevenbergMarquardt {
         }
         
         double[] b = new double[2*n];
-        final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kRadial, kIntr.getIntrinsic());
+        final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kRadial, 
+            kIntr.getIntrinsic(),useR2R4);
         for (int i = 0; i < n; ++i) {
             xn[0][i] /= xn[2][i];
             xn[1][i] /= xn[2][i];

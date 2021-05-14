@@ -58,11 +58,14 @@ public class CameraCalibration {
                (Z_w = 0, the scale factor is lost in the homography).
                It is a 2 dimensional double array of format
                3 X n
+       @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
      * @return camera intrinsic parameters, extrinsic parameters, and radial
      * distortion coefficients
      */
     public static CameraMatrices estimateCamera(final int n, double[][] coordsI, 
-        double[][] coordsW) throws NotConvergedException {
+        double[][] coordsW, boolean useR2R4) throws NotConvergedException {
         
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI must have 3 rows.");
@@ -134,7 +137,8 @@ public class CameraCalibration {
         double[] v = new double[n*nImages];
         calculateProjected(coordsW, h, u, v);
                 
-        double[] kRadial = solveForRadialDistortion(coordsI, u, v, cameraMatrices);
+        double[] kRadial = solveForRadialDistortion(coordsI, u, v, cameraMatrices,
+            useR2R4);
         
         // (5) optimization to improve the parameter estimates
         
@@ -152,7 +156,7 @@ public class CameraCalibration {
             
             // improve the extrinsic parameter estimates:
             extrinsic = ProjectiveLevenbergMarquardt.solve(cI, coordsW, kIntr, 
-                kExtr, kRadial, nMaxIter);
+                kExtr, kRadial, nMaxIter, useR2R4);
             
             cameraMatrices.getExtrinsics().set(i, extrinsic);
         }        
@@ -482,12 +486,16 @@ public class CameraCalibration {
      * @param coordsI holds the image coordinates in pixels of features present in image i
      * @param coordsW holds the world coordinates of features present in image 1 corresponding
                to the same features and order of coordsI_i
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+    * note that if rCoeffs is null or empty, no radial distortion is applied.
      * @return 
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     static CameraExtrinsicParameters solveForExtrinsic2(
         CameraIntrinsicParameters kIntr, double[] kRadial, 
-        double[][] coordsI, double[][] coordsW) throws NotConvergedException {
+        double[][] coordsI, double[][] coordsW, boolean useR2R4) throws NotConvergedException {
         
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI length should be 3");
@@ -501,7 +509,8 @@ public class CameraCalibration {
         }
         
         // convert to camera centered coordinates
-        double[][] xc = Camera.pixelToCameraCoordinates(coordsI, kRadial, kIntr.getIntrinsic());
+        double[][] xc = Camera.pixelToCameraCoordinates(coordsI, kRadial, 
+            kIntr.getIntrinsic(), useR2R4);
         
         // normalize by last coordinate:
         for (int i = 0; i < xc[0].length; ++i) {
@@ -678,11 +687,15 @@ public class CameraCalibration {
     In terms of Table 1 of Chen et al. 2004, this is a double array of (x, y).
     @param k1 first radial distortion coefficient
     @param k2 second radial distortion coefficient
+    @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
     @return  distorted camera centered coordinates in format 3XN where N is
     the number of points.
     In terms of Table 1 of Chen et al. 2004, this is a double array of (x_d, y_d).
     */
-    static double[][] applyRadialDistortion(double[][] xC, double k1, double k2) {
+    static double[][] applyRadialDistortion(double[][] xC, double k1, double k2,
+        boolean useR2R4) {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
@@ -698,7 +711,11 @@ public class CameraCalibration {
             r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
             r = Math.sqrt(r2);
             //f(r) = (1 + k1*r + k2*r^2)
-            fr = 1 + k1*r + k2*r2;
+            if (useR2R4) {
+                fr = 1 + k1*r2 + k2*r2*r2;
+            } else {
+                fr = 1 + k1*r + k2*r2;
+            }
             // x_d = x*f_r:
             distorted[0][i] *= fr;
             distorted[1][i] *= fr;
@@ -1125,11 +1142,14 @@ public class CameraCalibration {
      * @param v y image coordinates.  array length is n*nImages
      * @param cameraMatrices data structure holding the camera intrinsic parameters
      * and the extrinsic parameter matrices for each image.
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
      * @return 
      */
     static double[] solveForRadialDistortion(double[][] uvD, 
         double[] u, double[] v, 
-        CameraMatrices cameraMatrices) throws NotConvergedException {
+        CameraMatrices cameraMatrices, boolean useR2R4) throws NotConvergedException {
         
         int nImages = cameraMatrices.getExtrinsics().size();
         int nFeatures = u.length/nImages;
@@ -1171,14 +1191,15 @@ public class CameraCalibration {
         */
         
         int i, j;
-        double ui, vi, udi, vdi, xi, yi, r2, r4;
+        double ui, vi, udi, vdi, xi, yi, r2, r4, r;
         double u0=0; double v0=0;
         double[][] xy;
         double[][] dM = new double[2*nFeatures*nImages][2];
         double[] dV = new double[2*nFeatures*nImages];
         for (i = 0; i < nImages; ++i) {
             xy = MatrixUtil.copySubMatrix(uvD, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);
-            xy = Camera.pixelToCameraCoordinates(xy, null, cameraMatrices.getIntrinsics().getIntrinsic());
+            xy = Camera.pixelToCameraCoordinates(xy, null, 
+                cameraMatrices.getIntrinsics().getIntrinsic(), false);
             for (j = 0; j < nFeatures; ++j) {
                 ui = u[nFeatures*i + j];
                 vi = u[nFeatures*i + j];
@@ -1194,8 +1215,14 @@ public class CameraCalibration {
                 //i:0 j:2          idx=4, idy=5
                 //i:1 j:0  idx=6, idy=7
                 //i:1 j:1  idx=8, idy=9
-                dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r2, (ui-u0)*r4};
-                dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r2, (vi-v0)*r4};
+                if (useR2R4) {
+                    dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r2, (ui-u0)*r4};
+                    dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r2, (vi-v0)*r4};
+                } else {
+                    r = Math.sqrt(r2);
+                    dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r, (ui-u0)*r2};
+                    dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r, (vi-v0)*r2};
+                }
                 dV[2*nFeatures*i + 2*j] = udi - 2*ui + u0;
                 dV[2*nFeatures*i + 2*j + 1] = vdi - 2*vi + v0;
             }
@@ -1266,11 +1293,16 @@ public class CameraCalibration {
      * @param kIntr
      * @param coordsI
      * @param coordsW
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2 if true.
+    * note that if rCoeffs is null or empty, no radial distortion is applied.
      * @return
      * @throws NotConvergedException 
      */
     static List<CameraExtrinsicParameters> solveForExtrinsics2(
-        CameraIntrinsicParameters kIntr, double[][] coordsI, double[][] coordsW) 
+        CameraIntrinsicParameters kIntr, double[][] coordsI, double[][] coordsW,
+        boolean useR2R4) 
         throws NotConvergedException {
         
         int nFeatures = coordsW[0].length;
@@ -1292,7 +1324,7 @@ public class CameraCalibration {
             //NOTE: here, internal to solveForExtrinsic() would be a different place 
             // where one could remove radial distortion.
             // the method forms the image of the "absolute conic"
-            kExtr = solveForExtrinsic2(kIntr, kRadial, cI, coordsW);
+            kExtr = solveForExtrinsic2(kIntr, kRadial, cI, coordsW, useR2R4);
             
             list.add(kExtr);
         }
