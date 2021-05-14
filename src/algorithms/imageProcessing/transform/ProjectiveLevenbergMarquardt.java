@@ -79,7 +79,7 @@ public class ProjectiveLevenbergMarquardt {
         // equation (19).  size is 1 X 9
         double[] h = new double[]{r[0][0], r[0][1], t[0], 
             r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], -t[2]};
-       
+ editing... upstream t[0] might be far too large      
         // equation 20.  length is 2*N
         double[] fgp = map(worldC, h);
         
@@ -102,13 +102,8 @@ public class ProjectiveLevenbergMarquardt {
         double f = Double.POSITIVE_INFINITY;
         double fPrev;
         
-        // from a different lecture:: delta p LM: (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p)))
-        // length is 6
         double[] deltaPLM;
-        
-        //from eqn (22) :           inv( J^T J + λ diag(J^TJ)) · (b−f)
-        double[] deltaPLM22;
-        
+                
         double eps = 1.e-5;
         
         // gain ratio:
@@ -153,16 +148,17 @@ public class ProjectiveLevenbergMarquardt {
             j = calculateJ(worldC, h, thetas); //(2N) X 6
             jT = MatrixUtil.transpose(j);
             jTJ = MatrixUtil.multiply(jT, j);
-    editing here: deltaPM not correct        
-            deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);        
-            // compare with other step function:
-            deltaPLM = calculateDeltaPLM(jTJ, jT, lambda, bMinusFGP);
+                  
+            //inv( J^T J + λ diag(J^TJ)) · (b−f)
+            //deltaPLM = calculateDeltaPLM(jTJ, lambda, bMinusFGP);        
+            // delta p LM: (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p)))
+            //deltaPLM = calculateDeltaPLM(jTJ, jT, lambda, bMinusFGP);
+            deltaPLM = calculateDeltaPLMSzeliski(jTJ, jT, lambda, bMinusFGP);
             
-            System.out.printf("delta0=%s\ndelta1=%s\n", FormatArray.toString(deltaPLM, "%.3e"),
-                FormatArray.toString(deltaPLM22, "%.3e"));
+            System.out.printf("deltaP=%s\n", FormatArray.toString(deltaPLM, "%.3e"));
         
             // ======= stopping conditions ============
-            stepLengthCheck = deltaPLM22;
+            stepLengthCheck = deltaPLM;
             gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
             MatrixUtil.multiply(gradientCheck, -1.);            
             if (isNegligible(stepLengthCheck, tolP) || !isNegligible(gradientCheck, tolG)) {
@@ -178,15 +174,15 @@ public class ProjectiveLevenbergMarquardt {
             
             // ======= revise parameters =======
             
-            // add deltaPM22 to p, which is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-            updateBySteps(thetas, t, deltaPLM22);
+            // add deltaPM to p, which is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+            updateBySteps(thetas, t, deltaPLM);
             
             updateH(h, thetas, t);
             
             // ====== change lambda ======
             if (nIter > 1) {
                 gainRatio = calculateGainRatio(f/2., fPrev/2.,
-                    deltaPLM22, lambda, jT, bMinusFGP, eps);
+                    deltaPLM, lambda, jT, bMinusFGP, eps);
                 if (gainRatio > 0) {
                     // near the minimimum, which is good.
                     // decrease lambda
@@ -243,16 +239,15 @@ public class ProjectiveLevenbergMarquardt {
         
         double[] f = new double[2*n];
         
-        double sum = 0;
         int i, j;
         double X, Y, s;
         for (i = 0; i < n; ++i) {
             X = worldC[0][i];
             Y = worldC[1][i];
-            s = h[6] * X + h[7] * Y + h[8];
+            s = h[6]*X + h[7]*Y + h[8];
             
-            f[2*i] = (h[0] * X + h[1] * Y + h[2])/s;
-            f[2*i+1] = ((h[3] * X + h[4] * Y + h[5])/s);            
+            f[2*i] = (h[0]*X + h[1]*Y + h[2])/s;
+            f[2*i+1] = ((h[3]*X + h[4]*Y + h[5])/s);            
         }
         
         return f;
@@ -392,6 +387,37 @@ public class ProjectiveLevenbergMarquardt {
     }
 
     /**
+     * following Szeliski 2010, Chap 6, eqn (6.18)
+     * @param jTJ
+     * @param jT
+     * @param lambda
+     * @param bMinusFGP
+     * @return 
+     */
+    private static double[] calculateDeltaPLMSzeliski(double[][] jTJ, 
+        double[][] jT, double lambda, double[] bMinusFGP) throws NotConvergedException {
+        
+        //                 inv(6X6)                       6X2N * 2N
+        //delta p = pseudoInv(J^T*J + lambda*diag(J^T*J)) * J^T*BFG
+        
+        int i, j;
+        // J^T J + λ diag(J^TJ)     
+        // 6 X 6
+        double[][] a = MatrixUtil.copy(jTJ);
+        for (i = 0; i < 6; ++i) {
+            a[i][i] += (lambda*(jTJ[i][i]));
+        }
+        double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
+        
+        //6X2N * 2N = 6X1
+        double[] jTBFG = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
+        
+        double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBFG);
+        
+        return step;
+    }
+        
+    /**
      *                          6X6  * (6 * (2N)) * (2NX1) = 6 X (2N) * (2NX1) = 6X1
      * calculate the step as (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p))
      * @param jTJ 
@@ -410,8 +436,8 @@ public class ProjectiveLevenbergMarquardt {
         double[][] a = MatrixUtil.elementwiseAdd(jTJ, identity);
         double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
         
-        double[][] pt1 = MatrixUtil.multiply(aInv, jT);
-        double[] step = MatrixUtil.multiplyMatrixByColumnVector(pt1, bMinusF);
+        double[] jTBF = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusF);
+        double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBF);
         
         return step;
     }
