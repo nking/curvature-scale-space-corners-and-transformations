@@ -1138,8 +1138,8 @@ public class CameraCalibration {
                columns are the features presented in the same order in each image.
                In Table 1 of Ma, Chen, & Moore 2003 "Camera Calibration"
                these are the (u_d, v_d) pairs.
-     * @param u x image coordinates.  array length is n*nImages
-     * @param v y image coordinates.  array length is n*nImages
+     * @param u projections of the WCS feature x coordinates.  array length is n*nImages
+     * @param v projections of the WCS feature y coordinates.  array length is n*nImages
      * @param cameraMatrices data structure holding the camera intrinsic parameters
      * and the extrinsic parameter matrices for each image.
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
@@ -1155,34 +1155,54 @@ public class CameraCalibration {
         int nFeatures = u.length/nImages;
         
         /* 
-        eqn (8) of Ma, Chen & Moore "Camera Calibration"
+        (ud, vd) are Real observed distorted image points
+        (u, v) Ideal projected undistorted image points
+        [x,y,1] = A^-1 * [u, v, 1]
+
+        eqn (5) of Ma, Chen, & Moore 2004, "Rational Radial Distortion..."
+           ud-u0 = (u-u0)*f(r)
+           vd-v0 = (v-v0)*f(r)
+
+        eqn (8) of Ma, Chen & Moore 2003, "Camera Calibration..."
            ud = u + (u−u0)*f_r
            vd = v + (v−v0)*f_r
-        
-        uses equation #4 of Ma et al. 2004 Table 2
+
+        eqn (11) of Zhang 1998, "Flexible Camera Calibration ..."
+           ud = u + (u−u0)*[k1*r + k2*r^2]
+           vd = v + (v−v0)*[k1*r + k2*r^2]
+
+        (5) and (8) use equation #3 or #4 of Ma et al. 2004 Table 2
+            #3: f_r = 1 + k_1*r + k_2*r^2
+                    = 1 + k_1*(x^2 + y^2)^-1/2 + k_2*(x^2 + y^2)
             #4: f_r = 1 + k_1*r^2 + k_2*r^4
                     = 1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
-        
-            (ud, vd) are Real observed distorted image points
-            (u, v) Ideal projected undistorted image points
-            [x,y,1] = A^-1 * [u, v, 1]
-        
+
+        factored out eqn (5) of Ma, Chen, & Moore 2004:
+           ud-u0 = (u-u0)*(1 + k_1*r + k_2*r^2)
+                 = (u-u0) + (u-u0)*(k_1*r + k_2*r^2)
+           ud = u + (u-u0)*(k_1*r + k_2*r^2)
+           ud-u = (u-u0)*(k_1*r + k_2*r^2)
+         is the same as eqn (11) of Zhang 1998.
+
         Given n points in nImages, we can stack all equations together
-        to obtain 2Nn equations in matrix form as 
-            Dk = d, where k = [k1, k2]^T . 
-        The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d.
-                                                     = pseudoInv(D) * d
-             ud = u + (u−u0)*f_r
-             vd = v + (v−v0)*f_r
-             f_r =  1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
-        
-             0 = -ud + u + (u -u0)*(1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2)
-             0 = -ud + 2*u - u0 + k1*((u-u0)*(x^2 + y^2)) + k2*((u-u0)*(x^2 + y^2)^2)
-             
+        to obtain totally 2Nn equations in matrix form as
+        Dk = d, where k = [k1, k2]^T .
+
+        The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d = pseudoInv(D)*d.
+
+          if choose #3:
+
+               k1                        k2                    const
+              ----------------------------------------------------------
+        D = [ (u-u0)*sqrt(x^2 + y^2)    (u-u0)*(x^2 + y^2) ]   d = [ ud - u ]
+            [ (v-v0)*sqrt(x^2 + y^2)    (v-v0)*(x^2 + y^2) ]       [ vd - v ]
+
+          if choose #4:
+
                k1                   k2                       const
               ----------------------------------------------------------
-        D = [ (u-u0)*(x^2 + y^2)    (u-u0)*(x^2 + y^2)^2 ]   d = [ ud - 2*u + u0 ]
-            [ (v-v0)*(x^2 + y^2)    (v-v0)*(x^2 + y^2)^2 ]       [ vd - 2*v + v0 ]
+        D = [ (u-u0)*(x^2 + y^2)    (u-u0)*(x^2 + y^2)^2 ]   d = [ ud - u ]
+            [ (v-v0)*(x^2 + y^2)    (v-v0)*(x^2 + y^2)^2 ]       [ vd - v ]
         
        The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d.
                                                       (2X2nN * 2nNX2)^-1 * (2X2nN) * (2nNX1)
@@ -1192,7 +1212,9 @@ public class CameraCalibration {
         
         int i, j;
         double ui, vi, udi, vdi, xi, yi, r2, r4, r;
-        double u0=0; double v0=0;
+        double ud0 = cameraMatrices.getIntrinsics().getIntrinsic()[0][2];
+        double vd0 = cameraMatrices.getIntrinsics().getIntrinsic()[1][2];
+        double u0=ud0; double v0=vd0;
         double[][] xy;
         double[][] dM = new double[2*nFeatures*nImages][2];
         double[] dV = new double[2*nFeatures*nImages];
@@ -1202,7 +1224,7 @@ public class CameraCalibration {
                 cameraMatrices.getIntrinsics().getIntrinsic(), false);
             for (j = 0; j < nFeatures; ++j) {
                 ui = u[nFeatures*i + j];
-                vi = u[nFeatures*i + j];
+                vi = v[nFeatures*i + j];
                 udi = uvD[0][nFeatures*i + j];
                 vdi = uvD[1][nFeatures*i + j];
                 xi = xy[0][j];
@@ -1223,15 +1245,15 @@ public class CameraCalibration {
                     dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r, (ui-u0)*r2};
                     dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r, (vi-v0)*r2};
                 }
-                dV[2*nFeatures*i + 2*j] = udi - 2*ui + u0;
-                dV[2*nFeatures*i + 2*j + 1] = vdi - 2*vi + v0;
+                dV[2*nFeatures*i + 2*j] = udi -ud0 - ui;
+                dV[2*nFeatures*i + 2*j + 1] = vdi -vd0 - vi;
             }
         }
            
         //k = (D^T*D)^−1*D^T*d = pseudoInv(D) * d
         double[][] dInv = MatrixUtil.pseudoinverseFullRank(dM);
         double[] k = MatrixUtil.multiplyMatrixByColumnVector(dInv, dV);
-        
+                
         return k;
     }
 

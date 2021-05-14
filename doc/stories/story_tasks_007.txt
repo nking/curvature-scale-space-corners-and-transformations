@@ -206,9 +206,9 @@ Task 5: implement the method to estimate the radial distortion coefficients
 
    time estimate: minimum 1 hour, maximum 1 day
   
-   amount of time used:  3 hours
+   amount of time used:  5 hours
 
-   state of completion: implemented, but not tested
+   state of completion: implemented, but test results are a little off
 
    comments:
               
@@ -225,18 +225,35 @@ Task 5: implement the method to estimate the radial distortion coefficients
                        h21*X_w + h23*Y_W + h23
                    v = -----------------------
                        h31*X_w + h32*Y_W + h33
+
+                (ud, vd) are Real observed distorted image points
+                (u, v) Ideal projected undistorted image points
+                [x,y,1] = A^-1 * [u, v, 1]
+        
+                eqn (5) of Ma, Chen, & Moore 2004, "Rational Radial Distortion..."
+                   ud-u0 = (u-u0)*f(r)
+                   vd-v0 = (v-v0)*f(r)
            
-                eqn (8) of Ma, Chen & Moore "Camera Calibration"
+                eqn (8) of Ma, Chen & Moore 2003, "Camera Calibration..."
                    ud = u + (u−u0)*f_r
                    vd = v + (v−v0)*f_r
+
+                eqn (11) of Zhang 1998, "Flexible Camera Calibration ..."
+                   ud = u + (u−u0)*[k1*r + k2*r^2]
+                   vd = v + (v−v0)*[k1*r + k2*r^2]
         
-                uses equation #4 of Ma et al. 2004 Table 2
+                (5) and (8) use equation #3 or #4 of Ma et al. 2004 Table 2
+                    #3: f_r = 1 + k_1*r + k_2*r^2
+                            = 1 + k_1*(x^2 + y^2)^-1/2 + k_2*(x^2 + y^2)
                     #4: f_r = 1 + k_1*r^2 + k_2*r^4
                             = 1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
-        
-                    (ud, vd) are Real observed distorted image points
-                    (u, v) Ideal projected undistorted image points
-                    [x,y,1] = A^-1 * [u, v, 1]
+
+                factored out eqn (5) of Ma, Chen, & Moore 2004:
+                   ud-u0 = (u-u0)*(1 + k_1*r + k_2*r^2)
+                         = (u-u0) + (u-u0)*(k_1*r + k_2*r^2)
+                   ud = u + (u-u0)*(k_1*r + k_2*r^2)
+                   ud-u = (u-u0)*(k_1*r + k_2*r^2)
+                 is the same as eqn (11) of Zhang 1998.
         
                 Given n points in nImages, we can stack all equations together
                 to obtain totally 2Nn equations in matrix form as 
@@ -244,17 +261,19 @@ Task 5: implement the method to estimate the radial distortion coefficients
 
                 The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d = pseudoInv(D)*d.
         
-                     ud = u + (u−u0)*f_r
-                     vd = v + (v−v0)*f_r
-                     f_r =  1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
-        
-                     0 = -ud + u + (u -u0)*(1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2)
-                     0 = -ud + 2*u - u0 + k1*((u-u0)*(x^2 + y^2)) + k2*((u-u0)*(x^2 + y^2)^2)
+                  if choose #3:
+             
+                       k1                        k2                    const
+                      ----------------------------------------------------------
+                D = [ (u-u0)*sqrt(x^2 + y^2)    (u-u0)*(x^2 + y^2) ]   d = [ ud - u ]
+                    [ (v-v0)*sqrt(x^2 + y^2)    (v-v0)*(x^2 + y^2) ]       [ vd - v ]
+
+                  if choose #4:
              
                        k1                   k2                       const
                       ----------------------------------------------------------
-                D = [ (u-u0)*(x^2 + y^2)    (u-u0)*(x^2 + y^2)^2 ]   d = [ ud - 2*u + u0 ]
-                    [ (v-v0)*(x^2 + y^2)    (v-v0)*(x^2 + y^2)^2 ]       [ vd - 2*v + v0 ]
+                D = [ (u-u0)*(x^2 + y^2)    (u-u0)*(x^2 + y^2)^2 ]   d = [ ud - u ]
+                    [ (v-v0)*(x^2 + y^2)    (v-v0)*(x^2 + y^2)^2 ]       [ vd - v ]
         
 
 ---------------------------------------------------------------------
