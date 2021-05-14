@@ -20,7 +20,7 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testCalibration0() throws IOException, NotConvergedException {
+    public void estCalibration0() throws IOException, NotConvergedException {
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*rk2*r^2:
@@ -97,6 +97,43 @@ public class CameraCalibrationTest extends TestCase {
         double k1 = kRadial[0];
         double k2 = kRadial[1];
         System.out.printf("k=\n%s\n", FormatArray.toString(kRadial, "%.4e"));
+        
+        CameraMatrices cameraCalibration = CameraCalibration.estimateCamera(
+             nFeatures, coordsI, coordsW, useR2R4);
+        
+    }
+    
+    public void testCalibration1() throws IOException, NotConvergedException {
+        // see testresources/zhang1998/README.txt
+        
+        // they use f(r) = 1 + k1*rk2*r^2:
+        boolean useR2R4 = false;
+        
+        int nFeatures = 256;
+        int nImages = 5;
+        
+        // 3 X 256
+        double[][] coordsW = Zhang98Data.getFeatureWCS();
+        assertEquals(3, coordsW.length);
+        assertEquals(nFeatures, coordsW[0].length);
+        
+        //3 X (256*5)
+        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
+        assertEquals(3, coordsI.length);
+        assertEquals(nFeatures*nImages, coordsI[0].length);
+        
+        double alphaE = 871.445;
+        double gammaE = 0.2419;
+        double u0E = 300.7676;
+        double betaE = 871.1251;
+        double v0E = 220.8684;
+        double k1E = 0.1371;
+        double k2E = -2.0101;
+        
+        
+        CameraMatrices cameraCalibration = CameraCalibration.estimateCamera(
+             nFeatures, coordsI, coordsW, useR2R4);
+        
     }
     
     public void estCalibration2() throws NotConvergedException {

@@ -2,7 +2,6 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
-import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
@@ -54,6 +53,9 @@ public class ProjectiveLevenbergMarquardt {
             throw new IllegalArgumentException("imageC[0].length must equal worldC[0].length");
         }
         
+        // TODO: remove this temporary change
+        kRadial = null;
+        
         double[] b = new double[2*n];
         final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kRadial, 
             kIntr.getIntrinsic(), useR2R4);
@@ -87,7 +89,7 @@ public class ProjectiveLevenbergMarquardt {
         // size is (2N) X 6
         double[][] j = calculateJ(worldC, h, thetas);
         
-        // size is (2N) X 6
+        // size is 6 X (2N)
         double[][] jT = MatrixUtil.transpose(j);
         // size is 6 X 6
         double[][] jTJ = MatrixUtil.multiply(jT, j);
@@ -102,13 +104,10 @@ public class ProjectiveLevenbergMarquardt {
         
         // from a different lecture:: delta p LM: (J^T*J + lambda*I)^-1 * J^T * (b-f(g(p)))
         // length is 6
-        double[] deltaPLM = calculateDeltaPLM(jTJ, jT, lambda, bMinusFGP);
+        double[] deltaPLM;
         
-        //from eqn (22) : inv( J^T J + λ diag(J^TJ)) · (b−f)
-        double[] deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);
-        
-        System.out.printf("delta0=%s\ndelta1=%s\n", FormatArray.toString(deltaPLM, "%.3e"),
-            FormatArray.toString(deltaPLM22, "%.3e"));
+        //from eqn (22) :           inv( J^T J + λ diag(J^TJ)) · (b−f)
+        double[] deltaPLM22;
         
         double eps = 1.e-5;
         
@@ -125,25 +124,46 @@ public class ProjectiveLevenbergMarquardt {
         double[] gradientCheck;
         final double tolP = 1.e-3;
         final double tolG = 1.e-3;
+                    
+        /*
+        init: f=infinity
+        loop:
+            set fPrev = f
+            calc fgp = map(worldC, h);
+            set f = b-fgp
+            calc j from (worldC, h, thetas);
+            calc deltaPM from (j, lambda, b-fgp)
+            check stopping conditions: jT-bMinusFGP small or deltaPM small
+            update thetas, t from (deltaPM)
+            update h from (thetas, t)
+            adjust lambda from (f, fPrev, deltaPM, b-fgp)
+        */
         
         int nIter = 0;
         while (nIter < nMaxIter) {
             
             nIter++;
-            
+                   
             fPrev = f;
+            fgp = map(worldC, h);
+            bMinusFGP = MatrixUtil.subtract(b, fgp);            
             f = evaluateObjective(bMinusFGP);
             
             // ===== calculate step ========
             j = calculateJ(worldC, h, thetas); //(2N) X 6
             jT = MatrixUtil.transpose(j);
             jTJ = MatrixUtil.multiply(jT, j);
+    editing here: deltaPM not correct        
             deltaPLM22 = calculateDeltaPLM(jTJ, lambda, bMinusFGP);        
+            // compare with other step function:
+            deltaPLM = calculateDeltaPLM(jTJ, jT, lambda, bMinusFGP);
             
+            System.out.printf("delta0=%s\ndelta1=%s\n", FormatArray.toString(deltaPLM, "%.3e"),
+                FormatArray.toString(deltaPLM22, "%.3e"));
+        
             // ======= stopping conditions ============
             stepLengthCheck = deltaPLM22;
-            gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, 
-                MatrixUtil.subtract(b, fgp));
+            gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
             MatrixUtil.multiply(gradientCheck, -1.);            
             if (isNegligible(stepLengthCheck, tolP) || !isNegligible(gradientCheck, tolG)) {
                 break;
@@ -162,9 +182,6 @@ public class ProjectiveLevenbergMarquardt {
             updateBySteps(thetas, t, deltaPLM22);
             
             updateH(h, thetas, t);
-                        
-            fgp = map(worldC, h);
-            bMinusFGP = MatrixUtil.subtract(b, fgp);
             
             // ====== change lambda ======
             if (nIter > 1) {
@@ -178,8 +195,7 @@ public class ProjectiveLevenbergMarquardt {
                     // increase lambda
                     lambda *= lambdaF;
                 }
-            }
-            
+            }            
         }
         
         /*
@@ -308,19 +324,19 @@ public class ProjectiveLevenbergMarquardt {
             s2 = h[3] * x + h[4] * y + h[5];
             dsq = s1*s1;
             
-            jF[0][2*i] = x/d;
-            jF[1][2*i] = y/d;
-            jF[2][2*i] = 1./d;
-            jF[6][2*i] = -(s1/dsq)*x;
-            jF[7][2*i] = -(s1/dsq)*y;
-            jF[8][2*i] = -(s1/dsq);
+            jF[2*i][0] = x/d;
+            jF[2*i][1] = y/d;
+            jF[2*i][2] = 1./d;
+            jF[2*i][6] = -(s1/dsq)*x;
+            jF[2*i][7] = -(s1/dsq)*y;
+            jF[2*i][8] = -(s1/dsq);
             
-            jF[3][2*i + 1] = x/d;
-            jF[4][2*i + 1] = y/d;
-            jF[5][2*i + 1] = 1./d;
-            jF[6][2*i + 1] = -(s2/dsq)*x;
-            jF[7][2*i + 1] = -(s2/dsq)*y;
-            jF[8][2*i + 1] = -(s2/dsq);
+            jF[2*i + 1][3] = x/d;
+            jF[2*i + 1][4] = y/d;
+            jF[2*i + 1][5] = 1./d;
+            jF[2*i + 1][6] = -(s2/dsq)*x;
+            jF[2*i + 1][7] = -(s2/dsq)*y;
+            jF[2*i + 1][8] = -(s2/dsq);
         }
         return jF;
     }
@@ -421,8 +437,10 @@ public class ProjectiveLevenbergMarquardt {
             a[i][i] += (lambda*(jTJ[i][i]));
         }
         
+        //6X6
         double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
-                
+              
+        //512
         double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, bMinusF);
         
         return step;

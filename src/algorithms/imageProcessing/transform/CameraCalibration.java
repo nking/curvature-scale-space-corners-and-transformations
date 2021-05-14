@@ -570,14 +570,9 @@ public class CameraCalibration {
             r2[i] -= (r1[i] * r1doth2);
         }
         r2 = MatrixUtil.normalizeL2(r2);
-        
-        // check that r1 dot r2 = 0;
-        double chk = MatrixUtil.innerProduct(r1, r2);
-        assert(Math.abs(chk) < 1.e-3);
-        
+         
         // r3 is r1 cross r2
         double[] r3 = MatrixUtil.crossProduct(r1, r2);
-        
         
         double[][] r = MatrixUtil.zeros(3, 3);
         for (int row = 0; row < 3; ++row) {
@@ -590,6 +585,12 @@ public class CameraCalibration {
         SVDProducts svd2 = MatrixUtil.performSVD(r);
         r = MatrixUtil.multiply(svd2.u, svd2.vT);
         
+        // check that r1 dot r2 = 0;
+        r1 = MatrixUtil.extractColumn(r, 0);
+        r2 = MatrixUtil.extractColumn(r, 1);        
+        double chk = MatrixUtil.innerProduct(r1, r2);
+        assert(Math.abs(chk) < 1.e-3);
+       
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
@@ -870,6 +871,8 @@ public class CameraCalibration {
             //   so consider whether to continue use cubic root for that case
             
             double[] rBar = CubicRootSolver.solveUsingDepressedCubic(p, q);
+            if (rBar != null)
+                System.out.printf("rBar=%s\n", FormatArray.toString(rBar, "%.4e"));
             if (rBar == null || rBar.length == 0) {
                 //k2*r^3 +k1*r^2 + r - r_d = 0
                 rBar = PolynomialRootSolver.realRoots(new double[]{k2, k1, 1, -rd});
