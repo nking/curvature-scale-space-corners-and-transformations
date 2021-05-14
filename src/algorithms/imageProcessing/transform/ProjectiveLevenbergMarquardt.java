@@ -79,7 +79,7 @@ public class ProjectiveLevenbergMarquardt {
         // equation (19).  size is 1 X 9
         double[] h = new double[]{r[0][0], r[0][1], t[0], 
             r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], -t[2]};
- editing... upstream t[0] might be far too large      
+      
         // equation 20.  length is 2*N
         double[] fgp = map(worldC, h);
         

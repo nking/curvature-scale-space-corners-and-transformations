@@ -100,7 +100,10 @@ public class CameraCalibration {
         CameraMatrices cameraMatrices = new CameraMatrices();
         cameraMatrices.setIntrinsics(kIntr);
         
-        List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics(kIntr, h, nImages);
+        //List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics(kIntr, h, nImages);        
+        List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics2(
+            kIntr, coordsI, coordsW, useR2R4);
+        
         cameraMatrices.getExtrinsics().addAll(extrinsics);
         
         // (4) estimate the radial distortion coefficients
