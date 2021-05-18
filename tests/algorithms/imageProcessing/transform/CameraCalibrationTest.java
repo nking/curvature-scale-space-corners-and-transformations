@@ -20,10 +20,10 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void estCalibration0() throws IOException, NotConvergedException {
+    public void testCalibration0() throws IOException, NotConvergedException {
         // see testresources/zhang1998/README.txt
         
-        // they use f(r) = 1 + k1*rk2*r^2:
+        // they use f(r) = 1 + k1*r + k2*r^2:
         boolean useR2R4 = false;
         
         int nFeatures = 256;
@@ -98,12 +98,36 @@ public class CameraCalibrationTest extends TestCase {
         double k2 = kRadial[1];
         System.out.printf("k=\n%s\n", FormatArray.toString(kRadial, "%.4e"));
         
-        CameraMatrices cameraCalibration = CameraCalibration.estimateCamera(
-             nFeatures, coordsI, coordsW, useR2R4);
+        
+        // quick test of apply and remove distortion
+        // (u_d, v_d) are the distorted features in coordsI in image reference frame.
+        // (x_d, y_d) are the distorted features in the camera reference frame.
+        // (x, y) are the distortion-free features in the camera reference frame.
+        int i, j;
+        double diff, diffD;
+        double[][] uvDI, xyDI, xyi, xyDUI;
+        for (i = 0; i < nImages; ++i) {
+            uvDI = MatrixUtil.copySubMatrix(coordsI, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);
+            xyDI = Camera.pixelToCameraCoordinates(uvDI, cameraMatrices.getIntrinsics(), null, false);
+            xyi = CameraCalibration.removeRadialDistortion(xyDI, k1, k2);
+            xyDUI = CameraCalibration.applyRadialDistortion(xyi, k1, k2, useR2R4);
+            // assert that xy != xyDI
+            // assert that xyDI == xyDUI
+            for (j = 0; j < nFeatures; ++j) {
+                diff = Math.abs(xyi[0][j] - xyDI[0][j]);
+                assertTrue(diff > 0.1);
+                diffD = Math.abs(xyDUI[0][j] - xyDI[0][j]);
+                System.out.printf("(distorted-undistorted)=%.5e \n(orig - removedApplied)=%.5e\n", diff, diffD);  System.out.flush();
+                assertTrue(diffD < 0.1);
+            }
+        }
+        
+        //CameraMatrices cameraCalibration = CameraCalibration.estimateCamera(
+        //     nFeatures, coordsI, coordsW, useR2R4);
         
     }
     
-    public void testCalibration1() throws IOException, NotConvergedException {
+    public void estCalibration1() throws IOException, NotConvergedException {
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*rk2*r^2:

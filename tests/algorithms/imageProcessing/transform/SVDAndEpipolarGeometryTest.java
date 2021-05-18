@@ -1207,16 +1207,28 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
 
         // Rodrigues formula for small rotations, but this angle is  large
         //   R(θ,t) = I + sinθ * [t]_× + (1−cosθ)*([t]_x)^2
-        //      is [t]_x)^2 defined by power series P^(2*k+ 1) = ((-1)^k) *P?
-        //      still reading...
+        //      [t]_x)^2 from Szeliski 2010 near eqn (2.40)
+        //               = [ -y^2-z^2  x*y       x*z      ]
+        //                 [ x*y       -x^2-z^2  y*z      ]
+        //                 [ x*z       y*z       -x^2-y^2 ]
         double rotAxisLengthRight = MatrixUtil.lPSum(rotAxisRight, 2);
         double[][] skewSymTRight = MatrixUtil.skewSymmetric(rotAxisRight);
-        double[][] skewSymTTRight;// = skewSymTRight;//MatrixUtil.multiply(skewSymTRight, skewSymTRight);
-        skewSymTTRight = MatrixUtil.outerProduct(rotAxisRight, rotAxisRight);
-        for (int i = 0; i < skewSymTT.length; ++i) {
-            //skewSymTTRight[i][i] -= 1;
-            skewSymTTRight[i][i] -= (rotAxisLengthRight*rotAxisLengthRight);
-        }
+        double[][] skewSymTTRight = new double[3][3];
+        skewSymTTRight[0] = new double[]{
+            -rotAxisRight[1]*rotAxisRight[1]-rotAxisRight[2]*rotAxisRight[2],
+            rotAxisRight[0]*rotAxisRight[1],
+            rotAxisRight[0]*rotAxisRight[2]
+        };
+        skewSymTTRight[1] = new double[]{
+            rotAxisRight[0]*rotAxisRight[1],
+            -rotAxisRight[0]*rotAxisRight[0]-rotAxisRight[2]*rotAxisRight[2],
+            rotAxisRight[1]*rotAxisRight[2]
+        };
+        skewSymTTRight[2] = new double[]{
+            rotAxisRight[0]*rotAxisRight[2],
+            rotAxisRight[1]*rotAxisRight[2]
+            -rotAxisRight[0]*rotAxisRight[0]-rotAxisRight[1]*rotAxisRight[1],
+        };
         
         System.out.printf("acos(aXb/(|a||b|)) Right =\n%s\n", FormatArray.toString(rotAxisRight, "%.4e"));
         System.out.printf("skewSymTRight=\n%s\n", FormatArray.toString(skewSymTRight, "%.4e"));

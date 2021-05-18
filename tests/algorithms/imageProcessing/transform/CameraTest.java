@@ -36,8 +36,10 @@ public class CameraTest extends TestCase {
         
         double[] rCoeffs = null;
         boolean useR2R4 = false;
-        double[][] xC = Camera.pixelToCameraCoordinates(x, rCoeffs, focalLength, 
-             centerX, centerY, useR2R4);
+        Camera.CameraIntrinsicParameters kIntr = new Camera.CameraIntrinsicParameters(
+            Camera.createIntrinsicCameraMatrix(focalLength, centerX, centerY)
+        );
+        double[][] xC = Camera.pixelToCameraCoordinates(x, kIntr, rCoeffs, useR2R4);
         assertEquals(eX.length, xC.length);
         assertEquals(eX[0].length, xC[0].length);
         for (int i = 0; i < eX.length; ++i) {

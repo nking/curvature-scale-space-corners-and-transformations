@@ -60,12 +60,9 @@ public class LevenbergMarquardtForPose {
             throw new IllegalArgumentException("imageC[0].length must equal worldC[0].length");
         }
         
-        // TODO: remove this temporary change
-        kRadial = null;
-        
         double[] b = new double[2*n];
-        final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kRadial, 
-            kIntr.getIntrinsic(), useR2R4);
+        final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kIntr, 
+            kRadial, useR2R4);
         for (int i = 0; i < n; ++i) {
             xn[0][i] /= xn[2][i];
             xn[1][i] /= xn[2][i];
@@ -139,6 +136,7 @@ public class LevenbergMarquardtForPose {
             adjust lambda from (f, fPrev, deltaPM, b-fgp)
         */
         
+        int doUpdate = 0;
         int nIter = 0;
         while (nIter < nMaxIter) {
             
@@ -178,14 +176,11 @@ public class LevenbergMarquardtForPose {
             // eigenvalues of the matrix JT J + λDT D to be at least λ
             
             // ======= revise parameters =======
-            
-            // add deltaPM to p, which is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-            updateBySteps(thetas, t, deltaPLM);
-            
-            updateH(h, thetas, t);
-            
-            // ====== change lambda ======
-            if (nIter > 1) {
+             
+            // ====== accept or reject changes and change lambda ======
+            if (nIter == 0) {
+                doUpdate = 1;   
+            } else {
                 // gain ratio:
                 //    gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
                 //         where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
@@ -194,14 +189,22 @@ public class LevenbergMarquardtForPose {
                     gradientCheck, eps);
                 System.out.printf("lambda=%.4e, gainRatio=%.4e\n", lambda, gainRatio);
                 if (gainRatio > 0) {
+                    doUpdate = 1;
                     // near the minimimum, which is good.
                     // decrease lambda
                     lambda /= lambdaF;
                 } else {
+                    doUpdate = 0;
                     // increase lambda
                     lambda *= lambdaF;
                 }
                 System.out.printf("new lambda=%.4e\n", lambda);
+            }
+            if (doUpdate == 1) {
+                 // add deltaPM to p, which is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+                updateBySteps(thetas, t, deltaPLM);
+            
+                updateH(h, thetas, t);
             }            
         }
         
