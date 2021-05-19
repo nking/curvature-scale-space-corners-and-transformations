@@ -705,35 +705,75 @@ public class CameraCalibration {
             throw new IllegalArgumentException("xC.length must be 3");
         }
         
+        double eps = 1e-11;
+        
         double[][] distorted = MatrixUtil.copy(xC);
         
-        double r, r2, fr;
-        //double signx, signy, c2p1, fx, fy;
+        double r, r2, c;
+        double signx, signy, c2p1, divc2p1, xm, ym, x, x2, x4, y, y2, y4;
         int i;
         
         for (i = 0; i < distorted[0].length; ++i) {
             r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
             r = Math.sqrt(r2);
-            //f(r) = (1 + k1*r + k2*r^2)
-            if (useR2R4) {
-                fr = 1 + k1*r2 + k2*r2*r2;
-            } else {
-                fr = 1 + k1*r + k2*r2;
-            }
-            // x_d = x*f_r:
-            distorted[0][i] *= fr;
-            distorted[1][i] *= fr;
             
             // following Ma et al. 2004 Table 2,column 3 for model #3:
-            // where c = y_d/x_d = y/x
-            // f(x) = (1 + k1*math.sqrt(1+c^2)*x*sign(x) + k2*(1+c^2)*x^2)
-            //c2p1 = Math.pow(distorted[1][i]/distorted[0][i], 2.) + 1;
-            //signx = (distorted[0][i] < 0) ? -1 : 0;
-            //signy = (distorted[1][i] < 0) ? -1 : 0;
-            //fx = 1 + (k1*Math.sqrt(c2p1)*distorted[0][i]*signx) + (k2*c2p1*distorted[0][i]*distorted[0][i]);
-            //fy = 1 + (k1*Math.sqrt(c2p1)*distorted[1][i]*signy) + (k2*c2p1*distorted[1][i]*distorted[1][i]);
-            //distorted[0][i] *= fx;
-            //distorted[1][i] *= fy;
+            /*
+            where r^2 is (x-x0)^2 + (y-y0)^2
+            let _x=x-x0  this is the notation here for camera coordinate frame
+            let c^2 = (_y)^2/(_x)^2
+            let c2p1 = (1 + c^2)
+            then r^2 = _x^2 + _x^2*c^2 = _x^2*(1 + c^2)
+                      = _x^2*c2p1
+            also, for r^2 in terms of _y^2:
+            let divc2p1 = ((1/c^2) + 1)
+            then r^2 = _y^2*((1/c^2) + 1)
+                     = _y^2*divc2p1
+            */
+            x = distorted[0][i];
+            x2 = x*x;
+            y = distorted[1][i];
+            y2 = y*y;
+            //handle cases where x=0 or y=0 
+            if (Math.abs(x) < eps) {
+                c2p1 = 0;
+            } else {     
+                c = y/x;
+                c2p1 = c*c + 1;
+            }
+            if (Math.abs(y) < eps) {
+                divc2p1 = 0;
+            } else {     
+                c = y/x;
+                divc2p1 = c*c + 1;
+            }
+            if (useR2R4) {
+                /* model #4
+                for x:
+                 magnitude of distortion = xd-x
+                                         = _x*(k1*_x^2*c2p1 + k2*_x^4*(c2p1^2))
+               for y:
+                 magnitude of distortion = yd-y
+                                       = _y*(k1*_y^2*divc2p1 + k2*_y^4*(divc2p1^2))
+                */
+                xm = x*(k1*c2p1*x2 + k2*c2p1*c2p1*x2*x2);
+                ym = y*(k1*divc2p1*y2 + k2*divc2p1*divc2p1*y2*y2);
+            } else {
+                /* model #3:
+                magnitude of distortion = xd-x
+                                       = _x*(k1*r + k2*r^2)
+                                       = _x*(signx*k1*_x*sqrt(c2p1) + k2*_x^2*c2p1)
+               magnitude of distortion = yd-y
+                                       = _y*(signy*k1*_y*sqrt(divc2p1) + k2*_y^2*divc2p1)
+                */
+                signx = (x < 0) ? -1 : 0;
+                signy = (y < 0) ? -1 : 0;
+                // model #3, Table 2, column 2:
+                xm = x*(signx*k1*x*Math.sqrt(c2p1) + k2*x*x*c2p1);
+                ym = y*(signy*k1*y*Math.sqrt(divc2p1) + k2*y*y*divc2p1);
+            }
+            distorted[0][i] += xm;
+            distorted[1][i] += ym;
         }
                 
         return distorted;
@@ -854,7 +894,7 @@ public class CameraCalibration {
         double[] coeffs = new double[]{k2, k1, 1, 0};
         double[] rBar;
         double rd, r, fr;
-        double p, q, a, b, c;
+        double p, q, a, b, c, signx, signy;
         //double c2p1, signx, signy, fx, fy;
         double tol = 1e-5;
         int i;
@@ -920,28 +960,26 @@ public class CameraCalibration {
                 System.out.printf("chk 0=%.4e\n", chk);
                 //assert(Math.abs(chk) < tol);
             }
-                                    
+                       
+            // remove radial distortion
+            // we have r now and have ud, vd
+            // model #3: fr = 1 + k1*r + k2*r*r;
+            
             // eqn (5) from Ma et al. 2004
-            //u = u0 + ((ud - u0)/fr);
-            //v = v0 + ((vd - v0)/fr);
-            // but points are currently in image reference frame as xd, yd
-            // and the radial distortion w.r.t image reference frame
-            // so presumably should use eqn (4) instead
-            // eqn 4): xd = x *f(r) ==> x = x_d/f(r)
+            // (ud - u0) = (u - u0) * fr
+            // where (ud, vd) are the real observed image points.
+            // since the "apply radial distortion" is to the points in the camera
+            // reference frame, the removal must be also in order for the radial
+            // coefficients to be of the right scale.
+            //
+            // so one can look at eqn (4) instead:
+            //    xd = x*fr
+            //    where x is the undistorted in the camera reference frame.
+            // solving for x:
+            //    x = xd/fr
             fr = 1 + k1*r + k2*r*r;
             corrected[0][i] /= fr;
             corrected[1][i] /= fr;
-            
-            // following Ma et al. 2004 Table 2,column 3 for model #3:
-            // where c = y_d/x_d = y/x
-            // f(x) = (1 + k1*math.sqrt(1+c^2)*x*sign(x) + k2*(1+c^2)*x^2)
-            //c2p1 = Math.pow(corrected[1][i]/corrected[0][i], 2.) + 1;
-            //signx = (corrected[0][i] < 0) ? -1 : 0;
-            //signy = (corrected[1][i] < 0) ? -1 : 0;
-            //fx = 1 + (k1*Math.sqrt(c2p1)*corrected[0][i]*signx) + (k2*c2p1*corrected[0][i]*corrected[0][i]);
-            //fy = 1 + (k1*Math.sqrt(c2p1)*corrected[1][i]*signy) + (k2*c2p1*corrected[1][i]*corrected[1][i]);
-            //corrected[0][i] /= fx;
-            //corrected[1][i] /= fy;
         }
                 
         return corrected;
@@ -979,8 +1017,13 @@ public class CameraCalibration {
         ...Barrel distortion can be physically present in small focal length 
         systems, while larger focal lengths can result in pincushion distortion 
         ...
-        barrel distortion corresponds to a negative value of k1.
-        pincushion distortion to a positive value of k1.
+        barrel distortion corresponds to a 
+            negative value of k1.
+            present in small focal length systems.
+        pincushion distortion to a 
+            positive value of k1.
+            present in larger focal length systems
+            *
     </pre>
     @param xC distorted points in the camera reference frame, presumably 
     already center subtracted.  format is 3XN where N is the
@@ -1001,8 +1044,7 @@ public class CameraCalibration {
         
         //from k2*r^5 + k1*r^3 + r - rd = 0.
   
-        double rd, r, fr;
-        //double c2p1, fx, fy;
+        double rd, r, fr, r2;
         double tol = 1e-5;
         int i;
         double[] roots;
@@ -1021,28 +1063,32 @@ public class CameraCalibration {
                 r = 0;
             } else {
                 // TODO: revisit this
+                System.out.printf("poly roots=%s\n", FormatArray.toString(roots, "%.4e"));
                 r = roots[0];
             }
                                           
+            // remove radial distortion
+            // we have r now and have ud, vd
+            // model #4: fr = 1 + k1*r*r + k2*Math.pow(r, 4.);
+            //           x_d = x * (1 + signx*((k1*c2p1*x2) + (k2*c2p1*c2p1*x2*x2)));
+            
             // eqn (5) from Ma et al. 2004
-            //u = u0 + ((ud - u0)/fr);
-            //v = v0 + ((vd - v0)/fr);
-            // but points are currently in image reference frame as xd, yd
-            // and the radial distortion w.r.t image reference frame
-            // so presumably should use eqn (4) instead
-            // eqn 4): xd = x *f(r) ==> x = x_d/f(r)
-            fr = 1 + k1*r*r + k2*Math.pow(r, 4.);
+            // (ud - u0) = (u - u0) * fr
+            // where (ud, vd) are the real observed image points.
+            // since the "apply radial distortion" is to the points in the camera
+            // reference frame, the removal must be also in order for the radial
+            // coefficients to be of the right scale.
+            //
+            // so one can look at eqn (4) instead:
+            //    xd = x*fr
+            //    where x is the undistorted in the camera reference frame.
+            // solving for x:
+            //    x = xd/fr
+            r2 = r*r;
+            fr = 1 + k1*r2 + k2*r2*r2;
             corrected[0][i] /= fr;
             corrected[1][i] /= fr;
             
-            // following Ma et al. 2004 Table 2,column 3 for model #3:
-            // where c = y_d/x_d = y/x
-            // f(x) = (1 + k1*math.sqrt(1+c^2)*x*sign(x) + k2*(1+c^2)*x^2)
-            //c2p1 = Math.pow(corrected[1][i]/corrected[0][i], 2.) + 1;
-            //fx = 1 + (k1*c2p1*Math.pow(corrected[0][i], 2)) + (k2*c2p1*Math.pow(corrected[0][i], 4));
-            //fy = 1 + (k1*c2p1*Math.pow(corrected[1][i], 2)) + (k2*c2p1*Math.pow(corrected[1][i], 4));
-            //corrected[0][i] /= fx;
-            //corrected[1][i] /= fy;
         }
                 
         return corrected;
