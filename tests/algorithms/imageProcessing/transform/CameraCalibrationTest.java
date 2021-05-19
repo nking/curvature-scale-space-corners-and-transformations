@@ -4,7 +4,10 @@ import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import static algorithms.imageProcessing.transform.CameraCalibration.solveForIntrinsic;
 import algorithms.matrix.MatrixUtil;
+import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.array.TDoubleArrayList;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -20,7 +23,49 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testCalibration0() throws IOException, NotConvergedException {
+    public void testApplyRemoveRadialDistortion() throws IOException, NotConvergedException {
+        
+        // test for model #3
+        // test for model #4
+        // test for k1<0, barrel distortion (happens for smaller focal lengths)
+        // test for k1>0, pincushion distortion (happes for larger focal lenngths)
+        
+        // generate coords in radial annuli in area 100x100 then unit standard normalized
+        double[][] coords = generateCoords0();
+        
+        double[] k1s = new double[]{-0.25};//, +0.25};
+        double[] k2s = new double[]{0.2};//, 0.2};
+        boolean[] useR2R4s = new boolean[]{true};//, false};
+        int i, j;
+        double k1, k2;
+        double[][] xyd, xy;
+        double diffDx, diffDy, diffx, diffy;
+        for (boolean useR2R4 : useR2R4s) {
+            for (i = 0; i < k1s.length; ++i) {
+                k1 = k1s[i];
+                k2 = k2s[i];
+                System.out.println("useR2R4=" + useR2R4 + "   k1="+ k1);
+                xyd = CameraCalibration.applyRadialDistortion(coords, k1, k2, useR2R4);
+                xy = CameraCalibration.removeRadialDistortion(xyd, k1, k2, useR2R4);
+                // assert xyd != coordsI
+                // assert xy == coordsI
+                for (j = 0; j < coords[0].length; ++j) {
+                    diffDx = Math.abs(coords[0][j] - xyd[0][j]);
+                    diffDy = Math.abs(coords[1][j] - xyd[1][j]);
+                    diffx = Math.abs(coords[0][j] - xy[0][j]);
+                    diffy = Math.abs(coords[1][j] - xy[1][j]);
+                    System.out.printf("(%.4e,%.4e): diff(%.4e, %.4e)?  same(%.4e, %.4e)?\n", 
+                        coords[0][j], coords[1][j], diffDx, diffDy, diffx, diffy);
+                    
+                    // if barrel (k1<0), distorted is at a smaller radius
+                }
+            }
+        }
+        
+        // apply radial distortion and remove radial distortion and compare
+    }
+    
+    public void estCalibration0() throws IOException, NotConvergedException {
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*r + k2*r^2:
@@ -237,5 +282,63 @@ public class CameraCalibrationTest extends TestCase {
         assertEquals(3, h0[0].length);
         //TODO: assert characteristics of h0
         */
+    }
+
+    /**
+     * generate coordinates in 5 radial annuli in area 100x100 then unit standard normalized
+     * @return 
+     */
+    private double[][] generateCoords0() {
+        TDoubleList x = new TDoubleArrayList();
+        TDoubleList y = new TDoubleArrayList();
+        
+        double rMax = 100;
+        int nAnnuli = 2;
+        double dR = rMax/nAnnuli;
+        
+        // for each annuli, want the 4 points crossing the x and y axes to test 0's.
+        //     and the remaining points can be 8 points => all distributed at 2*pi/12 intervals
+        double dT = 2.*Math.PI/12.;
+        
+        int i, j;
+        double r, t;
+        x.add(0);
+        y.add(0);
+        for (i = 1; i <= nAnnuli; ++i) {
+            r = i*dR;
+            for (j = 0; j < 12; ++j) {
+                t = j*dT;
+                //x = r cos t
+                //y = r sin t
+                x.add(r*Math.cos(t));
+                y.add(r*Math.sin(t));
+            }
+        }
+        
+        // can use this transposed for unit standard normalization:
+        //public static double[][] Standardization.standardUnitNormalization(double[][] data, 
+        //    double[] outputMean, double[] outputStandardDeviation) {
+        
+        // write all x along column 0 instead of row 0.  and y goes in column 1
+        double[][] normalized = new double[x.size()][2];
+        for (i = 0; i < x.size(); ++i) {
+            normalized[i] = new double[]{x.get(i), y.get(i)};
+        }
+        
+        double[] outputMean = new double[2];
+        double[] outputStDev = new double[2];
+        normalized = Standardization.standardUnitNormalization(normalized,
+            outputMean, outputStDev);
+        
+        // write for use in code above:
+        //    row 0 = 's. row 1 = y's, row 2 = 1's
+        double[][] coords = MatrixUtil.zeros(3, x.size());
+        for (i = 0; i < x.size(); ++i) {
+            coords[0][i] = normalized[i][0];
+            coords[1][i] = normalized[i][1];
+            coords[2][i] = 1.;
+        }
+        
+        return coords;
     }
 }

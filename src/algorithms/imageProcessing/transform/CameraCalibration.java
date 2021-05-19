@@ -709,13 +709,13 @@ public class CameraCalibration {
         
         double[][] distorted = MatrixUtil.copy(xC);
         
-        double r, r2, c;
-        double signx, signy, c2p1, divc2p1, xm, ym, x, x2, x4, y, y2, y4;
+        //double r, r2;
+        double c, signx, signy, c2p1, divc2p1, xm, ym, x, x2, y, y2;
         int i;
         
         for (i = 0; i < distorted[0].length; ++i) {
-            r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
-            r = Math.sqrt(r2);
+            //r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
+            //r = Math.sqrt(r2);
             
             // following Ma et al. 2004 Table 2,column 3 for model #3:
             /*
@@ -737,15 +737,25 @@ public class CameraCalibration {
             //handle cases where x=0 or y=0 
             if (Math.abs(x) < eps) {
                 c2p1 = 0;
-            } else {     
-                c = y/x;
-                c2p1 = c*c + 1;
+            } else {
+                if (Math.abs(y) < eps) {
+                    // r^2 = _x^2
+                    c2p1 = 1;
+                } else {
+                    c = y/x;
+                    c2p1 = c*c + 1;
+                }
             }
             if (Math.abs(y) < eps) {
                 divc2p1 = 0;
-            } else {     
-                c = y/x;
-                divc2p1 = c*c + 1;
+            } else {
+                if (Math.abs(x) < eps) {
+                    // r^2 = _y^2
+                    divc2p1 = 1;
+                } else {
+                    c = y/x;
+                    divc2p1 = c*c + 1;
+                }
             }
             if (useR2R4) {
                 /* model #4
@@ -1063,7 +1073,7 @@ public class CameraCalibration {
                 r = 0;
             } else {
                 // TODO: revisit this
-                System.out.printf("poly roots=%s\n", FormatArray.toString(roots, "%.4e"));
+                //System.out.printf("poly roots=%s\n", FormatArray.toString(roots, "%.4e"));
                 r = roots[0];
             }
                                           
