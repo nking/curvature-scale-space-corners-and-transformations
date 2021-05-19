@@ -49,7 +49,6 @@ public class CameraTest extends TestCase {
             }
         }
         
-        
         double[][] xCP = Camera.cameraToPixelCoordinates(xC, rCoeffs, 
             focalLength, centerX, centerY, useR2R4);
         

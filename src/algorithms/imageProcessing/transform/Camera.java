@@ -86,7 +86,7 @@ public class Camera {
     }
     
     /**
-     *  create the inverse of camera intrinsic matrix k with assumptions of square pixels
+     *create the inverse of camera intrinsic matrix k with assumptions of square pixels
      * and no skew.  the focal length and optical centers should be in units of pixels.
      * NOTE that given the field of view (FOV) and the image dimensions,
      * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
@@ -118,26 +118,56 @@ public class Camera {
     public static double[][] createIntrinsicCameraMatrixInverse(double[][] kIntr) {
         
         /*
-        double[][] kInv = new double[3][3];
-        kInv[0] = new double[]{1./kIntr[0][0], 0, -1*kIntr[0][2]/kIntr[0][0]};
-        kInv[1] = new double[]{0, 1./kIntr[1][1], -1*kIntr[1][2]/kIntr[1][1]};
-        kInv[2]= new double[]{0, 0, 1};
+        translation matrix: inverse changes the signs of the translation elements, but not the diagonal.
+        rotation matrix: inverse is the transpose of rotation matrix.
+        scaling matrix: inverse is performed on each element, that is, the reciprocal.
+        
+        skew is a translation term, so will put it in its own matrix
+        
+             | 1  0  xc |   | fx  0   0 |   | 1  g/fx   0 | 
+         K = | 0  1  yc | * | 0  fy   0 | * | 0  1      0 | 
+             | 0  0   1 |   | 0   0   1 |   | 0  0      1 | 
+            
+             | fx  0  xc |   | 1  g/fx   0 |   | fx  g  xc |
+           = | 0  fy  yc | * | 0  1      0 | = | 0  fy  yc |
+             | 0  0   1  |   | 0  0      1 |   | 0  0   1  |
+        
+        let z = the inverse term for g/fx = -g/fx
+        
+               | 1  z       0 |   | 1/fx  0      0   |   | 1  0 -xc | 
+        K^-1 = | 0  1       0 | * | 0     1/fy   0   | * | 0  1 -yc | 
+               | 0  0       1 |   | 0     0      1/1 |   | 0  0   1 |
+        
+               | 1/fx   z/fy  0 |   | 1  0 -xc |   | 1/fx   z/fy    -xc/fx -yc*z/fy |
+             = |  0     1/fy  0 | * | 0  1 -yc | = |  0     1/fy    -yc/fy          |
+               |  0     0     1 |   | 0  0   1 |   |  0     0       1               |
+        
+               | 1/fx   -g/(fx*fy)   -xc/fx + g*yc/(fx*fy) |
+             = | 0       1/fy        -yc/fy                |
+               | 0       0           1                     |
+        
+        validation here:
+        https://www.imatest.com/support/docs/pre-5-2/geometric-calibration-deprecated/projective-camera/
         */
-        double[][] kInv = MatrixUtil.copy(kIntr);
-        int i, j;
+        
+        double[][] kInv = MatrixUtil.zeros(3, 3);
+        
+        
         double tol = 1e-7;
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 2; ++j) {
-                if (Math.abs(kIntr[i][j]) > tol) {
-                    kInv[i][j] = 1./kInv[i][j];
-                }
-            }
-        }
-        kInv[0][2] *= -1*kInv[0][0];                    
-        kInv[1][2] *= -1*kInv[1][1];
-        if (Math.abs(kIntr[0][1]) > tol) {
-            kIntr[0][1] *= -1*kInv[0][0]*kInv[1][1];
-        }
+        
+        double fx = kIntr[0][0];
+        double fy = kIntr[1][1];
+        double fxfy = fx*fy;
+        double g = kIntr[0][1];
+        double xc = kIntr[0][2];
+        double yc = kIntr[1][2];
+        
+        kInv[0][0] = 1./fx;
+        kInv[0][1] = -g/fxfy;
+        kInv[0][2] = (-xc/fx) + (g*yc/fxfy);
+        kInv[1][1] = 1./fy;
+        kInv[1][2] = -yc/fy;
+        kInv[2][2] = 1;
         
         return kInv;
     }

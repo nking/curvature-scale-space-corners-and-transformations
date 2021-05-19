@@ -426,7 +426,7 @@ public class CameraCalibration {
         //        c = SVD(A).V^T[n-1], the eigenvector assoc w/ smallest eigenvalue.
         //
         //        there are 3 cases for the smallest eigenvalue of SVD(A):
-        //          (1) SVD(A).s[5] == 0, and n=5, then a conic xists that
+        //          (1) SVD(A).s[5] == 0, and n=5, then a conic exists that
         //              fits the data exactly
         //          (2) SVD(A).s[5] >=0, and n > 5, then the value is the goodness of fit
         //          (3) n < 5, the conic is undetermined and requires other means to solve.
