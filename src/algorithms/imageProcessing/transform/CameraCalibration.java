@@ -1387,6 +1387,7 @@ public class CameraCalibration {
                 //i:0 j:2          idx=4, idy=5
                 //i:1 j:0  idx=6, idy=7
                 //i:1 j:1  idx=8, idy=9
+//TODO: edit for x and y components      
                 if (useR2R4) {
                     dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r2, (ui-u0)*r4};
                     dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r2, (vi-v0)*r4};
