@@ -728,6 +728,7 @@ public class CameraCalibration {
         
         //double r, r2;
         double c, signx, signy, c2p1, divc2p1, xm, ym, x, x2, y, y2;
+        double[] c2s = new double[2];
         int i;
         
         for (i = 0; i < distorted[0].length; ++i) {
@@ -751,29 +752,11 @@ public class CameraCalibration {
             x2 = x*x;
             y = distorted[1][i];
             y2 = y*y;
-            //handle cases where x=0 or y=0 
-            if (Math.abs(x) < eps) {
-                c2p1 = 0;
-            } else {
-                if (Math.abs(y) < eps) {
-                    // r^2 = _x^2
-                    c2p1 = 1;
-                } else {
-                    c = y/x;
-                    c2p1 = c*c + 1;
-                }
-            }
-            if (Math.abs(y) < eps) {
-                divc2p1 = 0;
-            } else {
-                if (Math.abs(x) < eps) {
-                    // r^2 = _y^2
-                    divc2p1 = 1;
-                } else {
-                    c = y/x;
-                    divc2p1 = (1./(c*c)) + 1;
-                }
-            }
+            
+            calculateC2s(x, y, c2s);
+            c2p1 = c2s[0];
+            divc2p1 = c2s[1];
+            
             if (useR2R4) {
                 /* model #4
                 for x:
@@ -1109,6 +1092,7 @@ public class CameraCalibration {
         double[] rootsX, rootsY;
         double[] coeffsX = new double[]{0, 0, 0, 0, 1, 0};
         double[] coeffsY = new double[]{0, 0, 0, 0, 1, 0};
+        double[] c2s = new double[2];
         if (Math.abs(k2) < eps) {
             // k2 is 0 so solve for reduced order of coeffs:
             coeffsX = new double[]{0, 0, 1, 0};
@@ -1125,26 +1109,10 @@ public class CameraCalibration {
             //divc2p1 = (x/y)^2 + 1;
             
             //handle cases where x=0 or y=0 
-            if (Math.abs(corrected[0][i]) < eps) {
-                c2p1 = 0;
-            } else {
-                if (Math.abs(corrected[1][i]) < eps) {
-                    c2p1 = 1;
-                } else {
-                    c = corrected[1][i]/corrected[0][i];
-                    c2p1 = c*c + 1;
-                }
-            }
-            if (Math.abs(corrected[1][i]) < eps) {
-                divc2p1 = 0;
-            } else {
-                if (Math.abs(corrected[0][i]) < eps) {
-                    divc2p1 = 1;
-                } else {
-                    c = corrected[1][i]/corrected[0][i];
-                    divc2p1 = (1./(c*c)) + 1;
-                }
-            }            
+            calculateC2s(corrected[0][i], corrected[1][i], c2s);
+            c2p1 = c2s[0];
+            divc2p1 = c2s[1];
+            
             log.log(LEVEL, String.format("\ni=%d\n",i));
             // solve for x in (k2*(c2p1^2))*_x^5 + (k1*c2p1)*_x^3 + _x - xd = 0
             if (coeffsX.length == 6) {
@@ -1284,8 +1252,10 @@ public class CameraCalibration {
                3 X (N*n) where N is the number of images.
                In Table 1 of Ma, Chen, & Moore 2003 "Camera Calibration"
                these are the (u_d, v_d) pairs.
-     * @param u projections of the WCS feature x coordinates.  array length is n*nImages
-     * @param v projections of the WCS feature y coordinates.  array length is n*nImages
+     * @param u projections of the WCS feature x coordinates into the image
+     * reference frame.  array length is n*nImages
+     * @param v projections of the WCS feature y coordinates into the image
+     * reference frame.  array length is n*nImages
      * @param cameraMatrices data structure holding the camera intrinsic parameters
      * and the extrinsic parameter matrices for each image.
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
@@ -1303,11 +1273,11 @@ public class CameraCalibration {
         
         int nImages = cameraMatrices.getExtrinsics().size();
         int nFeatures = u.length/nImages;
-        
+                
         /* 
-        (ud, vd) are Real observed distorted image points
-        (u, v) Ideal projected undistorted image points
-        [x,y,1] = A^-1 * [u, v, 1]
+        (ud, vd) are Real observed distorted image points in image reference frame.
+        (u, v) Ideal projected undistorted image points in image reference frame.
+        [x,y,1] = A^-1 * [u, v, 1] are transformed to camera reference frame.
 
         eqn (5) of Ma, Chen, & Moore 2004, "Rational Radial Distortion..."
            ud-u0 = (u-u0)*f(r)
@@ -1361,10 +1331,13 @@ public class CameraCalibration {
         */
         
         int i, j;
-        double ui, vi, udi, vdi, xi, yi, r2, r4, r;
+        double ui, vi, udi, vdi, xi, yi, xi2, yi2;
+        double signx, signy, c2p1, divc2p1;
+        double[] c2s = new double[2];
         double ud0 = cameraMatrices.getIntrinsics().getIntrinsic()[0][2];
         double vd0 = cameraMatrices.getIntrinsics().getIntrinsic()[1][2];
-        double u0=ud0; double v0=vd0;
+        double u0 = ud0; 
+        double v0 = vd0;
         double[][] xy;
         double[][] dM = new double[2*nFeatures*nImages][2];
         double[] dV = new double[2*nFeatures*nImages];
@@ -1379,25 +1352,35 @@ public class CameraCalibration {
                 vdi = uvD[1][nFeatures*i + j];
                 xi = xy[0][j];
                 yi = xy[1][j];
-                r2 = xi*xi + yi*yi;
-                r4 = r2*r2;
+                xi2 = xi*xi;
+                yi2 = yi*yi;
+                
+                calculateC2s(xi, yi, c2s);
+                c2p1 = c2s[0];
+                divc2p1 = c2s[1];
+                                
                 // e.g. nFeatures=3
                 //i:0 j:0          idx=0, idy=1
                 //i:0 j:1          idx=2, idy=3
                 //i:0 j:2          idx=4, idy=5
                 //i:1 j:0  idx=6, idy=7
                 //i:1 j:1  idx=8, idy=9
-//TODO: edit for x and y components      
+      
                 if (useR2R4) {
-                    dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r2, (ui-u0)*r4};
-                    dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r2, (vi-v0)*r4};
+                    dM[2*nFeatures*i + 2*j] = new double[]{
+                        (ui-u0)*c2p1*xi2, (ui-u0)*c2p1*c2p1*xi2*xi2};
+                    dM[2*nFeatures*i + 2*j + 1] = new double[]{
+                        (vi-v0)*divc2p1*yi2, (vi-v0)*divc2p1*divc2p1*yi2*yi2};
                 } else {
-                    r = Math.sqrt(r2);
-                    dM[2*nFeatures*i + 2*j] = new double[]{(ui-u0)*r, (ui-u0)*r2};
-                    dM[2*nFeatures*i + 2*j + 1] = new double[]{(vi-v0)*r, (vi-v0)*r2};
+                    signx = (xi < 0) ? -1 : 1;
+                    signy = (yi < 0) ? -1 : 1;
+                    dM[2*nFeatures*i + 2*j] = new double[]{
+                        (ui-u0)*signx*xi*Math.sqrt(c2p1), (ui-u0)*xi2*c2p1};
+                    dM[2*nFeatures*i + 2*j + 1] = new double[]{
+                        (vi-v0)*signy*yi*Math.sqrt(divc2p1), (vi-v0)*yi2*divc2p1};
                 }
-                dV[2*nFeatures*i + 2*j] = udi -ud0 - ui;
-                dV[2*nFeatures*i + 2*j + 1] = vdi -vd0 - vi;
+                dV[2*nFeatures*i + 2*j] = udi - ui;
+                dV[2*nFeatures*i + 2*j + 1] = vdi - vi;
             }
         }
            
@@ -1509,4 +1492,41 @@ public class CameraCalibration {
         return list;
     }
 
+    /**
+     * calculate c2p1 and divc2p1
+     * where c = y/x
+     * and c2p1 = c*c + 1
+     * and divc2p1 = (1./(c*c)) + 1.
+     * the method handles cases where x or y are 0.
+     * @param x
+     * @param y
+     * @param output array of length 2 to return []{c2p1, divc2p1};
+     */
+    private static void calculateC2s(double x, double y, double[] output) {
+        double c, c2p1, divc2p1;
+        if (Math.abs(x) < eps) {
+            c2p1 = 0;
+        } else {
+            if (Math.abs(y) < eps) {
+                // r^2 = _x^2
+                c2p1 = 1;
+            } else {
+                c = y / x;
+                c2p1 = c * c + 1;
+            }
+        }
+        if (Math.abs(y) < eps) {
+            divc2p1 = 0;
+        } else {
+            if (Math.abs(x) < eps) {
+                // r^2 = _y^2
+                divc2p1 = 1;
+            } else {
+                c = y / x;
+                divc2p1 = (1. / (c * c)) + 1;
+            }
+        }
+        output[0] = c2p1;
+        output[1] = divc2p1;
+    }
 }
