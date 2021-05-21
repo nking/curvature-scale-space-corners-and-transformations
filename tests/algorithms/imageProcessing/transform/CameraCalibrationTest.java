@@ -37,7 +37,7 @@ public class CameraCalibrationTest extends TestCase {
         
         double[] k1s = new double[]{-0.25};//, +0.25};
         double[] k2s = new double[]{0};//, +0.2};
-        boolean[] useR2R4s = new boolean[]{true};//, true};
+        boolean[] useR2R4s = new boolean[]{false};//, true};
         int i, j;
         double k1, k2;
         double[][] xyd, xy;

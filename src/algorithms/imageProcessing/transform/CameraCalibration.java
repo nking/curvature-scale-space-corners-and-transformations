@@ -791,7 +791,7 @@ public class CameraCalibration {
                 xm = x*(signx*k1*x*Math.sqrt(c2p1) + k2*x*x*c2p1);
                 ym = y*(signy*k1*y*Math.sqrt(divc2p1) + k2*y*y*divc2p1);
             }
-        
+  
             System.out.printf("%d) distort fx=%.4f, fy=%.4f for (x,y)=(%.3f,%.3f) => (xd,yd)=(%.3f,%.3f)\n", 
                 i, (xm/distorted[0][i])+1, (ym/distorted[1][i])+1,
                 distorted[0][i], distorted[1][i], distorted[0][i]+xm, distorted[1][i]+ym);
@@ -960,6 +960,8 @@ public class CameraCalibration {
             //p = b - (a*a/3);
             //q = 2*(a*a*a/27) - (a*b/3) + c;
       
+            System.out.printf("\ni=%d\n",i);
+            
             //rBar = CubicRootSolver.solve(coeffs);
             rBar = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps2);
             if (rBar != null)
@@ -973,11 +975,11 @@ public class CameraCalibration {
                 //assert(Math.abs(chk) < tol);
             } else {
                 System.out.printf("rBar=%s\n", FormatArray.toString(rBar, "%.4f"));
-                r = rBar[rBar.length - 1];
+                r = rBar[0];
                 // check solution: 
                 //  k2*r^3 +k1*r^2 +r - r_d = 0
                 double chk = k2 * r * r * r + k1 * r * r + r - rd;
-                System.out.printf("chk 0==%.4e\n", chk);
+                //System.out.printf("chk 0==%.4e\n", chk);
                 //assert(Math.abs(chk) < tol);
             }
                        
@@ -999,6 +1001,11 @@ public class CameraCalibration {
             //    x = xd/fr
             //fr = 1 + k1*r + k2*r*r;
             theta = Math.atan2(corrected[1][i], corrected[0][i]);
+            
+            System.out.printf("(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n",
+                corrected[0][i], corrected[1][i], 
+                r*Math.cos(theta), r*Math.sin(theta));
+            
             corrected[0][i] = (r*Math.cos(theta));
             corrected[1][i] = (r*Math.sin(theta));
         }
@@ -1055,7 +1062,8 @@ public class CameraCalibration {
     number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
     @throws no.uib.cipr.matrix.NotConvergedException
     */
-    static double[][] removeRadialDistortion4(double[][] xC, double k1, double k2) throws NotConvergedException, Exception {
+    static double[][] removeRadialDistortion4(double[][] xC, double k1, double k2) 
+        throws NotConvergedException, Exception {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
