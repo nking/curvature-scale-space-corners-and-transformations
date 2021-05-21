@@ -25,6 +25,7 @@ import no.uib.cipr.matrix.RQ;
  */
 public class CameraPose {
     
+    public static double eps = 1e-7;
     /**
      * given correspondence between two images in image coordinates calculate 
      * the extrinsic camera parameters.
@@ -260,30 +261,28 @@ public class CameraPose {
         System.out.printf("det(R2)=%.3e\n\n", detR2);
         System.out.printf("det(R3)=%.3e\n", detR3);
         System.out.printf("det(R4)=%.3e\n\n", detR4);
-        
-        double tol = 1.e-5;
-        
+                
         // keep the 2 that have det(R) == 1 
         double[][] rot1 = null; 
         double[][] rot2 = null;
-        if (Math.abs(detR1 - 1.) < tol) {
+        if (Math.abs(detR1 - 1.) < eps) {
             rot1 = R1;
         }
-        if (Math.abs(detR2 - 1.) < tol) {
+        if (Math.abs(detR2 - 1.) < eps) {
             if (rot1 == null) {
                 rot1 = R2;
             } else {
                 rot2 = R2;
             }
         }
-        if (Math.abs(detR3 - 1.) < tol) {
+        if (Math.abs(detR3 - 1.) < eps) {
             if (rot1 == null) {
                 rot1 = R3;
             } else {
                 rot2 = R3;
             }
         }
-        if (Math.abs(detR4 - 1.) < tol) {
+        if (Math.abs(detR4 - 1.) < eps) {
             if (rot1 == null) {
                 rot1 = R4;
             } else {

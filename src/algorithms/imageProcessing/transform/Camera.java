@@ -30,6 +30,8 @@ import no.uib.cipr.matrix.NotConvergedException;
  * @author nichole
  */
 public class Camera {
+   
+    public static double eps = 1e-7;
     
     /**
      *  create camera intrinsic matrix k with assumptions of square pixels
@@ -152,9 +154,7 @@ public class Camera {
         
         double[][] kInv = MatrixUtil.zeros(3, 3);
         
-        
-        double tol = 1e-7;
-        
+                
         double fx = kIntr[0][0];
         double fy = kIntr[1][1];
         double fxfy = fx*fy;
@@ -418,7 +418,7 @@ public class Camera {
      */
     public static double[][] pixelToCameraCoordinates(double[][] x, 
         CameraIntrinsicParameters kIntr, double[] rCoeffs, boolean useR2R4) 
-        throws NotConvergedException {
+        throws NotConvergedException, Exception {
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
                 

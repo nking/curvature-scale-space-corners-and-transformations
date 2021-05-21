@@ -36,7 +36,8 @@ import no.uib.cipr.matrix.NotConvergedException;
  */
 public class CameraCalibration {
     
-    public static final double eps = 1e-11;
+    public static final double eps = 1e-7;
+    public static final double eps2 = 1e-5;
     
     /**
      * 
@@ -63,11 +64,15 @@ public class CameraCalibration {
        @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,
     else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
      * @return camera intrinsic parameters, extrinsic parameters, and radial
      * distortion coefficients
      */
     public static CameraMatrices estimateCamera(final int n, double[][] coordsI, 
-        double[][] coordsW, boolean useR2R4) throws NotConvergedException {
+        double[][] coordsW, boolean useR2R4) throws NotConvergedException,
+        Exception {
         
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI must have 3 rows.");
@@ -497,10 +502,14 @@ public class CameraCalibration {
     * note that if rCoeffs is null or empty, no radial distortion is applied.
      * @return 
      * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
      */
     static CameraExtrinsicParameters solveForExtrinsic2(
         CameraIntrinsicParameters kIntr, double[] kRadial, 
-        double[][] coordsI, double[][] coordsW, boolean useR2R4) throws NotConvergedException {
+        double[][] coordsI, double[][] coordsW, boolean useR2R4) 
+        throws NotConvergedException, Exception {
         
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI length should be 3");
@@ -776,13 +785,17 @@ public class CameraCalibration {
                magnitude of distortion = yd-y
                                        = _y*(signy*k1*_y*sqrt(divc2p1) + k2*_y^2*divc2p1)
                 */
-                signx = (x < 0) ? -1 : 0;
-                signy = (y < 0) ? -1 : 0;
+                signx = (x < 0) ? -1 : 1;
+                signy = (y < 0) ? -1 : 1;
                 // model #3, Table 2, column 2:
                 xm = x*(signx*k1*x*Math.sqrt(c2p1) + k2*x*x*c2p1);
                 ym = y*(signy*k1*y*Math.sqrt(divc2p1) + k2*y*y*divc2p1);
             }
-             
+        
+            System.out.printf("%d) distort fx=%.4f, fy=%.4f for (x,y)=(%.3f,%.3f) => (xd,yd)=(%.3f,%.3f)\n", 
+                i, (xm/distorted[0][i])+1, (ym/distorted[1][i])+1,
+                distorted[0][i], distorted[1][i], distorted[0][i]+xm, distorted[1][i]+ym);
+            
             distorted[0][i] += xm;
             distorted[1][i] += ym;
         }
@@ -840,7 +853,7 @@ public class CameraCalibration {
     @throws no.uib.cipr.matrix.NotConvergedException
     */
     static double[][] removeRadialDistortion(double[][] xC, double k1, double k2,
-        boolean useR2R4) throws NotConvergedException {
+        boolean useR2R4) throws NotConvergedException, Exception {
         
         if (useR2R4) {
             return removeRadialDistortion4(xC, k1, k2);
@@ -893,7 +906,7 @@ public class CameraCalibration {
     @throws no.uib.cipr.matrix.NotConvergedException
     */
     static double[][] removeRadialDistortion(double[][] xC, double k1, double k2) 
-        throws NotConvergedException {
+        throws NotConvergedException, Exception {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
@@ -902,19 +915,31 @@ public class CameraCalibration {
         // output array that will be corrected
         double[][] corrected = MatrixUtil.copy(xC);
         
+        if (Math.abs(k1) < eps) {
+            if (Math.abs(k2) < eps) {
+                return corrected;
+            }
+            throw new Exception("k1 must be non-zero for this algorithm.  "
+                + "To solve for the 2nd order term only, use useR2R4=true");
+        }
+        
         double[] coeffs = new double[]{k2, k1, 1, 0};
+        
+        if (Math.abs(k2) < eps) {
+            // k2 is 0 so solve for reduced order of coeffs:
+            coeffs = new double[]{k1, 1, 0};
+        }
         double[] rBar;
         double rd, r, fr, theta;
         double p, q, a, b, c, signx, signy;
         //double c2p1, signx, signy, fx, fy;
-        double tol = 1e-5;
         int i;
         for (i = 0; i < xC[0].length; ++i) {
             rd = Math.sqrt(corrected[0][i]*corrected[0][i] + corrected[1][i]*corrected[1][i]);
-            if (Math.abs(rd) < tol) {
+            if (Math.abs(rd) < eps) {
                 continue;
             }
-            coeffs[3] = -rd;
+            coeffs[coeffs.length - 1] = -rd;
             
             /*
             Ma et al. 2004, reduction to cubic root
@@ -935,40 +960,24 @@ public class CameraCalibration {
             //p = b - (a*a/3);
             //q = 2*(a*a*a/27) - (a*b/3) + c;
       
-            rBar = CubicRootSolver.solve(coeffs);
-            //rBar = CubicRootSolver.solveUsingDepressedCubic(p, q);
+            //rBar = CubicRootSolver.solve(coeffs);
+            rBar = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps2);
             if (rBar != null)
                 System.out.printf("rBar=%s\n", FormatArray.toString(rBar, "%.4e"));
             if (rBar == null || rBar.length == 0) {
-                //k2*r^3 +k1*r^2 + r - r_d = 0
-                rBar = PolynomialRootSolver.realRoots(coeffs);
-                if (rBar == null || rBar.length == 0) {
-                    //TODO: consider how to handle this case
-                    r = 0;
-                }
-                r = rBar[0];
-                // check solution: 
-                //  k2*r^3 +k1*r^2 +r - r_d = 0
-                double chk = k2 * r * r * r + k1 * r * r + r - rd;
-                System.out.printf("chk 0=%.4e\n", chk);
-                //assert(Math.abs(chk) < tol);
-            } else if (rBar.length == 1) {
-                r = rBar[0];
+                r = rd;
                 // check solution: 
                 //  k2*r^3 +k1*r^2 +r - r_d = 0
                 double chk = k2 * r * r * r + k1 * r * r + r - rd;
                 System.out.printf("chk 0=%.4e\n", chk);
                 //assert(Math.abs(chk) < tol);
             } else {
-                if (rBar.length == 3) {
-                    r = rBar[1];
-                } else {
-                    r = rBar[0];
-                }
+                System.out.printf("rBar=%s\n", FormatArray.toString(rBar, "%.4f"));
+                r = rBar[rBar.length - 1];
                 // check solution: 
                 //  k2*r^3 +k1*r^2 +r - r_d = 0
                 double chk = k2 * r * r * r + k1 * r * r + r - rd;
-                System.out.printf("chk 0=%.4e\n", chk);
+                System.out.printf("chk 0==%.4e\n", chk);
                 //assert(Math.abs(chk) < tol);
             }
                        
@@ -1046,40 +1055,45 @@ public class CameraCalibration {
     number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
     @throws no.uib.cipr.matrix.NotConvergedException
     */
-    static double[][] removeRadialDistortion4(double[][] xC, double k1, double k2) throws NotConvergedException {
+    static double[][] removeRadialDistortion4(double[][] xC, double k1, double k2) throws NotConvergedException, Exception {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
         }
+        
+        // 5th order root finding
+        // a polynomial of degree n has at most n real or complex roots
                 
         double[][] corrected = MatrixUtil.copy(xC);
+        
+        if (Math.abs(k1) < eps) {
+            if (Math.abs(k2) < eps) {
+                return corrected;
+            }
+            throw new Exception("k1 must be non-zero for this algorithm.");
+        }
+        
+        System.out.printf("distorted coords=\n%s\n", FormatArray.toString(xC, "%.3f"));
         
         //model#4: k2*r^5 + k1*r^3 + r - rd = 0.
         //         (k2*(c2p1^2))*_x^5 + (k1*c2p1)*_x^3 + _x - xd = 0
         //         (k2*(divc2p1^2))*_y^5 + (k1*divc2p1)*_y^3 + _y - yd = 0
         
-        double rd, r, theta, x, y, c, c2p1, divc2p1;
-        double tol = 1e-5;
+        double rd, r, theta, x, y, c, c2p1, divc2p1, fx, fy;
         int i;
-        double[] rootsR, rootsX, rootsY;
-        double[] coeffsR = new double[]{k2, 0, k1, 0, 1, 0};
+        double[] rootsX, rootsY;
         double[] coeffsX = new double[]{0, 0, 0, 0, 1, 0};
         double[] coeffsY = new double[]{0, 0, 0, 0, 1, 0};
+        if (Math.abs(k2) < eps) {
+            // k2 is 0 so solve for reduced order of coeffs:
+            coeffsX = new double[]{0, 0, 1, 0};
+            coeffsY = new double[]{0, 0, 1, 0};
+        }
+        
         for (i = 0; i < xC[0].length; ++i) {
             rd = Math.sqrt(corrected[0][i]*corrected[0][i] + corrected[1][i]*corrected[1][i]);
-            if (Math.abs(rd) < tol) {
+            if (Math.abs(rd) < eps) {
                 continue;
-            }
-            coeffsR[5] = -rd;
-            
-            rootsR = PolynomialRootSolver.realRoots(coeffsR);
-            
-            if (rootsR == null || rootsR.length == 0) {
-                //TODO: consider how to handle this case
-                r = 0;
-            } else {
-                //System.out.printf("poly roots=%s\n", FormatArray.toString(roots, "%.4e"));
-                r = rootsR[0];
             }
             
             //c2p1 = (y/x)^2 + 1;
@@ -1106,40 +1120,69 @@ public class CameraCalibration {
                     divc2p1 = (1./(c*c)) + 1;
                 }
             }            
-            
+            System.out.printf("\ni=%d\n",i);
             // solve for x in (k2*(c2p1^2))*_x^5 + (k1*c2p1)*_x^3 + _x - xd = 0
-            coeffsX[0] = k2*c2p1*c2p1;
-            coeffsX[2] = k1*c2p1;
-            coeffsX[4] = -corrected[0][i];
-            rootsX = PolynomialRootSolver.realRoots(coeffsX);
-            if (rootsX == null || rootsX.length == 0) {
-                x = 0;
+            if (coeffsX.length == 6) {
+                coeffsX[0] = k2 * c2p1 * c2p1;
+                coeffsX[2] = k1 * c2p1;
             } else {
-                System.out.printf("poly rootsX=%s\n", FormatArray.toString(rootsX, "%.4e"));
-                x = rootsX[0];
-                if (corrected[0][i] < 0) {
-                    x = -1*Math.abs(x);
+                coeffsX[0] = k1 * c2p1;
+            }
+            coeffsX[coeffsX.length - 1] = -corrected[0][i];
+            
+            if (Math.abs(corrected[0][i]) < eps) {
+                x = corrected[0][i];
+            } else {
+                rootsX = PolynomialRootSolver.solveForRealUsingMPSolve(coeffsX, eps2);
+                if (rootsX == null || rootsX.length == 0) {
+                    x = corrected[0][i];
+                    System.out.printf("rootsX=null\n");
                 } else {
-                    x = Math.abs(x);
+                    System.out.printf("poly rootsX=%s\n", FormatArray.toString(rootsX, "%.4f"));
+                    if (corrected[0][i] < 0) {
+                        x = rootsX[0];
+                    } else {
+                        x = rootsX[rootsX.length - 1];
+                    }
                 }
             }
+            //xd = x*(1 + k1*c2p1*x2 + k2*c2p1*c2p1*x2*x2)
+            fx = (k2*(c2p1*c2p1))*Math.pow(x, 4) + (k1*c2p1)*Math.pow(x, 2) + 1;
+            // xd = x*fx
+            double chkX = fx * x;
             
             // solve for y in (k2*(divc2p1^2))*_y^5 + (k1*divc2p1)*_y^3 + _y - yd = 0
-            coeffsY[0] = k2*divc2p1*divc2p1;
-            coeffsY[2] = k1*divc2p1;
-            coeffsY[4] = -corrected[1][i];
-            rootsY = PolynomialRootSolver.realRoots(coeffsY);
-            if (rootsY == null || rootsY.length == 0) {
-                y = 0;
+            if (coeffsY.length == 6) {
+                coeffsY[0] = k2 * divc2p1 * divc2p1;
+                coeffsY[2] = k1 * divc2p1;
             } else {
-                System.out.printf("poly rootsY=%s\n", FormatArray.toString(rootsY, "%.4e"));
-                y = rootsY[0];
-                if (corrected[1][i] < 0) {
-                    y = -1*Math.abs(y);
+                coeffsY[0] = k1 * divc2p1;
+            }
+            coeffsY[coeffsY.length - 1] = -corrected[1][i];
+            
+            if (Math.abs(corrected[1][i]) < eps) {
+                y = corrected[1][i];
+            } else {
+                rootsY = PolynomialRootSolver.solveForRealUsingMPSolve(coeffsY, eps2);
+                if (rootsY == null || rootsY.length == 0) {
+                    y = corrected[1][i];
+                    System.out.printf("rootsY=null\n");
                 } else {
-                    y = Math.abs(y);
+                    System.out.printf("poly rootsY=%s\n", FormatArray.toString(rootsY, "%.4f"));
+                    if (corrected[1][i] < 0) {
+                        y = rootsY[0];
+                    } else {
+                        y = rootsY[rootsY.length - 1];
+                    }
                 }
             }
+            fy = (k2*(divc2p1*divc2p1))*Math.pow(y, 4) + (k1*divc2p1)*Math.pow(y, 2) + 1;
+            // yd = y*fy
+            double chkY = fy * y;
+            System.out.printf("(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n",
+                corrected[0][i], corrected[1][i], x, y);
+            System.out.printf("fx=%.4f, fy=%.4f, checkX:%.4f==%.4f? checkY:%.4f==%.4f?\n",
+                fx, fy, chkX, xC[0][i], chkY, xC[1][i]);
             
             corrected[0][i] = x;
             corrected[1][i] = y;
@@ -1223,11 +1266,15 @@ public class CameraCalibration {
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,
     else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
      * @return 
      */
     static double[] solveForRadialDistortion(double[][] uvD, 
         double[] u, double[] v, 
-        CameraMatrices cameraMatrices, boolean useR2R4) throws NotConvergedException {
+        CameraMatrices cameraMatrices, boolean useR2R4) 
+        throws NotConvergedException, Exception {
         
         int nImages = cameraMatrices.getExtrinsics().size();
         int nFeatures = u.length/nImages;
@@ -1362,7 +1409,8 @@ public class CameraCalibration {
     }
 
     static List<CameraExtrinsicParameters> solveForExtrinsics(
-        CameraIntrinsicParameters kIntr, double[][] h, int nImages) throws NotConvergedException {
+        CameraIntrinsicParameters kIntr, double[][] h, int nImages) 
+        throws NotConvergedException, Exception {
         
         List<CameraExtrinsicParameters> list = new ArrayList<CameraExtrinsicParameters>();
         //(3) for each image homography and inverse intrinsic parameter matrix,
@@ -1399,11 +1447,14 @@ public class CameraCalibration {
     * note that if rCoeffs is null or empty, no radial distortion is applied.
      * @return
      * @throws NotConvergedException 
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
      */
     static List<CameraExtrinsicParameters> solveForExtrinsics2(
-        CameraIntrinsicParameters kIntr, double[][] coordsI, double[][] coordsW,
-        boolean useR2R4) 
-        throws NotConvergedException {
+        CameraIntrinsicParameters kIntr, double[][] coordsI, 
+        double[][] coordsW, boolean useR2R4) 
+        throws NotConvergedException, Exception {
         
         int nFeatures = coordsW[0].length;
         int nImages = coordsI[0].length/nFeatures;

@@ -2,7 +2,6 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
-import static algorithms.imageProcessing.transform.CameraCalibration.solveForIntrinsic;
 import algorithms.matrix.MatrixUtil;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
@@ -23,7 +22,8 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testApplyRemoveRadialDistortion() throws IOException, NotConvergedException {
+    public void testApplyRemoveRadialDistortion() 
+    throws Exception {
         
         // test for model #3
         // test for model #4
@@ -33,9 +33,11 @@ public class CameraCalibrationTest extends TestCase {
         // generate coords in radial annuli in area 100x100 then unit standard normalized
         double[][] coords = generateCoords0();
         
+        System.out.printf("orig coords=\n%s\n", FormatArray.toString(coords, "%.3f"));
+        
         double[] k1s = new double[]{-0.25};//, +0.25};
-        double[] k2s = new double[]{0.2};//, 0.2};
-        boolean[] useR2R4s = new boolean[]{true};//, false};
+        double[] k2s = new double[]{0};//, +0.2};
+        boolean[] useR2R4s = new boolean[]{true};//, true};
         int i, j;
         double k1, k2;
         double[][] xyd, xy;
@@ -65,7 +67,7 @@ public class CameraCalibrationTest extends TestCase {
         // apply radial distortion and remove radial distortion and compare
     }
     
-    public void estCalibration0() throws IOException, NotConvergedException {
+    public void estCalibration0() throws Exception {
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*r + k2*r^2:
@@ -182,7 +184,7 @@ public class CameraCalibrationTest extends TestCase {
         
     }
     
-    public void estCalibration1() throws IOException, NotConvergedException {
+    public void estCalibration1() throws Exception {
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*rk2*r^2:
@@ -215,7 +217,7 @@ public class CameraCalibrationTest extends TestCase {
         
     }
     
-    public void estCalibration2() throws NotConvergedException {
+    public void estCalibration2() throws Exception {
         
         boolean useR2R4 = false;
         
@@ -293,7 +295,7 @@ public class CameraCalibrationTest extends TestCase {
         TDoubleList y = new TDoubleArrayList();
         
         double rMax = 100;
-        int nAnnuli = 2;
+        int nAnnuli = 1;
         double dR = rMax/nAnnuli;
         
         // for each annuli, want the 4 points crossing the x and y axes to test 0's.

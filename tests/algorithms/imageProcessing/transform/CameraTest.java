@@ -9,15 +9,16 @@ import no.uib.cipr.matrix.NotConvergedException;
  */
 public class CameraTest extends TestCase {
     
+    public static double eps = 1e-7;
+    
     public CameraTest() {
     }
 
-    public void test0() throws NotConvergedException {
+    public void test0() throws Exception {
         
         double focalLength = 500;
         double centerX = 250;
         double centerY = 200;
-        double tol = 1e-5;
         double diff;
         
         double[][] x = new double[3][1];
@@ -45,7 +46,7 @@ public class CameraTest extends TestCase {
         for (int i = 0; i < eX.length; ++i) {
             for (int j = 0; j < eX[i].length; j++) {
                 diff = Math.abs(eX[i][j] - xC[i][j]);
-                assertTrue(diff < tol);
+                assertTrue(diff < eps);
             }
         }
         
@@ -59,7 +60,7 @@ public class CameraTest extends TestCase {
         for (int i = 0; i < xCP.length; ++i) {
             for (int j = 0; j < xCP[i].length; j++) {
                 diff = Math.abs(xCP[i][j] - x[i][j]);
-                assertTrue(diff < tol);
+                assertTrue(diff < eps);
             }
         }
     }

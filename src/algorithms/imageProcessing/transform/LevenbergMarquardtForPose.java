@@ -44,12 +44,16 @@ public class LevenbergMarquardtForPose {
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
         note that if rCoeffs is null or empty, no radial distortion is removed.
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
      * @return 
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     public static CameraExtrinsicParameters solveForPose(double[][] imageC, double[][] worldC, 
         CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
-        double[] kRadial, final int nMaxIter, boolean useR2R4) throws NotConvergedException {
+        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        throws NotConvergedException, Exception {
         
         int n = imageC[0].length;
         
