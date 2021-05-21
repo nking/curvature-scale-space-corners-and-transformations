@@ -5,12 +5,13 @@ import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
-import algorithms.misc.CubicRootSolver;
 import algorithms.misc.PolynomialRootSolver;
 import algorithms.util.FormatArray;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
@@ -39,6 +40,13 @@ public class CameraCalibration {
     public static final double eps = 1e-7;
     public static final double eps2 = 1e-5;
     
+    private static final Level LEVEL = Level.FINE;
+    private static final Logger log;
+    static {
+        log = Logger.getLogger(CameraCalibration.class.getSimpleName());
+        log.setLevel(LEVEL);
+    }
+
     /**
      * 
      * @param n n is the number of points in each image which is the
@@ -260,7 +268,7 @@ public class CameraCalibration {
             throw new IllegalArgumentException("h must have 3 columns");
         }
         
-        System.out.printf("h=\n%s\n", FormatArray.toString(h, "%.3e"));
+        log.log(LEVEL, "h=\n%s\n", FormatArray.toString(h, "%.3e"));
         
         // Section 6.3 of Ma et al. 2003
         
@@ -373,7 +381,7 @@ public class CameraCalibration {
         
         //       0    1    2    3    4    5
         //b = [B11, B12, B22, B13, B23, B33]^T
-        System.out.printf("b=%s\n", FormatArray.toString(b, "%.3e"));
+        log.log(LEVEL, String.format("b=%s\n", FormatArray.toString(b, "%.3e")));
         double B11 = b[0];
         double B12 = b[1];
         double B22 = b[2];
@@ -389,12 +397,12 @@ public class CameraCalibration {
         double u0 = (gamma*v0/beta) - (B13*alpha*alpha/lambda);
         //u0 = (gamma*v0/alpha) - (B13*alpha*alpha/lambda);
         
-        System.out.printf("v0=%.4e (exp=220.866)\n", v0);
-        System.out.printf("lambda=%.4e\n", lambda);
-        System.out.printf("alpha=%.4e\n", alpha);
-        System.out.printf("beta=%.4e\n", beta);
-        System.out.printf("gamma=%.4e\n", gamma);
-        System.out.printf("u0=%.4e\n", u0);
+        log.log(LEVEL, String.format("v0=%.4e (exp=220.866)\n", v0));
+        log.log(LEVEL, String.format("lambda=%.4e\n", lambda));
+        log.log(LEVEL, String.format("alpha=%.4e\n", alpha));
+        log.log(LEVEL, String.format("beta=%.4e\n", beta));
+        log.log(LEVEL, String.format("gamma=%.4e\n", gamma));
+        log.log(LEVEL, String.format("u0=%.4e\n", u0));
         
         double[][] kIntr = Camera.createIntrinsicCameraMatrix(
             alpha, beta, u0, v0, gamma);
@@ -458,7 +466,7 @@ public class CameraCalibration {
         double lambda = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h1));
         double lambda2 = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h2));
         //double scaleFactor = 2./(Math.sqrt(sumOfSquares(h1)) + Math.sqrt(sumOfSquares(h1)));
-        System.out.printf("lambda1=%.3e, lambda2=%.3e\n", lambda, lambda2);
+        log.log(LEVEL, String.format("lambda1=%.3e, lambda2=%.3e\n", lambda, lambda2));
         
         double[][] lambdaAInv = MatrixUtil.copy(aInv);
         MatrixUtil.multiply(lambdaAInv, lambda);
@@ -792,9 +800,10 @@ public class CameraCalibration {
                 ym = y*(signy*k1*y*Math.sqrt(divc2p1) + k2*y*y*divc2p1);
             }
   
-            System.out.printf("%d) distort fx=%.4f, fy=%.4f for (x,y)=(%.3f,%.3f) => (xd,yd)=(%.3f,%.3f)\n", 
+            log.log(LEVEL, String.format(
+                "%d) distort fx=%.4f, fy=%.4f for (x,y)=(%.3f,%.3f) => (xd,yd)=(%.3f,%.3f)\n", 
                 i, (xm/distorted[0][i])+1, (ym/distorted[1][i])+1,
-                distorted[0][i], distorted[1][i], distorted[0][i]+xm, distorted[1][i]+ym);
+                distorted[0][i], distorted[1][i], distorted[0][i]+xm, distorted[1][i]+ym));
             
             distorted[0][i] += xm;
             distorted[1][i] += ym;
@@ -960,26 +969,34 @@ public class CameraCalibration {
             //p = b - (a*a/3);
             //q = 2*(a*a*a/27) - (a*b/3) + c;
       
-            System.out.printf("\ni=%d\n",i);
+            log.log(LEVEL, String.format("\ni=%d\n",i));
             
             //rBar = CubicRootSolver.solve(coeffs);
             rBar = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps2);
             if (rBar != null)
-                System.out.printf("rBar=%s\n", FormatArray.toString(rBar, "%.4e"));
+                log.log(LEVEL, String.format("rBar=%s\n", FormatArray.toString(rBar, "%.4e")));
             if (rBar == null || rBar.length == 0) {
                 r = rd;
                 // check solution: 
                 //  k2*r^3 +k1*r^2 +r - r_d = 0
                 double chk = k2 * r * r * r + k1 * r * r + r - rd;
-                System.out.printf("chk 0=%.4e\n", chk);
+                log.log(LEVEL, String.format("chk 0=%.4e\n", chk));
                 //assert(Math.abs(chk) < tol);
             } else {
-                System.out.printf("rBar=%s\n", FormatArray.toString(rBar, "%.4f"));
+                log.log(LEVEL, String.format("rBar=%s\n", FormatArray.toString(rBar, "%.4f")));
                 r = rBar[0];
+                if (r < 0 && rBar.length > 1) {
+                    for (int ii = 1; ii < rBar.length; ++ii) {
+                        r = rBar[ii];
+                        if (r > 0) {
+                            break;
+                        }
+                    }
+                }
                 // check solution: 
                 //  k2*r^3 +k1*r^2 +r - r_d = 0
                 double chk = k2 * r * r * r + k1 * r * r + r - rd;
-                //System.out.printf("chk 0==%.4e\n", chk);
+                //log.log(LEVEL, String.format("chk 0==%.4e\n", chk);
                 //assert(Math.abs(chk) < tol);
             }
                        
@@ -1002,9 +1019,9 @@ public class CameraCalibration {
             //fr = 1 + k1*r + k2*r*r;
             theta = Math.atan2(corrected[1][i], corrected[0][i]);
             
-            System.out.printf("(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n",
+            log.log(LEVEL, String.format("(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n",
                 corrected[0][i], corrected[1][i], 
-                r*Math.cos(theta), r*Math.sin(theta));
+                r*Math.cos(theta), r*Math.sin(theta)));
             
             corrected[0][i] = (r*Math.cos(theta));
             corrected[1][i] = (r*Math.sin(theta));
@@ -1081,7 +1098,7 @@ public class CameraCalibration {
             throw new Exception("k1 must be non-zero for this algorithm.");
         }
         
-        System.out.printf("distorted coords=\n%s\n", FormatArray.toString(xC, "%.3f"));
+        log.log(LEVEL, String.format("distorted coords=\n%s\n", FormatArray.toString(xC, "%.3f")));
         
         //model#4: k2*r^5 + k1*r^3 + r - rd = 0.
         //         (k2*(c2p1^2))*_x^5 + (k1*c2p1)*_x^3 + _x - xd = 0
@@ -1128,7 +1145,7 @@ public class CameraCalibration {
                     divc2p1 = (1./(c*c)) + 1;
                 }
             }            
-            System.out.printf("\ni=%d\n",i);
+            log.log(LEVEL, String.format("\ni=%d\n",i));
             // solve for x in (k2*(c2p1^2))*_x^5 + (k1*c2p1)*_x^3 + _x - xd = 0
             if (coeffsX.length == 6) {
                 coeffsX[0] = k2 * c2p1 * c2p1;
@@ -1144,9 +1161,9 @@ public class CameraCalibration {
                 rootsX = PolynomialRootSolver.solveForRealUsingMPSolve(coeffsX, eps2);
                 if (rootsX == null || rootsX.length == 0) {
                     x = corrected[0][i];
-                    System.out.printf("rootsX=null\n");
+                    log.log(LEVEL, String.format("rootsX=null\n"));
                 } else {
-                    System.out.printf("poly rootsX=%s\n", FormatArray.toString(rootsX, "%.4f"));
+                    log.log(LEVEL, String.format("poly rootsX=%s\n", FormatArray.toString(rootsX, "%.4f")));
                     if (corrected[0][i] < 0) {
                         x = rootsX[0];
                     } else {
@@ -1174,9 +1191,9 @@ public class CameraCalibration {
                 rootsY = PolynomialRootSolver.solveForRealUsingMPSolve(coeffsY, eps2);
                 if (rootsY == null || rootsY.length == 0) {
                     y = corrected[1][i];
-                    System.out.printf("rootsY=null\n");
+                    log.log(LEVEL, String.format("rootsY=null\n"));
                 } else {
-                    System.out.printf("poly rootsY=%s\n", FormatArray.toString(rootsY, "%.4f"));
+                    log.log(LEVEL, String.format("poly rootsY=%s\n", FormatArray.toString(rootsY, "%.4f")));
                     if (corrected[1][i] < 0) {
                         y = rootsY[0];
                     } else {
@@ -1187,10 +1204,10 @@ public class CameraCalibration {
             fy = (k2*(divc2p1*divc2p1))*Math.pow(y, 4) + (k1*divc2p1)*Math.pow(y, 2) + 1;
             // yd = y*fy
             double chkY = fy * y;
-            System.out.printf("(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n",
-                corrected[0][i], corrected[1][i], x, y);
-            System.out.printf("fx=%.4f, fy=%.4f, checkX:%.4f==%.4f? checkY:%.4f==%.4f?\n",
-                fx, fy, chkX, xC[0][i], chkY, xC[1][i]);
+            log.log(LEVEL, String.format("(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n",
+                corrected[0][i], corrected[1][i], x, y));
+            log.log(LEVEL, String.format("fx=%.4f, fy=%.4f, checkX:%.4f==%.4f? checkY:%.4f==%.4f?\n",
+                fx, fy, chkX, xC[0][i], chkY, xC[1][i]));
             
             corrected[0][i] = x;
             corrected[1][i] = y;

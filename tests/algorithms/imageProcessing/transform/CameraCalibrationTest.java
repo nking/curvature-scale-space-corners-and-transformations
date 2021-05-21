@@ -10,6 +10,8 @@ import gnu.trove.list.array.TDoubleArrayList;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -18,6 +20,15 @@ import no.uib.cipr.matrix.NotConvergedException;
  * @author nichole
  */
 public class CameraCalibrationTest extends TestCase {
+    
+    static double eps = 1.e-5;
+    
+    private static final Level LEVEL = Level.FINE;
+    private static final Logger log;
+    static {
+        log = Logger.getLogger(CameraCalibration.class.getSimpleName());
+        log.setLevel(LEVEL);
+    }
     
     public CameraCalibrationTest() {
     }
@@ -33,11 +44,11 @@ public class CameraCalibrationTest extends TestCase {
         // generate coords in radial annuli in area 100x100 then unit standard normalized
         double[][] coords = generateCoords0();
         
-        System.out.printf("orig coords=\n%s\n", FormatArray.toString(coords, "%.3f"));
+        log.log(LEVEL, String.format("orig coords=\n%s\n", FormatArray.toString(coords, "%.3f")));
         
-        double[] k1s = new double[]{-0.25};//, +0.25};
-        double[] k2s = new double[]{0};//, +0.2};
-        boolean[] useR2R4s = new boolean[]{false};//, true};
+        double[] k1s = new double[]{0.25, +0.25};
+        double[] k2s = new double[]{0.2, +0.2};
+        boolean[] useR2R4s = new boolean[]{false, true};
         int i, j;
         double k1, k2;
         double[][] xyd, xy;
@@ -46,7 +57,7 @@ public class CameraCalibrationTest extends TestCase {
             for (i = 0; i < k1s.length; ++i) {
                 k1 = k1s[i];
                 k2 = k2s[i];
-                System.out.println("useR2R4=" + useR2R4 + "   k1="+ k1);
+                log.log(LEVEL, "useR2R4=" + useR2R4 + "   k1="+ k1);
                 xyd = CameraCalibration.applyRadialDistortion(coords, k1, k2, useR2R4);
                 xy = CameraCalibration.removeRadialDistortion(xyd, k1, k2, useR2R4);
                 // assert xyd != coordsI
@@ -56,9 +67,10 @@ public class CameraCalibrationTest extends TestCase {
                     diffDy = Math.abs(coords[1][j] - xyd[1][j]);
                     diffx = Math.abs(coords[0][j] - xy[0][j]);
                     diffy = Math.abs(coords[1][j] - xy[1][j]);
-                    System.out.printf("(%.4e,%.4e): diff(%.4e, %.4e)?  same(%.4e, %.4e)?\n", 
-                        coords[0][j], coords[1][j], diffDx, diffDy, diffx, diffy);
-                    
+                    log.log(LEVEL, String.format("(%.4e,%.4e): diff(%.4e, %.4e)?  same(%.4e, %.4e)?\n", 
+                        coords[0][j], coords[1][j], diffDx, diffDy, diffx, diffy));
+                    assertTrue(diffx < eps);
+                    assertTrue(diffy < eps);
                     // if barrel (k1<0), distorted is at a smaller radius
                 }
             }
@@ -128,11 +140,11 @@ public class CameraCalibrationTest extends TestCase {
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
             ex2 = extrinsics2.get(i);
-            System.out.printf("\nimg %d:\n", i);
-            System.out.printf("   r1=\n%s\n", FormatArray.toString(ex1.getRotation(), "%.3e"));
-            System.out.printf("   r2=\n%s\n", FormatArray.toString(ex2.getRotation(), "%.3e"));
-            System.out.printf("   t1=\n%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e"));
-            System.out.printf("   t2=\n%s\n", FormatArray.toString(ex2.getTranslation(), "%.3e"));
+            log.log(LEVEL, String.format("\nimg %d:\n", i));
+            log.log(LEVEL, String.format("   r1=\n%s\n", FormatArray.toString(ex1.getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("   r2=\n%s\n", FormatArray.toString(ex2.getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("   t1=\n%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            log.log(LEVEL, String.format("   t2=\n%s\n", FormatArray.toString(ex2.getTranslation(), "%.3e")));
         }
         
         double[] u = new double[nFeatures*nImages];
@@ -143,7 +155,7 @@ public class CameraCalibrationTest extends TestCase {
             cameraMatrices, useR2R4);
         double k1 = kRadial[0];
         double k2 = kRadial[1];
-        System.out.printf("k=\n%s\n", FormatArray.toString(kRadial, "%.4e"));
+        log.log(LEVEL, String.format("k=\n%s\n", FormatArray.toString(kRadial, "%.4e")));
         
         // quick test of apply and remove distortion
         // (u_d, v_d) are the distorted features in coordsI in image reference frame.
@@ -172,8 +184,8 @@ public class CameraCalibrationTest extends TestCase {
                 diff = Math.abs(xyi[0][j] - xyDI[0][j]);
                 //assertTrue(diff > 0.1);
                 diffD = Math.abs(xyDUI[0][j] - xyDI[0][j]);
-                System.out.printf("(%.3f,%.3f): (distorted-undistorted)=%.5e \n     (orig - removedApplied)=%.5e\n", 
-                    xyDI[0][j], xyDI[1][j], diff, diffD);  System.out.flush();
+                log.log(LEVEL, String.format("(%.3f,%.3f): (distorted-undistorted)=%.5e \n     (orig - removedApplied)=%.5e\n", 
+                    xyDI[0][j], xyDI[1][j], diff, diffD));
                 System.out.flush();
                 //assertTrue(diffD < 0.1);
             }
