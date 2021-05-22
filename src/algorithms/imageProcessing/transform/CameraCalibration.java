@@ -1330,9 +1330,6 @@ public class CameraCalibration {
                                                       (2X2nN) * (2nNX1) = 2X1
         */
         
- //TODO: tranform u,v and uvD into camera reference frame
- //    to use only camera refrence frame coords to solve for radial distortion
-                
         int i, j;
         double ui, vi, udi, vdi, xi, yi, xi2, yi2;
         double signx, signy, c2p1, divc2p1;
