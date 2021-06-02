@@ -289,4 +289,460 @@ public class Rotation {
         double thetaZ = Math.atan2(-r[0][1], r[1][1]);
         return new double[]{thetaX, thetaY, thetaZ};
     }
+        
+    /**
+     * another method to extract the Rodrigues vector from the given
+     * euler rotation matrix (it's an ambiguous task).
+
+     <pre>
+     the method is from  
+     lecture notes of Pradit Mittrapiyanuruk at Perdue University,
+     ECE 661 Robot Vision Laboratory,
+     https://engineering.purdue.edu/kak/computervision/ECE661_Fall2012/homework/hw5_LM_handout.pdf
+     </pre>
+     * @param r euler rotation matrix
+     * @return Rodriques vector.  the axis and angle representation from this
+     * can be constructed as angle of rotation = r_vec/||r_vec|| and angle = ||r_vec||
+     * where r_vec is the rodrigues vector.
+     */
+    public static double[] extractRotation2(double[][] r) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3x3");
+        }
+        /*
+        theta=acos((trace(R)-1)/2);
+        w=(theta/(2*sin(theta)))*[R(3,2)-R(2,3); R(1,3)-R(3,1); R(2,1)-R(1,2)];
+        wx=w(1);
+        wy=w(2);
+        wz=w(3);
+        */
+        int i;
+        double[] theta = new double[3];
+        double[] w = new double[3];
+        for (i = 0; i  < 3; ++i) {
+            theta[i] = Math.acos((r[i][i] - 1.)/2.);
+            w[i] = theta[i]/(2.*Math.sin(theta[i]));
+        }
+        w[0] *= r[2][1] - r[1][2];
+        w[1] *= r[0][2] - r[2][0];
+        w[2] *= r[1][0] - r[0][1];
+        return w;
+    }
+    
+    /**
+     update the rotation matrix by the perturbation of dx where dx is the
+     change in the 3 parameters, theta. 
+     <pre>from Danping Zou lecture notes, Shanghai Jiao Tong University,
+     EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+     http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+      
+     parameter perturbations for a Lie group such as rotation are:
+         R * (I - [delta x]_x) where [delta x]_x is the skew-symetric matrix of delta_x
+     </pre>
+     * @param r rotation matrix of size 3X3.
+     * @param dx parameter perturbations for theta.  length is 3.
+     * @return the rotation matrix perturbed by dx.
+     */
+    public static double[][] updateRotation(double[][] r, double[] dx) {
+                
+        double[][] iMinusDX = MatrixUtil.createIdentityMatrix(3);
+        double[][] dxM = MatrixUtil.skewSymmetric(dx);
+        double[][] factor = MatrixUtil.multiply(iMinusDX, dxM);
+        r = MatrixUtil.multiply(r, factor);
+        
+        return r;
+    }
+    
+    /**
+     * given a quaternion, form the left-hand compound operator:
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (2):
+     * given q = 4X1 column vector of [eps eta] where eta is the scalar,
+     * and "1" is a 3X3 identity matrix, also written as I_3.
+     * and [q]_x is the skew-symetric matrix for q.
+     * 
+     * The left-hand compound operator is a 4X4 matrix:
+     * 
+     * q^+ = [ eta*I_3-[q]_x   eps ]
+     *       [ -eps^T          eta ]
+     * 
+     * multiplication of quaternions, u and v, which is typically written 
+     * as u ⊗ v may be written equivalently as either
+         u^+ v or v^⨁ u,
+     * </pre>
+     * @param quaternion
+     * @return 
+     */
+    public static double[][] lefthandCompoundOperator(double[] quaternion) {
+        if (quaternion.length != 4) {
+            throw new IllegalArgumentException("quaternion must be length 4");
+        }
+        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);
+        assert(eps.length == 3);
+        double eta = quaternion[3];
+        
+        double[][] minusSkewEps = MatrixUtil.skewSymmetric(eps);
+        MatrixUtil.multiply(minusSkewEps, -1);
+        
+        double[][] i3Eta = MatrixUtil.createIdentityMatrix(3);
+        MatrixUtil.multiply(i3Eta, eta);
+        
+        // 3X3
+        double[][] block00 = MatrixUtil.elementwiseAdd(i3Eta, minusSkewEps);
+        
+        double[][] lhc = MatrixUtil.zeros(4, 4);
+        int i;
+        for (i = 0; i < 3; ++i) {
+            System.arraycopy(block00[i], 0, lhc[i], 0, 3);
+            lhc[i][3] = eps[i];
+        }
+        for (i = 0; i < 3; ++i) {
+            lhc[3][i] = -eps[i];
+        }
+        lhc[3][3] = eta;
+        
+        return lhc;
+    }
+    
+    /**
+     * given a quaternion, form the right-hand compound operator:
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (2):
+     * given q = 4X1 column vector of [eps eta] where eta is the scalar,
+     * and "1" is a 3X3 identity matrix, also written as I_3.
+     * and [q]_x is the skew-symetric matrix for q.
+     * 
+     * The right-hand compound operator is a 4X4 matrix:
+     * 
+     * q^⨁ = [ eta*I_3+[q]_x   eps ]
+     *        [ -eps^T          eta ]
+     * 
+     * multiplication of quaternions, u and v, which is typically written 
+     * as u ⊗ v may be written equivalently as either
+         u^+ v or v^⨁ u,
+     * </pre>
+     * @param quaternion
+     * @return 
+     */
+    public static double[][] righthandCompoundOperator(double[] quaternion) {
+        if (quaternion.length != 4) {
+            throw new IllegalArgumentException("quaternion must be length 4");
+        }
+        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);
+        assert(eps.length == 3);
+        double eta = quaternion[3];
+        
+        double[][] skewEps = MatrixUtil.skewSymmetric(eps);
+        
+        double[][] i3Eta = MatrixUtil.createIdentityMatrix(3);
+        MatrixUtil.multiply(i3Eta, eta);
+        
+        // 3X3
+        double[][] block00 = MatrixUtil.elementwiseAdd(i3Eta, skewEps);
+        
+        double[][] lhc = MatrixUtil.zeros(4, 4);
+        int i;
+        for (i = 0; i < 3; ++i) {
+            System.arraycopy(block00[i], 0, lhc[i], 0, 3);
+            lhc[i][3] = eps[i];
+        }
+        for (i = 0; i < 3; ++i) {
+            lhc[3][i] = -eps[i];
+        }
+        lhc[3][3] = eta;
+        
+        return lhc;
+    }
+    
+    /**
+     * given a quaternion, return the inverse
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (5):
+     * given q = 4X1 column vector of [eps eta] where eta is the scalar,
+     * 
+     * the inverse is the column vector:
+     * 
+     * q^-1 = [ -eps  eta ]
+     * 
+     * NOTE that if the quaternion is a unit-length quaternion, the conjugate
+     * operation is usually called the inverse operation.
+     * 
+     * </pre>
+     * @param quaternion
+     * @return 
+     */
+    public static double[] conjugateOperator(double[] quaternion) {
+        if (quaternion.length != 4) {
+            throw new IllegalArgumentException("quaternion must be length 4");
+        }
+        double[] inv = Arrays.copyOf(quaternion, 4);
+        
+        int i;
+        for (i = 0; i < 3; ++i) {
+            inv[i] *= -1;
+        }
+        
+        return inv;
+    }
+   
+    /**
+     * given a quaternion, return the inverse
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049,
+     * near eqn (8): 
+     * 
+     * creates identity element: [0 0 0 1]
+     * 
+     * </pre>
+     * @return 
+     */
+    public static double[] createIdentityQuaternion() {
+        
+        double[] i4 = new double[4];
+        i4[3] = 1;
+                
+        return i4;
+    }
+    
+     /**
+     * create a rotation matrix from the given quaternion
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (12):
+     * 
+     *  R = q^+ * q^(-1)^⨁ = q^(-1)^⨁ * q^+ = q^(⨁)^T * q^+
+     *    
+     *    = [ C   0 ]
+     *      [ 0^T 1 ]
+     * where C is the canonical 3X3 rotation matrix.
+     * </pre>
+     * @param quaternion the quaternion 4 element array
+     * @return a 4x4 rotation matrix
+     */
+    public static double[][] createRotationMatrix(double[] quaternion) {
+        if (quaternion.length != 4) {
+            throw new IllegalArgumentException("quaternion must be length 4");
+        }
+        double[][] lhc = lefthandCompoundOperator(quaternion);
+        double[][] rhcT = righthandCompoundOperator(quaternion);
+        rhcT = MatrixUtil.transpose(rhcT);
+        
+        double[][] r = MatrixUtil.multiply(rhcT, lhc);
+        
+        return r;
+    }
+    
+     /**
+     * rotate point p by the given quaternion.
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (11):
+     * 
+     * v3 = [ p ]
+     *      [ 0 ]
+     * 
+     *  rotated = q^+ * q^(-1)^⨁ * v3 = R*v3
+     * 
+     *  where R is the canonical 3X3 rotation matrix.
+     * </pre>
+     * @param quaternion the quaternion 4 element array
+     * @param v3 the point as 3 element array.
+     * @return 
+     */
+    public static double[] rotateAPoint(double[] quaternion, double[] v3) {
+        if (quaternion.length != 4) {
+            throw new IllegalArgumentException("quaternion must be length 4");
+        }
+        if (v3.length != 3) {
+            throw new IllegalArgumentException("v3 must be length 3");
+        }
+        double[] v = Arrays.copyOf(v3, 4);
+        
+        return rotateVector4(quaternion, v);
+    }
+    
+     /**
+     * rotate point p by the given quaternion.
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (11):
+     * 
+     * v3 = [ p ]
+     *      [ 0 ]
+     * 
+     *  rotated = q^+ * q^(-1)^⨁ * v3 = R*v3
+     * 
+     * </pre>
+     * @param quaternion the quaternion 4 element array
+     * @param v the vector as a 3 element array followed by a 0.
+     * @return 
+     */
+    public static double[] rotateVector4(double[] quaternion, double[] v) {
+        if (quaternion.length != 4) {
+            throw new IllegalArgumentException("quaternion must be length 4");
+        }
+        if (v.length != 4) {
+            throw new IllegalArgumentException("v3 must be length 4");
+        }
+        double[][] r = createRotationMatrix(quaternion);
+        
+        double[] result = MatrixUtil.multiplyMatrixByColumnVector(r, v);
+        
+        return result;
+    }
+    
+    /**
+     * calculate S_theta which is the matrix relating angular velocity to 
+     * Euler-angle rates.  
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (21):
+     * given C = 3X3 rotation matrix (oftern written as R)
+     * given array of rotation angles for euler alpha, beta,gamma matrices
+     * 
+     * s_theta column 0 = C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T
+     *         column 1 = C_gamma(theta[2]) * [0, 1, 0]^T 
+     *         column 2 = [0, 0, 1]^T
+     * 
+     *       C_gamma                        C_alpha                    C_beta
+     *   about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+     *  theta[0] = angleX angle of rotation about x-axis (roll) in units of radians.
+     *             can use createEulerRollRotationMatrix(theta[0])
+     *  theta[1] = angleY angle of rotation about y-axis (pitch) in units of radians.
+     *             can use createEulerPitchRotationMatrix(theta[1])
+     *  theta[2] = angleZ angle of rotation about z-axis (yaw) in units of radians.
+     *             can use createEulerYawRotationMatrix(theta[2])
+     * 
+     * see also, pp 479-480, eqn (285) of Shuster 1993, "A Survey of AttitudeRepresentations"
+     * http://www.ladispe.polito.it/corsi/Meccatronica/02JHCOR/2011-12/Slides/Shuster_Pub_1993h_J_Repsurv_scan.pdf
+     * though the sign conventions of the sine terms are different
+     * 
+     * </pre>
+     * @return 
+     */
+    public static double[][] sTheta(double[] theta) {
+        if (theta.length != 3) {
+            throw new IllegalArgumentException("theta length must be 3");
+        }
+        
+        /*
+         C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T
+        
+        = | cos φ   -sin φ    0 |    *  |  cos ψ    0  sin ψ | * [1, 0, 0]^T
+          | sin φ    cos φ    0 |    *  |      0    1      0 |
+          |     0        0    1 |    *  | -sin ψ    0  cos ψ |
+        = |  cos t2 * cos t1    -sin t2   cos t2 * sin t1 | * [1, 0, 0]^T
+          |  sin t2 * cos t1     cos t2   sin t2 * sin t1 |
+          | -sin t1              0        cos t1          |
+        = | cos t2 * cos t1 |
+          | sin t2 * cos t1 |
+          | -sin t1         |
+        */
+        
+        double[] i0 = new double[]{1, 0, 0};
+        double[] i1 = new double[]{0, 1, 0};
+        double[] i2 = new double[]{0, 0, 1};
+        double[][] cBeta = createEulerPitchRotationMatrix(theta[1]);
+        double[][] cGamma = createEulerYawRotationMatrix(theta[2]);
+        
+        double[] col0 = MatrixUtil.multiplyMatrixByColumnVector(
+            MatrixUtil.multiply(cGamma, cBeta), i0);
+        double[] col1 = MatrixUtil.multiplyMatrixByColumnVector(
+            cGamma, i1);
+        double[] col2 = i2;
+        
+        double[][] sTheta = MatrixUtil.zeros(3, 3);
+        int i;
+        for (i = 0; i < 3; ++i) {
+            sTheta[0][i] = col0[i];
+            sTheta[1][i] = col1[i];
+            sTheta[2][i] = col2[i];
+        }
+        
+        return sTheta;
+    }
+    
+    /**
+     * given an array of euler rotation angles, return thxe rotation matrix
+     * as the rotations for z, y, x multiplied in that order.
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (18)
+     * 
+     * where  
+     *  about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+     * </pre>
+     * @return 
+     */
+    public static double[][] calculateRotationZYX(double[] thetas) {
+        if (thetas.length != 3) {
+            throw new IllegalArgumentException("thetas must be length 3");
+        }
+        
+        double[][] rZ = Rotation.createEulerYawRotationMatrix(thetas[2]);
+        
+        double[][] rX = Rotation.createEulerRollRotationMatrix(thetas[0]);
+        
+        double[][] rY = Rotation.createEulerPitchRotationMatrix(thetas[1]);
+        
+        double[][] r = MatrixUtil.multiply(rZ, MatrixUtil.multiply(rY, rX));
+        
+        return r;
+    }
+    
+    /**
+     * given an array of euler rotation angles, return the rotation matrix
+     * as the rotations for x, y, z multiplied in that order.
+     * <pre>
+     * 
+     * where  
+     *  about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+     * </pre>
+     * @return 
+     */
+    public static double[][] calculateRotationXYZ(double[] thetas) {
+        if (thetas.length != 3) {
+            throw new IllegalArgumentException("thetas must be length 3");
+        }
+        
+        double[][] rZ = Rotation.createEulerYawRotationMatrix(thetas[2]);
+        
+        double[][] rX = Rotation.createEulerRollRotationMatrix(thetas[0]);
+        
+        double[][] rY = Rotation.createEulerPitchRotationMatrix(thetas[1]);
+        
+        double[][] r = MatrixUtil.multiply(rX, MatrixUtil.multiply(rY, rZ));
+        
+        return r;
+    }
+    
 }

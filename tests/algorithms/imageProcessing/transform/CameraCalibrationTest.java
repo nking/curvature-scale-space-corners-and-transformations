@@ -7,13 +7,10 @@ import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  *
@@ -23,7 +20,7 @@ public class CameraCalibrationTest extends TestCase {
     
     static double eps = 1.e-5;
     
-    private static final Level LEVEL = Level.FINE;
+    private static final Level LEVEL = Level.INFO;
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
@@ -33,7 +30,7 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testApplyRemoveRadialDistortion() 
+    public void estApplyRemoveRadialDistortion() 
     throws Exception {
         
         // test for model #3
@@ -79,7 +76,7 @@ public class CameraCalibrationTest extends TestCase {
         // apply radial distortion and remove radial distortion and compare
     }
     
-    public void estCalibration0() throws Exception {
+    public void testCalibration0() throws Exception {
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*r + k2*r^2:

@@ -11,7 +11,16 @@ import no.uib.cipr.matrix.NotConvergedException;
  * iterative non-linear optimization using Levenberg-Marquardt algorithm
  * to minimize the re-projection error of perspective projection.
  * 
+ * L-M is guaranteed to converge to eventually find an improvement, 
+ * because an update with a sufficiently small magnitude and a negative scalar 
+ * product with the gradient is guaranteed to do so.
+ * 
  * TODO: consider implementing the Szeliski 2010 chapter 6 equations (6.44)-(6.47)
+ * 
+ * NOTE: consider implementing the version of L-M by 
+ * which utilizes the sparseness of the block-diagonal structure in the
+ * hessian approximation by Engles, Stewenius, & Nister "Bundle Adjustment Rules".
+ * 
  * @author nichole
  */
 public class LevenbergMarquardtForPose {
@@ -19,7 +28,7 @@ public class LevenbergMarquardtForPose {
     /**
      * given initial camera calibration and extrinsic parameters, use the 
      * Levenberg-Marquardt
-     * algorithm to improve the rotation and translation
+     * algorithm to improve the rotation and translation estimates
      * by minimizing the re-projection error.
      * <pre>
      References:
@@ -33,6 +42,11 @@ public class LevenbergMarquardtForPose {
      http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
 
      Szeliski 2010, "Computer Vision: Algorithms and Applications", Chapter 6
+     
+     NOTE: this algorithm is vulnerable to singularities induced by the
+     changes of the rotation angles.
+     TODO: implement the sparse block version algorithm of Barfoot et al. 2010
+     in this same class.
      * </pre>
      * @param imageC
      * @param worldC
@@ -80,7 +94,8 @@ public class LevenbergMarquardtForPose {
         // the focal lengths along both axes are greater than 0.
         
         // extract pose as (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-        double[][] r = kExtr.getRotation();
+        double[][] r0 = kExtr.getRotation();
+        double[][] r = MatrixUtil.copy(r0);
         double[] thetas = Rotation.extractRotation(r);
         double[] t = kExtr.getTranslation();
         
@@ -110,7 +125,12 @@ public class LevenbergMarquardtForPose {
         double f = Double.POSITIVE_INFINITY;
         double fPrev;
         
+        // deltaPLM is the array of length 6 holding the steps of change for theta and translation.
         double[] deltaPLM;
+        // deltaTheta is used to extract the 1st 3 elements of deltaPM 
+        double[] deltaTheta = new double[3];
+        // deltaT is used to extract the last 3 elements of deltaPLM
+        double[] deltaT = new double[3];
                 
         double eps = 1.e-5;
         
@@ -158,8 +178,10 @@ public class LevenbergMarquardtForPose {
             jT = MatrixUtil.transpose(j);
             jTJ = MatrixUtil.multiply(jT, j);
            
+            //gradient is the local direction of steepest ascent
+            
             gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
-            deltaPLM = calculateDeltaPLMSzeliski(jTJ, jT, lambda, gradientCheck);
+            deltaPLM = calculateDeltaPLMSzeliski(jTJ, lambda, gradientCheck);
             
             System.out.printf("j^T*(b-fgp)=%s\n", FormatArray.toString(gradientCheck, "%.3e"));
             System.out.printf("deltaP=%s\n", FormatArray.toString(deltaPLM, "%.3e"));
@@ -199,16 +221,26 @@ public class LevenbergMarquardtForPose {
                     lambda /= lambdaF;
                 } else {
                     doUpdate = 0;
-                    // increase lambda
+                    // increase lambda to reduce step length and get closer to 
+                    // steepest descent direction
                     lambda *= lambdaF;
                 }
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
             if (doUpdate == 1) {
-                 // add deltaPM to p, which is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-                updateBySteps(thetas, t, deltaPLM);
-            
-                updateH(h, thetas, t);
+                 // add deltaPLM to p, where p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+                 
+                System.arraycopy(deltaPLM, 0, deltaTheta, 0, 3);
+                System.arraycopy(deltaPLM, 3, deltaT, 0, 3);
+                
+                updateT(t, deltaT);
+                
+                //NOTE: potential singularity in this method:
+                updateRTheta(r, thetas, deltaTheta);
+                             
+                //updateHWithThetaT(h, thetas, t);
+                
+                updateHWithRT(h, r, t);
             }            
         }
         
@@ -303,7 +335,7 @@ public class LevenbergMarquardtForPose {
         double[][] jF = calculateJF(worldC, h);
         //9 X 6
         double[][] jG = calculateJG(thetas);
-        // (@N)X6)
+        // (2N)X6)
         double[][] j = MatrixUtil.multiply(jF, jG);
         return j;
     }
@@ -413,7 +445,7 @@ public class LevenbergMarquardtForPose {
      * @return 
      */
     private static double[] calculateDeltaPLMSzeliski(double[][] jTJ, 
-        double[][] jT, double lambda, double[] jTBFG) throws NotConvergedException {
+        double lambda, double[] jTBFG) throws NotConvergedException {
         
         //                 inv(6X6)                       6X2N * 2N
         //delta p = pseudoInv(J^T*J + lambda*diag(J^T*J)) * J^T*BFG
@@ -500,6 +532,20 @@ public class LevenbergMarquardtForPose {
         return true;
     }
 
+    private static void updateHWithRT(double[] h, double[][] r, double[] t) {
+        //h = new double[]{r[0][0], r[0][1], t[0], 
+       //     r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], -t[2]};
+        h[0] = r[0][0];
+        h[1] = r[0][1];
+        h[2] = t[0];
+        h[3] = r[1][0];
+        h[4] = r[1][1];
+        h[5] = t[1];
+        h[6] = -r[2][0];
+        h[7] = -r[2][1];
+        h[8] = -t[2];
+    }
+    
     /**
      * 
      * @param h input and output variable homography to be updated with given
@@ -507,7 +553,7 @@ public class LevenbergMarquardtForPose {
      * @param thetas
      * @param t 
      */
-    private static void updateH(double[] h, double[] thetas, double[] t) {
+    private static void updateHWithThetaT(double[] h, double[] thetas, double[] t) {
         // equation (19).  size is 1 X 9
         
         double cx = Math.cos(thetas[0]);
@@ -529,19 +575,80 @@ public class LevenbergMarquardtForPose {
     }
 
     /**
-     * update thetas and t by deltaPLM22
-     * @param thetas input and output array holding euler rotation angles 
-     *    theta_x, theta_y, theta_
-     * @param t input and output array holding translation vector in x,y,z. 
-     * @param deltaPLM22 
+     * update t by deltaT
      */
-    private static void updateBySteps(double[] thetas, double[] t, double[] deltaPLM22) {
+    private static void updateT(double[] t, double[] deltaT) {
+        // from Danping Zou lecture notes, Shanghai Jiao Tong University,
+        // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+        // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+
+        // parameter perturbations for a vector are 
+        //     x + delta x
         int i;
+        
+        // vector perturbation for translation:
         for (i = 0; i < 3; ++i) {
-            thetas[i] += deltaPLM22[i];
-        }
-        for (i = 0; i < 3; ++i) {
-            t[i] += deltaPLM22[i+3];
+            t[i] += deltaT[i];
         }
     }
+    
+    /**
+     * update rotation matrix r and the theta vector with deltaTheta.
+     * NOTE: this method has a potential error from singularity from 90 degree 
+     * angles (near zenith and nadir, for example).
+     * @param thetas input and output array holding euler rotation angles 
+     *    theta_x, theta_y, theta_
+     */
+    private static void updateRTheta(double[][] r, double[] thetas, double[] deltaTheta) {
+        // from Danping Zou lecture notes, Shanghai Jiao Tong University,
+        // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+        // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+        // parameter perturbations for a Lie group such as rotation are:
+        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symetric matrix of delta_x 
+        
+        // T. Barfoot, et al. 2010, 
+        // Pose estimation using linearized rotations and quaternion algebra, 
+        // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+        // eqn (31) for updating rotation:
+        // C(theta) = C(deltaPhi) * previous C
+        //     where C is rotation matrix r
+        //           calculated as C(theta) = 
+        //     and deltaPhi = sTheta * deltaTheta
+        
+        // potential problem changing an axis when a theta=90
+        double[][] sTheta = Rotation.sTheta(thetas);
+        double[] deltaPhi = MatrixUtil.multiplyMatrixByColumnVector(sTheta, deltaTheta);
+        
+        // The Barfoot et al. paper uses
+        //    rotation matrix formed from rZ * rY * rX (yaw, pitch, and roll)
+        //    which is the same convention used by Wetzstein
+        
+        double[][] rDeltaPhi = Rotation.calculateRotationZYX(deltaPhi);
+        //double[][] rDeltaPhi = Rotation.calculateRotationXYZ(deltaPhi);
+        
+        double[][] r2 = MatrixUtil.multiply(rDeltaPhi, r);
+        
+        // update r
+        for (int i = 0; i < 3; ++i) {
+            System.arraycopy(r2, 0, r, 0, 3);
+        }
+        
+        // T. Barfoot, et al. 2012, 
+        // Pose estimation using linearized rotations and quaternion algebra, 
+        // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+        // eqn (28) for updating thetas:
+        // theta = previous theta + sTheta^-1 * deltaPhi
+        
+        // rotation matrix: inverse is the transpose of rotation matrix.
+        double[] sTInvDP = MatrixUtil.multiplyMatrixByColumnVector(
+            MatrixUtil.transpose(sTheta), deltaPhi);
+        
+        double[] thetas2 = MatrixUtil.add(thetas, sTInvDP);
+        
+        for (int i = 0; i < 3; ++i) {
+            System.arraycopy(thetas2, 0, thetas, 0, 3);
+        }
+        
+    }
+
 }

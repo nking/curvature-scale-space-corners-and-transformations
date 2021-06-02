@@ -143,14 +143,17 @@ public class CameraCalibration {
         //
         //    NOTE: Ma, Soatta, Kosecka, & Sastry (year 2012? 2004?) have 
         //          specified f(r) in terms of a center of radial distortion 
-        //          which is not necessarily the image centerin Section (3.3.3)
+        //          which is not necessarily the image centering Section (3.3.3)
         
         // Using the estimated intrinsic and extrinsic parameters, 
         //  we can get the ideal projected image points Along with the real 
         //  observed image points, we can estimate the 
         // two distortion coefficients (k1,k2)
         
-        // calculating the projected world coordinates using eqn (17)
+        // calculating the projected world coordinates using eqn (17).
+        //    the homgraphy transforms the world reference coordinates to the
+        //    image reference frame (which are w.r.t. the corner of the image,
+        //    not the center).
         double[] u = new double[n*nImages];
         double[] v = new double[n*nImages];
         calculateProjected(coordsW, h, u, v);
@@ -737,6 +740,8 @@ public class CameraCalibration {
             
             // following Ma et al. 2004 Table 2,column 3 for model #3:
             /*
+            for more information on rewriting r^2 in terms of only x or y, see
+            Eqn 3.1 of Boas "Mathematical Methods in the Physical Sciences".
             where r^2 is (x-x0)^2 + (y-y0)^2
             let _x=x-x0  this is the notation here for camera coordinate frame
             let c^2 = (_y)^2/(_x)^2
@@ -978,8 +983,8 @@ public class CameraCalibration {
                 }
                 // check solution: 
                 //  k2*r^3 +k1*r^2 +r - r_d = 0
-                double chk = k2 * r * r * r + k1 * r * r + r - rd;
-                //log.log(LEVEL, String.format("chk 0==%.4e\n", chk);
+                //double chk = k2 * r * r * r + k1 * r * r + r - rd;
+                //log.log(LEVEL, String.format("chk 0==%.4e\n", chk));
                 //assert(Math.abs(chk) < tol);
             }
                        
@@ -1105,6 +1110,8 @@ public class CameraCalibration {
                 continue;
             }
             
+            //for more information on rewriting r^2 in terms of only x or y, see
+            //Eqn 3.1 of Boas "Mathematical Methods in the Physical Sciences".
             //c2p1 = (y/x)^2 + 1;
             //divc2p1 = (x/y)^2 + 1;
             
@@ -1276,7 +1283,8 @@ public class CameraCalibration {
                 
         /* 
         (ud, vd) are Real observed distorted image points in image reference frame.
-        (u, v) Ideal projected undistorted image points in image reference frame.
+        (u, v) Ideal projected undistorted image points in image reference frame (the projection of
+               the points from the world reference frame to the image reference frame).
         [x,y,1] = A^-1 * [u, v, 1] are transformed to camera reference frame.
 
         eqn (5) of Ma, Chen, & Moore 2004, "Rational Radial Distortion..."
@@ -1354,6 +1362,7 @@ public class CameraCalibration {
                 yi = xy[1][j];
                 xi2 = xi*xi;
                 yi2 = yi*yi;
+        
                 
                 calculateC2s(xi, yi, c2s);
                 c2p1 = c2s[0];
