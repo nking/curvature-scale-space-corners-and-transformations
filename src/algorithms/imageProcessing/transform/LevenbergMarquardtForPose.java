@@ -17,7 +17,7 @@ import no.uib.cipr.matrix.NotConvergedException;
  * 
  * TODO: consider implementing the Szeliski 2010 chapter 6 equations (6.44)-(6.47)
  * 
- * NOTE: consider implementing the version of L-M by 
+ * NOTE: consider implementing the version of L-M by Barfoot et al. 2010
  * which utilizes the sparseness of the block-diagonal structure in the
  * hessian approximation by Engles, Stewenius, & Nister "Bundle Adjustment Rules".
  * 
@@ -26,10 +26,11 @@ import no.uib.cipr.matrix.NotConvergedException;
 public class LevenbergMarquardtForPose {
     
     /**
-     * given initial camera calibration and extrinsic parameters, use the 
-     * Levenberg-Marquardt
-     * algorithm to improve the rotation and translation estimates
-     * by minimizing the re-projection error.
+     * given initial camera calibration for a single camera 
+     * and initial estimates for extrinsic parameters for each image, use the 
+     * Levenberg-Marquardt algorithm to improve the rotation and translation 
+     * estimates by minimizing the re-projection error using feature 
+     * measurements in world coordinates and in each image.
      * <pre>
      References:
      
@@ -69,6 +70,7 @@ public class LevenbergMarquardtForPose {
         double[] kRadial, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException, Exception {
         
+        // number of features
         int n = imageC[0].length;
         
         if (n < 4) {
@@ -168,7 +170,9 @@ public class LevenbergMarquardtForPose {
                    
             fPrev = f;
             // eqn (20) of Wetzstein.  length is 2*N
+            // project the world coordinates to the camera coord frame, using R and T in h:
             fgp = map(worldC, h);
+            // in camera reference frame, subtract the projected world points from the observations:
             bMinusFGP = MatrixUtil.subtract(b, fgp);            
             f = evaluateObjective(bMinusFGP);
             
@@ -274,6 +278,98 @@ public class LevenbergMarquardtForPose {
         extrinsic.setTranslation(t);
         
         return extrinsic;
+    }
+    
+    /**
+     * given initial camera calibration and extrinsic parameters, use the 
+     * Levenberg-Marquardt
+     * algorithm to improve the rotation and translation estimates
+     * by minimizing the re-projection error.
+     * This algorithm assumes one camera calibration for all images, and
+     * individual poses for each image.
+     * This method exploits some of the properties of sparse matrices to
+     * reduce computation following Barfoot et al. 2010.
+     <pre>
+     References:
+     
+     T. Barfoot, et al., "Pose estimation using linearized rotations and 
+     quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+     </pre>
+     * @param imageC
+     * @param worldC
+     * @param kIntr
+     * @param kExtr
+     * @param kRadial
+     * @param nMaxIter
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     */
+    public static CameraExtrinsicParameters solveForPoseUsingSparse(
+        double[][] imageC, double[][] worldC, 
+        CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
+        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        throws NotConvergedException, Exception {
+        
+        int n = imageC[0].length;
+        
+        if (n < 4) {
+            throw new IllegalArgumentException("imageC[0].length must be at least 4");
+        }
+        if (worldC[0].length != n) {
+            throw new IllegalArgumentException("imageC[0].length must equal worldC[0].length");
+        }
+        
+        /*
+        The algortihm operates on pairs of reference frames u and v, so will
+        use the pattern of reference frame u always being that of image 0.
+        
+        --> The pose state variables, dx_1, can be determined directly from (82) 
+              [A_11 - A_12*A_22^-1*A_12^T] * dx_1 = [b1 - A_12*A_22^-1*b2]
+        --> the point position variables, dx_2, found inexpensively through 
+            backsubstitution. 
+              [A_12^T]*[dx_1] + [A_22]*[dx_2] = b2
+              [A_22]*[dx_2] = b2 - [A_12^T]*[dx_1]
+              A_22 is invertible
+              dx_2 = (A_22)^-1 * ( b2 - [A_12^T]*[dx_1] )
+        --> After solving for dx we update r using (76a), 
+            p_j using (76c), 
+            and C using (31). 
+        --> We iterate through the entire procedure until dx is sufficiently 
+            small. Once converged, the covariance of the state estimate is 
+            provided by A^-1
+        */
+        
+        //TODO: consider adding constraints suggestded in Seliski 2010:
+        // u_0 and v_0 are close to half the image lengths and widths, respectively.
+        // the angle between 2 image axes is close to 90.
+        // the focal lengths along both axes are greater than 0.
+        
+        // extract pose as (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+        double[][] r0 = kExtr.getRotation();
+        double[][] r = MatrixUtil.copy(r0);
+        double[] thetas = Rotation.extractRotation(r);
+        double[] t = kExtr.getTranslation();
+        
+        /*
+        NOTE: the Barfoot et al. 2010 notation here is different from the
+        Ma, Chen, & Moore 2003, 2004 notation.
+        
+        u, v: transform coordinates to camera reference frame
+        
+        p: project the world coordinates to the u camera reference frame
+           using the current rotation and translation estimates
+        */
+        
+        
+                
+        throw new UnsupportedOperationException("not yet finished");
     }
     
     /**
