@@ -295,12 +295,28 @@ public class LevenbergMarquardtForPose {
      T. Barfoot, et al., "Pose estimation using linearized rotations and 
      quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
      </pre>
-     * @param imageC
-     * @param worldC
+     @param coordsI  holds the image coordinates in pixels of
+               features present in all images ordered in the same
+               manner and paired with features in coordsW.
+               It is a 2 dimensional double array of format
+               3 X (N*n) where N is the number of images.
+               the first row is the x coordinates, the second row
+               is the y coordinates, and the third row is "1"'s.
+               The columns hold each image in order and within each image's
+               columns are the features presented in the same order in each image.
+               In Table 1 of Ma, Chen, & Moore 2003 "Camera Calibration"
+               these are the (u_d, v_d) pairs.
      * @param kIntr
      * @param kExtr
      * @param kRadial
      * @param nMaxIter
+     * @param coordsW holds the world coordinates of features, ordered
+               by the same features in the images.
+               the first row is the X coordinates, the second row
+               is the Y coordinates, and the third row is 1's 
+               (Z_w = 0, the scale factor is lost in the homography).
+               It is a 2 dimensional double array of format
+               3 X n
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
@@ -327,11 +343,101 @@ public class LevenbergMarquardtForPose {
         }
         
         /*
-        The algortihm operates on pairs of reference frames u and v, so will
-        use the pattern of reference frame u always being that of image 0.
+        The algortihm operates on pairs of reference frames u and v 
+        (it was desgined for stereoimaging from similar cameras), so will
+        either use the pattern of reference frame u always being that of image 0
+        or reference frame always being sequential pairs.
         
+        Regarding the use of applying it to pairs of images rather than 
+        looking at the sizes of structures from forming them using all images
+        at once:
+        
+        A quote from Engels, Stewénius, & Nistér, 2006, "Bundle Adjustment Rules"
+        <pre>
+            However, several researchers have noted (Fitzgibbon and 
+            Zisserman, 1998, Nistér, 2001, Pollefeys, 1999) that in the 
+            application of camera tracking, performing bundle adjustment each 
+            time a new frame has been added to the estimation can prevent the 
+            tracking process from failing over time. 
+            Thus, bundle adjustment can over time in a sequential estimation 
+            process have a much more dramatic impact than mere accuracy 
+            improvement, since it improves the initialization for future 
+            estimates, which can ultimately enable success in cases that would 
+            otherwise miserably fail.
+        </pre>
+        */
+        see https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
+        and add notes here (slide 10 and on)
+        
+        see http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+        NOTE that Engels et al. use J_f=[J_P J_C] which is reverse order
+        to that in  Barfoot et al. 2010, hence the different ordering in 
+        the final Schur complement reduced equation.
+        
+        Engels [ H_PP    H_PC ] [ dP ] = [ b_P ]
+               [ H_PC^T  H_CC ] [ dC ]   [ b_C ]
+        
+        From Barfoot et al. 2010:        
+        The objective function J on eqn (75a) is the sum of the
+        squares of the errors in reprojection in u and in v,
+        so one should be able to minimize J over more than 2 images similarly
+        as errors add in quadrature.
+                
         --> The pose state variables, dx_1, can be determined directly from (82) 
               [A_11 - A_12*A_22^-1*A_12^T] * dx_1 = [b1 - A_12*A_22^-1*b2]
+        
+              (where dx_1 is [dtransl drot])
+        
+              A * x = b
+                  NOTE: A is called the RCM (Reduced Camea Matrix)
+        
+              Can be solved without inverting A since it is a sparse matrix!
+              https://www.cvg.ethz.ch/teaching/3dvision/2014/slides/class06eth14.pdf
+              double[] x = LinearEquations.solveXFromLUDecomposition(a, b);
+              Sparse Matrix factorization:
+                  (1) LU factorization: A = L*U where original equation is A*x = b
+                      (a) use LU decomposition to solve L,U = luDecomp(A)
+                      (b) let c = U*x and rewrite A*x=b as L*c = b.
+                            then solve c from forward elimination
+                      (c) solve x from back substitution in c = U*x
+                  (2) QR factorization: A = Q*R
+                  (3) Cholesky factorization:A = L*L^T
+                  Some details for the above 3 are in Triggs et al. 1999/2000 Appendix B and near page 23
+                  ("Bundle Ajustment – A Modern Synthesis",
+                  Springer-Verlag, pp.298–372, 2000, 
+                  Lecture Notes in Computer Science (LNCS), 
+                  10.1007/3-540-44480-7_21. inria-00590128)
+                  https://hal.inria.fr/file/index/docid/590128/filename/Triggs-va99.pdf
+              Or Iterative methods:
+                  (1) Conjugate Gradient
+                  (2) Gauss-Seidel
+        
+              consider Google Ceres  https://code.google.com/p/ceres-solver/
+              or Lourakis SBA
+        
+             more suggestions in http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+               (1) Store as dense, decompose with ordinary linear algebra ◦
+                    M. Lourakis, A. Argyros: SBA: A Software Package For Generic 
+                       Sparse Bundle Adjustment. ACM Trans. Math. Softw. 36(1): (2009) ◦ 
+                    C. Engels, H. Stewenius, D. Nister: Bundle Adjustment Rules. 
+                       Photogrammetric Computer Vision (PCV), 2006. 
+               (2) Store as sparse, factorize with sparse direct solvers ◦ 
+                    K. Konolige: Sparse Sparse Bundle Adjustment. BMVC 2010: 1-11
+               (3) Store as sparse, use conjugate gradient methods memory efficient, 
+                    iterative, precoditioners necessary! ◦ 
+                    S. Agarwal, N. Snavely, S.M. Seitz, R. Szeliski: 
+                       Bundle Adjustment in the Large. ECCV (2) 2010: 29-42 ◦ 
+                    M. Byrod, K. Astrom: Conjugate Gradient Bundle Adjustment. 
+                       ECCV (2) 2010: 114-127 
+               (4) Avoid storing altogether ◦ 
+                    C. Wu, S. Agarwal, B. Curless, S.M. Seitz: Multicore Bundle 
+                       Adjustment. CVPR 2011: 30 57-3064 ◦ 
+                    M. Lourakis: Sparse Non-linear Least Squares Optimization 
+                       for Geometric Vision. ECCV (2) 2010: 43-56
+        
+              and computer vision library in java http://boofcv.org/index.php?title=Example_Sparse_Bundle_Adjustment
+              there is also a java binding for SBA http://seinturier.fr/jorigin/jsba.html
+        
         --> the point position variables, dx_2, found inexpensively through 
             backsubstitution. 
               [A_12^T]*[dx_1] + [A_22]*[dx_2] = b2
