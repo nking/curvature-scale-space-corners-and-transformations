@@ -296,12 +296,83 @@ Task 6: implement the method for parameter optimization
 
    time estimate: minimum 8 hours, maximum ?  day
   
-   amount of time used:  3 days so far on background reading and algorithm details.
-**may revise again to implement Lu et al. also
+   amount of time used:  
 
-   state of completion: in the design stage. 
+   state of completion: in design stage.
 
    comments:
+      This task spawned Task 7 to solve for extrinsic parameters only as that is
+      commonly used alone once the camera intrinsic parameters are known.
+      
+      This task has now become an implementation of the intrinsic and extrinsic
+      parameters refinement using the sparse
+      block structure of the Jacobian, and the Schur complement to solve for the
+      gradient using a cholesky factorization of the reduced camera matrix.
+
+      It could be overloaded to solve for extrinsic parameters only as another task.
+
+   details:  
+      input: intrinsic and extrinsic camera parameters as first estimate,
+             features observed in images, features in world coordinate frame,
+             boolean flag for radial distortion model
+      output: refined intrinsic and extrinsic camera parameters
+      NOTE: additional information is present in directory doc as "bundle_adjustment.pdf"
+            and "Levenberg-Marquardt_notes.pdf"
+
+      -- create the projected coordinates needed in "eps" (Lourakis notation)
+         eps is the righthand side vector of the augmented normal equation.
+         -- tranform X_w into camera frame coords X_c
+               X_feature_c = R_image*(X_feature_w - t_image)
+               X_feature_c in homogeneous = X_feature_c/X_feature_c[Z-coord]
+            *The coordinates are now in the camera frame.
+         -- apply radial distortion transformation f(r)=1+k2*r^2+k1*r^4, then multiply that by x_c
+            (see the code I have for applying the distortion to x and y separately).
+            Can call these x_d for distorted.
+            *The coordinates are in the camera frame, but distorted.
+         -- multiply by the intrinsic camera parameters matrix: K*x_d
+            (which includes transforming origin from center to image corner)
+            *The coordinates are now in the image frame.
+            these are called x_hat.
+      -- "eps_i_j" = x_i_j observed in images - x_hat_i_j projected to image frame
+          NOTE: eps_a = A^T * eps, eps_b =  B^T * eps
+      -- write methods for the partial derivatives of the objective w.r.t. the camera and point
+         parameter vector.  the objective is double summation overimage and features of the
+         sum of squares of eps.
+         (for derivatives, see thesis of Zhongnan Qu)
+      -- follow the Engels pseudocode for solving fot the parameter vector via the
+         reduced camera matrix and cholesky factoring with forward and back substitution
+         to avoid inverting the reduced camera matrix.
+         *At this point, have the Jacobians, approximate Hessians, and the
+          parameter vector as the gradient.
+      -- form the structure for the levenberg-marquardt as exists in the method
+         solveForPose() in LevenbergMarquardtForPose.java
+---------------------------------------------------------------------
+Task 7: implement a method for extrinsic parameter optimization
+
+   goal: given the extrinsic parameters estimated above as the initial estimates,
+         use non-linear optimization to get the final estimated values.
+
+         the objective function is the re-projection error composed of the observed
+         points in the image plane and their predicted projections from the
+         estimated parameters in the projection matrix and the measured points 
+         in the world coordinate system.
+
+         objective function L = summation_i=1_to_N( summation_j=1_to_n(
+           || m_i_j - ~m(A, k1, k2, R_i, t_i, M_j) ||^2
+           where N is the number of images, n is the number of features (a.k.a. points),
+           m_i_j is the image i coordinate of feature j,
+           ~m(...) is the projacetion given it's arguments,
+           M_i = [Xw,Yw,1]T is the feature in world coordinate space with Zw=0
+
+   time estimate: minimum 8 hours, maximum ?  day
+  
+   amount of time used:  3 days so far on background reading and algorithm details.
+
+   state of completion: complete, but not tested
+
+   comments:
+      implemented as solveForPose() in class LevenbergMarquardtForPose.java.
+
       the notes below are following the Ma et al. 2003 algorithm, then other references
       in more detail.  3 methods are suggested.
       This task will implement algorithm (1)(a).
@@ -430,53 +501,8 @@ Task 6: implement the method for parameter optimization
                region on the side of the image...our [Moreno-Noguer et al.'s] algorithm 
                can be used to initialize Lu et al.'s"
 
-
-           (3) Alternatively, iteratively solving for parameters in an order suggested 
-               by the dependencies, essentially.
-
-              looking at M contents to consider which parameters in which order in the optimization iterations:
-              NOTE that instead of derivatives would use gradients estimated from finite differences for each iteration.
-
-              M as m_1 is K * [R | t ] * X where t is actually -R*translation
-                   m_2
-                   m_3
-
-                 [alpha  gamma  u_0 ]   [ r11  r12  r13  t_x ]   [ X ]
-             M = [  0     beta  v_0 ] * [ r21  r22  r23  t_y ] * [ Y ]
-                 [  0      0     1  ]   [ r31  r32  r33  t_z ]   [ 0 ]
-                                                                 [ 1 ]
-                 [alpha  gamma  u_0 ]   [ r11  r12  t_x ]   [ X ]
-               = [  0     beta  v_0 ] * [ r21  r22  t_y ] * [ Y ]
-                 [  0      0     1  ]   [ r31  r32  t_z ]   [ 1 ]
-
-                 [ (alpha*r11 + gamma*r21 + u_0*r31)  (alpha*r12 + gamma*r22 + u_0*r32)  (alpha*t_x + gamma*t_y + u_0*t_z) ]
-               = [ (beta*r21 + v_0*r31)               (beta*r22 + v_0*r32)               (beta*t_y + v_0*t_z)              ]
-                 [ (r31)                              (r32)                              (t_z)                             ]
-
-               m_3 then gives us [r31, r32, t_z]
-               
-               m21 = (beta*r21 + v_0*r31) where v_0 can be presumed to be known, and r31 is m31
-               m22 = (beta*r22 + v_0*r32) with similar knowns and solved
-               m23 = (beta*t_y + v_0*t_z) with similar knowns and solved
-               ==> beta = (m21 - v_0*r31)/r21  has unknowns r21 and beta
-               ==> beta = (m22 - v_0*r32)/r22  has unknowns r22 and beta
-               ==> beta = (m23 - v_0*t_z)/t_y  has unknowns t_y and beta
-                   so have 4 unknowns but only 3 data
-                   not a closed loop solution, need stages of setting variables to fixed best values and
-                     minimizing for the others.
-                   -- considering: first optimizing for r21, r22, and t_y which solves m_3 and m_2
-               ==> m11 = (alpha*r11 + gamma*r21 + u_0*r31) would then have unknowns alpha and r11 and gamma
-               ==> m12 = (alpha*r12 + gamma*r22 + u_0*r32)                          alpha and r12 and gamma
-               ==> m13 = (alpha*t_x + gamma*t_y + u_0*t_z)                          alpha and t_x and gamma
-                   -- considering: next optimizing for r11, r12, t_x, alpha, and gamma which minimizes m_1
-
-               could use finite difference as the gradient in an LBFGS solution, though one would
-               expect it would take longer to converge as its missing derivative information to guide
-               the step size.
-
-
 ---------------------------------------------------------------------
-Task 7: implement the extrinsic parameters solver of Moreno-Noguer et al. 2007
+Task 8: implement the extrinsic parameters solver of Moreno-Noguer et al. 2007
 
    goal: implement a fast accurate P-n-P algorithm.
          The Moerno-Noguer et al. 2007 algorithm is a non-iterative solution 
@@ -488,7 +514,7 @@ Task 7: implement the extrinsic parameters solver of Moreno-Noguer et al. 2007
   
    amount of time used:
 
-   state of completion: in design stage
+   state of completion: not scheduled.  consider as future implementation.
 
    priority: low as Task 4 has same goal and is already implemented.
 
