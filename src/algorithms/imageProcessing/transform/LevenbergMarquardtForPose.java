@@ -26,6 +26,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 public class LevenbergMarquardtForPose {
     
     /**
+     * NOT YET TESTED.
      * given initial camera calibration for a single camera 
      * and initial estimates for extrinsic parameters for each image, use the 
      * Levenberg-Marquardt algorithm to improve the rotation and translation 
@@ -176,6 +177,12 @@ public class LevenbergMarquardtForPose {
             bMinusFGP = MatrixUtil.subtract(b, fgp);            
             f = evaluateObjective(bMinusFGP);
             
+            //NOTE: here, could alter to use sparse block structure in composing J.
+            //  J composed by blocks per feature for each image: 
+            //      would need to calculate J_f per feature J_g per image.
+            //  The reduced camera matrix is then formed and deltaPM
+            //  is solved for using methods such as cholesky factoring.
+            
             // ===== calculate step ========
             // eqns (24-34) of Wetzstein
             j = calculateJ(worldC, h, thetas); //(2N) X 6
@@ -294,6 +301,10 @@ public class LevenbergMarquardtForPose {
      
      T. Barfoot, et al., "Pose estimation using linearized rotations and 
      quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+         -- using the rotation and translation update details.
+         -- one of the 2 examples is interesting for the problem of pose for
+            a pair of stereo-images.  it also uses cholesky factoring of block
+            sparse matrix structure.
      </pre>
      @param coordsI  holds the image coordinates in pixels of
                features present in all images ordered in the same
@@ -438,6 +449,8 @@ public class LevenbergMarquardtForPose {
               and computer vision library in java http://boofcv.org/index.php?title=Example_Sparse_Bundle_Adjustment
               there is also a java binding for SBA http://seinturier.fr/jorigin/jsba.html
         
+              http://users.ics.forth.gr/~lourakis/sparseLM/
+        
         --> the point position variables, dx_2, found inexpensively through 
             backsubstitution. 
               [A_12^T]*[dx_1] + [A_22]*[dx_2] = b2
@@ -526,7 +539,21 @@ public class LevenbergMarquardtForPose {
     }
     
     /**
-     * 
+     * calculate J for extrinsic parameters in solving pose
+     <pre> 
+     Sect 6.1 of George Wetzstein Stanford Course Notes 
+     for EE 267 Virtual Reality, 6-DOF Pose Tracking with the VRduino  
+     </pre>
+     <pre>
+     J = J_f * J_g where p is the parameter vector [thetas, translations]
+                   where J_g = dh/dp 
+                         where h is the 2-D projection matrix of size 3x3 as
+                         2 columns of rotation and last column is translation
+                   and 
+                   where J_f = df/dh 
+                         where f is the world point transformed by the homography h.
+         J = df/dp
+     </pre>
      * @param worldC
      * @param h
      * @param thetas
@@ -543,7 +570,14 @@ public class LevenbergMarquardtForPose {
     }
     
     /**
-     * 
+     <pre>
+     J_f = df/dh 
+         where f is the world point transformed by the homography h.
+     </pre>
+     <pre> 
+     Sect 6.1 of George Wetzstein Stanford Course Notes 
+     for EE 267 Virtual Reality, 6-DOF Pose Tracking with the VRduino  
+     </pre>
      * @param worldC
      * @param h
      * @return a (2*n)X9 matrix
@@ -589,7 +623,15 @@ public class LevenbergMarquardtForPose {
     }
     
     /**
-     * 
+    <pre>
+     J_g = dh/dp 
+         where h is the 2-D projection matrix of size 3x3 as
+         2 columns of rotation and last column is translation
+    </pre>
+    <pre> 
+     Sect 6.1 of George Wetzstein Stanford Course Notes 
+     for EE 267 Virtual Reality, 6-DOF Pose Tracking with the VRduino  
+     </pre>
      * @param thetas
      * @return 9X6 matrix
      */
@@ -641,10 +683,10 @@ public class LevenbergMarquardtForPose {
     /**
      * following Szeliski 2010, Chap 6, eqn (6.18)
      * @param jTJ J^T * J.  size is 6X6.
-     * @param jT.  size is 6X(2*nFeatures)
      * @param lambda
      * @param jTBFG J^T * (B-F(g(p))). size is 6X1
      * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     private static double[] calculateDeltaPLMSzeliski(double[][] jTJ, 
         double lambda, double[] jTBFG) throws NotConvergedException {
