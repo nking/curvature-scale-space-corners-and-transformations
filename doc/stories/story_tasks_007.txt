@@ -277,7 +277,7 @@ Task 5: implement the method to estimate the radial distortion coefficients
         
 
 ---------------------------------------------------------------------
-Task 6: implement the method for parameter optimization
+Task 6: implement the method for intrinsic and extrinsic camera parameters optimization
 
    goal: given all of the parameters estimated above as the initial estimates,
          use non-linear optimization to get the final estimated values.
@@ -336,16 +336,17 @@ Task 6: implement the method for parameter optimization
       -- "eps_i_j" = x_i_j observed in images - x_hat_i_j projected to image frame
           NOTE: eps_a = A^T * eps, eps_b =  B^T * eps
       -- write methods for the partial derivatives of the objective w.r.t. the camera and point
-         parameter vector.  the objective is double summation overimage and features of the
+         parameter vector.  the objective is double summation over image and features of the
          sum of squares of eps.
          (for derivatives, see thesis of Zhongnan Qu)
-      -- follow the Engels pseudocode for solving fot the parameter vector via the
+      -- follow the Engels pseudocode for solving for the parameter vector via the
          reduced camera matrix and cholesky factoring with forward and back substitution
          to avoid inverting the reduced camera matrix.
          *At this point, have the Jacobians, approximate Hessians, and the
           parameter vector as the gradient.
       -- form the structure for the levenberg-marquardt as exists in the method
          solveForPose() in LevenbergMarquardtForPose.java
+
 ---------------------------------------------------------------------
 Task 7: implement a method for extrinsic parameter optimization
 
@@ -429,7 +430,20 @@ Task 7: implement a method for extrinsic parameter optimization
                (a) lecture notes of Gordon Wetzstein at Stanford University,
                    EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
                    https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
-               (b) Chapter 6 of Richard Szeliski 2010 "Computer Vision: Algorithms and Applications"
+                   includes details for the partial derivatives to build the Jacobian:
+                   J = J_f*J_g where p is the parameter vector [thetas, translations]
+                      J_g = dh/dp
+                         where h is the 2-D projection matrix of size 3x3 as
+                         2 columns of rotation and last column is translation
+                      J_f = df/dh where f is the world point transformed by the 
+                         homography h.
+                   J = df/dp
+               (b) Barfoot et al. 2010 has details of perturbation of the rotation (euler and 
+                   quaternion) and translation.
+               (c) a summary of Levenberg-Marqurdt and perturbation of a vector and a Lie group
+                   are in the Danping Zou lecture
+                   http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+               (d) Chapter 6 of Richard Szeliski 2010 "Computer Vision: Algorithms and Applications"
                    equations (6.44)-(6.47)
 
                One could reform the projection equations as separate steps in a chain of transformations
@@ -449,8 +463,6 @@ Task 7: implement a method for extrinsic parameter optimization
                partial derivative of the transform with respect to these parameters, which 
                results in a simple cross product of the backward chaining partial derivative 
                and the outgoing 3D vector (2.36)"
-                  NOTE: perturbations are summarized in the Danping Zou lecture
-                  http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
 
                       write the projection equations as
                          x_i = f(X_i;R,t,K)
@@ -486,7 +498,6 @@ Task 7: implement a method for extrinsic parameter optimization
 
                       see Section 4.2 of Gleicher & Witkin 1992 "Through-the-Lens Camera Control"
 
-
            (2) Lu et al. is recommended as a very accurate algorithm, 
                which is fast in comparison with other iterative ones but slow compared to 
                non-iterative methods.
@@ -500,6 +511,11 @@ Task 7: implement a method for extrinsic parameter optimization
                This happens when the points of the object are projected onto a small 
                region on the side of the image...our [Moreno-Noguer et al.'s] algorithm 
                can be used to initialize Lu et al.'s"
+           (3) a distributed solution using ADAM to divide the problem:
+               K. N. Ramamurthy, C. Lin, A. Y. Aravkin, S. Pankanti, and R. Viguier.
+               Distributed bundle adjustment. In 2017 IEEE International Conference
+               on Computer Vision Workshops, pages 2146–2154, 2017.
+           (4) several suggestions in http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
 
 ---------------------------------------------------------------------
 Task 8: implement the extrinsic parameters solver of Moreno-Noguer et al. 2007
@@ -510,7 +526,7 @@ Task 8: implement the extrinsic parameters solver of Moreno-Noguer et al. 2007
          camera from n 3D-to-2D point correspondences—whose computational 
          complexity grows linearly with n.
 
-   time estimate: minimum  hour, maximum  day
+   time estimate: 
   
    amount of time used:
 
