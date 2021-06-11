@@ -2,6 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
@@ -289,15 +290,47 @@ public class LevenbergMarquardtForPose {
     
     /**
      * given initial camera calibration and extrinsic parameters, use the 
-     * Levenberg-Marquardt
-     * algorithm to improve the rotation and translation estimates
-     * by minimizing the re-projection error.
+     * iterative non-linear Levenberg-Marquardt
+     * algorithm to minimize the re-projection error by finding the best values of
+     * intrinsic and extrinsic camera parameters.
      * This algorithm assumes one camera calibration for all images, and
      * individual poses for each image.
-     * This method exploits some of the properties of sparse matrices to
-     * reduce computation following Barfoot et al. 2010.
+     * This method exploits some of the properties of sparse matrices in the 
+     * block structure of the Jacobian by using the Schur complement to form
+     * reduced camera matrices which can be solved by Cholesky factoring and
+     * forward and backward substitution (halving the computation time for the
+     * parameter vector).
+     * Regarding the bundle adjustment as refinement for extrinsic parameters:
+        <pre>
+            However, several researchers have noted (Fitzgibbon and 
+            Zisserman, 1998, Nistér, 2001, Pollefeys, 1999) that in the 
+            application of camera tracking, performing bundle adjustment each 
+            time a new frame has been added to the estimation can prevent the 
+            tracking process from failing over time. 
+            Thus, bundle adjustment can over time in a sequential estimation 
+            process have a much more dramatic impact than mere accuracy 
+            improvement, since it improves the initialization for future 
+            estimates, which can ultimately enable success in cases that would 
+            otherwise miserably fail.
+        </pre>
      <pre>
      References:
+     
+     http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+     lecture by Lourakis  “Bundle adjustment gone public”
+
+     Engels, Stewenius, Nister 2006, “Bundle Adjustment Rules”
+      
+     Bill Triggs, Philip Mclauchlan, Richard Hartley, Andrew Fitzgibbon. 
+     Bundle Adjustment – A Modern Synthesis. 
+     International Workshop on Vision Algorithms, 
+     Sep 2000, Corfu, Greece. pp.298–372, 
+     10.1007/3-540-44480-7_21 . inria-00548290 
+
+     Zhongnan Qu's master thesis, "Efficient Optimization for Robust Bundle 
+     Adjustment"
+     
+     Chen, Chen, & Wang 2019, "Bundle Adjustment Revisited"
      
      T. Barfoot, et al., "Pose estimation using linearized rotations and 
      quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
@@ -305,18 +338,32 @@ public class LevenbergMarquardtForPose {
          -- one of the 2 examples is interesting for the problem of pose for
             a pair of stereo-images.  it also uses cholesky factoring of block
             sparse matrix structure.
+           
+     Tomasi 2007,CPS 296.1 Supplementary Lectur Notes, Duke University
+     
+     Useful mention of graph partioning in:
+        https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
+        recursive partitioning w/ elimination graph and vertex cut.
+     Graph partitioning in this project:
+        NormalizedCuts.java which uses the Fiedler vector of the Laplacian.
+        UnweightedGraphCommunityFinder.java
+        
      </pre>
+     
+     TODO: consider overloading this method to accept multiple cameras, hence
+     more than one set of intrinsic camera parameters and a data-structure
+     associating the camera with the images.
+     
      @param coordsI  holds the image coordinates in pixels of
                features present in all images ordered in the same
-               manner and paired with features in coordsW.
+               manner and paired with features in coordsW (all features in one
+               image, followed by all features in the next image.  stacked by columns).
                It is a 2 dimensional double array of format
-               3 X (N*n) where N is the number of images.
+               3 X (N*n) where N is the number of imagesand n is the number of features.
                the first row is the x coordinates, the second row
                is the y coordinates, and the third row is "1"'s.
-               The columns hold each image in order and within each image's
-               columns are the features presented in the same order in each image.
-               In Table 1 of Ma, Chen, & Moore 2003 "Camera Calibration"
-               these are the (u_d, v_d) pairs.
+               These are the (u_d, v_d) pairs using notation in Table 1 of 
+               Ma, Chen, & Moore 2003 "Camera Calibration".
      * @param kIntr
      * @param kExtr
      * @param kRadial
@@ -338,73 +385,42 @@ public class LevenbergMarquardtForPose {
      * @return 
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
-    public static CameraExtrinsicParameters solveForPoseUsingSparse(
-        double[][] imageC, double[][] worldC, 
+    public static CameraMatrices solveBundleAdjustmentUsingSparse(
+        double[][] coordsI, double[][] coordsW, 
         CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
         double[] kRadial, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException, Exception {
         
-        int n = imageC[0].length;
+        // number of features:
+        int m = coordsW[0].length;
         
-        if (n < 4) {
+        if (m < 4) {
             throw new IllegalArgumentException("imageC[0].length must be at least 4");
         }
-        if (worldC[0].length != n) {
-            throw new IllegalArgumentException("imageC[0].length must equal worldC[0].length");
+        
+        int nImages = coordsI[0].length/m;
+       
+        if (nImages < 2) {
+            throw new IllegalArgumentException("need at least 2 images");
+        }
+        
+        if ((coordsI[0].length % m) > 0) {
+            throw new IllegalArgumentException("the number of images present in coordsI should"
+            + " be evenly divided by the number of features in coordsW (that is, coordsI should"
+            + " have that same number of features for each image)");
+        }
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI must have 3 rows.");
+        }
+        if (coordsW.length != 3) {
+            throw new IllegalArgumentException("coordsW must have 3 rows.");
         }
         
         /*
-        The algortihm operates on pairs of reference frames u and v 
-        (it was desgined for stereoimaging from similar cameras), so will
-        either use the pattern of reference frame u always being that of image 0
-        or reference frame always being sequential pairs.
+        RCM is the reduced camera matrix in the augmented normal equation.
         
-        Regarding the use of applying it to pairs of images rather than 
-        looking at the sizes of structures from forming them using all images
-        at once:
-        
-        A quote from Engels, Stewénius, & Nistér, 2006, "Bundle Adjustment Rules"
-        <pre>
-            However, several researchers have noted (Fitzgibbon and 
-            Zisserman, 1998, Nistér, 2001, Pollefeys, 1999) that in the 
-            application of camera tracking, performing bundle adjustment each 
-            time a new frame has been added to the estimation can prevent the 
-            tracking process from failing over time. 
-            Thus, bundle adjustment can over time in a sequential estimation 
-            process have a much more dramatic impact than mere accuracy 
-            improvement, since it improves the initialization for future 
-            estimates, which can ultimately enable success in cases that would 
-            otherwise miserably fail.
-        </pre>
-        */
-        see https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
-        and add notes here (slide 10 and on)
-        
-        see http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
-        NOTE that Engels et al. use J_f=[J_P J_C] which is reverse order
-        to that in  Barfoot et al. 2010, hence the different ordering in 
-        the final Schur complement reduced equation.
-        
-        Engels [ H_PP    H_PC ] [ dP ] = [ b_P ]
-               [ H_PC^T  H_CC ] [ dC ]   [ b_C ]
-        
-        From Barfoot et al. 2010:        
-        The objective function J on eqn (75a) is the sum of the
-        squares of the errors in reprojection in u and in v,
-        so one should be able to minimize J over more than 2 images similarly
-        as errors add in quadrature.
-                
-        --> The pose state variables, dx_1, can be determined directly from (82) 
-              [A_11 - A_12*A_22^-1*A_12^T] * dx_1 = [b1 - A_12*A_22^-1*b2]
-        
-              (where dx_1 is [dtransl drot])
-        
-              A * x = b
-                  NOTE: A is called the RCM (Reduced Camea Matrix)
-        
-              Can be solved without inverting A since it is a sparse matrix!
+        The RCM can be solved without inverting A since it is a sparse matrix:
               https://www.cvg.ethz.ch/teaching/3dvision/2014/slides/class06eth14.pdf
-              double[] x = LinearEquations.solveXFromLUDecomposition(a, b);
               Sparse Matrix factorization:
                   (1) LU factorization: A = L*U where original equation is A*x = b
                       (a) use LU decomposition to solve L,U = luDecomp(A)
@@ -450,19 +466,6 @@ public class LevenbergMarquardtForPose {
               there is also a java binding for SBA http://seinturier.fr/jorigin/jsba.html
         
               http://users.ics.forth.gr/~lourakis/sparseLM/
-        
-        --> the point position variables, dx_2, found inexpensively through 
-            backsubstitution. 
-              [A_12^T]*[dx_1] + [A_22]*[dx_2] = b2
-              [A_22]*[dx_2] = b2 - [A_12^T]*[dx_1]
-              A_22 is invertible
-              dx_2 = (A_22)^-1 * ( b2 - [A_12^T]*[dx_1] )
-        --> After solving for dx we update r using (76a), 
-            p_j using (76c), 
-            and C using (31). 
-        --> We iterate through the entire procedure until dx is sufficiently 
-            small. Once converged, the covariance of the state estimate is 
-            provided by A^-1
         */
         
         //TODO: consider adding constraints suggestded in Seliski 2010:
@@ -471,21 +474,22 @@ public class LevenbergMarquardtForPose {
         // the focal lengths along both axes are greater than 0.
         
         // extract pose as (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-        double[][] r0 = kExtr.getRotation();
-        double[][] r = MatrixUtil.copy(r0);
-        double[] thetas = Rotation.extractRotation(r);
-        double[] t = kExtr.getTranslation();
+        double[][] rot0 = kExtr.getRotation();
+        double[][] rot = MatrixUtil.copy(rot0);
+        double[] thetas = Rotation.extractRotation(rot);
+        double[] transl = kExtr.getTranslation();
         
-        /*
-        NOTE: the Barfoot et al. 2010 notation here is different from the
-        Ma, Chen, & Moore 2003, 2004 notation.
-        
-        u, v: transform coordinates to camera reference frame
-        
-        p: project the world coordinates to the u camera reference frame
-           using the current rotation and translation estimates
-        */
-        
+       
+        int i, j;
+        boolean stop = false;
+        int nIter = 0;
+        while (nIter < nMaxIter && !stop) {
+            nIter++;
+                        
+            for (j = 0; j < m; ++j) {
+                
+            }
+        }
         
                 
         throw new UnsupportedOperationException("not yet finished");
@@ -893,6 +897,40 @@ public class LevenbergMarquardtForPose {
             System.arraycopy(thetas2, 0, thetas, 0, 3);
         }
         
+    }
+
+    private static double[][] projectToImageFrame(
+        double[][] coordsW, editing
+        CameraIntrinsicParameters kIntr, 
+        double[] kRadial, boolean useR2R4) throws Exception {
+        
+        // coordsI.length is 3
+        // coordsI[0].length is mFeatures * nImages
+        int nImages = coordsI[0].length/mFeatures;
+                
+        double[][] out = MatrixUtil.zeros(3, coordsI[0].length);
+        
+        double[][] g, cI;
+        int i, i2;
+        for (i = 0; i < nImages; ++i) {
+            
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, mFeatures*i, mFeatures*(i + 1)-1);
+            
+            transform by R and t
+            
+            g = Camera.pixelToCameraCoordinates(cI, kIntr, kRadial, useR2R4);
+            
+            for (i2 = 0; i2 < mFeatures; ++i2) {
+                g[0][i2] /= g[2][i2];
+                g[1][i2] /= g[2][i2];
+            }
+        
+            for (i2 = 0; i2 < 3; ++i2) {
+                System.arraycopy(g[i2], 0, out[i2], mFeatures*i, mFeatures*(i+1));
+            }
+        }
+        
+        return out;
     }
 
 }
