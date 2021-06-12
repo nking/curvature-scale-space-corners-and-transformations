@@ -316,13 +316,14 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              features observed in images, features in world coordinate frame,
              boolean flag for radial distortion model
       output: refined intrinsic and extrinsic camera parameters
+
       NOTE: additional information is present in directory doc as "bundle_adjustment.pdf"
             and "Levenberg-Marquardt_notes.pdf"
 
       -- create the projected coordinates needed in "eps" (Lourakis notation)
          eps is the righthand side vector of the augmented normal equation.
          -- tranform X_w into camera frame coords X_c
-               X_feature_c = R_image*(X_feature_w - t_image)
+               X_feature_c = R_image*(X_feature_w + t_image)  <== using + translation in CameraCalib*java too
                X_feature_c in homogeneous = X_feature_c/X_feature_c[Z-coord]
             *The coordinates are now in the camera frame.
          -- apply radial distortion transformation f(r)=1+k2*r^2+k1*r^4, then multiply that by x_c
@@ -339,6 +340,48 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          parameter vector.  the objective is double summation over image and features of the
          sum of squares of eps.
          (for derivatives, see thesis of Zhongnan Qu)
+
+         Assumptions:  no skew, square pixels, f=f_x=f_y
+
+         add to Camera.java:
+
+           // world coords in camera reference 
+           double[][] xWCF = worldToCameraCoordinates
+
+         add to LevenbergMarquardt*java:
+
+           pdCpIJCIJ(double[][] xWCNF, k1, k2, extrinsics)
+               cij = -xWCNF 
+               ...
+
+           pdCIJXWIJ(double[][] xWCF)
+
+           pdCpIJYJ(double[][] xWCNF, k1, k2, extrinsics)
+               cij = -xWCNF 
+               ...
+
+           pdXWIJPhiJ(double[][] coordsW, double[] phi, double[] cosPhi, double[] sinPhi)
+              // coordsW are in world coordinate frame
+              // phi is the rotation angle vector of length 3
+              // cosPhi is cosine of each phi
+              // sinPhi is sine of each phi
+
+           // for aIJ creates dF/dCameraParams which are the 9 parameters of extrinsic and intrinsic
+           // where the 9 parameters are the Qu notation for the variables phi_j, t_j, y_j
+           //    for each image = 9*nImages elements (j index is used for images)
+           // for bIJ creates dF/dPointParams which are the 3 parameters of the world point position
+           //    for each feature = 3 * mFeatures elements (i index is used for features)
+           // returns a 2X9 array and a 2X3 array
+           aIJBIJ(double[][] xWCF, k1, k2, extrinsics) :: ab
+              double[][] xWCNF = xWCF/(z-axis values)
+              //aIJ:
+              //dF/dPhi = pdCpIJCIJ * pdCIJXWIJ * pdXWIJPhiJ   [2X3]
+              //dF/dT   = pdCpIJCIJ * pdCIJXWIJ                [2X3]
+              //dF/dy   = pdCpIJYJ                             [2X3]
+              //bIJ:
+              //dF/dX = pdCpIJCIJ * pdCIJXWIJ                  [2X3]
+
+
       -- follow the Engels pseudocode for solving for the parameter vector via the
          reduced camera matrix and cholesky factoring with forward and back substitution
          to avoid inverting the reduced camera matrix.

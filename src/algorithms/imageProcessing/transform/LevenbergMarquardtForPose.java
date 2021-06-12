@@ -365,7 +365,11 @@ public class LevenbergMarquardtForPose {
                These are the (u_d, v_d) pairs using notation in Table 1 of 
                Ma, Chen, & Moore 2003 "Camera Calibration".
      * @param kIntr
-     * @param kExtr
+     * @param kExtr extrinsic camera parameters for each image.  note that the
+     * convention expected for translation is a positive sign in the transformation:
+     * <pre>
+     *   R*(x + t)
+     * </pre>
      * @param kRadial
      * @param nMaxIter
      * @param coordsW holds the world coordinates of features, ordered
