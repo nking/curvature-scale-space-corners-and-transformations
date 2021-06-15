@@ -345,22 +345,30 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
          add to Camera.java:
 
-           // world coords in camera reference 
-           double[][] xWCF = worldToCameraCoordinates
+           // world coords in camera reference (i.e. transformed by R*(xW + t)
+           double[][] xWC = worldToCameraCoordinates
+           double[] xWCI = worldToCameraCoordinates
+
+         add to CameraCalibration.java
+           static double[] applyRadialDistortion(double[] xC, double k1, double k2,
+             boolean useR2R4);
 
          add to LevenbergMarquardt*java:
 
-           pdCpIJCIJ(double[][] xWCNF, k1, k2, extrinsics)
-               cij = -xWCNF 
+           NOTE: xWI = column i of coordsW
+           NOTE: xWCNI = xWCI/xWCI[2]
+
+           pdCpIJCIJ(double[] xWCNI, k1, k2, extrinsics)
+               cij = -xWCNI 
                ...
 
-           pdCIJXWIJ(double[][] xWCF)
+           pdCIJXWIJ(double[] xWC)
 
-           pdCpIJYJ(double[][] xWCNF, k1, k2, extrinsics)
-               cij = -xWCNF 
+           pdCpIJYJ(double[] xWCNI, k1, k2, extrinsics)
+               cij = -xWCNI
                ...
 
-           pdXWIJPhiJ(double[][] coordsW, double[] phi, double[] cosPhi, double[] sinPhi)
+           pdXWIJPhiJ(double[] xWI, double[] phi, double[] cosPhi, double[] sinPhi)
               // coordsW are in world coordinate frame
               // phi is the rotation angle vector of length 3
               // cosPhi is cosine of each phi
@@ -372,8 +380,8 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
            // for bIJ creates dF/dPointParams which are the 3 parameters of the world point position
            //    for each feature = 3 * mFeatures elements (i index is used for features)
            // returns a 2X9 array and a 2X3 array
-           aIJBIJ(double[][] xWCF, k1, k2, extrinsics) :: ab
-              double[][] xWCNF = xWCF/(z-axis values)
+           aIJBIJ(double[] xWCI, k1, k2, extrinsics) :: ab
+              double[] xWCN = xWCI/xWCI[2]
               //aIJ:
               //dF/dPhi = pdCpIJCIJ * pdCIJXWIJ * pdXWIJPhiJ   [2X3]
               //dF/dT   = pdCpIJCIJ * pdCIJXWIJ                [2X3]
@@ -387,6 +395,70 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          to avoid inverting the reduced camera matrix.
          *At this point, have the Jacobians, approximate Hessians, and the
           parameter vector as the gradient.
+
+         // j for m images
+         // i for n features
+
+         // each row is for 1 image, so size for each is [mImages X 6]
+         cosJs, sinJs = sinCos(extrinsics)
+
+** does mtj have sparse block diagonal for V* and U*?
+
+         for (i=0; i<nFeatures; ++i) { // this is variable p in Engels pseudocode
+             init hPPI [3x3], a.k.a. V*_i
+             init bPI; // [3X1];   bP is [(3*n)X1]
+
+             // extract the world feature.  size [1X3]
+             xWI = MatrixUtil.extractColumn(coordsW, col);
+             //transform to camera reference frame. size [1X3]
+             xWCI = Camera.worldToCameraCoordinates(xWI, extrinsics);
+             // normalize
+             xWCNI = xWCFI/xWCFI[2];
+             // distort
+             xWCNDI = CameraCalibration.applyRadialDistortion(xWCFNI, k1, k2, useR2R4);
+
+             for (j=0; j<mImages; ++j) {
+                 aij, bij = aIJBIJ(xWCI, k1, k2, extrinsics, cosJs[j], sinJs[j])
+                 // aij is 2X9 when including intrinsic
+                 // bij is 2X3.
+                 // bij^T * bij = [3X2]*[2X3] = [3X3]
+                 bijsq = MatrixUtil.outerProduct(bij, bij)
+
+                 // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
+                 //     elementwise addition of 3X3 blocks:
+                 hPPI = MatrixUtil.elementwiseAdd(hPPI, bijsq)
+
+                 // the observed feature i in image j
+                 xIJ = MatrixUtil.extractColumn(coordsI, col);
+
+                 //the projected feature i into image j reference frame.  [1X3]
+                 double[][] cameraIntr = if more than one camera, extract j
+                 xIJHat = MatrixUtil.multiply(cameraIntr, xWCDI)
+
+                 // f_i_j [3X1] for homogeneous coords, else [2X1] used by Qu 
+                 diff = MatrixUtil.elementwiseSubtract(xIJ, xIJHat);
+                 epsIJ = diff//MatrixUtil.lpSum(diff, 2);
+
+                 // J_P sparsely stored is (m*n)n blocks of size [1X3]
+                 //     dense size is [n*m X 3*n]
+                 // (J_P)^T size is [3*nXn*m]
+                // W^T is [(3*n) X (9*m)] 
+                // delta_a = [9*m X 1]
+                // W^T * delta_a = [(3*n) X 1]
+                // b_P is eps_b: size is [(3*n)X1]  
+                // b_P = eps_b=(V*)(delta_b) + (W^T)(delta_a)
+                //             [3nX3n][3nX1] + [3nX9m][9mX1]
+                //                    [3nX1] + [3nX1] = [3nX1]
+                // b_P = -(J_P)^T * f
+                //      [3*n X n*m] * [n*m X 1] = [3nX1]
+                //        
+                // b_P_i_j = -(J_P_i_j)^T * eps_i_j is 
+                //           [3X2] * [2X1] = [3X1]
+                //      or   [3X3] * [3X1] = [3X1]
+             }
+         }
+
+         
       -- form the structure for the levenberg-marquardt as exists in the method
          solveForPose() in LevenbergMarquardtForPose.java
 
