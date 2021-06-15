@@ -402,11 +402,20 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          // each row is for 1 image, so size for each is [mImages X 6]
          cosJs, sinJs = sinCos(extrinsics)
 
-** does mtj have sparse block diagonal for V* and U*?
+         // inversion of matrix HPP (aka V*) for case (9^3)*mImages < (3^3)*nFeatures
+         // consider branching here for inversion of matrix HCC (aka U*) for case (9^3)*mImages > (3^3)*nFeatures
+
+         init hPPs;// aka V*, list/map of n  3X3 matrices
+         //init hCCs;// aka U*, list/map of m 9X9 matrices
+         //init hPCs;// aka W, 9m X 3m
+         init bP; // aka eps_b, list/map of n 3X1 vectors
+
+         init jP;// list/map of length m*n of blocks of BIJ of size 2X3
+         init jC;// list/map of length m*n of blocks of AIJ of size 2X9
 
          for (i=0; i<nFeatures; ++i) { // this is variable p in Engels pseudocode
-             init hPPI [3x3], a.k.a. V*_i
-             init bPI; // [3X1];   bP is [(3*n)X1]
+             init hPPI [3x3], a.k.a. V*_i.  (a reference to location in hPPs)
+             init bPI; // [3X1]; 
 
              // extract the world feature.  size [1X3]
              xWI = MatrixUtil.extractColumn(coordsW, col);
@@ -421,6 +430,9 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  aij, bij = aIJBIJ(xWCI, k1, k2, extrinsics, cosJs[j], sinJs[j])
                  // aij is 2X9 when including intrinsic
                  // bij is 2X3.
+
+                 set bij into jP 
+
                  // bij^T * bij = [3X2]*[2X3] = [3X3]
                  bijsq = MatrixUtil.outerProduct(bij, bij)
 
@@ -435,26 +447,37 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  double[][] cameraIntr = if more than one camera, extract j
                  xIJHat = MatrixUtil.multiply(cameraIntr, xWCDI)
 
-                 // f_i_j [3X1] for homogeneous coords, else [2X1] used by Qu 
-                 diff = MatrixUtil.elementwiseSubtract(xIJ, xIJHat);
-                 epsIJ = diff//MatrixUtil.lpSum(diff, 2);
+                 // f_i_j [2X1] 
+                 fIJ = MatrixUtil.elementwiseSubtract(xIJ, xIJHat);
+                 //for sum of squares: MatrixUtil.lpSum(fIJ, 2);
 
-                 // J_P sparsely stored is (m*n)n blocks of size [1X3]
-                 //     dense size is [n*m X 3*n]
-                 // (J_P)^T size is [3*nXn*m]
+                 // J_P sparsely stored is m*n blocks of size [2X3]
+                 //     dense size is [2*n*m X 3*n]
+                 // (J_P)^T size is [3*n X 2*n*m]
                 // W^T is [(3*n) X (9*m)] 
-                // delta_a = [9*m X 1]
+                // delta_a is dC = [9*m X 1]
+                // delta_b is dP = [3*n X 1]
+                // eps_a is b_C = [9*m X 1]
+                // eps_b is b_P = [3*n X 1]
                 // W^T * delta_a = [(3*n) X 1]
                 // b_P is eps_b: size is [(3*n)X1]  
-                // b_P = eps_b=(V*)(delta_b) + (W^T)(delta_a)
-                //             [3nX3n][3nX1] + [3nX9m][9mX1]
-                //                    [3nX1] + [3nX1] = [3nX1]
+                // b_P = eps_b = (V*)(delta_b) + (W^T)(delta_a)
+                //               [3nX3n][3nX1] + [3nX9m][9mX1]
+                //                      [3nX1] + [3nX1] = [3nX1]
                 // b_P = -(J_P)^T * f
                 //      [3*n X n*m] * [n*m X 1] = [3nX1]
                 //        
-                // b_P_i_j = -(J_P_i_j)^T * eps_i_j is 
+                // b_P_i_j = -(J_P_i_j)^T * f_i_j is 
                 //           [3X2] * [2X1] = [3X1]
                 //      or   [3X3] * [3X1] = [3X1]
+
+                calc:
+                f_i_j =  // [2X1]
+                jP_i_j =  //[2X3]
+                jC_i_j =  //[2X9]
+                Add Jp⊤Jp to the upper triangular part of Hpp -> (setting V_i into V)
+                bPI -= (jP_i_j)^T * f_i_j; // it's a vector [3X1] so use elementwise subtraction;
+
              }
          }
 
