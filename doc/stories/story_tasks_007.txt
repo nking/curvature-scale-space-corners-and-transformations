@@ -406,16 +406,20 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          // consider branching here for inversion of matrix HCC (aka U*) for case (9^3)*mImages > (3^3)*nFeatures
 
          init hPPs;// aka V*, list/map of n  3X3 matrices
-         //init hCCs;// aka U*, list/map of m 9X9 matrices
-         //init hPCs;// aka W, 9m X 3m
+         init hCCs;// aka U*, list/map of m 9X9 matrices
+         init hPCs;// aka W^T, 3n X 9m
          init bP; // aka eps_b, list/map of n 3X1 vectors
 
          init jP;// list/map of length m*n of blocks of BIJ of size 2X3
          init jC;// list/map of length m*n of blocks of AIJ of size 2X9
 
+         init mA ;// matrix A, aka reduced camera matrix; dense size is [9m X 9m]
+         init vB ;// vector B, on the rhs of eqn;         dense size is [9m X 1]
+
          for (i=0; i<nFeatures; ++i) { // this is variable p in Engels pseudocode
              init hPPI [3x3], a.k.a. V*_i.  (a reference to location in hPPs)
              init bPI; // [3X1]; 
+             init hPCJ as a list/map of m matrices of size [9X3]; 
 
              // extract the world feature.  size [1X3]
              xWI = MatrixUtil.extractColumn(coordsW, col);
@@ -470,6 +474,8 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                 // b_P_i_j = -(J_P_i_j)^T * f_i_j is 
                 //           [3X2] * [2X1] = [3X1]
                 //      or   [3X3] * [3X1] = [3X1]
+                // b_C_i_j = -(J_C_i_j)^T * f_i_j is 
+                //           [9X2] * [2X1] = [9X1]
 
                 calc:
                 f_i_j =  // [2X1]
@@ -478,6 +484,28 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                 Add Jp⊤Jp to the upper triangular part of Hpp -> (setting V_i into V)
                 bPI -= (jP_i_j)^T * f_i_j; // it's a vector [3X1] so use elementwise subtraction;
 
+
+                // for each free camera means this?
+                if (image j has feature i in it) {
+                    // [9X9]; hCC_j aka U*_j;  hCC[j] is sum over feature J of AIJ^T*AIJ
+                    calc (jC_i_j)^T*jC_i_j and add it to hCC[j]
+                    // since mA is empty, can set the diagonal block for hCC[j] also 
+
+                    // [3X9]; hPC_i_j aka W_i_j^T;
+                    calc (jP_i_j)^T*jC_i_j and set it in hPCs
+                      and set it in hPCJ[j]
+ 
+                    // bC_i_j [9X1]
+                    calc (jP_i_j)^T*f and subtract it from block row j in vB
+                }
+             } // end image j loop
+
+             invert hPPI
+
+             calc tP = invHPPI * bPI;
+
+             // for each free camera means?
+             {
              }
          }
 
