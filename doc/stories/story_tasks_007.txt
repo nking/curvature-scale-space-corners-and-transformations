@@ -351,6 +351,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
          add to MatrixUtil.java
             static double[][] transposeMatrixByBlocks(double[][] a, int nRows, int nCols)
+            static double[] vectorize(double[][] a)
             
          add to CameraCalibration.java
            static double[] applyRadialDistortion(double[] xC, double k1, double k2,
@@ -412,8 +413,8 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          init vB ;// vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
          init hPPI; // aka V_i; a [3X3] block
          init bPI; // aka jPTf; row j of bP; [3X1]
-         declare bIJT; [3X2]
-         declare aIJT; [9X2]
+         declare bIJT; //aka jP_I_J^T [3X2]
+         declare aIJT;//aka jC_I_J^T  [9X2]
          declare bIJsq // aka jP^T*JP; [3X3]
          init aIJ; [2X9]
          init bIJ; [2X3]
@@ -445,10 +446,13 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  // aij aka jC is [2X9] when including intrinsic, else [2X6]
                  // bij aka jP is [2X3].
 
-                 // bij^T * bij = [3X2]*[2X3] = [3X3]
-                 bIJsq = MatrixUtil.outerProduct(bIJ, bIJ)
+                 //[3X2]  aka jP^T
+                 bIJT = MatrixUtil.transpose(bIJ);
 
-                 // add jP^T*J to upper triangular part of hPP aka V
+                 // bij^T * bij = [3X2]*[2X3] = [3X3]
+                 bIJsq = MatrixUtil.multiply(bIJT, bIJ)
+
+                 // add jP^T*JP to upper triangular part of hPP aka V
                  // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
                  //     elementwise addition of 3X3 blocks:
                  hPPI = MatrixUtil.elementwiseAdd(hPPI, bijsq)
@@ -464,8 +468,6 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  fIJ = MatrixUtil.elementwiseSubtract(xIJ, xIJHat);
                  //for sum of squares: MatrixUtil.lpSum(fIJ, 2);
 
-                 //[3X2]  aka jP^T
-                 bIJT = MatrixUtil.transpose(bIJ);
                  // subtract jP^T*f (aka bP) from bP
                  bIJTF =  bIJT * fIJ;// [3X1]
                  bPI -= bIJTF; // element wise subtract
@@ -476,21 +478,21 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  // for each free camera means this?
                  if (image j has feature i in it) {
 
-                     // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA
+                     // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
                      mA[j][j] = aIJT * aIJ;
 
                      // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                      //    and store until end of image j loop.
                      hPCJ[j] = bIJT * aIJ;
 
-                     // subtract bc = -aIJT*f (aka -jCT*f) from block row j in vB. [9X1]
+                     // subtract aIJT*f (where bc = -aIJT*f aka -jCT*f) from block row j in vB. [9X1]
                      aIJTf = aIJT * f_i_j
-                     vB[j] = MatrixUtil.elementwiseSubtractBlock(vB[j], aIJTf)
-                }
+                     vB[j] = MatrixUtil.elementwiseSubtract(vB[j], aIJTf)
+                 }
              } // end image j loop
 
              //invert hPPI // hPP is V* // [3X3]
-             invHPPI = invert the diagonal block for feature i;
+             invHPPI = hppI; // invert the diagonal block for feature i;
 
              // hPPI^-1 * bPI is V^-1*bPI // [3X3][3X1] = [3X1]
              tP = invHPPI * bPI;
@@ -527,14 +529,37 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  tPC = hPCIJT * invHPPI;
 
                  for (j2=j+1; j2<mImages; ++j2) {
-                     // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2]
+                     // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2] // [9X3][3X9]=[9X9]
                      //   subtract from block (j, j2) of lhs mA
                      mA[j][j2] -= (tPC * hPCJ[j2]);
                  }
              } // end image j loop
          } // end feature i loop
 
-         steps 5-10...
+         // (optional) Fix gauge by freezing coordinates and thereby reducing the linear system with a few dimesnions.
+
+         // cholesky decompostion to solve for dC in mA*dC=vB
+         DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(new DenseMatrix(mA));
+         LowerTriangDenseMatrix cholL = chol.getL()
+         UpperTriangDenseMatrix cholU = chol.getU()
+         double[] yM = MatrixUtil.forwardSubstitution(i
+             MatrixUtil.convertToRowMajor(cholL), MatrixUtil.vectorize(vB));
+         // dC is [9m X 1]
+         double[] dC = MatrixUtil.backwardSubstitution(
+             MatrixUtil.convertToRowMajor(cholU), yM);
+
+    steps 7-10...
+
+ editing:  can see now that need to have stored all tP and all tPC
+
+         for (i=0; i<nFeatures; ++i) {
+             // start with point update for feature i, dP = tP
+             for (j=0; j<mImages; ++j) {
+                 // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9) 
+             }
+             // compute updated point
+         }
+
          
       -- form the structure for the levenberg-marquardt as exists in the method
          solveForPose() in LevenbergMarquardtForPose.java
