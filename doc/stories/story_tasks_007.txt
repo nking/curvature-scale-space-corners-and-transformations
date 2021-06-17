@@ -314,7 +314,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
       The task was blocked for awhile while I revised other camera code and added to
       it methods, some of which are needed by this task.  Then I spent about 1 month
       reading in and around the subject of bundle adjustment.
-      So the amount of time used will separate reading from design and implementation.
+      So in the amount of time used I'll separate reading from design and implementation.
 
    details:  
       Requirements:
@@ -373,7 +373,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
            create class BundleAdjustment.java
 
-           add to BundleAdjsutment.java
+           add to BundleAdjustment.java
 
              pdCpIJCIJ(double[] xWCNI, k1, k2, extrinsics)
                  cij = -xWCNI 
@@ -415,11 +415,15 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              // runtime complexity is ~ O(nFeatures * mImages^2)
              // assumptions used in forming the partial deivatives of the intrinsic camera parameters
              //    are no skew, focal length along x is the same as focal length along y, square pixels.
-             static public void solve(double[][] coordsI, double[][] coordsW, 
+             static public void solveSparse(double[][] coordsI, double[][] coordsW, 
                  double[][] intr, double[][] extrRot, double[][] extrTrans,
                  double[] kRadial, final int nMaxIter, boolean useR2R4,
                  double[] out)
 
+           create class LevenbergMarquardtForBA.java
+
+           add to LevenbergMarquardtForBA.java
+             solveUsingSparse
 
         details of the methods:
 
@@ -440,11 +444,12 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                 these are called x_hat.
              -- "eps_i_j" = x_i_j observed in images - x_hat_i_j projected to image frame
                 NOTE: eps_a = A^T * eps, eps_b =  B^T * eps
+
            partial derivatives:
              -- implemented from Qu 2018
                 Assumptions:  no skew, square pixels, f=f_x=f_y
 
-           details of the BundleAdjustment.solve(...) method:
+           details of the BundleAdjustment.solveSparse(...) method:
              -- following the Engels pseudocode for solving for the parameter vector via the
                 reduced camera matrix and cholesky factoring with forward and back substitution
                 to avoid inverting the reduced camera matrix.
@@ -614,7 +619,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  } // end image j loop
              } // end feature i loop
 
-             // (optional) Fix gauge by freezing coordinates and thereby reducing the linear system with a few dimesnions.
+             // (optional) Fix gauge by freezing coordinates and thereby reducing the linear system with a few dimensions.
 
              // cholesky decompostion to solve for dC in mA*dC=vB
              // (using the sparsity of upper and lower triangular matrices results in 
