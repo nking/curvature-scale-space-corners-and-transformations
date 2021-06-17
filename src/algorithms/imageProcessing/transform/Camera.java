@@ -633,6 +633,7 @@ public class Camera {
         private CameraIntrinsicParameters intrinsics;
         private List<CameraExtrinsicParameters> extrinsics = new ArrayList<CameraExtrinsicParameters>();
         private double[] radialDistortion;
+        private boolean useR2R4;
         
         /**
          * @return the radialDistortion
@@ -640,12 +641,25 @@ public class Camera {
         public double[] getRadialDistortion() {
             return radialDistortion;
         }
+        
+        /**
+         * @return true if using radial distortion function from Ma et al. 2004 
+         for model #4 in Table 2, f(r) = 1 +k1*r^2 + k2*r^4,
+         else return false if using model #3 f(r) = 1 +k1*r + k2*r^2.
+        */
+        public boolean useR2R4() {
+            return useR2R4;
+        }
 
         /**
          * @param radialDistortion the radialDistortion to set
+         * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+         f(r) = 1 +k1*r^2 + k2*r^4 if true,
+         else use model #3 f(r) = 1 +k1*r + k2*r^2.
          */
-        public void setRadialDistortion(double[] radialDistortion) {
+        public void setRadialDistortion(double[] radialDistortion, boolean useR2R4) {
             this.radialDistortion = radialDistortion;
+            this.useR2R4 = useR2R4;
         }
 
         /**
