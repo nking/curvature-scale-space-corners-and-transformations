@@ -418,12 +418,22 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              static public void solveSparse(double[][] coordsI, double[][] coordsW, 
                  double[][] intr, double[][] extrRot, double[][] extrTrans,
                  double[] kRadial, final int nMaxIter, boolean useR2R4,
-                 double[] out)
+                 double[] outDP, double[] outDC, double[] outGradP, double[] outGradP, double[] outFSqSum)
 
            create class LevenbergMarquardtForBA.java
 
            add to LevenbergMarquardtForBA.java
-             solveUsingSparse
+               static class BA with members
+                   double[][] intr;
+                   double[][] extrRot;
+                   double[][] extrTrans;
+                   double[] radial;
+                   boolean useR2R4;
+                   double err;
+
+           add to LevenbergMarquardtForBA.java
+             static public BA solveUsingSparse(double[][] coordsI, double[][] coordsW,
+                final int nMaxIter, boolean useR2R4)
 
         details of the methods:
 
@@ -649,11 +659,16 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              }
 
              // dP and dC are the updating vectors for L-M
+             -------------------------------------------------------------------
 
-    steps 8-10...
-         
-      -- form the structure for the levenberg-marquardt as exists in the method
-         solveForPose() in LevenbergMarquardtForPose.java
+           details of the LevenbergMarquardtForBA.solveSparse(...) method:
+             static public BA solveUsingSparse(double[][] coordsI, double[][] coordsW,
+                final int nMaxIter, boolean useR2R4)
+
+                the structure is similar to LevenbergMarquardtForPNP.solveForPose(...)
+                    excepting that the parameter update steps, gradients, and the objective
+                    evaluation are calculated by
+                    LevenbergMarquardtForBA.solveUsingSparse(...)
 
 ---------------------------------------------------------------------
 Task 7: implement a method for extrinsic parameter optimization
