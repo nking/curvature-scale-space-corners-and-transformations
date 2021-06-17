@@ -400,6 +400,9 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          *At this point, have the Jacobians, approximate Hessians, and the
           parameter vector as the gradient.
 
+         this method should return the parameter vector updates, and the objective as the
+            sum of squares of the observed - predicted.
+
          // j for m images
          // i for n features
 
@@ -420,11 +423,15 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          init bIJ; [2X3]
          declare bIJTF; aka bP [3X1]
          declare aIJTF; aka bC [9X1]
+         declare fIJ;// [2X1]
+         double fSqSum = 0;
          declare hPCJ; // m rows of blocks of size [3X9]
          declare tP; // [3X1]
          declare tPC; // [9X3]
          declare tmp; // [9X1]
          declare hPCIJT; // [9X3]
+         init tPs;// n blocks of [3X1] // i is nFeatures
+         init tPCTs;// nXm blocks of [3X9] // i is nFeatures, j is mImages
 
          for (i=0; i<nFeatures; ++i) { // this is variable p in Engels pseudocode
              reset hPPI to 0's;// [3x3]// a.k.a. V*_i. 
@@ -466,7 +473,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
                  // f_i_j [2X1] 
                  fIJ = MatrixUtil.elementwiseSubtract(xIJ, xIJHat);
-                 //for sum of squares: MatrixUtil.lpSum(fIJ, 2);
+                 fSqSum += MatrixUtil.lpSum(fIJ, 2);
 
                  // subtract jP^T*f (aka bP) from bP
                  bIJTF =  bIJT * fIJ;// [3X1]
@@ -496,6 +503,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
              // hPPI^-1 * bPI is V^-1*bPI // [3X3][3X1] = [3X1]
              tP = invHPPI * bPI;
+             tPs[i] = tP; // system.arraycopy...
 
              // outer product of feature i
              // for each free camera means? in context of a use case of real-time acquisition?
@@ -528,6 +536,9 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  // calc hPC^T * invHPPI and store in variable TPC/  [9X3][3X3] = [9X3]
                  tPC = hPCIJT * invHPPI;
 
+                 // tPC^T = invHPPI^T * hPCIJ = invHPPI * hPCIJ
+                 set block i,j of tPCTs to MatrixUtil.multiply(invHPPI, hPCJ[j]);
+
                  for (j2=j+1; j2<mImages; ++j2) {
                      // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2] // [9X3][3X9]=[9X9]
                      //   subtract from block (j, j2) of lhs mA
@@ -548,18 +559,24 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          double[] dC = MatrixUtil.backwardSubstitution(
              MatrixUtil.convertToRowMajor(cholU), yM);
 
-    steps 7-10...
-
- editing:  can see now that need to have stored all tP and all tPC
-
+         init dP // [3nX1]
+         declare dCJ // [9X1]
+         declare double[] tmp;
          for (i=0; i<nFeatures; ++i) {
              // start with point update for feature i, dP = tP
+             dP[i] = tPs[i];
              for (j=0; j<mImages; ++j) {
                  // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9) 
+                 dCJ = // system.arraycopy dC[j*9:(j+1)*9)
+                 tmp = tPCTs(i,j)*dCJ;
+                 dP[i] = element wise subtract dP[i] - tmp;
              }
              // compute updated point
          }
 
+         // dP and dC are the updating vectors for L-M
+
+    steps 8-10...
          
       -- form the structure for the levenberg-marquardt as exists in the method
          solveForPose() in LevenbergMarquardtForPose.java
