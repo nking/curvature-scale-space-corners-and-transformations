@@ -458,6 +458,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              // distort
              xWCNDI = CameraCalibration.applyRadialDistortion(xWCFNI, k1, k2, useR2R4);
 
+             //runtime complexity for this loop is O(nFeatures * mImages^2)
              for (j=0; j<mImages; ++j) {
                  aIJ, bIJ from aIJBIJ(xWCI, k1, k2, extrinsics, cosJs[j], sinJs[j], aIJ, bIJ)
                  // aij aka jC is [2X9] when including intrinsic, else [2X6]
@@ -493,7 +494,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  // [9X2] aka jC^T
                  aIJT = MatrixUtil.transpose(aIJ);
 
-                 // for each free camera means this?
+                 // if camera c is free means this?
                  if (image j has feature i in it) {
 
                      // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
@@ -565,6 +566,8 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          // (optional) Fix gauge by freezing coordinates and thereby reducing the linear system with a few dimesnions.
 
          // cholesky decompostion to solve for dC in mA*dC=vB
+         // (using the sparsity of upper and lower triangular matrices results in 
+         //    half the computation time of LU decomposition in comparison)
          DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(new DenseMatrix(mA));
          LowerTriangDenseMatrix cholL = chol.getL()
          UpperTriangDenseMatrix cholU = chol.getU()
