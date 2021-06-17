@@ -402,9 +402,13 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
             and the objective as the sum of squares of the observed - predicted, 
             and the gradient vector components used by L-M in calculating the 
             gain ratio and evaluating stopping criteria (outGradP and outGradC).
+         the output variables will be arguments given to the method instead of
+            returned by it in order to allow garbage collection to reclaim the
+            class instance of BundleAdjustment (or similar name) and it's associated memory.
 
          consider adapting the code to use an associative map for features in images.
             e.g. vij = 1 iff point i is visible in image j as used by Lourakis.
+
 
          // j for m images
          // i for n features
