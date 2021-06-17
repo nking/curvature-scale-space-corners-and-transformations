@@ -397,11 +397,11 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
       -- follow the Engels pseudocode for solving for the parameter vector via the
          reduced camera matrix and cholesky factoring with forward and back substitution
          to avoid inverting the reduced camera matrix.
-         *At this point, have the Jacobians, approximate Hessians, and the
-          parameter vector as the gradient.
 
-         this method should return the parameter vector updates, and the objective as the
-            sum of squares of the observed - predicted.
+         this method should return the parameter vector updates (dP and dC), 
+            and the objective as the sum of squares of the observed - predicted, 
+            and the gradient vector components used by L-M in calculating the 
+            gain ratio and evaluating stopping criteria (outGradP and outGradC).
 
          // j for m images
          // i for n features
@@ -423,8 +423,11 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
          init bIJ; [2X3]
          declare bIJTF; aka bP [3X1]
          declare aIJTF; aka bC [9X1]
+         // outBC and outBP are the output gradient vectors -J^T*(x-x_hat) as -aIJTF and -bIJTF, respectively.
+         double[] outGradC = new double[9]; // summation of aij^T*fij
+         double[] outGradP = new double[3]; // summation of bij^T*fij
          declare fIJ;// [2X1]
-         double fSqSum = 0;
+         double outFSqSum = 0;
          declare hPCJ; // m rows of blocks of size [3X9]
          declare tP; // [3X1]
          declare tPC; // [9X3]
@@ -473,11 +476,12 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
                  // f_i_j [2X1] 
                  fIJ = MatrixUtil.elementwiseSubtract(xIJ, xIJHat);
-                 fSqSum += MatrixUtil.lpSum(fIJ, 2);
+                 outFSqSum += MatrixUtil.lpSum(fIJ, 2);
 
                  // subtract jP^T*f (aka bP) from bP
                  bIJTF =  bIJT * fIJ;// [3X1]
                  bPI -= bIJTF; // element wise subtract
+                 elementwisesubtract outGradP , bIJTF
 
                  // [9X2] aka jC^T
                  aIJT = MatrixUtil.transpose(aIJ);
@@ -493,8 +497,11 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                      hPCJ[j] = bIJT * aIJ;
 
                      // subtract aIJT*f (where bc = -aIJT*f aka -jCT*f) from block row j in vB. [9X1]
-                     aIJTf = aIJT * f_i_j
-                     vB[j] = MatrixUtil.elementwiseSubtract(vB[j], aIJTf)
+                     aIJTF = aIJT * fIJ
+
+                     elementwisesubtract outGradC , aIJTF
+
+                     vB[j] = MatrixUtil.elementwiseSubtract(vB[j], aIJTF)
                  }
              } // end image j loop
 
@@ -531,6 +538,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                                                              | B41T*F41+B42T*F42+B43T*F43 |
                       *The V's are inverses in this matrix
                  */
+
                  vB[j] = MatrixUtil.elementwiseSubtractBlock(vB[j], tmp)
 
                  // calc hPC^T * invHPPI and store in variable TPC/  [9X3][3X3] = [9X3]
