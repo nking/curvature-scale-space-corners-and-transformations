@@ -397,6 +397,105 @@ public class Camera {
         return xDirection;
     }
     
+    /**
+     * transform the world coordinates xW to the camera reference frame using
+     * rot * ( xW + trans).
+     * @param xW coordinates of objects in a world reference frame.  
+     * The format is 3XN for N points.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
+     * @return xW transformed to the camera reference frame.
+     */
+    public static double[][] worldToCameraCoordinates(double[][] xW, double[][] rot,
+        double[] trans) {
+        if (xW.length != 3) {
+            throw new IllegalArgumentException("xW.length must be 3 (for x, y, z)");
+        }
+        if (trans.length != 3) {
+            throw new IllegalArgumentException("trans.length must be 3 (for x, y, z)");
+        }
+        if (rot.length != 3 || rot[0].length != 3) {
+            throw new IllegalArgumentException("rot must be 3X3");
+        }
+        
+        int n = xW[0].length;
+        double[][] xC = MatrixUtil.copy(xW);
+        int i, j;
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 3; ++j) {
+                xC[j][i] -= trans[j];
+            }
+        }
+        
+        xC = MatrixUtil.multiply(rot, xC);
+        return xC;
+    }
+    
+    /**
+     * transform the world coordinate point xWPt to the camera reference frame using
+     * rot * ( xW + trans).
+     * @param xWPt coordinates of an object in a world reference frame.  
+     * The length is 3.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
+     * @return the point xW transformed to the camera reference frame.
+     */
+    public static double[] worldToCameraCoordinates(double[] xWPt, double[][] rot,
+        double[] trans) {
+        if (xWPt.length != 3) {
+            throw new IllegalArgumentException("xW.length must be 3 (for x, y, z)");
+        }
+        if (trans.length != 3) {
+            throw new IllegalArgumentException("trans.length must be 3 (for x, y, z)");
+        }
+        if (rot.length != 3 || rot[0].length != 3) {
+            throw new IllegalArgumentException("rot must be 3X3");
+        }
+        
+        double[] xC = Arrays.copyOf(xWPt, xWPt.length);
+        int j;
+        for (j = 0; j < 3; ++j) {
+            xC[j] -= trans[j];
+        }
+        
+        xC = MatrixUtil.multiplyMatrixByColumnVector(rot, xC);
+        return xC;
+    }
+    
+    /**
+     * transform the world coordinate point xWPt to the camera reference frame using
+     * rot * ( xW + trans).
+     * @param xWPt coordinates of an object in a world reference frame.  
+     * The length is 3.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
+     * @param out the point transformed to the camera reference frame.
+     */
+    public static void worldToCameraCoordinates(double[] xWPt, double[][] rot,
+        double[] trans, double[] out) {
+        if (xWPt.length != 3) {
+            throw new IllegalArgumentException("xW.length must be 3 (for x, y, z)");
+        }
+        if (trans.length != 3) {
+            throw new IllegalArgumentException("trans.length must be 3 (for x, y, z)");
+        }
+        if (rot.length != 3 || rot[0].length != 3) {
+            throw new IllegalArgumentException("rot must be 3X3");
+        }
+        double[] x2 = Arrays.copyOf(xWPt, xWPt.length);
+        int j;
+        for (j = 0; j < 3; ++j) {
+            x2[j] -= trans[j];
+        }
+        MatrixUtil.multiplyMatrixByColumnVector(rot, x2, out);
+    }
+    
     /** converts pixel coordinates to camera coordinates by transforming them to camera 
     reference frame then removing radial distortion.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
