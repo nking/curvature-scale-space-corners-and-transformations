@@ -298,7 +298,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
   
    amount of time used: 1 month for reading + 5 days for design + ? days for implementation 
 
-   state of completion: end of design stage.
+   state of completion: finished design stage. beginning implementation.
 
    comments:
       This task spawned Task 7 to solve for extrinsic parameters only as that is
@@ -360,9 +360,22 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              double[][] xWC = worldToCameraCoordinates
              double[] xWCI = worldToCameraCoordinates
 
+           create class BlockMatrixIsometric.java
+               // for block matrices composed of equal sized blocks
+               // members:
+               //   double[][] a
+               //   int bSize0; // block size for rows
+               //   int bSize1; // block size for columns
+               // methods:
+               //   BlockMatrixIsometric(double[][] a, int bSize0, int bSize1)
+               //   setBlock(double[][] b, int blockNumber0, int blockNumber1) :: void
+               //   getBlock(int blockNumber0, int blockNumber1) :: double[][]
+               //   getBlock(double[][] b, int blockNumber0, int blockNumber1) 
+
            add to MatrixUtil.java
-              static double[][] transposeMatrixByBlocks(double[][] a, int nRows, int nCols)
-              static double[] vectorize(double[][] a)
+              transpose(BlockMatrixIsometric a) :: BlockMatrixIsometric
+              reshapeToVector(double[][] a) :: double[] // [*, 0], [*, 1], i.e. all rows in col 0, all rows in col 1
+              fill(double[][] a, double value) :: void
             
            add to CameraCalibration.java
              static double[] applyRadialDistortion(double[] xC, double k1, double k2,
@@ -484,6 +497,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
              // inversion of matrix HPP (aka V*) for case (9^3)*mImages < (3^3)*nFeatures
              // consider branching here for inversion of matrix HCC (aka U*) for case (9^3)*mImages > (3^3)*nFeatures
+
 
              init mA ;// matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
              init vB ;// vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
@@ -659,9 +673,10 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              }
 
              // dP and dC are the updating vectors for L-M
-             -------------------------------------------------------------------
+             -----------
 
            details of the LevenbergMarquardtForBA.solveSparse(...) method:
+
              static public BA solveUsingSparse(double[][] coordsI, double[][] coordsW,
                 final int nMaxIter, boolean useR2R4)
 
