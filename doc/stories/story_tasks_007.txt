@@ -419,7 +419,10 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                 //bIJ:
                 //dF/dX = pdCpIJCIJ * pdCIJXWIJ                  [2X3]
 
-             // there may be more than one camera and should be more than 4 points.
+             // there may be more than one camera and should be 6 of more features per image
+             // (3 for rot, 3 for trans) and among those, need 3 per camera for the intrinsic parameters
+             // and 2 or more vantage points for the point parameters (no reference for these
+             // numbers, just a rough estimate from counting the number of unknowns).
              // the code needs initial parameter estimates in intr, extrRot, and extrTrans.
              // the code returns results in intr, extrRot, extrTrans, outGradP, outGradC, 
              //    outFSqSum, outDP, outDC for refined parameters
