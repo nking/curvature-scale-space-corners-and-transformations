@@ -115,4 +115,50 @@ public class BundleAdjustment {
         
     }
     
+    /**
+     * the partial derivative of the
+     * final 2D re-projected coordinates of the i-th feature point
+     * w.r.t. the intrinsic camera parameters.
+     * Defined in Qu 2018 eqn (3.10).
+     * 
+     * @param xWCNI a world point projected to the camera reference frame and
+     * normalized by it's last coordinate.
+     * xWCI = column i of coordsW transformed to camera coordinates; 
+     * xWCNI = xWCI/xWCI[2];
+     * @param intr
+     * @param k1 radial distortion coefficient 1
+     * @param k2 radial distortion coefficient 2
+     * @param rot extrinsic camera parameter rotation matrix.
+     * @param trans extrinsic camera parameter translation vector.
+     * @param out output array of size [2X3]
+     */
+    static void pdCpIJYJ(double[] xWCNI, Camera.CameraIntrinsicParameters intr,
+        double k1, double k2, 
+        double[][] rot, double[] trans,
+        double[][] out) {
+        
+        if (out.length != 2 || out[0].length != 3) {
+            throw new IllegalArgumentException("out size must be 2X3");
+        }
+        
+        double x = -xWCNI[0];
+        double y = -xWCNI[1];
+        
+        double x2 = x*x;
+        double y2 = y*y;
+        double r2 = x2 + y2;
+        double r4 = r2*r2;
+        
+        double f1 = intr.getIntrinsic()[0][0];
+        
+        double dis = 1 + k1*r2 + k2*r4;
+        
+        out[0][0] = dis*x;
+        out[0][1] = f1*r2*x;
+        out[0][2] = f1*r4 * x;
+        out[1][0] = dis*y;
+        out[1][1] = f1*r2*y;
+        out[1][2] = f1*r4*y;
+        
+    }
 }
