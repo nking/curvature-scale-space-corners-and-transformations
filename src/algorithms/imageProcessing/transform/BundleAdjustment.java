@@ -87,7 +87,7 @@ public class BundleAdjustment {
     
     /**
      * the partial derivative of the 2D coordinates of perspective projection 
-     * of the i-th feature point normalized, w.r.t. to the same notnormalized.
+     * of the i-th feature point normalized, w.r.t. to the same not normalized.
      * Defined in Qu 2018 eqn (3.16).
      * 
      * @param xWCI a world point projected to the camera reference frame.
@@ -160,5 +160,94 @@ public class BundleAdjustment {
         out[1][1] = f1*r2*y;
         out[1][2] = f1*r4*y;
         
+    }
+    
+    /**
+     * the partial derivative of the
+     * final 2D re-projected coordinates of the i-th feature point
+     * w.r.t. 2D coordinates of perspective projection of the i-th feature point.
+     * Defined in Qu 2018 eqns (3.28 - 3.33).
+     * 
+     * @param xWCI a world point projected to the camera reference frame.
+     * xWCI = column i of coordsW transformed to camera coordinates; 
+     * @param phi rotation angle vector of length 3 in units of radians
+     * @param cosPhi is cosine of each phi
+     * @param sinPhi is sine of each phi
+     * @param out output array of size [3X3]
+     */
+    static void pdXWIJPhiJ(double[] xWCI, double[] phi, double cosPhi, double sinPhi,
+            double[][] out) {
+        
+        if (out.length != 3 || out[0].length != 3) {
+            throw new IllegalArgumentException("out size must be 3X3");
+        }
+        
+        double x = xWCI[0];
+        double y = xWCI[1];
+        double z = xWCI[2];
+        double pX = phi[0]; // in radians
+        double pY = phi[1];
+        double pZ = phi[2];
+        double p = Math.sqrt(pX*pX + pY*pY + pZ*pZ);
+        double p2 = p*p;
+        double p3 = p2*p;
+        double p4 = p2*p2;
+        double c = Math.cos(p);
+        double s = Math.sin(p);
+        
+        double dXdPxx = - (pX*x*s)/p +
+            ((2*pX*x + pY*y + pZ*z)*(1.-c) + (pX*pY*z - pX*pZ*y)*c)/p2 +
+            ((-pX*pY*z + pX*pZ*y + pX*pX*(pY*y + pZ*z + pX*x))*s)/p3 +
+            (2.*pX*pX*(pX*x + pY*y + pZ*z)*(c - 1.))/p4;
+        
+        double dXdPxy = (z*s - pY*x*s)/p +
+            (pX*y*(1.-c) + (pY*pY*z - pY*pZ*y)*c)/p2 +
+            ((pX*pX*x + pX*pY*y + pX*pZ*z + pZ*y - pY*z)*pY*s)/p3 +
+            (2.*pX*pY*(pX*x + pY*y + pZ*z)*(c - 1.))/p4;
+        
+        double dXdPxz = (-y*s - pZ*x*s)/p +
+            (pX*z*(1.-c) + (pZ*pY*z - pZ*pZ*y)*c)/p2 +
+            ((pX*pX*x + pX*pY*y + pX*pZ*z + pZ*y - pY*z)*pZ*s)/p3 +
+            (2.*pX*pZ*(pX*x + pZ*z + pY*y)*(c-1.))/p4;
+        
+        double dXdPyx = (-z*s - pX*y*s)/p +
+            (pY*x*(1.-c) + (pX*pZ*x - pX*pX*z)*c)/p2 +
+            ((pY*pY*y + pY*pZ*z + pY*pX*x + pX*z - pZ*x)*pX*s)/p3 +
+            (2.*pY*pX*(pY*y + pX*x + pZ*z)*(c-1.))/p4;
+        
+        double dXdPyy = - (pY*y*s)/p +
+            ((2*pY*y + pZ*z + pX*x)*(1.-c) + (pY*pZ*x - pY*pX*z)*c)/p2 +
+            ((-pY*pZ*x + pY*pX*z + pY*pY*(pZ*z + pX*x + pY*y))*s)/p3 +
+            (2.*pY*pY*(pY*y + pZ*z + pX*x)*(c - 1.))/p4;
+        
+        double dXdPyz = (x*s - pZ*y*s)/p +
+            (pY*z*(1.-c) + (pZ*pZ*x - pZ*pX*z)*c)/p2 +
+            ((pY*pY*y + pY*pZ*z + pY*pX*x + pX*z - pZ*x)*pZ*s)/p3 +
+            (2.*pY*pZ*(pY*y + pZ*z + pX*x)*(c - 1.))/p4;
+        
+        double dXdPzx = (y*s - pX*z*s)/p +
+            (pZ*x*(1.-c) + (pX*pX*y - pX*pY*x)*c)/p2 +
+            ((pZ*pZ*z + pZ*pX*x + pZ*pY*y + pY*x - pX*y)*pX*s)/p3 +
+            (2.*pZ*pX*(pZ*z + pX*x + pY*y)*(c - 1.))/p4;
+     
+        double dXdPzy = (-x*s - pY*z*s)/p +
+            (pZ*y*(1.-c) + (pY*pX*y - pY*pY*x)*c)/p2 +
+            ((pZ*pZ*z + pZ*pX*x + pZ*pY*y + pY*x - pX*y)*pY*s)/p3 +
+            (2.*pZ*pY*(pZ*z + pY*y + pX*x)*(c-1.))/p4;
+        
+        double dXdPzz = - (pZ*z*s)/p +
+            ((2*pZ*z + pX*x + pY*y)*(1.-c) + (pZ*pX*y - pZ*pY*x)*c)/p2 +
+            ((-pZ*pX*y + pZ*pY*x + pZ*pZ*(pX*x + pY*y + pZ*z))*s)/p3 +
+            (2.*pZ*pZ*(pZ*z + pX*x + pY*y)*(c - 1.))/p4;
+        
+        out[0][0] = dXdPxx;
+        out[0][1] = dXdPxy;
+        out[0][2] = dXdPxz;
+        out[1][0] = dXdPyx;
+        out[1][1] = dXdPyy;
+        out[1][2] = dXdPyz;
+        out[2][0] = dXdPzx;
+        out[2][1] = dXdPzy;
+        out[2][2] = dXdPzz;
     }
 }

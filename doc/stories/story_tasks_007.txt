@@ -398,11 +398,11 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  cij = -xWCNI
                  ...
 
-             pdXWIJPhiJ(double[] xWI, double[] phi, double[] cosPhi, double[] sinPhi)
+             pdXWIJPhiJ(double[] xWI, double[] phi)
                 // coordsW are in world coordinate frame
                 // phi is the rotation angle vector of length 3
-                // cosPhi is cosine of each phi
-                // sinPhi is sine of each phi
+                // cosPhi is cosine of the magnitude of phi
+                // sinPhi is sine of the magnitude of phi
 
              // for aIJ creates dF/dCameraParams which are the 9 parameters of extrinsic and intrinsic
              // where the 9 parameters are the Qu notation for the variables phi_j, t_j, y_j
@@ -496,8 +496,6 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              // i for n features
 
              // each row is for 1 image, so size for each is [mImages X 6]
-             cosJs, sinJs = sinCos(extrinsics)
-
              // inversion of matrix HPP (aka V*) for case (9^3)*mImages < (3^3)*nFeatures
              // consider branching here for inversion of matrix HCC (aka U*) for case (9^3)*mImages > (3^3)*nFeatures
 
@@ -543,7 +541,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  xWCNDI = CameraCalibration.applyRadialDistortion(xWCFNI, k1, k2, useR2R4);
 
                  for (j=0; j<mImages; ++j) {
-                     aIJ, bIJ from aIJBIJ(xWCI, k1, k2, extrinsics, cosJs[j], sinJs[j], aIJ, bIJ)
+                     aIJ, bIJ from aIJBIJ(xWCI, k1, k2, extrinsics, aIJ, bIJ)
                      // aij aka jC is [2X9] when including intrinsic, else [2X6]
                      // bij aka jP is [2X3].
 
