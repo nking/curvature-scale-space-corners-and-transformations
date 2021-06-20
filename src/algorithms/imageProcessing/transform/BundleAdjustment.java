@@ -1,5 +1,8 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.matrix.MatrixUtil;
+import java.util.Arrays;
+
 /**
  given intrinsic and extrinsic camera parameters, coordinates for points
  in a world reference frame, and observations of those points in one or more
@@ -51,14 +54,10 @@ public class BundleAdjustment {
      * @param intr
      * @param k1 radial distortion coefficient 1
      * @param k2 radial distortion coefficient 2
-     * @param rot extrinsic camera parameter rotation matrix.
-     * @param trans extrinsic camera parameter translation vector.
      * @param out output array of size [2X2]
      */
     static void pdCpIJCIJ(double[] xWCNI, Camera.CameraIntrinsicParameters intr,
-        double k1, double k2, 
-        double[][] rot, double[] trans,
-        double[][] out) {
+        double k1, double k2, double[][] out) {
         
         if (out.length != 2 || out[0].length != 2) {
             throw new IllegalArgumentException("out size must be 2X2");
@@ -92,7 +91,7 @@ public class BundleAdjustment {
      * 
      * @param xWCI a world point projected to the camera reference frame.
      * xWCI = column i of coordsW transformed to camera coordinates; 
-     * @out output array of size [2X3]
+     * @param out output array of size [2X3]
      */
     static void pdCIJXWIJ(double[] xWCI, double[][] out) {
         
@@ -128,14 +127,10 @@ public class BundleAdjustment {
      * @param intr
      * @param k1 radial distortion coefficient 1
      * @param k2 radial distortion coefficient 2
-     * @param rot extrinsic camera parameter rotation matrix.
-     * @param trans extrinsic camera parameter translation vector.
      * @param out output array of size [2X3]
      */
     static void pdCpIJYJ(double[] xWCNI, Camera.CameraIntrinsicParameters intr,
-        double k1, double k2, 
-        double[][] rot, double[] trans,
-        double[][] out) {
+        double k1, double k2, double[][] out) {
         
         if (out.length != 2 || out[0].length != 3) {
             throw new IllegalArgumentException("out size must be 2X3");
@@ -169,14 +164,11 @@ public class BundleAdjustment {
      * Defined in Qu 2018 eqns (3.28 - 3.33).
      * 
      * @param xWCI a world point projected to the camera reference frame.
-     * xWCI = column i of coordsW transformed to camera coordinates; 
+     * xWCI = column i of coordsW transformed to camera coordinates, but not normalize; 
      * @param phi rotation angle vector of length 3 in units of radians
-     * @param cosPhi is cosine of each phi
-     * @param sinPhi is sine of each phi
      * @param out output array of size [3X3]
      */
-    static void pdXWIJPhiJ(double[] xWCI, double[] phi, double cosPhi, double sinPhi,
-            double[][] out) {
+    static void pdXWIJPhiJ(double[] xWCI, double[] phi, double[][] out) {
         
         if (out.length != 3 || out[0].length != 3) {
             throw new IllegalArgumentException("out size must be 3X3");
@@ -249,5 +241,77 @@ public class BundleAdjustment {
         out[2][0] = dXdPzx;
         out[2][1] = dXdPzy;
         out[2][2] = dXdPzz;
+    }
+    
+    /**
+     for aIJ creates dF/dCameraParams which are the 9 parameters of 
+     extrinsic and intrinsic,
+     where the 9 parameters are the Qu notation for the variables phi_j, t_j, y_j.
+     for each image = 9*nImages elements (j index is used for images).
+     for bIJ creates dF/dPointParams which are the 3 parameters of the world point position.
+     for each feature = 3 * mFeatures elements (i index is used for features)
+     * Defined in Lourakis lecture slide 10.
+     * 
+     * @param xWCI a world point projected to the camera reference frame.
+     * xWCI = column i of coordsW transformed to camera coordinates, but not normalize; 
+     * @param intr
+     * @param k1 radial distortion coefficient 1
+     * @param k2 radial distortion coefficient 2
+     * //@param rot extrinsic camera parameter rotation matrix.
+     * @param phi the rotation angles.  formed from 
+     * phi = Rotation.extractRotation(rot);
+     * @param trans extrinsic camera parameter translation vector.
+     * @param outAIJ output array of size [2X9]
+     * @param outBIJ output array of size [2X3]
+     */
+    static void aIJBIJ(double[] xWCI, Camera.CameraIntrinsicParameters intr,
+        double k1, double k2, 
+        //double[][] rot, 
+        double[] phi,
+        double[] trans,
+        double[][] outAIJ, double[][] outBIJ) {
+        
+ //TODO: look at array creation to consider passing in arrays used in
+ // partial derivatives.
+        
+        if (outAIJ.length != 2 || outAIJ[0].length != 9) {
+            throw new IllegalArgumentException("outAIJ size must be 2X9");
+        }
+        if (outBIJ.length != 2 || outBIJ[0].length != 3) {
+            throw new IllegalArgumentException("outBIJ size must be 2X3");
+        }
+        
+        double[] xWCNI = Arrays.copyOf(xWCI, xWCI.length);
+        int i;
+        for (i = 0; i < xWCI.length; ++i) {
+            xWCNI[i] /= xWCNI[2];
+        }
+        
+        double[][] dCPdC = MatrixUtil.zeros(2, 2);
+        pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);
+        
+        double[][] dCdX = MatrixUtil.zeros(2, 3);
+        pdCIJXWIJ(xWCI, dCdX);
+        
+        double[][] dCPdY = MatrixUtil.zeros(2, 3);
+        pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);
+        
+        double[][] dXdP = MatrixUtil.zeros(3, 3);
+        pdXWIJPhiJ(xWCI, phi, dXdP);
+       
+        // [2X3]
+        double[][] dFdT = MatrixUtil.multiply(dCPdC, dCdX);
+        
+        // [2X3]
+        double[][] dFdPhi = MatrixUtil.multiply(dFdT, dXdP);
+        
+        // [2X3]
+        double[][] dFdY = dCPdY;
+        
+        double[][] rot = Rotation.calculateRotationZYX(phi);
+        
+        // [2X3]
+        double[][] dFdX = MatrixUtil.multiply(dFdT, rot);
+        
     }
 }
