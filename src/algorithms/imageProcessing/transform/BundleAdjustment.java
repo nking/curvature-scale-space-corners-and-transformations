@@ -119,6 +119,7 @@ public class BundleAdjustment {
      * @param extrRot the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.
+     * Each row is size [1X3] and that is a set of euler angles for the image number.
      * @param extrTrans the extrinsic camera parameter translation vectors
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.
@@ -317,13 +318,16 @@ public class BundleAdjustment {
      * missing from the image.  The feature numbers correspond to the 
      * 2nd dimension indexes in coordsW.
      * @param intr the intrinsic camera parameter matrices stacked along
-     * rows in a double array of size 3 X 3*nCameras.
+     * rows in a double array of size 3 X 3*nCameras where each block is
+     * size 3X3.
      * @param extrRot the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
-     * nImages is coordsI[0].length/coordsW[0].length.
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
      * @param extrTrans the extrinsic camera parameter translation vectors
      * stacked along the 3 columns, that is the size is nImages X 3 where
-     * nImages is coordsI[0].length/coordsW[0].length.
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
      * @param kRadial an array holding radial distortion coefficients k1 and k2.
      * NOTE: current implementation accepts values of 0 for k1 and k2.
      * TODO: consider whether to allow option of leaving out radial distortion
@@ -349,13 +353,13 @@ public class BundleAdjustment {
      */
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
-        double[][] intr, double[][] extrRot, double[][] extrTrans,
+        BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum) {
             
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
-        int nCameras = intr[0].length/3;
+        int nCameras = intr.getA()[0].length/3;
         double k1 = kRadial[0];
         double k2 = kRadial[1];
         
@@ -369,7 +373,7 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("coordsI[0].length must be evenly "
                     + "divisible by nFeatures which is coordsW[0].length");
         }
-        if (intr[0].length != 3) {
+        if (intr.getA()[0].length != 3) {
             throw new IllegalArgumentException("intr[0].length must be 3");
         }
         if (extrRot[0].length != 3) {
@@ -480,11 +484,18 @@ public class BundleAdjustment {
         BlockMatrixIsometric tPCTs = new BlockMatrixIsometric(
             MatrixUtil.zeros(nFeatures*3, mImages*9), 3, 9);
 
-        double[] xWI, xWCI, xWCNI, xWCNDI;
+        //size is [3 X 3*mImages)with each block being [3X3]
+        BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRot);
+        
+        double[] xWI, xWCNDI;
+        double[] xWCI = new double[3];
+        double[] xWCNI = new double[3];
+        double[] rotAux = new double[3];
+        double[][] rotM = MatrixUtil.zeros(3, 3);
         
         // i for n features, for m images
-        int i, j; 
-             
+        int i, j, k;
+                     
         //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
         for (i = 0; i < nFeatures; ++i) { // this is variable p in Engels pseudocode
             //reset hPPI to 0's; [3x3]// a.k.a. V*_i.
@@ -494,15 +505,27 @@ public class BundleAdjustment {
             
             // extract the world feature.  size [1X3]
             xWI = MatrixUtil.extractColumn(coordsW, i);
-            //transform to camera reference frame. size [1X3]
-            xWCI = Camera.worldToCameraCoordinates(xWI, extrinsics);
-            // normalize
-            xWCNI = xWCI/xWCI[2];
-                 // distort
-                 xWCNDI = CameraCalibration.applyRadialDistortion(xWCNI, 
-                     k1, k2, useR2R4);
+            
+            for (j = 0; j < mImages; ++j) {
+                
+                // get the rotation matrix rotM [3X3]
+                rotMatrices.getBlock(rotM, 0, j);
+                
+                //transform to camera reference frame. size [1X3]
+                Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j],
+                    rotAux, xWCI);
+                
+                // normalize
+                for (k = 0; k < 3; ++k) {
+                    xWCNI[k] = xWCI[k] / xWCI[2];
+                }
 
-                 for (j=0; j<mImages; ++j) {
+                // distort
+                xWCNDI = CameraCalibration.applyRadialDistortion(xWCNI,
+                    k1, k2, useR2R4);
+                
+                // paused here
+            }
         }
         
         
@@ -803,6 +826,27 @@ public class BundleAdjustment {
             System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);
             System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);
         }
+    }
+
+    private static BlockMatrixIsometric createRotationMatricesFromEulerAngles(
+        double[][] extrRot) {
+        
+        //extrRot is mImages*[1X3]
+        
+        int mImages = extrRot.length;
+        
+        double[][] rot = MatrixUtil.zeros(3, 3);
+        
+        BlockMatrixIsometric m = new BlockMatrixIsometric(MatrixUtil.zeros(3, 3*mImages), 3, 3);
+       
+        Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();
+        
+        int i;
+        for (i = 0; i < mImages; ++i) {
+            Rotation.calculateRotationZYX(extrRot[i], aa, rot);
+            m.setBlock(rot, 0, i);
+        }
+        return m;
     }
     
     static class AuxiliaryArrays {

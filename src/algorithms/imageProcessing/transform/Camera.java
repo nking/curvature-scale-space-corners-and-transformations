@@ -475,6 +475,46 @@ public class Camera {
      * the size is 3X3.
      * @param trans the translation to apply to coordinates xW in x, y, and z.
      * The length of the array is 3.
+     * @param aux an auxiliary array of length 3 used internally to hold
+     * values for a calculation.  it's present to help the invoker reuse an
+     * object instead of creating another.  it's values are not used.
+     * @param out the point xW transformed to the camera reference frame.
+     */
+    public static void worldToCameraCoordinates(double[] xWPt, double[][] rot,
+        double[] trans, double[] aux, double[] out) {
+        if (xWPt.length != 3) {
+            throw new IllegalArgumentException("xW.length must be 3 (for x, y, z)");
+        }
+        if (trans.length != 3) {
+            throw new IllegalArgumentException("trans.length must be 3 (for x, y, z)");
+        }
+        if (rot.length != 3 || rot[0].length != 3) {
+            throw new IllegalArgumentException("rot must be 3X3");
+        }
+        if (out.length != 3) {
+            throw new IllegalArgumentException("out.length must be 3 (for x, y, z)");
+        }
+        
+        double[] xC = Arrays.copyOf(xWPt, xWPt.length);
+        int j;
+        for (j = 0; j < 3; ++j) {
+            out[j] = xWPt[j] - trans[j];
+        }
+        
+        MatrixUtil.multiplyMatrixByColumnVector(rot, xC, aux);
+        
+        System.arraycopy(aux, 0, out, 0, out.length);
+    }
+    
+    /**
+     * transform the world coordinate point xWPt to the camera reference frame using
+     * rot * ( xW + trans).
+     * @param xWPt coordinates of an object in a world reference frame.  
+     * The length is 3.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
      * @param out the point transformed to the camera reference frame.
      */
     public static void worldToCameraCoordinates(double[] xWPt, double[][] rot,
