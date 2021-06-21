@@ -900,12 +900,120 @@ public class CameraCalibration {
     static double[] applyRadialDistortion(double[] xCPt, double k1, double k2,
         boolean useR2R4) {
         
+        double[] distorted = new double[3];
+        
+        applyRadialDistortion(xCPt, k1, k2, useR2R4, distorted);
+        
+        return distorted;
+    }
+    
+    /**
+    apply radial distortion to distortion-free camera centered coordinates using 
+    the algorithm of Ma, Chen & Moore (which is Ma et al. 2003) for the
+    distortion function expressed as f(r) = 1 + k1*r + k2*r^2 (which is 
+    equation #3 in Table 2 of Ma et al. 2004).
+    In terms of the variables outlined below, the algorithm input is
+    (x, y), k1, k2, and cameraIntrinsics and the output is (x_d, y_d).
+    TODO: consider overloading this method to implement equation #4. 
+    <pre>
+    Ma, Chen & Moore 2004, "Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction."
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+
+    and the projection equation variables:
+    [X_c,Y_c,Z_c]^T denotes a point in the camera frame which is related to the 
+        corresponding point 
+    [X_w, Y_w, Z_w]^T in the world reference frame 
+        by
+    P_c = R P_w + t
+    R is thr rotation matrix
+    t is the translation vector
+    
+    lambda * [u] = K [R|t] [X_w] = K [X_c]
+             [v]           [Y_w]     [Y_c]
+             [1]           [Z_w]     [Z_c]
+                           [1  ]
+    
+    ==> To Apply Radial Distorion, given coefficients k1, k2 and coordinates
+      (eqn 7) r_d = r * f(r) = r*(1 + k1*r + k2*r^2 + k3*r^3 + ...)
+      (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r + k2*r^2)
+    
+      Ma et al. 2003 distortion model:
+         x_d = x * f(r)
+         y_d = y * f(r)
+    
+    ==> Radial Undistortion:
+        solve for cubic roots
+        https://en.wikipedia.org/wiki/Cubic_equation#Reduction_to_a_depressed_cubic
+        though authors use Pearson's 1983 version of 
+           Handbook of Applied Mathematics: Selected Results and Methods
+    
+        from k2*r^3 +k1*r^2 +r - r_d = 0
+        solve 
+           r_bar^3 + r_bar*p + q = 0
+        where 
+          r_bar = r + (a/3)
+          a = k1/k2
+          b = 1/k2
+          c = −r_d/k2
+          p = b − (a^2/3)
+          q = (2a^3)/27 − ab/3 + c
+        then use depressed cubic root to solve for r_bar.
+        r = r_bar = (a/3)
+    
+        After r is determined, (u,v) can be calculated from (Eqn 5) which is
+           u_d - u_0 = (u−u_0) * f(r)
+           v_d − v_0 = (v−v_0) * f(r)
+          
+    Useful reading is also:
+    Drap et al, "An Exact Formula for Calculating Inverse Radial Lens Distortions"
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a negative value of k1.
+        pincushion distortion to a positive value of k1.
+         
+    NOTE that Drap et al. also apply the camera intrinsics, but they use a 
+    focal length of "1".
+    * 
+    </pre>
+    @param xCPt distortion-free camera centered coordinates for a point.  The
+    length is 3.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x, y).
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    @param outputDistorted  distorted camera centered coordinates in format 3XN where N is
+    the number of points.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x_d, y_d).
+    */
+    static void applyRadialDistortion(double[] xCPt, double k1, double k2,
+        boolean useR2R4, double[] outputDistorted) {
+        
         if (xCPt.length != 3) {
             throw new IllegalArgumentException("xCPt.length must be 3");
         }
-                
-        double[] distorted = Arrays.copyOf(xCPt, xCPt.length);
-        
+        if (outputDistorted.length != 3) {
+            throw new IllegalArgumentException("outputDistorted.length must be 3");
+        }
+                        
         //double r, r2;
         double signx, signy, c2p1, divc2p1, xm, ym, x, x2, y, y2;
         double[] c2s = new double[2];
@@ -928,9 +1036,9 @@ public class CameraCalibration {
         then r^2 = _y^2*((1/c^2) + 1)
                  = _y^2*divc2p1
         */
-        x = distorted[0];
+        x = xCPt[0];
         x2 = x*x;
-        y = distorted[1];
+        y = xCPt[1];
         y2 = y*y;
 
         calculateC2s(x, y, c2s);
@@ -965,13 +1073,11 @@ public class CameraCalibration {
 
         log.log(LEVEL, String.format(
             "distort fx=%.4f, fy=%.4f for (x,y)=(%.3f,%.3f) => (xd,yd)=(%.3f,%.3f)\n", 
-            (xm/distorted[0])+1, (ym/distorted[1])+1,
-            distorted[0], distorted[1], distorted[0]+xm, distorted[1]+ym));
+            (xm/x)+1, (ym/y)+1,
+            x, y, x+xm, y+ym));
 
-        distorted[0] += xm;
-        distorted[1] += ym;
-                
-        return distorted;
+        outputDistorted[0] = xCPt[0] + xm;
+        outputDistorted[1] = xCPt[1] + ym;
     }
     
     /**

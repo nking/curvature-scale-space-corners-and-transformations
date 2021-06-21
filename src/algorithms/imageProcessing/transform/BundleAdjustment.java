@@ -448,11 +448,11 @@ public class BundleAdjustment {
         double[] bPI = new double[3];
         
         //aka jP_I_J^T [3X2]
-        double[][] bIJT;
+        double[][] bIJT = MatrixUtil.zeros(3, 2);
         //aka jC_I_J^T  [9X2]
-        double[][] aIJT;
+        double[][] aIJT = MatrixUtil.zeros(9, 2);
         // aka jP^T*JP; [3X3]
-        double[][] bIJsq;
+        double[][] bIJsq = MatrixUtil.zeros(3, 3);
         
         //[2X9]
         double[][] aIJ = MatrixUtil.zeros(2, 9);
@@ -465,7 +465,7 @@ public class BundleAdjustment {
         double[] aIJTF = new double[9];
          
         // [2X1]
-        double[] fIJ;
+        double[] fIJ = new double[2];
         
         //m rows of blocks of size [3X9]
         double[][] hPCJ; 
@@ -487,26 +487,35 @@ public class BundleAdjustment {
         //size is [3 X 3*mImages)with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRot);
         
-        double[] xWI, xWCNDI;
+        double[] xWI = new double[3];
+        double[] xIJ = new double[3];
+        double[] xIJHat = new double[3];
         double[] xWCI = new double[3];
         double[] xWCNI = new double[3];
+        double[] xWCNDI = new double[3];
         double[] rotAux = new double[3];
         double[][] rotM = MatrixUtil.zeros(3, 3);
+                
+        AuxiliaryArrays aa = new AuxiliaryArrays();
+        double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
         // i for n features, for m images
-        int i, j, k;
+        int i, j, k, cameraNumber;
                      
         //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
         for (i = 0; i < nFeatures; ++i) { // this is variable p in Engels pseudocode
+                        
             //reset hPPI to 0's; [3x3]// a.k.a. V*_i.
             MatrixUtil.fill(hPPI, 0);
             //reset bPI to 0's; //[3X1]
             Arrays.fill(bPI, 0);
             
-            // extract the world feature.  size [1X3]
-            xWI = MatrixUtil.extractColumn(coordsW, i);
+            //populate xWI; extract the world feature.  size [1X3]
+            MatrixUtil.extractColumn(coordsW, i, xWI);
             
             for (j = 0; j < mImages; ++j) {
+                
+ //TODO consider how to handle feature not present in image here
                 
                 // get the rotation matrix rotM [3X3]
                 rotMatrices.getBlock(rotM, 0, j);
@@ -520,11 +529,41 @@ public class BundleAdjustment {
                     xWCNI[k] = xWCI[k] / xWCI[2];
                 }
 
-                // distort
-                xWCNDI = CameraCalibration.applyRadialDistortion(xWCNI,
-                    k1, k2, useR2R4);
+                // distort results are in xWCNDI
+                CameraCalibration.applyRadialDistortion(xWCNI,
+                    k1, k2, useR2R4, xWCNDI);
                 
+                cameraNumber = imageToCamera.get(j);
+                
+                //intr is 3 X 3*nCameras where each block is size 3X3.
+                intr.getBlock(auxIntr, 0, cameraNumber);
+                
+                // populate aIJ and bIJ as output of method:
+                aIJBIJ(xWCI, auxIntr, k1, k2, extrRot[j], extrTrans[j], aa, aIJ, bIJ);
+                
+                //populate  bIJT; [3X2]  aka jP^T
+                MatrixUtil.transpose(bIJ, bIJT);
+
+                // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
+                MatrixUtil.multiply(bIJT, bIJ, bIJsq);
+
+                // add jP^T*JP to upper triangular part of hPP aka V
+                // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
+                //     elementwise addition of 3X3 blocks:
+                MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);
+                
+                // populate xIJ; the observed feature i in image j
+                MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);
+                
+                //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
+                MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
+
+                 // f_i_j [2X1]
+                MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
+                outFSqSum[0] += MatrixUtil.lPSum(fIJ, 2);
+
                 // paused here
+                
             }
         }
         
@@ -547,7 +586,7 @@ public class BundleAdjustment {
      * @param k2 radial distortion coefficient 2
      * @param out output array of size [2X2]
      */
-    static void pdCpIJCIJ(double[] xWCNI, Camera.CameraIntrinsicParameters intr,
+    static void pdCpIJCIJ(double[] xWCNI, double[][] intr,
         double k1, double k2, double[][] out) {
         
         if (out.length != 2 || out[0].length != 2) {
@@ -562,7 +601,7 @@ public class BundleAdjustment {
         double y2 = y*y;
         double y4 = y2*y2;
         
-        double f1 = intr.getIntrinsic()[0][0];
+        double f1 = intr[0][0];
         
         double pdxx = f1 * (1 + k1*(3*x2 + y2) + k2*(5*x4 + y4 + 6*x2*y2));
         double pdxy = 2*f1*x*y*(k1 + 2*k2*(x2 + y2));
@@ -620,7 +659,7 @@ public class BundleAdjustment {
      * @param k2 radial distortion coefficient 2
      * @param out output array of size [2X3]
      */
-    static void pdCpIJYJ(double[] xWCNI, Camera.CameraIntrinsicParameters intr,
+    static void pdCpIJYJ(double[] xWCNI, double[][] intr,
         double k1, double k2, double[][] out) {
         
         if (out.length != 2 || out[0].length != 3) {
@@ -635,7 +674,7 @@ public class BundleAdjustment {
         double r2 = x2 + y2;
         double r4 = r2*r2;
         
-        double f1 = intr.getIntrinsic()[0][0];
+        double f1 = intr[0][0];
         
         double dis = 1 + k1*r2 + k2*r4;
         
@@ -757,11 +796,8 @@ public class BundleAdjustment {
      * @param outAIJ output array of size [2X9]
      * @param outBIJ output array of size [2X3]
      */
-    static void aIJBIJ(double[] xWCI, Camera.CameraIntrinsicParameters intr,
-        double k1, double k2, 
-        double[] phi,
-        double[] trans, 
-        AuxiliaryArrays aa,
+    static void aIJBIJ(double[] xWCI, double[][] intr, double k1, double k2, 
+        double[] phi, double[] trans, AuxiliaryArrays aa,
         double[][] outAIJ, double[][] outBIJ) {
         
         if (outAIJ.length != 2 || outAIJ[0].length != 9) {

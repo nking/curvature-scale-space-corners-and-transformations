@@ -493,28 +493,29 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              // inversion of matrix HPP (aka V*) for case (9^3)*mImages < (3^3)*nFeatures
              // consider branching here for inversion of matrix HCC (aka U*) for case (9^3)*mImages > (3^3)*nFeatures
 
+             // initializing variables for re-use
 
              init mA ;// matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
              init vB ;// vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
              init hPPI; // aka V_i; a [3X3] block
              init bPI; // aka jPTf; row j of bP; [3X1]
-             declare bIJT; //aka jP_I_J^T [3X2]
-             declare aIJT;//aka jC_I_J^T  [9X2]
-             declare bIJsq // aka jP^T*JP; [3X3]
+             init bIJT; //aka jP_I_J^T [3X2]
+             init aIJT;//aka jC_I_J^T  [9X2]
+             init bIJsq // aka jP^T*JP; [3X3]
              init aIJ; [2X9]
              init bIJ; [2X3]
-             declare bIJTF; aka bP [3X1]
-             declare aIJTF; aka bC [9X1]
+             init bIJTF; aka bP [3X1]
+             init aIJTF; aka bC [9X1]
              // outBC and outBP are the output gradient vectors -J^T*(x-x_hat) as -aIJTF and -bIJTF, respectively.
              double[] outGradC = new double[9]; // summation of aij^T*fij
              double[] outGradP = new double[3]; // summation of bij^T*fij
-             declare fIJ;// [2X1]
+             init fIJ;// [2X1]
              double outFSqSum = 0;
-             declare hPCJ; // m rows of blocks of size [3X9]
-             declare tP; // [3X1]
-             declare tPC; // [9X3]
-             declare tmp; // [9X1]
-             declare hPCIJT; // [9X3]
+             init hPCJ; // m rows of blocks of size [3X9]
+             init tP; // [3X1]
+             init tPC; // [9X3]
+             init tmp; // [9X1]
+             init hPCIJT; // [9X3]
              init tPs;// n blocks of [3X1] // i is nFeatures
              init tPCTs;// nXm blocks of [3X9] // i is nFeatures, j is mImages
 
@@ -653,8 +654,8 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  MatrixUtil.convertToRowMajor(cholU), yM);
 
              init dP // [3nX1]
-             declare dCJ // [9X1]
-             declare double[] tmp;
+             init dCJ // [9X1]
+             init double[] tmp;
              for (i=0; i<nFeatures; ++i) {
                  // start with point update for feature i, dP = tP
                  dP[i] = tPs[i];
