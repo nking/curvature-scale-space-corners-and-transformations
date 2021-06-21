@@ -437,6 +437,7 @@ public class BundleAdjustment {
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
             MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
+        double[][] auxMA = MatrixUtil.zeros(9, 9);
         
         // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
         double[][] vB = MatrixUtil.zeros(mImages, 9);
@@ -562,9 +563,30 @@ public class BundleAdjustment {
                 MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
                 outFSqSum[0] += MatrixUtil.lPSum(fIJ, 2);
 
-                // paused here
+                // subtract jP^T*f (aka bP) from bP
+                 
+                //bIJTF =  bIJT * fIJ;// [3X1]
+                MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ, bIJTF);
+                MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
                 
-            }
+                //populate aIJT; [9X2] aka jC^T
+                MatrixUtil.transpose(aIJ, aIJT);
+
+                // if camera c is free means this?
+                // if image j has feature i in it ?
+                if (!imageMissingFeaturesMap.get(j).contains(i)) {
+                    
+                    // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
+                    //mA[j][j] = aIJT * aIJ;
+                    MatrixUtil.multiply(aIJT, aIJ, auxMA);
+                    mA.setBlock(auxMA, j, j);
+
+                    //paused here
+                     
+                             
+                 }
+             } // end image j loop
+
         }
         
         
