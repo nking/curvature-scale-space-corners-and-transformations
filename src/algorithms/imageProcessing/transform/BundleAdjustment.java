@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import gnu.trove.map.TIntIntMap;
 import java.util.Arrays;
 
 /**
@@ -67,8 +68,21 @@ public class BundleAdjustment {
             a pair of stereo-images.  it also uses cholesky factoring of block
             sparse matrix structure.
      </pre>
-     * @param coordsI
-     * @param coordsW
+     * @param coordsI the features observed in different images.  The
+     * different images may or may not be from the same camera.  The image
+     * to camera relationship is defined in the associative array imageToCamera.
+     * The format of coordsI is 3 X (nFeatures*nImages). Each row should
+     * have nFeatures of one image, followed by nFeatures of the next image,
+       etc.
+     * @param coordsW the features in a world coordinate system.  The format is
+     * 3 X nFeatures.
+     * @param imageToCamera an associative array relating the image  of
+     * coordsI to the camera in intr.  the key is the image
+     * and the value is the camera.
+     * Note that the number of features (nFeatures) is coordsW[0].length, so the image
+     * number in coordsI is j/nFeatures where j is the index of the 2nd dimension,
+     * that is coordsI[j], and the camera
+     * number in intr is k/3 where k is intr[k];
      * @param intr
      * @param extrRot
      * @param extrTrans
@@ -82,6 +96,7 @@ public class BundleAdjustment {
      * @param outFSqSum 
      */
     public static void solveSparse(double[][] coordsI, double[][] coordsW,
+        TIntIntMap imageToCamera,
         double[][] intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, final int nMaxIter, boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum) {
