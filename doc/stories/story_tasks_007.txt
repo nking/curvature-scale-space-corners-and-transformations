@@ -434,7 +434,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              static public void solveSparse(double[][] coordsI, double[][] coordsW, 
                  double[][] intr, double[][] extrRot, double[][] extrTrans,
                  double[] kRadial, final int nMaxIter, boolean useR2R4,
-                 double[] outDP, double[] outDC, double[] outGradP, double[] outGradP, double[] outFSqSum)
+                 double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum)
 
            create class LevenbergMarquardtForBA.java
 

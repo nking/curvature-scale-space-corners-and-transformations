@@ -12,34 +12,82 @@ import java.util.Arrays;
  and calculates the re-projection error to form the parameter update steps,
  the gradient vector, and the evaluation of the objective (sum of squares of
  the re-projection error).
- * 
- <pre>
- additional information is present in directory doc as "bundle_adjustment.pdf"
-   and "Levenberg-Marquardt_notes.pdf"
-   
- http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
-lecture by Lourakis  “Bundle adjustment gone public”
-
-Engels, Stewenius, Nister 2006, “Bundle Adjustment Rules”
-
-Bill Triggs, Philip Mclauchlan, Richard Hartley, Andrew Fitzgibbon.
-Bundle Adjustment – A Modern Synthesis.
-International Workshop on Vision Algorithms,
-Sep 2000, Corfu, Greece. pp.298–372,
-10.1007/3-540-44480-7_21 . inria-00548290
-
-Zhongnan Qu's master thesis, "Efficient Optimization for Robust Bundle
-Adjustment", 2018 Technical University of Munich
-
-Chen, Chen, & Wang 2019, "Bundle Adjustment Revisited"
-
-T. Barfoot, et al., "Pose estimation using linearized rotations and
-quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
-    -- using the rotation and translation update details.
-</pre>
+ 
  * @author nichole
  */
 public class BundleAdjustment {
+    
+    /**
+     * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
+     * algorithm to refine the intrinsic and extrinsic camera parameters.
+     * The algorithms uses the sparse structure of the jacobian to reduce
+     * the computation time and memory needed.
+     * The code needs initial parameter estimates of intrinsic and extrinsic
+     * camera parameters (in intr, extrRot, kRadial, and extrTrans).
+       The code returns results in outGradP, outGradC,
+       outFSqSum, outDP, outDC for refined parameters
+       and the gradient, objective and parameter update steps needed by
+       code such as Levenberg-Marquardt.
+       NOTE: the code does not update the intrinsic and extrinsic camera parameters, allowing
+       the L-M algorithm to handle that.
+       The runtime complexity is ~ O(nFeatures * mImages^2)
+       assumptions used in forming the partial deivatives of the intrinsic camera parameters
+       are no skew, focal length along x is the same as focal length along y, square pixels.
+       Cholesky decomposition is used to half the runtime compared to LU decomposition.
+       Note that there can be more than one camera and should be 6 of more features per image
+       (3 for rot, 3 for trans) and among those, need 3 per camera for the intrinsic parameters
+       and 2 or more vantage points for the point parameters (no reference for these
+       numbers, just a rough estimate from counting the number of unknowns).
+     <pre>
+     References:
+     
+     additional information is present in directory doc as "bundle_adjustment.pdf"
+     and "Levenberg-Marquardt_notes.pdf"
+   
+     * http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+     lecture by Lourakis  “Bundle adjustment gone public”
+
+     Engels, Stewenius, Nister 2006, “Bundle Adjustment Rules”
+      
+     Bill Triggs, Philip Mclauchlan, Richard Hartley, Andrew Fitzgibbon. 
+     Bundle Adjustment – A Modern Synthesis. 
+     International Workshop on Vision Algorithms, 
+     Sep 2000, Corfu, Greece. pp.298–372, 
+     10.1007/3-540-44480-7_21 . inria-00548290 
+
+     Zhongnan Qu's master thesis, "Efficient Optimization for Robust Bundle 
+     Adjustment", 2018 Technical University of Munich
+     
+     Chen, Chen, & Wang 2019, "Bundle Adjustment Revisited"
+     
+     T. Barfoot, et al., "Pose estimation using linearized rotations and 
+     quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+         -- using the rotation and translation update details.
+         -- one of the 2 examples is interesting for the problem of pose for
+            a pair of stereo-images.  it also uses cholesky factoring of block
+            sparse matrix structure.
+     </pre>
+     * @param coordsI
+     * @param coordsW
+     * @param intr
+     * @param extrRot
+     * @param extrTrans
+     * @param kRadial
+     * @param nMaxIter
+     * @param useR2R4
+     * @param outDP
+     * @param outDC
+     * @param outGradP
+     * @param outGradC
+     * @param outFSqSum 
+     */
+    public static void solveSparse(double[][] coordsI, double[][] coordsW,
+        double[][] intr, double[][] extrRot, double[][] extrTrans,
+        double[] kRadial, final int nMaxIter, boolean useR2R4,
+        double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum) {
+            
+        throw new UnsupportedOperationException("not yet finished");
+    }
     
     /**
      * the partial derivative of the
