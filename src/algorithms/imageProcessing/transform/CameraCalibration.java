@@ -176,7 +176,7 @@ public class CameraCalibration {
             kExtr = cameraMatrices.getExtrinsics().get(i);
             
             // improve the extrinsic parameter estimates:
-            extrinsic = LevenbergMarquardtForPNP.solveForPose(cI, coordsW, kIntr, 
+            extrinsic = PNP.solveForPose(cI, coordsW, kIntr, 
                 kExtr, kRadial, nMaxIter, useR2R4);
             
             cameraMatrices.getExtrinsics().set(i, extrinsic);

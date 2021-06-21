@@ -24,7 +24,7 @@ import no.uib.cipr.matrix.NotConvergedException;
  * 
  * @author nichole
  */
-public class LevenbergMarquardtForPNP {
+public class PNP {
     
     /**
      * NOT YET TESTED.

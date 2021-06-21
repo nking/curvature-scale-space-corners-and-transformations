@@ -296,7 +296,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
    time estimate: minimum 8 hours, maximum ?  day
   
-   amount of time used: 1 month for reading + 5 days for design + ? days for implementation 
+   amount of time used: 1 month for reading + 5 days for design + ? (start 6/18) days for implementation 
 
    state of completion: finished design stage. beginning implementation.
 
@@ -439,19 +439,10 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  double[] kRadial, boolean useR2R4,
                  double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum)
 
-           create class LevenbergMarquardtForBA.java
-
-           add to LevenbergMarquardtForBA.java
-               static class BA with members
-                   double[][] intr;
-                   double[][] extrRot;
-                   double[][] extrTrans;
-                   double[] radial;
-                   boolean useR2R4;
-                   double err;
-
-           add to LevenbergMarquardtForBA.java
-             static public BA solveUsingSparse(double[][] coordsI, double[][] coordsW,
+             static public BA solveSparsely(
+                 ouble[][] coordsI, double[][] coordsW,
+                 TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
+                 double[][] intr, double[][] extrRot, double[][] extrTrans, double[] kRadial, 
                 final int nMaxIter, boolean useR2R4)
 
         details of the methods:
@@ -478,7 +469,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              -- implemented from Qu 2018
                 Assumptions:  no skew, square pixels, f=f_x=f_y
 
-           details of the BundleAdjustment.solveSparse(...) method:
+           details of the BundleAdjustment.calculateLMVectorsSparsely(...) method:
              -- following the Engels pseudocode for solving for the parameter vector via the
                 reduced camera matrix and cholesky factoring with forward and back substitution
                 to avoid inverting the reduced camera matrix.
@@ -679,7 +670,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              // dP and dC are the updating vectors for L-M
              -----------
 
-           details of the LevenbergMarquardtForBA.solveSparse(...) method:
+           details of the BundelAdjustment.solveSparsely(...) method:
 
              static public BA solveUsingSparse(double[][] coordsI, double[][] coordsW,
                 final int nMaxIter, boolean useR2R4)

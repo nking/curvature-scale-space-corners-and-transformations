@@ -5,6 +5,7 @@ import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
 import java.util.Arrays;
+import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  given intrinsic and extrinsic camera parameters, coordinates for points
@@ -21,6 +22,224 @@ import java.util.Arrays;
 public class BundleAdjustment {
     
     /**
+     * given initial camera calibration and extrinsic parameters, use the 
+     * iterative non-linear Levenberg-Marquardt (L-M)
+     * algorithm to minimize the re-projection error by finding the best values of
+     * intrinsic and extrinsic camera parameters.
+     * 
+     * The L-M is an iterative non-linear optimization to minimize the 
+     * objective.  For bundle adjustment, the objective is the 
+     * re-projection error.
+ * L-M is guaranteed to converge to eventually find an improvement, 
+ * because an update with a sufficiently small magnitude and a negative scalar 
+ * product with the gradient is guaranteed to do so.
+     * 
+     * 
+     * This method exploits some of the properties of sparse matrices in the 
+     * block structure of the Jacobian by using the Schur complement to form
+     * reduced camera matrices which can be solved by Cholesky factoring and
+     * forward and backward substitution (halving the computation time for the
+     * parameter vector).
+     * Regarding the bundle adjustment as refinement for extrinsic parameters:
+        <pre>
+            However, several researchers have noted (Fitzgibbon and 
+            Zisserman, 1998, Nistér, 2001, Pollefeys, 1999) that in the 
+            application of camera tracking, performing bundle adjustment each 
+            time a new frame has been added to the estimation can prevent the 
+            tracking process from failing over time. 
+            Thus, bundle adjustment can over time in a sequential estimation 
+            process have a much more dramatic impact than mere accuracy 
+            improvement, since it improves the initialization for future 
+            estimates, which can ultimately enable success in cases that would 
+            otherwise miserably fail.
+        </pre>
+     <pre>
+     References:
+     
+     http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+     lecture by Lourakis  “Bundle adjustment gone public”
+
+     Engels, Stewenius, Nister 2006, “Bundle Adjustment Rules”
+      
+     Bill Triggs, Philip Mclauchlan, Richard Hartley, Andrew Fitzgibbon. 
+     Bundle Adjustment – A Modern Synthesis. 
+     International Workshop on Vision Algorithms, 
+     Sep 2000, Corfu, Greece. pp.298–372, 
+     10.1007/3-540-44480-7_21 . inria-00548290 
+
+     Zhongnan Qu's master thesis, "Efficient Optimization for Robust Bundle 
+     Adjustment", 2018 Technical University of Munich
+     
+     Chen, Chen, & Wang 2019, "Bundle Adjustment Revisited"
+     
+     T. Barfoot, et al., "Pose estimation using linearized rotations and 
+     quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+         -- using the rotation and translation update details.
+         -- one of the 2 examples is interesting for the problem of pose for
+            a pair of stereo-images.  it also uses cholesky factoring of block
+            sparse matrix structure.
+           
+     Tomasi 2007,CPS 296.1 Supplementary Lectur Notes, Duke University
+     
+     Useful mention of graph partioning in:
+        https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
+        recursive partitioning w/ elimination graph and vertex cut.
+     Graph partitioning in this project:
+        NormalizedCuts.java which uses the Fiedler vector of the Laplacian.
+        UnweightedGraphCommunityFinder.java
+        
+     </pre>
+     @param coordsI the features observed in different images (in coordinates 
+     * of the image reference frame).  The
+     * different images may or may not be from the same camera.  The image
+     * to camera relationship is defined in the associative array imageToCamera.
+     * The format of coordsI is 3 X (nFeatures*nImages). Each row should
+     * have nFeatures of one image, followed by nFeatures of the next image,
+       etc.  The first dimension is for the x,y, and z axes.
+       Note that if a feature is not present in the image, that should be
+       an entry in imageMissingFeatureMap.
+     * @param coordsW the features in a world coordinate system.  The format is
+     * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
+     * @param imageToCamera an associative array relating the image  of
+     * coordsI to the camera in intr.  the key is the image
+     * and the value is the camera.
+     * Note that the number of features (nFeatures) is coordsW[0].length, so the image
+     * number in coordsI is j/nFeatures where j is the index of the 2nd dimension,
+     * that is coordsI[j], and the camera
+     * number in intr is k/3 where k is intr[k];
+     * @param imageMissingFeaturesMap an associative array holding the features
+     * that are missing from an image.  They key is the image number in coordsI 
+     * which is j/nFeatures where j is the index of the 2nd dimension,
+     * that is coordsI[j].  The value is a set of feature numbers which are
+     * missing from the image.  The feature numbers correspond to the 
+     * 2nd dimension indexes in coordsW.
+     * @param intr the intrinsic camera parameter matrices stacked along
+     * rows in a double array of size 3 X nCameras.
+     * @param extrRot the extrinsic camera parameter rotation euler angles
+     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * nImages is coordsI[0].length/coordsW[0].length.
+     * @param extrTrans the extrinsic camera parameter translation vectors
+     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * nImages is coordsI[0].length/coordsW[0].length.
+     * @param kRadial an array holding radial distortion coefficients k1 and k2.
+     * NOTE: current implementation accepts values of 0 for k1 and k2.
+     * TODO: consider whether to allow option of leaving out radial distortion
+     * by allowing kRadial to be null.
+     * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+     * @param nMaxIter
+     * 
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     */
+    public static void solveUsingSparse(
+        double[][] coordsI, double[][] coordsW,
+        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
+        double[][] intr, double[][] extrRot, double[][] extrTrans,
+        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        throws NotConvergedException, Exception {
+        
+        // number of features:
+        int m = coordsW[0].length;
+        
+        if (m < 4) {
+            throw new IllegalArgumentException("imageC[0].length must be at least 4");
+        }
+        
+        int nImages = coordsI[0].length/m;
+       
+        if (nImages < 2) {
+            throw new IllegalArgumentException("need at least 2 images");
+        }
+        
+        if ((coordsI[0].length % m) > 0) {
+            throw new IllegalArgumentException("the number of images present in coordsI should"
+            + " be evenly divided by the number of features in coordsW (that is, coordsI should"
+            + " have that same number of features for each image)");
+        }
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI must have 3 rows.");
+        }
+        if (coordsW.length != 3) {
+            throw new IllegalArgumentException("coordsW must have 3 rows.");
+        }
+        
+        // TODO: look into methods in MTJ
+        
+        /*
+        RCM is the reduced camera matrix in the augmented normal equation.
+        
+        The RCM can be solved without inverting A since it is a sparse matrix:
+              https://www.cvg.ethz.ch/teaching/3dvision/2014/slides/class06eth14.pdf
+              Sparse Matrix factorization:
+                  (1) LU factorization: A = L*U where original equation is A*x = b
+                      (a) use LU decomposition to solve L,U = luDecomp(A)
+                      (b) let c = U*x and rewrite A*x=b as L*c = b.
+                            then solve c from forward elimination
+                      (c) solve x from back substitution in c = U*x
+                  (2) QR factorization: A = Q*R
+                  (3) Cholesky factorization:A = L*L^T
+                  Some details for the above 3 are in Triggs et al. 1999/2000 Appendix B and near page 23
+                  ("Bundle Ajustment – A Modern Synthesis",
+                  Springer-Verlag, pp.298–372, 2000, 
+                  Lecture Notes in Computer Science (LNCS), 
+                  10.1007/3-540-44480-7_21. inria-00590128)
+                  https://hal.inria.fr/file/index/docid/590128/filename/Triggs-va99.pdf
+              Or Iterative methods:
+                  (1) Conjugate Gradient
+                  (2) Gauss-Seidel
+        
+              consider Google Ceres  https://code.google.com/p/ceres-solver/
+              or Lourakis SBA
+        
+             more suggestions in http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+               (1) Store as dense, decompose with ordinary linear algebra ◦
+                    M. Lourakis, A. Argyros: SBA: A Software Package For Generic 
+                       Sparse Bundle Adjustment. ACM Trans. Math. Softw. 36(1): (2009) ◦ 
+                    C. Engels, H. Stewenius, D. Nister: Bundle Adjustment Rules. 
+                       Photogrammetric Computer Vision (PCV), 2006. 
+               (2) Store as sparse, factorize with sparse direct solvers ◦ 
+                    K. Konolige: Sparse Sparse Bundle Adjustment. BMVC 2010: 1-11
+               (3) Store as sparse, use conjugate gradient methods memory efficient, 
+                    iterative, precoditioners necessary! ◦ 
+                    S. Agarwal, N. Snavely, S.M. Seitz, R. Szeliski: 
+                       Bundle Adjustment in the Large. ECCV (2) 2010: 29-42 ◦ 
+                    M. Byrod, K. Astrom: Conjugate Gradient Bundle Adjustment. 
+                       ECCV (2) 2010: 114-127 
+               (4) Avoid storing altogether ◦ 
+                    C. Wu, S. Agarwal, B. Curless, S.M. Seitz: Multicore Bundle 
+                       Adjustment. CVPR 2011: 30 57-3064 ◦ 
+                    M. Lourakis: Sparse Non-linear Least Squares Optimization 
+                       for Geometric Vision. ECCV (2) 2010: 43-56
+        
+              and computer vision library in java http://boofcv.org/index.php?title=Example_Sparse_Bundle_Adjustment
+              there is also a java binding for SBA http://seinturier.fr/jorigin/jsba.html
+        
+              http://users.ics.forth.gr/~lourakis/sparseLM/
+        
+            And more suggestsions in Qu:
+               (1) LMA-Cholesky-Decomposition
+               (2) Inexact increment step solved by Preconditioned Conjugate Gradient 
+               (3) Local parameterization
+               (4) IRLS
+               (5) (Adaptive) DINM algorithm and DINM with local parameterization
+               (6)
+        */
+        
+        //TODO: consider adding constraints suggestded in Seliski 2010:
+        // u_0 and v_0 are close to half the image lengths and widths, respectively.
+        // the angle between 2 image axes is close to 90.
+        // the focal lengths along both axes are greater than 0.
+        
+       
+                
+        throw new UnsupportedOperationException("not yet finished");
+    }
+    
+    /**
      * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
      * algorithm to refine the intrinsic and extrinsic camera parameters.
      * The algorithms uses the sparse structure of the jacobian to reduce
@@ -34,9 +253,11 @@ public class BundleAdjustment {
        NOTE: the code does not update the intrinsic and extrinsic camera parameters, allowing
        the L-M algorithm to handle that.
        The runtime complexity is ~ O(nFeatures * mImages^2)
-       assumptions used in forming the partial deivatives of the intrinsic camera parameters
+       assumptions used in forming the partial derivatives of the intrinsic camera parameters
        are no skew, focal length along x is the same as focal length along y, square pixels.
-       Cholesky decomposition is used to half the runtime compared to LU decomposition.
+       Cholesky decomposition is used with forward and back substitution
+       to avoid inverting the reduced camera matrix
+       and to half the runtime compared to LU decomposition
        Note that there can be more than one camera and should be 6 of more features per image
        (3 for rot, 3 for trans) and among those, need 3 per camera for the intrinsic parameters
        and 2 or more vantage points for the point parameters (no reference for these
@@ -115,14 +336,16 @@ public class BundleAdjustment {
      * The length should be 9*mImages.
      * @param outGradP an output array holding the gradient vector for point parameters
      *  (summation of bij^T*fij).  The length should be 3.
+     * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outGradC an output array holding the gradient vector for camera parameters
      *  (summation of aij^T*fij).  The length should be 9.
+     * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria
      * @param outFSqSum and output array holding the evaluation of the objective,
      * that is the sum of squares of the observed feature - projected feature.
      * It's the re-projection error.
      * The length should be 1.
      */
-    public static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+    static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
         double[][] intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, boolean useR2R4,
