@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.matrix.BlockMatrixIsometric;
 import algorithms.matrix.MatrixUtil;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
@@ -135,7 +136,7 @@ public class BundleAdjustment {
      * error message from the MPSolve documentation.
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
-    public static void solveUsingSparse(
+    public static void solveSparsely(
         double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
         double[][] intr, double[][] extrRot, double[][] extrTrans,
@@ -316,7 +317,7 @@ public class BundleAdjustment {
      * missing from the image.  The feature numbers correspond to the 
      * 2nd dimension indexes in coordsW.
      * @param intr the intrinsic camera parameter matrices stacked along
-     * rows in a double array of size 3 X nCameras.
+     * rows in a double array of size 3 X 3*nCameras.
      * @param extrRot the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.
@@ -335,11 +336,12 @@ public class BundleAdjustment {
      * @param outDC an output array holding the update values for the camera parameters.
      * The length should be 9*mImages.
      * @param outGradP an output array holding the gradient vector for point parameters
-     *  (summation of bij^T*fij).  The length should be 3.
+     *  (-J^T*(x-x_hat) as the summation of bij^T*fij).  The length should be 3.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outGradC an output array holding the gradient vector for camera parameters
-     *  (summation of aij^T*fij).  The length should be 9.
-     * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria
+     * (-J^T*(x-x_hat) as the summation of aij^T*fij).
+     * The length should be 9.
+     * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outFSqSum and output array holding the evaluation of the objective,
      * that is the sum of squares of the observed feature - projected feature.
      * It's the re-projection error.
@@ -354,6 +356,155 @@ public class BundleAdjustment {
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
         int nCameras = intr[0].length/3;
+        double k1 = kRadial[0];
+        double k2 = kRadial[1];
+        
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI.length must be 3");
+        }
+        if (coordsW.length != 3) {
+            throw new IllegalArgumentException("coordsW.length must be 3");
+        }
+        if (coordsI[0].length != nFeatures*mImages) {
+            throw new IllegalArgumentException("coordsI[0].length must be evenly "
+                    + "divisible by nFeatures which is coordsW[0].length");
+        }
+        if (intr[0].length != 3) {
+            throw new IllegalArgumentException("intr[0].length must be 3");
+        }
+        if (extrRot[0].length != 3) {
+            throw new IllegalArgumentException("extrRot[0].length must be 3");
+        }
+        if (extrRot.length != mImages) {
+            throw new IllegalArgumentException("extrRot.length must be mImages "
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (extrTrans[0].length != 3) {
+            throw new IllegalArgumentException("extrTrans[0].length must be 3");
+        }
+        if (extrTrans.length != mImages) {
+            throw new IllegalArgumentException("extrTrans.length must be mImages "
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (kRadial.length != 2) {
+            throw new IllegalArgumentException("kRadial.length must be 2.");
+        }
+        
+        if (outDP.length != 3*nFeatures) {
+            throw new IllegalArgumentException("outDP.length must be 3*nFeatures "
+                    + "where nFeatures=coordsW[0].length");
+        }
+        if (outDC.length != 9*mImages) {
+            throw new IllegalArgumentException("outDC.length must be 9*mImages "
+                    + "where mImages=coordsI[0].length/coordsW[0].length");
+        }
+        if (outGradP.length != 3) {
+            throw new IllegalArgumentException("outGradP.length must be 3");
+        }
+        if (outGradC.length != 9) {
+            throw new IllegalArgumentException("outGradC.length must be 9");
+        }
+        if (outFSqSum.length != 1) {
+            throw new IllegalArgumentException("outFSqSum.length must be 1");
+        } 
+        if (imageToCamera == null) {
+            throw new IllegalArgumentException("imageToCamera cannot be null");
+        }
+        if (imageMissingFeaturesMap == null) {
+            throw new IllegalArgumentException("imageMissingFeaturesMap cannot be null");
+        }
+                
+        /*
+        following the Engels pseudocode for solving for the parameter vector via the
+                reduced camera matrix and cholesky factoring with forward and back substitution
+                to avoid inverting the reduced camera matrix.
+        
+        The partial derivatives are implemented following Qu 2018.
+        The assumptions are no skew, square pixels, f=f_x=f_y.
+        
+        The factorization is of the reduced camera matrix of the Schur decomposition
+        as it is often assumed that (9^3)*mImages < (3^3)*nFeatures, so one
+        inverts the matrix HPP (aka V*).
+        TODO: consider branching if case (9^3)*mImages > (3^3)*nFeatures
+        in order to invert matrix HCC (aka U*) instead of matrix HPP.
+        
+        */
+        
+        // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
+        BlockMatrixIsometric mA = new BlockMatrixIsometric(
+            MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
+        
+        // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
+        double[][] vB = MatrixUtil.zeros(mImages, 9);
+        
+        // aka V_i; a [3X3] block
+        double[][] hPPI = MatrixUtil.zeros(3, 3); 
+        
+        // aka jPTf; row j of bP; [3X1]
+        double[] bPI = new double[3];
+        
+        //aka jP_I_J^T [3X2]
+        double[][] bIJT;
+        //aka jC_I_J^T  [9X2]
+        double[][] aIJT;
+        // aka jP^T*JP; [3X3]
+        double[][] bIJsq;
+        
+        //[2X9]
+        double[][] aIJ = MatrixUtil.zeros(2, 9);
+        //[2X3]
+        double[][] bIJ = MatrixUtil.zeros(2, 3);
+
+        //aka bP [3X1]
+        double[] bIJTF = new double[3];
+        //aka bC [9X1]
+        double[] aIJTF = new double[9];
+         
+        // [2X1]
+        double[] fIJ;
+        
+        //m rows of blocks of size [3X9]
+        double[][] hPCJ; 
+        // [3X1]
+        double[] tP; 
+        // [9X3]
+        double[][] tPC; 
+        // [9X1]
+        double[] tmp; 
+        // [9X3]
+        double[][] hPCIJT; 
+        
+        // n blocks of [3X1] // i is nFeatures
+        double[][] tPs = MatrixUtil.zeros(nFeatures, 3);
+        // nXm blocks of [3X9] // i is nFeatures, j is mImages
+        BlockMatrixIsometric tPCTs = new BlockMatrixIsometric(
+            MatrixUtil.zeros(nFeatures*3, mImages*9), 3, 9);
+
+        double[] xWI, xWCI, xWCNI, xWCNDI;
+        
+        // i for n features, for m images
+        int i, j; 
+             
+        //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
+        for (i = 0; i < nFeatures; ++i) { // this is variable p in Engels pseudocode
+            //reset hPPI to 0's; [3x3]// a.k.a. V*_i.
+            MatrixUtil.fill(hPPI, 0);
+            //reset bPI to 0's; //[3X1]
+            Arrays.fill(bPI, 0);
+            
+            // extract the world feature.  size [1X3]
+            xWI = MatrixUtil.extractColumn(coordsW, i);
+            //transform to camera reference frame. size [1X3]
+            xWCI = Camera.worldToCameraCoordinates(xWI, extrinsics);
+            // normalize
+            xWCNI = xWCI/xWCI[2];
+                 // distort
+                 xWCNDI = CameraCalibration.applyRadialDistortion(xWCNI, 
+                     k1, k2, useR2R4);
+
+                 for (j=0; j<mImages; ++j) {
+        }
+        
         
         throw new UnsupportedOperationException("not yet finished");
     }

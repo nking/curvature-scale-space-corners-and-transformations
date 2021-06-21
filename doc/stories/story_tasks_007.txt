@@ -670,7 +670,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              // dP and dC are the updating vectors for L-M
              -----------
 
-           details of the BundelAdjustment.solveSparsely(...) method:
+           details of the BundleAdjustment.solveSparsely(...) method:
 
              static public BA solveUsingSparse(double[][] coordsI, double[][] coordsW,
                 final int nMaxIter, boolean useR2R4)
