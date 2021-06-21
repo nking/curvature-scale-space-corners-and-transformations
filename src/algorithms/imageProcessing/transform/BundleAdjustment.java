@@ -266,19 +266,19 @@ public class BundleAdjustment {
      */
     static void aIJBIJ(double[] xWCI, Camera.CameraIntrinsicParameters intr,
         double k1, double k2, 
-        //double[][] rot, 
         double[] phi,
-        double[] trans,
+        double[] trans, 
+        AuxiliaryArrays aa,
         double[][] outAIJ, double[][] outBIJ) {
-        
- //TODO: look at array creation to consider passing in arrays used in
- // partial derivatives.
         
         if (outAIJ.length != 2 || outAIJ[0].length != 9) {
             throw new IllegalArgumentException("outAIJ size must be 2X9");
         }
         if (outBIJ.length != 2 || outBIJ[0].length != 3) {
             throw new IllegalArgumentException("outBIJ size must be 2X3");
+        }
+        if (aa == null) {
+            throw new IllegalArgumentException("aa cannot be null");
         }
         
         double[] xWCNI = Arrays.copyOf(xWCI, xWCI.length);
@@ -287,31 +287,74 @@ public class BundleAdjustment {
             xWCNI[i] /= xWCNI[2];
         }
         
-        double[][] dCPdC = MatrixUtil.zeros(2, 2);
+        // 2X2
+        double[][] dCPdC = aa.a2X2;
         pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);
         
-        double[][] dCdX = MatrixUtil.zeros(2, 3);
+        // 2X3
+        double[][] dCdX = aa.b2X3;
         pdCIJXWIJ(xWCI, dCdX);
         
-        double[][] dCPdY = MatrixUtil.zeros(2, 3);
+        // 2X3
+        double[][] dCPdY = aa.c2X3;
         pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);
         
-        double[][] dXdP = MatrixUtil.zeros(3, 3);
+        // 3X3
+        double[][] dXdP = aa.d3X3;
         pdXWIJPhiJ(xWCI, phi, dXdP);
        
-        // [2X3]
-        double[][] dFdT = MatrixUtil.multiply(dCPdC, dCdX);
+        //========================================
         
         // [2X3]
-        double[][] dFdPhi = MatrixUtil.multiply(dFdT, dXdP);
+        double[][] dFdT = aa.e2X3;
+        MatrixUtil.multiply(dCPdC, dCdX, dFdT);
+        
+        // [2X3]
+        double[][] dFdPhi = aa.f2X3;
+        MatrixUtil.multiply(dFdT, dXdP, dFdPhi);
         
         // [2X3]
         double[][] dFdY = dCPdY;
         
-        double[][] rot = Rotation.calculateRotationZYX(phi);
+        // 3X3
+        double[][] rot = aa.g3X3;
+        Rotation.calculateRotationZYX(phi, aa.aa, rot);
         
         // [2X3]
-        double[][] dFdX = MatrixUtil.multiply(dFdT, rot);
+        double[][] dFdX = aa.h2X3;
+        MatrixUtil.multiply(dFdT, rot, dFdX);
         
+        //------
+        // a holds camera parameters.  it's 2X9.  phi, t, y(=f, k1, f2)
+        // b hold point parameters.    it's 2X3.  x
+        for (i = 0; i < 2; ++i) {
+            System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, dFdPhi[i].length);
+            System.arraycopy(dFdT[i], 0, outAIJ[i], 3, dFdT[i].length);
+            System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);
+            System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);
+        }
+    }
+    
+    static class AuxiliaryArrays {
+        final double[][] a2X2;
+        final double[][] b2X3;
+        final double[][] c2X3;
+        final double[][] d3X3;
+        final double[][] e2X3;
+        final double[][] f2X3;
+        final double[][] g3X3;
+        final double[][] h2X3;
+        final Rotation.AuxiliaryArrays aa;
+        public AuxiliaryArrays() {
+            a2X2 = MatrixUtil.zeros(2, 2);
+            b2X3 = MatrixUtil.zeros(2, 3);
+            c2X3 = MatrixUtil.zeros(2, 3);
+            d3X3 = MatrixUtil.zeros(3, 3);
+            e2X3 = MatrixUtil.zeros(2, 3);
+            f2X3 = MatrixUtil.zeros(2, 3);
+            g3X3 = MatrixUtil.zeros(3, 3);
+            h2X3 = MatrixUtil.zeros(2, 3);
+            aa = new Rotation.AuxiliaryArrays();
+        }
     }
 }

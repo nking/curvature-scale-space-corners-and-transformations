@@ -62,6 +62,38 @@ public class Rotation {
     }
     
     /**
+     * create matrix for rotation about the X-axis, a.k.a. roll.
+       <pre>
+       about x-axis (roll):       
+       |    1       0       0 |  
+       |    0   cos θ   sin θ |  
+       |    0  -sin θ   cos θ | 
+       </pre>
+     * @param angle angle of rotation about x-axis (roll) in units of radians.
+     * @param out holds values for rotation matrix for roll. 
+     */
+    public static void createEulerRollRotationMatrix(double angle, double[][] out) {
+
+        if (out.length != 3 || out[0].length != 3) {
+            throw new IllegalArgumentException("out must be 3x3");
+        }
+        
+        
+        double c = Math.cos(angle);
+        double s = Math.sin(angle);
+        
+        out[0][0] = 1;
+        out[0][1] = 0;
+        out[0][2] = 0;
+        out[1][0] = 0;
+        out[1][1] = c;
+        out[1][2] = s;
+        out[2][0] = 0;
+        out[2][1] = -s;
+        out[2][2] = c;        
+    }        
+    
+    /**
     create matrix for rotation about the Y-axis, a.k.a. pitch.
       <pre>
       about the y-axis (pitch):
@@ -89,6 +121,38 @@ public class Rotation {
     }
     
     /**
+    create matrix for rotation about the Y-axis, a.k.a. pitch.
+      <pre>
+      about the y-axis (pitch):
+      |  cos ψ    0  sin ψ |
+      |      0    1      0 |
+      | -sin ψ    0  cos ψ |
+      </pre>
+     * @param angle angle of rotation about y-axis (pitch) in units of radians.
+     * @param out holds values for rotation matrix for pitch 
+    */
+    public static void createEulerPitchRotationMatrix(double angle, 
+        double[][] out) {
+
+        if (out.length != 3 || out[0].length != 3) {
+            throw new IllegalArgumentException("out must be 3x3");
+        }
+        
+        double c = Math.cos(angle);
+        double s = Math.sin(angle);
+        
+        out[0][0] = c;
+        out[0][1] = 0;
+        out[0][2] = s;
+        out[1][0] = 0;
+        out[1][1] = 1;
+        out[1][2] = 0;
+        out[2][0] = -s;
+        out[2][1] = 0;
+        out[2][2] = c;        
+    }
+    
+    /**
     create matrix for rotation about the Z-axis, a.k.a. yaw.
       <pre>
         about z-axis (yaw):          
@@ -113,6 +177,39 @@ public class Rotation {
         rot[2][2] = 1;
         
         return rot;
+    }
+    
+    /**
+    create matrix for rotation about the Z-axis, a.k.a. yaw.
+      <pre>
+        about z-axis (yaw):          
+            | cos φ   -sin φ    0 | 
+            | sin φ    cos φ    0 | 
+            |     0        0    1 | 
+      </pre>
+     * @param angle angle of rotation about z-axis (yaw) in units of radians.
+     * @param out results for a rotation matrix for yaw.  size given to method 
+     * must be 3X3.
+    */
+    public static void createEulerYawRotationMatrix(double angle, double[][] out) {
+
+        if (out.length != 3 || out[0].length != 3) {
+            throw new IllegalArgumentException("out must be 3x3");
+        }        
+        
+        double c = Math.cos(angle);
+        double s = Math.sin(angle);
+        
+        out[0][0] = c;
+        out[0][1] = -s;
+        out[0][2] = 0;
+        out[1][0] = s;
+        out[1][1] = c;
+        out[1][2] = 0;
+        out[2][0] = 0;
+        out[2][1] = 0;
+        out[2][2] = 1;
+        
     }
     
     /**
@@ -718,6 +815,46 @@ public class Rotation {
     
     /**
      * given an array of euler rotation angles, return the rotation matrix
+     * as the rotations for z, y, x multiplied in that order.
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (18)
+     * 
+     * where  
+     *  about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+     * </pre>
+     * @param thetas euler rotation angles
+     * @param aa auxiliary arrays used for internal calculations.  they're
+     * meant to reduce object creation and are created by the invoking code.
+     * @param out the output rotation matrix values.
+     */
+    public static void calculateRotationZYX(double[] thetas, AuxiliaryArrays aa, double[][] out) {
+        if (thetas.length != 3) {
+            throw new IllegalArgumentException("thetas must be length 3");
+        }
+        
+        double[][] rZ = aa.a3X3;
+        Rotation.createEulerYawRotationMatrix(thetas[2], rZ);
+        
+        double[][] rY = aa.b3X3;
+        Rotation.createEulerPitchRotationMatrix(thetas[1], rY);
+        
+        double[][] rX = aa.c3X3;
+        Rotation.createEulerRollRotationMatrix(thetas[0], rX);
+        
+        double[][] rZY = aa.d3X3;
+        MatrixUtil.multiply(rZ, rY, rZY);
+        MatrixUtil.multiply(rZY, rX, out);        
+    }
+    
+    
+    /**
+     * given an array of euler rotation angles, return the rotation matrix
      * as the rotations for x, y, z multiplied in that order.
      * <pre>
      * 
@@ -743,6 +880,19 @@ public class Rotation {
         double[][] r = MatrixUtil.multiply(rX, MatrixUtil.multiply(rY, rZ));
         
         return r;
+    }
+    
+    public static class AuxiliaryArrays {
+        final double[][] a3X3;
+        final double[][] b3X3;
+        final double[][] c3X3;
+        final double[][] d3X3;
+        public AuxiliaryArrays() {
+            a3X3 = MatrixUtil.zeros(3, 3);
+            b3X3 = MatrixUtil.zeros(3, 3);
+            c3X3 = MatrixUtil.zeros(3, 3);
+            d3X3 = MatrixUtil.zeros(3, 3);
+        }
     }
     
 }
