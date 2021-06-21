@@ -261,6 +261,8 @@ public class BundleAdjustment {
      * @param phi the rotation angles.  formed from 
      * phi = Rotation.extractRotation(rot);
      * @param trans extrinsic camera parameter translation vector.
+     * @param aa a group of arrays passed in by invoking code, re-used to avoid
+     * constructing more objects.  AuxiliaryArrays aa = AuxiliaryArrays().
      * @param outAIJ output array of size [2X9]
      * @param outBIJ output array of size [2X3]
      */
