@@ -2,6 +2,8 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
 import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.set.TIntSet;
 import java.util.Arrays;
 
 /**
@@ -68,14 +70,17 @@ public class BundleAdjustment {
             a pair of stereo-images.  it also uses cholesky factoring of block
             sparse matrix structure.
      </pre>
-     * @param coordsI the features observed in different images.  The
+     * @param coordsI the features observed in different images (in coordinates 
+     * of the image reference frame).  The
      * different images may or may not be from the same camera.  The image
      * to camera relationship is defined in the associative array imageToCamera.
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
      * have nFeatures of one image, followed by nFeatures of the next image,
-       etc.
+       etc.  The first dimension is for the x,y, and z axes.
+       Note that if a feature is not present in the image, that should be
+       an entry in imageMissingFeatureMap.
      * @param coordsW the features in a world coordinate system.  The format is
-     * 3 X nFeatures.
+     * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
      * @param imageToCamera an associative array relating the image  of
      * coordsI to the camera in intr.  the key is the image
      * and the value is the camera.
@@ -83,24 +88,50 @@ public class BundleAdjustment {
      * number in coordsI is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j], and the camera
      * number in intr is k/3 where k is intr[k];
-     * @param intr
-     * @param extrRot
-     * @param extrTrans
-     * @param kRadial
-     * @param nMaxIter
-     * @param useR2R4
-     * @param outDP
-     * @param outDC
-     * @param outGradP
-     * @param outGradC
-     * @param outFSqSum 
+     * @param imageMissingFeaturesMap an associative array holding the features
+     * that are missing from an image.  They key is the image number in coordsI 
+     * which is j/nFeatures where j is the index of the 2nd dimension,
+     * that is coordsI[j].  The value is a set of feature numbers which are
+     * missing from the image.  The feature numbers correspond to the 
+     * 2nd dimension indexes in coordsW.
+     * @param intr the intrinsic camera parameter matrices stacked along
+     * rows in a double array of size 3 X nCameras.
+     * @param extrRot the extrinsic camera parameter rotation euler angles
+     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * nImages is coordsI[0].length/coordsW[0].length.
+     * @param extrTrans the extrinsic camera parameter translation vectors
+     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * nImages is coordsI[0].length/coordsW[0].length.
+     * @param kRadial an array holding radial distortion coefficients k1 and k2.
+     * NOTE: current implementation accepts values of 0 for k1 and k2.
+     * TODO: consider whether to allow option of leaving out radial distortion
+     * by allowing kRadial to be null.
+     * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+     * @param outDP an output array holding the update values for the point parameters.
+     * The length should be 3*nFeatures.
+     * @param outDC an output array holding the update values for the camera parameters.
+     * The length should be 9*mImages.
+     * @param outGradP an output array holding the gradient vector for point parameters
+     *  (summation of bij^T*fij).  The length should be 3.
+     * @param outGradC an output array holding the gradient vector for camera parameters
+     *  (summation of aij^T*fij).  The length should be 9.
+     * @param outFSqSum and output array holding the evaluation of the objective,
+     * that is the sum of squares of the observed feature - projected feature.
+     * It's the re-projection error.
+     * The length should be 1.
      */
-    public static void solveSparse(double[][] coordsI, double[][] coordsW,
-        TIntIntMap imageToCamera,
+    public static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
         double[][] intr, double[][] extrRot, double[][] extrTrans,
-        double[] kRadial, final int nMaxIter, boolean useR2R4,
+        double[] kRadial, boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum) {
             
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length/nFeatures;
+        int nCameras = intr[0].length/3;
+        
         throw new UnsupportedOperationException("not yet finished");
     }
     
