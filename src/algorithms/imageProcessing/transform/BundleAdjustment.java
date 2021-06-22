@@ -355,7 +355,7 @@ public class BundleAdjustment {
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, boolean useR2R4,
-        double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum) {
+        double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum) throws NotConvergedException {
             
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -444,6 +444,8 @@ public class BundleAdjustment {
         
         // aka V_i; a [3X3] block
         double[][] hPPI = MatrixUtil.zeros(3, 3); 
+        //aka (V_i)^-1; a [3X3] block
+        double[][] invHPPI;
         
         // aka jPTf; row j of bP; [3X1]
         double[] bPI = new double[3];
@@ -474,7 +476,7 @@ public class BundleAdjustment {
         double[][] auxHPCJ = MatrixUtil.zeros(3, 9);
         
         // [3X1]
-        double[] tP; 
+        double[] tP = new double[3]; 
         // [9X3]
         double[][] tPC; 
         // [9X1]
@@ -482,7 +484,7 @@ public class BundleAdjustment {
         // [9X3]
         double[][] hPCIJT; 
         
-        // n blocks of [3X1] // i is nFeatures
+        // n blocks of [1X3] // i is nFeatures
         double[][] tPs = MatrixUtil.zeros(nFeatures, 3);
         // nXm blocks of [3X9] // i is nFeatures, j is mImages
         BlockMatrixIsometric tPCTs = new BlockMatrixIsometric(
@@ -602,9 +604,21 @@ public class BundleAdjustment {
                 }
             } // end image j loop
 
-           // paused here
-            //invert hPPI // hPP is V* // [3X3]
-            //invHPPI = hppI; // invert the diagonal block for feature i;
+            //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
+            invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
+            
+            // hPPI^-1 * bPI is V^-1*bPI // [3X3][3X1] = [3X1]
+            //tP = invHPPI * bPI;
+            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tP);
+            
+            //tPs[i] = tP;
+            System.arraycopy(tP, 0, tPs[i], 0, tP.length);
+
+            // outer product of feature i
+            // for each free camera means? in context of a use case of real-time acquisition?
+            for (j=0; j<mImages; ++j) {
+
+            }
         }
         
         
