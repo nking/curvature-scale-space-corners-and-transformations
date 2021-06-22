@@ -438,6 +438,8 @@ public class BundleAdjustment {
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
             MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
         double[][] auxMA = MatrixUtil.zeros(9, 9);
+        double[][] auxMA2 = MatrixUtil.zeros(9, 9);
+        double[][] auxMA3 = MatrixUtil.zeros(9, 9);
         
         // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
         double[][] vB = MatrixUtil.zeros(mImages, 9);
@@ -474,21 +476,23 @@ public class BundleAdjustment {
         BlockMatrixIsometric hPCJ = new BlockMatrixIsometric(
             MatrixUtil.zeros(mImages*3, 9), 3, 9);
         double[][] auxHPCJ = MatrixUtil.zeros(3, 9);
+        double[][] auxHPCJ2 = MatrixUtil.zeros(3, 9);
         
         // [3X1]
         double[] tP = new double[3]; 
         // [9X3]
-        double[][] tPC; 
+        double[][] tPC = MatrixUtil.zeros(9, 3);
         // [9X1]
-        double[] tmp; 
+        double[] tmp = new double[9];
         // [9X3]
-        double[][] hPCIJT; 
+        double[][] hPCIJT = MatrixUtil.zeros(9, 3);
         
         // n blocks of [1X3] // i is nFeatures
         double[][] tPs = MatrixUtil.zeros(nFeatures, 3);
         // nXm blocks of [3X9] // i is nFeatures, j is mImages
         BlockMatrixIsometric tPCTs = new BlockMatrixIsometric(
             MatrixUtil.zeros(nFeatures*3, mImages*9), 3, 9);
+        double[][] auxTPCTs = MatrixUtil.zeros(3, 9);
 
         //size is [3 X 3*mImages)with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRot);
@@ -506,7 +510,7 @@ public class BundleAdjustment {
         double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
         // i for n features, for m images
-        int i, j, k, cameraNumber;
+        int i, j, j2, k, cameraNumber;
                      
         //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
         for (i = 0; i < nFeatures; ++i) { // this is variable p in Engels pseudocode
@@ -615,11 +619,58 @@ public class BundleAdjustment {
             System.arraycopy(tP, 0, tPs[i], 0, tP.length);
 
             // outer product of feature i
-            // for each free camera means? in context of a use case of real-time acquisition?
-            for (j=0; j<mImages; ++j) {
+            // for each free camera means?
+            for (j = 0; j < mImages; ++j) {
+                if (!imageMissingFeaturesMap.get(j).contains(i)) {
+                    
+                    // subtract hPC^T * tP = hPC^T * (hPP^-1) * bP from part j for image j of rhs vB;
+                    //                     = W * V^-1 * bP
+                    // [9X1] block
 
-            }
-        }
+                    // calc hPC^T aka W for feature i, all j images;  [9X3]
+                    hPCJ.getBlock(auxHPCJ, j, 0);
+                    MatrixUtil.transpose(auxHPCJ, hPCIJT);
+
+                    //tmp = hPC^T * tP = hPC^T * (hPP^-1) * bP = W * V^-1 * bP
+                    // [9X3][3X1] = [9X1]
+                    MatrixUtil.multiplyMatrixByColumnVector(hPCIJT, tP, tmp);
+                     
+                    // (at this point, for all j's of current feature i))
+                    //   subtract hPC^T * tP from element j of rhs vB.
+                    /* e.g.  (W*V^-1)*(bP) =
+                                                                  vector element i=1
+                            element i=1,j=1                       (all j for this i already calculated)
+                              \/                                    \/
+                        -> | W11*V1   W21*V2  W31*V3  W41*V4 | * | B11T*F11+B12T*F12+B13T*F13 | <-
+                           | W12*V1   W22*V2  W32*V3  W42*V4 |   | B21T*F21+B22T*F22+B23T*F23 |
+                           | W13*V1   W23*V2  W33*V3  W43*V4 |   | B31T*F31+B32T*F32+B33T*F33 |
+                                                                 | B41T*F41+B42T*F42+B43T*F43 |
+                          *The V's are inverses in this matrix
+                    */
+
+                    MatrixUtil.elementwiseSubtract(vB[j], tmp, vB[j]);
+
+                    // calc tPC = hPC^T * invHPPI (aka W*V^-1) 
+                    // [9X3][3X3] = [9X3]
+                    MatrixUtil.multiply(hPCIJT, invHPPI, tPC);
+
+                     // tPC^T = invHPPI^T * hPCIJ = invHPPI * hPCIJ
+                     //set block i,j of tPCTs to MatrixUtil.multiply(invHPPI, hPCJ[j]);
+                    MatrixUtil.multiply(invHPPI, auxHPCJ, auxTPCTs);
+                    tPCTs.setBlock(auxTPCTs, i, j);
+                     
+                    for (j2 = j+1; j2 < mImages; ++j2) {
+                        // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2] // [9X3][3X9]=[9X9]
+                        //   subtract from block (j, j2) of lhs mA
+                        hPCJ.getBlock(auxHPCJ2, j2, 0);
+                        MatrixUtil.multiply(tPC, auxHPCJ2, auxMA2);
+                        mA.getBlock(auxMA3, j, j2);
+                        MatrixUtil.elementwiseSubtract(auxMA3, auxMA2, auxMA3);
+                        mA.setBlock(auxMA3, j, j2);
+                    }
+                } // end if free camera
+            } // end image j loop
+        } // end i features loop
         
         
         throw new UnsupportedOperationException("not yet finished");
