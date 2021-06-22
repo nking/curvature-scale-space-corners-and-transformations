@@ -94,7 +94,7 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      </pre>
-     @param coordsI the features observed in different images (in coordinates 
+     * @param coordsI the features observed in different images (in coordinates 
      * of the image reference frame).  The
      * different images may or may not be from the same camera.  The image
      * to camera relationship is defined in the associative array imageToCamera.
@@ -119,14 +119,16 @@ public class BundleAdjustment {
      * missing from the image.  The feature numbers correspond to the 
      * 2nd dimension indexes in coordsW.
      * @param intr the intrinsic camera parameter matrices stacked along
-     * rows in a double array of size 3 X nCameras.
+     * rows in a double array of size 3 X 3*nCameras where each block is
+     * size 3X3.
      * @param extrRot the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
-     * nImages is coordsI[0].length/coordsW[0].length.
-     * Each row is size [1X3] and that is a set of euler angles for the image number.
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
      * @param extrTrans the extrinsic camera parameter translation vectors
      * stacked along the 3 columns, that is the size is nImages X 3 where
-     * nImages is coordsI[0].length/coordsW[0].length.
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
      * @param kRadial an array holding radial distortion coefficients k1 and k2.
      * NOTE: current implementation accepts values of 0 for k1 and k2.
      * TODO: consider whether to allow option of leaving out radial distortion
@@ -136,17 +138,23 @@ public class BundleAdjustment {
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
      * @param nMaxIter
      * 
-     * @throws Exception if there is an error in use of MPSolver during the
-     * removal of radial distortion, a generic exception is thrown with the
-     * error message from the MPSolve documentation.
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     public static void solveSparsely(
         double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
-        double[][] intr, double[][] extrRot, double[][] extrTrans,
+        BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, final int nMaxIter, boolean useR2R4) 
-        throws NotConvergedException, Exception {
+        throws NotConvergedException {
+        
+        /*
+        static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+            TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
+            BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
+            double[] kRadial, boolean useR2R4,
+            double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
+            double[] outFSqSum) throws NotConvergedException {
+        */
         
         // number of features:
         int m = coordsW[0].length;
@@ -172,6 +180,10 @@ public class BundleAdjustment {
         if (coordsW.length != 3) {
             throw new IllegalArgumentException("coordsW must have 3 rows.");
         }
+        
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length/nFeatures;
+        int nCameras = intr.getA()[0].length/3;
         
         // TODO: look into methods in MTJ
         
@@ -235,12 +247,33 @@ public class BundleAdjustment {
                (6)
         */
         
-        //TODO: consider adding constraints suggestded in Seliski 2010:
+        //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
         
-       
+        // update values for the point parameters
+        double[] outDP = new double[3*nFeatures];
+        // updatevalues for the camera parameters
+        double[] outDC = new double[9*mImages];
+        
+        //the gradient vector for point parameters.  used in calc gain ration and stopping
+        double[] outGradP = new double[3];
+        // the gradient vector for camera parameters.  used in calc gain ration and stopping
+        double[] outGradC = new double[9];
+     
+        // evaluation of the objective re-projection error. 
+        //the sum of squares of the observed feature - projected feature
+        double[] outFoutFSqSum =new double[1];
+        
+        /*
+        static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+            TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
+            BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
+            double[] kRadial, boolean useR2R4,
+            double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
+            double[] outFSqSum) throws NotConvergedException {
+        */
                 
         throw new UnsupportedOperationException("not yet finished");
     }
@@ -344,10 +377,10 @@ public class BundleAdjustment {
      * @param outDC an output array holding the update values for the camera parameters.
      * The length should be 9*mImages.
      * @param outGradP an output array holding the gradient vector for point parameters
-     *  (-J^T*(x-x_hat) as the summation of bij^T*fij).  The length should be 3.
+     *  (-J_P^T*(x-x_hat) as the summation of bij^T*fij).  The length should be 3.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outGradC an output array holding the gradient vector for camera parameters
-     * (-J^T*(x-x_hat) as the summation of aij^T*fij).
+     * (-J_C^T*(x-x_hat) as the summation of aij^T*fij).
      * The length should be 9.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outFSqSum and output array holding the evaluation of the objective,
@@ -359,7 +392,8 @@ public class BundleAdjustment {
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, boolean useR2R4,
-        double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum) throws NotConvergedException {
+        double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
+        double[] outFSqSum) throws NotConvergedException {
             
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
