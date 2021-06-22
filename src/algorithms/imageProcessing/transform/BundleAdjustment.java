@@ -469,7 +469,10 @@ public class BundleAdjustment {
         double[] fIJ = new double[2];
         
         //m rows of blocks of size [3X9]
-        double[][] hPCJ; 
+        BlockMatrixIsometric hPCJ = new BlockMatrixIsometric(
+            MatrixUtil.zeros(mImages*3, 9), 3, 9);
+        double[][] auxHPCJ = MatrixUtil.zeros(3, 9);
+        
         // [3X1]
         double[] tP; 
         // [9X3]
@@ -582,11 +585,26 @@ public class BundleAdjustment {
                     mA.setBlock(auxMA, j, j);
 
                     //paused here
-                     
-                             
-                 }
-             } // end image j loop
+                    // compute block (i,j) of hPC as hPC=jPTJC [3X9]
+                    //    and store until end of image j loop.
+                    //hPCJ[j] = bIJT * aIJ;
+                    MatrixUtil.multiply(bIJT, aIJ, auxHPCJ);
+                    hPCJ.setBlock(auxHPCJ, j, 0);
 
+                    // subtract aIJT*f (where bc = -aIJT*f aka -jCT*f) from block row j in vB. [9X1]
+                    //aIJTF = aIJT * fIJ.  [1X9]
+                    MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ, aIJTF);
+
+                    MatrixUtil.elementwiseSubtract(outGradC, aIJTF, outGradC);
+               
+                    MatrixUtil.elementwiseSubtract(vB[j], aIJTF, vB[j]);
+                             
+                }
+            } // end image j loop
+
+           // paused here
+            //invert hPPI // hPP is V* // [3X3]
+            //invHPPI = hppI; // invert the diagonal block for feature i;
         }
         
         
