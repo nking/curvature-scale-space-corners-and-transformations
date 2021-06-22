@@ -658,7 +658,7 @@ public class BundleAdjustment {
                     // [9X3][3X3] = [9X3]
                     MatrixUtil.multiply(hPCIJT, invHPPI, tPC);
 
-                     // tPC^T = invHPPI^T * hPCIJ = invHPPI * hPCIJ
+                     // tPC^T = invHPPI^T * hPCIJ = invHPPI * hPCIJ; // [3X9]
                      //set block i,j of tPCTs to MatrixUtil.multiply(invHPPI, hPCJ[j]);
                     MatrixUtil.multiply(invHPPI, auxHPCJ, auxTPCTs);
                     tPCTs.setBlock(auxTPCTs, i, j);
@@ -687,23 +687,37 @@ public class BundleAdjustment {
         double[] yM = MatrixUtil.forwardSubstitution(cholL, 
             MatrixUtil.reshapeToVector(vB)
         );
+        
         // dC is [9m X 1]
         double[] dC = MatrixUtil.backwardSubstitution(cholU, yM);
 
-       /* init dP // [3nX1]
-         init dCJ // [9X1]
-         init double[] tmp;
-         for (i=0; i<nFeatures; ++i) {
-             // start with point update for feature i, dP = tP
-             dP[i] = tPs[i];
-             for (j=0; j<mImages; ++j) {
-                 // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9)
-                 dCJ = // system.arraycopy dC[j*9:(j+1)*9)
-                 tmp = tPCTs(i,j)*dCJ;
-                 dP[i] = element wise subtract dP[i] - tmp;
-             }
+        // [3nX1]
+        double[] dP = new double[nFeatures];
+        // [9X1]
+        double[] dCJ = new double[9];
+        
+        double[] tmp2 = new double[3];
+        for (i = 0; i < nFeatures; ++i) {
+            // start with point update for feature i, dP = tP
+            //dP[i] = tPs[i]; where tPs is [nFeaturesX3]
+            //[1X3]
+            System.arraycopy(tPs[i], 0, dP, i*3, 3);
+            for (j = 0; j < mImages; ++j) {
+                // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9)
+                //[9X1]
+                System.arraycopy(dC, j*9, dCJ, 0, 9);
+                //tmp2 = tPCTs(i,j)*dCJ;
+                //[3X9][9X1]=[3X1]
+                tPCTs.getBlock(auxTPCTs, i, j);
+                MatrixUtil.multiplyMatrixByColumnVector(auxTPCTs, dCJ, tmp2);
+                
+                //dP[i] = element wise subtract dP[i] - tmp2;
+                for (k = 0; k < 3; ++k) {
+                    dP[i*3 + k] -= tmp2[k];
+                }
+            }
              // compute updated point
-         }*/
+        }
              
         throw new UnsupportedOperationException("not yet finished");
     }
