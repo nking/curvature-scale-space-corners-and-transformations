@@ -376,6 +376,8 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
               transpose(BlockMatrixIsometric a) :: BlockMatrixIsometric
               reshapeToVector(double[][] a) :: double[] // [*, 0], [*, 1], i.e. all rows in col 0, all rows in col 1
               fill(double[][] a, double value) :: void
+              backwardSubstitution(UpperTriangDenseMatrix upperTriangular, double[] y) :: double[][]
+              forwardSubstitution(LowerTriangDenseMatrix lowerTriangular, double[] b): double[][]
             
            add to CameraCalibration.java
              static double[] applyRadialDistortion(double[] xC, double k1, double k2,

@@ -6,7 +6,11 @@ import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
 import java.util.Arrays;
+import no.uib.cipr.matrix.DenseCholesky;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.LowerTriangDenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 
 /**
  given intrinsic and extrinsic camera parameters, coordinates for points
@@ -672,7 +676,35 @@ public class BundleAdjustment {
             } // end image j loop
         } // end i features loop
         
-        
+        // (optional) Fix gauge by freezing coordinates and thereby reducing the linear system with a few dimensions.
+
+        // cholesky decompostion to solve for dC in mA*dC=vB
+         // (using the sparsity of upper and lower triangular matrices results in
+        //    half the computation time of LU decomposition in comparison)
+        DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(new DenseMatrix(mA.getA()));
+        LowerTriangDenseMatrix cholL = chol.getL();
+        UpperTriangDenseMatrix cholU = chol.getU();
+        double[] yM = MatrixUtil.forwardSubstitution(cholL, 
+            MatrixUtil.reshapeToVector(vB)
+        );
+        // dC is [9m X 1]
+        double[] dC = MatrixUtil.backwardSubstitution(cholU, yM);
+
+       /* init dP // [3nX1]
+         init dCJ // [9X1]
+         init double[] tmp;
+         for (i=0; i<nFeatures; ++i) {
+             // start with point update for feature i, dP = tP
+             dP[i] = tPs[i];
+             for (j=0; j<mImages; ++j) {
+                 // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9)
+                 dCJ = // system.arraycopy dC[j*9:(j+1)*9)
+                 tmp = tPCTs(i,j)*dCJ;
+                 dP[i] = element wise subtract dP[i] - tmp;
+             }
+             // compute updated point
+         }*/
+             
         throw new UnsupportedOperationException("not yet finished");
     }
     
