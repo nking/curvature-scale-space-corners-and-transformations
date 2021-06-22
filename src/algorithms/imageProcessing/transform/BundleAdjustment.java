@@ -581,6 +581,8 @@ public class BundleAdjustment {
                 //bIJTF =  bIJT * fIJ;// [3X1]
                 MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ, bIJTF);
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
+
+                MatrixUtil.elementwiseSubtract(outGradP, bIJTF, outGradP);
                 
                 //populate aIJT; [9X2] aka jC^T
                 MatrixUtil.transpose(aIJ, aIJT);
@@ -688,11 +690,10 @@ public class BundleAdjustment {
             MatrixUtil.reshapeToVector(vB)
         );
         
-        // dC is [9m X 1]
-        double[] dC = MatrixUtil.backwardSubstitution(cholU, yM);
+        // outDC is [9m X 1]
 
-        // [3nX1]
-        double[] dP = new double[nFeatures];
+        // outDP is [3nX1]
+        
         // [9X1]
         double[] dCJ = new double[9];
         
@@ -701,11 +702,11 @@ public class BundleAdjustment {
             // start with point update for feature i, dP = tP
             //dP[i] = tPs[i]; where tPs is [nFeaturesX3]
             //[1X3]
-            System.arraycopy(tPs[i], 0, dP, i*3, 3);
+            System.arraycopy(tPs[i], 0, outDP, i*3, 3);
             for (j = 0; j < mImages; ++j) {
                 // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9)
                 //[9X1]
-                System.arraycopy(dC, j*9, dCJ, 0, 9);
+                System.arraycopy(outDC, j*9, dCJ, 0, 9);
                 //tmp2 = tPCTs(i,j)*dCJ;
                 //[3X9][9X1]=[3X1]
                 tPCTs.getBlock(auxTPCTs, i, j);
@@ -713,13 +714,13 @@ public class BundleAdjustment {
                 
                 //dP[i] = element wise subtract dP[i] - tmp2;
                 for (k = 0; k < 3; ++k) {
-                    dP[i*3 + k] -= tmp2[k];
+                    outDP[i*3 + k] -= tmp2[k];
                 }
             }
-             // compute updated point
+            // compute updated point
         }
-             
-        throw new UnsupportedOperationException("not yet finished");
+        
+        //outGradP, outGradC, outDP, outDC, and outFSqSum are populated now        
     }
     
     /**
