@@ -186,7 +186,7 @@ public class BundleAdjustment {
         int nCameras = intr.getA()[0].length/3;
         
         // TODO: look into methods in MTJ
-        
+                
         /*
         RCM is the reduced camera matrix in the augmented normal equation.
         
@@ -279,6 +279,7 @@ public class BundleAdjustment {
     }
     
     /**
+     * NOT YET TESTED.
      * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
      * algorithm to refine the intrinsic and extrinsic camera parameters.
      * The algorithms uses the sparse structure of the jacobian to reduce
@@ -383,17 +384,21 @@ public class BundleAdjustment {
      * (-J_C^T*(x-x_hat) as the summation of aij^T*fij).
      * The length should be 9.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
-     * @param outFSqSum and output array holding the evaluation of the objective,
+     * @param outFSqSum an output array holding the evaluation of the objective,
      * that is the sum of squares of the observed feature - projected feature.
      * It's the re-projection error.
      * The length should be 1.
+     * @param outLambda an output array of length 1 which, if not null, will be filled
+     * with the maximum of the diagonal of J^T*J.  The value is used for 
+     * initializing the damping term of the L-M algorithm, but is not necessary to recalculate
+     * it here after that.   this can be null or an array of length 1.
      */
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
-        double[] outFSqSum) throws NotConvergedException {
+        double[] outFSqSum, double[] outLambda) throws NotConvergedException {
             
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -449,6 +454,9 @@ public class BundleAdjustment {
         if (outFSqSum.length != 1) {
             throw new IllegalArgumentException("outFSqSum.length must be 1");
         } 
+        if (outLambda != null && outLambda.length != 1) {
+            throw new IllegalArgumentException("outLambda must be null or its length must be 1");
+        }
         if (imageToCamera == null) {
             throw new IllegalArgumentException("imageToCamera cannot be null");
         }
@@ -472,6 +480,9 @@ public class BundleAdjustment {
         
         */
         
+        // max of diagonal of J^T*J which is the diagonals of U_J and V_I
+        double lambda = Double.NEGATIVE_INFINITY;
+                
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
             MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
@@ -547,6 +558,12 @@ public class BundleAdjustment {
         AuxiliaryArrays aa = new AuxiliaryArrays();
         double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
+        // used in calculating lambda as the max of diagonals of V_I and U_J
+        BlockMatrixIsometric uJ = null;
+        if (outLambda != null) {
+            uJ = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
+        }
+        
         // i for n features, for m images
         int i, j, j2, k, cameraNumber;
                      
@@ -588,7 +605,7 @@ public class BundleAdjustment {
                 
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWCI, auxIntr, k1, k2, extrRot[j], extrTrans[j], aa, aIJ, bIJ);
-                
+              
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
 
@@ -629,7 +646,13 @@ public class BundleAdjustment {
                     //mA[j][j] = aIJT * aIJ;
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
                     mA.setBlock(auxMA, j, j);
-
+                    
+                    if (uJ != null) {
+                        // uJ is [9*mImages X 9]
+                        //aijT*aiJ is [9X2][2X9]=[9X9];  sum over all i features = U_j
+                        uJ.addToBlock(auxMA, j, 0);
+                    }
+        
                     //paused here
                     // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                     //    and store until end of image j loop.
@@ -647,7 +670,9 @@ public class BundleAdjustment {
                              
                 }
             } // end image j loop
-
+            
+            lambda = max(hPPI, lambda);
+            
             //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
             
@@ -752,6 +777,15 @@ public class BundleAdjustment {
                 }
             }
             // compute updated point
+        }
+        
+        if (uJ != null) {
+            // uJ is [9*mImages X 9]
+            for (j = 0; j < mImages; ++j) {
+                uJ.getBlock(auxMA, j, 0);
+                lambda = max(auxMA, lambda);
+            }
+            outLambda[0] = lambda;
         }
         
         //outGradP, outGradC, outDP, outDC, and outFSqSum are populated now        
@@ -1069,6 +1103,16 @@ public class BundleAdjustment {
             m.setBlock(rot, 0, i);
         }
         return m;
+    }
+
+    private static double max(double[][] uJOrVI, double lambda) {
+        int i;
+        for (i = 0; i < uJOrVI.length; ++i) {
+            if (lambda < uJOrVI[i][i]) {
+                lambda = uJOrVI[i][i];
+            }
+        }
+        return lambda;
     }
     
     static class AuxiliaryArrays {
