@@ -92,7 +92,7 @@ public class PNP {
             b[2*i + 1] = xn[1][i];
         }
         
-        //TODO: consider adding constraints suggestded in Seliski 2010:
+        //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.

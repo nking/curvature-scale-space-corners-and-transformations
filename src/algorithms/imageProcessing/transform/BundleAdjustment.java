@@ -266,13 +266,15 @@ public class BundleAdjustment {
         //the sum of squares of the observed feature - projected feature
         double[] outFoutFSqSum =new double[1];
         
+        double[] outLambda = new double[1];
+        
         /*
         static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
             TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
             BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
             double[] kRadial, boolean useR2R4,
             double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
-            double[] outFSqSum) throws NotConvergedException {
+            double[] outFSqSum, double[] outLambda) throws NotConvergedException {
         */
                 
         throw new UnsupportedOperationException("not yet finished");
@@ -737,7 +739,10 @@ public class BundleAdjustment {
             } // end image j loop
         } // end i features loop
         
-        // (optional) Fix gauge by freezing coordinates and thereby reducing the linear system with a few dimensions.
+        // (optional) Fix gauge by freezing coordinates and thereby reducing 
+        //    the linear system with a few dimensions.
+        // see Triggs et al. 2010, "Bundle Adjustment – A Modern Synthesis",
+        //    Section 9.2
 
         // cholesky decompostion to solve for dC in mA*dC=vB
          // (using the sparsity of upper and lower triangular matrices results in
