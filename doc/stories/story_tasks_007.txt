@@ -641,7 +641,20 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  } // end image j loop
              } // end feature i loop
 
-             // (optional) Fix gauge by freezing coordinates and thereby reducing the linear system with a few dimensions.
+             // (optional) Fix gauge by freezing coordinates and thereby reducing the 
+             // linear system with a few dimensions.
+             // see TRiggs et al. 2010/2011 "bundle adjustment - a modern synthesis"
+             //   Section 9.2
+             //  "Section 9 returns to the theoretical issue of gauge freedom (datum deficiency), 
+             //   including the theory of inner constraints."
+             //   they reference:
+             //      [106] B.Triggs.Optimalestimationofmatchingconstraints.InR.KochandL.VanGool,
+             //      editors,3DStructure from Multiple Images of Large-scale Environments SMILE’98, 
+             //      Lecture Notes in Computer Science
+             //      --> see Section 3.1 page 8
+             //      "the gauge freedom is the 3 d.o.f. choice of plane."
+             // also  see Skeletal graphs for efficient structure from motion
+             //        N Snavely, SM Seitz, R Szeliski - 2008
 
              // cholesky decompostion to solve for dC in mA*dC=vB
              // (using the sparsity of upper and lower triangular matrices results in 
@@ -672,6 +685,13 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
 
              // dP and dC are the updating vectors for L-M
              -----------
+
+pause here to refactor the parameter estimates by moving them from PNP into
+CameraCalibration class.
+
+reading on gauge:
+free features and free cameras are terms that they are not fixed.
+
 
            details of the BundleAdjustment.solveSparsely(...) method:
 

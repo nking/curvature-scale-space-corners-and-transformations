@@ -19,9 +19,22 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
  in refinement of the intrinsic and extrinsic camera parameters.
  BundleAdjustment calculates partial derivatives of the parameters
  and calculates the re-projection error to form the parameter update steps,
- the gradient vector, and the evaluation of the objective (sum of squares of
+ the gradient covector, and the evaluation of the objective (sum of squares of
  the re-projection error).
  
+ * From Triggs et al. 2000, "Bundle Adjustment - A Modern Synthesis"
+ * "Bundle adjustment is the problem of refining a visual reconstruction to 
+ * produce jointly optimal 3D structure and viewing parameter (camera pose and/or 
+ * calibration) estimates. Optimal means that the parameter estimates are found 
+ * by minimizing some cost function that quantifies the model fitting error, and 
+ * jointly that the solution is simultaneously optimal with respect to both 
+ * structure and camera variations. The name refers to the ‘bundles’ of light 
+ * rays leaving each 3D feature and converging on each camera centre, which are 
+ * ‘adjusted’ optimally with respect to both feature and camera positions. 
+ * Equivalently — unlike independent model methods, which merge partial 
+ * reconstructions without up- dating their internal structure — all of the 
+ * structure and camera parameters are adjusted together ‘in one bundle’."
+ * 
  * @author nichole
  */
 public class BundleAdjustment {
@@ -86,9 +99,15 @@ public class BundleAdjustment {
            
      Tomasi 2007,CPS 296.1 Supplementary Lectur Notes, Duke University
      
-     Useful mention of graph partioning in:
+     graph partioning:
         https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
         recursive partitioning w/ elimination graph and vertex cut.
+        
+        Triggs et al. 2000.
+        
+        Skeletal graphs for efficient structure from motion
+        N Snavely, SM Seitz, R Szeliski - 2008
+ 
      Graph partitioning in this project:
         NormalizedCuts.java which uses the Fiedler vector of the Laplacian.
         UnweightedGraphCommunityFinder.java
@@ -200,7 +219,7 @@ public class BundleAdjustment {
                       (c) solve x from back substitution in c = U*x
                   (2) QR factorization: A = Q*R
                   (3) Cholesky factorization:A = L*L^T
-                  Some details for the above 3 are in Triggs et al. 1999/2000 Appendix B and near page 23
+                  Some details for the above 3 are in Triggs et al. 2000 Appendix B and near page 23
                   ("Bundle Ajustment – A Modern Synthesis",
                   Springer-Verlag, pp.298–372, 2000, 
                   Lecture Notes in Computer Science (LNCS), 
@@ -257,9 +276,9 @@ public class BundleAdjustment {
         // updatevalues for the camera parameters
         double[] outDC = new double[9*mImages];
         
-        //the gradient vector for point parameters.  used in calc gain ration and stopping
+        //the gradient covector for point parameters.  used in calc gain ration and stopping
         double[] outGradP = new double[3];
-        // the gradient vector for camera parameters.  used in calc gain ration and stopping
+        // the gradient covector for camera parameters.  used in calc gain ration and stopping
         double[] outGradC = new double[9];
      
         // evaluation of the objective re-projection error. 
@@ -267,6 +286,121 @@ public class BundleAdjustment {
         double[] outFoutFSqSum =new double[1];
         
         double[] outLambda = new double[1];
+        
+        /* Triggs et al. 2000: "state updates should be evaluated using a stable 
+        local parametrization based on increments from the current estimate".
+        and this on 3F points:
+        "3D points: Even for calibrated cameras, 
+        ** ==> vision geometry and visual reconstructions are intrinsically projective. 
+        If a 3D (X Y Z)⊤ parametrization (or equivalently a homogeneous affine (X Y Z 1)⊤ one) 
+        is used for very distant 3D points, large X, Y, Z displacements are 
+        needed to change the image significantly. I.e., in (X Y Z) space the 
+        cost function becomes very flat and steps needed for cost adjustment 
+        become very large for distant points. 
+            In comparison, with a homogeneous projective parametrization (X Y Z W)⊤, 
+        the behaviour near infinity is natural, finite and well-conditioned so 
+        long as the normalization keeps the homogeneous 4-vector finite at 
+        infinity (by sending W → 0 there). In fact, there is no immediate 
+        visual distinction between the images of real points near infinity and 
+        virtual ones ‘beyond’ it (all camera geometries admit such virtual 
+        points as bona fide projective constructs).  The optimal reconstruction 
+        of a real 3D point may even be virtual in this sense, if image noise 
+        happens to push it ‘across infinity’.  Also, there is nothing to stop a 
+        reconstructed point wandering beyond infinity and back during the 
+        optimization. This sounds bizarre at first, but it is an inescapable 
+        consequence of the fact that the natural geometry and error model for 
+        visual reconstruction is projective rather than affine. 
+        Projectively, infinity is just like any other place. 
+        ** ==> Affine parametrization (X Y Z 1)⊤ is acceptable for points near the 
+        origin with close-range convergent camera geometries, but it is 
+        disastrous for distant ones because it artificially cuts away half of 
+        the natural parameter space, and hides the fact by sending the resulting 
+        edge to infinite parameter values.
+        **==> Instead, you should use a homogeneous parametrization (X Y Z W )⊤ 
+        for distant points, e.g. with spherical normalization summation X_i^2 = 1."
+        
+        on Rotations:
+        "Rotations should be parametrized using either quaternions subject to 
+        ∥q∥2 = 1, or local perturbations R*δR or δR*R of an existing rotation R, 
+        where δR can be any well- behaved 3 parameter small rotation 
+        approximation, e.g. δR = (I + [ δr ]_×), the Rodriguez formula, 
+        local Euler angles, etc."
+
+        on State Updates:
+        "State updates: Just as state vectors x represent points in some 
+        nonlinear space, state updates x → x+ δx represent displacements in 
+        this nonlinear space that often can not be represented exactly by vector
+        addition. Nevertheless, we assume that we can locally linearize the 
+        state manifold, locally resolving any internal constraints and freedoms 
+        that it may be subject to, to produce an unconstrained vector δx 
+        parametrizing the possible local state displacements. 
+        We can then, e.g., use Taylor expansion in δx to form a local cost 
+        model f(x + δx)."
+        
+        on Error Modeling:
+        "A typical ML cost function would be the summed negative log likelihoods 
+        of the prediction errors of all the observed image features. For 
+        Gaussian error distributions, this reduces to the sum of squared 
+        covariance-weighted prediction errors (§3.2). A MAP estimator would 
+        typically add cost terms giving certain structure or camera calibration 
+        parameters a bias towards their expected values."
+        ...
+        "One of the great strengths of adjustment computations is their ability 
+        to combine information from disparate sources. Assuming that the sources 
+        are statistically independent of one another given the model, the total 
+        probability for the model given the combined data is the product of the 
+        probabilities from the individual sources. To get an additive cost 
+        function we take logs, so the total log likelihood for the model given 
+        the combined data is the sum of the individual source log likelihoods."
+        ...
+        "Information usually comes from many independent sources. In bundle 
+        adjustment these include: covariance-weighted reprojection errors of 
+        individual image features; other measurements such as 3D positions of 
+        control points, GPS or inertial sensor readings; predictions from 
+        uncertain dynamical models (for ‘Kalman filtering’ of dynamic cameras 
+        or scenes); prior knowledge expressed as soft constraints (e.g. on 
+        camera calibration or pose values); and supplementary sources such as 
+        overfitting, regularization or description length penalties."
+        
+        see section 3.1 footnote 2.
+        
+        Regarding step control:
+            recommends professional software or
+            see 
+               R. Fletcher. Practical Methods of Optimization. John Wiley, 1987.
+               J. Nocedal and S. J. Wright. Numerical Optimization. Springer-Verlag, 1999.
+               P. Gill, W. Murray, and M. Wright. Practical Optimization. Academic Press, 1981
+        
+        In bundle adjustment, certain well-known ambiguities 
+        (poorly-controlled parameter combinations) often dominate the uncertainty. 
+        Camera distance and focal length estimates, 
+        and structure depth and camera baseline ones (bas-relief), 
+        are both strongly correlated whenever the perspective is weak 
+        (note: from wikipedia: weak perspective is used when when the depth of t
+        he object along the line of sight is small compared to the distance 
+        from the camera, and the field of view is small.  hence, all points on 
+        a 3D object are at the same distance Z_avg from the camera without 
+        significant errors in the projection )
+        and become strict ambiguities in the affine limit. The well-conditioned 
+        diagonal blocks of the Hessian give no hint of these ambiguities: when 
+        both features and cameras are free, the overall network is much less 
+        rigid than it appears to be when each treats the other as fixed.
+        
+        ** ==> For updates involving a previously unseen 3D feature or image, 
+        new variables must also be added to the system.
+        (see page 33 in Section 8.1 and Section 8.2 on page 35)
+        ...If these parameters are eliminated using reduction (19), the 
+        observation update can be applied directly to the reduced Hessian and 
+        gradient. The eliminated parameters can then be updated by simple 
+        back-substitution (19) and their covariances by (17). In particular, 
+        if we cease to receive new information relating to a block of parameters 
+        (an image that has been fully treated, a 3D feature that has become 
+        invisible), they and all the observations relating to them can be 
+        subsumed once-and-for-all in a reduced Hessian and gradient on the 
+        remaining parameters. If required, we can later re-estimate the 
+        eliminated parameters by back-substitution. Otherwise, we do not 
+        need to consider them further.
+        */
         
         /*
         static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
@@ -379,10 +513,10 @@ public class BundleAdjustment {
      * The length should be 3*nFeatures.
      * @param outDC an output array holding the update values for the camera parameters.
      * The length should be 9*mImages.
-     * @param outGradP an output array holding the gradient vector for point parameters
+     * @param outGradP an output array holding the gradient covector for point parameters
      *  (-J_P^T*(x-x_hat) as the summation of bij^T*fij).  The length should be 3.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
-     * @param outGradC an output array holding the gradient vector for camera parameters
+     * @param outGradC an output array holding the gradient covector for camera parameters
      * (-J_C^T*(x-x_hat) as the summation of aij^T*fij).
      * The length should be 9.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
@@ -401,7 +535,14 @@ public class BundleAdjustment {
         double[] kRadial, boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
         double[] outFSqSum, double[] outLambda) throws NotConvergedException {
-            
+/*
+TODO:
+needs edits to the 2 conditionals involving "free camera"s as they appear
+    to be gauge terms.
+and needs edits to use imageMissingFeaturesMap
+(which should probably be changed to imageFeaturesMap)
+*/
+        
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
         int nCameras = intr.getA()[0].length/3;
@@ -478,7 +619,9 @@ public class BundleAdjustment {
         as it is often assumed that (9^3)*mImages < (3^3)*nFeatures, so one
         inverts the matrix HPP (aka V*).
         TODO: consider branching if case (9^3)*mImages > (3^3)*nFeatures
-        in order to invert matrix HCC (aka U*) instead of matrix HPP.
+        in order to invert matrix HCC (aka U*) instead of matrix HPP. This is
+        called the "reduced structure system" in contrast tot he "reduced
+        camera system" solution pattern below.
         
         */
         
@@ -686,7 +829,7 @@ public class BundleAdjustment {
             System.arraycopy(tP, 0, tPs[i], 0, tP.length);
 
             // outer product of feature i
-            // for each free camera means?
+            // for each free camera means?   context being push-broom or whisk-broom scanners?
             for (j = 0; j < mImages; ++j) {
                 if (!imageMissingFeaturesMap.get(j).contains(i)) {
                     
@@ -741,7 +884,7 @@ public class BundleAdjustment {
         
         // (optional) Fix gauge by freezing coordinates and thereby reducing 
         //    the linear system with a few dimensions.
-        // see Triggs et al. 2010, "Bundle Adjustment – A Modern Synthesis",
+        // see Triggs et al. 2000, "Bundle Adjustment – A Modern Synthesis",
         //    Section 9.2
 
         // cholesky decompostion to solve for dC in mA*dC=vB
