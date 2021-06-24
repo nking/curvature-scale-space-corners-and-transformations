@@ -131,8 +131,8 @@ public class BundleAdjustment {
      * number in coordsI is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j], and the camera
      * number in intr is k/3 where k is intr[k];
-     * @param imageMissingFeaturesMap an associative array holding the features
-     * that are missing from an image.  They key is the image number in coordsI 
+     * @param imageFeaturesMap an associative array holding the features
+     * in each image.  They key is the image number in coordsI 
      * which is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j].  The value is a set of feature numbers which are
      * missing from the image.  The feature numbers correspond to the 
@@ -161,7 +161,7 @@ public class BundleAdjustment {
      */
     public static void solveSparsely(
         double[][] coordsI, double[][] coordsW,
-        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
+        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException {
@@ -485,8 +485,8 @@ public class BundleAdjustment {
      * number in coordsI is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j], and the camera
      * number in intr is k/3 where k is intr[k];
-     * @param imageMissingFeaturesMap an associative array holding the features
-     * that are missing from an image.  They key is the image number in coordsI 
+     * @param imageFeaturesMap an associative array holding the features
+     * present in each image.  They key is the image number in coordsI 
      * which is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j].  The value is a set of feature numbers which are
      * missing from the image.  The feature numbers correspond to the 
@@ -530,7 +530,7 @@ public class BundleAdjustment {
      * it here after that.   this can be null or an array of length 1.
      */
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
-        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
+        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
@@ -603,8 +603,8 @@ and needs edits to use imageMissingFeaturesMap
         if (imageToCamera == null) {
             throw new IllegalArgumentException("imageToCamera cannot be null");
         }
-        if (imageMissingFeaturesMap == null) {
-            throw new IllegalArgumentException("imageMissingFeaturesMap cannot be null");
+        if (imageFeaturesMap == null) {
+            throw new IllegalArgumentException("imageFeaturesMap cannot be null");
         }
                 
         /*
@@ -713,7 +713,7 @@ and needs edits to use imageMissingFeaturesMap
         int i, j, j2, k, cameraNumber;
                      
         //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
-        for (i = 0; i < nFeatures; ++i) { // this is variable p in Engels pseudocode
+        for (i = 0; i < nFeatures; ++i) { // this is track p in Engels pseudocode
                         
             //reset hPPI to 0's; [3x3]// a.k.a. V*_i.
             MatrixUtil.fill(hPPI, 0);
@@ -723,9 +723,12 @@ and needs edits to use imageMissingFeaturesMap
             //populate xWI; extract the world feature.  size [1X3]
             MatrixUtil.extractColumn(coordsW, i, xWI);
             
-            for (j = 0; j < mImages; ++j) {
+            for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 
- //TODO consider how to handle feature not present in image here
+                //TODO consider how to handle feature not present in image here
+                if (!imageFeaturesMap.get(j).contains(i)) {
+                    continue;
+                }
                 
                 // get the rotation matrix rotM [3X3]
                 rotMatrices.getBlock(rotM, 0, j);
@@ -783,9 +786,12 @@ and needs edits to use imageMissingFeaturesMap
                 //populate aIJT; [9X2] aka jC^T
                 MatrixUtil.transpose(aIJ, aIJT);
 
-                // if camera c is free means this?
-                // if image j has feature i in it ?
-                if (!imageMissingFeaturesMap.get(j).contains(i)) {
+                // if camera c is free
+                // (presumably, this means that the camera is not a fixed set of
+                // parameters and needs to be determined).
+                // (?here for a part of a gauge correction such as fixing the first camera
+                //  to have rotation = I and translation=0?)
+                if (true) {
                     
                     // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
                     //mA[j][j] = aIJT * aIJ;
@@ -828,65 +834,95 @@ and needs edits to use imageMissingFeaturesMap
             //tPs[i] = tP;
             System.arraycopy(tP, 0, tPs[i], 0, tP.length);
 
-            // outer product of feature i
-            // for each free camera means?   context being push-broom or whisk-broom scanners?
+            // for each free camera c (==j) on track p (== i):
             for (j = 0; j < mImages; ++j) {
-                if (!imageMissingFeaturesMap.get(j).contains(i)) {
+                
+                //TODO consider how to handle feature not present in image here
+                if (!imageFeaturesMap.get(j).contains(i)) {
+                    continue;
+                }
                     
-                    // subtract hPC^T * tP = hPC^T * (hPP^-1) * bP from part j for image j of rhs vB;
-                    //                     = W * V^-1 * bP
-                    // [9X1] block
+                // subtract hPC^T * tP = hPC^T * (hPP^-1) * bP from part j for image j of rhs vB;
+                //                     = W * V^-1 * bP
+                // [9X1] block
 
-                    // calc hPC^T aka W for feature i, all j images;  [9X3]
-                    hPCJ.getBlock(auxHPCJ, j, 0);
-                    MatrixUtil.transpose(auxHPCJ, hPCIJT);
+                // calc hPC^T aka W for feature i, all j images;  [9X3]
+                hPCJ.getBlock(auxHPCJ, j, 0);
+                MatrixUtil.transpose(auxHPCJ, hPCIJT);
 
-                    //tmp = hPC^T * tP = hPC^T * (hPP^-1) * bP = W * V^-1 * bP
-                    // [9X3][3X1] = [9X1]
-                    MatrixUtil.multiplyMatrixByColumnVector(hPCIJT, tP, tmp);
+                //tmp = hPC^T * tP = hPC^T * (hPP^-1) * bP = W * V^-1 * bP
+                // [9X3][3X1] = [9X1]
+                MatrixUtil.multiplyMatrixByColumnVector(hPCIJT, tP, tmp);
                      
-                    // (at this point, for all j's of current feature i))
-                    //   subtract hPC^T * tP from element j of rhs vB.
-                    /* e.g.  (W*V^-1)*(bP) =
-                                                                  vector element i=1
-                            element i=1,j=1                       (all j for this i already calculated)
-                              \/                                    \/
-                        -> | W11*V1   W21*V2  W31*V3  W41*V4 | * | B11T*F11+B12T*F12+B13T*F13 | <-
-                           | W12*V1   W22*V2  W32*V3  W42*V4 |   | B21T*F21+B22T*F22+B23T*F23 |
-                           | W13*V1   W23*V2  W33*V3  W43*V4 |   | B31T*F31+B32T*F32+B33T*F33 |
-                                                                 | B41T*F41+B42T*F42+B43T*F43 |
-                          *The V's are inverses in this matrix
-                    */
+                // (at this point, for all j's of current feature i))
+                //   subtract hPC^T * tP from element j of rhs vB.
+                /* e.g.  (W*V^-1)*(bP) =
+                                                              vector element i=1
+                        element i=1,j=1                       (all j for this i already calculated)
+                          \/                                    \/
+                    -> | W11*V1   W21*V2  W31*V3  W41*V4 | * | B11T*F11+B12T*F12+B13T*F13 | <-
+                       | W12*V1   W22*V2  W32*V3  W42*V4 |   | B21T*F21+B22T*F22+B23T*F23 |
+                       | W13*V1   W23*V2  W33*V3  W43*V4 |   | B31T*F31+B32T*F32+B33T*F33 |
+                                                             | B41T*F41+B42T*F42+B43T*F43 |
+                      *The V's are inverses in this matrix
+                */
 
-                    MatrixUtil.elementwiseSubtract(vB[j], tmp, vB[j]);
+                MatrixUtil.elementwiseSubtract(vB[j], tmp, vB[j]);
 
-                    // calc tPC = hPC^T * invHPPI (aka W*V^-1) 
-                    // [9X3][3X3] = [9X3]
-                    MatrixUtil.multiply(hPCIJT, invHPPI, tPC);
+                // calc tPC = hPC^T * invHPPI (aka W*V^-1) 
+                // [9X3][3X3] = [9X3]
+                MatrixUtil.multiply(hPCIJT, invHPPI, tPC);
 
-                     // tPC^T = invHPPI^T * hPCIJ = invHPPI * hPCIJ; // [3X9]
-                     //set block i,j of tPCTs to MatrixUtil.multiply(invHPPI, hPCJ[j]);
-                    MatrixUtil.multiply(invHPPI, auxHPCJ, auxTPCTs);
-                    tPCTs.setBlock(auxTPCTs, i, j);
-                     
-                    for (j2 = j+1; j2 < mImages; ++j2) {
-                        // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2] // [9X3][3X9]=[9X9]
-                        //   subtract from block (j, j2) of lhs mA
-                        hPCJ.getBlock(auxHPCJ2, j2, 0);
-                        MatrixUtil.multiply(tPC, auxHPCJ2, auxMA2);
-                        mA.getBlock(auxMA3, j, j2);
-                        MatrixUtil.elementwiseSubtract(auxMA3, auxMA2, auxMA3);
-                        mA.setBlock(auxMA3, j, j2);
-                    }
-                } // end if free camera
-            } // end image j loop
+                 // tPC^T = invHPPI^T * hPCIJ = invHPPI * hPCIJ; // [3X9]
+                 //set block i,j of tPCTs to MatrixUtil.multiply(invHPPI, hPCJ[j]);
+                MatrixUtil.multiply(invHPPI, auxHPCJ, auxTPCTs);
+                tPCTs.setBlock(auxTPCTs, i, j);
+
+                for (j2 = j+1; j2 < mImages; ++j2) {
+                    // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2] // [9X3][3X9]=[9X9]
+                    //   subtract from block (j, j2) of lhs mA
+                    hPCJ.getBlock(auxHPCJ2, j2, 0);
+                    MatrixUtil.multiply(tPC, auxHPCJ2, auxMA2);
+                    mA.getBlock(auxMA3, j, j2);
+                    MatrixUtil.elementwiseSubtract(auxMA3, auxMA2, auxMA3);
+                    mA.setBlock(auxMA3, j, j2);
+                }
+            } // end if free camera, image j loop
         } // end i features loop
         
-        // (optional) Fix gauge by freezing coordinates and thereby reducing 
-        //    the linear system with a few dimensions.
-        // see Triggs et al. 2000, "Bundle Adjustment – A Modern Synthesis",
-        //    Section 9.2
-
+        /* (optional) Fix gauge by freezing coordinates and thereby reducing 
+            the linear system with a few dimensions.
+        
+           Section 9.2 and on of Triggs et al. 2000, 
+           "Bundle Adjustment – A Modern Synthesis"
+               "Section 9 returns to the theoretical issue of gauge freedom
+                (datum deficiency), including the theory of inner constraints."
+        
+            Triggs 1998, "Optimal estimation of matching constraints.
+              3D Structure from Multiple Images of Large-scale Environments SMILE’98,
+              Lecture Notes in Computer Science
+              (see Section 3.1 page 8
+                   "the gauge freedom is the 3 d.o.f. choice of plane."
+             
+            N Snavely, SM Seitz, R Szeliski - 2008
+            "Skeletal graphs for efficient structure from motion"
+            
+            Forstner & Wrobel refere to it as "Free Block Adjustment"
+           
+            Daniel D. Morris, Kenichi Kanatani and Takeo Kanade,
+            "Gauge Fixing for Accurate 3D Estimation"
+        
+           Also, in this project, can see it as fixing the exrinsic parameters
+              of the first camera to rotation = I and translation=0.
+           Also in this project, Reconstruction.java:
+              see implementation of metric constraints, after the comments
+              Fig 3.1 of Tomasi & Kanade 1991 or Fig 2. of Belongie lecture notes
+              Belongie Section 16.4.4 (c)
+              See Step 3 - Metric Constraints
+        
+        gauge fix not yet included here.
+        */
+        
         // cholesky decompostion to solve for dC in mA*dC=vB
          // (using the sparsity of upper and lower triangular matrices results in
         //    half the computation time of LU decomposition in comparison)
