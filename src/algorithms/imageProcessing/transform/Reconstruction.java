@@ -13,7 +13,6 @@ import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
 import java.util.List;
-import no.uib.cipr.matrix.DenseCholesky;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SymmDenseEVD;
@@ -1006,11 +1005,11 @@ public class Reconstruction {
         // see Fig 3.1 of Tomasi & Kanade 1991 or Fig 2. of Belongie lecture notes
         
         // Belongie Section 16.4.4 (c)
-        // Seo Step 3 - Metric Constraints
+        // See Step 3 - Metric Constraints
         /*
         The rows of R represent the orientations of the horizontal and vertical camera
         reference axes throughout the stream, 
-        while the colums of S are the coordinates of the P feature
+        while the columns of S are the coordinates of the P feature
         points with respect to their centroid.
         
         rC = [ i_C_1^T ]
@@ -1150,22 +1149,33 @@ public class Reconstruction {
         so forming one out of the average of both would be useful as input
         for forming Q below.  The correction's not necessary for the symmetric EVD method.
         */
-        
         double eps = 1e-5;
         
+        /*
+        eigen decompose A = L * (sigma+) * L^T
+        (sigma+) is a diagonal matrix whose negative values should be
+            replaced by a small value near 0.
+        Q = L * sqrt(sigma+)
+        */
+        
+        // eigen vectors in the columns of the left and right eigenvector matrices.
+        //    eigenvalues form the diagonal of sigma
+        //EVD evd = EVD.factorize(new DenseMatrix(ell));
         SymmDenseEVD evd = SymmDenseEVD.factorize(new DenseMatrix(ell));
-        double[][] ellSigmaSqrt = MatrixUtil.zeros(evd.getEigenvalues().length, evd.getEigenvalues().length);
+        
+        double[] ellSigmaSqrt = new double[evd.getEigenvalues().length];
         for (i = 0; i < ellSigmaSqrt.length; ++i) {
-            if (ellSigmaSqrt[i][i] < 0) {
+            if (evd.getEigenvalues()[i] < 0) {
                 // replace with very small value
-                ellSigmaSqrt[i][i] = eps;
+                ellSigmaSqrt[i] = eps;
             } else {
-                ellSigmaSqrt[i][i] = Math.sqrt(ellSigmaSqrt[i][i]);
+                ellSigmaSqrt[i] = Math.sqrt(evd.getEigenvalues()[i]);
             }
         }
         double[][] lEig = MatrixUtil.convertToRowMajor(evd.getEigenvectors());
+        
         // 3X3
-        double[][] q = MatrixUtil.multiply(lEig, ellSigmaSqrt);
+        double[][] q = MatrixUtil.multiplyByDiagonal(lEig, ellSigmaSqrt);
         
         // rC size is  (2*mImages)X3
         // sC size is 3XnFeatures
