@@ -140,7 +140,7 @@ public class BundleAdjustment {
      * @param intr the intrinsic camera parameter matrices stacked along
      * rows in a double array of size 3 X 3*nCameras where each block is
      * size 3X3.
-     * @param extrRot the extrinsic camera parameter rotation euler angles
+     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
@@ -162,7 +162,7 @@ public class BundleAdjustment {
     public static void solveSparsely(
         double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
-        BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
+        BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
         double[] kRadial, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException {
         
@@ -203,9 +203,7 @@ public class BundleAdjustment {
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
         int nCameras = intr.getA()[0].length/3;
-        
-        // TODO: look into methods in MTJ
-                
+                        
         /*
         RCM is the reduced camera matrix in the augmented normal equation.
         
@@ -265,28 +263,7 @@ public class BundleAdjustment {
                (5) (Adaptive) DINM algorithm and DINM with local parameterization
                (6)
         */
-        
-        //TODO: consider adding constraints suggested in Seliski 2010:
-        // u_0 and v_0 are close to half the image lengths and widths, respectively.
-        // the angle between 2 image axes is close to 90.
-        // the focal lengths along both axes are greater than 0.
-        
-        // update values for the point parameters
-        double[] outDP = new double[3*nFeatures];
-        // updatevalues for the camera parameters
-        double[] outDC = new double[9*mImages];
-        
-        //the gradient covector for point parameters.  used in calc gain ration and stopping
-        double[] outGradP = new double[3];
-        // the gradient covector for camera parameters.  used in calc gain ration and stopping
-        double[] outGradC = new double[9];
-     
-        // evaluation of the objective re-projection error. 
-        //the sum of squares of the observed feature - projected feature
-        double[] outFoutFSqSum =new double[1];
-        
-        double[] outLambda = new double[1];
-        
+            
         /* Triggs et al. 2000: "state updates should be evaluated using a stable 
         local parametrization based on increments from the current estimate".
         and this on 3F points:
@@ -402,15 +379,143 @@ public class BundleAdjustment {
         need to consider them further.
         */
         
+       
+        //TODO: consider adding constraints suggested in Seliski 2010:
+        // u_0 and v_0 are close to half the image lengths and widths, respectively.
+        // the angle between 2 image axes is close to 90.
+        // the focal lengths along both axes are greater than 0.
+        
+        // update values for the point parameters
+        double[] outDP = new double[3*nFeatures];
+        // updatevalues for the camera parameters
+        double[] outDC = new double[9*mImages];
+        
+        //the gradient covector for point parameters.  used in calc gain ration and stopping
+        double[] outGradP = new double[3];
+        // the gradient covector for camera parameters.  used in calc gain ration and stopping
+        double[] outGradC = new double[9];
+     
+        // evaluation of the objective re-projection error. 
+        //the sum of squares of the observed feature - projected feature
+        double[] outFSqSum =new double[1];
+        
+        double[] outLambda = new double[1];
+        
+        double lambda;
+        double lambdaF = 2;
+        
+        // the residual, that is, the evaulation of the objective which is the 
+        //   re-projection error.
+        double f = Double.POSITIVE_INFINITY;
+        double fPrev;
+        
+        double eps = 1.e-5;
+        
+        // gain ratio:
+        //gain = (f(p + delta p) - f(p)) / ell(delta p)
+        //     where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
+        //     and outGradC and outGradP are J^T * ( b - fgp)
+        //     and outDC and outDP are 'delta p'
+        //gain = (f - fPrev) / (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
+        double gainRatio;
+        
+        final double tolP = 1.e-3;
+        final double tolG = 1.e-3;
+          
         /*
-        static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
-            TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
-            BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
-            double[] kRadial, boolean useR2R4,
-            double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
-            double[] outFSqSum, double[] outLambda) throws NotConvergedException {
+        init: 
+              f=infinity
+              calculateLMVectorsSparsely()        
+              lambda = max(trace(J^T*J) which means calc J for initial conditions
+                     = outLambda[0]
+              then set outLambda = null to prevent re-calculating in calculateLMVectorsSparsely()
+        loop:
+            set fPrev = f
+            set f = outFSqSum[0];
+            have deltaP as outDP and outDC
+            check stopping conditions: gradients small or deltaP small        
+            calc gain ratio 
+                adjust lambda
+                determine whether to update.
+            if update==1
+                update params from outDP and outDC        
+            calculateLMVectorsSparsely()
         */
+        
+        calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
+            imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
+            outDP, outDC, outGradP, outGradC, outFSqSum, outLambda);
+        
+        lambda = outLambda[0];
+        
+        outLambda = null;
+        
+        int doUpdate = 0;
+        int nIter = 0;
+        while (nIter < nMaxIter) {
+            nIter++;
+                   
+            fPrev = f;            
+            f = outFSqSum[0];
+          /*  
+            if (isNegligible(outDC, outDP, tolP) || !isNegligible(outGradC, outGradP, tolG)) {
+                break;
+            }
+            
+            //TODO: consider whether to accept or reject step?
+             // comments from: https://arxiv.org/pdf/1201.5885
+             //           Transtruma & Sethna 2012
+            // the qualitative effect of the damping term is to modify the 
+            // eigenvalues of the matrix JT J + λDT D to be at least λ
+            
+            // ======= revise parameters =======
+             
+            // ====== accept or reject changes and change lambda ======
+            if (nIter == 0) {
+                doUpdate = 1;   
+            } else {
+                // gain ratio:
+                //    gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
+                //         where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+                //    gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+                gainRatio = calculateGainRatio(f/2., fPrev/2., outDC, outDP, lambda, 
+                    outGradC, outGradP, eps);
+                System.out.printf("lambda=%.4e, gainRatio=%.4e\n", lambda, gainRatio);
+                if (gainRatio > 0) {
+                    doUpdate = 1;
+                    // near the minimimum, which is good.
+                    // decrease lambda
+                    lambda /= lambdaF;
+                } else {
+                    doUpdate = 0;
+                    // increase lambda to reduce step length and get closer to 
+                    // steepest descent direction
+                    lambda *= lambdaF;
+                }
+                System.out.printf("new lambda=%.4e\n", lambda);
+            }
+            if (doUpdate == 1) {
+                // add deltaPLM to p, where p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+                 
+                System.arraycopy(deltaPLM, 0, deltaTheta, 0, 3);
+                System.arraycopy(deltaPLM, 3, deltaT, 0, 3);
                 
+                updateT(t, deltaT);
+                
+                //NOTE: potential singularity in this method:
+                updateRTheta(r, thetas, deltaTheta);
+                             
+                //updateHWithThetaT(h, thetas, t);
+                
+                updateHWithRT(h, r, t);
+            }
+            
+            calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
+                imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
+                outDP, outDC, outGradP, outGradC, outFSqSum, outLambda);
+            */
+        }
+        
         throw new UnsupportedOperationException("not yet finished");
     }
     
@@ -919,6 +1024,10 @@ and needs edits to use imageMissingFeaturesMap
               Fig 3.1 of Tomasi & Kanade 1991 or Fig 2. of Belongie lecture notes
               Belongie Section 16.4.4 (c)
               See Step 3 - Metric Constraints
+        
+           reasons to fix the gauge:
+              -- decrease drift in location accuracy
+              -- smaller covariance 
         
         gauge fix not yet included here.
         */
