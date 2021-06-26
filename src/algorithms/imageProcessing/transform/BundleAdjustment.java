@@ -166,15 +166,6 @@ public class BundleAdjustment {
         double[] kRadial, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException {
         
-        /*
-        static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
-            TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
-            BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
-            double[] kRadial, boolean useR2R4,
-            double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
-            double[] outFSqSum) throws NotConvergedException {
-        */
-        
         // number of features:
         int m = coordsW[0].length;
         
@@ -457,8 +448,9 @@ public class BundleAdjustment {
                    
             fPrev = f;            
             f = outFSqSum[0];
-          /*  
-            if (isNegligible(outDC, outDP, tolP) || !isNegligible(outGradC, outGradP, tolG)) {
+           
+            if (isNegligible(outDC, tolP) || isNegligible(outDP, tolP) ||
+                isNegligible(outGradC, tolG) || isNegligible(outGradP, tolG)) {
                 break;
             }
             
@@ -495,25 +487,20 @@ public class BundleAdjustment {
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
             if (doUpdate == 1) {
-                // add deltaPLM to p, where p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-                 
-                System.arraycopy(deltaPLM, 0, deltaTheta, 0, 3);
-                System.arraycopy(deltaPLM, 3, deltaT, 0, 3);
-                
+                /*
                 updateT(t, deltaT);
                 
                 //NOTE: potential singularity in this method:
                 updateRTheta(r, thetas, deltaTheta);
-                             
-                //updateHWithThetaT(h, thetas, t);
-                
-                updateHWithRT(h, r, t);
+
+                updateIntrinsic();
+                */
             }
             
             calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
                 imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
                 outDP, outDC, outGradP, outGradC, outFSqSum, outLambda);
-            */
+            
         }
         
         throw new UnsupportedOperationException("not yet finished");
@@ -1406,6 +1393,67 @@ and needs edits to use imageMissingFeaturesMap
             }
         }
         return lambda;
+    }
+
+    /**
+     * gain = (f(p + delta p) - f(p)) / ell(delta p)
+             where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
+             and delta p is deltaC and deltaP
+             and j^T*(b-f(g(p))) is gradC and gradP
+       gain = (f - fPrev) / (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
+             
+     * @param f
+     * @param fPrev
+     * @param deltaC
+     * @param deltaP
+     * @param lambda
+     * @param gradC
+     * @param gradP
+     * @param eps
+     * @return 
+     */
+    private static double calculateGainRatio(double f, double fPrev, 
+        double[] deltaC, double[] deltaP, double lambda, 
+        double[] gradC, double[] gradP, double eps) {
+                        
+        /*
+        gain = (f(p + delta p) - f(p)) / ell(delta p)
+             where ell(delta p) is (delta p)^T * (lambda * (delta p) + J^T * ( b - fgp))
+             and delta p is deltaC and deltaP
+             and j^T*(b-f(g(p))) is gradC and gradP
+       gain = (f - fPrev) / (delta p)^T * (lambda * (delta p) + gradient)
+            
+       */
+        
+        double[] dParams = new double[deltaC.length + deltaP.length];
+        System.arraycopy(deltaC, 0, dParams, 0, deltaC.length);
+        System.arraycopy(deltaP, 0, dParams, deltaC.length, deltaP.length);
+        
+        double[] gradient = new double[gradC.length + gradP.length];
+        System.arraycopy(gradC, 0, gradient, 0, gradC.length);
+        System.arraycopy(gradP, 0, gradient, gradC.length, gradP.length);
+        
+        double[] pt1 = Arrays.copyOf(dParams, dParams.length);
+        MatrixUtil.multiply(pt1, lambda);
+        
+        double ell = MatrixUtil.innerProduct(deltaP, gradient);
+        
+        if (Math.abs(ell) < eps) {
+            return Double.POSITIVE_INFINITY;
+        }
+        
+        double gain = (f - fPrev)/ell;
+        
+        return gain;
+    }
+    
+    private static boolean isNegligible(double[] c, double eps) {
+        for (int i = 0; i < c.length; ++i) {
+            if (Math.abs(c[i]) > eps) {
+                return false;
+            }
+        }
+        return true;
     }
     
     static class AuxiliaryArrays {

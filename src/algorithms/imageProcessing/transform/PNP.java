@@ -204,7 +204,7 @@ public class PNP {
             //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
             stepLengthCheck = deltaPLM;
             //MatrixUtil.multiply(gradientCheck, -1.);            
-            if (isNegligible(stepLengthCheck, tolP) || !isNegligible(gradientCheck, tolG)) {
+            if (isNegligible(stepLengthCheck, tolP) || isNegligible(gradientCheck, tolG)) {
                 break;
             }
             
@@ -532,28 +532,28 @@ public class PNP {
     }
     
     /**
-     * gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
-             where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-       gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+     * gain = (f(p + delta p) - f(p)) / ell(delta p)
+             where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
+       gain = (f - fPrev) / (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
      * @param f
      * @param fPrev
-     * @param deltaPLM
+     * @param deltaP
      * @param lambda
      * @param jTBFG j^T*(b-f(g(p))). size is 6X1
      * @return 
      */
     private static double calculateGainRatio(double f, double fPrev, 
-        double[] deltaPLM, double lambda, double[] jTBFG,
+        double[] deltaP, double lambda, double[] jTBFG,
         double eps) {
              
         //      1X6          *            ( 6X1   +   6 X (2N) * (2NX1) )
         //      1X6                        6X1 
         //  1X1
         //(delta p LM)^T * (lambda * (delta p LM) + J^T * (b - fgp))
-        double[] pt1 = Arrays.copyOf(deltaPLM, deltaPLM.length);
+        double[] pt1 = Arrays.copyOf(deltaP, deltaP.length);
         MatrixUtil.multiply(pt1, lambda);
         
-        double ell = MatrixUtil.innerProduct(deltaPLM, jTBFG);
+        double ell = MatrixUtil.innerProduct(deltaP, jTBFG);
         
         if (Math.abs(ell) < eps) {
             return Double.POSITIVE_INFINITY;
