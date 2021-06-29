@@ -377,13 +377,49 @@ public class Rotation {
      * to be a result of R_z(theta_z) * R_x(theta_x) * R_y(theta_y)
      * @return theta_x, theta_y, theta_z
      */
-    public static double[] extractRotation(double[][] r) {
+    public static double[] extractRotationFromZXY(double[][] r) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
         double thetaX = Math.asin(r[2][1]);
         double thetaY = Math.atan2(-r[2][0], r[2][2]);
         double thetaZ = Math.atan2(-r[0][1], r[1][1]);
+        return new double[]{thetaX, thetaY, thetaZ};
+    }
+    
+    /**
+     * extract euler angles from a rotation matrix which has been built following
+     * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
+     * @param r
+     * @return 
+     */
+    public static double[] extractRotationFromZYX(double[][] r) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3x3");
+        }
+        /*
+              z-axis (yaw)         *      y-axis (pitch)     *      x-axis (roll)
+          | cos φ   -sin φ    0 |  *  |  cos ψ    0  sin ψ | * |    1       0       0 |
+          | sin φ    cos φ    0 |     |      0    1      0 |   |    0   cos θ   sin θ |
+          |     0        0    1 |     | -sin ψ    0  cos ψ |   |    0  -sin θ   cos θ |
+
+        = | (cos φ * cos ψ)   (-sin φ)   (cos φ * sin ψ) |  * | 1       0       0 |
+          | (sin φ * cos ψ)   ( cos φ)   (sin φ * sin ψ) |    | 0   cos θ   sin θ |
+          | (-sin ψ)          (   0  )   (   cos ψ )     |    | 0  -sin θ   cos θ |
+
+        = | (cos φ * cos ψ)   (-sin φ * cos θ + cos φ * sin ψ * (-sin θ))   (-sin φ * sin θ + cos φ * sin ψ * cos θ) |
+          | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * (-sin θ))   (cos φ * sin θ + sin φ * sin ψ * cos θ)  |
+          | (-sin ψ)          ( cos ψ * (-sin θ) )                          (cos ψ * cos θ)                          |
+
+        r02 = -sin ψ  ==> ψ = theta_y = -Math.asin(r02)
+
+        r01/r00 = (sin φ * cos ψ)/(cos φ * cos ψ) = tan(φ) ==> φ = theta_z = Math.atan(r01/r00) = Math.atan2(r01, r00)
+
+        r12/r22 = ( cos ψ * (-sin θ) )/(cos ψ * cos θ) = (-sin θ)/(cos θ) = tan(θ) ==> θ = theta_x = Math.atan2(r12, r22)
+        */
+        double thetaX = Math.atan2(r[1][2], r[2][2]);
+        double thetaY = -Math.asin(r[0][2]);
+        double thetaZ = Math.atan2(r[0][1], r[0][0]);
         return new double[]{thetaX, thetaY, thetaZ};
     }
         

@@ -96,7 +96,7 @@ public class PNP {
         // extract pose as (theta_x, theta_y, theta_z, t_x, t_y, t_z)
         double[][] r0 = kExtr.getRotation();
         double[][] r = MatrixUtil.copy(r0);
-        double[] thetas = Rotation.extractRotation(r);
+        double[] thetas = Rotation.extractRotationFromZYX(r);
         double[] t = kExtr.getTranslation();
         
         // equation (19).  size is 1 X 9
@@ -662,9 +662,7 @@ public class PNP {
             //    and euler angle updates
             thetas[i] += deltaTheta[i];
         }
-        
-        
-        
+                
     }
 
 }
