@@ -411,15 +411,13 @@ public class Rotation {
           | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * (-sin θ))   (cos φ * sin θ + sin φ * sin ψ * cos θ)  |
           | (-sin ψ)          ( cos ψ * (-sin θ) )                          (cos ψ * cos θ)                          |
 
-        r02 = -sin ψ  ==> ψ = theta_y = -Math.asin(r02)
-
-        r01/r00 = (sin φ * cos ψ)/(cos φ * cos ψ) = tan(φ) ==> φ = theta_z = Math.atan(r01/r00) = Math.atan2(r01, r00)
-
-        r12/r22 = ( cos ψ * (-sin θ) )/(cos ψ * cos θ) = (-sin θ)/(cos θ) = tan(θ) ==> θ = theta_x = Math.atan2(r12, r22)
+        r20 = -sin ψ  ==> ψ = theta_y = -Math.asin(r20)
+        r21/r22 = ( cos ψ * (-sin θ) )/(cos ψ * cos θ) = (-sin θ)/(cos θ) = tan(θ) ==> θ = theta_x = -Math.atan2(r21, r22)
         */
-        double thetaX = Math.atan2(r[1][2], r[2][2]);
-        double thetaY = -Math.asin(r[0][2]);
-        double thetaZ = Math.atan2(r[0][1], r[0][0]);
+        double thetaX = -Math.atan2(r[2][1], r[2][2]);
+        double thetaY = -Math.asin(r[2][0]);
+        double thetaZ = Math.atan2(r[1][0], r[0][0]);
+        
         return new double[]{thetaX, thetaY, thetaZ};
     }
         

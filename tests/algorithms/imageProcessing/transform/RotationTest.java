@@ -23,11 +23,12 @@ public class RotationTest extends TestCase {
         double[][] r = Rotation.createRodriguesFormulaRotationMatrix(v);
         
         double[][] expected = new double[3][3];
-        expected[0] = new double[]{-0.43583, 0.875946, -0.480436};
+        expected[0] = new double[]{-0.043583, 0.875946, -0.480436};
         expected[1] = new double[]{0.765974, 0.338032, 0.546825};
         expected[2] = new double[]{0.641392, -0.344170, -0.685684};
         
-        System.out.printf("r=\n%s\n", FormatArray.toString(r,"%.3e"));
+        //System.out.printf("r=\n%s\n", FormatArray.toString(r,"%.3e"));
+        //System.out.printf("expected=\n%s\n", FormatArray.toString(expected,"%.3e"));
         
         assertEquals(expected.length, r.length);
         double tol = 1e-4;
@@ -120,13 +121,53 @@ public class RotationTest extends TestCase {
         x2[2] = new double[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
         int i;
         int j;
+        double a;
         for (i = 0; i < x2.length; ++i) {
             for (j = 0; j < x2[i].length; ++j) {
-                x2[i][j] -= k2ExtrTrans[j];
+                x2[i][j] -= k2ExtrTrans[i];
             }
         }
         double[][] orthogRot = Rotation.procrustesAlgorithmForRotation(MatrixUtil.transpose(x1), MatrixUtil.transpose(x2));
         System.out.printf("rotation from Procrustes algorithm\n=%s\n", FormatArray.toString(orthogRot, "%.3e"));
     }
     
+    public void test2() {
+        double[] theta = new double[]{25.*Math.PI/180., 35.*Math.PI/180., 55.*Math.PI/180.};
+        
+        //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
+        
+        double[][] r = Rotation.calculateRotationZYX(theta);
+        
+        double[] d = Rotation.extractRotationFromZYX(r);
+        //System.out.printf("result=%s\n", FormatArray.toString(d, "%.3e"));
+
+        assertEquals(theta.length, d.length);
+        
+        double diff;
+        double tol = 1e-4;
+        int i;
+        for (i = 0; i < theta.length; ++i) {
+            diff = Math.abs(theta[i] - d[i]);
+            //System.out.println("diff=" + diff);
+            assertTrue(diff < tol);
+        }
+        
+        //========
+        theta = new double[]{-25.*Math.PI/180., -35.*Math.PI/180., -55.*Math.PI/180.};
+        
+        //System.out.printf("original2=%s\n", FormatArray.toString(theta, "%.3e"));
+        
+        r = Rotation.calculateRotationZYX(theta);
+        
+        d = Rotation.extractRotationFromZYX(r);
+        //System.out.printf("result2=%s\n", FormatArray.toString(d, "%.3e"));
+
+        assertEquals(theta.length, d.length);
+        
+        for (i = 0; i < theta.length; ++i) {
+            diff = Math.abs(theta[i] - d[i]);
+            //System.out.println("diff=" + diff);
+            assertTrue(diff < tol);
+        }
+    }
 }
