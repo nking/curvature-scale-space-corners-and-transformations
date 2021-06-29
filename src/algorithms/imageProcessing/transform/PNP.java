@@ -657,7 +657,13 @@ public class PNP {
         // update r
         for (int i = 0; i < 3; ++i) {
             System.arraycopy(out[i], 0, r[i], 0, 3);
+            
+            //TODO: write tests to check consistency of rotation matrix update
+            //    and euler angle updates
+            thetas[i] += deltaTheta[i];
         }
+        
+        
         
     }
 
