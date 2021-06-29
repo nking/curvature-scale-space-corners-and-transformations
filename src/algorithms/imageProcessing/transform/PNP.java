@@ -46,10 +46,6 @@ public class PNP {
 
      Szeliski 2010, "Computer Vision: Algorithms and Applications", Chapter 6
      
-     NOTE: this algorithm is vulnerable to singularities induced by the
-     changes of the rotation angles.
-     TODO: implement the sparse block version algorithm of Barfoot et al. 2010
-     in this same class.
      * </pre>
      * @param imageC
      * @param worldC
@@ -248,11 +244,8 @@ public class PNP {
                 
                 updateT(t, deltaT);
                 
-                //NOTE: potential singularity in this method:
                 updateRTheta(r, thetas, deltaTheta);
-                             
-                //updateHWithThetaT(h, thetas, t);
-                
+                                             
                 updateHWithRT(h, r, t);
             }            
         }
@@ -634,9 +627,10 @@ public class PNP {
     }
     
     /**
-     * update rotation matrix r and the theta vector with deltaTheta.
-     * NOTE: this method has a potential error from singularity from 90 degree 
-     * angles (near zenith and nadir, for example).
+     * update rotation matrix r with deltaTheta.
+     * the approach used avoids singularities and the need to restore 
+     * the constraint afterwards (i.e., constraint restoration is built in).
+     * 
      * @param thetas input and output array holding euler rotation angles 
      *    theta_x, theta_y, theta_
      */
@@ -656,38 +650,13 @@ public class PNP {
         //           calculated as C(theta) = 
         //     and deltaPhi = sTheta * deltaTheta
         
-        // potential problem changing an axis when a theta=90
-        double[][] sTheta = Rotation.sTheta(thetas);
-        double[] deltaPhi = MatrixUtil.multiplyMatrixByColumnVector(sTheta, deltaTheta);
+        double[][] out = MatrixUtil.zeros(3, 3);
         
-        // The Barfoot et al. paper uses
-        //    rotation matrix formed from rZ * rY * rX (yaw, pitch, and roll)
-        //    which is the same convention used by Wetzstein
-        
-        double[][] rDeltaPhi = Rotation.calculateRotationZYX(deltaPhi);
-        //double[][] rDeltaPhi = Rotation.calculateRotationXYZ(deltaPhi);
-        
-        double[][] r2 = MatrixUtil.multiply(rDeltaPhi, r);
+        Rotation.applySingularitySafeRotationPerturbationEuler(r, thetas, deltaTheta, out);
         
         // update r
         for (int i = 0; i < 3; ++i) {
-            System.arraycopy(r2, 0, r, 0, 3);
-        }
-        
-        // T. Barfoot, et al. 2012, 
-        // Pose estimation using linearized rotations and quaternion algebra, 
-        // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
-        // eqn (28) for updating thetas:
-        // theta = previous theta + sTheta^-1 * deltaPhi
-        
-        // rotation matrix: inverse is the transpose of rotation matrix.
-        double[] sTInvDP = MatrixUtil.multiplyMatrixByColumnVector(
-            MatrixUtil.transpose(sTheta), deltaPhi);
-        
-        double[] thetas2 = MatrixUtil.add(thetas, sTInvDP);
-        
-        for (int i = 0; i < 3; ++i) {
-            System.arraycopy(thetas2, 0, thetas, 0, 3);
+            System.arraycopy(out[i], 0, r[i], 0, 3);
         }
         
     }
