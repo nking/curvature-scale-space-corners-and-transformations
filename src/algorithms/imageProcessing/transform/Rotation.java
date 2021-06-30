@@ -493,15 +493,21 @@ public class Rotation {
                         thetaX = Math.asin(r[2][1]/cPsi);
                     } else {
                         // can use r[0][1], r[0][2], r[1][1], or r[1][2] or combination
-                        //r[0][1] = (-sφ * cos θ + cφ * sψ * sin θ)
-                        //r[0][2] =  (sφ * sin θ + cφ * sψ * cos θ)
-                        //r[1][1] = ( cφ * cos θ + sφ * sψ * sin θ)
-                        //r[1][2] = (-cφ * sin θ + sφ * sψ * cos θ)
-                        //rewritten:
-                        //r[0][1] = cos θ * -sφ      +  sin θ * cφ * sψ 
-                        //r[0][2] = cos θ * cφ * sψ  +  sin θ * sφ
-                        //r[1][1] = cos θ * cφ       +  sin θ * sφ * sψ 
-                        //r[1][2] = cos θ * sφ * sψ  +  sin θ * -cφ
+                        /*r[0][1] = (-sφ * cos θ + cφ * sψ * sin θ)
+                        r[0][2] =  (sφ * sin θ + cφ * sψ * cos θ)
+                        r[1][1] = ( cφ * cos θ + sφ * sψ * sin θ)
+                        r[1][2] = (-cφ * sin θ + sφ * sψ * cos θ)
+                        
+                        looking for ways to factor one or more of the 4 equations for the 1 unknown θ
+                        rewritten:
+                        r[0][1] = cos θ * -sφ      +  sin θ * cφ * sψ 
+                        r[0][2] = cos θ * cφ * sψ  +  sin θ * sφ
+                        r[1][1] = cos θ * cφ       +  sin θ * sφ * sψ 
+                        r[1][2] = cos θ * sφ * sψ  +  sin θ * -cφ
+                        add all   : cos θ * (-sφ + cφ * sψ + cφ + sφ * sψ) + sin θ * (cφ * sψ + sφ + sφ * sψ + -cφ)
+                        rewritten : cos θ * (cφ - sφ + (cφ * sψ) + (sφ * sψ)) + sin θ * (-cφ + sφ + (cφ * sψ) + (sφ * sψ))
+                                  : cos θ * (cφ - sφ + (cφ * sψ) + (sφ * sψ)) + sin θ * (-cφ + sφ + (cφ * sψ) + (sφ * sψ))
+                        */
                         throw new UnsupportedOperationException("There are "
                                 + "0's in the rotation matrix, so factoring of "
                                 + "more than one exponential variable is needed."
@@ -535,7 +541,7 @@ public class Rotation {
                 r[1][2] : (-cos φ * sθ + sin φ * sψ * cθ)
                 ==> 1 unknown and 3 equations
                 */
-                throw new UnsupportedOperationException("There are several "
+                throw new UnsupportedOperationException("There are "
                                 + "0's in the rotation matrix, so factoring of "
                                 + "more than one exponential variable is needed."
                                 + "This case is not yet implemented.");
