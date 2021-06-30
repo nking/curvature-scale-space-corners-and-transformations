@@ -11,18 +11,32 @@ import no.uib.cipr.matrix.NotConvergedException;
  */
 public class Rotation {
 
+    /*    
+    NOTE that Schuster 1993, "A Survey of Attitude Representations"
+    Journal of Astronautical Sciences, Vol 41, No. 4, Oct-Dec 1993, pp 439-517
+    
+    uses different notation, each matrix is transposed compared to what is used
+    below commonly (see http://planning.cs.uiuc.edu/node102.html
+    
+        about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ    sin φ    0 |    |    1       0       0 |  |  cos ψ    0 -sin ψ |
+            |-sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0        0    1 |    |    0  -sin θ   cos θ |  |  sin ψ    0  cos ψ |
+    */
+    
     /**
-     * 
-     * about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
-            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
-            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+     * <pre>
+       cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+      </pre>
      * @param angleX angle of rotation about x-axis (roll) in units of radians.
      * @param angleY angle of rotation about y-axis (pitch) in units of radians.
      * @param angleZ angle of rotation about z-axis (yaw) in units of radians.
      * @return 
      */
-    public static double[][] createEulerRotationMatrix(double angleX, double angleY, double angleZ) {
+    public static double[][] calculateRotationXYZ(double angleX, double angleY, double angleZ) {
         
         double[][] rotX = createEulerRollRotationMatrix(angleX);
         double[][] rotY = createEulerPitchRotationMatrix(angleY);
@@ -39,8 +53,8 @@ public class Rotation {
        <pre>
        about x-axis (roll):       
        |    1       0       0 |  
-       |    0   cos θ   sin θ |  
-       |    0  -sin θ   cos θ | 
+       |    0   cos θ  -sin θ |  
+       |    0   sin θ   cos θ | 
        </pre>
      * @param angle angle of rotation about x-axis (roll) in units of radians.
      * @return 
@@ -54,8 +68,8 @@ public class Rotation {
         
         rot[0][0] = 1;
         rot[1][1] = c;
-        rot[1][2] = s;
-        rot[2][1] = -s;
+        rot[1][2] = -s;
+        rot[2][1] = s;
         rot[2][2] = c;
         
         return rot;
@@ -66,8 +80,8 @@ public class Rotation {
        <pre>
        about x-axis (roll):       
        |    1       0       0 |  
-       |    0   cos θ   sin θ |  
-       |    0  -sin θ   cos θ | 
+       |    0   cos θ  -sin θ |  
+       |    0   sin θ   cos θ | 
        </pre>
      * @param angle angle of rotation about x-axis (roll) in units of radians.
      * @param out holds values for rotation matrix for roll. 
@@ -87,9 +101,9 @@ public class Rotation {
         out[0][2] = 0;
         out[1][0] = 0;
         out[1][1] = c;
-        out[1][2] = s;
+        out[1][2] = -s;
         out[2][0] = 0;
-        out[2][1] = -s;
+        out[2][1] = s;
         out[2][2] = c;        
     }        
     
@@ -398,29 +412,30 @@ public class Rotation {
             throw new IllegalArgumentException("r must be 3x3");
         }
         /*
-              z-axis (yaw)         *      y-axis (pitch)     *      x-axis (roll)
-          | cos φ   -sin φ    0 |  *  |  cos ψ    0  sin ψ | * |    1       0       0 |
-          | sin φ    cos φ    0 |     |      0    1      0 |   |    0   cos θ   sin θ |
-          |     0        0    1 |     | -sin ψ    0  cos ψ |   |    0  -sin θ   cos θ |
+          cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
 
         = | (cos φ * cos ψ)   (-sin φ)   (cos φ * sin ψ) |  * | 1       0       0 |
           | (sin φ * cos ψ)   ( cos φ)   (sin φ * sin ψ) |    | 0   cos θ   sin θ |
           | (-sin ψ)          (   0  )   (   cos ψ )     |    | 0  -sin θ   cos θ |
 
-        = | (cos φ * cos ψ)   (-sin φ * cos θ + cos φ * sin ψ * (-sin θ))   (-sin φ * sin θ + cos φ * sin ψ * cos θ) |
-          | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * (-sin θ))   (cos φ * sin θ + sin φ * sin ψ * cos θ)  |
-          | (-sin ψ)          ( cos ψ * (-sin θ) )                          (cos ψ * cos θ)                          |
+        = | (cos φ * cos ψ)   (-sin φ * cos θ + cos φ * sin ψ * sin θ)   (sin φ * sin θ + cos φ * sin ψ * cos θ) |
+          | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * sin θ)   (-cos φ * sin θ + sin φ * sin ψ * cos θ)  |
+          | (-sin ψ)          ( cos ψ * sin θ )                          (cos ψ * cos θ)                          |
 
         r20 = -sin ψ  ==> ψ = theta_y = -Math.asin(r20)
-        r21/r22 = ( cos ψ * (-sin θ) )/(cos ψ * cos θ) = (-sin θ)/(cos θ) = tan(θ) ==> θ = theta_x = -Math.atan2(r21, r22)
+        r21/r22 = ( cos ψ * sin θ )/(cos ψ * cos θ) = (sin θ)/(cos θ) = tan(θ) ==> θ = theta_x = Math.atan2(r21, r22)
+        r10/r00 = (sin φ * cos ψ) / (cos φ * cos ψ) = Math.atan2(r10, r00)
         */
-        double thetaX = -Math.atan2(r[2][1], r[2][2]);
+        double thetaX = Math.atan2(r[2][1], r[2][2]);
         double thetaY = -Math.asin(r[2][0]);
         double thetaZ = Math.atan2(r[1][0], r[0][0]);
         
         return new double[]{thetaX, thetaY, thetaZ};
     }
-        
+            
     /**
      * another method to extract the Rodrigues vector from the given
      * euler rotation matrix (it's an ambiguous task).
@@ -824,6 +839,7 @@ public class Rotation {
         
         double[][] skew = MatrixUtil.skewSymmetric(dPhi);
         
+        // I - [dPhi]_x
         int i;
         for (i = 0; i < skew.length; ++i) {
             skew[i][i] = 1. - skew[i][i];
@@ -880,11 +896,11 @@ public class Rotation {
      *         column 1 = C_gamma(theta[2]) * [0, 1, 0]^T 
      *         column 2 = [0, 0, 1]^T
      * 
-     *       C_gamma                        C_alpha                    C_beta
-     *   about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
-            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
-            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+             C_gamma                        C_beta                            C_alpha
+      cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      *  theta[0] = angleX angle of rotation about x-axis (roll) in units of radians.
      *             can use createEulerRollRotationMatrix(theta[0])
      *  theta[1] = angleY angle of rotation about y-axis (pitch) in units of radians.
@@ -924,11 +940,11 @@ public class Rotation {
      *         column 1 = C_gamma(theta[2]) * [0, 1, 0]^T 
      *         column 2 = [0, 0, 1]^T
      * 
-     *       C_gamma                        C_alpha                    C_beta
-     *   about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
-            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
-            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+             C_gamma                        C_beta                            C_alpha
+          cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      *  theta[0] = angleX angle of rotation about x-axis (roll) in units of radians.
      *             can use createEulerRollRotationMatrix(theta[0])
      *  theta[1] = angleY angle of rotation about y-axis (pitch) in units of radians.
@@ -992,10 +1008,10 @@ public class Rotation {
      * eqn (18)
      * 
      * where  
-     *  about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
-            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
-            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+       cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      * </pre>
      * @return 
      */
@@ -1025,10 +1041,10 @@ public class Rotation {
      * eqn (18)
      * 
      * where  
-     *  about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
-            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
-            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+       cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      * </pre>
      * @param thetas euler rotation angles
      * @param aa auxiliary arrays used for internal calculations.  they're
@@ -1054,17 +1070,16 @@ public class Rotation {
         MatrixUtil.multiply(rZY, rX, out);        
     }
     
-    
     /**
      * given an array of euler rotation angles, return the rotation matrix
      * as the rotations for x, y, z multiplied in that order.
      * <pre>
      * 
      * where  
-     *  about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
-            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
-            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |
+       cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      * </pre>
      * @return 
      */

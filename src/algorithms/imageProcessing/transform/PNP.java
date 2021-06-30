@@ -275,8 +275,7 @@ public class PNP {
         
         // ===== create rotation matrix from thetas
         CameraExtrinsicParameters extrinsic = new CameraExtrinsicParameters();
-        extrinsic.setRotation(Rotation.createEulerRotationMatrix(thetas[0], 
-            thetas[1], thetas[2]));
+        extrinsic.setRotation(Rotation.calculateRotationZYX(thetas));
         extrinsic.setTranslation(t);
         
         return extrinsic;
@@ -654,14 +653,18 @@ public class PNP {
         
         Rotation.applySingularitySafeRotationPerturbationEuler(r, thetas, deltaTheta, out);
         
-        // update r
+        // update in-out variable r
         for (int i = 0; i < 3; ++i) {
             System.arraycopy(out[i], 0, r[i], 0, 3);
-            
+        }
+        /*
+        // update theta
+          dr = (deltaTheta)_x * r <-- but dr might be the rotation vector, not the euler angles
+        
             //TODO: write tests to check consistency of rotation matrix update
             //    and euler angle updates
             thetas[i] += deltaTheta[i];
-        }
+        }*/
                 
     }
 

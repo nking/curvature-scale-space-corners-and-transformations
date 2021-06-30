@@ -3,6 +3,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
+import java.util.Arrays;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -41,7 +42,7 @@ public class RotationTest extends TestCase {
         }
     }
 
-    public void testProcrustesAlgorithmForRotation() throws NotConvergedException {
+    public void estProcrustesAlgorithmForRotation() throws NotConvergedException {
         double[][] a = new double[4][2];
         a[0] = new double[]{1, 2};
         a[1] = new double[]{3, 4};
@@ -132,6 +133,7 @@ public class RotationTest extends TestCase {
     }
     
     public void test2() {
+        
         double[] theta = new double[]{25.*Math.PI/180., 35.*Math.PI/180., 55.*Math.PI/180.};
         
         //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
@@ -169,5 +171,39 @@ public class RotationTest extends TestCase {
             //System.out.println("diff=" + diff);
             assertTrue(diff < tol);
         }
+    }
+    
+    public void test3() {
+        
+        double[] theta = new double[]{25.*Math.PI/180., 35.*Math.PI/180., 55.*Math.PI/180.};
+        
+        //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
+        
+        double[][] r = Rotation.calculateRotationZYX(theta);
+                
+        double[] deltaTheta = new double[]{1*Math.PI/180., 10*Math.PI/180., 30*Math.PI/180.};
+        
+        double[][] out = MatrixUtil.zeros(3, 3);
+        
+        Rotation.applySingularitySafeRotationPerturbationEuler(r, theta, deltaTheta, out);
+        
+        double[] thetaUpdated = new double[3];
+        for (int i = 0; i < 3; ++i) {
+            thetaUpdated[i] = theta[i] + deltaTheta[i];
+        }
+        
+        double[][] rUpdated = Rotation.calculateRotationZYX(thetaUpdated);
+        
+        System.out.printf("theta=\n%s\n", FormatArray.toString(theta, "%.3e"));
+        System.out.printf("delta theta=\n%s\n", FormatArray.toString(deltaTheta, "%.3e"));
+        System.out.printf("theta updated=\n%s\n", FormatArray.toString(thetaUpdated, "%.3e"));
+        
+        System.out.printf("r=\n%s\n", FormatArray.toString(r, "%.3e"));
+        System.out.printf("r updated=\n%s\n", FormatArray.toString(out, "%.3e"));
+        System.out.printf("r calculated from theta updates=\n%s\n", FormatArray.toString(rUpdated, "%.3e"));
+        
+        double[] d = Rotation.extractRotationFromZYX(out);
+        System.out.printf("theta extracted from r updated=\n%s\n", FormatArray.toString(d, "%.3e"));
+        
     }
 }
