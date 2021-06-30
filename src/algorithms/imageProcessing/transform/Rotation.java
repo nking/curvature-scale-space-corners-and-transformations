@@ -45,9 +45,7 @@ public class Rotation {
     ‘‘the left-hand rule.’’   That is, the x-axis dimension is an arrow
      with the positive direction forward, the y-axis dimension has
     the positive direction rightward, and the z-axis dimension
-    has the positive dimension upward.
-    
-    
+    has the positive dimension upward.    
     */
     
     /*
@@ -462,14 +460,88 @@ public class Rotation {
         r21/r22 = ( cos ψ * sin θ )/(cos ψ * cos θ) = (sin θ)/(cos θ) = tan(θ) ==> θ = theta_x = Math.atan2(r21, r22)
         r10/r00 = (sin φ * cos ψ) / (cos φ * cos ψ) = Math.atan2(r10, r00)
         */
-        double thetaX = Math.atan2(r[2][1], r[2][2]);
         
-        //double thetaY = -Math.asin(r[2][0]);
-        double thetaY = Math.atan2(-r[2][0],
-            Math.sqrt(r[2][1]*r[2][1] + r[2][2]*r[2][2]));
+        //        θ      ψ       φ
+        double thetaX, thetaY, thetaZ;
         
-        double thetaZ = Math.atan2(r[1][0], r[0][0]);
+        //ψ
+        double d = r[2][1]*r[2][1] + r[2][2]*r[2][2];
+        if (d == 0) {
+            thetaY = -Math.asin(r[2][0]);
+        } else {
+            thetaY = Math.atan2(-r[2][0], Math.sqrt(d));
+        }
         
+        //θ
+        thetaZ = Double.NEGATIVE_INFINITY;
+        if (r[2][2] != 0) {
+            thetaX = Math.atan2(r[2][1], r[2][2]);
+        } else {
+            // cos ψ==0 or/and cos θ==0
+            if (r[2][1] != 0) {
+                // then cos ψ != 0  and cos θ==0
+                thetaX = Math.asin(r[2][1]/Math.cos(thetaY));
+            } else {
+                // else cos ψ == 0 and possibly cos θ==0
+                // need thetaZ solved
+                if (r[0][0] != 0) {
+                    thetaZ = Math.atan2(r[1][0], r[0][0]);
+                    //CALC θ(thetaX), knowing φ(thetaZ) and ψ(thetaY)
+                    double cPsi = Math.cos(thetaY);
+                    if (cPsi != 0) {
+                        // can use r[2][1] or r[2][2] for simplest:
+                        thetaX = Math.asin(r[2][1]/cPsi);
+                    } else {
+                        // can use r[0][1], r[0][2], r[1][1], or r[1][2] or combination
+                        //r[0][1] = (-sφ * cos θ + cφ * sψ * sin θ)
+                        //r[0][2] =  (sφ * sin θ + cφ * sψ * cos θ)
+                        //r[1][1] = ( cφ * cos θ + sφ * sψ * sin θ)
+                        //r[1][2] = (-cφ * sin θ + sφ * sψ * cos θ)
+                        //rewritten:
+                        //r[0][1] = cos θ * -sφ      +  sin θ * cφ * sψ 
+                        //r[0][2] = cos θ * cφ * sψ  +  sin θ * sφ
+                        //r[1][1] = cos θ * cφ       +  sin θ * sφ * sψ 
+                        //r[1][2] = cos θ * sφ * sψ  +  sin θ * -cφ
+                        throw new UnsupportedOperationException("There are "
+                                + "0's in the rotation matrix, so factoring of "
+                                + "more than one exponential variable is needed."
+                                + "This case is not yet implemented.");
+                    }
+                } else {
+                    /*
+                    need φ, missing θ, knowing ψ
+                    r[0][1] : (-sin φ * cos θ + cos φ * sψ * sin θ)
+                    r[0][2] : ( sin φ * sin θ + cos φ * sψ * cos θ)
+                    r[1][2] : (-cos φ * sin θ + sin φ * sψ * cos θ)
+                    ==> 2 unknowns and 3 equations.
+                    */
+                    throw new UnsupportedOperationException("There are "
+                                + "0's in the rotation matrix, so factoring of "
+                                + "more than one exponential variable is needed."
+                                + "This case is not yet implemented.");
+                }
+            }
+        }
+        
+        //φ
+        if (thetaZ == Double.NEGATIVE_INFINITY) {
+            if (r[0][0] != 0) {
+                thetaZ = Math.atan2(r[1][0], r[0][0]);
+            } else {
+                /* if r[0][0]==0, then so are r[1][0], r[2][1], r[2][2].
+                 have θ and ψ
+                r[0][1] : (-sin φ * cθ + cos φ * sψ * sθ)
+                r[0][2] : ( sin φ * sθ + cos φ * sψ * cθ)
+                r[1][2] : (-cos φ * sθ + sin φ * sψ * cθ)
+                ==> 1 unknown and 3 equations
+                */
+                throw new UnsupportedOperationException("There are several "
+                                + "0's in the rotation matrix, so factoring of "
+                                + "more than one exponential variable is needed."
+                                + "This case is not yet implemented.");
+            }
+        }
+                        
         return new double[]{thetaX, thetaY, thetaZ};
     }
             
