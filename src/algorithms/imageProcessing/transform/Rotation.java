@@ -24,6 +24,39 @@ public class Rotation {
             |     0        0    1 |    |    0  -sin θ   cos θ |  |  sin ψ    0  cos ψ |
     */
     
+    /*
+    Note that the "left-hand rule", which is opposite of the convention used in
+    engineering and physics, is used regarding the z-axis in
+    aeromedical communities.
+    
+    Chapter 4, "Human Response to Acceleration" by Banks, Brinkly, Allnut, and Harding
+    in "Fundamentals of Aerospace Medicine"
+    
+    For example, the Advisory Group for Aerospace
+    Research and Development (AGARD) standard for human
+    acceleration differs from the AGARD standard for aircraft
+    design (in which the z-acceleration axis is reversed and
+    positive downward).
+        ...consistent with the AGARD standard (1), the
+    Table of Equivalents for Acceleration Terminology (2), the
+    Aviation Space and Environmental Medicine Standard (3),
+    and the majority of the Aerospace Medicine literature, the
+    positive direction of each of these axes is here described by
+    ‘‘the left-hand rule.’’   That is, the x-axis dimension is an arrow
+     with the positive direction forward, the y-axis dimension has
+    the positive direction rightward, and the z-axis dimension
+    has the positive dimension upward.
+    
+    
+    */
+    
+    /*
+     terms used describing axes of rotation:
+        heading, attitude, bank,
+         pitch, yaw, roll,
+         pan, tilt, roll
+    */
+    
     /**
      * <pre>
        cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
@@ -430,7 +463,11 @@ public class Rotation {
         r10/r00 = (sin φ * cos ψ) / (cos φ * cos ψ) = Math.atan2(r10, r00)
         */
         double thetaX = Math.atan2(r[2][1], r[2][2]);
-        double thetaY = -Math.asin(r[2][0]);
+        
+        //double thetaY = -Math.asin(r[2][0]);
+        double thetaY = Math.atan2(-r[2][0],
+            Math.sqrt(r[2][1]*r[2][1] + r[2][2]*r[2][2]));
+        
         double thetaZ = Math.atan2(r[1][0], r[0][0]);
         
         return new double[]{thetaX, thetaY, thetaZ};
