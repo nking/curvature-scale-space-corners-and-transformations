@@ -507,6 +507,9 @@ public class Rotation {
                         add all   : cos θ * (-sφ + cφ * sψ + cφ + sφ * sψ) + sin θ * (cφ * sψ + sφ + sφ * sψ + -cφ)
                         rewritten : cos θ * (cφ - sφ + (cφ * sψ) + (sφ * sψ)) + sin θ * (-cφ + sφ + (cφ * sψ) + (sφ * sψ))
                                   : cos θ * (cφ - sφ + (cφ * sψ) + (sφ * sψ)) + sin θ * (-cφ + sφ + (cφ * sψ) + (sφ * sψ))
+                        let a1 = (cφ * sψ) + (sφ * sψ)
+                        let a0 = cφ - sφ
+                                  : cos θ * (a0 + a1) + sin θ * (-a0 + a1)
                         */
                         throw new UnsupportedOperationException("There are "
                                 + "0's in the rotation matrix, so factoring of "
