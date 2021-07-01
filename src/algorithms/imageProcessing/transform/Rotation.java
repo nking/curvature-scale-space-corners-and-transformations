@@ -14,14 +14,52 @@ public class Rotation {
     /*    
     NOTE that Schuster 1993, "A Survey of Attitude Representations"
     Journal of Astronautical Sciences, Vol 41, No. 4, Oct-Dec 1993, pp 439-517
+    uses different rotation matrices:
     
-    uses different notation, each matrix is transposed compared to what is used
+        about z-axis (yaw):           about the y-axis (pitch):    about x-axis (roll): 
+            | cos φ    sin φ    0 |    |  cos ψ    0 -sin ψ |      |    1       0       0 |  
+            |-sin φ    cos φ    0 |    |      0    1      0 |      |    0   cos θ   sin θ |  
+            |     0        0    1 |    |  sin ψ    0  cos ψ |      |    0  -sin θ   cos θ |  
+    
+    each matrix is transposed compared to what is used
     below commonly (see http://planning.cs.uiuc.edu/node102.html
     
-        about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
-            | cos φ    sin φ    0 |    |    1       0       0 |  |  cos ψ    0 -sin ψ |
-            |-sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
-            |     0        0    1 |    |    0  -sin θ   cos θ |  |  sin ψ    0  cos ψ |
+    cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+    
+    exponential and skew notes:
+   
+    skew symmetric of vector v is [v]_x:
+       |    0   -v[2]  v[1]  |
+       |  v[2]    0    -v[0] |
+       | -v[1]  v[0]    0    |
+    
+    e^(i*theta) = cos(theta) + i*sin(theta)
+    
+    exponential of a matrix is expanded via power series:  e^A = I + A + (higher order terms AA/2! + AAA/3!...)
+    
+    for A = | 0  -1 |
+            | 1   0 |
+    
+    e^(A*t) = |  cos(t)  -sin(t)  |  through diagonalizing A
+              |  sin(t)   cos(t)  |
+    
+    for A being skew symmetric: |  0  -z  y |
+                                |  z   0 -x |
+                                | -y   x  0 |
+    e^(A*theta) = I + A*sin(theta) +A^2*(1 - cos(theta))
+    
+    
+    R_axis = exp(-[e_axis]_x*theta_axis)
+    
+    R_x = exp(-[1,0,0]_x * theta_x) = exp( 0  0  0 )*theta_x )
+                                           0  0  1
+                                           0 -1  0
+                                    = 1  0  0
+                                      0  1  1  * ?
+                                      0 -1  0
     */
     
     /*
@@ -56,6 +94,7 @@ public class Rotation {
     */
     
     /**
+     * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
      * <pre>
        cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
@@ -510,6 +549,7 @@ public class Rotation {
                         let a1 = (cφ * sψ) + (sφ * sψ)
                         let a0 = cφ - sφ
                                   : cos θ * (a0 + a1) + sin θ * (-a0 + a1)
+                                  : a0*(cos θ - sin θ) + a1*(cos θ + sin θ)
                         */
                         throw new UnsupportedOperationException("There are "
                                 + "0's in the rotation matrix, so factoring of "
@@ -952,7 +992,7 @@ public class Rotation {
         }
         
         // ==== eqn (30c) ======
-        //3X3        
+        //3X3    dPhi is the perturbation of the "rotation vector" 
         double[] dPhi = createRotationVector(theta, dTheta);
         
         double[][] skew = MatrixUtil.skewSymmetric(dPhi);
@@ -1117,8 +1157,10 @@ public class Rotation {
     }
     
     /**
-     * given an array of euler rotation angles, return thxe rotation matrix
+     * calculate R(angle_x, angle_y, angle_z) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z),
+     * that is, given an array of euler rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
+     * 
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -1130,6 +1172,15 @@ public class Rotation {
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+            * 
+
+        = | (cos φ * cos ψ)   (-sin φ * cos θ + cos φ * sin ψ * sin θ)   (sin φ * sin θ + cos φ * sin ψ * cos θ)   |
+          | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * sin θ)   (-cos φ * sin θ + sin φ * sin ψ * cos θ)  |
+          | (-sin ψ)          ( cos ψ * sin θ )                          (cos ψ * cos θ)                           |
+          
+       =  | (cosZ * cosY)   (-sinZ * cosX + cosZ * sinY * sinX)   (sinZ * sinX + cosZ * sinY * cosX)   |
+          | (sinZ * cosY)   ( cosZ * cosX + sinZ * sinY * sinX)   (-cosZ * sinX + sinZ * sinY * cosX)  |
+          | (-sinY)          ( cosY * sinX )                       (cosZ * cosX)                       |
      * </pre>
      * @return 
      */
@@ -1373,6 +1424,7 @@ public class Rotation {
      * @return dPhi= S(theta) * dTheta.  length is 3.
      */
     public static double[] createRotationVector(double[] theta, double[] dTheta) {
+        
         double[][] sTheta = sTheta(dTheta);
         
         // length 3
