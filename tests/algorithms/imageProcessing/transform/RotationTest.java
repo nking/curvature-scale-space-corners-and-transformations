@@ -42,7 +42,7 @@ public class RotationTest extends TestCase {
         }
     }
 
-    public void estProcrustesAlgorithmForRotation() throws NotConvergedException {
+    public void testProcrustesAlgorithmForRotation() throws NotConvergedException {
         double[][] a = new double[4][2];
         a[0] = new double[]{1, 2};
         a[1] = new double[]{3, 4};
@@ -173,7 +173,7 @@ public class RotationTest extends TestCase {
         }
     }
     
-    public void test3() {
+    public void test3() throws NotConvergedException {
         
         /*
         at end of this method, add a test for gimbal lock.
@@ -192,15 +192,27 @@ public class RotationTest extends TestCase {
         
         //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
         
-        double[][] r = Rotation.calculateRotationZYX(theta);
+        double[][] r0 = Rotation.calculateRotationZYX(theta);
                 
+        double[] thetaExtracted0 = Rotation.extractRotationFromZYX(r0);
+        
         double[] deltaTheta = new double[]{1*Math.PI/180., 10*Math.PI/180., 30*Math.PI/180.};
         
-        double[][] out = MatrixUtil.zeros(3, 3);
+        double[][] rotated = MatrixUtil.zeros(3, 3);
         
-        Rotation.applySingularitySafeRotationPerturbationEuler(r, theta, deltaTheta, out);
+        Rotation.applySingularitySafeRotationPerturbationEuler(r0, theta, deltaTheta, rotated);
+        
+        double[] thetaExtracted = Rotation.extractRotationFromZYX(rotated);
+        
+        double[][] sTheta = Rotation.sTheta(theta);
+        double[][] sThetaInv = MatrixUtil.pseudoinverseRankDeficient(sTheta);
+        double[] dRotVector = MatrixUtil.multiplyMatrixByColumnVector(sTheta, deltaTheta);
+        double[] dThetaWithPotentialSingularity = 
+            MatrixUtil.multiplyMatrixByColumnVector(sThetaInv, dRotVector);
+        
+        System.out.printf("sTheta=\n%s\n", FormatArray.toString(sTheta, "%.3e"));
+        System.out.printf("inv sTheta=\n%s\n", FormatArray.toString(sThetaInv, "%.3e"));
 
-// update to theta is not yet correct:        
         
         double[] thetaUpdated = new double[3];
         for (int i = 0; i < 3; ++i) {
@@ -211,14 +223,17 @@ public class RotationTest extends TestCase {
         
         System.out.printf("theta=\n%s\n", FormatArray.toString(theta, "%.3e"));
         System.out.printf("delta theta=\n%s\n", FormatArray.toString(deltaTheta, "%.3e"));
-        System.out.printf("theta updated=\n%s\n", FormatArray.toString(thetaUpdated, "%.3e"));
+        System.out.printf("*theta extracted from r0 rotated=\n%s\n", FormatArray.toString(thetaExtracted0, "%.3e"));
+        System.out.printf("*theta extracted from r rotated=\n%s\n", FormatArray.toString(thetaExtracted, "%.3e"));
+        System.out.printf("delta rotation vector=\n%s\n", FormatArray.toString(dRotVector, "%.3e"));
+        System.out.printf("dThetaWithPotentialSingularity=\n%s\n", 
+            FormatArray.toString(dThetaWithPotentialSingularity, "%.3e"));
         
-        System.out.printf("r=\n%s\n", FormatArray.toString(r, "%.3e"));
-        System.out.printf("r updated=\n%s\n", FormatArray.toString(out, "%.3e"));
+        System.out.printf("theta updated by + dT =\n%s\n", FormatArray.toString(thetaUpdated, "%.3e"));
+        
+        System.out.printf("r0=\n%s\n", FormatArray.toString(r0, "%.3e"));
+        System.out.printf("r rotated=\n%s\n", FormatArray.toString(rotated, "%.3e"));
         System.out.printf("r calculated from theta updates=\n%s\n", FormatArray.toString(rUpdated, "%.3e"));
-        
-        double[] d = Rotation.extractRotationFromZYX(out);
-        System.out.printf("theta extracted from r updated=\n%s\n", FormatArray.toString(d, "%.3e"));
         
     }
 }
