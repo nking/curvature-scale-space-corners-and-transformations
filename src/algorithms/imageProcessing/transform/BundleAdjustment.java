@@ -392,7 +392,7 @@ public class BundleAdjustment {
         //the sum of squares of the observed feature - projected feature
         double[] outFSqSum =new double[1];
         
-        double[] outLambda = new double[1];
+        double[] outLambda = new double[12];
         
         /*
         TODO: consider the use of delta parameters on the order of those recommended
@@ -405,7 +405,7 @@ public class BundleAdjustment {
         delta x ~ 1e-8
         */
         
-        double lambda;
+        double[] lambda = new double[12];
         double lambdaF = 2;
         
         // the residual, that is, the evaulation of the objective which is the 
@@ -450,12 +450,17 @@ public class BundleAdjustment {
             imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
             outDP, outDC, outGradP, outGradC, outFSqSum, outLambda);
         
-        lambda = outLambda[0];
-        
+        System.arraycopy(outLambda, 0, lambda, 0, lambda.length);
+              
+        // nulling outLambda prevents further initialization of it within calculateLMVectorsSparsely
         outLambda = null;
+        
+        // if choose to use Qu recommendations to init lambda instead:
+        //initLambdaWithQu(lambda);
         
         int doUpdate = 0;
         int nIter = 0;
+        int i;
         while (nIter < nMaxIter) {
             nIter++;
                    
@@ -490,12 +495,16 @@ public class BundleAdjustment {
                     doUpdate = 1;
                     // near the minimimum, which is good.
                     // decrease lambda
-                    lambda /= lambdaF;
+                    for (i = 0; i < lambda.length; ++i) {
+                        lambda[i] /= lambdaF;
+                    }
                 } else {
                     doUpdate = 0;
                     // increase lambda to reduce step length and get closer to 
                     // steepest descent direction
-                    lambda *= lambdaF;
+                    for (i = 0; i < lambda.length; ++i) {
+                        lambda[i] *= lambdaF;
+                    }
                 }
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
@@ -632,10 +641,12 @@ public class BundleAdjustment {
      * given parameters, not the given parameters plus the returned update steps
      * (outDC and outDP).
      * The length should be 1.
-     * @param outLambda an output array of length 1 which, if not null, will be filled
-     * with the maximum of the diagonal of J^T*J.  The value is used for 
-     * initializing the damping term of the L-M algorithm, but is not necessary to recalculate
-     * it here after that.   this can be null or an array of length 1.
+     * @param outLambda an output array of length nCameraParams + nPointParams
+     * (=12 when solving for intrinsic, else =9) which, if not null, will be filled
+     * with the maximum of the diagonal of J^T*J for each parameter.  The value is used for 
+     * initializing the damping term of the L-M algorithm, but it is not necessary to recalculate
+     * it here after initialization so when outLambda is null,
+     * this method will not calculate it.
      */
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
@@ -698,8 +709,8 @@ public class BundleAdjustment {
         if (outFSqSum.length != 1) {
             throw new IllegalArgumentException("outFSqSum.length must be 1");
         } 
-        if (outLambda != null && outLambda.length != 1) {
-            throw new IllegalArgumentException("outLambda must be null or its length must be 1");
+        if (outLambda != null && outLambda.length != 12) {
+            throw new IllegalArgumentException("outLambda must be null or its length must be 12");
         }
         if (imageToCamera == null) {
             throw new IllegalArgumentException("imageToCamera cannot be null");
@@ -730,7 +741,7 @@ public class BundleAdjustment {
         */
         
         // max of diagonal of J^T*J which is the diagonals of U_J and V_I
-        double lambda = Double.NEGATIVE_INFINITY;
+        Arrays.fill(outLambda, Double.NEGATIVE_INFINITY);
                 
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
@@ -924,7 +935,13 @@ public class BundleAdjustment {
                 }
             } // end image j loop
             
-            lambda = max(hPPI, lambda);
+            if (outLambda != null) {
+                for (k = 0; k < 3; ++k) {
+                    if (hPPI[k][k] > outLambda[k + 9]) {
+                        outLambda[k + 9] = hPPI[k][k];
+                    }
+                }
+            }
             
             //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
@@ -1074,13 +1091,18 @@ public class BundleAdjustment {
             //    next invocation of this method)
         }
         
+        // camera params
+        // each block of U_j is 9X9 and is A_ij^T * A_ij where A_ij = dx_ij/dParam_ij
         if (uJ != null) {
             // uJ is [9*mImages X 9]
             for (j = 0; j < mImages; ++j) {
                 uJ.getBlock(auxMA, j, 0);
-                lambda = max(auxMA, lambda);
+                for (i = 0; i < 9; ++i) {
+                    if (auxMA[i][i] > outLambda[i]) {
+                        outLambda[i] = auxMA[i][i];
+                    }
+                }
             }
-            outLambda[0] = lambda;
         }
         
         // Engels: compute updated cost function
@@ -1433,7 +1455,7 @@ public class BundleAdjustment {
      * @return 
      */
     private static double calculateGainRatio(double f, double fPrev, 
-        double[] deltaC, double[] deltaP, double lambda, 
+        double[] deltaC, double[] deltaP, double[] lambda, 
         double[] gradC, double[] gradP, double eps) {
                         
         /*
@@ -1442,28 +1464,31 @@ public class BundleAdjustment {
              and delta p is deltaC and deltaP
              and j^T*(b-f(g(p))) is gradC and gradP
        gain = (f - fPrev) / (delta p)^T * (lambda * (delta p) + gradient)
-            
        */
         
         double[] dParams = new double[deltaC.length + deltaP.length];
         System.arraycopy(deltaC, 0, dParams, 0, deltaC.length);
         System.arraycopy(deltaP, 0, dParams, deltaC.length, deltaP.length);
-        
+
         double[] gradient = new double[gradC.length + gradP.length];
         System.arraycopy(gradC, 0, gradient, 0, gradC.length);
         System.arraycopy(gradP, 0, gradient, gradC.length, gradP.length);
-        
+
         double[] pt1 = Arrays.copyOf(dParams, dParams.length);
-        MatrixUtil.multiply(pt1, lambda);
-        
+        int i;
+        //MatrixUtil.multiply(pt1, lambda);
+        for (i = 0; i < pt1.length; ++i) {
+            pt1[i] *= lambda[i];
+        }
+
         double ell = MatrixUtil.innerProduct(deltaP, gradient);
-        
+
         if (Math.abs(ell) < eps) {
             return Double.POSITIVE_INFINITY;
         }
-        
-        double gain = (f - fPrev)/ell;
-        
+
+        double gain = (f - fPrev) / ell;
+
         return gain;
     }
     
@@ -1590,6 +1615,37 @@ public class BundleAdjustment {
             Rotation.extractRotationFromZYX(outR, thetaExtracted);
             System.arraycopy(thetaExtracted, 0, rotThetas[j], 0, rotThetas[j].length);        
         }        
+        
+    }
+
+    private static void initLambdaWithQu(double[] lambda) {
+        int len = lambda.length;
+        /*Qu thesis eqn (3.38)
+        
+        delta thetas ~ 1e-8
+        delta translation ~1e-5
+        delta focus ~ 1
+        delta kRadial ~ 1e-3
+        delta x ~ 1e-8
+        */
+        int i;
+        for (i = 0; i < 3; ++i) {
+            // delta theta
+            lambda[i] = 1e-8;
+        }
+        for (i = 0; i < 3; ++i) {
+            // delta translation
+            lambda[3+i] = 1e-5;
+        }
+        for (i = 0; i < 3; ++i) {
+            // delta point params
+            lambda[len-3+i] = 1e-5;
+        }
+        if (len == 12) {
+            lambda[7] = 1;
+            lambda[8] = 1e-3;
+            lambda[9] = 1e-3;
+        }
         
     }
 
