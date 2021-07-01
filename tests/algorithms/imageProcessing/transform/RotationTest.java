@@ -175,6 +175,19 @@ public class RotationTest extends TestCase {
     
     public void test3() {
         
+        /*
+        at end of this method, add a test for gimbal lock.
+        start with theta=[0, 90 degrees, 0]
+        
+        For the asymmetric matrix
+            C_i_j_k = R(ax,ay,az)=R_z(az)*R_y(ay)*R_x(ax), singularity when
+                ay=+-(pi/2)
+        
+        For the symmetrix 
+            C_i_j_i = R_x(az)*R_y(ay)*R_x(ax), singularity when
+                ay=+-pi or a2=0.
+        */
+        
         double[] theta = new double[]{25.*Math.PI/180., 35.*Math.PI/180., 55.*Math.PI/180.};
         
         //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
@@ -186,6 +199,8 @@ public class RotationTest extends TestCase {
         double[][] out = MatrixUtil.zeros(3, 3);
         
         Rotation.applySingularitySafeRotationPerturbationEuler(r, theta, deltaTheta, out);
+
+// update to theta is not yet correct:        
         
         double[] thetaUpdated = new double[3];
         for (int i = 0; i < 3; ++i) {
