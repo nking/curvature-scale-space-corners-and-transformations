@@ -481,6 +481,21 @@ public class Rotation {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
+        double[] out = new double[3];
+        extractRotationFromZYX(r, out);
+        return out;
+    }
+    
+    /**
+     * extract euler angles from a rotation matrix which has been built following
+     * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
+     * @param r
+     * @return 
+     */
+    public static double[] extractRotationFromZYX(double[][] r, double[] out) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3x3");
+        }
         /*
           cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  

@@ -213,10 +213,11 @@ public class RotationTest extends TestCase {
         System.out.printf("sTheta=\n%s\n", FormatArray.toString(sTheta, "%.3e"));
         System.out.printf("inv sTheta=\n%s\n", FormatArray.toString(sThetaInv, "%.3e"));
 
-        
+        double[]thetaExtrMinusTheta = new double[3];
         double[] thetaUpdated = new double[3];
         for (int i = 0; i < 3; ++i) {
             thetaUpdated[i] = theta[i] + deltaTheta[i];
+            thetaExtrMinusTheta[i] = thetaExtracted0[i] - thetaExtracted[i];
         }
         
         double[][] rUpdated = Rotation.calculateRotationZYX(thetaUpdated);
@@ -230,6 +231,8 @@ public class RotationTest extends TestCase {
             FormatArray.toString(dThetaWithPotentialSingularity, "%.3e"));
         
         System.out.printf("theta updated by + dT =\n%s\n", FormatArray.toString(thetaUpdated, "%.3e"));
+        System.out.printf("thetaExtrMinusThetaT =\n%s\n", FormatArray.toString(thetaExtrMinusTheta, "%.3e"));
+        
         
         System.out.printf("r0=\n%s\n", FormatArray.toString(r0, "%.3e"));
         System.out.printf("r rotated=\n%s\n", FormatArray.toString(rotated, "%.3e"));

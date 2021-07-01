@@ -630,8 +630,10 @@ public class PNP {
      * the approach used avoids singularities and the need to restore 
      * the constraint afterwards (i.e., constraint restoration is built in).
      * 
+     * @param r
      * @param thetas input and output array holding euler rotation angles 
      *    theta_x, theta_y, theta_
+     * @param deltaTheta
      */
     private static void updateRTheta(double[][] r, double[] thetas, double[] deltaTheta) {
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
@@ -657,15 +659,21 @@ public class PNP {
         for (int i = 0; i < 3; ++i) {
             System.arraycopy(out[i], 0, r[i], 0, 3);
         }
-        /*
-        // update theta
-          dr = (deltaTheta)_x * r <-- but dr might be the rotation vector, not the euler angles
+
+        // ---- update theta ----        
+        //extracting theta from the updated rotation would keep the theta
+        //    vector consistent with the rotation matrix,
+        //    but the value is different that updating theta with delta theta
+        //    by addition.
+        //    The difference may create a problem with convergence for delta theta.
+        double[] thetaExtracted = Rotation.extractRotationFromZYX(r);
+        System.arraycopy(thetaExtracted, 0, thetas, 0, thetas.length);
         
-            //TODO: write tests to check consistency of rotation matrix update
-            //    and euler angle updates
+        /*
+        for (int i = 0; i < 3; ++i) {
             thetas[i] += deltaTheta[i];
         }*/
-                
+        
     }
 
 }

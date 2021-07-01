@@ -113,6 +113,8 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      </pre>
+     TODO: add gauge fix in coordination with invoker which provides initial
+     * parameter estimates.
      * @param coordsI the features observed in different images (in coordinates 
      * of the image reference frame).  The
      * different images may or may not be from the same camera.  The image
@@ -141,11 +143,11 @@ public class BundleAdjustment {
      * rows in a double array of size 3 X 3*nCameras where each block is
      * size 3X3.
      * @param extrRotThetas the extrinsic camera parameter rotation euler angles
-     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * stacked along the 3 columns, that is the size is [nImages X 3] where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
      * @param extrTrans the extrinsic camera parameter translation vectors
-     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * stacked along the 3 columns, that is the size is [nImages X 3] where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
      * @param kRadial an array holding radial distortion coefficients k1 and k2.
@@ -168,9 +170,9 @@ public class BundleAdjustment {
         
         // number of features:
         int m = coordsW[0].length;
-        
-        if (m < 4) {
-            throw new IllegalArgumentException("imageC[0].length must be at least 4");
+                        
+        if (m < 6) {
+            throw new IllegalArgumentException("imageC[0].length must be at least 6");
         }
         
         int nImages = coordsI[0].length/m;
@@ -344,8 +346,8 @@ public class BundleAdjustment {
         Camera distance and focal length estimates, 
         and structure depth and camera baseline ones (bas-relief), 
         are both strongly correlated whenever the perspective is weak 
-        (note: from wikipedia: weak perspective is used when when the depth of t
-        he object along the line of sight is small compared to the distance 
+        (note: from wikipedia: weak perspective is used when when the depth of
+        the object along the line of sight is small compared to the distance 
         from the camera, and the field of view is small.  hence, all points on 
         a 3D object are at the same distance Z_avg from the camera without 
         significant errors in the projection )
@@ -391,6 +393,17 @@ public class BundleAdjustment {
         double[] outFSqSum =new double[1];
         
         double[] outLambda = new double[1];
+        
+        /*
+        TODO: consider the use of delta parameters on the order of those recommended
+        by the Qu thesis in eqn (3.38) and what changes that would involve here.
+        
+        delta thetas ~ 1e-8
+        delta translation ~1e-5
+        delta focus ~ 1
+        delta kRadial ~ 1e-3
+        delta x ~ 1e-8
+        */
         
         double lambda;
         double lambdaF = 2;
@@ -487,23 +500,24 @@ public class BundleAdjustment {
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
             if (doUpdate == 1) {
-                /*
-                updateT(t, deltaT);
+                
+                // use the 2nd three elements in outDC:
+                updateTranslation(extrTrans, outDC, 3);
                 
                 //NOTE: potential singularity in this method:
-                updateRTheta(r, thetas, deltaTheta);
-
-                updateIntrinsic();
-                */
+                // use the 1st three elements in outDC
+                updateRotThetas(extrRotThetas, outDC, 0);
+                
+                updateIntrinsic(intr, outDC, 6);
+                
+                updateRadialDistortion(kRadial, outDC, 7);
             }
             
             calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
                 imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
                 outDP, outDC, outGradP, outGradC, outFSqSum, outLambda);
             
-        }
-        
-        throw new UnsupportedOperationException("not yet finished");
+        }        
     }
     
     /**
@@ -520,12 +534,12 @@ public class BundleAdjustment {
        code such as Levenberg-Marquardt.
        NOTE: the code does not update the intrinsic and extrinsic camera parameters, allowing
        the L-M algorithm to handle that.
-       The runtime complexity is ~ O(nFeatures * mImages^2)
-       assumptions used in forming the partial derivatives of the intrinsic camera parameters
+       The runtime complexity is ~ O(nFeatures * mImages^2).
+       Assumptions used in forming the partial derivatives of the intrinsic camera parameters
        are no skew, focal length along x is the same as focal length along y, square pixels.
        Cholesky decomposition is used with forward and back substitution
        to avoid inverting the reduced camera matrix
-       and to half the runtime compared to LU decomposition
+       and to half the runtime compared to L-U decomposition.
        Note that there can be more than one camera and should be 6 of more features per image
        (3 for rot, 3 for trans) and among those, need 3 per camera for the intrinsic parameters
        and 2 or more vantage points for the point parameters (no reference for these
@@ -614,7 +628,9 @@ public class BundleAdjustment {
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outFSqSum an output array holding the evaluation of the objective,
      * that is the sum of squares of the observed feature - projected feature.
-     * It's the re-projection error.
+     * It's the re-projection error.  NOTE that this evaluation is for the
+     * given parameters, not the given parameters plus the returned update steps
+     * (outDC and outDP).
      * The length should be 1.
      * @param outLambda an output array of length 1 which, if not null, will be filled
      * with the maximum of the diagonal of J^T*J.  The value is used for 
@@ -627,13 +643,6 @@ public class BundleAdjustment {
         double[] kRadial, boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
         double[] outFSqSum, double[] outLambda) throws NotConvergedException {
-/*
-TODO:
-needs edits to the 2 conditionals involving "free camera"s as they appear
-    to be gauge terms.
-and needs edits to use imageMissingFeaturesMap
-(which should probably be changed to imageFeaturesMap)
-*/
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -697,6 +706,9 @@ and needs edits to use imageMissingFeaturesMap
         }
         if (imageFeaturesMap == null) {
             throw new IllegalArgumentException("imageFeaturesMap cannot be null");
+        }
+        if (nFeatures < 6) {
+            throw new IllegalArgumentException("need at least 6 features in an image");
         }
                 
         /*
@@ -881,8 +893,6 @@ and needs edits to use imageMissingFeaturesMap
                 // if camera c is free
                 // (presumably, this means that the camera is not a fixed set of
                 // parameters and needs to be determined).
-                // (?here for a part of a gauge correction such as fixing the first camera
-                //  to have rotation = I and translation=0?)
                 if (true) {
                     
                     // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
@@ -985,7 +995,7 @@ and needs edits to use imageMissingFeaturesMap
         /* (optional) Fix gauge by freezing coordinates and thereby reducing 
             the linear system with a few dimensions.
         
-           Section 9.2 and on of Triggs et al. 2000, 
+           ** Section 9 of Triggs et al. 2000, 
            "Bundle Adjustment – A Modern Synthesis"
                "Section 9 returns to the theoretical issue of gauge freedom
                 (datum deficiency), including the theory of inner constraints."
@@ -1001,7 +1011,7 @@ and needs edits to use imageMissingFeaturesMap
             
             Forstner & Wrobel refere to it as "Free Block Adjustment"
            
-            Daniel D. Morris, Kenichi Kanatani and Takeo Kanade,
+            ** Daniel D. Morris, Kenichi Kanatani and Takeo Kanade,
             "Gauge Fixing for Accurate 3D Estimation"
         
            Also, in this project, can see it as fixing the exrinsic parameters
@@ -1056,7 +1066,12 @@ and needs edits to use imageMissingFeaturesMap
                     outDP[i*3 + k] -= tmp2[k];
                 }
             }
-            // compute updated point
+            // Engels: compute updated point
+            // NOTE: for this method, the cost function
+            //    is evaluated for the parameters given to the method
+            //    instead of evaluated at the end of the calculation,
+            //    so the update is not performed here (it's handled at the
+            //    next invocation of this method)
         }
         
         if (uJ != null) {
@@ -1068,6 +1083,11 @@ and needs edits to use imageMissingFeaturesMap
             outLambda[0] = lambda;
         }
         
+        // Engels: compute updated cost function
+        // NOTE: for this method, the cost function
+        //    is evaluated for the parameters given to the method
+        //    instead of evaluated at the end of the calculation
+
         //outGradP, outGradC, outDP, outDC, and outFSqSum are populated now        
     }
     
@@ -1455,7 +1475,124 @@ and needs edits to use imageMissingFeaturesMap
         }
         return true;
     }
-    
+
+    /**
+     * update t by deltaT
+     * @param extrTrans
+     * @param dC
+     * @param idx0
+     */
+    private static void updateTranslation(double[][] extrTrans, double[] dC, 
+        int idx0) {
+        // from Danping Zou lecture notes, Shanghai Jiao Tong University,
+        // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+        // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+
+        // parameter perturbations for a vector are:
+        //     x + delta x
+        int i, j;
+        
+        for (j = 0; j < extrTrans.length; ++j) {
+            // vector perturbation for translation:
+            for (i = 0; i < 3; ++i) {
+                extrTrans[j][i] += dC[idx0 + i];
+            }
+        }
+    }
+
+    /**
+     * update the focus parameter of the intrinsic matrix.
+     * 
+     * @param intr the intrinsic camera parameter matrices stacked along
+     * rows in a double array of size 3 X 3*nCameras where each block is
+     * size 3X3.
+     * @param dC
+     * @param idx0 
+     */
+    private static void updateIntrinsic(BlockMatrixIsometric intr, 
+        double[] dC, int idx0) {
+        
+        int nImages = intr.getA()[0].length/3;
+        
+        double[][] k = MatrixUtil.zeros(3, 3);
+        
+        // use indexes idx0 to idx0+3 of dC
+        int i, j;
+        
+        for (j = 0; j < nImages; ++j) {
+            intr.getBlock(k, 0, j*3);
+            k[0][0] += dC[idx0];
+            k[1][1] += dC[idx0];
+            intr.setBlock(k, 0, j*3);
+        }
+    }
+        
+    private static void updateRadialDistortion(double[] kRadial, 
+        double[] dC, int idx0) {
+        
+        kRadial[0] += dC[idx0];
+        kRadial[1] += dC[idx0 + 1];
+    }
+
+    /**
+     * update rotation matrix theta vectors with steps in dC.
+     * NOTE: this method has a potential error from singularity from 90 degree 
+     * angles (near zenith and nadir, for example).
+     * @param rotThetas input and output array holding euler rotation angles 
+     *    theta_x, theta_y, theta_
+     * @param dC
+     * @param idx0
+     */
+    private static void updateRotThetas(double[][] rotThetas, double[] dC, 
+        int idx0) {
+                
+        // from Danping Zou lecture notes, Shanghai Jiao Tong University,
+        // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+        // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+        // parameter perturbations for a Lie group such as rotation are:
+        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symetric matrix of delta_x 
+        
+        // T. Barfoot, et al. 2010, 
+        // Pose estimation using linearized rotations and quaternion algebra, 
+        // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+        // eqn (31) for updating rotation:
+        // C(theta) = C(deltaPhi) * previous C
+        //     where C is rotation matrix r
+        //           calculated as C(theta) = 
+        //     and deltaPhi = sTheta * deltaTheta
+        
+        //    rotation matrix formed from rZ * rY * rX (yaw, pitch, and roll)
+        //    which is the same convention used by Wetzstein
+                
+        double[] deltaTheta = Arrays.copyOfRange(dC, idx0, idx0 + 3);
+        
+        double[][] outR = MatrixUtil.zeros(3, 3);
+        double[][] r0 = MatrixUtil.zeros(3, 3);
+        Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();
+        double[] thetaExtracted = new double[3];
+        
+        // ---- update theta ----        
+        //extracting theta from the updated rotation would keep the theta
+        //    vector consistent with the rotation matrix,
+        //    but the value is different that updating theta with delta theta
+        //    by addition.
+        //    The difference may create a problem with convergence for delta theta.
+        
+        int j;
+        
+        for (j = 0; j < rotThetas.length; ++j) {
+            
+            Rotation.calculateRotationZYX(deltaTheta, aa, r0);
+            
+            Rotation.applySingularitySafeRotationPerturbationEuler(r0, 
+                rotThetas[j], deltaTheta, outR);
+        
+            Rotation.extractRotationFromZYX(outR, thetaExtracted);
+            System.arraycopy(thetaExtracted, 0, rotThetas[j], 0, rotThetas[j].length);        
+        }        
+        
+    }
+
     static class AuxiliaryArrays {
         final double[][] a2X2;
         final double[][] b2X3;
