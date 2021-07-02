@@ -261,9 +261,9 @@ public class CameraCalibrationTest extends TestCase {
         double eFocalLength = 1604;
         double eCenterX = 1521;
         double eCenterY = 1752;
-        double[][] eR21 = Rotation.createEulerYawRotationMatrix(23.4*(Math.PI/180.));
-        double[][] eR23 = Rotation.createEulerYawRotationMatrix(23.4*(Math.PI/180.));
-        double[][] eR13 = Rotation.createEulerYawRotationMatrix(2*23.4*(Math.PI/180.));
+        double[][] eR21 = Rotation.createYawRotationMatrix(23.4*(Math.PI/180.));
+        double[][] eR23 = Rotation.createYawRotationMatrix(23.4*(Math.PI/180.));
+        double[][] eR13 = Rotation.createYawRotationMatrix(2*23.4*(Math.PI/180.));
         
         double[] eT21 = new double[]{18, 0, 0};
         double[] eT23 = new double[]{18, 0, 0};

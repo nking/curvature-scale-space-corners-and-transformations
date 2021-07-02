@@ -252,6 +252,9 @@ public class PNP {
                 
                 updateT(t, deltaT);
                 
+                // for local parameterization:
+                //updateT(t, deltaT, r);
+                
                 updateRTheta(r, thetas, deltaTheta);
                                              
                 updateHWithRT(h, r, t);
@@ -627,6 +630,18 @@ public class PNP {
         }
     }
     
+    private static void updateT(double[] t, double[] deltaT, double[][] r) {
+        // t_local(t + deltaT) = t + r*deltaT
+        int i;
+        
+        double[] rdt = MatrixUtil.multiplyMatrixByColumnVector(r, deltaT);
+        
+        // vector perturbation for translation:
+        for (i = 0; i < 3; ++i) {
+            t[i] += rdt[i];
+        }
+    }
+    
     /**
      * update rotation matrix r with deltaTheta.
      * the approach used avoids singularities and the need to restore 
@@ -655,7 +670,7 @@ public class PNP {
         
         double[][] out = MatrixUtil.zeros(3, 3);
         
-        Rotation.applySingularitySafeRotationPerturbationEuler(r, thetas, deltaTheta, out);
+        Rotation.applySingularitySafeRotationPerturbation(r, thetas, deltaTheta, out);
         
         // update in-out variable r
         for (int i = 0; i < 3; ++i) {

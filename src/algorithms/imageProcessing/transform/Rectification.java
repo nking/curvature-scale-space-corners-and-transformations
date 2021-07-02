@@ -287,7 +287,7 @@ public class Rectification {
         // rotate the epipole to lie on the x-axis
         double theta = Math.atan(-p2T[1]/p2T[0]);
         // rotation about z-axis:
-        double[][] gR = Rotation.createEulerYawRotationMatrix(theta);
+        double[][] gR = Rotation.createYawRotationMatrix(theta);
         double[] p2R = MatrixUtil.multiplyMatrixByColumnVector(gR, p2T);
        
         double[][] g = MatrixUtil.createIdentityMatrix(3);

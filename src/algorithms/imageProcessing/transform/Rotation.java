@@ -5,8 +5,100 @@ import java.util.Arrays;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
- * a utility class holding euler rotations and rodrigues formula.
+ * a utility class holding rotations associated with tait-bryan angles,
+ * quaternions, and angle-axis representations (using rodrigues formula for the later).
  * 
+ * <pre>
+ * https://en.wikipedia.org/wiki/Davenport_chained_rotations
+ * The general problem of decomposing a rotation into three composed movements 
+ * about intrinsic axes was studied by P. Davenport and the angles are 
+ * called "Davenport angles" by M. Shuster and L. Markley.
+ * 
+ * Generalized Euler rotations
+      (z-x-z, x-y-x, y-z-y, z-y-z, x-z-x, y-x-y)
+   Generalized Tait–Bryan rotations
+       (x-y-z, y-z-x, z-x-y, x-z-y, z-y-x, y-x-z).
+   Most of the cases belong to the second group, being the generalized Euler rotations 
+   are a degenerated case in which first and third axes are overlapping.
+   
+   A unique decomposition is possible if and only if the second axis is 
+   perpendicular to the other two axes.
+   The Tait–Bryan case appears when axes 1 and 3 are perpendicular, 
+   and the Euler case appears when they are overlapping.
+   
+ Regarding quaternions
+ "Why and How to Avoid the Flipped Quaternion Multiplication"
+Hannes Sommer∗, Igor Gilitschenski♯, Michael Bloesch†, Stephan Weiss‡, 
+Roland Siegwart∗, and Juan Nieto∗
+Aerospace 2018, 5(3), 72; https://doi.org/10.3390/aerospace5030072
+
+Over the last decades quaternions have become a crucial and very successful 
+* tool for attitude representation in robotics and aerospace. However, there 
+* is a major problem that is continuously causing trouble in practice when it 
+* comes to exchanging formulas or implementations: there are two quaternion 
+* multiplications commonly in use, Hamilton’s multiplication and its flipped 
+* version, which is often associated with NASA’s Jet Propulsion Laboratory. 
+* This paper explains the underlying problem for the popular passive world-to-
+* body usage of rotation quaternions, and promotes an alternative solution 
+* compatible with Hamilton’s multiplication. Furthermore, it argues for 
+* discontinuing the flipped multiplication. Additionally, it provides recipes 
+* for efficiently detecting relevant conventions and migrating formulas or 
+* algorithms between them.
+* 
+* from wikipedia:
+*     After Hamilton's death, his student Peter Tait continued promoting quaternions. 
+*     
+*     (Tait-Bryan coordinates are in comments below.)
+* 
+*     ... Hamilton's original definitions are unfamiliar and his writing style 
+*     was wordy and difficult to follow.
+* 
+* from https://fzheng.me/2017/11/12/quaternion_conventions_en/
+*     In Hamilton convention, ijk=-1, while JPL defines ijk = 1.
+*     As consequences, the multiplication of quaternions and the transformation 
+*     between quaternions and other rotation parameterizations differ with 
+*     different quaternion conventions.
+* 
+*  Eigen, ROS, and Google Ceres use Hamilton convention.
+*  Also  Wolfram Mathematica, Matlab’s aerospace(!) and robotics toolbox, 
+*  Boost, GNU Octave, NASA’s SPICE.
+* 
+* Regarding rotation axes and perspectives:
+*     https://en.wikipedia.org/wiki/Rotation_matrix#Ambiguities
+*     The coordinates of a point P may change due to either a rotation of the 
+*     coordinate system CS (alias), or a rotation of the point P (alibi). 
+*     In the latter case, the rotation of P also produces a rotation of the 
+*     vector v representing P. In other words, either P and v are fixed while 
+*     CS rotates (alias), or CS is fixed while P and v rotate (alibi). Any 
+*     given rotation can be legitimately described both ways, as vectors and 
+*     coordinate systems actually rotate with respect to each other, about the 
+*     same axis but in opposite directions. Throughout this article, we chose the 
+*     alibi approach to describe rotations. For instance, 
+*        R(theta)= | cos(theta)  -sin(theta) |
+*                  | sin(theta)   cos(theta) |
+*     represents a counterclockwise rotation of a vector v by an angle θ, or a 
+*     rotation of CS by the same angle but in the opposite direction 
+*     (i.e. clockwise). Alibi and alias transformations are also known as active 
+*     and passive transformations, respectively.
+* 
+*     Pre-multiplication or post-multiplication
+         The same point P can be represented either by a column vector v or a 
+         row vector w. Rotation matrices can either pre-multiply column vectors 
+         (Rv), or post-multiply row vectors (wR). However, Rv produces a 
+         rotation in the opposite direction with respect to wR. 
+         Throughout this article, rotations produced on column vectors are 
+         described by means of a pre-multiplication. To obtain exactly the same 
+         rotation (i.e. the same final coordinates of point P), the equivalent 
+         row vector must be post-multiplied by the transpose of R (i.e. wR^T).
+   
+  Regarding rotation matrices multiplication order:
+  https://en.wikipedia.org/wiki/Rotation_matrix
+       Suppose the three angles are θ1, θ2, θ3; 
+       physics and chemistry may interpret these as
+           R(θ1, θ2, θ3) = R_x(θ1)*R_y(θ2)*R_z(θ3)
+       while aircraft dynamics may use
+           R(θ1, θ2, θ3) = R_z(θ3)*R_y(θ2)*R_x(θ1)
+ * </pre>
  * @author nichole
  */
 public class Rotation {
@@ -20,10 +112,11 @@ public class Rotation {
             | cos φ    sin φ    0 |    |  cos ψ    0 -sin ψ |      |    1       0       0 |  
             |-sin φ    cos φ    0 |    |      0    1      0 |      |    0   cos θ   sin θ |  
             |     0        0    1 |    |  sin ψ    0  cos ψ |      |    0  -sin θ   cos θ |  
+   
+    each matrix is transposed compared to the Tait-Bryan angles which are used
+    below (see http://planning.cs.uiuc.edu/node102.html
     
-    each matrix is transposed compared to what is used
-    below commonly (see http://planning.cs.uiuc.edu/node102.html
-    
+    tait-bryan angles:
     cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
@@ -65,7 +158,9 @@ public class Rotation {
     /*
     Note that the "left-hand rule", which is opposite of the convention used in
     engineering and physics, is used regarding the z-axis in
-    aeromedical communities.
+    aeromedical communities.  These are Tait–Bryan angles where
+    Heading is along the z-axis and is in the opposite direction of that expected for 
+    "right-hand rule".
     
     Chapter 4, "Human Response to Acceleration" by Banks, Brinkly, Allnut, and Harding
     in "Fundamentals of Aerospace Medicine"
@@ -93,8 +188,11 @@ public class Rotation {
          pan, tilt, roll
     */
     
+    
     /**
      * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
+     * NOTE: this is not the normal convention.  You might want to use
+     * calculateRotationZYX().
      * <pre>
        cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
@@ -108,9 +206,9 @@ public class Rotation {
      */
     public static double[][] calculateRotationXYZ(double angleX, double angleY, double angleZ) {
         
-        double[][] rotX = createEulerRollRotationMatrix(angleX);
-        double[][] rotY = createEulerPitchRotationMatrix(angleY);
-        double[][] rotZ = createEulerYawRotationMatrix(angleZ);
+        double[][] rotX = Rotation.createRollRotationMatrix(angleX);
+        double[][] rotY = Rotation.createPitchRotationMatrix(angleY);
+        double[][] rotZ = Rotation.createYawRotationMatrix(angleZ);
         
         double[][] r = MatrixUtil.multiply(rotX, rotY);
         r = MatrixUtil.multiply(r, rotZ);
@@ -129,7 +227,7 @@ public class Rotation {
      * @param angle angle of rotation about x-axis (roll) in units of radians.
      * @return 
      */
-    public static double[][] createEulerRollRotationMatrix(double angle) {
+    public static double[][] createRollRotationMatrix(double angle) {
         
         double[][] rot = MatrixUtil.zeros(3, 3);
         
@@ -156,7 +254,7 @@ public class Rotation {
      * @param angle angle of rotation about x-axis (roll) in units of radians.
      * @param out holds values for rotation matrix for roll. 
      */
-    public static void createEulerRollRotationMatrix(double angle, double[][] out) {
+    public static void createRollRotationMatrix(double angle, double[][] out) {
 
         if (out.length != 3 || out[0].length != 3) {
             throw new IllegalArgumentException("out must be 3x3");
@@ -188,7 +286,7 @@ public class Rotation {
      * @param angle angle of rotation about y-axis (pitch) in units of radians.
      * @return 
     */
-    public static double[][] createEulerPitchRotationMatrix(double angle) {
+    public static double[][] createPitchRotationMatrix(double angle) {
         
         double[][] rot = MatrixUtil.zeros(3, 3);
         
@@ -215,7 +313,7 @@ public class Rotation {
      * @param angle angle of rotation about y-axis (pitch) in units of radians.
      * @param out holds values for rotation matrix for pitch 
     */
-    public static void createEulerPitchRotationMatrix(double angle, 
+    public static void createPitchRotationMatrix(double angle, 
         double[][] out) {
 
         if (out.length != 3 || out[0].length != 3) {
@@ -247,7 +345,7 @@ public class Rotation {
      * @param angle angle of rotation about z-axis (yaw) in units of radians.
      * @return 
     */
-    public static double[][] createEulerYawRotationMatrix(double angle) {
+    public static double[][] createYawRotationMatrix(double angle) {
         
         double[][] rot = MatrixUtil.zeros(3, 3);
         
@@ -275,7 +373,7 @@ public class Rotation {
      * @param out results for a rotation matrix for yaw.  size given to method 
      * must be 3X3.
     */
-    public static void createEulerYawRotationMatrix(double angle, double[][] out) {
+    public static void createYawRotationMatrix(double angle, double[][] out) {
 
         if (out.length != 3 || out[0].length != 3) {
             throw new IllegalArgumentException("out must be 3x3");
@@ -299,6 +397,9 @@ public class Rotation {
     /**
      * given v as an array of rotations about x, y, and z, calculate the 
      * rotation matrix.
+     * essentially, excepting a small angle correction:
+     *     R^⊤ = cosθ*I + sinθ*[v]_× + (1−cosθ)*v*v^⊤
+     * 
      * NOTE: if computing the partial derivative of Rotation elsewhere, 
      * can use d(R(ω)*v)/d(ω^T) = -[v]_x (see Equation (2.35) of Szeliski 2010).
      * <pre>
@@ -307,8 +408,8 @@ public class Rotation {
      *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
      *    Rodriguez’s formula (Ayache 1989)
      * </pre>
-     * @param v
-     * @return 
+     * @param v [1x3] array of rotations about x, y, and z
+     * @return rotation matrix [3X3]
      */
     public static double[][] createRodriguesFormulaRotationMatrix(double[] v) {
         if (v.length != 3) {
@@ -377,12 +478,15 @@ public class Rotation {
             
             double[] n = Arrays.copyOf(v, v.length);
             MatrixUtil.multiply(n, 1./theta);
+            // [3X3]
             double[][] sn = MatrixUtil.skewSymmetric(n);
             
             //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
             tmp1 = MatrixUtil.copy(sn);
+            //[3X3]
             MatrixUtil.multiply(tmp1, Math.sin(theta));
             
+            //[3X3]
             tmp2 = MatrixUtil.multiply(sn, sn);
             MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
             
@@ -414,6 +518,134 @@ public class Rotation {
     }
 
     /**
+     * given v as an array of rotations about x, y, and z, calculate the 
+     * transpose of the rotation matrix.
+     * essentially, excepting a small angle correction:
+     * R^⊤ = cosθ*I − sinθ*[v]_× + (1−cosθ)*v*v^⊤
+     *     
+     * NOTE: if computing the partial derivative of Rotation elsewhere, 
+     * can use d(R(ω)*v)/d(ω^T) = -[v]_x (see Equation (2.35) of Szeliski 2010).
+     * <pre>
+     * references:
+     *    Dmitry Berenson https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
+     *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
+     *    Rodriguez’s formula (Ayache 1989)
+     * 
+     *    Metrics for 3D Rotations: Comparison and Analysis.
+     *    Huynh 2009.
+     *    J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
+     *    https://www.cs.cmu.edu/~cga/dynopt/readings/Rmetric.pdf
+     * </pre>
+     * @param v [1x3] array of rotations about x, y, and z
+     * @return rotation matrix [3X3]
+     */
+    public static double[][] createRodriguesFormulaRotationMatrixTranspose(double[] v) {
+        if (v.length != 3) {
+            throw new IllegalArgumentException("v length must be 3");
+        }
+        
+        /*
+        https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
+        
+        Copyright (c) 2010 Carnegie Mellon University and Intel Corporation
+        #   Author: Dmitry Berenson <dberenso@cs.cmu.edu>
+        #
+        #   Redistribution and use in source and binary forms, with or without
+        #   modification, are permitted provided that the following conditions are met:
+        #
+        #     * Redistributions of source code must retain the above copyright
+        #       notice, this list of conditions and the following disclaimer.
+        #     * Redistributions in binary form must reproduce the above copyright
+        #       notice, this list of conditions and the following disclaimer in the
+        #       documentation and/or other materials provided with the distribution.
+        #     * Neither the name of Intel Corporation nor Carnegie Mellon University,
+        #       nor the names of their contributors, may be used to endorse or
+        #       promote products derived from this software without specific prior
+        #       written permission.
+        #
+        #   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+        #   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        #   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+        #   ARE DISCLAIMED. IN NO EVENT SHALL INTEL CORPORATION OR CARNEGIE MELLON
+        #   UNIVERSITY BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+        #   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+        #   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+        #   OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+        #   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+        #   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+        #   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+        # -*- coding: utf-8 -*-
+        '''Rodrigues formula
+        Input: 1x3 array of rotations about x, y, and z
+        Output: 3x3 rotation matrix'''
+        from numpy import array,mat,sin,cos,dot,eye
+        from numpy.linalg import norm
+
+        def rodrigues(r):
+            def S(n):
+                Sn = array([[0,-n[2],n[1]],[n[2],0,-n[0]],[-n[1],n[0],0]])
+                return Sn
+            theta = norm(r)
+            if theta > 1e-30:
+                n = r/theta
+                Sn = S(n)
+                R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
+            else:
+                Sr = S(r)
+                theta2 = theta**2
+                R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
+            return mat(R)        
+        */
+        
+        double theta = MatrixUtil.lPSum(v, 2);
+        
+        double[][] tmp1, tmp2;
+        
+        if (theta > 1e-30) {
+            
+            double[] n = Arrays.copyOf(v, v.length);
+            MatrixUtil.multiply(n, 1./theta);
+            // [3X3]
+            double[][] sn = MatrixUtil.skewSymmetric(n);
+            
+            //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
+            tmp1 = MatrixUtil.copy(sn);
+            //[3X3]
+            MatrixUtil.multiply(tmp1, Math.sin(theta));
+            
+            //[3X3]
+            tmp2 = MatrixUtil.multiply(sn, sn);
+            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
+            
+            
+        } else {
+            
+            double[][] sr = MatrixUtil.skewSymmetric(v);
+            double theta2 = theta*theta;
+            
+            //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
+            tmp1 = MatrixUtil.copy(sr);
+            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);
+          
+            tmp2 = MatrixUtil.multiply(sr, sr);
+            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);
+            
+        }
+        
+        double[][] r = MatrixUtil.createIdentityMatrix(3);
+        
+        int j;
+        for (int i = 0; i < tmp1.length; ++i) {
+            for (j = 0; j < tmp1[i].length; ++j) {
+                r[i][j] += (-tmp1[i][j] + tmp2[i][j]);
+            }
+        }
+        
+        return r;
+    }
+    
+    /**
      * determine the rotation between measurements x1 and x2 when both datasets
      * have the same center, that is, there is no translation between them,
      * only rotation.
@@ -427,7 +659,7 @@ public class Rotation {
      * the expected format is nData X nDimensions.
      * @return
      * @throws no.uib.cipr.matrix.NotConvergedException
-     */
+    */
     public static double[][] procrustesAlgorithmForRotation(double[][] x1, double[][] x2) 
         throws NotConvergedException {
         int m = x1.length;
@@ -444,24 +676,27 @@ public class Rotation {
     }
     
     /**
-     * extract the rotation angles from the given euler rotation matrix assumed
-     * to be a result of R_z(theta_z) * R_x(theta_x) * R_y(theta_y).
-     * NOTE: Note, however, that this way of extracting of the Euler angles is 
+     * extract the rotation angles from the given rotation matrix assumed
+     * to be a result of R_yxz = R_z(theta_z) * R_x(theta_x) * R_y(theta_y)
+     * (aka 2-1-3 angle set?).
+     * NOTE: Note, however, that this way of extracting of the Tait-Bryan angles is 
      * ambiguous. Even though whatever angles you extract this way will result 
      * in the correct rotation matrix, if the latter was generated from a 
-     * set of Euler angles in the first place, you are not guaranteed to get 
+     * set of Tait-Bryan angles in the first place, you are not guaranteed to get 
      * exactly those back.
      <pre>
      the method is from equation (37) from 
      lecture notes of Gordon Wetzstein at Stanford University,
      EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
      https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
+     
+     
      </pre>
-     * @param r euler rotation matrix assumed
-     * to be a result of R_z(theta_z) * R_x(theta_x) * R_y(theta_y)
+     * @param r  rotation matrix assumed
+     * to be a result of R_yxz = R_z(theta_z)  * R_x(theta_x) * R_y(theta_y).
      * @return theta_x, theta_y, theta_z
      */
-    public static double[] extractRotationFromZXY(double[][] r) {
+    public static double[] extractRotationAxisFromZXY(double[][] r) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
@@ -472,8 +707,8 @@ public class Rotation {
     }
     
     /**
-     * extract euler angles from a rotation matrix which has been built following
-     * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
+     * extract Tait-Bryan rotation angles from a rotation matrix which has been built following
+     * the convention of R_xyz =  R(theta_Z) * R(theta_Y) * R(theta_X).
      * @param r
      * @return 
      */
@@ -487,16 +722,16 @@ public class Rotation {
     }
     
     /**
-     * extract euler angles from a rotation matrix which has been built following
+     * extract Tait-Bryan rotation angles from a rotation matrix which has been built following
      * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
      * @param r
-     * @return 
      */
-    public static double[] extractRotationFromZYX(double[][] r, double[] out) {
+    public static void extractRotationFromZYX(double[][] r, double[] out) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
         /*
+        using tait-bryan angles
           cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
@@ -506,9 +741,9 @@ public class Rotation {
           | (sin φ * cos ψ)   ( cos φ)   (sin φ * sin ψ) |    | 0   cos θ   sin θ |
           | (-sin ψ)          (   0  )   (   cos ψ )     |    | 0  -sin θ   cos θ |
 
-        = | (cos φ * cos ψ)   (-sin φ * cos θ + cos φ * sin ψ * sin θ)   (sin φ * sin θ + cos φ * sin ψ * cos θ) |
-          | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * sin θ)   (-cos φ * sin θ + sin φ * sin ψ * cos θ)  |
-          | (-sin ψ)          ( cos ψ * sin θ )                          (cos ψ * cos θ)                          |
+        = | (cos Z * cos Y)   (-sin Z * cos X + cos Z * sin Y * sin X)   ( sin Z * sin X + cos Z * sin Y * cos X) |
+          | (sin Z * cos Y)   ( cos Z * cos X + sin Z * sin Y * sin X)   (-cos Z * sin X + sin Z * sin Y * cos X)  |
+          | (-sin Y)          ( cos Y * sin X )                          (cos Y * cos X)                          |
 
         r20 = -sin ψ  ==> ψ = theta_y = -Math.asin(r20)
         r21/r22 = ( cos ψ * sin θ )/(cos ψ * cos θ) = (sin θ)/(cos θ) = tan(θ) ==> θ = theta_x = Math.atan2(r21, r22)
@@ -605,13 +840,15 @@ public class Rotation {
                                 + "This case is not yet implemented.");
             }
         }
-                        
-        return new double[]{thetaX, thetaY, thetaZ};
+        
+        out[0] = thetaX;
+        out[1] = thetaY;
+        out[2] = thetaZ;                        
     }
             
     /**
      * another method to extract the Rodrigues vector from the given
-     * euler rotation matrix (it's an ambiguous task).
+     * rotation matrix (it's an ambiguous task).
 
      <pre>
      the method is from  
@@ -619,7 +856,7 @@ public class Rotation {
      ECE 661 Robot Vision Laboratory,
      https://engineering.purdue.edu/kak/computervision/ECE661_Fall2012/homework/hw5_LM_handout.pdf
      </pre>
-     * @param r euler rotation matrix
+     * @param r rotation matrix
      * @return Rodriques vector.  the axis and angle representation from this
      * can be constructed as angle of rotation = r_vec/||r_vec|| and angle = ||r_vec||
      * where r_vec is the rodrigues vector.
@@ -670,6 +907,40 @@ public class Rotation {
         r = MatrixUtil.multiply(r, factor);
         
         return r;
+    }
+    
+    /**
+    calculate the distance metric between quaternions, using vector inner product
+    <pre>
+    eqn (19) of J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
+    Metrics for 3D Rotations: Comparison and Analysis Du Q. Huynh
+    </pre>
+     * @param q1 a quaternion
+     * @param q2 another quaternion
+     * @return distance metric between 2 quaternions.  the range of 
+     * values will be [0,π/2] (radians).
+     */
+    public static double distanceBetweenQuaternions(double[] q1, double[] q2) {
+        double p = Math.abs(MatrixUtil.innerProduct(q1, q2));
+        double d = Math.acos(p);
+        return d;
+    }
+    
+    /**
+    calculate the distance measure between 2 euclidean transformations of the
+    given quaternions, using vector inner product.
+    <pre>
+    eqn (20) of J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
+    Metrics for 3D Rotations: Comparison and Analysis Du Q. Huynh
+    </pre>
+     * @param q1 a quaternion
+     * @param q2 another quaternion
+     * @return the distance measure between two Euclidean transformations.  the range of 
+     * values will be [0, 1] (radians).
+     */
+    public static double distanceBetweenQuaternionEuclideanTransformations(double[] q1, double[] q2) {
+        double p = Math.abs(MatrixUtil.innerProduct(q1, q2));
+        return 1 - p;
     }
     
     /**
@@ -811,7 +1082,7 @@ public class Rotation {
         
         return inv;
     }
-   
+    
     /**
      * given a quaternion, return the inverse
      * <pre>
@@ -847,9 +1118,9 @@ public class Rotation {
      * where C is the canonical 3X3 rotation matrix.
      * </pre>
      * @param quaternion the quaternion 4 element array
-     * @return a 4x4 rotation matrix
+     * @return a 4x4 rotation matrix whose 3X3 block at [0:2, 0:2] is the rotation matrix.
      */
-    public static double[][] createRotationMatrixFromQuaternion(double[] quaternion) {
+    public static double[][] createRotationMatrixFromQuaternion4(double[] quaternion) {
         if (quaternion.length != 4) {
             throw new IllegalArgumentException("quaternion must be length 4");
         }
@@ -908,7 +1179,7 @@ public class Rotation {
      * 
      * </pre>
      * @param quaternion the quaternion 4 element array
-     * @param v the vector as a 3 element array followed by a 0.
+     * @param v the vector as a 3 element array followed by a 0, = [4X1].
      * @return 
      */
     public static double[] rotateVectorByQuaternion4(double[] quaternion, double[] v) {
@@ -918,7 +1189,7 @@ public class Rotation {
         if (v.length != 4) {
             throw new IllegalArgumentException("v3 must be length 4");
         }
-        double[][] r = createRotationMatrixFromQuaternion(quaternion);
+        double[][] r = createRotationMatrixFromQuaternion4(quaternion);
         
         double[] result = MatrixUtil.multiplyMatrixByColumnVector(r, v);
         
@@ -926,7 +1197,7 @@ public class Rotation {
     }
     
      /**
-     * apply infinitesimal rotation expressed as euler angles ([1X3]) 
+     * apply infinitesimal rotation expressed as Tait-Bryan rotation angles ([1X3]) 
      * to a rotation matrix ([3X3]).
      * To the first order, this is a constraint-sensitive approach, i.e.
      * r*r^T = I for the perturbed matrix to first order as long as it was
@@ -944,7 +1215,7 @@ public class Rotation {
      * </pre>
      * @return 
      */
-    public static double[][] applyRotationPerturbationEuler(
+    public static double[][] applyRotationPerturbation(
         double[][] r, double[] theta, double[] dTheta) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r size must be [3X3]");
@@ -974,7 +1245,7 @@ public class Rotation {
     }
     
     /**
-     * apply infinitesimal rotation expressed as euler angles ([1X3]) 
+     * apply infinitesimal rotation expressed as Tait-Bryan rotation angles ([1X3]) 
      * to a rotation matrix ([3X3]).
      * To the first order, this is a constraint-sensitive approach, i.e.
      * r*r^T = I for the perturbed matrix to first order as long as it was
@@ -991,7 +1262,7 @@ public class Rotation {
      * 
      * </pre>
      */
-    public static void applySingularitySafeRotationPerturbationEuler(
+    public static void applySingularitySafeRotationPerturbation(
         double[][] r, double[] theta, double[] dTheta, double[][] out) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r size must be [3X3]");
@@ -1024,7 +1295,7 @@ public class Rotation {
     }
     
     /**
-     * apply infinitesimal rotation expressed as euler angles ([1X3]) 
+     * apply infinitesimal rotation expressed as Tait-Bryan rotation angles ([1X3]) 
      * to a rotation matrix ([3X3]).
      * To the first order, this is a constraint-sensitive approach.
      * <pre>
@@ -1056,14 +1327,14 @@ public class Rotation {
     
     /**
      * calculate S_theta which is the matrix relating angular velocity to 
-     * Euler-angle rates.  
+     * rotation angle rates.  
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
      * eqn (21):
-     * given C = 3X3 rotation matrix (oftern written as R)
-     * given array of rotation angles for euler alpha, beta,gamma matrices
+     * calc C = 3X3 rotation matrix (often written as R)
+     * given array of Tait-Bryan rotation angles alpha, beta, gamma
      * 
      * s_theta column 0 = C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T
      *         column 1 = C_gamma(theta[2]) * [0, 1, 0]^T 
@@ -1075,11 +1346,11 @@ public class Rotation {
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      *  theta[0] = angleX angle of rotation about x-axis (roll) in units of radians.
-     *             can use createEulerRollRotationMatrix(theta[0])
+     *             can use createRollRotationMatrix(theta[0])
      *  theta[1] = angleY angle of rotation about y-axis (pitch) in units of radians.
-     *             can use createEulerPitchRotationMatrix(theta[1])
+     *             can use createPitchRotationMatrix(theta[1])
      *  theta[2] = angleZ angle of rotation about z-axis (yaw) in units of radians.
-     *             can use createEulerYawRotationMatrix(theta[2])
+     *             can use createYawRotationMatrix(theta[2])
      * 
      * see also, pp 479-480, eqn (285) of Shuster 1993, "A Survey of AttitudeRepresentations"
      * http://www.ladispe.polito.it/corsi/Meccatronica/02JHCOR/2011-12/Slides/Shuster_Pub_1993h_J_Repsurv_scan.pdf
@@ -1100,14 +1371,14 @@ public class Rotation {
     
     /**
      * calculate S_theta which is the matrix relating angular velocity to 
-     * Euler-angle rates.  
+     * rotation angle rates.  
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
      * eqn (21):
-     * given C = 3X3 rotation matrix (oftern written as R)
-     * given array of rotation angles for euler alpha, beta,gamma matrices
+     * calc C = 3X3 rotation matrix (oftern written as R)
+     * given array of Tiat-Bryan rotation angles  alpha, beta,gamma matrices
      * 
      * s_theta column 0 = C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T
      *         column 1 = C_gamma(theta[2]) * [0, 1, 0]^T 
@@ -1119,11 +1390,11 @@ public class Rotation {
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      *  theta[0] = angleX angle of rotation about x-axis (roll) in units of radians.
-     *             can use createEulerRollRotationMatrix(theta[0])
+     *             can use createRollRotationMatrix(theta[0])
      *  theta[1] = angleY angle of rotation about y-axis (pitch) in units of radians.
-     *             can use createEulerPitchRotationMatrix(theta[1])
+     *             can use createPitchRotationMatrix(theta[1])
      *  theta[2] = angleZ angle of rotation about z-axis (yaw) in units of radians.
-     *             can use createEulerYawRotationMatrix(theta[2])
+     *             can use createYawRotationMatrix(theta[2])
      * 
      * see also, pp 479-480, eqn (285) of Shuster 1993, "A Survey of AttitudeRepresentations"
      * http://www.ladispe.polito.it/corsi/Meccatronica/02JHCOR/2011-12/Slides/Shuster_Pub_1993h_J_Repsurv_scan.pdf
@@ -1154,8 +1425,8 @@ public class Rotation {
         double[] i0 = new double[]{1, 0, 0};
         double[] i1 = new double[]{0, 1, 0};
         double[] i2 = new double[]{0, 0, 1};
-        double[][] cBeta = createEulerPitchRotationMatrix(theta[1]);
-        double[][] cGamma = createEulerYawRotationMatrix(theta[2]);
+        double[][] cBeta = Rotation.createPitchRotationMatrix(theta[1]);
+        double[][] cGamma = Rotation.createYawRotationMatrix(theta[2]);
         
         double[] col0 = MatrixUtil.multiplyMatrixByColumnVector(
             MatrixUtil.multiply(cGamma, cBeta), i0);
@@ -1172,10 +1443,15 @@ public class Rotation {
     }
     
     /**
-     * calculate R(angle_x, angle_y, angle_z) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z),
-     * that is, given an array of euler rotation angles, return the rotation matrix
+     * calculate  R_xyz,
+     * that is, given an array of rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
      * 
+     * from https://en.wikipedia.org/wiki/Davenport_chained_rotations
+     * "Any extrinsic rotation is equivalent to an intrinsic rotation by the 
+     * same angles but with inverted order of elemental rotations, and vice 
+     * versa. For instance, the intrinsic rotations x-y’-z″ by angles α, β, γ 
+     * are equivalent to the extrinsic rotations z-y-x by angles γ, β, α."
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -1204,11 +1480,11 @@ public class Rotation {
             throw new IllegalArgumentException("thetas must be length 3");
         }
         
-        double[][] rZ = Rotation.createEulerYawRotationMatrix(thetas[2]);
+        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);
         
-        double[][] rX = Rotation.createEulerRollRotationMatrix(thetas[0]);
+        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);
         
-        double[][] rY = Rotation.createEulerPitchRotationMatrix(thetas[1]);
+        double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);
         
         double[][] r = MatrixUtil.multiply(rZ, MatrixUtil.multiply(rY, rX));
         
@@ -1216,7 +1492,7 @@ public class Rotation {
     }
     
     /**
-     * given an array of euler rotation angles, return the rotation matrix
+     * given an array of Tait-Bryan rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
@@ -1230,7 +1506,7 @@ public class Rotation {
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      * </pre>
-     * @param thetas euler rotation angles
+     * @param thetas Tait-Bryan rotation angles
      * @param aa auxiliary arrays used for internal calculations.  they're
      * meant to reduce object creation and are created by the invoking code.
      * @param out the output rotation matrix values.
@@ -1241,13 +1517,13 @@ public class Rotation {
         }
         
         double[][] rZ = aa.a3X3;
-        Rotation.createEulerYawRotationMatrix(thetas[2], rZ);
+        Rotation.createYawRotationMatrix(thetas[2], rZ);
         
         double[][] rY = aa.b3X3;
-        Rotation.createEulerPitchRotationMatrix(thetas[1], rY);
+        Rotation.createPitchRotationMatrix(thetas[1], rY);
         
         double[][] rX = aa.c3X3;
-        Rotation.createEulerRollRotationMatrix(thetas[0], rX);
+        Rotation.createRollRotationMatrix(thetas[0], rX);
         
         double[][] rZY = aa.d3X3;
         MatrixUtil.multiply(rZ, rY, rZY);
@@ -1255,7 +1531,7 @@ public class Rotation {
     }
     
     /**
-     * given an array of euler rotation angles, return the rotation matrix
+     * given an array of Tait-Bryan rotation angles, return the rotation matrix
      * as the rotations for x, y, z multiplied in that order.
      * <pre>
      * 
@@ -1272,11 +1548,11 @@ public class Rotation {
             throw new IllegalArgumentException("thetas must be length 3");
         }
         
-        double[][] rZ = Rotation.createEulerYawRotationMatrix(thetas[2]);
+        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);
         
-        double[][] rX = Rotation.createEulerRollRotationMatrix(thetas[0]);
+        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);
         
-        double[][] rY = Rotation.createEulerPitchRotationMatrix(thetas[1]);
+        double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);
         
         double[][] r = MatrixUtil.multiply(rX, MatrixUtil.multiply(rY, rZ));
         
@@ -1336,7 +1612,7 @@ public class Rotation {
     }
     
     /**
-     * apply infinitesimal rotation expressed as euler angles ([1X3]) 
+     * apply infinitesimal rotation expressed as Tait-Bryan angles ([1X3]) 
      * to a rotation matrix ([3X3]).
      * To the first order, this is a constraint-sensitive approach.
      * <pre>
@@ -1408,14 +1684,14 @@ public class Rotation {
      * </pre>
      * @return rotation matrix [3X3].
      */
-    public static double[][] createRotationFromEulerViaQuaternion(double[] theta) {
+    public static double[][] createRotationFromQuaternion(double[] theta) {
         if (theta.length != 3) {
             throw new IllegalArgumentException("theta.length must be 3");
         }
         double[] q0 = quaternionPrincipalAxisRotation(theta[0], 0);
         double[] q1 = quaternionPrincipalAxisRotation(theta[1], 1);
         double[] q2 = quaternionPrincipalAxisRotation(theta[2], 2);
-        
+       
         double[][] q0m = quaternionRighthandCompoundOperator(q0);
         double[][] q1m = quaternionRighthandCompoundOperator(q1);
         double[][] q2m = quaternionRighthandCompoundOperator(q2);
@@ -1449,7 +1725,7 @@ public class Rotation {
     }
     
     /**
-     * apply rotation expressed as euler angles ([1X3]) to a quaternion ([4X1]).
+     * apply rotation expressed as Tait-Bryan angles ([1X3]) to a quaternion ([4X1]).
      * To the first order, this is a constraint-sensitive approach.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
@@ -1492,6 +1768,56 @@ public class Rotation {
         double[] result = MatrixUtil.multiplyMatrixByColumnVector(qLH, q);
         
         return result;
+    }
+    
+    /**
+     * calculate a quaternion from the given Tait-Bryan rotation angles and a rotation angle.
+     * NOTE, this method uses the HAmilton convention according to Fan's Farm.
+     *    In Hamilton convention, ijk=-1, while JPL defines ijk = 1.
+     * <pre>
+     * references:
+     * 
+     * https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#cite_note-1
+     * 
+     * Fan's Farm:
+     * https://fzheng.me/2017/11/12/quaternion_conventions_en/
+     * 
+     * </pre>
+     * @param theta the Tait-Bryan angles presumably.  still reading on this...
+     * @param rotAngle
+     * @return 
+     */
+    public static double[] createQuaternionFromThetaAndAngle(double[] theta,
+        double rotAngle) {
+        double a = rotAngle/2.;
+        double sa = Math.sin(a);
+        double ca = Math.cos(a);
+        double[] q = new double[] {
+            ca, sa*Math.cos(theta[0]), sa*Math.cos(theta[1]),
+            sa*Math.cos(theta[2])}; 
+        return q;
+    }
+    
+    /**
+     * calculate the "left-hand rule" rotation matrix from the given quaternion.
+     * @param q
+     * @return 
+     */
+    public static double[][] createRotationLHFromQuaternion(double[] q) {
+        if (q.length != 4) {
+            throw new IllegalArgumentException("q length must be 4");
+        }
+        double w = q[0];
+        double x = q[1];
+        double y = q[2];
+        double z = q[3];
+        
+        double[][] r = new double[3][];
+        r[0] = new double[]{1-2*y*y - 2*z*z, 2*x*y-2*z*w, 2*x*z+2*y*w};
+        r[1] = new double[]{2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w};
+        r[2] = new double[]{2*x*z-2*y*w, 2*y*z+2*x*w, 1-2*x*x-2*y*y};
+        
+        return r;
     }
         
     public static class AuxiliaryArrays {
