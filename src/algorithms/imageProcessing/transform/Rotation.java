@@ -26,6 +26,9 @@ import no.uib.cipr.matrix.NotConvergedException;
    The Tait–Bryan case appears when axes 1 and 3 are perpendicular, 
    and the Euler case appears when they are overlapping.
    
+   The Generalized Euler rotations seem to be called "symmetric angle sets"
+   elsewhere while the Tait-Bryan rotations are "asymmetric angle sets".
+   
  Regarding quaternions
  "Why and How to Avoid the Flipped Quaternion Multiplication"
 Hannes Sommer∗, Igor Gilitschenski♯, Michael Bloesch†, Stephan Weiss‡, 
@@ -77,7 +80,7 @@ Over the last decades quaternions have become a crucial and very successful
 *        R(theta)= | cos(theta)  -sin(theta) |
 *                  | sin(theta)   cos(theta) |
 *     represents a counterclockwise rotation of a vector v by an angle θ, or a 
-*     rotation of CS by the same angle but in the opposite direction 
+*     rotation of the coordinate system (CS) by the same angle but in the opposite direction 
 *     (i.e. clockwise). Alibi and alias transformations are also known as active 
 *     and passive transformations, respectively.
 * 
@@ -150,9 +153,6 @@ public class Rotation {
     R_x = exp(-[1,0,0]_x * theta_x) = exp( 0  0  0 )*theta_x )
                                            0  0  1
                                            0 -1  0
-                                    = 1  0  0
-                                      0  1  1  * ?
-                                      0 -1  0
     */
     
     /*
