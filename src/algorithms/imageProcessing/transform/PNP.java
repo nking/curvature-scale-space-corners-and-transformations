@@ -117,7 +117,8 @@ public class PNP {
         // size is 6 X 6
         double[][] jTJ = MatrixUtil.multiply(jT, j);
         
-        double lambda = maxDiag(jTJ);
+        double[] lambda = new double[6];
+        initLambdaWithQu(lambda);//maxDiag(jTJ);
         double lambdaF = 2;
         
         // the residual, that is, the evaulation of the objective which is the 
@@ -162,6 +163,7 @@ public class PNP {
         
         int doUpdate = 0;
         int nIter = 0;
+        int i;
         while (nIter < nMaxIter) {
             
             nIter++;
@@ -227,12 +229,18 @@ public class PNP {
                     doUpdate = 1;
                     // near the minimimum, which is good.
                     // decrease lambda
-                    lambda /= lambdaF;
+                    //lambda /= lambdaF;
+                    for (i = 0; i < lambda.length; ++i) {
+                        lambda[i] /= lambdaF;
+                    }
                 } else {
                     doUpdate = 0;
                     // increase lambda to reduce step length and get closer to 
                     // steepest descent direction
-                    lambda *= lambdaF;
+                    //lambda *= lambdaF;
+                    for (i = 0; i < lambda.length; ++i) {
+                        lambda[i] *= lambdaF;
+                    }
                 }
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
@@ -458,17 +466,7 @@ public class PNP {
         
         return jG;
     }
-
-    private static double maxDiag(double[][] a) {
-        double max = Double.NEGATIVE_INFINITY;
-        for (int i = 0; i < a.length; ++i) {
-            if (a[i][i] > max) {
-                max = a[i][i];
-            }
-        }
-        return max;
-    }
-
+    
     /**
      * following Szeliski 2010, Chap 6, eqn (6.18)
      * @param jTJ J^T * J.  size is 6X6.
@@ -478,7 +476,7 @@ public class PNP {
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     private static double[] calculateDeltaPLMSzeliski(double[][] jTJ, 
-        double lambda, double[] jTBFG) throws NotConvergedException {
+        double[] lambda, double[] jTBFG) throws NotConvergedException {
         
         //                 inv(6X6)                       6X2N * 2N
         //delta p = pseudoInv(J^T*J + lambda*diag(J^T*J)) * J^T*BFG
@@ -488,7 +486,7 @@ public class PNP {
         // 6 X 6
         double[][] a = MatrixUtil.copy(jTJ);
         for (i = 0; i < 6; ++i) {
-            a[i][i] += (lambda*(jTJ[i][i]));
+            a[i][i] += (lambda[i]*(jTJ[i][i]));
         }
         double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
                 
@@ -535,7 +533,7 @@ public class PNP {
      * @return 
      */
     private static double calculateGainRatio(double f, double fPrev, 
-        double[] deltaP, double lambda, double[] jTBFG,
+        double[] deltaP, double[] lambda, double[] jTBFG,
         double eps) {
              
         //      1X6          *            ( 6X1   +   6 X (2N) * (2NX1) )
@@ -543,7 +541,11 @@ public class PNP {
         //  1X1
         //(delta p LM)^T * (lambda * (delta p LM) + J^T * (b - fgp))
         double[] pt1 = Arrays.copyOf(deltaP, deltaP.length);
-        MatrixUtil.multiply(pt1, lambda);
+        int i;
+        //MatrixUtil.multiply(pt1, lambda);
+        for (i = 0; i < pt1.length; ++i) {
+            pt1[i] *= lambda[i];
+        }
         
         double ell = MatrixUtil.innerProduct(deltaP, jTBFG);
         
@@ -676,4 +678,24 @@ public class PNP {
         
     }
 
+    private static void initLambdaWithQu(double[] lambda) {
+        /*Qu thesis eqn (3.38)
+        
+        delta thetas ~ 1e-8
+        delta translation ~1e-5
+        delta focus ~ 1
+        delta kRadial ~ 1e-3
+        delta x ~ 1e-8
+        */
+        int i;
+        for (i = 0; i < 3; ++i) {
+            // delta theta
+            lambda[i] = 1e-8;
+        }
+        for (i = 0; i < 3; ++i) {
+            // delta translation
+            lambda[3+i] = 1e-5;
+        }
+        
+    }
 }
