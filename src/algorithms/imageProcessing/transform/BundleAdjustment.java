@@ -1389,7 +1389,7 @@ public class BundleAdjustment {
         
         // 3X3
         double[][] rot = aa.g3X3;
-        Rotation.calculateRotationZYX(phi, aa.aa, rot);
+        Rotation.createRotationZYX(phi, aa.aa, rot);
         
         // [2X3]
         double[][] dFdX = aa.h2X3;
@@ -1421,7 +1421,7 @@ public class BundleAdjustment {
         
         int i;
         for (i = 0; i < mImages; ++i) {
-            Rotation.calculateRotationZYX(extrRot[i], aa, rot);
+            Rotation.createRotationZYX(extrRot[i], aa, rot);
             m.setBlock(rot, 0, i);
         }
         return m;
@@ -1607,10 +1607,13 @@ public class BundleAdjustment {
         
         for (j = 0; j < rotThetas.length; ++j) {
             
-            Rotation.calculateRotationZYX(deltaTheta, aa, r0);
+            Rotation.createRotationZYX(deltaTheta, aa, r0);
             
-            Rotation.applySingularitySafeRotationPerturbation(r0, 
-                rotThetas[j], deltaTheta, outR);
+//TODO: revisit when done testing Rotation.java
+
+            outR = Rotation.applySingularitySafeRotationPerturbationXYZ(rotThetas[j], deltaTheta);
+            //Rotation.applySingularitySafeRotationPerturbation(r0, 
+            //    rotThetas[j], deltaTheta, outR);
         
             Rotation.extractRotationFromZYX(outR, thetaExtracted);
             System.arraycopy(thetaExtracted, 0, rotThetas[j], 0, rotThetas[j].length);        

@@ -1,71 +1,107 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import java.util.Arrays;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
- * a utility class holding rotations associated with tait-bryan angles,
+ * a utility class holding rotations associated with euler angles,
  * quaternions, and angle-axis representations (using rodrigues formula for the later).
  * 
- * <pre>
- * https://en.wikipedia.org/wiki/Davenport_chained_rotations
- * The general problem of decomposing a rotation into three composed movements 
- * about intrinsic axes was studied by P. Davenport and the angles are 
- * called "Davenport angles" by M. Shuster and L. Markley.
+ * <b><ul>RIGHT HAND SYSTEM</ul></b>
+ * The equations below use a right hand system.
+ * The right hand system is consistent with methods in physics, engineering,
+ * and computer science in general.  The <b>Hamilton quaternion</b> is consistent
+ * with the right hand system.
  * 
- * Generalized Euler rotations
-      (z-x-z, x-y-x, y-z-y, z-y-z, x-z-x, y-x-y)
-   Generalized Tait–Bryan rotations
-       (x-y-z, y-z-x, z-x-y, x-z-y, z-y-x, y-x-z).
-   Most of the cases belong to the second group, being the generalized Euler rotations 
-   are a degenerated case in which first and third axes are overlapping.
-   
-   A unique decomposition is possible if and only if the second axis is 
-   perpendicular to the other two axes.
-   The Tait–Bryan case appears when axes 1 and 3 are perpendicular, 
-   and the Euler case appears when they are overlapping.
-   
-   The Generalized Euler rotations seem to be called "symmetric angle sets"
-   elsewhere while the Tait-Bryan rotations are "asymmetric angle sets".
-   
- Regarding quaternions
- "Why and How to Avoid the Flipped Quaternion Multiplication"
-Hannes Sommer∗, Igor Gilitschenski♯, Michael Bloesch†, Stephan Weiss‡, 
-Roland Siegwart∗, and Juan Nieto∗
-Aerospace 2018, 5(3), 72; https://doi.org/10.3390/aerospace5030072
+ * The NASA 1977 publication and Szeliski. 
+ *    define a quaternion as (qw, qx, qy, qz) where qw is a scalar and
+ * [qx, qy, qz] is a vector.
+ * 
+ * In contrast, Barfoot et al. define a quaternion as (qx, qy, qz, qw).
+ * One might need to transform some properties to quaternions and then modify 
+ * the placement of the scalar term in order
+ * to compare results with other "Hamilton" "Right hand" system results.
+ *         
+ <pre>
+ R(q) = | (w^2 + x^2 - y^2 - z^2)  2(xy - wz)               2(xz + wy)               |
+        | 2(xy + wz)               w^2 - x^2 + y^2 - z^2)   2(yz - wx)               |
+        | 2(xz - wy)               2(yz + wx)               (w^2 - x^2 - y^2  + z^2) |
+ rewritten 
+ R(q) = | 1-2*(y^2 + z^2)   2(xy - zw)       2(xz + yw)      |
+        | 2(xy + zw)        1-2(x^2 + z^2)   2(yz - xw)      |
+        | 2(xz - yw)        2(yz + xw)       1-2(x^2 + y^2)  |
+ </pre>
+ Quaternions can be derived from the axis/angle representation through the 
+ formula q = (v, w) = (sin(theta)*n_hat,cos(theta)),
+ where n_hat and theta are the rotation axis and angle.
+ 
+cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ | 
+ 
+two ways that the skew matrix are expressed are transposed from one another:
+ [v]_x = |  0   z  -y |  used here in MatrixUtil.skewsymmetric()
+         |  z   0   x |
+         |  y  -x   0 |
 
-Over the last decades quaternions have become a crucial and very successful 
-* tool for attitude representation in robotics and aerospace. However, there 
-* is a major problem that is continuously causing trouble in practice when it 
-* comes to exchanging formulas or implementations: there are two quaternion 
-* multiplications commonly in use, Hamilton’s multiplication and its flipped 
-* version, which is often associated with NASA’s Jet Propulsion Laboratory. 
-* This paper explains the underlying problem for the popular passive world-to-
-* body usage of rotation quaternions, and promotes an alternative solution 
-* compatible with Hamilton’s multiplication. Furthermore, it argues for 
-* discontinuing the flipped multiplication. Additionally, it provides recipes 
-* for efficiently detecting relevant conventions and migrating formulas or 
-* algorithms between them.
-* 
-* from wikipedia:
-*     After Hamilton's death, his student Peter Tait continued promoting quaternions. 
-*     
-*     (Tait-Bryan coordinates are in comments below.)
-* 
-*     ... Hamilton's original definitions are unfamiliar and his writing style 
-*     was wordy and difficult to follow.
-* 
-* from https://fzheng.me/2017/11/12/quaternion_conventions_en/
-*     In Hamilton convention, ijk=-1, while JPL defines ijk = 1.
-*     As consequences, the multiplication of quaternions and the transformation 
-*     between quaternions and other rotation parameterizations differ with 
-*     different quaternion conventions.
-* 
-*  Eigen, ROS, and Google Ceres use Hamilton convention.
+ [v]_x = |  0  -z   y |
+         |  z   0  -x |
+         | -y   x   0 |
+ 
+ * Eigen, ROS, and Google Ceres use Hamilton convention.
 *  Also  Wolfram Mathematica, Matlab’s aerospace(!) and robotics toolbox, 
 *  Boost, GNU Octave, NASA’s SPICE.
+
+Note that Shuster 1993 use rotation matrices that are transposed from the above standard:
+    
+        about z-axis (yaw):           about the y-axis (pitch):    about x-axis (roll): 
+            | cos φ    sin φ    0 |    |  cos ψ    0 -sin ψ |      |    1       0       0 |  
+            |-sin φ    cos φ    0 |    |      0    1      0 |      |    0   cos θ   sin θ |  
+            |     0        0    1 |    |  sin ψ    0  cos ψ |      |    0  -sin θ   cos θ | 
+            * 
+    The Shuster transposed matrices are not used in this class.
+    
+ <pre>
+ Some references in the "right hand system":
+ 
+ "Euler Angles and Quaternions and Transformations", NASA Mission Planning
+  and Analysis Division, 1977, Shuttle Program.
+  
+  Szeleski 2010
+  
+  Shuster 1993, "A Survey of Attitude Representations"
+    Journal of Astronautical Sciences, Vol 41, No. 4, Oct-Dec 1993, pp 439-517
+    
+  
+ </pre>
 * 
+ * <pre><b><ul>LEFT HAND SYSTEM</ul></b></pre>
+ * A left hand system, in contrast, is used by aerospace engineering and
+ * aerospace medicine to describe the z-axis as pointing downwards (in the 
+ * direction of gravity w.r.t. a geo-centric system.)
+ * 
+ * Chapter 4, "Human Response to Acceleration" by Banks, Brinkly, Allnut, and Harding
+    in "Fundamentals of Aerospace Medicine"
+    Excerpt:
+    "For example, the Advisory Group for Aerospace
+    Research and Development (AGARD) standard for human
+    acceleration differs from the AGARD standard for aircraft
+    design (in which the z-acceleration axis is reversed and
+    positive downward).
+        ...consistent with the AGARD standard (1), the
+    Table of Equivalents for Acceleration Terminology (2), the
+    Aviation Space and Environmental Medicine Standard (3),
+    and the majority of the Aerospace Medicine literature, the
+    positive direction of each of these axes is here described by
+    ‘‘the left-hand rule.’’   That is, the x-axis dimension is an arrow
+     with the positive direction forward, the y-axis dimension has
+    the positive direction rightward, and"
+  
+  <pre> 
+ 
 * Regarding rotation axes and perspectives:
 *     https://en.wikipedia.org/wiki/Rotation_matrix#Ambiguities
 *     The coordinates of a point P may change due to either a rotation of the 
@@ -93,41 +129,8 @@ Over the last decades quaternions have become a crucial and very successful
          described by means of a pre-multiplication. To obtain exactly the same 
          rotation (i.e. the same final coordinates of point P), the equivalent 
          row vector must be post-multiplied by the transpose of R (i.e. wR^T).
-   
-  Regarding rotation matrices multiplication order:
-  https://en.wikipedia.org/wiki/Rotation_matrix
-       Suppose the three angles are θ1, θ2, θ3; 
-       physics and chemistry may interpret these as
-           R(θ1, θ2, θ3) = R_x(θ1)*R_y(θ2)*R_z(θ3)
-       while aircraft dynamics may use
-           R(θ1, θ2, θ3) = R_z(θ3)*R_y(θ2)*R_x(θ1)
- * </pre>
- * @author nichole
- */
-public class Rotation {
-
-    /*    
-    NOTE that Schuster 1993, "A Survey of Attitude Representations"
-    Journal of Astronautical Sciences, Vol 41, No. 4, Oct-Dec 1993, pp 439-517
-    uses different rotation matrices:
-    
-        about z-axis (yaw):           about the y-axis (pitch):    about x-axis (roll): 
-            | cos φ    sin φ    0 |    |  cos ψ    0 -sin ψ |      |    1       0       0 |  
-            |-sin φ    cos φ    0 |    |      0    1      0 |      |    0   cos θ   sin θ |  
-            |     0        0    1 |    |  sin ψ    0  cos ψ |      |    0  -sin θ   cos θ |  
-   
-    each matrix is transposed compared to the Tait-Bryan angles which are used
-    below (see http://planning.cs.uiuc.edu/node102.html
-    
-    tait-bryan angles:
-    cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
-            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
-            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
-            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
-    
-    exponential and skew notes:
-   
-    skew symmetric of vector v is [v]_x:
+ 
+ skew symmetric of vector v is [v]_x:
        |    0   -v[2]  v[1]  |
        |  v[2]    0    -v[0] |
        | -v[1]  v[0]    0    |
@@ -153,46 +156,20 @@ public class Rotation {
     R_x = exp(-[1,0,0]_x * theta_x) = exp( 0  0  0 )*theta_x )
                                            0  0  1
                                            0 -1  0
-    */
-    
-    /*
-    Note that the "left-hand rule", which is opposite of the convention used in
-    engineering and physics, is used regarding the z-axis in
-    aeromedical communities.  These are Tait–Bryan angles where
-    Heading is along the z-axis and is in the opposite direction of that expected for 
-    "right-hand rule".
-    
-    Chapter 4, "Human Response to Acceleration" by Banks, Brinkly, Allnut, and Harding
-    in "Fundamentals of Aerospace Medicine"
-    
-    For example, the Advisory Group for Aerospace
-    Research and Development (AGARD) standard for human
-    acceleration differs from the AGARD standard for aircraft
-    design (in which the z-acceleration axis is reversed and
-    positive downward).
-        ...consistent with the AGARD standard (1), the
-    Table of Equivalents for Acceleration Terminology (2), the
-    Aviation Space and Environmental Medicine Standard (3),
-    and the majority of the Aerospace Medicine literature, the
-    positive direction of each of these axes is here described by
-    ‘‘the left-hand rule.’’   That is, the x-axis dimension is an arrow
-     with the positive direction forward, the y-axis dimension has
-    the positive direction rightward, and the z-axis dimension
-    has the positive dimension upward.    
-    */
-    
-    /*
-     terms used describing axes of rotation:
+      
+   terms used describing axes of rotation, attitute or orientation:
         heading, attitude, bank,
-         pitch, yaw, roll,
-         pan, tilt, roll
-    */
-    
-    
+        pitch, yaw, roll,
+        pan, tilt, roll
+ * </pre>
+ * @author nichole
+ */
+public class Rotation {
+
     /**
      * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
      * NOTE: this is not the normal convention.  You might want to use
-     * calculateRotationZYX().
+     * createRotationZYX().
      * <pre>
        cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
@@ -204,7 +181,7 @@ public class Rotation {
      * @param angleZ angle of rotation about z-axis (yaw) in units of radians.
      * @return 
      */
-    public static double[][] calculateRotationXYZ(double angleX, double angleY, double angleZ) {
+    public static double[][] createRotationXYZ(double angleX, double angleY, double angleZ) {
         
         double[][] rotX = Rotation.createRollRotationMatrix(angleX);
         double[][] rotY = Rotation.createPitchRotationMatrix(angleY);
@@ -395,25 +372,30 @@ public class Rotation {
     }
     
     /**
-     * given v as an array of rotations about x, y, and z, calculate the 
-     * rotation matrix.
+     * given axis as an array of rotations about x, y, and z, calculate the 
+     * rotation matrix.  
      * essentially, excepting a small angle correction:
      *     R^⊤ = cosθ*I + sinθ*[v]_× + (1−cosθ)*v*v^⊤
      * 
      * NOTE: if computing the partial derivative of Rotation elsewhere, 
      * can use d(R(ω)*v)/d(ω^T) = -[v]_x (see Equation (2.35) of Szeliski 2010).
+     * Also note that a + sign in front of the sinθ term is used for the
+     * passive system of rotations and these are used in
+     * dynamics, mathematics, and computer science, etc.  A - sign 
+     * in front of the sinθ term is used in aerospace engineering and medicine
+     * as the later use the "left hand rule" for coordinate axes.
      * <pre>
      * references:
      *    Dmitry Berenson https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
      *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
      *    Rodriguez’s formula (Ayache 1989)
      * </pre>
-     * @param v [1x3] array of rotations about x, y, and z
+     * @param axis [1x3] array of rotations about x, y, and z
      * @return rotation matrix [3X3]
      */
-    public static double[][] createRodriguesFormulaRotationMatrix(double[] v) {
-        if (v.length != 3) {
-            throw new IllegalArgumentException("v length must be 3");
+    public static double[][] createRodriguesFormulaRotationMatrix(double[] axis) {
+        if (axis.length != 3) {
+            throw new IllegalArgumentException("axis length must be 3");
         }
         
         /*
@@ -470,13 +452,13 @@ public class Rotation {
             return mat(R)        
         */
         
-        double theta = MatrixUtil.lPSum(v, 2);
+        double theta = MatrixUtil.lPSum(axis, 2);
         
         double[][] tmp1, tmp2;
         
         if (theta > 1e-30) {
             
-            double[] n = Arrays.copyOf(v, v.length);
+            double[] n = Arrays.copyOf(axis, axis.length);
             MatrixUtil.multiply(n, 1./theta);
             // [3X3]
             double[][] sn = MatrixUtil.skewSymmetric(n);
@@ -493,7 +475,7 @@ public class Rotation {
             
         } else {
             
-            double[][] sr = MatrixUtil.skewSymmetric(v);
+            double[][] sr = MatrixUtil.skewSymmetric(axis);
             double theta2 = theta*theta;
             
             //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
@@ -520,11 +502,10 @@ public class Rotation {
     /**
      * given v as an array of rotations about x, y, and z, calculate the 
      * transpose of the rotation matrix.
-     * essentially, excepting a small angle correction:
+     * It is the same as the rodrigues rotation matrix without transposition, 
+     * except that the sign in front of the sine term is negatvie.
      * R^⊤ = cosθ*I − sinθ*[v]_× + (1−cosθ)*v*v^⊤
      *     
-     * NOTE: if computing the partial derivative of Rotation elsewhere, 
-     * can use d(R(ω)*v)/d(ω^T) = -[v]_x (see Equation (2.35) of Szeliski 2010).
      * <pre>
      * references:
      *    Dmitry Berenson https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
@@ -535,6 +516,7 @@ public class Rotation {
      *    Huynh 2009.
      *    J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
      *    https://www.cs.cmu.edu/~cga/dynopt/readings/Rmetric.pdf
+     *    (note that Huynh uses Hamilton quaternions.)
      * </pre>
      * @param v [1x3] array of rotations about x, y, and z
      * @return rotation matrix [3X3]
@@ -676,20 +658,17 @@ public class Rotation {
     }
     
     /**
-     * extract the rotation angles from the given rotation matrix assumed
+     * extract the euler rotation angles from the given rotation matrix assumed
      * to be a result of R_yxz = R_z(theta_z) * R_x(theta_x) * R_y(theta_y)
      * (aka 2-1-3 angle set?).
-     * NOTE: Note, however, that this way of extracting of the Tait-Bryan angles is 
-     * ambiguous. Even though whatever angles you extract this way will result 
-     * in the correct rotation matrix, if the latter was generated from a 
-     * set of Tait-Bryan angles in the first place, you are not guaranteed to get 
-     * exactly those back.
+     * Note, this way of extracting of the angles is 
+     * ambiguous (there are more than one angle combination sets that will
+       result in the same matrix).
      <pre>
      the method is from equation (37) from 
      lecture notes of Gordon Wetzstein at Stanford University,
      EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
      https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
-     
      
      </pre>
      * @param r  rotation matrix assumed
@@ -707,7 +686,7 @@ public class Rotation {
     }
     
     /**
-     * extract Tait-Bryan rotation angles from a rotation matrix which has been built following
+     * extract euler rotation angles from a rotation matrix which has been built following
      * the convention of R_xyz =  R(theta_Z) * R(theta_Y) * R(theta_X).
      * @param r
      * @return 
@@ -722,7 +701,7 @@ public class Rotation {
     }
     
     /**
-     * extract Tait-Bryan rotation angles from a rotation matrix which has been built following
+     * extract euler rotation angles from a rotation matrix which has been built following
      * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
      * @param r
      */
@@ -731,7 +710,7 @@ public class Rotation {
             throw new IllegalArgumentException("r must be 3x3");
         }
         /*
-        using tait-bryan angles
+        using euler angles
           cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
@@ -800,6 +779,26 @@ public class Rotation {
                         let a0 = cφ - sφ
                                   : cos θ * (a0 + a1) + sin θ * (-a0 + a1)
                                   : a0*(cos θ - sin θ) + a1*(cos θ + sin θ)
+                                  : a0*cosθ - a0*sinθ + a1*cosθ + a1*sinθ
+                        
+                        squared:  (a0*cosθ - a0*sinθ + a1*cosθ + a1*sinθ)*(a0*cosθ - a0*sinθ + a1*cosθ + a1*sinθ)
+                                  = a0^2*(cosθ)^2 - a0^2*cosθ*sinθ + a0*a1*(cosθ)^2 + a0*a1*cosθ*sinθ
+                                    - a0^2*cosθ*sinθ + a0^2*(sinθ)^2 - a0*a1*cosθ*sinθ - a0*a1*(sinθ)^2
+                                    + aθ*a1*(cosθ)^2 - a0*a1*cosθ*sinθ + a1^2*(cosθ)^2 + a1^2*cosθ*sinθ
+                                    + a0*a1*cosθ*sinθ - a0*a1*(sinθ)^2 + a1^2*cosθ*sinθ + a1^2*(sinθ)^2
+                                  = a0^2*(cosθ)^2 + a0^2*(sinθ)^2
+                                    + a1^2*(cosθ)^2 + a1^2*(sinθ)^2
+                                    - a0^2*cosθ*sinθ - a0^2*cosθ*sinθ
+                                    + a0*a1*(cosθ)^2 + aθ*a1*(cosθ)^2 - a0*a1*(sinθ)^2 - a0*a1*(sinθ)^2
+                                    + a0*a1*cosθ*sinθ - a0*a1*cosθ*sinθ + a0*a1*cosθ*sinθ - a0*a1*cosθ*sinθ 
+                                    + a1^2*cosθ*sinθ + a1^2*cosθ*sinθ
+                                  = a0^2 + a1^2
+                                    - 2*a0^2*( cosθ*sinθ )               <==== sin(2x) = 2 sin(x) cos(x)
+                                    + 2*a0*a1*( (cosθ)^2 - (sinθ)^2 )    <==== cos(2x) = cos2(x) – sin2(x)
+                                    + 2*a1^2*( cosθ*sinθ )
+                                  = a0^2 + a1^2
+                                     - a0^2*sin(2θ) + a1^2*sin(2θ) + 2*a0*a1*cos(2θ)
+                                  = a0^2 + a1^2 - sin(2θ)*( a0^2 - a1^2 ) + cos(2θ) * ( 2*a0*a1 )
                         */
                         throw new UnsupportedOperationException("There are "
                                 + "0's in the rotation matrix, so factoring of "
@@ -847,8 +846,9 @@ public class Rotation {
     }
             
     /**
-     * another method to extract the Rodrigues vector from the given
-     * rotation matrix (it's an ambiguous task).
+     * another method to extract the Rodrigues vector (angle and axis)
+     * from the given
+     * rotation matrix.  it's an ambiguous task.
 
      <pre>
      the method is from  
@@ -861,10 +861,56 @@ public class Rotation {
      * can be constructed as angle of rotation = r_vec/||r_vec|| and angle = ||r_vec||
      * where r_vec is the rodrigues vector.
      */
-    public static double[] extractRotation2(double[][] r) {
+    public static double[] extractRodriguesRotationAxis(double[][] r) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
+        /*
+        https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
+        compare to:
+        def rodrigues(r):
+            def S(n):
+                Sn = array([[0,-n[2],n[1]],[n[2],0,-n[0]],[-n[1],n[0],0]])
+                return Sn
+            theta = norm(r)
+            if theta > 1e-30:
+                n = r/theta
+                Sn = S(n)
+                R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
+            else:
+                Sr = S(r)
+                theta2 = theta**2
+                R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
+            return mat(R)
+        */
+        
+        double tol = 1.e-7;
+        
+        double traceR = MatrixUtil.trace(r);
+        System.out.printf("trace(R)=%.3e\n", traceR);
+        
+        int i;
+        
+        if ((traceR + 1) < tol ) {
+            // trace(R) == -1, and theta = Math.PI
+            /*
+            http://www2.ece.ohio-state.edu/~zhang/RoboticsClass/docs/LN3_RotationalMotion.pdf
+            
+            w is the unit vector representing the axis of rotation.
+            w is one of the following 3:
+            
+                (1./Math.sqrt(2.*(1.+r[2][2]))) * [r[0][2], r[1][2], 1 + r[2][2]]
+            or  (1./Math.sqrt(2.*(1.+r[1][1]))) * [r[0][1], 1 + r[1][1], r[2][1]]
+            or  (1./Math.sqrt(2.*(1.+r[0][0]))) * [1 + r[0][0], r[1][0], r[2][0]]
+            */
+            double t1 = (1./Math.sqrt(2.*(1.+r[2][2])));
+            double[] w = new double[3];
+            w[0] = t1 * r[0][2];
+            w[1] = t1 * r[1][2];
+            w[2] = t1 * (1. + r[2][2]);
+            return w;
+        }
+        
         /*
         theta=acos((trace(R)-1)/2);
         w=(theta/(2*sin(theta)))*[R(3,2)-R(2,3); R(1,3)-R(3,1); R(2,1)-R(1,2)];
@@ -872,16 +918,18 @@ public class Rotation {
         wy=w(2);
         wz=w(3);
         */
-        int i;
-        double[] theta = new double[3];
+        
+        // theta in range [0, Math.PI)
+        double theta = Math.acos(0.5*(traceR - 1.));
+        
+        // but // http://www2.ece.ohio-state.edu/~zhang/RoboticsClass/docs/LN3_RotationalMotion.pdf
+        // use t1 without theta factor: 
+        double t1 = 0.5*theta/Math.sin(theta);
         double[] w = new double[3];
-        for (i = 0; i  < 3; ++i) {
-            theta[i] = Math.acos((r[i][i] - 1.)/2.);
-            w[i] = theta[i]/(2.*Math.sin(theta[i]));
-        }
-        w[0] *= r[2][1] - r[1][2];
-        w[1] *= r[0][2] - r[2][0];
-        w[2] *= r[1][0] - r[0][1];
+        w[0] = t1*(r[2][1] - r[1][2]);
+        w[1] = t1*(r[0][2] - r[2][0]);
+        w[2] = t1*(r[1][0] - r[0][1]);
+        
         return w;
     }
     
@@ -963,7 +1011,7 @@ public class Rotation {
      * as u ⊗ v may be written equivalently as either
          u^+ v or v^⨁ u,
      * </pre>
-     * @param quaternion
+     * @param quaternion 4X1 column vector of [eps eta] where eta is the scalar
      * @return 
      */
     public static double[][] quaternionLefthandCompoundOperator(double[] quaternion) {
@@ -1017,7 +1065,7 @@ public class Rotation {
      * as u ⊗ v may be written equivalently as either
          u^+ v or v^⨁ u,
      * </pre>
-     * @param quaternion
+     * @param quaternion 4X1 column vector of [eps eta] where eta is the scalar
      * @return [4X4]
      */
     public static double[][] quaternionRighthandCompoundOperator(double[] quaternion) {
@@ -1066,7 +1114,7 @@ public class Rotation {
      * </pre>
      * <em>NOTE that if the quaternion is a unit-length quaternion, the conjugate
      * operation is usually called the inverse operation.</em>
-     * @param quaternion
+     * @param quaternion 4X1 column vector of [eps eta] where eta is the scalar
      * @return 
      */
     public static double[] quaternionConjugateOperator(double[] quaternion) {
@@ -1093,13 +1141,14 @@ public class Rotation {
      * creates identity element: [0 0 0 1]
      * 
      * </pre>
-     * @return 
+     * @return 4X1 column vector of [eps eta] where eta is the scalar, specifically
+     * [0, 0, 0, 1]
      */
     public static double[] createIdentityQuaternion() {
         
         double[] i4 = new double[4];
         i4[3] = 1;
-                
+        
         return i4;
     }
     
@@ -1117,7 +1166,7 @@ public class Rotation {
      *      [ 0^T 1 ]
      * where C is the canonical 3X3 rotation matrix.
      * </pre>
-     * @param quaternion the quaternion 4 element array
+     * @param quaternion rotation as a [4X1] column vector of [eps eta] where eta is the scalar.
      * @return a 4x4 rotation matrix whose 3X3 block at [0:2, 0:2] is the rotation matrix.
      */
     public static double[][] createRotationMatrixFromQuaternion4(double[] quaternion) {
@@ -1148,7 +1197,7 @@ public class Rotation {
      * 
      *  where R is the canonical 3X3 rotation matrix.
      * </pre>
-     * @param quaternion the quaternion 4 element array
+     * @param quaternion 4X1 column vector of [eps eta] where eta is the scalar.
      * @param v3 the point as 3 element array.
      * @return 
      */
@@ -1178,27 +1227,27 @@ public class Rotation {
      *  rotated = q^+ * q^(-1)^⨁ * v3 = R*v3
      * 
      * </pre>
-     * @param quaternion the quaternion 4 element array
-     * @param v the vector as a 3 element array followed by a 0, = [4X1].
+     * @param quaternion 4X1 column vector of [eps eta] where eta is the scalar
+     * @param p the vector as a 3 element array followed by a 0, = [4X1].
      * @return 
      */
-    public static double[] rotateVectorByQuaternion4(double[] quaternion, double[] v) {
+    public static double[] rotateVectorByQuaternion4(double[] quaternion, double[] p) {
         if (quaternion.length != 4) {
             throw new IllegalArgumentException("quaternion must be length 4");
         }
-        if (v.length != 4) {
-            throw new IllegalArgumentException("v3 must be length 4");
+        if (p.length != 4) {
+            throw new IllegalArgumentException("p must be length 4");
         }
         double[][] r = createRotationMatrixFromQuaternion4(quaternion);
         
-        double[] result = MatrixUtil.multiplyMatrixByColumnVector(r, v);
+        double[] result = MatrixUtil.multiplyMatrixByColumnVector(r, p);
         
         return result;
     }
     
      /**
-     * apply infinitesimal rotation expressed as Tait-Bryan rotation angles ([1X3]) 
-     * to a rotation matrix ([3X3]).
+     * apply a perturbation in rotation angles to the rotation matrix created by
+     * the euler angles theta where the rotation matrix created is R_z*R_y*R_x.
      * To the first order, this is a constraint-sensitive approach, i.e.
      * r*r^T = I for the perturbed matrix to first order as long as it was
      * true for the given matrix r.
@@ -1213,13 +1262,11 @@ public class Rotation {
      * the constraint afterwards (i.e., constraint restoration is built in)."
      * 
      * </pre>
+     * @param theta euler angles
+     * @param dTheta perturbation to apply to the euler angles
      * @return 
      */
-    public static double[][] applyRotationPerturbation(
-        double[][] r, double[] theta, double[] dTheta) {
-        if (r.length != 3 || r[0].length != 3) {
-            throw new IllegalArgumentException("r size must be [3X3]");
-        }
+    public static double[][] applyRotationPerturbationZYX(double[] theta, double[] dTheta) {
         if (theta.length != 3) {
             throw new IllegalArgumentException("theta must be length 3");
         }
@@ -1238,15 +1285,17 @@ public class Rotation {
             skew[i][i] = 1. - skew[i][i];
         }
         
+        double[][] r = createRotationZYX(theta);
+        
         // ==== eqn (31) =======
         double[][] result = MatrixUtil.multiply(skew, r);
         
         return result;
     }
     
-    /**
-     * apply infinitesimal rotation expressed as Tait-Bryan rotation angles ([1X3]) 
-     * to a rotation matrix ([3X3]).
+     /**
+     * apply a perturbation in rotation angles to the rotation matrix created by
+     * the euler angles theta where the rotation matrix created is R_x*R_y*R_z.
      * To the first order, this is a constraint-sensitive approach, i.e.
      * r*r^T = I for the perturbed matrix to first order as long as it was
      * true for the given matrix r.
@@ -1261,42 +1310,40 @@ public class Rotation {
      * the constraint afterwards (i.e., constraint restoration is built in)."
      * 
      * </pre>
+     * @param theta euler angles
+     * @param dTheta perturbation to apply to the euler angles
+     * @return resulting updated rotation matrix, perturbed by dTheta
      */
-    public static void applySingularitySafeRotationPerturbation(
-        double[][] r, double[] theta, double[] dTheta, double[][] out) {
-        if (r.length != 3 || r[0].length != 3) {
-            throw new IllegalArgumentException("r size must be [3X3]");
-        }
+    public static double[][] applySingularitySafeRotationPerturbationXYZ(double[] theta, double[] dTheta) {
         if (theta.length != 3) {
             throw new IllegalArgumentException("theta must be length 3");
         }
         if (dTheta.length != 3) {
             throw new IllegalArgumentException("dTheta must be length 3");
         }
-        if (out.length != 3 || out[0].length != 3) {
-            throw new IllegalArgumentException("out size must be [3X3]");
-        }
         
         // ==== eqn (30c) ======
-        //3X3    dPhi is the perturbation of the "rotation vector" 
+        //3X3        
         double[] dPhi = createRotationVector(theta, dTheta);
         
         double[][] skew = MatrixUtil.skewSymmetric(dPhi);
         
-        // I - [dPhi]_x
         int i;
         for (i = 0; i < skew.length; ++i) {
             skew[i][i] = 1. - skew[i][i];
         }
         
-        // ==== eqn (31) =======
-        MatrixUtil.multiply(skew, r, out);
+        double[][] r = createRotationXYZ(theta);
         
+        // ==== eqn (31) =======
+        double[][] result = MatrixUtil.multiply(skew, r);
+        
+        return result;
     }
     
     /**
-     * apply infinitesimal rotation expressed as Tait-Bryan rotation angles ([1X3]) 
-     * to a rotation matrix ([3X3]).
+     * apply a perturbation in rotation angles to the rotation matrix created by
+     * the euler angles theta where the rotation matrix created is R_x*R_y*R_z.
      * To the first order, this is a constraint-sensitive approach.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
@@ -1310,16 +1357,55 @@ public class Rotation {
      * </pre>
      * @return 
      */
-    public static double[][] applySingularitySafeRotationPerturbationRVec(
-        double[][] r, double[] dPhiRotationVector, double[] theta) {
-        if (r.length != 3 || r[0].length != 3) {
-            throw new IllegalArgumentException("r size must be [3X3]");
+    public static double[][] applySingularitySafeRotationPerturbationRVecXYZ(
+        double[] dPhiRotationVector, double[] theta) {
+        if (dPhiRotationVector.length != 3) {
+            throw new IllegalArgumentException("dPhiRotationVector length must be 3");
         }
         if (theta.length != 3) {
             throw new IllegalArgumentException("theta must be length 3");
         }
                
-        double[][] r1 = Rotation.calculateRotationZYX(dPhiRotationVector);
+        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);
+        
+        double[][] r = createRotationXYZ(theta);
+        
+        double[][] result = MatrixUtil.multiply(r1, r);
+        
+        return result;
+    }
+    
+    /**
+     * apply a perturbation in rotation angles to the rotation matrix created by
+     * the euler angles theta where the rotation matrix created is R_x*R_y*R_z.
+     * To the first order, this is a constraint-sensitive approach.
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (31).
+     * "This update approach allows us to store and update the rotation as a 
+     * rotation matrix, thereby avoiding singularities and the need to restore 
+     * the constraint afterwards (i.e., constraint restoration is built in).
+     * 
+     * </pre>
+     * @param dPhiRotationVector perturbation of the rotation vector
+     * @param theta euler angles representing the rotation matrix.
+     * @return 
+     */
+    public static double[][] applySingularitySafeRotationPerturbationRVecZYX(
+        double[] dPhiRotationVector, double[] theta) {
+        if (dPhiRotationVector.length != 3) {
+            throw new IllegalArgumentException("dPhiRotationVector length must be 3");
+        }
+        if (theta.length != 3) {
+            throw new IllegalArgumentException("theta must be length 3");
+        }
+               
+        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);
+        
+        double[][] r = createRotationZYX(theta);
+        
         double[][] result = MatrixUtil.multiply(r1, r);
         
         return result;
@@ -1334,7 +1420,7 @@ public class Rotation {
      * 
      * eqn (21):
      * calc C = 3X3 rotation matrix (often written as R)
-     * given array of Tait-Bryan rotation angles alpha, beta, gamma
+     * given array of euler rotation angles alpha, beta, gamma
      * 
      * s_theta column 0 = C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T
      *         column 1 = C_gamma(theta[2]) * [0, 1, 0]^T 
@@ -1357,6 +1443,7 @@ public class Rotation {
      * though the sign conventions of the sine terms are different
      * 
      * </pre>
+     * @param theta euler angles as representation of rotation matrix
      * @return [3X3]
      */
     public static double[][] sTheta(double[] theta) {
@@ -1378,7 +1465,7 @@ public class Rotation {
      * 
      * eqn (21):
      * calc C = 3X3 rotation matrix (oftern written as R)
-     * given array of Tiat-Bryan rotation angles  alpha, beta,gamma matrices
+     * given array of euler rotation angles  alpha, beta,gamma matrices
      * 
      * s_theta column 0 = C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T
      *         column 1 = C_gamma(theta[2]) * [0, 1, 0]^T 
@@ -1401,6 +1488,7 @@ public class Rotation {
      * though the sign conventions of the sine terms are different
      * 
      * </pre>
+     * @param theta euler angles as representation of rotation matrix
      * @param output 
      */
     public static void sTheta(double[] theta, double[][] output) {
@@ -1443,7 +1531,8 @@ public class Rotation {
     }
     
     /**
-     * calculate  R_xyz,
+     * calculate  R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z)
+     * ,
      * that is, given an array of rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
      * 
@@ -1471,11 +1560,12 @@ public class Rotation {
           
        =  | (cosZ * cosY)   (-sinZ * cosX + cosZ * sinY * sinX)   (sinZ * sinX + cosZ * sinY * cosX)   |
           | (sinZ * cosY)   ( cosZ * cosX + sinZ * sinY * sinX)   (-cosZ * sinX + sinZ * sinY * cosX)  |
-          | (-sinY)          ( cosY * sinX )                       (cosZ * cosX)                       |
+          | (-sinY)          ( cosY * sinX )                       (cosY * cosX)                       |
      * </pre>
+     * @param thetas euler angles
      * @return 
      */
-    public static double[][] calculateRotationZYX(double[] thetas) {
+    public static double[][] createRotationZYX(double[] thetas) {
         if (thetas.length != 3) {
             throw new IllegalArgumentException("thetas must be length 3");
         }
@@ -1492,7 +1582,7 @@ public class Rotation {
     }
     
     /**
-     * given an array of Tait-Bryan rotation angles, return the rotation matrix
+     * given an array of euler rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
@@ -1506,12 +1596,12 @@ public class Rotation {
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
      * </pre>
-     * @param thetas Tait-Bryan rotation angles
+     * @param thetas euler rotation angles
      * @param aa auxiliary arrays used for internal calculations.  they're
      * meant to reduce object creation and are created by the invoking code.
      * @param out the output rotation matrix values.
      */
-    public static void calculateRotationZYX(double[] thetas, AuxiliaryArrays aa, double[][] out) {
+    public static void createRotationZYX(double[] thetas, AuxiliaryArrays aa, double[][] out) {
         if (thetas.length != 3) {
             throw new IllegalArgumentException("thetas must be length 3");
         }
@@ -1531,19 +1621,177 @@ public class Rotation {
     }
     
     /**
-     * given an array of Tait-Bryan rotation angles, return the rotation matrix
-     * as the rotations for x, y, z multiplied in that order.
+     * calculate  the Hamilton quaternion which would be extracted from the
+     * rotation matrix created by R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z).
+     * 
+     * from https://en.wikipedia.org/wiki/Davenport_chained_rotations
+     * "Any extrinsic rotation is equivalent to an intrinsic rotation by the 
+     * same angles but with inverted order of elemental rotations, and vice 
+     * versa. For instance, the intrinsic rotations x-y’-z″ by angles α, β, γ 
+     * are equivalent to the extrinsic rotations z-y-x by angles γ, β, α."
      * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (18)
      * 
      * where  
        cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+            * 
+
+        = | (cos φ * cos ψ)   (-sin φ * cos θ + cos φ * sin ψ * sin θ)   (sin φ * sin θ + cos φ * sin ψ * cos θ)   |
+          | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * sin θ)   (-cos φ * sin θ + sin φ * sin ψ * cos θ)  |
+          | (-sin ψ)          ( cos ψ * sin θ )                          (cos ψ * cos θ)                           |
+          
+       =  | (cosZ * cosY)   (-sinZ * cosX + cosZ * sinY * sinX)   (sinZ * sinX + cosZ * sinY * cosX)   |
+          | (sinZ * cosY)   ( cosZ * cosX + sinZ * sinY * sinX)   (-cosZ * sinX + sinZ * sinY * cosX)  |
+          | (-sinY)          ( cosY * sinX )                       (cosY * cosX)                       |
+           
+     given angle theta and axis n:
+         q = [scalar, vector] = [
+             cos(theta/2), nx*sin(theta/2), ny*sin(theta/2), nz*sin(theta/2)];
+          
+     given euler angles:
+         q1 =  sin(z/2)*sin(y/2)*sin(x/2) + cos(z/2)*cos(y/2)*cos(x/2)
+         q2 = -sin(z/2)*sin(y/2)*cos(x/2) + sin(x/2)*cos(z/2)*cos(y/2)
+         q3 =  sin(z/2)*sin(x/2)*cos(y/2) + sin(y/2)*cos(z/2)*cos(x/2)
+         q4 =  sin(z/2)*cos(y/2)*cos(x/2) - sin(y/2)*sin(x/2)*cos(z/2)
+     
      * </pre>
+     * @param thetas euler rotation angles
      * @return 
      */
-    public static double[][] calculateRotationXYZ(double[] thetas) {
+    public static double[] createHamiltonQuaternionZYX(double[] thetas) {
+        if (thetas.length != 3) {
+            throw new IllegalArgumentException("thetas must be length 3");
+        }
+        double x2 = thetas[0]/2;
+        double y2 = thetas[1]/2;
+        double z2 = thetas[2]/2;
+        
+        double q1 =  Math.sin(z2)*Math.sin(y2)*Math.sin(x2) + 
+            Math.cos(z2)*Math.cos(y2)*Math.cos(x2);
+        double q2 = -Math.sin(z2)*Math.sin(y2)*Math.cos(x2) + Math.sin(x2)*Math.cos(z2)*Math.cos(y2);
+        double q3 =  Math.sin(z2)*Math.sin(x2)*Math.cos(y2) + Math.sin(y2)*Math.cos(z2)*Math.cos(x2);
+        double q4 =  Math.sin(z2)*Math.cos(y2)*Math.cos(x2) - Math.sin(y2)*Math.sin(x2)*Math.cos(z2);
+        
+        return new double[]{q1, q2, q3, q4};
+    }
+    
+    /**
+     * calculate  the Hamilton quaternion which would be extracted from the
+     * rotation matrix created by R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z).
+     * 
+     * from https://en.wikipedia.org/wiki/Davenport_chained_rotations
+     * "Any extrinsic rotation is equivalent to an intrinsic rotation by the 
+     * same angles but with inverted order of elemental rotations, and vice 
+     * versa. For instance, the intrinsic rotations x-y’-z″ by angles α, β, γ 
+     * are equivalent to the extrinsic rotations z-y-x by angles γ, β, α."
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (18)
+     * 
+     * where  
+       cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+            * 
+
+        = | (cos φ * cos ψ)   (-sin φ * cos θ + cos φ * sin ψ * sin θ)   (sin φ * sin θ + cos φ * sin ψ * cos θ)   |
+          | (sin φ * cos ψ)   ( cos φ * cos θ + sin φ * sin ψ * sin θ)   (-cos φ * sin θ + sin φ * sin ψ * cos θ)  |
+          | (-sin ψ)          ( cos ψ * sin θ )                          (cos ψ * cos θ)                           |
+          
+       =  | (cosZ * cosY)   (-sinZ * cosX + cosZ * sinY * sinX)   (sinZ * sinX + cosZ * sinY * cosX)   |
+          | (sinZ * cosY)   ( cosZ * cosX + sinZ * sinY * sinX)   (-cosZ * sinX + sinZ * sinY * cosX)  |
+          | (-sinY)          ( cosY * sinX )                       (cosY * cosX)                       |
+           
+     given angle theta and axis n:
+         q = [scalar, vector] = 
+             [cos(theta/2), nx*sin(theta/2), ny*sin(theta/2), nz*sin(theta/2)];
+          
+     given euler angles:
+         q1 =  sin(z/2)*sin(y/2)*sin(x/2) + cos(z/2)*cos(y/2)*cos(x/2)
+         q2 = -sin(z/2)*sin(y/2)*cos(x/2) + sin(x/2)*cos(z/2)*cos(y/2)
+         q3 =  sin(z/2)*sin(x/2)*cos(y/2) + sin(y/2)*cos(z/2)*cos(x/2)
+         q4 =  sin(z/2)*cos(y/2)*cos(x/2) - sin(y/2)*sin(x/2)*cos(z/2)
+     
+     * </pre>
+     * @param angle
+     * @param axis
+     * @return 
+     */
+    public static double[] createHamiltonQuaternionZYX(double angle, double[] axis) {
+        if (axis.length != 3) {
+            throw new IllegalArgumentException("axis must be length 3");
+        }
+        double d = MatrixUtil.lPSum(axis, 2);
+        double nx = axis[0]/d;
+        double ny = axis[1]/d;
+        double nz = axis[2]/d;
+        double ca = Math.cos(angle/2);
+        double sa = Math.sin(angle/2);
+        
+        double[] q = new double[]{ca, nx*sa, ny*sa, nz*sa};
+        
+        return q;
+    }
+    
+    /**
+     * convert the quaternion from [scalar vector] to [vector scalar] in-place.
+     * @param qHamilton quaternion of format [scalar  vector]
+     */
+    public static void convertHamiltonToBarfootQuaternionInPlace(double[] qHamilton) {
+        if (qHamilton.length != 4) {
+            throw new IllegalArgumentException("qHamilton length must be 4");
+        }
+       
+        double swap = qHamilton[0];
+        for (int i = 1; i < 4; ++i) {
+            qHamilton[i-1] = qHamilton[i];
+        }
+        qHamilton[3] = swap;
+    }
+    
+    /**
+     * convert the quaternion from [scalar vector] to [vector scalar].
+     * @param qHamilton quaternion of format [scalar  vector]
+     * @return convert the quaternion from [scalar vector] to [vector scalar]
+     */
+    public static double[] convertHamiltonToBarfootQuaternion(double[] qHamilton) {
+        if (qHamilton.length != 4) {
+            throw new IllegalArgumentException("qHamilton length must be 4");
+        }
+        double[] out = new double[4];
+        double swap = qHamilton[0];
+        for (int i = 1; i < 4; ++i) {
+            out[i-1] = qHamilton[i];
+        }
+        out[3] = swap;
+        return out;
+    }
+        
+    /**
+     * given an array of euler rotation angles, return the rotation matrix
+     * as the rotations for x, y, z multiplied in that order.
+      <pre>
+      
+      where  
+       cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+      </pre>
+      
+     @param thetas euler rotation angles
+     @return 
+    */
+    public static double[][] createRotationXYZ(double[] thetas) {
         if (thetas.length != 3) {
             throw new IllegalArgumentException("thetas must be length 3");
         }
@@ -1560,6 +1808,9 @@ public class Rotation {
     }
     
     /*
+    create a quaternion 4X1 column vector of [vector scalar] from the given
+    angle and axis representation of rotation.
+    Barfoot et al. place the scalar as the last item in the quaternion.
     <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -1569,8 +1820,13 @@ public class Rotation {
     satisfies unit-length constraint q^T*q = 1  (size [1X4]*[4X1]=[1X1].
     q^T*q = q_1^2 + q_2^2 + q_3^2 + q_4^2.
     </pre>
+    @param unitLengthAxis axis of rotation normalized to unit length
+    @param angle angle of rotation to apply
     */
-    public static double[] createUnitLengthQuaternion(double[] unitLengthAxis, double angle) {
+    public static double[] createUnitLengthQuaternionBarfoot(double[] unitLengthAxis, double angle) {
+        if (unitLengthAxis.length != 3) {
+            throw new IllegalArgumentException("unitLengthAxis.length must be 3");
+        }
         double cPhi2 = Math.cos(angle)/2.;
         double sPhi2 = Math.sin(angle)/2.;
         double[] out = new double[]{
@@ -1581,15 +1837,46 @@ public class Rotation {
     }
     
     /*
+    create a quaternion 4X1 column vector of [scalar vector] from the given
+    angle and axis representation of rotation.
+    Hamilton and most other "right hand system" notation place the scalar as the
+    first item in the quaternion.
+    <pre>
+     
+    satisfies unit-length constraint q^T*q = 1  (size [1X4]*[4X1]=[1X1].
+    q^T*q = q_1^2 + q_2^2 + q_3^2 + q_4^2.
+    </pre>
+    @param unitLengthAxis axis of rotation normalized to unit length
+    @param angle angle of rotation to apply
+    */
+    public static double[] createUnitLengthQuaternionHamilton(double[] unitLengthAxis, double angle) {
+        if (unitLengthAxis.length != 3) {
+            throw new IllegalArgumentException("unitLengthAxis.length must be 3");
+        }
+        double cPhi2 = Math.cos(angle)/2.;
+        double sPhi2 = Math.sin(angle)/2.;
+        double[] out = new double[]{
+            unitLengthAxis[0]*sPhi2, unitLengthAxis[1]*sPhi2, 
+            unitLengthAxis[2]*sPhi2, cPhi2
+        };
+        return out;
+    }
+    
+    /**
     <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
      * eqn (14)
+     C(axis, angle) = cos(angle)*I + (1-cos(angle))*axis*axis^T - sin(angle)*[axis]_x
+     *
     
     satisfies unit-length constraint q^T*q = 1  (size [1X4]*[4X1]=[1X1].
     q^T*q = q_1^2 + q_2^2 + q_3^2 + q_4^2.
     </pre>
+     * @param unitLengthAxis    
+     * @param angle    
+     * @return     
     */
     public static double[][] createRotationFromUnitLengthAngleAxis(double[] unitLengthAxis, double angle) {
         
@@ -1612,42 +1899,39 @@ public class Rotation {
     }
     
     /**
-     * apply infinitesimal rotation expressed as Tait-Bryan angles ([1X3]) 
-     * to a rotation matrix ([3X3]).
+     * apply perturbation dTheta to quaternion formed from euler rotation angles
+     * theta.
      * To the first order, this is a constraint-sensitive approach.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
-     * eqn (44).
+     * eqn (45) and (44).
      * 
      * </pre>
-     * @return 
-     */
+     * @param theta euler rotation angles
+     * @param dTheta rotation perturbation
+     * @return the resulting quaternion formed from theta and perturbed by dTheta.  [4X1]
+    */
     public static double[] applyRotationPerturbationToQuaternion(
-        double[] q, double[] theta, double[] dTheta) {
-        if (q.length != 4) {
-            throw new IllegalArgumentException("q.length must be 4");
-        }
+        double[] theta, double[] dTheta) {
+    
         if (theta.length != 3) {
             throw new IllegalArgumentException("theta must be length 3");
         }
         if (dTheta.length != 3) {
             throw new IllegalArgumentException("dTheta must be length 3");
         }
-                
-        double[] dPhi = createRotationVector(theta, dTheta);
+                 
+        //[4X4]
+        double[][] deltaQ = createDeltaQ(theta, dTheta);
         
-        double[][] skew = MatrixUtil.skewSymmetric(dPhi);
+        // this is eqn (37) of Barfoot et al.  [$X1]
+        double[] q = createQuaternionZYXFromEuler(theta);
         
-        int i;
-        for (i = 0; i < skew.length; ++i) {
-            skew[i][i] = 1. - skew[i][i];
-        }
+        double[] q2 = MatrixUtil.multiplyMatrixByColumnVector(deltaQ, q);
         
-        double[] result = MatrixUtil.multiplyMatrixByColumnVector(skew, q);
-        
-        return result;
+        return q2;
     }
     
     /*
@@ -1668,13 +1952,53 @@ public class Rotation {
         double sa = Math.sin(angle);
         double ca = Math.cos(angle);
         double[] q = new double[4];
+        // two 0's and a 1 for principal axis:
         q[principalAxis] = sa;
         q[3] = ca;
         return q;
     }
+    
+    /**
+     * create a rotation quaternion from Euler x, y, z angles.
+     * note that the rotation order of multiplication operations is z, y, x.
+     * 
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (37)
+     *     q(euler) = q_z(euler_z)^+ * q_y(euler_y)^+ + q_x(euler_x) 
+     * 
+     *     and principal axis rotations in eqn (35)
+     * </pre>
+     * @param eulerXYZ
+     * @return [4X1] quaternion rotation vector.
+     */
+    public static double[] createQuaternionZYXFromEuler(double[] eulerXYZ) {
+        if (eulerXYZ.length != 3) {
+            throw new IllegalArgumentException("eulerXYZ.length must be 3");
+        }
+        // length is 4
+        double[] q0 = quaternionPrincipalAxisRotation(eulerXYZ[0], 0);
+        double[] q1 = quaternionPrincipalAxisRotation(eulerXYZ[1], 1);
+        double[] q2 = quaternionPrincipalAxisRotation(eulerXYZ[2], 2);
+        
+        // [4X4]
+        double[][] q1m = quaternionRighthandCompoundOperator(q1);
+        double[][] q2m = quaternionRighthandCompoundOperator(q2);
+        
+        // q2m times q1m times q0 = [4X1]
+        // [4X4]
+        double[][] t1 = MatrixUtil.multiply(q2m, q1m);
+        // 4X1
+        double[] q = MatrixUtil.multiplyMatrixByColumnVector(t1, q0);
+        
+        return q;
+    }
  
     /**
-     * create the rotation vector dPhi = S(theta) * dTheta
+     * create the rotation matrix from quaternions formed by the euler rotation
+     * angles theta.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -1682,12 +2006,14 @@ public class Rotation {
      * eqn (37)
      * 
      * </pre>
+     * @param theta euler rotation angles
      * @return rotation matrix [3X3].
      */
     public static double[][] createRotationFromQuaternion(double[] theta) {
         if (theta.length != 3) {
             throw new IllegalArgumentException("theta.length must be 3");
         }
+        
         double[] q0 = quaternionPrincipalAxisRotation(theta[0], 0);
         double[] q1 = quaternionPrincipalAxisRotation(theta[1], 1);
         double[] q2 = quaternionPrincipalAxisRotation(theta[2], 2);
@@ -1710,8 +2036,11 @@ public class Rotation {
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
      * text under eqn (26)
+     *    dPhi= S(theta) * dTheta
      * 
      * </pre>
+     * @param theta euler rotation angles
+     * @param dTheta perturbation to apply to rotation
      * @return dPhi= S(theta) * dTheta.  length is 3.
      */
     public static double[] createRotationVector(double[] theta, double[] dTheta) {
@@ -1725,13 +2054,55 @@ public class Rotation {
     }
     
     /**
-     * apply rotation expressed as Tait-Bryan angles ([1X3]) to a quaternion ([4X1]).
+     * create perturbation for a quaternion from a perturbation to euler
+     * rotation angles.
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * part of eqn (45) and text under (26).
+     *   | dPhi |^⨁
+     *   |   1  |
+     *      where dPhi = S(theta) * dTheta 
+     * </pre>
+     * @param theta euler rotation angles
+     * @param dTheta rotation perturbation
+     * @return perturbation for a quaternion.  [4X4].
+    */
+    public static double[][] createDeltaQ(double[] theta, double[] dTheta) {
+        
+        if (theta.length != 3) {
+            throw new IllegalArgumentException("theta must be length 3");
+        }
+        if (dTheta.length != 3) {
+            throw new IllegalArgumentException("dTheta must be length 3");
+        }
+                        
+        double[] dPhi = createRotationVector(theta, dTheta);
+        
+        double[] dPhiQ = new double[4];
+        
+        for (int i = 0; i < 3; ++i) {
+            dPhiQ[i] = dPhi[i]/2.;
+        }
+        dPhiQ[3] = 1;
+        
+        double[][] dQ = quaternionRighthandCompoundOperator(dPhiQ);
+        
+        return dQ;
+    }
+    
+    /**
+     * create a unit-length quaternion update of the quaternion formed
+     * from the euler rotation angles theta by the perturbation dTheta.
      * To the first order, this is a constraint-sensitive approach.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
-     * eqn (49), (48a)
+     * eqn (49)
+     *    q(theta + perturbation) = q(dPhi)^⨁ * q(theta)
+     *        where dPhi = S(theta) * dTheta
      * 
      * "This update approach allows us to store and update the rotation as a 
      * unit-length quaternion, thereby avoiding singularities and the need to 
@@ -1739,85 +2110,30 @@ public class Rotation {
      * built in)."
      * 
      * </pre>
+     * @param theta euler rotation angles
+     * @param dTheta perturbation to apply to rotation
      * @return 
      */
     public static double[] applySingularitySafeRotationPerturbationQuaternion(
-        double[] q, double[] theta, double[] dTheta) {
-        if (q.length != 4) {
-            throw new IllegalArgumentException("q length must be 4");
+        double[] theta, double[] dTheta) {
+        if (theta.length != 3) {
+            throw new IllegalArgumentException("theta length must be 3");
         }
         if (dTheta.length != 3) {
             throw new IllegalArgumentException("theta must be length 3");
         }
-        
-        // ============= eqn (48c) =============
-        
-                
-        // length 3
+           
         double[] dPhi = createRotationVector(theta, dTheta);
-       
-        // length 4
-        double[] qdPhi = createIdentityQuaternion();
-        int i;
-        for (i = 0; i < 3; ++i) {
-            qdPhi[i] += 0.5*dPhi[i];
-        }
+        double[] qDPhi = createHamiltonQuaternionZYX(dPhi);
         
         // ====== eqn (49) =====
-        double[][] qLH = quaternionLefthandCompoundOperator(qdPhi);
+        double[][] qLH = quaternionLefthandCompoundOperator(qDPhi);
+        
+        double[] q = createHamiltonQuaternionZYX(theta);
+        
         double[] result = MatrixUtil.multiplyMatrixByColumnVector(qLH, q);
         
         return result;
-    }
-    
-    /**
-     * calculate a quaternion from the given Tait-Bryan rotation angles and a rotation angle.
-     * NOTE, this method uses the HAmilton convention according to Fan's Farm.
-     *    In Hamilton convention, ijk=-1, while JPL defines ijk = 1.
-     * <pre>
-     * references:
-     * 
-     * https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#cite_note-1
-     * 
-     * Fan's Farm:
-     * https://fzheng.me/2017/11/12/quaternion_conventions_en/
-     * 
-     * </pre>
-     * @param theta the Tait-Bryan angles presumably.  still reading on this...
-     * @param rotAngle
-     * @return 
-     */
-    public static double[] createQuaternionFromThetaAndAngle(double[] theta,
-        double rotAngle) {
-        double a = rotAngle/2.;
-        double sa = Math.sin(a);
-        double ca = Math.cos(a);
-        double[] q = new double[] {
-            ca, sa*Math.cos(theta[0]), sa*Math.cos(theta[1]),
-            sa*Math.cos(theta[2])}; 
-        return q;
-    }
-    
-    /**
-     * calculate the "left-hand rule" rotation matrix from the given quaternion.
-     * @param q
-     * @return 
-     */
-    public static double[][] createRotationLHFromQuaternion(double[] q) {
-        if (q.length != 4) {
-            throw new IllegalArgumentException("q length must be 4");
-        }
-        double w = q[0];
-        double x = q[1];
-        double y = q[2];
-        double z = q[3];
-        
-        double[][] r = new double[3][];
-        r[0] = new double[]{1-2*y*y - 2*z*z, 2*x*y-2*z*w, 2*x*z+2*y*w};
-        r[1] = new double[]{2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w};
-        r[2] = new double[]{2*x*z-2*y*w, 2*y*z+2*x*w, 1-2*x*x-2*y*y};
-        
-        return r;
     }
         
     public static class AuxiliaryArrays {

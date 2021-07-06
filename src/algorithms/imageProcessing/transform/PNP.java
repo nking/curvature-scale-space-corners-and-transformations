@@ -286,7 +286,7 @@ public class PNP {
         
         // ===== create rotation matrix from thetas
         CameraExtrinsicParameters extrinsic = new CameraExtrinsicParameters();
-        extrinsic.setRotation(Rotation.calculateRotationZYX(thetas));
+        extrinsic.setRotation(Rotation.createRotationZYX(thetas));
         extrinsic.setTranslation(t);
         
         return extrinsic;
@@ -668,13 +668,18 @@ public class PNP {
         //           calculated as C(theta) = 
         //     and deltaPhi = sTheta * deltaTheta
         
-        double[][] out = MatrixUtil.zeros(3, 3);
+        double[][] out;// = MatrixUtil.zeros(3, 3);
+//TODO: revisit this after testing Rotation.java        
+        double[] qUpdated = Rotation.applySingularitySafeRotationPerturbationQuaternion(thetas, deltaTheta);
         
-        Rotation.applySingularitySafeRotationPerturbation(r, thetas, deltaTheta, out);
+        // [4X4]
+        double[][] qR = Rotation.createRotationMatrixFromQuaternion4(qUpdated);
         
+        // rotation is [0:2, 0:2] of qR  
+                
         // update in-out variable r
         for (int i = 0; i < 3; ++i) {
-            System.arraycopy(out[i], 0, r[i], 0, 3);
+            System.arraycopy(qR[i], 0, r[i], 0, 3);
         }
 
         // ---- update theta ----        
