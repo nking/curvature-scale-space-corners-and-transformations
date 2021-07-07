@@ -9,6 +9,18 @@ import no.uib.cipr.matrix.NotConvergedException;
  * a utility class holding rotations associated with euler angles,
  * quaternions, and angle-axis representations (using rodrigues formula for the later).
  * 
+ * a rotation matrix describes a transformation in euclidean space.  it is a
+ * member of  special orthogonal group SO(n) where n is usually 3, but can
+ * be 4 for quaternion rotation matrix.  It has the properties R^T = R^−1 and det(R) = 1.
+ * 
+ * This class uses "active" rotations of vectors counterclockwise in a right-handed 
+ * coordinate system (y counterclockwise from x) by pre-multiplication 
+ * (R on the left). If any one of these is changed (such as rotating axes 
+ * instead of vectors, a "passive" transformation), then the inverse of the
+ * example matrix should be used, which coincides with its transpose.
+ * e.g. (A*B*C)^-1 = (C^-1) * (B^-1) * (A^-1)
+ * 
+ * 
  * <b><ul>RIGHT HAND SYSTEM</ul></b>
  * The equations below use a right hand system.
  * The right hand system is consistent with methods in physics, engineering,
@@ -691,12 +703,12 @@ public class Rotation {
      * @param r
      * @return 
      */
-    public static double[] extractRotationFromZYX(double[][] r) {
+    public static double[] extractThetaFromZYX(double[][] r) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
         double[] out = new double[3];
-        extractRotationFromZYX(r, out);
+        extractThetaFromZYX(r, out);
         return out;
     }
     
@@ -705,7 +717,7 @@ public class Rotation {
      * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
      * @param r
      */
-    public static void extractRotationFromZYX(double[][] r, double[] out) {
+    public static void extractThetaFromZYX(double[][] r, double[] out) {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
@@ -737,6 +749,9 @@ public class Rotation {
         if (d == 0) {
             thetaY = -Math.asin(r[2][0]);
         } else {
+            // Y = atan( -r[2][0] / sqrt(r[2][1]*r[2][1] + r[2][2]*r[2][2]) )
+            //         (  +sin Y  / sqrt( (cosY)^2 * (sinX)^2 + (cosY)^2 * (cosX)^2 )
+            //         (  +sin Y  / sqrt( (cosY)^2 * 1 )
             thetaY = Math.atan2(-r[2][0], Math.sqrt(d));
         }
         
@@ -762,9 +777,9 @@ public class Rotation {
                     } else {
                         // can use r[0][1], r[0][2], r[1][1], or r[1][2] or combination
                         /*r[0][1] = (-sφ * cos θ + cφ * sψ * sin θ)
-                        r[0][2] =  (sφ * sin θ + cφ * sψ * cos θ)
-                        r[1][1] = ( cφ * cos θ + sφ * sψ * sin θ)
-                        r[1][2] = (-cφ * sin θ + sφ * sψ * cos θ)
+                          r[0][2] =  (sφ * sin θ + cφ * sψ * cos θ)
+                          r[1][1] = ( cφ * cos θ + sφ * sψ * sin θ)
+                          r[1][2] = (-cφ * sin θ + sφ * sψ * cos θ)
                         
                         looking for ways to factor one or more of the 4 equations for the 1 unknown θ
                         rewritten:
@@ -843,6 +858,98 @@ public class Rotation {
         out[0] = thetaX;
         out[1] = thetaY;
         out[2] = thetaZ;                        
+    }
+    
+    /**
+     * extract euler rotation angles from a rotation matrix which has been built following
+     * the convention of R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z).
+     * @param r
+     * @return euler angles extracted from the rotation matrix under assumption
+     * that the rotation matrix was constructed with multiplication order
+     * R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z).
+     */
+    public static double[] extractThetaFromXYZ(double[][] r) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3x3");
+        }
+        double[] out = new double[3];
+        extractThetaFromXYZ(r, out);
+        return out;
+    }
+    
+    /**
+     * extract euler rotation angles from a rotation matrix which has been built following
+     * the convention of R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z).
+     * @param r
+     * @param out output array of size 3 used to place euler angles extracted 
+     * from the rotation matrix under assumption
+     * that the rotation matrix was constructed with multiplication order
+     * R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z).
+     */
+    public static void extractThetaFromXYZ(double[][] r, double[] out) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3x3");
+        }
+        /*        
+        using euler angles
+          cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+
+        from Appendix A of 
+        "Euler Angles and Quaternions and Transformations", NASA Mission Planning
+         and Analysis Division, 1977, Shuttle Program.
+        
+        R_X(theta_X)*R_Y(theta_Y)*R_Z(theta_Z) 
+        = |  cosY*cosZ                      -cosY*sinZ                    sinY       |
+          |  sinX*sinY*cosZ + cosX*sinZ     -sinX*sinY*sinZ + cosX*cosZ   -sinX*cosY |
+          |  -cosX*sinY*cosZ + sinX*sinZ     cosX*sinY*sinZ + sinX*cosZ   cosX*cosY  |
+        
+        q1 = -sin(X/2)*sin(Y/2)*sin(Z/2) + cos(X/2)*cos(Y/2)*cos(Z/2)
+        q2 =  sin(X/2)*cos(Y/2)*cos(Z/2) + sin(Y/2)*sin(Z/2)*cos(X/2)
+        q3 = -sin(X/2)*sin(Z/2)*cos(Y/2) + sin(Y/2)*cos(X/2)*cos(Z/2)
+        q4 =  sin(X/2)*sin(Y/2)*cos(Z/2) + sin(Z/2)*cos(X/2)*cos(Y/2)
+        
+        X = theta1 = math.atan2(-r[1][2], r[2][2])
+        Y = theta2 = math.atan2( r[0][2], sqrt(1 - r[0][2]*r[0][2]) )
+        Z = theta3 = math.atan2(-r[0][1], r[0][0])        
+        */
+        //        θ      ψ       φ
+        double thetaX, thetaY, thetaZ;
+        
+        if (r[2][2] != 0) {
+            thetaX = Math.atan2(-r[1][2], r[2][2]);
+        } else {
+            throw new UnsupportedOperationException("There are "
+                                + "0's in the rotation matrix, so factoring of "
+                                + "more than one exponential variable is needed."
+                                + "This case is not yet implemented.");
+        }
+        
+        double d = 1. - r[0][2]*r[0][2];
+        if (d != 0) {
+            thetaY = Math.atan2( r[0][2], Math.sqrt(1. - r[0][2]*r[0][2]) );
+        } else {
+            throw new UnsupportedOperationException("There are "
+                                + "0's in the rotation matrix, so factoring of "
+                                + "more than one exponential variable is needed."
+                                + "This case is not yet implemented.");
+        }
+    
+        if (r[0][0] != 0) {
+            thetaZ = Math.atan2(-r[0][1], r[0][0]);
+        } else {
+            throw new UnsupportedOperationException("There are "
+                                + "0's in the rotation matrix, so factoring of "
+                                + "more than one exponential variable is needed."
+                                + "This case is not yet implemented.");
+        }
+    
+        out[0] = thetaX;
+        out[1] = thetaY;
+        out[2] = thetaZ;
+        
     }
             
     /**
@@ -947,7 +1054,7 @@ public class Rotation {
      * @param dx parameter perturbations for theta.  length is 3.
      * @return the rotation matrix perturbed by dx.
      */
-    public static double[][] updateRotation(double[][] r, double[] dx) {
+    /*public static double[][] updateRotation(double[][] r, double[] dx) {
                 
         double[][] iMinusDX = MatrixUtil.createIdentityMatrix(3);
         double[][] dxM = MatrixUtil.skewSymmetric(dx);
@@ -955,7 +1062,7 @@ public class Rotation {
         r = MatrixUtil.multiply(r, factor);
         
         return r;
-    }
+    }*/
     
     /**
     calculate the distance metric between quaternions, using vector inner product
@@ -1264,7 +1371,7 @@ public class Rotation {
      * </pre>
      * @param theta euler angles
      * @param dTheta perturbation to apply to the euler angles
-     * @return 
+     * @return resulting perturbed rotation matrix
      */
     public static double[][] applyRotationPerturbationZYX(double[] theta, double[] dTheta) {
         if (theta.length != 3) {
@@ -1786,6 +1893,16 @@ public class Rotation {
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+         
+      from Appendix A of 
+        "Euler Angles and Quaternions and Transformations", NASA Mission Planning
+         and Analysis Division, 1977, Shuttle Program.
+         
+      R_X(theta_X)*R_Y(theta_Y)*R_Z(theta_Z) 
+        = |  cosY*cosZ                      -cosY*sinZ                    sinY       |
+          |  sinX*sinY*cosZ + cosX*sinZ     -sinX*sinY*sinZ + cosX*cosZ   -sinX*cosY |
+          |  -cosX*sinY*cosZ + sinX*sinZ     cosX*sinY*sinZ + sinX*cosZ   cosX*cosY  |
+         
       </pre>
       
      @param thetas euler rotation angles
@@ -2112,7 +2229,8 @@ public class Rotation {
      * </pre>
      * @param theta euler rotation angles
      * @param dTheta perturbation to apply to rotation
-     * @return 
+     * @return resulting quaternion from perturbation applied to quaternion 
+     * formed from theta euler angles.
      */
     public static double[] applySingularitySafeRotationPerturbationQuaternion(
         double[] theta, double[] dTheta) {

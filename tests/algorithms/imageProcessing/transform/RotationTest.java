@@ -16,7 +16,7 @@ public class RotationTest extends TestCase {
     public RotationTest() {
     }
 
-    public void testCreateRodriguesFormulaRotationMatrix() {
+    public void estRodriguesFormula() {
         
         //from http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example.html
         
@@ -57,7 +57,7 @@ public class RotationTest extends TestCase {
        
     }
 
-    public void testProcrustesAlgorithmForRotation() throws NotConvergedException {
+    public void estProcrustesAlgorithm() throws NotConvergedException {
         double[][] a = new double[4][2];
         a[0] = new double[]{1, 2};
         a[1] = new double[]{3, 4};
@@ -84,7 +84,7 @@ public class RotationTest extends TestCase {
         }
     }
 
-    public void testProcrustesAlgorithmForRotation2() throws NotConvergedException {
+    public void estProcrustesAlgorithm2() throws NotConvergedException {
         //test data from:
         //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
         // "Fifth calibration example - Calibrating a stereo system, stereo image rectification and 3D stereo triangulation"
@@ -155,7 +155,7 @@ public class RotationTest extends TestCase {
         
         double[][] r = Rotation.createRotationZYX(theta);
         
-        double[] d = Rotation.extractRotationFromZYX(r);
+        double[] d = Rotation.extractThetaFromZYX(r);
         //System.out.printf("result=%s\n", FormatArray.toString(d, "%.3e"));
 
         assertEquals(theta.length, d.length);
@@ -176,7 +176,7 @@ public class RotationTest extends TestCase {
         
         r = Rotation.createRotationZYX(theta);
         
-        d = Rotation.extractRotationFromZYX(r);
+        d = Rotation.extractThetaFromZYX(r);
         //System.out.printf("result2=%s\n", FormatArray.toString(d, "%.3e"));
 
         assertEquals(theta.length, d.length);
@@ -188,7 +188,7 @@ public class RotationTest extends TestCase {
         }
     }
     
-    public void est3() throws NotConvergedException {
+    public void test3() throws NotConvergedException {
         System.out.println("test3");
         
         /*
@@ -203,48 +203,99 @@ public class RotationTest extends TestCase {
             C_i_j_i = R_x(az)*R_y(ay)*R_x(ax), singularity when
                 ay=+-pi or a2=0.
         */
+        int i, j;
         
-        double[] theta 
+        double[] theta0 
             = new double[]{25.*Math.PI/180., 35.*Math.PI/180., 55.*Math.PI/180.};
-
+        // 0.1 radians = 5.73 degrees.  1 degree = 0.0174 redians
+        double[] dTheta0 
+            = new double[]{2*Math.PI/180., 3*Math.PI/180., 5.5*Math.PI/180.};
+        double[] theta0Up = new double[3];
+        for (i = 0; i < 3; ++i) {
+            theta0Up[i] = theta0[i] + dTheta0[i];
+        }
+        System.out.printf("theta0=\n%s\n", FormatArray.toString(theta0, "%.3e"));
+        System.out.printf("dTheta0=\n%s\n", FormatArray.toString(dTheta0, "%.3e"));
+        System.out.printf("theta0Up=\n%s\n", FormatArray.toString(theta0Up, "%.3e"));
+        
         //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
         
-        double[][] r0 = Rotation.createRotationZYX(theta);
+        double[][] r0ZYX = Rotation.createRotationZYX(theta0);                
+        double[] theta0ExZYX = Rotation.extractThetaFromZYX(r0ZYX); // recovered exactly     
+        double[][] r0UpZYX = Rotation.applyRotationPerturbationZYX(theta0, dTheta0);
+        double[] theta0UpExZYX = Rotation.extractThetaFromZYX(r0UpZYX);
+        double[][] r0FromTheta0UpZYX = Rotation.createRotationZYX(theta0Up);
+        double[] theta0UpExZYXMinusTheta0 = new double[3];
+        for (i = 0; i < 3; ++i) {
+            theta0UpExZYXMinusTheta0[i] = theta0UpExZYX[i] - theta0[i];
+        }
+        double[][] r0UpDanping = Rotation.updateRotation(dTheta0, r0ZYX);
+        System.out.printf("r0ZYX=\n%s\n", FormatArray.toString(r0ZYX, "%.3e"));
+        System.out.printf("r0UpZYX=\n%s\n", FormatArray.toString(r0UpZYX, "%.3e"));
+        System.out.printf("r0FromTheta0UpZYX=\n%s\n", FormatArray.toString(r0FromTheta0UpZYX, "%.3e"));
+        System.out.printf("r0UpDanping=\n%s\n", FormatArray.toString(r0UpDanping, "%.3e"));
+        System.out.printf("theta0ExZYX=\n%s\n", FormatArray.toString(theta0ExZYX, "%.3e"));
+        System.out.printf("theta0UpExZYX=\n%s\n", FormatArray.toString(theta0UpExZYX, "%.3e"));
+        System.out.printf("theta0UpExZYXMinusTheta0=\n%s\n", FormatArray.toString(theta0UpExZYXMinusTheta0, "%.3e"));
                 
-        double[] thetaExtracted0 = Rotation.extractRotationFromZYX(r0);
+        double[] q0Barfoot = Rotation.createQuaternionZYXFromEuler(theta0);
+        double[] dPhi = Rotation.createRotationVector(theta0, dTheta0);
+        double[] q0Hamilton = Rotation.createHamiltonQuaternionZYX(theta0);
+        double[] q0Barfoot2 = Rotation.convertHamiltonToBarfootQuaternion(q0Hamilton);
         
-        // 0.1 radians = 5.73 degrees.  1 degree = 0.0174 redians
-        double[] deltaTheta 
-            = new double[]{2*Math.PI/180., 3*Math.PI/180., 5.5*Math.PI/180.};
+        double[] a0ZYX1 = Rotation.extractRotationAxisFromZXY(r0ZYX);
+        double[] a0ZYX2 = Rotation.extractRodriguesRotationAxis(r0ZYX);
+        double m0ZYX1 = MatrixUtil.lPSum(a0ZYX1, 2);
+        double m0ZYX2 = MatrixUtil.lPSum(a0ZYX2, 2);
+        double[] q0AABarfootZYX1 = Rotation.createUnitLengthQuaternionBarfoot(a0ZYX1, m0ZYX1);
+        double[] q0AABarfootZYX2 = Rotation.createUnitLengthQuaternionBarfoot(a0ZYX2, m0ZYX2);
         
-        double[][] rotated = MatrixUtil.zeros(3, 3);
+        // rotate a quaternion.  
+        double[] dq0Hamilton = Rotation.createHamiltonQuaternionZYX(dTheta0);
+        double[] dq0Barfoot = Rotation.convertHamiltonToBarfootQuaternion(dq0Hamilton);
+        double[] q0Up = Rotation.rotateVectorByQuaternion4(dq0Barfoot, q0Barfoot2);
+        double[] q0SafeUp = Rotation.applySingularitySafeRotationPerturbationQuaternion(theta0, dTheta0);
         
-        rotated = Rotation.applySingularitySafeRotationPerturbationXYZ(theta, deltaTheta);
+        double[][] r0Diff = Rotation.procrustesAlgorithmForRotation(r0ZYX, r0UpZYX);
         
-        double[] thetaExtracted = Rotation.extractRotationFromZYX(rotated);
+        double dq0 = Rotation.distanceBetweenQuaternions(q0Barfoot2, q0Up);
+        double dq0Euclid = Rotation.distanceBetweenQuaternionEuclideanTransformations(q0Barfoot2, q0Up);
         
-        double[][] sTheta = Rotation.sTheta(theta);
+        // r0Q is ZYX
+        double[][] r0Q = Rotation.createRotationMatrixFromQuaternion4(q0Barfoot2);
+        double[][] r0QUpZYX = Rotation.applyRotationPerturbationZYX(theta0, dTheta0);
+       
+        /*
+        System.out.printf("theta0ExZYX=\n%s\n", FormatArray.toString(theta0ExZYX, "%.3e"));
+        System.out.printf("theta0UpExZYX=\n%s\n", FormatArray.toString(theta0UpExZYX, "%.3e"));
+        System.out.printf("theta0UpExZYXMinusTheta0=\n%s\n", FormatArray.toString(theta0UpExZYXMinusTheta0, "%.3e"));
+        System.out.printf("r0ZYX=\n%s\n", FormatArray.toString(r0ZYX, "%.3e"));
+        System.out.printf("r0UpZYX=\n%s\n", FormatArray.toString(r0UpZYX, "%.3e"));
+        System.out.printf("r0FromTheta0UpZYX=\n%s\n", FormatArray.toString(r0FromTheta0UpZYX, "%.3e"));
+        System.out.printf("theta0=\n%s\n", FormatArray.toString(theta0, "%.3e"));
+        System.out.printf("r0Diff=\n%s\n", FormatArray.toString(r0Diff, "%.3e"));
+        */
+        /*
+        double[] axis0Rod = Rotation.extractRodriguesRotationAxis(r0);
+        double[][] r0Rod = Rotation.createRodriguesFormulaRotationMatrix(theta0);
+        System.out.printf("axis0Rod=\n%s\n", FormatArray.toString(axis0Rod, "%.3e"));
+        System.out.printf("r0Rod=\n%s\n", FormatArray.toString(r0Rod, "%.3e"));
+                
+        double[][] r0XYZ = Rotation.createRotationXYZ(theta0);
+        
+        double[][] sTheta = Rotation.sTheta(theta0);
         double[][] sThetaInv = MatrixUtil.pseudoinverseRankDeficient(sTheta);
-        double[] dRotVector = MatrixUtil.multiplyMatrixByColumnVector(sTheta, deltaTheta);
+        double[] dRotVector = MatrixUtil.multiplyMatrixByColumnVector(sTheta, dTheta0);
         double[] dThetaWithPotentialSingularity = 
             MatrixUtil.multiplyMatrixByColumnVector(sThetaInv, dRotVector);
         
         System.out.printf("sTheta=\n%s\n", FormatArray.toString(sTheta, "%.3e"));
         System.out.printf("inv sTheta=\n%s\n", FormatArray.toString(sThetaInv, "%.3e"));
-
-        double[]thetaExtrMinusTheta = new double[3];
-        double[] thetaUpdated = new double[3];
-        for (int i = 0; i < 3; ++i) {
-            thetaUpdated[i] = theta[i] + deltaTheta[i];
-            thetaExtrMinusTheta[i] = thetaExtracted0[i] - thetaExtracted[i];
-        }
         
-        double[][] rUpdated = Rotation.createRotationZYX(thetaUpdated);
-        
-        System.out.printf("theta=\n   %s\n", FormatArray.toString(theta, "%.3e"));
-        System.out.printf("delta theta=\n   %s\n\n", FormatArray.toString(deltaTheta, "%.3e"));
-        System.out.printf("*theta extracted from r0 rotated=\n   %s\n", FormatArray.toString(thetaExtracted0, "%.3e"));
-        System.out.printf("*theta extracted from r rotated=\n   %s\n\n", FormatArray.toString(thetaExtracted, "%.3e"));
+        System.out.printf("theta=\n   %s\n", FormatArray.toString(theta0, "%.3e"));
+        System.out.printf("delta theta=\n   %s\n\n", FormatArray.toString(dTheta0, "%.3e"));
+        System.out.printf("*theta extracted from r0 rotated=\n   %s\n", FormatArray.toString(theta0ExZYX, "%.3e"));
+        System.out.printf("*theta extracted from r rotated=\n   %s\n\n", FormatArray.toString(theta0UpExZYX, "%.3e"));
         System.out.printf("delta rotation vector=\n   %s\n", FormatArray.toString(dRotVector, "%.3e"));
         System.out.printf("dThetaWithPotentialSingularity=\n   %s\n\n", 
             FormatArray.toString(dThetaWithPotentialSingularity, "%.3e"));
@@ -253,21 +304,14 @@ public class RotationTest extends TestCase {
         System.out.printf("thetaExtrMinusThetaT =\n   %s\n", FormatArray.toString(thetaExtrMinusTheta, "%.3e"));
         
         
-        System.out.printf("r0=\n%s\n", FormatArray.toString(r0, "%.3e"));
-        System.out.printf("r rotated=\n%s\n", FormatArray.toString(rotated, "%.3e"));
+        System.out.printf("r0=\n%s\n", FormatArray.toString(r0ZYX, "%.3e"));
+        System.out.printf("r rotated=\n%s\n", FormatArray.toString(r0UpZYX, "%.3e"));
         System.out.printf("r calculated from theta updates=\n%s\n", FormatArray.toString(rUpdated, "%.3e"));
         
-        double[][] r0_rodrigues = Rotation.createRodriguesFormulaRotationMatrix(theta);
-        double[][] r0_rodrigues_tdt = Rotation.createRodriguesFormulaRotationMatrix(thetaUpdated);
-        System.out.printf("r0_rodrigues=\n%s\n", FormatArray.toString(r0_rodrigues, "%.3e"));
-        System.out.printf("r0_rodrigues_tdt=\n%s\n\n", FormatArray.toString(r0_rodrigues_tdt, "%.3e"));
-        double[] axis = 
-            Rotation.extractRodriguesRotationAxis(r0_rodrigues_tdt);
-        System.out.printf("axis extracted from r0_rodrigues_tdt=\n%s\n\n", FormatArray.toString(axis, "%.3e"));
         
-        double[][] rDiff_rodrigues = Rotation.procrustesAlgorithmForRotation(r0_rodrigues, r0_rodrigues_tdt);
-        double[][] rDiff_barfoot = Rotation.procrustesAlgorithmForRotation(r0, rotated);
         System.out.printf("rDiff_rodrigues=\n%s\n", FormatArray.toString(rDiff_rodrigues, "%.3e"));
         System.out.printf("rDiff_barfoot=\n%s\n", FormatArray.toString(rDiff_barfoot, "%.3e"));
+        */
+        
     }
 }
