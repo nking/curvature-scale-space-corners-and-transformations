@@ -96,7 +96,7 @@ public class PNP {
         // extract pose as (theta_x, theta_y, theta_z, t_x, t_y, t_z)
         double[][] r0 = kExtr.getRotation();
         double[][] r = MatrixUtil.copy(r0);
-        double[] thetas = Rotation.extractRotationFromZYX(r);
+        double[] thetas = Rotation.extractThetaFromZYX(r);
         double[] t = kExtr.getTranslation();
         
         // equation (19).  size is 1 X 9
@@ -688,7 +688,7 @@ public class PNP {
         //    but the value is different that updating theta with delta theta
         //    by addition.
         //    The difference may create a problem with convergence for delta theta.
-        double[] thetaExtracted = Rotation.extractRotationFromZYX(r);
+        double[] thetaExtracted = Rotation.extractThetaFromZYX(r);
         System.arraycopy(thetaExtracted, 0, thetas, 0, thetas.length);
         
         /*

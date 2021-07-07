@@ -1615,7 +1615,7 @@ public class BundleAdjustment {
             //Rotation.applySingularitySafeRotationPerturbation(r0, 
             //    rotThetas[j], deltaTheta, outR);
         
-            Rotation.extractRotationFromZYX(outR, thetaExtracted);
+            Rotation.extractThetaFromZYX(outR, thetaExtracted);
             System.arraycopy(thetaExtracted, 0, rotThetas[j], 0, rotThetas[j].length);        
         }        
         

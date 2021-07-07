@@ -11,7 +11,8 @@ import no.uib.cipr.matrix.NotConvergedException;
  * 
  * a rotation matrix describes a transformation in euclidean space.  it is a
  * member of  special orthogonal group SO(n) where n is usually 3, but can
- * be 4 for quaternion rotation matrix.  It has the properties R^T = R^−1 and det(R) = 1.
+ * be 4 for quaternion rotation matrix.  It has the properties R^T = R^−1 and det(R) = +=1
+ * where det(R) == -1 for reflection.
  * 
  * This class uses "active" rotations of vectors counterclockwise in a right-handed 
  * coordinate system (y counterclockwise from x) by pre-multiplication 
@@ -86,8 +87,10 @@ Note that Shuster 1993 use rotation matrices that are transposed from the above 
   
   Shuster 1993, "A Survey of Attitude Representations"
     Journal of Astronautical Sciences, Vol 41, No. 4, Oct-Dec 1993, pp 439-517
-    
+    http://www.ladispe.polito.it/corsi/Meccatronica/02JHCOR/2011-12/Slides/Shuster_Pub_1993h_J_Repsurv_scan.pdf
   
+  "Representing Attitude: Euler Angles, Unit Quaternions, and Rotation Vectors"
+   James Diebel, 2006
  </pre>
 * 
  * <pre><b><ul>LEFT HAND SYSTEM</ul></b></pre>
@@ -402,7 +405,7 @@ public class Rotation {
      *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
      *    Rodriguez’s formula (Ayache 1989)
      * </pre>
-     * @param axis [1x3] array of rotations about x, y, and z
+     * @param axis [1x3] array of axis of rotations about x, y, and z
      * @return rotation matrix [3X3]
      */
     public static double[][] createRodriguesFormulaRotationMatrix(double[] axis) {
@@ -1081,7 +1084,7 @@ public class Rotation {
         return d;
     }
     
-    /**
+    /*
     calculate the distance measure between 2 euclidean transformations of the
     given quaternions, using vector inner product.
     <pre>
@@ -1093,10 +1096,10 @@ public class Rotation {
      * @return the distance measure between two Euclidean transformations.  the range of 
      * values will be [0, 1] (radians).
      */
-    public static double distanceBetweenQuaternionEuclideanTransformations(double[] q1, double[] q2) {
+    /*public static double distanceBetweenQuaternionEuclideanTransformations(double[] q1, double[] q2) {
         double p = Math.abs(MatrixUtil.innerProduct(q1, q2));
         return 1 - p;
-    }
+    }*/
     
     /**
      * given a quaternion, form the left-hand compound operator:
@@ -1260,7 +1263,8 @@ public class Rotation {
     }
     
      /**
-     * create a rotation matrix from the given quaternion
+     * create a [4x4] rotation matrix from the given quaternion.
+     * Note, the first [3X3] block is transposed compared to results from Rotation.createRotationZYX(theta0).
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -1393,6 +1397,54 @@ public class Rotation {
         }
         
         double[][] r = createRotationZYX(theta);
+        
+        // ==== eqn (31) =======
+        double[][] result = MatrixUtil.multiply(skew, r);
+        
+        return result;
+    }
+    
+    /**
+     * apply a perturbation in rotation angles to the rotation matrix created by
+     * the euler angles theta where the rotation matrix created is R_x*R_y*R_z.
+     * To the first order, this is a constraint-sensitive approach, i.e.
+     * r*r^T = I for the perturbed matrix to first order as long as it was
+     * true for the given matrix r.
+     * <pre>
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+     * 
+     * eqn (31) and (30c).
+     * 
+     * "This update approach allows us to store and update the rotation as a 
+     * rotation matrix, thereby avoiding singularities and the need to restore 
+     * the constraint afterwards (i.e., constraint restoration is built in)."
+     * 
+     * </pre>
+     * @param theta euler angles
+     * @param dTheta perturbation to apply to the euler rotation angle matrix
+     * @return resulting perturbed rotation matrix
+     */
+    public static double[][] applyRotationPerturbationXYZ(double[] theta, double[] dTheta) {
+        if (theta.length != 3) {
+            throw new IllegalArgumentException("theta must be length 3");
+        }
+        if (dTheta.length != 3) {
+            throw new IllegalArgumentException("dTheta must be length 3");
+        }
+        
+        // ==== eqn (30c) ======
+        //3X3        
+        double[] dPhi = createRotationVector(theta, dTheta);
+        
+        double[][] skew = MatrixUtil.skewSymmetric(dPhi);
+        
+        int i;
+        for (i = 0; i < skew.length; ++i) {
+            skew[i][i] = 1. - skew[i][i];
+        }
+        
+        double[][] r = createRotationXYZ(theta);
         
         // ==== eqn (31) =======
         double[][] result = MatrixUtil.multiply(skew, r);
@@ -1592,7 +1644,7 @@ public class Rotation {
      * 
      * see also, pp 479-480, eqn (285) of Shuster 1993, "A Survey of AttitudeRepresentations"
      * http://www.ladispe.polito.it/corsi/Meccatronica/02JHCOR/2011-12/Slides/Shuster_Pub_1993h_J_Repsurv_scan.pdf
-     * though the sign conventions of the sine terms are different
+     * though the matrices are transposed from these.
      * 
      * </pre>
      * @param theta euler angles as representation of rotation matrix
@@ -1886,6 +1938,10 @@ public class Rotation {
     /**
      * given an array of euler rotation angles, return the rotation matrix
      * as the rotations for x, y, z multiplied in that order.
+     * 
+     TODO: consider whether this should be using the Shuster equations
+     as R_xyz = R_x(theta_x)*R_y(theta_y)*R_z(theta_z) which is transposed
+     from the Z*Y*X operation.
       <pre>
       
       where  
