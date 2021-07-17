@@ -11,10 +11,20 @@ import no.uib.cipr.matrix.NotConvergedException;
  * 
  * a rotation matrix describes a transformation in euclidean space.  it is a
  * member of  special orthogonal group SO(n) where n is usually 3, but can
- * be 4 for quaternion rotation matrix.  It has the properties R^T = R^−1 and det(R) = +=1
- * where det(R) == -1 for reflection.
- * 
- * This class uses "active" rotations of vectors counterclockwise in a right-handed 
+ * be 4 for quaternion rotation matrix.  It has the properties R^T = R^−1 and det(R) = +-1.
+ <pre>
+   det(R)=1 is a proper rotation matrix.  rotation angles are counterclockwise.
+       it's a special orthogonal matrix and provides the
+       defining matrix representation of the group of proper n-dimensional rotations, denoted
+       by SO(n). http://scipp.ucsc.edu/~haber/ph251/rotreflect_17.pdf
+   det(R)=-1 is an improper rotation matrix representing rotations that
+       require mirrors.
+       The most general improper rotation matrix is a product of a proper rotation by an
+       angle θ about some axis nˆ and a mirror reflection through a plane that passes through
+       the origin and is perpendicular to nˆ.  NOTE: nˆ is determined by
+       the right hand rule.
+ </pre>
+ * This Rotation.java class uses "active" rotations of vectors counterclockwise in a right-handed 
  * coordinate system (y counterclockwise from x) by pre-multiplication 
  * (R on the left). If any one of these is changed (such as rotating axes 
  * instead of vectors, a "passive" transformation), then the inverse of the

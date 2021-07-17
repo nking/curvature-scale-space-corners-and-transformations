@@ -669,7 +669,6 @@ public class PNP {
         //     and deltaPhi = sTheta * deltaTheta
         
         double[][] out;// = MatrixUtil.zeros(3, 3);
-//TODO: revisit this after testing Rotation.java        
         double[] qUpdated = Rotation.applySingularitySafeRotationPerturbationQuaternion(thetas, deltaTheta);
         
         // [4X4]
