@@ -198,19 +198,6 @@ public class RotationTest extends TestCase {
     
     public void test3() throws NotConvergedException {
         System.out.println("test3");
-        
-        /*
-        at end of this method, add a test for gimbal lock.
-        start with theta=[0, 90 degrees, 0]
-        
-        For the asymmetric matrix
-            C_i_j_k = R(ax,ay,az)=R_z(az)*R_y(ay)*R_x(ax), singularity when
-                ay=+-(pi/2)
-        
-        For the symmetrix 
-            C_i_j_i = R_x(az)*R_y(ay)*R_x(ax), singularity when
-                ay=+-pi or a2=0.
-        */
         int i, j;
         
         double[] theta0 
@@ -285,6 +272,7 @@ public class RotationTest extends TestCase {
         double[] dq0Barfoot = Rotation.convertHamiltonToBarfootQuaternion(dq0Hamilton);
         double[] q0Up = Rotation.rotateVectorByQuaternion4(dq0Barfoot, q0Barfoot2);
         double[] q0SafeUp = Rotation.applySingularitySafeRotationPerturbationQuaternion(theta0, dTheta0);
+        double[][] r0QSafeUp = Rotation.createRotationMatrixFromQuaternion4(q0SafeUp); 
         
         double dq0Dist = Rotation.distanceBetweenQuaternions(q0Barfoot2, q0Up);
         //double dq0Euclid = Rotation.distanceBetweenQuaternionEuclideanTransformations(q0Barfoot2, q0Up);
@@ -293,6 +281,7 @@ public class RotationTest extends TestCase {
         System.out.printf("dq0Barfoot=%s\n", FormatArray.toString(dq0Barfoot, "%.3e"));
         System.out.printf("\nq0Up=%s\n", FormatArray.toString(q0Up, "%.3e"));
         System.out.printf("q0SafeUp=%s\n", FormatArray.toString(q0SafeUp, "%.3e"));
+        System.out.printf("r0QSafeUp^T=\n%s\n", FormatArray.toString(MatrixUtil.transpose(r0QSafeUp), "%.3e")); // approx equal to r0UpZYX within 0.035 radians = 2 degrees
         
         double[][] r0Q = Rotation.createRotationMatrixFromQuaternion4(q0Barfoot2); // this is transposed compared to Rotation.createRotationZYX(theta0)       
         double[][] r0Diff = Rotation.procrustesAlgorithmForRotation(r0ZYX, r0UpZYX);
@@ -335,5 +324,17 @@ public class RotationTest extends TestCase {
         System.out.printf("theta0UpExXYZMinusTheta0=%s\n", FormatArray.toString(theta0UpExXYZMinusTheta0, "%.3e"));
         
         
+    }
+    
+    public void est4() {
+         
+        /*
+        a test for gimbal lock.
+        theta=[0, 90 degrees, 0]
+        
+        For the asymmetric matrix
+            C_i_j_k = R(ax,ay,az)=R_z(az)*R_y(ay)*R_x(ax), singularity when
+                ay=+-(pi/2)
+        */
     }
 }

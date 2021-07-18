@@ -2285,12 +2285,17 @@ public class Rotation {
         double[] dPhi = createRotationVector(theta, dTheta);
         double[] qDPhi = createHamiltonQuaternionZYX(dPhi);
         
+        double[] qDPhiBarfoot = convertHamiltonToBarfootQuaternion(qDPhi);
+                
         // ====== eqn (49) =====
-        double[][] qLH = quaternionLefthandCompoundOperator(qDPhi);
+        double[][] qLH = quaternionLefthandCompoundOperator(
+            qDPhiBarfoot);
         
         double[] q = createHamiltonQuaternionZYX(theta);
+        double[] qBarfoot = convertHamiltonToBarfootQuaternion(q);
         
-        double[] result = MatrixUtil.multiplyMatrixByColumnVector(qLH, q);
+        double[] result = MatrixUtil.multiplyMatrixByColumnVector(
+              qLH, qBarfoot);
         
         return result;
     }
