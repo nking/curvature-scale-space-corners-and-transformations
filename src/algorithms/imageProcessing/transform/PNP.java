@@ -613,7 +613,7 @@ public class PNP {
     }
 
     /**
-     * update t by deltaT
+     * update translation t by deltaT
      */
     private static void updateT(double[] t, double[] deltaT) {
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
@@ -673,6 +673,7 @@ public class PNP {
         
         // [4X4]
         double[][] qR = Rotation.createRotationMatrixFromQuaternion4(qUpdated);
+        qR = MatrixUtil.transpose(qR);
         
         // rotation is [0:2, 0:2] of qR  
                 
@@ -684,9 +685,8 @@ public class PNP {
         // ---- update theta ----        
         //extracting theta from the updated rotation would keep the theta
         //    vector consistent with the rotation matrix,
-        //    but the value is different that updating theta with delta theta
+        //    but the value is a little different that updating theta with delta theta
         //    by addition.
-        //    The difference may create a problem with convergence for delta theta.
         double[] thetaExtracted = Rotation.extractThetaFromZYX(r);
         System.arraycopy(thetaExtracted, 0, thetas, 0, thetas.length);
         
