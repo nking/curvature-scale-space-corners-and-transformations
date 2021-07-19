@@ -198,6 +198,7 @@ public class RotationTest extends TestCase {
     
     public void test3() throws NotConvergedException {
         System.out.println("test3");
+       
         int i, j;
         
         double[] theta0 
@@ -326,15 +327,93 @@ public class RotationTest extends TestCase {
         
     }
     
-    public void est4() {
+    public void test4() throws NotConvergedException {
          
+        System.out.println("test4 for gimbal lock singularity");
+        
         /*
         a test for gimbal lock.
-        theta=[0, 90 degrees, 0]
+        theta=[0, 90 degrees (==pi/2), 0]
         
         For the asymmetric matrix
             C_i_j_k = R(ax,ay,az)=R_z(az)*R_y(ay)*R_x(ax), singularity when
                 ay=+-(pi/2)
         */
+        int i;
+        double[] theta0 
+            = new double[]{0., 0.5*Math.PI/180., 0.};
+        // 0.1 radians = 5.73 degrees.  1 degree = 0.0174 redians
+        double[] dTheta0 
+            = new double[]{2*Math.PI/180., 3*Math.PI/180., 5.5*Math.PI/180.};
+        double[] theta0Up = new double[3];
+        for (i = 0; i < 3; ++i) {
+            theta0Up[i] = theta0[i] + dTheta0[i];
+        }
+        System.out.printf("theta0=%s\n", FormatArray.toString(theta0, "%.3e"));
+        System.out.printf("dTheta0=%s\n", FormatArray.toString(dTheta0, "%.3e"));
+        System.out.printf("theta0Up=%s\n", FormatArray.toString(theta0Up, "%.3e"));
+        
+        //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
+        
+        double[][] r0ZYX = Rotation.createRotationZYX(theta0);          
+        double[] theta0ExZYX = Rotation.extractThetaFromZYX(r0ZYX); //** recovered exactly, that is, same as theta0 
+        
+        double[][] r0UpZYX = Rotation.applySingularitySafeRotationPerturbationZYX(theta0, dTheta0);
+        double[] theta0UpExZYX = Rotation.extractThetaFromZYX(r0UpZYX); // ** nearly the same as theta0Up
+        double[][] r0FromTheta0UpZYX = Rotation.createRotationZYX(theta0Up);
+        double[] theta0UpExZYXMinusTheta0 = new double[3];
+        for (i = 0; i < 3; ++i) {
+            theta0UpExZYXMinusTheta0[i] = theta0UpExZYX[i] - theta0[i];
+        }
+        System.out.printf("\nr0ZYX=\n%s\n", FormatArray.toString(r0ZYX, "%.3e"));
+        System.out.printf("r0UpZYX=\n%s\n", FormatArray.toString(r0UpZYX, "%.3e"));
+        System.out.printf("r0FromTheta0UpZYX=\n%s\n", FormatArray.toString(r0FromTheta0UpZYX, "%.3e"));
+        System.out.printf("\ntheta0ExZYX=%s\n", FormatArray.toString(theta0ExZYX, "%.3e"));
+        System.out.printf("theta0UpExZYX=%s\n", FormatArray.toString(theta0UpExZYX, "%.3e"));
+        System.out.printf("theta0UpExZYXMinusTheta0(=dTheta?)=%s\n", FormatArray.toString(theta0UpExZYXMinusTheta0, "%.3e"));
+        
+        double[] q0Barfoot = Rotation.createQuaternionZYXFromEuler(theta0);
+        double[] q0Hamilton = Rotation.createHamiltonQuaternionZYX(theta0); 
+        double[] q0Barfoot2 = Rotation.convertHamiltonToBarfootQuaternion(q0Hamilton); 
+        
+        // rotate a quaternion.  
+        double[] dq0Hamilton = Rotation.createHamiltonQuaternionZYX(dTheta0);
+        double[] dq0Barfoot = Rotation.convertHamiltonToBarfootQuaternion(dq0Hamilton);
+        double[] q0Up = Rotation.rotateVectorByQuaternion4(dq0Barfoot, q0Barfoot2);
+        double[] q0SafeUp = Rotation.applySingularitySafeRotationPerturbationQuaternion(theta0, dTheta0);
+        double[][] r0QSafeUp = Rotation.createRotationMatrixFromQuaternion4(q0SafeUp); 
+        
+        double dq0Dist = Rotation.distanceBetweenQuaternions(q0Barfoot2, q0Up);
+        //double dq0Euclid = Rotation.distanceBetweenQuaternionEuclideanTransformations(q0Barfoot2, q0Up);
+        
+        System.out.printf("\ndq0Hamilton=%s\n", FormatArray.toString(dq0Hamilton, "%.3e"));
+        System.out.printf("dq0Barfoot=%s\n", FormatArray.toString(dq0Barfoot, "%.3e"));
+        System.out.printf("\nq0Up=%s\n", FormatArray.toString(q0Up, "%.3e"));
+        System.out.printf("q0SafeUp=%s\n", FormatArray.toString(q0SafeUp, "%.3e"));
+        System.out.printf("r0QSafeUp^T=\n%s\n", FormatArray.toString(MatrixUtil.transpose(r0QSafeUp), "%.3e")); // approx equal to r0UpZYX within 0.035 radians = 2 degrees
+        
+        double[][] r0Q = Rotation.createRotationMatrixFromQuaternion4(q0Barfoot2); // this is transposed compared to Rotation.createRotationZYX(theta0)       
+        double[][] r0Diff = Rotation.procrustesAlgorithmForRotation(r0ZYX, r0UpZYX); //similar to value in test3() which is good
+        double[] thetaExR0Diff = Rotation.extractThetaFromZYX(r0Diff);
+
+        //dPhi= S(theta) * dTheta.  length is 3.
+        double[] dPhi = Rotation.createRotationVector(theta0, dTheta0);
+        //sTheta is the matrix relating angular velocity to rotation angle rates.
+        double[][] sTheta = Rotation.sTheta(theta0);
+        double[] rodVecFromEuler = Rotation.convertEulerAnglesToRodriguesVectorForZYX(theta0);
+        double[] rodPertVecFromEuler = Rotation.convertEulerAnglesToRodriguesVectorForZYX(dTheta0);
+        
+        System.out.printf("\nsTheta=%s\n", FormatArray.toString(sTheta, "%.3e"));
+        System.out.printf("dPhi=%s\n", FormatArray.toString(dPhi, "%.3e"));
+        System.out.printf("rodVecFromEuler=%s\n", FormatArray.toString(rodVecFromEuler, "%.3e"));
+        System.out.printf("rodPertVecFromEuler=%s\n", FormatArray.toString(rodPertVecFromEuler, "%.3e"));
+            
+        System.out.printf("\ndq0Dist=%.3e\n", dq0Dist);
+        //System.out.printf("dq0Euclid=%.3e\n", dq0Euclid);
+        System.out.printf("r0Q=\n%s\n", FormatArray.toString(r0Q, "%.3e"));
+        System.out.printf("r0QUpZYX=\n%s\n", FormatArray.toString(r0UpZYX, "%.3e"));
+        System.out.printf("r0Diff=\n%s\n", FormatArray.toString(r0Diff, "%.3e"));
+        System.out.printf("thetaExR0Diff(theta extracted from r)Diff)=\n%s\n", FormatArray.toString(thetaExR0Diff, "%.3e"));
+                
     }
 }
