@@ -103,7 +103,7 @@ public class BundleAdjustment {
         https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
         recursive partitioning w/ elimination graph and vertex cut.
         
-        Triggs et al. 2000.
+        Triggs et al. 2000, "Bundle Adjustment – A Modern Synthesis", Section 6
         
         Skeletal graphs for efficient structure from motion
         N Snavely, SM Seitz, R Szeliski - 2008
@@ -509,7 +509,7 @@ public class BundleAdjustment {
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
             if (doUpdate == 1) {
-                
+//TODO:    check here for use of lambda.   see PNP.calculateDeltaPLMSzeliski and
                 // use the 2nd three elements in outDC:
                 updateTranslation(extrTrans, outDC, 3);
                 
@@ -997,6 +997,7 @@ public class BundleAdjustment {
                 MatrixUtil.multiply(invHPPI, auxHPCJ, auxTPCTs);
                 tPCTs.setBlock(auxTPCTs, i, j);
 
+                //For each free camera c2 ≥ c on track p (c==j, p==i)
                 for (j2 = j+1; j2 < mImages; ++j2) {
                     // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2] // [9X3][3X9]=[9X9]
                     //   subtract from block (j, j2) of lhs mA
@@ -1009,13 +1010,15 @@ public class BundleAdjustment {
             } // end if free camera, image j loop
         } // end i features loop
         
-        /* (optional) Fix gauge by freezing coordinates and thereby reducing 
+        /* TODO: (optional) Fix gauge by freezing coordinates and thereby reducing 
             the linear system with a few dimensions.
         
            ** Section 9 of Triggs et al. 2000, 
            "Bundle Adjustment – A Modern Synthesis"
                "Section 9 returns to the theoretical issue of gauge freedom
                 (datum deficiency), including the theory of inner constraints."
+        
+            Section 9.2.1, Up vector selection, of Szeliski 2010
         
             Triggs 1998, "Optimal estimation of matching constraints.
               3D Structure from Multiple Images of Large-scale Environments SMILE’98,
@@ -1045,6 +1048,9 @@ public class BundleAdjustment {
         
         gauge fix not yet included here.
         */
+        
+        //(Linear Solving) Cholesky factor the left hand side matrix B and solve for dC. 
+        //    Add frozen coordinates back in.
         
         // cholesky decompostion to solve for dC in mA*dC=vB
          // (using the sparsity of upper and lower triangular matrices results in
@@ -1089,6 +1095,14 @@ public class BundleAdjustment {
             //    instead of evaluated at the end of the calculation,
             //    so the update is not performed here (it's handled at the
             //    next invocation of this method)
+            
+            //TODO: refactor the invoker and this method to make use of the
+            //   damping factor easier.  the damping factor is used in
+            //   creating the next parameter steps and is currently missing
+            //   from this incomplete implementation.
+            //deltaP_C = pseudoInv(HCC + lambda*diag(HCC)) * (b_C which is eps_a)
+           // deltaP_P = pseudoInv(HPP + lambda*diag(HPP)) * (b_P which is eps_b)
+            
         }
         
         // camera params
@@ -1513,6 +1527,9 @@ public class BundleAdjustment {
         // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
         // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
 
+        //TODO: consider editing all updates for local parameters.  see Qu eqn (4.9)
+        //   e.g. t_j = R_j*dT_j
+                
         // parameter perturbations for a vector are:
         //     x + delta x
         int i, j;
@@ -1651,6 +1668,21 @@ public class BundleAdjustment {
         }
         
     }
+    
+      /*
+     * calculates a minimum and maximum damping term for the rotation angle 
+     * used in the angle-axis representation, given an angle limit and the
+     * current step size.
+     * 
+     * @param dRotAngle the parameter step size for angle of rotation in angle-axis
+     * representation.
+     * @param lambda the damping parameter
+     * @return 
+     
+    private double[] rotationClampedAlpha(double dRotAngle, double lambda,
+        double angleLimit) {
+        
+    }*/
 
     static class AuxiliaryArrays {
         final double[][] a2X2;
