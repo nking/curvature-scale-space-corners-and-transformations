@@ -197,6 +197,22 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
         heading, attitude, bank,
         pitch, yaw, roll,
         pan, tilt, roll
+        
+   A rotation can be represented by a rotation axis nˆ and an angle ω,
+   or equivalently by a 3D vector ω = θ*nˆ
+   to project vector v onto the axis nˆ:
+      v_parallel = nˆ*(nˆ· v) = (nˆ*nˆ^T)*v and this is not affected by rotation
+      v_perpendicular = v - v_parallel
+                      = (I - nˆ*nˆ^T)*v
+   can rotate v by 90 degrees using the cross product:
+      nˆ cross v = [nˆ]_x * v
+      where [nˆ]_x is the skewsymmetric matrix of nˆ
+
+   can rotate v by 180 degrees:
+      nˆ cross (nˆ cross v) = ([nˆ]_x)^2 * v = -v_perpendicular
+   which shows that can also write
+      v_parallel = (I + ([nˆ]_x)^2 * v)
+      
  * </pre>
  * @author nichole
  */

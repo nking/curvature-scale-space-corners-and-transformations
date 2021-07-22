@@ -35,6 +35,8 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
  * reconstructions without up- dating their internal structure — all of the 
  * structure and camera parameters are adjusted together ‘in one bundle’."
  * 
+ * 
+* 
  * @author nichole
  */
 public class BundleAdjustment {
@@ -392,20 +394,10 @@ public class BundleAdjustment {
         //the sum of squares of the observed feature - projected feature
         double[] outFSqSum =new double[1];
         
-        double[] outLambda = new double[12];
-        
-        /*
-        TODO: consider the use of delta parameters on the order of those recommended
-        by the Qu thesis in eqn (3.38) and what changes that would involve here.
-        
-        delta thetas ~ 1e-8
-        delta translation ~1e-5
-        delta focus ~ 1
-        delta kRadial ~ 1e-3
-        delta x ~ 1e-8
-        */
-        
+        // [12X1]
         double[] lambda = new double[12];
+        initLambdaWithQu(outDC);
+        
         double lambdaF = 2;
         
         // the residual, that is, the evaulation of the objective which is the 
@@ -429,10 +421,9 @@ public class BundleAdjustment {
         /*
         init: 
               f=infinity
-              calculateLMVectorsSparsely()        
-              lambda = max(trace(J^T*J) which means calc J for initial conditions
-                     = outLambda[0]
-              then set outLambda = null to prevent re-calculating in calculateLMVectorsSparsely()
+              lambda = initial values used in Qu thesis.
+                        else, Danping recoomend using max(trace(J^T*J)
+              calculateLMVectorsSparsely()
         loop:
             set fPrev = f
             set f = outFSqSum[0];
@@ -448,15 +439,7 @@ public class BundleAdjustment {
         
         calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
             imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
-            outDP, outDC, outGradP, outGradC, outFSqSum, outLambda);
-        
-        System.arraycopy(outLambda, 0, lambda, 0, lambda.length);
-              
-        // nulling outLambda prevents further initialization of it within calculateLMVectorsSparsely
-        outLambda = null;
-        
-        // if choose to use Qu recommendations to init lambda instead:
-        //initLambdaWithQu(lambda);
+            outDP, outDC, outGradP, outGradC, outFSqSum, lambda);
         
         int doUpdate = 0;
         int nIter = 0;
@@ -509,7 +492,6 @@ public class BundleAdjustment {
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
             if (doUpdate == 1) {
-//TODO:    check here for use of lambda.   see PNP.calculateDeltaPLMSzeliski and
                 // use the 2nd three elements in outDC:
                 updateTranslation(extrTrans, outDC, 3);
                 
@@ -524,7 +506,7 @@ public class BundleAdjustment {
             
             calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
                 imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
-                outDP, outDC, outGradP, outGradC, outFSqSum, outLambda);
+                outDP, outDC, outGradP, outGradC, outFSqSum, lambda);
             
         }        
     }
@@ -818,13 +800,10 @@ public class BundleAdjustment {
         AuxiliaryArrays aa = new AuxiliaryArrays();
         double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
-        // used in calculating lambda as the max of diagonals of V_I and U_J
-        BlockMatrixIsometric uJ = null;
-        if (outLambda != null) {
-            uJ = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
-        }
+        //HCC is a.k.a. J_C^T*J_C (and in Qu thesis is variable B).  The diagonals are U_j which are each summations of a_i_j^T*a_i_j over i
+        BlockMatrixIsometric hCCJ = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
         
-        // i for n features, for m images
+        // i for n features, j for m images
         int i, j, j2, k, cameraNumber;
                      
         //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
@@ -874,6 +853,8 @@ public class BundleAdjustment {
 
                 // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
                 MatrixUtil.multiply(bIJT, bIJ, bIJsq);
+                
+ // TODO: handle the damping term: (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
 
                 // add jP^T*JP to upper triangular part of hPP aka V
                 // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
@@ -911,13 +892,12 @@ public class BundleAdjustment {
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
                     mA.setBlock(auxMA, j, j);
                     
-                    if (uJ != null) {
-                        // uJ is [9*mImages X 9]
-                        //aijT*aiJ is [9X2][2X9]=[9X9];  sum over all i features = U_j
-                        uJ.addToBlock(auxMA, j, 0);
-                    }
-        
-                    //paused here
+                    // uJ is [9*mImages X 9]
+                    //aijT*aiJ is [9X2][2X9]=[9X9];  sum over all i features = U_j
+                    hCCJ.addToBlock(auxMA, j, 0);
+                    
+  //TODO: damping term corrections
+  
                     // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                     //    and store until end of image j loop.
                     //hPCJ[j] = bIJT * aIJ;
@@ -934,15 +914,13 @@ public class BundleAdjustment {
                              
                 }
             } // end image j loop
-            
-            if (outLambda != null) {
-                for (k = 0; k < 3; ++k) {
-                    if (hPPI[k][k] > outLambda[k + 9]) {
-                        outLambda[k + 9] = hPPI[k][k];
-                    }
-                }
+/*            
+            edit for lambda and hPPI here
+            for (k = 0; k < 3; ++k) {
+                hPPI[k][k] 
+                lambda[k + 9]              
             }
-            
+ */           
             //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
             
@@ -1096,29 +1074,25 @@ public class BundleAdjustment {
             //    so the update is not performed here (it's handled at the
             //    next invocation of this method)
             
-            //TODO: refactor the invoker and this method to make use of the
-            //   damping factor easier.  the damping factor is used in
-            //   creating the next parameter steps and is currently missing
-            //   from this incomplete implementation.
-            //deltaP_C = pseudoInv(HCC + lambda*diag(HCC)) * (b_C which is eps_a)
-           // deltaP_P = pseudoInv(HPP + lambda*diag(HPP)) * (b_P which is eps_b)
+            //TODO: damping term corrections
+            //HCC_adjusted = HCC + lambda*diag(HCC)
+            //HCC_adjusted = HPP + lambda*diag(HPP)
             
         }
         
         // camera params
-        // each block of U_j is 9X9 and is A_ij^T * A_ij where A_ij = dx_ij/dParam_ij
-        if (uJ != null) {
-            // uJ is [9*mImages X 9]
-            for (j = 0; j < mImages; ++j) {
-                uJ.getBlock(auxMA, j, 0);
-                for (i = 0; i < 9; ++i) {
-                    if (auxMA[i][i] > outLambda[i]) {
-                        outLambda[i] = auxMA[i][i];
-                    }
-                }
+        //HCC is a.k.a. J_C^T*J_C (and in Qu thesis is variable B).  
+        // The diagonals are U_j which are each summations of a_i_j^T*a_i_j over i
+        // HCC is [9*mImages X 9] with block size 9X9.  a block is hCCJ
+/*
+        for (j = 0; j < mImages; ++j) {
+            hCCJ.getBlock(auxMA, j, 0);
+            for (i = 0; i < 9; ++i) {
+                auxMA[i][i]
+                lambda[i]
             }
         }
-        
+   */     
         // Engels: compute updated cost function
         // NOTE: for this method, the cost function
         //    is evaluated for the parameters given to the method
@@ -1558,9 +1532,12 @@ public class BundleAdjustment {
         
         double[][] k = MatrixUtil.zeros(3, 3);
         
+        //NOTE: follow up on Szeliski text that updating the intrinsic parameters is more involved
+        
         // use indexes idx0 to idx0+3 of dC
         int i, j;
         
+        // using addition for updates for now
         for (j = 0; j < nImages; ++j) {
             intr.getBlock(k, 0, j*3);
             k[0][0] += dC[idx0];
@@ -1572,22 +1549,24 @@ public class BundleAdjustment {
     private static void updateRadialDistortion(double[] kRadial, 
         double[] dC, int idx0) {
         
+        // using addition for updates for now
+        
         kRadial[0] += dC[idx0];
         kRadial[1] += dC[idx0 + 1];
     }
 
     /**
      * update rotation matrix theta vectors with steps in dC.
-     * NOTE: this method has a potential error from singularity from 90 degree 
-     * angles (near zenith and nadir, for example).
-     * @param rotThetas input and output array holding euler rotation angles 
-     *    theta_x, theta_y, theta_
+     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
+     * stacked along the 3 columns, that is the size is [nImages X 3] where
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
      * @param dC
      * @param idx0
      */
-    private static void updateRotThetas(double[][] rotThetas, double[] dC, 
-        int idx0) {
-                
+    private static void updateRotThetas(double[][] extrRotThetas,  
+        double[] dC, int idx0) {
+                         
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
         // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
         // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
@@ -1608,8 +1587,7 @@ public class BundleAdjustment {
                 
         double[] deltaTheta = Arrays.copyOfRange(dC, idx0, idx0 + 3);
         
-        double[][] outR = MatrixUtil.zeros(3, 3);
-        double[][] r0 = MatrixUtil.zeros(3, 3);
+        double[][] r = MatrixUtil.zeros(3, 3);
         Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();
         double[] thetaExtracted = new double[3];
         
@@ -1622,18 +1600,30 @@ public class BundleAdjustment {
         
         int j;
         
-        for (j = 0; j < rotThetas.length; ++j) {
+        for (j = 0; j < extrRotThetas.length; ++j) {
             
-            Rotation.createRotationZYX(deltaTheta, aa, r0);
-            
-//TODO: revisit when done testing Rotation.java
-
-            outR = Rotation.applySingularitySafeRotationPerturbationXYZ(rotThetas[j], deltaTheta);
-            //Rotation.applySingularitySafeRotationPerturbation(r0, 
-            //    rotThetas[j], deltaTheta, outR);
+            double[] qUpdated = 
+                Rotation.applySingularitySafeRotationPerturbationQuaternion(
+                extrRotThetas[j], deltaTheta);
         
-            Rotation.extractThetaFromZYX(outR, thetaExtracted);
-            System.arraycopy(thetaExtracted, 0, rotThetas[j], 0, rotThetas[j].length);        
+            // [4X4]
+            double[][] qR = Rotation.createRotationMatrixFromQuaternion4(qUpdated);
+            qR = MatrixUtil.transpose(qR);
+
+            // rotation is [0:2, 0:2] of qR  
+
+            // update in-out variable r
+            for (int i = 0; i < 3; ++i) {
+                System.arraycopy(qR[i], 0, r[i], 0, 3);
+            }
+
+            // ---- update theta ----        
+            //extracting theta from the updated rotation would keep the theta
+            //    vector consistent with the rotation matrix,
+            //    but the value is a little different that updating theta with delta theta
+            //    by addition.
+            Rotation.extractThetaFromZYX(r, thetaExtracted);
+            System.arraycopy(thetaExtracted, 0, extrRotThetas[j], 0, extrRotThetas[j].length);        
         }        
         
     }

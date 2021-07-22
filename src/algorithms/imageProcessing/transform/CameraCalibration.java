@@ -48,9 +48,11 @@ public class CameraCalibration {
     }
 
     /**
+     * estimate the intrinsic and extrinsic camera parameters.
+     To refine the returned values, follow with PNP.solveForPose(...).
      * 
      * @param n n is the number of points in each image which is the
-              same for all images.
+              same for all images.  n is number of features.
      * @param coordsI  holds the image coordinates in pixels of
                features present in all images ordered in the same
                manner and paired with features in coordsW.
@@ -160,6 +162,8 @@ public class CameraCalibration {
                 
         double[] kRadial = solveForRadialDistortion(coordsI, u, v, cameraMatrices,
             useR2R4);
+       
+        cameraMatrices.setRadialDistortion(kRadial, useR2R4);
         
         // (5) optimization to improve the parameter estimates
         
@@ -169,7 +173,7 @@ public class CameraCalibration {
         CameraExtrinsicParameters kExtr;
         CameraExtrinsicParameters extrinsic;
         int nMaxIter = 100;
-        for (i = 0; i < nImages; ++i) {
+        /*for (i = 0; i < nImages; ++i) {
             
             cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, n*i, n*(i + 1)-1);
             
@@ -180,9 +184,9 @@ public class CameraCalibration {
                 kExtr, kRadial, nMaxIter, useR2R4);
             
             cameraMatrices.getExtrinsics().set(i, extrinsic);
-        }        
-            
-        throw new UnsupportedOperationException("not yet implemented");
+        }*/     
+      
+        return cameraMatrices;
     }
     
     /**
@@ -1495,7 +1499,7 @@ public class CameraCalibration {
     static void calculateProjected(double[][] coordsW, double[][] h, 
         double[] u, double[] v) {
         
-        // number of features
+        // n is the number of features
         int n = coordsW[0].length;
         int nImages = h.length/3;
         
@@ -1682,6 +1686,8 @@ public class CameraCalibration {
 
     static double[][] solveForHomographies(double[][] coordsI, 
         double[][] coordsW, int n, int nImages) throws NotConvergedException {
+        
+        // n is the number of features
         
         double[][] h = MatrixUtil.zeros(nImages*3, 3);
         

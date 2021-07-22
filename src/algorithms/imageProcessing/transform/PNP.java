@@ -18,10 +18,15 @@ import no.uib.cipr.matrix.NotConvergedException;
  * 
  * TODO: consider implementing the Szeliski 2010 chapter 6 equations (6.44)-(6.47)
  * 
- * NOTE: consider implementing the version of L-M by Barfoot et al. 2010
- * which utilizes the sparseness of the block-diagonal structure in the
- * Hessian approximation by Engles, Stewenius, & Nister "Bundle Adjustment Rules".
- * 
+ * NOTE: this implementation uses euler rotation angles and singularity safe
+ * updates, but future versions could consider using quaternions.
+ * This from Szeliski 2010:
+   ..."Quaternions, on the other hand, are better if you want to keep track of 
+   a smoothly moving camera, since there are no discontinuities in the 
+   representation. It is also easier to interpolate between rotations and to 
+   chain rigid transformations (Murray, Li, and Sastry 1994; Bregler and Malik 1998).
+   My usual preference is to use quaternions, but to update their estimates 
+   using an incremental rotation, as described in Section 6.2.2."
  * @author nichole
  */
 public class PNP {
@@ -117,6 +122,10 @@ public class PNP {
         // size is 6 X 6
         double[][] jTJ = MatrixUtil.multiply(jT, j);
         
+        // NOTE: the damping term lambda is length 6 because all images are from 
+        //       the same camera and presumably each parameter needs a damping term.
+        // NOTE:  contrary to that, Snavely’s GitHub bundler_sfm/lib/sba-1.5/sba_levmar.c 
+        //       uses a single dimension damping parameter (mu)
         double[] lambda = new double[6];
         initLambdaWithQu(lambda);//maxDiag(jTJ);
         double lambdaF = 2;
@@ -194,7 +203,7 @@ public class PNP {
             gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
             deltaPLM = calculateDeltaPLMSzeliski(jTJ, lambda, gradientCheck);
             
-            System.out.printf("j^T*(b-fgp)=%s\n", FormatArray.toString(gradientCheck, "%.3e"));
+            System.out.printf("\nj^T*(b-fgp)=%s\n", FormatArray.toString(gradientCheck, "%.3e"));
             System.out.printf("deltaP=%s\n", FormatArray.toString(deltaPLM, "%.3e"));
         
             // ======= stopping conditions ============
@@ -222,9 +231,13 @@ public class PNP {
                 //    gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
                 //         where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
                 //    gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
+                
+               
+                // if only using a one dimensional lambda, can use this gain ratio:
                 gainRatio = calculateGainRatio(f/2., fPrev/2., deltaPLM, lambda, 
                     gradientCheck, eps);
-                System.out.printf("lambda=%.4e, gainRatio=%.4e\n", lambda, gainRatio);
+                
+                System.out.printf("lambda=%s, gainRatio=%.4e\n", FormatArray.toString(lambda, "%.3e"), gainRatio);
                 if (gainRatio > 0) {
                     doUpdate = 1;
                     // near the minimimum, which is good.
@@ -242,7 +255,7 @@ public class PNP {
                         lambda[i] *= lambdaF;
                     }
                 }
-                System.out.printf("new lambda=%.4e\n", lambda);
+                System.out.printf("new lambda=%s\n", FormatArray.toString(lambda, "%.3e"));
             }
             if (doUpdate == 1) {
                  // add deltaPLM to p, where p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
@@ -475,24 +488,26 @@ public class PNP {
      * @param jTJ J^T * J.  size is 6X6.
      * @param lambda
      * @param jTBFG J^T * (B-F(g(p))). size is 6X1
-     * @return 
+     * @return calculated step length
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     private static double[] calculateDeltaPLMSzeliski(double[][] jTJ, 
         double[] lambda, double[] jTBFG) throws NotConvergedException {
         
-        //                 inv(6X6)                       6X2N * 2N
+        //                        [6X6]                   * [6X1] = [6X1]
         //delta p = pseudoInv(J^T*J + lambda*diag(J^T*J)) * J^T*BFG
         
         int i, j;
         // J^T J + λ diag(J^TJ)     
-        // 6 X 6
+        // [6X6]
         double[][] a = MatrixUtil.copy(jTJ);
         for (i = 0; i < 6; ++i) {
             a[i][i] += (lambda[i]*(jTJ[i][i]));
         }
-        double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
+        //[6X6]
+        double[][] aInv = MatrixUtil.pseudoinverseRankDeficient(a);
                 
+        //[6X6] * [6X1] = [6X1]
         double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBFG);
         
         return step;
@@ -538,6 +553,11 @@ public class PNP {
     private static double calculateGainRatio(double f, double fPrev, 
         double[] deltaP, double[] lambda, double[] jTBFG,
         double eps) {
+        
+        //   1X6             6X1     (6X1          + 6X1)
+        //            1X1 *
+        //(delta p LM)^T * (lambda * (delta p LM) + J^T * (b - fgp))
+        
              
         //      1X6          *            ( 6X1   +   6 X (2N) * (2NX1) )
         //      1X6                        6X1 
@@ -668,7 +688,7 @@ public class PNP {
         //           calculated as C(theta) = 
         //     and deltaPhi = sTheta * deltaTheta
         
-        double[][] out;// = MatrixUtil.zeros(3, 3);
+        //double[][] out;// = MatrixUtil.zeros(3, 3);
         double[] qUpdated = Rotation.applySingularitySafeRotationPerturbationQuaternion(thetas, deltaTheta);
         
         // [4X4]

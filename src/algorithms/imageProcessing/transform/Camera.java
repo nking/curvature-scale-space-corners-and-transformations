@@ -777,7 +777,7 @@ public class Camera {
         /**
          * @return the radialDistortion
          */
-        public double[] getRadialDistortion() {
+        public double[] getRadialDistortCoeff() {
             return radialDistortion;
         }
         
