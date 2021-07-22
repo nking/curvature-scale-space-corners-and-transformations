@@ -37,6 +37,7 @@ public class PNPTest extends TestCase {
     public void testSolveForPose_ZhangData() throws Exception {
         
         // see testresources/zhang1998/README.txt
+        
         // they use f(r) = 1 + k1*r + k2*r^2:
         boolean useR2R4 = false;
         
@@ -56,14 +57,6 @@ public class PNPTest extends TestCase {
         Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
             nFeatures, coordsI, coordsW, useR2R4);
         
-        double alphaE = 871.445;
-        double gammaE = 0.2419;
-        double u0E = 300.7676;
-        double betaE = 871.1251;
-        double v0E = 220.8684;
-        double k1E = 0.1371;
-        double k2E = -2.0101;
-        
         CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
         List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
         
@@ -80,6 +73,43 @@ public class PNPTest extends TestCase {
         double oY = v0;
         double skew = gamma;
         
+        double alphaE = 871.445;
+        double gammaE = 0.2419;
+        double u0E = 300.7676;
+        double betaE = 871.1251;
+        double v0E = 220.8684;
+        double k1E = 0.1371;
+        double k2E = -0.20101;
+        //aftwe refinement with L-M: k1 = -0.228601, k2 = 0.190353.
+        
+        
+        /*
+        0.992759 -0.026319 0.117201
+        0.0139247 0.994339 0.105341
+        -0.11931 -0.102947 0.987505
+        -3.84019 3.65164 12.791
+
+        0.997397 -0.00482564 0.0719419
+        0.0175608 0.983971 -0.17746
+        -0.0699324 0.178262 0.981495
+        -3.71693 3.76928 13.1974
+
+        0.915213 -0.0356648 0.401389
+        -0.00807547 0.994252 0.106756
+        -0.402889 -0.100946 0.909665
+        -2.94409 3.77653 14.2456
+
+        0.986617 -0.0175461 -0.16211
+        0.0337573 0.994634 0.0977953
+        0.159524 -0.101959 0.981915
+        -3.40697 3.6362 12.4551
+
+        0.967585 -0.196899 -0.158144
+        0.191542 0.980281 -0.0485827
+        0.164592 0.0167167 0.98622
+        -4.07238 3.21033 14.3441
+        */
+        
         log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
         log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
         log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
@@ -89,12 +119,21 @@ public class PNPTest extends TestCase {
         Camera.CameraExtrinsicParameters ex1;
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
-            log.log(LEVEL, String.format("\nimg %d:\n", i));
-            log.log(LEVEL, String.format("   r1=\n%s\n", FormatArray.toString(ex1.getRotation(), "%.3e")));
-            log.log(LEVEL, String.format("   t1=\n%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            log.log(LEVEL, String.format("\n"));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
         }
         
         // now have initial parameters to refine using PNP.java
+        alphaE = 832.5010;
+        gammaE = 0.2046;
+        u0E = 303.9584;
+        betaE = 832.5309;
+        v0E = 206.5879;
+        k1E = -0.228601; 
+        k2E = 0.190353;
         
         // paused here.  
     }

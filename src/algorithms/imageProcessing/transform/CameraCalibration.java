@@ -547,10 +547,10 @@ public class CameraCalibration {
             xc[1][i] /= xc[2][i];
         }
         
-        // 2*n X 8 
+        // 2*n X 9
         // making it 2*n X 9 by adding the -u and -v columns onto end of rowsto use SVD instead of psuedoinverse
         double u, v, X, Y;
-        double[][] a = new double[2*n][8];
+        double[][] a = new double[2*n][9];
         for (int i = 0; i < n; ++i) {
             u = xc[0][i];
             v = xc[1][i];
@@ -563,21 +563,29 @@ public class CameraCalibration {
         
         MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(a);
         
-        // vT is 8X8  last row in vT is the eigenvector for the smallest eigenvalue
-        // making if 9x9 now
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] h = svd.vT[svd.vT.length - 1];
+        //     [ h[0] h[1] h[2] ]     H00  H01  H02
+        // H = [ h[3] h[4] h[5] ]  =  H10  H11  H12
+        //     [ h[6] h[7] h[8] ]     H20  H21  H22
         
-        // check the order here
+        //Let the ith column vector of H be hi = [hi1, hi2, hi3]T <=== that is column i of H^T??  confusion from V^T instead of V?
         double[] hcol1 = new double[]{h[0], h[3], h[6]};
         double[] hcol2 = new double[]{h[1], h[4], h[7]};
         double[] hcol3 = new double[]{h[2], h[5], h[8]};
+                  
+        // multiply by inverse of intrinsic camera matrix
+     //   double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());
+     //   hcol1 = MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, hcol1);
+     //   hcol2 = MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, hcol2);
+     //   hcol3 = MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, hcol3);
         
         double s = 2./(Math.sqrt(sumOfSquares(hcol1)) + Math.sqrt(sumOfSquares(hcol2)));
 
         // translational component of the camera pose:
         double[] t = Arrays.copyOf(hcol3, hcol3.length);
         MatrixUtil.multiply(t, s);
-        t[2] *= -1;
+        //t[2] *= -1;
         
         // estimate rotation from the homography
         
@@ -586,13 +594,13 @@ public class CameraCalibration {
         // column 1:
         double[] r1 = Arrays.copyOf(hcol1, hcol1.length);
         MatrixUtil.multiply(r1, 1./denom);
-        r1[2] *= -1;
+    //    r1[2] *= -1;
         
         //extract the second column of the rotation matrix r2 from the homography, 
         //but we have to make sure that it is orthogonal to the first column. 
         //We can enforce that as follows
         double[] r2 = Arrays.copyOf(hcol2, hcol2.length);
-        r2[2] *= -1;
+    //    r2[2] *= -1;
         
         double r1doth2 = MatrixUtil.innerProduct(r1, hcol2);
         for (int i = 0; i < r2.length; ++i) {
@@ -602,7 +610,7 @@ public class CameraCalibration {
          
         // r3 is r1 cross r2
         double[] r3 = MatrixUtil.crossProduct(r1, r2);
-        
+ 
         double[][] r = MatrixUtil.zeros(3, 3);
         for (int row = 0; row < 3; ++row) {
             r[row][0] = r1[row];
@@ -618,6 +626,7 @@ public class CameraCalibration {
         r1 = MatrixUtil.extractColumn(r, 0);
         r2 = MatrixUtil.extractColumn(r, 1);        
         double chk = MatrixUtil.innerProduct(r1, r2);
+        System.out.printf("asserting that r1 dot r2 ~ 0: %.4e\n", chk);
         assert(Math.abs(chk) < 1.e-3);
        
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();

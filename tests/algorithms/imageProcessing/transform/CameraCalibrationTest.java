@@ -218,7 +218,8 @@ public class CameraCalibrationTest extends TestCase {
         double betaE = 871.1251;
         double v0E = 220.8684;
         double k1E = 0.1371;
-        double k2E = -2.0101;
+        double k2E = -0.20101;
+        // after refinement with L-M: -0.2286, 0.1903
         
         
         CameraMatrices cameraCalibration = CameraCalibration.estimateCamera(
