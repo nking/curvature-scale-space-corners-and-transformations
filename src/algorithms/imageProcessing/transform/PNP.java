@@ -289,51 +289,87 @@ public class PNP {
             b[2*i + 1] = xn[1][i];
         }
         
+        CameraExtrinsicParameters outExtr = new CameraExtrinsicParameters();
+        
         //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
-                
+        
+      /*initialize:
+            calc h, fgp, bMinusFGP from r, t, thetas
+            calc fPrev = evaluateObjective(bMinusFGP);
+            calc J, j^T*J from h, thetas
+            calc lambda from max diagonal of J^T*J
+            copy r, thetas, t to rTest, thetasTest
+            calc deltaP from Qu init values
+            update rTest, tTest and thetasTest using deltaP
+        begin loop of tentative changes:  (we might not accept these)
+            calc h from rTest and tTest       
+            fgp = map(worldC, h);
+            bMinusFGP = MatrixUtil.subtract(b, fgp);
+            fTest = evaluateObjective(bMinusFGP);        
+            calc J, j^T*J from h, thetasTest
+            gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
+            if (nIter > 0) {
+                deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
+            }
+            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, gradient, eps);
+            if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
+            } else {doUpdate = 0;for (i = 0; i < lambda.length; ++i) : lambda[i] *= lambdaF;}
+            if (update) {
+                fPrev = fTest;
+                copy rTest, thetasTest, and tTest into r, thetas, and t
+                check for stopping conditions:
+                if (isNegligible(deltaP, tolP) || isNegligible(gradient, tolG)) : break;
+                update rTest, thetasTest, and tTest using deltaP
+            }
+        */
+      
+        // ==========  initialize ===================
+        
         // extract pose as (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-        double[][] r0 = kExtr.getRotation();
-        double[][] r = MatrixUtil.copy(r0);
-        double[] thetas = Rotation.extractThetaFromZYX(r);
-        double[] t = kExtr.getTranslation();
+        double[][] rTest = MatrixUtil.copy(kExtr.getRotation());
+        double[] thetasTest = Rotation.extractThetaFromZYX(rTest);
+        double[] tTest = Arrays.copyOf(kExtr.getTranslation(), 4);
         
         // equation (19).  size is 1 X 9
-        double[] h = new double[]{r[0][0], r[0][1], t[0], 
-            r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], -t[2]};
-      
-        // equation 20.  length is 2*N
-        double[] fgp;
+        double[] h = new double[]{rTest[0][0], rTest[0][1], tTest[0], 
+            rTest[1][0], rTest[1][1], tTest[1], -rTest[2][0], -rTest[2][1], -tTest[2]};
         
+        // eqn (20) of Wetzstein.  length is 2*N
+        // project the world coordinates to the camera coord frame, using R and T in h:
+        double[] fgp = map(worldC, h);
+        
+        // in camera reference frame, subtract the projected world points from the observations:
         // length is 2*N
-        double[] bMinusFGP;
+        double[] bMinusFGP = MatrixUtil.subtract(b, fgp);   
+        
+        // sum the squares to evalute the re-projection error:
+        double fPrev = evaluateObjective(bMinusFGP);
+        double fTest = Double.POSITIVE_INFINITY;
         
         // size is (2N) X 6
-        double[][] j = null;//calculateJ(worldC, h, thetas);
+        double[][] j = calculateJ(worldC, h, thetasTest);
         
         // size is 6 X (2N)
-        double[][] jT = null;// = MatrixUtil.transpose(j);
+        double[][] jT = MatrixUtil.transpose(j);
         // size is 6 X 6
-        double[][] jTJ = null;// = MatrixUtil.multiply(jT, j);
+        double[][] jTJ = MatrixUtil.multiply(jT, j);
         
         // NOTE: the damping term lambda is length 6 because all images are from 
         //       the same camera and presumably each parameter needs a damping term.
         // NOTE: contrary to that, Snavely’s GitHub bundler_sfm/lib/sba-1.5/sba_levmar.c 
         //       uses a single dimension damping parameter (mu)
         // TODO: follow up on convergence of L-M with a single lambda.
-        double[] lambda = new double[6];
-        initLambdaWithQu(lambda);//maxDiag(jTJ);
+        double[] lambda = maxDiag(jTJ);
+        
         double lambdaF = 2;
-        
-        // the residual, that is, the evaulation of the objective which is the 
-        //   re-projection error.
-        double f = Double.POSITIVE_INFINITY;
-        double fPrev;
-        
+                
         // deltaPLM is the array of length 6 holding the steps of change for theta and translation.
-        double[] deltaPLM;
+        double[] deltaP = new double[6];
+        initDeltaPWithQu(deltaP);
+        
         // deltaTheta is used to extract the 1st 3 elements of deltaPM 
         double[] deltaTheta = new double[3];
         // deltaT is used to extract the last 3 elements of deltaPLM
@@ -341,134 +377,104 @@ public class PNP {
                 
         double eps = 1.e-5;
         
-        // gain ratio:
-        //gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
-        //     where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-        //gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
         double gainRatio;
         
-        double[] stepLengthCheck;
-        double[] gradientCheck;
+        double[] gradient;
+        
         final double tolP = 1.e-3;
         final double tolG = 1.e-3;
-                    
-        /*
-        init: f=infinity
-              lambda = max(trace(J^T*J) which means calc J for initial conditions
-        loop:
-            set fPrev = f
-            calc fgp = map(worldC, h);
-            set f = b-fgp
-            calc j from (worldC, h, thetas);
-            calc deltaPM from (j, lambda, b-fgp)
-            check stopping conditions: jT-bMinusFGP small or deltaPM small
-            update thetas, t from (deltaPM)
-            update h from (thetas, t)
-            adjust lambda from (f, fPrev, deltaPM, b-fgp)
-        */
         
+        //update rTest, tTest and thetasTest using initial deltaP
+        System.arraycopy(deltaP, 0, deltaTheta, 0, 3);
+        System.arraycopy(deltaP, 3, deltaT, 0, 3);
+        updateT(tTest, deltaT);
+        updateRTheta(rTest, thetasTest, deltaTheta);
+                
         int doUpdate = 0;
         int nIter = 0;
         int i;
+        //begin loop of tentative changes
         while (nIter < nMaxIter) {
             
             nIter++;
-                   
-            fPrev = f;
+            
+            updateHWithRT(h, rTest, tTest);
+            
             // eqn (20) of Wetzstein.  length is 2*N
             // project the world coordinates to the camera coord frame, using R and T in h:
             fgp = map(worldC, h);
             // in camera reference frame, subtract the projected world points from the observations:
             bMinusFGP = MatrixUtil.subtract(b, fgp);   
             // sum the squares:
-            f = evaluateObjective(bMinusFGP);
-            
-            //NOTE: here, could alter to use sparse block structure in composing J.
-            //  J composed by blocks per feature for each image: 
-            //      would need to calculate J_f per feature J_g per image.
-            //  The reduced camera matrix is then formed and deltaPM
-            //  is solved for using methods such as cholesky factoring.
+            fTest = evaluateObjective(bMinusFGP);
             
             // ===== calculate step ========
             // eqns (24-34) of Wetzstein
-            j = calculateJ(worldC, h, thetas); // 2NX6
+            j = calculateJ(worldC, h, thetasTest); // 2NX6
             jT = MatrixUtil.transpose(j); // 6X2N
             jTJ = MatrixUtil.multiply(jT, j); // 6X6
            
             //gradient is the local direction of steepest ascent
-            
             // 6X1
-            gradientCheck = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
-            deltaPLM = calculateDeltaPLMSzeliski(jTJ, lambda, gradientCheck);
-            
-            System.out.printf("\nj^T*(b-fgp)=%s\n", FormatArray.toString(gradientCheck, "%.3e"));
-            System.out.printf("deltaP=%s\n", FormatArray.toString(deltaPLM, "%.3e"));
+            gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
+            if (nIter > 1) {
+                deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
+            }
+            System.out.printf("\nj^T*(b-fgp)=%s\n", FormatArray.toString(gradient, "%.3e"));
+            System.out.printf("deltaP=%s\n", FormatArray.toString(deltaP, "%.3e"));
         
-            // ======= stopping conditions ============
-            //   step length vanishes:  deltaPLM --> 0
-            //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
-            stepLengthCheck = deltaPLM;
-            //MatrixUtil.multiply(gradientCheck, -1.);            
-            if (isNegligible(stepLengthCheck, tolP) || isNegligible(gradientCheck, tolG)) {
-                break;
-            }
+            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, 
+                gradient, eps);
             
-             //TODO: consider whether to accept or reject step?
-             // comments from: https://arxiv.org/pdf/1201.5885
-             //           Transtruma & Sethna 2012
-            // the qualitative effect of the damping term is to modify the 
-            // eigenvalues of the matrix JT J + λDT D to be at least λ
-            
-            // ======= revise parameters =======
-             
-            // ====== accept or reject changes and change lambda ======
-            if (nIter == 0) {
-                doUpdate = 1;   
-            } else {
-                // gain ratio:
-                //    gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
-                //         where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-                //    gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-                               
-                gainRatio = calculateGainRatio(f/2., fPrev/2., deltaPLM, lambda, 
-                    gradientCheck, eps);
-                
-                System.out.printf("lambda=%s, gainRatio=%.4e  fPrev=%.3e, fNew=%.3e\n", 
-                    FormatArray.toString(lambda, "%.3e"), gainRatio, fPrev, f);
-                
-                if (gainRatio > 0) {
-                    doUpdate = 1;
-                    // near the minimimum, which is good.
-                    // decrease lambda
-                    //lambda /= lambdaF;
-                    for (i = 0; i < lambda.length; ++i) {
-                        lambda[i] /= lambdaF;
-                    }
-                } else {
-                    doUpdate = 0;
-                    // increase lambda to reduce step length and get closer to 
-                    // steepest descent direction
-                    //lambda *= lambdaF;
-                    for (i = 0; i < lambda.length; ++i) {
-                        lambda[i] *= lambdaF;
-                    }
+            System.out.printf("lambda=%s\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
+                FormatArray.toString(lambda, "%.3e"), gainRatio, fPrev, fTest);
+
+            if (gainRatio > 0) {
+                doUpdate = 1;
+                // near the minimimum, which is good.
+                // decrease lambda
+                //lambda /= lambdaF;
+                for (i = 0; i < lambda.length; ++i) {
+                    lambda[i] /= lambdaF;
                 }
-                System.out.printf("new lambda=%s\n", FormatArray.toString(lambda, "%.3e"));
+            } else {
+                doUpdate = 0;
+                // increase lambda to reduce step length and get closer to 
+                // steepest descent direction
+                //lambda *= lambdaF;
+                for (i = 0; i < lambda.length; ++i) {
+                    lambda[i] *= lambdaF;
+                }
             }
+            System.out.printf("new lambda=%s\n", FormatArray.toString(lambda, "%.3e"));
+           
             if (doUpdate == 1) {
-                 // p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-                 
-                System.arraycopy(deltaPLM, 0, deltaTheta, 0, 3);
-                System.arraycopy(deltaPLM, 3, deltaT, 0, 3);
                 
-                updateT(t, deltaT);
+                fPrev = fTest;
                 
-                updateRTheta(r, thetas, deltaTheta);
-                                             
-                updateHWithRT(h, r, t);
-            }            
+                outExtr.setRotation(MatrixUtil.copy(rTest));
+                outExtr.setTranslation(Arrays.copyOf(tTest, 3));
+                
+                // ======= stopping conditions ============
+                //   step length vanishes:  deltaPLM --> 0
+                //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
+                //MatrixUtil.multiply(gradientCheck, -1.);            
+                if (isNegligible(deltaP, tolP) || isNegligible(gradient, tolG)) {
+                    break;
+                }
+                
+                // p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+                System.arraycopy(deltaP, 0, deltaTheta, 0, 3);
+                System.arraycopy(deltaP, 3, deltaT, 0, 3);
+                
+                updateT(tTest, deltaT);
+                
+                updateRTheta(rTest, thetasTest, deltaTheta);
+            }              
         }
         
+        return outExtr;
+         
         /*
         Initialization: A = J^T*J, lambda=max{a_i_i}
         • Repeat until the step length vanishes, || delta x_LM || --> 0, 
@@ -491,13 +497,6 @@ public class PNP {
         where the incremental predicted by the LM step is computed as
               ell(delta x_LM) = - (delta x)^T * (lambda * (delta x_LM) + J^T*r)
         */
-        
-        // ===== create rotation matrix from thetas
-        CameraExtrinsicParameters extrinsic = new CameraExtrinsicParameters();
-        extrinsic.setRotation(Rotation.createRotationZYX(thetas));
-        extrinsic.setTranslation(t);
-        
-        return extrinsic;
     }
     
     /**
@@ -915,7 +914,12 @@ public class PNP {
         
     }
 
-    private static void initLambdaWithQu(double[] lambda) {
+    /**
+     * initialize the first parameter steps with small values suggested
+     * by Qu.
+     * @param deltaP 
+     */
+    private static void initDeltaPWithQu(double[] deltaP) {
         /*Qu thesis eqn (3.38)
         
         delta thetas ~ 1e-8
@@ -927,12 +931,21 @@ public class PNP {
         int i;
         for (i = 0; i < 3; ++i) {
             // delta theta
-            lambda[i] = 1e-8;
+            deltaP[i] = 1e-8;
         }
         for (i = 0; i < 3; ++i) {
             // delta translation
-            lambda[3+i] = 1e-5;
+            deltaP[3+i] = 1e-5;
         }
         
+    }
+
+    private static double[] maxDiag(double[][] jTJ) {
+        double[] max = new double[jTJ.length];
+        //Arrays.fill(max, Double.NEGATIVE_INFINITY);
+        for (int i = 0; i < jTJ.length; ++i) {
+            max[i] = jTJ[i][i];
+        }
+        return max;
     }
 }
