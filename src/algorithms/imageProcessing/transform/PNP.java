@@ -4,7 +4,9 @@ import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
@@ -33,11 +35,197 @@ public class PNP {
     
     /**
      * NOT YET TESTED.
-     * given initial camera calibration for a single camera 
-     * and initial estimates for extrinsic parameters for each image, use the 
-     * Levenberg-Marquardt algorithm to improve the rotation and translation 
+     * given the fixed intrinsic camera calibration for the single camera
+     * used in all images,
+     * and given the initial estimates
+     * of extrinsic camera parameters for each image, use the 
+     * Levenberg-Marquardt algorithm to improve the extrinsic camera parameters rotation and translation 
+     * by minimizing the re-projection error using feature 
+     * measurements and their world coordinates.
+     * NOTE: this is a dense Hessian matrix solver, not the sparse Hessian
+     * matrix bundle adjustment which is in BundleAdjustment.java.
+     * <pre>
+     References:
+     
+     Gordon Wetzstein lecture notes, Stanford University, EE 267 Virtual Reality, 
+     "Course Notes: 6-DOF Pose Tracking with the VRduino",
+       https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
+     
+     Danping Zou lecture notes, Shanghai Jiao Tong University,
+     EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+     http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+
+     Szeliski 2010, "Computer Vision: Algorithms and Applications", Chapter 6
+     
+     * </pre>
+     * @param imageC
+     * @param worldC
+     * @param kIntr
+     * @param kExtrs
+     * @param kRadial
+     * @param nMaxIter
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     */
+    public static List<CameraExtrinsicParameters> solveForPose(double[][] imageC, double[][] worldC, 
+        CameraIntrinsicParameters kIntr, 
+        List<CameraExtrinsicParameters> kExtrs, 
+        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        throws NotConvergedException, Exception {
+        
+        if (imageC.length != 3) {
+            throw new IllegalArgumentException("imageC.length must be 3 for the x,y,z dimensions");
+        }
+        if (worldC.length != 3) {
+            throw new IllegalArgumentException("worldC.length must be 3 for the x,y,z dimensions");
+        }
+        
+        int nFeatures = worldC[0].length;
+        
+        if (nFeatures < 4) {
+            throw new IllegalArgumentException("worldC[0].length must be at least 4");
+        }
+        if ((imageC[0].length % nFeatures) != 0) {
+            throw new IllegalArgumentException("imageC[0].length must be an integer multiple of worldC[0].length");
+        }
+        
+        int nImages = imageC[0].length/nFeatures;
+        
+        if (kExtrs.size() != nImages) {
+            throw new IllegalArgumentException("from imageC[0].length, "
+               + "nImages is expected to be " + nImages
+               + " therefore kExtrs.size() should be " + nImages + " also.");
+        }
+
+        List<CameraExtrinsicParameters> refined = new ArrayList<CameraExtrinsicParameters>();
+        
+        double[][] imageCI = MatrixUtil.zeros(3, nFeatures);
+        
+        CameraExtrinsicParameters r;
+        
+        for (int i = 0; i < nImages; ++i) {
+            
+            MatrixUtil.copySubMatrix(imageC, 0, 2, i*nFeatures, i*nFeatures+nFeatures-1, imageCI);
+            
+            r = solveForPose(imageCI, worldC, kIntr, kExtrs.get(i), kRadial, nMaxIter, useR2R4);
+            
+            refined.add(r);
+        }
+        return refined;
+    }
+    
+    /**
+     * NOT YET TESTED.
+     * given the fixed intrinsic camera calibration and the initial estimates
+     * of extrinsic camera parameters as lists of the same size, each item being
+     * for a single image, use the 
+     * Levenberg-Marquardt algorithm to improve the extrinsic camera parameters rotation and translation 
+     * by minimizing the re-projection error using feature 
+     * measurements and their world coordinates.
+     * NOTE: this is a dense Hessian matrix solver, not the sparse Hessian
+     * matrix bundle adjustment which is in BundleAdjustment.java.
+     * <pre>
+     References:
+     
+     Gordon Wetzstein lecture notes, Stanford University, EE 267 Virtual Reality, 
+     "Course Notes: 6-DOF Pose Tracking with the VRduino",
+       https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
+     
+     Danping Zou lecture notes, Shanghai Jiao Tong University,
+     EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
+     http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+
+     Szeliski 2010, "Computer Vision: Algorithms and Applications", Chapter 6
+     
+     * </pre>
+     * @param imageC
+     * @param worldC
+     * @param kIntrs
+     * @param kExtrs
+     * @param kRadial
+     * @param nMaxIter
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     */
+    public static List<CameraExtrinsicParameters> solveForPose(double[][] imageC, double[][] worldC, 
+        List<CameraIntrinsicParameters> kIntrs, 
+        List<CameraExtrinsicParameters> kExtrs, 
+        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        throws NotConvergedException, Exception {
+        
+        if (kIntrs.size() != kExtrs.size()) {
+            throw new IllegalArgumentException("the sizes of Kintrs and kExtrs must be the same");
+        }
+        
+        if (imageC.length != 3) {
+            throw new IllegalArgumentException("imageC.length must be 3 for the x,y,z dimensions");
+        }
+        if (worldC.length != 3) {
+            throw new IllegalArgumentException("worldC.length must be 3 for the x,y,z dimensions");
+        }
+        
+        int nFeatures = worldC[0].length;
+        
+        if (nFeatures < 4) {
+            throw new IllegalArgumentException("worldC[0].length must be at least 4");
+        }
+        if ((imageC[0].length % nFeatures) != 0) {
+            throw new IllegalArgumentException("imageC[0].length must be an integer multiple of worldC[0].length");
+        }
+        
+        int nImages = imageC[0].length/nFeatures;
+        
+        if (kExtrs.size() != nImages) {
+            throw new IllegalArgumentException("from imageC[0].length, "
+               + "nImages is expected to be " + nImages
+               + " therefore kExtrs.size() should be " + nImages + " also.");
+        }
+        if (kIntrs.size() != nImages) {
+            throw new IllegalArgumentException("from imageC[0].length, "
+               + "nImages is expected to be " + nImages
+               + " therefore kIntrs.size() should be " + nImages + " also.");
+        }
+
+        List<CameraExtrinsicParameters> refined = new ArrayList<CameraExtrinsicParameters>();
+        
+        double[][] imageCI = MatrixUtil.zeros(3, nFeatures);
+        
+        CameraExtrinsicParameters r;
+        
+        for (int i = 0; i < nImages; ++i) {
+            
+            MatrixUtil.copySubMatrix(imageC, 0, 2, i*nFeatures, i*nFeatures+nFeatures-1, imageCI);
+            
+            r = solveForPose(imageCI, worldC, kIntrs.get(i), kExtrs.get(i), kRadial, nMaxIter, useR2R4);
+            
+            refined.add(r);
+        }
+        return refined;
+    }
+    
+    /**
+     * NOT YET TESTED.
+     * given the camera intrinsic calibration  
+     * and initial estimates for extrinsic camera parameters for an image, use the 
+     * Levenberg-Marquardt algorithm to improve the extrinsic camera parameters rotation and translation 
      * estimates by minimizing the re-projection error using feature 
-     * measurements in world coordinates and in each image.
+     * measurements and their world coordinates.
+     * NOTE: this is a dense Hessian matrix solver, not the sparse Hessian
+     * matrix bundle adjustment which is in BundleAdjustment.java.
      * <pre>
      References:
      
@@ -69,17 +257,25 @@ public class PNP {
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     public static CameraExtrinsicParameters solveForPose(double[][] imageC, double[][] worldC, 
-        CameraIntrinsicParameters kIntr, CameraExtrinsicParameters kExtr, 
+        CameraIntrinsicParameters kIntr, 
+        CameraExtrinsicParameters kExtr, 
         double[] kRadial, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException, Exception {
         
+        if (imageC.length != 3) {
+            throw new IllegalArgumentException("imageC.length must be 3 for the x,y,z dimensions");
+        }
+        if (worldC.length != 3) {
+            throw new IllegalArgumentException("worldC.length must be 3 for the x,y,z dimensions");
+        }
+        
         // number of features
-        int n = imageC[0].length;
+        int n = worldC[0].length;
         
         if (n < 4) {
-            throw new IllegalArgumentException("imageC[0].length must be at least 4");
+            throw new IllegalArgumentException("worldC[0].length must be at least 4");
         }
-        if (worldC[0].length != n) {
+        if (imageC[0].length != n) {
             throw new IllegalArgumentException("imageC[0].length must equal worldC[0].length");
         }
         
@@ -97,7 +293,7 @@ public class PNP {
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
-        
+                
         // extract pose as (theta_x, theta_y, theta_z, t_x, t_y, t_z)
         double[][] r0 = kExtr.getRotation();
         double[][] r = MatrixUtil.copy(r0);
@@ -115,17 +311,18 @@ public class PNP {
         double[] bMinusFGP;
         
         // size is (2N) X 6
-        double[][] j = calculateJ(worldC, h, thetas);
+        double[][] j = null;//calculateJ(worldC, h, thetas);
         
         // size is 6 X (2N)
-        double[][] jT = MatrixUtil.transpose(j);
+        double[][] jT = null;// = MatrixUtil.transpose(j);
         // size is 6 X 6
-        double[][] jTJ = MatrixUtil.multiply(jT, j);
+        double[][] jTJ = null;// = MatrixUtil.multiply(jT, j);
         
         // NOTE: the damping term lambda is length 6 because all images are from 
         //       the same camera and presumably each parameter needs a damping term.
-        // NOTE:  contrary to that, Snavely’s GitHub bundler_sfm/lib/sba-1.5/sba_levmar.c 
+        // NOTE: contrary to that, Snavely’s GitHub bundler_sfm/lib/sba-1.5/sba_levmar.c 
         //       uses a single dimension damping parameter (mu)
+        // TODO: follow up on convergence of L-M with a single lambda.
         double[] lambda = new double[6];
         initLambdaWithQu(lambda);//maxDiag(jTJ);
         double lambdaF = 2;
@@ -182,7 +379,8 @@ public class PNP {
             // project the world coordinates to the camera coord frame, using R and T in h:
             fgp = map(worldC, h);
             // in camera reference frame, subtract the projected world points from the observations:
-            bMinusFGP = MatrixUtil.subtract(b, fgp);            
+            bMinusFGP = MatrixUtil.subtract(b, fgp);   
+            // sum the squares:
             f = evaluateObjective(bMinusFGP);
             
             //NOTE: here, could alter to use sparse block structure in composing J.
@@ -231,13 +429,13 @@ public class PNP {
                 //    gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
                 //         where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
                 //    gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-                
-               
-                // if only using a one dimensional lambda, can use this gain ratio:
+                               
                 gainRatio = calculateGainRatio(f/2., fPrev/2., deltaPLM, lambda, 
                     gradientCheck, eps);
                 
-                System.out.printf("lambda=%s, gainRatio=%.4e\n", FormatArray.toString(lambda, "%.3e"), gainRatio);
+                System.out.printf("lambda=%s, gainRatio=%.4e  fPrev=%.3e, fNew=%.3e\n", 
+                    FormatArray.toString(lambda, "%.3e"), gainRatio, fPrev, f);
+                
                 if (gainRatio > 0) {
                     doUpdate = 1;
                     // near the minimimum, which is good.
@@ -258,15 +456,12 @@ public class PNP {
                 System.out.printf("new lambda=%s\n", FormatArray.toString(lambda, "%.3e"));
             }
             if (doUpdate == 1) {
-                 // add deltaPLM to p, where p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+                 // p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
                  
                 System.arraycopy(deltaPLM, 0, deltaTheta, 0, 3);
                 System.arraycopy(deltaPLM, 3, deltaT, 0, 3);
                 
                 updateT(t, deltaT);
-                
-                // for local parameterization:
-                //updateT(t, deltaT, r);
                 
                 updateRTheta(r, thetas, deltaTheta);
                                              
@@ -542,41 +737,44 @@ public class PNP {
     /**
      * gain = (f(p + delta p) - f(p)) / ell(delta p)
              where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
-       gain = (f - fPrev) / (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
-     * @param f
+       gain = (f - fPrev) / ( (delta p)^T * (lambda * (delta p) + J^T * ( b - fgp)) )
+     * @param fNew
      * @param fPrev
      * @param deltaP
      * @param lambda
      * @param jTBFG j^T*(b-f(g(p))). size is 6X1
      * @return 
      */
-    private static double calculateGainRatio(double f, double fPrev, 
+    private static double calculateGainRatio(double fNew, double fPrev, 
         double[] deltaP, double[] lambda, double[] jTBFG,
         double eps) {
         
-        //   1X6             6X1     (6X1          + 6X1)
-        //            1X1 *
-        //(delta p LM)^T * (lambda * (delta p LM) + J^T * (b - fgp))
+        // NOTE: Lourakis and Argyros the sign is reversed from what is used here:
+        //  gain ratio = ( fPrev - fNew) / ( deltaP^T * (lambda * deltaP + J^T*fPrev) )
+        
+        
+        //   1X6         *    ([1X1]*[6X1]         + [6X1])           = [1X1]
+        //(delta p LM)^T *  (lambda * (delta p LM) + J^T * (b - fgp))
         
              
         //      1X6          *            ( 6X1   +   6 X (2N) * (2NX1) )
         //      1X6                        6X1 
         //  1X1
         //(delta p LM)^T * (lambda * (delta p LM) + J^T * (b - fgp))
-        double[] pt1 = Arrays.copyOf(deltaP, deltaP.length);
-        int i;
-        //MatrixUtil.multiply(pt1, lambda);
-        for (i = 0; i < pt1.length; ++i) {
-            pt1[i] *= lambda[i];
+        double[] denom = Arrays.copyOf(deltaP, deltaP.length);
+        for (int i = 0; i < denom.length; ++i) {
+            denom[i] *= lambda[i];
         }
         
-        double ell = MatrixUtil.innerProduct(deltaP, jTBFG);
+        denom = MatrixUtil.add(denom, jTBFG);
         
-        if (Math.abs(ell) < eps) {
+        double d = MatrixUtil.innerProduct(deltaP, denom);
+        
+        if (Math.abs(d) < eps) {
             return Double.POSITIVE_INFINITY;
         }
         
-        double gain = (f - fPrev)/ell;
+        double gain = (fNew - fPrev)/d;
         
         return gain;
     }

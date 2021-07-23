@@ -1,6 +1,8 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.util.FormatArray;
 import java.util.List;
 import java.util.logging.Level;
@@ -54,7 +56,7 @@ public class PNPTest extends TestCase {
         assertEquals(3, coordsI.length);
         assertEquals(nFeatures*nImages, coordsI[0].length);
         
-        Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
+        CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
             nFeatures, coordsI, coordsW, useR2R4);
         
         CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
@@ -79,37 +81,8 @@ public class PNPTest extends TestCase {
         double betaE = 871.1251;
         double v0E = 220.8684;
         double k1E = 0.1371;
-        double k2E = -0.20101;
-        //aftwe refinement with L-M: k1 = -0.228601, k2 = 0.190353.
-        
-        
-        /*
-        0.992759 -0.026319 0.117201
-        0.0139247 0.994339 0.105341
-        -0.11931 -0.102947 0.987505
-        -3.84019 3.65164 12.791
-
-        0.997397 -0.00482564 0.0719419
-        0.0175608 0.983971 -0.17746
-        -0.0699324 0.178262 0.981495
-        -3.71693 3.76928 13.1974
-
-        0.915213 -0.0356648 0.401389
-        -0.00807547 0.994252 0.106756
-        -0.402889 -0.100946 0.909665
-        -2.94409 3.77653 14.2456
-
-        0.986617 -0.0175461 -0.16211
-        0.0337573 0.994634 0.0977953
-        0.159524 -0.101959 0.981915
-        -3.40697 3.6362 12.4551
-
-        0.967585 -0.196899 -0.158144
-        0.191542 0.980281 -0.0485827
-        0.164592 0.0167167 0.98622
-        -4.07238 3.21033 14.3441
-        */
-        
+        double k2E = -0.20101;        
+       
         log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
         log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
         log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
@@ -126,7 +99,7 @@ public class PNPTest extends TestCase {
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
         }
         
-        // now have initial parameters to refine using PNP.java
+        // now have initial parameters to refine using BundleAdjustment.java in other tests
         alphaE = 832.5010;
         gammaE = 0.2046;
         u0E = 303.9584;
@@ -135,7 +108,12 @@ public class PNPTest extends TestCase {
         k1E = -0.228601; 
         k2E = 0.190353;
         
-        // paused here.  
+        final int nMaxIter = 100;
+        
+        List<CameraExtrinsicParameters> refinedExtr = PNP.solveForPose(
+            coordsI, coordsW, 
+            kIntr, cameraMatrices.getExtrinsics(),
+            cameraMatrices.getRadialDistortCoeff(), nMaxIter, useR2R4); 
     }
     
 }
