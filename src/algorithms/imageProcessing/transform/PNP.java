@@ -362,7 +362,7 @@ public class PNP {
         // NOTE: contrary to that, Snavely’s GitHub bundler_sfm/lib/sba-1.5/sba_levmar.c 
         //       uses a single dimension damping parameter (mu)
         // TODO: follow up on convergence of L-M with a single lambda.
-        double[] lambda = maxDiag(jTJ);
+        double lambda = maxDiag(jTJ);
         
         double lambdaF = 2;
                 
@@ -426,27 +426,21 @@ public class PNP {
             gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, 
                 gradient, eps);
             
-            System.out.printf("lambda=%s\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
-                FormatArray.toString(lambda, "%.3e"), gainRatio, fPrev, fTest);
+            System.out.printf("lambda=%.6e\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
+                lambda, gainRatio, fPrev, fTest);
 
             if (gainRatio > 0) {
                 doUpdate = 1;
                 // near the minimimum, which is good.
                 // decrease lambda
-                //lambda /= lambdaF;
-                for (i = 0; i < lambda.length; ++i) {
-                    lambda[i] /= lambdaF;
-                }
+                lambda /= lambdaF;
             } else {
                 doUpdate = 0;
                 // increase lambda to reduce step length and get closer to 
                 // steepest descent direction
-                //lambda *= lambdaF;
-                for (i = 0; i < lambda.length; ++i) {
-                    lambda[i] *= lambdaF;
-                }
+                lambda *= lambdaF;
             }
-            System.out.printf("new lambda=%s\n", FormatArray.toString(lambda, "%.3e"));
+            System.out.printf("new lambda=%.6e\n", lambda);
            
             if (doUpdate == 1) {
                 
@@ -537,8 +531,7 @@ public class PNP {
         int n = bMinusFGP.length;
         
         double sum = 0;
-        int i, j;
-        double r;
+        int i;
         for (i = 0; i < n; ++i) {
             sum += (bMinusFGP[i] * bMinusFGP[i]);
         }
@@ -686,7 +679,7 @@ public class PNP {
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     private static double[] calculateDeltaPLMSzeliski(double[][] jTJ, 
-        double[] lambda, double[] jTBFG) throws NotConvergedException {
+        double lambda, double[] jTBFG) throws NotConvergedException {
         
         //                        [6X6]                   * [6X1] = [6X1]
         //delta p = pseudoInv(J^T*J + lambda*diag(J^T*J)) * J^T*BFG
@@ -696,7 +689,7 @@ public class PNP {
         // [6X6]
         double[][] a = MatrixUtil.copy(jTJ);
         for (i = 0; i < 6; ++i) {
-            a[i][i] += (lambda[i]*(jTJ[i][i]));
+            a[i][i] += (lambda*(jTJ[i][i]));
         }
         //[6X6]
         double[][] aInv = MatrixUtil.pseudoinverseRankDeficient(a);
@@ -745,7 +738,7 @@ public class PNP {
      * @return 
      */
     private static double calculateGainRatio(double fNew, double fPrev, 
-        double[] deltaP, double[] lambda, double[] jTBFG,
+        double[] deltaP, double lambda, double[] jTBFG,
         double eps) {
         
         // NOTE: Lourakis and Argyros the sign is reversed from what is used here:
@@ -762,7 +755,7 @@ public class PNP {
         //(delta p LM)^T * (lambda * (delta p LM) + J^T * (b - fgp))
         double[] denom = Arrays.copyOf(deltaP, deltaP.length);
         for (int i = 0; i < denom.length; ++i) {
-            denom[i] *= lambda[i];
+            denom[i] *= lambda;
         }
         
         denom = MatrixUtil.add(denom, jTBFG);
@@ -940,11 +933,13 @@ public class PNP {
         
     }
 
-    private static double[] maxDiag(double[][] jTJ) {
-        double[] max = new double[jTJ.length];
+    private static double maxDiag(double[][] jTJ) {
+        double max = Double.NEGATIVE_INFINITY;
         //Arrays.fill(max, Double.NEGATIVE_INFINITY);
         for (int i = 0; i < jTJ.length; ++i) {
-            max[i] = jTJ[i][i];
+            if (jTJ[i][i] > max) {
+                max = jTJ[i][i];
+            }
         }
         return max;
     }
