@@ -394,47 +394,57 @@ public class BundleAdjustment {
         //the sum of squares of the observed feature - projected feature
         double[] outFSqSum =new double[1];
         
-        // [12X1]
-        double[] lambda = new double[12];
-        initLambdaWithQu(outDC);
-        
-        double lambdaF = 2;
-        
-        // the residual, that is, the evaulation of the objective which is the 
-        //   re-projection error.
-        double f = Double.POSITIVE_INFINITY;
-        double fPrev;
+        double lambda = maxDiag(jTJ);
+        //factor to raise or lower lambda.  
+        //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
+        final double lambdaF = 2;
+                
+        // deltaP is the array of length 12 holding the steps of change for theta and translation, intrinsic parameters and point parameters
+        double[] deltaP = new double[12];
+        initDeltaPWithQu(deltaP);
+                
+        // sum the squares to evalute the re-projection error:
+        double fPrev = evaluateObjective(bMinusFGP);
+        double fTest = Double.POSITIVE_INFINITY;
         
         double eps = 1.e-5;
-        
-        // gain ratio:
-        //gain = (f(p + delta p) - f(p)) / ell(delta p)
-        //     where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
-        //     and outGradC and outGradP are J^T * ( b - fgp)
-        //     and outDC and outDP are 'delta p'
-        //gain = (f - fPrev) / (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
+       
         double gainRatio;
         
         final double tolP = 1.e-3;
         final double tolG = 1.e-3;
           
         /*
-        init: 
-              f=infinity
-              lambda = initial values used in Qu thesis.
-                        else, Danping recoomend using max(trace(J^T*J)
-              calculateLMVectorsSparsely()
-        loop:
-            set fPrev = f
-            set f = outFSqSum[0];
-            have deltaP as outDP and outDC
-            check stopping conditions: gradients small or deltaP small        
-            calc gain ratio 
-                adjust lambda
-                determine whether to update.
-            if update==1
-                update params from outDP and outDC        
-            calculateLMVectorsSparsely()
+        adjusting this for SBA:
+        
+        initialize:
+            calc h, fgp, bMinusFGP from r, t, thetas
+            calc fPrev = evaluateObjective(bMinusFGP);
+            calc J, j^T*J from h, thetas
+            calc lambda from max diagonal of J^T*J
+            copy r, thetas, t to rTest, thetasTest
+   *        calc deltaP from Qu init values
+            update rTest, tTest and thetasTest using deltaP
+        begin loop of tentative changes:  (we might not accept these)
+            calc h from rTest and tTest       
+            fgp = map(worldC, h);
+            bMinusFGP = MatrixUtil.subtract(b, fgp);
+            fTest = evaluateObjective(bMinusFGP);        
+            calc J, j^T*J from h, thetasTest
+            gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
+            if (nIter > 0) {
+   *            deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
+            }
+            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, gradient, eps);
+            if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
+            } else {doUpdate = 0;for (i = 0; i < lambda.length; ++i) : lambda[i] *= lambdaF;}
+            if (update) {
+                fPrev = fTest;
+                copy rTest, thetasTest, and tTest into r, thetas, and t
+                check for stopping conditions:
+                if (isNegligible(deltaP, tolP) || isNegligible(gradient, tolG)) : break;
+                update rTest, thetasTest, and tTest using deltaP
+            }
         */
         
         calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
@@ -474,20 +484,22 @@ public class BundleAdjustment {
                 gainRatio = calculateGainRatio(f/2., fPrev/2., outDC, outDP, lambda, 
                     outGradC, outGradP, eps);
                 System.out.printf("lambda=%.4e, gainRatio=%.4e\n", lambda, gainRatio);
+                /*
+                for large values of lambda, the update is a very steep descent and
+                deltaP is very small.
+                If the damping term is small the approach is a nearly linear problem.
+                */
                 if (gainRatio > 0) {
                     doUpdate = 1;
                     // near the minimimum, which is good.
                     // decrease lambda
-                    for (i = 0; i < lambda.length; ++i) {
-                        lambda[i] /= lambdaF;
-                    }
+                    lambda /= lambdaF;
+                    assert(fTest < fPrev);
                 } else {
                     doUpdate = 0;
                     // increase lambda to reduce step length and get closer to 
                     // steepest descent direction
-                    for (i = 0; i < lambda.length; ++i) {
-                        lambda[i] *= lambdaF;
-                    }
+                    lambda *= lambdaF;
                 }
                 System.out.printf("new lambda=%.4e\n", lambda);
             }
@@ -623,7 +635,7 @@ public class BundleAdjustment {
      * given parameters, not the given parameters plus the returned update steps
      * (outDC and outDP).
      * The length should be 1.
-     * @param outLambda an output array of length nCameraParams + nPointParams
+     * @param lambda an output array of length nCameraParams + nPointParams
      * (=12 when solving for intrinsic, else =9) which, if not null, will be filled
      * with the maximum of the diagonal of J^T*J for each parameter.  The value is used for 
      * initializing the damping term of the L-M algorithm, but it is not necessary to recalculate
@@ -633,9 +645,9 @@ public class BundleAdjustment {
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
-        double[] kRadial, boolean useR2R4,
+        double[] kRadial, final boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
-        double[] outFSqSum, double[] outLambda) throws NotConvergedException {
+        double[] outFSqSum, final double lambda) throws NotConvergedException {
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -691,8 +703,8 @@ public class BundleAdjustment {
         if (outFSqSum.length != 1) {
             throw new IllegalArgumentException("outFSqSum.length must be 1");
         } 
-        if (outLambda != null && outLambda.length != 12) {
-            throw new IllegalArgumentException("outLambda must be null or its length must be 12");
+        if (!(lambda  > 0)) {
+            throw new IllegalArgumentException("lambda must be a positive number");
         }
         if (imageToCamera == null) {
             throw new IllegalArgumentException("imageToCamera cannot be null");
@@ -710,11 +722,13 @@ public class BundleAdjustment {
                 to avoid inverting the reduced camera matrix.
         
         The partial derivatives are implemented following Qu 2018.
+        
         The assumptions are no skew, square pixels, f=f_x=f_y.
         
         The factorization is of the reduced camera matrix of the Schur decomposition
         as it is often assumed that (9^3)*mImages < (3^3)*nFeatures, so one
         inverts the matrix HPP (aka V*).
+        
         TODO: consider branching if case (9^3)*mImages > (3^3)*nFeatures
         in order to invert matrix HCC (aka U*) instead of matrix HPP. This is
         called the "reduced structure system" in contrast tot he "reduced
@@ -722,9 +736,6 @@ public class BundleAdjustment {
         
         */
         
-        // max of diagonal of J^T*J which is the diagonals of U_J and V_I
-        Arrays.fill(outLambda, Double.NEGATIVE_INFINITY);
-                
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
             MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
@@ -739,6 +750,14 @@ public class BundleAdjustment {
         double[][] hPPI = MatrixUtil.zeros(3, 3); 
         //aka (V_i)^-1; a [3X3] block
         double[][] invHPPI;
+        
+        //HCC is a.k.a. J_C^T*J_C (and in Qu thesis is variable B).  
+        //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
+ //       BlockMatrixIsometric hCC = new BlockMatrixIsometric(MatrixUtil.zeros(mImages*9, 9), 9, 9);
+        
+        //HPP is a.k.a. J_P^T*J_P (and in Qu thesis is variable C).  
+        //The diagonals, V_i, are stored here as [3X3] blocks. each V_i is a summation of b_i_j^T*b_i_j over j.
+ //       BlockMatrixIsometric hPP = new BlockMatrixIsometric(MatrixUtil.zeros(nFeatures*3, 3), 3, 3);
         
         // aka jPTf; row j of bP; [3X1]
         double[] bPI = new double[3];
@@ -800,9 +819,6 @@ public class BundleAdjustment {
         AuxiliaryArrays aa = new AuxiliaryArrays();
         double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
-        //HCC is a.k.a. J_C^T*J_C (and in Qu thesis is variable B).  The diagonals are U_j which are each summations of a_i_j^T*a_i_j over i
-        BlockMatrixIsometric hCCJ = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
-        
         // i for n features, j for m images
         int i, j, j2, k, cameraNumber;
                      
@@ -816,6 +832,8 @@ public class BundleAdjustment {
             
             //populate xWI; extract the world feature.  size [1X3]
             MatrixUtil.extractColumn(coordsW, i, xWI);
+            
+            // sum hPPI over all images
             
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 
@@ -853,14 +871,16 @@ public class BundleAdjustment {
 
                 // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
                 MatrixUtil.multiply(bIJT, bIJ, bIJsq);
-                
- // TODO: handle the damping term: (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
 
-                // add jP^T*JP to upper triangular part of hPP aka V
+                //populate aIJT; [9X2] aka jC^T
+                MatrixUtil.transpose(aIJ, aIJT);
+                                
+                // add jP^T*JP for this image to the hPPi block for feature i.
+                // Engels: add jP^T*JP to upper triangular part of hPP aka V.
                 // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
                 //     elementwise addition of 3X3 blocks:
                 MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);
-                
+                                
                 // populate xIJ; the observed feature i in image j
                 MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);
                 
@@ -878,10 +898,7 @@ public class BundleAdjustment {
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
 
                 MatrixUtil.elementwiseSubtract(outGradP, bIJTF, outGradP);
-                
-                //populate aIJT; [9X2] aka jC^T
-                MatrixUtil.transpose(aIJ, aIJT);
-
+                              
                 // if camera c is free
                 // (presumably, this means that the camera is not a fixed set of
                 // parameters and needs to be determined).
@@ -890,14 +907,19 @@ public class BundleAdjustment {
                     // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
                     //mA[j][j] = aIJT * aIJ;
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
+                    
+                    // aIJ^T*aIJ is now in auxMA
+                    // modify it by the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
+                    for (k = 0; k < auxMA.length; ++k) {
+                        auxMA[k][k] *= (1. + lambda);
+                    }
+                    
                     mA.setBlock(auxMA, j, j);
                     
                     // uJ is [9*mImages X 9]
                     //aijT*aiJ is [9X2][2X9]=[9X9];  sum over all i features = U_j
-                    hCCJ.addToBlock(auxMA, j, 0);
-                    
-  //TODO: damping term corrections
-  
+//                    hCC.addToBlock(auxMA, j, 0);
+                      
                     // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                     //    and store until end of image j loop.
                     //hPCJ[j] = bIJT * aIJ;
@@ -914,13 +936,14 @@ public class BundleAdjustment {
                              
                 }
             } // end image j loop
-/*            
-            edit for lambda and hPPI here
+            
+            // hPPI is now integrated over all images, so can now handle the
+            //  damping term for it:
+            //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
             for (k = 0; k < 3; ++k) {
-                hPPI[k][k] 
-                lambda[k + 9]              
+                hPPI[k][k] *= (1. + lambda);
             }
- */           
+
             //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
             
@@ -981,6 +1004,7 @@ public class BundleAdjustment {
                     //   subtract from block (j, j2) of lhs mA
                     hPCJ.getBlock(auxHPCJ2, j2, 0);
                     MatrixUtil.multiply(tPC, auxHPCJ2, auxMA2);
+                            
                     mA.getBlock(auxMA3, j, j2);
                     MatrixUtil.elementwiseSubtract(auxMA3, auxMA2, auxMA3);
                     mA.setBlock(auxMA3, j, j2);
@@ -1074,31 +1098,8 @@ public class BundleAdjustment {
             //    so the update is not performed here (it's handled at the
             //    next invocation of this method)
             
-            //TODO: damping term corrections
-            //HCC_adjusted = HCC + lambda*diag(HCC)
-            //HCC_adjusted = HPP + lambda*diag(HPP)
-            
         }
-        
-        // camera params
-        //HCC is a.k.a. J_C^T*J_C (and in Qu thesis is variable B).  
-        // The diagonals are U_j which are each summations of a_i_j^T*a_i_j over i
-        // HCC is [9*mImages X 9] with block size 9X9.  a block is hCCJ
-/*
-        for (j = 0; j < mImages; ++j) {
-            hCCJ.getBlock(auxMA, j, 0);
-            for (i = 0; i < 9; ++i) {
-                auxMA[i][i]
-                lambda[i]
-            }
-        }
-   */     
-        // Engels: compute updated cost function
-        // NOTE: for this method, the cost function
-        //    is evaluated for the parameters given to the method
-        //    instead of evaluated at the end of the calculation
-
-        //outGradP, outGradC, outDP, outDC, and outFSqSum are populated now        
+                
     }
     
     /**
@@ -1628,8 +1629,8 @@ public class BundleAdjustment {
         
     }
 
-    private static void initLambdaWithQu(double[] lambda) {
-        int len = lambda.length;
+    private static void initDeltaPWithQu(double[] deltaP) {
+        int len = deltaP.length;
         /*Qu thesis eqn (3.38)
         
         delta thetas ~ 1e-8
@@ -1641,20 +1642,20 @@ public class BundleAdjustment {
         int i;
         for (i = 0; i < 3; ++i) {
             // delta theta
-            lambda[i] = 1e-8;
+            deltaP[i] = 1e-8;
         }
         for (i = 0; i < 3; ++i) {
             // delta translation
-            lambda[3+i] = 1e-5;
+            deltaP[3+i] = 1e-5;
         }
         for (i = 0; i < 3; ++i) {
             // delta point params
-            lambda[len-3+i] = 1e-5;
+            deltaP[len-3+i] = 1e-5;
         }
         if (len == 12) {
-            lambda[7] = 1;
-            lambda[8] = 1e-3;
-            lambda[9] = 1e-3;
+            deltaP[7] = 1;
+            deltaP[8] = 1e-3;
+            deltaP[9] = 1e-3;
         }
         
     }
