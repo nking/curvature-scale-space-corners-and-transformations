@@ -296,13 +296,15 @@ public class PNP {
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
         
-      /*initialize:
+        
+      /*
+        initialize:
             calc h, fgp, bMinusFGP from r, t, thetas
             calc fPrev = evaluateObjective(bMinusFGP);
             calc J, j^T*J from h, thetas
             calc lambda from max diagonal of J^T*J
             copy r, thetas, t to rTest, thetasTest
-            calc deltaP from Qu init values
+   *        calc deltaP from Qu init values
             update rTest, tTest and thetasTest using deltaP
         begin loop of tentative changes:  (we might not accept these)
             calc h from rTest and tTest       
@@ -312,7 +314,7 @@ public class PNP {
             calc J, j^T*J from h, thetasTest
             gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
             if (nIter > 0) {
-                deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
+   *            deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
             }
             gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, gradient, eps);
             if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
@@ -357,16 +359,13 @@ public class PNP {
         // size is 6 X 6
         double[][] jTJ = MatrixUtil.multiply(jT, j);
         
-        // NOTE: the damping term lambda is length 6 because all images are from 
-        //       the same camera and presumably each parameter needs a damping term.
-        // NOTE: contrary to that, Snavely’s GitHub bundler_sfm/lib/sba-1.5/sba_levmar.c 
-        //       uses a single dimension damping parameter (mu)
-        // TODO: follow up on convergence of L-M with a single lambda.
         double lambda = maxDiag(jTJ);
         
-        double lambdaF = 2;
+        //factor to raise or lower lambda.  
+        //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
+        final double lambdaF = 2;
                 
-        // deltaPLM is the array of length 6 holding the steps of change for theta and translation.
+        // deltaP is the array of length 6 holding the steps of change for theta and translation.
         double[] deltaP = new double[6];
         initDeltaPWithQu(deltaP);
         
@@ -429,11 +428,17 @@ public class PNP {
             System.out.printf("lambda=%.6e\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
                 lambda, gainRatio, fPrev, fTest);
 
+            /*
+            for large values of lambda, the update is a very steep descent and
+            deltaP is very small.
+            If the damping term is small the approach is a nearly linear problem.
+            */
             if (gainRatio > 0) {
                 doUpdate = 1;
                 // near the minimimum, which is good.
                 // decrease lambda
                 lambda /= lambdaF;
+                assert(fTest < fPrev);
             } else {
                 doUpdate = 0;
                 // increase lambda to reduce step length and get closer to 
