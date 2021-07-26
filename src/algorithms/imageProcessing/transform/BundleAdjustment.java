@@ -394,18 +394,26 @@ public class BundleAdjustment {
         //the sum of squares of the observed feature - projected feature
         double[] outFSqSum =new double[1];
         
-        double lambda = maxDiag(jTJ);
+        double[] outInitLambda = new double[1];
+        
+        // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
+        calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
+            imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
+            outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+        
+        double lambda = outInitLambda[0];
+        
+        // set to null to prevent calculating the max of diagnonal of (J^T*J) 
+        outInitLambda = null;
+        
         //factor to raise or lower lambda.  
         //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
         final double lambdaF = 2;
-                
-        // deltaP is the array of length 12 holding the steps of change for theta and translation, intrinsic parameters and point parameters
-        double[] deltaP = new double[12];
-        initDeltaPWithQu(deltaP);
-                
+       
         // sum the squares to evalute the re-projection error:
-        double fPrev = evaluateObjective(bMinusFGP);
-        double fTest = Double.POSITIVE_INFINITY;
+        double fPrev = outFSqSum[0];
+        
+        double fTest;
         
         double eps = 1.e-5;
        
@@ -413,113 +421,92 @@ public class BundleAdjustment {
         
         final double tolP = 1.e-3;
         final double tolG = 1.e-3;
-          
-        /*
-        adjusting this for SBA:
+         
+        // deltaP is the array of length 12 holding the steps of change for theta and translation, intrinsic parameters and point parameters
+        double[] deltaP = new double[12];
+        initDeltaPWithQu(deltaP);
         
-        initialize:
-            calc h, fgp, bMinusFGP from r, t, thetas
-            calc fPrev = evaluateObjective(bMinusFGP);
-            calc J, j^T*J from h, thetas
-            calc lambda from max diagonal of J^T*J
-            copy r, thetas, t to rTest, thetasTest
-   *        calc deltaP from Qu init values
-            update rTest, tTest and thetasTest using deltaP
-        begin loop of tentative changes:  (we might not accept these)
-            calc h from rTest and tTest       
-            fgp = map(worldC, h);
-            bMinusFGP = MatrixUtil.subtract(b, fgp);
-            fTest = evaluateObjective(bMinusFGP);        
-            calc J, j^T*J from h, thetasTest
-            gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
-            if (nIter > 0) {
-   *            deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
-            }
-            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, gradient, eps);
-            if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
-            } else {doUpdate = 0;for (i = 0; i < lambda.length; ++i) : lambda[i] *= lambdaF;}
-            if (update) {
-                fPrev = fTest;
-                copy rTest, thetasTest, and tTest into r, thetas, and t
-                check for stopping conditions:
-                if (isNegligible(deltaP, tolP) || isNegligible(gradient, tolG)) : break;
-                update rTest, thetasTest, and tTest using deltaP
-            }
-        */
+        // copy the parameter data structures into test (tentative) data structures
+        BlockMatrixIsometric intrTest = intr.copy();
+        double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);
+        double[][] extrTransTest = MatrixUtil.copy(extrTrans);
+        double[] kRadialTest = Arrays.copyOf(kRadial, kRadial.length);
         
-        calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
-            imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
-            outDP, outDC, outGradP, outGradC, outFSqSum, lambda);
+        // update the test data structures by deltaP and deltaC
+        // use the 2nd three elements in outDC:
+        updateTranslation(extrTransTest, outDC, 3);
+        updateRotThetas(extrRotThetasTest, outDC, 0);
+        updateIntrinsic(intrTest, outDC, 6);
+        updateRadialDistortion(kRadialTest, outDC, 7);
+        
+        // update the features with outDP?  see step 7 of Engels
         
         int doUpdate = 0;
         int nIter = 0;
         int i;
         while (nIter < nMaxIter) {
+            
             nIter++;
-                   
-            fPrev = f;            
-            f = outFSqSum[0];
-           
-            if (isNegligible(outDC, tolP) || isNegligible(outDP, tolP) ||
-                isNegligible(outGradC, tolG) || isNegligible(outGradP, tolG)) {
-                break;
-            }
-            
-            //TODO: consider whether to accept or reject step?
-             // comments from: https://arxiv.org/pdf/1201.5885
-             //           Transtruma & Sethna 2012
-            // the qualitative effect of the damping term is to modify the 
-            // eigenvalues of the matrix JT J + λDT D to be at least λ
-            
-            // ======= revise parameters =======
-             
-            // ====== accept or reject changes and change lambda ======
-            if (nIter == 0) {
-                doUpdate = 1;   
-            } else {
-                // gain ratio:
-                //    gain = (f(p + delta p LM) - f(p)) / ell(delta p LM)
-                //         where ell(delta p LM) is (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-                //    gain = (f - fPrev) / (delta p LM)^T * (lambda * (delta p LM)) + J^T * ( b - fgp))
-                gainRatio = calculateGainRatio(f/2., fPrev/2., outDC, outDP, lambda, 
-                    outGradC, outGradP, eps);
-                System.out.printf("lambda=%.4e, gainRatio=%.4e\n", lambda, gainRatio);
-                /*
-                for large values of lambda, the update is a very steep descent and
-                deltaP is very small.
-                If the damping term is small the approach is a nearly linear problem.
-                */
-                if (gainRatio > 0) {
-                    doUpdate = 1;
-                    // near the minimimum, which is good.
-                    // decrease lambda
-                    lambda /= lambdaF;
-                    assert(fTest < fPrev);
-                } else {
-                    doUpdate = 0;
-                    // increase lambda to reduce step length and get closer to 
-                    // steepest descent direction
-                    lambda *= lambdaF;
-                }
-                System.out.printf("new lambda=%.4e\n", lambda);
-            }
-            if (doUpdate == 1) {
-                // use the 2nd three elements in outDC:
-                updateTranslation(extrTrans, outDC, 3);
-                
-                //NOTE: potential singularity in this method:
-                // use the 1st three elements in outDC
-                updateRotThetas(extrRotThetas, outDC, 0);
-                
-                updateIntrinsic(intr, outDC, 6);
-                
-                updateRadialDistortion(kRadial, outDC, 7);
-            }
             
             calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
-                imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
-                outDP, outDC, outGradP, outGradC, outFSqSum, lambda);
+                imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialTest, useR2R4,
+                outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+        
+            fTest = outFSqSum[0];
             
+            if (nIter > 1) {
+                deltaP = calculateDeltaParams(jTJ, lambda, gradient);
+            }
+                                
+            gainRatio = calculateGainRatio(fTest/2., fPrev/2., outDC, outDP, lambda, 
+                outGradC, outGradP, eps);            
+            System.out.printf("lambda=%.6e\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
+                lambda, gainRatio, fPrev, fTest);
+
+            /*
+            for large values of lambda, the update is a very steep descent and
+            deltaP is very small.
+            If the damping term is small the approach is a nearly linear problem.
+            */
+            if (gainRatio > 0) {
+                doUpdate = 1;
+                // near the minimimum, which is good.
+                // decrease lambda
+                lambda /= lambdaF;
+                assert(fTest < fPrev);
+            } else {
+                doUpdate = 0;
+                // increase lambda to reduce step length and get closer to 
+                // steepest descent direction
+                lambda *= lambdaF;
+            }
+            System.out.printf("new lambda=%.6e\n", lambda);
+           
+            if (doUpdate == 1) {
+                
+                fPrev = fTest;
+                
+                //copy test data structures into the original in-out datastructures
+                intr.set(intrTest);
+                MatrixUtil.copy(extrRotThetasTest, extrRotThetas);
+                MatrixUtil.copy(extrTransTest, extrTrans);
+                System.arraycopy(kRadialTest, 0, kRadial, 0, kRadial.length);
+                        
+                // ======= stopping conditions ============
+                //   step length vanishes:  deltaPLM --> 0
+                //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
+                //MatrixUtil.multiply(gradientCheck, -1.);            
+                if (isNegligible(outDC, tolP) || isNegligible(outDP, tolP) ||
+                    isNegligible(outGradC, tolG) || isNegligible(outGradP, tolG)) {
+                    break;
+                }
+                
+                // use the 2nd three elements in outDC:
+                updateTranslation(extrTransTest, outDC, 3);
+                updateRotThetas(extrRotThetasTest, outDC, 0);                
+                updateIntrinsic(intrTest, outDC, 6);
+                updateRadialDistortion(kRadialTest, outDC, 7);
+            }            
         }        
     }
     
@@ -641,13 +628,16 @@ public class BundleAdjustment {
      * initializing the damping term of the L-M algorithm, but it is not necessary to recalculate
      * it here after initialization so when outLambda is null,
      * this method will not calculate it.
+     * @param outInitLambda when not null this is the output parameter holding 
+     * the maximum of the diagonal of j^T*J.  the array has length 1.
      */
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[] kRadial, final boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
-        double[] outFSqSum, final double lambda) throws NotConvergedException {
+        double[] outFSqSum, final double lambda,
+        double[] outInitLambda) throws NotConvergedException {
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -735,6 +725,11 @@ public class BundleAdjustment {
         camera system" solution pattern below.
         
         */
+        
+        if (outInitLambda != null) {
+            // this will hold the maximum of the diagonals of hPPI and hCCJ
+            outInitLambda[0] = Double.NEGATIVE_INFINITY;
+        }
         
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
@@ -908,6 +903,10 @@ public class BundleAdjustment {
                     //mA[j][j] = aIJT * aIJ;
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
                     
+                    if (outInitLambda != null) {
+                        maxDiag(auxMA, outInitLambda);
+                    }
+                    
                     // aIJ^T*aIJ is now in auxMA
                     // modify it by the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
                     for (k = 0; k < auxMA.length; ++k) {
@@ -936,6 +935,10 @@ public class BundleAdjustment {
                              
                 }
             } // end image j loop
+            
+            if (outInitLambda != null) {
+                maxDiag(hPPI, outInitLambda);
+            }
             
             // hPPI is now integrated over all images, so can now handle the
             //  damping term for it:
@@ -1416,24 +1419,12 @@ public class BundleAdjustment {
         return m;
     }
 
-    private static double max(double[][] uJOrVI, double lambda) {
-        int i;
-        for (i = 0; i < uJOrVI.length; ++i) {
-            if (lambda < uJOrVI[i][i]) {
-                lambda = uJOrVI[i][i];
-            }
-        }
-        return lambda;
-    }
-
     /**
      * gain = (f(p + delta p) - f(p)) / ell(delta p)
-             where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
-             and delta p is deltaC and deltaP
-             and j^T*(b-f(g(p))) is gradC and gradP
-       gain = (f - fPrev) / (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
+             where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - f))
+       gain = (f - fPrev) / ( (delta p)^T * (lambda * (delta p) + J^T * ( b - f)) )
              
-     * @param f
+     * @param fNew
      * @param fPrev
      * @param deltaC
      * @param deltaP
@@ -1443,17 +1434,15 @@ public class BundleAdjustment {
      * @param eps
      * @return 
      */
-    private static double calculateGainRatio(double f, double fPrev, 
-        double[] deltaC, double[] deltaP, double[] lambda, 
+    private static double calculateGainRatio(double fNew, double fPrev, 
+        double[] deltaC, double[] deltaP, double lambda, 
         double[] gradC, double[] gradP, double eps) {
                         
-        /*
-        gain = (f(p + delta p) - f(p)) / ell(delta p)
-             where ell(delta p) is (delta p)^T * (lambda * (delta p) + J^T * ( b - fgp))
-             and delta p is deltaC and deltaP
-             and j^T*(b-f(g(p))) is gradC and gradP
-       gain = (f - fPrev) / (delta p)^T * (lambda * (delta p) + gradient)
-       */
+        // NOTE: Lourakis and Argyros the sign is reversed from what is used here:
+        //  gain ratio = ( fPrev - fNew) / ( deltaP^T * (lambda * deltaP + J^T*fPrev) )
+
+        //   1X12         *    ([1X1]*[12X1]         + [12X1])     = [1X1]
+        //(delta params)^T *  (lambda * (delta params) + gradient)
         
         double[] dParams = new double[deltaC.length + deltaP.length];
         System.arraycopy(deltaC, 0, dParams, 0, deltaC.length);
@@ -1463,20 +1452,20 @@ public class BundleAdjustment {
         System.arraycopy(gradC, 0, gradient, 0, gradC.length);
         System.arraycopy(gradP, 0, gradient, gradC.length, gradP.length);
 
-        double[] pt1 = Arrays.copyOf(dParams, dParams.length);
-        int i;
-        //MatrixUtil.multiply(pt1, lambda);
-        for (i = 0; i < pt1.length; ++i) {
-            pt1[i] *= lambda[i];
+        double[] denom = Arrays.copyOf(dParams, dParams.length);
+        for (int i = 0; i < denom.length; ++i) {
+            denom[i] *= lambda;
         }
 
-        double ell = MatrixUtil.innerProduct(deltaP, gradient);
-
-        if (Math.abs(ell) < eps) {
+        denom = MatrixUtil.add(denom, gradient);
+      
+        double d = MatrixUtil.innerProduct(dParams, denom);
+            
+        if (Math.abs(d) < eps) {
             return Double.POSITIVE_INFINITY;
         }
 
-        double gain = (f - fPrev) / ell;
+        double gain = (fNew - fPrev)/d;
 
         return gain;
     }
@@ -1659,22 +1648,16 @@ public class BundleAdjustment {
         }
         
     }
-    
-      /*
-     * calculates a minimum and maximum damping term for the rotation angle 
-     * used in the angle-axis representation, given an angle limit and the
-     * current step size.
-     * 
-     * @param dRotAngle the parameter step size for angle of rotation in angle-axis
-     * representation.
-     * @param lambda the damping parameter
-     * @return 
-     
-    private double[] rotationClampedAlpha(double dRotAngle, double lambda,
-        double angleLimit) {
-        
-    }*/
 
+    private static void maxDiag(double[][] m, double[] outInitLambda) {
+        int i;
+        for (i = 0; i < m.length; ++i) {
+            if (outInitLambda[0] < m[i][i]) {
+                outInitLambda[0] = m[i][i];
+            }
+        }
+    }
+    
     static class AuxiliaryArrays {
         final double[][] a2X2;
         final double[][] b2X3;
