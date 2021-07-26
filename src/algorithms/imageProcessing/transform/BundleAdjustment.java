@@ -374,6 +374,30 @@ public class BundleAdjustment {
         need to consider them further.
         */
         
+        /*
+        initialize:
+            calc delta parameters and gradient from intrinsic and extrinsic camera parameters 
+                using sparse Hessian matrix (j^T*J)
+                calc fPrev = evaluateObjective();
+                calc initial lambda from max diagonal of J^T*J
+            copy intrinsic and extrinsic camera parameters into test data structures
+   *        calc initial deltaP from Qu init values
+            update test data structures using delta params
+        begin loop of tentative changes:  (we might not accept these)
+            calc delta parameters and gradient from test parameters
+                fTest = evaluateObjective();
+            
+            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, gradient, eps);
+            if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
+            } else {doUpdate = 0;for (i = 0; i < lambda.length; ++i) : lambda[i] *= lambdaF;}
+            if (update) {
+                fPrev = fTest;
+                copy test data structures into original in-out data structures
+                check for stopping conditions:
+                if (isNegligible(deltaP, tolP) || isNegligible(gradient, tolG)) : break;
+                update test data structures using deltaParameters
+            }
+        */
        
         //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
@@ -453,10 +477,6 @@ public class BundleAdjustment {
                 outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
         
             fTest = outFSqSum[0];
-            
-            if (nIter > 1) {
-                deltaP = calculateDeltaParams(jTJ, lambda, gradient);
-            }
                                 
             gainRatio = calculateGainRatio(fTest/2., fPrev/2., outDC, outDP, lambda, 
                 outGradC, outGradP, eps);            
