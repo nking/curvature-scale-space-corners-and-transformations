@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.BlockMatrixIsometric;
+import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
@@ -120,12 +121,6 @@ public class BundleAdjustmentTest extends TestCase {
         int i, j;
         double[][] r;
         
-        // 5 images and all from same camera
-        TIntIntMap imageToCamera = new TIntIntHashMap();
-        for (i = 0; i < nImages; ++i) {
-            imageToCamera.put(i, 0);
-        }
-        
         // each image has nFeatures
         TIntObjectMap<TIntSet> imageFeaturesMap = new TIntObjectHashMap<TIntSet>();
         for (i = 0; i < nImages; ++i) {
@@ -136,13 +131,15 @@ public class BundleAdjustmentTest extends TestCase {
             imageFeaturesMap.put(i, set);
         }
         
-        // for each camera, add an intrinsic camera matrix.
+        // for each camera, add an intrinsic camera matrix.  [(3*nImages) X 3]
         // for this dataset, there is only one camera
-        BlockMatrixIsometric intr = new BlockMatrixIsometric(kIntr.getIntrinsic(), 3, 3);
-        
-        // for each camera, a row of radial distortion coefficients
-        double[][] kRadials = new double[1][];
-        kRadials[0] = new double[]{kRadial[0], kRadial[1]};
+        BlockMatrixIsometric intr = new BlockMatrixIsometric(MatrixUtil.zeros(nImages*3, 3), 3, 3);
+        // for each camera, a row of radial distortion coefficients [nImages X 2]
+        double[][] kRadials = new double[nImages][];
+        for (i = 0; i < nImages; ++i) {
+            intr.setBlock(kIntr.getIntrinsic(), i, 0);
+            kRadials[i] = new double[]{kRadial[0], kRadial[1]};
+        }
         
         //the extrinsic camera parameter rotation euler angles
         //stacked along the 3 columns, that is the size is [nImages X 3] where
@@ -156,8 +153,7 @@ public class BundleAdjustmentTest extends TestCase {
             extrTrans[i] = Arrays.copyOf(ex1.getTranslation(), 3);
         }
         
-        BundleAdjustment.solveSparsely(coordsI, coordsW,
-            imageToCamera,  imageFeaturesMap,
+        BundleAdjustment.solveSparsely(coordsI, coordsW, imageFeaturesMap,
             intr, extrRotThetas, extrTrans,
             kRadials, nMaxIter, useR2R4);
         

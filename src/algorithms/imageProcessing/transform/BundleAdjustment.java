@@ -2,7 +2,6 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.BlockMatrixIsometric;
 import algorithms.matrix.MatrixUtil;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
 import java.util.Arrays;
@@ -35,25 +34,37 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
  * reconstructions without up- dating their internal structure — all of the 
  * structure and camera parameters are adjusted together ‘in one bundle’."
  * 
+ * This version of Bundle-Adjustment uses Levenberg-Marquardt Algorithm (LMA) 
+ * step in each iteration solved by dense Cholesky decomposition (LMA-CD).
  * 
+ * TODO: consider implementing or finding an implementation of 
+ * Jakob Engel, Vladlen Koltun, and Daniel Cremers. 
+ * "Direct sparse odometry". 
+ * IEEE transactions on pattern analysis and machine intelligence, 
+ * 40(3):611–625, 2018.
+ * 
+ * TODO: consider implementing or finding an implementation of:
+ * Agarwal, Snavel, Seitz, and Szeliski
+ * "Bundle Adjustment in the Large"
+ * European conference on computer vision, pages 29–42. Springer, 2010
 * 
  * @author nichole
  */
 public class BundleAdjustment {
     
     /**
-     * given initial camera calibration and extrinsic parameters, use the 
+     * given world scene features, the features observed in images,
+     * initial camera calibration and extrinsic parameters, use the 
      * iterative non-linear Levenberg-Marquardt (L-M)
-     * algorithm to minimize the re-projection error by finding the best values of
-     * intrinsic and extrinsic camera parameters.
+     * algorithm to minimize the re-projection error by refining the values of
+     * coordsW, intrinsic, and extrinsic camera parameters.
      * 
      * The L-M is an iterative non-linear optimization to minimize the 
      * objective.  For bundle adjustment, the objective is the 
      * re-projection error.
- * L-M is guaranteed to converge to eventually find an improvement, 
- * because an update with a sufficiently small magnitude and a negative scalar 
- * product with the gradient is guaranteed to do so.
-     * 
+     * L-M is guaranteed to converge to eventually find an improvement, 
+     * because an update with a sufficiently small magnitude and a negative scalar 
+     * product with the gradient is guaranteed to do so.
      * 
      * This method exploits some of the properties of sparse matrices in the 
      * block structure of the Jacobian by using the Schur complement to form
@@ -128,26 +139,18 @@ public class BundleAdjustment {
        an entry in imageMissingFeatureMap.
      * @param coordsW the features in a world coordinate system.  The format is
      * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
-     * @param imageToCamera an associative array relating the image  of
-     * coordsI to the camera in intr.  the key is the image
-     * and the value is the camera.
-     * Note that the number of features (nFeatures) is coordsW[0].length, so the image
-     * number in coordsI is j/nFeatures where j is the index of the 2nd dimension,
-     * that is coordsI[j], and the camera
-     * number in intr is k/3 where k is intr[k];
      * @param imageFeaturesMap an associative array holding the features
      * in each image.  They key is the image number in coordsI 
      * which is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j].  The value is a set of feature numbers which are
      * missing from the image.  The feature numbers correspond to the 
      * 2nd dimension indexes in coordsW.
-     * @param intr the intrinsic camera parameter matrices stacked along
-     * rows in a double array of size 3 X 3*nCameras where each block is
-     * size 3X3.
+     * @param intr the intrinsic camera parameter matrices stacked along rows
+     * to make a tall double array of size [(mImages*3) X 3] where each image block is
+     * size 3X3.  Note that only the focus parameter is refined in this method.
      * @param extrRotThetas the extrinsic camera parameter rotation euler angles
-     * stacked along the 3 columns, that is the size is [nImages X 3] where
-     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
-     * 1X3.
+     * stacked along the 3 columns, that is the size is [mImages X 3].  
+     * each image block is size 1X3.
      * @param extrTrans the extrinsic camera parameter translation vectors
      * stacked along the 3 columns, that is the size is [nImages X 3] where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
@@ -165,26 +168,18 @@ public class BundleAdjustment {
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     public static void solveSparsely(
-        double[][] coordsI, double[][] coordsW,
-        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
+        double[][] coordsI, double[][] coordsW, TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
         double[][] kRadials, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException {
         
-        // number of features:
-        int m = coordsW[0].length;
-                        
-        if (m < 6) {
-            throw new IllegalArgumentException("imageC[0].length must be at least 6");
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length/nFeatures;
+                                 
+        if (nFeatures < 6) {
+            throw new IllegalArgumentException("coordsW[0].length must be at least 6");
         }
-        
-        int nImages = coordsI[0].length/m;
-       
-        if (nImages < 2) {
-            throw new IllegalArgumentException("need at least 2 images");
-        }
-        
-        if ((coordsI[0].length % m) > 0) {
+        if ((coordsI[0].length % nFeatures) > 0) {
             throw new IllegalArgumentException("the number of images present in coordsI should"
             + " be evenly divided by the number of features in coordsW (that is, coordsI should"
             + " have that same number of features for each image)");
@@ -195,11 +190,45 @@ public class BundleAdjustment {
         if (coordsW.length != 3) {
             throw new IllegalArgumentException("coordsW must have 3 rows.");
         }
-        
-        int nFeatures = coordsW[0].length;
-        int mImages = coordsI[0].length/nFeatures;
-        int nCameras = intr.getA()[0].length/3;
-                        
+        if (coordsI[0].length != nFeatures*mImages) {
+            throw new IllegalArgumentException("coordsI[0].length must be evenly "
+                    + "divisible by nFeatures which is coordsW[0].length");
+        }
+        if (intr.getA().length != mImages) {
+            throw new IllegalArgumentException("intr.length must be mImages");
+        }
+        if (intr.getA()[0].length != 3) {
+            throw new IllegalArgumentException("intr[0].length must be 3");
+        }
+        if (kRadials.length != mImages) {
+            throw new IllegalArgumentException("kRadials.length must be equal "
+            + "to the number of cameras.");
+        }
+        if (kRadials[0].length != 2) {
+            throw new IllegalArgumentException("kRadials[0].length must be 2.");
+        }
+        if (extrRotThetas[0].length != 3) {
+            throw new IllegalArgumentException("extrRotThetas[0].length must be 3");
+        }
+        if (extrRotThetas.length != mImages) {
+            throw new IllegalArgumentException("extrRotThetas.length must be mImages "
+            + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (extrTrans[0].length != 3) {
+            throw new IllegalArgumentException("extrTrans[0].length must be 3");
+        }
+        if (extrTrans.length != mImages) {
+            throw new IllegalArgumentException("extrTrans.length must be mImages "
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (imageFeaturesMap == null) {
+            throw new IllegalArgumentException("imageFeaturesMap cannot be null");
+        }
+        if (imageFeaturesMap.size() != mImages) {
+            throw new IllegalArgumentException("imageFeaturesMap size must equal "
+            + "the number of images which = coordsI[0].length/coordsW[0].length");
+        }
+                
         /*
         RCM is the reduced camera matrix in the augmented normal equation.
         
@@ -400,9 +429,6 @@ public class BundleAdjustment {
             }
         */
         
-        -- editing to refine the 3D scene points (world features)
-        -- fixing errors in dimensions and multiplicity
-       
         //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
@@ -415,6 +441,11 @@ public class BundleAdjustment {
         double[] outDP = new double[3*nFeatures];
         // updatevalues for the camera parameters
         double[] outDC = new double[9*mImages];
+                
+        // Qu array u for parameters is ordered: rot_0, trans_0, intr_0, ...rot_m-1, trans_m-1, intr_m-1, then x_0, ... x_n
+        // but the delta parameter array for all params is ordered:
+        //     dRot_0, ... dRot_m-1,  dTrans_0, ...dTrans_m-1, dIntr_0,...dIntr_m-1, dX_0, ... dX_n
+        // gradient g is same length   
         
         //the gradient covector for point parameters.  used in calc gain ration and stopping
         double[] outGradP //= new double[3];
@@ -430,9 +461,13 @@ public class BundleAdjustment {
         double[] outInitLambda = new double[1];
         
         // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
-        calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
+        calculateLMVectorsSparsely(coordsI, coordsW,  
             imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadials, useR2R4,
             outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+        
+        // not using these as they are estimated in calculateLMVectorsSparsely
+        //initDeltaPWithQu(outDP);
+        //initDeltaCWithQu(outDC);
         
         double lambda = outInitLambda[0];
         
@@ -448,30 +483,28 @@ public class BundleAdjustment {
         
         double fTest;
         
-        double eps = 1.e-5;
+        final double eps = 1.e-5;
        
         double gainRatio;
         
         final double tolP = 1.e-3;
         final double tolG = 1.e-3;
-         
-        // deltaP is the array of length 12 holding the steps of change for theta and translation, intrinsic parameters and point parameters
-        double[] deltaP = new double[12];
-        initDeltaPWithQu(deltaP);
-        
+                 
         // copy the parameter data structures into test (tentative) data structures
         BlockMatrixIsometric intrTest = intr.copy();
         double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);
         double[][] extrTransTest = MatrixUtil.copy(extrTrans);
         double[][] kRadialsTest = MatrixUtil.copy(kRadials);
+        double[][] coordsWTest = MatrixUtil.copy(coordsW);
         
         // update the test data structures by deltaP and deltaC
         // use the 2nd three elements in outDC:
-        updateTranslation(extrTransTest, outDC, 3);
-        updateRotThetas(extrRotThetasTest, outDC, 0);
-        updateIntrinsic(intrTest, outDC, 6);
-        updateRadialDistortion(kRadialsTest, outDC, 7);
-        
+        updateTranslation(extrTransTest, outDC);
+        updateRotThetas(extrRotThetasTest, outDC);
+        updateIntrinsic(intrTest, outDC);
+        updateRadialDistortion(kRadialsTest, outDC);
+        updateWorldC(coordsWTest, outDP);
+                
         // update the features with outDP?  see step 7 of Engels
         
         int doUpdate = 0;
@@ -481,12 +514,12 @@ public class BundleAdjustment {
             
             nIter++;
             
-            calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
+            calculateLMVectorsSparsely(coordsI, coordsW,  
                 imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
                 outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
         
             fTest = outFSqSum[0];
-                                
+                
             gainRatio = calculateGainRatio(fTest/2., fPrev/2., outDC, outDP, lambda, 
                 outGradC, outGradP, eps);
             
@@ -521,9 +554,10 @@ public class BundleAdjustment {
                 MatrixUtil.copy(extrRotThetasTest, extrRotThetas);
                 MatrixUtil.copy(extrTransTest, extrTrans);
                 MatrixUtil.copy(kRadialsTest, kRadials);
+                MatrixUtil.copy(coordsWTest, coordsW);
                         
                 // ======= stopping conditions ============
-                //   step length vanishes:  deltaPLM --> 0
+                //   step length vanishes:  deltaParams --> 0
                 //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
                 //MatrixUtil.multiply(gradientCheck, -1.);            
                 if (isNegligible(outDC, tolP) || isNegligible(outDP, tolP) ||
@@ -532,10 +566,11 @@ public class BundleAdjustment {
                 }
                 
                 // use the 2nd three elements in outDC:
-                updateTranslation(extrTransTest, outDC, 3);
-                updateRotThetas(extrRotThetasTest, outDC, 0);                
-                updateIntrinsic(intrTest, outDC, 6);
-                updateRadialDistortion(kRadialsTest, outDC, 7);
+                updateTranslation(extrTransTest, outDC);
+                updateRotThetas(extrRotThetasTest, outDC);                
+                updateIntrinsic(intrTest, outDC);
+                updateRadialDistortion(kRadialsTest, outDC);
+                updateWorldC(coordsWTest, outDP);
             }            
         }        
     }
@@ -604,22 +639,15 @@ public class BundleAdjustment {
        an entry in imageMissingFeatureMap.
      * @param coordsW the features in a world coordinate system.  The format is
      * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
-     * @param imageToCamera an associative array relating the image  of
-     * coordsI to the camera in intr.  the key is the image
-     * and the value is the camera.
-     * Note that the number of features (nFeatures) is coordsW[0].length, so the image
-     * number in coordsI is j/nFeatures where j is the index of the 2nd dimension,
-     * that is coordsI[j], and the camera
-     * number in intr is k/3 where k is intr[k];
      * @param imageFeaturesMap an associative array holding the features
      * present in each image.  They key is the image number in coordsI 
      * which is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j].  The value is a set of feature numbers which are
      * missing from the image.  The feature numbers correspond to the 
      * 2nd dimension indexes in coordsW.
-     * @param intr the intrinsic camera parameter matrices stacked along
-     * rows in a double array of size 3 X 3*nCameras where each block is
-     * size 3X3.
+     * @param intr the intrinsic camera parameter matrices stacked along rows
+     * to make a tall double array of size [(mImages*3) X 3] where each block is
+     * size 3X3.   Note that only the focus parameter is refined in this class.
      * @param extrRot the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
@@ -629,7 +657,7 @@ public class BundleAdjustment {
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
      * @param kRadials a double array wherein each row holds the 
-     * radial distortion coefficients k1 and k2 for an image.
+     * radial distortion coefficients k1 and k2 for an image, so the total size is [nCameras X 2].
      * NOTE: current implementation accepts values of 0 for k1 and k2.
      * TODO: consider whether to allow option of leaving out radial distortion
      * by allowing kRadials to be null.
@@ -641,11 +669,11 @@ public class BundleAdjustment {
      * @param outDC an output array holding the update values for the camera parameters.
      * The length should be 9*mImages.
      * @param outGradP an output array holding the gradient covector for point parameters
-     *  (-J_P^T*(x-x_hat) as the summation of bij^T*fij).  The length should be 3.
+     *  (-J_P^T*(x-x_hat) as the summation of bij^T*fij).  The length should be 3 * number of features.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outGradC an output array holding the gradient covector for camera parameters
      * (-J_C^T*(x-x_hat) as the summation of aij^T*fij).
-     * The length should be 9.
+     * The length should be 9 times the number of images.
      * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
      * @param outFSqSum an output array holding the evaluation of the objective,
      * that is the sum of squares of the observed feature - projected feature.
@@ -663,7 +691,7 @@ public class BundleAdjustment {
      * the maximum of the diagonal of j^T*J.  the array has length 1.
      */
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
-        TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
+        TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[][] kRadials, final boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
@@ -672,7 +700,6 @@ public class BundleAdjustment {
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
-        int nCameras = intr.getA()[0].length/3;
         double k1, k2;
         
         if (coordsI.length != 3) {
@@ -685,8 +712,18 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("coordsI[0].length must be evenly "
                     + "divisible by nFeatures which is coordsW[0].length");
         }
+        if (intr.getA().length != mImages) {
+            throw new IllegalArgumentException("intr.length must be mImages");
+        }
         if (intr.getA()[0].length != 3) {
             throw new IllegalArgumentException("intr[0].length must be 3");
+        }
+        if (kRadials.length != mImages) {
+            throw new IllegalArgumentException("kRadials.length must be equal "
+            + "to the number of cameras.");
+        }
+        if (kRadials[0].length != 2) {
+            throw new IllegalArgumentException("kRadials[0].length must be 2.");
         }
         if (extrRot[0].length != 3) {
             throw new IllegalArgumentException("extrRot[0].length must be 3");
@@ -701,15 +738,7 @@ public class BundleAdjustment {
         if (extrTrans.length != mImages) {
             throw new IllegalArgumentException("extrTrans.length must be mImages "
                     + "where mImages = coordsI[0].length/coordsW[0].length");
-        }
-        if (kRadials.length != mImages) {
-            throw new IllegalArgumentException("kRadials.length must be equal "
-            + "to the number of images which is coordsI[0].length/nFeatures.");
-        }
-        if (kRadials[0].length != 2) {
-            throw new IllegalArgumentException("kRadials[0].length must be 2.");
-        }
-        
+        }        
         if (outDP.length != 3*nFeatures) {
             throw new IllegalArgumentException("outDP.length must be 3*nFeatures "
                     + "where nFeatures=coordsW[0].length");
@@ -718,11 +747,11 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("outDC.length must be 9*mImages "
                     + "where mImages=coordsI[0].length/coordsW[0].length");
         }
-        if (outGradP.length != 3) {
-            throw new IllegalArgumentException("outGradP.length must be 3");
+        if (outGradP.length != 3*nFeatures) {
+            throw new IllegalArgumentException("outGradP.length must be 3 * number of features");
         }
-        if (outGradC.length != 9) {
-            throw new IllegalArgumentException("outGradC.length must be 9");
+        if (outGradC.length != 9*mImages) {
+            throw new IllegalArgumentException("outGradC.length must be 9 * number of images");
         }
         if (outFSqSum.length != 1) {
             throw new IllegalArgumentException("outFSqSum.length must be 1");
@@ -730,11 +759,12 @@ public class BundleAdjustment {
         if (!(lambda  > 0)) {
             throw new IllegalArgumentException("lambda must be a positive number");
         }
-        if (imageToCamera == null) {
-            throw new IllegalArgumentException("imageToCamera cannot be null");
-        }
         if (imageFeaturesMap == null) {
             throw new IllegalArgumentException("imageFeaturesMap cannot be null");
+        }
+        if (imageFeaturesMap.size() != mImages) {
+            throw new IllegalArgumentException("imageFeaturesMap size must equal "
+            + "the number of images which = coordsI[0].length/coordsW[0].length");
         }
         if (nFeatures < 6) {
             throw new IllegalArgumentException("need at least 6 features in an image");
@@ -846,11 +876,16 @@ public class BundleAdjustment {
         double[] rotAux = new double[3];
         double[][] rotM = MatrixUtil.zeros(3, 3);
                 
+        // for each feature i
+        double[] gradPI = new double[3];
+        // for each image j
+        double[] gradCJ = new double[9];
+            
         AuxiliaryArrays aa = new AuxiliaryArrays();
         double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
         // i for n features, j for m images
-        int i, j, j2, k, cameraNumber;
+        int i, j, j2, k;
                      
         //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
         for (i = 0; i < nFeatures; ++i) { // this is track p in Engels pseudocode
@@ -863,6 +898,8 @@ public class BundleAdjustment {
             //populate xWI; extract the world feature.  size [1X3]
             MatrixUtil.extractColumn(coordsW, i, xWI);
             
+            Arrays.fill(gradPI, 0);
+            
             // sum hPPI over all images
             
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
@@ -871,6 +908,8 @@ public class BundleAdjustment {
                 if (!imageFeaturesMap.get(j).contains(i)) {
                     continue;
                 }
+                
+                Arrays.fill(gradCJ, 0);
                 
                 // get the rotation matrix rotM [3X3]
                 rotMatrices.getBlock(rotM, 0, j);
@@ -890,11 +929,9 @@ public class BundleAdjustment {
                 // distort results are in xWCNDI
                 CameraCalibration.applyRadialDistortion(xWCNI,
                     k1, k2, useR2R4, xWCNDI);
-                
-                cameraNumber = imageToCamera.get(j);
-                
+                                
                 //intr is 3 X 3*nCameras where each block is size 3X3.
-                intr.getBlock(auxIntr, 0, cameraNumber);
+                intr.getBlock(auxIntr, 0, j);
                 
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWCI, auxIntr, k1, k2, extrRot[j], extrTrans[j], aa, aIJ, bIJ);
@@ -930,7 +967,9 @@ public class BundleAdjustment {
                 MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ, bIJTF);
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
 
-                MatrixUtil.elementwiseSubtract(outGradP, bIJTF, outGradP);
+                MatrixUtil.elementwiseSubtract(gradPI, bIJTF, gradPI);
+                
+                System.arraycopy(gradPI, 0, outGradP, i*3, 3);
                               
                 // if camera c is free
                 // (presumably, this means that the camera is not a fixed set of
@@ -967,7 +1006,9 @@ public class BundleAdjustment {
                     //aIJTF = aIJT * fIJ.  [1X9]
                     MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ, aIJTF);
 
-                    MatrixUtil.elementwiseSubtract(outGradC, aIJTF, outGradC);
+                    MatrixUtil.elementwiseSubtract(gradCJ, aIJTF, gradCJ);
+                    
+                    System.arraycopy(gradCJ, 0, outGradC, j*mImages, 9);
                
                     MatrixUtil.elementwiseSubtract(vB[j], aIJTF, vB[j]);
                              
@@ -1112,6 +1153,7 @@ public class BundleAdjustment {
         // [9X1]
         double[] dCJ = new double[9];
         
+        //Engels step (7)
         double[] tmp2 = new double[3];
         for (i = 0; i < nFeatures; ++i) {
             // start with point update for feature i, dP = tP
@@ -1131,15 +1173,15 @@ public class BundleAdjustment {
                 for (k = 0; k < 3; ++k) {
                     outDP[i*3 + k] -= tmp2[k];
                 }
-            }
-            // Engels: compute updated point
-            // NOTE: for this method, the cost function
-            //    is evaluated for the parameters given to the method
-            //    instead of evaluated at the end of the calculation,
-            //    so the update is not performed here (it's handled at the
-            //    next invocation of this method)
+            } // end loop over image j
             
-        }
+            // Engels: compute updated point (i.e. world coord features)
+            // NOTE: for this class, the updates are handled by the invoker of 
+            //       this method.  The updated parameters are given to the code so
+            //       that when outFSqSum is calculated above, it is using 
+            //       the updated parameters and world coords.
+            
+        } // end loop over feature i
                 
     }
     
@@ -1464,8 +1506,11 @@ public class BundleAdjustment {
              
      * @param fNew
      * @param fPrev
-     * @param deltaC
-     * @param deltaP
+     * @param dC steps of change for the camera parameters in array of length
+     * 9*mImages.  dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.
+     * @param dP steps of change for the point parameters in array of length
+     * 3*nFeatures with elements ordered as follows: dX_0, dY_0, dZ_0, ... dX_n-1, dY_n-1, dZ_n-1.
      * @param lambda
      * @param gradC
      * @param gradP
@@ -1473,18 +1518,18 @@ public class BundleAdjustment {
      * @return 
      */
     private static double calculateGainRatio(double fNew, double fPrev, 
-        double[] deltaC, double[] deltaP, double lambda, 
+        double[] dC, double[] dP, double lambda, 
         double[] gradC, double[] gradP, double eps) {
-                        
-        // NOTE: Lourakis and Argyros the sign is reversed from what is used here:
-        //  gain ratio = ( fPrev - fNew) / ( deltaP^T * (lambda * deltaP + J^T*fPrev) )
-
-        //   1X12         *    ([1X1]*[12X1]         + [12X1])     = [1X1]
+                                
+        //NOTE: Lourakis and Argyros the sign is reversed from what is used here:
+        //  gain ratio = ( fPrev - fNew) / ( deltaParams^T * (lambda * deltaParams + J^T*fPrev) )
+        //let s = 9*mImages + 9*mImages
+        //   [1Xs]         *    ([1X1]*[sX1]             + [sX1])     = [1X1]
         //(delta params)^T *  (lambda * (delta params) + gradient)
         
-        double[] dParams = new double[deltaC.length + deltaP.length];
-        System.arraycopy(deltaC, 0, dParams, 0, deltaC.length);
-        System.arraycopy(deltaP, 0, dParams, deltaC.length, deltaP.length);
+        double[] dParams = new double[dC.length + dP.length];
+        System.arraycopy(dC, 0, dParams, 0, dC.length);
+        System.arraycopy(dP, 0, dParams, dC.length, dP.length);
 
         double[] gradient = new double[gradC.length + gradP.length];
         System.arraycopy(gradC, 0, gradient, 0, gradC.length);
@@ -1520,84 +1565,87 @@ public class BundleAdjustment {
     /**
      * update t by deltaT
      * @param extrTrans
-     * @param dC
-     * @param idx0
+     * @param dC steps of camera parameters in array of length 9*mImages.
+     * dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.  only the
+     * translation elements are used in this method.
      */
-    private static void updateTranslation(double[][] extrTrans, double[] dC, 
-        int idx0) {
+    private static void updateTranslation(double[][] extrTrans, double[] dC) {
+        
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
         // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
         // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
 
-        //TODO: consider editing all updates for local parameters.  see Qu eqn (4.9)
-        //   e.g. t_j = R_j*dT_j
-                
         // parameter perturbations for a vector are:
         //     x + delta x
         int i, j;
         
-        for (j = 0; j < extrTrans.length; ++j) {
+        int mImages = extrTrans.length;
+                
+        for (j = 0; j < mImages; ++j) {
             // vector perturbation for translation:
             for (i = 0; i < 3; ++i) {
-                extrTrans[j][i] += dC[idx0 + i];
+                //translation elements are indexes 3,4,5
+                extrTrans[j][i] += dC[j*9 + (i+3)];
             }
         }
     }
 
     /**
-     * update the focus parameter of the intrinsic matrix.
+     * update the focus parameters of the intrinsic matrices.
      * 
      * @param intr the intrinsic camera parameter matrices stacked along
-     * rows in a double array of size 3 X 3*nCameras where each block is
+     * rows in a double array of size [3*nCameras X 3] where each block is
      * size 3X3.
-     * @param dC
-     * @param idx0 
+     * @param dC steps of camera parameters in array of length 9*mImages.
+     * dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.  only the
+     * intrinsic camera parameters are used in this method.
      */
     private static void updateIntrinsic(BlockMatrixIsometric intr, 
-        double[] dC, int idx0) {
+        double[] dC) {
         
-        int nImages = intr.getA()[0].length/3;
+        int nImages = intr.getA().length/3;
         
-        double[][] k = MatrixUtil.zeros(3, 3);
+        double[][] kIntr = MatrixUtil.zeros(3, 3);
         
-        //NOTE: follow up on Szeliski text that updating the intrinsic parameters is more involved
+        //NOTE: follow up on Szeliski text stating that updating the intrinsic parameters is more involved
         
-        // use indexes idx0 to idx0+3 of dC
-        int i, j;
+        int j;
         
         // using addition for updates for now
         for (j = 0; j < nImages; ++j) {
-            intr.getBlock(k, 0, j*3);
-            k[0][0] += dC[idx0];
-            k[1][1] += dC[idx0];
-            intr.setBlock(k, 0, j*3);
+            // focus is parameterindex 6 within the 9 for each image in dC
+            intr.getBlock(kIntr, j*3, 0);
+            kIntr[0][0] += dC[j*9 + 6];
+            kIntr[1][1] += dC[j*9 + 6];
+            intr.setBlock(kIntr, j*3, 0);
         }
     }
         
-    private static void updateRadialDistortion(double[][] kRadials, 
-        double[] dC, int idx0) {
+    private static void updateRadialDistortion(double[][] kRadials, double[] dC) {
         
-        fixing: dC length is [9*mImages X 1]...
-        
+        int nImages = kRadials.length;
+                
         // using addition for updates for now
-        for (int i = 0; i < kRadials.length; ++i) {
-            kRadials[i][0] += dC[idx0];
-            kRadials[i][1] += dC[idx0 + 1];
+        for (int i = 0; i < nImages; ++i) {
+            kRadials[i][0] += dC[i*9 + 7];
+            kRadials[i][1] += dC[i*9 + 8];
         }
     }
 
     /**
      * update rotation matrix theta vectors with steps in dC.
      * @param extrRotThetas the extrinsic camera parameter rotation euler angles
-     * stacked along the 3 columns, that is the size is [nImages X 3] where
-     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
-     * 1X3.
-     * @param dC
-     * @param idx0
+     * stacked along the 3 columns, that is the size is [nImages X 3].
+     * @param dC steps of camera parameters in array of length 9*mImages.
+     * dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.  only the
+     * rotation elements are used in this method.
      */
     private static void updateRotThetas(double[][] extrRotThetas,  
-        double[] dC, int idx0) {
-                         
+        double[] dC) {
+                                 
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
         // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
         // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
@@ -1616,7 +1664,7 @@ public class BundleAdjustment {
         //    rotation matrix formed from rZ * rY * rX (yaw, pitch, and roll)
         //    which is the same convention used by Wetzstein
                 
-        double[] deltaTheta = Arrays.copyOfRange(dC, idx0, idx0 + 3);
+        double[] deltaTheta = new double[3];
         
         double[][] r = MatrixUtil.zeros(3, 3);
         Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();
@@ -1630,8 +1678,11 @@ public class BundleAdjustment {
         //    The difference may create a problem with convergence for delta theta.
         
         int j;
-        
+                        
         for (j = 0; j < extrRotThetas.length; ++j) {
+            
+            // copy delta thetas for this image into deltaTheta array
+            System.arraycopy(dC, j*9, deltaTheta, 0, 9);
             
             double[] qUpdated = 
                 Rotation.applySingularitySafeRotationPerturbationQuaternion(
@@ -1654,13 +1705,15 @@ public class BundleAdjustment {
             //    but the value is a little different that updating theta with delta theta
             //    by addition.
             Rotation.extractThetaFromZYX(r, thetaExtracted);
+            
             System.arraycopy(thetaExtracted, 0, extrRotThetas[j], 0, extrRotThetas[j].length);        
-        }        
-        
+        }    
     }
-
+    
     private static void initDeltaPWithQu(double[] deltaP) {
-        int len = deltaP.length;
+        
+        int nFeatures = deltaP.length/3;
+                
         /*Qu thesis eqn (3.38)
         
         delta thetas ~ 1e-8
@@ -1669,27 +1722,66 @@ public class BundleAdjustment {
         delta kRadial ~ 1e-3
         delta x ~ 1e-8
         */
-        int i;
-        for (i = 0; i < 3; ++i) {
-            // delta theta
-            deltaP[i] = 1e-8;
+        int i /*features*/, j /*parameters*/;
+        for (i = 0; i < nFeatures; ++i) {
+            // i*3 + 0,1,2
+            for (j = 0; j < 3; ++j) {
+                deltaP[i*3 + j] = 1e-8;
+            }
         }
-        for (i = 0; i < 3; ++i) {
-            // delta translation
-            deltaP[3+i] = 1e-5;
-        }
-        for (i = 0; i < 3; ++i) {
-            // delta point params
-            deltaP[len-3+i] = 1e-5;
-        }
-        if (len == 12) {
-            deltaP[7] = 1;
-            deltaP[8] = 1e-3;
-            deltaP[9] = 1e-3;
-        }
-        
     }
-
+    
+    private static void initDeltaCWithQu(double[] deltaC) {
+        
+        int mImages = deltaC.length/9;
+                
+        /*Qu thesis eqn (3.38)
+        
+        delta thetas ~ 1e-8
+        delta translation ~1e-5
+        delta focus ~ 1
+        delta kRadial ~ 1e-3
+        delta x ~ 1e-8
+        */
+        int i /*parameter*/, j /*image*/;
+        for (j = 0; j < mImages; ++j) {
+            // j*9 + 0,1,2
+            for (i = 0; i < 3; ++i) {
+                // delta theta
+                deltaC[j*9 + i] = 1e-8;
+            }
+            // j*9 + 3,4,5
+            for (i = 3; i < 6; ++i) {
+                // delta translation
+                deltaC[j*9 + i] = 1e-5;
+            }
+            // delta focus
+            deltaC[j*9 + 6] = 1;
+            // delta radial coefficients
+            deltaC[j*9 + 7] = 1e-8;
+            deltaC[j*9 + 8] = 1e-8;
+        }
+    }
+    
+    /**
+     * update the coordinates for the features in the world scene.
+     * @param coordsW the features in a world coordinate system.  The format is
+     * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
+     * @param deltaP an array of length nFeatures * 3 holding the steps in
+     * world coordinates for the features in the world scene.
+     * The elements are ordered as follows: dX_0, dY_0, dZ_0, ... dX_n-1, dY_n-1, dZ_n-1. 
+     */
+    private static void updateWorldC(double[][] coordsW, double[] deltaP) {
+        int nFeatures = coordsW[0].length;
+        
+        int i;
+        for (i = 0; i < nFeatures; ++i) {
+            coordsW[0][i] += deltaP[i*3 + 0];
+            coordsW[1][i] += deltaP[i*3 + 1];
+            coordsW[2][i] += deltaP[i*3 + 2];
+        }
+    }
+    
     private static void maxDiag(double[][] m, double[] outInitLambda) {
         int i;
         for (i = 0; i < m.length; ++i) {
@@ -1698,7 +1790,7 @@ public class BundleAdjustment {
             }
         }
     }
-    
+
     static class AuxiliaryArrays {
         final double[][] a2X2;
         final double[][] b2X3;
