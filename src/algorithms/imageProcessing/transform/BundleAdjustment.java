@@ -152,10 +152,11 @@ public class BundleAdjustment {
      * stacked along the 3 columns, that is the size is [nImages X 3] where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
-     * @param kRadial an array holding radial distortion coefficients k1 and k2.
+     * @param kRadials a double array wherein each row holds the 
+     * radial distortion coefficients k1 and k2 for an image.
      * NOTE: current implementation accepts values of 0 for k1 and k2.
      * TODO: consider whether to allow option of leaving out radial distortion
-     * by allowing kRadial to be null.
+     * by allowing kRadials to be null.
      * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
@@ -167,7 +168,7 @@ public class BundleAdjustment {
         double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
-        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        double[][] kRadials, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException {
         
         // number of features:
@@ -422,7 +423,7 @@ public class BundleAdjustment {
         
         // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
         calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
-            imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadial, useR2R4,
+            imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadials, useR2R4,
             outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
         
         double lambda = outInitLambda[0];
@@ -454,14 +455,14 @@ public class BundleAdjustment {
         BlockMatrixIsometric intrTest = intr.copy();
         double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);
         double[][] extrTransTest = MatrixUtil.copy(extrTrans);
-        double[] kRadialTest = Arrays.copyOf(kRadial, kRadial.length);
+        double[][] kRadialsTest = MatrixUtil.copy(kRadials);
         
         // update the test data structures by deltaP and deltaC
         // use the 2nd three elements in outDC:
         updateTranslation(extrTransTest, outDC, 3);
         updateRotThetas(extrRotThetasTest, outDC, 0);
         updateIntrinsic(intrTest, outDC, 6);
-        updateRadialDistortion(kRadialTest, outDC, 7);
+        updateRadialDistortion(kRadialsTest, outDC, 7);
         
         // update the features with outDP?  see step 7 of Engels
         
@@ -473,13 +474,14 @@ public class BundleAdjustment {
             nIter++;
             
             calculateLMVectorsSparsely(coordsI, coordsW, imageToCamera,  
-                imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialTest, useR2R4,
+                imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
                 outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
         
             fTest = outFSqSum[0];
                                 
             gainRatio = calculateGainRatio(fTest/2., fPrev/2., outDC, outDP, lambda, 
-                outGradC, outGradP, eps);            
+                outGradC, outGradP, eps);
+            
             System.out.printf("lambda=%.6e\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
                 lambda, gainRatio, fPrev, fTest);
 
@@ -510,7 +512,7 @@ public class BundleAdjustment {
                 intr.set(intrTest);
                 MatrixUtil.copy(extrRotThetasTest, extrRotThetas);
                 MatrixUtil.copy(extrTransTest, extrTrans);
-                System.arraycopy(kRadialTest, 0, kRadial, 0, kRadial.length);
+                MatrixUtil.copy(kRadialsTest, kRadials);
                         
                 // ======= stopping conditions ============
                 //   step length vanishes:  deltaPLM --> 0
@@ -525,7 +527,7 @@ public class BundleAdjustment {
                 updateTranslation(extrTransTest, outDC, 3);
                 updateRotThetas(extrRotThetasTest, outDC, 0);                
                 updateIntrinsic(intrTest, outDC, 6);
-                updateRadialDistortion(kRadialTest, outDC, 7);
+                updateRadialDistortion(kRadialsTest, outDC, 7);
             }            
         }        
     }
@@ -618,10 +620,11 @@ public class BundleAdjustment {
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
-     * @param kRadial an array holding radial distortion coefficients k1 and k2.
+     * @param kRadials a double array wherein each row holds the 
+     * radial distortion coefficients k1 and k2 for an image.
      * NOTE: current implementation accepts values of 0 for k1 and k2.
      * TODO: consider whether to allow option of leaving out radial distortion
-     * by allowing kRadial to be null.
+     * by allowing kRadials to be null.
      * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
@@ -654,7 +657,7 @@ public class BundleAdjustment {
     static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
-        double[] kRadial, final boolean useR2R4,
+        double[][] kRadials, final boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
         double[] outFSqSum, final double lambda,
         double[] outInitLambda) throws NotConvergedException {
@@ -662,8 +665,7 @@ public class BundleAdjustment {
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
         int nCameras = intr.getA()[0].length/3;
-        double k1 = kRadial[0];
-        double k2 = kRadial[1];
+        double k1, k2;
         
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI.length must be 3");
@@ -692,8 +694,12 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("extrTrans.length must be mImages "
                     + "where mImages = coordsI[0].length/coordsW[0].length");
         }
-        if (kRadial.length != 2) {
-            throw new IllegalArgumentException("kRadial.length must be 2.");
+        if (kRadials.length != mImages) {
+            throw new IllegalArgumentException("kRadials.length must be equal "
+            + "to the number of images which is coordsI[0].length/nFeatures.");
+        }
+        if (kRadials[0].length != 2) {
+            throw new IllegalArgumentException("kRadials[0].length must be 2.");
         }
         
         if (outDP.length != 3*nFeatures) {
@@ -730,6 +736,7 @@ public class BundleAdjustment {
         following the Engels pseudocode for solving for the parameter vector via the
                 reduced camera matrix and cholesky factoring with forward and back substitution
                 to avoid inverting the reduced camera matrix.
+        then adding the missing damping term.
         
         The partial derivatives are implemented following Qu 2018.
         
@@ -868,6 +875,9 @@ public class BundleAdjustment {
                 for (k = 0; k < 3; ++k) {
                     xWCNI[k] = xWCI[k] / xWCI[2];
                 }
+                
+                k1 = kRadials[j][0];
+                k2 = kRadials[j][1];
 
                 // distort results are in xWCNDI
                 CameraCalibration.applyRadialDistortion(xWCNI,
@@ -1556,13 +1566,16 @@ public class BundleAdjustment {
         }
     }
         
-    private static void updateRadialDistortion(double[] kRadial, 
+    private static void updateRadialDistortion(double[][] kRadials, 
         double[] dC, int idx0) {
         
-        // using addition for updates for now
+        fixing: dC length is [9*mImages X 1]...
         
-        kRadial[0] += dC[idx0];
-        kRadial[1] += dC[idx0 + 1];
+        // using addition for updates for now
+        for (int i = 0; i < kRadials.length; ++i) {
+            kRadials[i][0] += dC[idx0];
+            kRadials[i][1] += dC[idx0 + 1];
+        }
     }
 
     /**

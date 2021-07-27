@@ -1,0 +1,168 @@
+package algorithms.imageProcessing.transform;
+
+import algorithms.matrix.BlockMatrixIsometric;
+import algorithms.util.FormatArray;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import junit.framework.TestCase;
+import static junit.framework.TestCase.assertEquals;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
+/**
+ *
+ * @author nichole
+ */
+public class BundleAdjustmentTest extends TestCase {
+    
+    static double eps = 1.e-5;
+    
+    private static final Level LEVEL = Level.INFO;
+    private static final Logger log;
+    static {
+        log = Logger.getLogger(CameraCalibration.class.getSimpleName());
+        log.setLevel(LEVEL);
+    }
+    
+    // TODO: test with Zhang dataset
+    // TODO: test with Cambridge Landmark dataset
+    
+    public BundleAdjustmentTest() {
+    }
+
+    /**
+     * Test of solveUsingSparse method, of class BundleAdjustment.
+     */
+    public void testSolveUsingSparse_ZhangData() throws Exception {
+        
+        // see testresources/zhang1998/README.txt
+        
+        // they use f(r) = 1 + k1*r + k2*r^2:
+        boolean useR2R4 = false;
+        
+        int nFeatures = 256;
+        int nImages = 5;
+        
+        // 3 X 256
+        double[][] coordsW = Zhang98Data.getFeatureWCS();
+        assertEquals(3, coordsW.length);
+        assertEquals(nFeatures, coordsW[0].length);
+        
+        //3 X (256*5)
+        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
+        assertEquals(3, coordsI.length);
+        assertEquals(nFeatures*nImages, coordsI[0].length);
+        
+        System.out.printf("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
+            coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length);
+        
+        Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
+            nFeatures, coordsI, coordsW, useR2R4);
+        
+        Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
+        List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
+        
+        double alpha = kIntr.getIntrinsic()[0][0];
+        double gamma = kIntr.getIntrinsic()[0][1];
+        double u0 = kIntr.getIntrinsic()[0][2];
+        double beta = kIntr.getIntrinsic()[1][1];
+        double v0 = kIntr.getIntrinsic()[1][2];
+        double[] kRadial = cameraMatrices.getRadialDistortCoeff();
+        
+        double fX = alpha;
+        double fY = beta;
+        double oX = u0;
+        double oY = v0;
+        double skew = gamma;
+        
+        double alphaE = 871.445;
+        double gammaE = 0.2419;
+        double u0E = 300.7676;
+        double betaE = 871.1251;
+        double v0E = 220.8684;
+        double k1E = 0.1371;
+        double k2E = -0.20101;        
+       
+        log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
+        log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
+        log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
+        log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
+            kRadial[0], kRadial[1], k1E, k2E));
+                
+        Camera.CameraExtrinsicParameters ex1;
+        for (int i = 0; i < nImages; ++i) {
+            ex1 = extrinsics.get(i);
+            log.log(LEVEL, String.format("\n"));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+        }
+        
+        // now have initial parameters to refine using BundleAdjustment.java in other tests
+        alphaE = 832.5010;
+        gammaE = 0.2046;
+        u0E = 303.9584;
+        betaE = 832.5309;
+        v0E = 206.5879;
+        k1E = -0.228601; 
+        k2E = 0.190353;
+        
+        final int nMaxIter = 100;
+        int i, j;
+        double[][] r;
+        
+        // 5 images and all from same camera
+        TIntIntMap imageToCamera = new TIntIntHashMap();
+        for (i = 0; i < nImages; ++i) {
+            imageToCamera.put(i, 0);
+        }
+        
+        // each image has nFeatures
+        TIntObjectMap<TIntSet> imageFeaturesMap = new TIntObjectHashMap<TIntSet>();
+        for (i = 0; i < nImages; ++i) {
+            TIntSet set = new TIntHashSet();
+            for (j = 0; j < nFeatures; ++j) {
+                set.add(j);
+            }
+            imageFeaturesMap.put(i, set);
+        }
+        
+        // for each camera, add an intrinsic camera matrix.
+        // for this dataset, there is only one camera
+        BlockMatrixIsometric intr = new BlockMatrixIsometric(kIntr.getIntrinsic(), 3, 3);
+        
+        // for each camera, a row of radial distortion coefficients
+        double[][] kRadials = new double[1][];
+        kRadials[0] = new double[]{kRadial[0], kRadial[1]};
+        
+        //the extrinsic camera parameter rotation euler angles
+        //stacked along the 3 columns, that is the size is [nImages X 3] where
+        //nImages is coordsI[0].length/coordsW[0].length.  each array is size [1X3]
+        double[][] extrRotThetas = new double[nImages][];
+        double[][] extrTrans = new double[nImages][];
+        for (i = 0; i < nImages; ++i) {
+            ex1 = extrinsics.get(i);
+            r = ex1.getRotation();
+            extrRotThetas[i] = Rotation.extractThetaFromZYX(r);
+            extrTrans[i] = Arrays.copyOf(ex1.getTranslation(), 3);
+        }
+        
+        BundleAdjustment.solveSparsely(coordsI, coordsW,
+            imageToCamera,  imageFeaturesMap,
+            intr, extrRotThetas, extrTrans,
+            kRadials, nMaxIter, useR2R4);
+        
+        log.log(LEVEL, String.format("\nAfter BundleAdjustment\n"));
+        
+    }
+    
+}
