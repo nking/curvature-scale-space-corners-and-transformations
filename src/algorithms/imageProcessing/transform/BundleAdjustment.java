@@ -399,21 +399,29 @@ public class BundleAdjustment {
                 update test data structures using deltaParameters
             }
         */
+        
+        -- editing to refine the 3D scene points (world features)
+        -- fixing errors in dimensions and multiplicity
        
         //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
         
-        // update values for the point parameters
+        //In a single reprojection error formula, there are altogether 12 arguments 
+        //   (9 camera parameters and 3 feature point positions).
+        
+        // update values for the point parameters (== world coordinate features)
         double[] outDP = new double[3*nFeatures];
         // updatevalues for the camera parameters
         double[] outDC = new double[9*mImages];
         
         //the gradient covector for point parameters.  used in calc gain ration and stopping
-        double[] outGradP = new double[3];
+        double[] outGradP //= new double[3];
+            = new double[3*nFeatures];
         // the gradient covector for camera parameters.  used in calc gain ration and stopping
-        double[] outGradC = new double[9];
+        double[] outGradC //= new double[9];
+            = new double[9*mImages];
      
         // evaluation of the objective re-projection error. 
         //the sum of squares of the observed feature - projected feature
