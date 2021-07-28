@@ -432,6 +432,10 @@ public class PNP {
             for large values of lambda, the update is a very steep descent and
             deltaP is very small.
             If the damping term is small the approach is a nearly linear problem.
+            
+            NOTE: the damping term is used like a factor in the perturbation
+            of a symmetric matrix.  see:
+                https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
             */
             if (gainRatio > 0) {
                 doUpdate = 1;

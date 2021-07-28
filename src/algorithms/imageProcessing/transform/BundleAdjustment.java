@@ -531,6 +531,10 @@ public class BundleAdjustment {
             for large values of lambda, the update is a very steep descent and
             deltaP is very small.
             If the damping term is small the approach is a nearly linear problem.
+            
+            NOTE: the damping term is used like a factor in the perturbation
+            of a symmetric matrix.  see:
+                https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
             */
             if (gainRatio > 0) {
                 doUpdate = 1;
@@ -1152,9 +1156,11 @@ public class BundleAdjustment {
          // (using the sparsity of upper and lower triangular matrices results in
         //    half the computation time of LU decomposition in comparison)
           
+        // mA is square [mImages*9, mImages*9]
+        //    but not necessarily symmetric positive semi-definite 
  //TODO:       
         // nearest symmetric positive semi-definite matrix to mA:
-        // Higham 1988, "Computing a Nearest Symmetric Positice Semidefinite Matrix"
+        // Higham 1988, "Computing a Nearest Symmetric Positice Semidefinite Matrix
         // and:
         // https://nhigham.com/2021/01/26/what-is-the-nearest-positive-semidefinite-matrix/
         
