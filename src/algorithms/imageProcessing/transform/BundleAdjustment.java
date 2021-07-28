@@ -1151,8 +1151,15 @@ public class BundleAdjustment {
         // cholesky decompostion to solve for dC in mA*dC=vB
          // (using the sparsity of upper and lower triangular matrices results in
         //    half the computation time of LU decomposition in comparison)
-        see other code for reforming m into positive definite
-        DenseMatrix m = new DenseMatrix(mA.getA());        
+          
+ //TODO:       
+        // nearest symmetric positive semi-definite matrix to mA:
+        // Higham 1988, "Computing a Nearest Symmetric Positice Semidefinite Matrix"
+        // and:
+        // https://nhigham.com/2021/01/26/what-is-the-nearest-positive-semidefinite-matrix/
+        
+        DenseMatrix m = new DenseMatrix(mA.getA());
+               
         DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(m);
         LowerTriangDenseMatrix cholL = chol.getL();
         double[] yM = MatrixUtil.forwardSubstitution(cholL, 
