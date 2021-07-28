@@ -76,13 +76,14 @@ cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axi
             |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ | 
  
 two ways that the skew matrix are expressed are transposed from one another:
- [v]_x = |  0   z  -y |  used here in MatrixUtil.skewsymmetric()
-         |  z   0   x |
-         |  y  -x   0 |
-
- [v]_x = |  0  -z   y |
+ 
+ [v]_x = |  0  -z   y |   this one is used in MatrixUtil.skewSymmetric()
          |  z   0  -x |
          | -y   x   0 |
+         
+ [v]_x = |  0   z  -y | 
+         | -z   0   x |
+         |  y  -x   0 |
  
  * Eigen, ROS, and Google Ceres use Hamilton convention.
 *  Also  Wolfram Mathematica, Matlab’s aerospace(!) and robotics toolbox, 

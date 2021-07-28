@@ -2,6 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.BlockMatrixIsometric;
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
 import java.util.Arrays;
@@ -194,8 +195,8 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("coordsI[0].length must be evenly "
                     + "divisible by nFeatures which is coordsW[0].length");
         }
-        if (intr.getA().length != mImages) {
-            throw new IllegalArgumentException("intr.length must be mImages");
+        if (intr.getA().length != 3*mImages) {
+            throw new IllegalArgumentException("intr.length must be 3*mImages");
         }
         if (intr.getA()[0].length != 3) {
             throw new IllegalArgumentException("intr[0].length must be 3");
@@ -463,7 +464,7 @@ public class BundleAdjustment {
         // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
         calculateLMVectorsSparsely(coordsI, coordsW,  
             imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadials, useR2R4,
-            outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+            outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
         
         // not using these as they are estimated in calculateLMVectorsSparsely
         //initDeltaPWithQu(outDP);
@@ -681,12 +682,11 @@ public class BundleAdjustment {
      * given parameters, not the given parameters plus the returned update steps
      * (outDC and outDP).
      * The length should be 1.
-     * @param lambda an output array of length nCameraParams + nPointParams
-     * (=12 when solving for intrinsic, else =9) which, if not null, will be filled
-     * with the maximum of the diagonal of J^T*J for each parameter.  The value is used for 
-     * initializing the damping term of the L-M algorithm, but it is not necessary to recalculate
-     * it here after initialization so when outLambda is null,
-     * this method will not calculate it.
+     * @param lambda the damping parameter.  upon first use, this is 0 and 
+     * outInitLambda is not null so that the sparse Hessian is calculated without
+     * the damping term and is used to find the initial value of
+     * lambda which it places in outInitLambda.  upon all subsequent uses of
+     * this method, it's expected that lambda > 0 and outInitLambda is null.
      * @param outInitLambda when not null this is the output parameter holding 
      * the maximum of the diagonal of j^T*J.  the array has length 1.
      */
@@ -712,8 +712,8 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("coordsI[0].length must be evenly "
                     + "divisible by nFeatures which is coordsW[0].length");
         }
-        if (intr.getA().length != mImages) {
-            throw new IllegalArgumentException("intr.length must be mImages");
+        if (intr.getA().length != 3*mImages) {
+            throw new IllegalArgumentException("intr.length must be 3*mImages");
         }
         if (intr.getA()[0].length != 3) {
             throw new IllegalArgumentException("intr[0].length must be 3");
@@ -756,7 +756,7 @@ public class BundleAdjustment {
         if (outFSqSum.length != 1) {
             throw new IllegalArgumentException("outFSqSum.length must be 1");
         } 
-        if (!(lambda  > 0)) {
+        if (!(lambda  >= 0.)) {
             throw new IllegalArgumentException("lambda must be a positive number");
         }
         if (imageFeaturesMap == null) {
@@ -838,9 +838,6 @@ public class BundleAdjustment {
         double[] bIJTF = new double[3];
         //aka bC [9X1]
         double[] aIJTF = new double[9];
-         
-        // [2X1]
-        double[] fIJ = new double[2];
         
         //m rows of blocks of size [3X9]
         BlockMatrixIsometric hPCJ = new BlockMatrixIsometric(
@@ -873,6 +870,11 @@ public class BundleAdjustment {
         double[] xWCI = new double[3];
         double[] xWCNI = new double[3];
         double[] xWCNDI = new double[3];
+         
+        // [3X1]
+        double[] fIJ = new double[3];
+        double[] fIJ2 = new double[2];
+        
         double[] rotAux = new double[3];
         double[][] rotM = MatrixUtil.zeros(3, 3);
                 
@@ -931,8 +933,10 @@ public class BundleAdjustment {
                     k1, k2, useR2R4, xWCNDI);
                                 
                 //intr is 3 X 3*nCameras where each block is size 3X3.
-                intr.getBlock(auxIntr, 0, j);
+                intr.getBlock(auxIntr, j, 0);
                 
+                //aIJ is [2X9]
+                //bIJ is [2X3]
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWCI, auxIntr, k1, k2, extrRot[j], extrTrans[j], aa, aIJ, bIJ);
               
@@ -951,20 +955,25 @@ public class BundleAdjustment {
                 //     elementwise addition of 3X3 blocks:
                 MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);
                                 
-                // populate xIJ; the observed feature i in image j
+                // populate xIJ; the observed feature i in image j.  [1X3]
                 MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);
                 
                 //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
                 MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
-
-                 // f_i_j [2X1]
+                
+                 // [1X3] - [1X3] = [1X3]
                 MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
                 outFSqSum[0] += MatrixUtil.lPSum(fIJ, 2);
 
                 // subtract jP^T*f (aka bP) from bP
                  
-                //bIJTF =  bIJT * fIJ;// [3X1]
-                MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ, bIJTF);
+                //aIJ is [2X9]
+                //bIJ is [2X3]
+                //dropping the z-axis which is value=1
+                System.arraycopy(fIJ, 0, fIJ2, 0, 2);
+                
+                //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
+                MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
 
                 MatrixUtil.elementwiseSubtract(gradPI, bIJTF, gradPI);
@@ -1002,9 +1011,12 @@ public class BundleAdjustment {
                     MatrixUtil.multiply(bIJT, aIJ, auxHPCJ);
                     hPCJ.setBlock(auxHPCJ, j, 0);
 
+                    //aIJ is [2X9]
+                    //bIJ is [2X3]
+                
                     // subtract aIJT*f (where bc = -aIJT*f aka -jCT*f) from block row j in vB. [9X1]
-                    //aIJTF = aIJT * fIJ.  [1X9]
-                    MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ, aIJTF);
+                    //aIJTF = aIJT * fIJ.  [9X2]*[2X1]=[1X9]
+                    MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ2, aIJTF);
 
                     MatrixUtil.elementwiseSubtract(gradCJ, aIJTF, gradCJ);
                     
@@ -1139,9 +1151,10 @@ public class BundleAdjustment {
         // cholesky decompostion to solve for dC in mA*dC=vB
          // (using the sparsity of upper and lower triangular matrices results in
         //    half the computation time of LU decomposition in comparison)
-        DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(new DenseMatrix(mA.getA()));
+        see other code for reforming m into positive definite
+        DenseMatrix m = new DenseMatrix(mA.getA());        
+        DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(m);
         LowerTriangDenseMatrix cholL = chol.getL();
-        UpperTriangDenseMatrix cholU = chol.getU();
         double[] yM = MatrixUtil.forwardSubstitution(cholL, 
             MatrixUtil.reshapeToVector(vB)
         );

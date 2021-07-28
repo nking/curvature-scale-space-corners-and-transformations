@@ -627,7 +627,7 @@ public class CameraCalibration {
         r2 = MatrixUtil.extractColumn(r, 1);        
         double chk = MatrixUtil.innerProduct(r1, r2);
         System.out.printf("asserting that r1 dot r2 ~ 0: %.4e\n", chk);
-        assert(Math.abs(chk) < 1.e-3);
+        assert(Math.abs(chk) < 1.e-7);
        
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);

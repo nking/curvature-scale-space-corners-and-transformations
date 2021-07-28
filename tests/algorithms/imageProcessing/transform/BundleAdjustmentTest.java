@@ -159,6 +159,36 @@ public class BundleAdjustmentTest extends TestCase {
         
         log.log(LEVEL, String.format("\nAfter BundleAdjustment\n"));
         
+        // only f is refined:
+        fX = intr.getBlock(0, 0)[0][0];
+        fY = intr.getBlock(0, 0)[1][1];
+        oX = intr.getBlock(0, 0)[0][2];
+        oY = intr.getBlock(0, 0)[1][1];
+        skew = intr.getBlock(0, 0)[0][1];
+        kRadial = kRadials[0];
+        
+        log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", 
+            fX, fY, alphaE, betaE));
+        log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", 
+            oX, oY, u0E, v0E));
+        log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", 
+            skew, gammaE));
+        log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
+            kRadial[0], kRadial[1], k1E, k2E));
+        
+        for (i = 0; i < nImages; ++i) {
+            r = Rotation.createRotationZYX(extrRotThetas[i]);
+            log.log(LEVEL, String.format("\n"));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
+                FormatArray.toString(r, "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
+                FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i, 
+                FormatArray.toString(extrTrans[i], "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
+                FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+        }
+        
     }
     
 }
