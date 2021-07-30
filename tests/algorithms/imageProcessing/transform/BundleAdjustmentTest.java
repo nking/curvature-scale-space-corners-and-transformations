@@ -3,9 +3,7 @@ package algorithms.imageProcessing.transform;
 import algorithms.matrix.BlockMatrixIsometric;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -15,8 +13,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertEquals;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -38,7 +34,7 @@ public class BundleAdjustmentTest extends TestCase {
     
     public BundleAdjustmentTest() {
     }
-
+    
     /**
      * Test of solveUsingSparse method, of class BundleAdjustment.
      */
@@ -189,6 +185,15 @@ public class BundleAdjustmentTest extends TestCase {
                 FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
         }
         
+    }
+
+    private boolean allPositive(double[] eig, double eps) {
+        for (int i = 0; i < eig.length; ++i) {
+            if (eig[i] < eps) {
+                return false;
+            }
+        }
+        return true;
     }
     
 }

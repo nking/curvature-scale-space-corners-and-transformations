@@ -1641,10 +1641,10 @@ public class BundleAdjustment {
         // using addition for updates for now
         for (j = 0; j < nImages; ++j) {
             // focus is parameterindex 6 within the 9 for each image in dC
-            intr.getBlock(kIntr, j*3, 0);
+            intr.getBlock(kIntr, j, 0);
             kIntr[0][0] += dC[j*9 + 6];
             kIntr[1][1] += dC[j*9 + 6];
-            intr.setBlock(kIntr, j*3, 0);
+            intr.setBlock(kIntr, j, 0);
         }
     }
         
@@ -1707,7 +1707,7 @@ public class BundleAdjustment {
         for (j = 0; j < extrRotThetas.length; ++j) {
             
             // copy delta thetas for this image into deltaTheta array
-            System.arraycopy(dC, j*9, deltaTheta, 0, 9);
+            System.arraycopy(dC, j*9, deltaTheta, 0, 3);
             
             double[] qUpdated = 
                 Rotation.applySingularitySafeRotationPerturbationQuaternion(
