@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.BlockMatrixIsometric;
+import algorithms.matrix.LinearEquations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import gnu.trove.map.TIntObjectMap;
@@ -1157,17 +1158,15 @@ public class BundleAdjustment {
         //    half the computation time of LU decomposition in comparison)
           
         // mA is square [mImages*9, mImages*9]
-        //    but not necessarily symmetric positive semi-definite 
- //TODO:       
-        // nearest symmetric positive semi-definite matrix to mA:
-        // Higham 1988, "Computing a Nearest Symmetric Positice Semidefinite Matrix
-        // and:
-        // https://nhigham.com/2021/01/26/what-is-the-nearest-positive-semidefinite-matrix/
+        //    but not necessarily symmetric positive definite needed by the
+        //    Cholesky decomposition.
         
-        DenseMatrix m = new DenseMatrix(mA.getA());
-               
-        DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(m);
-        LowerTriangDenseMatrix cholL = chol.getL();
+        double eps = 1.e-11;
+        // this method attempts to make the matrix the nearest symmetric positive definite:
+        double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);
+        
+        double[][] cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps);
+           
         double[] yM = MatrixUtil.forwardSubstitution(cholL, 
             MatrixUtil.reshapeToVector(vB)
         );
