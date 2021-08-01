@@ -7,6 +7,8 @@ import algorithms.util.FormatArray;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseCholesky;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.LowerTriangDenseMatrix;
@@ -53,6 +55,13 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
  * @author nichole
  */
 public class BundleAdjustment {
+    
+    private static final Level LEVEL = Level.INFO;
+    private static final Logger log;
+    static {
+        log = Logger.getLogger(CameraCalibration.class.getSimpleName());
+        log.setLevel(LEVEL);
+    }
     
     /**
      * given world scene features, the features observed in images,
@@ -507,13 +516,20 @@ public class BundleAdjustment {
         updateRadialDistortion(kRadialsTest, outDC);
         updateWorldC(coordsWTest, outDP);
                 
+        log.log(LEVEL,
+            String.format(
+            "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
+            lambda, outFSqSum[0],
+            FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
+            FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")));
+            
         // update the features with outDP?  see step 7 of Engels
         
         int doUpdate = 0;
         int nIter = 0;
         int i;
         while (nIter < nMaxIter) {
-            
+                
             nIter++;
             
             calculateLMVectorsSparsely(coordsI, coordsW,  
@@ -525,9 +541,13 @@ public class BundleAdjustment {
             gainRatio = calculateGainRatio(fTest/2., fPrev/2., outDC, outDP, lambda, 
                 outGradC, outGradP, eps);
             
-            System.out.printf("lambda=%.6e\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
-                lambda, gainRatio, fPrev, fTest);
-
+            log.log(LEVEL,
+                String.format(
+                "(nIter=%d) lambda=%.3e F=%.3e g.r.=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n  gradP=%s\n", 
+                nIter, lambda, outFSqSum[0], gainRatio,
+                FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
+                FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")));
+            
             /*
             for large values of lambda, the update is a very steep descent and
             deltaP is very small.
@@ -1150,28 +1170,43 @@ public class BundleAdjustment {
         gauge fix not yet included here.
         */
         
-        //(Linear Solving) Cholesky factor the left hand side matrix B and solve for dC. 
+        //Engels step (6) (Linear Solving) 
+        //    Cholesky factor the left hand side matrix B and solve for dC. 
         //    Add frozen coordinates back in.
         
         // cholesky decompostion to solve for dC in mA*dC=vB
-         // (using the sparsity of upper and lower triangular matrices results in
+        // (using the sparsity of upper and lower triangular matrices results in
         //    half the computation time of LU decomposition in comparison)
-          
+        
         // mA is square [mImages*9, mImages*9]
         //    but not necessarily symmetric positive definite needed by the
-        //    Cholesky decomposition.
+        //    Cholesky decomposition, so need to find the nearest or a nearest
         
         double eps = 1.e-11;
-        // this method attempts to make the matrix the nearest symmetric positive definite:
+        // this method attempts to make the matrix the nearest symmetric positive *definite*:
         double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);
         
+        //[mImages*9, mImages*9]
         double[][] cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps);
            
+        /* avoid inverting A by using Cholesky decomposition w/ forward and 
+        backward substitution:
+            A﹡x= b:
+            A=L﹡L*
+            L﹡y = b ==> y via forward subst
+            L*﹡x = y ==> x via backward subst
+        */
+        
+        // length is vB.length vectorized which is [mImages*9]
         double[] yM = MatrixUtil.forwardSubstitution(cholL, 
             MatrixUtil.reshapeToVector(vB)
         );
         
-        // outDC is [9m X 1]
+        // [[mImages*9 X mImages*9] * x = [mImages*9] ==> xM is length mImages*9
+        // x is dC
+        MatrixUtil.backwardSubstitution(MatrixUtil.transpose(cholL), yM, outDC);
+                
+        // outDC is [9m X 1] 
 
         // outDP is [3nX1]
         
@@ -1186,9 +1221,11 @@ public class BundleAdjustment {
             //[1X3]
             System.arraycopy(tPs[i], 0, outDP, i*3, 3);
             for (j = 0; j < mImages; ++j) {
+               
                 // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9)
                 //[9X1]
                 System.arraycopy(outDC, j*9, dCJ, 0, 9);
+                
                 //tmp2 = tPCTs(i,j)*dCJ;
                 //[3X9][9X1]=[3X1]
                 tPCTs.getBlock(auxTPCTs, i, j);
