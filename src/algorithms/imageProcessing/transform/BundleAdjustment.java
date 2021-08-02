@@ -6,6 +6,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -140,9 +141,7 @@ public class BundleAdjustment {
      TODO: add gauge fix in coordination with invoker which provides initial
      * parameter estimates.
      * @param coordsI the features observed in different images (in coordinates 
-     * of the image reference frame).  The
-     * different images may or may not be from the same camera.  The image
-     * to camera relationship is defined in the associative array imageToCamera.
+     * of the image reference frame). 
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
      * have nFeatures of one image, followed by nFeatures of the next image,
        etc.  The first dimension is for the x,y, and z axes.
@@ -182,7 +181,7 @@ public class BundleAdjustment {
         double[][] coordsI, double[][] coordsW, TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
         double[][] kRadials, final int nMaxIter, boolean useR2R4) 
-        throws NotConvergedException {
+        throws NotConvergedException, IOException {
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -466,8 +465,8 @@ public class BundleAdjustment {
             = new double[9*mImages];
      
         // evaluation of the objective re-projection error. 
-        //the sum of squares of the observed feature - projected feature
-        double[] outFSqSum =new double[1];
+        //the sum of squares of the observed feature - projected feature in camera reference frame
+        double[] outFSqSum = new double[1];
         
         double[] outInitLambda = new double[1];
         
@@ -514,7 +513,7 @@ public class BundleAdjustment {
         updateRotThetas(extrRotThetasTest, outDC);
         updateIntrinsic(intrTest, outDC);
         updateRadialDistortion(kRadialsTest, outDC);
-        updateWorldC(coordsWTest, outDP);
+  //      updateWorldC(coordsWTest, outDP);
                 
         log.log(LEVEL,
             String.format(
@@ -591,12 +590,20 @@ public class BundleAdjustment {
                     break;
                 }
                 
+                
+                double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);
+                double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetasTest, extrRotThetasTest);
+                double _dts = MatrixUtil.frobeniusNorm(_dt);
+                double _rts = MatrixUtil.frobeniusNorm(_rt);
+                System.out.printf("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.3e"));
+                System.out.printf("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.3e"));
+                
                 // use the 2nd three elements in outDC:
                 updateTranslation(extrTransTest, outDC);
                 updateRotThetas(extrRotThetasTest, outDC);                
                 updateIntrinsic(intrTest, outDC);
                 updateRadialDistortion(kRadialsTest, outDC);
-                updateWorldC(coordsWTest, outDP);
+  //              updateWorldC(coordsWTest, outDP);
             }            
         }        
     }
@@ -656,8 +663,7 @@ public class BundleAdjustment {
      </pre>
      * @param coordsI the features observed in different images (in coordinates 
      * of the image reference frame).  The
-     * different images may or may not be from the same camera.  The image
-     * to camera relationship is defined in the associative array imageToCamera.
+     * different images may or may not be from the same camera.
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
      * have nFeatures of one image, followed by nFeatures of the next image,
        etc.  The first dimension is for the x,y, and z axes.
@@ -721,7 +727,7 @@ public class BundleAdjustment {
         double[][] kRadials, final boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
         double[] outFSqSum, final double lambda,
-        double[] outInitLambda) throws NotConvergedException {
+        double[] outInitLambda) throws NotConvergedException, IOException {
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -888,9 +894,12 @@ public class BundleAdjustment {
 
         //size is [3 X 3*mImages)with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRot);
+
+        double[][] xIJCs = transformToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         
         double[] xWI = new double[3];
         double[] xIJ = new double[3];
+        double[] xIJC = new double[3];
         double[] xIJHat = new double[3];
         double[] xWCI = new double[3];
         double[] xWCNI = new double[3];
@@ -954,8 +963,7 @@ public class BundleAdjustment {
                 k2 = kRadials[j][1];
 
                 // distort results are in xWCNDI
-                CameraCalibration.applyRadialDistortion(xWCNI,
-                    k1, k2, useR2R4, xWCNDI);
+      //          CameraCalibration.applyRadialDistortion(xWCNI, k1, k2, useR2R4, xWCNDI);
                                 
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
@@ -965,6 +973,9 @@ public class BundleAdjustment {
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWCI, auxIntr, k1, k2, extrRot[j], extrTrans[j], aa, aIJ, bIJ);
               
+ System.out.printf("img%d,f%d: aIJ=\n%s\n", j,i,FormatArray.toString(aIJ, "%.3e"));
+ System.out.printf("img%d,f%d: bIJ=\n%s\n", j,i,FormatArray.toString(bIJ, "%.3e"));
+ 
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
 
@@ -983,11 +994,17 @@ public class BundleAdjustment {
                 // populate xIJ; the observed feature i in image j.  [1X3]
                 MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);
                 
+                // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
+                MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
+                
                 //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
-                MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
+                //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
+                //populate xIJHat;the projected feature i into image j camera reference frame.  [1X3]
+                MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
                 
                  // [1X3] - [1X3] = [1X3]
-                MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
+                //MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
+                MatrixUtil.elementwiseSubtract(xIJC, xIJHat, fIJ);
                 outFSqSum[0] += MatrixUtil.lPSum(fIJ, 2);
 
                 // subtract jP^T*f (aka bP) from bP
@@ -1015,7 +1032,10 @@ public class BundleAdjustment {
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
                     
                     if (outInitLambda != null) {
-                        maxDiag(auxMA, outInitLambda);
+                        if (
+                            maxDiag(auxMA, outInitLambda)
+                        ) System.out.printf("auxMa) new lambda=%.3e\n", outInitLambda[0])
+                        ;
                     }
                     
                     // aIJ^T*aIJ is now in auxMA
@@ -1053,7 +1073,10 @@ public class BundleAdjustment {
             } // end image j loop
             
             if (outInitLambda != null) {
-                maxDiag(hPPI, outInitLambda);
+                if (
+                    maxDiag(hPPI, outInitLambda)
+                ) System.out.printf("hPPI) new lambda=%.3e\n", outInitLambda[0])
+                ;
             }
             
             // hPPI is now integrated over all images, so can now handle the
@@ -1844,13 +1867,61 @@ public class BundleAdjustment {
         }
     }
     
-    private static void maxDiag(double[][] m, double[] outInitLambda) {
+    private static boolean maxDiag(double[][] m, double[] outInitLambda) {
         int i;
+        boolean updated = false;
         for (i = 0; i < m.length; ++i) {
             if (outInitLambda[0] < m[i][i]) {
                 outInitLambda[0] = m[i][i];
+                updated =true;
             }
         }
+        return updated;
+    }
+
+    /**
+     * @param coordsI the features observed in different images (in coordinates 
+     * of the image reference frame).  The
+     * different images may or may not be from the same camera.  
+     * The format of coordsI is 3 X (nFeatures*nImages). Each row should
+     * have nFeatures of one image, followed by nFeatures of the next image,
+       etc.  The first dimension is for the x,y, and z axes.
+       Note that if a feature is not present in the image, that should be
+       an entry in imageMissingFeatureMap.
+     * @param intr the intrinsic camera parameter matrices stacked along rows
+     * to make a tall double array of size [(mImages*3) X 3] where each block is
+     * size 3X3.   Note that only the focus parameter is refined in this class.
+     * @param kRadial
+     * @param useR2R4
+     * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
+     */
+    private static double[][] transformToCamera(int nFeatures, double[][] coordsI, 
+        BlockMatrixIsometric intr, double[][] kRadial, boolean useR2R4) throws NotConvergedException, IOException {
+        
+        int nImages = coordsI[0].length/nFeatures;
+        
+        double[][] c = MatrixUtil.zeros(coordsI.length, coordsI[0].length);
+        double[][] x = MatrixUtil.zeros(3, nFeatures);
+        double[][] xc;
+        double[][] kIntr = MatrixUtil.zeros(3, 3);
+        
+        int i, j, k;
+        for (j = 0; j < nImages; ++j) {
+            MatrixUtil.copySubMatrix(coordsI, 0, 2, j*nFeatures, ((j+1)*nFeatures)-1, x);
+            
+            intr.getBlock(kIntr, j, 0);
+            xc = Camera.pixelToCameraCoordinates(x, kIntr, kRadial[j], useR2R4);
+            
+            for (i = 0; i < 3; ++i) {
+                for (k = 0; k < nFeatures; ++k) {
+                    xc[i][k] = xc[i][k] / xc[i][2];
+                }
+                System.arraycopy(xc[i], 0, c[i], j*nFeatures, nFeatures);
+            }
+        }
+        return c;
     }
 
     static class AuxiliaryArrays {

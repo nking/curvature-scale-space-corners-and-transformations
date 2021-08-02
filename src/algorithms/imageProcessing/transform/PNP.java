@@ -288,9 +288,7 @@ public class PNP {
             b[2*i] = xn[0][i];
             b[2*i + 1] = xn[1][i];
         }
-        
-        CameraExtrinsicParameters outExtr = new CameraExtrinsicParameters();
-        
+                
         //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
@@ -334,6 +332,10 @@ public class PNP {
         double[][] rTest = MatrixUtil.copy(kExtr.getRotation());
         double[] thetasTest = Rotation.extractThetaFromZYX(rTest);
         double[] tTest = Arrays.copyOf(kExtr.getTranslation(), 4);
+        
+        CameraExtrinsicParameters outExtr = new CameraExtrinsicParameters();
+        outExtr.setRotation(MatrixUtil.copy(kExtr.getRotation()));
+        outExtr.setTranslation(Arrays.copyOf(kExtr.getTranslation(), 4));
         
         // equation (19).  size is 1 X 9
         double[] h = new double[]{rTest[0][0], rTest[0][1], tTest[0], 
@@ -454,6 +456,16 @@ public class PNP {
             if (doUpdate == 1) {
                 
                 fPrev = fTest;
+            
+                /*
+                double[] _dt = new double[tTest.length];
+                double[][] _rt = MatrixUtil.elementwiseSubtract(outExtr.getRotation(), rTest);
+                double _dts = MatrixUtil.lPSum(_dt, 2);
+                double _rts = MatrixUtil.frobeniusNorm(_rt);
+                MatrixUtil.elementwiseSubtract(outExtr.getTranslation(), tTest, _dt);
+                System.out.printf("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.3e"));
+                System.out.printf("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.3e"));
+                */
                 
                 outExtr.setRotation(MatrixUtil.copy(rTest));
                 outExtr.setTranslation(Arrays.copyOf(tTest, 3));

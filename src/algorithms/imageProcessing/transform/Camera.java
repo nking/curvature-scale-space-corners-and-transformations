@@ -2,6 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -557,12 +558,39 @@ public class Camera {
      */
     public static double[][] pixelToCameraCoordinates(double[][] x, 
         CameraIntrinsicParameters kIntr, double[] rCoeffs, boolean useR2R4) 
-        throws NotConvergedException, Exception {
-        
-        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
-                
+        throws NotConvergedException, IOException {
+                        
         double[][] intr = MatrixUtil.copy(kIntr.getIntrinsic());
         
+        return pixelToCameraCoordinates(x, intr, rCoeffs, useR2R4);
+    }
+    
+    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    reference frame then removing radial distortion.
+    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
+    and the output is a double array of (x, y).
+    Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+    
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points.  
+     * @param intr intrinsic camera parameters. dimensions aer [3 X 3]
+     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
+     * @return pixels in the reference frame of 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
+     */
+    public static double[][] pixelToCameraCoordinates(double[][] x, 
+        double[][] intr, double[] rCoeffs, boolean useR2R4) 
+        throws NotConvergedException, IOException {
+        
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+                        
         // use absolute value of focal lengths
         intr[0][0] = Math.abs(intr[0][0]);
         intr[1][1] = Math.abs(intr[1][1]);

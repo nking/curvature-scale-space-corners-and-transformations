@@ -7,6 +7,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.PolynomialRootSolver;
 import algorithms.util.FormatArray;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1143,7 +1144,7 @@ public class CameraCalibration {
     @throws no.uib.cipr.matrix.NotConvergedException
     */
     static double[][] removeRadialDistortion(double[][] xC, double k1, double k2,
-        boolean useR2R4) throws NotConvergedException, Exception {
+        boolean useR2R4) throws NotConvergedException, IOException {
         
         if (useR2R4) {
             return removeRadialDistortion4(xC, k1, k2);
@@ -1196,7 +1197,7 @@ public class CameraCalibration {
     @throws no.uib.cipr.matrix.NotConvergedException
     */
     static double[][] removeRadialDistortion(double[][] xC, double k1, double k2) 
-        throws NotConvergedException, Exception {
+        throws NotConvergedException, IOException {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
@@ -1209,7 +1210,7 @@ public class CameraCalibration {
             if (Math.abs(k2) < eps) {
                 return corrected;
             }
-            throw new Exception("k1 must be non-zero for this algorithm.  "
+            throw new IllegalArgumentException("k1 must be non-zero for this algorithm.  "
                 + "To solve for the 2nd order term only, use useR2R4=true");
         }
         
@@ -1361,7 +1362,7 @@ public class CameraCalibration {
     @throws no.uib.cipr.matrix.NotConvergedException
     */
     static double[][] removeRadialDistortion4(double[][] xC, double k1, double k2) 
-        throws NotConvergedException, Exception {
+        throws NotConvergedException, IOException {
         
         if (xC.length != 3) {
             throw new IllegalArgumentException("xC.length must be 3");
@@ -1376,7 +1377,7 @@ public class CameraCalibration {
             if (Math.abs(k2) < eps) {
                 return corrected;
             }
-            throw new Exception("k1 must be non-zero for this algorithm.");
+            throw new IllegalArgumentException("k1 must be non-zero for this algorithm.");
         }
         
         log.log(LEVEL, String.format("distorted coords=\n%s\n", FormatArray.toString(xC, "%.3f")));
