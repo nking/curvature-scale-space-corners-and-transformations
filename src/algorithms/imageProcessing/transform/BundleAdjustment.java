@@ -827,6 +827,8 @@ public class BundleAdjustment {
             outInitLambda[0] = Double.NEGATIVE_INFINITY;
         }
         
+        outFSqSum[0] = 0;
+        
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
             MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
@@ -978,7 +980,12 @@ public class BundleAdjustment {
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
                 
-                //aIJ is [2X9]
+// TODO: aIJ and bIJ have large values due to the focal lengths in the intrinsic model
+//   (Qu uses the pinhole camera model)
+// looking into details again...
+
+
+                //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWCI, auxIntr, k1, k2, extrRot[j], extrTrans[j], aa, aIJ, bIJ);
@@ -1008,7 +1015,7 @@ public class BundleAdjustment {
                 MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
                 
                 if (useCameraFrame == 0) {
-                    // these are aDISTORTED and in IMAGE reference frame
+                    // these are DISTORTED and in IMAGE reference frame
                     
                     // xWCNDI are the world scene points projected into camera frame and distorted
                     
@@ -1021,11 +1028,11 @@ public class BundleAdjustment {
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
                 } else {  
-                    // these are distortion-free and in CAMERA reference frame
+                    // these are DISTORTION-FREE and in CAMERA reference frame
                     
                     //NOTE: most of the papers referenced above
                     //    apply the radial distortion, rather than remove it,
-                    //    and so they work in camera coordinates.
+                    //    and so they work in camera reference frame.
                     
                     // xWCNI are the world scene points projected into camera frame
                     
@@ -1034,16 +1041,17 @@ public class BundleAdjustment {
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.elementwiseSubtract(xIJC, xWCNI, fIJ);
                 }
-                
-                outFSqSum[0] += MatrixUtil.lPSum(fIJ, 2);
+      
+                //sum of squares
+                outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);
 
                 //== subtract jP^T*f (aka bP) from bP ==
                  
                 //aIJ is [2X9]
                 //bIJ is [2X3]
-                //dropping the z-axis which is value=1
+                //dropping the z-axis which is value=0 (from normalized-normalized=1-1)
                 System.arraycopy(fIJ, 0, fIJ2, 0, 2);
-                
+           
                 //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
                 MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
@@ -1528,7 +1536,7 @@ public class BundleAdjustment {
     static void aIJBIJ(double[] xWCI, double[][] intr, double k1, double k2, 
         double[] phi, double[] trans, AuxiliaryArrays aa,
         double[][] outAIJ, double[][] outBIJ) {
-        
+                
         if (outAIJ.length != 2 || outAIJ[0].length != 9) {
             throw new IllegalArgumentException("outAIJ size must be 2X9");
         }
@@ -1910,6 +1918,7 @@ public class BundleAdjustment {
     }
 
     /**
+     * @param nFeatures
      * @param coordsI the features observed in different images (in coordinates 
      * of the image reference frame).  The
      * different images may or may not be from the same camera.  
