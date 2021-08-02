@@ -721,7 +721,7 @@ public class BundleAdjustment {
      * @param outInitLambda when not null this is the output parameter holding 
      * the maximum of the diagonal of j^T*J.  the array has length 1.
      */
-    static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+    protected static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
         double[][] kRadials, final boolean useR2R4,
@@ -895,7 +895,6 @@ public class BundleAdjustment {
         //size is [3 X 3*mImages)with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRot);
 
-        double[][] xIJCs = transformToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         
         double[] xWI = new double[3];
         double[] xIJ = new double[3];
@@ -904,7 +903,16 @@ public class BundleAdjustment {
         double[] xWCI = new double[3];
         double[] xWCNI = new double[3];
         double[] xWCNDI = new double[3];
-         
+        final int useCameraFrame = 1; 
+        double[][] xIJCs;        
+        
+        //NOTE: most of the papers referenced above
+        //    apply the radial distortion, rather than remove it,
+        //    and so they work in camera coordinates.
+        if (useCameraFrame == 1) {
+            xIJCs = transformToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
+        }
+        
         // [3X1]
         double[] fIJ = new double[3];
         double[] fIJ2 = new double[2];
@@ -963,8 +971,10 @@ public class BundleAdjustment {
                 k2 = kRadials[j][1];
 
                 // distort results are in xWCNDI
-      //          CameraCalibration.applyRadialDistortion(xWCNI, k1, k2, useR2R4, xWCNDI);
-                                
+                if (useCameraFrame == 0) {
+                    CameraCalibration.applyRadialDistortion(xWCNI, k1, k2, useR2R4, xWCNDI);
+                }
+                
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
                 
@@ -997,17 +1007,37 @@ public class BundleAdjustment {
                 // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
                 MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
                 
-                //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
-                //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
-                //populate xIJHat;the projected feature i into image j camera reference frame.  [1X3]
-                MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
+                if (useCameraFrame == 0) {
+                    // these are aDISTORTED and in IMAGE reference frame
+                    
+                    // xWCNDI are the world scene points projected into camera frame and distorted
+                    
+                    //populate xIJHat;the projected distorted feature i into image j reference frame.  [1X3]
+                    MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
+                    
+                    //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
+                    //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
+                    
+                    // [1X3] - [1X3] = [1X3]
+                    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
+                } else {  
+                    // these are distortion-free and in CAMERA reference frame
+                    
+                    //NOTE: most of the papers referenced above
+                    //    apply the radial distortion, rather than remove it,
+                    //    and so they work in camera coordinates.
+                    
+                    // xWCNI are the world scene points projected into camera frame
+                    
+                    // xIJC are the observed points in the camera reference frame with distortion removed
+                    
+                    // [1X3] - [1X3] = [1X3]
+                    MatrixUtil.elementwiseSubtract(xIJC, xWCNI, fIJ);
+                }
                 
-                 // [1X3] - [1X3] = [1X3]
-                //MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
-                MatrixUtil.elementwiseSubtract(xIJC, xIJHat, fIJ);
                 outFSqSum[0] += MatrixUtil.lPSum(fIJ, 2);
 
-                // subtract jP^T*f (aka bP) from bP
+                //== subtract jP^T*f (aka bP) from bP ==
                  
                 //aIJ is [2X9]
                 //bIJ is [2X3]
