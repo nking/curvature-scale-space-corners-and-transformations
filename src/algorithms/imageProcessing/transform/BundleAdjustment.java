@@ -1955,7 +1955,7 @@ public class BundleAdjustment {
             
             for (i = 0; i < 3; ++i) {
                 for (k = 0; k < nFeatures; ++k) {
-                    xc[i][k] = xc[i][k] / xc[i][2];
+                    xc[i][k] /= xc[2][k];
                 }
                 System.arraycopy(xc[i], 0, c[i], j*nFeatures, nFeatures);
             }
