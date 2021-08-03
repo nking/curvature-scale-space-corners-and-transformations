@@ -680,7 +680,7 @@ public class BundleAdjustment {
      * @param intr the intrinsic camera parameter matrices stacked along rows
      * to make a tall double array of size [(mImages*3) X 3] where each block is
      * size 3X3.   Note that only the focus parameter is refined in this class.
-     * @param extrRot the extrinsic camera parameter rotation euler angles
+     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
@@ -723,7 +723,7 @@ public class BundleAdjustment {
      */
     protected static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntObjectMap<TIntSet> imageFeaturesMap,
-        BlockMatrixIsometric intr, double[][] extrRot, double[][] extrTrans,
+        BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
         double[][] kRadials, final boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
         double[] outFSqSum, final double lambda,
@@ -756,10 +756,10 @@ public class BundleAdjustment {
         if (kRadials[0].length != 2) {
             throw new IllegalArgumentException("kRadials[0].length must be 2.");
         }
-        if (extrRot[0].length != 3) {
+        if (extrRotThetas[0].length != 3) {
             throw new IllegalArgumentException("extrRot[0].length must be 3");
         }
-        if (extrRot.length != mImages) {
+        if (extrRotThetas.length != mImages) {
             throw new IllegalArgumentException("extrRot.length must be mImages "
                     + "where mImages = coordsI[0].length/coordsW[0].length");
         }
@@ -894,9 +894,8 @@ public class BundleAdjustment {
             MatrixUtil.zeros(nFeatures*3, mImages*9), 3, 9);
         double[][] auxTPCTs = MatrixUtil.zeros(3, 9);
 
-        //size is [3 X 3*mImages)with each block being [3X3]
-        BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRot);
-
+        //size is [3 X 3*mImages] with each block being [3X3]
+        BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);
         
         double[] xWI = new double[3];
         double[] xIJ = new double[3];
@@ -982,14 +981,13 @@ public class BundleAdjustment {
                 
 // TODO: aIJ and bIJ have large values due to the focal lengths in the intrinsic model
 //   (Qu uses the pinhole camera model)
-// looking into details again...
-
-
+        
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]
                 // populate aIJ and bIJ as output of method:
-                aIJBIJ(xWCI, auxIntr, k1, k2, extrRot[j], extrTrans[j], aa, aIJ, bIJ);
-              
+                aIJBIJ(xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, 
+                    extrTrans[j], aa, aIJ, bIJ);
+                
  System.out.printf("img%d,f%d: aIJ=\n%s\n", j,i,FormatArray.toString(aIJ, "%.3e"));
  System.out.printf("img%d,f%d: bIJ=\n%s\n", j,i,FormatArray.toString(bIJ, "%.3e"));
  
@@ -1010,10 +1008,10 @@ public class BundleAdjustment {
                                 
                 // populate xIJ; the observed feature i in image j.  [1X3]
                 MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);
-                
+                                
                 // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
                 MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
-                
+                                
                 if (useCameraFrame == 0) {
                     // these are DISTORTED and in IMAGE reference frame
                     
@@ -1027,6 +1025,7 @@ public class BundleAdjustment {
                     
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
+                    
                 } else {  
                     // these are DISTORTION-FREE and in CAMERA reference frame
                     
@@ -1123,14 +1122,14 @@ public class BundleAdjustment {
             for (k = 0; k < 3; ++k) {
                 hPPI[k][k] *= (1. + lambda);
             }
-
+            
             //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
             
             // hPPI^-1 * bPI is V^-1*bPI // [3X3][3X1] = [3X1]
             //tP = invHPPI * bPI;
             MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tP);
-            
+
             //tPs[i] = tP;
             System.arraycopy(tP, 0, tPs[i], 0, tP.length);
 
@@ -1273,27 +1272,36 @@ public class BundleAdjustment {
         
         // [9X1]
         double[] dCJ = new double[9];
-        
+                 
         //Engels step (7)
         double[] tmp2 = new double[3];
         for (i = 0; i < nFeatures; ++i) {
+            
             // start with point update for feature i, dP = tP
-            //dP[i] = tPs[i]; where tPs is [nFeaturesX3]
+            //dP[i] = tPs[i];
+            //   where tPs is [nFeatures X 3] with nFeatures blocks of [1X3]
+            //tP = hPPI^-1 * bPI is V^-1*bPI
             //[1X3]
             System.arraycopy(tPs[i], 0, outDP, i*3, 3);
+      
             for (j = 0; j < mImages; ++j) {
                
-                // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9)
+                // Engels: subtract tPC^T*dCJ from dP
+                // where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9)
+                
                 //[9X1]
                 System.arraycopy(outDC, j*9, dCJ, 0, 9);
                 
+                //[3X9]
+                tPCTs.getBlock(auxTPCTs, i, j);
+                
                 //tmp2 = tPCTs(i,j)*dCJ;
                 //[3X9][9X1]=[3X1]
-                tPCTs.getBlock(auxTPCTs, i, j);
                 MatrixUtil.multiplyMatrixByColumnVector(auxTPCTs, dCJ, tmp2);
-                
+                 
                 //dP[i] = element wise subtract dP[i] - tmp2;
                 for (k = 0; k < 3; ++k) {
+                    //outDP length is 3*nFeatures
                     outDP[i*3 + k] -= tmp2[k];
                 }
             } // end loop over image j
@@ -1525,8 +1533,9 @@ public class BundleAdjustment {
      * @param k1 radial distortion coefficient 1
      * @param k2 radial distortion coefficient 2
      * //@param rot extrinsic camera parameter rotation matrix.
-     * @param phi the rotation angles.  formed from 
-     * phi = Rotation.extractRotation(rot);
+     * @param rotAngles [1 X 3] array holding euler rotation angles.
+     * @param rot [3 X 3] rotation matrix which was created with
+     * Rotation.createRotationZYX(rotAngles...);
      * @param trans extrinsic camera parameter translation vector.
      * @param aa a group of arrays passed in by invoking code, re-used to avoid
      * constructing more objects.  AuxiliaryArrays aa = AuxiliaryArrays().
@@ -1534,7 +1543,7 @@ public class BundleAdjustment {
      * @param outBIJ output array of size [2X3]
      */
     static void aIJBIJ(double[] xWCI, double[][] intr, double k1, double k2, 
-        double[] phi, double[] trans, AuxiliaryArrays aa,
+        double[] rotAngles, double[][] rot, double[] trans, AuxiliaryArrays aa,
         double[][] outAIJ, double[][] outBIJ) {
                 
         if (outAIJ.length != 2 || outAIJ[0].length != 9) {
@@ -1567,7 +1576,7 @@ public class BundleAdjustment {
         
         // 3X3
         double[][] dXdP = aa.d3X3;
-        pdXWIJPhiJ(xWCI, phi, dXdP);
+        pdXWIJPhiJ(xWCI, rotAngles, dXdP);
        
         //========================================
         
@@ -1581,11 +1590,7 @@ public class BundleAdjustment {
         
         // [2X3]
         double[][] dFdY = dCPdY;
-        
-        // 3X3
-        double[][] rot = aa.g3X3;
-        Rotation.createRotationZYX(phi, aa.aa, rot);
-        
+    
         // [2X3]
         double[][] dFdX = aa.h2X3;
         MatrixUtil.multiply(dFdT, rot, dFdX);
@@ -1602,11 +1607,11 @@ public class BundleAdjustment {
     }
 
     private static BlockMatrixIsometric createRotationMatricesFromEulerAngles(
-        double[][] extrRot) {
+        double[][] extrRotThetas) {
         
         //extrRot is mImages*[1X3]
         
-        int mImages = extrRot.length;
+        int mImages = extrRotThetas.length;
         
         double[][] rot = MatrixUtil.zeros(3, 3);
         
@@ -1616,7 +1621,7 @@ public class BundleAdjustment {
         
         int i;
         for (i = 0; i < mImages; ++i) {
-            Rotation.createRotationZYX(extrRot[i], aa, rot);
+            Rotation.createRotationZYX(extrRotThetas[i], aa, rot);
             m.setBlock(rot, 0, i);
         }
         return m;
