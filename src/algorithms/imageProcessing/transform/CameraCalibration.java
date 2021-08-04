@@ -549,7 +549,7 @@ public class CameraCalibration {
         }
         
         // 2*n X 9
-        // making it 2*n X 9 by adding the -u and -v columns onto end of rowsto use SVD instead of psuedoinverse
+        // making it 2*n X 9 by adding the -u and -v columns onto end of rows to use SVD instead of psuedoinverse
         double u, v, X, Y;
         double[][] a = new double[2*n][9];
         for (int i = 0; i < n; ++i) {

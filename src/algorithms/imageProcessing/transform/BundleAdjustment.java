@@ -238,6 +238,10 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("imageFeaturesMap size must equal "
             + "the number of images which = coordsI[0].length/coordsW[0].length");
         }
+        
+        //TODO: as part of "fix the gauge", need to consider the first
+        //    camera to have axes aligned with world axes, so that the
+        //    origin of the world scence is [0,0,0] or [0,0,0,1]
                 
         /*
         RCM is the reduced camera matrix in the augmented normal equation.
@@ -904,13 +908,13 @@ public class BundleAdjustment {
         double[] xWCI = new double[3];
         double[] xWCNI = new double[3];
         double[] xWCNDI = new double[3];
-        final int useCameraFrame = 0; 
+        final int useCameraFrame = 1; 
         double[][] xIJCs = null;        
         
         //NOTE: most of the papers referenced above
         //    apply the radial distortion, rather than remove it,
         //    and so they work in camera coordinates.
-        if (useCameraFrame == 0) {
+        if (useCameraFrame == 1) {
             xIJCs = transformToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
         
@@ -978,19 +982,13 @@ public class BundleAdjustment {
                 
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
-                
-// TODO: aIJ and bIJ have large values due to the focal lengths in the intrinsic model
-//   (Qu uses the pinhole camera model)
-        
+          
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, 
                     extrTrans[j], aa, aIJ, bIJ);
-                
- System.out.printf("img%d,f%d: aIJ=\n%s\n", j,i,FormatArray.toString(aIJ, "%.3e"));
- System.out.printf("img%d,f%d: bIJ=\n%s\n", j,i,FormatArray.toString(bIJ, "%.3e"));
- 
+  
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
 
@@ -1037,12 +1035,18 @@ public class BundleAdjustment {
                     
                     // xIJC are the observed points in the camera reference frame with distortion removed
                     
+//System.out.printf("(%d,%d)\nxIJC=%s\n", i,j, FormatArray.toString(xIJC, "%.3e"));
+//System.out.printf("xWCNI=%s\n\n", FormatArray.toString(xWCNI, "%.3e"));
+                
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.elementwiseSubtract(xIJC, xWCNI, fIJ);
                 }
-      
+                
                 //sum of squares
                 outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);
+                             
+ //System.out.printf("F%d%d=%.3e\n", i,j,MatrixUtil.innerProduct(fIJ, fIJ));
+ //System.out.flush();
 
                 //== subtract jP^T*f (aka bP) from bP ==
                  
@@ -1054,9 +1058,14 @@ public class BundleAdjustment {
                 //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
                 MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
+                
+//System.out.printf("bIJTF=%s\n", FormatArray.toString(bIJTF, "%.3e"));
 
                 MatrixUtil.elementwiseSubtract(gradPI, bIJTF, gradPI);
                 
+//System.out.printf("gradP_%d=%s\n", i, FormatArray.toString(gradPI, "%.3e"));
+//System.out.flush();
+
                 System.arraycopy(gradPI, 0, outGradP, i*3, 3);
                               
                 // if camera c is free
@@ -1067,6 +1076,9 @@ public class BundleAdjustment {
                     // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
                     //mA[j][j] = aIJT * aIJ;
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
+                    
+//System.out.printf("(ft%d,img%d)=U_%d=aIJT*aIJ=\n%s\n", 
+//    i, j, j, FormatArray.toString(auxMA, "%.3e"));
                     
                     if (outInitLambda != null) {
                         if (
