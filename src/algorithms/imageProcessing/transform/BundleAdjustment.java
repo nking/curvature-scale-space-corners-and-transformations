@@ -904,13 +904,13 @@ public class BundleAdjustment {
         double[] xWCI = new double[3];
         double[] xWCNI = new double[3];
         double[] xWCNDI = new double[3];
-        final int useCameraFrame = 1; 
-        double[][] xIJCs;        
+        final int useCameraFrame = 0; 
+        double[][] xIJCs = null;        
         
         //NOTE: most of the papers referenced above
         //    apply the radial distortion, rather than remove it,
         //    and so they work in camera coordinates.
-        if (useCameraFrame == 1) {
+        if (useCameraFrame == 0) {
             xIJCs = transformToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
         
@@ -1008,10 +1008,7 @@ public class BundleAdjustment {
                                 
                 // populate xIJ; the observed feature i in image j.  [1X3]
                 MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);
-                                
-                // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
-                MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
-                                
+                               
                 if (useCameraFrame == 0) {
                     // these are DISTORTED and in IMAGE reference frame
                     
@@ -1033,6 +1030,9 @@ public class BundleAdjustment {
                     //    apply the radial distortion, rather than remove it,
                     //    and so they work in camera reference frame.
                     
+                    // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
+                    MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
+                  
                     // xWCNI are the world scene points projected into camera frame
                     
                     // xIJC are the observed points in the camera reference frame with distortion removed
@@ -1071,7 +1071,7 @@ public class BundleAdjustment {
                     if (outInitLambda != null) {
                         if (
                             maxDiag(auxMA, outInitLambda)
-                        ) System.out.printf("auxMa) new lambda=%.3e\n", outInitLambda[0])
+                        ) System.out.printf("auxMa %d,%d) new lambda=%.3e\n", i,j,outInitLambda[0])
                         ;
                     }
                     
@@ -1990,4 +1990,5 @@ public class BundleAdjustment {
             aa = new Rotation.AuxiliaryArrays();
         }
     }
+    
 }
