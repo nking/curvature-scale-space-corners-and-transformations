@@ -400,7 +400,7 @@ public class Camera {
     
     /**
      * transform the world coordinates xW to the camera reference frame using
-     * rot * ( xW + trans).
+     * (rot * xW + trans).
      * @param xW coordinates of objects in a world reference frame.  
      * The format is 3XN for N points.
      * @param rot the rotation matrix to apply to the translated coordinates.
@@ -423,20 +423,20 @@ public class Camera {
         
         int n = xW[0].length;
         double[][] xC = MatrixUtil.copy(xW);
+        xC = MatrixUtil.multiply(rot, xC);
         int i, j;
         for (i = 0; i < n; ++i) {
             for (j = 0; j < 3; ++j) {
-                xC[j][i] -= trans[j];
+                xC[j][i] += trans[j];
             }
         }
         
-        xC = MatrixUtil.multiply(rot, xC);
         return xC;
     }
     
     /**
      * transform the world coordinate point xWPt to the camera reference frame using
-     * rot * ( xW + trans).
+     * (rot * xW + trans).
      * @param xWPt coordinates of an object in a world reference frame.  
      * The length is 3.
      * @param rot the rotation matrix to apply to the translated coordinates.
@@ -458,18 +458,18 @@ public class Camera {
         }
         
         double[] xC = Arrays.copyOf(xWPt, xWPt.length);
+        xC = MatrixUtil.multiplyMatrixByColumnVector(rot, xC);
         int j;
         for (j = 0; j < 3; ++j) {
-            xC[j] -= trans[j];
+            xC[j] += trans[j];
         }
         
-        xC = MatrixUtil.multiplyMatrixByColumnVector(rot, xC);
         return xC;
     }
     
     /**
      * transform the world coordinate point xWPt to the camera reference frame using
-     * rot * ( xW + trans).
+     * (rot * xW + trans).
      * @param xWPt coordinates of an object in a world reference frame.  
      * The length is 3.
      * @param rot the rotation matrix to apply to the translated coordinates.
@@ -495,21 +495,22 @@ public class Camera {
         if (out.length != 3) {
             throw new IllegalArgumentException("out.length must be 3 (for x, y, z)");
         }
+                
+        //point_camera = (1/x_z) * (R * point_world + translation) is called the normalized coordinate.
         
         double[] xC = Arrays.copyOf(xWPt, xWPt.length);
-        int j;
-        for (j = 0; j < 3; ++j) {
-            out[j] = xWPt[j] - trans[j];
-        }
-        
+      
         MatrixUtil.multiplyMatrixByColumnVector(rot, xC, aux);
         
-        System.arraycopy(aux, 0, out, 0, out.length);
+        int j;
+        for (j = 0; j < 3; ++j) {
+            out[j] = aux[j] + trans[j];
+        }        
     }
     
     /**
      * transform the world coordinate point xWPt to the camera reference frame using
-     * rot * ( xW + trans).
+     * (rot * xW + trans).
      * @param xWPt coordinates of an object in a world reference frame.  
      * The length is 3.
      * @param rot the rotation matrix to apply to the translated coordinates.
@@ -530,11 +531,12 @@ public class Camera {
             throw new IllegalArgumentException("rot must be 3X3");
         }
         double[] x2 = Arrays.copyOf(xWPt, xWPt.length);
+        MatrixUtil.multiplyMatrixByColumnVector(rot, x2, out);
         int j;
         for (j = 0; j < 3; ++j) {
-            x2[j] -= trans[j];
+            out[j] = x2[j] + trans[j];
         }
-        MatrixUtil.multiplyMatrixByColumnVector(rot, x2, out);
+        
     }
     
     /** converts pixel coordinates to camera coordinates by transforming them to camera 
