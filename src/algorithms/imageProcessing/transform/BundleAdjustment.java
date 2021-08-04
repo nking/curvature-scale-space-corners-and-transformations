@@ -479,11 +479,20 @@ public class BundleAdjustment {
             imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadials, useR2R4,
             outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
         
+        double lambda = outInitLambda[0];
+        
         // not using these as they are estimated in calculateLMVectorsSparsely
         //initDeltaPWithQu(outDP);
         //initDeltaCWithQu(outDC);
         
-        double lambda = outInitLambda[0];
+ //NOTE: outDC values are too large
+ 
+        log.log(LEVEL,
+            String.format(
+            "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
+            lambda, outFSqSum[0],
+            FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
+            FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")));                 
         
         // set to null to prevent calculating the max of diagnonal of (J^T*J) 
         outInitLambda = null;
@@ -519,13 +528,6 @@ public class BundleAdjustment {
         updateRadialDistortion(kRadialsTest, outDC);
   //      updateWorldC(coordsWTest, outDP);
                 
-        log.log(LEVEL,
-            String.format(
-            "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
-            lambda, outFSqSum[0],
-            FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
-            FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")));
-            
         // update the features with outDP?  see step 7 of Engels
         
         int doUpdate = 0;
@@ -572,7 +574,7 @@ public class BundleAdjustment {
                 // steepest descent direction
                 lambda *= lambdaF;
             }
-            System.out.printf("new lambda=%.6e\n", lambda);
+            System.out.printf("new lambda=%.6e  doUpdate=%d\n", lambda, doUpdate);
            
             if (doUpdate == 1) {
                 
@@ -1115,7 +1117,18 @@ public class BundleAdjustment {
                     MatrixUtil.elementwiseSubtract(gradCJ, aIJTF, gradCJ);
                     
                     System.arraycopy(gradCJ, 0, outGradC, j*mImages, 9);
-               
+/*     here
+bC = JC^T * F =  [9m X 1]
+———————————————-
+-A11T*F11- A21T*F21-A31T*F31-A41T*F41
+-A12T*F12- A22T*F22-A32T*F32-A42T*F42
+-A13T*F13- A23T*F23-A33T*F33-A43T*F43
+
+where each row is [9X2][2X1] = [9X1]
+0,0  0,1   0,2 => 1,1  1,2  1,3
+ double[][] vB = MatrixUtil.zeros(mImages, 9);
+ so should store in vB[i] not vB[j] as had
+ */
                     MatrixUtil.elementwiseSubtract(vB[j], aIJTF, vB[j]);
                              
                 }
@@ -1177,7 +1190,17 @@ public class BundleAdjustment {
                                                              | B41T*F41+B42T*F42+B43T*F43 |
                       *The V's are inverses in this matrix
                 */
+/*
+bC = JC^T * F =  [9m X 1]
+———————————————-
+-A11T*F11- A21T*F21-A31T*F31-A41T*F41
+-A12T*F12- A22T*F22-A32T*F32-A42T*F42
+-A13T*F13- A23T*F23-A33T*F33-A43T*F43
 
+where each row is [9X2][2X1] = [9X1]
+tmp=W * V^-1 * bP
+  need to finish loop over i before this stage I think...      
+*/        
                 MatrixUtil.elementwiseSubtract(vB[j], tmp, vB[j]);
 
                 // calc tPC = hPC^T * invHPPI (aka W*V^-1) 
@@ -1262,17 +1285,19 @@ public class BundleAdjustment {
         double[][] cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps);
            
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
-        backward substitution:
-            A﹡x= b:
-            A=L﹡L*
-            L﹡y = b ==> y via forward subst
-            L*﹡x = y ==> x via backward subst
+        backward substitution to find x as dC.
+            A ﹡ x = b: 
+            A = L ﹡ L^*
+            L ﹡ y = b ==> y via forward subst
+            L^* ﹡ x = y ==> x via backward subst
         */
         
         // length is vB.length vectorized which is [mImages*9]
         double[] yM = MatrixUtil.forwardSubstitution(cholL, 
             MatrixUtil.reshapeToVector(vB)
         );
+
+//outDC values are too large.  are mA values too small?  are vB values too large?
         
         // [[mImages*9 X mImages*9] * x = [mImages*9] ==> xM is length mImages*9
         // x is dC
