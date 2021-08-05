@@ -833,7 +833,11 @@ public class BundleAdjustment {
             outInitLambda[0] = Double.NEGATIVE_INFINITY;
         }
         
-        outFSqSum[0] = 0;
+        Arrays.fill(outGradC, 0);
+        Arrays.fill(outGradP, 0);
+        Arrays.fill(outDC, 0);
+        Arrays.fill(outDP, 0);
+        Arrays.fill(outFSqSum, 0);
         
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(
@@ -913,9 +917,6 @@ public class BundleAdjustment {
         final int useCameraFrame = 1; 
         double[][] xIJCs = null;        
         
-        //NOTE: most of the papers referenced above
-        //    apply the radial distortion, rather than remove it,
-        //    and so they work in camera coordinates.
         if (useCameraFrame == 1) {
             xIJCs = transformToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
@@ -960,7 +961,8 @@ public class BundleAdjustment {
                     continue;
                 }
                 
-                Arrays.fill(gradCJ, 0);
+                // fill gradC with last entry for feature J
+                System.arraycopy(outGradC, j*mImages, gradCJ, 0, 9);
                 
                 // get the rotation matrix rotM [3X3]
                 rotMatrices.getBlock(rotM, 0, j);
@@ -1025,10 +1027,6 @@ public class BundleAdjustment {
                     
                 } else {  
                     // these are DISTORTION-FREE and in CAMERA reference frame
-                    
-                    //NOTE: most of the papers referenced above
-                    //    apply the radial distortion, rather than remove it,
-                    //    and so they work in camera reference frame.
                     
                     // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
                     MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
