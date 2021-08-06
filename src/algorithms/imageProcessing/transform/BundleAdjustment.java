@@ -898,14 +898,16 @@ public class BundleAdjustment {
         double[] xIJHat = new double[3];
         double[] xWCI = new double[3];
         double[] xWCNI = new double[3];
+        //double[] xWCNI_2_19 = new double[3];
         double[] xWCNDI = new double[3];
+        //double[] xWCNDI_2_20 = new double[3];
         double[][] xIJCs = null;  
         
         // for 0, use image (pixel) reference frame, else for 1 use camera frame.
         final int useCameraFrame = 0;
         
         if (useCameraFrame == 1) {
-            xIJCs = transformToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
+            xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
         
         // [3X1]
@@ -959,10 +961,17 @@ public class BundleAdjustment {
                 Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j],
                     rotAux, xWCI);
                 
+                //intr is 3 X 3*nCameras where each block is size 3X3.
+                intr.getBlock(auxIntr, j, 0);
+          
                 // normalize
                 for (k = 0; k < 3; ++k) {
                     xWCNI[k] = xWCI[k] / xWCI[2];
                 }
+                // Qu eqn 2.19, used instead of xWCNI
+                /*xWCNI_2_19[0] = -auxIntr[0][0]*xWCNI[0];
+                xWCNI_2_19[1] = -auxIntr[1][1]*xWCNI[1];
+                xWCNI_2_19[2] = 1;*/
                 
                 k1 = kRadials[j][0];
                 k2 = kRadials[j][1];
@@ -970,17 +979,18 @@ public class BundleAdjustment {
                 // distort results are in xWCNDI
                 if (useCameraFrame == 0) {
                     CameraCalibration.applyRadialDistortion(xWCNI, k1, k2, useR2R4, xWCNDI);
+                    // Qu eqn 2.20, used instead of xWCNDI.  world feature reprojected to camera and  distorted
+                    //CameraCalibration.applyRadialDistortion(xWCNI_2_19, k1, k2, useR2R4, xWCNDI_2_20);
                 }
                 
-                //intr is 3 X 3*nCameras where each block is size 3X3.
-                intr.getBlock(auxIntr, j, 0);
-          
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, 
                     extrTrans[j], aa, aIJ, bIJ);
-  
+                
+ //ERROR: aIJ terms for rotation are too large
+         
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
 
@@ -1003,13 +1013,21 @@ public class BundleAdjustment {
                     // these are DISTORTED and in IMAGE reference frame
                     
                     // xWCNDI are the world scene points projected into camera frame and distorted
-                    
+                   
                     //populate xIJHat;the projected distorted feature i into image j reference frame.  [1X3]
-                    MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
+                    MatrixUtil.multiplyMatrixByColumnVector(auxIntr, 
+                        xWCNDI, xIJHat);
                     
                     //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
-                    
+
+if (j==0) {
+    System.out.printf("xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
+    System.out.printf("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e"));
+    System.out.printf("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e"));
+    System.out.printf("xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e"));
+    System.out.flush();
+}
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
                     
@@ -1032,8 +1050,8 @@ public class BundleAdjustment {
                 //sum of squares
                 outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);
                              
- //System.out.printf("F%d%d=%.3e\n", i,j,MatrixUtil.innerProduct(fIJ, fIJ));
- //System.out.flush();
+ System.out.printf("F(%d,%d)=%.3e\n", i,j,MatrixUtil.innerProduct(fIJ, fIJ));
+ System.out.flush();
 
                 //== subtract jP^T*f (aka bP) from bP ==
                  
@@ -1073,10 +1091,12 @@ public class BundleAdjustment {
                     // add jCT*JC aka U aka HCC to upper triangular part of block (j,j) of lhs mA; // [9X9]
                     //mA[j][j] = aIJT * aIJ;
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
-                    
-//System.out.printf("(ft%d,img%d)=U_%d=aIJT*aIJ=\n%s\n", 
-//    i, j, j, FormatArray.toString(auxMA, "%.3e"));
-                    
+
+/*if ((i%25)==0) {                    
+System.out.printf("(ft%d,img%d)\naIJ=\n%s\nbIJ=\n%s\n", 
+    i, j, FormatArray.toString(aIJ, "%.3e"), FormatArray.toString(bIJ, "%.3e"));
+System.out.flush();
+}*/
                     if (outInitLambda != null) {
                         if (
                             maxDiag(auxMA, outInitLambda)
@@ -1320,11 +1340,12 @@ System.out.printf("outGradC=%s\n", FormatArray.toString(outGradC, "%.3e"));
      
 System.out.printf("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e"));
 System.out.printf("vB=%s\n", FormatArray.toString(vB, "%.3e"));
-   
+System.out.flush();
+
         double eps = 1.e-7;
         // this method attempts to make the matrix the nearest symmetric positive *definite*:
         double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);
-        
+       
         /*
 System.out.printf("aPSD=%s\n", FormatArray.toString(aPSD, "%.3e"));
         EVD evd = EVD.factorize(new DenseMatrix(aPSD));
@@ -1336,7 +1357,7 @@ System.out.flush();
         */
         
         //[mImages*9, mImages*9]
-        double[][] cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps);
+        double[][] cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps/10.);
            
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
         backward substitution to find x as dC.
@@ -1359,7 +1380,8 @@ System.out.printf("cholL=%s\n", FormatArray.toString(cholL, "%.3e"));
           
 System.out.printf("yM=%s\n", FormatArray.toString(yM, "%.3e"));
 System.out.printf("outDC=%s\n", FormatArray.toString(outDC, "%.3e"));
-       
+System.out.flush();
+
         // now have outDC
         // calc outDP:  dP = invHPPI * gradPI - invHPPI * HPC * dC
         
@@ -1420,6 +1442,7 @@ System.out.printf("outDC=%s\n", FormatArray.toString(outDC, "%.3e"));
         } // end loop over feature i
             
 System.out.printf("outDP=%s\n", FormatArray.toString(outDP, "%.3e"));
+System.out.flush();
 
     }
     
@@ -1518,8 +1541,8 @@ System.out.printf("outDP=%s\n", FormatArray.toString(outDP, "%.3e"));
             throw new IllegalArgumentException("out size must be 2X3");
         }
         
-        double x = -xWCNI[0];
-        double y = -xWCNI[1];
+        double x = xWCNI[0];
+        double y = xWCNI[1];
         
         double x2 = x*x;
         double y2 = y*y;
@@ -1694,7 +1717,21 @@ System.out.printf("outDP=%s\n", FormatArray.toString(outDP, "%.3e"));
         // [2X3]
         double[][] dFdPhi = aa.f2X3;
         MatrixUtil.multiply(dFdT, dXdP, dFdPhi);
+
+//NOTE:  possibly need to derive dCPdC and dCPdY from equations as used in this
+//           code as the treatment of radial distortion is a little different than Qu
         
+//dFdPhi seems too large.  the x-term especially which is row 0 
+//==> dCPdC first term is large due to focal length
+//==> dCPdY is also large due to focal length
+/*System.out.printf("dCPdY=\n%s\n", FormatArray.toString(dCPdY, "%.3e"));
+System.out.printf("dXdP=\n%s\n", FormatArray.toString(dXdP, "%.3e"));
+System.out.printf("dCPdC=\n%s\n", FormatArray.toString(dCPdC, "%.3e"));
+System.out.printf("dCdX=\n%s\n", FormatArray.toString(dCdX, "%.3e"));
+System.out.printf("dFdT=\n%s\n", FormatArray.toString(dFdT, "%.3e"));
+System.out.printf("*dFdPhi=\n%s\n", FormatArray.toString(dFdPhi, "%.3e"));
+System.out.flush();*/
+
         // [2X3]
         double[][] dFdY = dCPdY;
     
@@ -2048,7 +2085,7 @@ System.out.printf("outDP=%s\n", FormatArray.toString(outDP, "%.3e"));
      * @throws no.uib.cipr.matrix.NotConvergedException 
      * @throws java.io.IOException 
      */
-    private static double[][] transformToCamera(int nFeatures, double[][] coordsI, 
+    private static double[][] transformPixelToCamera(int nFeatures, double[][] coordsI, 
         BlockMatrixIsometric intr, double[][] kRadial, boolean useR2R4) throws NotConvergedException, IOException {
         
         int nImages = coordsI[0].length/nFeatures;
