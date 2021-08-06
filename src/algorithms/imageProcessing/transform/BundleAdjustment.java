@@ -977,7 +977,7 @@ public class BundleAdjustment {
                 k2 = kRadials[j][1];
 
                 // distort results are in xWCNDI
-                if (useCameraFrame == 0) {
+                if (useCameraFrame == 0) {                            
                     CameraCalibration.applyRadialDistortion(xWCNI, k1, k2, useR2R4, xWCNDI);
                     // Qu eqn 2.20, used instead of xWCNDI.  world feature reprojected to camera and  distorted
                     //CameraCalibration.applyRadialDistortion(xWCNI_2_19, k1, k2, useR2R4, xWCNDI_2_20);
@@ -986,11 +986,9 @@ public class BundleAdjustment {
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]
                 // populate aIJ and bIJ as output of method:
-                aIJBIJ(xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, 
+                aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, 
                     extrTrans[j], aa, aIJ, bIJ);
-                
- //ERROR: aIJ terms for rotation are too large
-         
+                         
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
 
@@ -1021,11 +1019,11 @@ public class BundleAdjustment {
                     //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
 
-if (j==0) {
-    System.out.printf("xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
+if (j==0 && ((i%50)==0)) {
     System.out.printf("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e"));
     System.out.printf("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e"));
     System.out.printf("xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e"));
+    System.out.printf("xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
     System.out.flush();
 }
                     // [1X3] - [1X3] = [1X3]
@@ -1568,20 +1566,19 @@ System.out.flush();
      * w.r.t. 2D coordinates of perspective projection of the i-th feature point.
      * Defined in Qu 2018 eqns (3.28 - 3.33).
      * 
-     * @param xWCI a world point projected to the camera reference frame.
-     * xWCI = column i of coordsW transformed to camera coordinates, but not normalize; 
+     * @param xWI the 3-D coordinates of a world scene feature.
      * @param phi rotation angle vector of length 3 in units of radians
      * @param out output array of size [3X3]
      */
-    static void pdXWIJPhiJ(double[] xWCI, double[] phi, double[][] out) {
+    static void pdXWIJPhiJ(double[] xWI, double[] phi, double[][] out) {
         
         if (out.length != 3 || out[0].length != 3) {
             throw new IllegalArgumentException("out size must be 3X3");
         }
         
-        double x = xWCI[0];
-        double y = xWCI[1];
-        double z = xWCI[2];
+        double x = xWI[0];
+        double y = xWI[1];
+        double z = xWI[2];
         double pX = phi[0]; // in radians
         double pY = phi[1];
         double pZ = phi[2];
@@ -1657,8 +1654,10 @@ System.out.flush();
      for each feature = 3 * mFeatures elements (i index is used for features)
      * Defined in Lourakis lecture slide 10.
      * 
-     * @param xWCI a world point projected to the camera reference frame.
-     * xWCI = column i of coordsW transformed to camera coordinates, but not normalize; 
+     * @param xWI a world scene feature.
+     * xWI = column i of coordsW
+     * @param xWCI xWI projected to the camera reference frame.
+     * xWCI = column i of coordsW transformed to camera coordinates, but not normalize;
      * @param intr
      * @param k1 radial distortion coefficient 1
      * @param k2 radial distortion coefficient 2
@@ -1672,7 +1671,7 @@ System.out.flush();
      * @param outAIJ output array of size [2X9]
      * @param outBIJ output array of size [2X3]
      */
-    static void aIJBIJ(double[] xWCI, double[][] intr, double k1, double k2, 
+    static void aIJBIJ(double[] xWI, double[] xWCI, double[][] intr, double k1, double k2, 
         double[] rotAngles, double[][] rot, double[] trans, AuxiliaryArrays aa,
         double[][] outAIJ, double[][] outBIJ) {
                 
@@ -1692,6 +1691,7 @@ System.out.flush();
             xWCNI[i] /= xWCNI[2];
         }
         
+//NOTE: may need sign corrections:        
         // 2X2
         double[][] dCPdC = aa.a2X2;
         pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);
@@ -1706,7 +1706,7 @@ System.out.flush();
         
         // 3X3
         double[][] dXdP = aa.d3X3;
-        pdXWIJPhiJ(xWCI, rotAngles, dXdP);
+        pdXWIJPhiJ(xWI, rotAngles, dXdP);
        
         //========================================
         
