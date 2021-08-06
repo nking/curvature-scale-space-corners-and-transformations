@@ -1092,6 +1092,7 @@ public class CameraCalibration {
 
         outputDistorted[0] = xCPt[0] + xm;
         outputDistorted[1] = xCPt[1] + ym;
+        outputDistorted[2] = xCPt[2];// <=== presumably this coordinate is '1'
     }
     
     /**
