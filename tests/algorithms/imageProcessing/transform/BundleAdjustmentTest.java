@@ -43,7 +43,7 @@ public class BundleAdjustmentTest extends TestCase {
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*r + k2*r^2:
-        boolean useR2R4 = false;
+        boolean useR2R4 = true;//false;
         
         int nFeatures = 256;
         int nImages = 5;
@@ -81,7 +81,7 @@ public class BundleAdjustmentTest extends TestCase {
         double skew = gamma;
         
         double alphaE = 871.445;
-        double gammaE = 0.2419;
+        double gammaE = 0.2419; //<== not significantly different from 0 according to Zhang stats
         double u0E = 300.7676;
         double betaE = 871.1251;
         double v0E = 220.8684;
