@@ -1137,7 +1137,7 @@ System.out.flush();
 System.out.printf("(ft%d,img%d): gradCJ=%s\n     aIJTF=%s\nj*9=%d\n", 
     i, j,  FormatArray.toString(gradCJ, "%.3e"), FormatArray.toString(aIJTF, "%.3e"), j*9);
 System.out.flush();
-                    
+        
                     //outGradC length is [9*mImages]
                     System.arraycopy(gradCJ, 0, outGradC, j*9, 9);
                     
@@ -1691,51 +1691,37 @@ System.out.flush();
             xWCNI[i] /= xWCNI[2];
         }
         
-//NOTE: may need sign corrections:        
-        // 2X2
+//TODO: may need sign corrections:      
+        // 2X2.  Qu 2018 eqn (3.12)
         double[][] dCPdC = aa.a2X2;
         pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);
         
-        // 2X3
+        // 2X3.  Qu 2018 eqn (3.16)
         double[][] dCdX = aa.b2X3;
         pdCIJXWIJ(xWCI, dCdX);
         
-        // 2X3
+        // 2X3.  Qu 2018 eqn (3.10)
         double[][] dCPdY = aa.c2X3;
         pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);
         
-        // 3X3
+        // 3X3.  Qu 2018 eqns (3.28 - 3.33)
         double[][] dXdP = aa.d3X3;
         pdXWIJPhiJ(xWI, rotAngles, dXdP);
        
         //========================================
         
-        // [2X3]
+        // [2X3].  Qu 2018 eqn (3.35)
         double[][] dFdT = aa.e2X3;
         MatrixUtil.multiply(dCPdC, dCdX, dFdT);
         
-        // [2X3]
+        // [2X3].  Qu 2018 eqn (3.34)
         double[][] dFdPhi = aa.f2X3;
         MatrixUtil.multiply(dFdT, dXdP, dFdPhi);
 
-//NOTE:  possibly need to derive dCPdC and dCPdY from equations as used in this
-//           code as the treatment of radial distortion is a little different than Qu
-        
-//dFdPhi seems too large.  the x-term especially which is row 0 
-//==> dCPdC first term is large due to focal length
-//==> dCPdY is also large due to focal length
-/*System.out.printf("dCPdY=\n%s\n", FormatArray.toString(dCPdY, "%.3e"));
-System.out.printf("dXdP=\n%s\n", FormatArray.toString(dXdP, "%.3e"));
-System.out.printf("dCPdC=\n%s\n", FormatArray.toString(dCPdC, "%.3e"));
-System.out.printf("dCdX=\n%s\n", FormatArray.toString(dCdX, "%.3e"));
-System.out.printf("dFdT=\n%s\n", FormatArray.toString(dFdT, "%.3e"));
-System.out.printf("*dFdPhi=\n%s\n", FormatArray.toString(dFdPhi, "%.3e"));
-System.out.flush();*/
-
-        // [2X3]
+        // [2X3]. Qu 2018 eqn (3.36)
         double[][] dFdY = dCPdY;
     
-        // [2X3]
+        // [2X3].  Qu 2018 eqn (3.37)
         double[][] dFdX = aa.h2X3;
         MatrixUtil.multiply(dFdT, rot, dFdX);
         
