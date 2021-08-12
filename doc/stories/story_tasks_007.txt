@@ -394,7 +394,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  cij = -xWCNI 
                  ...
 
-             pdCIJXWIJ(double[] xWC)
+             pdCIJXWIJ(double[] xWCI)
   
              pdCpIJYJ(double[] xWCNI, k1, k2)
                  cij = -xWCNI
@@ -421,30 +421,13 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                 //bIJ:
                 //dF/dX = pdCpIJCIJ * pdCIJXWIJ                  [2X3]
 
-             // there may be more than one camera and should be 6 of more features per image
-             // (3 for rot, 3 for trans) and among those, need 3 per camera for the intrinsic parameters
-             // and 2 or more vantage points for the point parameters (no reference for these
-             // numbers, just a rough estimate from counting the number of unknowns).
-             // the code needs initial parameter estimates in intr, extrRot, and extrTrans.
-             // the code returns results in outGradP, outGradC, 
-             //    outFSqSum, outDP, outDC for refined parameters
-             //    and the gradient, objective and parameter update steps needed by
-             //    code such as Levenberg-Marquardt.
-             //    NOTE: the code does not update the intrinsic and extrinsic camera parameters, allowing
-             //    the L-M algorithm to handle that.
-             // runtime complexity is ~ O(nFeatures * mImages^2)
-             // assumptions used in forming the partial deivatives of the intrinsic camera parameters
-             //    are no skew, focal length along x is the same as focal length along y, square pixels.
              static public void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW, 
-                 TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
-                 double[][] intr, double[][] extrRot, double[][] extrTrans,
-                 double[] kRadial, boolean useR2R4,
+                 ... params ...
                  double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, double[] outFSqSum)
 
              static public BA solveSparsely(
                  ouble[][] coordsI, double[][] coordsW,
-                 TIntIntMap imageToCamera,  TIntObjectMap<TIntSet> imageMissingFeaturesMap,
-                 double[][] intr, double[][] extrRot, double[][] extrTrans, double[] kRadial, 
+                 ... params ...
                 final int nMaxIter, boolean useR2R4)
 
         details of the methods:
@@ -453,7 +436,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              -- create the projected coordinates needed in "eps" (Lourakis notation)
                 eps is the righthand side vector of the augmented normal equation.
              -- tranform X_w into camera frame coords X_c
-                X_feature_c = R_image*(X_feature_w + t_image)  <== using + translation in CameraCalib*java too
+                X_feature_c = R_image*X_feature_w + t_image 
                 X_feature_c in homogeneous = X_feature_c/X_feature_c[Z-coord]
                 *The coordinates are now in the camera frame.
              -- apply radial distortion transformation f(r)=1+k2*r^2+k1*r^4, then multiply that by x_c
@@ -472,7 +455,7 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                 Assumptions:  no skew, square pixels, f=f_x=f_y
 
            details of the BundleAdjustment.calculateLMVectorsSparsely(...) method:
-             -- following the Engels pseudocode for solving for the parameter vector via the
+             -- following in part, the Engels pseudocode for solving for the parameter vector via the
                 reduced camera matrix and cholesky factoring with forward and back substitution
                 to avoid inverting the reduced camera matrix.
 
@@ -484,10 +467,6 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                    returned by it in order to allow garbage collection to reclaim the
                    class instance of BundleAdjustment (or similar name) and it's associated memory.
 
-                consider adapting the code to use an associative map for features in images.
-                   e.g. vij = 1 iff point i is visible in image j as used by Lourakis.
-
-
              // j for m images
              // i for n features
 
@@ -495,39 +474,21 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
              // inversion of matrix HPP (aka V*) for case (9^3)*mImages < (3^3)*nFeatures
              // consider branching here for inversion of matrix HCC (aka U*) for case (9^3)*mImages > (3^3)*nFeatures
 
-             // initializing variables for re-use
-
-             init mA ;// matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
-             init vB ;// vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
-             init hPPI; // aka V_i; a [3X3] block
-             init bPI; // aka jPTf; row j of bP; [3X1]
-             init bIJT; //aka jP_I_J^T [3X2]
-             init aIJT;//aka jC_I_J^T  [9X2]
-             init bIJsq // aka jP^T*JP; [3X3]
-             init aIJ; [2X9]
-             init bIJ; [2X3]
-             init bIJTF; aka bP [3X1]
-             init aIJTF; aka bC [9X1]
+             NOTE: datastructures may have changed.   see code BundleAdjustment.java
              // outBC and outBP are the output gradient vectors -J^T*(x-x_hat) as -aIJTF and -bIJTF, respectively.
              double[] outGradC = new double[9]; // summation of aij^T*fij
              double[] outGradP = new double[3]; // summation of bij^T*fij
-             init fIJ;// [2X1]
              double outFSqSum = 0;
-             init hPCJ; // m rows of blocks of size [3X9]
-             init tP; // [3X1]
-             init tPC; // [9X3]
-             init tmp; // [9X1]
-             init hPCIJT; // [9X3]
-             init tPs;// n blocks of [3X1] // i is nFeatures
-             init tPCTs;// nXm blocks of [3X9] // i is nFeatures, j is mImages
+             double[] bC = new double[9*mImages];
+             double[] bP = new double[3*nFeatures];
+             BlockMatrixIsometric hPCBlocks /*W^T*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);
+             BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 1), 9, 9);
+             BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);
+             // storing hCCJBlocks in mA, while populating mA with only HCC.  later will add the negative rightsize of mA to mA
+             //BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 1), 9, 9);
 
-             //runtime complexity for this loop is O(nFeatures * mImages^2)
+             //largest runtime complexity in the loop clauses is O(nFeatures * mImages^2)
              for (i=0; i<nFeatures; ++i) { // this is variable p in Engels pseudocode
-                 reset hPPI to 0's;// [3x3]// a.k.a. V*_i. 
-                 reset bPI to 0's; //[3X1]
-                 // if the number of images that a feature is in is different for any feature,
-                 //  need to reset hPCJ to m rows of blocks of size [3X9] for the feature
-
                  // extract the world feature.  size [1X3]
                  xWI = MatrixUtil.extractColumn(coordsW, col);
                  //transform to camera reference frame. size [1X3]
@@ -538,21 +499,6 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                  xWCNDI = CameraCalibration.applyRadialDistortion(xWCFNI, k1, k2, useR2R4);
 
                  for (j=0; j<mImages; ++j) {
-                     aIJ, bIJ from aIJBIJ(xWCI, k1, k2, extrinsics, aIJ, bIJ)
-                     // aij aka jC is [2X9] when including intrinsic, else [2X6]
-                     // bij aka jP is [2X3].
-
-                     //[3X2]  aka jP^T
-                     bIJT = MatrixUtil.transpose(bIJ);
-
-                     // bij^T * bij = [3X2]*[2X3] = [3X3]
-                     bIJsq = MatrixUtil.multiply(bIJT, bIJ)
-
-                     // add jP^T*JP to upper triangular part of hPP aka V
-                     // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
-                     //     elementwise addition of 3X3 blocks:
-                     hPPI = MatrixUtil.elementwiseAdd(hPPI, bijsq)
-
                      // the observed feature i in image j
                      xIJ = MatrixUtil.extractColumn(coordsI, col);
 
@@ -564,123 +510,83 @@ Task 6: implement the method for intrinsic and extrinsic camera parameters optim
                      fIJ = MatrixUtil.elementwiseSubtract(xIJ, xIJHat);
                      outFSqSum += MatrixUtil.lpSum(fIJ, 2);
 
-                     // subtract jP^T*f (aka bP) from bP
-                     bIJTF =  bIJT * fIJ;// [3X1]
-                     bPI -= bIJTF; // element wise subtract
-                     elementwisesubtract outGradP , bIJTF
+                     //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
+                     //bIJ is [2X3]
+                     // populate aIJ and bIJ as output of method:
+                     aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, extrTrans[j], aa, aIJ, bIJ);
+                     calc FIJ 
+                     outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);
 
-                     // [9X2] aka jC^T
-                     aIJT = MatrixUtil.transpose(aIJ);
-
-                     // if camera c is free means this?
-                     if (image j has feature i in it) {
-
-                         // add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; // [9X9]
-                         mA[j][j] = aIJT * aIJ;
-
-                         // compute block (i,j) of hPC as hPC=jPTJC [3X9]
-                         //    and store until end of image j loop.
-                         hPCJ[j] = bIJT * aIJ;
-
-                         // subtract aIJT*f (where bc = -aIJT*f aka -jCT*f) from block row j in vB. [9X1]
-                         aIJTF = aIJT * fIJ
-
-                         elementwisesubtract outGradC , aIJTF
-
-                         vB[j] = MatrixUtil.elementwiseSubtract(vB[j], aIJTF)
+                     //V_i = Σ_j(BIJT*B1J) // HPP=V
+                     calc BIJT*BIJ and add it to hPPI. later invert it, and add to hPPIInvBlocks for block(i,0)
+                     //U_j = Σ_i(AIJT*A1J) // HCC=U
+                     calc AIJT*AIJ.  add it to mA block(j,j) 
+                     //W_i_j^T = (AIJT*BIJ)^T = BIJ^T*AIJ
+                     calc BIJ^T*AIJ and store in hPCBlocks for block(i,j)
+                     //calc bC: row=j, col=0 : Σ_i(-AIJT*F1J)
+                     //calc bP: row=i, col=0 : Σ_j(-BIJT*F1J)
+                 } // end j loop over images
+             } // end i loop over features
+             BlockMatrixIsometric tPBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 1), 3, 1);
+             BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures), 9, 3);
+             double[][] vB = MatrixUtil.zeros(mImages, 9);
+             for (i = 0; i < nFeatures; ++i) {
+                 for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
+                     //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
+                     //calc tPC = HPC^T*HPP^-1 = W*V^-1 and set into tPCBlocks(j,i)=WIJ*invVI
+                     for (j2 = 0; j2 < mImages; ++j2) {
+                         //calc rightside of mA: tPC*HPC2 = W*V^-1*W^T [9m X 9m]
+                         //calc rightside of vB: HPC^T*tP = HPC^T*HPP^-1*bP = W*V^-1*bP
                      }
-                 } // end image j loop
+                 } // end j loop over images
+             } // end i loop over features
 
-                 //invert hPPI // hPP is V* // [3X3]
-                 invHPPI = hppI; // invert the diagonal block for feature i;
-
-                 // hPPI^-1 * bPI is V^-1*bPI // [3X3][3X1] = [3X1]
-                 tP = invHPPI * bPI;
-                 tPs[i] = tP; // system.arraycopy...
-
-                 // outer product of feature i
-                 // for each free camera means? in context of a use case of real-time acquisition?
-                 for (j=0; j<mImages; ++j) {
-
-                     // subtract hPC^T * tP = hPC^T * (hPP^-1) * bP from part j for image j of rhs vB;
-                     //                     = W * V^-1 * bP
-                     // [9X1] block
-
-                     // calc hPC^T aka W for feature i, all j images;  [9X3] 
-                     hPCIJT = MatrixUtil.transpose( hPCJ[j] );
-
-                     // [9X3][3X1] = [9X1]
-                     tmp = MatrixUtil.multiply(hPCIJT, tP);
-
-                     // (at this point, have invHPPI (W_I_J for all j's of current feature i))
-                     //   subtract hPC^T * tP from element j of rhs vB.
-                     /* e.g.  (W*V^-1)*(bP) =
-                                                                  vector element i=1 
-                            element i=1,j=1                       (all j for this i already calculated)
-                              \/                                    \/
-                        -> | W11*V1   W21*V2  W31*V3  W41*V4 | * | B11T*F11+B12T*F12+B13T*F13 | <-
-                           | W12*V1   W22*V2  W32*V3  W42*V4 |   | B21T*F21+B22T*F22+B23T*F23 |
-                           | W13*V1   W23*V2  W33*V3  W43*V4 |   | B31T*F31+B32T*F32+B33T*F33 |
-                                                                 | B41T*F41+B42T*F42+B43T*F43 |
-                          *The V's are inverses in this matrix
-                     */
-
-                     vB[j] = MatrixUtil.elementwiseSubtractBlock(vB[j], tmp)
-
-                     // calc hPC^T * invHPPI and store in variable TPC/  [9X3][3X3] = [9X3]
-                     tPC = hPCIJT * invHPPI;
-
-                     // tPC^T = invHPPI^T * hPCIJ = invHPPI * hPCIJ
-                     set block i,j of tPCTs to MatrixUtil.multiply(invHPPI, hPCJ[j]);
-
-                     for (j2=j+1; j2<mImages; ++j2) {
-                         // calc tPC * hPCJ[j2] = hPC^T * invHPPI * hPCJ[j2] // [9X3][3X9]=[9X9]
-                         //   subtract from block (j, j2) of lhs mA
-                         mA[j][j2] -= (tPC * hPCJ[j2]);
-                     }
-                 } // end image j loop
-             } // end feature i loop
+             //then Engels steps 5-10
 
              // (optional) Fix gauge by freezing coordinates and thereby reducing the 
              // linear system with a few dimensions.
               
-
              // cholesky decompostion to solve for dC in mA*dC=vB
              // (using the sparsity of upper and lower triangular matrices results in 
-             //    half the computation time of LU decomposition in comparison)
-             DenseCholesky chol = no.uib.cipr.matrix.DenseCholesky.factorize(new DenseMatrix(mA));
-             LowerTriangDenseMatrix cholL = chol.getL()
-             UpperTriangDenseMatrix cholU = chol.getU()
-             double[] yM = MatrixUtil.forwardSubstitution(i
-                 MatrixUtil.convertToRowMajor(cholL), MatrixUtil.vectorize(vB));
-             // dC is [9m X 1]
-             double[] dC = MatrixUtil.backwardSubstitution(
-                 MatrixUtil.convertToRowMajor(cholU), yM);
+             //    half the computation time of LU decomposition in comparison).
+             // convert mA to a symmetric positive definite matrix.
+             // use cholesky method PackCholesky of MTJ or the simple one in MatrixUtil.java
+             /* avoid inverting A by using Cholesky decomposition w/ forward and 
+             backward substitution to find x as dC.
+                 A ﹡ x = b: 
+                 A = L ﹡ L^*
+                 L ﹡ y = b ==> y via forward subst
+                 L^* ﹡ x = y ==> x via backward subst
+             */
+             // length is vB.length vectorized which is [mImages*9]
+             double[] yM = MatrixUtil.forwardSubstitution(cholL, MatrixUtil.reshapeToVector(vB));
+        
+             // [[mImages*9 X mImages*9] * x = [mImages*9] ==> x is length mImages*9
+             // x is dC
+             MatrixUtil.backwardSubstitution(MatrixUtil.transpose(cholL), yM, outDC);
+          
+             // outDC is [9m X 1] 
+             // outDP is [3nX1]
+             // now have outDC. calc outDP:  dP = invHPPI * gradPI - invHPPI * HPC * dC
+             
+             //equivalent of Engels step (7)
+             for (i = 0; i < nFeatures; ++i) {
+                 //bP is bIJTF and is stored in outGradP; [3*nFeaturesX1] as blocks of [3X1]
+                 // outDP = invHPPI * gradPI - invHPPI * auxHPC * dCJ
+                 // let tmp = invHPPI * gradPI;// [3X3]  [3X1]
+                 //for each j, subtract from tP, invHPPI*HPCJ*dCJ
+                 for (j = 0; j < mImages; ++j) {
+                     //for each j, subtract from tP, invHPPI*HPCJ*dCJ = [3X3][3X9][9X1]
+                 } // end image j loop
+                 // store tP in outDP which is [3*nFeaturesX1]
+                 // Engels: compute updated point (i.e. world coord features)
+                 // NOTE: for this class, the updates are handled by the invoker of 
+                 //       this method.  The updated parameters are given to the code so
+                 //       that when outFSqSum is calculated above, it is using 
+                 //       the updated parameters and world coords.
+             } // end loop over feature i
 
-             init dP // [3nX1]
-             init dCJ // [9X1]
-             init double[] tmp;
-             for (i=0; i<nFeatures; ++i) {
-                 // start with point update for feature i, dP = tP
-                 dP[i] = tPs[i];
-                 for (j=0; j<mImages; ++j) {
-                     // subtract tPC^T*dCJ where dCJ is for image j (that is dCJ = subvector: dC[j*9:(j+1)*9) 
-                     dCJ = // system.arraycopy dC[j*9:(j+1)*9)
-                     tmp = tPCTs(i,j)*dCJ;
-                     dP[i] = element wise subtract dP[i] - tmp;
-                 }
-                 // compute updated point
-             }
-
-             // dP and dC are the updating vectors for L-M
              -----------
-
-pause here to refactor the parameter estimates by moving them from PNP into
-CameraCalibration class.
-
-reading on gauge:
-free features and free cameras are terms that they are not fixed.
-
 
            details of the BundleAdjustment.solveSparsely(...) method:
 
@@ -689,8 +595,7 @@ free features and free cameras are terms that they are not fixed.
 
                 the structure is similar to LevenbergMarquardtForPNP.solveForPose(...)
                     excepting that the parameter update steps, gradients, and the objective
-                    evaluation are calculated by
-                    LevenbergMarquardtForBA.solveUsingSparse(...)
+                    evaluation are calculated in the private sparse method
 
 ---------------------------------------------------------------------
 Task 7: implement a method for extrinsic parameter optimization
@@ -714,7 +619,7 @@ Task 7: implement a method for extrinsic parameter optimization
   
    amount of time used:  3 days so far on background reading and algorithm details.
 
-   state of completion: complete, but not tested
+   state of completion: complete, but not tested.  The class is PNP.java
 
    comments:
       implemented as solveForPose() in class LevenbergMarquardtForPose.java.
