@@ -849,13 +849,13 @@ public class BundleAdjustment {
         //HPP^-1 is a.k.a. (J_P^T*J_P)^-1 a.k.a. V^-1
         //The diagonals, V_i, are stored here as [3X3] blocks. each V_i is a summation of b_i_j^T*b_i_j over all j images.
         //The inverse is each diagonal block inverted.
-        BlockMatrixIsometric hPPIInvBlocks /*VI^-1*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 1), 3, 3);
+        BlockMatrixIsometric hPPIInvBlocks /*VI^-1*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 3), 3, 3);
 
         //HCC is a.k.a. J_C^T*J_C a.k.a. U^* (and in Qu thesis is variable B).
         //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
         // HCC is set into matrix A as it is calculated.
         // storing hCCJBlocks in mA, while populating mA with only HCC.  later will add the negative rightsize of mA to mA
-        //BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 1), 9, 9);
+        //BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
 
         // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);
@@ -1158,7 +1158,7 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
         }// end loop i over features
         
         if (outInitLambda != null) {
-            for (j = 0; j < auxMA.length; ++j) {
+            for (j = 0; j < mImages; ++j) {
                 mA.getBlock(auxMA, j, j);
                 if (maxDiag(auxMA, outInitLambda)) {
                     System.out.printf("auxMa %d,%d) new lambda=%.3e\n", i, j, outInitLambda[0]);
@@ -1168,9 +1168,11 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
 
         // aIJ^T*aIJ is now in auxMA.  each U_j is a summation of a_i_j^T*a_i_j over all i features.
         // augment U_J with the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
-        for (j = 0; j < auxMA.length; ++j) {
+        for (j = 0; j < mImages; ++j) {
             mA.getBlock(auxMA, j, j);
-            auxMA[j][j] *= (1. + lambda);
+            for (k = 0; k < auxMA.length; ++k) {
+                auxMA[k][k] *= (1. + lambda);
+            }
             mA.setBlock(auxMA, j, j);
         }
         
@@ -1187,7 +1189,9 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
         System.out.printf("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e"));
         System.out.flush();
                 
-        BlockMatrixIsometric tPBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 1), 3, 1);
+        // blocks: n rows and 1 column
+        BlockMatrixIsometric tPRowBlocks = new BlockMatrixIsometric(
+            MatrixUtil.zeros(nFeatures, 3), 1, 3);
         double[] tPI = new double[3];
         
         BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures), 9, 3);
@@ -1200,7 +1204,7 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
             System.arraycopy(bP, i*3, bPI, 0, 3);
             // [3X3][3X1]=[3X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);
-            tPBlocks.setRowBlock(tPI, i, 0);
+            tPRowBlocks.setRowBlock(tPI, i, 0);
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 //TODO consider how to handle feature not present in image here
                 if (!imageFeaturesMap.get(j).contains(i)) {
@@ -1219,7 +1223,7 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
         double[][] vB = MatrixUtil.zeros(mImages, 9); 
         double[] vBJ = new double[9];
         for (i = 0; i < nFeatures; ++i) {
-            tPBlocks.getRowBlock(tPI, i, 0);            
+            tPRowBlocks.getRowBlock(tPI, i, 0);            
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 //TODO consider how to handle feature not present in image here
                 if (!imageFeaturesMap.get(j).contains(i)) {
@@ -1320,10 +1324,6 @@ System.out.flush();
         
  System.out.printf("cholL=%s\n", FormatArray.toString(cholL, "%.3e"));
 
-        PackCholesky pCholL = PackCholesky.factorize(new DenseMatrix(aPSD));
- System.out.printf("packchol.L=%s\n", FormatArray.toString(
-     Matrices.getArray(pCholL.getL()), "%.3e"));
-        
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
         backward substitution to find x as dC.
             A ﹡ x = b: 
@@ -1371,7 +1371,7 @@ System.out.flush();
                     tmpI[k] += tmp[k];
                 }
             }
-            tPBlocks.getRowBlock(tPI, i, 0);
+            tPRowBlocks.getRowBlock(tPI, i, 0);
             for (k = 0; k < tPI.length; ++k) {
                 tPI[k] -= tmpI[k];
                 outDP[i*3 + k] = tPI[k];
