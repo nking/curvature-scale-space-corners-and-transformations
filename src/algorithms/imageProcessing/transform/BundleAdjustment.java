@@ -849,7 +849,6 @@ public class BundleAdjustment {
         //The inverse is each diagonal block inverted.
         BlockMatrixIsometric hPPIInvBlocks /*VI^-1*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 1), 3, 3);
 
-        
         //HCC is a.k.a. J_C^T*J_C a.k.a. U^* (and in Qu thesis is variable B).
         //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
         // HCC is set into matrix A as it is calculated.
@@ -926,9 +925,10 @@ public class BundleAdjustment {
         double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
         // i for n features, j for m images
-        int i, j, j2, k;
+        int i, j, k;
         
-        //largest runtime complexity in the loop clauses is O(nFeatures * mImages^2)
+        //largest runtime complexity in the loop clauses is O(nFeatures * mImages)
+        //largest runtime complexity for block multiplication is O(
                      
         for (i = 0; i < nFeatures; ++i) { // this is track p in Engels pseudocode
                         
@@ -947,9 +947,6 @@ public class BundleAdjustment {
                 if (!imageFeaturesMap.get(j).contains(i)) {
                     continue;
                 }
-                
-                // fill bCJ with last entry for feature J
-                System.arraycopy(bC, j*9, bCJ, 0, 9);
                 
                 // get the rotation matrix rotM [3X3]
                 rotMatrices.getBlock(rotM, 0, j);
@@ -1114,13 +1111,16 @@ System.out.flush();
                     /* 
                     bC = -JC^T * F =  [9m X 1]
                     ———————————————-
-                    -A11T*F11- A21T*F21-A31T*F31-A41T*F41
-                    -A12T*F12- A22T*F22-A32T*F32-A42T*F42
-                    -A13T*F13- A23T*F23-A33T*F33-A43T*F43
+                    -A11T*F11-A21T*F21-A31T*F31-A41T*F41
+                    -A12T*F12-A22T*F22-A32T*F32-A42T*F42
+                    -A13T*F13-A23T*F23-A33T*F33-A43T*F43
 
                     where each row is [9X2][2X1] = [9X1]
                     */
 
+                    // fill bCJ with last entry for image J
+                    System.arraycopy(bC, j*9, bCJ, 0, 9);
+                
                     MatrixUtil.elementwiseSubtract(bCJ, aIJTF, bCJ);
 
 System.out.printf("(ft%d,img%d): bCJ=%s\n     aIJTF=%s\nj*9=%d\n", 
@@ -1143,6 +1143,7 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
                 ;
             }
             
+            // augment hPPI by damping term
             //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
             for (k = 0; k < 3; ++k) {
                 hPPI[k][k] *= (1. + lambda);
@@ -1164,10 +1165,11 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
         }
 
         // aIJ^T*aIJ is now in auxMA.  each U_j is a summation of a_i_j^T*a_i_j over all i features.
-        // augment it with the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
+        // augment U_J with the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
         for (j = 0; j < auxMA.length; ++j) {
             mA.getBlock(auxMA, j, j);
             auxMA[j][j] *= (1. + lambda);
+            mA.setBlock(auxMA, j, j);
         }
         
         // HPC is finished and is a dense matrix
@@ -1185,8 +1187,10 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
                 
         BlockMatrixIsometric tPBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 1), 3, 1);
         double[] tPI = new double[3];
+        
         BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures), 9, 3);
         double[][] tPC = MatrixUtil.zeros(9, 3);
+        
         for (i = 0; i < nFeatures; ++i) {
             //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
             //   invHPPI is [3X3]
@@ -1194,12 +1198,12 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
             System.arraycopy(bP, i*3, bPI, 0, 3);
             // [3X3][3X1]=[3X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);
-            tPBlocks.subtractFromRowBlock(tPI, i, 0);
+            tPBlocks.setRowBlock(tPI, i, 0);
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 //TODO consider how to handle feature not present in image here
                 if (!imageFeaturesMap.get(j).contains(i)) {
                     continue;
-                }
+                }        
                 //calc tPC = HPC^T*HPP^-1 = W*V^-1 and set into tPCBlocks(j,i)=WIJ*invVI//[9X3]
                 // auxHPC is [3X9]
                 // tPC block is [9X3][3X3]=[9X3]
@@ -1220,23 +1224,18 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
                     continue;
                 }
                 hPCBlocks.getBlock(auxHPC, i, j);
-                MatrixUtil.multiplyMatrixByColumnVector(auxHPC, tPI, vBJ);
+                MatrixUtil.transpose(auxHPC, auxHPCT);
+                MatrixUtil.multiplyMatrixByColumnVector(auxHPCT, tPI, vBJ);
                 for (k = 0; k < vBJ.length; ++k) {
                     vB[j][k] -= vBJ[k];
                 }
             }
         }
         // finish vB: vB += bC
-        for (i = 0; i < nFeatures; ++i) {
-            for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
-                //TODO consider how to handle feature not present in image here.
-                if (!imageFeaturesMap.get(j).contains(i)) {
-                    continue;
-                }
-                System.arraycopy(bC, j*9, bCJ, 0, 9);
-                for (k = 0; k < bCJ.length; ++k) {
-                    vB[j][k] += bCJ[k];
-                }
+        for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
+            System.arraycopy(bC, j*9, bCJ, 0, 9);
+            for (k = 0; k < bCJ.length; ++k) {
+                vB[j][k] += bCJ[k];
             }
         }
         
@@ -1301,7 +1300,7 @@ System.out.printf("vB=%s\n", FormatArray.toString(vB, "%.3e"));
 System.out.flush();
 
         double eps = 1.e-7;
-        // this method attempts to make the matrix the nearest symmetric positive *definite*:
+        // this method attempts to find the nearest symmetric positive *definite* matrix to A:
         double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);
        
         /*
@@ -1340,59 +1339,37 @@ System.out.printf("yM=%s\n", FormatArray.toString(yM, "%.3e"));
 System.out.printf("outDC=%s\n", FormatArray.toString(outDC, "%.3e"));
 System.out.flush();
 
-        // now have outDC
         // calc outDP:  dP = invHPPI * bPI - invHPPI * HPC * dC
-        //              dP = tP - tPC^T * dC
-        editing
-        
-        // outDC is [9m X 1] 
-        // outDP is [3nX1]
+        //              dP = tP - tPC^T * dC // [3nX1] - [3nX9m]*[9*mImagesX1] 
+        //outDP : [3nX1]
+        //tP : [3nX1]
+        //tPCBlocks : (9*mImages, 3*nFeatures), 9, 3);
+        //outDC: [9*mImagesX1]
         
         double[] dCJ = new double[9];
-        double[] tP = new double[3];
+        double[] tmpI = new double[3]; // holds tPC^T * dC
         double[] tmp = new double[3];
-        double[][] tmp2 = MatrixUtil.zeros(3, 9);
-        
-        //equivalent of Engels step (7)
         for (i = 0; i < nFeatures; ++i) {
-            
-            //[3X3]
-            hPPIInvBlocks.getBlock(invHPPI, i, 0);
-            
-            //bP is bIJTF and is stored in outGradP; [3*nFeaturesX1] as blocks of [3X1]
-            System.arraycopy(bP, i*3, bPI, 0, 3);
-            
-            // outDP = invHPPI * bPI - invHPPI * auxHPC * dCJ
-            // let tmp = invHPPI * bPI;// [3X3]  [3X1]
-            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tP);
-            
-            //for each j, subtract from tP, invHPPI*HPCJ*dCJ
-            
+            Arrays.fill(tmpI, 0);
             for (j = 0; j < mImages; ++j) {
-            
-                //TODO consider how to handle feature not present in image here
-                if (!imageFeaturesMap.get(j).contains(i)) {
-                    continue;
-                }
-                
-                //[3X9]
-                hPCBlocks.getBlock(auxHPC, i, j);
-                
-                //[9X1]
+                //[9X3]
+                tPCBlocks.getBlock(tPC, j, i);
+                // tPC^T [3X9]  in auxHPC
+                MatrixUtil.transpose(tPC, auxHPC);
+                //dCJ [9X1].
                 System.arraycopy(outDC, j*9, dCJ, 0, 9);
-            
-                //for each j, subtract from tP, invHPPI*HPCJ*dCJ = [3X3][3X9][9X1]
-                MatrixUtil.multiply(invHPPI, auxHPC, tmp2);
-                MatrixUtil.multiplyMatrixByColumnVector(tmp2, dCJ, tmp);
-                
-                MatrixUtil.elementwiseSubtract(tP, tmp, tP);
-                
-            } // end image j loop
-            // store tP in outDP which is [3*nFeaturesX1]
-            for (k = 0; k < 3; ++k) {
-                outDP[i*3 + k] = tP[k];
+                // tmp [3X1]
+                MatrixUtil.multiplyMatrixByColumnVector(auxHPC, dCJ, tmp);
+                for (k = 0; k < tmp.length; ++k) {
+                    tmpI[k] += tmp[k];
+                }
             }
-            
+            tPBlocks.getRowBlock(tPI, i, 0);
+            for (k = 0; k < tPI.length; ++k) {
+                tPI[k] -= tmpI[k];
+                outDP[i*3 + k] = tPI[k];
+            }
+           
             // Engels: compute updated point (i.e. world coord features)
             // NOTE: for this class, the updates are handled by the invoker of 
             //       this method.  The updated parameters are given to the code so
