@@ -832,6 +832,38 @@ public class BundleAdjustment {
         Arrays.fill(outDP, 0);
         Arrays.fill(outFSqSum, 0);
         
+        double[] bC = outGradC;
+        double[] bP = outGradP;
+        
+        // for each feature i
+        double[] bPI = new double[3];
+        // for each image j
+        double[] bCJ = new double[9];
+               
+        //HPC is a.k.a. J_C^T*J_P a.k.a. (W^*)^T
+        //W_i_j^T are stored here as [3X9] blocks. each W_i_j^T is b_i_j^T*a_i_j 
+        BlockMatrixIsometric hPCBlocks /*W^T*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);
+        
+        //HPP^-1 is a.k.a. (J_P^T*J_P)^-1 a.k.a. V^-1
+        //The diagonals, V_i, are stored here as [3X3] blocks. each V_i is a summation of b_i_j^T*b_i_j over all j images.
+        //The inverse is each diagonal block inverted.
+        BlockMatrixIsometric hPPIInvBlocks /*VI^-1*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 1), 3, 3);
+
+        
+        //HCC is a.k.a. J_C^T*J_C a.k.a. U^* (and in Qu thesis is variable B).
+        //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
+        // HCC is set into matrix A as it is calculated.
+        // storing hCCJBlocks in mA, while populating mA with only HCC.  later will add the negative rightsize of mA to mA
+        //BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 1), 9, 9);
+
+        // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
+        BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);
+        
+        // aka V_i; a [3X3] block
+        double[][] hPPI = MatrixUtil.zeros(3, 3); 
+        //aka (V_i)^-1; a [3X3] block
+        double[][] invHPPI = null;
+                
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         //BlockMatrixIsometric mA = new BlockMatrixIsometric(
         //    MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
@@ -840,24 +872,16 @@ public class BundleAdjustment {
         double[][] auxMA3 = MatrixUtil.zeros(9, 9);
         
         // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
-        double[][] vB = MatrixUtil.zeros(mImages, 9);
+ //       double[][] vB = MatrixUtil.zeros(mImages, 9);
         
-        // aka V_i; a [3X3] block
-        double[][] hPPI = MatrixUtil.zeros(3, 3); 
-        //aka (V_i)^-1; a [3X3] block
-        double[][] invHPPI = null;
-                
         double[][] auxHPC = MatrixUtil.zeros(3, 9);
         double[][] auxHPCT = MatrixUtil.zeros(9, 3);
 
-        
-        // aka jPTf; row j of bP; [3X1]
-        double[] bPI = new double[3];
-        
-        // aka jCTf; col i of bC; [9X1] 
-        double[] bCI = new double[9];
-        
-        
+        //[2X9]
+        double[][] aIJ = MatrixUtil.zeros(2, 9);
+        //[2X3]
+        double[][] bIJ = MatrixUtil.zeros(2, 3);
+
         //aka jP_I_J^T [3X2]
         double[][] bIJT = MatrixUtil.zeros(3, 2);
         //aka jC_I_J^T  [9X2]
@@ -865,33 +889,15 @@ public class BundleAdjustment {
         // aka jP^T*JP; [3X3]
         double[][] bIJsq = MatrixUtil.zeros(3, 3);
         
-        //[2X9]
-        double[][] aIJ = MatrixUtil.zeros(2, 9);
-        //[2X3]
-        double[][] bIJ = MatrixUtil.zeros(2, 3);
-
+        // [3X1]
+        double[] fIJ = new double[3];
+        double[] fIJ2 = new double[2];
+        
         //aka bP [3X1]
         double[] bIJTF = new double[3];
         //aka bC [9X1]
         double[] aIJTF = new double[9];
-        
-        //HPP is a.k.a. J_P^T*J_P a.k.a. V^*
-        //The diagonals, V_i, are stored here as [3X3] blocks. each V_i is a summation of b_i_j^T*b_i_j over all j images.
-        //The inverse is each diagonal block inverted.
-        BlockMatrixIsometric hPPInv = new BlockMatrixIsometric(MatrixUtil.zeros(nFeatures*3, 3), 3, 3);
-
-        //HCC is a.k.a. J_C^T*J_C a.k.a. U^* (and in Qu thesis is variable B).
-        //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
-        // HCC is set into matrix A as it is calculated.
-        BlockMatrixIsometric hCC = new BlockMatrixIsometric(MatrixUtil.zeros(9, mImages*9), 9, 9); 
-
-        //HPC is a.k.a. J_C^T*J_P a.k.a. (W^*)^T
-        //W_i_j^T are stored here as [3X9] blocks. each W_i_j^T is b_i_j^T*a_i_j 
-        BlockMatrixIsometric hPC = new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);
-        
-         //size is [3 X 3*mImages] with each block being [3X3]
-        BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);
-        
+ 
         double[] xWI = new double[3];
         double[] xIJ = new double[3];
         double[] xIJC = new double[3];
@@ -910,25 +916,20 @@ public class BundleAdjustment {
             xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
         
-        // [3X1]
-        double[] fIJ = new double[3];
-        double[] fIJ2 = new double[2];
+        //size is [3 X 3*mImages] with each block being [3X3]
+        BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);
         
         double[] rotAux = new double[3];
         double[][] rotM = MatrixUtil.zeros(3, 3);
                 
-        // for each feature i
-        double[] gradPI = new double[3];
-        // for each image j
-        double[] gradCJ = new double[9];
-            
         AuxiliaryArrays aa = new AuxiliaryArrays();
         double[][] auxIntr = MatrixUtil.zeros(3, 3);
         
         // i for n features, j for m images
         int i, j, j2, k;
+        
+        //largest runtime complexity in the loop clauses is O(nFeatures * mImages^2)
                      
-        //runtime complexity for this loop is roughly O(nFeatures * mImages^2)
         for (i = 0; i < nFeatures; ++i) { // this is track p in Engels pseudocode
                         
             //reset hPPI to 0's; [3x3]// a.k.a. V*_i.
@@ -938,21 +939,17 @@ public class BundleAdjustment {
             
             //populate xWI; extract the world feature.  size [1X3]
             MatrixUtil.extractColumn(coordsW, i, xWI);
-            
-            Arrays.fill(gradPI, 0);
-            
-            // sum hPPI over all images
-            
+                        
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 
-                //TODO consider how to handle feature not present in image here
+                //TODO consider how to handle feature not present in image here.
                 //   if not in image, then aIJ and bIJ are both 0, so make sure that's handled here
                 if (!imageFeaturesMap.get(j).contains(i)) {
                     continue;
                 }
                 
-                // fill gradC with last entry for feature J
-                System.arraycopy(outGradC, j*9, gradCJ, 0, 9);
+                // fill bCJ with last entry for feature J
+                System.arraycopy(bC, j*9, bCJ, 0, 9);
                 
                 // get the rotation matrix rotM [3X3]
                 rotMatrices.getBlock(rotM, 0, j);
@@ -992,17 +989,8 @@ public class BundleAdjustment {
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
 
-                // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
-                MatrixUtil.multiply(bIJT, bIJ, bIJsq);
-
                 //populate aIJT; [9X2] aka jC^T
                 MatrixUtil.transpose(aIJ, aIJT);
-                                
-                // add jP^T*JP for this image to the hPPi block for feature i.
-                // Engels: add jP^T*JP to upper triangular part of hPP aka V.
-                // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
-                //     elementwise addition of 3X3 blocks:
-                MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);
                                 
                 // populate xIJ; the observed feature i in image j.  [1X3]
                 MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);
@@ -1060,7 +1048,6 @@ if (j==0 && ((i%50)==0)) {
            
                 //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
                 MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);
-                MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
                 
                 /*
                 gradP = bP = -JP^T * F  [3n X 1]
@@ -1074,20 +1061,30 @@ if (j==0 && ((i%50)==0)) {
                 */
 
                 //[3 X 1]
-                MatrixUtil.elementwiseSubtract(gradPI, bIJTF, gradPI);
+                MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
                 
                 //System.out.printf("bIJTF=%s\n", FormatArray.toString(bIJTF, "%.3e"));
-                //System.out.printf("gradP_%d=%s\n", i, FormatArray.toString(gradPI, "%.3e"));
+                //System.out.printf("gradP_%d=%s\n", i, FormatArray.toString(bPI, "%.3e"));
                 //System.out.flush();
 
-                System.arraycopy(gradPI, 0, outGradP, i*3, 3);
-                            
-                // if camera c is free
-                // (presumably, free is in context of fixed or free variables).
+                System.arraycopy(bPI, 0, bP, i*3, 3);
+                
+                // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
+                MatrixUtil.multiply(bIJT, bIJ, bIJsq);
+
+                // add jP^T*JP for this image to the hPPi block for feature i.
+                //    HPP_i = V_i = Σ_j(BIJT*B1J) 
+                // Engels: add jP^T*JP to upper triangular part of hPP aka V.
+                // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
+                //     elementwise addition of 3X3 blocks:
+                MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);
+            
+                // if camera c is free (presumably, context is fixed or free variables).
                 if (true) {
                     
-                    // add jCT*JC aka U aka HCC to upper triangular part of block (j,j) of lhs mA; // [9X9]
-                    //mA[j][j] = aIJT * aIJ;
+                    //U_j = Σ_i(AIJT*A1J) where U is jCT*JC which is HCC=U
+                    //add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; 
+                    //mA[j][j] += aIJT * aIJ; // [9X9]
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
 
 /*if ((i%25)==0) {                    
@@ -1095,25 +1092,17 @@ System.out.printf("(ft%d,img%d)\naIJ=\n%s\nbIJ=\n%s\n",
     i, j, FormatArray.toString(aIJ, "%.3e"), FormatArray.toString(bIJ, "%.3e"));
 System.out.flush();
 }*/
-                    if (outInitLambda != null) {
-                        if (
-                            maxDiag(auxMA, outInitLambda)
-                        ) System.out.printf("auxMa %d,%d) new lambda=%.3e\n", i,j,outInitLambda[0])
-                        ;
-                    }
-                    
-                    // aIJ^T*aIJ is now in auxMA.  each U_j is a summation of a_i_j^T*a_i_j over all i features.
-                    // modify it by the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
-                    for (k = 0; k < auxMA.length; ++k) {
-                        auxMA[k][k] *= (1. + lambda);
-                    }
-                    
-                    hCC.setBlock(auxMA, 0, j);
+                    mA.getBlock(auxMA2, j, j);
+                    MatrixUtil.elementwiseAdd(auxMA, auxMA2, auxMA3);
+                    mA.setBlock(auxMA3, j, j);
+        
+                    //dont use U_j (= mA) yet, nor augment it with damping term
+                    //until finished summing over all i
                     
                     // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                     //hPC[i][j] = bIJT * aIJ;
                     MatrixUtil.multiply(bIJT, aIJ, auxHPC);
-                    hPC.setBlock(auxHPC, i, j);
+                    hPCBlocks.setBlock(auxHPC, i, j);
                     
                     //aIJ is [2X9]
                     //bIJ is [2X3]
@@ -1132,21 +1121,20 @@ System.out.flush();
                     where each row is [9X2][2X1] = [9X1]
                     */
 
-                    MatrixUtil.elementwiseSubtract(gradCJ, aIJTF, gradCJ);
+                    MatrixUtil.elementwiseSubtract(bCJ, aIJTF, bCJ);
 
-System.out.printf("(ft%d,img%d): gradCJ=%s\n     aIJTF=%s\nj*9=%d\n", 
-    i, j,  FormatArray.toString(gradCJ, "%.3e"), FormatArray.toString(aIJTF, "%.3e"), j*9);
+System.out.printf("(ft%d,img%d): bCJ=%s\n     aIJTF=%s\nj*9=%d\n", 
+    i, j,  FormatArray.toString(bCJ, "%.3e"), FormatArray.toString(aIJTF, "%.3e"), j*9);
 System.out.flush();
         
-                    //outGradC length is [9*mImages]
-                    System.arraycopy(gradCJ, 0, outGradC, j*9, 9);
-                    
-                    // to calculate vector B, need to finish bC first over i and j loops
-                    
+                    //bC length is [9*mImages]
+                    System.arraycopy(bCJ, 0, bC, j*9, 9);                    
                 }
             } // end image j loop
             
-System.out.printf("outGradC=%s\n", FormatArray.toString(outGradC, "%.3e"));
+System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
+
+            // now HPP_i (aka V_i) is summed over all j: V_i = Σ_j(BIJT*B1J)
 
             if (outInitLambda != null) {
                 if (
@@ -1155,8 +1143,6 @@ System.out.printf("outGradC=%s\n", FormatArray.toString(outGradC, "%.3e"));
                 ;
             }
             
-            // hPPI is now integrated over all images, so can now handle the
-            //  damping term for it:
             //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
             for (k = 0; k < 3; ++k) {
                 hPPI[k][k] *= (1. + lambda);
@@ -1164,9 +1150,25 @@ System.out.printf("outGradC=%s\n", FormatArray.toString(outGradC, "%.3e"));
             //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
             
-            hPPInv.setBlock(invHPPI, i, 0);
+            hPPIInvBlocks.setBlock(invHPPI, i, 0);
             
-        }// end loop i
+        }// end loop i over features
+        
+        if (outInitLambda != null) {
+            for (j = 0; j < auxMA.length; ++j) {
+                mA.getBlock(auxMA, j, j);
+                if (maxDiag(auxMA, outInitLambda)) {
+                    System.out.printf("auxMa %d,%d) new lambda=%.3e\n", i, j, outInitLambda[0]);
+                }
+            }
+        }
+
+        // aIJ^T*aIJ is now in auxMA.  each U_j is a summation of a_i_j^T*a_i_j over all i features.
+        // augment it with the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
+        for (j = 0; j < auxMA.length; ++j) {
+            mA.getBlock(auxMA, j, j);
+            auxMA[j][j] *= (1. + lambda);
+        }
         
         // HPC is finished and is a dense matrix
         // hPPInv is finished and the diagonals are stored
@@ -1174,117 +1176,75 @@ System.out.printf("outGradC=%s\n", FormatArray.toString(outGradC, "%.3e"));
         // bC is aIJTF and this is stored in outGradC
         // bP is bIJTF and thisis stored in outGradP
         
-        System.out.printf("HPC=\n%s\n\n", FormatArray.toString(hPC.getA(), "%.3e"));
-        System.out.printf("HPPInv=\n%s\n\n", FormatArray.toString(hPPInv.getA(), "%.3e"));
-        System.out.printf("HCC=\n%s\n\n", FormatArray.toString(hCC.getA(), "%.3e"));
-        System.out.printf("gradC=\n%s\n\n", FormatArray.toString(outGradC, "%.3e"));
-        System.out.printf("gradP=\n%s\n\n", FormatArray.toString(outGradP, "%.3e"));
+        System.out.printf("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e"));
+        System.out.printf("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e"));
+        System.out.printf("HCC=U=\n%s\n\n", FormatArray.toString(mA.getA(), "%.3e"));
+        System.out.printf("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e"));
+        System.out.printf("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e"));
         System.out.flush();
-        
-        // calc tPC = hPCT * HPPInv is W*V^-1// = [9*mImages X 3*nFeatures]
-        //     each block is [9X3][3X3] = [9X3]
-        // calc tA = tPC * HPC
-        // calc tB = tPC * bP = tPC * outGradP
-        // matrix A = mA currently holds only HCC. subtract tA from it
-        // vector B = vB = bC - tB
-        
-        // [9X3]
+                
+        BlockMatrixIsometric tPBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 1), 3, 1);
+        double[] tPI = new double[3];
+        BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures), 9, 3);
         double[][] tPC = MatrixUtil.zeros(9, 3);
-        double[] tB = new double[9];
-        
-        // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
-        BlockMatrixIsometric mA = new BlockMatrixIsometric(
-            MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
-        
-        /*
-        matrix A = HCC - auxMA2 = HCC - HPC^T * HPP^-1 * HPC = U - W*V^-1*W^T
-            each U block is [9X9].  each W block is [9X3].  each V block is [3X3]
-        A = U - W*V^-1*W^T=    [9mX9m]   ==> the V’s are inverses <==         
-        | U1    0     0    | - | W11*V1*W11+W21*V2*W21+W31*V3*W31+W41*V4*W41   W11*V1*W12+W21*V2*W22+W31*V3*W32+W41*V4*W42  W11*V1*W13+W21*V2*W23+W31*V3*W33+W41*V4*W43|
-        | 0      U2   0    |   | W12*V1*W11+W22*V2*W21+W32*V3*W31+W42*V4*W41   W12*V1*W12+W22*V2*W22+W32*V3*W32+W42*V4*W42  W12*V1*W13+W22*V2*W23+W32*V3*W33+W42*V4*W43|
-        | 0      0      U3 |   | W13*V1*W11+W23*V2*W21+W33*V3*W31+W43*V4*W41   W13*V1*W12+W23*V2*W22+W33*V3*W32+W43*V4*W42  W13*V1*W13+W23*V2*W23+W33*V3*W33+W43*V4*W43|
-        where each A block is [9X9]
-        
-        from Engels, set into mA the right handside:
-        j = 1:mImages
-           calc tPC = HPC^T * invHPP
-           j2 = 1:mImages
-               Subtract tPC * HPC2 (which is HPC^T * invHPP * HPC2) from block (c, c2)
-                                             W^T  * inv(V) * W2^T
-        Looks correct:
-        i=1,j=1,j2=1: block(1,1)-= (W11^T * inv(V1) * W11^T)
-        i=1,j=1,j2=2: block(1,2)-= (W11^T * inv(V1) * W12^T)
-        i=1,j=1,j2=3: block(1,3)-= (W11^T * inv(V1) * W13^T)
-        i=1,j=2,j2=1: block(2,1)-= (W12^T * inv(V1) * W11^T) <=== j2 indexes are not >= j, but instead start at first index, else would never fill in block(2,1), (3,1),(3,2)...
-        i=1,j=2,j2=2: block(2,2)-= (W12^T * inv(V1) * W12^T)
-        i=1,j=2,j2=3: block(2,3)-= (W12^T * inv(V1) * W13^T)
-        ...
-        i=2,j=1,j2=1: block(1,1)-= (W11^T * inv(V1) * W21^T)
-        
-        */        
         for (i = 0; i < nFeatures; ++i) {
-            
-            //[3X3]
-            hPPInv.getBlock(invHPPI, i, 0);
-            
-            //bP is bIJTF and is stored in outGradP; [3*nFeaturesX1] as blocks of [3X1]
-            System.arraycopy(outGradP, i*3, gradPI, 0, 3);
-            
-            for (j = 0; j < mImages; ++j) {
-            
+            //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
+            //   invHPPI is [3X3]
+            hPPIInvBlocks.getBlock(invHPPI, i, 0);
+            System.arraycopy(bP, i*3, bPI, 0, 3);
+            // [3X3][3X1]=[3X1]
+            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);
+            tPBlocks.subtractFromRowBlock(tPI, i, 0);
+            for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 //TODO consider how to handle feature not present in image here
                 if (!imageFeaturesMap.get(j).contains(i)) {
                     continue;
                 }
-                
-                //[3X9]
-                hPC.getBlock(auxHPC, i, j);
-                
-                //[9X3]
+                //calc tPC = HPC^T*HPP^-1 = W*V^-1 and set into tPCBlocks(j,i)=WIJ*invVI//[9X3]
+                // auxHPC is [3X9]
+                // tPC block is [9X3][3X3]=[9X3]
+                hPCBlocks.getBlock(auxHPC, i, j);
                 MatrixUtil.transpose(auxHPC, auxHPCT);
-                
-                //[9X3][3X3]=[9X3]
                 MatrixUtil.multiply(auxHPCT, invHPPI, tPC);
-                
-                // bC is aIJTF and this is stored in outGradC as [9*mImages X 1], blocks of [9X1]
-                // bP is bIJTF and this is stored in outGradP
+                tPCBlocks.setBlock(tPC, j, i);
+            }
+        }
         
-                // calc tB = tPC * bP = tPC * outGradP
-                // vector B = vB = bC - tB
-                
-                //[9X1]
-                System.arraycopy(outGradC, j*9, gradCJ, 0, 9);
-            
-                //tB = tPC* gradPI;//[9X3][3X1]=[9X1]
-                MatrixUtil.multiplyMatrixByColumnVector(tPC, gradPI, tB);
-                //store as a row in vB: gradCJ - tB
-                MatrixUtil.elementwiseSubtract(gradCJ, tB, vB[j]);
-                
-                // for all free, not fixed cameras:
-                for (j2 = 0; j2 < mImages; ++j2) {
-                    /*
-                    from Engels, set into mA the right handside:
-                    j = 1:mImages
-                       calc tPC = HPC^T * invHPP
-                       j2 = 1:mImages
-                           Subtract tPC * HPC2 (which is HPC^T * invHPP * HPC2) from block (c, c2)
-                                                         W^T  * inv(V) * W2^T
-                    */
-                    // tPC is [9X3].   auxHPC is [3X9]
-                    hPC.getBlock(auxHPC, i, j2);
-                    MatrixUtil.multiply(tPC, auxHPC, auxMA2);
-                    mA.getBlock(auxMA, j, j2);
-                    MatrixUtil.elementwiseSubtract(auxMA, auxMA2, auxMA3);
-                    mA.setBlock(auxMA3, j, j2);
+        double[][] vB = MatrixUtil.zeros(mImages, 9); 
+        double[] vBJ = new double[9];
+        for (i = 0; i < nFeatures; ++i) {
+            tPBlocks.getRowBlock(tPI, i, 0);            
+            for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
+                //TODO consider how to handle feature not present in image here
+                if (!imageFeaturesMap.get(j).contains(i)) {
+                    continue;
                 }
-                //add HCC to the diagonal of mA
-                hCC.getBlock(auxMA, 0, j);
-                mA.getBlock(auxMA2, j, j);
-                MatrixUtil.elementwiseAdd(auxMA, auxMA2, auxMA3);
-                mA.setBlock(auxMA3, j, j);
-            } // end image j loop
-        } // end i features loop
-
+                hPCBlocks.getBlock(auxHPC, i, j);
+                MatrixUtil.multiplyMatrixByColumnVector(auxHPC, tPI, vBJ);
+                for (k = 0; k < vBJ.length; ++k) {
+                    vB[j][k] -= vBJ[k];
+                }
+            }
+        }
+        // finish vB: vB += bC
+        for (i = 0; i < nFeatures; ++i) {
+            for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
+                //TODO consider how to handle feature not present in image here.
+                if (!imageFeaturesMap.get(j).contains(i)) {
+                    continue;
+                }
+                System.arraycopy(bC, j*9, bCJ, 0, 9);
+                for (k = 0; k < bCJ.length; ++k) {
+                    vB[j][k] += bCJ[k];
+                }
+            }
+        }
+        
+        // mA -= tPC*HPC  [9*mImages X 9*mImages]
+        double[][] mARight = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());
+        mARight = MatrixUtil.elementwiseSubtract(mA.getA(), mARight);
+        mA = new BlockMatrixIsometric(mARight, 9, 9);
+        
         /* TODO: (optional) Fix gauge by freezing coordinates and thereby reducing 
             the linear system with a few dimensions.
         
@@ -1304,7 +1264,7 @@ System.out.printf("outGradC=%s\n", FormatArray.toString(outGradC, "%.3e"));
             N Snavely, SM Seitz, R Szeliski - 2008
             "Skeletal graphs for efficient structure from motion"
             
-            Forstner & Wrobel refere to it as "Free Block Adjustment"
+            Forstner & Wrobel refer to it as "Free Block Adjustment"
            
             ** Daniel D. Morris, Kenichi Kanatani and Takeo Kanade,
             "Gauge Fixing for Accurate 3D Estimation"
@@ -1381,7 +1341,9 @@ System.out.printf("outDC=%s\n", FormatArray.toString(outDC, "%.3e"));
 System.out.flush();
 
         // now have outDC
-        // calc outDP:  dP = invHPPI * gradPI - invHPPI * HPC * dC
+        // calc outDP:  dP = invHPPI * bPI - invHPPI * HPC * dC
+        //              dP = tP - tPC^T * dC
+        editing
         
         // outDC is [9m X 1] 
         // outDP is [3nX1]
@@ -1395,14 +1357,14 @@ System.out.flush();
         for (i = 0; i < nFeatures; ++i) {
             
             //[3X3]
-            hPPInv.getBlock(invHPPI, i, 0);
+            hPPIInvBlocks.getBlock(invHPPI, i, 0);
             
             //bP is bIJTF and is stored in outGradP; [3*nFeaturesX1] as blocks of [3X1]
-            System.arraycopy(outGradP, i*3, gradPI, 0, 3);
+            System.arraycopy(bP, i*3, bPI, 0, 3);
             
-            // outDP = invHPPI * gradPI - invHPPI * auxHPC * dCJ
-            // let tmp = invHPPI * gradPI;// [3X3]  [3X1]
-            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, gradPI, tP);
+            // outDP = invHPPI * bPI - invHPPI * auxHPC * dCJ
+            // let tmp = invHPPI * bPI;// [3X3]  [3X1]
+            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tP);
             
             //for each j, subtract from tP, invHPPI*HPCJ*dCJ
             
@@ -1414,7 +1376,7 @@ System.out.flush();
                 }
                 
                 //[3X9]
-                hPC.getBlock(auxHPC, i, j);
+                hPCBlocks.getBlock(auxHPC, i, j);
                 
                 //[9X1]
                 System.arraycopy(outDC, j*9, dCJ, 0, 9);
