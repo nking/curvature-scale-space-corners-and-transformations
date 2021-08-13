@@ -12,7 +12,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.EVD;
+import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.PackCholesky;
 import no.uib.cipr.matrix.SVD;
 
 /**
@@ -1315,7 +1317,13 @@ System.out.flush();
         
         //[mImages*9, mImages*9]
         double[][] cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps/10.);
-           
+        
+ System.out.printf("cholL=%s\n", FormatArray.toString(cholL, "%.3e"));
+
+        PackCholesky pCholL = PackCholesky.factorize(new DenseMatrix(aPSD));
+ System.out.printf("packchol.L=%s\n", FormatArray.toString(
+     Matrices.getArray(pCholL.getL()), "%.3e"));
+        
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
         backward substitution to find x as dC.
             A ﹡ x = b: 
@@ -1323,8 +1331,6 @@ System.out.flush();
             L ﹡ y = b ==> y via forward subst
             L^* ﹡ x = y ==> x via backward subst
         */
-         
-System.out.printf("cholL=%s\n", FormatArray.toString(cholL, "%.3e"));
 
         // length is vB.length vectorized which is [mImages*9]
         double[] yM = MatrixUtil.forwardSubstitution(cholL, 
@@ -1350,6 +1356,7 @@ System.out.flush();
         double[] tmpI = new double[3]; // holds tPC^T * dC
         double[] tmp = new double[3];
         for (i = 0; i < nFeatures; ++i) {
+            //[row i, col 0] = tPI - (Σ_j(tPC[J,I]^T*dCJ))
             Arrays.fill(tmpI, 0);
             for (j = 0; j < mImages; ++j) {
                 //[9X3]
