@@ -432,7 +432,7 @@ public class BundleAdjustment {
             calc delta parameters and gradient from test parameters
                 fTest = evaluateObjective();
             
-            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, gradient, eps);
+            gainRatio = calculateGainRatio(fTest, fPrev, deltaP, lambda, gradient, eps);
             if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
             } else {doUpdate = 0;for (i = 0; i < lambda.length; ++i) : lambda[i] *= lambdaF;}
             if (update) {
@@ -544,7 +544,7 @@ public class BundleAdjustment {
         
             fTest = outFSqSum[0];
                 
-            gainRatio = calculateGainRatio(fTest/2., fPrev/2., outDC, outDP, lambda, 
+            gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda, 
                 outGradC, outGradP, eps);
             
             log.log(LEVEL,
@@ -1009,8 +1009,8 @@ public class BundleAdjustment {
 if (j==0 && ((i%50)==0)) {
     System.out.printf("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e"));
     System.out.printf("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e"));
-    System.out.printf("xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e"));
-    System.out.printf("xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
+    System.out.printf("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e"));
+    System.out.printf("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
     System.out.flush();
 }
                     // [1X3] - [1X3] = [1X3]
@@ -1704,7 +1704,7 @@ System.out.flush();
     }
 
     /**
-     * gain = (f(p + delta p) - f(p)) / ell(delta p)
+     * gain = (f(p) - f(p + delta p)) / ell(delta p)
              where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - f))
        gain = (f - fPrev) / ( (delta p)^T * (lambda * (delta p) + J^T * ( b - f)) )
              
@@ -1725,7 +1725,8 @@ System.out.flush();
         double[] dC, double[] dP, double lambda, 
         double[] gradC, double[] gradP, double eps) {
                                 
-        //NOTE: Lourakis and Argyros the sign is reversed from what is used here:
+        // (M. Lourakis, A. Argyros: SBA: A Software Package For Generic
+        // Sparse Bundle Adjustment. ACM Trans. Math. Softw. 36(1): (2009))
         //  gain ratio = ( fPrev - fNew) / ( deltaParams^T * (lambda * deltaParams + J^T*fPrev) )
         //let s = 9*mImages + 9*mImages
         //   [1Xs]         *    ([1X1]*[sX1]             + [sX1])     = [1X1]
@@ -1749,7 +1750,7 @@ System.out.flush();
         double d = MatrixUtil.innerProduct(dParams, denom);
             
         if (Math.abs(d) < eps) {
-            return Double.POSITIVE_INFINITY;
+            return Double.NEGATIVE_INFINITY;
         }
 
         double gain = (fNew - fPrev)/d;

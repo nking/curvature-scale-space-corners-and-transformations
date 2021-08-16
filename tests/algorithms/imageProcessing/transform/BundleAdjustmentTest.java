@@ -41,6 +41,13 @@ public class BundleAdjustmentTest extends TestCase {
     public void testSolveUsingSparse_ZhangData() throws Exception {
         
         // see testresources/zhang1998/README.txt
+        /*
+        each image is 640×480  [pixels^2]
+        The pixel is square (aspect ratio = 1); 
+        the focal length = 832.5 pixels; 
+        the image center is at (303.959, 206.585); 
+        there is a significant radial distortion: k1 = -0.228601, k2 = 0.190353.
+        */
         
         // they use f(r) = 1 + k1*r + k2*r^2:
         boolean useR2R4 = true;//false;
