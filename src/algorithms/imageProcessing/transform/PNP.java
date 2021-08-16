@@ -815,7 +815,8 @@ public class PNP {
         h[4] = r[1][1];
         h[5] = t[1];
         // TODO: review the code for right-handedness vs left-handedness.
-        //    Wetzstein convention looks down the negative z-axis
+        //    Wetzstein convention looks down the negative z-axis.
+        //    (see Rotation.java notes). may need transposition...
         //h[6] = -r[2][0];
         //h[7] = -r[2][1];
         //h[8] = -t[2];
