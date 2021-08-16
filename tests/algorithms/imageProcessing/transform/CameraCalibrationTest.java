@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertEquals;
 
 /**
  *
@@ -30,9 +31,11 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void estApplyRemoveRadialDistortion() 
+    public void testApplyRemoveRadialDistortion() 
     throws Exception {
         
+        log.log(LEVEL, "testApplyRemoveRadialDistortion");
+
         // test for model #3
         // test for model #4
         // test for k1<0, barrel distortion (happens for smaller focal lengths)
@@ -77,6 +80,9 @@ public class CameraCalibrationTest extends TestCase {
     }
     
     public void testCalibration0() throws Exception {
+        
+        log.log(LEVEL, "testCalibration0");
+
         // see testresources/zhang1998/README.txt
         
         // they use f(r) = 1 + k1*r + k2*r^2:
@@ -192,110 +198,7 @@ public class CameraCalibrationTest extends TestCase {
         //     nFeatures, coordsI, coordsW, useR2R4);
         
     }
-    
-    public void estCalibration1() throws Exception {
-        // see testresources/zhang1998/README.txt
-        
-        // they use f(r) = 1 + k1*rk2*r^2:
-        boolean useR2R4 = false;
-        
-        int nFeatures = 256;
-        int nImages = 5;
-        
-        // 3 X 256
-        double[][] coordsW = Zhang98Data.getFeatureWCS();
-        assertEquals(3, coordsW.length);
-        assertEquals(nFeatures, coordsW[0].length);
-        
-        //3 X (256*5)
-        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
-        assertEquals(3, coordsI.length);
-        assertEquals(nFeatures*nImages, coordsI[0].length);
-        
-        double alphaE = 871.445;
-        double gammaE = 0.2419;
-        double u0E = 300.7676;
-        double betaE = 871.1251;
-        double v0E = 220.8684;
-        double k1E = 0.1371;
-        double k2E = -0.20101;
-        // after refinement with L-M: -0.2286, 0.1903
-        
-        
-        CameraMatrices cameraCalibration = CameraCalibration.estimateCamera(
-             nFeatures, coordsI, coordsW, useR2R4);
-        
-    }
-    
-    public void estCalibration2() throws Exception {
-        
-        boolean useR2R4 = false;
-        
-        // number of features
-        int n = 8;
-        double[][] coordsI = new double[3][];
-        coordsI[0] = new double[]{};
-        coordsI[1] = new double[]{};
-        coordsI[2] = new double[]{1, 1, 1, 1, 1, 1, 1, 1};
-        
-        double[][] coordsW = new double[3][];
-        coordsW[0] = new double[]{-11, 11, 0, 0, -3.7, -8, -11, 11};
-        coordsW[1] = new double[]{14,  14, 9.7, 0, -3, -3, -14, -14};
-        coordsW[2] = new double[]{41.5, 41.5, 41.5, 41.5, 41.5, 41.5, 41.5, 41.5};
-        
-        CameraMatrices c = CameraCalibration.estimateCamera(n, coordsI, coordsW,
-            useR2R4);
-        
-        /*
-        expecting
-             focalLength ~ 1604 pixels = 2.245 mm
-             no skew
-             xc=1521
-             yc=1752
-             little to no radial distortion (if was present, it is already removed)
-             rotation between images = 23.4 degrees
-             translation between images = 18 cm
-        other information:
-            pixel width = 1.4e-3mm
-            FOV = 77 degrees = 1.344 radians
-        */
-        double eFocalLength = 1604;
-        double eCenterX = 1521;
-        double eCenterY = 1752;
-        double[][] eR21 = Rotation.createYawRotationMatrix(23.4*(Math.PI/180.));
-        double[][] eR23 = Rotation.createYawRotationMatrix(23.4*(Math.PI/180.));
-        double[][] eR13 = Rotation.createYawRotationMatrix(2*23.4*(Math.PI/180.));
-        
-        double[] eT21 = new double[]{18, 0, 0};
-        double[] eT23 = new double[]{18, 0, 0};
-        double[] eT13 = new double[]{36, 0, 0};
-        
-        assertNotNull(c);
-        
-        double[][] kIntr = c.getIntrinsics().getIntrinsic();
-        assertNotNull(kIntr);
-        assertEquals(3, kIntr.length);
-        assertEquals(3, kIntr[0].length);
-        
-        double focalLengthX = kIntr[0][0];
-        double focalLengthY = kIntr[1][1];
-        double centerX = kIntr[0][2];
-        double centerY = kIntr[1][2];
-        double skew = kIntr[0][1];
-        /*
-        double[][] collatedRotation = c.getCollatedRotation;
-       
-        double[][] collatedTranslation = c.getCollatedTranslation();
-        
-        // --------
-        double[][] coordsI0 = MatrixUtil.copySubMatrix(coordsI, 0, 3, 0, n);
-        double[][] h0 = Camera.solveForHomography(coordsI0, coordsW);
-        assertEquals(3, h0.length);
-        assertEquals(3, h0[0].length);
-        //TODO: assert characteristics of h0
-        */
-    }
-
+   
     /**
      * generate coordinates in 5 radial annuli in area 100x100 then unit standard normalized
      * @return 
@@ -352,5 +255,109 @@ public class CameraCalibrationTest extends TestCase {
         }
         
         return coords;
+    }
+    
+    /**
+     * Test of solveForPose method, of class PNP.
+     */
+    public void testSolveForPose_ZhangData() throws Exception {
+        
+        log.log(LEVEL, "testSolveForPose_ZhangData");
+        
+        // see testresources/zhang1998/README.txt
+        
+        // they use f(r) = 1 + k1*r + k2*r^2:
+        boolean useR2R4 = false;
+        
+        int nFeatures = 256;
+        int nImages = 5;
+        
+        // 3 X 256
+        double[][] coordsW = Zhang98Data.getFeatureWCS();
+        assertEquals(3, coordsW.length);
+        assertEquals(nFeatures, coordsW[0].length);
+        
+        //3 X (256*5)
+        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
+        assertEquals(3, coordsI.length);
+        assertEquals(nFeatures*nImages, coordsI[0].length);
+        
+        System.out.printf("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
+            coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length);
+        
+        CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
+            nFeatures, coordsI, coordsW, useR2R4);
+        
+        Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
+        List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
+        
+        double alpha = kIntr.getIntrinsic()[0][0];
+        double gamma = kIntr.getIntrinsic()[0][1];
+        double u0 = kIntr.getIntrinsic()[0][2];
+        double beta = kIntr.getIntrinsic()[1][1];
+        double v0 = kIntr.getIntrinsic()[1][2];
+        double[] kRadial = cameraMatrices.getRadialDistortCoeff();
+        
+        double fX = alpha;
+        double fY = beta;
+        double oX = u0;
+        double oY = v0;
+        double skew = gamma;
+        
+        double alphaE = 871.445;
+        double gammaE = 0.2419;
+        double u0E = 300.7676;
+        double betaE = 871.1251;
+        double v0E = 220.8684;
+        double k1E = 0.1371;
+        double k2E = -0.20101;        
+       
+        log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
+        log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
+        log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
+        log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
+            kRadial[0], kRadial[1], k1E, k2E));
+                
+        Camera.CameraExtrinsicParameters ex1;
+        for (int i = 0; i < nImages; ++i) {
+            ex1 = extrinsics.get(i);
+            log.log(LEVEL, String.format("\n"));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+        }
+        
+        // now have initial parameters to refine using BundleAdjustment.java in other tests
+        alphaE = 832.5010;
+        gammaE = 0.2046;
+        u0E = 303.9584;
+        betaE = 832.5309;
+        v0E = 206.5879;
+        k1E = -0.228601; 
+        k2E = 0.190353;
+        
+        final int nMaxIter = 100;
+        
+        List<CameraExtrinsicParameters> refinedExtr = PNP.solveForPose(
+            coordsI, coordsW, 
+            kIntr, cameraMatrices.getExtrinsics(),
+            cameraMatrices.getRadialDistortCoeff(), nMaxIter, useR2R4); 
+        
+        log.log(LEVEL, String.format("\nAfter PNP\n"));
+        
+        assertEquals(nImages, refinedExtr.size());
+                
+        for (int i = 0; i < nImages; ++i) {
+            log.log(LEVEL, String.format("\n"));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
+                    FormatArray.toString(refinedExtr.get(i).getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
+                    FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i,
+                    FormatArray.toString(refinedExtr.get(i).getTranslation(), "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
+                    FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+        }
     }
 }

@@ -318,7 +318,7 @@ public class Camera {
                 useR2R4);
         }
          
-        focalLength = Math.abs(focalLength);
+//        focalLength = Math.abs(focalLength);
         
         double[][] cameraIntr = Camera.createIntrinsicCameraMatrix(focalLength, centerX, centerY);
                        
@@ -557,6 +557,7 @@ public class Camera {
         note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return pixels in the reference frame of 
      * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
      */
     public static double[][] pixelToCameraCoordinates(double[][] x, 
         CameraIntrinsicParameters kIntr, double[] rCoeffs, boolean useR2R4) 
@@ -594,9 +595,9 @@ public class Camera {
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
                         
         // use absolute value of focal lengths
-        intr[0][0] = Math.abs(intr[0][0]);
-        intr[1][1] = Math.abs(intr[1][1]);
-        
+//        intr[0][0] = Math.abs(intr[0][0]);
+//        intr[1][1] = Math.abs(intr[1][1]);
+       
         double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(
             intr);
         
