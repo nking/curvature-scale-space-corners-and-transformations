@@ -59,10 +59,10 @@ public class PNPTest extends TestCase {
         System.out.printf("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
             coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length);
         
-        CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
-            nFeatures, coordsI, coordsW, useR2R4);
+        CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(nFeatures, coordsI, coordsW, useR2R4);
         
         CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
+        
         List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
         
         double alpha = kIntr.getIntrinsic()[0][0];
@@ -92,14 +92,16 @@ public class PNPTest extends TestCase {
         log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
                 
+        log.log(LEVEL, String.format("results of camera calibration:\n"));
+        
         Camera.CameraExtrinsicParameters ex1;
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
             log.log(LEVEL, String.format("\n"));
-            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
-            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.7e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.7e")));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.7e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.7e")));
         }
         
         // now have initial parameters to refine using BundleAdjustment.java in other tests
@@ -118,20 +120,20 @@ public class PNPTest extends TestCase {
             kIntr, cameraMatrices.getExtrinsics(),
             cameraMatrices.getRadialDistortCoeff(), nMaxIter, useR2R4); 
         
-        log.log(LEVEL, String.format("\nAfter PNP\n"));
+        log.log(LEVEL, String.format("\nresults of PNP refinement:\n"));
         
         assertEquals(nImages, refinedExtr.size());
                 
         for (int i = 0; i < nImages; ++i) {
             log.log(LEVEL, String.format("\n"));
-            log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
-                    FormatArray.toString(refinedExtr.get(i).getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("PNP   r%d=\n%s\n", i, 
+                    FormatArray.toString(refinedExtr.get(i).getRotation(), "%.7e")));
             log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
-                    FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
-            log.log(LEVEL, String.format("   t%d=\n%s\n", i,
-                    FormatArray.toString(refinedExtr.get(i).getTranslation(), "%.3e")));
+                    FormatArray.toString(Zhang98Data.getRotation(i), "%.7e")));
+            log.log(LEVEL, String.format("PNP   t%d=\n%s\n", i,
+                    FormatArray.toString(refinedExtr.get(i).getTranslation(), "%.7e")));
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
-                    FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+                    FormatArray.toString(Zhang98Data.getTranslation(i), "%.7e")));
         }
     }
     

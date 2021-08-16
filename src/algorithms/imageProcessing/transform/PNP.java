@@ -285,6 +285,7 @@ public class PNP {
         for (int i = 0; i < n; ++i) {
             xn[0][i] /= xn[2][i];
             xn[1][i] /= xn[2][i];
+            //TODO: follow up on signs from pixelToCameraCoordinates.
             b[2*i] = xn[0][i];
             b[2*i + 1] = xn[1][i];
         }
@@ -337,9 +338,12 @@ public class PNP {
         outExtr.setRotation(MatrixUtil.copy(kExtr.getRotation()));
         outExtr.setTranslation(Arrays.copyOf(kExtr.getTranslation(), 4));
         
+//TODO: check the signs of the last row.  wetzsteinuses a convention of looking down
+//the negative z-axis.
+        
         // equation (19).  size is 1 X 9
-        double[] h = new double[]{rTest[0][0], rTest[0][1], tTest[0], 
-            rTest[1][0], rTest[1][1], tTest[1], -rTest[2][0], -rTest[2][1], -tTest[2]};
+        double[] h = new double[9];
+        populateHWithRT(h, rTest, tTest);
         
         // eqn (20) of Wetzstein.  length is 2*N
         // project the world coordinates to the camera coord frame, using R and T in h:
@@ -348,6 +352,14 @@ public class PNP {
         // in camera reference frame, subtract the projected world points from the observations:
         // length is 2*N
         double[] bMinusFGP = MatrixUtil.subtract(b, fgp);   
+                
+// the projected x and y have opposite signs than they should      
+        System.out.printf("observed in camera ref frame=\n%s\n",
+            FormatArray.toString(b, "%.3e"));
+        System.out.printf("world feature projected to camera ref frame=\n%s\n",
+            FormatArray.toString(fgp, "%.3e"));
+        System.out.printf("(observed-projected) in camera ref frame=\n%s\n",
+            FormatArray.toString(bMinusFGP, "%.3e"));
         
         // sum the squares to evalute the re-projection error:
         double fPrev = evaluateObjective(bMinusFGP);
@@ -369,37 +381,41 @@ public class PNP {
                 
         // deltaP is the array of length 6 holding the steps of change for theta and translation.
         double[] deltaP = new double[6];
-        initDeltaPWithQu(deltaP);
         
         // deltaTheta is used to extract the 1st 3 elements of deltaPM 
         double[] deltaTheta = new double[3];
         // deltaT is used to extract the last 3 elements of deltaPLM
         double[] deltaT = new double[3];
                 
-        double eps = 1.e-5;
+        double eps = 1E-12;
         
         double gainRatio;
         
-        double[] gradient;
+        double[] gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
         
         final double tolP = 1.e-3;
         final double tolG = 1.e-3;
         
-        //update rTest, tTest and thetasTest using initial deltaP
-        System.arraycopy(deltaP, 0, deltaTheta, 0, 3);
-        System.arraycopy(deltaP, 3, deltaT, 0, 3);
-        updateT(tTest, deltaT);
-        updateRTheta(rTest, thetasTest, deltaTheta);
-                
-        int doUpdate = 0;
         int nIter = 0;
         int i;
         //begin loop of tentative changes
-        while (nIter < nMaxIter) {
+        while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps)) {
             
+            if (nIter == 0) {
+                initDeltaPWithQu(deltaP);
+            } else {
+                calculateDeltaPLMSzeliski(jTJ, lambda, gradient, deltaP);
+            }
+
             nIter++;
             
-            updateHWithRT(h, rTest, tTest);
+            // p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
+            System.arraycopy(deltaP, 0, deltaTheta, 0, 3);
+            System.arraycopy(deltaP, 3, deltaT, 0, 3);
+            updateT(tTest, deltaT);
+            updateRTheta(rTest, thetasTest, deltaTheta);
+
+            populateHWithRT(h, rTest, tTest);
             
             // eqn (20) of Wetzstein.  length is 2*N
             // project the world coordinates to the camera coord frame, using R and T in h:
@@ -409,6 +425,10 @@ public class PNP {
             // sum the squares:
             fTest = evaluateObjective(bMinusFGP);
             
+            System.out.printf("nIter=%d) fPrev=%.11e, fTest=%.11e  diff=%.11e\n", nIter, fPrev, fTest,
+                (fPrev-fTest));
+            System.out.flush();
+
             // ===== calculate step ========
             // eqns (24-34) of Wetzstein
             j = calculateJ(worldC, h, thetasTest); // 2NX6
@@ -418,17 +438,20 @@ public class PNP {
             //gradient is the local direction of steepest ascent
             // 6X1
             gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
-            if (nIter > 1) {
-                deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
-            }
+            
             System.out.printf("\nj^T*(b-fgp)=%s\n", FormatArray.toString(gradient, "%.3e"));
             System.out.printf("deltaP=%s\n", FormatArray.toString(deltaP, "%.3e"));
         
-            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, 
+            gainRatio = calculateGainRatio(fTest, fPrev, deltaP, lambda, 
                 gradient, eps);
             
-            System.out.printf("lambda=%.6e\ngainRatio=%.6e\nfPrev=%.6e, fTest=%.6e\n", 
+            if (gainRatio <= Double.NEGATIVE_INFINITY) {
+                break;
+            }
+            
+            System.out.printf("lambda=%.6e\ngainRatio=%.6e\nfPrev=%.11e, fTest=%.11e\n", 
                 lambda, gainRatio, fPrev, fTest);
+            System.out.flush();
 
             /*
             for large values of lambda, the update is a very steep descent and
@@ -440,33 +463,15 @@ public class PNP {
                 https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
             */
             if (gainRatio > 0) {
-                doUpdate = 1;
                 // near the minimimum, which is good.
                 // decrease lambda
                 lambda /= lambdaF;
                 assert(fTest < fPrev);
-            } else {
-                doUpdate = 0;
-                // increase lambda to reduce step length and get closer to 
-                // steepest descent direction
-                lambda *= lambdaF;
-            }
-            System.out.printf("new lambda=%.6e\n", lambda);
-           
-            if (doUpdate == 1) {
-                
                 fPrev = fTest;
-            
-                /*
-                double[] _dt = new double[tTest.length];
-                double[][] _rt = MatrixUtil.elementwiseSubtract(outExtr.getRotation(), rTest);
-                double _dts = MatrixUtil.lPSum(_dt, 2);
-                double _rts = MatrixUtil.frobeniusNorm(_rt);
-                MatrixUtil.elementwiseSubtract(outExtr.getTranslation(), tTest, _dt);
-                System.out.printf("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.3e"));
-                System.out.printf("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.3e"));
-                */
                 
+                System.out.printf("fPrev updated to fTest: fPrev=%.11e fTest=%.11e\n", fPrev, fTest);
+                System.out.flush();
+            
                 outExtr.setRotation(MatrixUtil.copy(rTest));
                 outExtr.setTranslation(Arrays.copyOf(tTest, 3));
                 
@@ -478,14 +483,12 @@ public class PNP {
                     break;
                 }
                 
-                // p is (theta_x, theta_y, theta_z, t_x, t_y, t_z)
-                System.arraycopy(deltaP, 0, deltaTheta, 0, 3);
-                System.arraycopy(deltaP, 3, deltaT, 0, 3);
-                
-                updateT(tTest, deltaT);
-                
-                updateRTheta(rTest, thetasTest, deltaTheta);
-            }              
+            } else {
+                // increase lambda to reduce step length and get closer to 
+                // steepest descent direction
+                lambda *= lambdaF;
+            }
+            System.out.printf("new lambda=%.6e\n", lambda);    
         }
         
         return outExtr;
@@ -535,7 +538,7 @@ public class PNP {
             s = h[6]*X + h[7]*Y + h[8];
             
             f[2*i] = (h[0]*X + h[1]*Y + h[2])/s;
-            f[2*i+1] = ((h[3]*X + h[4]*Y + h[5])/s);            
+            f[2*i+1] = ((h[3]*X + h[4]*Y + h[5])/s); 
         }
         
         return f;
@@ -696,12 +699,12 @@ public class PNP {
      * @param jTJ J^T * J.  size is 6X6.
      * @param lambda
      * @param jTBFG J^T * (B-F(g(p))). size is 6X1
-     * @return calculated step length
+     * @param outDeltaP calculated step length
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
-    private static double[] calculateDeltaPLMSzeliski(double[][] jTJ, 
-        double lambda, double[] jTBFG) throws NotConvergedException {
-        
+    private static void calculateDeltaPLMSzeliski(double[][] jTJ, 
+        double lambda, double[] jTBFG, double[] outDeltaP) throws NotConvergedException {
+                
         //                        [6X6]                   * [6X1] = [6X1]
         //delta p = pseudoInv(J^T*J + lambda*diag(J^T*J)) * J^T*BFG
         
@@ -716,9 +719,7 @@ public class PNP {
         double[][] aInv = MatrixUtil.pseudoinverseRankDeficient(a);
                 
         //[6X6] * [6X1] = [6X1]
-        double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBFG);
-        
-        return step;
+        MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBFG, outDeltaP);        
     }
         
     /**
@@ -748,7 +749,7 @@ public class PNP {
     }
     
     /**
-     * gain = (f(p + delta p) - f(p)) / ell(delta p)
+     * gain = (f(p) - f(p + delta p)) / ell(delta p)
              where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - fgp))
        gain = (f - fPrev) / ( (delta p)^T * (lambda * (delta p) + J^T * ( b - fgp)) )
      * @param fNew
@@ -762,7 +763,8 @@ public class PNP {
         double[] deltaP, double lambda, double[] jTBFG,
         double eps) {
         
-        // NOTE: Lourakis and Argyros the sign is reversed from what is used here:
+        // (M. Lourakis, A. Argyros: SBA: A Software Package For Generic
+        // Sparse Bundle Adjustment. ACM Trans. Math. Softw. 36(1): (2009))
         //  gain ratio = ( fPrev - fNew) / ( deltaP^T * (lambda * deltaP + J^T*fPrev) )
         
         
@@ -784,10 +786,10 @@ public class PNP {
         double d = MatrixUtil.innerProduct(deltaP, denom);
         
         if (Math.abs(d) < eps) {
-            return Double.POSITIVE_INFINITY;
+            return Double.NEGATIVE_INFINITY;
         }
         
-        double gain = (fNew - fPrev)/d;
+        double gain = (fPrev - fNew)/d;
         
         return gain;
     }
@@ -801,9 +803,7 @@ public class PNP {
         return true;
     }
 
-    private static void updateHWithRT(double[] h, double[][] r, double[] t) {
-        //h = new double[]{r[0][0], r[0][1], t[0], 
-       //     r[1][0], r[1][1], t[1], -r[2][0], -r[2][1], -t[2]};
+    private static void populateHWithRT(double[] h, double[][] r, double[] t) {
         h[0] = r[0][0];
         h[1] = r[0][1];
         h[2] = t[0];
