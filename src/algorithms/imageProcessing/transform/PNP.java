@@ -294,38 +294,6 @@ public class PNP {
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
-        
-        
-      /*
-        initialize:
-            calc h, fgp, bMinusFGP from r, t, thetas
-            calc fPrev = evaluateObjective(bMinusFGP);
-            calc J, j^T*J from h, thetas
-            calc lambda from max diagonal of J^T*J
-            copy r, thetas, t to rTest, thetasTest
-   *        calc deltaP from Qu init values
-            update rTest, tTest and thetasTest using deltaP
-        begin loop of tentative changes:  (we might not accept these)
-            calc h from rTest and tTest       
-            fgp = map(worldC, h);
-            bMinusFGP = MatrixUtil.subtract(b, fgp);
-            fTest = evaluateObjective(bMinusFGP);        
-            calc J, j^T*J from h, thetasTest
-            gradient = MatrixUtil.multiplyMatrixByColumnVector(jT, bMinusFGP);
-            if (nIter > 0) {
-   *            deltaP = calculateDeltaPLMSzeliski(jTJ, lambda, gradient);
-            }
-            gainRatio = calculateGainRatio(fTest/2., fPrev/2., deltaP, lambda, gradient, eps);
-            if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
-            } else {doUpdate = 0;for (i = 0; i < lambda.length; ++i) : lambda[i] *= lambdaF;}
-            if (update) {
-                fPrev = fTest;
-                copy rTest, thetasTest, and tTest into r, thetas, and t
-                check for stopping conditions:
-                if (isNegligible(deltaP, tolP) || isNegligible(gradient, tolG)) : break;
-                update rTest, thetasTest, and tTest using deltaP
-            }
-        */
       
         // ==========  initialize ===================
         
@@ -397,7 +365,6 @@ public class PNP {
         final double tolG = 1.e-3;
         
         int nIter = 0;
-        int i;
         //begin loop of tentative changes
         while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps)) {
             
