@@ -10,12 +10,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.EVD;
-import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
-import no.uib.cipr.matrix.PackCholesky;
-import no.uib.cipr.matrix.SVD;
 
 /**
  given intrinsic and extrinsic camera parameters, coordinates for points
@@ -419,35 +414,22 @@ public class BundleAdjustment {
         need to consider them further.
         */
         
-        /*
-        initialize:
-            calc delta parameters and gradient from intrinsic and extrinsic camera parameters 
-                using sparse Hessian matrix (j^T*J)
-                calc fPrev = evaluateObjective();
-                calc initial lambda from max diagonal of J^T*J
-            copy intrinsic and extrinsic camera parameters into test data structures
-   *        calc initial deltaP from Qu init values
-            update test data structures using delta params
-        begin loop of tentative changes:  (we might not accept these)
-            calc delta parameters and gradient from test parameters
-                fTest = evaluateObjective();
-            
-            gainRatio = calculateGainRatio(fTest, fPrev, deltaP, lambda, gradient, eps);
-            if (gainRatio > 0) { doUpdate = 1; for (i = 0; i < lambda.length; ++i) : lambda[i] /= lambdaF;
-            } else {doUpdate = 0;for (i = 0; i < lambda.length; ++i) : lambda[i] *= lambdaF;}
-            if (update) {
-                fPrev = fTest;
-                copy test data structures into original in-out data structures
-                check for stopping conditions:
-                if (isNegligible(deltaP, tolP) || isNegligible(gradient, tolG)) : break;
-                update test data structures using deltaParameters
-            }
-        */
-        
         //TODO: consider adding constraints suggested in Seliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
+       
+        //factor to raise or lower lambda.  
+        //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
+        final double lambdaF = 2;
+        double eps = 1E-12;
+       
+         // copy the parameter data structures into test (tentative) data structures
+        BlockMatrixIsometric intrTest = intr.copy();
+        double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);
+        double[][] extrTransTest = MatrixUtil.copy(extrTrans);
+        double[][] kRadialsTest = MatrixUtil.copy(kRadials);
+        double[][] coordsWTest = MatrixUtil.copy(coordsW);
         
         //In a single reprojection error formula, there are altogether 12 arguments 
         //   (9 camera parameters and 3 feature point positions).
@@ -463,82 +445,63 @@ public class BundleAdjustment {
         // gradient g is same length   
         
         //the gradient covector for point parameters.  used in calc gain ration and stopping
-        double[] outGradP //= new double[3];
-            = new double[3*nFeatures];
+        double[] outGradP = new double[3*nFeatures];
         // the gradient covector for camera parameters.  used in calc gain ration and stopping
-        double[] outGradC //= new double[9];
-            = new double[9*mImages];
+        double[] outGradC = new double[9*mImages];
      
-        // evaluation of the objective re-projection error. 
-        //the sum of squares of the observed feature - projected feature in camera reference frame
-        double[] outFSqSum = new double[1];
-        
-        double[] outInitLambda = new double[1];
-        
-        // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
-        calculateLMVectorsSparsely(coordsI, coordsW,  
-            imageFeaturesMap, intr, extrRotThetas, extrTrans, kRadials, useR2R4,
-            outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
-        
-        double lambda = outInitLambda[0];
+        final double tolP = 1.e-3;
+        final double tolG = 1.e-3;
         
         // not using these as they are estimated in calculateLMVectorsSparsely
         //initDeltaPWithQu(outDP);
         //initDeltaCWithQu(outDC);
         
- //NOTE: outDC values are too large
- 
+        // evaluation of the objective re-projection error. 
+        //the sum of squares of the observed feature - projected feature in camera reference frame
+        final double[] outFSqSum = new double[1];
+        
+        double[] outInitLambda = new double[1];
+        
+        // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
+        calculateLMVectorsSparsely(coordsI, coordsWTest,  
+            imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
+            outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
+        
+        double lambda = outInitLambda[0];
+        
+        // set to null to prevent calculating the max of diagnonal of (J^T*J) 
+        outInitLambda = null;
+        
+        // sum the squares to evalute the re-projection error:
+        double fPrev = outFSqSum[0];
+        
+        double fTest = Double.POSITIVE_INFINITY;
+        
         log.log(LEVEL,
             String.format(
             "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
             lambda, outFSqSum[0],
             FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
             FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")));                 
-        
-        // set to null to prevent calculating the max of diagnonal of (J^T*J) 
-        outInitLambda = null;
-        
-        //factor to raise or lower lambda.  
-        //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
-        final double lambdaF = 2;
-       
-        // sum the squares to evalute the re-projection error:
-        double fPrev = outFSqSum[0];
-        
-        double fTest;
-        
-        final double eps = 1.e-5;
-       
+                       
         double gainRatio;
-        
-        final double tolP = 1.e-3;
-        final double tolG = 1.e-3;
-                 
-        // copy the parameter data structures into test (tentative) data structures
-        BlockMatrixIsometric intrTest = intr.copy();
-        double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);
-        double[][] extrTransTest = MatrixUtil.copy(extrTrans);
-        double[][] kRadialsTest = MatrixUtil.copy(kRadials);
-        double[][] coordsWTest = MatrixUtil.copy(coordsW);
-        
-        // update the test data structures by deltaP and deltaC
-        // use the 2nd three elements in outDC:
-        updateTranslation(extrTransTest, outDC);
-        updateRotThetas(extrRotThetasTest, outDC);
-        updateIntrinsic(intrTest, outDC);
-        updateRadialDistortion(kRadialsTest, outDC);
-  //      updateWorldC(coordsWTest, outDP);
-                
+                             
         // update the features with outDP?  see step 7 of Engels
         
-        int doUpdate = 0;
         int nIter = 0;
-        int i;
-        while (nIter < nMaxIter) {
+        while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps)) {
                 
             nIter++;
             
-            calculateLMVectorsSparsely(coordsI, coordsW,  
+            // update the test data structures by deltaP and deltaC
+            // use the 2nd three elements in outDC:
+            updateTranslation(extrTransTest, outDC);
+            updateRotThetas(extrRotThetasTest, outDC);
+            updateIntrinsic(intrTest, outDC);
+            updateRadialDistortion(kRadialsTest, outDC);
+            //      updateWorldC(coordsWTest, outDP);
+
+            calculateLMVectorsSparsely(coordsI, coordsWTest,  
                 imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
                 outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
         
@@ -549,10 +512,12 @@ public class BundleAdjustment {
             
             log.log(LEVEL,
                 String.format(
-                "(nIter=%d) lambda=%.3e F=%.3e g.r.=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n  gradP=%s\n", 
-                nIter, lambda, outFSqSum[0], gainRatio,
-                FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
-                FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")));
+                "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
+                + " g.r.=%.3e\ndC=%s\ndP=%s\ngradC=%s\ngradP=%s\n", 
+                nIter, lambda, fPrev, fTest, (fPrev-fTest),
+                gainRatio,
+                FormatArray.toString(outDC, "%.11e"), FormatArray.toString(outDP, "%.11e"), 
+                FormatArray.toString(outGradC, "%.11e"), FormatArray.toString(outGradP, "%.11e")));
             
             /*
             for large values of lambda, the update is a very steep descent and
@@ -564,22 +529,18 @@ public class BundleAdjustment {
                 https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
             */
             if (gainRatio > 0) {
-                doUpdate = 1;
                 // near the minimimum, which is good.
                 // decrease lambda
                 lambda /= lambdaF;
-                assert(fTest < fPrev);
-            } else {
-                doUpdate = 0;
-                // increase lambda to reduce step length and get closer to 
-                // steepest descent direction
-                lambda *= lambdaF;
-            }
-            System.out.printf("new lambda=%.6e  doUpdate=%d\n", lambda, doUpdate);
-           
-            if (doUpdate == 1) {
-                
+                assert(fTest < fPrev);                
                 fPrev = fTest;
+                
+                double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);
+                double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetas, extrRotThetasTest);
+                double _dts = MatrixUtil.frobeniusNorm(_dt);
+                double _rts = MatrixUtil.frobeniusNorm(_rt);
+                System.out.printf("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e"));
+                System.out.printf("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e"));
                 
                 //copy test data structures into the original in-out datastructures
                 intr.set(intrTest);
@@ -587,7 +548,7 @@ public class BundleAdjustment {
                 MatrixUtil.copy(extrTransTest, extrTrans);
                 MatrixUtil.copy(kRadialsTest, kRadials);
                 MatrixUtil.copy(coordsWTest, coordsW);
-                        
+                
                 // ======= stopping conditions ============
                 //   step length vanishes:  deltaParams --> 0
                 //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
@@ -596,22 +557,12 @@ public class BundleAdjustment {
                     isNegligible(outGradC, tolG) || isNegligible(outGradP, tolG)) {
                     break;
                 }
-                
-                
-                double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);
-                double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetasTest, extrRotThetasTest);
-                double _dts = MatrixUtil.frobeniusNorm(_dt);
-                double _rts = MatrixUtil.frobeniusNorm(_rt);
-                System.out.printf("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.3e"));
-                System.out.printf("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.3e"));
-                
-                // use the 2nd three elements in outDC:
-                updateTranslation(extrTransTest, outDC);
-                updateRotThetas(extrRotThetasTest, outDC);                
-                updateIntrinsic(intrTest, outDC);
-                updateRadialDistortion(kRadialsTest, outDC);
-  //              updateWorldC(coordsWTest, outDP);
-            }            
+            } else {
+                // increase lambda to reduce step length and get closer to 
+                // steepest descent direction
+                lambda *= lambdaF;
+            }
+            System.out.printf("new lambda=%.11e\n", lambda);           
         }        
     }
     
@@ -999,6 +950,7 @@ public class BundleAdjustment {
                     
                     // xWCNDI are the world scene points projected into camera frame and distorted
                    
+                    // camera to pixel transformation (distortion already applied):
                     //populate xIJHat;the projected distorted feature i into image j reference frame.  [1X3]
                     MatrixUtil.multiplyMatrixByColumnVector(auxIntr, 
                         xWCNDI, xIJHat);
@@ -1007,10 +959,13 @@ public class BundleAdjustment {
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
 
 if (j==0 && ((i%50)==0)) {
+    double[] diff = new double[xIJ.length];
+    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, diff);
     System.out.printf("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e"));
     System.out.printf("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e"));
     System.out.printf("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e"));
     System.out.printf("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
+    System.out.printf("*diff=%s\n", FormatArray.toString(diff, "%.7e"));
     System.out.flush();
 }
                     // [1X3] - [1X3] = [1X3]
