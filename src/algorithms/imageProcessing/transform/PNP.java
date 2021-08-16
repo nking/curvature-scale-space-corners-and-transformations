@@ -471,6 +471,10 @@ public class PNP {
                 
                 System.out.printf("fPrev updated to fTest: fPrev=%.11e fTest=%.11e\n", fPrev, fTest);
                 System.out.flush();
+                
+                System.out.printf("elementwise diff in rotation:\n%s\n", 
+                    FormatArray.toString(MatrixUtil.elementwiseSubtract(outExtr.getRotation(), rTest),
+                    "%.11e"));
             
                 outExtr.setRotation(MatrixUtil.copy(rTest));
                 outExtr.setTranslation(Arrays.copyOf(tTest, 3));
@@ -810,9 +814,14 @@ public class PNP {
         h[3] = r[1][0];
         h[4] = r[1][1];
         h[5] = t[1];
-        h[6] = -r[2][0];
-        h[7] = -r[2][1];
-        h[8] = -t[2];
+        // TODO: review the code for right-handedness vs left-handedness.
+        //    Wetzstein convention looks down the negative z-axis
+        //h[6] = -r[2][0];
+        //h[7] = -r[2][1];
+        //h[8] = -t[2];
+        h[6] = r[2][0];
+        h[7] = r[2][1];
+        h[8] = t[2];
     }
     
     /**

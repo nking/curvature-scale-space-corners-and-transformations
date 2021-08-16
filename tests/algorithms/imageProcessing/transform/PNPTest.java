@@ -84,7 +84,9 @@ public class PNPTest extends TestCase {
         double betaE = 871.1251;
         double v0E = 220.8684;
         double k1E = 0.1371;
-        double k2E = -0.20101;        
+        double k2E = -0.20101; 
+        
+        String pr = "%.11e";
        
         log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
         log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
@@ -98,10 +100,10 @@ public class PNPTest extends TestCase {
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
             log.log(LEVEL, String.format("\n"));
-            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.7e")));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.7e")));
-            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.7e")));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.7e")));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), pr)));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), pr)));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), pr)));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), pr)));
         }
         
         // now have initial parameters to refine using BundleAdjustment.java in other tests
@@ -127,13 +129,13 @@ public class PNPTest extends TestCase {
         for (int i = 0; i < nImages; ++i) {
             log.log(LEVEL, String.format("\n"));
             log.log(LEVEL, String.format("PNP   r%d=\n%s\n", i, 
-                    FormatArray.toString(refinedExtr.get(i).getRotation(), "%.7e")));
+                    FormatArray.toString(refinedExtr.get(i).getRotation(), pr)));
             log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
-                    FormatArray.toString(Zhang98Data.getRotation(i), "%.7e")));
+                    FormatArray.toString(Zhang98Data.getRotation(i), pr)));
             log.log(LEVEL, String.format("PNP   t%d=\n%s\n", i,
-                    FormatArray.toString(refinedExtr.get(i).getTranslation(), "%.7e")));
+                    FormatArray.toString(refinedExtr.get(i).getTranslation(), pr)));
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
-                    FormatArray.toString(Zhang98Data.getTranslation(i), "%.7e")));
+                    FormatArray.toString(Zhang98Data.getTranslation(i), pr)));
         }
     }
     
