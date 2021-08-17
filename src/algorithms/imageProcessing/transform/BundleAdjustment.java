@@ -421,7 +421,7 @@ public class BundleAdjustment {
        
         //factor to raise or lower lambda.  
         //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
-        final double lambdaF = 2;
+        double lambdaF = 2;
         double eps = 1E-12;
        
          // copy the parameter data structures into test (tentative) data structures
@@ -468,7 +468,8 @@ public class BundleAdjustment {
             outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
         
         double lambda = outInitLambda[0];
-        
+        System.out.printf("max diag of Hessian lambda=%.7e\n", lambda);
+
         // set to null to prevent calculating the max of diagnonal of (J^T*J) 
         outInitLambda = null;
         
@@ -477,12 +478,15 @@ public class BundleAdjustment {
         
         double fTest = Double.POSITIVE_INFINITY;
         
-        log.log(LEVEL,
-            String.format(
+        //log.log(LEVEL,
+         //   String.format(
+         System.out.printf(
             "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
             lambda, outFSqSum[0],
             FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
-            FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")));                 
+            FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")
+            //)
+        );                 
                        
         double gainRatio;
                              
@@ -510,15 +514,17 @@ public class BundleAdjustment {
             gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda, 
                 outGradC, outGradP, eps);
             
-            log.log(LEVEL,
-                String.format(
+            //log.log(LEVEL,
+            //    String.format(
+            System.out.printf(
                 "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
                 + " g.r.=%.3e\ndC=%s\ndP=%s\ngradC=%s\ngradP=%s\n", 
                 nIter, lambda, fPrev, fTest, (fPrev-fTest),
                 gainRatio,
                 FormatArray.toString(outDC, "%.11e"), FormatArray.toString(outDP, "%.11e"), 
-                FormatArray.toString(outGradC, "%.11e"), FormatArray.toString(outGradP, "%.11e")));
-            
+                FormatArray.toString(outGradC, "%.11e"), FormatArray.toString(outGradP, "%.11e")
+            //));
+            );
             /*
             for large values of lambda, the update is a very steep descent and
             deltaP is very small.
@@ -531,7 +537,17 @@ public class BundleAdjustment {
             if (gainRatio > 0) {
                 // near the minimimum, which is good.
                 // decrease lambda
-                lambda /= lambdaF;
+                
+                // from Algorithm 3.16 of Madsen et al. 2004, 
+                //"Mehtods for Non-Linear Least Squares Problems"
+                // and Figure 2 of
+                // Lourakis & Argyros 2009, "SBA: A Software Package For Generic
+                // Sparse Bundle Adjustment"
+                lambda = Math.max(1./3, 1. - Math.pow(2*gainRatio - 1, 3));
+                
+                //lambda /= lambdaF;
+                
+                lambdaF = 2;
                 assert(fTest < fPrev);                
                 fPrev = fTest;
                 
@@ -561,6 +577,7 @@ public class BundleAdjustment {
                 // increase lambda to reduce step length and get closer to 
                 // steepest descent direction
                 lambda *= lambdaF;
+                lambdaF *= 2;
             }
             System.out.printf("new lambda=%.11e\n", lambda);           
         }        
@@ -590,6 +607,11 @@ public class BundleAdjustment {
        (3 for rot, 3 for trans) and among those, need 3 per camera for the intrinsic parameters
        and 2 or more vantage points for the point parameters (no reference for these
        numbers, just a rough estimate from counting the number of unknowns).
+        
+       Also note that the code uses the Jacobian J = [J_P J_C] following
+       Engels et al., which is reversed from the Lourakis Jacobian J = [J_c J_P].
+       Qu Jacobian (and hence reduced camera matrix are consistent with Lourakis.
+       See details in doc/bundle_adjustment.pdf
      <pre>
      References:
      
@@ -864,6 +886,10 @@ public class BundleAdjustment {
         // for 0, use image (pixel) reference frame, else for 1 use camera frame.
         final int useCameraFrame = 0;
         
+        //lourakis (sba-toms.pdf):  observed is one feature in all images, 
+        //     then next feature in all images...
+        //Qu: observed is all features of first image, then all features of next image
+        
         if (useCameraFrame == 1) {
             xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
@@ -875,7 +901,7 @@ public class BundleAdjustment {
         double[][] rotM = MatrixUtil.zeros(3, 3);
                 
         AuxiliaryArrays aa = new AuxiliaryArrays();
-        double[][] auxIntr = MatrixUtil.zeros(3, 3);
+        double[][] auxIntr = MatrixUtil.zeros(3, 3);     
         
         // i for n features, j for m images
         int i, j, k;
@@ -990,7 +1016,7 @@ if (j==0 && ((i%50)==0)) {
                 //sum of squares
                 outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);
                              
- System.out.printf("F(%d,%d)=%.3e\n", i,j,MatrixUtil.innerProduct(fIJ, fIJ));
+ System.out.printf("F(%d,%d)=%.7f\n", i,j,MatrixUtil.innerProduct(fIJ, fIJ));
  System.out.flush();
 
                 //== subtract jP^T*f (aka bP) from bP ==
@@ -1096,7 +1122,8 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
             if (outInitLambda != null) {
                 if (
                     maxDiag(hPPI, outInitLambda)
-                ) System.out.printf("hPPI) new lambda=%.3e\n", outInitLambda[0])
+                ) 
+                    //System.out.printf("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0])
                 ;
             }
             
@@ -1116,7 +1143,7 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
             for (j = 0; j < mImages; ++j) {
                 mA.getBlock(auxMA, j, j);
                 if (maxDiag(auxMA, outInitLambda)) {
-                    System.out.printf("auxMa %d,%d) new lambda=%.3e\n", i, j, outInitLambda[0]);
+                    //System.out.printf("max diag of HCC_J (aka U_j): new lambda=%.7e\n", outInitLambda[0]);
                 }
             }
         }
@@ -1948,7 +1975,7 @@ System.out.flush();
         for (i = 0; i < m.length; ++i) {
             if (outInitLambda[0] < m[i][i]) {
                 outInitLambda[0] = m[i][i];
-                updated =true;
+                updated = true;
             }
         }
         return updated;
@@ -1976,7 +2003,7 @@ System.out.flush();
     private static double[][] transformPixelToCamera(int nFeatures, double[][] coordsI, 
         BlockMatrixIsometric intr, double[][] kRadial, boolean useR2R4) throws NotConvergedException, IOException {
         
-        int nImages = coordsI[0].length/nFeatures;
+        int mImages = coordsI[0].length/nFeatures;
         
         double[][] c = MatrixUtil.zeros(coordsI.length, coordsI[0].length);
         double[][] x = MatrixUtil.zeros(3, nFeatures);
@@ -1984,7 +2011,7 @@ System.out.flush();
         double[][] kIntr = MatrixUtil.zeros(3, 3);
         
         int i, j, k;
-        for (j = 0; j < nImages; ++j) {
+        for (j = 0; j < mImages; ++j) {
             MatrixUtil.copySubMatrix(coordsI, 0, 2, j*nFeatures, ((j+1)*nFeatures)-1, x);
             
             intr.getBlock(kIntr, j, 0);

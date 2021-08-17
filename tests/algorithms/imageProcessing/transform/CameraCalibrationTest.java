@@ -97,7 +97,7 @@ public class CameraCalibrationTest extends TestCase {
         assertEquals(nFeatures, coordsW[0].length);
         
         //3 X (256*5)
-        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
+        double[][] coordsI = Zhang98Data.getObservedFeaturesInAllImages();
         assertEquals(3, coordsI.length);
         assertEquals(nFeatures*nImages, coordsI[0].length);
         
@@ -278,7 +278,7 @@ public class CameraCalibrationTest extends TestCase {
         assertEquals(nFeatures, coordsW[0].length);
         
         //3 X (256*5)
-        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
+        double[][] coordsI = Zhang98Data.getObservedFeaturesInAllImages();
         assertEquals(3, coordsI.length);
         assertEquals(nFeatures*nImages, coordsI[0].length);
         

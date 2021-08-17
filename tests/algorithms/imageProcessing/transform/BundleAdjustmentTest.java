@@ -61,7 +61,7 @@ public class BundleAdjustmentTest extends TestCase {
         assertEquals(nFeatures, coordsW[0].length);
         
         //3 X (256*5)
-        double[][] coordsI = Zhang98Data.getFeaturesInAllImages();
+        double[][] coordsI = Zhang98Data.getObservedFeaturesInAllImages();
         assertEquals(3, coordsI.length);
         assertEquals(nFeatures*nImages, coordsI[0].length);
         
@@ -142,6 +142,7 @@ public class BundleAdjustmentTest extends TestCase {
         for (i = 0; i < nImages; ++i) {
             intr.setBlock(kIntr.getIntrinsic(), i, 0);
             kRadials[i] = new double[]{kRadial[0], kRadial[1]};
+            //kRadials[i] = new double[2];
         }
         
         //the extrinsic camera parameter rotation euler angles
@@ -155,6 +156,11 @@ public class BundleAdjustmentTest extends TestCase {
             extrRotThetas[i] = Rotation.extractThetaFromZYX(r);
             extrTrans[i] = Arrays.copyOf(ex1.getTranslation(), 3);
         }
+        
+        Zhang98Data.printObservedMinusProjected_Camera_Frame();
+        Zhang98Data.printObservedMinusProjected_Camera_Frame_Eqn2();
+        Zhang98Data.printObservedMinusProjected_Image_Frame();        
+        Zhang98Data.printObservedMinusProjected_Image_Frame_Eqn2();
         
         BundleAdjustment.solveSparsely(coordsI, coordsW, imageFeaturesMap,
             intr, extrRotThetas, extrTrans,

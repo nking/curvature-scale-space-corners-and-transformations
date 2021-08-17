@@ -1,17 +1,24 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import algorithms.util.ResourceFinder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  * convenience methods for camera test data Zhang 1998.
  * see testresources/zhang1998/README.txt
  * 
+        each image is 640×480  [pixels^2]
+        The pixel is square (aspect ratio = 1); 
+        the focal length = 832.5 pixels; 
+        the image center is at (303.959, 206.585); 
+        there is a significant radial distortion: k1 = -0.228601, k2 = 0.190353.
  * @author nichole
  */
 public class Zhang98Data {
@@ -48,14 +55,15 @@ public class Zhang98Data {
      * get the 256 checkerboard corners for the 5 images in pixel coordinates.
      * @return a double array of size 3 X 256*5
      */
-    public static double[][] getFeaturesInAllImages() throws IOException {
+    public static double[][] getObservedFeaturesInAllImages() throws IOException {
         
+        int mImages = 5;
         int nFeatures = 256;
-        double[][] uv = MatrixUtil.zeros(3, nFeatures*5);
+        double[][] uv = MatrixUtil.zeros(3, nFeatures*mImages);
         double[][] uvi;
         int i, j;
-        for(i = 0; i < 5; ++i) {
-            uvi = getFeaturesImage(i+1);
+        for (i = 0; i < mImages; ++i) {
+            uvi = getObservedFeaturesInImage(i+1);
             assert(nFeatures == uvi[0].length);
             for (j = 0; j < 3; ++j) {
                 System.arraycopy(uvi[j], 0, uv[j], nFeatures*i, nFeatures);
@@ -66,7 +74,7 @@ public class Zhang98Data {
     
     // data1.txt through data5.txt
     // size is 3 X 256
-    public static double[][] getFeaturesImage(int idx) throws IOException {
+    public static double[][] getObservedFeaturesInImage(int idx) throws IOException {
         if (idx < 0 || idx > 5) {
             throw new IllegalArgumentException("idx must be 1 through 5, inclusive");
         }
@@ -210,4 +218,355 @@ public class Zhang98Data {
         return t;
     }
     
+    public static double[][] getIntrinsicCameraMatrix() {
+        double[][] intr = MatrixUtil.zeros(3, 3);
+        intr[0][0] = 832.5;
+        intr[1][1] = 832.5;
+        intr[0][2] = 303.959;  // dimension is 640 pixels
+        intr[1][2] = 206.585;  // dimension is 480 pixels
+        intr[2][2] = 1;
+        return intr;
+    }
+    
+    /**
+     * the radial distortion coefficients are for the distortion polynomial k1*r^2 + k2*r^4.
+     * @return 
+     */
+    public static double[] getRadialDistortionR2R4() {
+        return new double[]{-0.228601, 0.190353};
+    }
+    
+    /**
+     * transform the observed to camera coordinates.
+       radial distortion is removed.
+     * @return
+     * @throws IOException
+     * @throws NotConvergedException 
+     */
+    public static double[][] getObservedTransformedToCameraFrame() throws IOException, NotConvergedException {
+        double[][] coordsI = getObservedFeaturesInAllImages();
+        double[][] coordsW = getFeatureWCS();
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length/nFeatures;
+        
+        double[] kRadial = getRadialDistortionR2R4();
+        
+        double[][] intr = getIntrinsicCameraMatrix();
+        
+        boolean useR2R4 = true;
+        
+        double[][] coordsIC = MatrixUtil.zeros(coordsI.length, coordsI[0].length);
+        double[][] x = MatrixUtil.zeros(3, nFeatures);
+        double[][] xc;
+        
+        // transform the observed to camera coordinates:
+        //   (radial distortion is removed)
+        int i, j, k;
+        for (j = 0; j < mImages; ++j) {
+            MatrixUtil.copySubMatrix(coordsI, 0, 2, j*nFeatures, ((j+1)*nFeatures)-1, x);            
+            xc = Camera.pixelToCameraCoordinates(x, intr, kRadial, useR2R4);
+            for (i = 0; i < 3; ++i) {
+                for (k = 0; k < nFeatures; ++k) {
+                    xc[i][k] /= xc[2][k];
+                }
+                System.arraycopy(xc[i], 0, coordsIC[i], j*nFeatures, nFeatures);
+            }
+        } 
+        return coordsIC;
+    }
+    
+    /**
+     * for each image, project world scene features into the camera reference
+     * frame.  no distortion is added.
+     * @return
+     * @throws IOException 
+     */
+    public static double[][] getFeaturesProjectedToAllCameraFrames() throws IOException {
+        double[][] coordsI = getObservedFeaturesInAllImages();
+        double[][] coordsW = getFeatureWCS();
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length/nFeatures;
+             
+        int i, j, k;
+        
+        double[] coordsWI = new double[3];
+        double[] coordsWIC = new double[3];
+        double[] coordsWICN = new double[3];
+        double[][] r;
+        double[] t;
+        double[] rAux = new double[3];
+        
+        double[][] out = MatrixUtil.zeros(3, nFeatures*mImages);
+                
+        // project the world scene features to each camera reference frame
+        //   (not adding distortion)
+        for (i = 0; i < nFeatures; ++i) {
+            //populate xWI; extract the world feature.  size [1X3]
+            MatrixUtil.extractColumn(coordsW, i, coordsWI);
+            for (j = 0; j < mImages; ++j) {
+                r = getRotation(j);
+                t = getTranslation(j);
+                //transform to camera reference frame. size [1X3]
+                Camera.worldToCameraCoordinates(coordsWI, r, t, rAux, coordsWIC);
+                for (k = 0; k < 3; ++k) {
+                    coordsWICN[k] = coordsWIC[k] / coordsWIC[2];
+                    out[k][j*nFeatures + i] = coordsWICN[k];
+                }
+            }
+        }
+        return out;
+    }
+    
+     /**
+     * for each image, project world scene features into the camera reference
+     * frame.  no distortion is added.
+     * It uses Zhang equation 2 for scale * projected = H * coordsW with H = intrinsic * | r1 r2 t|.
+     * @return
+     * @throws IOException 
+     */
+    public static double[][] getFeaturesProjectedToAllCameraFramesEqn2() throws IOException {
+        double[][] coordsI = getObservedFeaturesInAllImages();
+        double[][] coordsW = getFeatureWCS();
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length/nFeatures;
+             
+        int i, j, k;
+        
+        double[][] h = MatrixUtil.zeros(3, 3);
+        
+        double[] coordsWI = new double[3];
+        double[] coordsWIC = new double[3];
+        double[] coordsWICN = new double[3];
+        double[][] r;
+        double[] t;
+        
+        double[][] out = MatrixUtil.zeros(3, nFeatures*mImages);
+                
+        // project the world scene features to each camera reference frame
+        //   (not adding distortion)
+        for (i = 0; i < nFeatures; ++i) {
+            //populate xWI; extract the world feature.  size [1X3]
+            MatrixUtil.extractColumn(coordsW, i, coordsWI);
+            
+            for (j = 0; j < mImages; ++j) {
+                r = getRotation(j);
+                t = getTranslation(j);
+                
+                h[0][0] = r[0][0];
+                h[1][0] = r[1][0];
+                h[2][0] = r[2][0];
+                h[0][1] = r[0][1];
+                h[1][1] = r[1][1];
+                h[2][1] = r[2][1];
+                h[0][2] = t[0];
+                h[1][2] = t[1];
+                h[2][2] = t[2];
+                
+                //transform to camera reference frame. size [1X3]
+                MatrixUtil.multiplyMatrixByColumnVector(h, coordsWI, coordsWIC);
+                for (k = 0; k < 3; ++k) {
+                    coordsWICN[k] = coordsWIC[k] / coordsWIC[2];
+                    out[k][j*nFeatures + i] = coordsWICN[k];
+                }
+            }
+        }
+        return out;
+    }
+    
+    public static double[][] getObservedMinusProjected_Camera_Frame() throws IOException, NotConvergedException {
+        
+        double[][] x = getObservedTransformedToCameraFrame();
+        double[][] xHat = getFeaturesProjectedToAllCameraFrames();
+        
+        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        
+        return m;
+    }
+    
+    public static double[][] getObservedMinusProjected_Camera_Frame_Eqn2() throws IOException, NotConvergedException {
+        
+        double[][] x = getObservedTransformedToCameraFrame();
+        double[][] xHat = getFeaturesProjectedToAllCameraFramesEqn2();
+        
+        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        
+        return m;
+    }
+    
+    /**
+     * for each image, project world scene features into the image reference
+     * frame.  distortion is added internally after transformation to camera coordinates.
+     * @return
+     * @throws IOException 
+     */
+    public static double[][] getFeaturesProjectedToAllImageFrames() throws IOException {
+        double[][] coordsWCN = getFeaturesProjectedToAllCameraFrames();
+        double[][] coordsW = getFeatureWCS();
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsWCN[0].length/nFeatures;
+        
+        boolean useR2R4 = true;
+        double[] rd = getRadialDistortionR2R4();
+        
+        double[][] intr = getIntrinsicCameraMatrix();
+        
+        double[] xWCNI = new double[3];
+        double[] xWCNDI = new double[3];
+        double[] xWDI = new double[3];
+        
+        int i, j, k;
+                
+        double[][] out = MatrixUtil.zeros(3, nFeatures*mImages);
+                
+        for (i = 0; i < nFeatures; ++i) {
+            for (j = 0; j < mImages; ++j) {
+                MatrixUtil.extractColumn(coordsWCN, j*nFeatures + i, xWCNI);                
+                CameraCalibration.applyRadialDistortion(xWCNI, rd[0], rd[1], useR2R4, xWCNDI);
+                
+                MatrixUtil.multiplyMatrixByColumnVector(intr, xWCNDI, xWDI);
+                
+                for (k = 0; k < 3; ++k) {
+                    out[k][j*nFeatures + i] = xWDI[k];
+                }
+            }
+        }        
+        return out;
+    }
+    
+    /**
+     * for each image, project world scene features into the image reference
+     * frame.  distortion is added internally after transformation to camera coordinates.
+     * @return
+     * @throws IOException 
+     */
+    public static double[][] getFeaturesProjectedToAllImageFramesEqn2() throws IOException {
+        
+        double[][] coordsWCN = getFeaturesProjectedToAllCameraFramesEqn2();
+        double[][] coordsW = getFeatureWCS();
+        
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsWCN[0].length/nFeatures;
+        
+        boolean useR2R4 = true;
+        double[] rd = getRadialDistortionR2R4();
+        
+        double[] xWCNI = new double[3];
+        double[] xWCNDI = new double[3];
+        double[] xWDI = new double[3];
+        
+        double[][] intr = getIntrinsicCameraMatrix();
+        
+        int i, j, k;
+                
+        double[][] out = MatrixUtil.zeros(3, nFeatures*mImages);
+                
+        for (i = 0; i < nFeatures; ++i) {
+            for (j = 0; j < mImages; ++j) {
+                MatrixUtil.extractColumn(coordsWCN, j*nFeatures + i, xWCNI);                
+                CameraCalibration.applyRadialDistortion(xWCNI, rd[0], rd[1], useR2R4, xWCNDI);
+                MatrixUtil.multiplyMatrixByColumnVector(intr, xWCNDI, xWDI);
+                for (k = 0; k < 3; ++k) {
+                    out[k][j*nFeatures + i] = xWDI[k];
+                }
+            }
+        }
+        
+        // or use zhang eqn 2:
+        //   H = A * |r1 r2 t|
+        
+        return out;
+    }
+    
+    public static double[][] getObservedMinusProjected_Image_Frame() throws IOException, NotConvergedException {
+        
+        double[][] x = getObservedFeaturesInAllImages();
+        double[][] xHat = getFeaturesProjectedToAllImageFrames();
+        
+        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        
+        return m;
+    }
+    
+    public static double[][] getObservedMinusProjected_Image_Frame_Eqn2() throws IOException, NotConvergedException {
+        
+        double[][] x = getObservedFeaturesInAllImages();
+        double[][] xHat = getFeaturesProjectedToAllImageFramesEqn2();
+        
+        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        
+        return m;
+    }
+    
+    
+    public static void printObservedMinusProjected_Camera_Frame() throws IOException, NotConvergedException {
+        
+        double[][] m = getObservedMinusProjected_Camera_Frame();
+        
+        System.out.printf("obs-projected in camera=\n%s\n", FormatArray.toString(m, "%.7e"));
+        
+        double sqsum = 0;
+        
+        int i, j;
+        for (i = 0; i < m.length; ++i) {
+            for (j = 0; j < m[i].length; ++j) {
+                sqsum += (m[i][j]*m[i][j]);
+            }
+        }
+        
+        System.out.printf("sqsum=%.7e\n", sqsum);
+    }
+    
+    public static void printObservedMinusProjected_Image_Frame() throws IOException, NotConvergedException {
+       
+        double[][] m = getObservedMinusProjected_Image_Frame();
+        
+        System.out.printf("obs-projected in images=\n%s\n", FormatArray.toString(m, "%.7e"));
+        
+        double sqsum = 0;
+        
+        int i, j;
+        for (i = 0; i < m.length; ++i) {
+            for (j = 0; j < m[i].length; ++j) {
+                sqsum += (m[i][j]*m[i][j]);
+            }
+        }
+        
+        System.out.printf("sqsum=%.7e\n", sqsum);
+    }
+    
+    public static void printObservedMinusProjected_Camera_Frame_Eqn2() throws IOException, NotConvergedException {
+        
+        double[][] m = getObservedMinusProjected_Camera_Frame_Eqn2();
+        
+        System.out.printf("obs-projected_eqn2 in camera=\n%s\n", FormatArray.toString(m, "%.7e"));
+        
+        double sqsum = 0;
+        
+        int i, j;
+        for (i = 0; i < m.length; ++i) {
+            for (j = 0; j < m[i].length; ++j) {
+                sqsum += (m[i][j]*m[i][j]);
+            }
+        }
+        
+        System.out.printf("sqsum=%.7e\n", sqsum);
+    }
+    
+    public static void printObservedMinusProjected_Image_Frame_Eqn2() throws IOException, NotConvergedException {
+        
+        double[][] m = getObservedMinusProjected_Image_Frame_Eqn2();
+        
+        System.out.printf("obs-projected_eqn2 in images=\n%s\n", FormatArray.toString(m, "%.7e"));
+        
+        double sqsum = 0;
+        
+        int i, j;
+        for (i = 0; i < m.length; ++i) {
+            for (j = 0; j < m[i].length; ++j) {
+                sqsum += (m[i][j]*m[i][j]);
+            }
+        }
+        
+        System.out.printf("sqsum=%.7e\n", sqsum);
+    }
 }

@@ -58,8 +58,13 @@ public class PNP {
      Szeliski 2010, "Computer Vision: Algorithms and Applications", Chapter 6
      
      * </pre>
-     * @param imageC
-     * @param worldC
+     * @param imageC observed features in one image followed by the same observed
+     * features in the next image, etc. format of double array with
+     * first dimension length 3 (for x, y, z) and the second dimension length
+     * of nFeatures * mImages. 
+     * @param worldC world scene features in format of double array with
+     * first dimension length 3 (for x, y, z) and the second dimension length
+     * of nFeatures.
      * @param kIntr
      * @param kExtrs
      * @param kRadial
@@ -342,7 +347,8 @@ public class PNP {
         double[][] jTJ = MatrixUtil.multiply(jT, j);
         
         double lambda = maxDiag(jTJ);
-        
+        System.out.printf("max diag of Hessian lambda=%.7e\n", lambda);
+
         //factor to raise or lower lambda.  
         //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
         final double lambdaF = 2;
