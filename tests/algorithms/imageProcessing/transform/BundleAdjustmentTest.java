@@ -157,10 +157,12 @@ public class BundleAdjustmentTest extends TestCase {
             extrTrans[i] = Arrays.copyOf(ex1.getTranslation(), 3);
         }
         
+        /*
         Zhang98Data.printObservedMinusProjected_Camera_Frame();
         Zhang98Data.printObservedMinusProjected_Camera_Frame_Eqn2();
         Zhang98Data.printObservedMinusProjected_Image_Frame();        
         Zhang98Data.printObservedMinusProjected_Image_Frame_Eqn2();
+        */
         
         BundleAdjustment.solveSparsely(coordsI, coordsW, imageFeaturesMap,
             intr, extrRotThetas, extrTrans,

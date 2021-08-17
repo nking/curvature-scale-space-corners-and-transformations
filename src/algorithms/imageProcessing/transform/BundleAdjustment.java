@@ -899,6 +899,7 @@ public class BundleAdjustment {
         
         double[] rotAux = new double[3];
         double[][] rotM = MatrixUtil.zeros(3, 3);
+        double[][] h = MatrixUtil.zeros(3, 3);
                 
         AuxiliaryArrays aa = new AuxiliaryArrays();
         double[][] auxIntr = MatrixUtil.zeros(3, 3);     
@@ -931,9 +932,10 @@ public class BundleAdjustment {
                 rotMatrices.getBlock(rotM, 0, j);
                 
                 //transform to camera reference frame. size [1X3]
-                Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j],
-                    rotAux, xWCI);
-                
+                //Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j], rotAux, xWCI);
+                populateCameraProjectionHomography(rotM, extrTrans[j], h);
+                MatrixUtil.multiplyMatrixByColumnVector(h, xWI, xWCI);
+          
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
           
@@ -2025,6 +2027,26 @@ System.out.flush();
             }
         }
         return c;
+    }
+    
+    /**
+     * populate the homography matrix to transform world screen coordinates
+     * to projected 2D coordinates in the camera reference frame.
+     * @param rot
+     * @param translation
+     * @param outH 
+     */
+    static void populateCameraProjectionHomography(double[][] rot,
+        double[] translation, double[][] outH) {
+        outH[0][0] = rot[0][0];
+        outH[1][0] = rot[1][0];
+        outH[2][0] = rot[2][0];
+        outH[0][1] = rot[0][1];
+        outH[1][1] = rot[1][1];
+        outH[2][1] = rot[2][1];
+        outH[0][2] = translation[0];
+        outH[1][2] = translation[1];
+        outH[2][2] = translation[2];
     }
 
     static class AuxiliaryArrays {

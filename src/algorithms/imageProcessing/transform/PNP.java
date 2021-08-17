@@ -320,7 +320,7 @@ public class PNP {
         
         // eqn (20) of Wetzstein.  length is 2*N
         // project the world coordinates to the camera coord frame, using R and T in h:
-        double[] fgp = map(worldC, h);
+        double[] fgp = transformToCamera(worldC, h);
         
         // in camera reference frame, subtract the projected world points from the observations:
         // length is 2*N
@@ -392,7 +392,7 @@ public class PNP {
             
             // eqn (20) of Wetzstein.  length is 2*N
             // project the world coordinates to the camera coord frame, using R and T in h:
-            fgp = map(worldC, h);
+            fgp = transformToCamera(worldC, h);
             // in camera reference frame, subtract the projected world points from the observations:
             bMinusFGP = MatrixUtil.subtract(b, fgp);   
             // sum the squares:
@@ -495,13 +495,13 @@ public class PNP {
     }
     
     /**
-     * map the homography matrix to the projected 2D point coordinates of the 
-     * world reference points eqn (20).
+     * use the homography matrix to the project the world reference points
+     * to 2D point coordinates in the camera frame.  eqn (20).
      * @param worldC
      * @param h
      * @return 
      */
-    static double[] map(double[][] worldC, double[] h) {
+    static double[] transformToCamera(double[][] worldC, double[] h) {
         
         int n = worldC[0].length;
         
