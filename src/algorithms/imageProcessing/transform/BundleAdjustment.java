@@ -47,11 +47,17 @@ import no.uib.cipr.matrix.NotConvergedException;
  * IEEE transactions on pattern analysis and machine intelligence, 
  * 40(3):611–625, 2018.
  * 
- * TODO: consider implementing or finding an implementation of:
- * Agarwal, Snavel, Seitz, and Szeliski
- * "Bundle Adjustment in the Large"
- * European conference on computer vision, pages 29–42. Springer, 2010
-* 
+ * TODO: find errors leading to such large parameter steps (dC and dP).
+ * 
+ * TODO:  add gauge fix.  And related to that, consider adding constraints 
+ * suggested in Seliski 2010: u_0 and v_0 are close to half the image lengths 
+ * and widths, respectively.  the angle between 2 image axes is close to 90.
+  the focal lengths along both axes are greater than 0.     
+ * 
+ * TODO: consider implementing the "reduced structure system" for the cases
+ * where (9^3)*mImages > (3^3)*nFeatures,  The "reduced camera system" is
+ * currently implemented.
+ * 
  * @author nichole
  */
 public class BundleAdjustment {
@@ -158,8 +164,6 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      </pre>
-     TODO: add gauge fix in coordination with invoker which provides initial
-     * parameter estimates.
      * @param coordsI the features observed in different images (in coordinates 
      * of the image reference frame). 
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
@@ -188,8 +192,6 @@ public class BundleAdjustment {
      * @param kRadials a double array wherein each row holds the 
      * radial distortion coefficients k1 and k2 for an image.
      * NOTE: current implementation accepts values of 0 for k1 and k2.
-     * TODO: consider whether to allow option of leaving out radial distortion
-     * by allowing kRadials to be null.
      * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
@@ -699,8 +701,6 @@ public class BundleAdjustment {
      * @param kRadials a double array wherein each row holds the 
      * radial distortion coefficients k1 and k2 for an image, so the total size is [nCameras X 2].
      * NOTE: current implementation accepts values of 0 for k1 and k2.
-     * TODO: consider whether to allow option of leaving out radial distortion
-     * by allowing kRadials to be null.
      * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
@@ -820,10 +820,6 @@ public class BundleAdjustment {
         as it is often assumed that (9^3)*mImages < (3^3)*nFeatures, so one
         inverts the matrix HPP (aka V*).
         
-        TODO: consider branching if case (9^3)*mImages > (3^3)*nFeatures
-        in order to invert matrix HCC (aka U*) instead of matrix HPP. This is
-        called the "reduced structure system" in contrast to the "reduced
-        camera system" solution pattern below.
         */
         
         if (outInitLambda != null) {
@@ -1529,8 +1525,6 @@ public class BundleAdjustment {
      * final 2D re-projected coordinates of the i-th feature point
      * w.r.t. 2D coordinates of perspective projection of the i-th feature point.
      * Defined in Qu 2018 eqns (3.28 - 3.33).
-     * TODO: create this method for the case when useHomography==1.
-     * see PNP.calculateJ(...).
      * @param xWI the 3-D coordinates of a world scene feature.
      * @param phi rotation angle vector of length 3 in units of radians
      * @param out output array of size [3X3]
@@ -1623,9 +1617,6 @@ public class BundleAdjustment {
      for each feature = 3 * mFeatures elements (i index is used for features)
      * Defined in Lourakis lecture slide 10.
      * 
-     * TODO: sign corrections may be needed internal to this method.
-     * TODO: partial derivatives for homography need to be added for the
-     * case when useHomography==1.  see PNP.calculateJ(...).
      * @param xWI a world scene feature.
      * xWI = column i of coordsW
      * @param xWCI xWI projected to the camera reference frame.

@@ -65,8 +65,8 @@ public class BundleAdjustmentTest extends TestCase {
         assertEquals(3, coordsI.length);
         assertEquals(nFeatures*nImages, coordsI[0].length);
         
-        System.out.printf("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
-            coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length);
+        log.log(LEVEL, String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
+            coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length));
         
         Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
             nFeatures, coordsI, coordsW, useR2R4);
