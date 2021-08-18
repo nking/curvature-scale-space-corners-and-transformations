@@ -624,6 +624,38 @@ public class PNP {
         return jF;
     }
     
+    static void calculateJF(double[] worldC, double[] h, double[][] outJF) {
+        
+        //TODO: assert worldC[2] = 1 for local device frame
+        //assert(Math.abs(worldC[2] - 1.) < 1e-5);
+        
+        assert(outJF.length == 2);
+        assert(outJF[0].length == 9);
+        
+        int i, j;
+        double x, y, s1, s2, d, dsq;
+        x = worldC[0];
+        y = worldC[1];
+        d = h[6] * x + h[7] * y + h[8];
+        s1 = h[0] * x + h[1] * y + h[2];
+        s2 = h[3] * x + h[4] * y + h[5];
+        dsq = s1*s1;
+
+        outJF[0][0] = x/d;
+        outJF[0][1] = y/d;
+        outJF[0][2] = 1./d;
+        outJF[0][6] = -(s1/dsq)*x;
+        outJF[0][7] = -(s1/dsq)*y;
+        outJF[0][8] = -(s1/dsq);
+
+        outJF[1][3] = x/d;
+        outJF[1][4] = y/d;
+        outJF[1][5] = 1./d;
+        outJF[1][6] = -(s2/dsq)*x;
+        outJF[1][7] = -(s2/dsq)*y;
+        outJF[1][8] = -(s2/dsq);
+    }
+    
     /**
     <pre>
      J_g = dh/dp 
@@ -639,7 +671,7 @@ public class PNP {
      */
     static double[][] calculateJG(double[] thetas) {
                         
-        // 9 X 9
+        // 9 X 6
         double[][] jG = new double[9][6];//MatrixUtil.zeros(9, 6);
         double cx, cy, cz, sx, sy, sz;
         cx = Math.cos(thetas[0]);

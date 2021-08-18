@@ -529,7 +529,7 @@ public class BundleAdjustment {
             updateRotThetas(extrRotThetasTest, outDC);
             updateIntrinsic(intrTest, outDC);
             updateRadialDistortion(kRadialsTest, outDC);
-            updateWorldC(coordsWTest, outDP);
+            //updateWorldC(coordsWTest, outDP);
 
             try {
                 calculateLMVectorsSparsely(coordsI, coordsWTest,
@@ -1677,8 +1677,6 @@ public class BundleAdjustment {
         pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);
         
         // 3X3.  Qu 2018 eqns (3.28 - 3.33)
-        //TODO: create the partial derivative for the case when useHomography==1.
-        // see PNP.calculateJ(...).
         double[][] dXdP = aa.d3X3;
         pdXWIJPhiJ(xWI, rotAngles, dXdP);
        
@@ -1691,7 +1689,7 @@ public class BundleAdjustment {
         // [2X3].  Qu 2018 eqn (3.34)
         double[][] dFdPhi = aa.f2X3;
         MatrixUtil.multiply(dFdT, dXdP, dFdPhi);
-
+        
         // [2X3]. Qu 2018 eqn (3.36)
         double[][] dFdY = dCPdY;
     
@@ -1699,14 +1697,65 @@ public class BundleAdjustment {
         double[][] dFdX = aa.h2X3;
         MatrixUtil.multiply(dFdT, rot, dFdX);
         
-        //------
-        // a holds camera parameters.  it's 2X9.  phi, t, y(=f, k1, f2)
-        // b hold point parameters.    it's 2X3.  x
-        for (i = 0; i < 2; ++i) {
-            System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, dFdPhi[i].length);
-            System.arraycopy(dFdT[i], 0, outAIJ[i], 3, dFdT[i].length);
-            System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);
-            System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);
+        if (useHomography == 1) {
+            
+            // replace dFdPhi and dFdT
+            
+            boolean useRightHanded = true;
+            double[] h = new double[9];
+            populateCameraProjectionHomography(rot, trans, h, useRightHanded);
+            
+            double[][] jF = MatrixUtil.zeros(2, 9);
+            PNP.calculateJF(xWI, h, jF);
+            
+            //J_g = dh/dp where h has 9 elements, and the number of parameters
+            // jG is [9X6]
+            double[][] jG = PNP.calculateJG(rotAngles);
+            
+            // [2X9]*[9X6] = [2X6]  this is dF/dTrans and dF/dRot combined
+            double[][] j = MatrixUtil.multiply(jF, jG);  
+            
+            /*
+            J_f: each block is [2X1] for x and y:
+            ∂f1/∂h1  ∂f1/∂h2  ∂f1/∂h3  ∂f1/∂h4  ∂f1/∂h5  ∂f1/∂h6  ∂f1/∂h7  ∂f1/∂h8  ∂f1/∂h9
+
+            J_g: each block is [1X1]
+            ∂h1/∂p1  ∂h1/∂p2  ∂h1/∂p3  ∂h1/∂p4  ∂h1/∂p5  ∂h1/∂p6
+            ∂h2/∂p1  ∂h2/∂p2  ∂h2/∂p3  ∂h2/∂p4  ∂h2/∂p5  ∂h2/∂p6
+            ∂h3/∂p1  ∂h3/∂p2  ∂h3/∂p3  ∂h3/∂p4  ∂h3/∂p5  ∂h3/∂p6
+            ∂h4/∂p1  ∂h4/∂p2  ∂h4/∂p3  ∂h4/∂p4  ∂h4/∂p5  ∂h4/∂p6
+            ∂h5/∂p1  ∂h5/∂p2  ∂h5/∂p3  ∂h5/∂p4  ∂h5/∂p5  ∂h5/∂p6
+            ∂h6/∂p1  ∂h6/∂p2  ∂h6/∂p3  ∂h6/∂p4  ∂h6/∂p5  ∂h6/∂p6
+            ∂h7/∂p1  ∂h7/∂p2  ∂h7/∂p3  ∂h7/∂p4  ∂h7/∂p5  ∂h7/∂p6
+            ∂h8/∂p1  ∂h8/∂p2  ∂h8/∂p3  ∂h8/∂p4  ∂h8/∂p5  ∂h8/∂p6
+            ∂h9/∂p1  ∂h9/∂p2  ∂h9/∂p3  ∂h9/∂p4  ∂h9/∂p5  ∂h9/∂p6
+
+            j = j_F*J_g:  [2x6] and each block is [2X1]
+            (∂f1/∂h1)*(∂h1/∂p1) + (∂f1/∂h2)*(∂h2/∂p1 + (∂f1/∂h3)*(∂h3/∂p1) + ...+ (∂f1/∂h9)*(∂h9/∂p1)
+            (∂f1/∂h1)*(∂h1/∂p2) + (∂f1/∂h2)*(∂h2/∂p2 + (∂f1/∂h3)*(∂h3/∂p2) + ...+ (∂f1/∂h9)*(∂h9/∂p2)
+            ...
+            (∂f1/∂h1)*(∂h1/∂p6) + (∂f1/∂h2)*(∂h2/∂p6 + (∂f1/∂h3)*(∂h3/∂p6) + ...+ (∂f1/∂h9)*(∂h9/∂p6)
+            
+            where p=(thetax,thetay,thetaz,transx,transy,transz)
+            */
+            // transpose to left-handed system
+            j = MatrixUtil.transpose(j);
+            for (i = 0; i < 2; ++i) {
+                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, j[i].length);
+                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);
+                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);
+            }
+        } else {
+        
+            //------
+            // a holds camera parameters.  it's 2X9.  phi, t, y(=f, k1, f2)
+            // b hold point parameters.    it's 2X3.  x
+            for (i = 0; i < 2; ++i) {
+                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, dFdPhi[i].length);
+                System.arraycopy(dFdT[i], 0, outAIJ[i], 3, dFdT[i].length);
+                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);
+                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);
+            }
         }
     }
 
@@ -2086,6 +2135,38 @@ public class BundleAdjustment {
         outH[0][2] = translation[0];
         outH[1][2] = translation[1];
         outH[2][2] = translation[2];
+    }
+    /**
+     * populate the homography matrix to transform world screen coordinates
+     * to projected 2D coordinates in the camera reference frame.
+     * method follows Wetzstein, eqn 19.
+     * @param rot
+     * @param translation
+     * @param outH 
+     */
+    void populateCameraProjectionHomography(double[][] rot,
+        double[] translation, double[] outH, boolean useRightHanded) {
+        if (useRightHanded) {
+            outH[0] = rot[0][0];
+            outH[1] = rot[0][1];
+            outH[2] = translation[0];
+            outH[3] = rot[1][0];
+            outH[4] = rot[1][1];
+            outH[5] = translation[1];
+            outH[6] = rot[2][0]; //-
+            outH[7] = rot[2][1]; //-
+            outH[8] = translation[2]; //-
+        } else {
+            outH[0] = rot[0][0];
+            outH[1] = rot[1][0];
+            outH[3] = rot[2][0];
+            outH[4] = rot[0][1];
+            outH[6] = rot[1][1];
+            outH[7] = rot[2][1];
+            outH[2] = translation[0];
+            outH[5] = translation[1];
+            outH[8] = translation[2];
+        }
     }
 
     private boolean hasNaN(double[] b) {

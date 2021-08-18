@@ -41,7 +41,7 @@ public class CameraCalibration {
     public static final double eps = 1e-7;
     public static final double eps2 = 1e-5;
     
-    private static final Level LEVEL = Level.FINE;
+    private static final Level LEVEL = Level.FINEST;
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
