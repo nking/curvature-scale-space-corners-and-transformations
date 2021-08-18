@@ -35,6 +35,7 @@
     <!-- =========== the application file directories ========-->
     <property name="src.dir"             value="${basedir}/src"/>
     <property name="resources.dir"       value="${basedir}/resources"/>
+    <property name="testresources.dir"   value="${basedir}/testresources"/>
     <property name="lib.dir"             value="${basedir}/lib"/>
     <property name="classes.dir"         value="${basedir}/bin"/>
     <property name="src.out.dir"         value="${classes.dir}/classes"/>
@@ -157,6 +158,7 @@
             <src path="${src.dir}"/>
             <compilerarg value="-Xlint"/>
     	</javac>
+        <copy file="${testresources.dir}/logging.properties" todir="${src.out.dir}" overwrite="true"/>
     </target>
 
     <target name="coverage">
