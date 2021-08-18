@@ -1692,9 +1692,9 @@ public class BundleAdjustment {
             
             // replace dFdPhi and dFdT
             
-            boolean useRightHanded = true;
+            boolean useLeftHanded = true;
             double[] h = new double[9];
-            populateCameraProjectionHomography(rot, trans, h, useRightHanded);
+            populateCameraProjectionHomography(rot, trans, h, useLeftHanded);
             
             double[][] jF = MatrixUtil.zeros(2, 9);
             PNP.calculateJF(xWI, h, jF);
@@ -1729,7 +1729,7 @@ public class BundleAdjustment {
             
             where p=(thetax,thetay,thetaz,transx,transy,transz)
             */
-            // transpose to left-handed system
+            // transpose to right-handed system
             j = MatrixUtil.transpose(j);
             for (i = 0; i < 2; ++i) {
                 System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, j[i].length);
@@ -2136,8 +2136,9 @@ public class BundleAdjustment {
      * @param outH 
      */
     void populateCameraProjectionHomography(double[][] rot,
-        double[] translation, double[] outH, boolean useRightHanded) {
-        if (useRightHanded) {
+        double[] translation, double[] outH, boolean useLeftHanded) {
+        if (useLeftHanded) {
+            // Wetzstein lecture uses convention: "looking down the negative z-axis"
             outH[0] = rot[0][0];
             outH[1] = rot[0][1];
             outH[2] = translation[0];

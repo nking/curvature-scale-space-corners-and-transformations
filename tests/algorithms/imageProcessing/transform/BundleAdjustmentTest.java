@@ -29,9 +29,6 @@ public class BundleAdjustmentTest extends TestCase {
         log.setLevel(LEVEL);
     }
     
-    // TODO: test with Zhang dataset
-    // TODO: test with Cambridge Landmark dataset
-    
     public BundleAdjustmentTest() {
     }
     
