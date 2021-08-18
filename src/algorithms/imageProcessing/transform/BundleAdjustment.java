@@ -1,24 +1,19 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.BlockMatrixIsometric;
-import algorithms.matrix.LinearEquations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.set.TIntSet;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseCholesky;
-import no.uib.cipr.matrix.DenseCholesky2;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.LowerSPDDenseMatrix;
 import no.uib.cipr.matrix.LowerTriangDenseMatrix;
 import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
-import no.uib.cipr.matrix.UpperSPDDenseMatrix;
-import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 
 /**
  given intrinsic and extrinsic camera parameters, coordinates for points
@@ -61,11 +56,32 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
  */
 public class BundleAdjustment {
     
-    private static final Level LEVEL = Level.INFO;
-    private static final Logger log;
-    static {
-        log = Logger.getLogger(CameraCalibration.class.getSimpleName());
-        log.setLevel(LEVEL);
+    // for 0, use image (pixel) reference frame, else for 1 use camera frame.
+    private final int useCameraFrame = 0;
+        
+    private int useHomography = 0;
+        
+    //private static final Level LEVEL = Level.INFO;
+    private static final Logger log = Logger.getLogger(CameraCalibration.class.getSimpleName());
+    
+    public BundleAdjustment() {
+        useHomography = 0;
+    }
+    
+    /**
+     * setting to use the homography matrix in the WCS projection to camera
+     * 2-D reference frame.   The homography matrix is the first 2 columns of
+     * the rotation matrix and the translation vector as the 3rd column
+     * in the homography.  
+     * The default uses, instead, the full projection
+     * of Rotation * x_WCS + translation.
+     * Note that the partial derivatives calculated in making
+     * the Jacobian are derived from the full projection, not the homography,
+     * so there will be inconsistencies until that is fixed for the homography
+     * derivatives.
+     */
+    public void setUseHomography() {
+        useHomography =1;
     }
     
     /**
@@ -180,8 +196,9 @@ public class BundleAdjustment {
      * @param nMaxIter
      * 
      * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
      */
-    public static void solveSparsely(
+    public void solveSparsely(
         double[][] coordsI, double[][] coordsW, TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
         double[][] kRadials, final int nMaxIter, boolean useR2R4) 
@@ -480,7 +497,7 @@ public class BundleAdjustment {
             return;
         }
         double lambda = outInitLambda[0];
-        System.out.printf("max diag of Hessian lambda=%.7e\n", lambda);
+        log.fine(String.format("max diag of Hessian lambda=%.7e\n", lambda));
 
         // set to null to prevent calculating the max of diagnonal of (J^T*J) 
         outInitLambda = null;
@@ -490,15 +507,12 @@ public class BundleAdjustment {
         
         double fTest = Double.POSITIVE_INFINITY;
         
-        //log.log(LEVEL,
-         //   String.format(
-         System.out.printf(
+        log.fine(String.format(
             "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
             lambda, outFSqSum[0],
             FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
             FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")
-            //)
-        );                 
+        ));                 
                        
         double gainRatio;
                              
@@ -531,17 +545,14 @@ public class BundleAdjustment {
             gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda, 
                 outGradC, outGradP, eps);
             
-            //log.log(LEVEL,
-            //    String.format(
-            System.out.printf(
+            log.fine(String.format(
                 "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
                 + " g.r.=%.3e\ndC=%s\ndP=%s\ngradC=%s\ngradP=%s\n", 
                 nIter, lambda, fPrev, fTest, (fPrev-fTest),
                 gainRatio,
                 FormatArray.toString(outDC, "%.11e"), FormatArray.toString(outDP, "%.11e"), 
                 FormatArray.toString(outGradC, "%.11e"), FormatArray.toString(outGradP, "%.11e")
-            //));
-            );
+            ));
             /*
             for large values of lambda, the update is a very steep descent and
             deltaP is very small.
@@ -572,8 +583,8 @@ public class BundleAdjustment {
                 double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetas, extrRotThetasTest);
                 double _dts = MatrixUtil.frobeniusNorm(_dt);
                 double _rts = MatrixUtil.frobeniusNorm(_rt);
-                System.out.printf("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e"));
-                System.out.printf("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e"));
+                log.fine(String.format("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e")));
+                log.fine(String.format("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e")));
                 
                 //copy test data structures into the original in-out datastructures
                 intr.set(intrTest);
@@ -596,7 +607,7 @@ public class BundleAdjustment {
                 lambda *= lambdaF;
                 lambdaF *= 2;
             }
-            System.out.printf("new lambda=%.11e\n", lambda);           
+            log.fine(String.format("new lambda=%.11e\n", lambda));           
         }        
     }
     
@@ -720,7 +731,7 @@ public class BundleAdjustment {
      * @throws no.uib.cipr.matrix.NotConvergedException
      * @throws java.io.IOException
      */
-    protected static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+    protected void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntObjectMap<TIntSet> imageFeaturesMap,
         BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
         double[][] kRadials, final boolean useR2R4,
@@ -904,9 +915,6 @@ public class BundleAdjustment {
         //double[] xWCNDI_2_20 = new double[3];
         double[][] xIJCs = null;  
         
-        // for 0, use image (pixel) reference frame, else for 1 use camera frame.
-        final int useCameraFrame = 0;
-        final int useHomography = 1;
         
         //lourakis (sba-toms.pdf):  observed is one feature in all images, 
         //     then next feature in all images...
@@ -1014,15 +1022,14 @@ public class BundleAdjustment {
 
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
-if ((i%85)==0) {
-    System.out.printf("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e"));
-    System.out.printf("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e"));
-    System.out.printf("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e"));
-    System.out.printf("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
-    System.out.printf("*diff=%s\n", FormatArray.toString(fIJ, "%.7e"));
-    System.out.printf("%d,%d) aIJ=%s\n", i, j, FormatArray.toString(aIJ, "%.7e"));
-    System.out.printf("bIJ=%s\n", FormatArray.toString(bIJ, "%.7e"));
-    System.out.flush();
+                    if ((i % (nFeatures/3)) == 0) {
+                        log.fine(String.format("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e")));
+                        log.fine(String.format("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e")));
+                        log.fine(String.format("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e")));
+                        log.fine(String.format("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e")));
+                        log.fine(String.format("*diff=%s\n", FormatArray.toString(fIJ, "%.7e")));
+                        log.fine(String.format("%d,%d) aIJ=%s\n", i, j, FormatArray.toString(aIJ, "%.7e")));
+                        log.fine(String.format("bIJ=%s\n", FormatArray.toString(bIJ, "%.7e")));
 }                    
                 } else {  
                     // these are DISTORTION-FREE and in CAMERA reference frame
@@ -1033,9 +1040,6 @@ if ((i%85)==0) {
                     
                     // xIJC are the observed points in the camera reference frame with distortion removed
                     
-//System.out.printf("(%d,%d)\nxIJC=%s\n", i,j, FormatArray.toString(xIJC, "%.3e"));
-//System.out.printf("xWCNI=%s\n\n", FormatArray.toString(xWCNI, "%.3e"));
-                
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.elementwiseSubtract(xIJC, xWCNI, fIJ);
                 }
@@ -1066,14 +1070,11 @@ if ((i%85)==0) {
 
                 //[3 X 1]
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
-if ((i%85)==0) {
-    System.out.printf("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e"));
-    System.out.flush();
-}                
-                //System.out.printf("bIJTF=%s\n", FormatArray.toString(bIJTF, "%.3e"));
-                //System.out.printf("gradP_%d=%s\n", i, FormatArray.toString(bPI, "%.3e"));
-                //System.out.flush();
-
+                
+                if ((i % (nFeatures / 3)) == 0) {
+                    log.fine(String.format("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e")));
+                }
+                
                 System.arraycopy(bPI, 0, bP, i*3, 3);
                 
                 // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
@@ -1139,16 +1140,14 @@ if ((i%85)==0) {
                 }
             } // end image j loop
             
-System.out.printf("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e"));
+            log.fine(String.format("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e")));
 
             // now HPP_i (aka V_i) is summed over all j: V_i = Σ_j(BIJT*B1J)
 
             if (outInitLambda != null) {
-                if (
-                    maxDiag(hPPI, outInitLambda)
-                ) 
-                //System.out.printf("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0])
-                ;
+                if (maxDiag(hPPI, outInitLambda)) {
+                    log.fine(String.format("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0]));
+                }
             }
             
             // augment hPPI by damping term
@@ -1173,7 +1172,7 @@ System.out.printf("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e"));
             for (j = 0; j < mImages; ++j) {
                 mA.getBlock(auxMA, j, j);
                 if (maxDiag(auxMA, outInitLambda)) {
-                    //System.out.printf("max diag of HCC_J (aka U_j): new lambda=%.7e\n", outInitLambda[0]);
+                    log.fine(String.format("max diag of HCC_J (aka U_j): new lambda=%.7e\n", outInitLambda[0]));
                 }
             }
         }
@@ -1194,12 +1193,11 @@ System.out.printf("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e"));
         // bC is aIJTF and this is stored in outGradC
         // bP is bIJTF and thisis stored in outGradP
         
-        System.out.printf("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e"));
-        System.out.printf("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e"));
-        System.out.printf("HCC=U=\n%s\n\n", FormatArray.toString(mA.getA(), "%.3e"));
-        System.out.printf("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e"));
-        System.out.printf("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e"));
-        System.out.flush();
+        log.fine(String.format("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e")));
+        log.fine(String.format("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e")));
+        log.fine(String.format("HCC=U=\n%s\n\n", FormatArray.toString(mA.getA(), "%.3e")));
+        log.fine(String.format("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e")));
+        log.fine(String.format("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e")));
                 
         //tP = HPP^-1*bP = V^-1*bP [3n X 1] or [1n X 3] row format
         // blocks: n rows and 1 column
@@ -1318,9 +1316,8 @@ System.out.printf("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e"));
         //    Cholesky decomposition, so need to find the nearest or a nearest
         //    symmetric positive definite.
         
-System.out.printf("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e"));
-System.out.printf("vB=%s\n", FormatArray.toString(vB, "%.3e"));
-System.out.flush();
+        log.fine(String.format("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e")));
+        log.fine(String.format("vB=%s\n", FormatArray.toString(vB, "%.3e")));
 
         double eps = 1.e-7;
         // this method attempts to find the nearest symmetric positive *definite* matrix to A:
@@ -1329,24 +1326,15 @@ System.out.flush();
         DenseCholesky chol = new DenseCholesky(aPSD.length, false);
         chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(aPSD)));
         LowerTriangDenseMatrix _cholL = chol.getL();
-         
-        /*
-System.out.printf("aPSD=%s\n", FormatArray.toString(aPSD, "%.3e"));
-        EVD evd = EVD.factorize(new DenseMatrix(aPSD));
-        Arrays.sort(evd.getRealEigenvalues());
-System.out.printf("EVD(aPSD).eigenvalues=%s\n", FormatArray.toString(evd.getRealEigenvalues(), "%.3e"));
-SVD svd = SVD.factorize(new DenseMatrix(aPSD));
-System.out.printf("SVD(aPSD).eigenvalues=%s\n", FormatArray.toString(svd.getS(), "%.3e"));
-System.out.flush();
-        */
         
         //[mImages*9, mImages*9]
         double[][] cholL = Matrices.getArray(_cholL);
         
         double[][] cholLT = MatrixUtil.transpose(cholL);
- System.out.printf("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e"));
- System.out.printf("cholL*LT=\n%s\n", FormatArray.toString(
-     MatrixUtil.multiply(cholL, cholLT), "%.3e"));
+        
+        log.fine(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
+        log.fine(String.format("cholL*LT=\n%s\n", FormatArray.toString(
+            MatrixUtil.multiply(cholL, cholLT), "%.3e")));
 
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
         backward substitution to find x as dC.
@@ -1372,11 +1360,9 @@ System.out.flush();
         // x is dC
         MatrixUtil.backwardSubstitution(cholLT, yM, outDC);
         
-        
 //Error:  dC is too large.  error somewhere in calculating it.        
-System.out.printf("yM=%s\n", FormatArray.toString(yM, "%.3e"));
-System.out.printf("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e"));
-System.out.flush();
+        log.fine(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
+        log.fine(String.format("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e")));
 
         // calc outDP:  dP = invHPPI * bPI - invHPPI * HPC * dC
         //              dP = tP - tPC^T * dC // [3nX1] - [3nX9m]*[9*mImagesX1] 
@@ -1418,8 +1404,7 @@ System.out.flush();
             
         } // end loop over feature i
             
-System.out.printf("outDP=%s\n", FormatArray.toString(outDP, "%.3e"));
-System.out.flush();
+        log.fine(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
 
     }
     
@@ -1438,7 +1423,7 @@ System.out.flush();
      * @param k2 radial distortion coefficient 2
      * @param out output array of size [2X2]
      */
-    static void pdCpIJCIJ(double[] xWCNI, double[][] intr,
+    void pdCpIJCIJ(double[] xWCNI, double[][] intr,
         double k1, double k2, double[][] out) {
         
         if (out.length != 2 || out[0].length != 2) {
@@ -1475,7 +1460,7 @@ System.out.flush();
      * xWCI = column i of coordsW transformed to camera coordinates; 
      * @param out output array of size [2X3]
      */
-    static void pdCIJXWIJ(double[] xWCI, double[][] out) {
+    void pdCIJXWIJ(double[] xWCI, double[][] out) {
         
         if (out.length != 2 || out[0].length != 3) {
             throw new IllegalArgumentException("out size must be 2X3");
@@ -1511,7 +1496,7 @@ System.out.flush();
      * @param k2 radial distortion coefficient 2
      * @param out output array of size [2X3]
      */
-    static void pdCpIJYJ(double[] xWCNI, double[][] intr,
+    void pdCpIJYJ(double[] xWCNI, double[][] intr,
         double k1, double k2, double[][] out) {
         
         if (out.length != 2 || out[0].length != 3) {
@@ -1544,12 +1529,13 @@ System.out.flush();
      * final 2D re-projected coordinates of the i-th feature point
      * w.r.t. 2D coordinates of perspective projection of the i-th feature point.
      * Defined in Qu 2018 eqns (3.28 - 3.33).
-     * 
+     * TODO: create this method for the case when useHomography==1.
+     * see PNP.calculateJ(...).
      * @param xWI the 3-D coordinates of a world scene feature.
      * @param phi rotation angle vector of length 3 in units of radians
      * @param out output array of size [3X3]
      */
-    static void pdXWIJPhiJ(double[] xWI, double[] phi, double[][] out) {
+    void pdXWIJPhiJ(double[] xWI, double[] phi, double[][] out) {
         
         if (out.length != 3 || out[0].length != 3) {
             throw new IllegalArgumentException("out size must be 3X3");
@@ -1637,6 +1623,9 @@ System.out.flush();
      for each feature = 3 * mFeatures elements (i index is used for features)
      * Defined in Lourakis lecture slide 10.
      * 
+     * TODO: sign corrections may be needed internal to this method.
+     * TODO: partial derivatives for homography need to be added for the
+     * case when useHomography==1.  see PNP.calculateJ(...).
      * @param xWI a world scene feature.
      * xWI = column i of coordsW
      * @param xWCI xWI projected to the camera reference frame.
@@ -1654,7 +1643,7 @@ System.out.flush();
      * @param outAIJ output array of size [2X9]
      * @param outBIJ output array of size [2X3]
      */
-    static void aIJBIJ(double[] xWI, double[] xWCI, double[][] intr, double k1, double k2, 
+    void aIJBIJ(double[] xWI, double[] xWCI, double[][] intr, double k1, double k2, 
         double[] rotAngles, double[][] rot, double[] trans, AuxiliaryArrays aa,
         double[][] outAIJ, double[][] outBIJ) {
                 
@@ -1688,6 +1677,8 @@ System.out.flush();
         pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);
         
         // 3X3.  Qu 2018 eqns (3.28 - 3.33)
+        //TODO: create the partial derivative for the case when useHomography==1.
+        // see PNP.calculateJ(...).
         double[][] dXdP = aa.d3X3;
         pdXWIJPhiJ(xWI, rotAngles, dXdP);
        
@@ -1719,7 +1710,7 @@ System.out.flush();
         }
     }
 
-    private static BlockMatrixIsometric createRotationMatricesFromEulerAngles(
+    private BlockMatrixIsometric createRotationMatricesFromEulerAngles(
         double[][] extrRotThetas) {
         
         //extrRot is mImages*[1X3]
@@ -1758,7 +1749,7 @@ System.out.flush();
      * @param eps
      * @return 
      */
-    private static double calculateGainRatio(double fNew, double fPrev, 
+    private double calculateGainRatio(double fNew, double fPrev, 
         double[] dC, double[] dP, double lambda, 
         double[] gradC, double[] gradP, double eps) {
                                 
@@ -1795,7 +1786,7 @@ System.out.flush();
         return gain;
     }
     
-    private static boolean isNegligible(double[] c, double eps) {
+    private boolean isNegligible(double[] c, double eps) {
         for (int i = 0; i < c.length; ++i) {
             if (Math.abs(c[i]) > eps) {
                 return false;
@@ -1812,7 +1803,7 @@ System.out.flush();
      * image, followed by the same 9 for the next image, etc.  only the
      * translation elements are used in this method.
      */
-    private static void updateTranslation(double[][] extrTrans, double[] dC) {
+    private void updateTranslation(double[][] extrTrans, double[] dC) {
         
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
         // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
@@ -1844,7 +1835,7 @@ System.out.flush();
      * image, followed by the same 9 for the next image, etc.  only the
      * intrinsic camera parameters are used in this method.
      */
-    private static void updateIntrinsic(BlockMatrixIsometric intr, 
+    private void updateIntrinsic(BlockMatrixIsometric intr, 
         double[] dC) {
         
         int nImages = intr.getA().length/3;
@@ -1865,7 +1856,7 @@ System.out.flush();
         }
     }
         
-    private static void updateRadialDistortion(double[][] kRadials, double[] dC) {
+    private void updateRadialDistortion(double[][] kRadials, double[] dC) {
         
         int nImages = kRadials.length;
                 
@@ -1885,7 +1876,7 @@ System.out.flush();
      * image, followed by the same 9 for the next image, etc.  only the
      * rotation elements are used in this method.
      */
-    private static void updateRotThetas(double[][] extrRotThetas,  
+    private void updateRotThetas(double[][] extrRotThetas,  
         double[] dC) {
                                  
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
@@ -1952,7 +1943,7 @@ System.out.flush();
         }    
     }
     
-    private static void initDeltaPWithQu(double[] deltaP) {
+    private void initDeltaPWithQu(double[] deltaP) {
         
         int nFeatures = deltaP.length/3;
                 
@@ -1969,7 +1960,7 @@ System.out.flush();
         }
     }
     
-    private static void initDeltaCWithQu(double[] deltaC) {
+    private void initDeltaCWithQu(double[] deltaC) {
         
         int mImages = deltaC.length/9;
                 
@@ -2008,7 +1999,7 @@ System.out.flush();
      * world coordinates for the features in the world scene.
      * The elements are ordered as follows: dX_0, dY_0, dZ_0, ... dX_n-1, dY_n-1, dZ_n-1. 
      */
-    private static void updateWorldC(double[][] coordsW, double[] deltaP) {
+    private void updateWorldC(double[][] coordsW, double[] deltaP) {
         int nFeatures = coordsW[0].length;
         
         int i;
@@ -2019,7 +2010,7 @@ System.out.flush();
         }
     }
     
-    private static boolean maxDiag(double[][] m, double[] outInitLambda) {
+    private boolean maxDiag(double[][] m, double[] outInitLambda) {
         int i;
         boolean updated = false;
         for (i = 0; i < m.length; ++i) {
@@ -2050,7 +2041,7 @@ System.out.flush();
      * @throws no.uib.cipr.matrix.NotConvergedException 
      * @throws java.io.IOException 
      */
-    private static double[][] transformPixelToCamera(int nFeatures, double[][] coordsI, 
+    private double[][] transformPixelToCamera(int nFeatures, double[][] coordsI, 
         BlockMatrixIsometric intr, double[][] kRadial, boolean useR2R4) throws NotConvergedException, IOException {
         
         int mImages = coordsI[0].length/nFeatures;
@@ -2084,7 +2075,7 @@ System.out.flush();
      * @param translation
      * @param outH 
      */
-    static void populateCameraProjectionHomography(double[][] rot,
+    void populateCameraProjectionHomography(double[][] rot,
         double[] translation, double[][] outH) {
         outH[0][0] = rot[0][0];
         outH[1][0] = rot[1][0];
@@ -2097,7 +2088,7 @@ System.out.flush();
         outH[2][2] = translation[2];
     }
 
-    private static boolean hasNaN(double[] b) {
+    private boolean hasNaN(double[] b) {
         for (double a : b) {
             if (Double.isNaN(a)) {
                 return true;
@@ -2106,7 +2097,7 @@ System.out.flush();
         return false;
     }
 
-    private static boolean hasNaN(double[][] a) {
+    private boolean hasNaN(double[][] a) {
         int i, j;
         for (i = 0; i < a.length; ++i) {
             for(j = 0; j < a[0].length; ++j) {

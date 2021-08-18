@@ -162,7 +162,9 @@ public class BundleAdjustmentTest extends TestCase {
         //Zhang98Data.printObservedMinusProjected_Image_Frame();        
         //Zhang98Data.printObservedMinusProjected_Image_Frame_Eqn2();
         
-        BundleAdjustment.solveSparsely(coordsI, coordsW, imageFeaturesMap,
+        BundleAdjustment ba = new BundleAdjustment();
+        ba.setUseHomography();
+        ba.solveSparsely(coordsI, coordsW, imageFeaturesMap,
             intr, extrRotThetas, extrTrans,
             kRadials, nMaxIter, useR2R4);
         
