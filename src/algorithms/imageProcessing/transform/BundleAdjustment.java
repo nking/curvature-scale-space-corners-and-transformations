@@ -10,7 +10,15 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import no.uib.cipr.matrix.DenseCholesky;
+import no.uib.cipr.matrix.DenseCholesky2;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.LowerSPDDenseMatrix;
+import no.uib.cipr.matrix.LowerTriangDenseMatrix;
+import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.UpperSPDDenseMatrix;
+import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 
 /**
  given intrinsic and extrinsic camera parameters, coordinates for points
@@ -463,10 +471,14 @@ public class BundleAdjustment {
         double[] outInitLambda = new double[1];
         
         // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
-        calculateLMVectorsSparsely(coordsI, coordsWTest,  
-            imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
-            outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
-        
+        try {
+            calculateLMVectorsSparsely(coordsI, coordsWTest,  
+                imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
+                outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
+        } catch (NaNException e) {
+            System.err.println(e.getMessage());
+            return;
+        }
         double lambda = outInitLambda[0];
         System.out.printf("max diag of Hessian lambda=%.7e\n", lambda);
 
@@ -493,7 +505,7 @@ public class BundleAdjustment {
         // update the features with outDP?  see step 7 of Engels
         
         int nIter = 0;
-        while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps)) {
+        while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps) && (lambda > 1E-15)) {
                 
             nIter++;
             
@@ -503,11 +515,16 @@ public class BundleAdjustment {
             updateRotThetas(extrRotThetasTest, outDC);
             updateIntrinsic(intrTest, outDC);
             updateRadialDistortion(kRadialsTest, outDC);
-            //      updateWorldC(coordsWTest, outDP);
+            updateWorldC(coordsWTest, outDP);
 
-            calculateLMVectorsSparsely(coordsI, coordsWTest,  
-                imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
-                outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+            try {
+                calculateLMVectorsSparsely(coordsI, coordsWTest,
+                    imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
+                    outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+            } catch (NaNException e) {
+                System.err.println(e.getMessage());
+                break;
+            }
         
             fTest = outFSqSum[0];
                 
@@ -543,11 +560,11 @@ public class BundleAdjustment {
                 // and Figure 2 of
                 // Lourakis & Argyros 2009, "SBA: A Software Package For Generic
                 // Sparse Bundle Adjustment"
-                lambda = Math.max(1./3, 1. - Math.pow(2*gainRatio - 1, 3));
+                //lambda = Math.max(1./3, 1. - Math.pow(2*gainRatio - 1, 3));
+                //lambdaF = 2;
                 
-                //lambda /= lambdaF;
+                lambda /= lambdaF;
                 
-                lambdaF = 2;
                 assert(fTest < fPrev);                
                 fPrev = fTest;
                 
@@ -700,6 +717,8 @@ public class BundleAdjustment {
      * this method, it's expected that lambda > 0 and outInitLambda is null.
      * @param outInitLambda when not null this is the output parameter holding 
      * the maximum of the diagonal of j^T*J.  the array has length 1.
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     * @throws java.io.IOException
      */
     protected static void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
         TIntObjectMap<TIntSet> imageFeaturesMap,
@@ -707,7 +726,7 @@ public class BundleAdjustment {
         double[][] kRadials, final boolean useR2R4,
         double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
         double[] outFSqSum, final double lambda,
-        double[] outInitLambda) throws NotConvergedException, IOException {
+        double[] outInitLambda) throws NotConvergedException, IOException, NaNException {
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -831,6 +850,8 @@ public class BundleAdjustment {
         //BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
 
         // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
+        // U_J is stored it in alone until i and j loops complete the first time, then
+        //     the rest of mA is subtracted in.
         BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);
         
         // aka V_i; a [3X3] block
@@ -885,15 +906,17 @@ public class BundleAdjustment {
         
         // for 0, use image (pixel) reference frame, else for 1 use camera frame.
         final int useCameraFrame = 0;
+        final int useHomography = 1;
         
         //lourakis (sba-toms.pdf):  observed is one feature in all images, 
         //     then next feature in all images...
         //Qu: observed is all features of first image, then all features of next image
         
         if (useCameraFrame == 1) {
+            // this includes removing radial distortion
             xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
-        
+                   
         //size is [3 X 3*mImages] with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);
         
@@ -932,9 +955,12 @@ public class BundleAdjustment {
                 rotMatrices.getBlock(rotM, 0, j);
                 
                 //transform to camera reference frame. size [1X3]
-                //Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j], rotAux, xWCI);
-                populateCameraProjectionHomography(rotM, extrTrans[j], h);
-                MatrixUtil.multiplyMatrixByColumnVector(h, xWI, xWCI);
+                if (useHomography == 1) {
+                    populateCameraProjectionHomography(rotM, extrTrans[j], h);
+                    MatrixUtil.multiplyMatrixByColumnVector(h, xWI, xWCI);
+                } else {
+                    Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j], rotAux, xWCI);
+                }
           
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
@@ -957,7 +983,7 @@ public class BundleAdjustment {
                     // Qu eqn 2.20, used instead of xWCNDI.  world feature reprojected to camera and  distorted
                     //CameraCalibration.applyRadialDistortion(xWCNI_2_19, k1, k2, useR2R4, xWCNDI_2_20);
                 }
-                
+         
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]
                 // populate aIJ and bIJ as output of method:
@@ -986,19 +1012,18 @@ public class BundleAdjustment {
                     //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
 
-if (j==0 && ((i%50)==0)) {
-    double[] diff = new double[xIJ.length];
-    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, diff);
+                    // [1X3] - [1X3] = [1X3]
+                    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
+if ((i%85)==0) {
     System.out.printf("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e"));
     System.out.printf("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e"));
     System.out.printf("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e"));
     System.out.printf("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e"));
-    System.out.printf("*diff=%s\n", FormatArray.toString(diff, "%.7e"));
+    System.out.printf("*diff=%s\n", FormatArray.toString(fIJ, "%.7e"));
+    System.out.printf("%d,%d) aIJ=%s\n", i, j, FormatArray.toString(aIJ, "%.7e"));
+    System.out.printf("bIJ=%s\n", FormatArray.toString(bIJ, "%.7e"));
     System.out.flush();
-}
-                    // [1X3] - [1X3] = [1X3]
-                    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
-                    
+}                    
                 } else {  
                     // these are DISTORTION-FREE and in CAMERA reference frame
                                         // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
@@ -1017,9 +1042,6 @@ if (j==0 && ((i%50)==0)) {
                 
                 //sum of squares
                 outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);
-                             
- System.out.printf("F(%d,%d)=%.7f\n", i,j,MatrixUtil.innerProduct(fIJ, fIJ));
- System.out.flush();
 
                 //== subtract jP^T*f (aka bP) from bP ==
                  
@@ -1044,7 +1066,10 @@ if (j==0 && ((i%50)==0)) {
 
                 //[3 X 1]
                 MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
-                
+if ((i%85)==0) {
+    System.out.printf("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e"));
+    System.out.flush();
+}                
                 //System.out.printf("bIJTF=%s\n", FormatArray.toString(bIJTF, "%.3e"));
                 //System.out.printf("gradP_%d=%s\n", i, FormatArray.toString(bPI, "%.3e"));
                 //System.out.flush();
@@ -1053,7 +1078,7 @@ if (j==0 && ((i%50)==0)) {
                 
                 // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
                 MatrixUtil.multiply(bIJT, bIJ, bIJsq);
-
+                
                 // add jP^T*JP for this image to the hPPi block for feature i.
                 //    HPP_i = V_i = Σ_j(BIJT*B1J) 
                 // Engels: add jP^T*JP to upper triangular part of hPP aka V.
@@ -1061,6 +1086,12 @@ if (j==0 && ((i%50)==0)) {
                 //     elementwise addition of 3X3 blocks:
                 MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);
             
+                // temporary exit until find reasons for very large numbers in some
+                //   of the arrays
+                if (hasNaN(hPPI)) {
+                    throw new NaNException("Errors due to unusually large numbers");
+                }
+
                 // if camera c is free (presumably, context is fixed or free variables).
                 if (true) {
                     
@@ -1069,11 +1100,6 @@ if (j==0 && ((i%50)==0)) {
                     //mA[j][j] += aIJT * aIJ; // [9X9]
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
 
-/*if ((i%25)==0) {                    
-System.out.printf("(ft%d,img%d)\naIJ=\n%s\nbIJ=\n%s\n", 
-    i, j, FormatArray.toString(aIJ, "%.3e"), FormatArray.toString(bIJ, "%.3e"));
-System.out.flush();
-}*/
                     mA.getBlock(auxMA2, j, j);
                     MatrixUtil.elementwiseAdd(auxMA, auxMA2, auxMA3);
                     mA.setBlock(auxMA3, j, j);
@@ -1105,19 +1131,15 @@ System.out.flush();
 
                     // fill bCJ with last entry for image J
                     System.arraycopy(bC, j*9, bCJ, 0, 9);
-                
+     
                     MatrixUtil.elementwiseSubtract(bCJ, aIJTF, bCJ);
 
-System.out.printf("(ft%d,img%d): bCJ=%s\n     aIJTF=%s\nj*9=%d\n", 
-    i, j,  FormatArray.toString(bCJ, "%.3e"), FormatArray.toString(aIJTF, "%.3e"), j*9);
-System.out.flush();
-        
                     //bC length is [9*mImages]
                     System.arraycopy(bCJ, 0, bC, j*9, 9);                    
                 }
             } // end image j loop
             
-System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
+System.out.printf("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e"));
 
             // now HPP_i (aka V_i) is summed over all j: V_i = Σ_j(BIJT*B1J)
 
@@ -1125,7 +1147,7 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
                 if (
                     maxDiag(hPPI, outInitLambda)
                 ) 
-                    //System.out.printf("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0])
+                //System.out.printf("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0])
                 ;
             }
             
@@ -1133,6 +1155,12 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
             //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
             for (k = 0; k < 3; ++k) {
                 hPPI[k][k] *= (1. + lambda);
+            }
+            
+            // temporary exit until find reasons for very large numbers in some
+            //   of the arrays
+            if (hasNaN(hPPI)) {
+                throw new NaNException("Errors due to unusually large numbers");
             }
             //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
@@ -1173,18 +1201,22 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
         System.out.printf("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e"));
         System.out.flush();
                 
+        //tP = HPP^-1*bP = V^-1*bP [3n X 1] or [1n X 3] row format
         // blocks: n rows and 1 column
         BlockMatrixIsometric tPRowBlocks = new BlockMatrixIsometric(
             MatrixUtil.zeros(nFeatures, 3), 1, 3);
         double[] tPI = new double[3];
         
+        //tPC = HPC^T*HPP^-1 = W*V^-1 [9m X 3n]
         BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures), 9, 3);
         double[][] tPC = MatrixUtil.zeros(9, 3);
         
         for (i = 0; i < nFeatures; ++i) {
             //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
-            //   invHPPI is [3X3]
+            
+            //invHPPI aka V^-1 is [3X3]
             hPPIInvBlocks.getBlock(invHPPI, i, 0);
+            
             System.arraycopy(bP, i*3, bPI, 0, 3);
             // [3X3][3X1]=[3X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);
@@ -1284,7 +1316,8 @@ System.out.printf("bC=%s\n", FormatArray.toString(bC, "%.3e"));
         // mA is square [mImages*9, mImages*9]
         //    but not necessarily symmetric positive definite needed by the
         //    Cholesky decomposition, so need to find the nearest or a nearest
-     
+        //    symmetric positive definite.
+        
 System.out.printf("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e"));
 System.out.printf("vB=%s\n", FormatArray.toString(vB, "%.3e"));
 System.out.flush();
@@ -1293,6 +1326,10 @@ System.out.flush();
         // this method attempts to find the nearest symmetric positive *definite* matrix to A:
         double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);
        
+        DenseCholesky chol = new DenseCholesky(aPSD.length, false);
+        chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(aPSD)));
+        LowerTriangDenseMatrix _cholL = chol.getL();
+         
         /*
 System.out.printf("aPSD=%s\n", FormatArray.toString(aPSD, "%.3e"));
         EVD evd = EVD.factorize(new DenseMatrix(aPSD));
@@ -1304,12 +1341,16 @@ System.out.flush();
         */
         
         //[mImages*9, mImages*9]
-        double[][] cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps/10.);
+        double[][] cholL = Matrices.getArray(_cholL);
         
- System.out.printf("cholL=%s\n", FormatArray.toString(cholL, "%.3e"));
+        double[][] cholLT = MatrixUtil.transpose(cholL);
+ System.out.printf("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e"));
+ System.out.printf("cholL*LT=\n%s\n", FormatArray.toString(
+     MatrixUtil.multiply(cholL, cholLT), "%.3e"));
 
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
         backward substitution to find x as dC.
+            mA * dC=vB
             A ﹡ x = b: 
             A = L ﹡ L^*
             L ﹡ y = b ==> y via forward subst
@@ -1321,12 +1362,20 @@ System.out.flush();
             MatrixUtil.reshapeToVector(vB)
         );
         
+        // temporary exit until find reasons for very large numbers in some
+        //   of the arrays
+        if (hasNaN(yM)) {
+            throw new NaNException("Errors due to unusually large numbers");
+        }
+        
         // [[mImages*9 X mImages*9] * x = [mImages*9] ==> x is length mImages*9
         // x is dC
-        MatrixUtil.backwardSubstitution(MatrixUtil.transpose(cholL), yM, outDC);
-          
+        MatrixUtil.backwardSubstitution(cholLT, yM, outDC);
+        
+        
+//Error:  dC is too large.  error somewhere in calculating it.        
 System.out.printf("yM=%s\n", FormatArray.toString(yM, "%.3e"));
-System.out.printf("outDC=%s\n", FormatArray.toString(outDC, "%.3e"));
+System.out.printf("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e"));
 System.out.flush();
 
         // calc outDP:  dP = invHPPI * bPI - invHPPI * HPC * dC
@@ -1576,6 +1625,10 @@ System.out.flush();
     }
     
     /**
+     * NOTE: there may be a problem if using the homography matrix [r0 r1 t] to
+     * transform world scene to camera coordinates as the partial derivatives here
+     * are assuming the use of the 3nd column of rotation too, that is R * T.
+     * 
      for aIJ creates dF/dCameraParams which are the 9 parameters of 
      extrinsic and intrinsic,
      where the 9 parameters are the Qu notation for the variables phi_j, t_j, y_j.
@@ -1905,11 +1958,7 @@ System.out.flush();
                 
         /*Qu thesis eqn (3.38)
         
-        delta thetas ~ 1e-8
-        delta translation ~1e-5
-        delta focus ~ 1
-        delta kRadial ~ 1e-3
-        delta x ~ 1e-8
+        3 delta x ~ 1e-8
         */
         int i /*features*/, j /*parameters*/;
         for (i = 0; i < nFeatures; ++i) {
@@ -1926,11 +1975,10 @@ System.out.flush();
                 
         /*Qu thesis eqn (3.38)
         
-        delta thetas ~ 1e-8
-        delta translation ~1e-5
-        delta focus ~ 1
-        delta kRadial ~ 1e-3
-        delta x ~ 1e-8
+        3 delta thetas ~ 1e-8
+        3 delta translation ~1e-5
+        1 delta focus ~ 1
+        2 delta kRadial ~ 1e-3
         */
         int i /*parameter*/, j /*image*/;
         for (j = 0; j < mImages; ++j) {
@@ -2047,6 +2095,27 @@ System.out.flush();
         outH[0][2] = translation[0];
         outH[1][2] = translation[1];
         outH[2][2] = translation[2];
+    }
+
+    private static boolean hasNaN(double[] b) {
+        for (double a : b) {
+            if (Double.isNaN(a)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasNaN(double[][] a) {
+        int i, j;
+        for (i = 0; i < a.length; ++i) {
+            for(j = 0; j < a[0].length; ++j) {
+                if (Double.isNaN(a[i][j])) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     static class AuxiliaryArrays {
