@@ -75,7 +75,7 @@ public class Zhang98Data {
     // data1.txt through data5.txt
     // size is 3 X 256
     public static double[][] getObservedFeaturesInImage(int idx) throws IOException {
-        if (idx < 0 || idx > 5) {
+        if (idx < 1 || idx > 5) {
             throw new IllegalArgumentException("idx must be 1 through 5, inclusive");
         }
         
