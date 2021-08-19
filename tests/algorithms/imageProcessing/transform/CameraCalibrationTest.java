@@ -360,4 +360,92 @@ public class CameraCalibrationTest extends TestCase {
                     FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
         }
     }
+    
+    public void testNeurochemistryBookPoses() throws Exception {
+        
+        //test pose
+        //test triangulation
+        
+        /*
+        images are 3042 X 3504 (previously 3042x4032)
+          errors likely > 8 pixels
+        
+        TODO: redo these coordinates on the full images that haven't been
+        cropped.
+
+                img2       img1         img3
+          #1 560, 532     680, 720     744, 808
+          #2 2428, 512    2208, 896    2284, 528
+          #3 1484, 856    1508, 1100   1416, 1000
+          #4 1488, 1708   1520, 1856   1428, 1784
+          #5 1228, 1896   1296, 2012   1220, 1952
+          #6 2136, 1908   2028, 2000   2012, 1972
+          #7 620, 2800    704, 2940    788, 2718
+          #8 2364, 2844   2208, 2780   2272, 2928
+
+          features in WCS
+          #1 -11, 14, 41.5
+          #2  11, 14, 41.5
+          #3   0, 9.7, 41.5
+          #4   0, 0, 41.5
+          #5 -3.7, -3, 41.5
+          #6 -8, -3, 41.5
+          #7 -11, -14, 41.5
+          #8  11, -14, 41.5
+        
+        expecting
+             focalLength ~ 1604 pixels = 2.245 mm
+             no skew
+             xc=1521
+             yc=1752
+             little to no radial distortion (if was present, it is already removed)
+             rotation between images = 23.4 degrees
+             translation between images = 18 cm
+
+          other information:
+            pixel width = 1.4e-3mm
+            FOV = 77 degrees = 1.344 radians
+        */
+        
+        boolean useR2R4 = false;
+        
+        int nFeatures = NeurochemistryBookData.nFeatures;
+        int nImages = NeurochemistryBookData.mImages;
+        
+        // 3 X (3*8)
+        double[][] coordsW = NeurochemistryBookData.getFeatureWCS();
+        assertEquals(3, coordsW.length);
+        assertEquals(nFeatures, coordsW[0].length);
+        
+        //3 X (3*8))
+        double[][] coordsI = NeurochemistryBookData.getObservedFeaturesInAllImages();
+        assertEquals(3, coordsI.length);
+        assertEquals(nFeatures*nImages, coordsI[0].length);
+        
+        //log.log(LEVEL, String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
+        //    coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length));
+        
+        /*
+        CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
+            nFeatures, coordsI, coordsW, useR2R4);
+        
+        Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
+        
+        List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
+        
+        log.log(LEVEL, String.format("intr=\n%s\n", FormatArray.toString(kIntr.getIntrinsic(), "%.3e")));
+        
+        Camera.CameraExtrinsicParameters ex1;
+        for (int i = 0; i < nImages; ++i) {
+            ex1 = extrinsics.get(i);
+            log.log(LEVEL, String.format("\n"));
+            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(NeurochemistryBookData.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(NeurochemistryBookData.getTranslation(i), "%.3e")));
+        }
+        */
+        NeurochemistryBookData.printObservedMinusProjected_Camera_Frame();
+        NeurochemistryBookData.printObservedMinusProjected_Image_Frame();
+    }
 }

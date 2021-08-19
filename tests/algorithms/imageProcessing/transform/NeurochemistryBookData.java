@@ -95,6 +95,8 @@ public class NeurochemistryBookData {
             throw new IllegalArgumentException("idx must be 0 through 3, inclusive");
         }
         
+        //TODO: need to redo these on the full images that haven't been cropped.
+        
         double[][] uv = new double[nFeatures][];
         switch(idx) {
             case 0:
@@ -144,15 +146,17 @@ public class NeurochemistryBookData {
         double[] thetas;
         switch (idx) {
             // cc along z is + for right-handed system
-            case 0:
-                thetas = new double[]{0, 0, -23.5*Math.PI/180.};
-                break;
             case 1:
+                thetas = new double[]{0, -23.5*Math.PI/180., 0};
+                break;
+            case 0:
                 thetas = new double[]{0, 0, 0};        
                 break;
-            default:
-                thetas = new double[]{0, 0, 23.5*Math.PI/180.};
+            case 2:
+                thetas = new double[]{0, 23.5*Math.PI/180., 0};
                 break;
+            default:
+                throw new IllegalArgumentException("idx out of range");
         }
         return Rotation.createRotationZYX(thetas);
     }
@@ -268,11 +272,12 @@ public class NeurochemistryBookData {
     }
     
      /**
+      * cannot use this method because translation[2] is 0 for all poses.
      * for each image, project world scene features into the camera reference
      * frame.  no distortion is added.
      * It uses  scale * projected = H * coordsW with H = intrinsic * | r1 r2 t|.
      * @return
-     */
+     
     public static double[][] getFeaturesProjectedToAllCameraFrames_H_LftHnd() {
         double[][] coordsW = getFeatureWCS();
              
@@ -307,7 +312,7 @@ public class NeurochemistryBookData {
                 h[0][2] = t[0];
                 h[1][2] = t[1];
                 h[2][2] = t[2];
-                
+ //cannot use this when translation[2] == 0
                 //transform to camera reference frame. size [1X3]
                 MatrixUtil.multiplyMatrixByColumnVector(h, coordsWI, coordsWIC);
                 for (k = 0; k < 3; ++k) {
@@ -317,7 +322,7 @@ public class NeurochemistryBookData {
             }
         }
         return out;
-    }
+    }*/
     
     public static double[][] getObservedMinusProjected_Camera_Frame() throws NotConvergedException, IOException {
         
@@ -329,6 +334,7 @@ public class NeurochemistryBookData {
         return m;
     }
     
+    /* cannot use this method because translation[2] is 0 for all poses.
     public static double[][] getObservedMinusProjected_Camera_Frame_H_LftHnd() throws NotConvergedException, IOException {
         
         double[][] x = getObservedTransformedToCameraFrame();
@@ -338,6 +344,7 @@ public class NeurochemistryBookData {
         
         return m;
     }
+    */
     
     /**
      * for each image, project world scene features into the image reference
@@ -376,10 +383,10 @@ public class NeurochemistryBookData {
     }
     
     /**
+    * cannot use this method because translation[2] is 0 for all poses.
      * for each image, project world scene features into the image reference
      * frame.  distortion is added internally after transformation to camera coordinates.
      * @return
-     */
     public static double[][] getFeaturesProjectedToAllImageFrames_H_LftHnd() {
         
         double[][] coordsWCN = getFeaturesProjectedToAllCameraFrames_H_LftHnd();
@@ -413,6 +420,7 @@ public class NeurochemistryBookData {
         
         return out;
     }
+    */
     
     public static double[][] getObservedMinusProjected_Image_Frame() {
         
@@ -424,6 +432,8 @@ public class NeurochemistryBookData {
         return m;
     }
     
+    /**
+      * cannot use this method because translation[2] is 0 for all poses.
     public static double[][] getObservedMinusProjected_Image_Frame_H_LftHnd() {
         
         double[][] x = getObservedFeaturesInAllImages();
@@ -433,7 +443,7 @@ public class NeurochemistryBookData {
         
         return m;
     }
-    
+    */
     
     public static void printObservedMinusProjected_Camera_Frame() throws NotConvergedException, IOException {
         
@@ -450,7 +460,7 @@ public class NeurochemistryBookData {
             }
         }
         
-        System.out.printf("sqsum=%.7e\n", sqsum);
+        System.out.printf("sqsum=%.7e\n\n", sqsum);
     }
     
     public static void printObservedMinusProjected_Image_Frame() {
@@ -468,9 +478,11 @@ public class NeurochemistryBookData {
             }
         }
         
-        System.out.printf("sqsum=%.7e\n", sqsum);
+        System.out.printf("sqsum=%.7e\n\n", sqsum);
     }
     
+    /*
+      * cannot use this method because translation[2] is 0 for all poses.
     public static void printObservedMinusProjected_Camera_Frame_H_LftHnd() throws NotConvergedException, IOException {
         
         double[][] m = getObservedMinusProjected_Camera_Frame_H_LftHnd();
@@ -486,9 +498,12 @@ public class NeurochemistryBookData {
             }
         }
         
-        System.out.printf("sqsum=%.7e\n", sqsum);
+        System.out.printf("sqsum=%.7e\n\n", sqsum);
     }
+    */
     
+    /*
+      * cannot use this method because translation[2] is 0 for all poses.
     public static void printObservedMinusProjected_Image_Frame_H_LftHnd() {
         
         double[][] m = getObservedMinusProjected_Image_Frame_H_LftHnd();
@@ -504,6 +519,7 @@ public class NeurochemistryBookData {
             }
         }
         
-        System.out.printf("sqsum=%.7e\n", sqsum);
+        System.out.printf("sqsum=%.7e\n\n", sqsum);
     }
+*/
 }
