@@ -31,7 +31,7 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testApplyRemoveRadialDistortion() 
+    public void estApplyRemoveRadialDistortion() 
     throws Exception {
         
         log.log(LEVEL, "testApplyRemoveRadialDistortion");
@@ -79,7 +79,7 @@ public class CameraCalibrationTest extends TestCase {
         // apply radial distortion and remove radial distortion and compare
     }
     
-    public void testCalibration0() throws Exception {
+    public void estCalibration0() throws Exception {
         
         log.log(LEVEL, "testCalibration0");
 
@@ -260,7 +260,7 @@ public class CameraCalibrationTest extends TestCase {
     /**
      * Test of solveForPose method, of class PNP.
      */
-    public void testSolveForPose_ZhangData() throws Exception {
+    public void estSolveForPose_ZhangData() throws Exception {
         
         log.log(LEVEL, "testSolveForPose_ZhangData");
         
@@ -329,11 +329,11 @@ public class CameraCalibrationTest extends TestCase {
         }
         
         // now have initial parameters to refine using BundleAdjustment.java in other tests
-        alphaE = 832.5010;
-        gammaE = 0.2046;
-        u0E = 303.9584;
-        betaE = 832.5309;
-        v0E = 206.5879;
+        alphaE = 832.5010; //f_x
+        gammaE = 0.2046; // skew
+        u0E = 303.9584;  //x_0
+        betaE = 832.5309; // f_y
+        v0E = 206.5879;   //y_0
         k1E = -0.228601; 
         k2E = 0.190353;
         
@@ -367,21 +367,18 @@ public class CameraCalibrationTest extends TestCase {
         //test triangulation
         
         /*
-        images are 3042 X 3504 (previously 3042x4032)
+        images are 3024x4032
           errors likely > 8 pixels
         
-        TODO: redo these coordinates on the full images that haven't been
-        cropped.
-
-                img2       img1         img3
-          #1 560, 532     680, 720     744, 808
-          #2 2428, 512    2208, 896    2284, 528
-          #3 1484, 856    1508, 1100   1416, 1000
-          #4 1488, 1708   1520, 1856   1428, 1784
-          #5 1228, 1896   1296, 2012   1220, 1952
-          #6 2136, 1908   2028, 2000   2012, 1972
-          #7 620, 2800    704, 2940    788, 2718
-          #8 2364, 2844   2208, 2780   2272, 2928
+            img2         img1            img3
+        #1 678, 718     608, 530        744, 806
+        #2 2210, 886    2462, 512       2286, 526
+        #3 1504, 1102   1484, 858       1410, 992
+        #4 1516, 1814   1486, 1678      1432, 1760
+        #5 1228, 2014   1154, 1882      1164, 1940
+        #6 2042, 1936   2142, 1810      2018, 1866
+        #7 698, 2944    614, 2802       788, 2728
+        #8 2210, 2782   2366, 2848      2276, 2930
 
           features in WCS
           #1 -11, 14, 41.5
@@ -396,8 +393,8 @@ public class CameraCalibrationTest extends TestCase {
         expecting
              focalLength ~ 1604 pixels = 2.245 mm
              no skew
-             xc=1521
-             yc=1752
+             xc=1512
+             yc=2016
              little to no radial distortion (if was present, it is already removed)
              rotation between images = 23.4 degrees
              translation between images = 18 cm
@@ -425,7 +422,7 @@ public class CameraCalibrationTest extends TestCase {
         //log.log(LEVEL, String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
         //    coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length));
         
-        /*
+        
         CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
             nFeatures, coordsI, coordsW, useR2R4);
         
@@ -444,8 +441,49 @@ public class CameraCalibrationTest extends TestCase {
             log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(NeurochemistryBookData.getTranslation(i), "%.3e")));
         }
-        */
+        
+        NeurochemistryBookData.printExpectedTriangulation();
+        /*
         NeurochemistryBookData.printObservedMinusProjected_Camera_Frame();
         NeurochemistryBookData.printObservedMinusProjected_Image_Frame();
+        */
+        
+        /*
+        // theta_x is rotated by 180 degrees 
+        double[][] q = new double[3][];
+        q[0] = new double[]{9.928e-01, 7.859e-02, -9.033e-02};
+        q[1] = new double[]{7.195e-02, -9.946e-01, -7.454e-02};
+        q[2] = new double[]{-9.571e-02, 6.750e-02, -9.931e-01};
+        double[] qt = new double[3];
+        Rotation.extractThetaFromZYX(q, qt);
+        for (int i = 0; i < 3; ++i) {
+            System.out.printf("qt=%.2f  ", qt[i]*180./Math.PI);
+        }
+        System.out.println();
+        */
+        /*
+        // theta_z is rotataed by -180
+        double[][] q = new double[3][];
+        q[0] = new double[]{-9.928e-01, 7.859e-02, 9.033e-02};
+        q[1] = new double[]{-7.195e-02, -9.946e-01, 7.454e-02};
+        q[2] = new double[]{9.571e-02, 6.750e-02, 9.931e-01};
+        double[] qt = new double[3];
+        Rotation.extractThetaFromZYX(q, qt);
+        for (int i = 0; i < 3; ++i) {
+            System.out.printf("qt=%.2f  ", qt[i]*180./Math.PI);
+        }
+        System.out.println();
+        */
+        
+        double[][] q = new double[3][];
+        q[0] = new double[]{9.652e-01, -4.408e-03, 2.616e-01};
+        q[1] = new double[]{3.769e-02, -9.871e-01, -1.557e-01};
+        q[2] = new double[]{2.589e-01, 1.601e-01, -9.525e-01};
+        double[] qt = new double[3];
+        Rotation.extractThetaFromZYX(q, qt);
+        for (int i = 0; i < 3; ++i) {
+            System.out.printf("qt=%.2f  ", qt[i]*180./Math.PI);
+        }
+        System.out.println();
     }
 }

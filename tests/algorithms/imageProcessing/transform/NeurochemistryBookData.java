@@ -6,18 +6,22 @@ import java.io.IOException;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
- * images are 3042 X 3504 (previously 3042x4032)
+ should use many more points than the 8 used here 
+ and preferably more than the 3 images used here too.
+  
+ 
+ * images are 3024 X 4032
           errors likely > 8 pixels
 
-                img2       img1         img3
-          #1 560, 532     680, 720     744, 808
-          #2 2428, 512    2208, 896    2284, 528
-          #3 1484, 856    1508, 1100   1416, 1000
-          #4 1488, 1708   1520, 1856   1428, 1784
-          #5 1228, 1896   1296, 2012   1220, 1952
-          #6 2136, 1908   2028, 2000   2012, 1972
-          #7 620, 2800    704, 2940    788, 2718
-          #8 2364, 2844   2208, 2780   2272, 2928
+             img2         img1            img3
+        #1 678, 718     608, 530        744, 806
+        #2 2210, 886    2462, 512       2286, 526
+        #3 1504, 1102   1484, 858       1410, 992
+        #4 1516, 1814   1486, 1678      1432, 1760
+        #5 1228, 2014   1154, 1882      1164, 1940
+        #6 2042, 1936   2142, 1810      2018, 1866
+        #7 698, 2944    614, 2802       788, 2728
+        #8 2210, 2782   2366, 2848      2276, 2930
 
           features in WCS
           #1 -11, 14, 41.5
@@ -32,8 +36,8 @@ import no.uib.cipr.matrix.NotConvergedException;
         expecting
              focalLength ~ 1604 pixels = 2.245 mm
              no skew
-             xc=1521
-             yc=1752
+             xc=1512
+             yc=2016
              little to no radial distortion (if was present, it is already removed)
              rotation between images = 23.4 degrees
              translation between images = 18 cm
@@ -64,7 +68,17 @@ public class NeurochemistryBookData {
         wcs[5] = new double[]{-8, -3, 41.5};
         wcs[6] = new double[]{-11, -14, 41.5};
         wcs[7] = new double[]{11, -14, 41.5};
-        
+       // attempting to line up center of book in WCS and in the first image
+       //    in order to make interpretation of calculated translation easier.
+       // image at pose1 has book center to the left by about 26 pixels 
+       //  (= about 18  in wcs units [cm] where have estimated the scale factor
+       //   from the book width in WCS and in pixels).
+       // the offset in y is about 21 in WCS units
+       for (int i = 0; i < wcs.length;++i) {
+            wcs[i][0] +=8.5; // changed this from 9 to 8.5 by trial and error until the
+                             // extracted intrinsic parameters for image center were reasonable
+                             // and skew near 0.
+        }
         return MatrixUtil.transpose(wcs);
     }
      
@@ -100,34 +114,34 @@ public class NeurochemistryBookData {
         double[][] uv = new double[nFeatures][];
         switch(idx) {
             case 0:
-                uv[0] = new double[]{560, 532, 1};
-                uv[1] = new double[]{2428, 512, 1};
-                uv[2] = new double[]{1484, 856, 1};
-                uv[3] = new double[]{1488, 1708, 1};
-                uv[4] = new double[]{1228, 1896, 1};
-                uv[5] = new double[]{2136, 1908, 1};
-                uv[6] = new double[]{620, 2800, 1};
-                uv[7] = new double[]{2364, 2844, 1};
+                uv[0] = new double[]{608, 530, 1};
+                uv[1] = new double[]{2462, 512, 1};
+                uv[2] = new double[]{1484, 858, 1};
+                uv[3] = new double[]{1486, 1678, 1};
+                uv[4] = new double[]{1154, 1882, 1};
+                uv[5] = new double[]{2142, 1810, 1};
+                uv[6] = new double[]{614, 2802, 1};
+                uv[7] = new double[]{2366, 2848, 1};
                 break;
             case 1:
-                uv[0] = new double[]{680, 720, 1};
-                uv[1] = new double[]{2208, 896, 1};
-                uv[2] = new double[]{1508, 1100, 1};
-                uv[3] = new double[]{1520, 1856, 1};
-                uv[4] = new double[]{1296, 2012, 1};
-                uv[5] = new double[]{2028, 2000, 1};
-                uv[6] = new double[]{704, 2940, 1};
-                uv[7] = new double[]{2208, 2780, 1};
+                uv[0] = new double[]{678, 718, 1};
+                uv[1] = new double[]{2210, 886, 1};
+                uv[2] = new double[]{1504, 1102, 1};
+                uv[3] = new double[]{1516, 1814, 1};
+                uv[4] = new double[]{1228, 2014, 1};
+                uv[5] = new double[]{2042, 1936, 1};
+                uv[6] = new double[]{698, 2944, 1};
+                uv[7] = new double[]{2210, 2782, 1};
                 break;
             default:
-                uv[0] = new double[]{744, 808, 1};
-                uv[1] = new double[]{2284, 528, 1};
-                uv[2] = new double[]{1416, 1000, 1};
-                uv[3] = new double[]{1428, 1784, 1};
-                uv[4] = new double[]{1220, 1952, 1};
-                uv[5] = new double[]{2012, 1972, 1};
-                uv[6] = new double[]{788, 2718, 1};
-                uv[7] = new double[]{2272, 2928, 1};
+                uv[0] = new double[]{744, 806, 1};
+                uv[1] = new double[]{2286, 526, 1};
+                uv[2] = new double[]{1410, 992, 1};
+                uv[3] = new double[]{1432, 1760, 1};
+                uv[4] = new double[]{1164, 1940, 1};
+                uv[5] = new double[]{2018, 1866, 1};
+                uv[6] = new double[]{788, 2728, 1};
+                uv[7] = new double[]{2276, 2930, 1};
                 break;
         }        
         
@@ -145,15 +159,15 @@ public class NeurochemistryBookData {
         }
         double[] thetas;
         switch (idx) {
-            // cc along z is + for right-handed system
+            // cc along y is + for right-handed system
             case 1:
-                thetas = new double[]{0, -23.5*Math.PI/180., 0};
+                thetas = new double[]{0, 23.5*Math.PI/180., 0};
                 break;
             case 0:
                 thetas = new double[]{0, 0, 0};        
                 break;
             case 2:
-                thetas = new double[]{0, 23.5*Math.PI/180., 0};
+                thetas = new double[]{0.*Math.PI/180., -23.5*Math.PI/180., 0};
                 break;
             default:
                 throw new IllegalArgumentException("idx out of range");
@@ -170,22 +184,28 @@ public class NeurochemistryBookData {
         if (idx < 0 || idx > mImages-1) {
             throw new IllegalArgumentException("idx must be 0 through 3, inclusive");
         }
+        // offset of image center of book and center of image
+        //    gives the offset in Y of the WCS reference frame origin to the image center (==camera origin).
+        // that's (2016-1678)/81=4.2
         switch (idx) {
-            case 0:
-                return new double[]{-18,0, 0};
             case 1:
-                return new double[]{0, 0, 0};
+                //-6.636e+00, -3.037e+00, 3.537e+01
+                return new double[]{-18, -4.2, 41.5};
+            case 0:
+                //-7.260e+00, -4.721e+00, 3.410e+01
+                return new double[]{0, -4.2, 41.5};
             default:
-                return new double[]{18, 0, 0};
+                //-7.376e+00, -4.029e+00, 4.009e+01 
+                return new double[]{18, -4.2, 41.5};
         }        
     }
     
     public static double[][] getIntrinsicCameraMatrix() {
         double[][] intr = MatrixUtil.zeros(3, 3);
-        intr[0][0] = 1600;
-        intr[1][1] = 1600;
-        intr[0][2] = 1521;
-        intr[1][2] = 1752;
+        intr[0][0] = 1600; //2.189e+03
+        intr[1][1] = 1600; //2.886e+03
+        intr[0][2] = 1512; //1500
+        intr[1][2] = 2016; //2000
         intr[2][2] = 1;
         return intr;
     }
@@ -269,6 +289,48 @@ public class NeurochemistryBookData {
             }
         }
         return out;
+    }
+    
+    public static void printExpectedTriangulation() throws NotConvergedException {
+        
+        double[][] intr = new double[3][];
+        intr[0] = new double[]{1600, 0, 1512};
+        intr[1] = new double[]{0, 1600, 2016};
+        intr[2] = new double[]{0, 0, 1};
+        
+        double[][] r0 = Rotation.createRotationZYX(
+            new double[]{0, 0, 0});
+        
+        double[][] r1 = Rotation.createRotationZYX(
+            new double[]{0, 23.5*Math.PI/180., 0});
+        
+        double[] t0 = new double[]{0, 0, 0};
+        double[] t1 = new double[]{-18, 0, 0};
+        
+        double[][] xi0 = getObservedFeaturesInImage(0);
+        double[][] xi1 = getObservedFeaturesInImage(1);
+        
+        double[][] x0 = MatrixUtil.zeros(3, 1);
+        double[][] x1 = MatrixUtil.zeros(3, 1);
+        
+        int i, k;
+        for (i = 0; i < xi0[0].length; ++i) {
+            for (k = 0; k < 3; ++k) {
+                x0[k][0] = xi0[k][i];
+                x1[k][0] = xi1[k][i];
+            }
+            
+            double[] xw = Triangulation.calculateWCSPoint(
+            intr, r0, t0,
+            intr, r1, t1,
+            x0, x1);
+            
+            for (k = 0; k < 4; ++k) {
+                xw[k] /= xw[3];
+            }
+            
+            System.out.printf("xw[%d]=%s\n\n", i, FormatArray.toString(xw, "%.3e"));
+        }
     }
     
      /**

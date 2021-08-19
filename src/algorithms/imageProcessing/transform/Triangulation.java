@@ -203,10 +203,10 @@ public class Triangulation {
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * add references here
      * </pre>
-     * @param camera1 camera matrix for image 1 in units of pixels.  
-     * It has intrinsic and extrinsic components.
-     * @param camera2 camera matrix for image 2 in units of pixels.  
-     * It has intrinsic and extrinsic components.
+     * @param camera1 camera matrix for image 1 in units of pixels
+     * containing intrinsic and extrinsic parameters.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels
+     * containing extrinsic parameters. the size is 3X4.
      * @param x1 the image 1 set of measurements of real world point X.
      * The corresponding measurements of the same point in image 2 are in x2.
      * format is 3 x N where
@@ -215,16 +215,24 @@ public class Triangulation {
      * The corresponding measurements of the same point in image 1 are in x1.
      * format is 3 x N where
      * N is the number of measurements.
+     * @return the point coordinates in world coordinate reference frame
      */
     public static double[] calculateWCSPoint(
         CameraParameters camera1, CameraParameters camera2,
         double[][] x1, double[][] x2) {
         
-        return calculateWCSPoint(camera1.createProjectionMatrix(),
-            camera2.createProjectionMatrix(), x1, x2);
+        return calculateWCSPoint(camera1.getIntrinsicParameters().getIntrinsic(),
+            camera1.getExtrinsicParameters().getRotation(),
+            camera1.getExtrinsicParameters().getTranslation(),
+            camera2.getIntrinsicParameters().getIntrinsic(),
+            camera2.getExtrinsicParameters().getRotation(),
+            camera2.getExtrinsicParameters().getTranslation(),
+            x1, x2);
     }
     
     /**
+     * not yet tested.
+     * 
      * given the camera projection matrix as intrinsic times extrinsic matrices for 2 images
      * and given the matching correspondence of points between the 2 images,
      * calculate the real world coordinate of the observations.
@@ -233,10 +241,10 @@ public class Triangulation {
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * add references here
      * </pre>
-     * @param camera1 camera matrix for image 1 in units of pixels.  
-     * It has intrinsic and extrinsic components.   the size is 3X4.
-     * @param camera2 camera matrix for image 2 in units of pixels.  
-     * It has intrinsic and extrinsic components. the size is 3X4.
+     * @param camera1 camera matrix for image 1 in units of pixels
+     * containing extrinsic parameters.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels
+     * containing extrinsic parameters. the size is 3X4.
      * @param x1 the image 1 set of measurements of 1 real world point X.
      * The corresponding measurements of the same point in image 2 are in x2.
      * format is 3 x N where
@@ -254,6 +262,8 @@ public class Triangulation {
     }
     
      /**
+      * not yet tested.
+      * 
      * given the camera projection matrix as intrinsic times extrinsic matrices for 2 images
      * and given the matching correspondence of points between the 2 images,
      * calculate the real world coordinate of the observations.
@@ -262,10 +272,10 @@ public class Triangulation {
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * add references here
      * </pre>
-     * @param camera1 camera matrix for image 1 in units of pixels.  
-     * It has intrinsic and extrinsic components.   the size is 3X4.
-     * @param camera2 camera matrix for image 2 in units of pixels.  
-     * It has intrinsic and extrinsic components. the size is 3X4.
+     * @param camera1 camera matrix for image 1 in units of pixels
+     * containing extrinsic parameters.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels
+     * containing extrinsic parameters. the size is 3X4.
      * @param x1 the image 1 set of measurements of 1 real world point X.
      * The corresponding measurements of the same point in image 2 are in x2.
      * format is 3 x N where
@@ -274,6 +284,8 @@ public class Triangulation {
      * The corresponding measurements of the same point in image 1 are in x1.
      * format is 3 x N where
      * N is the number of measurements.
+     * @return the 3D coordinate of the point in world scene.  note that
+     * the entire array can be normalized by the last element.
      */
     public static double[] calculateWCSPoint(
         double[][] camera1, double[][] camera2,
@@ -292,7 +304,7 @@ public class Triangulation {
         if (x2[0].length != n) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
         }
-        
+      
         /*
         following CMU lectures of Kris Kitani:
         http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
@@ -393,7 +405,7 @@ public class Triangulation {
         Solution is the eigenvector corresponding to smallest eigenvalue of A^T*A.
         
         */
-                
+              
         double u1x, u1y, u2x, u2y;
         double[] tmp;
         double[][] a = new double[4*n][4];
@@ -446,12 +458,13 @@ public class Triangulation {
         // eigenvector corresponding to smallest eigenvector is last row in svd.V^T
         double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);
         
-
+        /*
         System.out.printf("x1=\n%s\n", FormatArray.toString(x1, "%.4e"));
         System.out.printf("camera1=\n%s\n", FormatArray.toString(camera1, "%.4e"));
         System.out.printf("x2=\n%s\n", FormatArray.toString(x2, "%.4e"));
         System.out.printf("camera2=\n%s\n", FormatArray.toString(camera2, "%.4e"));
         System.out.printf("X=\n%s\n\n", FormatArray.toString(X, "%.4e"));
+        */
         
         // can see that the constraint ||X||^2 = 1 is preserved
                 
@@ -462,19 +475,22 @@ public class Triangulation {
         MatrixUtil.multiply(x1Rev, 1./x1Rev[2]);
         MatrixUtil.multiply(x2Rev, 1./x2Rev[2]);
         
+        /*
         System.out.printf("x1Rev=\n%s\n", FormatArray.toString(x1Rev, "%.4e"));
         System.out.printf("x1=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(x1, 0), "%.4e"));
         System.out.printf("x2Rev=\n%s\n", FormatArray.toString(x2Rev, "%.4e"));        
         System.out.printf("x2=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(x2, 0), "%.4e"));
+        */
         //System.out.printf("alpha=\n%.3e\n", alpha);
         //MatrixUtil.multiply(X, alpha);
-        
-        
-        
+                
         return X;
     }
+   
     
-    /**
+    /*
+     * not finished
+     * 
      * given a feature in 2 cameras and the rotation and translation between
      * the cameras, estimate the depths and universal scale factor to 
      * return the estimates of the 3-D position.
@@ -491,6 +507,7 @@ public class Triangulation {
      * The depths and universal scale factors are returned also.
      * @throws no.uib.cipr.matrix.NotConvergedException
      */
+    /*
     public static WCSResults calculateDepths(double[][] r, double[] t,
         double[] x1, double[] x2) throws NotConvergedException {
         
@@ -584,6 +601,7 @@ public class Triangulation {
         
         return w;
     }
+    */
     
     public static class WCSResults {
         /**
