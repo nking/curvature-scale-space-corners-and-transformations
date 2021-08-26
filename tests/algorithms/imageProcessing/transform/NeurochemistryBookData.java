@@ -1,8 +1,10 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import java.io.IOException;
+import java.util.Arrays;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
@@ -68,18 +70,37 @@ public class NeurochemistryBookData {
         wcs[5] = new double[]{-8, -3, 41.5};
         wcs[6] = new double[]{-11, -14, 41.5};
         wcs[7] = new double[]{11, -14, 41.5};
+        // mean=-1.4625, 0.4625, 41.5
+        // stdev=8.82, 11.303, 0.
+        
        // attempting to line up center of book in WCS and in the first image
        //    in order to make interpretation of calculated translation easier.
        // image at pose1 has book center to the left by about 26 pixels 
        //  (= about 18  in wcs units [cm] where have estimated the scale factor
        //   from the book width in WCS and in pixels).
        // the offset in y is about 21 in WCS units
-       for (int i = 0; i < wcs.length;++i) {
+       /*for (int i = 0; i < wcs.length;++i) {
             wcs[i][0] +=8.5; // changed this from 9 to 8.5 by trial and error until the
                              // extracted intrinsic parameters for image center were reasonable
                              // and skew near 0.
         }
-        return MatrixUtil.transpose(wcs);
+       */
+       
+        //double[] mn = new double[3];
+        //double[] sd = new double[3];
+        //double[][] wcs2 = Standardization.standardUnitNormalization(
+        //    wcs, mn, sd);
+        // mean=-1.4625, 0.4625, 41.5
+        // stdev=8.82, 11.303, 0.
+        
+        for (int i = 0; i < wcs.length;++i) {
+            wcs[i][0] +=8.5; // changed this from 9 to 8.5 by trial and error until the
+                             // extracted intrinsic parameters for image center were reasonable
+                             // and skew near 0.
+        }
+        
+        wcs = MatrixUtil.transpose(wcs);        
+        return wcs;
     }
      
     /**

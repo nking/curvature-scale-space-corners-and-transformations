@@ -56,6 +56,11 @@ public class BundleAdjustmentTest extends TestCase {
         double[][] coordsW = Zhang98Data.getFeatureWCS();
         assertEquals(3, coordsW.length);
         assertEquals(nFeatures, coordsW[0].length);
+        // mean of x coords is 3.361.  stdev=2.056
+        // mean of y coords is -3.361.  stdev=2.056
+        
+        //double[] meanT = MatrixUtil.mean(MatrixUtil.transpose(coordsW));
+        //double[] stdevT = MatrixUtil.standardDeviation(MatrixUtil.transpose(coordsW));
         
         //3 X (256*5)
         double[][] coordsI = Zhang98Data.getObservedFeaturesInAllImages();

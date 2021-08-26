@@ -326,7 +326,7 @@ public class ColorHistogram {
      * histogram of CIE LUV C and H which are the polar angle of U,V and the 
      * magnitude.  The histogram is a one dimensional binning of 
      * divisions of C and H in combination.  8 divisions in C or H results
-     * in 84 bins, for example.
+     * in 64 bins, for example.
      * 
      * The ranges of the bins are the ranges from use of the D65 standard
      * illuminant which are
@@ -341,7 +341,7 @@ public class ColorHistogram {
      * @return histogram of CIE LUV C and H which are the polar angle of 
      * U,V and the magnitude.  The histogram is a one dimensional binning 
      * of divisions of C and H in combination.  8 divisions in C or H 
-     * results in 84 bins, for example.
+     * results in 64 bins, for example.
      */
     public int[] histogramCIECH64(ImageExt img, Set<PairInt> points) {
         
@@ -389,7 +389,7 @@ public class ColorHistogram {
      * histogram of CIE LUV C and H which are the polar angle of U,V and the 
      * magnitude.  The histogram is a one dimensional binning of 
      * divisions of C and H in combination.  8 divisions in C or H results
-     * in 84 bins, for example.
+     * in 64 bins, for example.
      * 
      * The ranges of the bins are the ranges from use of the D65 standard
      * illuminant which are
@@ -403,7 +403,7 @@ public class ColorHistogram {
      * @return histogram of CIE LUV C and H which are the polar angle of 
      * U,V and the magnitude.  The histogram is a one dimensional binning 
      * of divisions of C and H in combination.  8 divisions in C or H 
-     * results in 84 bins, for example.
+     * results in 64 bins, for example.
      */
     public int[] histogramCIECH64(ImageExt img, TIntList xPoints,
         TIntList yPoints) {

@@ -678,7 +678,7 @@ public class CIEChromaticity {
         conditions.  Mie scattering for clouds and Rayleigh scattering for air,
         then consideration for aerosols... these aren't single scattering
         conditions, so empirically gathered data might be more useful to derive
-        ranges from...many intresting databases with relevant data...
+        ranges from...many interesting databases with relevant data...
         */
 
         float Xn = 95.047f;
@@ -718,7 +718,7 @@ public class CIEChromaticity {
         conditions.  Mie scattering for clouds and Rayleigh scattering for air,
         then consideration for aerosols... these aren't single scattering
         conditions, so empirically gathered data might be more useful to derive
-        ranges from...many intresting databases with relevant data...
+        ranges from...many interesting databases with relevant data...
         */
 
         float Xn = 95.047f;
@@ -769,7 +769,7 @@ public class CIEChromaticity {
         conditions.  Mie scattering for clouds and Rayleigh scattering for air,
         then consideration for aerosols... these aren't single scattering
         conditions, so empirically gathered data might be more useful to derive
-        ranges from...many intresting databases with relevant data...
+        ranges from...many interesting databases with relevant data...
         */
 
         float Xn = 95.047f;

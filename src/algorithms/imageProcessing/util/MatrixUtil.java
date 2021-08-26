@@ -795,7 +795,7 @@ public class MatrixUtil {
     /**
      * extract yaw, pitch, and roll from a 3X3 rotation matrix
      * <pre>
-     euler transformations
+     euler rotations
         
         about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
             | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
