@@ -285,6 +285,11 @@ public class ORBMatcherTest extends TestCase {
                 kp2.addAll(combined2K);
                 matched = ORBMatcher.matchDescriptors(d1Comb, d2Comb, kp1, kp2);
 
+                //TODO: revisit all of this and related code.
+                if (matched == null) {
+                    continue;
+                }
+                
                 /*
                 after results, if want to reverse transform the dataset2 images and points to
                 more easily see the results

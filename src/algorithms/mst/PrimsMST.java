@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Stack;
 
 /**
- * Minimum spanning tree is the minimal network that spans all nodes in a tree
- * and has the smallest cost (sum of edges).
+ * minimum spanning tree is the subset of edges in a weighted undirected graph
+ * that connect all vertexes for a total minimum cost (sum of edge weights).
  *
  * Implemented from pseudo code in Cormen et al. Introduction to Algorithms and
  * from http://en.wikipedia.org/wiki/Prim's_algorithm.

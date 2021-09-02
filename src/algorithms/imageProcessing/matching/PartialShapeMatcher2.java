@@ -1308,7 +1308,7 @@ public class PartialShapeMatcher2 {
             left[1][i] = p.getY(idx1);
             right[0][i] = q.getX(idx2);
             right[1][i] = q.getY(idx2);
-            pPointIndexMap.put(new PairInt(p.getX(idx1), p.getY(idx1)), i);
+            pPointIndexMap.put(new PairInt(left[0][i], left[1][i]), i);
         }
         
         // normalize left and right
@@ -1343,7 +1343,7 @@ public class PartialShapeMatcher2 {
             TIntSet present = new TIntHashSet();
             for (int i = 0; i < nOut; ++i) {
                 int idx = inliers.get(i);
-                PairInt p1 = new PairInt(left[0][idx], right[0][idx]);
+                PairInt p1 = new PairInt(left[0][idx], left[1][idx]);
                 int lIdx = pPointIndexMap.get(p1);
                 present.add(lIdx);
             }

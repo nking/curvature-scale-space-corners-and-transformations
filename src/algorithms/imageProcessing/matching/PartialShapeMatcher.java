@@ -1284,7 +1284,7 @@ public class PartialShapeMatcher {
             left[1][i] = p.getY(idx1);
             right[0][i] = q.getX(idx2);
             right[1][i] = q.getY(idx2);
-            pPointIndexMap.put(new PairInt(p.getX(idx1), p.getY(idx1)), i);
+            pPointIndexMap.put(new PairInt(left[0][i], left[1][i]), i);
         }
         
         // normalize left and right
@@ -1296,7 +1296,7 @@ public class PartialShapeMatcher {
         EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;//false;
         
         RANSACSolver solver = new RANSACSolver();
         
@@ -1319,7 +1319,7 @@ public class PartialShapeMatcher {
             TIntSet present = new TIntHashSet();
             for (int i = 0; i < nOut; ++i) {
                 int idx = inliers.get(i);
-                PairInt p1 = new PairInt(left[0][idx], right[0][idx]);
+                PairInt p1 = new PairInt(left[0][idx], left[1][idx]);
                 int lIdx = pPointIndexMap.get(p1);
                 present.add(lIdx);
             }
