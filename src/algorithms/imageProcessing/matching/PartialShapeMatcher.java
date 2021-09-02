@@ -2254,7 +2254,7 @@ public class PartialShapeMatcher {
             MiscDebug.getCurrentTimeFormatted());
 
         PairIntArray outLeft = new PairIntArray(left.getN());
-        PairIntArray outRight = new PairIntArray(left.getN());
+        PairIntArray outRight = new PairIntArray(right.getN());
         
         RANSACEuclideanSolver euclid =
             new RANSACEuclideanSolver();
