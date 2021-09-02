@@ -101,29 +101,7 @@ public class RANSACAlgorithmIterations {
     </pre>
     */
     public static int numberOfSubsamplesOfSize7For95PercentInliers(int outlierPercent) {
-    
-        if (outlierPercent < 0) {
-            throw new IllegalArgumentException("outlierPercent must be non-negative");
-        }
-        if (outlierPercent > 50) {
-            throw new IllegalArgumentException("outlierPercent must be 50 percent or less");
-        }
-        
-        /*
-        1 - gamma = (1 - (1 - eps)^p)^m
-           let Z = (1 - (1 - eps)^p)
-           let g = 1 - gamma
-        g = Z^m
-        log(g) = m*log(Z);       
-        m = log(g) / log(Z)
-        */
-        int p = 7;
-        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);
-        double g = 1. - 0.95;
-        
-        double m = Math.log(g) / Math.log(z);
-                
-        return (int)Math.ceil(m);
+        return numberOfSubsamplesFor95PercentInliers(outlierPercent, 7);
     }
     
     /*

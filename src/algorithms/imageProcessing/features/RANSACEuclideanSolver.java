@@ -102,7 +102,8 @@ public class RANSACEuclideanSolver {
             useAllSubsets = true;
         } else {
             nMaxIter = RANSACAlgorithmIterations
-                .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
+                .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
+                //.numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
         }
         
         System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
