@@ -481,22 +481,22 @@ import java.util.Set;
      */
     public static double[] getAvgAndStDev(double[] x) {
         
-<span class="nc" id="L484">        int n = x.length;</span>
-<span class="nc" id="L485">        double sumX = 0;</span>
-<span class="nc bnc" id="L486" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L487">            sumX += x[i];</span>
+<span class="fc" id="L484">        int n = x.length;</span>
+<span class="fc" id="L485">        double sumX = 0;</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L487">            sumX += x[i];</span>
         }
         
-<span class="nc" id="L490">        double avgX = sumX/(double)n;</span>
+<span class="fc" id="L490">        double avgX = sumX/(double)n;</span>
         
-<span class="nc" id="L492">        sumX = 0;</span>
-<span class="nc bnc" id="L493" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L494">            double diffX = x[i] - avgX;</span>
-<span class="nc" id="L495">            sumX += (diffX * diffX);</span>
+<span class="fc" id="L492">        sumX = 0;</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L494">            double diffX = x[i] - avgX;</span>
+<span class="fc" id="L495">            sumX += (diffX * diffX);</span>
         }
-<span class="nc" id="L497">        double stdDevX = Math.sqrt(sumX/(n - 1.0f));</span>
+<span class="fc" id="L497">        double stdDevX = Math.sqrt(sumX/(n - 1.0f));</span>
         
-<span class="nc" id="L499">        return new double[]{avgX, stdDevX};</span>
+<span class="fc" id="L499">        return new double[]{avgX, stdDevX};</span>
     }
     
     /**

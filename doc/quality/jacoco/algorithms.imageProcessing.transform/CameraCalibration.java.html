@@ -1,0 +1,1839 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CameraCalibration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">CameraCalibration.java</span></div><h1>CameraCalibration.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraMatrices;
+import algorithms.matrix.MatrixUtil;
+import algorithms.matrix.MatrixUtil.SVDProducts;
+import algorithms.misc.PolynomialRootSolver;
+import algorithms.util.FormatArray;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import no.uib.cipr.matrix.NotConvergedException;
+
+/**
+ * estimate the camera intrinsic and extrinsic parameters using 3 images
+ * or more of the same objects with different camera poses.
+ * Following the algorithm os Ma, Chen, &amp; Moore 2003 in 
+ * &quot;Camera Calibration: a USU Implementation&quot; available as a preprint
+ * at arXiv  https://arxiv.org/pdf/cs/0307072
+ * Note that Ma et al. 2003 algorithm is based upon Zhang 1999 
+ * &quot;Flexible Camera Calibration By Viewing a Plane From Unknown Orientations&quot;
+ * available at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/11/zhan99.pdf
+ * 
+ * &lt;pre&gt;
+ * &quot;one image observed by a camera can provide 2 constraints about this camera’s 
+ * intrinsic parameters that are regarded to be unchanged here. 
+ * With 3 images observed by the same camera, 6 constraints are established and 
+ * we are able to recover the 5 intrinsic parameters. Once the intrinsic 
+ * parameters are known, we can estimate the extrinsic parameters, 
+ * the distortion coefficients (k1,k2), and put every initial guess of these 
+ * parameters into some nonlinear optimization routine to get the final estimations. 
+ * &lt;/pre&gt;
+ * @author nichole
+ */
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">public class CameraCalibration {</span>
+    
+    public static final double eps = 1e-7;
+    public static final double eps2 = 1e-5;
+    
+<span class="fc" id="L44">    private static final Level LEVEL = Level.FINEST;</span>
+    private static final Logger log;
+    static {
+<span class="fc" id="L47">        log = Logger.getLogger(CameraCalibration.class.getSimpleName());</span>
+<span class="fc" id="L48">        log.setLevel(LEVEL);</span>
+<span class="fc" id="L49">    }</span>
+
+    /**
+     * estimate the intrinsic and extrinsic camera parameters.
+     To refine the returned values, follow with PNP.solveForPose(...).
+     * 
+     * @param n n is the number of points in each image which is the
+              same for all images.  n is number of features.
+     * @param coordsI  holds the image coordinates in pixels of
+               features present in all images ordered in the same
+               manner and paired with features in coordsW.
+               It is a 2 dimensional double array of format
+               3 X (N*n) where N is the number of images.
+               the first row is the x coordinates, the second row
+               is the y coordinates, and the third row is &quot;1&quot;'s.
+               The columns hold each image in order and within each image's
+               columns are the features presented in the same order in each image.
+               In Table 1 of Ma, Chen, &amp; Moore 2003 &quot;Camera Calibration&quot;
+               these are the (u_d, v_d) pairs.
+     * @param coordsW holds the world coordinates of features, ordered
+               by the same features in the images.
+               the first row is the X coordinates, the second row
+               is the Y coordinates, and the third row is 1's 
+               (Z_w = 0, the scale factor is lost in the homography).
+               It is a 2 dimensional double array of format
+               3 X n
+       @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     * @return camera intrinsic parameters, extrinsic parameters, and radial
+     * distortion coefficients
+     */
+    public static CameraMatrices estimateCamera(final int n, double[][] coordsI, 
+        double[][] coordsW, boolean useR2R4) throws NotConvergedException,
+        Exception {
+        
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L89">            throw new IllegalArgumentException(&quot;coordsI must have 3 rows.&quot;);</span>
+        }
+<span class="fc" id="L91">        int nImages = coordsI[0].length/n;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (coordsI[0].length != nImages*n) {</span>
+<span class="nc" id="L93">            throw new IllegalArgumentException(&quot;coordsI must have nImages * n features as the number of columns&quot;);</span>
+        }
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
+<span class="nc" id="L96">            throw new IllegalArgumentException(&quot;coordsW must have 3 rows.&quot;);</span>
+        }
+        
+        int i;
+        
+        // the normalization centroidX, centroidY, and sigma values applied to x1 and x2:
+        //double[] tt = new double[3*nImages];        
+        //coordsI = extractAndNormalize(coordsI, 0, n, tt);
+        
+        //TODO: consider normalizing coordsI by coordsI[2][*] if the last row
+        //      is not already 1's
+        
+        //(1) for each image: invoke homography solver using SVD on a (2N)X9 DLT
+        //    where the homographies are the projections of the 3D points onto the images
+        //    and the model plane has Z=0 (hence the (2N)X9 DLT instead of (2N)X12 DLT)
+<span class="fc" id="L111">        double[][] h = solveForHomographies(coordsI, coordsW, n, nImages);</span>
+        
+        
+        //(2) using all homographies, solve for the camera intrinsic parameters
+        // this is where at least 3 points are needed per image to euqal the number of unknown intrinsic parameters.
+<span class="fc" id="L116">        CameraIntrinsicParameters kIntr = solveForIntrinsic(h);</span>
+        
+<span class="fc" id="L118">        CameraMatrices cameraMatrices = new CameraMatrices();</span>
+<span class="fc" id="L119">        cameraMatrices.setIntrinsics(kIntr);</span>
+        
+        //List&lt;CameraExtrinsicParameters&gt; extrinsics = solveForExtrinsics(kIntr, h, nImages);        
+<span class="fc" id="L122">        List&lt;CameraExtrinsicParameters&gt; extrinsics = solveForExtrinsics2(</span>
+            kIntr, coordsI, coordsW, useR2R4);
+        
+<span class="fc" id="L125">        cameraMatrices.getExtrinsics().addAll(extrinsics);</span>
+        
+        // (4) estimate the radial distortion coefficients
+        //     NOTE: There are a couple of radial functions which are commonly
+        //           used.
+        //           (a) f_r = 1 + k_1*r^2 + k_2*r^4
+        //               which is Eqn #4 of Table 2 of Ma et al. 2004.
+        //               Ma et al. 2004 statistics for it were among the best
+        //               so they use it in their algorithms.
+        //           (b) f_r = 1 + k_1*r + k_2*r^2
+        //               which is Eqn #3 of Table 2 of Ma et al. 2004.
+        //               it's a lower order function so may be a better choice
+        //               for some data.
+        //               Ma, Chen, Moore 2003 prefer (b) to (a) because:
+        //                  (I) Low order fitting, better for fixed-point implementation
+        //                  (II) Explicit inverse function with no numerical iterations 
+        //                  (IV) Better accuracy than radial distortion model (a)
+        //             
+        //    NOTE: The Ma et al. 2003 paper found that the non-linear optimization
+        //          works just as well with initial estimates of 0 for the radial
+        //          distortion coefficients, so one can exclude this step.
+        //
+        //    NOTE: Ma, Soatta, Kosecka, &amp; Sastry (year 2012? 2004?) have 
+        //          specified f(r) in terms of a center of radial distortion 
+        //          which is not necessarily the image centering Section (3.3.3)
+        
+        // Using the estimated intrinsic and extrinsic parameters, 
+        //  we can get the ideal projected image points Along with the real 
+        //  observed image points, we can estimate the 
+        // two distortion coefficients (k1,k2)
+        
+        // calculating the projected world coordinates using eqn (17).
+        //    the homgraphy transforms the world reference coordinates to the
+        //    image reference frame (which are w.r.t. the corner of the image,
+        //    not the center).
+<span class="fc" id="L160">        double[] u = new double[n*nImages];</span>
+<span class="fc" id="L161">        double[] v = new double[n*nImages];</span>
+<span class="fc" id="L162">        calculateProjected(coordsW, h, u, v);</span>
+                
+<span class="fc" id="L164">        double[] kRadial = solveForRadialDistortion(coordsI, u, v, cameraMatrices,</span>
+            useR2R4);
+       
+<span class="fc" id="L167">        cameraMatrices.setRadialDistortion(kRadial, useR2R4);</span>
+        
+        // (5) optimization to improve the parameter estimates
+        
+        // ============ iterate over the above steps after non-linear optimization
+        //  for extrinsic parameters.
+        double[][] cI;
+        CameraExtrinsicParameters kExtr;
+        CameraExtrinsicParameters extrinsic;
+<span class="fc" id="L176">        int nMaxIter = 100;</span>
+        /*for (i = 0; i &lt; nImages; ++i) {
+            
+            cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, n*i, n*(i + 1)-1);
+            
+            kExtr = cameraMatrices.getExtrinsics().get(i);
+            
+            // improve the extrinsic parameter estimates:
+            extrinsic = PNP.solveForPose(cI, coordsW, kIntr, 
+                kExtr, kRadial, nMaxIter, useR2R4);
+            
+            cameraMatrices.getExtrinsics().set(i, extrinsic);
+        }*/     
+      
+<span class="fc" id="L190">        return cameraMatrices;</span>
+    }
+    
+    /**
+     * for a given set of feature coordinates in image reference frame and in
+     * world coordinate system, calculates the homography following the 
+     * algorithm in Ma et al. 2003.
+     * @param coordsI holds the image coordinates in pixels of features present in image i
+     * @param coordsW holds the world coordinates of features present in image 1 corresponding
+               to the same features and order of coordsI_i
+     * @return the homography, projection matrix
+     */
+    static double[][] solveForHomography(double[][] coordsI, double[][] coordsW) throws NotConvergedException {
+        
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L205">            throw new IllegalArgumentException(&quot;coordsI must have 3 rows.&quot;);</span>
+        }
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
+<span class="nc" id="L208">            throw new IllegalArgumentException(&quot;coordsW must have 3 rows.&quot;);</span>
+        }
+<span class="fc" id="L210">        int n = coordsI[0].length;</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (coordsW[0].length != n) {</span>
+<span class="nc" id="L212">            throw new IllegalArgumentException(&quot;coordsW must have same number of rows as coordsI.&quot;);</span>
+        }
+        
+        /*
+        creates matrix L, and finds the solution to x as orthogonal to L by using the SVD(L)
+           to find the eigenvector belonging to the smallest eigenvalue.
+          -reformats x into 3x3 H to return
+        */
+        
+        // Section 6.1 of Ma et al. 2003
+        
+        /*
+          H =   [ h11 h12 h13 ]
+                [ h21 h22 h23 ]
+                [ h31 h32 h33 ]
+          H^T = [ h11 h21 h31 ]
+                [ h12 h22 h32 ]
+                [ h13 h23 h33 ]
+
+          Let h_i be the ith row of H:
+              h_i = ]h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+                    [h_i_2]
+                    [h_i_3]
+        */
+        
+        // 2*n X 9       
+        double u, v, X, Y;
+<span class="fc" id="L239">        double[][] ell = new double[2*n][9];</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L241">            u = coordsI[0][i];</span>
+<span class="fc" id="L242">            v = coordsI[1][i];</span>
+<span class="fc" id="L243">            X = coordsW[0][i];</span>
+<span class="fc" id="L244">            Y = coordsW[1][i];</span>
+            // eqn(15) of Ma et al. 2003
+<span class="fc" id="L246">            ell[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};</span>
+<span class="fc" id="L247">            ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};</span>
+        }
+        
+<span class="fc" id="L250">        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);</span>
+        
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
+<span class="fc" id="L253">        double[] xOrth = svd.vT[svd.vT.length - 1];</span>
+        //h00, h01, h02, h10, h11, h12,h20,h21,h22
+        
+<span class="fc" id="L256">        double[][] h = new double[3][3];</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L258">            h[i] = new double[3];</span>
+<span class="fc" id="L259">            h[i][0] = xOrth[(i * 3) + 0];</span>
+<span class="fc" id="L260">            h[i][1] = xOrth[(i * 3) + 1];</span>
+<span class="fc" id="L261">            h[i][2] = xOrth[(i * 3) + 2];</span>
+        }
+        
+<span class="fc" id="L264">        return h;</span>
+    }
+    
+    /**
+     * estimate the camera intrinsic parameters from the image homographies.
+     * @param h H as (3*NImages)x3 homography, projection matrices
+              where each image homography is stacked row-wise
+     * @return the camera intrinsic parameters.
+     */
+    static CameraIntrinsicParameters solveForIntrinsic(double[][] h) throws NotConvergedException {
+        
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        if (h[0].length != 3) {</span>
+<span class="nc" id="L276">            throw new IllegalArgumentException(&quot;h must have 3 columns&quot;);</span>
+        }
+        
+<span class="fc" id="L279">        log.log(LEVEL, &quot;h=\n%s\n&quot;, FormatArray.toString(h, &quot;%.3e&quot;));</span>
+        
+        // Section 6.3 of Ma et al. 2003
+        
+        /*
+          H =   [ h11 h12 h13 ]
+                [ h21 h22 h23 ]
+                [ h31 h32 h33 ]
+          H^T = [ h11 h21 h31 ]
+                [ h12 h22 h32 ]
+                [ h13 h23 h33 ]
+
+        Let h_i be the ith column vector of H:
+              h_i = [h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+                    [h_i_2]
+                    [h_i_3]
+        
+        - for each H:
+                    form a matrix V_i_j out of the first 2 columns of each H matrix
+                    and stack them by rows, into a matrix called V
+              - perform SVD(V) to get right singular vector of V associated with the smallest singular value
+                as the solution to b.
+              - b holds the contents of the upper right triangle of B
+                where B = A^-T * A^-1 known as the absolute conic.
+              - the intrinsic parameters are extracted from combinations of the solved
+                for B and other coefficients.
+        
+        b = [B11, B12, B22, B13, B23, B33]^T
+        */
+        
+<span class="fc" id="L309">        int n = h.length/3;</span>
+        
+        // 2*nImages X 6
+<span class="fc" id="L312">        double[][] v = new double[2*n][6];</span>
+<span class="fc" id="L313">        double[] v22 = new double[6];</span>
+        double h11, h12, h13, h21, h22, h23;
+        //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T 
+<span class="fc bfc" id="L316" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+            // h_i is the ith column vector of H
+            // h11 = column 0 of h, first element: h[0][0]
+            // h12 = column 0 of h, 2nd element:   h[1][0]
+            // h13 = column 0 of h, 3rd element:   h[2][0]
+            // h21 = column 1 of h, first element: h[0][1]
+            // h22 = column 1 of h, 2nd element:   h[1][1]
+            // h23 = column 1 of h, 3rd element:   h[2][1]
+<span class="fc" id="L324">            h11 = h[0+3*i][0]; h12 = h[1+3*i][0]; h13 = h[2+3*i][0];</span>
+<span class="fc" id="L325">            h21 = h[0+3*i][1]; h22 = h[1+3*i][1]; h23 = h[2+3*i][1];</span>
+            
+            //h11 = h[0+3*i][0]; h12 = h[0+3*i][1]; h13 = h[0+3*i][2];
+            //h21 = h[1+3*i][0]; h22 = h[1+3*i][1]; h23 = h[1+3*i][2];
+            
+            //V12 = [h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23, 
+            //       h13*h22 + h12*h23, h13*h23]T 
+<span class="fc" id="L332">            v[2*i] = new double[]{</span>
+                h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23, 
+                h13*h22 + h12*h23, h13*h23
+            };
+             
+            //V11 = [
+            // h11*h11 , 
+            // h11*h12 + h12*h11, 
+            // h12*h12, 
+            // h13*h11 + h11*h13, 
+            // h13*h12 + h12*h13, 
+            // h13*h13]T
+            // 2nd row is V11 - V12
+            /*v[2*i + 1] = new double[]{
+                h11*h11           - v[2*i][0],
+                h11*h12 + h12*h11 - v[2*i][1],
+                h12*h12           - v[2*i][2],
+                h13*h11 + h11*h13 - v[2*i][3],
+                h13*h12 + h12*h13 - v[2*i][4],
+                h13*h13           - v[2*i][5]
+            };*/
+            
+            //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T
+<span class="fc" id="L355">            v22[0] = h21*h21;</span>
+<span class="fc" id="L356">            v22[1] = h21*h22 + h22*h21;</span>
+<span class="fc" id="L357">            v22[2] = h22*h22;</span>
+<span class="fc" id="L358">            v22[3] = h23*h21 + h21*h23;</span>
+<span class="fc" id="L359">            v22[4] = h23*h22 + h22*h23;</span>
+<span class="fc" id="L360">            v22[5] = h23*h23;</span>
+             
+            // v11 - v22; Zhang 99 eqn(8)
+<span class="fc" id="L363">            v[2*i + 1] = new double[]{</span>
+                h11*h11           - v22[0],
+                h11*h12 + h12*h11 - v22[1],
+                h12*h12           - v22[2],
+                h13*h11 + h11*h13 - v22[3],
+                h13*h12 + h12*h13 - v22[4],
+                h13*h13           - v22[5]
+            };
+            
+        }
+        
+        //Vb = 0 and b = [B11, B12, B22, B13, B23, B33]^T
+<span class="fc" id="L375">        SVDProducts svd = MatrixUtil.performSVD(v);</span>
+        
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
+<span class="fc" id="L378">        double[] b = svd.vT[svd.vT.length - 1];</span>
+        
+        /*
+        double[][] B = MatrixUtil.zeros(3, 3);
+        B[0][0] = b[0];
+        B[0][1] = b[1];
+        B[1][1] = b[2];
+        B[0][2] = b[3];
+        B[1][2] = b[4];
+        B[2][2] = b[5];
+        */
+        
+        //       0    1    2    3    4    5
+        //b = [B11, B12, B22, B13, B23, B33]^T
+<span class="fc" id="L392">        log.log(LEVEL, String.format(&quot;b=%s\n&quot;, FormatArray.toString(b, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L393">        double B11 = b[0];</span>
+<span class="fc" id="L394">        double B12 = b[1];</span>
+<span class="fc" id="L395">        double B22 = b[2];</span>
+<span class="fc" id="L396">        double B13 = b[3];</span>
+<span class="fc" id="L397">        double B23 = b[4];</span>
+<span class="fc" id="L398">        double B33 = b[5];</span>
+        //Zhang 99 Appendix B; Ma et al. 2003 eqn (26)
+<span class="fc" id="L400">        double v0 = (B12*B13 - B11*B23)/(B11*B22 - B12*B12);</span>
+<span class="fc" id="L401">        double lambda = B33 - ((B13*B13 + v0*(B12*B13 - B11*B23))/B11);</span>
+<span class="fc" id="L402">        double alpha = Math.sqrt(lambda/B11);</span>
+<span class="fc" id="L403">        double beta = Math.sqrt( lambda*B11 / (B11*B22 - B12*B12) );</span>
+<span class="fc" id="L404">        double gamma = -B12*alpha*alpha*beta / lambda;</span>
+<span class="fc" id="L405">        double u0 = (gamma*v0/beta) - (B13*alpha*alpha/lambda);</span>
+        //u0 = (gamma*v0/alpha) - (B13*alpha*alpha/lambda);
+        
+<span class="fc" id="L408">        log.log(LEVEL, String.format(&quot;v0=%.4e (exp=220.866)\n&quot;, v0));</span>
+<span class="fc" id="L409">        log.log(LEVEL, String.format(&quot;lambda=%.4e\n&quot;, lambda));</span>
+<span class="fc" id="L410">        log.log(LEVEL, String.format(&quot;alpha=%.4e\n&quot;, alpha));</span>
+<span class="fc" id="L411">        log.log(LEVEL, String.format(&quot;beta=%.4e\n&quot;, beta));</span>
+<span class="fc" id="L412">        log.log(LEVEL, String.format(&quot;gamma=%.4e\n&quot;, gamma));</span>
+<span class="fc" id="L413">        log.log(LEVEL, String.format(&quot;u0=%.4e\n&quot;, u0));</span>
+        
+<span class="fc" id="L415">        double[][] kIntr = Camera.createIntrinsicCameraMatrix(</span>
+            alpha, beta, u0, v0, gamma);
+            
+<span class="fc" id="L418">        CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();</span>
+<span class="fc" id="L419">        intrinsics.setIntrinsic(kIntr);</span>
+<span class="fc" id="L420">        intrinsics.setLambda(lambda);</span>
+        
+<span class="fc" id="L422">        return intrinsics;</span>
+    }
+    
+    
+    /**
+     * following Ma et al. 2003
+     * estimate the extrinsic parameters from the image of the absolute conic.
+     * @param kIntr camera intrinsic parameters
+     * @param h homography for the projection for an image
+     * @return 
+     */
+    static Camera.CameraExtrinsicParameters solveForExtrinsic(
+        CameraIntrinsicParameters kIntr, double[][] h) throws NotConvergedException {
+        
+        // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+        // homogeneous repr of a point is x_vec = (x, y, 1)^T
+        // equation f a line is ell = a*x + b*y + c = 0;
+        // line rewritten in homogeneous coordinatrs is x_vec^T * ell.
+        // general conic in 3 dimensions is a*x^2 + b*x*y + c*y^2 + d*x*z + e*y*z + f*z^2 = 0.
+        //     rewritten using 2D homogenouse coords, quadratice form: x_vec^T * C * x_vec = 0
+        //                  [a   b/2   d/2 ]
+        //        where C = [b/2   c   c/2 ]
+        //                  [d/2 c/2     f ]
+        //        C has 6 variable, 5 DOF, so need 5 points
+        //     can then reformat x_vec^T * C * x_vec = 0 into
+        //        the &quot;design matrix&quot; * &quot;the carrier vector&quot; = 0
+        //               A * c = 0
+        //        c = SVD(A).V^T[n-1], the eigenvector assoc w/ smallest eigenvalue.
+        //
+        //        there are 3 cases for the smallest eigenvalue of SVD(A):
+        //          (1) SVD(A).s[5] == 0, and n=5, then a conic exists that
+        //              fits the data exactly
+        //          (2) SVD(A).s[5] &gt;=0, and n &gt; 5, then the value is the goodness of fit
+        //          (3) n &lt; 5, the conic is undetermined and requires other means to solve.
+        //        
+        
+        // points at infinity, a.k.a. ideal points, have the form (x, y, 0)^T
+        // the line at infinity is (0, 0, 1)^T.
+        
+<span class="nc" id="L461">        double[][] aInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());</span>
+        
+        //h_i is the ith column vector of H
+        //r1 = λ * A^−1 * h1
+        //r2 = λ * A^−1 * h2
+        //r3 = r1×r2
+        // t = λ * A^−1 * h3
+        
+<span class="nc" id="L469">        double[] h1 = MatrixUtil.extractColumn(h, 0);</span>
+<span class="nc" id="L470">        double[] h2 = MatrixUtil.extractColumn(h, 1);</span>
+<span class="nc" id="L471">        double[] h3 = MatrixUtil.extractColumn(h, 2);</span>
+        
+        //λ = 1/||A−1h1||2 = 1/||A−1h2||2
+<span class="nc" id="L474">        double lambda = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h1));</span>
+<span class="nc" id="L475">        double lambda2 = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h2));</span>
+        //double scaleFactor = 2./(Math.sqrt(sumOfSquares(h1)) + Math.sqrt(sumOfSquares(h1)));
+<span class="nc" id="L477">        log.log(LEVEL, String.format(&quot;lambda1=%.3e, lambda2=%.3e\n&quot;, lambda, lambda2));</span>
+        
+<span class="nc" id="L479">        double[][] lambdaAInv = MatrixUtil.copy(aInv);</span>
+<span class="nc" id="L480">        MatrixUtil.multiply(lambdaAInv, lambda);</span>
+        
+        
+<span class="nc" id="L483">        double[] r1 = MatrixUtil.multiplyMatrixByColumnVector(lambdaAInv, h1);</span>
+<span class="nc" id="L484">        double[] r2 = MatrixUtil.multiplyMatrixByColumnVector(lambdaAInv, h2);</span>
+<span class="nc" id="L485">        double[] t = MatrixUtil.multiplyMatrixByColumnVector(lambdaAInv, h3);</span>
+<span class="nc" id="L486">        double[] r3 = MatrixUtil.crossProduct(r1, r2);</span>
+        
+<span class="nc" id="L488">        double[][] r = MatrixUtil.zeros(3, 3);</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">        for (int row = 0; row &lt; 3; ++row) {</span>
+<span class="nc" id="L490">            r[row][0] = r1[row];</span>
+<span class="nc" id="L491">            r[row][1] = r2[row];</span>
+<span class="nc" id="L492">            r[row][2] = r3[row];</span>
+        }
+        
+<span class="nc" id="L495">        SVDProducts svd = MatrixUtil.performSVD(r);</span>
+        
+<span class="nc" id="L497">        r = MatrixUtil.multiply(svd.u, svd.vT);</span>
+        
+<span class="nc" id="L499">        CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();</span>
+<span class="nc" id="L500">        kExtr.setRotation(r);</span>
+<span class="nc" id="L501">        kExtr.setTranslation(t);</span>
+        
+<span class="nc" id="L503">        return kExtr;</span>
+    }
+    
+    /**
+     * following Wetzstein &quot;EE 267 Virtual Reality Course Notes: 6-DOF Pose 
+     * Tracking with the VRduino&quot;
+     * estimate the extrinsic parameters
+     * @param kIntr camera intrinsic parameters
+     * @param kRadial an array holding the 2 radial distortion coefficients, or a null array
+     * @param coordsI holds the image coordinates in pixels of features present in image i
+     * @param coordsW holds the world coordinates of features present in image 1 corresponding
+               to the same features and order of coordsI_i
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    * note that if rCoeffs is null or empty, no radial distortion is applied.
+     * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     */
+    static CameraExtrinsicParameters solveForExtrinsic2(
+        CameraIntrinsicParameters kIntr, double[] kRadial, 
+        double[][] coordsI, double[][] coordsW, boolean useR2R4) 
+        throws NotConvergedException, Exception {
+        
+<span class="pc bpc" id="L530" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L531">            throw new IllegalArgumentException(&quot;coordsI length should be 3&quot;);</span>
+        }
+<span class="fc" id="L533">        int n = coordsI[0].length;</span>
+<span class="pc bpc" id="L534" title="1 of 2 branches missed.">        if (coordsW[0].length != n) {</span>
+<span class="nc" id="L535">            throw new IllegalArgumentException(&quot;coordsW must have same number of rows as coordsI.&quot;);</span>
+        }
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">        if (n &lt; 4) {</span>
+<span class="nc" id="L538">            throw new IllegalArgumentException(&quot;coordsI[0].length cannot be less than 4&quot;);</span>
+        }
+        
+        // convert to camera centered coordinates
+<span class="fc" id="L542">        double[][] xc = Camera.pixelToCameraCoordinates(coordsI, </span>
+            kIntr, kRadial, useR2R4);
+        
+        // normalize by last coordinate:
+<span class="fc bfc" id="L546" title="All 2 branches covered.">        for (int i = 0; i &lt; xc[0].length; ++i) {</span>
+<span class="fc" id="L547">            xc[0][i] /= xc[2][i];</span>
+<span class="fc" id="L548">            xc[1][i] /= xc[2][i];</span>
+        }
+        
+        // 2*n X 9
+        // making it 2*n X 9 by adding the -u and -v columns onto end of rows to use SVD instead of psuedoinverse
+        double u, v, X, Y;
+<span class="fc" id="L554">        double[][] a = new double[2*n][9];</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L556">            u = xc[0][i];</span>
+<span class="fc" id="L557">            v = xc[1][i];</span>
+<span class="fc" id="L558">            X = coordsW[0][i];</span>
+<span class="fc" id="L559">            Y = coordsW[1][i];</span>
+            // eqn(10) of lecture notes   same homography as above, but missing the last column for -u and -v
+<span class="fc" id="L561">            a[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};</span>
+<span class="fc" id="L562">            a[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};</span>
+        }
+        
+<span class="fc" id="L565">        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(a);</span>
+        
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
+<span class="fc" id="L568">        double[] h = svd.vT[svd.vT.length - 1];</span>
+        //     [ h[0] h[1] h[2] ]     H00  H01  H02
+        // H = [ h[3] h[4] h[5] ]  =  H10  H11  H12
+        //     [ h[6] h[7] h[8] ]     H20  H21  H22
+        
+        //Let the ith column vector of H be hi = [hi1, hi2, hi3]T &lt;=== that is column i of H^T??  confusion from V^T instead of V?
+<span class="fc" id="L574">        double[] hcol1 = new double[]{h[0], h[3], h[6]};</span>
+<span class="fc" id="L575">        double[] hcol2 = new double[]{h[1], h[4], h[7]};</span>
+<span class="fc" id="L576">        double[] hcol3 = new double[]{h[2], h[5], h[8]};</span>
+                  
+        // multiply by inverse of intrinsic camera matrix
+     //   double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());
+     //   hcol1 = MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, hcol1);
+     //   hcol2 = MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, hcol2);
+     //   hcol3 = MatrixUtil.multiplyMatrixByColumnVector(kIntrInv, hcol3);
+        
+<span class="fc" id="L584">        double s = 2./(Math.sqrt(sumOfSquares(hcol1)) + Math.sqrt(sumOfSquares(hcol2)));</span>
+
+        // translational component of the camera pose:
+<span class="fc" id="L587">        double[] t = Arrays.copyOf(hcol3, hcol3.length);</span>
+<span class="fc" id="L588">        MatrixUtil.multiply(t, s);</span>
+        //t[2] *= -1;
+        
+        // estimate rotation from the homography
+        
+<span class="fc" id="L593">        double denom = sumOfSquares(hcol1);</span>
+        
+        // column 1:
+<span class="fc" id="L596">        double[] r1 = Arrays.copyOf(hcol1, hcol1.length);</span>
+<span class="fc" id="L597">        MatrixUtil.multiply(r1, 1./denom);</span>
+    //    r1[2] *= -1;
+        
+        //extract the second column of the rotation matrix r2 from the homography, 
+        //but we have to make sure that it is orthogonal to the first column. 
+        //We can enforce that as follows
+<span class="fc" id="L603">        double[] r2 = Arrays.copyOf(hcol2, hcol2.length);</span>
+    //    r2[2] *= -1;
+        
+<span class="fc" id="L606">        double r1doth2 = MatrixUtil.innerProduct(r1, hcol2);</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">        for (int i = 0; i &lt; r2.length; ++i) {</span>
+<span class="fc" id="L608">            r2[i] -= (r1[i] * r1doth2);</span>
+        }
+<span class="fc" id="L610">        r2 = MatrixUtil.normalizeL2(r2);</span>
+         
+        // r3 is r1 cross r2
+<span class="fc" id="L613">        double[] r3 = MatrixUtil.crossProduct(r1, r2);</span>
+ 
+<span class="fc" id="L615">        double[][] r = MatrixUtil.zeros(3, 3);</span>
+<span class="fc bfc" id="L616" title="All 2 branches covered.">        for (int row = 0; row &lt; 3; ++row) {</span>
+<span class="fc" id="L617">            r[row][0] = r1[row];</span>
+<span class="fc" id="L618">            r[row][1] = r2[row];</span>
+<span class="fc" id="L619">            r[row][2] = r3[row];</span>
+        }
+        
+        // unit norm:
+<span class="fc" id="L623">        SVDProducts svd2 = MatrixUtil.performSVD(r);</span>
+<span class="fc" id="L624">        r = MatrixUtil.multiply(svd2.u, svd2.vT);</span>
+        
+        // check that r1 dot r2 = 0;
+<span class="fc" id="L627">        r1 = MatrixUtil.extractColumn(r, 0);</span>
+<span class="fc" id="L628">        r2 = MatrixUtil.extractColumn(r, 1);        </span>
+<span class="fc" id="L629">        double chk = MatrixUtil.innerProduct(r1, r2);</span>
+<span class="fc" id="L630">        System.out.printf(&quot;asserting that r1 dot r2 ~ 0: %.4e\n&quot;, chk);</span>
+<span class="pc bpc" id="L631" title="3 of 4 branches missed.">        assert(Math.abs(chk) &lt; 1.e-7);</span>
+       
+<span class="fc" id="L633">        CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();</span>
+<span class="fc" id="L634">        kExtr.setRotation(r);</span>
+<span class="fc" id="L635">        kExtr.setTranslation(t);</span>
+        
+<span class="fc" id="L637">        return kExtr;</span>
+    }
+    
+    /**
+    apply radial distortion to distortion-free camera centered coordinates using 
+    the algorithm of Ma, Chen &amp; Moore (which is Ma et al. 2003) for the
+    distortion function expressed as f(r) = 1 + k1*r + k2*r^2 (which is 
+    equation #3 in Table 2 of Ma et al. 2004).
+    In terms of the variables outlined below, the algorithm input is
+    (x, y), k1, k2, and cameraIntrinsics and the output is (x_d, y_d).
+    TODO: consider overloading this method to implement equation #4. 
+    &lt;pre&gt;
+    Ma, Chen &amp; Moore 2004, &quot;Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction.&quot;
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+
+    and the projection equation variables:
+    [X_c,Y_c,Z_c]^T denotes a point in the camera frame which is related to the 
+        corresponding point 
+    [X_w, Y_w, Z_w]^T in the world reference frame 
+        by
+    P_c = R P_w + t
+    R is thr rotation matrix
+    t is the translation vector
+    
+    lambda * [u] = K [R|t] [X_w] = K [X_c]
+             [v]           [Y_w]     [Y_c]
+             [1]           [Z_w]     [Z_c]
+                           [1  ]
+    
+    ==&gt; To Apply Radial Distorion, given coefficients k1, k2 and coordinates
+      (eqn 7) r_d = r * f(r) = r*(1 + k1*r + k2*r^2 + k3*r^3 + ...)
+      (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r + k2*r^2)
+    
+      Ma et al. 2003 distortion model:
+         x_d = x * f(r)
+         y_d = y * f(r)
+    
+    ==&gt; Radial Undistortion:
+        solve for cubic roots
+        https://en.wikipedia.org/wiki/Cubic_equation#Reduction_to_a_depressed_cubic
+        though authors use Pearson's 1983 version of 
+           Handbook of Applied Mathematics: Selected Results and Methods
+    
+        from k2*r^3 +k1*r^2 +r - r_d = 0
+        solve 
+           r_bar^3 + r_bar*p + q = 0
+        where 
+          r_bar = r + (a/3)
+          a = k1/k2
+          b = 1/k2
+          c = −r_d/k2
+          p = b − (a^2/3)
+          q = (2a^3)/27 − ab/3 + c
+        then use depressed cubic root to solve for r_bar.
+        r = r_bar = (a/3)
+    
+        After r is determined, (u,v) can be calculated from (Eqn 5) which is
+           u_d - u_0 = (u−u_0) * f(r)
+           v_d − v_0 = (v−v_0) * f(r)
+          
+    Useful reading is also:
+    Drap et al, &quot;An Exact Formula for Calculating Inverse Radial Lens Distortions&quot;
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a negative value of k1.
+        pincushion distortion to a positive value of k1.
+         
+    NOTE that Drap et al. also apply the camera intrinsics, but they use a 
+    focal length of &quot;1&quot;.
+    * 
+    &lt;/pre&gt;
+    @param xC distortion-free camera centered coordinates.  format is 3XN where N is the
+    number of points.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x, y).
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    @return  distorted camera centered coordinates in format 3XN where N is
+    the number of points.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x_d, y_d).
+    */
+    static double[][] applyRadialDistortion(double[][] xC, double k1, double k2,
+        boolean useR2R4) {
+        
+<span class="nc bnc" id="L740" title="All 2 branches missed.">        if (xC.length != 3) {</span>
+<span class="nc" id="L741">            throw new IllegalArgumentException(&quot;xC.length must be 3&quot;);</span>
+        }
+                
+<span class="nc" id="L744">        double[][] distorted = MatrixUtil.copy(xC);</span>
+        
+        //double r, r2;
+        double c, signx, signy, c2p1, divc2p1, xm, ym, x, x2, y, y2;
+<span class="nc" id="L748">        double[] c2s = new double[2];</span>
+        int i;
+        
+<span class="nc bnc" id="L751" title="All 2 branches missed.">        for (i = 0; i &lt; distorted[0].length; ++i) {</span>
+            //r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
+            //r = Math.sqrt(r2);
+            
+            // following Ma et al. 2004 Table 2,column 3 for model #3:
+            /*
+            for more information on rewriting r^2 in terms of only x or y, see
+            Eqn 3.1 of Boas &quot;Mathematical Methods in the Physical Sciences&quot;.
+            where r^2 is (x-x0)^2 + (y-y0)^2
+            let _x=x-x0  this is the notation here for camera coordinate frame
+            let c^2 = (_y)^2/(_x)^2
+            let c2p1 = (1 + c^2)
+            then r^2 = _x^2 + _x^2*c^2 = _x^2*(1 + c^2)
+                      = _x^2*c2p1
+            also, for r^2 in terms of _y^2:
+            let divc2p1 = ((1/c^2) + 1)
+            then r^2 = _y^2*((1/c^2) + 1)
+                     = _y^2*divc2p1
+            */
+<span class="nc" id="L770">            x = distorted[0][i];</span>
+<span class="nc" id="L771">            x2 = x*x;</span>
+<span class="nc" id="L772">            y = distorted[1][i];</span>
+<span class="nc" id="L773">            y2 = y*y;</span>
+            
+<span class="nc" id="L775">            calculateC2s(x, y, c2s);</span>
+<span class="nc" id="L776">            c2p1 = c2s[0];</span>
+<span class="nc" id="L777">            divc2p1 = c2s[1];</span>
+            
+<span class="nc bnc" id="L779" title="All 2 branches missed.">            if (useR2R4) {</span>
+                /* model #4
+                for x:
+                 magnitude of distortion = xd-x
+                                         = _x*(k1*_x^2*c2p1 + k2*_x^4*(c2p1^2))
+               for y:
+                 magnitude of distortion = yd-y
+                                       = _y*(k1*_y^2*divc2p1 + k2*_y^4*(divc2p1^2))
+                */
+<span class="nc" id="L788">                xm = x*(k1*c2p1*x2 + k2*c2p1*c2p1*x2*x2);</span>
+<span class="nc" id="L789">                ym = y*(k1*divc2p1*y2 + k2*divc2p1*divc2p1*y2*y2);</span>
+            } else {
+                /* model #3:
+                magnitude of distortion = xd-x
+                                       = _x*(k1*r + k2*r^2)
+                                       = _x*(signx*k1*_x*sqrt(c2p1) + k2*_x^2*c2p1)
+               magnitude of distortion = yd-y
+                                       = _y*(signy*k1*_y*sqrt(divc2p1) + k2*_y^2*divc2p1)
+                */
+<span class="nc bnc" id="L798" title="All 2 branches missed.">                signx = (x &lt; 0) ? -1 : 1;</span>
+<span class="nc bnc" id="L799" title="All 2 branches missed.">                signy = (y &lt; 0) ? -1 : 1;</span>
+                // model #3, Table 2, column 2:
+<span class="nc" id="L801">                xm = x*(signx*k1*x*Math.sqrt(c2p1) + k2*x*x*c2p1);</span>
+<span class="nc" id="L802">                ym = y*(signy*k1*y*Math.sqrt(divc2p1) + k2*y*y*divc2p1);</span>
+            }
+  
+<span class="nc" id="L805">            log.log(LEVEL, String.format(</span>
+                &quot;%d) distort fx=%.4f, fy=%.4f for (x,y)=(%.3f,%.3f) =&gt; (xd,yd)=(%.3f,%.3f)\n&quot;, 
+<span class="nc" id="L807">                i, (xm/distorted[0][i])+1, (ym/distorted[1][i])+1,</span>
+<span class="nc" id="L808">                distorted[0][i], distorted[1][i], distorted[0][i]+xm, distorted[1][i]+ym));</span>
+            
+<span class="nc" id="L810">            distorted[0][i] += xm;</span>
+<span class="nc" id="L811">            distorted[1][i] += ym;</span>
+        }
+                
+<span class="nc" id="L814">        return distorted;</span>
+    }
+    
+    /**
+    apply radial distortion to distortion-free camera centered coordinates using 
+    the algorithm of Ma, Chen &amp; Moore (which is Ma et al. 2003) for the
+    distortion function expressed as f(r) = 1 + k1*r + k2*r^2 (which is 
+    equation #3 in Table 2 of Ma et al. 2004).
+    In terms of the variables outlined below, the algorithm input is
+    (x, y), k1, k2, and cameraIntrinsics and the output is (x_d, y_d).
+    TODO: consider overloading this method to implement equation #4. 
+    &lt;pre&gt;
+    Ma, Chen &amp; Moore 2004, &quot;Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction.&quot;
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+
+    and the projection equation variables:
+    [X_c,Y_c,Z_c]^T denotes a point in the camera frame which is related to the 
+        corresponding point 
+    [X_w, Y_w, Z_w]^T in the world reference frame 
+        by
+    P_c = R P_w + t
+    R is thr rotation matrix
+    t is the translation vector
+    
+    lambda * [u] = K [R|t] [X_w] = K [X_c]
+             [v]           [Y_w]     [Y_c]
+             [1]           [Z_w]     [Z_c]
+                           [1  ]
+    
+    ==&gt; To Apply Radial Distorion, given coefficients k1, k2 and coordinates
+      (eqn 7) r_d = r * f(r) = r*(1 + k1*r + k2*r^2 + k3*r^3 + ...)
+      (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r + k2*r^2)
+    
+      Ma et al. 2003 distortion model:
+         x_d = x * f(r)
+         y_d = y * f(r)
+    
+    ==&gt; Radial Undistortion:
+        solve for cubic roots
+        https://en.wikipedia.org/wiki/Cubic_equation#Reduction_to_a_depressed_cubic
+        though authors use Pearson's 1983 version of 
+           Handbook of Applied Mathematics: Selected Results and Methods
+    
+        from k2*r^3 +k1*r^2 +r - r_d = 0
+        solve 
+           r_bar^3 + r_bar*p + q = 0
+        where 
+          r_bar = r + (a/3)
+          a = k1/k2
+          b = 1/k2
+          c = −r_d/k2
+          p = b − (a^2/3)
+          q = (2a^3)/27 − ab/3 + c
+        then use depressed cubic root to solve for r_bar.
+        r = r_bar = (a/3)
+    
+        After r is determined, (u,v) can be calculated from (Eqn 5) which is
+           u_d - u_0 = (u−u_0) * f(r)
+           v_d − v_0 = (v−v_0) * f(r)
+          
+    Useful reading is also:
+    Drap et al, &quot;An Exact Formula for Calculating Inverse Radial Lens Distortions&quot;
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a negative value of k1.
+        pincushion distortion to a positive value of k1.
+         
+    NOTE that Drap et al. also apply the camera intrinsics, but they use a 
+    focal length of &quot;1&quot;.
+    * 
+    &lt;/pre&gt;
+    @param xCPt distortion-free camera centered coordinates for a point.  The
+    length is 3.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x, y).
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    @return  distorted camera centered coordinates in format 3XN where N is
+    the number of points.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x_d, y_d).
+    */
+    static double[] applyRadialDistortion(double[] xCPt, double k1, double k2,
+        boolean useR2R4) {
+        
+<span class="nc" id="L917">        double[] distorted = new double[3];</span>
+        
+<span class="nc" id="L919">        applyRadialDistortion(xCPt, k1, k2, useR2R4, distorted);</span>
+        
+<span class="nc" id="L921">        return distorted;</span>
+    }
+    
+    /**
+    apply radial distortion to distortion-free camera centered coordinates using 
+    the algorithm of Ma, Chen &amp; Moore (which is Ma et al. 2003) for the
+    distortion function expressed as f(r) = 1 + k1*r + k2*r^2 (which is 
+    equation #3 in Table 2 of Ma et al. 2004).
+    In terms of the variables outlined below, the algorithm input is
+    (x, y), k1, k2, and cameraIntrinsics and the output is (x_d, y_d).
+    TODO: consider overloading this method to implement equation #4. 
+    &lt;pre&gt;
+    Ma, Chen &amp; Moore 2004, &quot;Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction.&quot;
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+
+    and the projection equation variables:
+    [X_c,Y_c,Z_c]^T denotes a point in the camera frame which is related to the 
+        corresponding point 
+    [X_w, Y_w, Z_w]^T in the world reference frame 
+        by
+    P_c = R P_w + t
+    R is thr rotation matrix
+    t is the translation vector
+    
+    lambda * [u] = K [R|t] [X_w] = K [X_c]
+             [v]           [Y_w]     [Y_c]
+             [1]           [Z_w]     [Z_c]
+                           [1  ]
+    
+    ==&gt; To Apply Radial Distorion, given coefficients k1, k2 and coordinates
+      (eqn 7) r_d = r * f(r) = r*(1 + k1*r + k2*r^2 + k3*r^3 + ...)
+      (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r + k2*r^2)
+    
+      Ma et al. 2003 distortion model:
+         x_d = x * f(r)
+         y_d = y * f(r)
+    
+    ==&gt; Radial Undistortion:
+        solve for cubic roots
+        https://en.wikipedia.org/wiki/Cubic_equation#Reduction_to_a_depressed_cubic
+        though authors use Pearson's 1983 version of 
+           Handbook of Applied Mathematics: Selected Results and Methods
+    
+        from k2*r^3 +k1*r^2 +r - r_d = 0
+        solve 
+           r_bar^3 + r_bar*p + q = 0
+        where 
+          r_bar = r + (a/3)
+          a = k1/k2
+          b = 1/k2
+          c = −r_d/k2
+          p = b − (a^2/3)
+          q = (2a^3)/27 − ab/3 + c
+        then use depressed cubic root to solve for r_bar.
+        r = r_bar = (a/3)
+    
+        After r is determined, (u,v) can be calculated from (Eqn 5) which is
+           u_d - u_0 = (u−u_0) * f(r)
+           v_d − v_0 = (v−v_0) * f(r)
+          
+    Useful reading is also:
+    Drap et al, &quot;An Exact Formula for Calculating Inverse Radial Lens Distortions&quot;
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a negative value of k1.
+        pincushion distortion to a positive value of k1.
+         
+    NOTE that Drap et al. also apply the camera intrinsics, but they use a 
+    focal length of &quot;1&quot;.
+    * 
+    &lt;/pre&gt;
+    @param xCPt distortion-free camera centered coordinates for a point.  The
+    length is 3.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x, y).
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    @param outputDistorted  distorted camera centered coordinates in format 3XN where N is
+    the number of points.
+    In terms of Table 1 of Chen et al. 2004, this is a double array of (x_d, y_d).
+    */
+    static void applyRadialDistortion(double[] xCPt, double k1, double k2,
+        boolean useR2R4, double[] outputDistorted) {
+        
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">        if (xCPt.length != 3) {</span>
+<span class="nc" id="L1025">            throw new IllegalArgumentException(&quot;xCPt.length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L1027" title="All 2 branches missed.">        if (outputDistorted.length != 3) {</span>
+<span class="nc" id="L1028">            throw new IllegalArgumentException(&quot;outputDistorted.length must be 3&quot;);</span>
+        }
+                        
+        //double r, r2;
+        double signx, signy, c2p1, divc2p1, xm, ym, x, x2, y, y2;
+<span class="nc" id="L1033">        double[] c2s = new double[2];</span>
+        
+        //r2 = distorted[0][i]*distorted[0][i] + distorted[1][i]*distorted[1][i];
+        //r = Math.sqrt(r2);
+
+        // following Ma et al. 2004 Table 2,column 3 for model #3:
+        /*
+        for more information on rewriting r^2 in terms of only x or y, see
+        Eqn 3.1 of Boas &quot;Mathematical Methods in the Physical Sciences&quot;.
+        where r^2 is (x-x0)^2 + (y-y0)^2
+        let _x=x-x0  this is the notation here for camera coordinate frame
+        let c^2 = (_y)^2/(_x)^2
+        let c2p1 = (1 + c^2)
+        then r^2 = _x^2 + _x^2*c^2 = _x^2*(1 + c^2)
+                  = _x^2*c2p1
+        also, for r^2 in terms of _y^2:
+        let divc2p1 = ((1/c^2) + 1)
+        then r^2 = _y^2*((1/c^2) + 1)
+                 = _y^2*divc2p1
+        */
+<span class="nc" id="L1053">        x = xCPt[0];</span>
+<span class="nc" id="L1054">        x2 = x*x;</span>
+<span class="nc" id="L1055">        y = xCPt[1];</span>
+<span class="nc" id="L1056">        y2 = y*y;</span>
+
+<span class="nc" id="L1058">        calculateC2s(x, y, c2s);</span>
+<span class="nc" id="L1059">        c2p1 = c2s[0];</span>
+<span class="nc" id="L1060">        divc2p1 = c2s[1];</span>
+
+<span class="nc bnc" id="L1062" title="All 2 branches missed.">        if (useR2R4) {</span>
+            /* model #4
+            for x:
+             magnitude of distortion = xd-x
+                                     = _x*(k1*_x^2*c2p1 + k2*_x^4*(c2p1^2))
+           for y:
+             magnitude of distortion = yd-y
+                                   = _y*(k1*_y^2*divc2p1 + k2*_y^4*(divc2p1^2))
+            */
+<span class="nc" id="L1071">            xm = x*(k1*c2p1*x2 + k2*c2p1*c2p1*x2*x2);</span>
+<span class="nc" id="L1072">            ym = y*(k1*divc2p1*y2 + k2*divc2p1*divc2p1*y2*y2);</span>
+        } else {
+            /* model #3:
+            magnitude of distortion = xd-x
+                                   = _x*(k1*r + k2*r^2)
+                                   = _x*(signx*k1*_x*sqrt(c2p1) + k2*_x^2*c2p1)
+           magnitude of distortion = yd-y
+                                   = _y*(signy*k1*_y*sqrt(divc2p1) + k2*_y^2*divc2p1)
+            */
+<span class="nc bnc" id="L1081" title="All 2 branches missed.">            signx = (x &lt; 0) ? -1 : 1;</span>
+<span class="nc bnc" id="L1082" title="All 2 branches missed.">            signy = (y &lt; 0) ? -1 : 1;</span>
+            // model #3, Table 2, column 2:
+<span class="nc" id="L1084">            xm = x*(signx*k1*x*Math.sqrt(c2p1) + k2*x*x*c2p1);</span>
+<span class="nc" id="L1085">            ym = y*(signy*k1*y*Math.sqrt(divc2p1) + k2*y*y*divc2p1);</span>
+        }
+
+<span class="nc" id="L1088">        log.log(LEVEL, String.format(</span>
+            &quot;distort fx=%.4f, fy=%.4f for (x,y)=(%.3f,%.3f) =&gt; (xd,yd)=(%.3f,%.3f)\n&quot;, 
+<span class="nc" id="L1090">            (xm/x)+1, (ym/y)+1,</span>
+<span class="nc" id="L1091">            x, y, x+xm, y+ym));</span>
+
+<span class="nc" id="L1093">        outputDistorted[0] = xCPt[0] + xm;</span>
+<span class="nc" id="L1094">        outputDistorted[1] = xCPt[1] + ym;</span>
+<span class="nc" id="L1095">        outputDistorted[2] = xCPt[2];// &lt;=== presumably this coordinate is '1'</span>
+<span class="nc" id="L1096">    }</span>
+    
+    /**
+    remove radial distortion from image.
+    The algorithm follows Ma, Chen, &amp; Moore 2004.
+    In terms of the variables outlined in comments below, the algorithm input is
+    distorted points as a double array of (x_d, x_d), and the radial distortion
+    coefficients k1, k2.  The output is a double array of (x, y).
+    Choices for the distortion function are models #3 and #4.
+    &lt;pre&gt;
+    Ma, Chen &amp; Moore 2004, &quot;Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction.&quot;
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+      
+    Useful reading is also:
+    Drap et al, &quot;An Exact Formula for Calculating Inverse Radial Lens Distortions&quot;
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a negative value of k1.
+        pincushion distortion to a positive value of k1.
+         
+    &lt;/pre&gt;
+    @param xC distorted points in the camera reference frame, presumably 
+    already center subtracted.  format is 3XN where N is the
+    number of points.  These are (x_d, x_d) pairs in terms of Table 1 in Ma et al. 2004.
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
+    @return undistorted points in the camera reference frame.  Format is 3XN where N is the
+    number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
+    @throws no.uib.cipr.matrix.NotConvergedException
+    */
+    static double[][] removeRadialDistortion(double[][] xC, double k1, double k2,
+        boolean useR2R4) throws NotConvergedException, IOException {
+        
+<span class="pc bpc" id="L1150" title="1 of 2 branches missed.">        if (useR2R4) {</span>
+<span class="nc" id="L1151">            return removeRadialDistortion4(xC, k1, k2);</span>
+        }
+<span class="fc" id="L1153">        return removeRadialDistortion(xC, k1, k2);</span>
+    }
+    
+    /**
+    remove radial distortion from image.
+    The algorithm follows Ma, Chen, &amp; Moore 2004 and is for model #3,
+    * f(r) = 1 + k1*r + k2*r^2.
+    In terms of the variables outlined in comments below, the algorithm input is
+    distorted points as a double array of (x_d, x_d), and the radial distortion
+    coefficients k1, k2.  The output is a double array of (x, y).
+    &lt;pre&gt;
+    Ma, Chen &amp; Moore 2004, &quot;Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction.&quot;
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+      
+    Useful reading is also:
+    Drap et al, &quot;An Exact Formula for Calculating Inverse Radial Lens Distortions&quot;
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a negative value of k1.
+        pincushion distortion to a positive value of k1.
+    &lt;/pre&gt;
+    @param xC distorted points in the camera reference frame, presumably 
+    already center subtracted.  format is 3XN where N is the
+    number of points.  These are (x_d, x_d) pairs in terms of Table 1 in Ma et al. 2004.
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @return undistorted points in the camera reference frame.  Format is 3XN where N is the
+    number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
+    @throws no.uib.cipr.matrix.NotConvergedException
+    */
+    static double[][] removeRadialDistortion(double[][] xC, double k1, double k2) 
+        throws NotConvergedException, IOException {
+        
+<span class="pc bpc" id="L1203" title="1 of 2 branches missed.">        if (xC.length != 3) {</span>
+<span class="nc" id="L1204">            throw new IllegalArgumentException(&quot;xC.length must be 3&quot;);</span>
+        }
+          
+        // output array that will be corrected
+<span class="fc" id="L1208">        double[][] corrected = MatrixUtil.copy(xC);</span>
+        
+<span class="pc bpc" id="L1210" title="1 of 2 branches missed.">        if (Math.abs(k1) &lt; eps) {</span>
+<span class="nc bnc" id="L1211" title="All 2 branches missed.">            if (Math.abs(k2) &lt; eps) {</span>
+<span class="nc" id="L1212">                return corrected;</span>
+            }
+<span class="nc" id="L1214">            throw new IllegalArgumentException(&quot;k1 must be non-zero for this algorithm.  &quot;</span>
+                + &quot;To solve for the 2nd order term only, use useR2R4=true&quot;);
+        }
+        
+<span class="fc" id="L1218">        double[] coeffs = new double[]{k2, k1, 1, 0};</span>
+        
+<span class="pc bpc" id="L1220" title="1 of 2 branches missed.">        if (Math.abs(k2) &lt; eps) {</span>
+            // k2 is 0 so solve for reduced order of coeffs:
+<span class="nc" id="L1222">            coeffs = new double[]{k1, 1, 0};</span>
+        }
+        double[] rBar;
+        double rd, r, fr, theta;
+        double p, q, a, b, c, signx, signy;
+        //double c2p1, signx, signy, fx, fy;
+        int i;
+<span class="fc bfc" id="L1229" title="All 2 branches covered.">        for (i = 0; i &lt; xC[0].length; ++i) {</span>
+<span class="fc" id="L1230">            rd = Math.sqrt(corrected[0][i]*corrected[0][i] + corrected[1][i]*corrected[1][i]);</span>
+<span class="pc bpc" id="L1231" title="1 of 2 branches missed.">            if (Math.abs(rd) &lt; eps) {</span>
+<span class="nc" id="L1232">                continue;</span>
+            }
+<span class="fc" id="L1234">            coeffs[coeffs.length - 1] = -rd;</span>
+            
+            /*
+            Ma et al. 2004, reduction to cubic root
+            k2*r^3 +k1*r^2 + r - r_d = 0
+            
+            NOTE: checked the coefficient factoring
+            a = k1/k2, b = 1/k2, and c = -rd/k2
+            let rbar = r + (a/3)
+            then r = rbar - (a/3)
+            let p = b - (a*a/3)
+            let q = 2*(a*a*a/27) - (a*b/3) + c
+   
+            rbar^3 + p*rbar + q = 0
+            */
+            //a = k1/k2;
+            //b = 1./k2;
+            //c = -rd/k2;
+            //p = b - (a*a/3);
+            //q = 2*(a*a*a/27) - (a*b/3) + c;
+      
+<span class="fc" id="L1255">            log.log(LEVEL, String.format(&quot;\ni=%d\n&quot;,i));</span>
+            
+            //rBar = CubicRootSolver.solve(coeffs);
+<span class="fc" id="L1258">            rBar = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps2);</span>
+<span class="pc bpc" id="L1259" title="1 of 2 branches missed.">            if (rBar != null)</span>
+<span class="fc" id="L1260">                log.log(LEVEL, String.format(&quot;rBar=%s\n&quot;, FormatArray.toString(rBar, &quot;%.4e&quot;)));</span>
+<span class="pc bpc" id="L1261" title="2 of 4 branches missed.">            if (rBar == null || rBar.length == 0) {</span>
+<span class="nc" id="L1262">                r = rd;</span>
+                // check solution: 
+                //  k2*r^3 +k1*r^2 +r - r_d = 0
+<span class="nc" id="L1265">                double chk = k2 * r * r * r + k1 * r * r + r - rd;</span>
+<span class="nc" id="L1266">                log.log(LEVEL, String.format(&quot;chk 0=%.4e\n&quot;, chk));</span>
+                //assert(Math.abs(chk) &lt; tol);
+<span class="nc" id="L1268">            } else {</span>
+<span class="fc" id="L1269">                log.log(LEVEL, String.format(&quot;rBar=%s\n&quot;, FormatArray.toString(rBar, &quot;%.4f&quot;)));</span>
+<span class="fc" id="L1270">                r = rBar[0];</span>
+<span class="pc bpc" id="L1271" title="2 of 4 branches missed.">                if (r &lt; 0 &amp;&amp; rBar.length &gt; 1) {</span>
+<span class="pc bpc" id="L1272" title="1 of 2 branches missed.">                    for (int ii = 1; ii &lt; rBar.length; ++ii) {</span>
+<span class="fc" id="L1273">                        r = rBar[ii];</span>
+<span class="pc bpc" id="L1274" title="1 of 2 branches missed.">                        if (r &gt; 0) {</span>
+<span class="fc" id="L1275">                            break;</span>
+                        }
+                    }
+                }
+                // check solution: 
+                //  k2*r^3 +k1*r^2 +r - r_d = 0
+                //double chk = k2 * r * r * r + k1 * r * r + r - rd;
+                //log.log(LEVEL, String.format(&quot;chk 0==%.4e\n&quot;, chk));
+                //assert(Math.abs(chk) &lt; tol);
+            }
+                       
+            // remove radial distortion
+            // we have r now and have ud, vd
+            // model #3: fr = 1 + k1*r + k2*r*r;
+            
+            // eqn (5) from Ma et al. 2004
+            // (ud - u0) = (u - u0) * fr
+            // where (ud, vd) are the real observed image points.
+            // since the &quot;apply radial distortion&quot; is to the points in the camera
+            // reference frame, the removal must be also in order for the radial
+            // coefficients to be of the right scale.
+            //
+            // so one can look at eqn (4) instead:
+            //    xd = x*fr
+            //    where x is the undistorted in the camera reference frame.
+            // solving for x:
+            //    x = xd/fr
+            //fr = 1 + k1*r + k2*r*r;
+<span class="fc" id="L1303">            theta = Math.atan2(corrected[1][i], corrected[0][i]);</span>
+            
+<span class="fc" id="L1305">            log.log(LEVEL, String.format(&quot;(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n&quot;,</span>
+<span class="fc" id="L1306">                corrected[0][i], corrected[1][i], </span>
+<span class="fc" id="L1307">                r*Math.cos(theta), r*Math.sin(theta)));</span>
+            
+<span class="fc" id="L1309">            corrected[0][i] = (r*Math.cos(theta));</span>
+<span class="fc" id="L1310">            corrected[1][i] = (r*Math.sin(theta));</span>
+        }
+                
+<span class="fc" id="L1313">        return corrected;</span>
+    }
+    
+    /**
+    remove radial distortion from image.
+    The algorithm follows Ma, Chen, &amp; Moore 2004 and is for model #4,
+    * f(r) = 1 + k1*r^2 + k2*r^4.
+    In terms of the variables outlined in comments below, the algorithm input is
+    distorted points as a double array of (x_d, x_d), and the radial distortion
+    coefficients k1, k2.  The output is a double array of (x, y).
+    &lt;pre&gt;
+    Ma, Chen &amp; Moore 2004, &quot;Rational Radial Distortion Models of Camera Lenses 
+    with Analytical Solution for Distortion Correction.&quot;
+    International Journal of Information Acquisition · June 2004    
+    
+    defining variables:
+        K            :  camera intrinsics matrix
+        (u_d, v_d)   :  Distorted image point in pixel
+        (u, v)       :  Distortion-free image point in pixel
+        (x_d, y_d)   :  [x_d, y_d, 1]^T = K^−1[u_d, v_d, 1]^T
+        (x, y)       :  [x, y, 1]^T = K^−1[u, v, 1]^T
+        r_d          :  r_d^2 = x_d^2 + y_d^2
+        r            :  r^2 = x^2 + y^2
+        k1, k2, ...  :  Radial distortion coefficients
+      
+    Useful reading is also:
+    Drap et al, &quot;An Exact Formula for Calculating Inverse Radial Lens Distortions&quot;
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4934233/
+        Radial distortion is caused by the spherical shape of the lens, 
+        whereas tangential distortion is caused by the decentering and 
+        non-orthogonality of the lens components with respect to the 
+        optical axis
+        ...Barrel distortion can be physically present in small focal length 
+        systems, while larger focal lengths can result in pincushion distortion 
+        ...
+        barrel distortion corresponds to a 
+            negative value of k1.
+            present in small focal length systems.
+        pincushion distortion to a 
+            positive value of k1.
+            present in larger focal length systems
+            *
+    &lt;/pre&gt;
+    @param xC distorted points in the camera reference frame, presumably 
+    already center subtracted.  format is 3XN where N is the
+    number of points.  These are (x_d, x_d) pairs in terms of Table 1 in Ma et al. 2004.
+    @param k1 first radial distortion coefficient
+    @param k2 second radial distortion coefficient
+    @return undistorted points in the camera reference frame.  Format is 3XN where N is the
+    number of points.  These are (x, y) pairs in terms of Table 1 in Ma et al. 2004.
+    @throws no.uib.cipr.matrix.NotConvergedException
+    */
+    static double[][] removeRadialDistortion4(double[][] xC, double k1, double k2) 
+        throws NotConvergedException, IOException {
+        
+<span class="nc bnc" id="L1368" title="All 2 branches missed.">        if (xC.length != 3) {</span>
+<span class="nc" id="L1369">            throw new IllegalArgumentException(&quot;xC.length must be 3&quot;);</span>
+        }
+        
+        // 5th order root finding
+        // a polynomial of degree n has at most n real or complex roots
+                
+<span class="nc" id="L1375">        double[][] corrected = MatrixUtil.copy(xC);</span>
+        
+<span class="nc bnc" id="L1377" title="All 2 branches missed.">        if (Math.abs(k1) &lt; eps) {</span>
+<span class="nc bnc" id="L1378" title="All 2 branches missed.">            if (Math.abs(k2) &lt; eps) {</span>
+<span class="nc" id="L1379">                return corrected;</span>
+            }
+<span class="nc" id="L1381">            throw new IllegalArgumentException(&quot;k1 must be non-zero for this algorithm.&quot;);</span>
+        }
+        
+<span class="nc" id="L1384">        log.log(LEVEL, String.format(&quot;distorted coords=\n%s\n&quot;, FormatArray.toString(xC, &quot;%.3f&quot;)));</span>
+        
+        //model#4: k2*r^5 + k1*r^3 + r - rd = 0.
+        //         (k2*(c2p1^2))*_x^5 + (k1*c2p1)*_x^3 + _x - xd = 0
+        //         (k2*(divc2p1^2))*_y^5 + (k1*divc2p1)*_y^3 + _y - yd = 0
+        
+        double rd, r, theta, x, y, c, c2p1, divc2p1, fx, fy;
+        int i;
+        double[] rootsX, rootsY;
+<span class="nc" id="L1393">        double[] coeffsX = new double[]{0, 0, 0, 0, 1, 0};</span>
+<span class="nc" id="L1394">        double[] coeffsY = new double[]{0, 0, 0, 0, 1, 0};</span>
+<span class="nc" id="L1395">        double[] c2s = new double[2];</span>
+<span class="nc bnc" id="L1396" title="All 2 branches missed.">        if (Math.abs(k2) &lt; eps) {</span>
+            // k2 is 0 so solve for reduced order of coeffs:
+<span class="nc" id="L1398">            coeffsX = new double[]{0, 0, 1, 0};</span>
+<span class="nc" id="L1399">            coeffsY = new double[]{0, 0, 1, 0};</span>
+        }
+        
+<span class="nc bnc" id="L1402" title="All 2 branches missed.">        for (i = 0; i &lt; xC[0].length; ++i) {</span>
+<span class="nc" id="L1403">            rd = Math.sqrt(corrected[0][i]*corrected[0][i] + corrected[1][i]*corrected[1][i]);</span>
+<span class="nc bnc" id="L1404" title="All 2 branches missed.">            if (Math.abs(rd) &lt; eps) {</span>
+<span class="nc" id="L1405">                continue;</span>
+            }
+            
+            //for more information on rewriting r^2 in terms of only x or y, see
+            //Eqn 3.1 of Boas &quot;Mathematical Methods in the Physical Sciences&quot;.
+            //c2p1 = (y/x)^2 + 1;
+            //divc2p1 = (x/y)^2 + 1;
+            
+            //handle cases where x=0 or y=0 
+<span class="nc" id="L1414">            calculateC2s(corrected[0][i], corrected[1][i], c2s);</span>
+<span class="nc" id="L1415">            c2p1 = c2s[0];</span>
+<span class="nc" id="L1416">            divc2p1 = c2s[1];</span>
+            
+<span class="nc" id="L1418">            log.log(LEVEL, String.format(&quot;\ni=%d\n&quot;,i));</span>
+            // solve for x in (k2*(c2p1^2))*_x^5 + (k1*c2p1)*_x^3 + _x - xd = 0
+<span class="nc bnc" id="L1420" title="All 2 branches missed.">            if (coeffsX.length == 6) {</span>
+<span class="nc" id="L1421">                coeffsX[0] = k2 * c2p1 * c2p1;</span>
+<span class="nc" id="L1422">                coeffsX[2] = k1 * c2p1;</span>
+            } else {
+<span class="nc" id="L1424">                coeffsX[0] = k1 * c2p1;</span>
+            }
+<span class="nc" id="L1426">            coeffsX[coeffsX.length - 1] = -corrected[0][i];</span>
+            
+<span class="nc bnc" id="L1428" title="All 2 branches missed.">            if (Math.abs(corrected[0][i]) &lt; eps) {</span>
+<span class="nc" id="L1429">                x = corrected[0][i];</span>
+            } else {
+<span class="nc" id="L1431">                rootsX = PolynomialRootSolver.solveForRealUsingMPSolve(coeffsX, eps2);</span>
+<span class="nc bnc" id="L1432" title="All 4 branches missed.">                if (rootsX == null || rootsX.length == 0) {</span>
+<span class="nc" id="L1433">                    x = corrected[0][i];</span>
+<span class="nc" id="L1434">                    log.log(LEVEL, String.format(&quot;rootsX=null\n&quot;));</span>
+                } else {
+<span class="nc" id="L1436">                    log.log(LEVEL, String.format(&quot;poly rootsX=%s\n&quot;, FormatArray.toString(rootsX, &quot;%.4f&quot;)));</span>
+<span class="nc bnc" id="L1437" title="All 2 branches missed.">                    if (corrected[0][i] &lt; 0) {</span>
+<span class="nc" id="L1438">                        x = rootsX[0];</span>
+                    } else {
+<span class="nc" id="L1440">                        x = rootsX[rootsX.length - 1];</span>
+                    }
+                }
+            }
+            //xd = x*(1 + k1*c2p1*x2 + k2*c2p1*c2p1*x2*x2)
+<span class="nc" id="L1445">            fx = (k2*(c2p1*c2p1))*Math.pow(x, 4) + (k1*c2p1)*Math.pow(x, 2) + 1;</span>
+            // xd = x*fx
+<span class="nc" id="L1447">            double chkX = fx * x;</span>
+            
+            // solve for y in (k2*(divc2p1^2))*_y^5 + (k1*divc2p1)*_y^3 + _y - yd = 0
+<span class="nc bnc" id="L1450" title="All 2 branches missed.">            if (coeffsY.length == 6) {</span>
+<span class="nc" id="L1451">                coeffsY[0] = k2 * divc2p1 * divc2p1;</span>
+<span class="nc" id="L1452">                coeffsY[2] = k1 * divc2p1;</span>
+            } else {
+<span class="nc" id="L1454">                coeffsY[0] = k1 * divc2p1;</span>
+            }
+<span class="nc" id="L1456">            coeffsY[coeffsY.length - 1] = -corrected[1][i];</span>
+            
+<span class="nc bnc" id="L1458" title="All 2 branches missed.">            if (Math.abs(corrected[1][i]) &lt; eps) {</span>
+<span class="nc" id="L1459">                y = corrected[1][i];</span>
+            } else {
+<span class="nc" id="L1461">                rootsY = PolynomialRootSolver.solveForRealUsingMPSolve(coeffsY, eps2);</span>
+<span class="nc bnc" id="L1462" title="All 4 branches missed.">                if (rootsY == null || rootsY.length == 0) {</span>
+<span class="nc" id="L1463">                    y = corrected[1][i];</span>
+<span class="nc" id="L1464">                    log.log(LEVEL, String.format(&quot;rootsY=null\n&quot;));</span>
+                } else {
+<span class="nc" id="L1466">                    log.log(LEVEL, String.format(&quot;poly rootsY=%s\n&quot;, FormatArray.toString(rootsY, &quot;%.4f&quot;)));</span>
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">                    if (corrected[1][i] &lt; 0) {</span>
+<span class="nc" id="L1468">                        y = rootsY[0];</span>
+                    } else {
+<span class="nc" id="L1470">                        y = rootsY[rootsY.length - 1];</span>
+                    }
+                }
+            }
+<span class="nc" id="L1474">            fy = (k2*(divc2p1*divc2p1))*Math.pow(y, 4) + (k1*divc2p1)*Math.pow(y, 2) + 1;</span>
+            // yd = y*fy
+<span class="nc" id="L1476">            double chkY = fy * y;</span>
+<span class="nc" id="L1477">            log.log(LEVEL, String.format(&quot;(xd,yd)=(%.4f,%.4f)  (x,y)=(%.4f,%.4f)\n&quot;,</span>
+<span class="nc" id="L1478">                corrected[0][i], corrected[1][i], x, y));</span>
+<span class="nc" id="L1479">            log.log(LEVEL, String.format(&quot;fx=%.4f, fy=%.4f, checkX:%.4f==%.4f? checkY:%.4f==%.4f?\n&quot;,</span>
+<span class="nc" id="L1480">                fx, fy, chkX, xC[0][i], chkY, xC[1][i]));</span>
+            
+<span class="nc" id="L1482">            corrected[0][i] = x;</span>
+<span class="nc" id="L1483">            corrected[1][i] = y;</span>
+            
+        }
+                
+<span class="nc" id="L1487">        return corrected;</span>
+    }
+
+    private static double sumOfSquares(double[] m) {
+<span class="fc" id="L1491">        double sum = 0;</span>
+<span class="fc bfc" id="L1492" title="All 2 branches covered.">        for (int i = 0; i &lt; m.length; ++i) {</span>
+<span class="fc" id="L1493">            sum += (m[i]*m[i]);</span>
+        }
+<span class="fc" id="L1495">        return sum;</span>
+    }
+
+    /**
+     * calculate the projection of world features in coordsW by the
+     * homography h into the image plane, storing the results in ud and vd.
+     * The method follows eqn (17) of Ma, Chen, &amp; Moore 2003 &quot;Camera Calibration&quot;.
+     * @param coordsW the coordinates of the features in world reference frame.
+     *    size is 3 X n.
+     * @param h the homography.  size is (nImages*3) X 3
+     * @param u output projected image x coordinates for all images.
+     *     length is (n*nImages).
+     * @param v output projected image y coordinated for all images.
+     *     length is  (n*nImages).
+     */
+    static void calculateProjected(double[][] coordsW, double[][] h, 
+        double[] u, double[] v) {
+        
+        // n is the number of features
+<span class="fc" id="L1514">        int n = coordsW[0].length;</span>
+<span class="fc" id="L1515">        int nImages = h.length/3;</span>
+        
+        //u, v are 1 X (n*nImages)
+        //h is nImages*3 X 3
+        //coordsW is 3 X n
+        
+        // eqn (17) denom = h[2][0]*X_w + h[2][1]*Y_w + h[2][2]
+        //          ud = (h[0][0]*X_w + h[0][1]*Y_w + h[0][2])/denom
+        //          vd = (h[1][0]*X_w + h[1][1]*Y_w + h[1][2])/denom
+        
+<span class="fc" id="L1525">        double[] xw1 = new double[3];</span>
+<span class="fc" id="L1526">        xw1[2] = 1;</span>
+        double denom;
+        double[] h0, h1, h2;
+        int i, j;
+<span class="fc bfc" id="L1530" title="All 2 branches covered.">        for (i = 0; i &lt; nImages; ++i) {</span>
+<span class="fc" id="L1531">            h0 = h[i*3 + 0];</span>
+<span class="fc" id="L1532">            h1 = h[i*3 + 1];</span>
+<span class="fc" id="L1533">            h2 = h[i*3 + 2];</span>
+<span class="fc bfc" id="L1534" title="All 2 branches covered.">            for (j = 0; j &lt; n; ++j) { // n features</span>
+<span class="fc" id="L1535">                xw1[0] = coordsW[0][j];</span>
+<span class="fc" id="L1536">                xw1[1] = coordsW[1][j];</span>
+<span class="fc" id="L1537">                denom = MatrixUtil.innerProduct(h2, xw1);</span>
+<span class="fc" id="L1538">                u[i*n + j] = MatrixUtil.innerProduct(h0, xw1);</span>
+<span class="fc" id="L1539">                u[i*n + j] /= denom;</span>
+<span class="fc" id="L1540">                v[i*n + j] = MatrixUtil.innerProduct(h1, xw1);</span>
+<span class="fc" id="L1541">                v[i*n + j] /= denom;</span>
+            }
+        }        
+<span class="fc" id="L1544">    }</span>
+
+    /**
+     * 
+     * @param uvD (ud, vd) are the Real observed distorted image points.
+     * uvD holds the features in each image in pixel coordinates ordered 
+     * such that all features of one image are followed by all features
+     * of the next image.  the x-axis coordinates are in row 0.
+     * the y-axis coordinates are in row 1.  the third row is all 1's.
+               It is a 2 dimensional double array of size
+               3 X (N*n) where N is the number of images.
+               In Table 1 of Ma, Chen, &amp; Moore 2003 &quot;Camera Calibration&quot;
+               these are the (u_d, v_d) pairs.
+     * @param u projections of the WCS feature x coordinates into the image
+     * reference frame.  array length is n*nImages
+     * @param v projections of the WCS feature y coordinates into the image
+     * reference frame.  array length is n*nImages
+     * @param cameraMatrices data structure holding the camera intrinsic parameters
+     * and the extrinsic parameter matrices for each image.
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     * @return 
+     */
+    static double[] solveForRadialDistortion(double[][] uvD, 
+        double[] u, double[] v, 
+        CameraMatrices cameraMatrices, boolean useR2R4) 
+        throws NotConvergedException, Exception {
+        
+<span class="fc" id="L1576">        int nImages = cameraMatrices.getExtrinsics().size();</span>
+<span class="fc" id="L1577">        int nFeatures = u.length/nImages;</span>
+                
+        /* 
+        (ud, vd) are Real observed distorted image points in image reference frame.
+        (u, v) Ideal projected undistorted image points in image reference frame (the projection of
+               the points from the world reference frame to the image reference frame).
+        [x,y,1] = A^-1 * [u, v, 1] are transformed to camera reference frame.
+
+        eqn (5) of Ma, Chen, &amp; Moore 2004, &quot;Rational Radial Distortion...&quot;
+           ud-u0 = (u-u0)*f(r)
+           vd-v0 = (v-v0)*f(r)
+
+        eqn (8) of Ma, Chen &amp; Moore 2003, &quot;Camera Calibration...&quot;
+           ud = u + (u−u0)*f_r
+           vd = v + (v−v0)*f_r
+
+        eqn (11) of Zhang 1998, &quot;Flexible Camera Calibration ...&quot;
+           ud = u + (u−u0)*[k1*r + k2*r^2]
+           vd = v + (v−v0)*[k1*r + k2*r^2]
+
+        (5) and (8) use equation #3 or #4 of Ma et al. 2004 Table 2
+            #3: f_r = 1 + k_1*r + k_2*r^2
+                    = 1 + k_1*(x^2 + y^2)^-1/2 + k_2*(x^2 + y^2)
+            #4: f_r = 1 + k_1*r^2 + k_2*r^4
+                    = 1 + k_1*(x^2 + y^2) + k_2*(x^2 + y^2)^2
+
+        factored out eqn (5) of Ma, Chen, &amp; Moore 2004:
+           ud-u0 = (u-u0)*(1 + k_1*r + k_2*r^2)
+                 = (u-u0) + (u-u0)*(k_1*r + k_2*r^2)
+           ud = u + (u-u0)*(k_1*r + k_2*r^2)
+           ud-u = (u-u0)*(k_1*r + k_2*r^2)
+         is the same as eqn (11) of Zhang 1998.
+
+        Given n points in nImages, we can stack all equations together
+        to obtain totally 2Nn equations in matrix form as
+        Dk = d, where k = [k1, k2]^T .
+
+        The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d = pseudoInv(D)*d.
+
+          if choose #3:
+
+               k1                        k2                    const
+              ----------------------------------------------------------
+        D = [ (u-u0)*sqrt(x^2 + y^2)    (u-u0)*(x^2 + y^2) ]   d = [ ud - u ]
+            [ (v-v0)*sqrt(x^2 + y^2)    (v-v0)*(x^2 + y^2) ]       [ vd - v ]
+
+          if choose #4:
+
+               k1                   k2                       const
+              ----------------------------------------------------------
+        D = [ (u-u0)*(x^2 + y^2)    (u-u0)*(x^2 + y^2)^2 ]   d = [ ud - u ]
+            [ (v-v0)*(x^2 + y^2)    (v-v0)*(x^2 + y^2)^2 ]       [ vd - v ]
+        
+       The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d.
+                                                      (2X2nN * 2nNX2)^-1 * (2X2nN) * (2nNX1)
+                                                      (2X2)              * (2X2nN) * (2nNX1)
+                                                      (2X2nN) * (2nNX1) = 2X1
+        */
+        
+        int i, j;
+        double ui, vi, udi, vdi, xi, yi, xi2, yi2;
+        double signx, signy, c2p1, divc2p1;
+<span class="fc" id="L1639">        double[] c2s = new double[2];</span>
+<span class="fc" id="L1640">        double ud0 = cameraMatrices.getIntrinsics().getIntrinsic()[0][2];</span>
+<span class="fc" id="L1641">        double vd0 = cameraMatrices.getIntrinsics().getIntrinsic()[1][2];</span>
+<span class="fc" id="L1642">        double u0 = ud0; </span>
+<span class="fc" id="L1643">        double v0 = vd0;</span>
+        double[][] xy;
+<span class="fc" id="L1645">        double[][] dM = new double[2*nFeatures*nImages][2];</span>
+<span class="fc" id="L1646">        double[] dV = new double[2*nFeatures*nImages];</span>
+<span class="fc bfc" id="L1647" title="All 2 branches covered.">        for (i = 0; i &lt; nImages; ++i) {</span>
+<span class="fc" id="L1648">            xy = MatrixUtil.copySubMatrix(uvD, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);</span>
+<span class="fc" id="L1649">            xy = Camera.pixelToCameraCoordinates(xy, </span>
+<span class="fc" id="L1650">                cameraMatrices.getIntrinsics(), null, false);</span>
+<span class="fc bfc" id="L1651" title="All 2 branches covered.">            for (j = 0; j &lt; nFeatures; ++j) {</span>
+<span class="fc" id="L1652">                ui = u[nFeatures*i + j];</span>
+<span class="fc" id="L1653">                vi = v[nFeatures*i + j];</span>
+<span class="fc" id="L1654">                udi = uvD[0][nFeatures*i + j];</span>
+<span class="fc" id="L1655">                vdi = uvD[1][nFeatures*i + j];</span>
+<span class="fc" id="L1656">                xi = xy[0][j];</span>
+<span class="fc" id="L1657">                yi = xy[1][j];</span>
+<span class="fc" id="L1658">                xi2 = xi*xi;</span>
+<span class="fc" id="L1659">                yi2 = yi*yi;</span>
+        
+                
+<span class="fc" id="L1662">                calculateC2s(xi, yi, c2s);</span>
+<span class="fc" id="L1663">                c2p1 = c2s[0];</span>
+<span class="fc" id="L1664">                divc2p1 = c2s[1];</span>
+                                
+                // e.g. nFeatures=3
+                //i:0 j:0          idx=0, idy=1
+                //i:0 j:1          idx=2, idy=3
+                //i:0 j:2          idx=4, idy=5
+                //i:1 j:0  idx=6, idy=7
+                //i:1 j:1  idx=8, idy=9
+      
+<span class="pc bpc" id="L1673" title="1 of 2 branches missed.">                if (useR2R4) {</span>
+<span class="nc" id="L1674">                    dM[2*nFeatures*i + 2*j] = new double[]{</span>
+                        (ui-u0)*c2p1*xi2, (ui-u0)*c2p1*c2p1*xi2*xi2};
+<span class="nc" id="L1676">                    dM[2*nFeatures*i + 2*j + 1] = new double[]{</span>
+                        (vi-v0)*divc2p1*yi2, (vi-v0)*divc2p1*divc2p1*yi2*yi2};
+                } else {
+<span class="fc bfc" id="L1679" title="All 2 branches covered.">                    signx = (xi &lt; 0) ? -1 : 1;</span>
+<span class="fc bfc" id="L1680" title="All 2 branches covered.">                    signy = (yi &lt; 0) ? -1 : 1;</span>
+<span class="fc" id="L1681">                    dM[2*nFeatures*i + 2*j] = new double[]{</span>
+<span class="fc" id="L1682">                        (ui-u0)*signx*xi*Math.sqrt(c2p1), (ui-u0)*xi2*c2p1};</span>
+<span class="fc" id="L1683">                    dM[2*nFeatures*i + 2*j + 1] = new double[]{</span>
+<span class="fc" id="L1684">                        (vi-v0)*signy*yi*Math.sqrt(divc2p1), (vi-v0)*yi2*divc2p1};</span>
+                }
+<span class="fc" id="L1686">                dV[2*nFeatures*i + 2*j] = udi - ui;</span>
+<span class="fc" id="L1687">                dV[2*nFeatures*i + 2*j + 1] = vdi - vi;</span>
+            }
+        }
+           
+        //k = (D^T*D)^−1*D^T*d = pseudoInv(D) * d
+<span class="fc" id="L1692">        double[][] dInv = MatrixUtil.pseudoinverseFullRank(dM);</span>
+<span class="fc" id="L1693">        double[] k = MatrixUtil.multiplyMatrixByColumnVector(dInv, dV);</span>
+                
+<span class="fc" id="L1695">        return k;</span>
+    }
+
+    static double[][] solveForHomographies(double[][] coordsI, 
+        double[][] coordsW, int n, int nImages) throws NotConvergedException {
+        
+        // n is the number of features
+        
+<span class="fc" id="L1703">        double[][] h = MatrixUtil.zeros(nImages*3, 3);</span>
+        
+        double[][] g, cI;
+        int i, i2;
+<span class="fc bfc" id="L1707" title="All 2 branches covered.">        for (i = 0; i &lt; nImages; ++i) {</span>
+<span class="fc" id="L1708">            cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, n*i, n*(i + 1)-1);</span>
+            
+            //3X3  and contains intrinsic camera information from the point-to-point mappings
+<span class="fc" id="L1711">            g = solveForHomography(cI, coordsW);</span>
+            
+            /*
+            h image 0// 3X3 in rows 0:3
+            h image 1// 3X3 in rows 3:6
+            h image 2// 3X3 in rows 6:9
+            */
+<span class="fc bfc" id="L1718" title="All 2 branches covered.">            for (i2 = 0; i2 &lt; 3; ++i2) {</span>
+<span class="fc" id="L1719">                System.arraycopy(g[i2], 0, h[i*3 + i2], 0, g[i2].length);</span>
+            }
+        }
+        
+<span class="fc" id="L1723">        return h;</span>
+    }
+
+    static List&lt;CameraExtrinsicParameters&gt; solveForExtrinsics(
+        CameraIntrinsicParameters kIntr, double[][] h, int nImages) 
+        throws NotConvergedException, Exception {
+        
+<span class="nc" id="L1730">        List&lt;CameraExtrinsicParameters&gt; list = new ArrayList&lt;CameraExtrinsicParameters&gt;();</span>
+        //(3) for each image homography and inverse intrinsic parameter matrix,
+        //    estimate the extrinsic parameters for the pose of the camera for that image.
+        CameraExtrinsicParameters kExtr;
+        
+        int i;
+        double[][] g;
+        
+<span class="nc bnc" id="L1738" title="All 2 branches missed.">        for (i = 0; i &lt; nImages; ++i) {</span>
+            //                               ri,      rf,ci,cf
+<span class="nc" id="L1740">            g = MatrixUtil.copySubMatrix(h, 3*i, 3*i + 2, 0, 2);</span>
+            
+            //NOTE: here, internal to solveForExtrinsic() would be a different place 
+            // where one could remove radial distortion.
+            // the method forms the image of the &quot;absolute conic&quot;
+<span class="nc" id="L1745">            kExtr = solveForExtrinsic(kIntr, g);</span>
+            
+<span class="nc" id="L1747">            list.add(kExtr);</span>
+        }
+        
+<span class="nc" id="L1750">        return list;</span>
+    }
+    
+    /**
+     * following EE 267 Virtual Reality Course Notes: 6-DOF Pose Tracking with the VRduino
+       by Gordon Wetzstein
+     * @param kIntr
+     * @param coordsI
+     * @param coordsW
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+    f(r) = 1 +k1*r^2 + k2*r^4 if true,
+    else use model #3 f(r) = 1 +k1*r + k2*r^2.
+    * note that if rCoeffs is null or empty, no radial distortion is applied.
+     * @return
+     * @throws NotConvergedException 
+     * @throws Exception if there is an error in use of MPSolver during the
+     * removal of radial distortion, a generic exception is thrown with the
+     * error message from the MPSolve documentation.
+     */
+    static List&lt;CameraExtrinsicParameters&gt; solveForExtrinsics2(
+        CameraIntrinsicParameters kIntr, double[][] coordsI, 
+        double[][] coordsW, boolean useR2R4) 
+        throws NotConvergedException, Exception {
+        
+<span class="fc" id="L1774">        int nFeatures = coordsW[0].length;</span>
+<span class="fc" id="L1775">        int nImages = coordsI[0].length/nFeatures;</span>
+        
+<span class="fc" id="L1777">        double[] kRadial = null;</span>
+        
+<span class="fc" id="L1779">        List&lt;CameraExtrinsicParameters&gt; list = new ArrayList&lt;CameraExtrinsicParameters&gt;();</span>
+        //(3) for each image homography and inverse intrinsic parameter matrix,
+        //    estimate the extrinsic parameters for the pose of the camera for that image.
+        CameraExtrinsicParameters kExtr;
+        
+        int i;
+        double[][] cI;
+        
+<span class="fc bfc" id="L1787" title="All 2 branches covered.">        for (i = 0; i &lt; nImages; ++i) {</span>
+<span class="fc" id="L1788">            cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);</span>
+            
+            //NOTE: here, internal to solveForExtrinsic() would be a different place 
+            // where one could remove radial distortion.
+            // the method forms the image of the &quot;absolute conic&quot;
+<span class="fc" id="L1793">            kExtr = solveForExtrinsic2(kIntr, kRadial, cI, coordsW, useR2R4);</span>
+            
+<span class="fc" id="L1795">            list.add(kExtr);</span>
+        }
+        
+<span class="fc" id="L1798">        return list;</span>
+    }
+
+    /**
+     * calculate c2p1 and divc2p1
+     * where c = y/x
+     * and c2p1 = c*c + 1
+     * and divc2p1 = (1./(c*c)) + 1.
+     * the method handles cases where x or y are 0.
+     * @param x
+     * @param y
+     * @param output array of length 2 to return []{c2p1, divc2p1};
+     */
+    private static void calculateC2s(double x, double y, double[] output) {
+        double c, c2p1, divc2p1;
+<span class="pc bpc" id="L1813" title="1 of 2 branches missed.">        if (Math.abs(x) &lt; eps) {</span>
+<span class="nc" id="L1814">            c2p1 = 0;</span>
+        } else {
+<span class="pc bpc" id="L1816" title="1 of 2 branches missed.">            if (Math.abs(y) &lt; eps) {</span>
+                // r^2 = _x^2
+<span class="nc" id="L1818">                c2p1 = 1;</span>
+            } else {
+<span class="fc" id="L1820">                c = y / x;</span>
+<span class="fc" id="L1821">                c2p1 = c * c + 1;</span>
+            }
+        }
+<span class="pc bpc" id="L1824" title="1 of 2 branches missed.">        if (Math.abs(y) &lt; eps) {</span>
+<span class="nc" id="L1825">            divc2p1 = 0;</span>
+        } else {
+<span class="pc bpc" id="L1827" title="1 of 2 branches missed.">            if (Math.abs(x) &lt; eps) {</span>
+                // r^2 = _y^2
+<span class="nc" id="L1829">                divc2p1 = 1;</span>
+            } else {
+<span class="fc" id="L1831">                c = y / x;</span>
+<span class="fc" id="L1832">                divc2p1 = (1. / (c * c)) + 1;</span>
+            }
+        }
+<span class="fc" id="L1835">        output[0] = c2p1;</span>
+<span class="fc" id="L1836">        output[1] = divc2p1;</span>
+<span class="fc" id="L1837">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

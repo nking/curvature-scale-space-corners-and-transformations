@@ -6,6 +6,7 @@ import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.imageProcessing.features.RANSACEuclideanSolver;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
+import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import no.uib.cipr.matrix.DenseMatrix;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
@@ -132,7 +134,7 @@ based upon algorithm in paper
   &lt;/pre&gt;
   @author nichole
  */
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">public class PartialShapeMatcher2 {</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">public class PartialShapeMatcher2 {</span>
 
     /**
      * in sampling the boundaries of the shapes, one can
@@ -143,25 +145,25 @@ based upon algorithm in paper
      * dp is the set distance between sampling points.
        The authors of the paper use 3 as an example.
     */
-<span class="fc" id="L146">    protected int dp = 3;</span>
+<span class="fc" id="L148">    protected int dp = 3;</span>
 
-<span class="fc" id="L148">    private boolean useSameNumberOfPoints = false;</span>
+<span class="fc" id="L150">    private boolean useSameNumberOfPoints = false;</span>
     
-<span class="fc" id="L150">    private boolean performEuclidTrans = false;</span>
+<span class="fc" id="L152">    private boolean performEuclidTrans = false;</span>
 
-<span class="fc" id="L152">    private boolean useRANSAC = false;</span>
+<span class="fc" id="L154">    private boolean useRANSAC = false;</span>
     
-<span class="fc" id="L154">    private float pixTolerance = 20;</span>
+<span class="fc" id="L156">    private float pixTolerance = 20;</span>
 
     // 10 degrees is 0.1745 radians
     // for a fit to a line, consider 1E-9
-<span class="fc" id="L158">    private float thresh = 1.f;//(float)(Math.PI/180.) * 10.f;</span>
+<span class="fc" id="L160">    private float thresh = 1.f;//(float)(Math.PI/180.) * 10.f;</span>
 
-<span class="fc" id="L160">    private int minLength = 7;//3;</span>
+<span class="fc" id="L162">    private int minLength = 7;//3;</span>
         
-<span class="fc" id="L162">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L164">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
 
-<span class="fc" id="L164">    private boolean debug = false;</span>
+<span class="fc" id="L166">    private boolean debug = false;</span>
 
     /**
      * storing the difference order matrix as pToQ or qToP for re-reading later
@@ -169,20 +171,20 @@ based upon algorithm in paper
      * also present here are the parameters associated w/ storedMatrix needed to
      * read it.
      */
-<span class="fc" id="L172">    private boolean pToQ = true;</span>
-<span class="fc" id="L173">    private boolean storeMatrix = false;</span>
-<span class="fc" id="L174">    private float[][][] storedMatrix = null;</span>
-<span class="fc" id="L175">    private int storePDp = 1;</span>
-<span class="fc" id="L176">    private int storeQDp = 1;</span>
-<span class="fc" id="L177">    private EpipolarTransformationFit storedEpipolarFit = null;</span>
+<span class="fc" id="L174">    private boolean pToQ = true;</span>
+<span class="fc" id="L175">    private boolean storeMatrix = false;</span>
+<span class="fc" id="L176">    private float[][][] storedMatrix = null;</span>
+<span class="fc" id="L177">    private int storePDp = 1;</span>
+<span class="fc" id="L178">    private int storeQDp = 1;</span>
+<span class="fc" id="L179">    private EpipolarTransformationFit storedEpipolarFit = null;</span>
    
     /**
      * set this to store the difference matrix and scale information in order
      * to read more from the matrix later.
      */
     public void overrideToStoreMatrix() {
-<span class="nc" id="L184">        storeMatrix = true;</span>
-<span class="nc" id="L185">    }</span>
+<span class="nc" id="L186">        storeMatrix = true;</span>
+<span class="nc" id="L187">    }</span>
     
     /**
      * turn on the euclidean transformation to evaluate the best
@@ -191,12 +193,12 @@ based upon algorithm in paper
      * a lower threshold.
      */
     public void setToUseEuclidean() {
-<span class="fc" id="L194">        performEuclidTrans = true;</span>
-<span class="fc" id="L195">    }</span>
+<span class="fc" id="L196">        performEuclidTrans = true;</span>
+<span class="fc" id="L197">    }</span>
     
     public void setToRemoveOutliers() {
-<span class="fc" id="L198">        useRANSAC = true;</span>
-<span class="fc" id="L199">    }</span>
+<span class="fc" id="L200">        useRANSAC = true;</span>
+<span class="fc" id="L201">    }</span>
     
     /**
      * override the threshold for using a chord differernce value
@@ -205,16 +207,16 @@ based upon algorithm in paper
      * @param t 
      */
     public void _overrideToThreshhold(float t) {
-<span class="fc" id="L208">        this.thresh = t;</span>
-<span class="fc" id="L209">    }</span>
+<span class="fc" id="L210">        this.thresh = t;</span>
+<span class="fc" id="L211">    }</span>
     
     /**
      * override the default minimum length of 7.
      * @param length 
      */
     public void overrideMinimumLength(int length) {
-<span class="fc" id="L216">        this.minLength = length;</span>
-<span class="fc" id="L217">    }</span>
+<span class="fc" id="L218">        this.minLength = length;</span>
+<span class="fc" id="L219">    }</span>
     
     /**
     if this is set, the same number of points
@@ -224,24 +226,24 @@ based upon algorithm in paper
     3 by using the method overrideSamplingDistance(dp).
     */
     public void setToUseSameNumberOfPoints() {
-<span class="fc" id="L227">        useSameNumberOfPoints = true;</span>
-<span class="fc" id="L228">    }</span>
+<span class="fc" id="L229">        useSameNumberOfPoints = true;</span>
+<span class="fc" id="L230">    }</span>
 
     /**
      * the default sampling distance is 3.  use this method to override it.
      * @param d 
      */
     public void overrideSamplingDistance(int d) {
-<span class="fc" id="L235">        this.dp = d;</span>
-<span class="fc" id="L236">    }</span>
+<span class="fc" id="L237">        this.dp = d;</span>
+<span class="fc" id="L238">    }</span>
 
     /**
      * use this to enable the debug log comments and plots
      */
     public void setToDebug() {
-<span class="nc" id="L242">        debug = true;</span>
-<span class="nc" id="L243">        log.setLevel(Level.FINE);</span>
-<span class="nc" id="L244">    }</span>
+<span class="nc" id="L244">        debug = true;</span>
+<span class="nc" id="L245">        log.setLevel(Level.FINE);</span>
+<span class="nc" id="L246">    }</span>
 
     /**
       A shape is defined as the clockwise ordered sequence
@@ -268,45 +270,45 @@ based upon algorithm in paper
     */
     public Result match(PairIntArray p, PairIntArray q) {
 
-<span class="fc" id="L271">        log.info(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN()</span>
+<span class="fc" id="L273">        log.info(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN()</span>
             + &quot; useSameNumberOfPoints=&quot; + useSameNumberOfPoints
             + &quot; dp=&quot; + dp);
 
-<span class="pc bpc" id="L275" title="2 of 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
-<span class="nc" id="L276">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
+<span class="pc bpc" id="L277" title="2 of 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
+<span class="nc" id="L278">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
             + &quot; have at least dp*2 points = &quot; + (dp * 2));
         }
         
-<span class="pc bpc" id="L280" title="2 of 4 branches missed.">        if ((p.getN()/dp) &gt; 500 || (q.getN()/dp) &gt; 500) {</span>
-<span class="nc" id="L281">            log.warning(&quot;warning, q.n/dp or q.n/dp is large and requires alot of&quot;</span>
+<span class="pc bpc" id="L282" title="2 of 4 branches missed.">        if ((p.getN()/dp) &gt; 500 || (q.getN()/dp) &gt; 500) {</span>
+<span class="nc" id="L283">            log.warning(&quot;warning, q.n/dp or q.n/dp is large and requires alot of&quot;</span>
                 + &quot; memory&quot;);
         }
 
-<span class="fc bfc" id="L285" title="All 2 branches covered.">        if (useSameNumberOfPoints) {</span>
-<span class="fc" id="L286">            return matchSameNumber(p, q);</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (useSameNumberOfPoints) {</span>
+<span class="fc" id="L288">            return matchSameNumber(p, q);</span>
         }
                 
-<span class="fc bfc" id="L289" title="All 2 branches covered.">        if (dp == 1) {</span>
-<span class="fc" id="L290">            return match0(p, q);</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        if (dp == 1) {</span>
+<span class="fc" id="L292">            return match0(p, q);</span>
         }
      
-<span class="fc" id="L293">        PairIntArray pSub = new PairIntArray(p.getN()/dp);</span>
-<span class="fc" id="L294">        PairIntArray qSub = new PairIntArray(q.getN()/dp);</span>
+<span class="fc" id="L295">        PairIntArray pSub = new PairIntArray(p.getN()/dp);</span>
+<span class="fc" id="L296">        PairIntArray qSub = new PairIntArray(q.getN()/dp);</span>
     
-<span class="fc bfc" id="L296" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); i += dp) {</span>
-<span class="fc" id="L297">            pSub.add(p.getX(i), p.getY(i));</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); i += dp) {</span>
+<span class="fc" id="L299">            pSub.add(p.getX(i), p.getY(i));</span>
         }
         
-<span class="fc bfc" id="L300" title="All 2 branches covered.">        for (int i = 0; i &lt; q.getN(); i += dp) {</span>
-<span class="fc" id="L301">            qSub.add(q.getX(i), q.getY(i));</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">        for (int i = 0; i &lt; q.getN(); i += dp) {</span>
+<span class="fc" id="L303">            qSub.add(q.getX(i), q.getY(i));</span>
         }
         
-<span class="fc" id="L304">        log.info(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
+<span class="fc" id="L306">        log.info(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
         
-<span class="fc" id="L306">        Result rSub = match0(pSub, qSub);</span>
+<span class="fc" id="L308">        Result rSub = match0(pSub, qSub);</span>
         
-<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (rSub == null) {</span>
-<span class="nc" id="L309">            return null;</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">        if (rSub == null) {</span>
+<span class="nc" id="L311">            return null;</span>
         } 
         
         // -- put results back into frame of p and q --
@@ -314,26 +316,26 @@ based upon algorithm in paper
         // TODO: consider an option to further match the
         // points between correspondence if dp &gt; 1
       
-<span class="fc" id="L317">        Result r = new Result(p.getN(), q.getN(), rSub.getOriginalN1());</span>
+<span class="fc" id="L319">        Result r = new Result(p.getN(), q.getN(), rSub.getOriginalN1());</span>
 
-<span class="fc bfc" id="L319" title="All 2 branches covered.">        for (int i = 0; i &lt; rSub.idx1s.size(); ++i) {</span>
-<span class="fc" id="L320">            int idx1 = rSub.idx1s.get(i);</span>
-<span class="fc" id="L321">            int idx2 = rSub.idx2s.get(i);</span>
-<span class="fc" id="L322">            idx1 *= dp;</span>
-<span class="fc" id="L323">            idx2 *= dp;</span>
-<span class="fc" id="L324">            r.idx1s.add(idx1);</span>
-<span class="fc" id="L325">            r.idx2s.add(idx2);</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        for (int i = 0; i &lt; rSub.idx1s.size(); ++i) {</span>
+<span class="fc" id="L322">            int idx1 = rSub.idx1s.get(i);</span>
+<span class="fc" id="L323">            int idx2 = rSub.idx2s.get(i);</span>
+<span class="fc" id="L324">            idx1 *= dp;</span>
+<span class="fc" id="L325">            idx2 *= dp;</span>
+<span class="fc" id="L326">            r.idx1s.add(idx1);</span>
+<span class="fc" id="L327">            r.idx2s.add(idx2);</span>
         }
-<span class="pc bpc" id="L327" title="3 of 4 branches missed.">        assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
-<span class="fc" id="L328">        r.chordDiffSum = rSub.chordDiffSum;</span>
-<span class="fc" id="L329">        r.distSum = rSub.distSum;</span>
+<span class="pc bpc" id="L329" title="3 of 4 branches missed.">        assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
+<span class="fc" id="L330">        r.chordDiffSum = rSub.chordDiffSum;</span>
+<span class="fc" id="L331">        r.distSum = rSub.distSum;</span>
         
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        if (storeMatrix) {</span>
-<span class="nc" id="L332">            storePDp = dp;</span>
-<span class="nc" id="L333">            storeQDp = dp;</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">        if (storeMatrix) {</span>
+<span class="nc" id="L334">            storePDp = dp;</span>
+<span class="nc" id="L335">            storeQDp = dp;</span>
         }
         
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">        if (rSub.getTransformationParameters() != null) {</span>
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">        if (rSub.getTransformationParameters() != null) {</span>
        
             /*
             transX = xt0 -
@@ -349,118 +351,118 @@ based upon algorithm in paper
             // rotation shouldn't change
             // scale changes by factor dp
             
-<span class="fc" id="L352">            TransformationParameters params = rSub.getTransformationParameters().copy();</span>
-<span class="fc" id="L353">            params.setScale(params.getScale());</span>
-<span class="fc" id="L354">            params.setTranslationX(params.getTranslationX());</span>
-<span class="fc" id="L355">            params.setTranslationY(params.getTranslationY());</span>
-<span class="fc" id="L356">            r.setTransformationParameters(params);</span>
+<span class="fc" id="L354">            TransformationParameters params = rSub.getTransformationParameters().copy();</span>
+<span class="fc" id="L355">            params.setScale(params.getScale());</span>
+<span class="fc" id="L356">            params.setTranslationX(params.getTranslationX());</span>
+<span class="fc" id="L357">            params.setTranslationY(params.getTranslationY());</span>
+<span class="fc" id="L358">            r.setTransformationParameters(params);</span>
             
         }
         
-<span class="fc" id="L360">        return r;</span>
+<span class="fc" id="L362">        return r;</span>
     }
 
     private TDoubleList calculateChordDiffsSameNumber(PairIntArray p, 
         PairIntArray q, PairIntArray matchedIndexes) {
         
-<span class="nc" id="L366">        log.fine(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN());</span>
+<span class="nc" id="L368">        log.fine(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN());</span>
 
-<span class="nc bnc" id="L368" title="All 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
-<span class="nc" id="L369">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
+<span class="nc bnc" id="L370" title="All 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
+<span class="nc" id="L371">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
             + &quot; have at least dp*2 points = &quot; + (dp * 2));
         }
 
-<span class="nc" id="L373">        int nSampl = Math.min(p.getN(), q.getN())/dp;</span>
+<span class="nc" id="L375">        int nSampl = Math.min(p.getN(), q.getN())/dp;</span>
 
-<span class="nc" id="L375">        PairIntArray pSub = new PairIntArray(nSampl);</span>
-<span class="nc" id="L376">        PairIntArray qSub = new PairIntArray(nSampl);</span>
-<span class="nc" id="L377">        PairIntArray idxsSub = new PairIntArray(nSampl);</span>
+<span class="nc" id="L377">        PairIntArray pSub = new PairIntArray(nSampl);</span>
+<span class="nc" id="L378">        PairIntArray qSub = new PairIntArray(nSampl);</span>
+<span class="nc" id="L379">        PairIntArray idxsSub = new PairIntArray(nSampl);</span>
         
-<span class="nc" id="L379">        int pDp = p.getN()/nSampl;</span>
-<span class="nc" id="L380">        int qDp = q.getN()/nSampl;</span>
+<span class="nc" id="L381">        int pDp = p.getN()/nSampl;</span>
+<span class="nc" id="L382">        int qDp = q.getN()/nSampl;</span>
     
-<span class="nc bnc" id="L382" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); i += pDp) {</span>
-<span class="nc" id="L383">            pSub.add(p.getX(i), p.getY(i));</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); i += pDp) {</span>
+<span class="nc" id="L385">            pSub.add(p.getX(i), p.getY(i));</span>
         }
         
-<span class="nc bnc" id="L386" title="All 2 branches missed.">        for (int i = 0; i &lt; q.getN(); i += qDp) {</span>
-<span class="nc" id="L387">            qSub.add(q.getX(i), q.getY(i));</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">        for (int i = 0; i &lt; q.getN(); i += qDp) {</span>
+<span class="nc" id="L389">            qSub.add(q.getX(i), q.getY(i));</span>
         }
         
-<span class="nc bnc" id="L390" title="All 2 branches missed.">        for (int i = 0; i &lt; idxsSub.getN(); ++i) {</span>
-<span class="nc" id="L391">            int idx1 = matchedIndexes.getX(i)/pDp;</span>
-<span class="nc" id="L392">            int idx2 = matchedIndexes.getY(i)/qDp;</span>
-<span class="nc" id="L393">            idxsSub.add(idx1, idx2);</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        for (int i = 0; i &lt; idxsSub.getN(); ++i) {</span>
+<span class="nc" id="L393">            int idx1 = matchedIndexes.getX(i)/pDp;</span>
+<span class="nc" id="L394">            int idx2 = matchedIndexes.getY(i)/qDp;</span>
+<span class="nc" id="L395">            idxsSub.add(idx1, idx2);</span>
         }
         
-<span class="nc" id="L396">        log.fine(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
+<span class="nc" id="L398">        log.fine(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
     
-<span class="nc bnc" id="L398" title="All 2 branches missed.">        if (storeMatrix) {</span>
-<span class="nc" id="L399">            storePDp = pDp;</span>
-<span class="nc" id="L400">            storeQDp = qDp;</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">        if (storeMatrix) {</span>
+<span class="nc" id="L401">            storePDp = pDp;</span>
+<span class="nc" id="L402">            storeQDp = qDp;</span>
         }
         
-<span class="nc" id="L403">        TDoubleList chordDiffs = calculateChordDiffs0(pSub, qSub, idxsSub);</span>
+<span class="nc" id="L405">        TDoubleList chordDiffs = calculateChordDiffs0(pSub, qSub, idxsSub);</span>
         
-<span class="nc" id="L405">        return chordDiffs;</span>
+<span class="nc" id="L407">        return chordDiffs;</span>
     }
     
     private Result matchSameNumber(PairIntArray p, PairIntArray q) {
 
-<span class="fc" id="L410">        log.fine(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN());</span>
+<span class="fc" id="L412">        log.fine(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN());</span>
 
-<span class="pc bpc" id="L412" title="2 of 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
-<span class="nc" id="L413">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
+<span class="pc bpc" id="L414" title="2 of 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
+<span class="nc" id="L415">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
             + &quot; have at least dp*2 points = &quot; + (dp * 2));
         }
 
-<span class="fc" id="L417">        int nSampl = Math.min(p.getN(), q.getN())/dp;</span>
+<span class="fc" id="L419">        int nSampl = Math.min(p.getN(), q.getN())/dp;</span>
 
-<span class="fc" id="L419">        PairIntArray pSub = new PairIntArray(nSampl);</span>
-<span class="fc" id="L420">        PairIntArray qSub = new PairIntArray(nSampl);</span>
+<span class="fc" id="L421">        PairIntArray pSub = new PairIntArray(nSampl);</span>
+<span class="fc" id="L422">        PairIntArray qSub = new PairIntArray(nSampl);</span>
 
-<span class="fc" id="L422">        int pDp = p.getN()/nSampl;</span>
-<span class="fc" id="L423">        int qDp = q.getN()/nSampl;</span>
+<span class="fc" id="L424">        int pDp = p.getN()/nSampl;</span>
+<span class="fc" id="L425">        int qDp = q.getN()/nSampl;</span>
     
-<span class="fc bfc" id="L425" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); i += pDp) {</span>
-<span class="fc" id="L426">            pSub.add(p.getX(i), p.getY(i));</span>
+<span class="fc bfc" id="L427" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); i += pDp) {</span>
+<span class="fc" id="L428">            pSub.add(p.getX(i), p.getY(i));</span>
         }
         
-<span class="fc bfc" id="L429" title="All 2 branches covered.">        for (int i = 0; i &lt; q.getN(); i += qDp) {</span>
-<span class="fc" id="L430">            qSub.add(q.getX(i), q.getY(i));</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">        for (int i = 0; i &lt; q.getN(); i += qDp) {</span>
+<span class="fc" id="L432">            qSub.add(q.getX(i), q.getY(i));</span>
         }
         
-<span class="fc" id="L433">        log.fine(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
+<span class="fc" id="L435">        log.fine(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
     
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">        if (storeMatrix) {</span>
-<span class="nc" id="L436">            storePDp = pDp;</span>
-<span class="nc" id="L437">            storeQDp = qDp;</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">        if (storeMatrix) {</span>
+<span class="nc" id="L438">            storePDp = pDp;</span>
+<span class="nc" id="L439">            storeQDp = qDp;</span>
         }
         
-<span class="fc" id="L440">        Result rSub = match0(pSub, qSub);</span>
+<span class="fc" id="L442">        Result rSub = match0(pSub, qSub);</span>
         
-<span class="pc bpc" id="L442" title="1 of 2 branches missed.">        if (rSub == null) {</span>
-<span class="nc" id="L443">            return null;</span>
+<span class="pc bpc" id="L444" title="1 of 2 branches missed.">        if (rSub == null) {</span>
+<span class="nc" id="L445">            return null;</span>
         }
         
         // -- put results back into frame of p and q --
           
         // unrealistic value to ensure it's not used.
-<span class="fc" id="L449">        int offset = Integer.MAX_VALUE;</span>
+<span class="fc" id="L451">        int offset = Integer.MAX_VALUE;</span>
 
-<span class="fc" id="L451">        Result r = new Result(p.getN(), q.getN(), rSub.getOriginalN1());</span>
+<span class="fc" id="L453">        Result r = new Result(p.getN(), q.getN(), rSub.getOriginalN1());</span>
             
-<span class="fc bfc" id="L453" title="All 2 branches covered.">        for (int i = 0; i &lt; rSub.idx1s.size(); ++i) {</span>
-<span class="fc" id="L454">            int idx1 = rSub.idx1s.get(i);</span>
-<span class="fc" id="L455">            int idx2 = rSub.idx2s.get(i);</span>
-<span class="fc" id="L456">            idx1 *= pDp;</span>
-<span class="fc" id="L457">            idx2 *= qDp;</span>
-<span class="fc" id="L458">            r.idx1s.add(idx1);</span>
-<span class="fc" id="L459">            r.idx2s.add(idx2);</span>
+<span class="fc bfc" id="L455" title="All 2 branches covered.">        for (int i = 0; i &lt; rSub.idx1s.size(); ++i) {</span>
+<span class="fc" id="L456">            int idx1 = rSub.idx1s.get(i);</span>
+<span class="fc" id="L457">            int idx2 = rSub.idx2s.get(i);</span>
+<span class="fc" id="L458">            idx1 *= pDp;</span>
+<span class="fc" id="L459">            idx2 *= qDp;</span>
+<span class="fc" id="L460">            r.idx1s.add(idx1);</span>
+<span class="fc" id="L461">            r.idx2s.add(idx2);</span>
         }
-<span class="fc" id="L461">        r.chordDiffSum = rSub.chordDiffSum;</span>
+<span class="fc" id="L463">        r.chordDiffSum = rSub.chordDiffSum;</span>
         
-<span class="pc bpc" id="L463" title="1 of 2 branches missed.">        if (rSub.getTransformationParameters() != null) {</span>
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">        if (rSub.getTransformationParameters() != null) {</span>
             
             /*
             two different scale factors need to be applied to the
@@ -485,40 +487,40 @@ based upon algorithm in paper
             looks like need to recalc transformation
             */
             
-<span class="fc" id="L488">            PairIntArray left = new PairIntArray(r.idx1s.size());</span>
-<span class="fc" id="L489">            PairIntArray right = new PairIntArray(r.idx2s.size());</span>
-<span class="pc bpc" id="L490" title="3 of 4 branches missed.">            assert(r.idx1s.size() == r.idx2s.size());</span>
-<span class="fc bfc" id="L491" title="All 2 branches covered.">            for (int i = 0; i &lt; r.idx1s.size(); ++i) {</span>
-<span class="fc" id="L492">                int idx = r.idx1s.get(i);</span>
-<span class="fc" id="L493">                left.add(p.getX(idx), p.getY(idx));</span>
-<span class="fc" id="L494">                idx = r.idx2s.get(i);</span>
-<span class="fc" id="L495">                right.add(q.getX(idx), q.getY(idx));</span>
+<span class="fc" id="L490">            PairIntArray left = new PairIntArray(r.idx1s.size());</span>
+<span class="fc" id="L491">            PairIntArray right = new PairIntArray(r.idx2s.size());</span>
+<span class="pc bpc" id="L492" title="3 of 4 branches missed.">            assert(r.idx1s.size() == r.idx2s.size());</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">            for (int i = 0; i &lt; r.idx1s.size(); ++i) {</span>
+<span class="fc" id="L494">                int idx = r.idx1s.get(i);</span>
+<span class="fc" id="L495">                left.add(p.getX(idx), p.getY(idx));</span>
+<span class="fc" id="L496">                idx = r.idx2s.get(i);</span>
+<span class="fc" id="L497">                right.add(q.getX(idx), q.getY(idx));</span>
             }
             
-<span class="fc" id="L498">            MatchedPointsTransformationCalculator tc = </span>
+<span class="fc" id="L500">            MatchedPointsTransformationCalculator tc = </span>
                 new MatchedPointsTransformationCalculator();
             
-<span class="fc" id="L501">            TransformationParameters params = tc.calulateEuclideanWithoutFilter(</span>
+<span class="fc" id="L503">            TransformationParameters params = tc.calulateEuclideanWithoutFilter(</span>
                 left, right, 0, 0);
             
-<span class="fc" id="L504">            r.setTransformationParameters(params);            </span>
+<span class="fc" id="L506">            r.setTransformationParameters(params);            </span>
         
-<span class="fc" id="L506">            r.distSum = rSub.distSum;</span>
+<span class="fc" id="L508">            r.distSum = rSub.distSum;</span>
         }
 
-<span class="fc" id="L509">        return r;</span>
+<span class="fc" id="L511">        return r;</span>
     }
     
     private TDoubleList calculateChordDiffs0(PairIntArray p, PairIntArray q,
         PairIntArray matchedIndexes) {
         
-<span class="nc bnc" id="L515" title="All 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
-<span class="nc" id="L516">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
+<span class="nc bnc" id="L517" title="All 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
+<span class="nc" id="L518">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
                 + &quot;least 2 points&quot;);
         }
         
-<span class="nc bnc" id="L520" title="All 4 branches missed.">        if (q == null || q.getN() &lt; 2) {</span>
-<span class="nc" id="L521">            throw new IllegalArgumentException(&quot;q must have at &quot;</span>
+<span class="nc bnc" id="L522" title="All 4 branches missed.">        if (q == null || q.getN() &lt; 2) {</span>
+<span class="nc" id="L523">            throw new IllegalArgumentException(&quot;q must have at &quot;</span>
                 + &quot;least 2 points&quot;);
         }
         
@@ -527,34 +529,34 @@ based upon algorithm in paper
         //md[0:n2-1][0:n1-1][0:n1-1]
         float[][][] md;
         TDoubleList chordDiffs;
-<span class="nc bnc" id="L530" title="All 2 branches missed.">        if (p.getN() &lt;= q.getN()) {</span>
-<span class="nc" id="L531">            md = createDifferenceMatrices(p, q);</span>
-<span class="nc" id="L532">            chordDiffs = extractChordDiffs(md, p.getN(), q.getN(),</span>
+<span class="nc bnc" id="L532" title="All 2 branches missed.">        if (p.getN() &lt;= q.getN()) {</span>
+<span class="nc" id="L533">            md = createDifferenceMatrices(p, q);</span>
+<span class="nc" id="L534">            chordDiffs = extractChordDiffs(md, p.getN(), q.getN(),</span>
                 matchedIndexes);
         } else {
-<span class="nc" id="L535">            md = createDifferenceMatrices(q, p);</span>
-<span class="nc" id="L536">            PairIntArray revMatchedIndexes = reverseXY(matchedIndexes);</span>
-<span class="nc" id="L537">            chordDiffs = extractChordDiffs(md, q.getN(), p.getN(),</span>
+<span class="nc" id="L537">            md = createDifferenceMatrices(q, p);</span>
+<span class="nc" id="L538">            PairIntArray revMatchedIndexes = reverseXY(matchedIndexes);</span>
+<span class="nc" id="L539">            chordDiffs = extractChordDiffs(md, q.getN(), p.getN(),</span>
                 revMatchedIndexes);
-<span class="nc" id="L539">            pToQ = false;</span>
+<span class="nc" id="L541">            pToQ = false;</span>
         }
         
-<span class="nc bnc" id="L542" title="All 2 branches missed.">        if (storeMatrix) {</span>
-<span class="nc" id="L543">            storedMatrix = md;</span>
+<span class="nc bnc" id="L544" title="All 2 branches missed.">        if (storeMatrix) {</span>
+<span class="nc" id="L545">            storedMatrix = md;</span>
         }
 
-<span class="nc" id="L546">        return chordDiffs;</span>
+<span class="nc" id="L548">        return chordDiffs;</span>
     }
     
     private Result match0(PairIntArray p, PairIntArray q) {
 
-<span class="pc bpc" id="L551" title="2 of 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
-<span class="nc" id="L552">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
+<span class="pc bpc" id="L553" title="2 of 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
+<span class="nc" id="L554">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
                 + &quot;least 2 points&quot;);
         }
         
-<span class="pc bpc" id="L556" title="2 of 4 branches missed.">        if (q == null || q.getN() &lt; 2) {</span>
-<span class="nc" id="L557">            throw new IllegalArgumentException(&quot;q must have at &quot;</span>
+<span class="pc bpc" id="L558" title="2 of 4 branches missed.">        if (q == null || q.getN() &lt; 2) {</span>
+<span class="nc" id="L559">            throw new IllegalArgumentException(&quot;q must have at &quot;</span>
                 + &quot;least 2 points&quot;);
         }
         
@@ -563,56 +565,56 @@ based upon algorithm in paper
         //md[0:n2-1][0:n1-1][0:n1-1]
         float[][][] md;
         Result r;
-<span class="fc bfc" id="L566" title="All 2 branches covered.">        if (p.getN() &lt;= q.getN()) {</span>
-<span class="fc" id="L567">            md = createDifferenceMatrices(p, q);</span>
-<span class="fc" id="L568">            applySummedAreaTableConversion(md);</span>
-<span class="fc" id="L569">            r = match0(md, p, q);</span>
-<span class="pc bpc" id="L570" title="1 of 2 branches missed.">            if (r != null) {</span>
-<span class="pc bpc" id="L571" title="1 of 2 branches missed.">                if (debug) {</span>
-<span class="nc" id="L572">                    System.out.println(&quot;not transposed&quot;);</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">        if (p.getN() &lt;= q.getN()) {</span>
+<span class="fc" id="L569">            md = createDifferenceMatrices(p, q);</span>
+<span class="fc" id="L570">            applySummedAreaTableConversion(md);</span>
+<span class="fc" id="L571">            r = match0(md, p, q);</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">            if (r != null) {</span>
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L574">                    System.out.println(&quot;not transposed&quot;);</span>
                 }
-<span class="pc bpc" id="L574" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
+<span class="pc bpc" id="L576" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
             }
         } else {
-<span class="fc" id="L577">            md = createDifferenceMatrices(q, p);</span>
-<span class="fc" id="L578">            applySummedAreaTableConversion(md);</span>
-<span class="fc" id="L579">            r = match0(md, q, p);</span>
-<span class="pc bpc" id="L580" title="1 of 2 branches missed.">            if (r != null) {</span>
-<span class="pc bpc" id="L581" title="1 of 2 branches missed.">                if (debug) {</span>
-<span class="nc" id="L582">                    System.out.println(&quot;transpose&quot;);</span>
+<span class="fc" id="L579">            md = createDifferenceMatrices(q, p);</span>
+<span class="fc" id="L580">            applySummedAreaTableConversion(md);</span>
+<span class="fc" id="L581">            r = match0(md, q, p);</span>
+<span class="pc bpc" id="L582" title="1 of 2 branches missed.">            if (r != null) {</span>
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L584">                    System.out.println(&quot;transpose&quot;);</span>
                 }
-<span class="fc" id="L584">                r = r.transpose();</span>
-<span class="pc bpc" id="L585" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
+<span class="fc" id="L586">                r = r.transpose();</span>
+<span class="pc bpc" id="L587" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
             }
-<span class="fc" id="L587">            pToQ = false;</span>
+<span class="fc" id="L589">            pToQ = false;</span>
         }
         
-<span class="pc bpc" id="L590" title="1 of 2 branches missed.">        if (storeMatrix) {</span>
-<span class="nc" id="L591">            storedMatrix = md;</span>
+<span class="pc bpc" id="L592" title="1 of 2 branches missed.">        if (storeMatrix) {</span>
+<span class="nc" id="L593">            storedMatrix = md;</span>
         }
 
-<span class="fc" id="L594">        return r;</span>
+<span class="fc" id="L596">        return r;</span>
     }
         
     private Result match0(float[][][] md, PairIntArray p, PairIntArray q) {
 
-<span class="pc bpc" id="L599" title="2 of 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
-<span class="nc" id="L600">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
+<span class="pc bpc" id="L601" title="2 of 4 branches missed.">        if (p == null || p.getN() &lt; 2) {</span>
+<span class="nc" id="L602">            throw new IllegalArgumentException(&quot;p must have at &quot;</span>
                 + &quot;least 2 points&quot;);
         }
         
-<span class="pc bpc" id="L604" title="2 of 4 branches missed.">        if (q == null || q.getN() &lt; 2) {</span>
-<span class="nc" id="L605">            throw new IllegalArgumentException(&quot;q must have at &quot;</span>
+<span class="pc bpc" id="L606" title="2 of 4 branches missed.">        if (q == null || q.getN() &lt; 2) {</span>
+<span class="nc" id="L607">            throw new IllegalArgumentException(&quot;q must have at &quot;</span>
                 + &quot;least 2 points&quot;);
         }
         
-<span class="pc bpc" id="L609" title="1 of 2 branches missed.">        if (p.getN() &gt; q.getN()) {</span>
-<span class="nc" id="L610">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L611" title="1 of 2 branches missed.">        if (p.getN() &gt; q.getN()) {</span>
+<span class="nc" id="L612">            throw new IllegalArgumentException(</span>
             &quot;q.n must be &gt;= p.n&quot;);
         }
         
-<span class="fc" id="L614">        int n1 = p.getN();</span>
-<span class="fc" id="L615">        int n2 = q.getN();</span>
+<span class="fc" id="L616">        int n1 = p.getN();</span>
+<span class="fc" id="L617">        int n2 = q.getN();</span>
 
         /*
         This method will return results for a local
@@ -636,20 +638,20 @@ based upon algorithm in paper
         of the Paretto frontier.
         */
     
-<span class="fc" id="L639">        List&lt;SR&gt; minima = findMinima(md, n1, n2);</span>
+<span class="fc" id="L641">        List&lt;SR&gt; minima = findMinima(md, n1, n2);</span>
         
-<span class="fc" id="L641">        int topK = 100;</span>
-<span class="fc bfc" id="L642" title="All 2 branches covered.">        if (minima.size() &lt; topK) {</span>
-<span class="fc" id="L643">            topK = minima.size();</span>
+<span class="fc" id="L643">        int topK = 100;</span>
+<span class="fc bfc" id="L644" title="All 2 branches covered.">        if (minima.size() &lt; topK) {</span>
+<span class="fc" id="L645">            topK = minima.size();</span>
         }
         
-<span class="fc" id="L646">        minima = minima.subList(0, topK);</span>
+<span class="fc" id="L648">        minima = minima.subList(0, topK);</span>
 
-<span class="pc bpc" id="L648" title="2 of 4 branches missed.">        if (minima == null || minima.isEmpty()) {</span>
-<span class="nc" id="L649">            return null;</span>
+<span class="pc bpc" id="L650" title="2 of 4 branches missed.">        if (minima == null || minima.isEmpty()) {</span>
+<span class="nc" id="L651">            return null;</span>
         }
       
-<span class="fc bfc" id="L652" title="All 2 branches covered.">        if (performEuclidTrans) {</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">        if (performEuclidTrans) {</span>
 
             // solve for transformation, add points near projection,
             // return sorted solutions, best is at top.
@@ -657,20 +659,20 @@ based upon algorithm in paper
             // from the already matched points when there are enough points to use it
 
             // the added points from the transformation
-<span class="fc" id="L660">            List&lt;PairIntArray&gt; addedPoints = new ArrayList&lt;PairIntArray&gt;(topK);</span>
+<span class="fc" id="L662">            List&lt;PairIntArray&gt; addedPoints = new ArrayList&lt;PairIntArray&gt;(topK);</span>
                 
-<span class="fc" id="L662">            List&lt;Result&gt; results = transformAndEvaluate(minima, p, q,</span>
+<span class="fc" id="L664">            List&lt;Result&gt; results = transformAndEvaluate(minima, p, q,</span>
                 md, pixTolerance, topK, addedPoints);
 
-<span class="pc bpc" id="L665" title="2 of 4 branches missed.">            if (results == null || results.isEmpty()) {</span>
-<span class="nc" id="L666">                return null;</span>
+<span class="pc bpc" id="L667" title="2 of 4 branches missed.">            if (results == null || results.isEmpty()) {</span>
+<span class="nc" id="L668">                return null;</span>
             }
             
-<span class="fc bfc" id="L669" title="All 2 branches covered.">            for (int i = 0; i &lt; results.size(); ++i) {</span>
-<span class="fc" id="L670">                Result result = results.get(i);</span>
-<span class="fc" id="L671">                populateWithChordDiffs(result, md, p.getN(), q.getN());</span>
-<span class="fc" id="L672">                log.fine(&quot;calc'ed chords: &quot; + result.toStringAbbrev());</span>
-<span class="pc bpc" id="L673" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
+<span class="fc bfc" id="L671" title="All 2 branches covered.">            for (int i = 0; i &lt; results.size(); ++i) {</span>
+<span class="fc" id="L672">                Result result = results.get(i);</span>
+<span class="fc" id="L673">                populateWithChordDiffs(result, md, p.getN(), q.getN());</span>
+<span class="fc" id="L674">                log.fine(&quot;calc'ed chords: &quot; + result.toStringAbbrev());</span>
+<span class="pc bpc" id="L675" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
             }
 
             // need to decide between using the total chord diff sum
@@ -681,26 +683,26 @@ based upon algorithm in paper
             // choosing the later here, just as did in previous sorting of
             // intervals.
 
-<span class="fc" id="L684">            double maxChordAvg = Double.MIN_VALUE;</span>
-<span class="fc bfc" id="L685" title="All 2 branches covered.">            for (Result r : results) {</span>
-<span class="fc" id="L686">                double d = r.chordDiffSum/(double)r.getNumberOfMatches();</span>
-<span class="fc bfc" id="L687" title="All 2 branches covered.">                if (d &gt; maxChordAvg) {</span>
-<span class="fc" id="L688">                    maxChordAvg = d;</span>
+<span class="fc" id="L686">            double maxChordAvg = Double.MIN_VALUE;</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">            for (Result r : results) {</span>
+<span class="fc" id="L688">                double d = r.chordDiffSum/(double)r.getNumberOfMatches();</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">                if (d &gt; maxChordAvg) {</span>
+<span class="fc" id="L690">                    maxChordAvg = d;</span>
                 }
-<span class="fc" id="L690">            }</span>
-<span class="fc" id="L691">            float[] avgCosts = new float[results.size()];</span>
-<span class="fc bfc" id="L692" title="All 2 branches covered.">            for (int i = 0; i &lt; results.size(); ++i) {</span>
-<span class="fc" id="L693">                Result r = results.get(i);</span>
-<span class="fc" id="L694">                float n = r.getNumberOfMatches();</span>
-<span class="fc" id="L695">                double avgD = r.chordDiffSum/n;</span>
-<span class="fc" id="L696">                float f = 1.f - (n/(float)n1);</span>
-<span class="fc" id="L697">                double d = avgD/maxChordAvg;</span>
-<span class="fc" id="L698">                float s = (float) (f * f + d * d);</span>
-<span class="fc" id="L699">                avgCosts[i] = s;</span>
+<span class="fc" id="L692">            }</span>
+<span class="fc" id="L693">            float[] avgCosts = new float[results.size()];</span>
+<span class="fc bfc" id="L694" title="All 2 branches covered.">            for (int i = 0; i &lt; results.size(); ++i) {</span>
+<span class="fc" id="L695">                Result r = results.get(i);</span>
+<span class="fc" id="L696">                float n = r.getNumberOfMatches();</span>
+<span class="fc" id="L697">                double avgD = r.chordDiffSum/n;</span>
+<span class="fc" id="L698">                float f = 1.f - (n/(float)n1);</span>
+<span class="fc" id="L699">                double d = avgD/maxChordAvg;</span>
+<span class="fc" id="L700">                float s = (float) (f * f + d * d);</span>
+<span class="fc" id="L701">                avgCosts[i] = s;</span>
             }
-<span class="fc" id="L701">            QuickSort.sortBy1stArg(avgCosts, results, 0, results.size() - 1);            </span>
+<span class="fc" id="L703">            QuickSort.sortBy1stArg(avgCosts, results, 0, results.size() - 1);            </span>
             
-<span class="fc" id="L703">            return results.get(0);</span>
+<span class="fc" id="L705">            return results.get(0);</span>
 
         } else {
         
@@ -712,46 +714,46 @@ based upon algorithm in paper
             //   an unmatched and consistent range, is filtered to the subset of 
             //   the interval which does fit.
 
-<span class="fc" id="L715">            OrderedClosedCurveCorrespondence occ = </span>
+<span class="fc" id="L717">            OrderedClosedCurveCorrespondence occ = </span>
                 new OrderedClosedCurveCorrespondence();
         
-<span class="pc bpc" id="L718" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L719">                occ.dbg1 = p;</span>
-<span class="nc" id="L720">                occ.dbg2 = q;</span>
-<span class="nc" id="L721">                occ.dp = dp;</span>
-<span class="nc" id="L722">                occ.setToDebug();</span>
+<span class="pc bpc" id="L720" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L721">                occ.dbg1 = p;</span>
+<span class="nc" id="L722">                occ.dbg2 = q;</span>
+<span class="nc" id="L723">                occ.dp = dp;</span>
+<span class="nc" id="L724">                occ.setToDebug();</span>
             }
             
-<span class="fc" id="L725">            occ.setMinimumLength(minLength);</span>
+<span class="fc" id="L727">            occ.setMinimumLength(minLength);</span>
 
-<span class="fc" id="L727">            occ.addIntervals(minima, n1, n2);</span>
+<span class="fc" id="L729">            occ.addIntervals(minima, n1, n2);</span>
 
-<span class="fc" id="L729">            List&lt;SR&gt; results = occ.getResultsAsList();</span>
+<span class="fc" id="L731">            List&lt;SR&gt; results = occ.getResultsAsList();</span>
 
-<span class="fc" id="L731">            Result best = new Result(n1, n2, n1);</span>
-<span class="fc bfc" id="L732" title="All 2 branches covered.">            for (int i = 0; i &lt; results.size(); ++i) {</span>
+<span class="fc" id="L733">            Result best = new Result(n1, n2, n1);</span>
+<span class="fc bfc" id="L734" title="All 2 branches covered.">            for (int i = 0; i &lt; results.size(); ++i) {</span>
 
-<span class="fc" id="L734">                SR sr = results.get(i);</span>
+<span class="fc" id="L736">                SR sr = results.get(i);</span>
 
-<span class="fc bfc" id="L736" title="All 2 branches covered.">                for (int idx1 = sr.startIdx1; idx1 &lt;= sr.stopIdx1; ++idx1) {</span>
-<span class="fc" id="L737">                    int idx2 = idx1 + sr.offsetIdx2;</span>
-<span class="pc bpc" id="L738" title="1 of 2 branches missed.">                    if (idx2 &gt; (n2 - 1)) {</span>
-<span class="nc" id="L739">                        idx2 -= n2;</span>
+<span class="fc bfc" id="L738" title="All 2 branches covered.">                for (int idx1 = sr.startIdx1; idx1 &lt;= sr.stopIdx1; ++idx1) {</span>
+<span class="fc" id="L739">                    int idx2 = idx1 + sr.offsetIdx2;</span>
+<span class="pc bpc" id="L740" title="1 of 2 branches missed.">                    if (idx2 &gt; (n2 - 1)) {</span>
+<span class="nc" id="L741">                        idx2 -= n2;</span>
                     }
-<span class="fc" id="L741">                    best.idx1s.add(idx1);</span>
-<span class="fc" id="L742">                    best.idx2s.add(idx2);</span>
+<span class="fc" id="L743">                    best.idx1s.add(idx1);</span>
+<span class="fc" id="L744">                    best.idx2s.add(idx2);</span>
                 }
                 
-<span class="fc" id="L745">                best.chordDiffSum += sr.diffChordSum;</span>
+<span class="fc" id="L747">                best.chordDiffSum += sr.diffChordSum;</span>
             }
             
-<span class="pc bpc" id="L748" title="1 of 2 branches missed.">            if (useRANSAC) {</span>
-<span class="nc bnc" id="L749" title="All 4 branches missed.">                if (best != null &amp;&amp; best.idx1s.size() &gt;= 7) {</span>
-<span class="nc" id="L750">                    improveWithRANSAC(best, p, q, md, n1, n2);</span>
+<span class="pc bpc" id="L750" title="1 of 2 branches missed.">            if (useRANSAC) {</span>
+<span class="nc bnc" id="L751" title="All 4 branches missed.">                if (best != null &amp;&amp; best.idx1s.size() &gt;= 7) {</span>
+<span class="nc" id="L752">                    improveWithRANSAC(best, p, q, md, n1, n2);</span>
                 }
             }
 
-<span class="fc" id="L754">            return best;</span>
+<span class="fc" id="L756">            return best;</span>
         }        
     }
     
@@ -768,15 +770,15 @@ based upon algorithm in paper
     public double calculateChordDiffSums(PairIntArray p, PairIntArray q,
         PairIntArray matchedIndexes) {
        
-<span class="nc" id="L771">        TDoubleList diffs = calculateChordDiffs(p, q, matchedIndexes);</span>
+<span class="nc" id="L773">        TDoubleList diffs = calculateChordDiffs(p, q, matchedIndexes);</span>
         
-<span class="nc" id="L773">        double sum = 0;</span>
+<span class="nc" id="L775">        double sum = 0;</span>
         
-<span class="nc bnc" id="L775" title="All 2 branches missed.">        for (int i = 0; i &lt; diffs.size(); ++i) {</span>
-<span class="nc" id="L776">            sum += diffs.get(i);</span>
+<span class="nc bnc" id="L777" title="All 2 branches missed.">        for (int i = 0; i &lt; diffs.size(); ++i) {</span>
+<span class="nc" id="L778">            sum += diffs.get(i);</span>
         }
        
-<span class="nc" id="L779">        return sum;</span>
+<span class="nc" id="L781">        return sum;</span>
     }
     
     /**
@@ -799,44 +801,44 @@ based upon algorithm in paper
         //  NOTE: chord diff matrix needs to be changed to
         //  use summed columns or summed area
         
-<span class="nc" id="L802">        log.info(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN()</span>
+<span class="nc" id="L804">        log.info(&quot;p.n=&quot; + p.getN() + &quot; q.n=&quot; + q.getN()</span>
             + &quot; useSameNumberOfPoints=&quot; + useSameNumberOfPoints
             + &quot; dp=&quot; + dp);
 
-<span class="nc bnc" id="L806" title="All 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
-<span class="nc" id="L807">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
+<span class="nc bnc" id="L808" title="All 4 branches missed.">        if (p.getN() &lt; 2 || q.getN() &lt; 2) {</span>
+<span class="nc" id="L809">            throw new IllegalArgumentException(&quot;p and q must &quot;</span>
             + &quot; have at least dp*2 points = &quot; + (dp * 2));
         }
 
-<span class="nc bnc" id="L811" title="All 2 branches missed.">        if (useSameNumberOfPoints) {</span>
-<span class="nc" id="L812">            return calculateChordDiffsSameNumber(p, q, matchedIndexes);</span>
+<span class="nc bnc" id="L813" title="All 2 branches missed.">        if (useSameNumberOfPoints) {</span>
+<span class="nc" id="L814">            return calculateChordDiffsSameNumber(p, q, matchedIndexes);</span>
         }
                 
-<span class="nc bnc" id="L815" title="All 2 branches missed.">        if (dp == 1) {</span>
-<span class="nc" id="L816">            return calculateChordDiffs0(p, q, matchedIndexes);</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">        if (dp == 1) {</span>
+<span class="nc" id="L818">            return calculateChordDiffs0(p, q, matchedIndexes);</span>
         }
      
-<span class="nc" id="L819">        PairIntArray pSub = new PairIntArray(p.getN()/dp);</span>
-<span class="nc" id="L820">        PairIntArray qSub = new PairIntArray(q.getN()/dp);</span>
-<span class="nc" id="L821">        PairIntArray idxsSub = new PairIntArray(pSub.getN());</span>
+<span class="nc" id="L821">        PairIntArray pSub = new PairIntArray(p.getN()/dp);</span>
+<span class="nc" id="L822">        PairIntArray qSub = new PairIntArray(q.getN()/dp);</span>
+<span class="nc" id="L823">        PairIntArray idxsSub = new PairIntArray(pSub.getN());</span>
         
-<span class="nc bnc" id="L823" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); i += dp) {</span>
-<span class="nc" id="L824">            pSub.add(p.getX(i), p.getY(i));</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); i += dp) {</span>
+<span class="nc" id="L826">            pSub.add(p.getX(i), p.getY(i));</span>
         }
         
-<span class="nc bnc" id="L827" title="All 2 branches missed.">        for (int i = 0; i &lt; q.getN(); i += dp) {</span>
-<span class="nc" id="L828">            qSub.add(q.getX(i), q.getY(i));</span>
+<span class="nc bnc" id="L829" title="All 2 branches missed.">        for (int i = 0; i &lt; q.getN(); i += dp) {</span>
+<span class="nc" id="L830">            qSub.add(q.getX(i), q.getY(i));</span>
         }
         
-<span class="nc bnc" id="L831" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedIndexes.getN(); ++i) {</span>
-<span class="nc" id="L832">            int idx1 = matchedIndexes.getX(i)/dp;</span>
-<span class="nc" id="L833">            int idx2 = matchedIndexes.getY(i)/dp;</span>
-<span class="nc" id="L834">            idxsSub.add(idx1, idx2);</span>
+<span class="nc bnc" id="L833" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedIndexes.getN(); ++i) {</span>
+<span class="nc" id="L834">            int idx1 = matchedIndexes.getX(i)/dp;</span>
+<span class="nc" id="L835">            int idx2 = matchedIndexes.getY(i)/dp;</span>
+<span class="nc" id="L836">            idxsSub.add(idx1, idx2);</span>
         }
         
-<span class="nc" id="L837">        log.info(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
+<span class="nc" id="L839">        log.info(&quot;pSub.n=&quot; + pSub.getN() + &quot; qSub.n=&quot; + qSub.getN());</span>
         
-<span class="nc" id="L839">        return calculateChordDiffs0(pSub, qSub, idxsSub);</span>
+<span class="nc" id="L841">        return calculateChordDiffs0(pSub, qSub, idxsSub);</span>
     }
 
     private List&lt;SR&gt; findMinima(float[][][] md, int n1, int n2) {
@@ -844,12 +846,12 @@ based upon algorithm in paper
         //q.n is &gt;= p.n, that is n2 &gt;= n1
         
         //md[0:n2-1][0:n1-1][0:n1-1]
-<span class="pc bpc" id="L847" title="2 of 4 branches missed.">        if (md.length != n2 || md[0].length != n1) {</span>
-<span class="nc" id="L848">            throw new IllegalArgumentException(&quot;error in algorithm arguments:&quot;</span>
+<span class="pc bpc" id="L849" title="2 of 4 branches missed.">        if (md.length != n2 || md[0].length != n1) {</span>
+<span class="nc" id="L850">            throw new IllegalArgumentException(&quot;error in algorithm arguments:&quot;</span>
                 + &quot; revise to set n1 and n2 from md&quot;);
         }
-<span class="pc bpc" id="L851" title="1 of 2 branches missed.">        if (n2 &lt; n1) {</span>
-<span class="nc" id="L852">            throw new IllegalArgumentException(&quot;n2 must be &gt;= n1&quot;);</span>
+<span class="pc bpc" id="L853" title="1 of 2 branches missed.">        if (n2 &lt; n1) {</span>
+<span class="nc" id="L854">            throw new IllegalArgumentException(&quot;n2 must be &gt;= n1&quot;);</span>
         }        
         
         // reading over a range of window sizes to keep the 
@@ -860,13 +862,13 @@ based upon algorithm in paper
         // (note that the objective formula for the cost
         // is the Salukwzde distance).
 
-<span class="fc" id="L863">        List&lt;SR&gt; allResults = new ArrayList&lt;SR&gt;();</span>
+<span class="fc" id="L865">        List&lt;SR&gt; allResults = new ArrayList&lt;SR&gt;();</span>
         
-<span class="fc" id="L865">        Interval&lt;Integer&gt; interval = null;</span>
+<span class="fc" id="L867">        Interval&lt;Integer&gt; interval = null;</span>
         
         // this is learned from the first search at offset=0
-<span class="fc" id="L868">        double maxChordSum = Double.MIN_VALUE;</span>
-<span class="fc" id="L869">        float[] outC = new float[2];</span>
+<span class="fc" id="L870">        double maxChordSum = Double.MIN_VALUE;</span>
+<span class="fc" id="L871">        float[] outC = new float[2];</span>
         double ds1, ds2;
                 
         /*
@@ -900,124 +902,124 @@ based upon algorithm in paper
         //    sub intervals of n1, 
         //    could choose r=1 to lg2(n1) for example or n1-lg2(n1) to n1, etc,
         //    to make the runtime complexity n2 * (O(n1 * lg2(n1))
-<span class="fc bfc" id="L903" title="All 2 branches covered.">        for (int offset = 0; offset &lt; md.length; offset++) {</span>
+<span class="fc bfc" id="L905" title="All 2 branches covered.">        for (int offset = 0; offset &lt; md.length; offset++) {</span>
             
-<span class="fc" id="L905">            float[][] a = md[offset];</span>
+<span class="fc" id="L907">            float[][] a = md[offset];</span>
 
-<span class="fc" id="L907">            List&lt;Interval&lt;Integer&gt;&gt; outputIntervals = new ArrayList&lt;Interval&lt;Integer&gt;&gt;();</span>
-<span class="fc" id="L908">            List&lt;SR&gt; outputValues = new ArrayList&lt;SR&gt;();</span>
+<span class="fc" id="L909">            List&lt;Interval&lt;Integer&gt;&gt; outputIntervals = new ArrayList&lt;Interval&lt;Integer&gt;&gt;();</span>
+<span class="fc" id="L910">            List&lt;SR&gt; outputValues = new ArrayList&lt;SR&gt;();</span>
             
             // runtime complexity is approx O(n1 * lg2(n1)).
-<span class="fc" id="L911">            search(a, outputIntervals, outputValues, offset);</span>
+<span class="fc" id="L913">            search(a, outputIntervals, outputValues, offset);</span>
             
-<span class="fc bfc" id="L913" title="All 2 branches covered.">            if (outputValues.isEmpty()) {</span>
-<span class="fc" id="L914">                continue;</span>
+<span class="fc bfc" id="L915" title="All 2 branches covered.">            if (outputValues.isEmpty()) {</span>
+<span class="fc" id="L916">                continue;</span>
             }
             
-<span class="fc bfc" id="L917" title="All 2 branches covered.">            if (maxChordSum == Double.MIN_VALUE) {</span>
-<span class="fc" id="L918">                maxChordSum = findMaxDiffChordSum(outputValues);</span>
+<span class="fc bfc" id="L919" title="All 2 branches covered.">            if (maxChordSum == Double.MIN_VALUE) {</span>
+<span class="fc" id="L920">                maxChordSum = findMaxDiffChordSum(outputValues);</span>
             }
             
             // the intervals are in the reference frame of p and of q shifted by
             // offset.
                         
-<span class="fc" id="L924">            allResults.addAll(outputValues);</span>
+<span class="fc" id="L926">            allResults.addAll(outputValues);</span>
         }
                
-<span class="fc bfc" id="L927" title="All 2 branches covered.">        for (SR sr: allResults) {</span>
-<span class="fc bfc" id="L928" title="All 2 branches covered.">            if (sr.maxChordSum &gt; maxChordSum) {</span>
-<span class="fc" id="L929">                maxChordSum = sr.maxChordSum;</span>
+<span class="fc bfc" id="L929" title="All 2 branches covered.">        for (SR sr: allResults) {</span>
+<span class="fc bfc" id="L930" title="All 2 branches covered.">            if (sr.maxChordSum &gt; maxChordSum) {</span>
+<span class="fc" id="L931">                maxChordSum = sr.maxChordSum;</span>
             }
-<span class="fc" id="L931">        }</span>
+<span class="fc" id="L933">        }</span>
         
-<span class="fc bfc" id="L933" title="All 2 branches covered.">        for (SR sr: allResults) {</span>
-<span class="fc" id="L934">            sr.maxChordSum = maxChordSum;</span>
-<span class="fc" id="L935">        }</span>
+<span class="fc bfc" id="L935" title="All 2 branches covered.">        for (SR sr: allResults) {</span>
+<span class="fc" id="L936">            sr.maxChordSum = maxChordSum;</span>
+<span class="fc" id="L937">        }</span>
         
         // sort by salukwzde distance.  O(n1 * lg2(n1))
-<span class="fc" id="L938">        Collections.sort(allResults, new SRComparator());</span>
+<span class="fc" id="L940">        Collections.sort(allResults, new SRComparator());</span>
         
-<span class="pc bpc" id="L940" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L941">            System.out.println(&quot;nIntervals to proces=&quot; + allResults.size());</span>
+<span class="pc bpc" id="L942" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L943">            System.out.println(&quot;nIntervals to proces=&quot; + allResults.size());</span>
         }
         
-<span class="fc" id="L944">        return allResults;</span>
+<span class="fc" id="L946">        return allResults;</span>
         
     }
     
     private double calcSalukDist(double compChord, double maxChord,
         int length, int maxMatchable) {
-<span class="nc" id="L950">        double d = compChord/maxChord;</span>
-<span class="nc" id="L951">        double f = 1. - ((double)length/(double)maxMatchable);</span>
-<span class="nc" id="L952">        return f*f + d*d;</span>
+<span class="nc" id="L952">        double d = compChord/maxChord;</span>
+<span class="nc" id="L953">        double f = 1. - ((double)length/(double)maxMatchable);</span>
+<span class="nc" id="L954">        return f*f + d*d;</span>
     }
 
     private Result smallNumberEuclidean(SR sr, PairIntArray p, PairIntArray q, 
         float pixTol, PairIntArray outputAddedPoints) {
 
-<span class="nc" id="L958">        int len = sr.mLen;</span>
-<span class="nc bnc" id="L959" title="All 2 branches missed.">        if (len &lt; 2) {</span>
-<span class="nc" id="L960">            return null;</span>
+<span class="nc" id="L960">        int len = sr.mLen;</span>
+<span class="nc bnc" id="L961" title="All 2 branches missed.">        if (len &lt; 2) {</span>
+<span class="nc" id="L962">            return null;</span>
         }
         
-<span class="nc" id="L963">        PairIntArray leftXY = new PairIntArray(len);</span>
-<span class="nc" id="L964">        PairIntArray rightXY = new PairIntArray(len);</span>
-<span class="nc" id="L965">        PairIntArray leftUnmatchedXY = new PairIntArray(p.getN() - len);</span>
-<span class="nc" id="L966">        PairIntArray rightUnmatchedXY = new PairIntArray(q.getN() - len);</span>
+<span class="nc" id="L965">        PairIntArray leftXY = new PairIntArray(len);</span>
+<span class="nc" id="L966">        PairIntArray rightXY = new PairIntArray(len);</span>
+<span class="nc" id="L967">        PairIntArray leftUnmatchedXY = new PairIntArray(p.getN() - len);</span>
+<span class="nc" id="L968">        PairIntArray rightUnmatchedXY = new PairIntArray(q.getN() - len);</span>
 
-<span class="nc" id="L968">        populatePointArrays(sr, p, q, leftXY, rightXY,</span>
+<span class="nc" id="L970">        populatePointArrays(sr, p, q, leftXY, rightXY,</span>
             leftUnmatchedXY, rightUnmatchedXY);
 
         
-<span class="nc" id="L972">        MatchedPointsTransformationCalculator tc = </span>
+<span class="nc" id="L974">        MatchedPointsTransformationCalculator tc = </span>
             new MatchedPointsTransformationCalculator();        
                 
         // NOTE: could use the method which removes outliers also, but the
         //    the contiguous points in sr are a single unit essentially
         
-<span class="nc" id="L978">        TransformationParameters params = tc.calulateEuclideanWithoutFilter(</span>
+<span class="nc" id="L980">        TransformationParameters params = tc.calulateEuclideanWithoutFilter(</span>
             leftXY, rightXY, 0, 0);
         
-<span class="nc bnc" id="L981" title="All 2 branches missed.">        if (params == null) {</span>
-<span class="nc" id="L982">            return null;</span>
+<span class="nc bnc" id="L983" title="All 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L984">            return null;</span>
         }
         
         // since this class is using equidistant
         // points on shape boundary, need to compare
         // for same scale.
-<span class="nc bnc" id="L988" title="All 4 branches missed.">        if (params.getScale() &lt; 0.9 || params.getScale() &gt; 1.1) {</span>
-<span class="nc" id="L989">            log.fine(&quot;WARNING: &quot; +</span>
+<span class="nc bnc" id="L990" title="All 4 branches missed.">        if (params.getScale() &lt; 0.9 || params.getScale() &gt; 1.1) {</span>
+<span class="nc" id="L991">            log.fine(&quot;WARNING: &quot; +</span>
                 &quot; euclidean transformation scale: &quot;  + params);
         }
         
         // ---- apply transformation -----
-<span class="nc" id="L994">        Result result = applyTransformation(params, p, q,</span>
+<span class="nc" id="L996">        Result result = applyTransformation(params, p, q,</span>
             leftXY, rightXY, leftUnmatchedXY, rightUnmatchedXY, 
             pixTol, outputAddedPoints);
     
-<span class="nc bnc" id="L998" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L999">            String debugTag = Integer.toString(MiscDebug.getCurrentTimeFormatted());</span>
+<span class="nc bnc" id="L1000" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L1001">            String debugTag = Integer.toString(MiscDebug.getCurrentTimeFormatted());</span>
             try {
-<span class="nc" id="L1001">                CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);</span>
-<span class="nc bnc" id="L1002" title="All 2 branches missed.">                for (int i = 0; i &lt; result.getNumberOfMatches(); ++i) {</span>
-<span class="nc" id="L1003">                    int idx1 = result.getIdx1(i);</span>
-<span class="nc" id="L1004">                    int idx2 = result.getIdx2(i);</span>
-<span class="nc" id="L1005">                    int x1 = p.getX(idx1);</span>
-<span class="nc" id="L1006">                    int y1 = p.getY(idx1);</span>
-<span class="nc" id="L1007">                    int x2 = q.getX(idx2);</span>
-<span class="nc" id="L1008">                    int y2 = q.getY(idx2);</span>
-<span class="nc bnc" id="L1009" title="All 2 branches missed.">                    if ((i % 4) == 0) {</span>
-<span class="nc" id="L1010">                        plotter.drawLineInAlternatingColors(</span>
+<span class="nc" id="L1003">                CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);</span>
+<span class="nc bnc" id="L1004" title="All 2 branches missed.">                for (int i = 0; i &lt; result.getNumberOfMatches(); ++i) {</span>
+<span class="nc" id="L1005">                    int idx1 = result.getIdx1(i);</span>
+<span class="nc" id="L1006">                    int idx2 = result.getIdx2(i);</span>
+<span class="nc" id="L1007">                    int x1 = p.getX(idx1);</span>
+<span class="nc" id="L1008">                    int y1 = p.getY(idx1);</span>
+<span class="nc" id="L1009">                    int x2 = q.getX(idx2);</span>
+<span class="nc" id="L1010">                    int y2 = q.getY(idx2);</span>
+<span class="nc bnc" id="L1011" title="All 2 branches missed.">                    if ((i % 4) == 0) {</span>
+<span class="nc" id="L1012">                        plotter.drawLineInAlternatingColors(</span>
                             x1, y1, x2, y2, 0);
                     }
                 }
-<span class="nc" id="L1014">                String filePath = plotter.writeImage(&quot;_&quot;</span>
+<span class="nc" id="L1016">                String filePath = plotter.writeImage(&quot;_&quot;</span>
                     + &quot;_debug4_&quot; + debugTag);
-<span class="nc" id="L1016">            } catch (Throwable t) {</span>
-<span class="nc" id="L1017">            }</span>
+<span class="nc" id="L1018">            } catch (Throwable t) {</span>
+<span class="nc" id="L1019">            }</span>
         }
         
-<span class="nc" id="L1020">        return result;</span>
+<span class="nc" id="L1022">        return result;</span>
     }
     
     private Result applyTransformation(TransformationParameters params,
@@ -1026,13 +1028,13 @@ based upon algorithm in paper
         PairIntArray leftUnmatchedXY, PairIntArray rightUnmatchedXY, 
         float pixTol, PairIntArray outputAddedPoints) {
         
-<span class="fc" id="L1029">        Transformer transformer = new Transformer();</span>
-<span class="fc" id="L1030">        PairIntArray leftTr = transformer.applyTransformation(</span>
+<span class="fc" id="L1031">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L1032">        PairIntArray leftTr = transformer.applyTransformation(</span>
             params, leftUnmatchedXY);
-<span class="fc" id="L1032">        PairIntArray leftTr0 = transformer.applyTransformation(</span>
+<span class="fc" id="L1034">        PairIntArray leftTr0 = transformer.applyTransformation(</span>
             params, leftXY);
 
-<span class="fc" id="L1035">        String debugTag = Integer.toString(MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L1037">        String debugTag = Integer.toString(MiscDebug.getCurrentTimeFormatted());</span>
         if (false &amp;&amp; debug) {
             try {
                 CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
@@ -1080,7 +1082,7 @@ based upon algorithm in paper
             }
         }
 
-<span class="fc" id="L1083">        log.fine(debugTag + &quot; params=&quot; + params);</span>
+<span class="fc" id="L1085">        log.fine(debugTag + &quot; params=&quot; + params);</span>
 
         // find the best matches to the unmatched in q
 
@@ -1095,11 +1097,11 @@ based upon algorithm in paper
         //    idxMap = optimalMatch(leftTr, rightUnmatched,
         //        pixTol);
         //} else {
-<span class="fc" id="L1098">            idxMap = nearestMatch(leftTr, rightUnmatchedXY, pixTol);</span>
+<span class="fc" id="L1100">            idxMap = nearestMatch(leftTr, rightUnmatchedXY, pixTol);</span>
         //}
 
-<span class="fc" id="L1101">        log.fine(debugTag + &quot;transformation nearest matches=&quot; +</span>
-<span class="fc" id="L1102">            idxMap.size());</span>
+<span class="fc" id="L1103">        log.fine(debugTag + &quot;transformation nearest matches=&quot; +</span>
+<span class="fc" id="L1104">            idxMap.size());</span>
 
         /*
         combine results from leftXY-rightXY
@@ -1108,249 +1110,269 @@ based upon algorithm in paper
                           left
         */
 
-<span class="fc" id="L1111">        TObjectIntMap&lt;PairInt&gt; pPoints = Misc.createPointIndexMap(p);</span>
-<span class="fc" id="L1112">        TObjectIntMap&lt;PairInt&gt; qPoints = Misc.createPointIndexMap(q);</span>
+<span class="fc" id="L1113">        TObjectIntMap&lt;PairInt&gt; pPoints = Misc.createPointIndexMap(p);</span>
+<span class="fc" id="L1114">        TObjectIntMap&lt;PairInt&gt; qPoints = Misc.createPointIndexMap(q);</span>
 
-<span class="fc" id="L1114">        Result result = new Result(p.getN(), q.getN(), p.getN());</span>
-<span class="fc" id="L1115">            result.setTransformationParameters(params);</span>
+<span class="fc" id="L1116">        Result result = new Result(p.getN(), q.getN(), p.getN());</span>
+<span class="fc" id="L1117">            result.setTransformationParameters(params);</span>
         
-<span class="fc" id="L1117">        TObjectFloatIterator&lt;PairInt&gt; iter = idxMap.iterator();</span>
-<span class="fc bfc" id="L1118" title="All 2 branches covered.">        for (int i = 0; i &lt; idxMap.size(); ++i) {</span>
-<span class="fc" id="L1119">            iter.advance();</span>
-<span class="fc" id="L1120">            PairInt idxIdx = iter.key();</span>
-<span class="fc" id="L1121">            float dist = iter.value();</span>
-<span class="fc" id="L1122">            PairInt ell = new PairInt(</span>
-<span class="fc" id="L1123">                leftUnmatchedXY.getX(idxIdx.getX()),</span>
-<span class="fc" id="L1124">                leftUnmatchedXY.getY(idxIdx.getX())</span>
+<span class="fc" id="L1119">        TObjectFloatIterator&lt;PairInt&gt; iter = idxMap.iterator();</span>
+<span class="fc bfc" id="L1120" title="All 2 branches covered.">        for (int i = 0; i &lt; idxMap.size(); ++i) {</span>
+<span class="fc" id="L1121">            iter.advance();</span>
+<span class="fc" id="L1122">            PairInt idxIdx = iter.key();</span>
+<span class="fc" id="L1123">            float dist = iter.value();</span>
+<span class="fc" id="L1124">            PairInt ell = new PairInt(</span>
+<span class="fc" id="L1125">                leftUnmatchedXY.getX(idxIdx.getX()),</span>
+<span class="fc" id="L1126">                leftUnmatchedXY.getY(idxIdx.getX())</span>
             );
-<span class="fc" id="L1126">            int pIdx = pPoints.get(ell);</span>
-<span class="pc bpc" id="L1127" title="3 of 4 branches missed.">            assert(pIdx &gt; -1);</span>
-<span class="fc" id="L1128">            PairInt ar = new PairInt(</span>
-<span class="fc" id="L1129">                rightUnmatchedXY.getX(idxIdx.getY()),</span>
-<span class="fc" id="L1130">                rightUnmatchedXY.getY(idxIdx.getY())</span>
+<span class="fc" id="L1128">            int pIdx = pPoints.get(ell);</span>
+<span class="pc bpc" id="L1129" title="3 of 4 branches missed.">            assert(pIdx &gt; -1);</span>
+<span class="fc" id="L1130">            PairInt ar = new PairInt(</span>
+<span class="fc" id="L1131">                rightUnmatchedXY.getX(idxIdx.getY()),</span>
+<span class="fc" id="L1132">                rightUnmatchedXY.getY(idxIdx.getY())</span>
             );
-<span class="fc" id="L1132">            int qIdx = qPoints.get(ar);</span>
-<span class="pc bpc" id="L1133" title="3 of 4 branches missed.">            assert(qIdx &gt; -1);</span>
+<span class="fc" id="L1134">            int qIdx = qPoints.get(ar);</span>
+<span class="pc bpc" id="L1135" title="3 of 4 branches missed.">            assert(qIdx &gt; -1);</span>
 
-<span class="fc" id="L1135">            result.insert(pIdx, qIdx, dist);</span>
+<span class="fc" id="L1137">            result.insert(pIdx, qIdx, dist);</span>
 
-<span class="fc" id="L1137">            outputAddedPoints.add(pIdx, qIdx);</span>
+<span class="fc" id="L1139">            outputAddedPoints.add(pIdx, qIdx);</span>
         }
 
-<span class="fc bfc" id="L1140" title="All 2 branches covered.">        for (int i = 0; i &lt; rightXY.getN(); ++i) {</span>
-<span class="fc" id="L1141">            int diffX = leftTr0.getX(i) - rightXY.getX(i);</span>
-<span class="fc" id="L1142">            int diffY = leftTr0.getY(i) - rightXY.getY(i);</span>
-<span class="fc" id="L1143">            float dist = (float)Math.sqrt(diffX * diffX +</span>
+<span class="fc bfc" id="L1142" title="All 2 branches covered.">        for (int i = 0; i &lt; rightXY.getN(); ++i) {</span>
+<span class="fc" id="L1143">            int diffX = leftTr0.getX(i) - rightXY.getX(i);</span>
+<span class="fc" id="L1144">            int diffY = leftTr0.getY(i) - rightXY.getY(i);</span>
+<span class="fc" id="L1145">            float dist = (float)Math.sqrt(diffX * diffX +</span>
                 diffY * diffY);
 
-<span class="fc" id="L1146">            PairInt ell = new PairInt(leftXY.getX(i), leftXY.getY(i));</span>
-<span class="fc" id="L1147">            int pIdx = pPoints.get(ell);</span>
-<span class="pc bpc" id="L1148" title="3 of 4 branches missed.">            assert(pIdx &gt; -1);</span>
+<span class="fc" id="L1148">            PairInt ell = new PairInt(leftXY.getX(i), leftXY.getY(i));</span>
+<span class="fc" id="L1149">            int pIdx = pPoints.get(ell);</span>
+<span class="pc bpc" id="L1150" title="3 of 4 branches missed.">            assert(pIdx &gt; -1);</span>
 
-<span class="fc" id="L1150">            PairInt ar = new PairInt(rightXY.getX(i), rightXY.getY(i));</span>
-<span class="fc" id="L1151">            int qIdx = qPoints.get(ar);</span>
-<span class="pc bpc" id="L1152" title="3 of 4 branches missed.">            assert(qIdx &gt; -1);</span>
+<span class="fc" id="L1152">            PairInt ar = new PairInt(rightXY.getX(i), rightXY.getY(i));</span>
+<span class="fc" id="L1153">            int qIdx = qPoints.get(ar);</span>
+<span class="pc bpc" id="L1154" title="3 of 4 branches missed.">            assert(qIdx &gt; -1);</span>
 
-<span class="fc" id="L1154">            result.insert(pIdx, qIdx, dist);</span>
+<span class="fc" id="L1156">            result.insert(pIdx, qIdx, dist);</span>
         }
 
-<span class="pc bpc" id="L1157" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L1159" title="1 of 2 branches missed.">        if (debug) {</span>
             try {
-<span class="nc" id="L1159">                CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);</span>
-<span class="nc bnc" id="L1160" title="All 2 branches missed.">                for (int i = 0; i &lt; result.getNumberOfMatches(); ++i) {</span>
-<span class="nc" id="L1161">                    int idx1 = result.getIdx1(i);</span>
-<span class="nc" id="L1162">                    int idx2 = result.getIdx2(i);</span>
-<span class="nc" id="L1163">                    int x1 = p.getX(idx1);</span>
-<span class="nc" id="L1164">                    int y1 = p.getY(idx1);</span>
-<span class="nc" id="L1165">                    int x2 = q.getX(idx2);</span>
-<span class="nc" id="L1166">                    int y2 = q.getY(idx2);</span>
-<span class="nc bnc" id="L1167" title="All 2 branches missed.">                    if ((i % 4) == 0) {</span>
-<span class="nc" id="L1168">                        plotter.drawLineInAlternatingColors(</span>
+<span class="nc" id="L1161">                CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);</span>
+<span class="nc bnc" id="L1162" title="All 2 branches missed.">                for (int i = 0; i &lt; result.getNumberOfMatches(); ++i) {</span>
+<span class="nc" id="L1163">                    int idx1 = result.getIdx1(i);</span>
+<span class="nc" id="L1164">                    int idx2 = result.getIdx2(i);</span>
+<span class="nc" id="L1165">                    int x1 = p.getX(idx1);</span>
+<span class="nc" id="L1166">                    int y1 = p.getY(idx1);</span>
+<span class="nc" id="L1167">                    int x2 = q.getX(idx2);</span>
+<span class="nc" id="L1168">                    int y2 = q.getY(idx2);</span>
+<span class="nc bnc" id="L1169" title="All 2 branches missed.">                    if ((i % 4) == 0) {</span>
+<span class="nc" id="L1170">                        plotter.drawLineInAlternatingColors(</span>
                             x1, y1, x2, y2, 0);
                     }
                 }
-<span class="nc" id="L1172">                String filePath = plotter.writeImage(&quot;_&quot;</span>
+<span class="nc" id="L1174">                String filePath = plotter.writeImage(&quot;_&quot;</span>
                     + &quot;_debug4_&quot; + debugTag);
-<span class="nc" id="L1174">            } catch (Throwable t) {</span>
-<span class="nc" id="L1175">            }</span>
+<span class="nc" id="L1176">            } catch (Throwable t) {</span>
+<span class="nc" id="L1177">            }</span>
         }
 
-<span class="fc" id="L1178">        return result;</span>
+<span class="fc" id="L1180">        return result;</span>
     }
     
     private TObjectFloatMap&lt;PairInt&gt; nearestMatch(
         PairIntArray xy1, PairIntArray xy2,
         double tolerance) {
 
-<span class="fc" id="L1185">        KNearestNeighbors knn = null;</span>
+<span class="fc" id="L1187">        KNearestNeighbors knn = null;</span>
 
-<span class="fc bfc" id="L1187" title="All 2 branches covered.">        if (xy1.getN() &gt; 3) {</span>
-<span class="fc" id="L1188">            knn = new KNearestNeighbors(</span>
-<span class="fc" id="L1189">                xy2.getX(), xy2.getY());</span>
+<span class="fc bfc" id="L1189" title="All 2 branches covered.">        if (xy1.getN() &gt; 3) {</span>
+<span class="fc" id="L1190">            knn = new KNearestNeighbors(</span>
+<span class="fc" id="L1191">                xy2.getX(), xy2.getY());</span>
         }
 
-<span class="fc" id="L1192">        int k = 3;</span>
+<span class="fc" id="L1194">        int k = 3;</span>
 
-<span class="fc" id="L1194">        TObjectIntMap&lt;PairInt&gt; indexMap2 =</span>
-<span class="fc" id="L1195">            Misc.createPointIndexMap(xy2);</span>
+<span class="fc" id="L1196">        TObjectIntMap&lt;PairInt&gt; indexMap2 =</span>
+<span class="fc" id="L1197">            Misc.createPointIndexMap(xy2);</span>
 
-<span class="fc" id="L1197">        float[] dist = new float[3*xy1.getN()];</span>
-<span class="fc" id="L1198">        int[] idx2s = new int[dist.length];</span>
-<span class="fc" id="L1199">        int[] idx1s = new int[dist.length];</span>
-<span class="fc" id="L1200">        int count = 0;</span>
-<span class="fc bfc" id="L1201" title="All 2 branches covered.">        for (int i = 0; i &lt; xy1.getN(); ++i) {</span>
-<span class="fc" id="L1202">            int x = xy1.getX(i);</span>
-<span class="fc" id="L1203">            int y = xy1.getY(i);</span>
-<span class="fc" id="L1204">            List&lt;PairFloat&gt; nearest = null;</span>
-<span class="pc bpc" id="L1205" title="1 of 2 branches missed.">            if (knn != null) {</span>
-<span class="fc" id="L1206">                nearest = knn.findNearest(k, x, y, (float)tolerance);</span>
+<span class="fc" id="L1199">        float[] dist = new float[3*xy1.getN()];</span>
+<span class="fc" id="L1200">        int[] idx2s = new int[dist.length];</span>
+<span class="fc" id="L1201">        int[] idx1s = new int[dist.length];</span>
+<span class="fc" id="L1202">        int count = 0;</span>
+<span class="fc bfc" id="L1203" title="All 2 branches covered.">        for (int i = 0; i &lt; xy1.getN(); ++i) {</span>
+<span class="fc" id="L1204">            int x = xy1.getX(i);</span>
+<span class="fc" id="L1205">            int y = xy1.getY(i);</span>
+<span class="fc" id="L1206">            List&lt;PairFloat&gt; nearest = null;</span>
+<span class="pc bpc" id="L1207" title="1 of 2 branches missed.">            if (knn != null) {</span>
+<span class="fc" id="L1208">                nearest = knn.findNearest(k, x, y, (float)tolerance);</span>
             } else {
-<span class="nc" id="L1208">                nearest = kNearestBruteForce(k, x, y,</span>
+<span class="nc" id="L1210">                nearest = kNearestBruteForce(k, x, y,</span>
                     (float)tolerance, xy2);
             }
-<span class="pc bpc" id="L1211" title="1 of 2 branches missed.">            if (nearest == null) {</span>
-<span class="nc" id="L1212">                continue;</span>
+<span class="pc bpc" id="L1213" title="1 of 2 branches missed.">            if (nearest == null) {</span>
+<span class="nc" id="L1214">                continue;</span>
             }
             // note nearest has already been filtered by tolerance
-<span class="fc bfc" id="L1215" title="All 2 branches covered.">            for (PairFloat p : nearest) {</span>
-<span class="fc" id="L1216">                int x2 = Math.round(p.getX());</span>
-<span class="fc" id="L1217">                int y2 = Math.round(p.getY());</span>
-<span class="fc" id="L1218">                double d = Math.sqrt(</span>
-<span class="fc" id="L1219">                    distanceSqEucl(x, y, x2, y2));</span>
-<span class="fc" id="L1220">                dist[count] = (float)d;</span>
-<span class="fc" id="L1221">                idx1s[count] = i;</span>
-<span class="fc" id="L1222">                idx2s[count] = indexMap2.get(new PairInt(x2, y2));</span>
-<span class="fc" id="L1223">                count++;</span>
-<span class="fc" id="L1224">            }</span>
+<span class="fc bfc" id="L1217" title="All 2 branches covered.">            for (PairFloat p : nearest) {</span>
+<span class="fc" id="L1218">                int x2 = Math.round(p.getX());</span>
+<span class="fc" id="L1219">                int y2 = Math.round(p.getY());</span>
+<span class="fc" id="L1220">                double d = Math.sqrt(</span>
+<span class="fc" id="L1221">                    distanceSqEucl(x, y, x2, y2));</span>
+<span class="fc" id="L1222">                dist[count] = (float)d;</span>
+<span class="fc" id="L1223">                idx1s[count] = i;</span>
+<span class="fc" id="L1224">                idx2s[count] = indexMap2.get(new PairInt(x2, y2));</span>
+<span class="fc" id="L1225">                count++;</span>
+<span class="fc" id="L1226">            }</span>
         }
 
-<span class="fc" id="L1227">        idx1s = Arrays.copyOf(idx1s, count);</span>
-<span class="fc" id="L1228">        idx2s = Arrays.copyOf(idx2s, count);</span>
-<span class="fc" id="L1229">        dist = Arrays.copyOf(dist, count);</span>
-<span class="fc" id="L1230">        int[] ilu = new int[count];</span>
-<span class="fc bfc" id="L1231" title="All 2 branches covered.">        for (int i = 0; i &lt; count; ++i) {</span>
-<span class="fc" id="L1232">            ilu[i] = i;</span>
+<span class="fc" id="L1229">        idx1s = Arrays.copyOf(idx1s, count);</span>
+<span class="fc" id="L1230">        idx2s = Arrays.copyOf(idx2s, count);</span>
+<span class="fc" id="L1231">        dist = Arrays.copyOf(dist, count);</span>
+<span class="fc" id="L1232">        int[] ilu = new int[count];</span>
+<span class="fc bfc" id="L1233" title="All 2 branches covered.">        for (int i = 0; i &lt; count; ++i) {</span>
+<span class="fc" id="L1234">            ilu[i] = i;</span>
         }
-<span class="fc" id="L1234">        QuickSort.sortBy1stArg(dist, ilu);</span>
+<span class="fc" id="L1236">        QuickSort.sortBy1stArg(dist, ilu);</span>
 
-<span class="fc" id="L1236">        TIntSet a1 = new TIntHashSet();</span>
-<span class="fc" id="L1237">        TIntSet a2 = new TIntHashSet();</span>
+<span class="fc" id="L1238">        TIntSet a1 = new TIntHashSet();</span>
+<span class="fc" id="L1239">        TIntSet a2 = new TIntHashSet();</span>
 
-<span class="fc" id="L1239">        TObjectFloatMap&lt;PairInt&gt; costMap =</span>
+<span class="fc" id="L1241">        TObjectFloatMap&lt;PairInt&gt; costMap =</span>
             new TObjectFloatHashMap&lt;PairInt&gt;();
 
-<span class="fc bfc" id="L1242" title="All 2 branches covered.">        for (int i = 0; i &lt; dist.length; ++i) {</span>
-<span class="fc" id="L1243">            int idx = ilu[i];</span>
-<span class="fc" id="L1244">            int idx1 = idx1s[idx];</span>
-<span class="fc" id="L1245">            int idx2 = idx2s[idx];</span>
-<span class="fc bfc" id="L1246" title="All 4 branches covered.">            if (a1.contains(idx1) || a2.contains(idx2)) {</span>
-<span class="fc" id="L1247">                continue;</span>
+<span class="fc bfc" id="L1244" title="All 2 branches covered.">        for (int i = 0; i &lt; dist.length; ++i) {</span>
+<span class="fc" id="L1245">            int idx = ilu[i];</span>
+<span class="fc" id="L1246">            int idx1 = idx1s[idx];</span>
+<span class="fc" id="L1247">            int idx2 = idx2s[idx];</span>
+<span class="fc bfc" id="L1248" title="All 4 branches covered.">            if (a1.contains(idx1) || a2.contains(idx2)) {</span>
+<span class="fc" id="L1249">                continue;</span>
             }
-<span class="fc" id="L1249">            PairInt p = new PairInt(idx1, idx2);</span>
-<span class="fc" id="L1250">            costMap.put(p, dist[i]);</span>
-<span class="fc" id="L1251">            a1.add(idx1);</span>
-<span class="fc" id="L1252">            a2.add(idx2);</span>
+<span class="fc" id="L1251">            PairInt p = new PairInt(idx1, idx2);</span>
+<span class="fc" id="L1252">            costMap.put(p, dist[i]);</span>
+<span class="fc" id="L1253">            a1.add(idx1);</span>
+<span class="fc" id="L1254">            a2.add(idx2);</span>
         }
 
-<span class="fc" id="L1255">        return costMap;</span>
+<span class="fc" id="L1257">        return costMap;</span>
     }
 
     private boolean assertIndexesWithinBounds(Result result, 
         int n1, int n2) {
         
-<span class="nc bnc" id="L1261" title="All 2 branches missed.">        for (int i = 0; i &lt; result.idx1s.size(); ++i) {</span>
-<span class="nc" id="L1262">            int idx1 = result.idx1s.get(i);</span>
-<span class="nc bnc" id="L1263" title="All 2 branches missed.">            if (idx1 &gt;= n1) {</span>
-<span class="nc" id="L1264">                return false;</span>
+<span class="nc bnc" id="L1263" title="All 2 branches missed.">        for (int i = 0; i &lt; result.idx1s.size(); ++i) {</span>
+<span class="nc" id="L1264">            int idx1 = result.idx1s.get(i);</span>
+<span class="nc bnc" id="L1265" title="All 2 branches missed.">            if (idx1 &gt;= n1) {</span>
+<span class="nc" id="L1266">                return false;</span>
             }
-<span class="nc" id="L1266">            int idx2 = result.idx2s.get(i);</span>
-<span class="nc bnc" id="L1267" title="All 2 branches missed.">            if (idx2 &gt;= n2) {</span>
-<span class="nc" id="L1268">                return false;</span>
+<span class="nc" id="L1268">            int idx2 = result.idx2s.get(i);</span>
+<span class="nc bnc" id="L1269" title="All 2 branches missed.">            if (idx2 &gt;= n2) {</span>
+<span class="nc" id="L1270">                return false;</span>
             }
         }
         
-<span class="nc" id="L1272">        return true;</span>
+<span class="nc" id="L1274">        return true;</span>
     }
 
     private double findMaxChordDiff(List&lt;Result&gt; results) {
 
-<span class="nc" id="L1277">        double max = Double.MIN_VALUE;</span>
-<span class="nc bnc" id="L1278" title="All 2 branches missed.">        for (Result r : results) {</span>
-<span class="nc" id="L1279">            double d = r.chordDiffSum;</span>
-<span class="nc bnc" id="L1280" title="All 2 branches missed.">            if (d &gt; max) {</span>
-<span class="nc" id="L1281">                max = d;</span>
+<span class="nc" id="L1279">        double max = Double.MIN_VALUE;</span>
+<span class="nc bnc" id="L1280" title="All 2 branches missed.">        for (Result r : results) {</span>
+<span class="nc" id="L1281">            double d = r.chordDiffSum;</span>
+<span class="nc bnc" id="L1282" title="All 2 branches missed.">            if (d &gt; max) {</span>
+<span class="nc" id="L1283">                max = d;</span>
             }
-<span class="nc" id="L1283">        }</span>
-<span class="nc" id="L1284">        return max;</span>
+<span class="nc" id="L1285">        }</span>
+<span class="nc" id="L1286">        return max;</span>
     }
 
     private void improveWithRANSAC(Result best, PairIntArray p, PairIntArray q, 
         float[][][] md, int n1, int n2) {
         
-<span class="nc" id="L1290">        int n = best.getNumberOfMatches();</span>
+<span class="nc" id="L1292">        int n = best.getNumberOfMatches();</span>
         
-<span class="nc" id="L1292">        TObjectIntMap&lt;PairInt&gt; pPointIndexMap = new TObjectIntHashMap&lt;PairInt&gt;();</span>
+<span class="nc" id="L1294">        TObjectIntMap&lt;PairInt&gt; pPointIndexMap = new TObjectIntHashMap&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L1294">        PairIntArray matchedLeftXY = new PairIntArray(n);</span>
-<span class="nc" id="L1295">        PairIntArray matchedRightXY = new PairIntArray(n);</span>
-<span class="nc bnc" id="L1296" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc" id="L1297">            int idx1 = best.idx1s.get(i);</span>
-<span class="nc" id="L1298">            int idx2 = best.idx2s.get(i);</span>
-<span class="nc" id="L1299">            matchedLeftXY.add(p.getX(idx1), p.getY(idx1));</span>
-<span class="nc" id="L1300">            matchedRightXY.add(q.getX(idx2), q.getY(idx2));</span>
-<span class="nc" id="L1301">            pPointIndexMap.put(new PairInt(p.getX(idx1), p.getY(idx1)), i);</span>
+<span class="nc" id="L1296">        double[][] left = new double[3][n];</span>
+<span class="nc" id="L1297">        double[][] right = new double[3][n];</span>
+<span class="nc bnc" id="L1298" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L1299">            left[i] = new double[n];</span>
+<span class="nc" id="L1300">            right[i] = new double[n];</span>
+        }
+<span class="nc" id="L1302">        Arrays.fill(left[2], 1.0);</span>
+<span class="nc" id="L1303">        Arrays.fill(right[2], 1.0);</span>
+<span class="nc bnc" id="L1304" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L1305">            int idx1 = best.idx1s.get(i);</span>
+<span class="nc" id="L1306">            int idx2 = best.idx2s.get(i);</span>
+<span class="nc" id="L1307">            left[0][i] = p.getX(idx1);</span>
+<span class="nc" id="L1308">            left[1][i] = p.getY(idx1);</span>
+<span class="nc" id="L1309">            right[0][i] = q.getX(idx2);</span>
+<span class="nc" id="L1310">            right[1][i] = q.getY(idx2);</span>
+<span class="nc" id="L1311">            pPointIndexMap.put(new PairInt(left[0][i], left[1][i]), i);</span>
         }
         
-<span class="nc" id="L1304">        PairIntArray outputLeftXY = new PairIntArray();</span>
-<span class="nc" id="L1305">        PairIntArray outputRightXY = new PairIntArray();</span>
+        // normalize left and right
+<span class="nc" id="L1315">        boolean useToleranceAsStatFactor = true;</span>
+<span class="nc" id="L1316">        final double tolerance = 3.8;</span>
+<span class="nc" id="L1317">        ErrorType errorType = ErrorType.SAMPSONS;</span>
         
-<span class="nc" id="L1307">        RANSACSolver solver = new RANSACSolver();</span>
-
-<span class="nc" id="L1309">        double tolerance = 4;</span>
+<span class="nc" id="L1319">        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));</span>
+<span class="nc" id="L1320">        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));</span>
+<span class="nc" id="L1321">        DenseMatrix leftM = normXY1.getXy();</span>
+<span class="nc" id="L1322">        DenseMatrix rightM = normXY2.getXy();</span>
+<span class="nc" id="L1323">        boolean reCalcIterations = false;</span>
         
-<span class="nc" id="L1311">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
-            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY,
-            tolerance);
-
-<span class="nc bnc" id="L1315" title="All 2 branches missed.">        if (storeMatrix) {</span>
-<span class="nc" id="L1316">            storedEpipolarFit = fit;</span>
+<span class="nc" id="L1325">        RANSACSolver solver = new RANSACSolver();</span>
+        
+<span class="nc" id="L1327">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations, false);
+        
+<span class="nc bnc" id="L1331" title="All 2 branches missed.">        if (storeMatrix) {</span>
+<span class="nc" id="L1332">            DenseMatrix denormFM = EpipolarTransformer</span>
+<span class="nc" id="L1333">                .denormalizeTheFundamentalMatrix(fit.getFundamentalMatrix(), </span>
+<span class="nc" id="L1334">                normXY1.getNormalizationMatrices(), normXY2.getNormalizationMatrices());</span>
+<span class="nc" id="L1335">            fit.setFundamentalMatrix(denormFM);</span>
+<span class="nc" id="L1336">            storedEpipolarFit = fit;</span>
         }
         
-<span class="nc bnc" id="L1319" title="All 2 branches missed.">        if (outputLeftXY.getN() &lt; matchedLeftXY.getN()) {</span>
-<span class="nc" id="L1320">            int nOut = outputLeftXY.getN();</span>
-<span class="nc" id="L1321">            TIntSet present = new TIntHashSet();</span>
-<span class="nc bnc" id="L1322" title="All 2 branches missed.">            for (int i = 0; i &lt; nOut; ++i) {</span>
-<span class="nc" id="L1323">                PairInt p1 = new PairInt(outputLeftXY.getX(i),</span>
-<span class="nc" id="L1324">                    outputLeftXY.getY(i));</span>
-<span class="nc" id="L1325">                int lIdx = pPointIndexMap.get(p1);</span>
-<span class="nc" id="L1326">                present.add(lIdx);</span>
+<span class="nc" id="L1339">        List&lt;Integer&gt; inliers = fit.getInlierIndexes();</span>
+        
+<span class="nc bnc" id="L1341" title="All 2 branches missed.">        if (inliers.size() &lt; n) {</span>
+<span class="nc" id="L1342">            int nOut = inliers.size();</span>
+<span class="nc" id="L1343">            TIntSet present = new TIntHashSet();</span>
+<span class="nc bnc" id="L1344" title="All 2 branches missed.">            for (int i = 0; i &lt; nOut; ++i) {</span>
+<span class="nc" id="L1345">                int idx = inliers.get(i);</span>
+<span class="nc" id="L1346">                PairInt p1 = new PairInt(left[0][idx], left[1][idx]);</span>
+<span class="nc" id="L1347">                int lIdx = pPointIndexMap.get(p1);</span>
+<span class="nc" id="L1348">                present.add(lIdx);</span>
             }
             // remove best indexes not in final output
-<span class="nc bnc" id="L1329" title="All 2 branches missed.">            for (int ii = (n - 1); ii &gt; -1; --ii) {</span>
-<span class="nc bnc" id="L1330" title="All 2 branches missed.">                if (!present.contains(ii)) {</span>
-<span class="nc" id="L1331">                    best.idx1s.removeAt(ii);</span>
-<span class="nc" id="L1332">                    best.idx2s.removeAt(ii);</span>
+<span class="nc bnc" id="L1351" title="All 2 branches missed.">            for (int ii = (n - 1); ii &gt; -1; --ii) {</span>
+<span class="nc bnc" id="L1352" title="All 2 branches missed.">                if (!present.contains(ii)) {</span>
+<span class="nc" id="L1353">                    best.idx1s.removeAt(ii);</span>
+<span class="nc" id="L1354">                    best.idx2s.removeAt(ii);</span>
                 }
             }
             
             //TODO: consider adding nearest neighbor unmatched within bounds
             
-<span class="nc" id="L1338">            populateWithChordDiffs(best, md, n1, n2);</span>
+<span class="nc" id="L1360">            populateWithChordDiffs(best, md, n1, n2);</span>
         }       
-<span class="nc" id="L1340">    }</span>
+<span class="nc" id="L1362">    }</span>
 
     private PairIntArray reverseXY(PairIntArray matchedIndexes) {
 
-<span class="nc" id="L1344">        int n = matchedIndexes.getN();</span>
+<span class="nc" id="L1366">        int n = matchedIndexes.getN();</span>
         
-<span class="nc" id="L1346">        PairIntArray r = new PairIntArray(n);</span>
+<span class="nc" id="L1368">        PairIntArray r = new PairIntArray(n);</span>
         
-<span class="nc bnc" id="L1348" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc" id="L1349">            r.add(matchedIndexes.getY(i),</span>
-<span class="nc" id="L1350">                matchedIndexes.getX(i));</span>
+<span class="nc bnc" id="L1370" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L1371">            r.add(matchedIndexes.getY(i),</span>
+<span class="nc" id="L1372">                matchedIndexes.getX(i));</span>
         }
         
-<span class="nc" id="L1353">        return r;</span>
+<span class="nc" id="L1375">        return r;</span>
     }
     
     public static class SRComparator implements Comparator&lt;SR&gt; {
@@ -1370,14 +1392,14 @@ based upon algorithm in paper
     }
 
     private double findMaxDiffChordSum(List&lt;SR&gt; list) {
-<span class="fc" id="L1373">        double max = Double.MIN_VALUE;</span>
-<span class="fc bfc" id="L1374" title="All 2 branches covered.">        for (SR sr : list) {</span>
-<span class="fc" id="L1375">            double v = sr.maxChordSum;</span>
-<span class="fc bfc" id="L1376" title="All 2 branches covered.">            if (v &gt; max) {</span>
-<span class="fc" id="L1377">                max = v;</span>
+<span class="fc" id="L1395">        double max = Double.MIN_VALUE;</span>
+<span class="fc bfc" id="L1396" title="All 2 branches covered.">        for (SR sr : list) {</span>
+<span class="fc" id="L1397">            double v = sr.maxChordSum;</span>
+<span class="fc bfc" id="L1398" title="All 2 branches covered.">            if (v &gt; max) {</span>
+<span class="fc" id="L1399">                max = v;</span>
             }
-<span class="fc" id="L1379">        }</span>
-<span class="fc" id="L1380">        return max;</span>
+<span class="fc" id="L1401">        }</span>
+<span class="fc" id="L1402">        return max;</span>
     }
  
     /**
@@ -1396,24 +1418,24 @@ based upon algorithm in paper
         List&lt;SR&gt; outputValues, int offset) {
     
         //q.n is &gt;= p.n, that is, n2 &gt;= n1
-<span class="fc" id="L1399">        int n1 = a.length;</span>
-<span class="fc" id="L1400">        int n2 = a[0].length;</span>
+<span class="fc" id="L1421">        int n1 = a.length;</span>
+<span class="fc" id="L1422">        int n2 = a[0].length;</span>
 
         // storing the interval of consecutive indexes, each below threshold,
         //   and storing as the value, the key to entry in intervalMap
-<span class="fc" id="L1404">        IntervalRangeSearch&lt;Integer, SR&gt; rangeSearch =</span>
+<span class="fc" id="L1426">        IntervalRangeSearch&lt;Integer, SR&gt; rangeSearch =</span>
             new IntervalRangeSearch&lt;Integer, SR&gt;();
 
-<span class="fc" id="L1407">        Interval&lt;Integer&gt; interval = null;</span>
+<span class="fc" id="L1429">        Interval&lt;Integer&gt; interval = null;</span>
 
-<span class="fc" id="L1409">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1431">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
  
-<span class="fc" id="L1411">        double maxChordSum = Double.MIN_VALUE;</span>
+<span class="fc" id="L1433">        double maxChordSum = Double.MIN_VALUE;</span>
 
-<span class="fc" id="L1413">        float[] outC = new float[2];</span>
+<span class="fc" id="L1435">        float[] outC = new float[2];</span>
         int stop, start;
         
-<span class="fc" id="L1416">        SummedAreaTable st = new SummedAreaTable();</span>
+<span class="fc" id="L1438">        SummedAreaTable st = new SummedAreaTable();</span>
         
         // NOTE that because of a sort operation in the invoker of this
         // method, the larger algorithm could do no better than
@@ -1422,91 +1444,91 @@ based upon algorithm in paper
         
         // wanting the total number of r reads to be log_2(n1).
         // choosing evenly spaced intervals:
-<span class="fc" id="L1425">        int nIntervals = (int)Math.ceil(Math.log(n1)/Math.log(2));</span>
-<span class="fc" id="L1426">        int dr = (n1 - minLength)/nIntervals;</span>
-<span class="pc bpc" id="L1427" title="1 of 2 branches missed.">        if (dr == 0) {</span>
-<span class="nc" id="L1428">            dr = 1;</span>
+<span class="fc" id="L1447">        int nIntervals = (int)Math.ceil(Math.log(n1)/Math.log(2));</span>
+<span class="fc" id="L1448">        int dr = (n1 - minLength)/nIntervals;</span>
+<span class="pc bpc" id="L1449" title="1 of 2 branches missed.">        if (dr == 0) {</span>
+<span class="nc" id="L1450">            dr = 1;</span>
         }
-<span class="fc" id="L1430">        int rUpper = n1 - 1;//(rStop - 1)*dr;</span>
+<span class="fc" id="L1452">        int rUpper = n1 - 1;//(rStop - 1)*dr;</span>
          
         // runtime complexity is ~ log_2(n1) * n1.
         
         // using row major notation of a[row][col]
-<span class="fc bfc" id="L1435" title="All 2 branches covered.">        for (int r = rUpper; r &gt;= minLength; r -= dr) {</span>
+<span class="fc bfc" id="L1457" title="All 2 branches covered.">        for (int r = rUpper; r &gt;= minLength; r -= dr) {</span>
     
             // row and col are both iDiag
-<span class="fc bfc" id="L1438" title="All 2 branches covered.">            for (int iDiag = 0; iDiag &lt; n1; iDiag += r) {</span>
-<span class="fc" id="L1439">                stop = iDiag + r;</span>
-<span class="fc bfc" id="L1440" title="All 2 branches covered.">                if (stop &gt; (n1 - 1)) {</span>
-<span class="fc" id="L1441">                    stop = n1 - 1;</span>
+<span class="fc bfc" id="L1460" title="All 2 branches covered.">            for (int iDiag = 0; iDiag &lt; n1; iDiag += r) {</span>
+<span class="fc" id="L1461">                stop = iDiag + r;</span>
+<span class="fc bfc" id="L1462" title="All 2 branches covered.">                if (stop &gt; (n1 - 1)) {</span>
+<span class="fc" id="L1463">                    stop = n1 - 1;</span>
                 }
-<span class="fc" id="L1443">                start = iDiag;</span>
-<span class="fc bfc" id="L1444" title="All 2 branches covered.">                if (stop == start) {</span>
+<span class="fc" id="L1465">                start = iDiag;</span>
+<span class="fc bfc" id="L1466" title="All 2 branches covered.">                if (stop == start) {</span>
                     // do not store single index matches
-<span class="fc" id="L1446">                    continue;</span>
+<span class="fc" id="L1468">                    continue;</span>
                 }
 
-<span class="fc" id="L1449">                int ni = stop - start + 1;</span>
-<span class="fc bfc" id="L1450" title="All 2 branches covered.">                if (ni &lt; minLength) {</span>
-<span class="fc" id="L1451">                    continue;</span>
+<span class="fc" id="L1471">                int ni = stop - start + 1;</span>
+<span class="fc bfc" id="L1472" title="All 2 branches covered.">                if (ni &lt; minLength) {</span>
+<span class="fc" id="L1473">                    continue;</span>
                 }
-<span class="fc" id="L1453">                st.extractWindowFromSummedAreaTable(a, start, stop, start, stop, outC);</span>
-<span class="pc bpc" id="L1454" title="1 of 2 branches missed.">                if (outC[1] &lt; 1) {</span>
-<span class="nc" id="L1455">                    continue;</span>
+<span class="fc" id="L1475">                st.extractWindowFromSummedAreaTable(a, start, stop, start, stop, outC);</span>
+<span class="pc bpc" id="L1476" title="1 of 2 branches missed.">                if (outC[1] &lt; 1) {</span>
+<span class="nc" id="L1477">                    continue;</span>
                 }
-<span class="fc" id="L1457">                float d = outC[0]/outC[1];</span>
-<span class="pc bpc" id="L1458" title="3 of 4 branches missed.">                if (debug &amp;&amp; ((iDiag % 50) == 0)) {</span>
-<span class="nc" id="L1459">                    System.out.println(&quot;interval &quot; + d + </span>
+<span class="fc" id="L1479">                float d = outC[0]/outC[1];</span>
+<span class="pc bpc" id="L1480" title="3 of 4 branches missed.">                if (debug &amp;&amp; ((iDiag % 50) == 0)) {</span>
+<span class="nc" id="L1481">                    System.out.println(&quot;interval &quot; + d + </span>
                     &quot; sr=&quot; + iDiag + &quot; : &quot; + stop + &quot; off=&quot; + offset 
                     + &quot; Len=&quot; + (stop - iDiag + 1));
                     //System.out.println(String.format(
                     //&quot;len=%d i=%d d=%.2f&quot;, (stop - j + 1), i, d));
                 }
-<span class="fc bfc" id="L1465" title="All 2 branches covered.">                if (d &gt; thresh) {</span>
-<span class="fc" id="L1466">                    continue;</span>
+<span class="fc bfc" id="L1487" title="All 2 branches covered.">                if (d &gt; thresh) {</span>
+<span class="fc" id="L1488">                    continue;</span>
                 }
-<span class="fc bfc" id="L1468" title="All 2 branches covered.">                if (d &gt; maxChordSum) {</span>
-<span class="fc" id="L1469">                    maxChordSum = d;</span>
+<span class="fc bfc" id="L1490" title="All 2 branches covered.">                if (d &gt; maxChordSum) {</span>
+<span class="fc" id="L1491">                    maxChordSum = d;</span>
                 }
 
-<span class="fc" id="L1472">                interval =  new Interval&lt;Integer&gt;(start, stop);</span>
-<span class="fc" id="L1473">                PairInt s = new PairInt(start, stop);</span>
-<span class="fc bfc" id="L1474" title="All 2 branches covered.">                if (added.contains(s)) {</span>
-<span class="fc" id="L1475">                    continue;</span>
+<span class="fc" id="L1494">                interval =  new Interval&lt;Integer&gt;(start, stop);</span>
+<span class="fc" id="L1495">                PairInt s = new PairInt(start, stop);</span>
+<span class="fc bfc" id="L1496" title="All 2 branches covered.">                if (added.contains(s)) {</span>
+<span class="fc" id="L1497">                    continue;</span>
                 }
 
                 //a, col, stop, row, outC
-<span class="fc" id="L1479">                SR sr = new SR();</span>
-<span class="fc" id="L1480">                sr.startIdx1 = iDiag;</span>
-<span class="fc" id="L1481">                sr.stopIdx1 = stop;</span>
-<span class="fc" id="L1482">                sr.offsetIdx2 = offset;</span>
-<span class="fc" id="L1483">                sr.row = iDiag;</span>
-<span class="fc" id="L1484">                sr.diffChordSum = d;</span>
-<span class="fc" id="L1485">                sr.setChordSumNeedsUpdate(false);</span>
-<span class="fc" id="L1486">                sr.maxChordSum = maxChordSum;</span>
-<span class="fc" id="L1487">                sr.mLen = ni;</span>
-<span class="fc" id="L1488">                sr.nMax = n1; // n1 &lt;= n2</span>
+<span class="fc" id="L1501">                SR sr = new SR();</span>
+<span class="fc" id="L1502">                sr.startIdx1 = iDiag;</span>
+<span class="fc" id="L1503">                sr.stopIdx1 = stop;</span>
+<span class="fc" id="L1504">                sr.offsetIdx2 = offset;</span>
+<span class="fc" id="L1505">                sr.row = iDiag;</span>
+<span class="fc" id="L1506">                sr.diffChordSum = d;</span>
+<span class="fc" id="L1507">                sr.setChordSumNeedsUpdate(false);</span>
+<span class="fc" id="L1508">                sr.maxChordSum = maxChordSum;</span>
+<span class="fc" id="L1509">                sr.mLen = ni;</span>
+<span class="fc" id="L1510">                sr.nMax = n1; // n1 &lt;= n2</span>
 
-<span class="fc" id="L1490">                boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);</span>
+<span class="fc" id="L1512">                boolean didIns = rangeSearch.putIfLessThan(interval, sr, sr);</span>
 
-<span class="pc bpc" id="L1492" title="1 of 2 branches missed.">                if (debug) {</span>
-<span class="nc" id="L1493">                    System.out.println(&quot;interval: &quot; + d + </span>
+<span class="pc bpc" id="L1514" title="1 of 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L1515">                    System.out.println(&quot;interval: &quot; + d + </span>
                         &quot; sr=&quot; + iDiag + &quot; : &quot; + stop 
                         + &quot; off=&quot; + offset + &quot; row=&quot; + iDiag 
                         + &quot; Len=&quot; + (stop - iDiag + 1)
                         + &quot; didIns=&quot; + didIns 
                         + &quot; (maxCh=&quot; + sr.maxChordSum
                         + &quot; sd=&quot; + 
-<span class="nc" id="L1500">                        sr.calcSalukDist());</span>
+<span class="nc" id="L1522">                        sr.calcSalukDist());</span>
                 }
-<span class="fc" id="L1502">                added.add(s);</span>
+<span class="fc" id="L1524">                added.add(s);</span>
             } // end loop iDiag
         } // end r
         
-<span class="fc" id="L1506">        rangeSearch.getAllIntervals(outputIntervals, outputValues);</span>
+<span class="fc" id="L1528">        rangeSearch.getAllIntervals(outputIntervals, outputValues);</span>
     
-<span class="pc bpc" id="L1508" title="3 of 4 branches missed.">        assert(outputIntervals.size() == outputValues.size());</span>
-<span class="fc" id="L1509">    }</span>
+<span class="pc bpc" id="L1530" title="3 of 4 branches missed.">        assert(outputIntervals.size() == outputValues.size());</span>
+<span class="fc" id="L1531">    }</span>
 
     /**
      * create the matrices of differences between p
@@ -1518,8 +1540,8 @@ based upon algorithm in paper
     protected float[][][] createDifferenceMatrices(
         PairIntArray p, PairIntArray q) {
 
-<span class="pc bpc" id="L1521" title="1 of 2 branches missed.">        if (p.getN() &gt; q.getN()) {</span>
-<span class="nc" id="L1522">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1543" title="1 of 2 branches missed.">        if (p.getN() &gt; q.getN()) {</span>
+<span class="nc" id="L1544">            throw new IllegalArgumentException(</span>
             &quot;q.n must be &gt;= p.n&quot;);
         }
 
@@ -1535,10 +1557,10 @@ based upon algorithm in paper
         */
 
         //log.fine(&quot;a1:&quot;);
-<span class="fc" id="L1538">        float[][] a1 = createDescriptorMatrix(p, p.getN());</span>
+<span class="fc" id="L1560">        float[][] a1 = createDescriptorMatrix(p, p.getN());</span>
 
         //log.fine(&quot;a2:&quot;);
-<span class="fc" id="L1541">        float[][] a2 = createDescriptorMatrix(q, q.getN());</span>
+<span class="fc" id="L1563">        float[][] a2 = createDescriptorMatrix(q, q.getN());</span>
 
         /*
          make difference matrices.
@@ -1576,30 +1598,30 @@ based upon algorithm in paper
         //TODO: look into Toeplitz matrix and cyclic matrix
 
         // --- make difference matrices ---
-<span class="fc" id="L1579">        int n1 = p.getN();</span>
-<span class="fc" id="L1580">        int n2 = q.getN();</span>
-<span class="fc" id="L1581">        float[][][] md = new float[n2][][];</span>
-<span class="fc" id="L1582">        float[][] prevA2Shifted = null;</span>
-<span class="fc bfc" id="L1583" title="All 2 branches covered.">        for (int i = 0; i &lt; n2; ++i) {</span>
+<span class="fc" id="L1601">        int n1 = p.getN();</span>
+<span class="fc" id="L1602">        int n2 = q.getN();</span>
+<span class="fc" id="L1603">        float[][][] md = new float[n2][][];</span>
+<span class="fc" id="L1604">        float[][] prevA2Shifted = null;</span>
+<span class="fc bfc" id="L1605" title="All 2 branches covered.">        for (int i = 0; i &lt; n2; ++i) {</span>
             float[][] shifted2;
-<span class="fc bfc" id="L1585" title="All 2 branches covered.">            if (prevA2Shifted == null) {</span>
-<span class="fc" id="L1586">                shifted2 = copy(a2);</span>
+<span class="fc bfc" id="L1607" title="All 2 branches covered.">            if (prevA2Shifted == null) {</span>
+<span class="fc" id="L1608">                shifted2 = copy(a2);</span>
             } else {
                 // shifts by 1 to left and up by 1
-<span class="fc" id="L1589">                rotate(prevA2Shifted);</span>
-<span class="fc" id="L1590">                shifted2 = prevA2Shifted;</span>
+<span class="fc" id="L1611">                rotate(prevA2Shifted);</span>
+<span class="fc" id="L1612">                shifted2 = prevA2Shifted;</span>
             }
             // NOTE: absolute values are stored.
             //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
-<span class="fc" id="L1594">            md[i] = subtract(a1, shifted2);</span>
-<span class="pc bpc" id="L1595" title="3 of 4 branches missed.">            assert(md[i].length == n1);</span>
-<span class="pc bpc" id="L1596" title="3 of 4 branches missed.">            assert(md[i][0].length == n1);</span>
-<span class="fc" id="L1597">            prevA2Shifted = shifted2;</span>
+<span class="fc" id="L1616">            md[i] = subtract(a1, shifted2);</span>
+<span class="pc bpc" id="L1617" title="3 of 4 branches missed.">            assert(md[i].length == n1);</span>
+<span class="pc bpc" id="L1618" title="3 of 4 branches missed.">            assert(md[i][0].length == n1);</span>
+<span class="fc" id="L1619">            prevA2Shifted = shifted2;</span>
         }
        
         //print(&quot;differences:&quot;, md);
 
-<span class="fc" id="L1602">        return md;</span>
+<span class="fc" id="L1624">        return md;</span>
     }
 
     /**
@@ -1621,11 +1643,11 @@ based upon algorithm in paper
     */
     protected float[][] createDescriptorMatrix(PairIntArray p, int n) {
         
-<span class="fc" id="L1624">        int dp1 = 1;</span>
+<span class="fc" id="L1646">        int dp1 = 1;</span>
 
-<span class="fc" id="L1626">        float[][] a = new float[n][];</span>
-<span class="fc bfc" id="L1627" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1628">            a[i] = new float[n];</span>
+<span class="fc" id="L1648">        float[][] a = new float[n][];</span>
+<span class="fc bfc" id="L1649" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1650">            a[i] = new float[n];</span>
         }
 
         /*
@@ -1634,46 +1656,46 @@ based upon algorithm in paper
                   P2
         */
 
-<span class="fc" id="L1637">        log.fine(&quot;n=&quot; + n);</span>
+<span class="fc" id="L1659">        log.fine(&quot;n=&quot; + n);</span>
 
-<span class="fc bfc" id="L1639" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; n; ++i1) {</span>
-<span class="fc" id="L1640">            int start = i1 + 1 + dp1;</span>
-<span class="fc bfc" id="L1641" title="All 2 branches covered.">            for (int ii = start; ii &lt; (start + n - 1 - dp1); ++ii) {</span>
-<span class="fc" id="L1642">                int i2 = ii;</span>
+<span class="fc bfc" id="L1661" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; n; ++i1) {</span>
+<span class="fc" id="L1662">            int start = i1 + 1 + dp1;</span>
+<span class="fc bfc" id="L1663" title="All 2 branches covered.">            for (int ii = start; ii &lt; (start + n - 1 - dp1); ++ii) {</span>
+<span class="fc" id="L1664">                int i2 = ii;</span>
 
-<span class="fc" id="L1644">                int imid = i2 - dp1;</span>
+<span class="fc" id="L1666">                int imid = i2 - dp1;</span>
                 // wrap around
-<span class="fc bfc" id="L1646" title="All 2 branches covered.">                if (imid &gt; (n - 1)) {</span>
-<span class="fc" id="L1647">                    imid -= n;</span>
+<span class="fc bfc" id="L1668" title="All 2 branches covered.">                if (imid &gt; (n - 1)) {</span>
+<span class="fc" id="L1669">                    imid -= n;</span>
                 }
 
                 // wrap around
-<span class="fc bfc" id="L1651" title="All 2 branches covered.">                if (i2 &gt; (n - 1)) {</span>
-<span class="fc" id="L1652">                    i2 -= n;</span>
+<span class="fc bfc" id="L1673" title="All 2 branches covered.">                if (i2 &gt; (n - 1)) {</span>
+<span class="fc" id="L1674">                    i2 -= n;</span>
                 }
 
                 //log.fine(&quot;i1=&quot; + i1 + &quot; imid=&quot; + imid + &quot; i2=&quot; + i2);
 
-<span class="fc" id="L1657">                double angleA = LinesAndAngles.calcAngle(</span>
+<span class="fc" id="L1679">                double angleA = LinesAndAngles.calcAngle(</span>
                 //double angleA = LinesAndAngles.calcClockwiseAngle(
-<span class="fc" id="L1659">                    p.getX(i1), p.getY(i1),</span>
-<span class="fc" id="L1660">                    p.getX(i2), p.getY(i2),</span>
-<span class="fc" id="L1661">                    p.getX(imid), p.getY(imid)</span>
+<span class="fc" id="L1681">                    p.getX(i1), p.getY(i1),</span>
+<span class="fc" id="L1682">                    p.getX(i2), p.getY(i2),</span>
+<span class="fc" id="L1683">                    p.getX(imid), p.getY(imid)</span>
                 );
                 
-<span class="pc bpc" id="L1664" title="1 of 2 branches missed.">                if (Double.isNaN(angleA)) {</span>
-<span class="nc bnc" id="L1665" title="All 4 branches missed.">                    if (i2 &lt; i1 &amp;&amp; i1 &lt; imid) {</span>
-<span class="nc" id="L1666">                        angleA = LinesAndAngles.calcAngle(</span>
+<span class="pc bpc" id="L1686" title="1 of 2 branches missed.">                if (Double.isNaN(angleA)) {</span>
+<span class="nc bnc" id="L1687" title="All 4 branches missed.">                    if (i2 &lt; i1 &amp;&amp; i1 &lt; imid) {</span>
+<span class="nc" id="L1688">                        angleA = LinesAndAngles.calcAngle(</span>
                         //angleA = LinesAndAngles.calcClockwiseAngle(
-<span class="nc" id="L1668">                            p.getX(i2), p.getY(i2),</span>
-<span class="nc" id="L1669">                            p.getX(i1), p.getY(i1),</span>
-<span class="nc" id="L1670">                            p.getX(imid), p.getY(imid));</span>
-<span class="nc bnc" id="L1671" title="All 2 branches missed.">                        if (Double.isNaN(angleA)) {</span>
-<span class="nc" id="L1672">                            angleA = LinesAndAngles.calcAngle(</span>
+<span class="nc" id="L1690">                            p.getX(i2), p.getY(i2),</span>
+<span class="nc" id="L1691">                            p.getX(i1), p.getY(i1),</span>
+<span class="nc" id="L1692">                            p.getX(imid), p.getY(imid));</span>
+<span class="nc bnc" id="L1693" title="All 2 branches missed.">                        if (Double.isNaN(angleA)) {</span>
+<span class="nc" id="L1694">                            angleA = LinesAndAngles.calcAngle(</span>
                             //angleA = LinesAndAngles.calcClockwiseAngle(
-<span class="nc" id="L1674">                                p.getX(i2), p.getY(i2),</span>
-<span class="nc" id="L1675">                                p.getX(i1), p.getY(i1),</span>
-<span class="nc" id="L1676">                                p.getX(imid), p.getY(imid));</span>
+<span class="nc" id="L1696">                                p.getX(i2), p.getY(i2),</span>
+<span class="nc" id="L1697">                                p.getX(i1), p.getY(i1),</span>
+<span class="nc" id="L1698">                                p.getX(imid), p.getY(imid));</span>
                         }
                     } else {
                        // System.out.println(
@@ -1692,54 +1714,54 @@ based upon algorithm in paper
                 log.fine(str);
                 */
 
-<span class="fc" id="L1695">                a[i1][i2] = (float)angleA;</span>
+<span class="fc" id="L1717">                a[i1][i2] = (float)angleA;</span>
                 
-<span class="fc bfc" id="L1697" title="All 2 branches covered.">                if (i2 == (i1 + 2)) {</span>
+<span class="fc bfc" id="L1719" title="All 2 branches covered.">                if (i2 == (i1 + 2)) {</span>
                     // fill in missing point, assume same value
-<span class="pc bpc" id="L1699" title="1 of 2 branches missed.">                    if (a[i1][i2] == a[i1][ii]) {</span>
-<span class="fc" id="L1700">                        a[i1][i1 + 1] = a[i1][i2];</span>
+<span class="pc bpc" id="L1721" title="1 of 2 branches missed.">                    if (a[i1][i2] == a[i1][ii]) {</span>
+<span class="fc" id="L1722">                        a[i1][i1 + 1] = a[i1][i2];</span>
                     }
                 }
             }
         }
 
-<span class="fc" id="L1706">        return a;</span>
+<span class="fc" id="L1728">        return a;</span>
     }
 
     protected int distanceSqEucl(int x1, int y1, int x2, int y2) {
-<span class="fc" id="L1710">        int diffX = x1 - x2;</span>
-<span class="fc" id="L1711">        int diffY = y1 - y2;</span>
-<span class="fc" id="L1712">        return (diffX * diffX + diffY * diffY);</span>
+<span class="fc" id="L1732">        int diffX = x1 - x2;</span>
+<span class="fc" id="L1733">        int diffY = y1 - y2;</span>
+<span class="fc" id="L1734">        return (diffX * diffX + diffY * diffY);</span>
     }
 
     private float[][] copy(float[][] a) {
-<span class="fc" id="L1716">        float[][] a2 = new float[a.length][];</span>
-<span class="fc bfc" id="L1717" title="All 2 branches covered.">        for (int i = 0; i &lt; a2.length; ++i) {</span>
-<span class="fc" id="L1718">            a2[i] = Arrays.copyOf(a[i], a[i].length);</span>
+<span class="fc" id="L1738">        float[][] a2 = new float[a.length][];</span>
+<span class="fc bfc" id="L1739" title="All 2 branches covered.">        for (int i = 0; i &lt; a2.length; ++i) {</span>
+<span class="fc" id="L1740">            a2[i] = Arrays.copyOf(a[i], a[i].length);</span>
         }
-<span class="fc" id="L1720">        return a2;</span>
+<span class="fc" id="L1742">        return a2;</span>
     }
 
     private void rotate(float[][] prevShifted) {
 
          // shift x left by 1 first
-<span class="fc bfc" id="L1726" title="All 2 branches covered.">         for (int y = 0; y &lt; prevShifted[0].length; ++y) {</span>
-<span class="fc" id="L1727">             float tmp0 = prevShifted[0][y];</span>
-<span class="fc bfc" id="L1728" title="All 2 branches covered.">             for (int x = 0; x &lt; (prevShifted.length- 1); ++x){</span>
-<span class="fc" id="L1729">                 prevShifted[x][y] = prevShifted[x + 1][y];</span>
+<span class="fc bfc" id="L1748" title="All 2 branches covered.">         for (int y = 0; y &lt; prevShifted[0].length; ++y) {</span>
+<span class="fc" id="L1749">             float tmp0 = prevShifted[0][y];</span>
+<span class="fc bfc" id="L1750" title="All 2 branches covered.">             for (int x = 0; x &lt; (prevShifted.length- 1); ++x){</span>
+<span class="fc" id="L1751">                 prevShifted[x][y] = prevShifted[x + 1][y];</span>
              }
-<span class="fc" id="L1731">             prevShifted[prevShifted.length - 1][y] = tmp0;</span>
+<span class="fc" id="L1753">             prevShifted[prevShifted.length - 1][y] = tmp0;</span>
          }
 
          // shift y down by 1
-<span class="fc bfc" id="L1735" title="All 2 branches covered.">         for (int x = 0; x &lt; prevShifted.length; ++x) {</span>
-<span class="fc" id="L1736">             float tmp0 = prevShifted[x][0];</span>
-<span class="fc bfc" id="L1737" title="All 2 branches covered.">             for (int y = 0; y &lt; (prevShifted[x].length - 1); ++y){</span>
-<span class="fc" id="L1738">                 prevShifted[x][y] = prevShifted[x][y + 1];</span>
+<span class="fc bfc" id="L1757" title="All 2 branches covered.">         for (int x = 0; x &lt; prevShifted.length; ++x) {</span>
+<span class="fc" id="L1758">             float tmp0 = prevShifted[x][0];</span>
+<span class="fc bfc" id="L1759" title="All 2 branches covered.">             for (int y = 0; y &lt; (prevShifted[x].length - 1); ++y){</span>
+<span class="fc" id="L1760">                 prevShifted[x][y] = prevShifted[x][y + 1];</span>
              }
-<span class="fc" id="L1740">             prevShifted[x][prevShifted[x].length - 1] = tmp0;</span>
+<span class="fc" id="L1762">             prevShifted[x][prevShifted[x].length - 1] = tmp0;</span>
          }
-<span class="fc" id="L1742">    }</span>
+<span class="fc" id="L1764">    }</span>
 
     /**
      * subtract the portion of a2 that is same size as
@@ -1767,93 +1789,93 @@ based upon algorithm in paper
         subtracting only the MXM portion
         */
 
-<span class="pc bpc" id="L1770" title="3 of 4 branches missed.">        assert(a1.length == a1[0].length);</span>
-<span class="pc bpc" id="L1771" title="3 of 4 branches missed.">        assert(a2.length == a2[0].length);</span>
+<span class="pc bpc" id="L1792" title="3 of 4 branches missed.">        assert(a1.length == a1[0].length);</span>
+<span class="pc bpc" id="L1793" title="3 of 4 branches missed.">        assert(a2.length == a2[0].length);</span>
 
-<span class="fc" id="L1773">        int n1 = a1.length;</span>
-<span class="fc" id="L1774">        int n2 = a2.length;</span>
+<span class="fc" id="L1795">        int n1 = a1.length;</span>
+<span class="fc" id="L1796">        int n2 = a2.length;</span>
 
-<span class="pc bpc" id="L1776" title="3 of 4 branches missed.">        assert(n1 &lt;= n2);</span>
+<span class="pc bpc" id="L1798" title="3 of 4 branches missed.">        assert(n1 &lt;= n2);</span>
 
-<span class="fc" id="L1778">        float[][] output = new float[n1][];</span>
-<span class="fc bfc" id="L1779" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="fc" id="L1780">            output[i] = new float[n1];</span>
-<span class="fc bfc" id="L1781" title="All 2 branches covered.">            for (int j = 0; j &lt; n1; ++j) {</span>
-<span class="fc" id="L1782">                float v = a1[i][j] - a2[i][j];</span>
-<span class="fc bfc" id="L1783" title="All 2 branches covered.">                if (v &lt; 0) {</span>
-<span class="fc" id="L1784">                    v *= -1;</span>
+<span class="fc" id="L1800">        float[][] output = new float[n1][];</span>
+<span class="fc bfc" id="L1801" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="fc" id="L1802">            output[i] = new float[n1];</span>
+<span class="fc bfc" id="L1803" title="All 2 branches covered.">            for (int j = 0; j &lt; n1; ++j) {</span>
+<span class="fc" id="L1804">                float v = a1[i][j] - a2[i][j];</span>
+<span class="fc bfc" id="L1805" title="All 2 branches covered.">                if (v &lt; 0) {</span>
+<span class="fc" id="L1806">                    v *= -1;</span>
                 }
-<span class="fc" id="L1786">                output[i][j] = v;</span>
+<span class="fc" id="L1808">                output[i][j] = v;</span>
             }
         }
 
-<span class="fc" id="L1790">        return output;</span>
+<span class="fc" id="L1812">        return output;</span>
     }
     
     protected void applySummedAreaTableConversion(float[][][] md) {
-<span class="fc bfc" id="L1794" title="All 2 branches covered.">        for (int i = 0; i &lt; md.length; ++i) {</span>
-<span class="fc" id="L1795">            applySummedAreaTableConversion(md[i]);</span>
+<span class="fc bfc" id="L1816" title="All 2 branches covered.">        for (int i = 0; i &lt; md.length; ++i) {</span>
+<span class="fc" id="L1817">            applySummedAreaTableConversion(md[i]);</span>
         }
-<span class="fc" id="L1797">    }</span>
+<span class="fc" id="L1819">    }</span>
 
     protected void applySummedAreaTableConversion(float[][] mdI) {
 
-<span class="fc" id="L1801">        int w = mdI.length;</span>
-<span class="fc" id="L1802">        int h = mdI[0].length;</span>
+<span class="fc" id="L1823">        int w = mdI.length;</span>
+<span class="fc" id="L1824">        int h = mdI[0].length;</span>
         
         // sum along columns, that is a[i][*]
-<span class="fc bfc" id="L1805" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L1806" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc bfc" id="L1807" title="All 4 branches covered.">                if (i &gt; 0 &amp;&amp; j &gt; 0) {</span>
-<span class="fc" id="L1808">                    mdI[i][j] += (mdI[i - 1][j] + mdI[i][j - 1]</span>
+<span class="fc bfc" id="L1827" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L1828" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L1829" title="All 4 branches covered.">                if (i &gt; 0 &amp;&amp; j &gt; 0) {</span>
+<span class="fc" id="L1830">                    mdI[i][j] += (mdI[i - 1][j] + mdI[i][j - 1]</span>
                         - mdI[i - 1][j - 1]);
-<span class="fc bfc" id="L1810" title="All 2 branches covered.">                } else if (i &gt; 0) {</span>
-<span class="fc" id="L1811">                    mdI[i][j] += mdI[i - 1][j];</span>
-<span class="fc bfc" id="L1812" title="All 2 branches covered.">                } else if (j &gt; 0) {</span>
-<span class="fc" id="L1813">                    mdI[i][j] += mdI[i][j - 1];</span>
+<span class="fc bfc" id="L1832" title="All 2 branches covered.">                } else if (i &gt; 0) {</span>
+<span class="fc" id="L1833">                    mdI[i][j] += mdI[i - 1][j];</span>
+<span class="fc bfc" id="L1834" title="All 2 branches covered.">                } else if (j &gt; 0) {</span>
+<span class="fc" id="L1835">                    mdI[i][j] += mdI[i][j - 1];</span>
                 }
             }
         }
-<span class="fc" id="L1817">    }</span>
+<span class="fc" id="L1839">    }</span>
 
     private List&lt;PairFloat&gt; kNearestBruteForce(
         int k, int x, int y, float tolerance,
         PairIntArray xy2) {
 
-<span class="nc" id="L1823">        int nn = 0;</span>
-<span class="nc" id="L1824">        float[] dist = new float[xy2.getN()];</span>
-<span class="nc" id="L1825">        int[] indexes = new int[xy2.getN()];</span>
-<span class="nc bnc" id="L1826" title="All 2 branches missed.">        for (int i = 0; i &lt; xy2.getN(); ++i) {</span>
-<span class="nc" id="L1827">            int diffX = xy2.getX(i) - x;</span>
-<span class="nc" id="L1828">            int diffY = xy2.getY(i) - y;</span>
-<span class="nc" id="L1829">            dist[i] = (float) Math.sqrt(</span>
+<span class="nc" id="L1845">        int nn = 0;</span>
+<span class="nc" id="L1846">        float[] dist = new float[xy2.getN()];</span>
+<span class="nc" id="L1847">        int[] indexes = new int[xy2.getN()];</span>
+<span class="nc bnc" id="L1848" title="All 2 branches missed.">        for (int i = 0; i &lt; xy2.getN(); ++i) {</span>
+<span class="nc" id="L1849">            int diffX = xy2.getX(i) - x;</span>
+<span class="nc" id="L1850">            int diffY = xy2.getY(i) - y;</span>
+<span class="nc" id="L1851">            dist[i] = (float) Math.sqrt(</span>
                 diffX * diffX + diffY * diffY);
-<span class="nc bnc" id="L1831" title="All 2 branches missed.">            if (dist[i] &lt;= tolerance) {</span>
-<span class="nc" id="L1832">                nn++;</span>
+<span class="nc bnc" id="L1853" title="All 2 branches missed.">            if (dist[i] &lt;= tolerance) {</span>
+<span class="nc" id="L1854">                nn++;</span>
             }
-<span class="nc" id="L1834">            indexes[i] = i;</span>
+<span class="nc" id="L1856">            indexes[i] = i;</span>
         }
 
-<span class="nc bnc" id="L1837" title="All 2 branches missed.">        if (nn == 0) {</span>
-<span class="nc" id="L1838">            return null;</span>
+<span class="nc bnc" id="L1859" title="All 2 branches missed.">        if (nn == 0) {</span>
+<span class="nc" id="L1860">            return null;</span>
         }
 
-<span class="nc" id="L1841">        QuickSort.sortBy1stArg(dist, indexes);</span>
+<span class="nc" id="L1863">        QuickSort.sortBy1stArg(dist, indexes);</span>
 
-<span class="nc bnc" id="L1843" title="All 2 branches missed.">        if (k &lt; nn) {</span>
-<span class="nc" id="L1844">            nn = k;</span>
+<span class="nc bnc" id="L1865" title="All 2 branches missed.">        if (k &lt; nn) {</span>
+<span class="nc" id="L1866">            nn = k;</span>
         }
 
-<span class="nc" id="L1847">        List&lt;PairFloat&gt; list = new ArrayList&lt;PairFloat&gt;(nn);</span>
-<span class="nc bnc" id="L1848" title="All 2 branches missed.">        for (int i = 0; i &lt; nn; ++i) {</span>
-<span class="nc" id="L1849">            int idx = indexes[i];</span>
-<span class="nc" id="L1850">            int x2 = xy2.getX(idx);</span>
-<span class="nc" id="L1851">            int y2 = xy2.getY(idx);</span>
-<span class="nc" id="L1852">            PairFloat p = new PairFloat(x2, y2);</span>
-<span class="nc" id="L1853">            list.add(p);</span>
+<span class="nc" id="L1869">        List&lt;PairFloat&gt; list = new ArrayList&lt;PairFloat&gt;(nn);</span>
+<span class="nc bnc" id="L1870" title="All 2 branches missed.">        for (int i = 0; i &lt; nn; ++i) {</span>
+<span class="nc" id="L1871">            int idx = indexes[i];</span>
+<span class="nc" id="L1872">            int x2 = xy2.getX(idx);</span>
+<span class="nc" id="L1873">            int y2 = xy2.getY(idx);</span>
+<span class="nc" id="L1874">            PairFloat p = new PairFloat(x2, y2);</span>
+<span class="nc" id="L1875">            list.add(p);</span>
         }
 
-<span class="nc" id="L1856">        return list;</span>
+<span class="nc" id="L1878">        return list;</span>
     }
 
     public static class Result {
@@ -2019,43 +2041,43 @@ based upon algorithm in paper
         float[][][] md, float pixTol, int topK,
         List&lt;PairIntArray&gt; addedPointLists) {
 
-<span class="pc bpc" id="L2022" title="1 of 2 branches missed.">        if (intervals.size() == 0) {</span>
-<span class="nc" id="L2023">            return null;</span>
+<span class="pc bpc" id="L2044" title="1 of 2 branches missed.">        if (intervals.size() == 0) {</span>
+<span class="nc" id="L2045">            return null;</span>
         }
 
-<span class="fc" id="L2026">        List&lt;Result&gt; results = new ArrayList&lt;Result&gt;(topK);</span>
-<span class="fc bfc" id="L2027" title="All 2 branches covered.">        for (int i = 0; i &lt; topK; ++i) {</span>
+<span class="fc" id="L2048">        List&lt;Result&gt; results = new ArrayList&lt;Result&gt;(topK);</span>
+<span class="fc bfc" id="L2049" title="All 2 branches covered.">        for (int i = 0; i &lt; topK; ++i) {</span>
             
-<span class="fc" id="L2029">            SR sr = intervals.get(i);</span>
+<span class="fc" id="L2051">            SR sr = intervals.get(i);</span>
             
             //System.out.println(&quot;srLen=&quot; + sr.mLen);
             
-<span class="fc" id="L2033">            PairIntArray added = new PairIntArray();</span>
-<span class="fc" id="L2034">            Result result = null;</span>
+<span class="fc" id="L2055">            PairIntArray added = new PairIntArray();</span>
+<span class="fc" id="L2056">            Result result = null;</span>
             
-<span class="pc bpc" id="L2036" title="1 of 2 branches missed.">            if (sr.mLen &lt; 7) {</span>
+<span class="pc bpc" id="L2058" title="1 of 2 branches missed.">            if (sr.mLen &lt; 7) {</span>
                 //too few for the RANSAC algorithm
-<span class="nc" id="L2038">                result = smallNumberEuclidean(sr, p, q, pixTol, added);</span>
+<span class="nc" id="L2060">                result = smallNumberEuclidean(sr, p, q, pixTol, added);</span>
             } else { 
-<span class="fc" id="L2040">                result = addByTransformation(sr, p, q, pixTol, added);</span>
+<span class="fc" id="L2062">                result = addByTransformation(sr, p, q, pixTol, added);</span>
             }
             
-<span class="pc bpc" id="L2043" title="1 of 2 branches missed.">            if (result != null) {</span>
-<span class="pc bpc" id="L2044" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
-<span class="fc" id="L2045">                results.add(result);</span>
-<span class="fc" id="L2046">                addedPointLists.add(added);</span>
+<span class="pc bpc" id="L2065" title="1 of 2 branches missed.">            if (result != null) {</span>
+<span class="pc bpc" id="L2066" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
+<span class="fc" id="L2067">                results.add(result);</span>
+<span class="fc" id="L2068">                addedPointLists.add(added);</span>
             }
         }
 
-<span class="pc bpc" id="L2050" title="1 of 2 branches missed.">        if (results.isEmpty()) {</span>
-<span class="nc" id="L2051">            return null;</span>
+<span class="pc bpc" id="L2072" title="1 of 2 branches missed.">        if (results.isEmpty()) {</span>
+<span class="nc" id="L2073">            return null;</span>
         }
         
         { //DEBUG, recalc the saluk score to see if top has changed
             //TODO:   
         }
      
-<span class="fc" id="L2058">        return results;</span>
+<span class="fc" id="L2080">        return results;</span>
     }
     
     /**
@@ -2068,7 +2090,7 @@ based upon algorithm in paper
     private void populateWithChordDiffs(Result result,
         float[][][] md, int n1, int n2) {
        
-<span class="pc bpc" id="L2071" title="3 of 4 branches missed.">        assert(md[0][0].length == n1);</span>
+<span class="pc bpc" id="L2093" title="3 of 4 branches missed.">        assert(md[0][0].length == n1);</span>
         
         //md[0:n2-1][0:n1-1][0:n1-1]
         
@@ -2078,53 +2100,53 @@ based upon algorithm in paper
         //    even if the interval is a single pixel.
         //    and this argument receives a list of SR instead of a Result
 
-<span class="fc" id="L2081">        result.chordDiffSum = 0;</span>
+<span class="fc" id="L2103">        result.chordDiffSum = 0;</span>
         
-<span class="fc" id="L2083">        SummedAreaTable st = new SummedAreaTable();</span>
-<span class="fc" id="L2084">        float[] output = new float[2];</span>
-<span class="fc" id="L2085">        int row = 0;</span>
-<span class="fc" id="L2086">        int offset = 0;</span>
+<span class="fc" id="L2105">        SummedAreaTable st = new SummedAreaTable();</span>
+<span class="fc" id="L2106">        float[] output = new float[2];</span>
+<span class="fc" id="L2107">        int row = 0;</span>
+<span class="fc" id="L2108">        int offset = 0;</span>
         int idx1, idx2;
         
-<span class="fc bfc" id="L2089" title="All 2 branches covered.">        for (int i = 0; i &lt; result.getNumberOfMatches(); ++i) {</span>
+<span class="fc bfc" id="L2111" title="All 2 branches covered.">        for (int i = 0; i &lt; result.getNumberOfMatches(); ++i) {</span>
             
             // reading 1 pixel at a time...not ideal compared to the smaller
             //  cost over the best interval that it was extracted from
             
-<span class="fc" id="L2094">            idx1 = result.getIdx1(i);</span>
-<span class="fc" id="L2095">            idx2 = result.getIdx2(i);</span>
+<span class="fc" id="L2116">            idx1 = result.getIdx1(i);</span>
+<span class="fc" id="L2117">            idx2 = result.getIdx2(i);</span>
  
-<span class="fc" id="L2097">            offset = 0;</span>
+<span class="fc" id="L2119">            offset = 0;</span>
 
-<span class="fc bfc" id="L2099" title="All 2 branches covered.">            if (idx2 &gt; (n1 - 2)) {</span>
+<span class="fc bfc" id="L2121" title="All 2 branches covered.">            if (idx2 &gt; (n1 - 2)) {</span>
                 // idx2 is outside of the default row 0 of md[0] array, so
                 // need to calculate the offset.
                 
                 // if within bounds, will add 4 to the offset to get the pixel
                 // away from bounds
                                 
-<span class="pc bpc" id="L2106" title="1 of 2 branches missed.">                if (((idx2 - (n1 - 2)) + 4) &lt; (n1 - 2)) {</span>
-<span class="fc" id="L2107">                    offset = (idx2 - (n1 - 2)) + 4;</span>
+<span class="pc bpc" id="L2128" title="1 of 2 branches missed.">                if (((idx2 - (n1 - 2)) + 4) &lt; (n1 - 2)) {</span>
+<span class="fc" id="L2129">                    offset = (idx2 - (n1 - 2)) + 4;</span>
                 } else {
-<span class="nc" id="L2109">                    offset = (idx2 - (n1 - 2));</span>
+<span class="nc" id="L2131">                    offset = (idx2 - (n1 - 2));</span>
                 }
-<span class="fc" id="L2111">                idx2 -= offset;</span>
-<span class="pc bpc" id="L2112" title="1 of 2 branches missed.">                if (idx2 &lt; 0) {</span>
-<span class="nc" id="L2113">                    offset = idx2 - (n1 - 2);</span>
-<span class="nc" id="L2114">                    idx2 -= offset;</span>
+<span class="fc" id="L2133">                idx2 -= offset;</span>
+<span class="pc bpc" id="L2134" title="1 of 2 branches missed.">                if (idx2 &lt; 0) {</span>
+<span class="nc" id="L2135">                    offset = idx2 - (n1 - 2);</span>
+<span class="nc" id="L2136">                    idx2 -= offset;</span>
                 }
             }
            
-<span class="fc" id="L2118">            st.extractWindowFromSummedAreaTable(md[offset], </span>
+<span class="fc" id="L2140">            st.extractWindowFromSummedAreaTable(md[offset], </span>
                 idx2, idx2 + 1, idx2, idx2 + 1, output);
             
-<span class="fc" id="L2121">            float d = output[0]/output[1];</span>
+<span class="fc" id="L2143">            float d = output[0]/output[1];</span>
           
-<span class="fc" id="L2123">            result.chordDiffSum += d;</span>
+<span class="fc" id="L2145">            result.chordDiffSum += d;</span>
         }
         
-<span class="fc" id="L2126">        result.chordsNeedUpdates = false;</span>
-<span class="fc" id="L2127">    }</span>
+<span class="fc" id="L2148">        result.chordsNeedUpdates = false;</span>
+<span class="fc" id="L2149">    }</span>
 
     /**
      * given a chord difference matrix which does not use summed columns
@@ -2137,15 +2159,15 @@ based upon algorithm in paper
     private TDoubleList extractChordDiffs(float[][][] md, int n1, int n2,
         PairIntArray matchedIndexes) {
        
-<span class="nc bnc" id="L2140" title="All 4 branches missed.">        assert(md[0][0].length == n1);</span>
-<span class="nc bnc" id="L2141" title="All 4 branches missed.">        assert(md.length == n2);</span>
-<span class="nc bnc" id="L2142" title="All 4 branches missed.">        assert(md[0].length == n1);</span>
+<span class="nc bnc" id="L2162" title="All 4 branches missed.">        assert(md[0][0].length == n1);</span>
+<span class="nc bnc" id="L2163" title="All 4 branches missed.">        assert(md.length == n2);</span>
+<span class="nc bnc" id="L2164" title="All 4 branches missed.">        assert(md[0].length == n1);</span>
         
         //md[0:n2-1][0:n1-1][0:n1-1]
         
-<span class="nc" id="L2146">        TDoubleList chordDiffs = new TDoubleArrayList();</span>
+<span class="nc" id="L2168">        TDoubleList chordDiffs = new TDoubleArrayList();</span>
         
-<span class="nc" id="L2148">        int offset = 0;</span>
+<span class="nc" id="L2170">        int offset = 0;</span>
         int idx1, idx2;
         
         /*
@@ -2171,112 +2193,112 @@ based upon algorithm in paper
          00 01 02        33 30 31 32  p_i_j - q_(i+3)_(j+3)
         */
 
-<span class="nc bnc" id="L2174" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedIndexes.getN(); ++i) {</span>
+<span class="nc bnc" id="L2196" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedIndexes.getN(); ++i) {</span>
             
-<span class="nc" id="L2176">            idx1 = matchedIndexes.getX(i);</span>
-<span class="nc" id="L2177">            idx2 = matchedIndexes.getY(i);</span>
+<span class="nc" id="L2198">            idx1 = matchedIndexes.getX(i);</span>
+<span class="nc" id="L2199">            idx2 = matchedIndexes.getY(i);</span>
  
             // idx2 is at column 0 when offset=idx2.
             // since n2 &gt;= n1, offset should be within bounds for tht offset.
             // but the diagonals are 0, so choosing a position
             // at least a few pixels away from bounds.
-<span class="nc" id="L2183">            offset = 0;</span>
+<span class="nc" id="L2205">            offset = 0;</span>
 
-<span class="nc bnc" id="L2185" title="All 2 branches missed.">            if (idx2 &gt; (n1 - 2)) {</span>
+<span class="nc bnc" id="L2207" title="All 2 branches missed.">            if (idx2 &gt; (n1 - 2)) {</span>
                 // idx2 is outside of the default row 0 of md[0] array, so
                 // need to calculate the offset.
                 
                 // if within bounds, will add 4 to the offset to get the pixel
                 // away from bounds
                                 
-<span class="nc bnc" id="L2192" title="All 2 branches missed.">                if (((idx2 - (n1 - 2)) + 4) &lt; (n1 - 2)) {</span>
-<span class="nc" id="L2193">                    offset = (idx2 - (n1 - 2)) + 4;</span>
+<span class="nc bnc" id="L2214" title="All 2 branches missed.">                if (((idx2 - (n1 - 2)) + 4) &lt; (n1 - 2)) {</span>
+<span class="nc" id="L2215">                    offset = (idx2 - (n1 - 2)) + 4;</span>
                 } else {
-<span class="nc" id="L2195">                    offset = (idx2 - (n1 - 2));</span>
+<span class="nc" id="L2217">                    offset = (idx2 - (n1 - 2));</span>
                 }
-<span class="nc" id="L2197">                idx2 -= offset;</span>
-<span class="nc bnc" id="L2198" title="All 2 branches missed.">                if (idx2 &lt; 0) {</span>
-<span class="nc" id="L2199">                    offset = idx2 - (n1 - 2);</span>
-<span class="nc" id="L2200">                    idx2 -= offset;</span>
+<span class="nc" id="L2219">                idx2 -= offset;</span>
+<span class="nc bnc" id="L2220" title="All 2 branches missed.">                if (idx2 &lt; 0) {</span>
+<span class="nc" id="L2221">                    offset = idx2 - (n1 - 2);</span>
+<span class="nc" id="L2222">                    idx2 -= offset;</span>
                 }
             }
                         
-<span class="nc" id="L2204">            chordDiffs.add(md[offset][idx1][idx2]);</span>
+<span class="nc" id="L2226">            chordDiffs.add(md[offset][idx1][idx2]);</span>
         }
         
-<span class="nc" id="L2207">        return chordDiffs;</span>
+<span class="nc" id="L2229">        return chordDiffs;</span>
     }
 
     protected void populatePointArrays(SR sr, PairIntArray p, PairIntArray q,
         PairIntArray pOut, PairIntArray qOut,
         PairIntArray pUnmatchedOut, PairIntArray qUnmatchedOut) {
 
-<span class="fc" id="L2214">        int offset = sr.offsetIdx2;</span>
-<span class="fc" id="L2215">        int len = sr.mLen;</span>
+<span class="fc" id="L2236">        int offset = sr.offsetIdx2;</span>
+<span class="fc" id="L2237">        int len = sr.mLen;</span>
 
-<span class="fc" id="L2217">        int n1 = p.getN();</span>
-<span class="fc" id="L2218">        int n2 = q.getN();</span>
+<span class="fc" id="L2239">        int n1 = p.getN();</span>
+<span class="fc" id="L2240">        int n2 = q.getN();</span>
 
-<span class="fc" id="L2220">        TIntSet pIdxs = new TIntHashSet();</span>
-<span class="fc" id="L2221">        TIntSet qIdxs = new TIntHashSet();</span>
+<span class="fc" id="L2242">        TIntSet pIdxs = new TIntHashSet();</span>
+<span class="fc" id="L2243">        TIntSet qIdxs = new TIntHashSet();</span>
 
-<span class="fc bfc" id="L2223" title="All 2 branches covered.">        for (int i = 0; i &lt; len; ++i) {</span>
+<span class="fc bfc" id="L2245" title="All 2 branches covered.">        for (int i = 0; i &lt; len; ++i) {</span>
 
-<span class="fc" id="L2225">            int pIdx = i;</span>
-<span class="pc bpc" id="L2226" title="3 of 4 branches missed.">            assert(pIdx &lt; n1);</span>
+<span class="fc" id="L2247">            int pIdx = i;</span>
+<span class="pc bpc" id="L2248" title="3 of 4 branches missed.">            assert(pIdx &lt; n1);</span>
 
-<span class="fc" id="L2228">            pIdxs.add(pIdx);</span>
-<span class="fc" id="L2229">            pOut.add(p.getX(pIdx), p.getY(pIdx));</span>
+<span class="fc" id="L2250">            pIdxs.add(pIdx);</span>
+<span class="fc" id="L2251">            pOut.add(p.getX(pIdx), p.getY(pIdx));</span>
 
-<span class="fc" id="L2231">            int qIdx = pIdx + offset;</span>
-<span class="fc bfc" id="L2232" title="All 2 branches covered.">            if (qIdx &gt;= n2) {</span>
-<span class="fc" id="L2233">                qIdx -= n2;</span>
+<span class="fc" id="L2253">            int qIdx = pIdx + offset;</span>
+<span class="fc bfc" id="L2254" title="All 2 branches covered.">            if (qIdx &gt;= n2) {</span>
+<span class="fc" id="L2255">                qIdx -= n2;</span>
             }
             
-<span class="fc" id="L2236">            qIdxs.add(qIdx);</span>
-<span class="fc" id="L2237">            qOut.add(q.getX(qIdx), q.getY(qIdx));</span>
+<span class="fc" id="L2258">            qIdxs.add(qIdx);</span>
+<span class="fc" id="L2259">            qOut.add(q.getX(qIdx), q.getY(qIdx));</span>
         }
 
-<span class="pc bpc" id="L2240" title="3 of 4 branches missed.">        assert(pOut.getN() == len);</span>
-<span class="pc bpc" id="L2241" title="3 of 4 branches missed.">        assert(qOut.getN() == len);</span>
+<span class="pc bpc" id="L2262" title="3 of 4 branches missed.">        assert(pOut.getN() == len);</span>
+<span class="pc bpc" id="L2263" title="3 of 4 branches missed.">        assert(qOut.getN() == len);</span>
 
         // -- populate unmatched p ----
-<span class="fc bfc" id="L2244" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
-<span class="fc bfc" id="L2245" title="All 2 branches covered.">            if (!pIdxs.contains(i)) {</span>
-<span class="fc" id="L2246">                pUnmatchedOut.add(p.getX(i), p.getY(i));</span>
+<span class="fc bfc" id="L2266" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
+<span class="fc bfc" id="L2267" title="All 2 branches covered.">            if (!pIdxs.contains(i)) {</span>
+<span class="fc" id="L2268">                pUnmatchedOut.add(p.getX(i), p.getY(i));</span>
             }
         }
         
-<span class="fc bfc" id="L2250" title="All 2 branches covered.">        for (int i = 0; i &lt; q.getN(); ++i) {</span>
-<span class="fc bfc" id="L2251" title="All 2 branches covered.">            if (!qIdxs.contains(i)) {</span>
-<span class="fc" id="L2252">                qUnmatchedOut.add(q.getX(i), q.getY(i));</span>
+<span class="fc bfc" id="L2272" title="All 2 branches covered.">        for (int i = 0; i &lt; q.getN(); ++i) {</span>
+<span class="fc bfc" id="L2273" title="All 2 branches covered.">            if (!qIdxs.contains(i)) {</span>
+<span class="fc" id="L2274">                qUnmatchedOut.add(q.getX(i), q.getY(i));</span>
             }
         }
         
-<span class="pc bpc" id="L2256" title="3 of 4 branches missed.">        assert(pUnmatchedOut.getN() + pOut.getN() == p.getN());</span>
-<span class="pc bpc" id="L2257" title="3 of 4 branches missed.">        assert(qUnmatchedOut.getN() + qOut.getN() == q.getN());</span>
-<span class="fc" id="L2258">    }</span>
+<span class="pc bpc" id="L2278" title="3 of 4 branches missed.">        assert(pUnmatchedOut.getN() + pOut.getN() == p.getN());</span>
+<span class="pc bpc" id="L2279" title="3 of 4 branches missed.">        assert(qUnmatchedOut.getN() + qOut.getN() == q.getN());</span>
+<span class="fc" id="L2280">    }</span>
     
     private Result addByTransformation(SR sr, PairIntArray p, PairIntArray q,
         float pixTol, PairIntArray outputAddedPoints) {
 
-<span class="fc" id="L2263">        int len = sr.mLen;</span>
-<span class="pc bpc" id="L2264" title="1 of 2 branches missed.">        if (len &lt; 2) {</span>
-<span class="nc" id="L2265">            return null;</span>
+<span class="fc" id="L2285">        int len = sr.mLen;</span>
+<span class="pc bpc" id="L2286" title="1 of 2 branches missed.">        if (len &lt; 2) {</span>
+<span class="nc" id="L2287">            return null;</span>
         }
         
-<span class="fc" id="L2268">        PairIntArray leftXY = new PairIntArray(len);</span>
-<span class="fc" id="L2269">        PairIntArray rightXY = new PairIntArray(len);</span>
-<span class="fc" id="L2270">        PairIntArray leftUnmatchedXY = new PairIntArray(p.getN() - len);</span>
-<span class="fc" id="L2271">        PairIntArray rightUnmatchedXY = new PairIntArray(q.getN() - len);</span>
+<span class="fc" id="L2290">        PairIntArray leftXY = new PairIntArray(len);</span>
+<span class="fc" id="L2291">        PairIntArray rightXY = new PairIntArray(len);</span>
+<span class="fc" id="L2292">        PairIntArray leftUnmatchedXY = new PairIntArray(p.getN() - len);</span>
+<span class="fc" id="L2293">        PairIntArray rightUnmatchedXY = new PairIntArray(q.getN() - len);</span>
 
-<span class="fc" id="L2273">        populatePointArrays(sr, p, q, leftXY, rightXY,</span>
+<span class="fc" id="L2295">        populatePointArrays(sr, p, q, leftXY, rightXY,</span>
             leftUnmatchedXY, rightUnmatchedXY);
 
-<span class="fc" id="L2276">        log.fine(&quot; lft.n=&quot; + leftXY.getN()</span>
-<span class="fc" id="L2277">            + &quot; rgt.n=&quot; + rightXY.getN());</span>
+<span class="fc" id="L2298">        log.fine(&quot; lft.n=&quot; + leftXY.getN()</span>
+<span class="fc" id="L2299">            + &quot; rgt.n=&quot; + rightXY.getN());</span>
 
-<span class="fc" id="L2279">        return addByTransformation(p, q,</span>
+<span class="fc" id="L2301">        return addByTransformation(p, q,</span>
             leftXY, rightXY, leftUnmatchedXY, rightUnmatchedXY,
             pixTol, outputAddedPoints);
     }
@@ -2287,123 +2309,123 @@ based upon algorithm in paper
         PairIntArray leftUnmatched, PairIntArray rightUnmatched,
         float pixTol, PairIntArray outAddedPoints) {
 
-<span class="fc" id="L2290">        String debugTag = &quot;offset=&quot; + Integer.toString(</span>
-<span class="fc" id="L2291">            MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L2312">        String debugTag = &quot;offset=&quot; + Integer.toString(</span>
+<span class="fc" id="L2313">            MiscDebug.getCurrentTimeFormatted());</span>
 
-<span class="fc" id="L2293">        PairIntArray outLeft = new PairIntArray(left.getN());</span>
-<span class="fc" id="L2294">        PairIntArray outRight = new PairIntArray(left.getN());</span>
+<span class="fc" id="L2315">        PairIntArray outLeft = new PairIntArray(left.getN());</span>
+<span class="fc" id="L2316">        PairIntArray outRight = new PairIntArray(left.getN());</span>
         
-<span class="fc" id="L2296">        RANSACEuclideanSolver euclid =</span>
+<span class="fc" id="L2318">        RANSACEuclideanSolver euclid =</span>
             new RANSACEuclideanSolver();
-<span class="fc" id="L2298">        EuclideanTransformationFit fit = euclid.calculateEuclideanTransformation(</span>
+<span class="fc" id="L2320">        EuclideanTransformationFit fit = euclid.calculateEuclideanTransformation(</span>
             left, right, outLeft, outRight, 5);
 
-<span class="pc bpc" id="L2301" title="1 of 2 branches missed.">        TransformationParameters params = (fit != null) ?</span>
-<span class="pc" id="L2302">            fit.getTransformationParameters() : null;</span>
+<span class="pc bpc" id="L2323" title="1 of 2 branches missed.">        TransformationParameters params = (fit != null) ?</span>
+<span class="pc" id="L2324">            fit.getTransformationParameters() : null;</span>
 
-<span class="pc bpc" id="L2304" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="pc bpc" id="L2326" title="1 of 2 branches missed.">        if (params == null) {</span>
             //TODO: reconsider whether to package up
             // the given sequence s and return it here
-<span class="nc" id="L2307">            log.fine(debugTag + &quot; no euclidean fit&quot;);</span>
-<span class="nc" id="L2308">            return null;</span>
+<span class="nc" id="L2329">            log.fine(debugTag + &quot; no euclidean fit&quot;);</span>
+<span class="nc" id="L2330">            return null;</span>
         }
 
         // since this class is using equidistant
         // points on shape boundary, need to compare
         // for same scale.
-<span class="fc bfc" id="L2314" title="All 4 branches covered.">        if (params.getScale() &lt; 0.9 || params.getScale() &gt; 1.1) {</span>
-<span class="fc" id="L2315">            log.fine(&quot;WARNING: &quot; + debugTag +</span>
+<span class="fc bfc" id="L2336" title="All 4 branches covered.">        if (params.getScale() &lt; 0.9 || params.getScale() &gt; 1.1) {</span>
+<span class="fc" id="L2337">            log.fine(&quot;WARNING: &quot; + debugTag +</span>
                 &quot; euclidean transformation scale: &quot;  + params);
         }
-<span class="fc" id="L2318">        left = outLeft;</span>
-<span class="fc" id="L2319">        right = outRight;</span>
+<span class="fc" id="L2340">        left = outLeft;</span>
+<span class="fc" id="L2341">        right = outRight;</span>
 
-<span class="fc" id="L2321">        log.fine(debugTag + &quot; partial fit=&quot; + fit.toString()</span>
+<span class="fc" id="L2343">        log.fine(debugTag + &quot; partial fit=&quot; + fit.toString()</span>
             + &quot; params=&quot; + params
-<span class="fc" id="L2323">            + &quot; reset left.n=&quot; + left.getN()</span>
-<span class="fc" id="L2324">            + &quot; right.n=&quot; + right.getN());</span>
+<span class="fc" id="L2345">            + &quot; reset left.n=&quot; + left.getN()</span>
+<span class="fc" id="L2346">            + &quot; right.n=&quot; + right.getN());</span>
 
-<span class="fc" id="L2326">        log.fine(&quot;dp=&quot; + dp + &quot; pixTol=&quot; + pixTol);</span>
+<span class="fc" id="L2348">        log.fine(&quot;dp=&quot; + dp + &quot; pixTol=&quot; + pixTol);</span>
 
         // ---- apply transformation -----
-<span class="fc" id="L2329">        Result result = applyTransformation(params, p, q,</span>
+<span class="fc" id="L2351">        Result result = applyTransformation(params, p, q,</span>
             left, right, leftUnmatched, rightUnmatched, 
             pixTol, outAddedPoints);
         
-<span class="fc" id="L2333">        return result;        </span>
+<span class="fc" id="L2355">        return result;        </span>
     }
 
      private void print(String label, float[][][] a) {
-<span class="nc bnc" id="L2337" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L2338">            print(label + &quot; off &quot; + i, a[i]);</span>
+<span class="nc bnc" id="L2359" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L2360">            print(label + &quot; off &quot; + i, a[i]);</span>
         }
-<span class="nc" id="L2340">    }</span>
+<span class="nc" id="L2362">    }</span>
 
     private void print(String label, float[][] a) {
 
-<span class="nc" id="L2344">        StringBuilder sb = new StringBuilder(label);</span>
-<span class="nc" id="L2345">        sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L2366">        StringBuilder sb = new StringBuilder(label);</span>
+<span class="nc" id="L2367">        sb.append(&quot;\n&quot;);</span>
 
-<span class="nc bnc" id="L2347" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L2348">            sb.append(String.format(&quot;row %3d: &quot;, i));</span>
-<span class="nc bnc" id="L2349" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc" id="L2350">                sb.append(String.format(&quot; %.2f,&quot;, a[i][j]));</span>
+<span class="nc bnc" id="L2369" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L2370">            sb.append(String.format(&quot;row %3d: &quot;, i));</span>
+<span class="nc bnc" id="L2371" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc" id="L2372">                sb.append(String.format(&quot; %.2f,&quot;, a[i][j]));</span>
             }
-<span class="nc" id="L2352">            log.fine(sb.toString());</span>
-<span class="nc" id="L2353">            System.out.println(sb.toString());</span>
-<span class="nc" id="L2354">            sb.delete(0, sb.length());</span>
+<span class="nc" id="L2374">            log.fine(sb.toString());</span>
+<span class="nc" id="L2375">            System.out.println(sb.toString());</span>
+<span class="nc" id="L2376">            sb.delete(0, sb.length());</span>
         }
-<span class="nc" id="L2356">    }</span>
+<span class="nc" id="L2378">    }</span>
                     
     public float readStoredMatrix(int pIdx, int qIdx) {
         
-<span class="nc bnc" id="L2360" title="All 2 branches missed.">        if (storedMatrix == null) {</span>
-<span class="nc" id="L2361">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L2382" title="All 2 branches missed.">        if (storedMatrix == null) {</span>
+<span class="nc" id="L2383">            throw new IllegalStateException(</span>
                 &quot;need to use overrideToStoreMatrix() before match(...)&quot;);
         }
       
-<span class="nc" id="L2365">        SummedAreaTable st = new SummedAreaTable();</span>
+<span class="nc" id="L2387">        SummedAreaTable st = new SummedAreaTable();</span>
         
-<span class="nc" id="L2367">        float[] output = new float[2];</span>
-<span class="nc" id="L2368">        int row = 0;</span>
+<span class="nc" id="L2389">        float[] output = new float[2];</span>
+<span class="nc" id="L2390">        int row = 0;</span>
         int idx1, idx2;
         
-<span class="nc bnc" id="L2371" title="All 2 branches missed.">        if (pToQ) {</span>
-<span class="nc" id="L2372">            idx1 = pIdx/storePDp;</span>
-<span class="nc" id="L2373">            idx2 = qIdx/storeQDp;</span>
+<span class="nc bnc" id="L2393" title="All 2 branches missed.">        if (pToQ) {</span>
+<span class="nc" id="L2394">            idx1 = pIdx/storePDp;</span>
+<span class="nc" id="L2395">            idx2 = qIdx/storeQDp;</span>
         } else {
-<span class="nc" id="L2375">            idx1 = qIdx/storeQDp;</span>
-<span class="nc" id="L2376">            idx2 = pIdx/storePDp;</span>
+<span class="nc" id="L2397">            idx1 = qIdx/storeQDp;</span>
+<span class="nc" id="L2398">            idx2 = pIdx/storePDp;</span>
         }
         
-<span class="nc" id="L2379">        int n1 = storedMatrix[0].length;</span>
+<span class="nc" id="L2401">        int n1 = storedMatrix[0].length;</span>
         
-<span class="nc" id="L2381">        int offset = 0;</span>
+<span class="nc" id="L2403">        int offset = 0;</span>
    
         //NOTE: this is not the same as reading a block w.r.t. the original
         //   offset that was used
 
-<span class="nc bnc" id="L2386" title="All 2 branches missed.">        if (idx2 &gt; (n1 - 1)) {</span>
+<span class="nc bnc" id="L2408" title="All 2 branches missed.">        if (idx2 &gt; (n1 - 1)) {</span>
             // idx2 is outside of the default row 0 of md[0] array, so
             // need to calculate the offset.
 
             // if within bounds, will add 4 to the offset to get the pixel
             // away from bounds
 
-<span class="nc" id="L2393">            offset = (idx2 - (n1 - 1)) + 4;</span>
-<span class="nc" id="L2394">            idx2 -= offset;</span>
-<span class="nc bnc" id="L2395" title="All 2 branches missed.">            if (idx2 &lt; 0) {</span>
-<span class="nc" id="L2396">                offset = idx2 - (n1 - 1);</span>
-<span class="nc" id="L2397">                idx2 -= offset;</span>
+<span class="nc" id="L2415">            offset = (idx2 - (n1 - 1)) + 4;</span>
+<span class="nc" id="L2416">            idx2 -= offset;</span>
+<span class="nc bnc" id="L2417" title="All 2 branches missed.">            if (idx2 &lt; 0) {</span>
+<span class="nc" id="L2418">                offset = idx2 - (n1 - 1);</span>
+<span class="nc" id="L2419">                idx2 -= offset;</span>
             }
         }
 
-<span class="nc" id="L2401">        st.extractWindowFromSummedAreaTable(</span>
+<span class="nc" id="L2423">        st.extractWindowFromSummedAreaTable(</span>
             storedMatrix[offset], idx1, idx2, idx1, idx2, output);
 
-<span class="nc" id="L2404">        float d = output[0]/output[1];</span>
+<span class="nc" id="L2426">        float d = output[0]/output[1];</span>
             
-<span class="nc" id="L2406">        return d;</span>
+<span class="nc" id="L2428">        return d;</span>
     }
     
     /**
@@ -2434,31 +2456,31 @@ based upon algorithm in paper
         int qXRef2, int qYRef2, int qX, int qY
         ) {
        
-<span class="nc" id="L2437">        double angleA1 = LinesAndAngles.calcAngle(</span>
+<span class="nc" id="L2459">        double angleA1 = LinesAndAngles.calcAngle(</span>
             pXRef1, pYRef1, pX, pY, pXRef2, pYRef2
         );
-<span class="nc bnc" id="L2440" title="All 4 branches missed.">        assert(!Double.isNaN(angleA1));</span>
+<span class="nc bnc" id="L2462" title="All 4 branches missed.">        assert(!Double.isNaN(angleA1));</span>
            
-<span class="nc" id="L2442">        double angleA2 = LinesAndAngles.calcAngle(</span>
+<span class="nc" id="L2464">        double angleA2 = LinesAndAngles.calcAngle(</span>
             qXRef1, qYRef1, qX, qY, qXRef2, qYRef2
         );
-<span class="nc bnc" id="L2445" title="All 4 branches missed.">        assert(!Double.isNaN(angleA2));</span>
+<span class="nc bnc" id="L2467" title="All 4 branches missed.">        assert(!Double.isNaN(angleA2));</span>
         
-<span class="nc" id="L2447">        double v = angleA1 - angleA2;</span>
-<span class="nc bnc" id="L2448" title="All 2 branches missed.">        if (v &lt; 0) {</span>
-<span class="nc" id="L2449">            v *= -1;</span>
+<span class="nc" id="L2469">        double v = angleA1 - angleA2;</span>
+<span class="nc bnc" id="L2470" title="All 2 branches missed.">        if (v &lt; 0) {</span>
+<span class="nc" id="L2471">            v *= -1;</span>
         }
         
-<span class="nc" id="L2452">        return (float)v;</span>
+<span class="nc" id="L2474">        return (float)v;</span>
     }
     
     public EpipolarTransformationFit getStoredEpipolarFit() {
-<span class="nc bnc" id="L2456" title="All 2 branches missed.">        if (this.storedEpipolarFit == null) {</span>
-<span class="nc" id="L2457">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L2478" title="All 2 branches missed.">        if (this.storedEpipolarFit == null) {</span>
+<span class="nc" id="L2479">            throw new IllegalStateException(</span>
                 &quot;need to use overrideToStoreMatrix() before match(...) &quot;
                     + &quot; and do not set to use euclidean&quot;);
         }
-<span class="nc" id="L2461">        return storedEpipolarFit;</span>
+<span class="nc" id="L2483">        return storedEpipolarFit;</span>
     }
     
 }

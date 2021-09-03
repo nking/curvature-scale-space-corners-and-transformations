@@ -169,7 +169,7 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 <span class="fc" id="L169">        UpperTriangDenseMatrix r = qr.getR();</span>
         
 <span class="fc" id="L171">        Matrix qT = algorithms.matrix.MatrixUtil.transpose(q);</span>
-<span class="fc" id="L172">        double[] qTY = MatrixUtil.multiply(qT, getRHSVector());</span>
+<span class="fc" id="L172">        double[] qTY = MatrixUtil.multiplyMatrixByColumnVector(qT, getRHSVector());</span>
 <span class="fc" id="L173">        float[] c = new float[3];</span>
 <span class="fc bfc" id="L174" title="All 2 branches covered.">        for (int i = (3 - 1); i &gt;= 0; i--) {</span>
 <span class="fc" id="L175">            c[i] = (float)qTY[i];</span>

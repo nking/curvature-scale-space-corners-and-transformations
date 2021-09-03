@@ -3052,15 +3052,15 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
      */
     public double[][] copyToDouble2D(Matrix m) {
 
-<span class="fc" id="L3055">        double[][] output = new double[m.numRows()][];</span>
-<span class="fc bfc" id="L3056" title="All 2 branches covered.">        for (int i = 0; i &lt; m.numRows(); ++i) {</span>
-<span class="fc" id="L3057">            output[i] = new double[m.numColumns()];</span>
-<span class="fc bfc" id="L3058" title="All 2 branches covered.">            for (int j = 0; j &lt; m.numColumns(); ++j) {</span>
-<span class="fc" id="L3059">                output[i][j] = m.get(i, j);</span>
+<span class="nc" id="L3055">        double[][] output = new double[m.numRows()][];</span>
+<span class="nc bnc" id="L3056" title="All 2 branches missed.">        for (int i = 0; i &lt; m.numRows(); ++i) {</span>
+<span class="nc" id="L3057">            output[i] = new double[m.numColumns()];</span>
+<span class="nc bnc" id="L3058" title="All 2 branches missed.">            for (int j = 0; j &lt; m.numColumns(); ++j) {</span>
+<span class="nc" id="L3059">                output[i][j] = m.get(i, j);</span>
             }
         }
 
-<span class="fc" id="L3063">        return output;</span>
+<span class="nc" id="L3063">        return output;</span>
     }
 
     /**

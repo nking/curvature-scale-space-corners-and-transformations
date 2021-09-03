@@ -1,0 +1,2211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BundleAdjustment.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">BundleAdjustment.java</span></div><h1>BundleAdjustment.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.matrix.BlockMatrixIsometric;
+import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.set.TIntSet;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.logging.Logger;
+import no.uib.cipr.matrix.DenseCholesky;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.LowerSPDDenseMatrix;
+import no.uib.cipr.matrix.LowerTriangDenseMatrix;
+import no.uib.cipr.matrix.Matrices;
+import no.uib.cipr.matrix.NotConvergedException;
+
+/**
+ given intrinsic and extrinsic camera parameters, coordinates for points
+ in a world reference frame, and observations of those points in one or more
+ camera, return data structures needed by Levenberg-Marquardt algorithm
+ in refinement of the intrinsic and extrinsic camera parameters.
+ BundleAdjustment calculates partial derivatives of the parameters
+ and calculates the re-projection error to form the parameter update steps,
+ the gradient covector, and the evaluation of the objective (sum of squares of
+ the re-projection error).
+ 
+ * From Triggs et al. 2000, &quot;Bundle Adjustment - A Modern Synthesis&quot;
+ * &quot;Bundle adjustment is the problem of refining a visual reconstruction to 
+ * produce jointly optimal 3D structure and viewing parameter (camera pose and/or 
+ * calibration) estimates. Optimal means that the parameter estimates are found 
+ * by minimizing some cost function that quantifies the model fitting error, and 
+ * jointly that the solution is simultaneously optimal with respect to both 
+ * structure and camera variations. The name refers to the ‘bundles’ of light 
+ * rays leaving each 3D feature and converging on each camera centre, which are 
+ * ‘adjusted’ optimally with respect to both feature and camera positions. 
+ * Equivalently — unlike independent model methods, which merge partial 
+ * reconstructions without up- dating their internal structure — all of the 
+ * structure and camera parameters are adjusted together ‘in one bundle’.&quot;
+ * 
+ * This version of Bundle-Adjustment uses Levenberg-Marquardt Algorithm (LMA) 
+ * step in each iteration solved by dense Cholesky decomposition (LMA-CD).
+ * 
+ * TODO: consider implementing or finding an implementation of 
+ * Jakob Engel, Vladlen Koltun, and Daniel Cremers. 
+ * &quot;Direct sparse odometry&quot;. 
+ * IEEE transactions on pattern analysis and machine intelligence, 
+ * 40(3):611–625, 2018.
+ * 
+ * TODO: find errors leading to such large parameter steps (dC and dP).
+ * 
+ * TODO:  add gauge fix.  And related to that, consider adding constraints 
+ * suggested in Seliski 2010: u_0 and v_0 are close to half the image lengths 
+ * and widths, respectively.  the angle between 2 image axes is close to 90.
+  the focal lengths along both axes are greater than 0.     
+ * 
+ * TODO: consider implementing the &quot;reduced structure system&quot; for the cases
+ * where (9^3)*mImages &gt; (3^3)*nFeatures,  The &quot;reduced camera system&quot; is
+ * currently implemented.
+ * 
+ * @author nichole
+ */
+public class BundleAdjustment {
+    
+    // for 0, use image (pixel) reference frame, else for 1 use camera frame.
+<span class="nc" id="L66">    private final int useCameraFrame = 0;</span>
+        
+<span class="nc" id="L68">    private int useHomography = 0;</span>
+        
+    //private static final Level LEVEL = Level.INFO;
+<span class="nc" id="L71">    private static final Logger log = Logger.getLogger(CameraCalibration.class.getSimpleName());</span>
+    
+<span class="nc" id="L73">    public BundleAdjustment() {</span>
+<span class="nc" id="L74">        useHomography = 0;</span>
+<span class="nc" id="L75">    }</span>
+    
+    /**
+     * setting to use the homography matrix in the WCS projection to camera
+     * 2-D reference frame.   The homography matrix is the first 2 columns of
+     * the rotation matrix and the translation vector as the 3rd column
+     * in the homography.  
+     * The default uses, instead, the full projection
+     * of Rotation * x_WCS + translation.
+     * Note that the partial derivatives calculated in making
+     * the Jacobian are derived from the full projection, not the homography,
+     * so there will be inconsistencies until that is fixed for the homography
+     * derivatives.
+     */
+    public void setUseHomography() {
+<span class="nc" id="L90">        useHomography =1;</span>
+<span class="nc" id="L91">    }</span>
+    
+    /**
+     * given world scene features, the features observed in images,
+     * initial camera calibration and extrinsic parameters, use the 
+     * iterative non-linear Levenberg-Marquardt (L-M)
+     * algorithm to minimize the re-projection error by refining the values of
+     * coordsW, intrinsic, and extrinsic camera parameters.
+     * 
+     * The L-M is an iterative non-linear optimization to minimize the 
+     * objective.  For bundle adjustment, the objective is the 
+     * re-projection error.
+     * L-M is guaranteed to converge to eventually find an improvement, 
+     * because an update with a sufficiently small magnitude and a negative scalar 
+     * product with the gradient is guaranteed to do so.
+     * 
+     * This method exploits some of the properties of sparse matrices in the 
+     * block structure of the Jacobian by using the Schur complement to form
+     * reduced camera matrices which can be solved by Cholesky factoring and
+     * forward and backward substitution (halving the computation time for the
+     * parameter vector).
+     * Regarding the bundle adjustment as refinement for extrinsic parameters:
+        &lt;pre&gt;
+            However, several researchers have noted (Fitzgibbon and 
+            Zisserman, 1998, Nistér, 2001, Pollefeys, 1999) that in the 
+            application of camera tracking, performing bundle adjustment each 
+            time a new frame has been added to the estimation can prevent the 
+            tracking process from failing over time. 
+            Thus, bundle adjustment can over time in a sequential estimation 
+            process have a much more dramatic impact than mere accuracy 
+            improvement, since it improves the initialization for future 
+            estimates, which can ultimately enable success in cases that would 
+            otherwise miserably fail.
+        &lt;/pre&gt;
+     &lt;pre&gt;
+     References:
+     
+     http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+     lecture by Lourakis  “Bundle adjustment gone public”
+     
+     Zhongnan Qu's master thesis, &quot;Efficient Optimization for Robust Bundle 
+     Adjustment&quot;, 2018 Technical University of Munich
+     
+     Chen, Chen, &amp; Wang 2019, &quot;Bundle Adjustment Revisited&quot;
+     
+     Engels, Stewenius, Nister 2006, “Bundle Adjustment Rules”
+      
+     Bill Triggs, Philip Mclauchlan, Richard Hartley, Andrew Fitzgibbon. 
+     Bundle Adjustment – A Modern Synthesis. 
+     International Workshop on Vision Algorithms, 
+     Sep 2000, Corfu, Greece. pp.298–372, 
+     10.1007/3-540-44480-7_21 . inria-00548290 
+
+     T. Barfoot, et al., &quot;Pose estimation using linearized rotations and 
+     quaternion algebra&quot;, Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+         -- using the rotation and translation update details.
+         -- one of the 2 examples is interesting for the problem of pose for
+            a pair of stereo-images.  it also uses cholesky factoring of block
+            sparse matrix structure.
+           
+     Tomasi 2007,CPS 296.1 Supplementary Lectur Notes, Duke University
+     
+     graph partioning:
+        https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
+        recursive partitioning w/ elimination graph and vertex cut.
+        
+        Triggs et al. 2000, &quot;Bundle Adjustment – A Modern Synthesis&quot;, Section 6
+        
+        Skeletal graphs for efficient structure from motion
+        N Snavely, SM Seitz, R Szeliski - 2008
+ 
+     Graph partitioning in this project:
+        NormalizedCuts.java which uses the Fiedler vector of the Laplacian.
+        UnweightedGraphCommunityFinder.java
+        
+     &lt;/pre&gt;
+     * @param coordsI the features observed in different images (in coordinates 
+     * of the image reference frame). 
+     * The format of coordsI is 3 X (nFeatures*nImages). Each row should
+     * have nFeatures of one image, followed by nFeatures of the next image,
+       etc.  The first dimension is for the x,y, and z axes.
+       Note that if a feature is not present in the image, that should be
+       an entry in imageMissingFeatureMap.
+     * @param coordsW the features in a world coordinate system.  The format is
+     * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
+     * @param imageFeaturesMap an associative array holding the features
+     * in each image.  They key is the image number in coordsI 
+     * which is j/nFeatures where j is the index of the 2nd dimension,
+     * that is coordsI[j].  The value is a set of feature numbers which are
+     * missing from the image.  The feature numbers correspond to the 
+     * 2nd dimension indexes in coordsW.
+     * @param intr the intrinsic camera parameter matrices stacked along rows
+     * to make a tall double array of size [(mImages*3) X 3] where each image block is
+     * size 3X3.  Note that only the focus parameter is refined in this method.
+     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
+     * stacked along the 3 columns, that is the size is [mImages X 3].  
+     * each image block is size 1X3.
+     * @param extrTrans the extrinsic camera parameter translation vectors
+     * stacked along the 3 columns, that is the size is [nImages X 3] where
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
+     * @param kRadials a double array wherein each row holds the 
+     * radial distortion coefficients k1 and k2 for an image.
+     * NOTE: current implementation accepts values of 0 for k1 and k2.
+     * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+     * @param nMaxIter
+     * 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
+     */
+    public void solveSparsely(
+        double[][] coordsI, double[][] coordsW, TIntObjectMap&lt;TIntSet&gt; imageFeaturesMap,
+        BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
+        double[][] kRadials, final int nMaxIter, boolean useR2R4) 
+        throws NotConvergedException, IOException {
+        
+<span class="nc" id="L209">        int nFeatures = coordsW[0].length;</span>
+<span class="nc" id="L210">        int mImages = coordsI[0].length/nFeatures;</span>
+                                 
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (nFeatures &lt; 6) {</span>
+<span class="nc" id="L213">            throw new IllegalArgumentException(&quot;coordsW[0].length must be at least 6&quot;);</span>
+        }
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if ((coordsI[0].length % nFeatures) &gt; 0) {</span>
+<span class="nc" id="L216">            throw new IllegalArgumentException(&quot;the number of images present in coordsI should&quot;</span>
+            + &quot; be evenly divided by the number of features in coordsW (that is, coordsI should&quot;
+            + &quot; have that same number of features for each image)&quot;);
+        }
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L221">            throw new IllegalArgumentException(&quot;coordsI must have 3 rows.&quot;);</span>
+        }
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (coordsW.length != 3) {</span>
+<span class="nc" id="L224">            throw new IllegalArgumentException(&quot;coordsW must have 3 rows.&quot;);</span>
+        }
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (coordsI[0].length != nFeatures*mImages) {</span>
+<span class="nc" id="L227">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
+                    + &quot;divisible by nFeatures which is coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        if (intr.getA().length != 3*mImages) {</span>
+<span class="nc" id="L231">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
+        }
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
+<span class="nc" id="L234">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (kRadials.length != mImages) {</span>
+<span class="nc" id="L237">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
+            + &quot;to the number of cameras.&quot;);
+        }
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        if (kRadials[0].length != 2) {</span>
+<span class="nc" id="L241">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
+        }
+<span class="nc bnc" id="L243" title="All 2 branches missed.">        if (extrRotThetas[0].length != 3) {</span>
+<span class="nc" id="L244">            throw new IllegalArgumentException(&quot;extrRotThetas[0].length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        if (extrRotThetas.length != mImages) {</span>
+<span class="nc" id="L247">            throw new IllegalArgumentException(&quot;extrRotThetas.length must be mImages &quot;</span>
+            + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L250" title="All 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
+<span class="nc" id="L251">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (extrTrans.length != mImages) {</span>
+<span class="nc" id="L254">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
+                    + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (imageFeaturesMap == null) {</span>
+<span class="nc" id="L258">            throw new IllegalArgumentException(&quot;imageFeaturesMap cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (imageFeaturesMap.size() != mImages) {</span>
+<span class="nc" id="L261">            throw new IllegalArgumentException(&quot;imageFeaturesMap size must equal &quot;</span>
+            + &quot;the number of images which = coordsI[0].length/coordsW[0].length&quot;);
+        }
+                
+        //TODO: as part of &quot;fix the gauge&quot;, need to consider the first
+        //    camera to have axes aligned with world axes, so that the
+        //    origin of the world scence is [0,0,0] or [0,0,0,1]
+                
+        /*
+        RCM is the reduced camera matrix in the augmented normal equation.
+        
+        The RCM can be solved without inverting A since it is a sparse matrix:
+              https://www.cvg.ethz.ch/teaching/3dvision/2014/slides/class06eth14.pdf
+              Sparse Matrix factorization:
+                  (1) LU factorization: A = L*U where original equation is A*x = b
+                      (a) use LU decomposition to solve L,U = luDecomp(A)
+                      (b) let c = U*x and rewrite A*x=b as L*c = b.
+                            then solve c from forward elimination
+                      (c) solve x from back substitution in c = U*x
+                  (2) QR factorization: A = Q*R
+                  (3) Cholesky factorization:A = L*L^T
+                  Some details for the above 3 are in Triggs et al. 2000 Appendix B and near page 23
+                  (&quot;Bundle Ajustment – A Modern Synthesis&quot;,
+                  Springer-Verlag, pp.298–372, 2000, 
+                  Lecture Notes in Computer Science (LNCS), 
+                  10.1007/3-540-44480-7_21. inria-00590128)
+                  https://hal.inria.fr/file/index/docid/590128/filename/Triggs-va99.pdf
+              Or Iterative methods:
+                  (1) Conjugate Gradient
+                  (2) Gauss-Seidel
+        
+              consider Google Ceres  https://code.google.com/p/ceres-solver/
+              or Lourakis SBA
+        
+             more suggestions in http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+               (1) Store as dense, decompose with ordinary linear algebra ◦
+                    M. Lourakis, A. Argyros: SBA: A Software Package For Generic 
+                       Sparse Bundle Adjustment. ACM Trans. Math. Softw. 36(1): (2009) ◦ 
+                    C. Engels, H. Stewenius, D. Nister: Bundle Adjustment Rules. 
+                       Photogrammetric Computer Vision (PCV), 2006. 
+               (2) Store as sparse, factorize with sparse direct solvers ◦ 
+                    K. Konolige: Sparse Sparse Bundle Adjustment. BMVC 2010: 1-11
+               (3) Store as sparse, use conjugate gradient methods memory efficient, 
+                    iterative, precoditioners necessary! ◦ 
+                    S. Agarwal, N. Snavely, S.M. Seitz, R. Szeliski: 
+                       Bundle Adjustment in the Large. ECCV (2) 2010: 29-42 ◦ 
+                    M. Byrod, K. Astrom: Conjugate Gradient Bundle Adjustment. 
+                       ECCV (2) 2010: 114-127 
+               (4) Avoid storing altogether ◦ 
+                    C. Wu, S. Agarwal, B. Curless, S.M. Seitz: Multicore Bundle 
+                       Adjustment. CVPR 2011: 30 57-3064 ◦ 
+                    M. Lourakis: Sparse Non-linear Least Squares Optimization 
+                       for Geometric Vision. ECCV (2) 2010: 43-56
+        
+              and computer vision library in java http://boofcv.org/index.php?title=Example_Sparse_Bundle_Adjustment
+              there is also a java binding for SBA http://seinturier.fr/jorigin/jsba.html
+        
+              http://users.ics.forth.gr/~lourakis/sparseLM/
+        
+            And more suggestsions in Qu:
+               (1) LMA-Cholesky-Decomposition
+               (2) Inexact increment step solved by Preconditioned Conjugate Gradient 
+               (3) Local parameterization
+               (4) IRLS
+               (5) (Adaptive) DINM algorithm and DINM with local parameterization
+               (6)
+        */
+            
+        /* Triggs et al. 2000: &quot;state updates should be evaluated using a stable 
+        local parametrization based on increments from the current estimate&quot;.
+        and this on 3F points:
+        &quot;3D points: Even for calibrated cameras, 
+        ** ==&gt; vision geometry and visual reconstructions are intrinsically projective. 
+        If a 3D (X Y Z)⊤ parametrization (or equivalently a homogeneous affine (X Y Z 1)⊤ one) 
+        is used for very distant 3D points, large X, Y, Z displacements are 
+        needed to change the image significantly. I.e., in (X Y Z) space the 
+        cost function becomes very flat and steps needed for cost adjustment 
+        become very large for distant points. 
+            In comparison, with a homogeneous projective parametrization (X Y Z W)⊤, 
+        the behaviour near infinity is natural, finite and well-conditioned so 
+        long as the normalization keeps the homogeneous 4-vector finite at 
+        infinity (by sending W → 0 there). In fact, there is no immediate 
+        visual distinction between the images of real points near infinity and 
+        virtual ones ‘beyond’ it (all camera geometries admit such virtual 
+        points as bona fide projective constructs).  The optimal reconstruction 
+        of a real 3D point may even be virtual in this sense, if image noise 
+        happens to push it ‘across infinity’.  Also, there is nothing to stop a 
+        reconstructed point wandering beyond infinity and back during the 
+        optimization. This sounds bizarre at first, but it is an inescapable 
+        consequence of the fact that the natural geometry and error model for 
+        visual reconstruction is projective rather than affine. 
+        Projectively, infinity is just like any other place. 
+        ** ==&gt; Affine parametrization (X Y Z 1)⊤ is acceptable for points near the 
+        origin with close-range convergent camera geometries, but it is 
+        disastrous for distant ones because it artificially cuts away half of 
+        the natural parameter space, and hides the fact by sending the resulting 
+        edge to infinite parameter values.
+        **==&gt; Instead, you should use a homogeneous parametrization (X Y Z W )⊤ 
+        for distant points, e.g. with spherical normalization summation X_i^2 = 1.&quot;
+        
+        on Rotations:
+        &quot;Rotations should be parametrized using either quaternions subject to 
+        ∥q∥2 = 1, or local perturbations R*δR or δR*R of an existing rotation R, 
+        where δR can be any well- behaved 3 parameter small rotation 
+        approximation, e.g. δR = (I + [ δr ]_×), the Rodriguez formula, 
+        local Euler angles, etc.&quot;
+
+        on State Updates:
+        &quot;State updates: Just as state vectors x represent points in some 
+        nonlinear space, state updates x → x+ δx represent displacements in 
+        this nonlinear space that often can not be represented exactly by vector
+        addition. Nevertheless, we assume that we can locally linearize the 
+        state manifold, locally resolving any internal constraints and freedoms 
+        that it may be subject to, to produce an unconstrained vector δx 
+        parametrizing the possible local state displacements. 
+        We can then, e.g., use Taylor expansion in δx to form a local cost 
+        model f(x + δx).&quot;
+        
+        on Error Modeling:
+        &quot;A typical ML cost function would be the summed negative log likelihoods 
+        of the prediction errors of all the observed image features. For 
+        Gaussian error distributions, this reduces to the sum of squared 
+        covariance-weighted prediction errors (§3.2). A MAP estimator would 
+        typically add cost terms giving certain structure or camera calibration 
+        parameters a bias towards their expected values.&quot;
+        ...
+        &quot;One of the great strengths of adjustment computations is their ability 
+        to combine information from disparate sources. Assuming that the sources 
+        are statistically independent of one another given the model, the total 
+        probability for the model given the combined data is the product of the 
+        probabilities from the individual sources. To get an additive cost 
+        function we take logs, so the total log likelihood for the model given 
+        the combined data is the sum of the individual source log likelihoods.&quot;
+        ...
+        &quot;Information usually comes from many independent sources. In bundle 
+        adjustment these include: covariance-weighted reprojection errors of 
+        individual image features; other measurements such as 3D positions of 
+        control points, GPS or inertial sensor readings; predictions from 
+        uncertain dynamical models (for ‘Kalman filtering’ of dynamic cameras 
+        or scenes); prior knowledge expressed as soft constraints (e.g. on 
+        camera calibration or pose values); and supplementary sources such as 
+        overfitting, regularization or description length penalties.&quot;
+        
+        see section 3.1 footnote 2.
+        
+        Regarding step control:
+            recommends professional software or
+            see 
+               R. Fletcher. Practical Methods of Optimization. John Wiley, 1987.
+               J. Nocedal and S. J. Wright. Numerical Optimization. Springer-Verlag, 1999.
+               P. Gill, W. Murray, and M. Wright. Practical Optimization. Academic Press, 1981
+        
+        In bundle adjustment, certain well-known ambiguities 
+        (poorly-controlled parameter combinations) often dominate the uncertainty. 
+        Camera distance and focal length estimates, 
+        and structure depth and camera baseline ones (bas-relief), 
+        are both strongly correlated whenever the perspective is weak 
+        (note: from wikipedia: weak perspective is used when when the depth of
+        the object along the line of sight is small compared to the distance 
+        from the camera, and the field of view is small.  hence, all points on 
+        a 3D object are at the same distance Z_avg from the camera without 
+        significant errors in the projection )
+        and become strict ambiguities in the affine limit. The well-conditioned 
+        diagonal blocks of the Hessian give no hint of these ambiguities: when 
+        both features and cameras are free, the overall network is much less 
+        rigid than it appears to be when each treats the other as fixed.
+        
+        ** ==&gt; For updates involving a previously unseen 3D feature or image, 
+        new variables must also be added to the system.
+        (see page 33 in Section 8.1 and Section 8.2 on page 35)
+        ...If these parameters are eliminated using reduction (19), the 
+        observation update can be applied directly to the reduced Hessian and 
+        gradient. The eliminated parameters can then be updated by simple 
+        back-substitution (19) and their covariances by (17). In particular, 
+        if we cease to receive new information relating to a block of parameters 
+        (an image that has been fully treated, a 3D feature that has become 
+        invisible), they and all the observations relating to them can be 
+        subsumed once-and-for-all in a reduced Hessian and gradient on the 
+        remaining parameters. If required, we can later re-estimate the 
+        eliminated parameters by back-substitution. Otherwise, we do not 
+        need to consider them further.
+        */
+        
+        //TODO: consider adding constraints suggested in Seliski 2010:
+        // u_0 and v_0 are close to half the image lengths and widths, respectively.
+        // the angle between 2 image axes is close to 90.
+        // the focal lengths along both axes are greater than 0.
+       
+        //factor to raise or lower lambda.  
+        //   consider using the eigenvalue spacing of J^T*J (Transtrum &amp; Sethna, &quot;Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization&quot;)
+<span class="nc" id="L451">        double lambdaF = 2;</span>
+<span class="nc" id="L452">        double eps = 1E-12;</span>
+       
+         // copy the parameter data structures into test (tentative) data structures
+<span class="nc" id="L455">        BlockMatrixIsometric intrTest = intr.copy();</span>
+<span class="nc" id="L456">        double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);</span>
+<span class="nc" id="L457">        double[][] extrTransTest = MatrixUtil.copy(extrTrans);</span>
+<span class="nc" id="L458">        double[][] kRadialsTest = MatrixUtil.copy(kRadials);</span>
+<span class="nc" id="L459">        double[][] coordsWTest = MatrixUtil.copy(coordsW);</span>
+        
+        //In a single reprojection error formula, there are altogether 12 arguments 
+        //   (9 camera parameters and 3 feature point positions).
+        
+        // update values for the point parameters (== world coordinate features)
+<span class="nc" id="L465">        double[] outDP = new double[3*nFeatures];</span>
+        // updatevalues for the camera parameters
+<span class="nc" id="L467">        double[] outDC = new double[9*mImages];</span>
+                
+        // Qu array u for parameters is ordered: rot_0, trans_0, intr_0, ...rot_m-1, trans_m-1, intr_m-1, then x_0, ... x_n
+        // but the delta parameter array for all params is ordered:
+        //     dRot_0, ... dRot_m-1,  dTrans_0, ...dTrans_m-1, dIntr_0,...dIntr_m-1, dX_0, ... dX_n
+        // gradient g is same length   
+        
+        //the gradient covector for point parameters.  used in calc gain ration and stopping
+<span class="nc" id="L475">        double[] outGradP = new double[3*nFeatures];</span>
+        // the gradient covector for camera parameters.  used in calc gain ration and stopping
+<span class="nc" id="L477">        double[] outGradC = new double[9*mImages];</span>
+     
+<span class="nc" id="L479">        final double tolP = 1.e-3;</span>
+<span class="nc" id="L480">        final double tolG = 1.e-3;</span>
+        
+        // not using these as they are estimated in calculateLMVectorsSparsely
+        //initDeltaPWithQu(outDP);
+        //initDeltaCWithQu(outDC);
+        
+        // evaluation of the objective re-projection error. 
+        //the sum of squares of the observed feature - projected feature in camera reference frame
+<span class="nc" id="L488">        final double[] outFSqSum = new double[1];</span>
+        
+<span class="nc" id="L490">        double[] outInitLambda = new double[1];</span>
+        
+        // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
+        try {
+<span class="nc" id="L494">            calculateLMVectorsSparsely(coordsI, coordsWTest,  </span>
+                imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
+                outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
+<span class="nc" id="L497">        } catch (NaNException e) {</span>
+<span class="nc" id="L498">            System.err.println(e.getMessage());</span>
+<span class="nc" id="L499">            return;</span>
+<span class="nc" id="L500">        }</span>
+<span class="nc" id="L501">        double lambda = outInitLambda[0];</span>
+<span class="nc" id="L502">        log.fine(String.format(&quot;max diag of Hessian lambda=%.7e\n&quot;, lambda));</span>
+
+        // set to null to prevent calculating the max of diagnonal of (J^T*J) 
+<span class="nc" id="L505">        outInitLambda = null;</span>
+        
+        // sum the squares to evalute the re-projection error:
+<span class="nc" id="L508">        double fPrev = outFSqSum[0];</span>
+        
+<span class="nc" id="L510">        double fTest = Double.POSITIVE_INFINITY;</span>
+        
+<span class="nc" id="L512">        log.fine(String.format(</span>
+            &quot;(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n&quot;, 
+<span class="nc" id="L514">            lambda, outFSqSum[0],</span>
+<span class="nc" id="L515">            FormatArray.toString(outDC, &quot;%.3e&quot;), FormatArray.toString(outDP, &quot;%.3e&quot;), </span>
+<span class="nc" id="L516">            FormatArray.toString(outGradC, &quot;%.3e&quot;), FormatArray.toString(outGradP, &quot;%.3e&quot;)</span>
+        ));                 
+                       
+        double gainRatio;
+                             
+        // update the features with outDP?  see step 7 of Engels
+        
+<span class="nc" id="L523">        int nIter = 0;</span>
+<span class="nc bnc" id="L524" title="All 6 branches missed.">        while ((nIter &lt; nMaxIter) &amp;&amp; (Math.abs(fPrev - fTest) &gt;= eps) &amp;&amp; (lambda &gt; 1E-15)) {</span>
+                
+<span class="nc" id="L526">            nIter++;</span>
+            
+            // update the test data structures by deltaP and deltaC
+            // use the 2nd three elements in outDC:
+<span class="nc" id="L530">            updateTranslation(extrTransTest, outDC);</span>
+<span class="nc" id="L531">            updateRotThetas(extrRotThetasTest, outDC);</span>
+<span class="nc" id="L532">            updateIntrinsic(intrTest, outDC);</span>
+<span class="nc" id="L533">            updateRadialDistortion(kRadialsTest, outDC);</span>
+            //updateWorldC(coordsWTest, outDP);
+
+            try {
+<span class="nc" id="L537">                calculateLMVectorsSparsely(coordsI, coordsWTest,</span>
+                    imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
+                    outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+<span class="nc" id="L540">            } catch (NaNException e) {</span>
+<span class="nc" id="L541">                System.err.println(e.getMessage());</span>
+<span class="nc" id="L542">                break;</span>
+<span class="nc" id="L543">            }</span>
+        
+<span class="nc" id="L545">            fTest = outFSqSum[0];</span>
+                
+<span class="nc" id="L547">            gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda, </span>
+                outGradC, outGradP, eps);
+            
+<span class="nc" id="L550">            log.fine(String.format(</span>
+                &quot;(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n &quot;
+                + &quot; g.r.=%.3e\ndC=%s\ndP=%s\ngradC=%s\ngradP=%s\n&quot;, 
+<span class="nc" id="L553">                nIter, lambda, fPrev, fTest, (fPrev-fTest),</span>
+<span class="nc" id="L554">                gainRatio,</span>
+<span class="nc" id="L555">                FormatArray.toString(outDC, &quot;%.11e&quot;), FormatArray.toString(outDP, &quot;%.11e&quot;), </span>
+<span class="nc" id="L556">                FormatArray.toString(outGradC, &quot;%.11e&quot;), FormatArray.toString(outGradP, &quot;%.11e&quot;)</span>
+            ));
+            /*
+            for large values of lambda, the update is a very steep descent and
+            deltaP is very small.
+            If the damping term is small the approach is a nearly linear problem.
+            
+            NOTE: the damping term is used like a factor in the perturbation
+            of a symmetric matrix.  see:
+                https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
+            */
+<span class="nc bnc" id="L567" title="All 2 branches missed.">            if (gainRatio &gt; 0) {</span>
+                // near the minimimum, which is good.
+                // decrease lambda
+                
+                // from Algorithm 3.16 of Madsen et al. 2004, 
+                //&quot;Methods for Non-Linear Least Squares Problems&quot;
+                // and Figure 2 of
+                // Lourakis &amp; Argyros 2009, &quot;SBA: A Software Package For Generic
+                // Sparse Bundle Adjustment&quot;
+                //lambda = Math.max(1./3, 1. - Math.pow(2*gainRatio - 1, 3));
+                //lambdaF = 2;
+                
+<span class="nc" id="L579">                lambda /= lambdaF;</span>
+                
+<span class="nc bnc" id="L581" title="All 2 branches missed.">                if (fTest &lt; fPrev) {</span>
+                    
+<span class="nc" id="L583">                    fPrev = fTest;</span>
+
+<span class="nc" id="L585">                    double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);</span>
+<span class="nc" id="L586">                    double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetas, extrRotThetasTest);</span>
+<span class="nc" id="L587">                    double _dts = MatrixUtil.frobeniusNorm(_dt);</span>
+<span class="nc" id="L588">                    double _rts = MatrixUtil.frobeniusNorm(_rt);</span>
+<span class="nc" id="L589">                    log.fine(String.format(&quot;delta trans=%.3e, %s\n&quot;, _dts, FormatArray.toString(_dt, &quot;%.11e&quot;)));</span>
+<span class="nc" id="L590">                    log.fine(String.format(&quot;delta rot=%.3e\n%s\n&quot;, _rts, FormatArray.toString(_rt, &quot;%.11e&quot;)));</span>
+
+                    //copy test data structures into the original in-out datastructures
+<span class="nc" id="L593">                    intr.set(intrTest);</span>
+<span class="nc" id="L594">                    MatrixUtil.copy(extrRotThetasTest, extrRotThetas);</span>
+<span class="nc" id="L595">                    MatrixUtil.copy(extrTransTest, extrTrans);</span>
+<span class="nc" id="L596">                    MatrixUtil.copy(kRadialsTest, kRadials);</span>
+<span class="nc" id="L597">                    MatrixUtil.copy(coordsWTest, coordsW);</span>
+                }
+                
+                // ======= stopping conditions ============
+                //   step length vanishes:  deltaParams --&gt; 0
+                //   gradient of f(x) vanishes: -J^T * (b - fgp) --&gt; 0
+                //MatrixUtil.multiply(gradientCheck, -1.);            
+<span class="nc bnc" id="L604" title="All 4 branches missed.">                if (isNegligible(outDC, tolP) || isNegligible(outDP, tolP) ||</span>
+<span class="nc bnc" id="L605" title="All 4 branches missed.">                    isNegligible(outGradC, tolG) || isNegligible(outGradP, tolG)) {</span>
+<span class="nc" id="L606">                    break;</span>
+                }
+            } else {
+                // increase lambda to reduce step length and get closer to 
+                // steepest descent direction
+<span class="nc" id="L611">                lambda *= lambdaF;</span>
+<span class="nc" id="L612">                lambdaF *= 2;</span>
+            }
+<span class="nc" id="L614">            log.fine(String.format(&quot;new lambda=%.11e\n&quot;, lambda));           </span>
+        }        
+<span class="nc" id="L616">    }</span>
+    
+    /**
+     * NOT YET TESTED.
+     * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
+     * algorithm to refine the intrinsic and extrinsic camera parameters.
+     * The algorithms uses the sparse structure of the jacobian to reduce
+     * the computation time and memory needed.
+     * The code needs initial parameter estimates of intrinsic and extrinsic
+     * camera parameters (in intr, extrRot, kRadial, and extrTrans).
+       The code returns results in outGradP, outGradC,
+       outFSqSum, outDP, outDC for refined parameters
+       and the gradient, objective and parameter update steps needed by
+       code such as Levenberg-Marquardt.
+       NOTE: the code does not update the intrinsic and extrinsic camera parameters, allowing
+       the L-M algorithm to handle that.
+       The runtime complexity is ~ O(nFeatures * mImages^2).
+       Assumptions used in forming the partial derivatives of the intrinsic camera parameters
+       are no skew, focal length along x is the same as focal length along y, square pixels.
+       Cholesky decomposition is used with forward and back substitution
+       to avoid inverting the reduced camera matrix
+       and to half the runtime compared to L-U decomposition.
+       Note that there can be more than one camera and should be 6 of more features per image
+       (3 for rot, 3 for trans) and among those, need 3 per camera for the intrinsic parameters
+       and 2 or more vantage points for the point parameters (no reference for these
+       numbers, just a rough estimate from counting the number of unknowns).
+        
+       Also note that the code uses the Jacobian J = [J_P J_C] following
+       Engels et al., which is reversed from the Lourakis Jacobian J = [J_c J_P].
+       Qu Jacobian (and hence reduced camera matrix are consistent with Lourakis.
+       See details in doc/bundle_adjustment.pdf
+     &lt;pre&gt;
+     References:
+     
+     additional information is present in directory doc as &quot;bundle_adjustment.pdf&quot;
+     and &quot;Levenberg-Marquardt_notes.pdf&quot;
+   
+     * http://users.ics.forth.gr/~lourakis/sba/PRCV_colloq.pdf
+     lecture by Lourakis  “Bundle adjustment gone public”
+
+     Engels, Stewenius, Nister 2006, “Bundle Adjustment Rules”
+      
+     Bill Triggs, Philip Mclauchlan, Richard Hartley, Andrew Fitzgibbon. 
+     Bundle Adjustment – A Modern Synthesis. 
+     International Workshop on Vision Algorithms, 
+     Sep 2000, Corfu, Greece. pp.298–372, 
+     10.1007/3-540-44480-7_21 . inria-00548290 
+
+     Zhongnan Qu's master thesis, &quot;Efficient Optimization for Robust Bundle 
+     Adjustment&quot;, 2018 Technical University of Munich
+     
+     Chen, Chen, &amp; Wang 2019, &quot;Bundle Adjustment Revisited&quot;
+     
+     T. Barfoot, et al., &quot;Pose estimation using linearized rotations and 
+     quaternion algebra&quot;, Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+         -- using the rotation and translation update details.
+         -- one of the 2 examples is interesting for the problem of pose for
+            a pair of stereo-images.  it also uses cholesky factoring of block
+            sparse matrix structure.
+     &lt;/pre&gt;
+     * @param coordsI the features observed in different images (in coordinates 
+     * of the image reference frame).  The
+     * different images may or may not be from the same camera.
+     * The format of coordsI is 3 X (nFeatures*nImages). Each row should
+     * have nFeatures of one image, followed by nFeatures of the next image,
+       etc.  The first dimension is for the x,y, and z axes.
+       Note that if a feature is not present in the image, that should be
+       an entry in imageMissingFeatureMap.
+     * @param coordsW the features in a world coordinate system.  The format is
+     * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
+     * @param imageFeaturesMap an associative array holding the features
+     * present in each image.  They key is the image number in coordsI 
+     * which is j/nFeatures where j is the index of the 2nd dimension,
+     * that is coordsI[j].  The value is a set of feature numbers which are
+     * missing from the image.  The feature numbers correspond to the 
+     * 2nd dimension indexes in coordsW.
+     * @param intr the intrinsic camera parameter matrices stacked along rows
+     * to make a tall double array of size [(mImages*3) X 3] where each block is
+     * size 3X3.   Note that only the focus parameter is refined in this class.
+     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
+     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
+     * @param extrTrans the extrinsic camera parameter translation vectors
+     * stacked along the 3 columns, that is the size is nImages X 3 where
+     * nImages is coordsI[0].length/coordsW[0].length.  each array is size
+     * 1X3.
+     * @param kRadials a double array wherein each row holds the 
+     * radial distortion coefficients k1 and k2 for an image, so the total size is [nCameras X 2].
+     * NOTE: current implementation accepts values of 0 for k1 and k2.
+     * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+     * @param outDP an output array holding the update values for the point parameters.
+     * The length should be 3*nFeatures.
+     * @param outDC an output array holding the update values for the camera parameters.
+     * The length should be 9*mImages.
+     * @param outGradP an output array holding the gradient covector for point parameters
+     *  (-J_P^T*(x-x_hat) as the summation of bij^T*fij).  The length should be 3 * number of features.
+     * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
+     * @param outGradC an output array holding the gradient covector for camera parameters
+     * (-J_C^T*(x-x_hat) as the summation of aij^T*fij).
+     * The length should be 9 times the number of images.
+     * This is used by the L-M algorithm to calculate the gain ratio and evaluate stopping criteria.
+     * @param outFSqSum an output array holding the evaluation of the objective,
+     * that is the sum of squares of the observed feature - projected feature.
+     * It's the re-projection error.  NOTE that this evaluation is for the
+     * given parameters, not the given parameters plus the returned update steps
+     * (outDC and outDP).
+     * The length should be 1.
+     * @param lambda the damping parameter.  upon first use, this is 0 and 
+     * outInitLambda is not null so that the sparse Hessian is calculated without
+     * the damping term and is used to find the initial value of
+     * lambda which it places in outInitLambda.  upon all subsequent uses of
+     * this method, it's expected that lambda &gt; 0 and outInitLambda is null.
+     * @param outInitLambda when not null this is the output parameter holding 
+     * the maximum of the diagonal of j^T*J.  the array has length 1.
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     * @throws java.io.IOException
+     */
+    protected void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+        TIntObjectMap&lt;TIntSet&gt; imageFeaturesMap,
+        BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
+        double[][] kRadials, final boolean useR2R4,
+        double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
+        double[] outFSqSum, final double lambda,
+        double[] outInitLambda) throws NotConvergedException, IOException, NaNException {
+        
+<span class="nc" id="L744">        int nFeatures = coordsW[0].length;</span>
+<span class="nc" id="L745">        int mImages = coordsI[0].length/nFeatures;</span>
+        double k1, k2;
+        
+<span class="nc bnc" id="L748" title="All 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L749">            throw new IllegalArgumentException(&quot;coordsI.length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L751" title="All 2 branches missed.">        if (coordsW.length != 3) {</span>
+<span class="nc" id="L752">            throw new IllegalArgumentException(&quot;coordsW.length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L754" title="All 2 branches missed.">        if (coordsI[0].length != nFeatures*mImages) {</span>
+<span class="nc" id="L755">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
+                    + &quot;divisible by nFeatures which is coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L758" title="All 2 branches missed.">        if (intr.getA().length != 3*mImages) {</span>
+<span class="nc" id="L759">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
+        }
+<span class="nc bnc" id="L761" title="All 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
+<span class="nc" id="L762">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L764" title="All 2 branches missed.">        if (kRadials.length != mImages) {</span>
+<span class="nc" id="L765">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
+            + &quot;to the number of cameras.&quot;);
+        }
+<span class="nc bnc" id="L768" title="All 2 branches missed.">        if (kRadials[0].length != 2) {</span>
+<span class="nc" id="L769">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
+        }
+<span class="nc bnc" id="L771" title="All 2 branches missed.">        if (extrRotThetas[0].length != 3) {</span>
+<span class="nc" id="L772">            throw new IllegalArgumentException(&quot;extrRot[0].length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L774" title="All 2 branches missed.">        if (extrRotThetas.length != mImages) {</span>
+<span class="nc" id="L775">            throw new IllegalArgumentException(&quot;extrRot.length must be mImages &quot;</span>
+                    + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L778" title="All 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
+<span class="nc" id="L779">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L781" title="All 2 branches missed.">        if (extrTrans.length != mImages) {</span>
+<span class="nc" id="L782">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
+                    + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
+        }        
+<span class="nc bnc" id="L785" title="All 2 branches missed.">        if (outDP.length != 3*nFeatures) {</span>
+<span class="nc" id="L786">            throw new IllegalArgumentException(&quot;outDP.length must be 3*nFeatures &quot;</span>
+                    + &quot;where nFeatures=coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L789" title="All 2 branches missed.">        if (outDC.length != 9*mImages) {</span>
+<span class="nc" id="L790">            throw new IllegalArgumentException(&quot;outDC.length must be 9*mImages &quot;</span>
+                    + &quot;where mImages=coordsI[0].length/coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L793" title="All 2 branches missed.">        if (outGradP.length != 3*nFeatures) {</span>
+<span class="nc" id="L794">            throw new IllegalArgumentException(&quot;outGradP.length must be 3 * number of features&quot;);</span>
+        }
+<span class="nc bnc" id="L796" title="All 2 branches missed.">        if (outGradC.length != 9*mImages) {</span>
+<span class="nc" id="L797">            throw new IllegalArgumentException(&quot;outGradC.length must be 9 * number of images&quot;);</span>
+        }
+<span class="nc bnc" id="L799" title="All 2 branches missed.">        if (outFSqSum.length != 1) {</span>
+<span class="nc" id="L800">            throw new IllegalArgumentException(&quot;outFSqSum.length must be 1&quot;);</span>
+        } 
+<span class="nc bnc" id="L802" title="All 2 branches missed.">        if (!(lambda  &gt;= 0.)) {</span>
+<span class="nc" id="L803">            throw new IllegalArgumentException(&quot;lambda must be a positive number&quot;);</span>
+        }
+<span class="nc bnc" id="L805" title="All 2 branches missed.">        if (imageFeaturesMap == null) {</span>
+<span class="nc" id="L806">            throw new IllegalArgumentException(&quot;imageFeaturesMap cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L808" title="All 2 branches missed.">        if (imageFeaturesMap.size() != mImages) {</span>
+<span class="nc" id="L809">            throw new IllegalArgumentException(&quot;imageFeaturesMap size must equal &quot;</span>
+            + &quot;the number of images which = coordsI[0].length/coordsW[0].length&quot;);
+        }
+<span class="nc bnc" id="L812" title="All 2 branches missed.">        if (nFeatures &lt; 6) {</span>
+<span class="nc" id="L813">            throw new IllegalArgumentException(&quot;need at least 6 features in an image&quot;);</span>
+        }
+                
+        /*
+        The partial derivatives are implemented following Qu 2018.
+        
+        The assumptions are no skew, square pixels, f=f_x=f_y.
+        
+        The factorization is of the reduced camera matrix of the Schur decomposition
+        as it is often assumed that (9^3)*mImages &lt; (3^3)*nFeatures, so one
+        inverts the matrix HPP (aka V*).
+        
+        */
+        
+<span class="nc bnc" id="L827" title="All 2 branches missed.">        if (outInitLambda != null) {</span>
+            // this will hold the maximum of the diagonals of hPPI and hCCJ
+<span class="nc" id="L829">            outInitLambda[0] = Double.NEGATIVE_INFINITY;</span>
+        }
+        
+<span class="nc" id="L832">        Arrays.fill(outGradC, 0);</span>
+<span class="nc" id="L833">        Arrays.fill(outGradP, 0);</span>
+<span class="nc" id="L834">        Arrays.fill(outDC, 0);</span>
+<span class="nc" id="L835">        Arrays.fill(outDP, 0);</span>
+<span class="nc" id="L836">        Arrays.fill(outFSqSum, 0);</span>
+        
+<span class="nc" id="L838">        double[] bC = outGradC;</span>
+<span class="nc" id="L839">        double[] bP = outGradP;</span>
+        
+        // for each feature i
+<span class="nc" id="L842">        double[] bPI = new double[3];</span>
+        // for each image j
+<span class="nc" id="L844">        double[] bCJ = new double[9];</span>
+               
+        //HPC is a.k.a. J_C^T*J_P a.k.a. (W^*)^T
+        //W_i_j^T are stored here as [3X9] blocks. each W_i_j^T is b_i_j^T*a_i_j 
+<span class="nc" id="L848">        BlockMatrixIsometric hPCBlocks /*W^T*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);</span>
+        
+        //HPP^-1 is a.k.a. (J_P^T*J_P)^-1 a.k.a. V^-1
+        //The diagonals, V_i, are stored here as [3X3] blocks. each V_i is a summation of b_i_j^T*b_i_j over all j images.
+        //The inverse is each diagonal block inverted.
+<span class="nc" id="L853">        BlockMatrixIsometric hPPIInvBlocks /*VI^-1*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 3), 3, 3);</span>
+
+        //HCC is a.k.a. J_C^T*J_C a.k.a. U^* (and in Qu thesis is variable B).
+        //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
+        // HCC is set into matrix A as it is calculated.
+        // storing hCCJBlocks in mA, while populating mA with only HCC.  later will add the negative rightsize of mA to mA
+        //BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
+
+        // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
+        // U_J is stored it in alone until i and j loops complete the first time, then
+        //     the rest of mA is subtracted in.
+<span class="nc" id="L864">        BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);</span>
+        
+        // aka V_i; a [3X3] block
+<span class="nc" id="L867">        double[][] hPPI = MatrixUtil.zeros(3, 3); </span>
+        //aka (V_i)^-1; a [3X3] block
+<span class="nc" id="L869">        double[][] invHPPI = null;</span>
+                
+        // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
+        //BlockMatrixIsometric mA = new BlockMatrixIsometric(
+        //    MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
+<span class="nc" id="L874">        double[][] auxMA = MatrixUtil.zeros(9, 9);</span>
+<span class="nc" id="L875">        double[][] auxMA2 = MatrixUtil.zeros(9, 9);</span>
+<span class="nc" id="L876">        double[][] auxMA3 = MatrixUtil.zeros(9, 9);</span>
+        
+        // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
+ //       double[][] vB = MatrixUtil.zeros(mImages, 9);
+        
+<span class="nc" id="L881">        double[][] auxHPC = MatrixUtil.zeros(3, 9);</span>
+<span class="nc" id="L882">        double[][] auxHPCT = MatrixUtil.zeros(9, 3);</span>
+
+        //[2X9]
+<span class="nc" id="L885">        double[][] aIJ = MatrixUtil.zeros(2, 9);</span>
+        //[2X3]
+<span class="nc" id="L887">        double[][] bIJ = MatrixUtil.zeros(2, 3);</span>
+
+        //aka jP_I_J^T [3X2]
+<span class="nc" id="L890">        double[][] bIJT = MatrixUtil.zeros(3, 2);</span>
+        //aka jC_I_J^T  [9X2]
+<span class="nc" id="L892">        double[][] aIJT = MatrixUtil.zeros(9, 2);</span>
+        // aka jP^T*JP; [3X3]
+<span class="nc" id="L894">        double[][] bIJsq = MatrixUtil.zeros(3, 3);</span>
+        
+        // [3X1]
+<span class="nc" id="L897">        double[] fIJ = new double[3];</span>
+<span class="nc" id="L898">        double[] fIJ2 = new double[2];</span>
+        
+        //aka bP [3X1]
+<span class="nc" id="L901">        double[] bIJTF = new double[3];</span>
+        //aka bC [9X1]
+<span class="nc" id="L903">        double[] aIJTF = new double[9];</span>
+ 
+<span class="nc" id="L905">        double[] xWI = new double[3];</span>
+<span class="nc" id="L906">        double[] xIJ = new double[3];</span>
+<span class="nc" id="L907">        double[] xIJC = new double[3];</span>
+<span class="nc" id="L908">        double[] xIJHat = new double[3];</span>
+<span class="nc" id="L909">        double[] xWCI = new double[3];</span>
+<span class="nc" id="L910">        double[] xWCNI = new double[3];</span>
+        //double[] xWCNI_2_19 = new double[3];
+<span class="nc" id="L912">        double[] xWCNDI = new double[3];</span>
+        //double[] xWCNDI_2_20 = new double[3];
+<span class="nc" id="L914">        double[][] xIJCs = null;  </span>
+        
+        
+        //lourakis (sba-toms.pdf):  observed is one feature in all images, 
+        //     then next feature in all images...
+        //Qu: observed is all features of first image, then all features of next image
+        
+        if (useCameraFrame == 1) {
+            // this includes removing radial distortion
+            xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
+        }
+                   
+        //size is [3 X 3*mImages] with each block being [3X3]
+<span class="nc" id="L927">        BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);</span>
+        
+<span class="nc" id="L929">        double[] rotAux = new double[3];</span>
+<span class="nc" id="L930">        double[][] rotM = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L931">        double[][] h = MatrixUtil.zeros(3, 3);</span>
+                
+<span class="nc" id="L933">        AuxiliaryArrays aa = new AuxiliaryArrays();</span>
+<span class="nc" id="L934">        double[][] auxIntr = MatrixUtil.zeros(3, 3);     </span>
+        
+        // i for n features, j for m images
+        int i, j, k;
+        
+        //largest runtime complexity in the loop clauses is O(nFeatures * mImages)
+        //largest runtime complexity for block multiplication is O(
+                     
+<span class="nc bnc" id="L942" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) { // this is track p in Engels pseudocode</span>
+                        
+            //reset hPPI to 0's; [3x3]// a.k.a. V*_i.
+<span class="nc" id="L945">            MatrixUtil.fill(hPPI, 0);</span>
+            //reset bPI to 0's; //[3X1]
+<span class="nc" id="L947">            Arrays.fill(bPI, 0);</span>
+            
+            //populate xWI; extract the world feature.  size [1X3]
+<span class="nc" id="L950">            MatrixUtil.extractColumn(coordsW, i, xWI);</span>
+                        
+<span class="nc bnc" id="L952" title="All 2 branches missed.">            for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
+                
+                //TODO consider how to handle feature not present in image here.
+                //   if not in image, then aIJ and bIJ are both 0, so make sure that's handled here
+<span class="nc bnc" id="L956" title="All 2 branches missed.">                if (!imageFeaturesMap.get(j).contains(i)) {</span>
+<span class="nc" id="L957">                    continue;</span>
+                }
+                
+                // get the rotation matrix rotM [3X3]
+<span class="nc" id="L961">                rotMatrices.getBlock(rotM, 0, j);</span>
+                
+                //transform to camera reference frame. size [1X3]
+<span class="nc bnc" id="L964" title="All 2 branches missed.">                if (useHomography == 1) {</span>
+<span class="nc" id="L965">                    populateCameraProjectionHomography(rotM, extrTrans[j], h);</span>
+<span class="nc" id="L966">                    MatrixUtil.multiplyMatrixByColumnVector(h, xWI, xWCI);</span>
+                } else {
+<span class="nc" id="L968">                    Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j], rotAux, xWCI);</span>
+                }
+          
+                //intr is 3 X 3*nCameras where each block is size 3X3.
+<span class="nc" id="L972">                intr.getBlock(auxIntr, j, 0);</span>
+          
+                // normalize
+<span class="nc bnc" id="L975" title="All 2 branches missed.">                for (k = 0; k &lt; 3; ++k) {</span>
+<span class="nc" id="L976">                    xWCNI[k] = xWCI[k] / xWCI[2];</span>
+                }
+                // Qu eqn 2.19, used instead of xWCNI
+                /*xWCNI_2_19[0] = -auxIntr[0][0]*xWCNI[0];
+                xWCNI_2_19[1] = -auxIntr[1][1]*xWCNI[1];
+                xWCNI_2_19[2] = 1;*/
+                
+<span class="nc" id="L983">                k1 = kRadials[j][0];</span>
+<span class="nc" id="L984">                k2 = kRadials[j][1];</span>
+
+                // distort results are in xWCNDI
+                if (useCameraFrame == 0) {                            
+<span class="nc" id="L988">                    CameraCalibration.applyRadialDistortion(xWCNI, k1, k2, useR2R4, xWCNDI);</span>
+                    // Qu eqn 2.20, used instead of xWCNDI.  world feature reprojected to camera and  distorted
+                    //CameraCalibration.applyRadialDistortion(xWCNI_2_19, k1, k2, useR2R4, xWCNDI_2_20);
+                }
+         
+                //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
+                //bIJ is [2X3]
+                // populate aIJ and bIJ as output of method:
+<span class="nc" id="L996">                aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, </span>
+                    extrTrans[j], aa, aIJ, bIJ);
+                         
+                //populate  bIJT; [3X2]  aka jP^T
+<span class="nc" id="L1000">                MatrixUtil.transpose(bIJ, bIJT);</span>
+
+                //populate aIJT; [9X2] aka jC^T
+<span class="nc" id="L1003">                MatrixUtil.transpose(aIJ, aIJT);</span>
+                                
+                // populate xIJ; the observed feature i in image j.  [1X3]
+<span class="nc" id="L1006">                MatrixUtil.extractColumn(coordsI, nFeatures*j + i, xIJ);</span>
+                               
+                if (useCameraFrame == 0) {
+                    // these are DISTORTED and in IMAGE reference frame
+                    
+                    // xWCNDI are the world scene points projected into camera frame and distorted
+                   
+                    // camera to pixel transformation (distortion already applied):
+                    //populate xIJHat;the projected distorted feature i into image j reference frame.  [1X3]
+<span class="nc" id="L1015">                    MatrixUtil.multiplyMatrixByColumnVector(auxIntr, </span>
+                        xWCNDI, xIJHat);
+                    
+                    //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
+                    //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
+
+                    // [1X3] - [1X3] = [1X3]
+<span class="nc" id="L1022">                    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);</span>
+<span class="nc bnc" id="L1023" title="All 2 branches missed.">                    if ((i % (nFeatures/3)) == 0) {</span>
+<span class="nc" id="L1024">                        log.fine(String.format(&quot;xWCNI=%s\n&quot;, FormatArray.toString(xWCNI, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1025">                        log.fine(String.format(&quot;xWCNDI=%s\n&quot;, FormatArray.toString(xWCNDI, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1026">                        log.fine(String.format(&quot;*xIJHat=%s\n&quot;, FormatArray.toString(xIJHat, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1027">                        log.fine(String.format(&quot;*xIJ=%s\n&quot;, FormatArray.toString(xIJ, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1028">                        log.fine(String.format(&quot;*diff=%s\n&quot;, FormatArray.toString(fIJ, &quot;%.7e&quot;)));</span>
+<span class="nc" id="L1029">                        log.fine(String.format(&quot;%d,%d) aIJ=%s\n&quot;, i, j, FormatArray.toString(aIJ, &quot;%.7e&quot;)));</span>
+<span class="nc" id="L1030">                        log.fine(String.format(&quot;bIJ=%s\n&quot;, FormatArray.toString(bIJ, &quot;%.7e&quot;)));</span>
+}                    
+                } else {  
+                    // these are DISTORTION-FREE and in CAMERA reference frame
+                                        // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
+                    MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
+                  
+                    // xWCNI are the world scene points projected into camera frame
+                    
+                    // xIJC are the observed points in the camera reference frame with distortion removed
+                    
+                    // [1X3] - [1X3] = [1X3]
+                    MatrixUtil.elementwiseSubtract(xIJC, xWCNI, fIJ);
+                }
+                
+                //sum of squares
+<span class="nc" id="L1046">                outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);</span>
+
+                //== subtract jP^T*f (aka bP) from bP ==
+                 
+                //aIJ is [2X9]
+                //bIJ is [2X3]
+                //dropping the z-axis which is value=0 (from normalized-normalized=1-1)
+<span class="nc" id="L1053">                System.arraycopy(fIJ, 0, fIJ2, 0, 2);</span>
+           
+                //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
+<span class="nc" id="L1056">                MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);</span>
+                
+                /*
+                gradP = bP = -JP^T * F  [3n X 1]
+                ———————————————-----------------
+                -B11T*F11-B12T*F12-B13T*F13
+                -B21T*F21-B22T*F22-B23T*F23
+                -B31T*F31-B32T*F32-B33T*F33
+                -B41T*F41-B42T*F42-B43T*F43
+
+                where each row is [3X2]*[2X1] = [3X1]
+                */
+
+                //[3 X 1]
+<span class="nc" id="L1070">                MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);</span>
+                
+<span class="nc bnc" id="L1072" title="All 2 branches missed.">                if ((i % (nFeatures / 3)) == 0) {</span>
+<span class="nc" id="L1073">                    log.fine(String.format(&quot;%d,%d) bPI=gradP=%s\n&quot;, i, j, FormatArray.toString(bPI, &quot;%.7e&quot;)));</span>
+                }
+                
+<span class="nc" id="L1076">                System.arraycopy(bPI, 0, bP, i*3, 3);</span>
+                
+                // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
+<span class="nc" id="L1079">                MatrixUtil.multiply(bIJT, bIJ, bIJsq);</span>
+                
+                // add jP^T*JP for this image to the hPPi block for feature i.
+                //    HPP_i = V_i = Σ_j(BIJT*B1J) 
+                // Engels: add jP^T*JP to upper triangular part of hPP aka V.
+                // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
+                //     elementwise addition of 3X3 blocks:
+<span class="nc" id="L1086">                MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);</span>
+            
+                // temporary exit until find reasons for very large numbers in some
+                //   of the arrays
+<span class="nc bnc" id="L1090" title="All 2 branches missed.">                if (hasNaN(hPPI)) {</span>
+<span class="nc" id="L1091">                    throw new NaNException(&quot;Errors due to unusually large numbers&quot;);</span>
+                }
+
+                // if camera c is free (presumably, context is fixed or free variables).
+                if (true) {
+                    
+                    //U_j = Σ_i(AIJT*A1J) where U is jCT*JC which is HCC=U
+                    //add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; 
+                    //mA[j][j] += aIJT * aIJ; // [9X9]
+<span class="nc" id="L1100">                    MatrixUtil.multiply(aIJT, aIJ, auxMA);</span>
+
+<span class="nc" id="L1102">                    mA.getBlock(auxMA2, j, j);</span>
+<span class="nc" id="L1103">                    MatrixUtil.elementwiseAdd(auxMA, auxMA2, auxMA3);</span>
+<span class="nc" id="L1104">                    mA.setBlock(auxMA3, j, j);</span>
+        
+                    //dont use U_j (= mA) yet, nor augment it with damping term
+                    //until finished summing over all i
+                    
+                    // compute block (i,j) of hPC as hPC=jPTJC [3X9]
+                    //hPC[i][j] = bIJT * aIJ;
+<span class="nc" id="L1111">                    MatrixUtil.multiply(bIJT, aIJ, auxHPC);</span>
+<span class="nc" id="L1112">                    hPCBlocks.setBlock(auxHPC, i, j);</span>
+                    
+                    //aIJ is [2X9]
+                    //bIJ is [2X3]
+                
+                    // subtract aIJT*f (where bc = -aIJT*f aka -jCT*f) from block row j in vB. [9X1]
+                    //aIJTF = aIJT * fIJ.  [9X2]*[2X1]=[1X9]
+<span class="nc" id="L1119">                    MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ2, aIJTF);</span>
+
+                    /* 
+                    bC = -JC^T * F =  [9m X 1]
+                    ———————————————-
+                    -A11T*F11-A21T*F21-A31T*F31-A41T*F41
+                    -A12T*F12-A22T*F22-A32T*F32-A42T*F42
+                    -A13T*F13-A23T*F23-A33T*F33-A43T*F43
+
+                    where each row is [9X2][2X1] = [9X1]
+                    */
+
+                    // fill bCJ with last entry for image J
+<span class="nc" id="L1132">                    System.arraycopy(bC, j*9, bCJ, 0, 9);</span>
+     
+<span class="nc" id="L1134">                    MatrixUtil.elementwiseSubtract(bCJ, aIJTF, bCJ);</span>
+
+                    //bC length is [9*mImages]
+<span class="nc" id="L1137">                    System.arraycopy(bCJ, 0, bC, j*9, 9);                    </span>
+                }
+            } // end image j loop
+            
+<span class="nc" id="L1141">            log.fine(String.format(&quot;%d,%d) bC=%s\n&quot;, i,j, FormatArray.toString(bC, &quot;%.3e&quot;)));</span>
+
+            // now HPP_i (aka V_i) is summed over all j: V_i = Σ_j(BIJT*B1J)
+
+<span class="nc bnc" id="L1145" title="All 2 branches missed.">            if (outInitLambda != null) {</span>
+<span class="nc bnc" id="L1146" title="All 2 branches missed.">                if (maxDiag(hPPI, outInitLambda)) {</span>
+<span class="nc" id="L1147">                    log.fine(String.format(&quot;max diag of hPPI (aka V_i): new lambda=%.7e\n&quot;, outInitLambda[0]));</span>
+                }
+            }
+            
+            // augment hPPI by damping term
+            //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
+<span class="nc bnc" id="L1153" title="All 2 branches missed.">            for (k = 0; k &lt; 3; ++k) {</span>
+<span class="nc" id="L1154">                hPPI[k][k] *= (1. + lambda);</span>
+            }
+            
+            // temporary exit until find reasons for very large numbers in some
+            //   of the arrays
+<span class="nc bnc" id="L1159" title="All 2 branches missed.">            if (hasNaN(hPPI)) {</span>
+<span class="nc" id="L1160">                throw new NaNException(&quot;Errors due to unusually large numbers&quot;);</span>
+            }
+            //invert hPPI  which is a diagonal block of hPP aka V* // [3X3]
+<span class="nc" id="L1163">            invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);</span>
+            
+<span class="nc" id="L1165">            hPPIInvBlocks.setBlock(invHPPI, i, 0);</span>
+            
+        }// end loop i over features
+        
+<span class="nc bnc" id="L1169" title="All 2 branches missed.">        if (outInitLambda != null) {</span>
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">            for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="nc" id="L1171">                mA.getBlock(auxMA, j, j);</span>
+<span class="nc bnc" id="L1172" title="All 2 branches missed.">                if (maxDiag(auxMA, outInitLambda)) {</span>
+<span class="nc" id="L1173">                    log.fine(String.format(&quot;max diag of HCC_J (aka U_j): new lambda=%.7e\n&quot;, outInitLambda[0]));</span>
+                }
+            }
+        }
+
+        // aIJ^T*aIJ is now in auxMA.  each U_j is a summation of a_i_j^T*a_i_j over all i features.
+        // augment U_J with the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
+<span class="nc bnc" id="L1180" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="nc" id="L1181">            mA.getBlock(auxMA, j, j);</span>
+<span class="nc bnc" id="L1182" title="All 2 branches missed.">            for (k = 0; k &lt; auxMA.length; ++k) {</span>
+<span class="nc" id="L1183">                auxMA[k][k] *= (1. + lambda);</span>
+            }
+<span class="nc" id="L1185">            mA.setBlock(auxMA, j, j);</span>
+        }
+        
+        // HPC is finished and is a dense matrix
+        // hPPInv is finished and the diagonals are stored
+        // HCC is finished and the diagonals are stored in mA
+        // bC is aIJTF and this is stored in outGradC
+        // bP is bIJTF and thisis stored in outGradP
+        
+<span class="nc" id="L1194">        log.fine(String.format(&quot;HPC=W^T=\n%s\n\n&quot;, FormatArray.toString(hPCBlocks.getA(), &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1195">        log.fine(String.format(&quot;HPPInv=V^-1=\n%s\n\n&quot;, FormatArray.toString(hPPIInvBlocks.getA(), &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1196">        log.fine(String.format(&quot;HCC=U=\n%s\n\n&quot;, FormatArray.toString(mA.getA(), &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1197">        log.fine(String.format(&quot;gradC=bC=\n%s\n\n&quot;, FormatArray.toString(bC, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1198">        log.fine(String.format(&quot;gradP=bP=\n%s\n\n&quot;, FormatArray.toString(bP, &quot;%.3e&quot;)));</span>
+                
+        //tP = HPP^-1*bP = V^-1*bP [3n X 1] or [1n X 3] row format
+        // blocks: n rows and 1 column
+<span class="nc" id="L1202">        BlockMatrixIsometric tPRowBlocks = new BlockMatrixIsometric(</span>
+<span class="nc" id="L1203">            MatrixUtil.zeros(nFeatures, 3), 1, 3);</span>
+<span class="nc" id="L1204">        double[] tPI = new double[3];</span>
+        
+        //tPC = HPC^T*HPP^-1 = W*V^-1 [9m X 3n]
+<span class="nc" id="L1207">        BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures), 9, 3);</span>
+<span class="nc" id="L1208">        double[][] tPC = MatrixUtil.zeros(9, 3);</span>
+        
+<span class="nc bnc" id="L1210" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+            //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
+            
+            //invHPPI aka V^-1 is [3X3]
+<span class="nc" id="L1214">            hPPIInvBlocks.getBlock(invHPPI, i, 0);</span>
+            
+<span class="nc" id="L1216">            System.arraycopy(bP, i*3, bPI, 0, 3);</span>
+            // [3X3][3X1]=[3X1]
+<span class="nc" id="L1218">            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);</span>
+<span class="nc" id="L1219">            tPRowBlocks.setRowBlock(tPI, i, 0);</span>
+<span class="nc bnc" id="L1220" title="All 2 branches missed.">            for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
+                //TODO consider how to handle feature not present in image here
+<span class="nc bnc" id="L1222" title="All 2 branches missed.">                if (!imageFeaturesMap.get(j).contains(i)) {</span>
+<span class="nc" id="L1223">                    continue;</span>
+                }        
+                //calc tPC = HPC^T*HPP^-1 = W*V^-1 and set into tPCBlocks(j,i)=WIJ*invVI//[9X3]
+                // auxHPC is [3X9]
+                // tPC block is [9X3][3X3]=[9X3]
+<span class="nc" id="L1228">                hPCBlocks.getBlock(auxHPC, i, j);</span>
+<span class="nc" id="L1229">                MatrixUtil.transpose(auxHPC, auxHPCT);</span>
+<span class="nc" id="L1230">                MatrixUtil.multiply(auxHPCT, invHPPI, tPC);</span>
+<span class="nc" id="L1231">                tPCBlocks.setBlock(tPC, j, i);</span>
+            }
+        }
+        
+<span class="nc" id="L1235">        double[][] vB = MatrixUtil.zeros(mImages, 9); </span>
+<span class="nc" id="L1236">        double[] vBJ = new double[9];</span>
+<span class="nc bnc" id="L1237" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L1238">            tPRowBlocks.getRowBlock(tPI, i, 0);            </span>
+<span class="nc bnc" id="L1239" title="All 2 branches missed.">            for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
+                //TODO consider how to handle feature not present in image here
+<span class="nc bnc" id="L1241" title="All 2 branches missed.">                if (!imageFeaturesMap.get(j).contains(i)) {</span>
+<span class="nc" id="L1242">                    continue;</span>
+                }
+<span class="nc" id="L1244">                hPCBlocks.getBlock(auxHPC, i, j);</span>
+<span class="nc" id="L1245">                MatrixUtil.transpose(auxHPC, auxHPCT);</span>
+<span class="nc" id="L1246">                MatrixUtil.multiplyMatrixByColumnVector(auxHPCT, tPI, vBJ);</span>
+<span class="nc bnc" id="L1247" title="All 2 branches missed.">                for (k = 0; k &lt; vBJ.length; ++k) {</span>
+<span class="nc" id="L1248">                    vB[j][k] -= vBJ[k];</span>
+                }
+            }
+        }
+        // finish vB: vB += bC
+<span class="nc bnc" id="L1253" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
+<span class="nc" id="L1254">            System.arraycopy(bC, j*9, bCJ, 0, 9);</span>
+<span class="nc bnc" id="L1255" title="All 2 branches missed.">            for (k = 0; k &lt; bCJ.length; ++k) {</span>
+<span class="nc" id="L1256">                vB[j][k] += bCJ[k];</span>
+            }
+        }
+        
+        // mA -= tPC*HPC  [9*mImages X 9*mImages]
+<span class="nc" id="L1261">        double[][] mARight = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());</span>
+<span class="nc" id="L1262">        mARight = MatrixUtil.elementwiseSubtract(mA.getA(), mARight);</span>
+<span class="nc" id="L1263">        mA = new BlockMatrixIsometric(mARight, 9, 9);</span>
+        
+        /* TODO: (optional) Fix gauge by freezing coordinates and thereby reducing 
+            the linear system with a few dimensions.
+        
+           ** Section 9 of Triggs et al. 2000, 
+           &quot;Bundle Adjustment – A Modern Synthesis&quot;
+               &quot;Section 9 returns to the theoretical issue of gauge freedom
+                (datum deficiency), including the theory of inner constraints.&quot;
+        
+            Section 9.2.1, Up vector selection, of Szeliski 2010
+        
+            Triggs 1998, &quot;Optimal estimation of matching constraints.
+              3D Structure from Multiple Images of Large-scale Environments SMILE’98,
+              Lecture Notes in Computer Science
+              (see Section 3.1 page 8
+                   &quot;the gauge freedom is the 3 d.o.f. choice of plane.&quot;
+             
+            N Snavely, SM Seitz, R Szeliski - 2008
+            &quot;Skeletal graphs for efficient structure from motion&quot;
+            
+            Forstner &amp; Wrobel refer to it as &quot;Free Block Adjustment&quot;
+           
+            ** Daniel D. Morris, Kenichi Kanatani and Takeo Kanade,
+            &quot;Gauge Fixing for Accurate 3D Estimation&quot;
+        
+           Also, in this project, can see it as fixing the exrinsic parameters
+              of the first camera to rotation = I and translation=0.
+           Also in this project, Reconstruction.java:
+              see implementation of metric constraints, after the comments
+              Fig 3.1 of Tomasi &amp; Kanade 1991 or Fig 2. of Belongie lecture notes
+              Belongie Section 16.4.4 (c)
+              See Step 3 - Metric Constraints
+        
+           reasons to fix the gauge:
+              -- decrease drift in location accuracy
+              -- smaller covariance 
+        
+        gauge fix not yet included here.
+        */
+        
+        //Engels step (6) (Linear Solving) 
+        //    Cholesky factor the left hand side matrix B and solve for dC. 
+        //    Add frozen coordinates back in.
+        
+        // cholesky decompostion to solve for dC in mA*dC=vB
+        // (using the sparsity of upper and lower triangular matrices results in
+        //    half the computation time of LU decomposition in comparison)
+        
+        // mA is square [mImages*9, mImages*9]
+        //    but not necessarily symmetric positive definite needed by the
+        //    Cholesky decomposition, so need to find the nearest or a nearest
+        //    symmetric positive definite.
+        
+<span class="nc" id="L1317">        log.fine(String.format(&quot;mA=%s\n&quot;, FormatArray.toString(mA.getA(), &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1318">        log.fine(String.format(&quot;vB=%s\n&quot;, FormatArray.toString(vB, &quot;%.3e&quot;)));</span>
+
+<span class="nc" id="L1320">        double eps = 1.e-7;</span>
+        // this method attempts to find the nearest symmetric positive *definite* matrix to A:
+<span class="nc" id="L1322">        double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);</span>
+       
+<span class="nc" id="L1324">        DenseCholesky chol = new DenseCholesky(aPSD.length, false);</span>
+<span class="nc" id="L1325">        chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(aPSD)));</span>
+<span class="nc" id="L1326">        LowerTriangDenseMatrix _cholL = chol.getL();</span>
+        
+        //[mImages*9, mImages*9]
+<span class="nc" id="L1329">        double[][] cholL = Matrices.getArray(_cholL);</span>
+        
+<span class="nc" id="L1331">        double[][] cholLT = MatrixUtil.transpose(cholL);</span>
+        
+<span class="nc" id="L1333">        log.fine(String.format(&quot;cholL=\n%s\n&quot;, FormatArray.toString(cholL, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1334">        log.fine(String.format(&quot;cholL*LT=\n%s\n&quot;, FormatArray.toString(</span>
+<span class="nc" id="L1335">            MatrixUtil.multiply(cholL, cholLT), &quot;%.3e&quot;)));</span>
+
+        /* avoid inverting A by using Cholesky decomposition w/ forward and 
+        backward substitution to find x as dC.
+            mA * dC=vB
+            A ﹡ x = b: 
+            A = L ﹡ L^*
+            L ﹡ y = b ==&gt; y via forward subst
+            L^* ﹡ x = y ==&gt; x via backward subst
+        */
+
+        // length is vB.length vectorized which is [mImages*9]
+<span class="nc" id="L1347">        double[] yM = MatrixUtil.forwardSubstitution(cholL, </span>
+<span class="nc" id="L1348">            MatrixUtil.reshapeToVector(vB)</span>
+        );
+        
+        // temporary exit until find reasons for very large numbers in some
+        //   of the arrays
+<span class="nc bnc" id="L1353" title="All 2 branches missed.">        if (hasNaN(yM)) {</span>
+<span class="nc" id="L1354">            throw new NaNException(&quot;Errors due to unusually large numbers&quot;);</span>
+        }
+        
+        // [[mImages*9 X mImages*9] * x = [mImages*9] ==&gt; x is length mImages*9
+        // x is dC
+<span class="nc" id="L1359">        MatrixUtil.backwardSubstitution(cholLT, yM, outDC);</span>
+        
+//Error:  dC is too large.  error somewhere in calculating it.        
+<span class="nc" id="L1362">        log.fine(String.format(&quot;yM=%s\n&quot;, FormatArray.toString(yM, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1363">        log.fine(String.format(&quot;outDC=dC=%s\n&quot;, FormatArray.toString(outDC, &quot;%.3e&quot;)));</span>
+
+        // calc outDP:  dP = invHPPI * bPI - invHPPI * HPC * dC
+        //              dP = tP - tPC^T * dC // [3nX1] - [3nX9m]*[9*mImagesX1] 
+        //outDP : [3nX1]
+        //tP : [3nX1]
+        //tPCBlocks : (9*mImages, 3*nFeatures), 9, 3);
+        //outDC: [9*mImagesX1]
+        
+<span class="nc" id="L1372">        double[] dCJ = new double[9];</span>
+<span class="nc" id="L1373">        double[] tmpI = new double[3]; // holds tPC^T * dC</span>
+<span class="nc" id="L1374">        double[] tmp = new double[3];</span>
+<span class="nc bnc" id="L1375" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+            //[row i, col 0] = tPI - (Σ_j(tPC[J,I]^T*dCJ))
+<span class="nc" id="L1377">            Arrays.fill(tmpI, 0);</span>
+<span class="nc bnc" id="L1378" title="All 2 branches missed.">            for (j = 0; j &lt; mImages; ++j) {</span>
+                //[9X3]
+<span class="nc" id="L1380">                tPCBlocks.getBlock(tPC, j, i);</span>
+                // tPC^T [3X9]  in auxHPC
+<span class="nc" id="L1382">                MatrixUtil.transpose(tPC, auxHPC);</span>
+                //dCJ [9X1].
+<span class="nc" id="L1384">                System.arraycopy(outDC, j*9, dCJ, 0, 9);</span>
+                // tmp [3X1]
+<span class="nc" id="L1386">                MatrixUtil.multiplyMatrixByColumnVector(auxHPC, dCJ, tmp);</span>
+<span class="nc bnc" id="L1387" title="All 2 branches missed.">                for (k = 0; k &lt; tmp.length; ++k) {</span>
+<span class="nc" id="L1388">                    tmpI[k] += tmp[k];</span>
+                }
+            }
+<span class="nc" id="L1391">            tPRowBlocks.getRowBlock(tPI, i, 0);</span>
+<span class="nc bnc" id="L1392" title="All 2 branches missed.">            for (k = 0; k &lt; tPI.length; ++k) {</span>
+<span class="nc" id="L1393">                tPI[k] -= tmpI[k];</span>
+<span class="nc" id="L1394">                outDP[i*3 + k] = tPI[k];</span>
+            }
+           
+            // Engels: compute updated point (i.e. world coord features)
+            // NOTE: for this class, the updates are handled by the invoker of 
+            //       this method.  The updated parameters are given to the code so
+            //       that when outFSqSum is calculated above, it is using 
+            //       the updated parameters and world coords.
+            
+        } // end loop over feature i
+            
+<span class="nc" id="L1405">        log.fine(String.format(&quot;outDP=%s\n&quot;, FormatArray.toString(outDP, &quot;%.3e&quot;)));</span>
+
+<span class="nc" id="L1407">    }</span>
+    
+    /**
+     * the partial derivative of the
+     * final 2D re-projected coordinates of the i-th feature point
+     * w.r.t. 2D coordinates of perspective projection of the i-th feature point.
+     * Defined in Qu 2018 eqn (3.12).
+     * 
+     * @param xWCNI a world point projected to the camera reference frame and
+     * normalized by it's last coordinate.
+     * xWCI = column i of coordsW transformed to camera coordinates; 
+     * xWCNI = xWCI/xWCI[2];
+     * @param intr
+     * @param k1 radial distortion coefficient 1
+     * @param k2 radial distortion coefficient 2
+     * @param out output array of size [2X2]
+     */
+    void pdCpIJCIJ(double[] xWCNI, double[][] intr,
+        double k1, double k2, double[][] out) {
+        
+<span class="nc bnc" id="L1427" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 2) {</span>
+<span class="nc" id="L1428">            throw new IllegalArgumentException(&quot;out size must be 2X2&quot;);</span>
+        }
+        
+<span class="nc" id="L1431">        double x = -xWCNI[0];</span>
+<span class="nc" id="L1432">        double y = -xWCNI[1];</span>
+        
+<span class="nc" id="L1434">        double x2 = x*x;</span>
+<span class="nc" id="L1435">        double x4 = x2*x2;</span>
+<span class="nc" id="L1436">        double y2 = y*y;</span>
+<span class="nc" id="L1437">        double y4 = y2*y2;</span>
+        
+<span class="nc" id="L1439">        double f1 = intr[0][0];</span>
+        
+<span class="nc" id="L1441">        double pdxx = f1 * (1 + k1*(3*x2 + y2) + k2*(5*x4 + y4 + 6*x2*y2));</span>
+<span class="nc" id="L1442">        double pdxy = 2*f1*x*y*(k1 + 2*k2*(x2 + y2));</span>
+<span class="nc" id="L1443">        double pdyx = pdxy;</span>
+<span class="nc" id="L1444">        double pdyy = f1*(k1*(3*y2 + x2) + k2*(5*y4 + x4 + 6*x2*y2));</span>
+        
+<span class="nc" id="L1446">        out[0][0] = pdxx;</span>
+<span class="nc" id="L1447">        out[0][1] = pdxy;</span>
+<span class="nc" id="L1448">        out[1][0] = pdyx;</span>
+<span class="nc" id="L1449">        out[1][1] = pdyy;</span>
+<span class="nc" id="L1450">    }</span>
+    
+    /**
+     * the partial derivative of the 2D coordinates of perspective projection 
+     * of the i-th feature point normalized, w.r.t. to the same not normalized.
+     * Defined in Qu 2018 eqn (3.16).
+     * 
+     * @param xWCI a world point projected to the camera reference frame.
+     * xWCI = column i of coordsW transformed to camera coordinates; 
+     * @param out output array of size [2X3]
+     */
+    void pdCIJXWIJ(double[] xWCI, double[][] out) {
+        
+<span class="nc bnc" id="L1463" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 3) {</span>
+<span class="nc" id="L1464">            throw new IllegalArgumentException(&quot;out size must be 2X3&quot;);</span>
+        }
+        
+<span class="nc" id="L1467">        double x = xWCI[0];</span>
+<span class="nc" id="L1468">        double y = xWCI[1];</span>
+<span class="nc" id="L1469">        double z = xWCI[2];</span>
+<span class="nc" id="L1470">        double z2 = z*z;</span>
+        
+<span class="nc" id="L1472">        out[0][0] = -1./z;</span>
+<span class="nc" id="L1473">        out[0][1] = 0;</span>
+<span class="nc" id="L1474">        out[0][2] = x/z2;</span>
+        
+<span class="nc" id="L1476">        out[1][0] = 0;</span>
+<span class="nc" id="L1477">        out[1][1] = -1./z;</span>
+<span class="nc" id="L1478">        out[1][2] = y/z2;</span>
+        
+<span class="nc" id="L1480">    }</span>
+    
+    /**
+     * the partial derivative of the
+     * final 2D re-projected coordinates of the i-th feature point
+     * w.r.t. the intrinsic camera parameters.
+     * Defined in Qu 2018 eqn (3.10).
+     * 
+     * @param xWCNI a world point projected to the camera reference frame and
+     * normalized by it's last coordinate.
+     * xWCI = column i of coordsW transformed to camera coordinates; 
+     * xWCNI = xWCI/xWCI[2];
+     * @param intr
+     * @param k1 radial distortion coefficient 1
+     * @param k2 radial distortion coefficient 2
+     * @param out output array of size [2X3]
+     */
+    void pdCpIJYJ(double[] xWCNI, double[][] intr,
+        double k1, double k2, double[][] out) {
+        
+<span class="nc bnc" id="L1500" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 3) {</span>
+<span class="nc" id="L1501">            throw new IllegalArgumentException(&quot;out size must be 2X3&quot;);</span>
+        }
+        
+<span class="nc" id="L1504">        double x = xWCNI[0];</span>
+<span class="nc" id="L1505">        double y = xWCNI[1];</span>
+        
+<span class="nc" id="L1507">        double x2 = x*x;</span>
+<span class="nc" id="L1508">        double y2 = y*y;</span>
+<span class="nc" id="L1509">        double r2 = x2 + y2;</span>
+<span class="nc" id="L1510">        double r4 = r2*r2;</span>
+        
+<span class="nc" id="L1512">        double f1 = intr[0][0];</span>
+        
+<span class="nc" id="L1514">        double dis = 1 + k1*r2 + k2*r4;</span>
+        
+<span class="nc" id="L1516">        out[0][0] = dis*x;</span>
+<span class="nc" id="L1517">        out[0][1] = f1*r2*x;</span>
+<span class="nc" id="L1518">        out[0][2] = f1*r4 * x;</span>
+<span class="nc" id="L1519">        out[1][0] = dis*y;</span>
+<span class="nc" id="L1520">        out[1][1] = f1*r2*y;</span>
+<span class="nc" id="L1521">        out[1][2] = f1*r4*y;</span>
+        
+<span class="nc" id="L1523">    }</span>
+    
+    /**
+     * the partial derivative of the
+     * final 2D re-projected coordinates of the i-th feature point
+     * w.r.t. 2D coordinates of perspective projection of the i-th feature point.
+     * Defined in Qu 2018 eqns (3.28 - 3.33).
+     * @param xWI the 3-D coordinates of a world scene feature.
+     * @param phi rotation angle vector of length 3 in units of radians
+     * @param out output array of size [3X3]
+     */
+    void pdXWIJPhiJ(double[] xWI, double[] phi, double[][] out) {
+        
+<span class="nc bnc" id="L1536" title="All 4 branches missed.">        if (out.length != 3 || out[0].length != 3) {</span>
+<span class="nc" id="L1537">            throw new IllegalArgumentException(&quot;out size must be 3X3&quot;);</span>
+        }
+        
+<span class="nc" id="L1540">        double x = xWI[0];</span>
+<span class="nc" id="L1541">        double y = xWI[1];</span>
+<span class="nc" id="L1542">        double z = xWI[2];</span>
+<span class="nc" id="L1543">        double pX = phi[0]; // in radians</span>
+<span class="nc" id="L1544">        double pY = phi[1];</span>
+<span class="nc" id="L1545">        double pZ = phi[2];</span>
+<span class="nc" id="L1546">        double p = Math.sqrt(pX*pX + pY*pY + pZ*pZ);</span>
+<span class="nc" id="L1547">        double p2 = p*p;</span>
+<span class="nc" id="L1548">        double p3 = p2*p;</span>
+<span class="nc" id="L1549">        double p4 = p2*p2;</span>
+<span class="nc" id="L1550">        double c = Math.cos(p);</span>
+<span class="nc" id="L1551">        double s = Math.sin(p);</span>
+        
+<span class="nc" id="L1553">        double dXdPxx = - (pX*x*s)/p +</span>
+            ((2*pX*x + pY*y + pZ*z)*(1.-c) + (pX*pY*z - pX*pZ*y)*c)/p2 +
+            ((-pX*pY*z + pX*pZ*y + pX*pX*(pY*y + pZ*z + pX*x))*s)/p3 +
+            (2.*pX*pX*(pX*x + pY*y + pZ*z)*(c - 1.))/p4;
+        
+<span class="nc" id="L1558">        double dXdPxy = (z*s - pY*x*s)/p +</span>
+            (pX*y*(1.-c) + (pY*pY*z - pY*pZ*y)*c)/p2 +
+            ((pX*pX*x + pX*pY*y + pX*pZ*z + pZ*y - pY*z)*pY*s)/p3 +
+            (2.*pX*pY*(pX*x + pY*y + pZ*z)*(c - 1.))/p4;
+        
+<span class="nc" id="L1563">        double dXdPxz = (-y*s - pZ*x*s)/p +</span>
+            (pX*z*(1.-c) + (pZ*pY*z - pZ*pZ*y)*c)/p2 +
+            ((pX*pX*x + pX*pY*y + pX*pZ*z + pZ*y - pY*z)*pZ*s)/p3 +
+            (2.*pX*pZ*(pX*x + pZ*z + pY*y)*(c-1.))/p4;
+        
+<span class="nc" id="L1568">        double dXdPyx = (-z*s - pX*y*s)/p +</span>
+            (pY*x*(1.-c) + (pX*pZ*x - pX*pX*z)*c)/p2 +
+            ((pY*pY*y + pY*pZ*z + pY*pX*x + pX*z - pZ*x)*pX*s)/p3 +
+            (2.*pY*pX*(pY*y + pX*x + pZ*z)*(c-1.))/p4;
+        
+<span class="nc" id="L1573">        double dXdPyy = - (pY*y*s)/p +</span>
+            ((2*pY*y + pZ*z + pX*x)*(1.-c) + (pY*pZ*x - pY*pX*z)*c)/p2 +
+            ((-pY*pZ*x + pY*pX*z + pY*pY*(pZ*z + pX*x + pY*y))*s)/p3 +
+            (2.*pY*pY*(pY*y + pZ*z + pX*x)*(c - 1.))/p4;
+        
+<span class="nc" id="L1578">        double dXdPyz = (x*s - pZ*y*s)/p +</span>
+            (pY*z*(1.-c) + (pZ*pZ*x - pZ*pX*z)*c)/p2 +
+            ((pY*pY*y + pY*pZ*z + pY*pX*x + pX*z - pZ*x)*pZ*s)/p3 +
+            (2.*pY*pZ*(pY*y + pZ*z + pX*x)*(c - 1.))/p4;
+        
+<span class="nc" id="L1583">        double dXdPzx = (y*s - pX*z*s)/p +</span>
+            (pZ*x*(1.-c) + (pX*pX*y - pX*pY*x)*c)/p2 +
+            ((pZ*pZ*z + pZ*pX*x + pZ*pY*y + pY*x - pX*y)*pX*s)/p3 +
+            (2.*pZ*pX*(pZ*z + pX*x + pY*y)*(c - 1.))/p4;
+     
+<span class="nc" id="L1588">        double dXdPzy = (-x*s - pY*z*s)/p +</span>
+            (pZ*y*(1.-c) + (pY*pX*y - pY*pY*x)*c)/p2 +
+            ((pZ*pZ*z + pZ*pX*x + pZ*pY*y + pY*x - pX*y)*pY*s)/p3 +
+            (2.*pZ*pY*(pZ*z + pY*y + pX*x)*(c-1.))/p4;
+        
+<span class="nc" id="L1593">        double dXdPzz = - (pZ*z*s)/p +</span>
+            ((2*pZ*z + pX*x + pY*y)*(1.-c) + (pZ*pX*y - pZ*pY*x)*c)/p2 +
+            ((-pZ*pX*y + pZ*pY*x + pZ*pZ*(pX*x + pY*y + pZ*z))*s)/p3 +
+            (2.*pZ*pZ*(pZ*z + pX*x + pY*y)*(c - 1.))/p4;
+        
+<span class="nc" id="L1598">        out[0][0] = dXdPxx;</span>
+<span class="nc" id="L1599">        out[0][1] = dXdPxy;</span>
+<span class="nc" id="L1600">        out[0][2] = dXdPxz;</span>
+<span class="nc" id="L1601">        out[1][0] = dXdPyx;</span>
+<span class="nc" id="L1602">        out[1][1] = dXdPyy;</span>
+<span class="nc" id="L1603">        out[1][2] = dXdPyz;</span>
+<span class="nc" id="L1604">        out[2][0] = dXdPzx;</span>
+<span class="nc" id="L1605">        out[2][1] = dXdPzy;</span>
+<span class="nc" id="L1606">        out[2][2] = dXdPzz;</span>
+<span class="nc" id="L1607">    }</span>
+    
+    /**
+     * NOTE: there may be a problem if using the homography matrix [r0 r1 t] to
+     * transform world scene to camera coordinates as the partial derivatives here
+     * are assuming the use of the 3nd column of rotation too, that is R * T.
+     * 
+     for aIJ creates dF/dCameraParams which are the 9 parameters of 
+     extrinsic and intrinsic,
+     where the 9 parameters are the Qu notation for the variables phi_j, t_j, y_j.
+     for each image = 9*nImages elements (j index is used for images).
+     for bIJ creates dF/dPointParams which are the 3 parameters of the world point position.
+     for each feature = 3 * mFeatures elements (i index is used for features)
+     * Defined in Lourakis lecture slide 10.
+     * 
+     * @param xWI a world scene feature.
+     * xWI = column i of coordsW
+     * @param xWCI xWI projected to the camera reference frame.
+     * xWCI = column i of coordsW transformed to camera coordinates, but not normalize;
+     * @param intr
+     * @param k1 radial distortion coefficient 1
+     * @param k2 radial distortion coefficient 2
+     * //@param rot extrinsic camera parameter rotation matrix.
+     * @param rotAngles [1 X 3] array holding euler rotation angles.
+     * @param rot [3 X 3] rotation matrix which was created with
+     * Rotation.createRotationZYX(rotAngles...);
+     * @param trans extrinsic camera parameter translation vector.
+     * @param aa a group of arrays passed in by invoking code, re-used to avoid
+     * constructing more objects.  AuxiliaryArrays aa = AuxiliaryArrays().
+     * @param outAIJ output array of size [2X9]
+     * @param outBIJ output array of size [2X3]
+     */
+    void aIJBIJ(double[] xWI, double[] xWCI, double[][] intr, double k1, double k2, 
+        double[] rotAngles, double[][] rot, double[] trans, AuxiliaryArrays aa,
+        double[][] outAIJ, double[][] outBIJ) {
+                
+<span class="nc bnc" id="L1643" title="All 4 branches missed.">        if (outAIJ.length != 2 || outAIJ[0].length != 9) {</span>
+<span class="nc" id="L1644">            throw new IllegalArgumentException(&quot;outAIJ size must be 2X9&quot;);</span>
+        }
+<span class="nc bnc" id="L1646" title="All 4 branches missed.">        if (outBIJ.length != 2 || outBIJ[0].length != 3) {</span>
+<span class="nc" id="L1647">            throw new IllegalArgumentException(&quot;outBIJ size must be 2X3&quot;);</span>
+        }
+<span class="nc bnc" id="L1649" title="All 2 branches missed.">        if (aa == null) {</span>
+<span class="nc" id="L1650">            throw new IllegalArgumentException(&quot;aa cannot be null&quot;);</span>
+        }
+        
+<span class="nc" id="L1653">        double[] xWCNI = Arrays.copyOf(xWCI, xWCI.length);</span>
+        int i;
+<span class="nc bnc" id="L1655" title="All 2 branches missed.">        for (i = 0; i &lt; xWCI.length; ++i) {</span>
+<span class="nc" id="L1656">            xWCNI[i] /= xWCNI[2];</span>
+        }
+        
+//TODO: may need sign corrections:      
+        // 2X2.  Qu 2018 eqn (3.12)
+<span class="nc" id="L1661">        double[][] dCPdC = aa.a2X2;</span>
+<span class="nc" id="L1662">        pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);</span>
+        
+        // 2X3.  Qu 2018 eqn (3.16)
+<span class="nc" id="L1665">        double[][] dCdX = aa.b2X3;</span>
+<span class="nc" id="L1666">        pdCIJXWIJ(xWCI, dCdX);</span>
+        
+        // 2X3.  Qu 2018 eqn (3.10)
+<span class="nc" id="L1669">        double[][] dCPdY = aa.c2X3;</span>
+<span class="nc" id="L1670">        pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);</span>
+        
+        // 3X3.  Qu 2018 eqns (3.28 - 3.33)
+<span class="nc" id="L1673">        double[][] dXdP = aa.d3X3;</span>
+<span class="nc" id="L1674">        pdXWIJPhiJ(xWI, rotAngles, dXdP);</span>
+       
+        //========================================
+        
+        // [2X3].  Qu 2018 eqn (3.35)
+<span class="nc" id="L1679">        double[][] dFdT = aa.e2X3;</span>
+<span class="nc" id="L1680">        MatrixUtil.multiply(dCPdC, dCdX, dFdT);</span>
+        
+        // [2X3].  Qu 2018 eqn (3.34)
+<span class="nc" id="L1683">        double[][] dFdPhi = aa.f2X3;</span>
+<span class="nc" id="L1684">        MatrixUtil.multiply(dFdT, dXdP, dFdPhi);</span>
+        
+        // [2X3]. Qu 2018 eqn (3.36)
+<span class="nc" id="L1687">        double[][] dFdY = dCPdY;</span>
+    
+        // [2X3].  Qu 2018 eqn (3.37)
+<span class="nc" id="L1690">        double[][] dFdX = aa.h2X3;</span>
+<span class="nc" id="L1691">        MatrixUtil.multiply(dFdT, rot, dFdX);</span>
+        
+<span class="nc bnc" id="L1693" title="All 2 branches missed.">        if (useHomography == 1) {</span>
+            
+            // replace dFdPhi and dFdT
+            
+<span class="nc" id="L1697">            boolean useLeftHanded = true;</span>
+<span class="nc" id="L1698">            double[] h = new double[9];</span>
+<span class="nc" id="L1699">            populateCameraProjectionHomography(rot, trans, h, useLeftHanded);</span>
+            
+<span class="nc" id="L1701">            double[][] jF = MatrixUtil.zeros(2, 9);</span>
+<span class="nc" id="L1702">            PNP.calculateJF(xWI, h, jF);</span>
+            
+            //J_g = dh/dp where h has 9 elements, and the number of parameters
+            // jG is [9X6]
+<span class="nc" id="L1706">            double[][] jG = PNP.calculateJG(rotAngles);</span>
+            
+            // [2X9]*[9X6] = [2X6]  this is dF/dTrans and dF/dRot combined
+<span class="nc" id="L1709">            double[][] j = MatrixUtil.multiply(jF, jG);  </span>
+            
+            /*
+            J_f: each block is [2X1] for x and y:
+            ∂f1/∂h1  ∂f1/∂h2  ∂f1/∂h3  ∂f1/∂h4  ∂f1/∂h5  ∂f1/∂h6  ∂f1/∂h7  ∂f1/∂h8  ∂f1/∂h9
+
+            J_g: each block is [1X1]
+            ∂h1/∂p1  ∂h1/∂p2  ∂h1/∂p3  ∂h1/∂p4  ∂h1/∂p5  ∂h1/∂p6
+            ∂h2/∂p1  ∂h2/∂p2  ∂h2/∂p3  ∂h2/∂p4  ∂h2/∂p5  ∂h2/∂p6
+            ∂h3/∂p1  ∂h3/∂p2  ∂h3/∂p3  ∂h3/∂p4  ∂h3/∂p5  ∂h3/∂p6
+            ∂h4/∂p1  ∂h4/∂p2  ∂h4/∂p3  ∂h4/∂p4  ∂h4/∂p5  ∂h4/∂p6
+            ∂h5/∂p1  ∂h5/∂p2  ∂h5/∂p3  ∂h5/∂p4  ∂h5/∂p5  ∂h5/∂p6
+            ∂h6/∂p1  ∂h6/∂p2  ∂h6/∂p3  ∂h6/∂p4  ∂h6/∂p5  ∂h6/∂p6
+            ∂h7/∂p1  ∂h7/∂p2  ∂h7/∂p3  ∂h7/∂p4  ∂h7/∂p5  ∂h7/∂p6
+            ∂h8/∂p1  ∂h8/∂p2  ∂h8/∂p3  ∂h8/∂p4  ∂h8/∂p5  ∂h8/∂p6
+            ∂h9/∂p1  ∂h9/∂p2  ∂h9/∂p3  ∂h9/∂p4  ∂h9/∂p5  ∂h9/∂p6
+
+            j = j_F*J_g:  [2x6] and each block is [2X1]
+            (∂f1/∂h1)*(∂h1/∂p1) + (∂f1/∂h2)*(∂h2/∂p1 + (∂f1/∂h3)*(∂h3/∂p1) + ...+ (∂f1/∂h9)*(∂h9/∂p1)
+            (∂f1/∂h1)*(∂h1/∂p2) + (∂f1/∂h2)*(∂h2/∂p2 + (∂f1/∂h3)*(∂h3/∂p2) + ...+ (∂f1/∂h9)*(∂h9/∂p2)
+            ...
+            (∂f1/∂h1)*(∂h1/∂p6) + (∂f1/∂h2)*(∂h2/∂p6 + (∂f1/∂h3)*(∂h3/∂p6) + ...+ (∂f1/∂h9)*(∂h9/∂p6)
+            
+            where p=(thetax,thetay,thetaz,transx,transy,transz)
+            */
+            // transpose to right-handed system
+<span class="nc" id="L1735">            j = MatrixUtil.transpose(j);</span>
+<span class="nc bnc" id="L1736" title="All 2 branches missed.">            for (i = 0; i &lt; 2; ++i) {</span>
+<span class="nc" id="L1737">                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, j[i].length);</span>
+<span class="nc" id="L1738">                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);</span>
+<span class="nc" id="L1739">                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);</span>
+            }
+<span class="nc" id="L1741">        } else {</span>
+        
+            //------
+            // a holds camera parameters.  it's 2X9.  phi, t, y(=f, k1, f2)
+            // b hold point parameters.    it's 2X3.  x
+<span class="nc bnc" id="L1746" title="All 2 branches missed.">            for (i = 0; i &lt; 2; ++i) {</span>
+<span class="nc" id="L1747">                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, dFdPhi[i].length);</span>
+<span class="nc" id="L1748">                System.arraycopy(dFdT[i], 0, outAIJ[i], 3, dFdT[i].length);</span>
+<span class="nc" id="L1749">                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);</span>
+<span class="nc" id="L1750">                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);</span>
+            }
+        }
+<span class="nc" id="L1753">    }</span>
+
+    private BlockMatrixIsometric createRotationMatricesFromEulerAngles(
+        double[][] extrRotThetas) {
+        
+        //extrRot is mImages*[1X3]
+        
+<span class="nc" id="L1760">        int mImages = extrRotThetas.length;</span>
+        
+<span class="nc" id="L1762">        double[][] rot = MatrixUtil.zeros(3, 3);</span>
+        
+<span class="nc" id="L1764">        BlockMatrixIsometric m = new BlockMatrixIsometric(MatrixUtil.zeros(3, 3*mImages), 3, 3);</span>
+       
+<span class="nc" id="L1766">        Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();</span>
+        
+        int i;
+<span class="nc bnc" id="L1769" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L1770">            Rotation.createRotationZYX(extrRotThetas[i], aa, rot);</span>
+<span class="nc" id="L1771">            m.setBlock(rot, 0, i);</span>
+        }
+<span class="nc" id="L1773">        return m;</span>
+    }
+
+    /**
+     * gain = (f(p) - f(p + delta p)) / ell(delta p)
+             where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - f))
+       gain = (f - fPrev) / ( (delta p)^T * (lambda * (delta p) + J^T * ( b - f)) )
+             
+     * @param fNew
+     * @param fPrev
+     * @param dC steps of change for the camera parameters in array of length
+     * 9*mImages.  dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.
+     * @param dP steps of change for the point parameters in array of length
+     * 3*nFeatures with elements ordered as follows: dX_0, dY_0, dZ_0, ... dX_n-1, dY_n-1, dZ_n-1.
+     * @param lambda
+     * @param gradC
+     * @param gradP
+     * @param eps
+     * @return 
+     */
+    private double calculateGainRatio(double fNew, double fPrev, 
+        double[] dC, double[] dP, double lambda, 
+        double[] gradC, double[] gradP, double eps) {
+                                
+        // (M. Lourakis, A. Argyros: SBA: A Software Package For Generic
+        // Sparse Bundle Adjustment. ACM Trans. Math. Softw. 36(1): (2009))
+        //  gain ratio = ( fPrev - fNew) / ( deltaParams^T * (lambda * deltaParams + J^T*fPrev) )
+        //let s = 9*mImages + 9*mImages
+        //   [1Xs]         *    ([1X1]*[sX1]             + [sX1])     = [1X1]
+        //(delta params)^T *  (lambda * (delta params) + gradient)
+        
+<span class="nc" id="L1805">        double[] dParams = new double[dC.length + dP.length];</span>
+<span class="nc" id="L1806">        System.arraycopy(dC, 0, dParams, 0, dC.length);</span>
+<span class="nc" id="L1807">        System.arraycopy(dP, 0, dParams, dC.length, dP.length);</span>
+
+<span class="nc" id="L1809">        double[] gradient = new double[gradC.length + gradP.length];</span>
+<span class="nc" id="L1810">        System.arraycopy(gradC, 0, gradient, 0, gradC.length);</span>
+<span class="nc" id="L1811">        System.arraycopy(gradP, 0, gradient, gradC.length, gradP.length);</span>
+
+<span class="nc" id="L1813">        double[] denom = Arrays.copyOf(dParams, dParams.length);</span>
+<span class="nc bnc" id="L1814" title="All 2 branches missed.">        for (int i = 0; i &lt; denom.length; ++i) {</span>
+<span class="nc" id="L1815">            denom[i] *= lambda;</span>
+        }
+
+<span class="nc" id="L1818">        denom = MatrixUtil.add(denom, gradient);</span>
+      
+<span class="nc" id="L1820">        double d = MatrixUtil.innerProduct(dParams, denom);</span>
+            
+<span class="nc bnc" id="L1822" title="All 2 branches missed.">        if (Math.abs(d) &lt; eps) {</span>
+<span class="nc" id="L1823">            return Double.NEGATIVE_INFINITY;</span>
+        }
+
+<span class="nc" id="L1826">        double gain = (fNew - fPrev)/d;</span>
+
+<span class="nc" id="L1828">        return gain;</span>
+    }
+    
+    private boolean isNegligible(double[] c, double eps) {
+<span class="nc bnc" id="L1832" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
+<span class="nc bnc" id="L1833" title="All 2 branches missed.">            if (Math.abs(c[i]) &gt; eps) {</span>
+<span class="nc" id="L1834">                return false;</span>
+            }
+        }
+<span class="nc" id="L1837">        return true;</span>
+    }
+
+    /**
+     * update t by deltaT
+     * @param extrTrans
+     * @param dC steps of camera parameters in array of length 9*mImages.
+     * dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.  only the
+     * translation elements are used in this method.
+     */
+    private void updateTranslation(double[][] extrTrans, double[] dC) {
+        
+        // from Danping Zou lecture notes, Shanghai Jiao Tong University,
+        // EE382-Visual localization &amp; Perception, “Lecture 08- Nonlinear least square &amp; RANSAC”
+        // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+
+        // parameter perturbations for a vector are:
+        //     x + delta x
+        int i, j;
+        
+<span class="nc" id="L1858">        int mImages = extrTrans.length;</span>
+                
+<span class="nc bnc" id="L1860" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
+            // vector perturbation for translation:
+<span class="nc bnc" id="L1862" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+                //translation elements are indexes 3,4,5
+<span class="nc" id="L1864">                extrTrans[j][i] += dC[j*9 + (i+3)];</span>
+            }
+        }
+<span class="nc" id="L1867">    }</span>
+
+    /**
+     * update the focus parameters of the intrinsic matrices.
+     * 
+     * @param intr the intrinsic camera parameter matrices stacked along
+     * rows in a double array of size [3*nCameras X 3] where each block is
+     * size 3X3.
+     * @param dC steps of camera parameters in array of length 9*mImages.
+     * dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.  only the
+     * intrinsic camera parameters are used in this method.
+     */
+    private void updateIntrinsic(BlockMatrixIsometric intr, 
+        double[] dC) {
+        
+<span class="nc" id="L1883">        int nImages = intr.getA().length/3;</span>
+        
+<span class="nc" id="L1885">        double[][] kIntr = MatrixUtil.zeros(3, 3);</span>
+        
+        //NOTE: follow up on Szeliski text stating that updating the intrinsic parameters is more involved
+        
+        int j;
+        
+        // using addition for updates for now
+<span class="nc bnc" id="L1892" title="All 2 branches missed.">        for (j = 0; j &lt; nImages; ++j) {</span>
+            // focus is parameterindex 6 within the 9 for each image in dC
+<span class="nc" id="L1894">            intr.getBlock(kIntr, j, 0);</span>
+<span class="nc" id="L1895">            kIntr[0][0] += dC[j*9 + 6];</span>
+<span class="nc" id="L1896">            kIntr[1][1] += dC[j*9 + 6];</span>
+<span class="nc" id="L1897">            intr.setBlock(kIntr, j, 0);</span>
+        }
+<span class="nc" id="L1899">    }</span>
+        
+    private void updateRadialDistortion(double[][] kRadials, double[] dC) {
+        
+<span class="nc" id="L1903">        int nImages = kRadials.length;</span>
+                
+        // using addition for updates for now
+<span class="nc bnc" id="L1906" title="All 2 branches missed.">        for (int i = 0; i &lt; nImages; ++i) {</span>
+<span class="nc" id="L1907">            kRadials[i][0] += dC[i*9 + 7];</span>
+<span class="nc" id="L1908">            kRadials[i][1] += dC[i*9 + 8];</span>
+        }
+<span class="nc" id="L1910">    }</span>
+
+    /**
+     * update rotation matrix theta vectors with steps in dC.
+     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
+     * stacked along the 3 columns, that is the size is [nImages X 3].
+     * @param dC steps of camera parameters in array of length 9*mImages.
+     * dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
+     * image, followed by the same 9 for the next image, etc.  only the
+     * rotation elements are used in this method.
+     */
+    private void updateRotThetas(double[][] extrRotThetas,  
+        double[] dC) {
+                                 
+        // from Danping Zou lecture notes, Shanghai Jiao Tong University,
+        // EE382-Visual localization &amp; Perception, “Lecture 08- Nonlinear least square &amp; RANSAC”
+        // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
+        // parameter perturbations for a Lie group such as rotation are:
+        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symetric matrix of delta_x 
+        
+        // T. Barfoot, et al. 2010, 
+        // Pose estimation using linearized rotations and quaternion algebra, 
+        // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
+        // eqn (31) for updating rotation:
+        // C(theta) = C(deltaPhi) * previous C
+        //     where C is rotation matrix r
+        //           calculated as C(theta) = 
+        //     and deltaPhi = sTheta * deltaTheta
+        
+        //    rotation matrix formed from rZ * rY * rX (yaw, pitch, and roll)
+        //    which is the same convention used by Wetzstein
+                
+<span class="nc" id="L1942">        double[] deltaTheta = new double[3];</span>
+        
+<span class="nc" id="L1944">        double[][] r = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L1945">        Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();</span>
+<span class="nc" id="L1946">        double[] thetaExtracted = new double[3];</span>
+        
+        // ---- update theta ----        
+        //extracting theta from the updated rotation would keep the theta
+        //    vector consistent with the rotation matrix,
+        //    but the value is different that updating theta with delta theta
+        //    by addition.
+        //    The difference may create a problem with convergence for delta theta.
+        
+        int j;
+                        
+<span class="nc bnc" id="L1957" title="All 2 branches missed.">        for (j = 0; j &lt; extrRotThetas.length; ++j) {</span>
+            
+            // copy delta thetas for this image into deltaTheta array
+<span class="nc" id="L1960">            System.arraycopy(dC, j*9, deltaTheta, 0, 3);</span>
+            
+<span class="nc" id="L1962">            double[] qUpdated = </span>
+<span class="nc" id="L1963">                Rotation.applySingularitySafeRotationPerturbationQuaternion(</span>
+                extrRotThetas[j], deltaTheta);
+        
+            // [4X4]
+<span class="nc" id="L1967">            double[][] qR = Rotation.createRotationMatrixFromQuaternion4(qUpdated);</span>
+<span class="nc" id="L1968">            qR = MatrixUtil.transpose(qR);</span>
+
+            // rotation is [0:2, 0:2] of qR  
+
+            // update in-out variable r
+<span class="nc bnc" id="L1973" title="All 2 branches missed.">            for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L1974">                System.arraycopy(qR[i], 0, r[i], 0, 3);</span>
+            }
+
+            // ---- update theta ----        
+            //extracting theta from the updated rotation would keep the theta
+            //    vector consistent with the rotation matrix,
+            //    but the value is a little different that updating theta with delta theta
+            //    by addition.
+<span class="nc" id="L1982">            Rotation.extractThetaFromZYX(r, thetaExtracted);</span>
+            
+<span class="nc" id="L1984">            System.arraycopy(thetaExtracted, 0, extrRotThetas[j], 0, extrRotThetas[j].length);        </span>
+        }    
+<span class="nc" id="L1986">    }</span>
+    
+    private void initDeltaPWithQu(double[] deltaP) {
+        
+<span class="nc" id="L1990">        int nFeatures = deltaP.length/3;</span>
+                
+        /*Qu thesis eqn (3.38)
+        
+        3 delta x ~ 1e-8
+        */
+        int i /*features*/, j /*parameters*/;
+<span class="nc bnc" id="L1997" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+            // i*3 + 0,1,2
+<span class="nc bnc" id="L1999" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L2000">                deltaP[i*3 + j] = 1e-8;</span>
+            }
+        }
+<span class="nc" id="L2003">    }</span>
+    
+    private void initDeltaCWithQu(double[] deltaC) {
+        
+<span class="nc" id="L2007">        int mImages = deltaC.length/9;</span>
+                
+        /*Qu thesis eqn (3.38)
+        
+        3 delta thetas ~ 1e-8
+        3 delta translation ~1e-5
+        1 delta focus ~ 1
+        2 delta kRadial ~ 1e-3
+        */
+        int i /*parameter*/, j /*image*/;
+<span class="nc bnc" id="L2017" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
+            // j*9 + 0,1,2
+<span class="nc bnc" id="L2019" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+                // delta theta
+<span class="nc" id="L2021">                deltaC[j*9 + i] = 1e-8;</span>
+            }
+            // j*9 + 3,4,5
+<span class="nc bnc" id="L2024" title="All 2 branches missed.">            for (i = 3; i &lt; 6; ++i) {</span>
+                // delta translation
+<span class="nc" id="L2026">                deltaC[j*9 + i] = 1e-5;</span>
+            }
+            // delta focus
+<span class="nc" id="L2029">            deltaC[j*9 + 6] = 1;</span>
+            // delta radial coefficients
+<span class="nc" id="L2031">            deltaC[j*9 + 7] = 1e-8;</span>
+<span class="nc" id="L2032">            deltaC[j*9 + 8] = 1e-8;</span>
+        }
+<span class="nc" id="L2034">    }</span>
+    
+    /**
+     * update the coordinates for the features in the world scene.
+     * @param coordsW the features in a world coordinate system.  The format is
+     * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
+     * @param deltaP an array of length nFeatures * 3 holding the steps in
+     * world coordinates for the features in the world scene.
+     * The elements are ordered as follows: dX_0, dY_0, dZ_0, ... dX_n-1, dY_n-1, dZ_n-1. 
+     */
+    private void updateWorldC(double[][] coordsW, double[] deltaP) {
+<span class="nc" id="L2045">        int nFeatures = coordsW[0].length;</span>
+        
+        int i;
+<span class="nc bnc" id="L2048" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L2049">            coordsW[0][i] += deltaP[i*3 + 0];</span>
+<span class="nc" id="L2050">            coordsW[1][i] += deltaP[i*3 + 1];</span>
+<span class="nc" id="L2051">            coordsW[2][i] += deltaP[i*3 + 2];</span>
+        }
+<span class="nc" id="L2053">    }</span>
+    
+    private boolean maxDiag(double[][] m, double[] outInitLambda) {
+        int i;
+<span class="nc" id="L2057">        boolean updated = false;</span>
+<span class="nc bnc" id="L2058" title="All 2 branches missed.">        for (i = 0; i &lt; m.length; ++i) {</span>
+<span class="nc bnc" id="L2059" title="All 2 branches missed.">            if (outInitLambda[0] &lt; m[i][i]) {</span>
+<span class="nc" id="L2060">                outInitLambda[0] = m[i][i];</span>
+<span class="nc" id="L2061">                updated = true;</span>
+            }
+        }
+<span class="nc" id="L2064">        return updated;</span>
+    }
+
+    /**
+     * @param nFeatures
+     * @param coordsI the features observed in different images (in coordinates 
+     * of the image reference frame).  The
+     * different images may or may not be from the same camera.  
+     * The format of coordsI is 3 X (nFeatures*nImages). Each row should
+     * have nFeatures of one image, followed by nFeatures of the next image,
+       etc.  The first dimension is for the x,y, and z axes.
+       Note that if a feature is not present in the image, that should be
+       an entry in imageMissingFeatureMap.
+     * @param intr the intrinsic camera parameter matrices stacked along rows
+     * to make a tall double array of size [(mImages*3) X 3] where each block is
+     * size 3X3.   Note that only the focus parameter is refined in this class.
+     * @param kRadial
+     * @param useR2R4
+     * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
+     */
+    private double[][] transformPixelToCamera(int nFeatures, double[][] coordsI, 
+        BlockMatrixIsometric intr, double[][] kRadial, boolean useR2R4) throws NotConvergedException, IOException {
+        
+<span class="nc" id="L2089">        int mImages = coordsI[0].length/nFeatures;</span>
+        
+<span class="nc" id="L2091">        double[][] c = MatrixUtil.zeros(coordsI.length, coordsI[0].length);</span>
+<span class="nc" id="L2092">        double[][] x = MatrixUtil.zeros(3, nFeatures);</span>
+        double[][] xc;
+<span class="nc" id="L2094">        double[][] kIntr = MatrixUtil.zeros(3, 3);</span>
+        
+        int i, j, k;
+<span class="nc bnc" id="L2097" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="nc" id="L2098">            MatrixUtil.copySubMatrix(coordsI, 0, 2, j*nFeatures, ((j+1)*nFeatures)-1, x);</span>
+            
+<span class="nc" id="L2100">            intr.getBlock(kIntr, j, 0);</span>
+<span class="nc" id="L2101">            xc = Camera.pixelToCameraCoordinates(x, kIntr, kRadial[j], useR2R4);</span>
+            
+<span class="nc bnc" id="L2103" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc bnc" id="L2104" title="All 2 branches missed.">                for (k = 0; k &lt; nFeatures; ++k) {</span>
+<span class="nc" id="L2105">                    xc[i][k] /= xc[2][k];</span>
+                }
+<span class="nc" id="L2107">                System.arraycopy(xc[i], 0, c[i], j*nFeatures, nFeatures);</span>
+            }
+        }
+<span class="nc" id="L2110">        return c;</span>
+    }
+    
+    /**
+     * populate the homography matrix to transform world screen coordinates
+     * to projected 2D coordinates in the camera reference frame.
+     * @param rot
+     * @param translation
+     * @param outH 
+     */
+    void populateCameraProjectionHomography(double[][] rot,
+        double[] translation, double[][] outH) {
+<span class="nc" id="L2122">        outH[0][0] = rot[0][0];</span>
+<span class="nc" id="L2123">        outH[1][0] = rot[1][0];</span>
+<span class="nc" id="L2124">        outH[2][0] = rot[2][0];</span>
+<span class="nc" id="L2125">        outH[0][1] = rot[0][1];</span>
+<span class="nc" id="L2126">        outH[1][1] = rot[1][1];</span>
+<span class="nc" id="L2127">        outH[2][1] = rot[2][1];</span>
+<span class="nc" id="L2128">        outH[0][2] = translation[0];</span>
+<span class="nc" id="L2129">        outH[1][2] = translation[1];</span>
+<span class="nc" id="L2130">        outH[2][2] = translation[2];</span>
+<span class="nc" id="L2131">    }</span>
+    /**
+     * populate the homography matrix to transform world screen coordinates
+     * to projected 2D coordinates in the camera reference frame.
+     * method follows Wetzstein, eqn 19.
+     * @param rot
+     * @param translation
+     * @param outH 
+     */
+    void populateCameraProjectionHomography(double[][] rot,
+        double[] translation, double[] outH, boolean useLeftHanded) {
+<span class="nc bnc" id="L2142" title="All 2 branches missed.">        if (useLeftHanded) {</span>
+            // Wetzstein lecture uses convention: &quot;looking down the negative z-axis&quot;
+<span class="nc" id="L2144">            outH[0] = rot[0][0];</span>
+<span class="nc" id="L2145">            outH[1] = rot[0][1];</span>
+<span class="nc" id="L2146">            outH[2] = translation[0];</span>
+<span class="nc" id="L2147">            outH[3] = rot[1][0];</span>
+<span class="nc" id="L2148">            outH[4] = rot[1][1];</span>
+<span class="nc" id="L2149">            outH[5] = translation[1];</span>
+<span class="nc" id="L2150">            outH[6] = rot[2][0]; //-</span>
+<span class="nc" id="L2151">            outH[7] = rot[2][1]; //-</span>
+<span class="nc" id="L2152">            outH[8] = translation[2]; //-</span>
+        } else {
+<span class="nc" id="L2154">            outH[0] = rot[0][0];</span>
+<span class="nc" id="L2155">            outH[1] = rot[1][0];</span>
+<span class="nc" id="L2156">            outH[3] = rot[2][0];</span>
+<span class="nc" id="L2157">            outH[4] = rot[0][1];</span>
+<span class="nc" id="L2158">            outH[6] = rot[1][1];</span>
+<span class="nc" id="L2159">            outH[7] = rot[2][1];</span>
+<span class="nc" id="L2160">            outH[2] = translation[0];</span>
+<span class="nc" id="L2161">            outH[5] = translation[1];</span>
+<span class="nc" id="L2162">            outH[8] = translation[2];</span>
+        }
+<span class="nc" id="L2164">    }</span>
+
+    private boolean hasNaN(double[] b) {
+<span class="nc bnc" id="L2167" title="All 2 branches missed.">        for (double a : b) {</span>
+<span class="nc bnc" id="L2168" title="All 2 branches missed.">            if (Double.isNaN(a)) {</span>
+<span class="nc" id="L2169">                return true;</span>
+            }
+        }
+<span class="nc" id="L2172">        return false;</span>
+    }
+
+    private boolean hasNaN(double[][] a) {
+        int i, j;
+<span class="nc bnc" id="L2177" title="All 2 branches missed.">        for (i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L2178" title="All 2 branches missed.">            for(j = 0; j &lt; a[0].length; ++j) {</span>
+<span class="nc bnc" id="L2179" title="All 2 branches missed.">                if (Double.isNaN(a[i][j])) {</span>
+<span class="nc" id="L2180">                    return true;</span>
+                }
+            }
+        }
+<span class="nc" id="L2184">        return false;</span>
+    }
+
+    static class AuxiliaryArrays {
+        final double[][] a2X2;
+        final double[][] b2X3;
+        final double[][] c2X3;
+        final double[][] d3X3;
+        final double[][] e2X3;
+        final double[][] f2X3;
+        final double[][] g3X3;
+        final double[][] h2X3;
+        final Rotation.AuxiliaryArrays aa;
+        public AuxiliaryArrays() {
+            a2X2 = MatrixUtil.zeros(2, 2);
+            b2X3 = MatrixUtil.zeros(2, 3);
+            c2X3 = MatrixUtil.zeros(2, 3);
+            d3X3 = MatrixUtil.zeros(3, 3);
+            e2X3 = MatrixUtil.zeros(2, 3);
+            f2X3 = MatrixUtil.zeros(2, 3);
+            g3X3 = MatrixUtil.zeros(3, 3);
+            h2X3 = MatrixUtil.zeros(2, 3);
+            aa = new Rotation.AuxiliaryArrays();
+        }
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

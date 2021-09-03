@@ -1,0 +1,2139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Reconstruction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">Reconstruction.java</span></div><h1>Reconstruction.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.dimensionReduction.CURDecomposition;
+import algorithms.dimensionReduction.CURDecomposition.CUR;
+import algorithms.imageProcessing.features.RANSACSolver;
+import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
+import algorithms.imageProcessing.transform.Camera.CameraParameters;
+import algorithms.imageProcessing.transform.Camera.CameraProjection;
+import algorithms.matrix.MatrixUtil;
+import algorithms.matrix.MatrixUtil.SVDProducts;
+import algorithms.util.FormatArray;
+import java.util.Arrays;
+import java.util.List;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SymmDenseEVD;
+
+/**
+ * given correspondence between two images calculate the camera
+ * parameters as intrinsic and extrinsic parameters,
+ * and the real world position.
+ * 
+ * Euler rotations:
+        
+        about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
+            | cos φ   -sin φ    0 |    |    1       0       0 |  |  cos ψ    0  sin ψ |
+            | sin φ    cos φ    0 |    |    0   cos θ   sin θ |  |      0    1      0 |
+            |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |        
+        
+ * useful reading:
+ * &lt;pre&gt;
+ * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+ * add other references here
+ * &lt;/pre&gt;
+ * @author nichole
+ */
+<span class="nc bnc" id="L39" title="All 2 branches missed.">public class Reconstruction {</span>
+    
+    /*
+    // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+    
+    // homogeneous repr of a point is x_vec = (x, y, 1)^T
+    // equation f a line is ell = a*x + b*y + c = 0;
+    
+    // line rewritten in homogeneous coordinatrs is x_vec^T * ell.
+    
+    // general conic in 3 dimensions is a*x^2 + b*x*y + c*y^2 + d*x*z + e*y*z + f*z^2 = 0.
+    //     rewritten using 2D homogenouse coords, quadratice form: x_vec^T * C * x_vec = 0
+    //                  [a   b/2   d/2 ]
+    //        where C = [b/2   c   c/2 ]
+    //                  [d/2 c/2     f ]
+    //        C has 6 variable, 5 DOF, so need 5 points
+    //     can then reformat x_vec^T * C * x_vec = 0 into
+    //        the &quot;design matrix&quot; * &quot;the carrier vector&quot; = 0
+    //               A * c = 0
+    //        c = SVD(A).V^T[n-1], the eigenvector assoc w/ smallest eigenvalue.
+    
+    Parallel lines lines intersect in points at infinity (also known as ideal points) 
+    and these points have the form (x, y, 0)^⊤
+    the set of ideal points (i.e., points at infinity) is the set of points 
+    where parallel lines intersect.
+    
+    The intersection of two lines is given by their vector cross product.
+    
+    The line passing through any two points is given by their cross product.
+    
+    The line at infinity is (0,0,1)^⊤ which can be seen by taking the cross
+        product of 2 points at infinity.  e.g. (x1,y1,0)^⊤ cross (x2,y2,0)^⊤ = (0,0,1)^⊤
+     
+        The two circular points are defined as
+           I = (1, i, 0)^⊤
+           J = (1, −i, 0)^T
+        The circular points lie on l∞, along with all other ideal points. All 
+        circles intersect l∞ at points I and J.
+    
+        Recall the duality between points and lines:
+           x2 = H*x1,  l2 = (H^−⊤)*l1
+    
+        The dual of a conic C is the set of lines satisfying:
+           l^⊤ * C∗ * l = 0
+           where C∗ is the adjoint in this case, so C∗ ∼ C^−1  
+        Dual conics tranform under homography H as:
+           C∗′ = H * C∗ * H^⊤
+    
+        The “conic dual to the circular points” is defined as
+           C ∞∗ = I*J^⊤ + J*I^⊤
+                ~ [ 1  0  0 ]
+                  [ 0  1  0 ]
+                  [ 0  0  0 ]
+    
+    Stratified Reconstruction (cahpters 8 and 6):
+    
+    Notes on stratified reconstruction in the 2D case (lec 6):
+        Each stratum represents a different level of reconstruction we may wish 
+        to obtain, namely projective, affine and Euclidean. 
+        A general 2D homography can be decomposed into three components:
+           H = H_p * H_a * H_e 
+        which are the projective, affine and euclidean components.
+              
+          H = [  I   0 ] * [ K    0 ] * [ R   T ]
+              [ v^T  1 ]   [ 0^T  1 ]   [ 0^T 1 ]
+                 H_p           H_a         H_e
+    
+          H_e is a 2D rigid transformation
+          H_a is an affine trnsformation
+          H_p is a projective transformation known as an “elation.”
+               v^T affets the line at infinity, l∞ = (0, 0, 1)^⊤.
+               ** Only H_p can map l∞ to a finite line in the image plane, or vice versa.
+               suppose the image of l∞ is some line l = (a, b, c)^⊤, then the
+               following matrix H will send l back to infinity:
+                                [ 1  0  0 ]
+                      H = H_a * [ 0  1  0 ]
+                                [ a  b  c ]
+                          where where H_a is any affine transformation
+          
+       The key to the affine upgrade is the behavior of the line at infinity. 
+       The counterpart to this for the Euclidean upgrade is the behavior of the 
+       “circular points.”
+    
+       Chap 6, Section 3 has more about euclidean upgrades in transformation
+          for circular points and conics.
+    
+    Notes from Lec 8:
+        Levels of reconstruction of a scene: projective, affine and euclidean components.
+    
+        If the camera intrinisc parameters, K, are not known, then only the
+        projective reconstruction is possible, but this can be upgraded to 
+        affine (parallelism preserved) and Euclidean (parallelism and orthogonality preserved) reconstructions.
+    
+        Given a set of point correspondences between two views {(x′1,x′2)} 
+        we can get the Projective Structure X_p.
+        where x' = x * K, that is, x = x' * K^-1.  x' are the image coordinates as pixels.
+           first calculate F from the point correspondences, then use F to
+           get the projection matrix for camera 2, P2, then triangulate to get
+           X_p (which is the 3D point in projective space).
+           caveat is that K, R, T from in P2 will not be unique.
+           The canonical choice for these two projection matrices is:
+               P1 = [ I | 0 ]
+               P2 = [ ([T']_x)^T  F  | T' ]
+           where T' = K*T and ||T'|| = 1
+           and recall that T′ ∼ e2
+    
+           The triangulation uses DLT and SVD.
+    
+           for the case where there is no noise:
+                X_P is SVD(M).V^T[last row]
+           for the case where there is noise, the SVD solution is the initial
+                values for a non-linear optimization method.
+    
+    NOTE: to solve affine reconstruction for the case of pure translation, 
+    see Example 6.6 of Ma, Soatto, Kosecká, &amp; Shankar Sastry book
+    &quot;Invitation to 3D&quot;.
+    For the case of pure rotation, see Example 6.10.
+    
+    */
+    
+     /**
+      * TODO: proof read and write test for this.
+     * given correspondence between two images calculate the camera
+     * parameters, and the real world position.
+     * 
+     * &lt;pre&gt;
+     * following CMU lectures of Kris Kitani at 
+     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+     * 
+     * add other references here
+     * &lt;/pre&gt;
+     * @param camera1 image 1 camera matrices of intrinsic and extrinsic parameters.
+     * the size is 3 x 4.
+     * @param camera2 image 2 camera matrices of intrinsic and extrinsic parameters.
+     * the size is 3 x 4.
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @return 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     */
+    public static ReconstructionResults calculateReconstruction(
+        CameraParameters camera1, CameraParameters camera2,
+        double[][] x1, double[][] x2) throws NotConvergedException {
+        
+<span class="nc bnc" id="L185" title="All 4 branches missed.">        if (x1.length != 3 || x2.length != 3) {</span>
+<span class="nc" id="L186">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
+        }
+<span class="nc" id="L188">        int n = x1[0].length;</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        if (x2[0].length != n) {</span>
+<span class="nc" id="L190">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
+        }
+        
+        /*
+        http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+        
+        (3) For each point correspondence, compute the point X in 3D space (triangularization)
+        */
+        
+<span class="nc" id="L199">        double[][] XW = new double[4][n];</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        for (int i = 0; i &lt; 4; ++i) {</span>
+<span class="nc" id="L201">            XW[i] = new double[n];</span>
+        }
+<span class="nc" id="L203">        double[] XWPt = new double[4];</span>
+        
+<span class="nc" id="L205">        double[][] x1Pt = new double[3][1];</span>
+<span class="nc" id="L206">        double[][] x2Pt = new double[3][1];</span>
+        int i, j, ii;
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L209">            x1Pt[i] = new double[1];</span>
+<span class="nc" id="L210">            x2Pt[i] = new double[1];</span>
+        }
+                    
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">            for (ii = 0; ii &lt; 3; ++ii) {</span>
+<span class="nc" id="L215">                x1Pt[ii][0] = x1[ii][i];</span>
+<span class="nc" id="L216">                x2Pt[ii][0] = x2[ii][i];</span>
+            }
+            //
+<span class="nc" id="L219">            XWPt = Triangulation.calculateWCSPoint(</span>
+                camera1, camera2, x1Pt, x2Pt);
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            for (ii = 0; ii &lt; 4; ++ii) {</span>
+<span class="nc" id="L222">                XW[ii][i] = XWPt[ii];</span>
+            } 
+        }
+                
+<span class="nc" id="L226">        ReconstructionResults rr = new ReconstructionResults();</span>
+<span class="nc" id="L227">        rr.XW = XW;</span>
+
+<span class="nc" id="L229">        return rr;</span>
+    }
+    
+    /**
+     * TODO: proof read and write test for this.
+     * recover the 3-D coordinates in WCS from pairs of corresponding
+     * un-calibrated image points, that is, points in the image reference frame in pixels.
+     * 
+     * This is also called Projective Structure From Motion for the
+     * Two-camera case.   it's a distorted version of euclidean 3d.
+     * 
+     * NOTE that because the camera calibration, that is, intrinsic parameters,
+     * are not known, only the projective reconstruction is possible,,
+     * but this can be upgraded to 
+     affine (parallelism preserved) and Euclidean (parallelism and orthogonality preserved) 
+     reconstructions.
+     To upgrade to an affine projection, need 3 vanishing points
+     (see Section 9.2.2 of Belongie lec 9).
+     To directly upgrade from projective to euclidean projection, need
+     5 ground truth points in general position, that is, no 4 points
+     are coplanar (see Section 9.3 of Belongie lec 9).
+     * NOTE: this solution is fine for cases with no noise, otherwise, the
+     * results should be the initial values for a non-linear optimization method.
+     
+     * &lt;pre&gt;
+     * following CMU lectures of Kris Kitani at 
+     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+     * 
+     * other references:
+     * Sect 7.2.1 of Szeliski 2010
+     * &lt;/pre&gt;
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * NOTE: since intrinsic parameters are not known, users of this method should 
+     * presumably center the coordinates in some manner 
+     * (e.g. subtract the image center or centroid of points) since internally
+     * an identity matrix is used for K.  
+     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * NOTE: since intrinsic parameters are not known, users of this method should 
+     * presumably center the coordinates in some manner 
+     * (e.g. subtract the image center or centroid of points).
+     * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
+     */
+    public static ProjectionResults calculateProjectiveReconstruction(
+        double[][] x1, double[][] x2) throws NotConvergedException {
+                        
+<span class="nc bnc" id="L276" title="All 4 branches missed.">        if (x1.length != 3 || x2.length != 3) {</span>
+<span class="nc" id="L277">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
+        }
+<span class="nc" id="L279">        int n0 = x1[0].length;</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (x2[0].length != n0) {</span>
+<span class="nc" id="L281">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
+        }
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (n0 &lt; 7) {</span>
+<span class="nc" id="L284">            throw new IllegalArgumentException(&quot;need at least 7 points for the uncalirated camera (s) 2 view solution&quot;);</span>
+        }
+        
+        /*
+        http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+        
+        (1) compute fundamental mat5rix FM from the correspondence x1, x2
+        (2) compute the camera matrices P1, P2 from FM.
+        (3) For each point correspondence, compute the point X in 3D space (triangularization)
+        
+        see also notes above frpm notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+        */
+        
+<span class="nc" id="L297">        DenseMatrix x1M = new DenseMatrix(x1);</span>
+<span class="nc" id="L298">        DenseMatrix x2M = new DenseMatrix(x2);</span>
+        
+<span class="nc" id="L300">        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(x1M);</span>
+<span class="nc" id="L301">        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(x2M);</span>
+<span class="nc" id="L302">        DenseMatrix leftM = normXY1.getXy();</span>
+<span class="nc" id="L303">        DenseMatrix rightM = normXY2.getXy();</span>
+        
+<span class="nc" id="L305">        double tolerance = 3.84; //3.84 5.99 7.82        </span>
+<span class="nc" id="L306">        boolean useToleranceAsStatFactor = true;</span>
+<span class="nc" id="L307">        ErrorType errorType = ErrorType.SAMPSONS;</span>
+<span class="nc" id="L308">        EpipolarTransformationFit fitR = null;</span>
+<span class="nc" id="L309">        boolean reCalcIterations = false;</span>
+        
+        //EpipolarTransformer tr = new EpipolarTransformer();
+        
+        /*
+        DenseMatrix normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
+        DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
+        
+        Distances distances = new Distances();
+        if (useToleranceAsStatFactor) {
+            fitR = distances.calculateError2(normalizedFM, leftM, rightM,
+                    errorType, tolerance);
+        } else {
+            fitR = distances.calculateError(normalizedFM, leftM, rightM,
+                    errorType, tolerance);
+        }
+        */
+<span class="nc" id="L326">        RANSACSolver solver = new RANSACSolver();</span>
+<span class="nc" id="L327">        fitR = solver.calculateEpipolarProjection(</span>
+            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations, false);
+        
+<span class="nc" id="L331">        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(</span>
+<span class="nc" id="L332">            fitR.getFundamentalMatrix(), </span>
+<span class="nc" id="L333">            normXY1.getNormalizationMatrices(),</span>
+<span class="nc" id="L334">            normXY2.getNormalizationMatrices());</span>
+        
+<span class="nc" id="L336">        double[][] _fm = MatrixUtil.convertToRowMajor(fm);</span>
+        
+<span class="nc" id="L338">        x1M = extractIndices(x1M, fitR.inlierIndexes);</span>
+<span class="nc" id="L339">        x2M = extractIndices(x2M, fitR.inlierIndexes);</span>
+<span class="nc" id="L340">        x1 = MatrixUtil.convertToRowMajor(x1M);</span>
+<span class="nc" id="L341">        x2 = MatrixUtil.convertToRowMajor(x2M);</span>
+        
+<span class="nc" id="L343">        int n = x1[0].length;</span>
+        
+<span class="nc" id="L345">        System.out.println(&quot;RANSAC fit=&quot; + fitR.toString());</span>
+        
+        //(2) compute the camera matrices P1, P2 from FM.
+        
+<span class="nc" id="L349">        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(_fm);</span>
+<span class="nc" id="L350">        double[] s = Arrays.copyOf(svd.s, svd.s.length);</span>
+<span class="nc" id="L351">        System.out.printf(&quot;SVD.s=\n%s\n&quot;, FormatArray.toString(s, &quot;%.3e&quot;));</span>
+        
+<span class="nc bnc" id="L353" title="All 6 branches missed.">        assert(svd.u[0].length == 3 &amp;&amp; svd.u.length == 3);</span>
+
+        // Szeliski 2010 eqn 7.30.reform dropping the last singular value.
+<span class="nc" id="L356">        s[2] = 0;</span>
+<span class="nc" id="L357">        _fm = MatrixUtil.multiplyByDiagonal(svd.u, s);</span>
+<span class="nc" id="L358">        _fm = MatrixUtil.multiply(_fm, svd.vT);</span>
+<span class="nc" id="L359">        svd = MatrixUtil.performSVD(_fm);</span>
+<span class="nc" id="L360">        double[] e2 = MatrixUtil.extractColumn(svd.u, 2);</span>
+<span class="nc" id="L361">        double[] e1 = svd.vT[2];</span>
+        
+<span class="nc" id="L363">        double detV = MatrixUtil.determinant(svd.vT);</span>
+        
+<span class="nc" id="L365">        System.out.printf(&quot;SVD.u=\n%s\n&quot;, FormatArray.toString(svd.u, &quot;%.3e&quot;));</span>
+<span class="nc" id="L366">        System.out.printf(&quot;SVD.s=\n%s\n&quot;, FormatArray.toString(s, &quot;%.3e&quot;));</span>
+<span class="nc" id="L367">        System.out.printf(&quot;SVD.vT=\n%s\n&quot;, FormatArray.toString(svd.vT, &quot;%.3e&quot;));</span>
+<span class="nc" id="L368">        System.out.printf(&quot;det(SVD.u)=%.2f\n&quot;, MatrixUtil.determinant(svd.u));</span>
+<span class="nc" id="L369">        System.out.printf(&quot;det(SVD.vT)=%.2f\n&quot;, detV);</span>
+                   
+        // form the ambiguous homography:
+        //   ~H = U * (R_90)^T * ~Sigma * V^T
+        //    where ~sigma is the singular value matrix with the smallest value 
+        //  replaced by a reasonable alternative (say, the middle value)
+       
+        // camera matrix P for left image = [I | 0 ]
+<span class="nc" id="L377">        double[][] camera1 = MatrixUtil.zeros(3, 4);</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L379">            camera1[i][i] = 1;</span>
+        }
+        
+<span class="nc" id="L382">        double[][] r90 = new double[3][3];</span>
+<span class="nc" id="L383">        r90[0] = new double[]{0, -1, 0};</span>
+<span class="nc" id="L384">        r90[1] = new double[]{1, 0, 0};</span>
+<span class="nc" id="L385">        r90[2] = new double[]{0, 0, 1};        </span>
+<span class="nc" id="L386">        double[][] r90T = MatrixUtil.transpose(r90);</span>
+<span class="nc" id="L387">        s = Arrays.copyOf(svd.s, svd.s.length);</span>
+<span class="nc" id="L388">        s[2] = s[1]; // should this be 0?</span>
+        
+<span class="nc" id="L390">        double[][] homog = MatrixUtil.multiply(svd.u, r90T);</span>
+<span class="nc" id="L391">        homog = MatrixUtil.multiplyByDiagonal(homog, s);</span>
+<span class="nc" id="L392">        homog = MatrixUtil.multiply(homog, svd.vT);</span>
+        
+<span class="nc" id="L394">        e2 = MatrixUtil.extractColumn(svd.u, 2);</span>
+<span class="nc" id="L395">        e1 = svd.vT[2];</span>
+        
+<span class="nc" id="L397">        System.out.printf(&quot;e1=%s\n&quot;, FormatArray.toString(e1, &quot;%.3e&quot;));</span>
+<span class="nc" id="L398">        System.out.printf(&quot;e2=%s\n&quot;, FormatArray.toString(e2, &quot;%.3e&quot;));</span>
+         
+        // Szeliksi 2010 eqn 7.34:  P0 =[I|0] and P0 =[H|e],
+        //    and then he finishes w/ triangulation
+        // kitani lecture has P2 = [ [e1]_x * F | e2 ]
+        // Hartley &amp; Zisserman: has P2 = [ -[e2]_x^T * F | e2 ]
+        //    note that slide 59 of http://16720.courses.cs.cmu.edu/lec/sfm.pdf
+        //    also uses the Hartley &amp; Zisserman: version of P2 and refers to proof in 
+        //    Forsyth &amp; Ponce Sec 8.3
+        // Belongie uses P2 = [ [e2]_x^T * F | e2 ] and so does Ma et al. textbook (msks, &quot;Invitation to 3D&quot;
+        // 
+        
+        // NOTE: not necessary to normalize the epipoles by the last value
+        
+<span class="nc" id="L412">        double[][] camera2S = MatrixUtil.zeros(3, 4);</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L414">            camera2S[i] = new double[4];</span>
+<span class="nc" id="L415">            System.arraycopy(homog[i], 0, camera2S[i], 0, 3);</span>
+<span class="nc" id="L416">            camera2S[i][3] = e2[i];</span>
+        }
+        
+<span class="nc" id="L419">        double[][] e1SkewSym = MatrixUtil.skewSymmetric(e1);</span>
+<span class="nc" id="L420">        double[][] e1F = MatrixUtil.multiply(e1SkewSym, _fm);</span>
+<span class="nc" id="L421">        double[][] camera2K = MatrixUtil.zeros(3, 4);</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L423">            camera2K[i] = new double[4];</span>
+<span class="nc" id="L424">            System.arraycopy(e1F[i], 0, camera2K[i], 0, 3);</span>
+<span class="nc" id="L425">            camera2K[i][3] = e2[i];</span>
+        }
+<span class="nc" id="L427">        double[][] e2SkewSymT = MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2));</span>
+<span class="nc" id="L428">        MatrixUtil.multiply(e2SkewSymT, -1);</span>
+<span class="nc" id="L429">        double[][] e2TF = MatrixUtil.multiply(e2SkewSymT, _fm);</span>
+<span class="nc" id="L430">        double[][] camera2H = MatrixUtil.zeros(3, 4);</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L432">            camera2H[i] = new double[4];</span>
+<span class="nc" id="L433">            System.arraycopy(e2TF[i], 0, camera2H[i], 0, 3);</span>
+<span class="nc" id="L434">            camera2H[i][3] = e2[i];</span>
+        }
+        
+<span class="nc" id="L437">        e2SkewSymT = MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2));</span>
+<span class="nc" id="L438">        e2TF = MatrixUtil.multiply(e2SkewSymT, _fm);</span>
+<span class="nc" id="L439">        double[][] camera2B = MatrixUtil.zeros(3, 4);</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L441">            camera2B[i] = new double[4];</span>
+<span class="nc" id="L442">            System.arraycopy(e2TF[i], 0, camera2B[i], 0, 3);</span>
+<span class="nc" id="L443">            camera2B[i][3] = e2[i];</span>
+        }
+        
+<span class="nc" id="L446">        System.out.printf(&quot;Szeliski P2\n%s\n&quot;, FormatArray.toString(camera2S, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L448">        System.out.printf(&quot;Kitani P2\n%s\n&quot;, FormatArray.toString(camera2K, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L450">        System.out.printf(&quot;Hartley &amp; Zisserman P2\n%s\n&quot;, FormatArray.toString(camera2H, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L452">        System.out.printf(&quot;Belongie P2\n%s\n&quot;, FormatArray.toString(camera2B, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L454">        CameraProjection P1 = new CameraProjection(camera1);</span>
+<span class="nc" id="L455">        CameraProjection P2S = new CameraProjection(camera2S);</span>
+<span class="nc" id="L456">        CameraProjection P2K = new CameraProjection(camera2K);</span>
+<span class="nc" id="L457">        CameraProjection P2H = new CameraProjection(camera2H);</span>
+<span class="nc" id="L458">        CameraProjection P2B = new CameraProjection(camera2B);</span>
+        
+        double[][] XWS, XWK, XWH, XWB;
+        double[] XWPt;
+        
+<span class="nc" id="L463">        XWPt = new double[4];</span>
+<span class="nc" id="L464">        XWS = new double[4][n];</span>
+<span class="nc" id="L465">        XWK = new double[4][n];</span>
+<span class="nc" id="L466">        XWH = new double[4][n];</span>
+<span class="nc" id="L467">        XWB = new double[4][n];</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">        for (int i = 0; i &lt; 4; ++i) {</span>
+<span class="nc" id="L469">            XWS[i] = new double[n];</span>
+<span class="nc" id="L470">            XWK[i] = new double[n];</span>
+<span class="nc" id="L471">            XWH[i] = new double[n];</span>
+<span class="nc" id="L472">            XWB[i] = new double[n];</span>
+        }
+        
+<span class="nc" id="L475">        double[][] x1Pt = new double[3][1];</span>
+<span class="nc" id="L476">        double[][] x2Pt = new double[3][1];</span>
+        int i, j;
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L479">            x1Pt[i] = new double[1];</span>
+<span class="nc" id="L480">            x2Pt[i] = new double[1];</span>
+        }
+        
+<span class="nc bnc" id="L483" title="All 2 branches missed.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L485">                x1Pt[j][0] = x1[j][i];</span>
+<span class="nc" id="L486">                x2Pt[j][0] = x2[j][i];</span>
+            }
+<span class="nc" id="L488">            XWPt = Triangulation.calculateWCSPoint(P1, P2S, x1Pt, x2Pt);</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">            for (j = 0; j &lt; 4; ++j) {</span>
+<span class="nc" id="L490">                XWS[j][i] = XWPt[j];</span>
+            }
+<span class="nc" id="L492">            XWPt = Triangulation.calculateWCSPoint(P1, P2K, x1Pt, x2Pt);</span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">            for (j = 0; j &lt; 4; ++j) {</span>
+<span class="nc" id="L494">                XWK[j][i] = XWPt[j];</span>
+            }
+<span class="nc" id="L496">            XWPt = Triangulation.calculateWCSPoint(P1, P2H, x1Pt, x2Pt);</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">            for (j = 0; j &lt; 4; ++j) {</span>
+<span class="nc" id="L498">                XWH[j][i] = XWPt[j];</span>
+            }
+<span class="nc" id="L500">            XWPt = Triangulation.calculateWCSPoint(P1, P2B, x1Pt, x2Pt);</span>
+<span class="nc bnc" id="L501" title="All 2 branches missed.">            for (j = 0; j &lt; 4; ++j) {</span>
+<span class="nc" id="L502">                XWB[j][i] = XWPt[j];</span>
+            }
+        }
+        
+<span class="nc" id="L506">        System.out.printf(&quot;Szeliski reconstruction\n%s\n&quot;, FormatArray.toString(XWS, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L508">        System.out.printf(&quot;Kitani reconstruction\n%s\n&quot;, FormatArray.toString(XWK, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L510">        System.out.printf(&quot;Hartley &amp; Zisserman reconstruction\n%s\n&quot;, FormatArray.toString(XWH, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L512">        System.out.printf(&quot;Belongie reconstruction\n%s\n&quot;, FormatArray.toString(XWB, &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L514">        ProjectionResults rr = new ProjectionResults();</span>
+<span class="nc" id="L515">        rr.XW = XWK;</span>
+<span class="nc" id="L516">        rr.projectionMatrices = MatrixUtil.zeros(3*2, 4);</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L518">            System.arraycopy(P1.getP()[i], 0, rr.projectionMatrices[i], 0, 4);</span>
+        }
+<span class="nc bnc" id="L520" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L521">            System.arraycopy(P2B.getP()[i], 0, rr.projectionMatrices[3 + i], 0, 4);</span>
+        }
+<span class="nc" id="L523">        return rr;</span>
+    }
+   
+    /**
+     * TODO: proof read the algorithm and write test for this.
+     * for the case of un-calibrated cameras viewing the same scene features,
+     * recover the 3-D coordinates in WCS and the projection matrices 
+     * from pairs of corresponding
+     * un-calibrated image points, that is, points in the image reference frame in pixels.
+     * 
+     * The method implements the Sturm &amp; Triggs 1996 algorithm: 
+     &quot;a method for the recovery of projective shape and motion from multiple 
+     images of a scene by the factorization of a matrix containing the images 
+     of all points in all views. This factorization is only possible when the
+     image points are correctly scaled. The major technical contribution of 
+     this paper is a practical method for the recovery of these scalings, 
+     using only fundamental matrices and epipoles estimated from the image data.&quot;
+     &quot;[it is a] closed form solutions, not iterative bundle-adjustment...&quot;
+     * &lt;pre&gt;
+     * references:
+     * 
+     * Sturm and Triggs 1996, 
+    &quot;A Factorization Based Algorithm for Multi-Image Projective Structure and Motion&quot;
+     https://link.springer.com/content/pdf/10.1007/3-540-61123-1_183.pdf
+    
+    see also proj_recons_fsvd.m from http://lear.inrialpes.fr/people/triggs/src/
+    which has a very liberal copyright in the file COPYRIGHT
+    Copyright Bill Triggs (http://www.inrialpes.fr/movi/people/Triggs),
+    INRIA (http://www.inria.fr) and CNRS (http://www.cnrs.fr),
+    1995-2002. All rights reserved.
+
+    You may use and distribute [*] this work with or without modification,
+    for any purpose and without fee or royalty, subject to the following
+    conditions:
+       (see file COPYRIGHT)
+    
+     * &lt;/pre&gt;
+     * 
+     * NOTE: Sturm &amp; Triggs 1996 state in their code, &quot;% The projective output 
+     frame is numerically well-conditioned, but otherwise *completely* 
+     arbitrary. It has *no* relation to any Euclidean frame.
+     * 
+     * @param x the image coordinates of feature correspondences in 2 or more
+     * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
+     * and row 1 holds the y-coordinates and each image's features are given
+     * before the next and the features are ordered in the same manner within
+     * all images.
+     * for example: row 0 = [img_0_feature_0, ... img_0_feature_n-1, ... img_m-1_feature_0,...
+     *     img_m-1_feature_n-1].
+     * @param mImages the number of images in x.
+     * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
+     */
+    public static ProjectionResults calculateProjectiveReconstruction(
+        double[][] x, int mImages) throws NotConvergedException {
+                        
+<span class="nc bnc" id="L578" title="All 2 branches missed.">        if (x.length != 2) {</span>
+<span class="nc" id="L579">            throw new IllegalArgumentException(&quot;x.length must be 2&quot;);</span>
+        }
+<span class="nc bnc" id="L581" title="All 2 branches missed.">        if ((x[0].length % mImages) != 0) {</span>
+<span class="nc" id="L582">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
+        }
+<span class="nc" id="L584">        int nFeatures = x[0].length / mImages;</span>
+        
+        // need at least 7 points in each image for the point version of fundamental
+        // matrix.
+        // not implementing the line version as Triggs in another paper states
+        //    that they may be more affected by outliers
+<span class="nc bnc" id="L590" title="All 2 branches missed.">        if (nFeatures &lt; 7) {</span>
+<span class="nc" id="L591">            throw new IllegalArgumentException(&quot;need at least 7 points per image&quot;);</span>
+        }
+        
+        /*
+        3.3 Outline of the Algorithm
+        The complete algorithm is composed of the following steps.
+        i. Normalize the image coordinates, by applying transformations Ti.
+        2. Estimate the fundamental matrices and epipoles with the method of [Har95].
+        3. Determine the scale factors Aip using equation (3).
+        4. Build the rescaled measurement matrix W.
+        5. Balance W by column-wise and &quot;triplet-of-rows&quot;-wise scalar mutliplications.
+        6. Compute the SVD of the balanced matrix W.
+        7. From the SVD, recover projective motion and shape.
+        8. Adapt projective motion, to account for the normalization transformations Ti of
+        step 1.
+        */
+        
+        // following proj_recons_fsvd.m
+        //    pairs of image sets can be formed either by using the first
+        //    image as x1 for all images, or chaining them all together.
+        // i.e. [(0,1), (0, 2), (0,3)] or [(0,1), (1,2), (2,3)].
+        // choosing the later here.
+        
+<span class="nc" id="L614">        RANSACSolver ransac = new RANSACSolver();</span>
+<span class="nc" id="L615">        double[] e12 = new double[3];</span>
+        EpipolarTransformationFit fit;
+        double[][] fm;
+<span class="nc" id="L618">        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;</span>
+<span class="nc" id="L619">        boolean useToleranceAsStatFactor = true;</span>
+<span class="nc" id="L620">        double tolerance = 3.84;</span>
+        // TODO: estimate this:
+<span class="nc bnc" id="L622" title="All 6 branches missed.">        boolean recalcIterations = (nFeatures &gt; 100 || (mImages &gt; 10 &amp;&amp; nFeatures &gt; 20));</span>
+<span class="nc" id="L623">        boolean calibrated = false;</span>
+        
+        int i, j;
+        // image pairs extracted from x:
+        double[][] x1, x2;
+        // the normalization centroidX, centroidY, and sigma values applied to x1 and x2:
+<span class="nc" id="L629">        double[] tt = new double[3*mImages];</span>
+        
+        // use a reference depth of 1 for first image's features, as have no measurements for any depths to bootstrap from.
+<span class="nc" id="L632">        double[][] lambdas = MatrixUtil.zeros(mImages, nFeatures);</span>
+<span class="nc" id="L633">        Arrays.fill(lambdas[0], 1.);</span>
+        
+<span class="nc" id="L635">        x1 = extractAndNormalize(x, 0, nFeatures, tt);</span>
+        DenseMatrix x1M, x2M;
+<span class="nc" id="L637">        x1M = new DenseMatrix(x1);</span>
+<span class="nc" id="L638">        double[] x1p = new double[3];</span>
+<span class="nc" id="L639">        double[] x2p = new double[3];</span>
+        double[] x2e, tmp;
+        double tmp2, x2esq;
+        
+        // format x into shape W (3*mImages X nFeatures):
+        //  row 0:2 = image 1 points where row 0 is the x coordinates, row 1 is the y coordinates
+        //  row 3:5 = image 2 points
+<span class="nc" id="L646">        double[][] w = MatrixUtil.zeros(3*mImages, nFeatures);</span>
+<span class="nc" id="L647">        System.arraycopy(x1[0], 0, w[0], 0, nFeatures);</span>
+<span class="nc" id="L648">        System.arraycopy(x1[1], 0, w[1], 0, nFeatures);</span>
+<span class="nc" id="L649">        System.arraycopy(x1[2], 0, w[2], 0, nFeatures);</span>
+        
+<span class="nc bnc" id="L651" title="All 2 branches missed.">        for (i = 1; i &lt; mImages; ++i) {</span>
+            
+<span class="nc" id="L653">            x2 = extractAndNormalize(x, i, nFeatures, tt);</span>
+<span class="nc" id="L654">            x2M = new DenseMatrix(x2);</span>
+            
+<span class="nc" id="L656">            System.arraycopy(x2[0], 0, w[i*3], 0, nFeatures);</span>
+<span class="nc" id="L657">            System.arraycopy(x2[1], 0, w[i*3+1], 0, nFeatures);</span>
+<span class="nc" id="L658">            System.arraycopy(x2[2], 0, w[i*3+2], 0, nFeatures);</span>
+            
+<span class="nc" id="L660">            fit = ransac.calculateEpipolarProjection(x1M, x2M, errorType, </span>
+                useToleranceAsStatFactor, tolerance, recalcIterations, calibrated);
+            
+<span class="nc" id="L663">            fm = MatrixUtil.convertToRowMajor(fit.getFundamentalMatrix());</span>
+            
+            /*
+            TODO: consider keeping only the inliers in a future version that handles
+            occlusion.  by imputation or applied factorization or other means...
+            x1M = extractIndices(x1M, fitR.inlierIndexes);
+            x2M = extractIndices(x2M, fitR.inlierIndexes);
+            x1 = MatrixUtil.convertToRowMajor(x1M);
+            x2 = MatrixUtil.convertToRowMajor(x2M);
+            int nFeaturesI = x1[0].length;
+            */
+            
+            // note: e12 is not normalized by last component
+<span class="nc" id="L676">            calculateLeftEpipole(fit.getFundamentalMatrix(), e12);</span>
+            
+<span class="nc bnc" id="L678" title="All 2 branches missed.">            for (j = 0; j &lt; nFeatures; ++j) {</span>
+<span class="nc" id="L679">                extractColumn(x1, j, x1p);</span>
+<span class="nc" id="L680">                extractColumn(x2, j, x2p);</span>
+                
+                //xe = cross(x2_j, e12);  // same as x2 cross -e21
+<span class="nc" id="L683">                x2e = MatrixUtil.crossProduct(x2p, e12);</span>
+                
+                //lambda(i,j) = lambda(x1,j) * abs((x1_j' * FM * xe) / (xe' *xe));
+                //    note: epipolar line2 = x1_j' * FM
+<span class="nc" id="L687">                x2esq = MatrixUtil.innerProduct(x2e, x2e);</span>
+                
+<span class="nc" id="L689">                tmp = MatrixUtil.multiplyRowVectorByMatrix(x1p, fm);</span>
+                
+<span class="nc" id="L691">                tmp2 = MatrixUtil.innerProduct(tmp, x2e);</span>
+<span class="nc" id="L692">                lambdas[i][j] = lambdas[i-1][j] * Math.abs(tmp2/x2esq);</span>
+            }
+            
+<span class="nc" id="L695">            x1 = x2;</span>
+<span class="nc" id="L696">            x1M = x2M;</span>
+        }
+        
+        /*
+        4. Build the rescaled measurement matrix W.
+        5. Balance W by column-wise and &quot;triplet-of-rows&quot;-wise scalar mutliplications.
+        
+        as stated in Sturm &amp; Triggs 1996 Section 3.2, the balancing of the
+        rescaled measurement matrix by Q's then P's can be replaced by
+        balancing the m x n matrix lambdas instead of W because of the simplification
+        of working with normalized image coordinates Q.
+        The balance operations are demonstrated in proj_recons_fsvd.m
+        */
+<span class="nc" id="L709">        double eps = 1.e-11;</span>
+        double[] lambdaj;
+        int k;
+        // authors find 2 iterations is heuristically enough:
+<span class="nc bnc" id="L713" title="All 2 branches missed.">        for (i = 0; i &lt; 2; ++i) {</span>
+<span class="nc bnc" id="L714" title="All 2 branches missed.">            for (j = 0; j &lt; nFeatures; ++j) {</span>
+<span class="nc" id="L715">                lambdaj = MatrixUtil.extractColumn(lambdas, j);</span>
+<span class="nc" id="L716">                tmp2 = MatrixUtil.lPSum(lambdaj, 2);</span>
+<span class="nc bnc" id="L717" title="All 2 branches missed.">                if (Math.abs(tmp2) &lt; eps) { </span>
+<span class="nc" id="L718">                    tmp2 = eps;</span>
+                }
+<span class="nc bnc" id="L720" title="All 2 branches missed.">                for (k = 0; k &lt; mImages; ++k) {</span>
+<span class="nc" id="L721">                    lambdas[k][j] = lambdaj[k] / tmp2;</span>
+                }
+            }
+<span class="nc bnc" id="L724" title="All 2 branches missed.">            for (k = 0; k &lt; mImages; ++k) {</span>
+<span class="nc" id="L725">                tmp2 = MatrixUtil.lPSum(lambdas[k], 2);</span>
+<span class="nc bnc" id="L726" title="All 2 branches missed.">                if (Math.abs(tmp2) &lt; eps) { </span>
+<span class="nc" id="L727">                    tmp2 = eps;</span>
+                }
+<span class="nc" id="L729">                MatrixUtil.multiply(lambdas[k], 1./tmp2);</span>
+            }
+        }
+        
+        // rescale the image points
+<span class="nc bnc" id="L734" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">            for (j = 0; j &lt; nFeatures; ++j) {</span>
+<span class="nc" id="L736">                w[3*i + 0][j] *= lambdas[i][j];</span>
+<span class="nc" id="L737">                w[3*i + 1][j] *= lambdas[i][j];</span>
+<span class="nc" id="L738">                w[3*i + 2][j] *= lambdas[i][j];</span>
+            }
+        }
+        
+        /*
+        6. Compute the SVD of the balanced matrix W.
+        7. From the SVD, recover projective motion and shape.
+        8. Adapt projective motion, to account for the normalization transformations Ti of
+        step 1.
+        */
+        
+        // if the number of images is larger than 10 or the number of features
+        //   is greater than 30, will use cur decomposition
+        double[][] u, vT;
+        double[][] s;
+        //double[][] wRescaled;
+<span class="nc bnc" id="L754" title="All 4 branches missed.">        if (mImages &gt; 10 || nFeatures &gt; 30) {</span>
+<span class="nc" id="L755">            CUR cur = CURDecomposition.calculateDecomposition(w, 4);</span>
+<span class="nc" id="L756">            SVDProducts curSVD = cur.getApproximateSVD();</span>
+<span class="nc" id="L757">            u = curSVD.u;</span>
+<span class="nc" id="L758">            vT = curSVD.vT;</span>
+<span class="nc" id="L759">            s = curSVD.sigma;</span>
+            
+            // Sturm &amp; Triggs divide by the largest eigenvalue:
+<span class="nc" id="L762">            MatrixUtil.multiply(s, 1./s[0][0]);</span>
+            
+            //wRescaled = cur.getResult();
+<span class="nc" id="L765">        } else {</span>
+<span class="nc" id="L766">            SVDProducts svd = MatrixUtil.performSVD(w);</span>
+            
+            //reduce rank to 4
+<span class="nc" id="L769">            u = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 3);</span>
+<span class="nc" id="L770">            vT = MatrixUtil.copySubMatrix(svd.vT, 0, 3, 0, svd.vT[0].length-1);</span>
+            
+<span class="nc" id="L772">            s = MatrixUtil.zeros(4, 4);</span>
+<span class="nc" id="L773">            s[0][0] = svd.s[0];</span>
+<span class="nc" id="L774">            s[1][1] = svd.s[1];</span>
+<span class="nc" id="L775">            s[2][2] = svd.s[2];</span>
+<span class="nc" id="L776">            s[3][3] = svd.s[3];</span>
+            
+            /*double[][] sqrts4 = MatrixUtil.zeros(4, 4);
+            sqrts4[0][0] = Math.sqrt(svd.s[0]);
+            sqrts4[1][1] = Math.sqrt(svd.s[1]);
+            sqrts4[2][2] = Math.sqrt(svd.s[2]);
+            sqrts4[3][3] = Math.sqrt(svd.s[3]);
+
+            u = MatrixUtil.multiply(u4, sqrts4);
+            vT = MatrixUtil.multiply(sqrts4, vT4);
+            wRescaled = MatrixUtil.multiply(u, vT);
+            */
+            
+            // Sturm &amp; Triggs divide by the largest eigenvalue:
+<span class="nc" id="L790">            MatrixUtil.multiply(s, 1./s[0][0]);</span>
+        }
+        
+        //Ps = fliplr(U(:,1:4));             // 3*MImages X 4
+        //Xs = flipud(S(1:4,1:4)*V(:,1:4)'); // 4 X 4*mImages
+<span class="nc" id="L795">        double[][] ps = MatrixUtil.copy(u);</span>
+<span class="nc" id="L796">        MatrixUtil.flipLR(ps);</span>
+<span class="nc" id="L797">        double[][] XW = MatrixUtil.multiply(s, vT);</span>
+<span class="nc" id="L798">        MatrixUtil.flipUD(XW);</span>
+   
+        //denormalize ps.  = ps * T^-1
+        // tt is the normalization centroidX, centroidY, and sigma values applied to x1 and x2:
+        /*
+                 | 1  0  xc |   | s  0   0 |   | s   0  xc |
+          T^-1 = | 0  1  yc | * | 0  s   0 | = | 0   s  yc |
+                 | 0  0   1 |   | 0  0   1 |   | 0   0   1 |
+        */
+<span class="nc" id="L807">        double[][] tInv = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L808">        tInv[2][2] = 1;</span>
+        double ts, txc, tyc;
+        double[] p0, p1, p2;
+<span class="nc" id="L811">        double[][] p = MatrixUtil.zeros(3, 4);</span>
+<span class="nc bnc" id="L812" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L813">            txc = tt[3*i];</span>
+<span class="nc" id="L814">            tyc = tt[3*i + 1];</span>
+<span class="nc" id="L815">            ts = tt[3*i + 2];</span>
+<span class="nc" id="L816">            tInv[0][0] = ts;</span>
+<span class="nc" id="L817">            tInv[1][1] = ts;</span>
+<span class="nc" id="L818">            tInv[0][2] = txc;</span>
+<span class="nc" id="L819">            tInv[1][2] = tyc;</span>
+            
+<span class="nc" id="L821">            p0 = ps[3*mImages];</span>
+<span class="nc" id="L822">            p1 = ps[3*mImages + 1];</span>
+<span class="nc" id="L823">            p2 = ps[3*mImages + 2];</span>
+<span class="nc" id="L824">            System.arraycopy(p0, 0, p[0], 0, 4);</span>
+<span class="nc" id="L825">            System.arraycopy(p1, 0, p[1], 0, 4);</span>
+<span class="nc" id="L826">            System.arraycopy(p2, 0, p[2], 0, 4);</span>
+            
+<span class="nc" id="L828">            p = MatrixUtil.multiply(p, tInv);</span>
+            
+<span class="nc" id="L830">            System.arraycopy(p[0], 0, ps[3*mImages], 0, 4);</span>
+<span class="nc" id="L831">            System.arraycopy(p[1], 0, ps[3*mImages + 1], 0, 4);</span>
+<span class="nc" id="L832">            System.arraycopy(p[2], 0, ps[3*mImages + 2], 0, 4);</span>
+        }
+        
+<span class="nc" id="L835">        ProjectionResults rr = new ProjectionResults();</span>
+<span class="nc" id="L836">        rr.XW = XW;</span>
+<span class="nc" id="L837">        rr.projectionMatrices = ps;</span>
+        
+<span class="nc" id="L839">        return rr;</span>
+    }
+
+     /**
+      * TODO: proof read and write test for this.
+     * given correspondence between two images calculate the extrinsic camera
+     * parameters, and the real world position.  This is called reconstruction
+     * with calibrated cameras where the calibration refers to having the intrinsic
+     * camera parameters.
+     * 
+     * &lt;pre&gt;
+     * following CMU lectures of Kris Kitani at 
+     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+     * 
+     * add other references here
+     * &lt;/pre&gt;
+     * @param k1 intrinsic camera matrix for image 1 in units of pixels.
+     * @param k2 intrinsic camera matrix for image 2 in units of pixels.
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @return 
+     */
+    public static ReconstructionResults calculateReconstruction(
+        CameraIntrinsicParameters k1, CameraIntrinsicParameters k2,
+        double[][] x1, double[][] x2) throws NotConvergedException {
+        
+<span class="nc" id="L867">        double[][] outputXW = MatrixUtil.zeros(4, x1[0].length);</span>
+<span class="nc" id="L868">        CameraExtrinsicParameters[] cps = </span>
+<span class="nc" id="L869">            CameraPose.calculateUsingEssentialMatrix(</span>
+<span class="nc" id="L870">            k1.getIntrinsic(), k2.getIntrinsic(), x1, x2, outputXW);</span>
+                
+<span class="nc" id="L872">        ReconstructionResults rr = new ReconstructionResults();</span>
+<span class="nc" id="L873">        rr.XW = outputXW;</span>
+<span class="nc" id="L874">        rr.k1ExtrRot = cps[0].getRotation();</span>
+<span class="nc" id="L875">        rr.k1ExtrTrans = cps[0].getTranslation();</span>
+<span class="nc" id="L876">        rr.k1Intr = k1.getIntrinsic();</span>
+<span class="nc" id="L877">        rr.k2ExtrRot = cps[1].getRotation();</span>
+<span class="nc" id="L878">        rr.k2ExtrTrans = cps[11].getTranslation();;</span>
+<span class="nc" id="L879">        rr.k2Intr = k2.getIntrinsic();</span>
+
+<span class="nc" id="L881">        return rr;</span>
+    }
+    
+    /**
+     * TODO: proof read the algorithm and write test for this.
+     * for the case where the cameras are viewing small, distant scenes,
+     * recover the 3-D coordinates in WCS and the rotation matrices 
+     * from pairs of corresponding
+     * un-calibrated image points, that is, points in the image reference frame in pixels.
+     * assumes an orthographic camera model.
+     * can use the orthographic camera model when
+     *    (the average distance of an object from the camera) 
+     *     .geq. 10*(the average width of the object (measured along the optical axis of the camera).
+     * &lt;pre&gt;
+     * references:
+     * 
+     * lecture 16 notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+     * http://www-cse.ucsd.edu/classes/sp04/cse252b/notes/lec16/lec16.pdf
+     * 
+     * lectures of Deva Ramanan at http://16720.courses.cs.cmu.edu/lec/sfm.pdf
+     * .
+     * Tomasi &amp; Kanade 1991, &quot;Shape and motion from image streams under 
+     * orthography: a factorization method&quot;, International journal of computer vision 
+     * 
+     * Higham, 1988, “Computing a Nearest Symmetric Positive Semidefinite Matrix,” 
+     *    Linear Algebra and Appl., 103:103-118, 1988
+     * 
+     * a great summary of the above:
+     * http://note.sonots.com/SciSoftware/Factorization.html#cse252b
+     * http://note.sonots.com/?plugin=attach&amp;refer=SciSoftware%2FFactorization&amp;openfile=Factorization.pdf
+     * 
+     * and a derivation of the geometry of the tracking equation:
+     * Birchfield 1997, &quot;Derivation of Kanade-Lucas-Tomasi Tracking Equation&quot;
+     * http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.185.413&amp;rep=rep1&amp;type=pdf
+     * &lt;/pre&gt;
+     * NOTE: could overload this method to enable handling of occlusion 
+     * following Section 5 of Tomasi &amp; Kanade 1991, but might want to alter the
+     * algorithm to use geometric median in place of centroid so that the
+     * &quot;centers&quot; are not as affected by removing or adding a point.
+     * NOTE: comments from Poelman &amp; Kanade 1992:
+     * Orthographic projection does not account for the apparent change in size 
+     * of an object as it moves toward or away from the camera, nor the different 
+     * angle from which an object is viewed as it moves parallel to the image plane.
+     * @param x the image coordinates of feature correspondences in 2 or more
+     * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
+     * and row 1 holds the y-coordinates and each image's features are given
+     * before the next and the features are ordered in the same manner within
+     * all images.
+     * for example: row 0 = [img_0_feature_0, ... img_0_feature_n-1, ... img_m-1_feature_0,...
+     *     img_m-1_feature_n-1].
+     * @param mImages the number of images in x.
+     * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
+     */
+    public static OrthographicProjectionResults calculateAffineReconstruction(
+        double[][] x, int mImages) throws NotConvergedException {
+                        
+<span class="nc bnc" id="L937" title="All 2 branches missed.">        if (x.length != 2) {</span>
+<span class="nc" id="L938">            throw new IllegalArgumentException(&quot;x.length must be 2&quot;);</span>
+        }
+<span class="nc bnc" id="L940" title="All 2 branches missed.">        if ((x[0].length % mImages) != 0) {</span>
+<span class="nc" id="L941">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
+        }
+<span class="nc" id="L943">        int nFeatures = x[0].length / mImages;</span>
+        
+        //2mn &gt;= 8m + 3n – 12
+<span class="nc bnc" id="L946" title="All 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
+<span class="nc" id="L947">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
+                + &quot;2 * mImages * nFeatures &gt;= 8 * mImages + 3 * nFeatures – 12&quot;);
+        }
+        // for mImages=2, need 4 features
+        
+        // create matrix W composed of U and V 
+        //     where U is rows of each image's x coordinates (size os mImages X nFeatures).
+        //     where V is rows of each image's y coordinates (size os mImages X nFeatures).
+        // create matrix t which holds the centroids of each row of W
+        // create matrix WC = W - t
+        
+<span class="nc" id="L958">        double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);</span>
+<span class="nc" id="L959">        double[] t = new double[2*mImages];</span>
+        int i, j;
+        int m, n, xCol, vRow;
+<span class="nc bnc" id="L962" title="All 2 branches missed.">        for (m = 0; m &lt; mImages; ++m) {</span>
+<span class="nc" id="L963">            vRow = mImages + m;</span>
+<span class="nc bnc" id="L964" title="All 2 branches missed.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
+<span class="nc" id="L965">                xCol = m * nFeatures + n;</span>
+<span class="nc" id="L966">                w[m][n] = x[0][xCol];</span>
+<span class="nc" id="L967">                t[m] += x[0][xCol];</span>
+<span class="nc" id="L968">                w[vRow][n] = x[1][xCol];</span>
+<span class="nc" id="L969">                t[vRow] += x[1][xCol];</span>
+            }
+<span class="nc" id="L971">            t[m] /= (double)nFeatures;</span>
+<span class="nc" id="L972">            t[vRow] /= (double)nFeatures;</span>
+        }
+        
+        //registered measurement matrix:
+<span class="nc" id="L976">        double[][] wC = MatrixUtil.copy(w);</span>
+<span class="nc bnc" id="L977" title="All 2 branches missed.">        for (i = 0; i &lt; t.length; ++i) {</span>
+<span class="nc bnc" id="L978" title="All 2 branches missed.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
+<span class="nc" id="L979">                wC[i][n] -= t[i];</span>
+            }
+        }
+        
+<span class="nc" id="L983">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
+<span class="nc" id="L984">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
+<span class="nc" id="L985">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L986">        s3[0][0] = svd.s[0];</span>
+<span class="nc" id="L987">        s3[1][1] = svd.s[1];</span>
+<span class="nc" id="L988">        s3[2][2] = svd.s[2];</span>
+<span class="nc" id="L989">        double[][] sqrts3 = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L990">        sqrts3[0][0] = Math.sqrt(svd.s[0]);</span>
+<span class="nc" id="L991">        sqrts3[1][1] = Math.sqrt(svd.s[1]);</span>
+<span class="nc" id="L992">        sqrts3[2][2] = Math.sqrt(svd.s[2]);</span>
+<span class="nc" id="L993">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
+        
+        // if this is large, then the noise contribution can be ignored (cholesky not necessary)
+<span class="nc" id="L996">        double sRatio = svd.s[2]/svd.s[3];</span>
+<span class="nc" id="L997">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
+                
+        //Tamasi &amp; Kanade
+        // (2*mImages)X3
+<span class="nc" id="L1001">        double[][] rC = MatrixUtil.multiply(u3, sqrts3);</span>
+        // 3XnFeatures
+<span class="nc" id="L1003">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
+        
+        // see Fig 3.1 of Tomasi &amp; Kanade 1991 or Fig 2. of Belongie lecture notes
+        
+        // Belongie Section 16.4.4 (c)
+        // See Step 3 - Metric Constraints
+        /*
+        The rows of R represent the orientations of the horizontal and vertical camera
+        reference axes throughout the stream, 
+        while the columns of S are the coordinates of the P feature
+        points with respect to their centroid.
+        
+        rC = [ i_C_1^T ]
+             [   ...   ]
+             [ i_C_m^T ]
+             [ j_C_1^T ]
+             [   ...   ]
+             [ j_C_m^T ]
+        
+        sC = [s_C_1  ...  s_C_m]
+        */
+        
+        // constraints: enforce image axes to be orthonogal and length 1
+        //    that is, the the rows of rC must have unit norm
+        //    and the i_f's of rC must be perpendicular to the j_f’s where f is the
+        //    image number(== frame number).
+        /*
+          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1
+          eqn (2)  (`j_f)^T * Q * Q^T * (`j_f) = 1
+          eqn (3)  (`i_f)^T * Q * Q^T * (`j_f) = 0
+        where Q is a 3 × 3 matrix
+        
+        L = Q*Q^T and solve the linear system of equations for L 
+            and use Cholesky decomposition to get Q.
+            Correct the decomposition to enforce L to be positive definite
+            symmetric.
+        
+        Seo notes reference Morita and Kanade for solving Q.
+         T. Morita and T. Kanade, A Sequential Factorization Method for Recovering Shape and Motion
+         from Image Streams, Pattern Analysis and Machine Intelligence, IEEE Transactions on, vol. 19,
+         no.8, pp.858-867, Aug 1997    
+        
+        http://note.sonots.com/SciSoftware/Factorization.html#cse252b
+        
+          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1
+          eqn (2)  (`j_f)^T * Q * Q^T * (`j_f) = 1
+          eqn (3)  (`i_f)^T * Q * Q^T * (`j_f) = 0
+
+        let L = Q*Q^T.  it's symmetric and square:
+            L = [ l1 l2 l3 ]
+                [ l2 l4 l5 ]
+                [ l3 l5 l6 ]
+
+        the knowns are `i_f and `j_f, so we are solving for the 6 unknowns in L.
+
+        expand the terms:
+
+        eqn(1):
+        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ if_0 ] = 1
+                             [ l2 l4 l5 ]   [ if_1 ]
+                             [ l3 l5 l6 ]   [ if_2 ]
+        eqn(2):
+        jf_0  jf_1  jf_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 1
+                             [ l2 l4 l5 ]   [ jf_1 ]
+                             [ l3 l5 l6 ]   [ jf_2 ]
+        eqn(3):
+        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 0
+                             [ l2 l4 l5 ]   [ jf_1 ]
+                             [ l3 l5 l6 ]   [ jf_2 ]
+        
+        (if0*l1 + if1*l2 + if2*l3)*if0 + (if0*l2 + if1*l4 + if2*l5)*if1 + (if0*l3 + if1*l5 + if2*l6)*if2   = 1
+        (jf0*l1 + jf1*l2 + jf2*l3)*jf0 + (jf0*l2 + jf1*l4 + jf2*l5)*jf1 + (jf0*l3 + jf1*l5 + jf2*l6)*if2   = 1
+        (if0*l1 + if1*l2 + if2*l3)*jf0 + (if0*l2 + if1*l4 + if2*l5)*jf1 + (if0*l3 + if1*l5 + if2*l6)*jf2   = 0
+
+        rewriting:
+        l1*if0*if0 + l2*if1*if0 + l3*if2*if0 + l2*if0*if1 + l4*if1*if1 + l5*if2*if1 + l3*if0*if2 + l5*if1*if2 + l6*if2*if2   = 1
+        l1*jf0*jf0 + l2*jf1*jf0 + l3*jf2*jf0 + l2*jf0*jf1 + l4*jf1*jf1 + l5*jf2*jf1 + l3*jf0*jf2 + l5*jf1*jf2 + l6*jf2*jf2   = 1
+        l1*if0*jf0 + l2*if1*jf0 + l3*if2*jf0 + l2*if0*jf1 + l4*if1*jf1 + l5*if2*jf1 + l3*if0*jf2 + l5*if1*jf2 + l6*if2*jf2   = 0
+
+        factor out the L terms, linearly
+        l1           l2                    l3                    l4           l5                    l6         const
+        (if0*if0)    (if1*if0 + if0*if1)   (if2*if0 + if0*if2)   (if1*if1)    (if2*if1 + if1*if2)   (if2*if2)   1
+        (jf0*jf0)    (jf1*jf0 + jf0*jf1)   (jf2*jf0 + jf0*jf2)   (jf1*jf1)    (jf2*jf1 + jf1*jf2)   (jf2*jf2)   1
+        (if0*jf0)    (if1*jf0 + if0*jf1)   (if2*jf0 + if0*jf2)   (if1*jf1)    (if2*jf1 + if1*jf2)   (if2*jf2)   0
+
+        since the terms in the rows have a similar pattern, can write the equation more concisely using
+        a function to generate them:
+           g(a,b) = [a0*b0         ]
+                    [a0*b1 + a1*b0 ]
+                    [a0*b2 + a2*b0 ]
+                    [a1*b1         ]
+                    [a1*b2 + a2*b1 ]
+                    [a2*b2         ]
+
+        the G = [ g(i_0, i_0)^T       ]   L_vectorized = [l1]    c = [2*F rows of 1]
+                [ ...each row thru F  ]                  [l2]        [F rows of 0  ]
+                [ g(j_0, j_0)^T       ]                  [l3]
+                [ ...each row thru F  ]                  [l4]
+                [ g(i_0, j_0)^T       ]                  [l5]
+                [ ...each row thru F  ]                  [l6]
+
+        G*L_vectorized = c ==&gt;  L_vectorized = G^-1 * c
+        */
+        
+<span class="nc" id="L1107">        double[] c = new double[3*mImages];</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">        for (i = 0; i &lt; 2*mImages; ++i) {</span>
+<span class="nc" id="L1109">            c[i] = 1;</span>
+        }
+        
+        //g is 3F × 6
+<span class="nc" id="L1113">        double[][] g = new double[3*mImages][6];</span>
+<span class="nc bnc" id="L1114" title="All 2 branches missed.">        for (i = 0; i &lt; 2*mImages; ++i) {</span>
+<span class="nc" id="L1115">            g[i] = gT(rC[i], rC[i]);</span>
+<span class="nc bnc" id="L1116" title="All 4 branches missed.">            assert(g[i].length == 6);</span>
+        }
+<span class="nc" id="L1118">        j = 0;</span>
+<span class="nc bnc" id="L1119" title="All 2 branches missed.">        for (i = 2*mImages; i &lt; 3*mImages; ++i) {</span>
+<span class="nc" id="L1120">            g[i] = gT(rC[j], rC[mImages + j]);</span>
+<span class="nc" id="L1121">            j++;</span>
+        }
+<span class="nc" id="L1123">        double[][] gInv = MatrixUtil.pseudoinverseRankDeficient(g);</span>
+        
+        // 6X1
+<span class="nc" id="L1126">        double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
+<span class="nc bnc" id="L1127" title="All 4 branches missed.">        assert(iVector.length == 6);</span>
+        
+        // 3X3
+<span class="nc" id="L1130">        double[][] ell = new double[3][3];</span>
+<span class="nc" id="L1131">        ell[0] = new double[]{iVector[0], iVector[1], iVector[2]};</span>
+<span class="nc" id="L1132">        ell[1] = new double[]{iVector[1], iVector[3], iVector[4]};</span>
+<span class="nc" id="L1133">        ell[2] = new double[]{iVector[2], iVector[4], iVector[5]};</span>
+        
+        // Q can be determined :
+        //   as the square root of ell,
+        //   or with the Cholesky decomposition
+        //   or with eigendecomposition
+        
+        /*
+        // enforcing positive definiteness of L (which is ell here).
+        ell = MatrixUtil.elementwiseAdd(ell, MatrixUtil.transpose(ell));
+        MatrixUtil.multiply(ell, 0.5);
+        
+        Not using this as ell is written above as symmetric.
+        The correction might be for use with the eigenvalue decomposition.
+        If one uses the general EVD instead of the symmetric EVD method, 
+        the left and right eigenvector matrices are a little different
+        so forming one out of the average of both would be useful as input
+        for forming Q below.  The correction's not necessary for the symmetric EVD method.
+        */
+<span class="nc" id="L1152">        double eps = 1e-5;</span>
+        
+        /*
+        eigen decompose A = L * (sigma+) * L^T
+        (sigma+) is a diagonal matrix whose negative values should be
+            replaced by a small value near 0.
+        Q = L * sqrt(sigma+)
+        */
+        
+        // eigen vectors in the columns of the left and right eigenvector matrices.
+        //    eigenvalues form the diagonal of sigma
+        //EVD evd = EVD.factorize(new DenseMatrix(ell));
+<span class="nc" id="L1164">        SymmDenseEVD evd = SymmDenseEVD.factorize(new DenseMatrix(ell));</span>
+        
+<span class="nc" id="L1166">        double[] ellSigmaSqrt = new double[evd.getEigenvalues().length];</span>
+<span class="nc bnc" id="L1167" title="All 2 branches missed.">        for (i = 0; i &lt; ellSigmaSqrt.length; ++i) {</span>
+<span class="nc bnc" id="L1168" title="All 2 branches missed.">            if (evd.getEigenvalues()[i] &lt; 0) {</span>
+                // replace with very small value
+<span class="nc" id="L1170">                ellSigmaSqrt[i] = eps;</span>
+            } else {
+<span class="nc" id="L1172">                ellSigmaSqrt[i] = Math.sqrt(evd.getEigenvalues()[i]);</span>
+            }
+        }
+<span class="nc" id="L1175">        double[][] lEig = MatrixUtil.convertToRowMajor(evd.getEigenvectors());</span>
+        
+        // 3X3
+<span class="nc" id="L1178">        double[][] q = MatrixUtil.multiplyByDiagonal(lEig, ellSigmaSqrt);</span>
+        
+        // rC size is  (2*mImages)X3
+        // sC size is 3XnFeatures
+<span class="nc" id="L1182">        double[][] r = MatrixUtil.multiply(rC, q);</span>
+<span class="nc" id="L1183">        double[][] s = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);</span>
+        
+        /*
+        from Tomasi &amp; Kanade 1992:
+        If desired, align the first camera reference system with the world 
+        reference system by forming the products R*R_0 and R_0^T*S, 
+        where the orthonormal matrix R_0 = [i1 j1 k1] rotates the first camera 
+        reference system into the identity matrix
+        
+        i0x i0y i0z    *  r0ix  r0jx  r0kx   = (i0 dot r0i)  (i0 dot r0j) (i0 dot r0k)
+        i1x i1y i1z       r0iy  r0jy  r0ky
+        i2x i2y i2z       r0iz  r0jz  r0kz
+        i3x i3y i3z
+        ...
+        j0x j0y j0z
+        j1x j1y j1z
+        */
+<span class="nc" id="L1200">        double[] i1 = Arrays.copyOf(r[0], r[0].length);</span>
+<span class="nc" id="L1201">        double i1Norm = MatrixUtil.lPSum(i1, 2);</span>
+<span class="nc" id="L1202">        MatrixUtil.multiply(i1, 1./i1Norm);</span>
+<span class="nc" id="L1203">        double[] j1 = Arrays.copyOf(r[mImages], r[mImages].length);</span>
+<span class="nc" id="L1204">        double j1Norm = MatrixUtil.lPSum(j1, 2);</span>
+<span class="nc" id="L1205">        MatrixUtil.multiply(j1, 1./j1Norm);</span>
+<span class="nc" id="L1206">        double[] k1 = MatrixUtil.crossProduct(i1, j1);</span>
+<span class="nc" id="L1207">        double k1Norm = MatrixUtil.lPSum(k1, 2);</span>
+<span class="nc" id="L1208">        MatrixUtil.multiply(k1, 1./k1Norm);</span>
+        
+<span class="nc" id="L1210">        double[][] r0 = new double[3][3];</span>
+<span class="nc bnc" id="L1211" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L1212">            r0[i] = new double[]{i1[i], j1[i], k1[i]};</span>
+        }
+        
+        // with orthographic, can only recover rotation, not translation
+        //(2*mImages)X3
+<span class="nc" id="L1217">        r = MatrixUtil.multiply(r, r0);</span>
+        // s now holds the world reference frame coordinates
+        // 3XnFeatures
+<span class="nc" id="L1220">        s = MatrixUtil.multiply(MatrixUtil.transpose(r0), s);</span>
+        
+        // r has the i and j direction and k=i cross j.
+        // create a stack of rotation matrices, one per image.
+<span class="nc" id="L1224">        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);</span>
+        double[] ic, jc, kc;
+<span class="nc bnc" id="L1226" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L1227">            ic = r[i];</span>
+<span class="nc" id="L1228">            jc = r[mImages + i];</span>
+<span class="nc" id="L1229">            kc = MatrixUtil.crossProduct(ic, jc);</span>
+<span class="nc bnc" id="L1230" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L1231">                rotStack[i*3 + j][0] = ic[j]; </span>
+<span class="nc" id="L1232">                rotStack[i*3 + j][1] = jc[j];</span>
+<span class="nc" id="L1233">                rotStack[i*3 + j][2] = kc[j];</span>
+            }
+        }
+        
+<span class="nc" id="L1237">        OrthographicProjectionResults results = new OrthographicProjectionResults();</span>
+<span class="nc" id="L1238">        results.XW = s;</span>
+<span class="nc" id="L1239">        results.rotationMatrices = rotStack;</span>
+                
+<span class="nc" id="L1241">        return results;</span>
+    }
+    
+    /*
+    TODO: proof read and write test for this.
+    from Szeliski 2010 and Poelman &amp; Kanade 1992 (year?  a few published translations with different years):
+    Para-perspective provides a more accurate projection model than scaled 
+    orthography, without incurring the added complexity of per-pixel perspective 
+    division, which invalidates traditional factoriza- tion methods 
+    (Poelman and Kanade 1997).
+    
+    Scaled orthographic projection, sometimes referred to as &quot;weak perspective&quot;, 
+    accounts for the scaling effect of an object as it moves towards and away 
+    from the camera. Paraperspective projection, first introduced by Ohta in 
+    [4] and named by Aloimonos in [1], accounts for the scaling effect as well 
+    as the different angle from which an object is viewed as it moves in a 
+    direction parallel to the image plane.
+
+    */
+    
+    /**
+     * TODO: proof read the algorithm and write test for this.
+     * for the case where the cameras are viewing small, distant scenes,
+     * recover the 3-D coordinates in WCS and the projection matrices 
+     * from pairs of corresponding
+     * un-calibrated image points, that is, points in the image reference frame in pixels.
+     * assumes a para-perspective camera model.
+     *
+     * &lt;pre&gt;
+     * references:
+     * 
+     * Poelman &amp; Kanade 1997, &quot;A Paraperspective Factorization Method for Shape 
+     * and Motion Recovery&quot; 
+     * 
+     * &lt;/pre&gt;
+     * 
+     * @param x the image coordinates of feature correspondences in 2 or more
+     * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
+     * and row 1 holds the y-coordinates and each image's features are given
+     * before the next and the features are ordered in the same manner within
+     * all images.
+     * for example: row 0 = [img_0_feature_0, ... img_0_feature_n-1, ... img_m-1_feature_0,...
+     *     img_m-1_feature_n-1].
+     * @param mImages the number of images in x.
+     * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
+     */
+    public static ParaperspectiveProjectionResults calculateParaperspectiveReconstruction(
+        double[][] x, int mImages) throws NotConvergedException {
+                        
+<span class="nc bnc" id="L1290" title="All 2 branches missed.">        if (x.length != 2) {</span>
+<span class="nc" id="L1291">            throw new IllegalArgumentException(&quot;x.length must be 2&quot;);</span>
+        }
+<span class="nc bnc" id="L1293" title="All 2 branches missed.">        if ((x[0].length % mImages) != 0) {</span>
+<span class="nc" id="L1294">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
+        }
+<span class="nc" id="L1296">        int nFeatures = x[0].length / mImages;</span>
+        
+        //2mn &gt;= 8m + 3n – 12
+<span class="nc bnc" id="L1299" title="All 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
+<span class="nc" id="L1300">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
+                + &quot;2 * mImages * nFeatures &gt;= 8 * mImages + 3 * nFeatures – 12&quot;);
+        }
+        // for mImages=2, need 4 features
+        
+        // create matrix W composed of U and V 
+        //     where U is rows of each image's x coordinates (size os mImages X nFeatures).
+        //     where V is rows of each image's y coordinates (size os mImages X nFeatures).
+        // create matrix t which holds the centroids of each row of W
+        // create matrix WC = W - t
+<span class="nc" id="L1310">        double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);</span>
+<span class="nc" id="L1311">        double[] t = new double[2*mImages];</span>
+        int i, j;
+        int m, n, xCol, vRow;
+<span class="nc bnc" id="L1314" title="All 2 branches missed.">        for (m = 0; m &lt; mImages; ++m) {</span>
+<span class="nc" id="L1315">            vRow = mImages + m;</span>
+<span class="nc bnc" id="L1316" title="All 2 branches missed.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
+<span class="nc" id="L1317">                xCol = m * nFeatures + n;</span>
+<span class="nc" id="L1318">                w[m][n] = x[0][xCol];</span>
+<span class="nc" id="L1319">                t[m] += x[0][xCol];</span>
+<span class="nc" id="L1320">                w[vRow][n] = x[1][xCol];</span>
+<span class="nc" id="L1321">                t[vRow] += x[1][xCol];</span>
+            }
+<span class="nc" id="L1323">            t[m] /= (double)nFeatures;</span>
+<span class="nc" id="L1324">            t[vRow] /= (double)nFeatures;</span>
+        }
+        
+        //registered measurement matrix:
+<span class="nc" id="L1328">        double[][] wC = MatrixUtil.copy(w);</span>
+<span class="nc bnc" id="L1329" title="All 2 branches missed.">        for (i = 0; i &lt; t.length; ++i) {</span>
+<span class="nc bnc" id="L1330" title="All 2 branches missed.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
+<span class="nc" id="L1331">                wC[i][n] -= t[i];</span>
+            }
+        }
+        
+<span class="nc" id="L1335">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
+<span class="nc" id="L1336">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
+<span class="nc" id="L1337">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L1338">        s3[0][0] = svd.s[0];</span>
+<span class="nc" id="L1339">        s3[1][1] = svd.s[1];</span>
+<span class="nc" id="L1340">        s3[2][2] = svd.s[2];</span>
+<span class="nc" id="L1341">        double[][] sqrts3 = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L1342">        sqrts3[0][0] = Math.sqrt(svd.s[0]);</span>
+<span class="nc" id="L1343">        sqrts3[1][1] = Math.sqrt(svd.s[1]);</span>
+<span class="nc" id="L1344">        sqrts3[2][2] = Math.sqrt(svd.s[2]);</span>
+<span class="nc" id="L1345">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
+        
+        // if this is large, then the noise contribution can be ignored (cholesky not necessary)
+<span class="nc" id="L1348">        double sRatio = svd.s[2]/svd.s[3];</span>
+<span class="nc" id="L1349">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
+                
+        // (2*mImages)X3
+<span class="nc" id="L1352">        double[][] mC = MatrixUtil.multiply(u3, sqrts3);</span>
+        // 3XnFeatures
+<span class="nc" id="L1354">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
+        
+        /*
+        ------------------------------------------------------------------
+        Paraperspective Normalization
+        ------------------------------------------------------------------
+        
+         3 constraints:
+
+         eqn(15) of paper:
+                 |m_f|^2/(1+x_f^2) - |n_f|^2/(1+y_f^2) = 0
+         eqn(17) of paper:
+                 m_f dot n_f = x_f * y*f * 0.5 * ( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2) )
+         eqn(18) of paper:
+                 |m_0|=1
+
+         those are 2*F + 1 equations as metric constraints
+
+         from the SVD of the registered measurement matrix, there is M and S
+         `M is size 2*F X 3
+         `M = vectorized( m_0, m_1, ... m_{F-1}, n_0, n_1, ... n_{F-1},
+
+         let M = `M*A where A is a 3X3 matrix, and as before, Q = symmetric matrix, but Q=A^T*A.
+
+         Equations (15), (17), and (18) give us 2F+ 1 equations,
+         We compute the 3 X 3 matrix A such that M = `M*A best satisfies these metric constraints
+         in the least sum-of-squares error sense.
+
+         This is a simple problem because the constraints are linear in the 6 unique elements
+         of the symmetric 3 x 3 matrix Q = A^TA.
+        
+         Thus we compute Q by solving the overconstrained linear system of 2F + 1 equations
+         in 6 variables defined by the metric constraints, ...
+
+             [ q1  q2  q3 ]
+         Q = [ q2  q4  q5 ]
+             [ q3  q5  q6 ]
+
+         m_f = `m_f * Q = [`mf0  `mf1  `mf2] * [ q1  q2  q3 ]
+                                               [ q2  q4  q5 ]
+                                               [ q3  q5  q6 ]
+                        = [ (q1*`mf0 + q2*`mf1 + q3*`mf2 )  (q2*`mf0 + q4*`mf1 + q5*`mf2 )  (q3*`mf0 + q5*`mf1 + q6*`mf2 ) ]
+
+         |vector| is the magnitude of a vector = square root of the sum of squares of its components.
+        
+         as an aside, in case can simplify any future steps with this:
+         and Q*Q = q1*q1 + q2*q2 + q3*q3   q1*q2 + q2*q4 + q3*q5   q1*q3 + q2*q5 + q3*q6
+                   q1*q2 + q2*q4 + q3*q5   q2*q2 + q4*q4 + q5*q5   q2*q3 + q4*q5 + q5*q6
+                   q1*q3 + q2*q5 + q3*q6   q2*q3 + q4*q5 + q5*q6   q3*q3 + q5*q5 + q6*q6
+                 = Q_col0 dot Q_col0   Q_col0 dot Q_col1  Q_col0 dot Q_col2
+                   Q_col0 dot Q_col1   Q_col1 dot Q_col1  Q_col1 dot Q_col2
+                   Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
+
+        NOTE: below are the expanded details of the multiplication.
+        The result can be rewritten using other notation:
+        since need the dot product of vector `m_f*Q with itself, can use the inner product
+        of the vector multiplied by its transpose:
+            |m_f|^2 = `m_f*Q*Q^T*`m_f^T where m_f is a 1X3 vector and Q is a 3X3 symmetric matrix
+                    = `m_f*Q^2*`m_f^T
+                    = [`m_f*Q^2[:][0] `m_f*Q^2[:][1] `m_f*Q^2[:][2]] * `m_f^T
+                    = ['m_f[0]*`m_f*Q^2[:][0] + 'm_f[1]*`m_f*Q^2[:][1] + 'm_f[2]*`m_f*Q^2[:][2]]
+
+
+         expand |m_f|^2/(1+x_f^2) :
+             (1/(1+x_f^2)) * [ (q1*`mf0 + q2*`mf1 + q3*`mf2 )^2 + (q2*`mf0 + q4*`mf1 + q5*`mf2 )^2 + (q3*`mf0 + q5*`mf1 + q6*`mf2 )^2 ]
+             (1/(1+x_f^2)) * [ (q1*`mf0*q1*`mf0 + q1*`mf0*q2*`mf1 + q1*`mf0*q3*`mf2)
+                              + (q2*`mf1*q1*`mf0 + q2*`mf1*q2*`mf1 + q2*`mf1*q3*`mf2)
+                              + (q3*`mf2*q1*`mf0 + q3*`mf2*q2*`mf1 + q3*`mf2*q3*`mf2)
+                              + (q2*`mf0*q2*`mf0 + q2*`mf0*q4*`mf1 + q2*`mf0*q5*`mf2 )
+                              + (q4*`mf1*q2*`mf0 + q4*`mf1*q4*`mf1 + q4*`mf1*q5*`mf2 )
+                              + (q5*`mf2*q2*`mf0 + q5*`mf2*q4*`mf1 + q5*`mf2*q5*`mf2 )
+                              + (q3*`mf0*q3*`mf0 + q3*`mf0*q5*`mf1 + q3*`mf0*q6*`mf2 )
+                              + (q5*`mf1*q3*`mf0 + q5*`mf1*q5*`mf1 + q5*`mf1*q6*`mf2 )
+                              + (q6*`mf2*q3*`mf0 + q6*`mf2*q5*`mf1 + q6*`mf2*q6*`mf2 ) ]
+
+             (1/(1+x_f^2))  * [ (q1*`mf0*q1*`mf0 + q1*`mf0*q2*`mf1 + q1*`mf0*q3*`mf2)
+                              + (q1*`mf0*q2*`mf1 + q2*`mf1*q2*`mf1 + q2*`mf1*q3*`mf2)
+                              + (q1*`mf0*q3*`mf2 + q2*`mf1*q3*`mf2 + q3*`mf2*q3*`mf2)
+                              + (q2*`mf0*q2*`mf0 + q2*`mf0*q4*`mf1 + q2*`mf0*q5*`mf2 )
+                              + (q2*`mf0*q4*`mf1 + q4*`mf1*q4*`mf1 + q4*`mf1*q5*`mf2 )
+                              + (q2*`mf0*q5*`mf2 + q4*`mf1*q5*`mf2 + q5*`mf2*q5*`mf2 )
+                              + (q3*`mf0*q3*`mf0 + q3*`mf0*q5*`mf1 + q3*`mf0*q6*`mf2 )
+                              + (q3*`mf0*q5*`mf1 + q5*`mf1*q5*`mf1 + q5*`mf1*q6*`mf2 )
+                              + (q3*`mf0*q6*`mf2 + q6*`mf2*q5*`mf1 + q6*`mf2*q6*`mf2 ) ]
+        
+                          (1/(1+x_f^2))  * [ q1*q1*`mf0*`mf0 + q1*q2*`mf0*`mf1 + q1*q3*`mf0*`mf2
+                              + q1*q2*`mf0*`mf1 + q2*q2*`mf1*`mf1 + q2*q3*`mf1*`mf2
+                              + q1*q3*`mf0*`mf2 + q2*q3*`mf1*`mf2 + q3*q3*`mf2*`mf2
+                              + q2*q2*`mf0*`mf0 + q2*q4*`mf0*`mf1 + q2*q5*`mf0*`mf2
+                              + q2*q4*`mf0*`mf1 + q4*q4*`mf1*`mf1 + q4*q5*`mf1*`mf2
+                              + q2*q5*`mf0*`mf2 + q4*q5*`mf1*`mf2 + q5*q5*`mf2*`mf2
+                              + q3*q3*`mf0*`mf0 + q3*q5*`mf0*`mf1 + q3*q6*`mf0*`mf2
+                              + q3*q5*`mf0*`mf1 + q5*q5*`mf1*`mf1 + q5*q6*`mf1*`mf2
+                              + q3*q6*`mf0*`mf2 + q6*q5*`mf2*`mf1 + q6*q6*`mf2*`mf2 ]
+
+             (1/(1+x_f^2))  * [ q1*q1*`mf0*`mf0 + q2*q2*`mf0*`mf0 + q3*q3*`mf0*`mf0
+                              + q1*q2*`mf0*`mf1 + q2*q4*`mf0*`mf1 + q3*q5*`mf0*`mf1   &lt;== 1st 3 lines of addition are:
+                              + q1*q3*`mf0*`mf2 + q2*q5*`mf0*`mf2 + q3*q6*`mf0*`mf2       [ `mf0*`mf0  `mf0*`mf1  `mf0*`mf2 ] * [Q^2_col0]
+
+                              + q1*q2*`mf0*`mf1 + q2*q4*`mf0*`mf1 + q3*q5*`mf0*`mf1   &lt;== 2nd 3 lines of addition are:
+                              + q2*q2*`mf1*`mf1 + q4*q4*`mf1*`mf1 + q5*q5*`mf1*`mf1       [ `mf0*`mf1  `mf1*`mf1  `mf1*`mf2 ] * [Q^2_col1]
+                              + q2*q3*`mf1*`mf2 + q4*q5*`mf1*`mf2 + q5*q6*`mf1*`mf2
+
+                              + q1*q3*`mf0*`mf2 + q2*q5*`mf0*`mf2 + q3*q6*`mf0*`mf2   &lt;== 3rd 3 lines of addition are:
+                              + q2*q3*`mf1*`mf2 + q4*q5*`mf1*`mf2 + q5*q6*`mf1*`mf2       [ `mf0*`mf2  `mf1*`mf2  `mf2*`mf2 ] * [Q^2_col2]
+                              + q3*q3*`mf2*`mf2 + q5*q5*`mf2*`mf2 + q6*q6*`mf2*`mf2 ]
+
+             let z0 = [ `mf0*`mf0  `mf0*`mf1  `mf0*`mf2 ]
+                 z1 = [ `mf0*`mf1  `mf1*`mf1  `mf1*`mf2 ]
+                 z2 = [ `mf0*`mf2  `mf1*`mf2  `mf2*`mf2 ]
+             (1/(1+x_f^2))  * [ z0 z1 z2] * [Q^2_col0]
+                                            [Q^2_col1]
+                                            [Q^2_col2]
+
+         reminder of Q*Q:
+                 = q1*q1 + q2*q2 + q3*q3   q1*q2 + q2*q4 + q3*q5   q1*q3 + q2*q5 + q3*q6
+                   q1*q2 + q2*q4 + q3*q5   q2*q2 + q4*q4 + q5*q5   q2*q3 + q4*q5 + q5*q6
+                   q1*q3 + q2*q5 + q3*q6   q2*q3 + q4*q5 + q5*q6   q3*q3 + q5*q5 + q6*q6
+                 = Q_col0 dot Q_col0   Q_col0 dot Q_col1  Q_col0 dot Q_col2
+                   Q_col0 dot Q_col1   Q_col1 dot Q_col1  Q_col1 dot Q_col2
+                   Q_col0 dot Q_col2   Q_col1 dot Q_col2  Q_col2 dot Q_col2
+            
+             let z0 = [ `mf0*`mf0  `mf0*`mf1  `mf0*`mf2 ]
+                 z1 = [ `mf1*`mf0  `mf1*`mf1  `mf1*`mf2 ]
+                 z2 = [ `mf2*`mf0  `mf2*`mf1  `mf2*`mf2 ]
+             let y0 = [ `nf0*`nf0  `nf0*`nf1  `nf0*`nf2 ]
+                 y1 = [ `nf1*`nf0  `nf1*`nf1  `nf1*`nf2 ]
+                 y2 = [ `nf2*`nf0  `nf2*`nf1  `nf2*`nf2 ]
+             let w0 = [ `mf0*`nf0  `mf0*`nf1  `mf0*`nf2 ]
+                 w1 = [ `mf1*`nf0  `mf1*`nf1  `mf1*`nf2 ]
+                 w2 = [ `mf2*`nf0  `mf2*`nf1  `mf2*`nf2 ]
+             let c2 = (x_f*y_f*0.5)
+
+        factoring the constraints to separate Q unknowns from m and n knowns:
+         eqn(15) of paper:
+                 |m_f|^2/(1+x_f^2) - |n_f|^2/(1+y_f^2) = 0
+
+             (1/(1+x_f^2)) * [ z0 z1 z2] * [Q^2_col0]  -  (1/(1+y_f^2)) * [ y0 y1 y2] * [Q^2_col0] = 0
+                                           [Q^2_col1]                                   [Q^2_col1]
+                                           [Q^2_col2]                                   [Q^2_col2]
+
+             [ (z0/(1+x_f^2) -y0/(1+y_f^2))  (z1/(1+x_f^2) -y1/(1+y_f^2))  (z2/(1+x_f^2) -y2/(1+y_f^2)) ] * [Q^2_col0] = 0
+                                                                                                            [Q^2_col1]
+                                                                                                            [Q^2_col2]
+
+         eqn(17) of paper:
+                 m_f dot n_f = x_f*y_f*0.5 * ( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2) )
+
+                 [ w0 w1 w2] * [Q^2_col0] - c2 * [ z0 z1 z2] * [Q^2_col0]  -  c2 * [ y0 y1 y2] * [Q^2_col0] = 0
+                               [Q^2_col1]                      [Q^2_col1]                        [Q^2_col1]
+                               [Q^2_col2]                      [Q^2_col2]                        [Q^2_col2]
+
+                 [ (w0 -z0*c2 -y0*c2)  (w1 -z1*c2 -y1*c2)  (w2 -z2*c2 -y2*c2)] * [Q^2_col0] = 0
+                                                                                 [Q^2_col1]
+                                                                                 [Q^2_col2]
+         eqn(18) of paper:
+                 |m_0|=1
+
+                 square to use the same factorization by Q^2?
+
+             let v0 = [ `m_0[0]*`mf0  `m_0[0]*`m_0[1]  `m_0[0]*`m_0[2] ]
+                 v1 = [ `m_0[0]*`mf1  `m_0[1]*`m_0[1]  `m_0[1]*`m_0[2] ]
+                 v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2]*`m_0[2] ]
+             |m_0|^2 = [ v0 v1 v2] * [Q^2_col0] = 1
+                                     [Q^2_col1]
+                                     [Q^2_col2]
+        */
+        
+<span class="nc" id="L1522">        double[][] g = new double[2*mImages + 1][9];</span>
+<span class="nc" id="L1523">        double[] z0 = new double[3];</span>
+<span class="nc" id="L1524">        double[] z1 = new double[3];</span>
+<span class="nc" id="L1525">        double[] z2 = new double[3];</span>
+<span class="nc" id="L1526">        double[] y0 = new double[3];</span>
+<span class="nc" id="L1527">        double[] y1 = new double[3];</span>
+<span class="nc" id="L1528">        double[] y2 = new double[3];</span>
+<span class="nc" id="L1529">        double[] w0 = new double[3];</span>
+<span class="nc" id="L1530">        double[] w1 = new double[3];</span>
+<span class="nc" id="L1531">        double[] w2 = new double[3];</span>
+        double c2, xf, yf, divXf, divYf;
+        
+<span class="nc bnc" id="L1534" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L1535">            xf = t[i];</span>
+<span class="nc" id="L1536">            yf = t[mImages + i];</span>
+            
+<span class="nc" id="L1538">            z0[0] = mC[i][0] * mC[i][0]; </span>
+<span class="nc" id="L1539">            z0[1] = mC[i][0] * mC[i][1];</span>
+<span class="nc" id="L1540">            z0[2] = mC[i][0] * mC[i][2];</span>
+            
+<span class="nc" id="L1542">            z1[0] = mC[i][1] * mC[i][0]; </span>
+<span class="nc" id="L1543">            z1[1] = mC[i][1] * mC[i][1];</span>
+<span class="nc" id="L1544">            z1[2] = mC[i][1] * mC[i][2];</span>
+            
+<span class="nc" id="L1546">            z2[0] = mC[i][2] * mC[i][0]; </span>
+<span class="nc" id="L1547">            z2[1] = mC[i][2] * mC[i][1];</span>
+<span class="nc" id="L1548">            z2[2] = mC[i][2] * mC[i][2];</span>
+            
+<span class="nc" id="L1550">            y0[0] = mC[mImages + i][0] * mC[mImages + i][0];</span>
+<span class="nc" id="L1551">            y0[1] = mC[mImages + i][0] * mC[mImages + i][1];</span>
+<span class="nc" id="L1552">            y0[2] = mC[mImages + i][0] * mC[mImages + i][2];</span>
+            
+<span class="nc" id="L1554">            y1[0] = mC[mImages + i][1] * mC[mImages + i][0];</span>
+<span class="nc" id="L1555">            y1[1] = mC[mImages + i][1] * mC[mImages + i][1];</span>
+<span class="nc" id="L1556">            y1[2] = mC[mImages + i][1] * mC[mImages + i][2];</span>
+            
+<span class="nc" id="L1558">            y2[0] = mC[mImages + i][2] * mC[mImages + i][0];</span>
+<span class="nc" id="L1559">            y2[1] = mC[mImages + i][2] * mC[mImages + i][1];</span>
+<span class="nc" id="L1560">            y2[2] = mC[mImages + i][2] * mC[mImages + i][2];</span>
+            
+<span class="nc" id="L1562">            w0[0] = mC[i][0] * mC[mImages + i][0];</span>
+<span class="nc" id="L1563">            w0[1] = mC[i][0] * mC[mImages + i][1];</span>
+<span class="nc" id="L1564">            w0[2] = mC[i][0] * mC[mImages + i][2];</span>
+            
+<span class="nc" id="L1566">            w1[0] = mC[i][1] * mC[mImages + i][0];</span>
+<span class="nc" id="L1567">            w1[1] = mC[i][1] * mC[mImages + i][1];</span>
+<span class="nc" id="L1568">            w1[2] = mC[i][1] * mC[mImages + i][2];</span>
+            
+<span class="nc" id="L1570">            w2[0] = mC[i][2] * mC[mImages + i][0];</span>
+<span class="nc" id="L1571">            w2[1] = mC[i][2] * mC[mImages + i][1];</span>
+<span class="nc" id="L1572">            w2[2] = mC[i][2] * mC[mImages + i][2];</span>
+            
+<span class="nc" id="L1574">            c2 = 0.5*xf*yf;</span>
+            
+<span class="nc" id="L1576">            divXf = 1./(1.+xf*xf);</span>
+<span class="nc" id="L1577">            divYf = 1./(1.+yf*yf);</span>
+            
+            // length 9
+            // eqn(15) of paper is the 1st mImages rows of g
+            //   [ (z0/(1+x_f^2) -y0/(1+y_f^2))  (z1/(1+x_f^2) -y1/(1+y_f^2))  (z2/(1+x_f^2) -y2/(1+y_f^2)) ] ... = 0
+<span class="nc" id="L1582">            g[i] = new double[9]; // g is (2*mImages + 1) X 9;</span>
+<span class="nc bnc" id="L1583" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) { </span>
+<span class="nc" id="L1584">                g[i][j] = (z0[j]*divXf - y0[j]*divYf);                </span>
+<span class="nc" id="L1585">                g[i][3+j] = (z1[j]*divXf - y1[j]*divYf);</span>
+<span class="nc" id="L1586">                g[i][6+j] = (z2[j]*divXf - y2[j]*divYf);                </span>
+            }
+            
+            //eqn(17) of paper is the 2nd mImages rows of g
+            //  [ (w0 -z0*c2 -y0*c2)  (w1 -z1*c2 -y1*c2)  (w2 -z2*c2 -y2*c2)] ... = 0
+<span class="nc" id="L1591">            g[mImages + i] = new double[9]; // g is (2*mImages + 1) X 9;</span>
+<span class="nc bnc" id="L1592" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) { </span>
+<span class="nc" id="L1593">                g[mImages + i][j] = (w0[j] - z0[j]*c2 - y0[j]*c2);                </span>
+<span class="nc" id="L1594">                g[mImages + i][3+j] = (w1[j] - z1[j]*c2 - y1[j]*c2);</span>
+<span class="nc" id="L1595">                g[mImages + i][6+j] = (w2[j] - z2[j]*c2 - y2[j]*c2);               </span>
+            }
+        }
+        
+        //let v0 = [ `m_0[0]*`mf0  `m_0[0]*`m_0[1]  `m_0[0]*`m_0[2] ]
+        //    v1 = [ `m_0[0]*`mf1  `m_0[1]*`m_0[1]  `m_0[1]*`m_0[2] ]
+        //    v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2]*`m_0[2] ]
+        // length 9
+        // [ v0 v1 v2 ] = 1
+<span class="nc" id="L1604">        i = 0;</span>
+<span class="nc" id="L1605">        double[] v0 = new double[] {</span>
+           mC[i][0] * mC[i][0], mC[i][0] * mC[i][1], mC[i][0] * mC[i][2]};
+<span class="nc" id="L1607">        double[] v1 = new double[] {</span>
+            mC[i][1] * mC[i][0], mC[i][1] * mC[i][1], mC[i][1] * mC[i][2]};
+<span class="nc" id="L1609">        double[] v2 = new double[] {</span>
+            mC[i][2] * mC[i][0], mC[i][2] * mC[i][1], mC[i][2] * mC[i][2]};
+<span class="nc" id="L1611">        g[2*mImages] = new double[9]; // g is (2*mImages + 1) X 9;</span>
+<span class="nc bnc" id="L1612" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) { </span>
+<span class="nc" id="L1613">            g[2*mImages][j] = v0[j];                </span>
+<span class="nc" id="L1614">            g[2*mImages][3+j] = v1[j];</span>
+<span class="nc" id="L1615">            g[2*mImages][6+j] = v2[j];               </span>
+        }
+        
+<span class="nc" id="L1618">        double[] c = new double[2*mImages + 1];</span>
+<span class="nc" id="L1619">        c[2*mImages] = 1;</span>
+        
+<span class="nc" id="L1621">        double[][] gInv = MatrixUtil.pseudoinverseFullRank(g);</span>
+<span class="nc" id="L1622">        double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
+<span class="nc bnc" id="L1623" title="All 4 branches missed.">        assert(iVector.length == 9);</span>
+        
+        // 3X3
+<span class="nc" id="L1626">        double[][] ell = new double[3][3];</span>
+<span class="nc" id="L1627">        ell[0] = new double[]{iVector[0], iVector[1], iVector[2]};</span>
+<span class="nc" id="L1628">        ell[1] = new double[]{iVector[1], iVector[3], iVector[4]};</span>
+<span class="nc" id="L1629">        ell[2] = new double[]{iVector[2], iVector[4], iVector[5]};</span>
+
+        // Q can be determined :
+        //   as the square root of ell,
+        //   or with the Cholesky decomposition
+        //   or with eigendecomposition
+
+<span class="nc" id="L1636">        double eps = 1e-5;</span>
+
+<span class="nc" id="L1638">        SymmDenseEVD evd = SymmDenseEVD.factorize(new DenseMatrix(ell));</span>
+<span class="nc" id="L1639">        double[][] ellSigmaSqrt = MatrixUtil.zeros(evd.getEigenvalues().length, evd.getEigenvalues().length);</span>
+<span class="nc bnc" id="L1640" title="All 2 branches missed.">        for (i = 0; i &lt; ellSigmaSqrt.length; ++i) {</span>
+<span class="nc bnc" id="L1641" title="All 2 branches missed.">            if (ellSigmaSqrt[i][i] &lt; 0) {</span>
+                // replace with very small value
+<span class="nc" id="L1643">                ellSigmaSqrt[i][i] = eps;</span>
+            } else {
+<span class="nc" id="L1645">                ellSigmaSqrt[i][i] = Math.sqrt(ellSigmaSqrt[i][i]);</span>
+            }
+        }
+<span class="nc" id="L1648">        double[][] lEig = MatrixUtil.convertToRowMajor(evd.getEigenvectors());</span>
+        // 3X3
+<span class="nc" id="L1650">        double[][] q = MatrixUtil.multiply(lEig, ellSigmaSqrt);</span>
+        
+        // (2*mImages)X3
+<span class="nc" id="L1653">        double[][] _M = MatrixUtil.multiply(mC, q);</span>
+        // 3XnFeatures
+<span class="nc" id="L1655">        double[][] _S = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);</span>
+                        
+        /*
+        --------------------------------
+        Paraperspective Motion Recovery
+        --------------------------------
+        eqn(19) :
+         `i_f = z_f * m_f + x_f * `k_f
+         `j_f = z_f * n_f + y_f * `k_f
+
+         Since the `i, `j, `k  produced must be orthonormal,
+            they can be written as functions of only 3 rotational variables.
+            We can then view the problem as, for each frame f,
+              solving an overconstrained system of 6 equations
+              (the expansion of (19) to each of its vector components)
+              in 4 variables (the 3 rotational variables and zs).
+            
+              `i_f[0] = z_f * m_f[0] + x_f * `k_f[0]
+              `i_f[1] = z_f * m_f[1] + x_f * `k_f[1]
+              `i_f[2] = z_f * m_f[2] + x_f * `k_f[2]
+              `j_f[0] = z_f * n_f[0] + y_f * `k_f[0]
+              `j_f[1] = z_f * n_f[1] + y_f * `k_f[1]
+              `j_f[2] = z_f * n_f[2] + y_f * `k_f[2]
+        
+          using the equalities of `k_f terms:
+           ==&gt; `i_f[0] = `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f)
+           ==&gt; `i_f[1] = `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f)
+           ==&gt; `i_f[2] = `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f)
+
+        rewrite the 6 eqns of (19)
+          `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) = z_f * m_f[0] + x_f * `k_f[0]
+          `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f) = z_f * m_f[1] + x_f * `k_f[1]
+          `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f) = z_f * m_f[2] + x_f * `k_f[2]
+          `j_f[0] = z_f * n_f[0] + y_f * `k_f[0]
+          `j_f[1] = z_f * n_f[1] + y_f * `k_f[1]
+          `j_f[2] = z_f * n_f[2] + y_f * `k_f[2]
+        rewrite again:
+          `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) - z_f * m_f[0] - x_f * `k_f[0] = 0
+          `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f) - z_f * m_f[1] - x_f * `k_f[1] = 0
+          `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f) - z_f * m_f[2] - x_f * `k_f[2] = 0
+          `j_f[0] - z_f * n_f[0] - y_f * `k_f[0] = 0
+          `j_f[1] - z_f * n_f[1] - y_f * `k_f[1] = 0
+          `j_f[2] - z_f * n_f[2] - y_f * `k_f[2] = 0
+
+       factor:
+          jf0                  jf1             jf2            kf0           kf1            kf2         const
+        --------------------------------------------------------------------------------------------------------------------
+         (x_f/y_f)               0              0            -x_f             0            0           m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) - z_f * m_f[0]
+            0                 (x_f/y_f)         0              0            -x_f           0           m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
+            0                    0           (x_f/y_f)         0              0           -x_f         m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
+            1                    0              0            -y_f             0            0           -z_f * n_f[0]
+            0                    1              0              0            -y_f           0           -z_f * n_f[1]
+            0                    0              1              0              0           -y_f         -z_f * n_f[2]
+           
+         also, as in eqn (17), use arithmetic mean for (1/z_f^2):
+           z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
+        */
+        // TODO: revisit this for most robust solution
+<span class="nc" id="L1713">        double[][] _M2 = new double[3*mImages][3]; // holding all i_f, then j_f, then k_f</span>
+        double xDivY, zf, mfsq, nfsq, tmp;
+        double[] mf, nf;
+<span class="nc" id="L1716">        double[] zfs = new double[mImages];</span>
+<span class="nc" id="L1717">        double[] cs = new double[6];</span>
+<span class="nc" id="L1718">        double[][] g2 = new double[6][6];</span>
+        double[][] g2Inv;
+        double[] i2Vector;
+<span class="nc bnc" id="L1721" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L1722">            xf = t[i];</span>
+<span class="nc" id="L1723">            yf = t[mImages + i];</span>
+<span class="nc" id="L1724">            xDivY = xf/yf;</span>
+<span class="nc" id="L1725">            mf = _M[i];</span>
+<span class="nc" id="L1726">            nf = _M[mImages + i];</span>
+            
+<span class="nc" id="L1728">            mfsq = 0;</span>
+<span class="nc" id="L1729">            nfsq = 0;</span>
+<span class="nc bnc" id="L1730" title="All 2 branches missed.">            for (j = 0; j &lt; mf.length; ++j) {</span>
+<span class="nc" id="L1731">                mfsq += (mf[j]*mf[j]);</span>
+<span class="nc" id="L1732">                nfsq += (nf[j]*nf[j]);</span>
+            }
+            //z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
+<span class="nc" id="L1735">            tmp = (mfsq/(1. + xf*xf)) + (nfsq/(1. + yf*yf));</span>
+<span class="nc" id="L1736">            zf = Math.sqrt(2./tmp);</span>
+<span class="nc" id="L1737">            zfs[i] = zf;</span>
+              
+<span class="nc" id="L1739">            g2[0] = new double[]{xDivY, 0, 0, -xf, 0, 0};</span>
+<span class="nc" id="L1740">            cs[0] = (-mf[0]*zf + nf[0]*(zf*xDivY) + zf*mf[0]);</span>
+<span class="nc" id="L1741">            g2[1] = new double[]{0, xDivY, 0, 0, -xf, 0,};</span>
+<span class="nc" id="L1742">            cs[1] = (-mf[1]*zf + nf[1]*(zf*xDivY) + zf*mf[1]);</span>
+<span class="nc" id="L1743">            g2[2] = new double[]{0, 0, xDivY, 0, 0, -xf};</span>
+<span class="nc" id="L1744">            cs[2] = (-mf[2]*zf + nf[2]*(zf*xDivY) + zf*mf[2]);</span>
+<span class="nc" id="L1745">            g2[3] = new double[]{1, 0, 0, -yf, 0, 0};</span>
+<span class="nc" id="L1746">            cs[3] = zf*nf[0];</span>
+<span class="nc" id="L1747">            g2[4] = new double[]{0, 1, 0, 0, -yf, 0};</span>
+<span class="nc" id="L1748">            cs[4] = zf*nf[1];</span>
+<span class="nc" id="L1749">            g2[5] = new double[]{0, 0, 1, 0, 0, -yf};</span>
+<span class="nc" id="L1750">            cs[5] = zf*nf[2];</span>
+            
+<span class="nc" id="L1752">            g2Inv = MatrixUtil.pseudoinverseRankDeficient(g2);</span>
+<span class="nc" id="L1753">            i2Vector = MatrixUtil.multiplyMatrixByColumnVector(g2Inv, cs);</span>
+<span class="nc bnc" id="L1754" title="All 4 branches missed.">            assert(i2Vector.length == 6);</span>
+            
+            // j_f
+<span class="nc" id="L1757">            _M2[mImages + i] = new double[]{i2Vector[0], i2Vector[1], i2Vector[2]}; </span>
+            // k_f
+<span class="nc" id="L1759">            _M2[2*mImages + i] = new double[]{i2Vector[3], i2Vector[4], i2Vector[5]};</span>
+            // i_f
+<span class="nc" id="L1761">            _M2[i] = MatrixUtil.crossProduct(_M2[mImages + i], _M2[2*mImages + i]);            </span>
+        }
+           
+        /*
+        from Tomasi &amp; Kanade 1992:
+        If desired, align the ^Lfirst camera reference system with the world
+        reference system by forming the products R*R_0 and R_0^T*S,
+        where the orthonormal matrix R_0 = [i1 j1 k1] rotates the ^Lfirst camera
+        reference system into the identity matrix
+
+        i0x i0y i0z    *  r0ix  r0jx  r0kx   = (i0 dot r0i)  (i0 dot r0j) (i0 dot r0k)
+        i1x i1y i1z       r0iy  r0jy  r0ky
+        i2x i2y i2z       r0iz  r0jz  r0kz
+        i3x i3y i3z
+        ...
+        j0x j0y j0z
+        j1x j1y j1z
+        */
+<span class="nc" id="L1779">        double[] i1 = Arrays.copyOf(_M2[0], _M2[0].length);</span>
+<span class="nc" id="L1780">        double i1Norm = MatrixUtil.lPSum(i1, 2);</span>
+<span class="nc" id="L1781">        MatrixUtil.multiply(i1, 1./i1Norm);</span>
+<span class="nc" id="L1782">        double[] j1 = Arrays.copyOf(_M2[mImages], _M2[mImages].length);</span>
+<span class="nc" id="L1783">        double j1Norm = MatrixUtil.lPSum(j1, 2);</span>
+<span class="nc" id="L1784">        MatrixUtil.multiply(j1, 1./j1Norm);</span>
+<span class="nc" id="L1785">        double[] k1 = Arrays.copyOf(_M2[2*mImages], _M2[2*mImages].length);</span>
+<span class="nc" id="L1786">        double k1Norm = MatrixUtil.lPSum(k1, 2);</span>
+<span class="nc" id="L1787">        MatrixUtil.multiply(k1, 1./k1Norm);</span>
+
+<span class="nc" id="L1789">        double[][] r0 = new double[3][3];</span>
+<span class="nc bnc" id="L1790" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L1791">            r0[i] = new double[]{i1[i], j1[i], k1[i]};</span>
+        }
+<span class="nc" id="L1793">        _M2 = MatrixUtil.multiply(_M2, r0);</span>
+<span class="nc" id="L1794">        _S = MatrixUtil.multiply(MatrixUtil.transpose(r0), _S);</span>
+        
+        /*
+        Poelman &amp; Kanade, last paragraph, Sect 3.4:
+        All that remain to be computed are the translations for each frame. 
+        We calculate the depth z_f from (15).  
+        Once we know we x_f, y_f, z_f, `i_f, `j_f, `k_f 
+        we can calculate `t_f using (4) and (5).
+        
+        eqn(4):
+            z_f = -t_f dot k_f
+        eqn (5):
+            x_f = (-1/z_f)*(t_f dot i_f)
+            and
+            y_f = (-1/z_f)*(t_f dot j_f)
+
+        use z_f equalities:
+            z_f = -t_f dot k_f
+                = -tf[0]*kf[0] + -tf[1]*kf[1] + -tf[2]*kf[2]
+
+            z_f = (-1/x_f) * (t_f dot i_f)
+                = -(1/xf)*tf[0]*if[0] + -(1/xf)*tf[1]*if[1] + -(1/xf)*tf[2]*if[2]
+
+            z_f = (-1/y_f) * (t_f dot j_f)
+                = -(1/yf)*tf[0]*jf[0] + -(1/yf)*tf[1]*jf[1] + -(1/yf)*tf[2]*jf[2]
+            
+        factor:
+           tf[0]           tf[1]           tf[2]         const
+           -------------------------------------------
+           -kf[0]          -kf[1]         -kf[2]         -zf
+           -(1/xf)*if[0]   -(1/xf)*if[1]  -(1/xf)*if[2]  -zf
+           -(1/yf)*jf[0]   -(1/yf)*jf[1]  -(1/yf)*jf[2]  -zf
+        */
+<span class="nc" id="L1827">        double[][] trans = new double[mImages][3];</span>
+<span class="nc" id="L1828">        double[][] tf = MatrixUtil.zeros(3, 3);</span>
+        double[][] g3Inv;
+        double[] i3Vector;
+<span class="nc" id="L1831">        cs = new double[3];</span>
+<span class="nc bnc" id="L1832" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L1833">            xf = t[i];</span>
+<span class="nc" id="L1834">            yf = t[mImages + i];</span>
+<span class="nc" id="L1835">            zf = zfs[i];</span>
+            
+            // i_f[i] is _M2[i]
+            // j_f[i] is _M2[mImages + i]
+            // k_f[i] is _M2[2*mImages + i]
+<span class="nc" id="L1840">            tf[0][0] = -_M2[2*mImages + i][0];</span>
+<span class="nc" id="L1841">            tf[0][1] = -_M2[2*mImages + i][1];</span>
+<span class="nc" id="L1842">            tf[0][2] = -_M2[2*mImages + i][2];</span>
+            
+<span class="nc" id="L1844">            tf[1][0] = _M2[i][0]*(-1./xf);</span>
+<span class="nc" id="L1845">            tf[1][1] = _M2[i][1]*(-1./xf);</span>
+<span class="nc" id="L1846">            tf[1][2] = _M2[i][2]*(-1./xf);</span>
+            
+<span class="nc" id="L1848">            tf[2][0] = _M2[mImages + i][0]*(-1./yf);</span>
+<span class="nc" id="L1849">            tf[2][1] = _M2[mImages + i][1]*(-1./yf);</span>
+<span class="nc" id="L1850">            tf[2][2] = _M2[mImages + i][2]*(-1./yf);</span>
+            
+<span class="nc" id="L1852">            Arrays.fill(cs, zf);</span>
+            
+<span class="nc" id="L1854">            g3Inv = MatrixUtil.pseudoinverseRankDeficient(tf);</span>
+<span class="nc" id="L1855">            i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);</span>
+<span class="nc bnc" id="L1856" title="All 4 branches missed.">            assert(i3Vector.length == 3);</span>
+            
+<span class="nc" id="L1858">            trans[i] = new double[]{i3Vector[0], i3Vector[1], i3Vector[2]};</span>
+        }
+        
+        // reshape _M2 into a stack of rotation matrices, one per image.
+<span class="nc" id="L1862">        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);</span>
+        double[] ic, jc, kc;
+<span class="nc bnc" id="L1864" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L1865">            ic = _M2[i];</span>
+<span class="nc" id="L1866">            jc = _M2[mImages + i];</span>
+<span class="nc" id="L1867">            kc = _M2[2*mImages + i];</span>
+<span class="nc bnc" id="L1868" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L1869">                rotStack[i*3 + j][0] = ic[j]; </span>
+<span class="nc" id="L1870">                rotStack[i*3 + j][1] = jc[j];</span>
+<span class="nc" id="L1871">                rotStack[i*3 + j][2] = kc[j];</span>
+            }
+        }
+        
+<span class="nc" id="L1875">        ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();</span>
+<span class="nc" id="L1876">        results.XW = _S;</span>
+<span class="nc" id="L1877">        results.rotationMatrices = rotStack;</span>
+<span class="nc" id="L1878">        results.translationVectors = trans;</span>
+          
+<span class="nc" id="L1880">        return results;        </span>
+    }
+    
+    private static DenseMatrix extractIndices(DenseMatrix m, List&lt;Integer&gt; inlierIndexes) {
+<span class="nc" id="L1884">        DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());</span>
+<span class="nc" id="L1885">        int r = 0;</span>
+<span class="nc bnc" id="L1886" title="All 2 branches missed.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
+<span class="nc" id="L1887">            int idx = inlierIndexes.get(i);</span>
+<span class="nc bnc" id="L1888" title="All 2 branches missed.">            for (int j = 0; j &lt; m.numRows(); ++j) {</span>
+<span class="nc" id="L1889">                out.add(j, r, m.get(j, idx));</span>
+            }
+<span class="nc" id="L1891">            r++;</span>
+        }
+<span class="nc" id="L1893">        return out;</span>
+    }
+
+    private static double[] gT(double[] a, double[] b) {
+<span class="nc" id="L1897">        double[] gT = new double[]{</span>
+            a[0]*b[0], 
+            a[0]*b[1] + a[1]*b[0],
+            a[0]*b[2] + a[2]*b[0],
+            a[1]*b[1],
+            a[1]*b[2] + a[2]*b[1],
+            a[2]*b[2]
+        };
+<span class="nc" id="L1905">        return gT;</span>
+    }
+
+    private static double[][] extractAndNormalize(double[][] x, int imageNumber, 
+        int nFeatures, double[] outputNorm) {
+        
+<span class="nc" id="L1911">        double[][] xN = new double[3][nFeatures];</span>
+<span class="nc" id="L1912">        xN[0] = new double[nFeatures];</span>
+<span class="nc" id="L1913">        xN[1] = new double[nFeatures];</span>
+<span class="nc" id="L1914">        xN[2] = new double[nFeatures];</span>
+<span class="nc" id="L1915">        Arrays.fill(xN[2], 1);</span>
+        
+<span class="nc" id="L1917">        int imageIdx = (x.length/nFeatures)*imageNumber;</span>
+        
+<span class="nc" id="L1919">        double cen0 = 0;</span>
+<span class="nc" id="L1920">        double cen1 = 0;</span>
+<span class="nc bnc" id="L1921" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L1922">            cen0 += x[0][imageIdx + i];</span>
+<span class="nc" id="L1923">            cen1 += x[0][imageIdx + i];</span>
+        }
+<span class="nc" id="L1925">        cen0 /= (double)nFeatures;</span>
+<span class="nc" id="L1926">        cen1 /= (double)nFeatures;</span>
+
+<span class="nc" id="L1928">        double scale = 0;</span>
+        double diffX, diffY;
+<span class="nc bnc" id="L1930" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L1931">            diffX = x[0][imageIdx + i] - cen0;</span>
+<span class="nc" id="L1932">            diffY = x[0][imageIdx + i] - cen1;</span>
+<span class="nc" id="L1933">            scale += (diffX*diffX + diffY*diffY);</span>
+        }
+<span class="nc" id="L1935">        scale = Math.sqrt(scale/(2.*(nFeatures - 1.)));</span>
+        // to use std dev instead: scale = Math.sqrt(scale/(n-1.));
+        
+<span class="nc" id="L1938">        outputNorm[imageNumber*3 + 0] = cen0;</span>
+<span class="nc" id="L1939">        outputNorm[imageNumber*3 + 1] = cen1;</span>
+<span class="nc" id="L1940">        outputNorm[imageNumber*3 + 2] = scale;</span>
+        
+<span class="nc bnc" id="L1942" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L1943">            xN[0][i] = (x[0][imageIdx + i] - cen0)/scale;</span>
+<span class="nc" id="L1944">            xN[1][i] = (x[1][imageIdx + i] - cen1)/scale;</span>
+        }
+        
+<span class="nc" id="L1947">        return xN;</span>
+    }
+
+    private static void calculateLeftEpipole(DenseMatrix fundamentalMatrix,
+        double[] outputE01) throws NotConvergedException {
+        
+<span class="nc bnc" id="L1953" title="All 2 branches missed.">        if (outputE01.length != 3) {</span>
+<span class="nc" id="L1954">            throw new IllegalArgumentException(&quot;outputE01 length must be 3&quot;);</span>
+        }
+        
+<span class="nc" id="L1957">        SVDProducts svdE = MatrixUtil.performSVD(fundamentalMatrix);</span>
+        
+        /*
+         The left epipole is e1 = last column of U / last item of that column
+         It is  the left image position of the epipolar projection of the right camera center
+         The right epipole e2 = last row of V / last item of that row
+         It is the right image position of the epipolar projection of the left camera center
+        */
+        
+<span class="nc bnc" id="L1966" title="All 4 branches missed.">        assert(svdE.u[0].length == 3);</span>
+<span class="nc bnc" id="L1967" title="All 4 branches missed.">        assert(svdE.u.length == 3);</span>
+<span class="nc bnc" id="L1968" title="All 4 branches missed.">        assert(svdE.vT[0].length == 3);</span>
+<span class="nc bnc" id="L1969" title="All 4 branches missed.">        assert(svdE.vT.length == 3);</span>
+        
+        //double e1Div = svdE.vT[2][2];
+<span class="nc bnc" id="L1972" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="nc" id="L1973">            outputE01[i] = svdE.vT[2][i];///e1Div;</span>
+        }
+<span class="nc" id="L1975">    }</span>
+
+    private static void extractColumn(double[][] x, int idx, double[] outputPoint) {
+<span class="nc" id="L1978">        outputPoint[0] = x[0][idx];</span>
+<span class="nc" id="L1979">        outputPoint[1] = x[1][idx];</span>
+<span class="nc" id="L1980">        outputPoint[2] = x[2][idx];</span>
+<span class="nc" id="L1981">    }</span>
+    
+    public static class ProjectionResults {
+        /**
+         * world coordinate system points in matrix of size 4 X nFeatures.
+         * The points are stacked along columns sequentially.
+         */
+        public double[][] XW;
+        
+        /**
+         * the projection matrices stacked along rows for each image.
+         * so projection for image 0 will be in rows [0, 3);
+         * projection for image 1 will be in rows [3, 6), etc.
+         * This matrix's size is 3*nImages X 4
+         */
+        public double[][] projectionMatrices;
+    }
+    
+    public static class OrthographicProjectionResults {
+        /**
+         * world coordinate system points
+         */
+        public double[][] XW;
+        
+        /**
+         * the rotation matrices stacked along rows for each image.
+         * so rotation for image 0 will be in rows [0, 3);
+         * rotation for image 1 will be in rows [3, 6), etc.
+         */
+        public double[][] rotationMatrices;
+    }
+    
+    public static class ParaperspectiveProjectionResults {
+        /**
+         * world coordinate system points
+         */
+        private double[][] XW;
+        
+        /**
+         * the rotation matrices (as extrinsic parameters) stacked along rows for each image.
+         * so rotation for image 0 will be in rows [0, 3);
+         * rotation for image 1 will be in rows [3, 6), etc.
+         */
+        private double[][] rotationMatrices;
+        
+        /**
+         * the translation vectors (as extrinsic parameters) 
+         * stacked along rows for each image.
+         * 
+         */
+        private double[][] translationVectors;
+
+        /**
+         * @return the XW
+         */
+        public double[][] getXW() {
+            return XW;
+        }
+
+        /**
+         * @param XW the XW to set
+         */
+        public void setXW(double[][] XW) {
+            this.XW = XW;
+        }
+
+        /**
+         * @return the rotationMatrices (as extrinsic parameters) 
+         * stacked along rows for each image.
+         * so rotation for image 0 will be in rows [0, 3);
+         * rotation for image 1 will be in rows [3, 6), etc.
+         */
+        public double[][] getRotationStack() {
+            return rotationMatrices;
+        }
+
+        /**
+         * @param rotationMatrices the rotationMatrices to set.
+         * the rotation matrices (as extrinsic parameters) stacked along rows for each image.
+         * so rotation for image 0 will be in rows [0, 3);
+         * rotation for image 1 will be in rows [3, 6), etc.
+         */
+        public void setRotationStack(double[][] rotationMatrices) {
+            this.rotationMatrices = rotationMatrices;
+        }
+
+        /**
+         * @return the translationVectors
+         */
+        public double[][] getTranslationVectorStack() {
+            return translationVectors;
+        }
+
+        /**
+         * @param translationVectors the translationVectors to set
+         */
+        public void setTranslationVectorStack(double[][] translationVectors) {
+            this.translationVectors = translationVectors;
+        }
+        
+        public double[][] getExtrinsicProjection(int imageNumber) {
+            double[][] p = new double[3][4];
+            for (int i = 0; i &lt; 3; ++i) {
+                p[i] = new double[4];
+                System.arraycopy(rotationMatrices[imageNumber*3 + i], 0, p[i], 0, 3);
+                p[i][4] = translationVectors[imageNumber][i];
+            }
+            return p;
+        }
+    }
+
+    public static class ReconstructionResults {
+        double[][] XW;
+        double[][] k1Intr;
+        double[][] k2Intr;
+        double[][] k1ExtrRot;
+        double[] k1ExtrTrans;
+        double[][] k2ExtrRot;
+        double[] k2ExtrTrans;
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(&quot;XW=\n&quot;);
+            if (XW != null) {
+                sb.append(FormatArray.toString(XW, &quot;%.4e&quot;));
+            }
+            sb.append(&quot;k1 intrinsic=\n&quot;);
+            if (k1Intr != null) {
+                sb.append(FormatArray.toString(k1Intr, &quot;%.4e&quot;));
+            }
+            sb.append(&quot;k1 extrinsic rotation=\n&quot;);
+            if (k1ExtrRot != null) {
+                sb.append(FormatArray.toString(k1ExtrRot, &quot;%.4e&quot;));
+            }
+            sb.append(&quot;k1 extrinsic translation=\n&quot;);
+            if (k1ExtrTrans != null) {
+                sb.append(FormatArray.toString(k1ExtrTrans, &quot;%.4e&quot;));
+                sb.append(&quot;\n&quot;);
+            }
+            sb.append(&quot;k2 intrinsic=\n&quot;);
+            if (k2Intr != null) {
+                sb.append(FormatArray.toString(k2Intr, &quot;%.4e&quot;));
+            }
+            sb.append(&quot;k2 extrinsic rotation=\n&quot;);
+            if (k2ExtrRot != null) {
+                sb.append(FormatArray.toString(k2ExtrRot, &quot;%.4e&quot;));
+            }
+            sb.append(&quot;k2 extrinsic translation=\n&quot;);
+            if (k2ExtrTrans != null) {
+                sb.append(FormatArray.toString(k2ExtrTrans, &quot;%.4e&quot;));
+                sb.append(&quot;\n&quot;);
+            }
+            return sb.toString();
+        }
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

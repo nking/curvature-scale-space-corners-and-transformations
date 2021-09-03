@@ -1,0 +1,870 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Camera.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">Camera.java</span></div><h1>Camera.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import no.uib.cipr.matrix.NotConvergedException;
+
+/**
+ * utility methods for camera intrinsic and extrinsic matrices.
+ * 
+ * KIntrinsic is the camera intrinsic parameters
+ * KExtrinsic is the camera extrinsic parameters, specifically, the camera
+ * position and orientation in world coordinates.
+ * 
+ * to project the world coordinate system point into the camera frame
+ * canonical form,
+ * multiply it by the extrinsic matrix (which will translate the
+ * coordinates and rotate them).
+ * 
+ * to project the camera frame coordinate system into the image frame,
+ * multiply it by the intrinsic matrix.
+ * 
+ * TODO: consider implementing tangential distortion.  
+ * see Heikkila, Janne, and Olli Silven 1997. &quot;A four-step camera calibration 
+ * procedure with implicit image correction.&quot; 
+ * Computer Vision and Pattern Recognition, 1997. 
+ * Proceedings., 1997 IEEE Computer Society Conference on. IEEE, 1997.
+ * @author nichole
+ */
+<span class="nc" id="L33">public class Camera {</span>
+   
+<span class="fc" id="L35">    public static double eps = 1e-7;</span>
+    
+    /**
+     *  create camera intrinsic matrix k with assumptions of square pixels
+     * and no skew.  the focal length and optical centers should be in units of pixels.
+     * NOTE that given the field of view (FOV) and the image dimensions,
+     * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
+     * @param focalLength focal length of camera in units of pixels.  NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
+     * @param centerX x coordinate of principal point in pixels, usually image center.
+     * @param centerY y coordinate of principal point in pixels, usually image center.
+     * @return intrinsic camera matrix in units of pixels.
+     */
+    public static double[][] createIntrinsicCameraMatrix(double focalLength,
+        double centerX, double centerY) {
+        
+<span class="fc" id="L53">        double[][] k = new double[3][3];</span>
+<span class="fc" id="L54">        k[0] = new double[]{focalLength, 0, centerX};</span>
+<span class="fc" id="L55">        k[1] = new double[]{0, focalLength, centerY};</span>
+<span class="fc" id="L56">        k[2]= new double[]{0, 0, 1};</span>
+        
+<span class="fc" id="L58">        return k;</span>
+    }
+    
+    /**
+     *  create camera intrinsic matrix k.  the focal length and optical centers should be in units of pixels.
+     * NOTE that given the field of view (FOV) and the image dimensions,
+     * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
+     * @param focalLengthX focal length of camera in units of pixels along x axis.
+     * NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
+     * @param focalLengthY focal length of camera in units of pixels along y axis.
+     * NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
+     * @param centerX x coordinate of principal point in pixels, usually image center.
+     * @param centerY y coordinate of principal point in pixels, usually image center.
+     * @param skew camera skew
+     * @return intrinsic camera matrix in units of pixels.
+     */
+    public static double[][] createIntrinsicCameraMatrix(double focalLengthX,
+        double focalLengthY, double centerX, double centerY, double skew) {
+        
+<span class="fc" id="L83">        double[][] k = new double[3][3];</span>
+<span class="fc" id="L84">        k[0] = new double[]{focalLengthX, skew, centerX};</span>
+<span class="fc" id="L85">        k[1] = new double[]{0, focalLengthY, centerY};</span>
+<span class="fc" id="L86">        k[2]= new double[]{0, 0, 1};</span>
+        
+<span class="fc" id="L88">        return k;</span>
+    }
+    
+    /**
+     *create the inverse of camera intrinsic matrix k with assumptions of square pixels
+     * and no skew.  the focal length and optical centers should be in units of pixels.
+     * NOTE that given the field of view (FOV) and the image dimensions,
+     * one can roughly estimate the focal length as (image width/2) / tan(FOV/2).
+     * @param focalLength focal length of camera in units of pixels.
+     * NOTE that
+     * the sign of the focal length remains the same as is given, so if you
+     * want to use a right-hand coordinate system, you should give a negative
+     * focal length.
+     * @param centerX x coordinate of principal point in pixels, usually image center.
+     * @param centerY y coordinate of principal point in pixels, usually image center.
+     * @return intrinsic camera matrix in units of pixels.
+     */
+    public static double[][] createIntrinsicCameraMatrixInverse(double focalLength,
+        double centerX, double centerY) {
+        
+<span class="fc" id="L108">        double[][] k = new double[3][3];</span>
+<span class="fc" id="L109">        k[0] = new double[]{1./focalLength, 0, -centerX/focalLength};</span>
+<span class="fc" id="L110">        k[1] = new double[]{0, 1./focalLength, -centerY/focalLength};</span>
+<span class="fc" id="L111">        k[2] = new double[]{0, 0, 1};</span>
+        
+<span class="fc" id="L113">        return k;</span>
+    }
+    
+    /**
+     *  create the inverse of camera intrinsic matrix k.
+     * @param kIntr intrinsic camera matrix.
+     * @return intrinsic camera matrix inverse.
+     */
+    public static double[][] createIntrinsicCameraMatrixInverse(double[][] kIntr) {
+        
+        /*
+        translation matrix: inverse changes the signs of the translation elements, but not the diagonal.
+        rotation matrix: inverse is the transpose of rotation matrix.
+        scaling matrix: inverse is performed on each element, that is, the reciprocal.
+        
+        skew is a translation term, so will put it in its own matrix
+        
+             | 1  0  xc |   | fx  0   0 |   | 1  g/fx   0 | 
+         K = | 0  1  yc | * | 0  fy   0 | * | 0  1      0 | 
+             | 0  0   1 |   | 0   0   1 |   | 0  0      1 | 
+            
+             | fx  0  xc |   | 1  g/fx   0 |   | fx  g  xc |
+           = | 0  fy  yc | * | 0  1      0 | = | 0  fy  yc |
+             | 0  0   1  |   | 0  0      1 |   | 0  0   1  |
+        
+        let z = the inverse term for g/fx = -g/fx
+        
+               | 1  z       0 |   | 1/fx  0      0   |   | 1  0 -xc | 
+        K^-1 = | 0  1       0 | * | 0     1/fy   0   | * | 0  1 -yc | 
+               | 0  0       1 |   | 0     0      1/1 |   | 0  0   1 |
+        
+               | 1/fx   z/fy  0 |   | 1  0 -xc |   | 1/fx   z/fy    -xc/fx -yc*z/fy |
+             = |  0     1/fy  0 | * | 0  1 -yc | = |  0     1/fy    -yc/fy          |
+               |  0     0     1 |   | 0  0   1 |   |  0     0       1               |
+        
+               | 1/fx   -g/(fx*fy)   -xc/fx + g*yc/(fx*fy) |
+             = | 0       1/fy        -yc/fy                |
+               | 0       0           1                     |
+        
+        validation here:
+        https://www.imatest.com/support/docs/pre-5-2/geometric-calibration-deprecated/projective-camera/
+        */
+        
+<span class="fc" id="L156">        double[][] kInv = MatrixUtil.zeros(3, 3);</span>
+        
+                
+<span class="fc" id="L159">        double fx = kIntr[0][0];</span>
+<span class="fc" id="L160">        double fy = kIntr[1][1];</span>
+<span class="fc" id="L161">        double fxfy = fx*fy;</span>
+<span class="fc" id="L162">        double g = kIntr[0][1];</span>
+<span class="fc" id="L163">        double xc = kIntr[0][2];</span>
+<span class="fc" id="L164">        double yc = kIntr[1][2];</span>
+        
+<span class="fc" id="L166">        kInv[0][0] = 1./fx;</span>
+<span class="fc" id="L167">        kInv[0][1] = -g/fxfy;</span>
+<span class="fc" id="L168">        kInv[0][2] = (-xc/fx) + (g*yc/fxfy);</span>
+<span class="fc" id="L169">        kInv[1][1] = 1./fy;</span>
+<span class="fc" id="L170">        kInv[1][2] = -yc/fy;</span>
+<span class="fc" id="L171">        kInv[2][2] = 1;</span>
+        
+<span class="fc" id="L173">        return kInv;</span>
+    }
+   
+    /**
+     * 
+     * @param k camera intrinsics matrix of size 3 x 3.
+     * @param r camera extrinsic rotation matrix of size 3 x 3.
+     * @param t camera extrinsic translation vector of length 2.
+     * @return the camera matrix resulting from intrinsic and extrinsic parameters.
+     * the size is 3 x 4.
+     */
+    public static double[][] createCamera(double[][] k, double[][] r, double[] t) {
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">        if (k.length != 3 || k[0].length != 3) {</span>
+<span class="nc" id="L186">            throw new IllegalArgumentException(&quot;k must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L188" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L189">            throw new IllegalArgumentException(&quot;r must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (t.length != 3) {</span>
+<span class="nc" id="L192">            throw new IllegalArgumentException(&quot;t must be length 3&quot;);</span>
+        }
+        
+        /*
+            4x4     
+        [ R  -R*t ]
+        [ 0   1   ]
+        
+        P = K * R * [I | -t]
+        
+        alternately, can write as P = K * [ R | -R*t]
+        */
+<span class="fc" id="L204">        double[] rt = MatrixUtil.multiplyMatrixByColumnVector(r, t);</span>
+        
+<span class="fc" id="L206">        double[][] kExtr = new double[3][4];</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L208">            kExtr[i] = new double[4];</span>
+<span class="fc" id="L209">            System.arraycopy(r[i], 0, kExtr[i], 0, 3);</span>
+<span class="fc" id="L210">            kExtr[i][3] = rt[i];</span>
+        }
+        
+<span class="fc" id="L213">        double[][] p = MatrixUtil.multiply(k, kExtr);</span>
+        
+<span class="fc" id="L215">        return p;</span>
+    }
+
+    /**
+     * not ready for use.  a quick rough method to estimate the 3D homogeneous point
+     * from the 2D-homogenous point and this inverse camera matrix, with caveat 
+     * about missing information on the last dimension.  
+     * One should use reconstruction methods instead of this method.
+     * to use:
+     * &lt;pre&gt;
+     * double[][] X = MatrixUtil.multiply(cameraInv, x);
+     * then divide each column by the 3rd row.
+     * &lt;/pre&gt;
+     * 
+     * @param k camera intrinsics matrix of size 3 x 3.
+     * @param r camera extrinsic rotation matrix of size 3 x 3.
+     * @param t camera extrinsic translation vector of length 2.
+     * @return the inverse camera matrix resulting from intrinsic and extrinsic parameters.
+     * the size is 4x3
+     */
+    public static double[][] createCameraInverse(double[][] k, double[][] r, double[] t) {
+<span class="pc bpc" id="L236" title="2 of 4 branches missed.">        if (k.length != 3 || k[0].length != 3) {</span>
+<span class="nc" id="L237">            throw new IllegalArgumentException(&quot;k must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L239" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L240">            throw new IllegalArgumentException(&quot;r must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        if (t.length != 3) {</span>
+<span class="nc" id="L243">            throw new IllegalArgumentException(&quot;t must be length 3&quot;);</span>
+        }
+        
+        /*
+        translation matrix: inverse changes the signs of the translation elements, but not the diagonal.
+        rotation matrix: inverse is the transpose of rotation matrix.
+        scaling matrix: inverse is performed on each element, that is, the reciprocal.
+        */
+                
+<span class="fc" id="L252">        double[] tInv = Arrays.copyOf(t, t.length);</span>
+<span class="fc" id="L253">        tInv[0] *= -1;</span>
+<span class="fc" id="L254">        tInv[1] *= -1;</span>
+                
+<span class="fc" id="L256">        double[] rTInv = MatrixUtil.multiplyMatrixByColumnVector(r, tInv);</span>
+        
+<span class="fc" id="L258">        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k);</span>
+        
+        /*           
+        inverse of   K * R * [I | -t]             
+            
+        is  | r  | r*tInv ]^T  * kInv
+        */
+        
+<span class="fc" id="L266">        double[][] cInv = new double[3][4];</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L268">            cInv[i] = new double[4];</span>
+<span class="fc" id="L269">            System.arraycopy(r[i], 0, cInv[i], 0, 3);</span>
+<span class="fc" id="L270">            cInv[i][3] = rTInv[i];</span>
+        }
+<span class="fc" id="L272">        cInv = MatrixUtil.transpose(cInv);</span>
+        
+<span class="fc" id="L274">        cInv = MatrixUtil.multiply(cInv, kInv);</span>
+        
+<span class="fc" id="L276">        return cInv;</span>
+    }
+    
+    /**
+     * applies radial distortion to distortion-free camera centered coordinates
+     * then multiplies by the camera intrinsics to result in distorted coordinates 
+     * in the image reference frame in units of pixels.
+     * In terms of Table 1 of Ma et al. 2004, the input is a double array of (x, y)
+     * and the output is a double array of (u_d, v_d).
+     * Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+     * @param xC distortion-free camera centered coordinates. 
+     * format is 3XN for N points.  
+     * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
+     * @param rCoeffs radial distortion vector of length 2
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * if 
+     * @param focalLength focal length of camera in units of pixels.
+     * @param centerX x coordinate of principal point in pixels, usually image center.
+     * @param centerY y coordinate of principal point in pixels, usually image center.
+     * @return pixels in the reference frame of image with distortion applied.
+     * In terms of Table 1 of Ma et al. 2004, this is a double array of (u_d, v_d)
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is applied.
+     */
+    public static double[][] cameraToPixelCoordinates(double[][] xC, double[] rCoeffs,
+        double focalLength, double centerX, double centerY, boolean useR2R4) {
+        
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+        
+<span class="fc" id="L308">        double[][] cc = MatrixUtil.copy(xC);</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        for (int i = 0; i &lt; xC[0].length; ++i) {</span>
+            // normalized pinhole projection X_c/Z_c and 
+<span class="fc" id="L311">            cc[0][i] /= xC[2][i];</span>
+<span class="fc" id="L312">            cc[1][i] /= xC[2][i];</span>
+        }
+        
+<span class="pc bpc" id="L315" title="3 of 4 branches missed.">        if (rCoeffs != null &amp;&amp; rCoeffs.length &gt; 0) {</span>
+            // input and output cc are in camera reference frame
+<span class="nc" id="L317">            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1],</span>
+                useR2R4);
+        }
+         
+//        focalLength = Math.abs(focalLength);
+        
+<span class="fc" id="L323">        double[][] cameraIntr = Camera.createIntrinsicCameraMatrix(focalLength, centerX, centerY);</span>
+                       
+<span class="fc" id="L325">        cc = MatrixUtil.multiply(cameraIntr, cc);</span>
+        
+<span class="fc" id="L327">        return cc;</span>
+    }
+    
+    /**
+     * applies radial distortion to distortion-free camera centered coordinates
+     * then multiplies by the camera intrinsics to result in distorted coordinates 
+     * in the image reference frame in units of pixels.
+     * In terms of Table 1 of Ma et al. 2004, the input is a double array of (x, y)
+     * and the output is a double array of (u_d, v_d).
+     * Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+     * @param xC distortion-free camera centered coordinates. 
+     * format is 3XN for N points.  
+     * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
+     * @param rCoeffs radial distortion vector of length 2
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * @param kIntr
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is applied.
+     */
+    public static double[][] cameraToPixelCoordinates(double[][] xC, double[] rCoeffs,
+        CameraIntrinsicParameters kIntr, boolean useR2R4) {
+        
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+        
+<span class="nc" id="L354">        double[][] cc = MatrixUtil.copy(xC);</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">        for (int i = 0; i &lt; xC[0].length; ++i) {</span>
+            // normalized pinhole projection X_c/Z_c and 
+<span class="nc" id="L357">            cc[0][i] /= xC[2][i];</span>
+<span class="nc" id="L358">            cc[1][i] /= xC[2][i];</span>
+        }
+        
+<span class="nc bnc" id="L361" title="All 4 branches missed.">        if (rCoeffs != null &amp;&amp; rCoeffs.length &gt; 0) {</span>
+            // input and output cc are in camera reference frame
+<span class="nc" id="L363">            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1],</span>
+                useR2R4);
+        }
+                                        
+<span class="nc" id="L367">        cc = MatrixUtil.multiply(kIntr.getIntrinsic(), cc);</span>
+        
+<span class="nc" id="L369">        return cc;</span>
+    }
+    
+     /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
+    reference frame then applying Lp2-normalization.
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points. 
+     * @param intrinsic 
+     * @return pixels transformed to camera coordinate reerence frame then 
+     * Lp2-normalized.
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     */
+    public static double[][] pixelToNormalizedCameraCoordinates(double[][] x,
+        CameraIntrinsicParameters intrinsic) throws NotConvergedException {
+        
+<span class="nc" id="L384">        double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(intrinsic.getIntrinsic());</span>
+        
+        // the direction of the points is calculated by K^-1 * x
+<span class="nc" id="L387">        double[][] xDirection = MatrixUtil.multiply(kIntrInv, x);</span>
+        double sum;
+        int i;
+<span class="nc bnc" id="L390" title="All 2 branches missed.">        for (int col = 0; col &lt; x[0].length; ++col) {</span>
+<span class="nc" id="L391">            sum = (x[0][col]*x[0][col]) + (x[1][col]*x[1][col]) + (x[2][col]*x[2][col]);</span>
+<span class="nc" id="L392">            sum = Math.sqrt(sum);</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L394">                xDirection[i][col] /= sum;</span>
+            }
+        }
+                
+<span class="nc" id="L398">        return xDirection;</span>
+    }
+    
+    /**
+     * transform the world coordinates xW to the camera reference frame using
+     * (rot * xW + trans).
+     * @param xW coordinates of objects in a world reference frame.  
+     * The format is 3XN for N points.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
+     * @return xW transformed to the camera reference frame.
+     */
+    public static double[][] worldToCameraCoordinates(double[][] xW, double[][] rot,
+        double[] trans) {
+<span class="nc bnc" id="L414" title="All 2 branches missed.">        if (xW.length != 3) {</span>
+<span class="nc" id="L415">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L417" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L418">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L420" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L421">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+        }
+        
+<span class="nc" id="L424">        int n = xW[0].length;</span>
+<span class="nc" id="L425">        double[][] xC = MatrixUtil.copy(xW);</span>
+<span class="nc" id="L426">        xC = MatrixUtil.multiply(rot, xC);</span>
+        int i, j;
+<span class="nc bnc" id="L428" title="All 2 branches missed.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L430">                xC[j][i] += trans[j];</span>
+            }
+        }
+        
+<span class="nc" id="L434">        return xC;</span>
+    }
+    
+    /**
+     * transform the world coordinate point xWPt to the camera reference frame using
+     * (rot * xW + trans).
+     * @param xWPt coordinates of an object in a world reference frame.  
+     * The length is 3.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
+     * @return the point xW transformed to the camera reference frame.
+     */
+    public static double[] worldToCameraCoordinates(double[] xWPt, double[][] rot,
+        double[] trans) {
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
+<span class="nc" id="L451">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L453" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L454">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L456" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L457">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+        }
+        
+<span class="nc" id="L460">        double[] xC = Arrays.copyOf(xWPt, xWPt.length);</span>
+<span class="nc" id="L461">        xC = MatrixUtil.multiplyMatrixByColumnVector(rot, xC);</span>
+        int j;
+<span class="nc bnc" id="L463" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L464">            xC[j] += trans[j];</span>
+        }
+        
+<span class="nc" id="L467">        return xC;</span>
+    }
+    
+    /**
+     * transform the world coordinate point xWPt to the camera reference frame using
+     * (rot * xW + trans).
+     * @param xWPt coordinates of an object in a world reference frame.  
+     * The length is 3.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
+     * @param aux an auxiliary array of length 3 used internally to hold
+     * values for a calculation.  it's present to help the invoker reuse an
+     * object instead of creating another.  it's values are not used.
+     * @param out the point xW transformed to the camera reference frame.
+     */
+    public static void worldToCameraCoordinates(double[] xWPt, double[][] rot,
+        double[] trans, double[] aux, double[] out) {
+<span class="nc bnc" id="L486" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
+<span class="nc" id="L487">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L489" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L490">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L492" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L493">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+        }
+<span class="nc bnc" id="L495" title="All 2 branches missed.">        if (out.length != 3) {</span>
+<span class="nc" id="L496">            throw new IllegalArgumentException(&quot;out.length must be 3 (for x, y, z)&quot;);</span>
+        }
+                
+        //point_camera = (1/x_z) * (R * point_world + translation) is called the normalized coordinate.
+        
+<span class="nc" id="L501">        double[] xC = Arrays.copyOf(xWPt, xWPt.length);</span>
+      
+<span class="nc" id="L503">        MatrixUtil.multiplyMatrixByColumnVector(rot, xC, aux);</span>
+        
+        int j;
+<span class="nc bnc" id="L506" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L507">            out[j] = aux[j] + trans[j];</span>
+        }        
+<span class="nc" id="L509">    }</span>
+    
+    /**
+     * transform the world coordinate point xWPt to the camera reference frame using
+     * (rot * xW + trans).
+     * @param xWPt coordinates of an object in a world reference frame.  
+     * The length is 3.
+     * @param rot the rotation matrix to apply to the translated coordinates.
+     * the size is 3X3.
+     * @param trans the translation to apply to coordinates xW in x, y, and z.
+     * The length of the array is 3.
+     * @param out the point transformed to the camera reference frame.
+     */
+    public static void worldToCameraCoordinates(double[] xWPt, double[][] rot,
+        double[] trans, double[] out) {
+<span class="nc bnc" id="L524" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
+<span class="nc" id="L525">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L528">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+        }
+<span class="nc bnc" id="L530" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L531">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+        }
+<span class="nc" id="L533">        double[] x2 = Arrays.copyOf(xWPt, xWPt.length);</span>
+<span class="nc" id="L534">        MatrixUtil.multiplyMatrixByColumnVector(rot, x2, out);</span>
+        int j;
+<span class="nc bnc" id="L536" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L537">            out[j] = x2[j] + trans[j];</span>
+        }
+        
+<span class="nc" id="L540">    }</span>
+    
+    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    reference frame then removing radial distortion.
+    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
+    and the output is a double array of (x, y).
+    Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+    
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points.  
+     * @param kIntr  
+     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
+     * @return pixels in the reference frame of 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
+     */
+    public static double[][] pixelToCameraCoordinates(double[][] x, 
+        CameraIntrinsicParameters kIntr, double[] rCoeffs, boolean useR2R4) 
+        throws NotConvergedException, IOException {
+                        
+<span class="fc" id="L566">        double[][] intr = MatrixUtil.copy(kIntr.getIntrinsic());</span>
+        
+<span class="fc" id="L568">        return pixelToCameraCoordinates(x, intr, rCoeffs, useR2R4);</span>
+    }
+    
+    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+    reference frame then removing radial distortion.
+    The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
+    and the output is a double array of (x, y).
+    Also useful reading is NVM Tools by Alex Locher
+    https://github.com/alexlocher/nvmtools.git
+    
+     * @param x points in the camera centered reference frame. 
+     * format is 3XN for N points.  
+     * @param intr intrinsic camera parameters. dimensions aer [3 X 3]
+     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
+     * distortion vector of length 5.  can be null to skip lens distortion correction.
+     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4 if true,
+        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+        note that if rCoeffs is null or empty, no radial distortion is removed.
+     * @return pixels in the reference frame of 
+     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws java.io.IOException 
+     */
+    public static double[][] pixelToCameraCoordinates(double[][] x, 
+        double[][] intr, double[] rCoeffs, boolean useR2R4) 
+        throws NotConvergedException, IOException {
+        
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+                        
+        // use absolute value of focal lengths
+//        intr[0][0] = Math.abs(intr[0][0]);
+//        intr[1][1] = Math.abs(intr[1][1]);
+       
+<span class="fc" id="L601">        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(</span>
+            intr);
+        
+        // put x into camera coordinates reference frame:
+<span class="fc" id="L605">        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);</span>
+        
+<span class="fc bfc" id="L607" title="All 2 branches covered.">        if (rCoeffs != null) {</span>
+<span class="fc" id="L608">            pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], </span>
+                rCoeffs[1], useR2R4);
+        }
+                
+<span class="fc" id="L612">        return pix;</span>
+    }
+    
+    /**
+     * transform 2D pixel measurements x_i to unit norm 3D directions
+     * &lt;pre&gt;
+     * references Szeliski 2010, eqn (6.36)
+     * &lt;/pre&gt;
+     * @param x 2D pixel measurements in format 3XN where the rows are x, y, and &quot;1&quot;'s
+     * and the columns are each point in the N points.
+     * @param k camera intrinsic parameters
+     * @return 
+     */
+    public static double[][] transformToUnitNormDirections(double[][] x, 
+        CameraIntrinsicParameters k) {
+        
+<span class="nc bnc" id="L628" title="All 2 branches missed.">        if (x.length != 3) {</span>
+<span class="nc" id="L629">            throw new IllegalArgumentException(&quot;x length must be 3&quot;);</span>
+        }
+        
+<span class="nc" id="L632">        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k.intrinsic);</span>
+        
+        //(K^-1 * x_i)/(||K^-1 * x_i||)
+<span class="nc" id="L635">        double[][] norm = MatrixUtil.multiply(kInv, x);</span>
+                
+        int i, j;
+<span class="nc" id="L638">        double sum = 0;</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">        for (j = 0; j &lt; norm.length; ++j) {</span>
+<span class="nc" id="L640">            sum = 0;</span>
+<span class="nc bnc" id="L641" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>
+<span class="nc" id="L642">                sum += (norm[i][j]*norm[i][j]);</span>
+            }
+<span class="nc" id="L644">            sum = Math.sqrt(sum);</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>
+<span class="nc" id="L646">                norm[i][j] /= sum;</span>
+            }
+        }
+<span class="nc" id="L649">        return norm;</span>
+    }
+    
+    public static class CameraIntrinsicParameters {
+        private double[][] intrinsic;
+        private double lambda;
+        
+        public CameraIntrinsicParameters(double[][] k) {
+            this.intrinsic = k;
+        }
+        
+        public CameraIntrinsicParameters() {
+        }
+        
+        /**
+         * @return the intrinsic parameters
+         */
+        public double[][] getIntrinsic() {
+            return intrinsic;
+        }
+        /**
+         * @param intrinsic the intrinsic parameters to set
+         */
+        public void setIntrinsic(double[][] intrinsic) {
+            this.intrinsic = intrinsic;
+        }
+
+        /**
+         * @return the lambda the scale factor used in projection
+         */
+        public double getLambda() {
+            return lambda;
+        }
+
+        /**
+         * @param lambda the lambda to set for scale factor of projection
+         */
+        public void setLambda(double lambda) {
+            this.lambda = lambda;
+        }
+        
+    }
+    
+    public static class CameraProjection {
+        /**
+         * the projection matrix of a camera which is a 3X4 matrix of
+         * intrinsic times extrinsic parameter matrices
+         */
+        private double[][] p;
+        public CameraProjection(double[][] projection) {
+            this.p = projection;
+        }
+
+        /**
+         * @return the p
+         */
+        public double[][] getP() {
+            return p;
+        }
+
+        /**
+         * @param p the p to set
+         */
+        public void setP(double[][] p) {
+            this.p = p;
+        }
+    }
+    
+    public static class CameraParameters {
+        private final CameraIntrinsicParameters intrinsicParameters;
+        private final CameraExtrinsicParameters extrinsicParameters;
+
+        public CameraParameters(CameraIntrinsicParameters intrinsics,
+                CameraExtrinsicParameters extrinsics) {
+            this.intrinsicParameters = intrinsics;
+            this.extrinsicParameters = extrinsics;
+        }
+        
+        public double[][] createProjectionMatrix() {
+            
+            double[][] rt = new double[3][4];
+            int i, j;
+            for (i = 0; i &lt; 3; ++i) {
+                rt[i] = new double[4];
+                System.arraycopy(extrinsicParameters.rotation[i], 0, rt[i], 0, 3);
+                rt[i][3] = extrinsicParameters.translation[i];
+            }
+            
+            double[][] p = MatrixUtil.multiply(intrinsicParameters.getIntrinsic(), rt);
+            return p;
+        }
+        /**
+         * @return the intrinsicParameters
+         */
+        public CameraIntrinsicParameters getIntrinsicParameters() {
+            return intrinsicParameters;
+        }
+
+        /**
+         * @return the extrinsicParameters
+         */
+        public CameraExtrinsicParameters getExtrinsicParameters() {
+            return extrinsicParameters;
+        }
+    }
+    
+    public static class CameraExtrinsicParameters {
+        private double[][] rotation;
+        private double[] translation;
+
+        /**
+         * @return the rotation
+         */
+        public double[][] getRotation() {
+            return rotation;
+        }
+
+        /**
+         * @param rotation the rotation to set
+         */
+        public void setRotation(double[][] rotation) {
+            this.rotation = rotation;
+        }
+
+        /**
+         * @return the translation
+         */
+        public double[] getTranslation() {
+            return translation;
+        }
+
+        /**
+         * @param translation the translation to set
+         */
+        public void setTranslation(double[] translation) {
+            this.translation = translation;
+        }
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(&quot;rot=\n&quot;);
+            if (rotation != null) {
+                sb.append(FormatArray.toString(rotation, &quot;%.4e&quot;));
+            }
+            sb.append(&quot;trans=\n&quot;);
+            if (translation != null) {
+                sb.append(FormatArray.toString(translation, &quot;%.4e&quot;));
+            }
+            return sb.toString();
+        }
+    }
+    
+    public static class CameraMatrices {
+        private CameraIntrinsicParameters intrinsics;
+        private List&lt;CameraExtrinsicParameters&gt; extrinsics = new ArrayList&lt;CameraExtrinsicParameters&gt;();
+        private double[] radialDistortion;
+        private boolean useR2R4;
+        
+        /**
+         * @return the radialDistortion
+         */
+        public double[] getRadialDistortCoeff() {
+            return radialDistortion;
+        }
+        
+        /**
+         * @return true if using radial distortion function from Ma et al. 2004 
+         for model #4 in Table 2, f(r) = 1 +k1*r^2 + k2*r^4,
+         else return false if using model #3 f(r) = 1 +k1*r + k2*r^2.
+        */
+        public boolean useR2R4() {
+            return useR2R4;
+        }
+
+        /**
+         * @param radialDistortion the radialDistortion to set
+         * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+         f(r) = 1 +k1*r^2 + k2*r^4 if true,
+         else use model #3 f(r) = 1 +k1*r + k2*r^2.
+         */
+        public void setRadialDistortion(double[] radialDistortion, boolean useR2R4) {
+            this.radialDistortion = radialDistortion;
+            this.useR2R4 = useR2R4;
+        }
+
+        /**
+         * @return the intrinsics
+         */
+        public CameraIntrinsicParameters getIntrinsics() {
+            return intrinsics;
+        }
+
+        /**
+         * @param intrinsics the intrinsics to set
+         */
+        public void setIntrinsics(CameraIntrinsicParameters intrinsics) {
+            this.intrinsics = intrinsics;
+        }
+
+        /**
+         * @return the extrinsics
+         */
+        public List&lt;CameraExtrinsicParameters&gt; getExtrinsics() {
+            return extrinsics;
+        }
+
+        /**
+         * @param extrinsics the extrinsics to set
+         */
+        public void addExtrinsics(CameraExtrinsicParameters extrinsics) {
+            this.extrinsics.add(extrinsics);
+        }
+        /**
+         * @param extrinsics the extrinsics to set
+         */
+        public void addExtrinsics(List&lt;CameraExtrinsicParameters&gt; extrinsics) {
+            this.extrinsics.addAll(extrinsics);
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

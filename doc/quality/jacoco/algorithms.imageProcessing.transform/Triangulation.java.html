@@ -1,0 +1,700 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Triangulation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">Triangulation.java</span></div><h1>Triangulation.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.imageProcessing.transform.Camera.CameraParameters;
+import algorithms.imageProcessing.transform.Camera.CameraProjection;
+import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
+
+/**
+ * given correspondence between two images and the camera
+ * parameters as intrinsic and extrinsic parameters,
+ * determine the real world position.
+ * 
+ * useful reading:
+ * &lt;pre&gt;
+ * http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+ * add other references here
+ * &lt;/pre&gt;
+ * 
+ * TODO: implement a method using minimization of the re-projection error by
+ * non-linear optimization such as Levenberg-Marquardt.
+ * 
+ * TODO: construct a method that might be better placed in reconstruction:
+ * given camera intrinsic parameters and 2-view correspondences: first calculate
+ * the essential matrix, then extract the cameras extrinsic parameters from
+ * them, then use triangulation to get the WCS coordinates.
+ * @author nichole
+ */
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">public class Triangulation {</span>
+    
+    /**
+     * given the camera matrix as intrinsic and extrinsic matrices for 2 images
+     * and given the matching correspondence of points between the 2 images,
+     * calculate the real world coordinate of the observations.
+     * 
+     * &lt;pre&gt;
+     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     * add references here
+     * &lt;/pre&gt;
+     * @param k1 intrinsic camera matrix for image 1 in units of pixels.
+     * @param r1 the rotation matrix for the extrinsic camera matrix for image 1.
+     * @param t1 the translation vector for the extrinsic camera matrix for image 1.
+     * @param k2 intrinsic camera matrix for image 2 in units of pixels.
+     * @param r2 the rotation matrix for the extrinsic camera matrix for image 2.
+     * @param t2 the translation vector for the extrinsic camera matrix for image 2.
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.  all points are observations of real world point X.
+     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
+     * N is the number of points. .  all points are observations of real world point X.
+     * @return the point coordinates in world coordinate reference frame
+     */
+    public static double[] calculateWCSPoint(
+        double[][] k1, double[][] r1, double[] t1,
+        double[][] k2, double[][] r2, double[] t2,
+        double[][] x1, double[][] x2) {
+        
+<span class="pc bpc" id="L62" title="2 of 4 branches missed.">        if (k1.length != 3 || k1[0].length != 3) {</span>
+<span class="nc" id="L63">            throw new IllegalArgumentException(&quot;k1 must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L65" title="2 of 4 branches missed.">        if (k2.length != 3 || k2[0].length != 3) {</span>
+<span class="nc" id="L66">            throw new IllegalArgumentException(&quot;k2 must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L68" title="2 of 4 branches missed.">        if (r1.length != 3 || r1[0].length != 3) {</span>
+<span class="nc" id="L69">            throw new IllegalArgumentException(&quot;r1 must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if (r2.length != 3 || r2[0].length != 3) {</span>
+<span class="nc" id="L72">            throw new IllegalArgumentException(&quot;r2 must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (t1.length != 3 ) {</span>
+<span class="nc" id="L75">            throw new IllegalArgumentException(&quot;t1 must be length 3&quot;);</span>
+        }
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (t2.length != 3 ) {</span>
+<span class="nc" id="L78">            throw new IllegalArgumentException(&quot;t2 must be length 3&quot;);</span>
+        }
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">        if (x1.length != 3 || x2.length != 3) {</span>
+<span class="nc" id="L81">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
+        }
+<span class="fc" id="L83">        int n = x1[0].length;</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (x2[0].length != n) {</span>
+<span class="nc" id="L85">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
+        }
+        
+        /*
+        following CMU lectures of Kris Kitani:
+        http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+        
+        camera matrix P = intrinsic camera matrix times extrinsic camera matrix.
+        
+        note that the extrinsic matrix has a translation component, and that
+        translation is not a linear transformation (see Strang chap 7), so
+        the translation is kept seperate in most use of it to allow further operations
+        to be performed that require rotation and translation to be treated separately.
+        
+        K = intrinsic camera matrix.
+        R = rotation matrix (see euler roration matrix).
+        t = translation vector.
+        I = identity matrix.  it's size 3x3 here.
+        the '|' is a separation symbol in the matrix to denotate that the 
+            content to the right of it is concatenated to the matrix as column vectors.
+        
+        Note that the world coordinates can be seen to go through a translation
+        then a rotation represented by the extrinsic camera matrix to result in
+        homogenous coordinates in the camera reference frame.
+            X_c = R * (X_wcs - t)
+                = R * X_wcs - R * t
+        
+             4x1        4x4        4x1
+           [ x_c ]                  [ x_wcs ]
+           [ y_c ] = [ R  -R*t ] *  [ y_wcs ]
+           [ z_c ]   [ 0   1   ]    [ z_wcs ]
+           [  1  ]                  [  1    ]
+        
+        P = K * R * [I | -t]
+        
+        or, can write as P = K * [ R | -R*t]
+        
+        -----------------------------------
+        since data are noisy, these equalities need to be solved as best fit:
+        
+        x1 = P1 * X1  and  x2 = P2 * X2
+            where x1 and x2 are in homogeneous coordinates
+        
+        x = alpha * P * X 
+            where alpha is a scale factor and so the projection is in the same
+               direction.
+        
+                    [ p1  p1  p3  p4  ]   [ X ]
+        x = alpha * [ p5  p6  p7  p8  ] * [ Y ]
+                    [ p9  p10 p11 p12 ]   [ Z ]
+                                          [ 1 ]
+        
+           let pvec_1^T = [ p1 p2 p3 p4 ], etc. 
+        
+                       1x4               4x1
+                    [ --pvec_1^T-- ]   [ X ]
+        x = alpha * [ --pvec_2^T-- ] * [ Y ]
+                    [ --pvec_3^T-- ]   [ Z ]
+                                       [ 1 ]
+        
+                    [ pvec_1^T * [X,Y,Z,1] ] &lt;-- each row result is 1x1
+        x = alpha * [ pvec_2^T * [X,Y,Z,1] ]
+                    [ pvec_3^T * [X,Y,Z,1] ]
+        
+           let Xvec = [ X Y Z 1 ] as a row
+        
+                    [ pvec_1^T * Xvec ]
+        x = alpha * [ pvec_2^T * Xvec ]
+                    [ pvec_3^T * Xvec ]
+        
+        NOTE: The cross product of 2 vectors of the same direction is 0.
+        
+            So we have x cross P * X = 0 and alpha drops out
+
+                        [ a2*b3 - a3*b2 ]
+                a x b = [ a3*b1 - a1*b3 ]
+                        [ a1*b2 - a2*b1 ]
+
+        Can rewrite in terms of cross poduct:
+       
+        [ x ]       [ pvec_1^T * Xvec ]   [ y * pvec_3^T * Xvec - pvec_2^T * Xvec    ]   [ 0 ]
+        [ y ] cross [ pvec_2^T * Xvec ] = [ pvec_1^T * Xvec - x * pvec_3^T * Xvec    ] = [ 0 ]
+        [ 1 ]       [ pvec_3^T * Xvec ]   [ x * pvec_2^T * Xvec - y * pvec_1^T * Xvec]   [ 0 ]
+        
+        The 3rd line is a linear combination of the first and second lines. (x times the first line plus y times the second line)
+
+        [ y * pvec_3^T * Xvec - pvec_2^T * Xvec ]   [ 0 ]
+        [ pvec_1^T * Xvec - x * pvec_3^T * Xvec ] = [ 0 ]
+        
+        This is in format A_i * Xvec = 0
+        
+        can concatenate the 2 rows for the 2nd image in A_i:
+        
+        [ y1 * p1vec_3^T - p1vec_2^T ]           [ 0 ]
+        [ p1vec_1^T - x1 * p1vec_3^T ] * Xvec  = [ 0 ]
+        [ y2 * p2vec_3^T - p2vec_2^T ]           [ 0 ]
+        [ p2vec_1^T - x2 * p2vec_3^T ]           [ 0 ]
+        
+        solve Xvec in A * Xvec = 0 by minimizing ||A*x||^2 subject to ||x||^2 = 1
+        
+        Solution is the eigenvector corresponding to smallest eigenvalue of A^T*A.
+        
+        */
+        
+        // 3 x 4
+<span class="fc" id="L190">        double[][] camera1 = Camera.createCamera(k1, r1, t1);</span>
+        
+<span class="fc" id="L192">        double[][] camera2 = Camera.createCamera(k2, r2, t2);</span>
+        
+<span class="fc" id="L194">        return calculateWCSPoint(camera1, camera2, x1, x2);</span>
+    }
+    
+    /**
+     * given the camera matrix as intrinsic and extrinsic matrices for 2 images
+     * and given the matching correspondence of points between the 2 images,
+     * calculate the real world coordinate of the observations.
+     * 
+     * &lt;pre&gt;
+     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     * add references here
+     * &lt;/pre&gt;
+     * @param camera1 camera matrix for image 1 in units of pixels
+     * containing intrinsic and extrinsic parameters.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels
+     * containing extrinsic parameters. the size is 3X4.
+     * @param x1 the image 1 set of measurements of real world point X.
+     * The corresponding measurements of the same point in image 2 are in x2.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @param x2 the image 2 set of measurements of real world point X.
+     * The corresponding measurements of the same point in image 1 are in x1.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @return the point coordinates in world coordinate reference frame
+     */
+    public static double[] calculateWCSPoint(
+        CameraParameters camera1, CameraParameters camera2,
+        double[][] x1, double[][] x2) {
+        
+<span class="nc" id="L224">        return calculateWCSPoint(camera1.getIntrinsicParameters().getIntrinsic(),</span>
+<span class="nc" id="L225">            camera1.getExtrinsicParameters().getRotation(),</span>
+<span class="nc" id="L226">            camera1.getExtrinsicParameters().getTranslation(),</span>
+<span class="nc" id="L227">            camera2.getIntrinsicParameters().getIntrinsic(),</span>
+<span class="nc" id="L228">            camera2.getExtrinsicParameters().getRotation(),</span>
+<span class="nc" id="L229">            camera2.getExtrinsicParameters().getTranslation(),</span>
+            x1, x2);
+    }
+    
+    /**
+     * not yet tested.
+     * 
+     * given the camera projection matrix as intrinsic times extrinsic matrices for 2 images
+     * and given the matching correspondence of points between the 2 images,
+     * calculate the real world coordinate of the observations.
+     * 
+     * &lt;pre&gt;
+     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     * add references here
+     * &lt;/pre&gt;
+     * @param camera1 camera matrix for image 1 in units of pixels
+     * containing extrinsic parameters.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels
+     * containing extrinsic parameters. the size is 3X4.
+     * @param x1 the image 1 set of measurements of 1 real world point X.
+     * The corresponding measurements of the same point in image 2 are in x2.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @param x2 the image 2 set of measurements of 1 real world point X.
+     * The corresponding measurements of the same point in image 1 are in x1.
+     * format is 3 x N where
+     * N is the number of measurements.
+     */
+    public static double[] calculateWCSPoint(
+        CameraProjection camera1, CameraProjection camera2,
+        double[][] x1, double[][] x2) {
+        
+<span class="nc" id="L261">        return calculateWCSPoint(camera1.getP(), camera2.getP(), x1, x2);</span>
+    }
+    
+     /**
+      * not yet tested.
+      * 
+     * given the camera projection matrix as intrinsic times extrinsic matrices for 2 images
+     * and given the matching correspondence of points between the 2 images,
+     * calculate the real world coordinate of the observations.
+     * 
+     * &lt;pre&gt;
+     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     * add references here
+     * &lt;/pre&gt;
+     * @param camera1 camera matrix for image 1 in units of pixels
+     * containing extrinsic parameters.   the size is 3X4.
+     * @param camera2 camera matrix for image 2 in units of pixels
+     * containing extrinsic parameters. the size is 3X4.
+     * @param x1 the image 1 set of measurements of 1 real world point X.
+     * The corresponding measurements of the same point in image 2 are in x2.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @param x2 the image 2 set of measurements of 1 real world point X.
+     * The corresponding measurements of the same point in image 1 are in x1.
+     * format is 3 x N where
+     * N is the number of measurements.
+     * @return the 3D coordinate of the point in world scene.  note that
+     * the entire array can be normalized by the last element.
+     */
+    public static double[] calculateWCSPoint(
+        double[][] camera1, double[][] camera2,
+        double[][] x1, double[][] x2) {
+        
+<span class="pc bpc" id="L294" title="2 of 4 branches missed.">        if (camera1.length != 3 || camera1[0].length != 4) {</span>
+<span class="nc" id="L295">            throw new IllegalArgumentException(&quot;camera1 must be 3 x 4&quot;);</span>
+        }
+<span class="pc bpc" id="L297" title="2 of 4 branches missed.">        if (camera2.length != 3 || camera2[0].length != 4) {</span>
+<span class="nc" id="L298">            throw new IllegalArgumentException(&quot;camera2 must be 3 x 4&quot;);</span>
+        }
+<span class="pc bpc" id="L300" title="2 of 4 branches missed.">        if (x1.length != 3 || x2.length != 3) {</span>
+<span class="nc" id="L301">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
+        }
+<span class="fc" id="L303">        int n = x1[0].length;</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (x2[0].length != n) {</span>
+<span class="nc" id="L305">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
+        }
+      
+        /*
+        following CMU lectures of Kris Kitani:
+        http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+        
+        camera matrix P = intrinsic camera matrix times extrinsic camera matrix.
+        
+        note that the extrinsic matrix has a translation component, and that
+        translation is not a linear transformation (see Strang chap 7), so
+        the translation is kept seperate in most use of it to allow further operations
+        to be performed that require rotation and translation to be treated separately.
+        
+        K = intrinsic camera matrix.
+        R = rotation matrix (see euler roration matrix).
+        t = translation vector.
+        I = identity matrix.  it's size 3x3 here.
+        the '|' is a seperation symbol in the matrix to denotate that the 
+            content to the right of it is concatenated to the matrix as column vectors.
+        
+        Note that the world coordinates can be seen to go through a translation
+        then a rotation represented by the extrinsic camera matrix to result in
+        homogenous coordinates in the camera reference frame.
+            X_c = R * (X_wcs - t)
+                = R * X_wcs - R * t
+        
+             4x1        4x4        4x1
+           [ x_c ]                  [ x_wcs ]
+           [ y_c ] = [ R  -R*t ] *  [ y_wcs ]
+           [ z_c ]   [ 0   1   ]    [ z_wcs ]
+           [  1  ]                  [  1    ]
+        
+        P = K * R * [I | -t]
+        
+        alternately, can write as P = K * [ R | -R*t]
+        
+        -----------------------------------
+        since data are noisy, these equalities need to be solved as best fit:
+        
+        x1 = P1 * X1  and  x2 = P2 * X2
+            where x1 and x2 are in homogeneous coordinates
+        
+        x = alpha * P * X 
+            where alpha is a scale factor and so the projection is in the same
+               direction.  it's 1./(depth of point)
+        
+                    [ p1  p1  p3  p4  ]   [ X ]
+        x = alpha * [ p5  p6  p7  p8  ] * [ Y ]
+                    [ p9  p10 p11 p12 ]   [ Z ]
+                                          [ 1 ]
+        
+           let pvec_1^T = [ p1 p2 p3 p4 ], etc. 
+        
+                       1x4               4x1
+                    [ --pvec_1^T-- ]   [ X ]
+        x = alpha * [ --pvec_2^T-- ] * [ Y ]
+                    [ --pvec_3^T-- ]   [ Z ]
+                                       [ 1 ]
+        
+                    [ pvec_1^T * [X,Y,Z,1] ] &lt;-- each row result is 1x1
+        x = alpha * [ pvec_2^T * [X,Y,Z,1] ]
+                    [ pvec_3^T * [X,Y,Z,1] ]
+        
+           let Xvec = [ X Y Z 1 ] as a row
+        
+                    [ pvec_1^T * Xvec ]
+        x = alpha * [ pvec_2^T * Xvec ]
+                    [ pvec_3^T * Xvec ]
+        
+        NOTE: The cross product of 2 vectors of the same direction is 0.
+        
+            So we have x cross P * X = 0 and alpha drops out
+
+                        [ a2*b3 - a3*b2 ]
+                a x b = [ a3*b1 - a1*b3 ]
+                        [ a1*b2 - a2*b1 ]
+
+        Can rewrite in terms of cross poduct:
+       
+        [ x ]       [ pvec_1^T * Xvec ]   [ y * pvec_3^T * Xvec - pvec_2^T * Xvec    ]   [ 0 ]
+        [ y ] cross [ pvec_2^T * Xvec ] = [ pvec_1^T * Xvec - x * pvec_3^T * Xvec    ] = [ 0 ]
+        [ 1 ]       [ pvec_3^T * Xvec ]   [ x * pvec_2^T * Xvec - y * pvec_1^T * Xvec]   [ 0 ]
+        
+        The 3rd line is a linear combination of the first and second lines. (x times the first line plus y times the second line)
+
+        [ y * pvec_3^T * Xvec - pvec_2^T * Xvec ]   [ 0 ]
+        [ pvec_1^T * Xvec - x * pvec_3^T * Xvec ] = [ 0 ]
+        
+        This is in format A_i * Xvec = 0
+        
+        can concatenate the 2 rows for the 2nd image in A_i:
+        
+        [  y1 * p1vec_3^T - p1vec_2^T ]           [ 0 ]
+        [ -x1 * p1vec_3^T + p1vec_1^T ] * Xvec  = [ 0 ]
+        [  y2 * p2vec_3^T - p2vec_2^T ]           [ 0 ]
+        [ -x2 * p2vec_3^T + p2vec_1^T ]           [ 0 ]
+        
+        solve Xvec in A * Xvec = 0 by minimizing ||A*x||^2 subject to ||x||^2 = 1
+        
+        Solution is the eigenvector corresponding to smallest eigenvalue of A^T*A.
+        
+        */
+              
+        double u1x, u1y, u2x, u2y;
+        double[] tmp;
+<span class="fc" id="L411">        double[][] a = new double[4*n][4];</span>
+        int i, j;
+<span class="fc bfc" id="L413" title="All 2 branches covered.">        for (i = 0, j = 0; i &lt; n; ++i, j+=4) {</span>
+<span class="fc" id="L414">            u1x = x1[0][i];</span>
+<span class="fc" id="L415">            u1y = x1[1][i];</span>
+<span class="fc" id="L416">            u2x = x2[0][i];</span>
+<span class="fc" id="L417">            u2y = x2[1][i];</span>
+                        
+            //y1 * p1vec_3^T - p1vec_2^T
+<span class="fc" id="L420">            tmp = Arrays.copyOf(camera1[2], 4);</span>
+<span class="fc" id="L421">            MatrixUtil.multiply(tmp, u1y);</span>
+<span class="fc" id="L422">            a[j] = MatrixUtil.subtract(tmp, camera1[1]);</span>
+            
+            //p1vec_1^T - x1 * p1vec_3^T
+<span class="fc" id="L425">            tmp = Arrays.copyOf(camera1[2], 4);</span>
+<span class="fc" id="L426">            MatrixUtil.multiply(tmp, u1x);</span>
+<span class="fc" id="L427">            a[j+1] = MatrixUtil.subtract(camera1[0], tmp);</span>
+            
+            //y2 * p2vec_3^T - p2vec_2^T
+<span class="fc" id="L430">            tmp = Arrays.copyOf(camera2[2], 4);</span>
+<span class="fc" id="L431">            MatrixUtil.multiply(tmp, u2y);</span>
+<span class="fc" id="L432">            a[j+2] = MatrixUtil.subtract(tmp, camera2[1]);</span>
+            
+            //p2vec_1^T - x2 * p2vec_3^T
+<span class="fc" id="L435">            tmp = Arrays.copyOf(camera2[2], 4);</span>
+<span class="fc" id="L436">            MatrixUtil.multiply(tmp, u2x);</span>
+<span class="fc" id="L437">            a[j+3] = MatrixUtil.subtract(camera2[0], tmp);</span>
+        }
+        
+        // A is  4*N X 4
+        // A^T*A is 4 X 4
+<span class="fc" id="L442">        double[][] aTa = MatrixUtil.createATransposedTimesA(a);</span>
+<span class="pc bpc" id="L443" title="3 of 4 branches missed.">        assert(aTa.length == 4);</span>
+<span class="pc bpc" id="L444" title="3 of 4 branches missed.">        assert(aTa[0].length == 4);</span>
+        
+<span class="fc" id="L446">        SVD svd = null;</span>
+        try {
+<span class="fc" id="L448">            svd = SVD.factorize(new DenseMatrix(aTa));</span>
+<span class="nc" id="L449">        } catch (NotConvergedException ex) {</span>
+<span class="nc" id="L450">            Logger.getLogger(Triangulation.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L451">            return null;</span>
+<span class="fc" id="L452">        }</span>
+        
+<span class="fc" id="L454">        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());</span>
+<span class="pc bpc" id="L455" title="3 of 4 branches missed.">        assert(vT.length == 4);</span>
+<span class="pc bpc" id="L456" title="3 of 4 branches missed.">        assert(vT[0].length == 4);</span>
+        
+        // eigenvector corresponding to smallest eigenvector is last row in svd.V^T
+<span class="fc" id="L459">        double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);</span>
+        
+        /*
+        System.out.printf(&quot;x1=\n%s\n&quot;, FormatArray.toString(x1, &quot;%.4e&quot;));
+        System.out.printf(&quot;camera1=\n%s\n&quot;, FormatArray.toString(camera1, &quot;%.4e&quot;));
+        System.out.printf(&quot;x2=\n%s\n&quot;, FormatArray.toString(x2, &quot;%.4e&quot;));
+        System.out.printf(&quot;camera2=\n%s\n&quot;, FormatArray.toString(camera2, &quot;%.4e&quot;));
+        System.out.printf(&quot;X=\n%s\n\n&quot;, FormatArray.toString(X, &quot;%.4e&quot;));
+        */
+        
+        // can see that the constraint ||X||^2 = 1 is preserved
+                
+<span class="fc" id="L471">        double[] x1Rev = MatrixUtil.multiplyMatrixByColumnVector(camera1, X);</span>
+<span class="fc" id="L472">        double[] x2Rev = MatrixUtil.multiplyMatrixByColumnVector(camera2, X);        </span>
+<span class="fc" id="L473">        double alpha = ((1./x1Rev[2]) + (1./x2Rev[2]))/2.;</span>
+        
+<span class="fc" id="L475">        MatrixUtil.multiply(x1Rev, 1./x1Rev[2]);</span>
+<span class="fc" id="L476">        MatrixUtil.multiply(x2Rev, 1./x2Rev[2]);</span>
+        
+        /*
+        System.out.printf(&quot;x1Rev=\n%s\n&quot;, FormatArray.toString(x1Rev, &quot;%.4e&quot;));
+        System.out.printf(&quot;x1=\n%s\n&quot;, FormatArray.toString(MatrixUtil.extractColumn(x1, 0), &quot;%.4e&quot;));
+        System.out.printf(&quot;x2Rev=\n%s\n&quot;, FormatArray.toString(x2Rev, &quot;%.4e&quot;));        
+        System.out.printf(&quot;x2=\n%s\n&quot;, FormatArray.toString(MatrixUtil.extractColumn(x2, 0), &quot;%.4e&quot;));
+        */
+        //System.out.printf(&quot;alpha=\n%.3e\n&quot;, alpha);
+        //MatrixUtil.multiply(X, alpha);
+                
+<span class="fc" id="L487">        return X;</span>
+    }
+   
+    
+    /*
+     * not finished
+     * 
+     * given a feature in 2 cameras and the rotation and translation between
+     * the cameras, estimate the depths and universal scale factor to 
+     * return the estimates of the 3-D position.
+     &lt;pre&gt;
+     The algorithm follows Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+     who refers to Ma, Soatto, Kosecka, and Sastry 2003
+     &quot;An Invitation to 3D Vision From Images to Geometric Models&quot;:
+     &lt;/pre&gt;
+     * @param r rotation of camera 2 with respect to camera 1
+     * @param t the translation of camera 2 with respect to camera 1
+     * @param x1 coordinates of feature in image 1.   the array should be length
+     * @param x2 coordinates of feature in image 1.   the array should be length
+     * @return the estimated position of the 3-D point as 2 estimates which should be the same.
+     * The depths and universal scale factors are returned also.
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     */
+    /*
+    public static WCSResults calculateDepths(double[][] r, double[] t,
+        double[] x1, double[] x2) throws NotConvergedException {
+        
+        // X_2 = R * X_1 + gamma * T where gamma is the universal scale factor
+        //
+        // lambda_2 * x_2 = lambda_1 * R * x_1 + gamma * T
+        //
+        // multiply both sides by skew symmetric of x_2 = [x_2]_x to use the property that 
+        //     [x_2]_x * x_2 = 0 (i.e. cross product is 0).
+        //
+        //  [x_2]_x * lambda_2 * x_2 = [x_2]_x * lambda_1 * R * x_1 + [x_2]_x * gamma * T
+        //  0 = [x_2]_x * lambda_1 * R * x_1 + [x_2]_x * gamma * T
+        //
+        // then [ [x_2]_x * R * x_1   [x_2]_x * T ] * [ lambda_1 ] = 0
+        //                                            [   gamma  ]
+        //          sizes are [ 3X2 ] * [ 2X1 ] = [ 3X1 ]
+        //
+        // let M = the matrix on right hand side.
+        //    this assumes no noise in data
+        //  then [lambda_1, gamma] = SVD(M).V^T[last row]
+        //  
+        //  then X_1 = lambda_1 * x_1
+        // 
+        //  Then back to the transformation by extrinsic parameters:
+        //      lambda_2 * x_2 = lambda_1 * R * x_1 + gamma * T
+        //  multiply both sides by skew symmetric of x_1 = [x_1]_x
+        //      [x_1]_x * lambda_2 * x_2   =   [x_1]_x * lambda_1 * R * x_1   +   [x_1]_x * gamma * T
+        //      [x_1]_x * lambda_2 * x_2   =    0  +   [x_1]_x * gamma * T
+        //      [x_1]_x * lambda_2 * x_2  -  [x_1]_x * gamma * T = 0
+        //     where gamma is known
+        //  
+        // then [ [x_1]_x * x_2   -[x_1]_x * gamma * T ] * [ lambda_2 ] = 0
+        //                                                 [   1  ]
+        //       sizes are [ 3X2 ] * [ 2X1 ] = [ 3X1 ]
+        // then [lambda_2, 1] = SVD(M).V^T[last row]
+        // X_2 = lambda_2 * x_2
+        // 
+        // and assert that X_2 = R * X_1 + gamma * T
+        
+        double[][] x1SkewSym = MatrixUtil.skewSymmetric(x1);
+        double[][] x2SkewSym = MatrixUtil.skewSymmetric(x2);
+        
+        double[] M1Col0 = MatrixUtil.multiplyMatrixByColumnVector(
+            MatrixUtil.multiply(x2SkewSym, r), x1
+        );
+        double[] M1Col1 = MatrixUtil.multiplyMatrixByColumnVector(x2SkewSym, t);
+        double[][] M = new double[3][2];
+        int i;
+        for (i = 0; i &lt; 3; ++i) {
+            M[i] = new double[]{M1Col0[i], M1Col1[i]};
+        }
+        
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(M);
+        double lambda1 = svd.vT[svd.vT.length - 1][0];
+        double gamma = svd.vT[svd.vT.length - 1][1];
+        
+        double[] X1 = Arrays.copyOf(x2, x2.length);
+        MatrixUtil.multiply(X1, lambda1);
+        
+        // [ [x_1]_x * x_2   -[x_1]_x * gamma * T ]
+        M1Col0 = MatrixUtil.multiplyMatrixByColumnVector(x1SkewSym, x2);
+        M1Col1 = MatrixUtil.multiplyMatrixByColumnVector(x1SkewSym, t);
+        MatrixUtil.multiply(M1Col1, -gamma);
+        for (i = 0; i &lt; 3; ++i) {
+            M[i] = new double[]{M1Col0[i], M1Col1[i]};
+        }
+        svd = MatrixUtil.performSVD(M);
+        double lambda2 = svd.vT[svd.vT.length - 1][0];
+        double one = svd.vT[svd.vT.length - 1][1];
+        assert(Math.abs(one) - 1 &lt; 1e-2);
+        
+        double[] X2 = Arrays.copyOf(x2, x2.length);
+        MatrixUtil.multiply(X2, lambda1);
+        
+        //assert that X_2 = R * X_1 + gamma * T
+        double[] gt = Arrays.copyOf(t, t.length);
+        MatrixUtil.multiply(gt, gamma);
+        double[] checkX2 = MatrixUtil.multiplyMatrixByColumnVector(r, X1);
+        checkX2 = MatrixUtil.add(checkX2, gt);
+        
+        for (i = 0; i &lt; X2.length; ++i) {
+            assert(Math.abs(X2[i] - checkX2[i]) &lt; 1.e-2);
+        }
+        
+        WCSResults w = new WCSResults();
+        w.setX1(X1);
+        w.setX2(X2);
+        w.setDepth1(lambda1);
+        w.setDepth2(lambda2);
+        w.setUniversalScaleFactor(gamma);
+        
+        return w;
+    }
+    */
+    
+    public static class WCSResults {
+        /**
+         * the 3-D position of point x1 (which should be the same as X2)
+         */
+        private double[] X1;
+        /**
+         * the 3-D position of point x2 (which should be the same as X1)
+         */
+        private double[] X2;
+        /**
+         * the depth of X1
+         */
+        private double depth1;
+        /**
+         * the depth of X2
+         */
+        private double depth2;
+        /**
+         * the universal scale factor which is applied to the translation between camera positions
+         */
+        private double universalScaleFactor;
+
+        /**
+         * @return the X1
+         */
+        public double[] getX1() {
+            return X1;
+        }
+
+        /**
+         * @param X1 the X1 to set
+         */
+        public void setX1(double[] X1) {
+            this.X1 = X1;
+        }
+
+        /**
+         * @return the X2
+         */
+        public double[] getX2() {
+            return X2;
+        }
+
+        /**
+         * @param X2 the X2 to set
+         */
+        public void setX2(double[] X2) {
+            this.X2 = X2;
+        }
+
+        /**
+         * @return the depth1
+         */
+        public double getDepth1() {
+            return depth1;
+        }
+
+        /**
+         * @param depth1 the depth1 to set
+         */
+        public void setDepth1(double depth1) {
+            this.depth1 = depth1;
+        }
+
+        /**
+         * @return the depth2
+         */
+        public double getDepth2() {
+            return depth2;
+        }
+
+        /**
+         * @param depth2 the depth2 to set
+         */
+        public void setDepth2(double depth2) {
+            this.depth2 = depth2;
+        }
+
+        /**
+         * @return the universalScaleFactor
+         */
+        public double getUniversalScaleFactor() {
+            return universalScaleFactor;
+        }
+
+        /**
+         * @param universalScaleFactor the universalScaleFactor to set
+         */
+        public void setUniversalScaleFactor(double universalScaleFactor) {
+            this.universalScaleFactor = universalScaleFactor;
+        }
+        
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

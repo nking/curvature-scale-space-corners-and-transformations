@@ -366,7 +366,7 @@ public class ImageExt extends Image {
 <span class="fc" id="L366">        saturation[idx] = hsb[1];</span>
 <span class="fc" id="L367">        brightness[idx] = hsb[2];</span>
         
-<span class="fc" id="L369">        double[] yuv = MatrixUtil.multiply(rgbToLumaMatrix, </span>
+<span class="fc" id="L369">        double[] yuv = MatrixUtil.multiplyMatrixByColumnVector(rgbToLumaMatrix, </span>
             new double[]{rPix, gPix, bPix});
         
 <span class="fc" id="L372">        luma[idx] = (float)yuv[0];</span>
