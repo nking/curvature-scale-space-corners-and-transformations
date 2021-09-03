@@ -529,18 +529,22 @@
             <format property="TS" pattern="yyyy-MM-dd" locale="en,US"/>
         </tstamp>
         
+        <!--
         <mkdir dir="${classes.dir}/tmp" />
-        <move file="${classes.dir}/tmp/LICENSE.txt" tofile="${classes.dir}/tmp/Clustering_LICENSE.txt"/>
         <unjar src="${lib.dir}/com.climbwithyourfeet.shared.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/com.climbwithyourfeet.clustering.jar" dest="${classes.dir}/tmp"/>
+        -->
         
         <jar destfile="${classes.dir}/scalespace_${TS}.jar" manifest="${jar.mf}">
             <fileset dir="${src.out.dir}" includes="**"/>
             <fileset dir="${resources.dir}" includes="*.html"/>
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
-            <fileset dir="${basedir}" includes="Clustering_LICENSE.txt"/>
+            <!--
+            <fileset dir="${basedir}/lib" includes="CLUSTERING.txt"/>
+            <fileset dir="${basedir}/lib" includes="SHARED.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
+            -->
         </jar>
         
         <mkdir dir="dist" />
