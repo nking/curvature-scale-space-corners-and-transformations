@@ -569,7 +569,7 @@ public class BundleAdjustment {
                 // decrease lambda
                 
                 // from Algorithm 3.16 of Madsen et al. 2004, 
-                //"Mehtods for Non-Linear Least Squares Problems"
+                //"Methods for Non-Linear Least Squares Problems"
                 // and Figure 2 of
                 // Lourakis & Argyros 2009, "SBA: A Software Package For Generic
                 // Sparse Bundle Adjustment"
@@ -578,22 +578,24 @@ public class BundleAdjustment {
                 
                 lambda /= lambdaF;
                 
-                assert(fTest < fPrev);                
-                fPrev = fTest;
-                
-                double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);
-                double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetas, extrRotThetasTest);
-                double _dts = MatrixUtil.frobeniusNorm(_dt);
-                double _rts = MatrixUtil.frobeniusNorm(_rt);
-                log.fine(String.format("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e")));
-                log.fine(String.format("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e")));
-                
-                //copy test data structures into the original in-out datastructures
-                intr.set(intrTest);
-                MatrixUtil.copy(extrRotThetasTest, extrRotThetas);
-                MatrixUtil.copy(extrTransTest, extrTrans);
-                MatrixUtil.copy(kRadialsTest, kRadials);
-                MatrixUtil.copy(coordsWTest, coordsW);
+                if (fTest < fPrev) {
+                    
+                    fPrev = fTest;
+
+                    double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);
+                    double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetas, extrRotThetasTest);
+                    double _dts = MatrixUtil.frobeniusNorm(_dt);
+                    double _rts = MatrixUtil.frobeniusNorm(_rt);
+                    log.fine(String.format("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e")));
+                    log.fine(String.format("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e")));
+
+                    //copy test data structures into the original in-out datastructures
+                    intr.set(intrTest);
+                    MatrixUtil.copy(extrRotThetasTest, extrRotThetas);
+                    MatrixUtil.copy(extrTransTest, extrTrans);
+                    MatrixUtil.copy(kRadialsTest, kRadials);
+                    MatrixUtil.copy(coordsWTest, coordsW);
+                }
                 
                 // ======= stopping conditions ============
                 //   step length vanishes:  deltaParams --> 0

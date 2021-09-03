@@ -2,6 +2,7 @@ package algorithms.util;
 
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.MiscMath;
+import algorithms.statistics.CDFStandardNormal;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import junit.framework.TestCase;
@@ -72,37 +73,13 @@ public class LinearRegressionTest extends TestCase {
     public void test00() throws Exception {
        
         // small random deviations from a straight line
-                 
-        int d = 10;
+                         
+        float slope = 2.0f;
+        float yIntercept1 = (110.f - slope*10f);
         
-        PairIntArray dxdy = new PairIntArray();
-        double slope = 2.0;
-        double yIntercept1 = (110 - slope*10);
-        for (int x = 10; x < 100; x++) {
-            /*
-            (y1 - y0)/(x1 - x0) = slope
-            y1 - y0 = slope*(x1 - x0);
-            y1 = y0 + slope*(x1 - x0);
-            y1 = (y0 - slope*x0) + slope*x1
-            */
-            double dy = slope*(double)x;
-            int y = (int)Math.round(yIntercept1 + dy);
-            
-            if (sr.nextBoolean()) {
-                int xr = sr.nextInt(d);
-                int yr = sr.nextInt(d);
-                if (sr.nextBoolean()) {
-                    xr *= -1;
-                }
-                if (sr.nextBoolean()) {
-                    yr *= -1;
-                }
-                x += xr;
-                y += yr;
-            }
-            
-            dxdy.add(x, y);
-        }
+        float s = 0.25f;
+        PairFloatArray dxdy = generateLine(0, yIntercept1, slope, s, 10, 100);
+        
         
         LinearRegression instance = new LinearRegression();
         instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY());
@@ -168,6 +145,7 @@ public class LinearRegressionTest extends TestCase {
         float slope = 2.0f;
         float yIntercept1 = (110 - slope*10.f);
         float yIntercept2 = (120 - slope*10.f);
+        
         for (int x = 10; x < 100; x++) {
             /*
             (y1 - y0)/(x1 - x0) = slope
@@ -198,40 +176,62 @@ public class LinearRegressionTest extends TestCase {
         
     }
     
+    private PairFloatArray generateLine(float x0, float y0, float slope, double sigma,
+        float xStart, float xEnd) {
+        /*
+           |      slope=2
+           |      /
+           |     /
+           |____/_____     <-- x-intercept at x=10, y=0
+               /
+              /
+             /
+            / <--- y-intercept at x0=0, y0=-20
+        
+        slope=(y-y0)/(x-x0) => (x-x0)*slope=(y-y0) => y = y0 + (x-x0)*slope
+        */
+            
+        double n01, xn, yn;
+        double xi, yi;
+        PairFloatArray dxdy = new PairFloatArray();
+        for (float x = xStart; x < xEnd; x++) {
+            yi = y0 + (x-x0)*slope;
+            xi = x;
+            if (sr.nextBoolean()) {
+                //random sample from unit norm gaussian.
+                n01 = CDFStandardNormal.approxInverseShort(sr.nextDouble());
+                // and N(0,1) ~ (N(mean,sigma) - mean)/sigma
+                // N(mean,sigma) = x + sigma*n01
+                xi += (n01*sigma);
+                n01 = CDFStandardNormal.approxInverseShort(sr.nextDouble());
+                yi += (n01*sigma);
+            }
+            dxdy.add((float)xi, (float)yi);
+        }
+        return dxdy;
+    }
+    
     public void test00_float() throws Exception {
        
         // small random deviations from a straight line
         
-        int d = 10;
+        /*
+           |      slope=2
+           |      /
+           |     /
+           |____/_____     <-- x-intercept at x=10, y=0
+               /
+              /
+             /
+            / <--- y-intercept at x0=0, y0=-20
         
-        PairFloatArray dxdy = new PairFloatArray();
+        slope=(y-y0)/(x-x0) => (x-x0)*slope=(y-y0) => y = y0 + (x-x0)*slope
+        */
+                
         float slope = 2.0f;
-        float yIntercept1 = (110.f - slope*10.f);
-        for (int x = 10; x < 100; x++) {
-            /*
-            (y1 - y0)/(x1 - x0) = slope
-            y1 - y0 = slope*(x1 - x0);
-            y1 = y0 + slope*(x1 - x0);
-            y1 = (y0 - slope*x0) + slope*x1
-            */
-            float dy = slope*(float)x;
-            float y = yIntercept1 + dy;
-            
-            if (sr.nextBoolean()) {
-                int xr = sr.nextInt(d);
-                int yr = sr.nextInt(d);
-                if (sr.nextBoolean()) {
-                    xr *= -1;
-                }
-                if (sr.nextBoolean()) {
-                    yr *= -1;
-                }
-                x += xr;
-                y += yr;
-            }
-            
-            dxdy.add(x, y);
-        }
+        float yIntercept1 = -20f;
+        float s = 0.25f;
+        PairFloatArray dxdy = generateLine(0, yIntercept1, slope, s, 10, 100);
         
         LinearRegression instance = new LinearRegression();
         instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY());
@@ -243,7 +243,7 @@ public class LinearRegressionTest extends TestCase {
         double expectedSlope = slope;
         
         assertTrue(Math.abs(yInterceptAndSlope[0] 
-            - expectedYIntercept) < Math.sqrt(d));
+            - expectedYIntercept) < Math.sqrt(s));
         
         assertTrue(Math.abs(yInterceptAndSlope[1] - expectedSlope) < 0.2);
         
