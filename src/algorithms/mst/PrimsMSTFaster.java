@@ -86,7 +86,7 @@ public class PrimsMSTFaster {
         //     able to read the nodes still in the queue.
         List<HeapNode> nodes = new ArrayList<HeapNode>();
 
-        // initialize heap
+        // initialize heap by adding all nodes
         for (int i = 0; i < nVertexes; i++) {
             HeapNode v = new HeapNode();
             if (i == 0) {
@@ -94,17 +94,19 @@ public class PrimsMSTFaster {
             } else {
                 v.setKey(sentinel);
             }
-            v.setData(Integer.valueOf(i));
+            // i is the index in nodes list in inQ array
+            v.setData(Integer.valueOf(i)); 
             heap.insert(v);
             nodes.add(v);
         }
         
+        //O(|V|)
         while (heap.getNumberOfNodes() > 0) {
 
+            // O(log_2 log_2(w_bits)) or O(log_2(|V|))
             HeapNode u = heap.extractMin(); 
            
-            Integer uIndex = (Integer)u.getData();
-            int uIdx = uIndex.intValue();
+            int uIdx = ((Integer)u.getData()).intValue();
             inQ[uIdx] = false;
             
             TIntIntMap adjMap0 = adjCostMap.get(uIdx);
@@ -121,6 +123,7 @@ public class PrimsMSTFaster {
                
                 if (inQ[vIdx] && (cost < distV)) {
                     prev[vIdx] = uIdx;
+                    // O(log_2 log_2(w_bits)) or O(1)
                     heap.decreaseKey(nodes.get(vIdx), cost); 
                 }
             }

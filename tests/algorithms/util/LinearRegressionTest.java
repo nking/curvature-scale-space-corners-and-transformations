@@ -180,13 +180,13 @@ public class LinearRegressionTest extends TestCase {
         float xStart, float xEnd) {
         /*
            |      slope=2
-           |      /
-           |     /
-           |____/_____     <-- x-intercept at x=10, y=0
-               /
-              /
-             /
-            / <--- y-intercept at x0=0, y0=-20
+           |      .
+           |     .
+           |____._____     <-- x-intercept at x=10, y=0
+               .
+              .
+             .
+            . <--- y-intercept at x0=0, y0=-20
         
         slope=(y-y0)/(x-x0) => (x-x0)*slope=(y-y0) => y = y0 + (x-x0)*slope
         */
@@ -217,13 +217,13 @@ public class LinearRegressionTest extends TestCase {
         
         /*
            |      slope=2
-           |      /
-           |     /
-           |____/_____     <-- x-intercept at x=10, y=0
-               /
-              /
-             /
-            / <--- y-intercept at x0=0, y0=-20
+           |      .
+           |     .
+           |____._____     <-- x-intercept at x=10, y=0
+               .
+              .
+             .
+            . <--- y-intercept at x0=0, y0=-20
         
         slope=(y-y0)/(x-x0) => (x-x0)*slope=(y-y0) => y = y0 + (x-x0)*slope
         */

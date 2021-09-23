@@ -5,6 +5,7 @@
  */
 package algorithms.strings;
 
+import algorithms.util.PairIntArray;
 import junit.framework.TestCase;
 
 
@@ -21,10 +22,17 @@ public class StringEditDistanceTest extends TestCase {
         String a = "rosettacode";
         String b = "raisethysword";
         
+        PairIntArray outIndexes = new PairIntArray();
         StringEditDistance sed = new StringEditDistance();
-        int nEdits = sed.calculateWithWagnerFischer(a, b, true);
+        int nEdits = sed.calculateWithWagnerFischer(a, b, outIndexes);
         
         assertEquals(8, nEdits);
+        
+        char[] result = new char[outIndexes.getN()];
+        for (int i = 0; i < result.length; ++i) {
+            result[i] = a.charAt(outIndexes.getX(i));
+        } 
+        
         
     }
 }
