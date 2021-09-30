@@ -37,10 +37,10 @@ public class CameraPose {
      * the extrinsic camera parameters.
      * 
      * <pre>
-     * following CMU lectures of Kris Kitani at 
-     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
-     * 
-     * add other references:
+     following CMU lectures of Kris Kitani at 
+     http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+     Szeliski 2010, eqn (7.25)
+     Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision", pg 121        
      * </pre>
      * @param k1 intrinsic camera matrix for image 1 in units of pixels.
      * @param k2 intrinsic camera matrix for image 2 in units of pixels.
@@ -65,10 +65,9 @@ public class CameraPose {
      * 
      * <pre>
      * following CMU lectures of Kris Kitani at 
-     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
-     * 
-     * add:
-     * Sect 7.2 of Szeliski 2010
+     http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+     Szeliski 2010, eqn (7.25)
+     Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision", pg 121 
      * </pre>
      * @param k1 intrinsic camera matrix for image 1 in units of pixels.
      * @param k2 intrinsic camera matrix for image 2 in units of pixels.
