@@ -66,10 +66,10 @@ public class CameraPose {
      * </pre>
      * @param k1 intrinsic camera matrix for image 1 in units of pixels.
      * @param k2 intrinsic camera matrix for image 2 in units of pixels.
-     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
-     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
+     * @param x1 the image 1 set of correspondence points in image reference frame.  
+     * format is 3 x N where N is the number of points.
+     * @param x2 the image 2 set of correspondence points in image reference frame.  
+     * format is 3 x N where N is the number of points.
      * @param outputXW
      * @return 
      * @throws no.uib.cipr.matrix.NotConvergedException 
@@ -77,7 +77,7 @@ public class CameraPose {
     public static CameraExtrinsicParameters[] calculateUsingEssentialMatrix(
         double[][] k1, double[][] k2,
         double[][] x1, double[][] x2, double[][] outputXW) throws NotConvergedException {
-                        
+                
         if (x1.length != 3 || x2.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
         }
@@ -121,9 +121,7 @@ public class CameraPose {
         
         DenseMatrix normalizedE;
         
-        EpipolarTransformer tr = new EpipolarTransformer();
-        
-        /*
+        /*EpipolarTransformer tr = new EpipolarTransformer();        
         normalizedE = tr.calculateEpipolarProjection(leftM, rightM);
         DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
         
@@ -136,10 +134,15 @@ public class CameraPose {
                     errorType, tolerance);
         }*/
         
+        //if true, solves for the Essential Matrix, else solves
+        //for the Fundamental Matrix.  The difference is in the diagonal used for
+        //dimension reduction.
+        boolean coordsAreInCameraRefFrame = true;
+        
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations, true);
+                reCalcIterations, coordsAreInCameraRefFrame);
         
         System.out.println("RANSAC fit=" + fitR.toString());
         
@@ -150,6 +153,7 @@ public class CameraPose {
             normalizedE, normXY1.getNormalizationMatrices(),
             normXY2.getNormalizationMatrices());
         
+        //=========
         double[][] _essentialMatrix = MatrixUtil.convertToRowMajor(essentialM);
         
         MatrixUtil.SVDProducts svdE = MatrixUtil.performSVD(_essentialMatrix);
@@ -166,7 +170,7 @@ public class CameraPose {
         System.out.printf("det(SVD.vT)=%.2f\n", detV);
         
         /*
-        szeliski:
+        Szeliski 2010 chap 7:
         Once an estimate for the essential matrix E has been recovered, 
         the direction of the translation vector t can be estimated. 
         
@@ -175,57 +179,6 @@ public class CameraPose {
         about absolute camera and point positions or distances, often called ground 
         control points in photogrammetry.
         */
-                   
-        // last column in svdE.u is the second epipole and is the direction of vector t
-        double[] t1 = MatrixUtil.extractColumn(svdE.u, 2);
-        double[] t2 = Arrays.copyOf(t1, t1.length);
-        MatrixUtil.multiply(t2, -1); 
-        
-        // or is Kitani using U_3 as the 3x3 matrix U which would be R*t?
-        // TODO: follow up on the math
-        
-        //R_z_90
-        double[][] r90 = new double[3][3];
-        r90[0] = new double[]{0, -1, 0};
-        r90[1] = new double[]{1, 0, 0};
-        r90[2] = new double[]{0, 0, 1};
-                  
-        //R_z_90^T, positive 90 transposed to give R_z_-90
-        double[][] r90T = MatrixUtil.transpose(r90);
-        
-        //R = ±U R^T±90^T V^T
-        double[][] uNegative = MatrixUtil.copy(svdE.u);
-        MatrixUtil.multiply(uNegative, -1.);
-        
-        double[][] R1 = MatrixUtil.multiply(svdE.u, r90T);
-        R1 = MatrixUtil.multiply(R1, svdE.vT);
-        
-        double[][] R2 = MatrixUtil.multiply(svdE.u, r90);
-        R2 = MatrixUtil.multiply(R2, svdE.vT);
-        
-        //different here than in reconstruction lecture which has the
-        // 4 pairs, but does not suggest to find the 2 below which have det(R)=1:
-        //(1) R1, T1; (2) R1, T2; (3) R2, T2; (4) R2, T1
-                
-        double[][] R3 = MatrixUtil.multiply(uNegative, r90T);
-        R3 = MatrixUtil.multiply(R3, svdE.vT);
-        
-        double[][] R4 = MatrixUtil.multiply(uNegative, r90);
-        R4 = MatrixUtil.multiply(R4, svdE.vT);
-        
-        //NOTE: from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
-        // refers to Ma, Soatto, Kosecka, and Sastry 2003
-        // "An Invitation to 3D Vision From Images to Geometric Models", Eqn (5.9):
-        // R1 = U * (r90)^T * V^T
-        // R2 = U * (r90) * V^T
-        // T1 = U * (r90)^T * diag(1, 1, 0) * V^T  <== last term should be U^T
-        // T2 = U * (r90) * diag(1, 1, 0) * V^T    <== last term should be U^T
-        double[][] t1M = MatrixUtil.multiply(svdE.u, r90T);
-        t1M = MatrixUtil.multiplyByDiagonal(t1M, new double[]{1, 1, 0});
-        t1M = MatrixUtil.multiply(t1M, MatrixUtil.transpose(svdE.u));
-        double[][] t2M = MatrixUtil.multiply(svdE.u, r90);
-        t2M = MatrixUtil.multiplyByDiagonal(t2M, new double[]{1, 1, 0});
-        t2M = MatrixUtil.multiply(t2M, MatrixUtil.transpose(svdE.u));
         
         // det(R)=1 is a proper rotation matrix.  rotation angles are counterclockwise.
         //           it's a special orthogonal matrix and provides the
@@ -237,62 +190,34 @@ public class CameraPose {
         //           angle θ about some axis nˆ and a mirror reflection through a plane that passes through
         //           the origin and is perpendicular to nˆ.  NOTE: nˆ is determined by
         //           the right hand rule.
-        double detR1 = MatrixUtil.determinant(R1);
-        double detR2 = MatrixUtil.determinant(R2);
-        double detR3 = MatrixUtil.determinant(R3);
-        double detR4 = MatrixUtil.determinant(R4);
         
-        double[][] R3N = MatrixUtil.copy(R3);
-        MatrixUtil.multiply(R3N, 1./R3N[2][2]);
-        double[][] R4N = MatrixUtil.copy(R4);
-        MatrixUtil.multiply(R4N, 1./R4N[2][2]);
+        /*
+        Sect 7.2 of Szeliski 2010 eqn (7.25) introduces
+        R3 and R4 constructed from -U as 2 more rotation possibilities to be tested
+        and that is necessary in some cases where det(R) would otherwise be -1
+        (reflection).
+        ...we only know both E and tˆup to a sign. Furthermore, the matrices U and V
+        are not guaranteed to be rotations (you can flip both their signs and 
+        still get a valid SVD).   
+        For this reason, we have to generate all four possible rotation matrices
         
+        R = +-U * R_Z(+-90)^T * V^T
+           and keep the 2 whose determinant = 1
+        */
+        double[][] r1 = MatrixUtil.zeros(3, 3);
+        double[][] r2 = MatrixUtil.zeros(3, 3);
+        double[][] u = MatrixUtil.zeros(3, 3);
+        populateWithDet1Rs(svdE, r1, r2, u);
+        
+        // last column in u is the second epipole and is the direction of vector t
+        double[] t1 = MatrixUtil.extractColumn(u, 2);
+        double[] t2 = Arrays.copyOf(t1, t1.length);
+        MatrixUtil.multiply(t2, -1); 
+        
+        System.out.printf("R1=\n%s\n", FormatArray.toString(r1, "%.3e"));
+        System.out.printf("R2=\n%s\n", FormatArray.toString(r2, "%.3e"));
         System.out.printf("t1=\n%s\n", FormatArray.toString(t1, "%.3e"));
         System.out.printf("t2=\n%s\n", FormatArray.toString(t2, "%.3e"));
-        System.out.printf("R1=\n%s\n", FormatArray.toString(R1, "%.3e"));
-        System.out.printf("R2=\n%s\n", FormatArray.toString(R2, "%.3e"));
-        System.out.printf("R3=\n%s\n", FormatArray.toString(R3, "%.3e"));
-        System.out.printf("R3N=\n%s\n", FormatArray.toString(R3N, "%.3e"));
-        System.out.printf("R4=\n%s\n", FormatArray.toString(R4, "%.3e"));
-        System.out.printf("R4N=\n%s\n", FormatArray.toString(R4N, "%.3e"));
-        System.out.printf("t1M=\n%s\n", FormatArray.toString(t1M, "%.3e"));
-        System.out.printf("t2M=\n%s\n", FormatArray.toString(t2M, "%.3e"));
-        System.out.printf("det(R1)=%.3e\n", detR1);
-        System.out.printf("det(R2)=%.3e\n\n", detR2);
-        System.out.printf("det(R3)=%.3e\n", detR3);
-        System.out.printf("det(R4)=%.3e\n\n", detR4);
-                
-        // keep the 2 that have det(R) == 1 
-        double[][] rot1 = null; 
-        double[][] rot2 = null;
-        if (Math.abs(detR1 - 1.) < eps) {
-            rot1 = R1;
-        }
-        if (Math.abs(detR2 - 1.) < eps) {
-            if (rot1 == null) {
-                rot1 = R2;
-            } else {
-                rot2 = R2;
-            }
-        }
-        if (Math.abs(detR3 - 1.) < eps) {
-            if (rot1 == null) {
-                rot1 = R3;
-            } else {
-                rot2 = R3;
-            }
-        }
-        if (Math.abs(detR4 - 1.) < eps) {
-            if (rot1 == null) {
-                rot1 = R4;
-            } else {
-                rot2 = R4;
-            }
-        }
-        
-        if (rot1 == null && rot2 == null) {
-            return null;
-        }
         
         //then of the 4 possible choices find the one with largest number of positive Z.
           
@@ -300,20 +225,22 @@ public class CameraPose {
         //    eigenvector.  it is epipole2, that is, the right image position 
         //    of the epipolar projection of the left camera center.
         //    it's int the left null space of E.
-           
+        
+        //or use directions x1Direction, x2Direction
+                
         x1M = extractIndices(new DenseMatrix(x1), fitR.inlierIndexes);
         x2M = extractIndices(new DenseMatrix(x2), fitR.inlierIndexes);
         x1 = MatrixUtil.convertToRowMajor(x1M);
         x2 = MatrixUtil.convertToRowMajor(x2M);
         
-       // solution 1:  Rot1 and T1
+        // solution 1:  Rot1 and T1
         // solution 2:  Rot1 and T2
         // solution 3:  Rot2 and T2
         // solution 4:  Rot2 and T1
         double[][] rSelected = MatrixUtil.zeros(3, 3);
         double[] tSelected = new double[3];
         double[][] XW = MatrixUtil.zeros(4, x1[0].length);
-        chooseRAndT(x1, x2, k1, k2, rot1, rot2, t1, t2, rSelected, tSelected, XW);        
+        chooseRAndT(x1, x2, k1, k2, r1, r2, t1, t2, rSelected, tSelected, XW);  
         
         Camera.CameraExtrinsicParameters c1 = new Camera.CameraExtrinsicParameters();
         c1.setRotation(MatrixUtil.createIdentityMatrix(3));
@@ -675,7 +602,7 @@ public class CameraPose {
         //double estimatedRotY = Math.atan(R[0][2]/R[0][0]) * (180./Math.PI);
         double estimatedRotZ = Math.atan(-bestR[1][0]/bestR[1][1]) * (180./Math.PI);
         System.out.printf("estimated rotation in degrees about z axis from R=%.2f\n", estimatedRotZ);
-        System.out.printf("X_WCS=\n%s\n", FormatArray.toString(bestXW, "%.3e"));
+        //System.out.printf("X_WCS=\n%s\n", FormatArray.toString(bestXW, "%.3e"));
         System.out.flush();
         
         for (i = 0; i < XW.length; ++i) {
@@ -683,7 +610,7 @@ public class CameraPose {
         }
         
     }
-    
+   
     private static DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
         DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());
         int r = 0;
@@ -695,5 +622,91 @@ public class CameraPose {
             r++;
         }
         return out;
+    }
+
+    static void populateWithDet1Rs(MatrixUtil.SVDProducts svdE, 
+        double[][] r1Out, double[][] r2Out, double[][] uOut) {
+        
+        //Szeliski 2010, eqn (7.25)
+        
+        // R_Z+90 and R_Z_-90 from 
+        // Ma, Soatto, Kosecká, and Sastry, "An Invitation to 3-D Vision"
+        
+        //R_z_90^T  = [ [0, 1, 0], [0, -1, 0], [0, 0, 1] ]
+        //R_z_-90^T = [ [0, -1, 0], [0, 1, 0], [0, 0, 1] ]
+         
+        //R_z_90
+        double[][] r90T = new double[3][3];
+        r90T[0] = new double[]{0, 1, 0};
+        r90T[1] = new double[]{-1, 0, 0};
+        r90T[2] = new double[]{0, 0, 1};
+        double[][] r90NegT = MatrixUtil.transpose(r90T);
+        
+        double[][] u = svdE.u;
+        double[][] uNeg = MatrixUtil.copy(u);
+        MatrixUtil.multiply(uNeg, -1);
+        
+        double[][] rr1 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90T), svdE.vT);
+        double[][] rr2 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90T), svdE.vT);
+        double[][] rr3 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90NegT), svdE.vT);
+        double[][] rr4 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90NegT), svdE.vT);
+        
+        double det1 = MatrixUtil.determinant(rr1);
+        double det2 = MatrixUtil.determinant(rr2);
+        double det3 = MatrixUtil.determinant(rr3);
+        double det4 = MatrixUtil.determinant(rr4);
+        
+        System.out.printf("det(r1,r2,r3,r4)=%.3e,%.3e,%.3e,%.3e\n", det1, det2, det3, det4);
+        System.out.printf("r1:\n%s\n", FormatArray.toString(rr1, "%.4e"));
+        System.out.printf("r2:\n%s\n", FormatArray.toString(rr2, "%.4e"));
+        System.out.printf("r3:\n%s\n", FormatArray.toString(rr3, "%.4e"));
+        System.out.printf("r4:\n%s\n", FormatArray.toString(rr4, "%.4e"));
+        
+        boolean useUPos = true;
+        
+        int i;
+        if (Math.abs(det1 - 1.) < eps) {
+            System.out.printf("using +U\n");
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(rr1[i], 0, r1Out[i], 0, rr1[i].length);
+            }
+        } else if (Math.abs(det2 - 1.) < eps) {
+            System.out.printf("using -U\n");
+            useUPos = false;
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(rr2[i], 0, r1Out[i], 0, rr2[i].length);
+            }
+        } else {
+            throw new IllegalStateException("neither rotation matrix is SO(3)");
+        }
+        if (Math.abs(det3 - 1.) < eps) {
+            if (!useUPos) {
+                throw new IllegalStateException("expecting to need +U");
+            }
+            System.out.printf("using +U\n");
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(rr3[i], 0, r2Out[i], 0, rr3[i].length);
+            }
+        } else if (Math.abs(det4 - 1.) < eps) {
+            if (useUPos) {
+                throw new IllegalStateException("expecting to need -U");
+            }
+            System.out.printf("using -U\n");
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(rr4[i], 0, r2Out[i], 0, rr4[i].length);
+            }
+        } else {
+            throw new IllegalStateException("neither rotation matrix is SO(3)");
+        }
+        
+        if (useUPos) {
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(u[i], 0, uOut[i], 0, u[i].length);
+            }
+        } else {
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(uNeg[i], 0, uOut[i], 0, uNeg[i].length);
+            }
+        }
     }
 }
