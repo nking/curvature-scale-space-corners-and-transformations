@@ -630,7 +630,7 @@ public class CameraPose {
         //Szeliski 2010, eqn (7.25)
         
         // R_Z+90 and R_Z_-90 from 
-        // Ma, Soatto, Kosecká, and Sastry, "An Invitation to 3-D Vision"
+        // Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision", pg 121
         
         //R_z_90^T  = [ [0, 1, 0], [0, -1, 0], [0, 0, 1] ]
         //R_z_-90^T = [ [0, -1, 0], [0, 1, 0], [0, 0, 1] ]
