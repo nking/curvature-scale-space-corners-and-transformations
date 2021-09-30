@@ -12,18 +12,14 @@ import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 
 /**
- * given correspondence between two images and the camera
- * parameters as intrinsic and extrinsic parameters,
- * determine the real world position.
+ * given correspondence between two images and intrinsic and extrinsic camera 
+ * parameters, determine the real world position.
  * 
  * useful reading:
  * <pre>
  * http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
  * add other references here
  * </pre>
- * 
- * TODO: implement a method using minimization of the re-projection error by
- * non-linear optimization such as Levenberg-Marquardt.
  * 
  * TODO: construct a method that might be better placed in reconstruction:
  * given camera intrinsic parameters and 2-view correspondences: first calculate
@@ -34,13 +30,12 @@ import no.uib.cipr.matrix.SVD;
 public class Triangulation {
     
     /**
-     * given the camera matrix as intrinsic and extrinsic matrices for 2 images
+     * given the intrinsic and extrinsic camera matrices for 2 images
      * and given the matching correspondence of points between the 2 images,
      * calculate the real world coordinate of the observations.
      * 
      * <pre>
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * add references here
      * </pre>
      * @param k1 intrinsic camera matrix for image 1 in units of pixels.
      * @param r1 the rotation matrix for the extrinsic camera matrix for image 1.
@@ -270,7 +265,6 @@ public class Triangulation {
      * 
      * <pre>
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * add references here
      * </pre>
      * @param camera1 camera matrix for image 1 in units of pixels
      * containing extrinsic parameters.   the size is 3X4.
@@ -278,8 +272,9 @@ public class Triangulation {
      * containing extrinsic parameters. the size is 3X4.
      * @param x1 the image 1 set of measurements of 1 real world point X.
      * The corresponding measurements of the same point in image 2 are in x2.
-     * format is 3 x N where
-     * N is the number of measurements.
+     * format is 3 x N where N is the number of measurements.
+     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
+     * If the data are not perfect, need more than 1 pair for best fit.
      * @param x2 the image 2 set of measurements of 1 real world point X.
      * The corresponding measurements of the same point in image 1 are in x1.
      * format is 3 x N where
@@ -345,6 +340,8 @@ public class Triangulation {
         x1 = P1 * X1  and  x2 = P2 * X2
             where x1 and x2 are in homogeneous coordinates
         
+        similarity relation: same direction ray, but have a scale factor alpha
+        
         x = alpha * P * X 
             where alpha is a scale factor and so the projection is in the same
                direction.  it's 1./(depth of point)
@@ -354,7 +351,10 @@ public class Triangulation {
                     [ p9  p10 p11 p12 ]   [ Z ]
                                           [ 1 ]
         
-           let pvec_1^T = [ p1 p2 p3 p4 ], etc. 
+        similarity relations are solvedby DLT:
+        (Remove scale factor, convert to linear system and solve with SVD)
+        
+           let pvec_1^T = [ p1 p2 p3 p4 ], pvec_2^T = [ p5 p6 p7 p8 ] etc. 
         
                        1x4               4x1
                     [ --pvec_1^T-- ]   [ X ]
@@ -374,7 +374,7 @@ public class Triangulation {
         
         NOTE: The cross product of 2 vectors of the same direction is 0.
         
-            So we have x cross P * X = 0 and alpha drops out
+            So we have 'x cross (P * X) = 0' and alpha drops out
 
                         [ a2*b3 - a3*b2 ]
                 a x b = [ a3*b1 - a1*b3 ]
@@ -387,6 +387,7 @@ public class Triangulation {
         [ 1 ]       [ pvec_3^T * Xvec ]   [ x * pvec_2^T * Xvec - y * pvec_1^T * Xvec]   [ 0 ]
         
         The 3rd line is a linear combination of the first and second lines. (x times the first line plus y times the second line)
+        so remove it:
 
         [ y * pvec_3^T * Xvec - pvec_2^T * Xvec ]   [ 0 ]
         [ pvec_1^T * Xvec - x * pvec_3^T * Xvec ] = [ 0 ]
@@ -402,10 +403,12 @@ public class Triangulation {
         
         solve Xvec in A * Xvec = 0 by minimizing ||A*x||^2 subject to ||x||^2 = 1
         
+        Total least squares
+        
         Solution is the eigenvector corresponding to smallest eigenvalue of A^T*A.
         
         */
-              
+                
         double u1x, u1y, u2x, u2y;
         double[] tmp;
         double[][] a = new double[4*n][4];
@@ -442,6 +445,8 @@ public class Triangulation {
         double[][] aTa = MatrixUtil.createATransposedTimesA(a);
         assert(aTa.length == 4);
         assert(aTa[0].length == 4);
+        
+        //NOTE: SVD(A).V is the same as SVD(A^TA).V
         
         SVD svd = null;
         try {
@@ -486,8 +491,7 @@ public class Triangulation {
                 
         return X;
     }
-   
-    
+       
     /*
      * not finished
      * 
@@ -497,7 +501,7 @@ public class Triangulation {
      <pre>
      The algorithm follows Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
      who refers to Ma, Soatto, Kosecka, and Sastry 2003
-     "An Invitation to 3D Vision From Images to Geometric Models":
+     "An Invitation to 3D Vision From Images to Geometric Models" (Chap 5)
      </pre>
      * @param r rotation of camera 2 with respect to camera 1
      * @param t the translation of camera 2 with respect to camera 1
