@@ -157,10 +157,9 @@ public class Reconstruction {
     */
     
      /**
-      * TODO: proof read and write test for this.
-     * given correspondence between two images calculate the camera
-     * parameters, and the real world position.
-     * 
+     * given 2 sets of correspondence from 2 different images taken from
+     * 2 cameras whose intrinsic and extrinsic parameters are known,
+     * determine the world scene coordinates of the correspondence points.
      * <pre>
      * following CMU lectures of Kris Kitani at 
      * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
@@ -175,7 +174,8 @@ public class Reconstruction {
      * N is the number of points.
      * @param x2 the image 2 set of correspondence points.  format is 3 x N where
      * N is the number of points.
-     * @return 
+     * @return the world scene coordinates and the intrinsic and extrinsic
+     * camera matrices (the later were given to the code, but are convenient to return in results).
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     public static ReconstructionResults calculateReconstruction(
@@ -195,12 +195,12 @@ public class Reconstruction {
         
         (3) For each point correspondence, compute the point X in 3D space (triangularization)
         */
-        
+                        
         double[][] XW = new double[4][n];
         for (int i = 0; i < 4; ++i) {
             XW[i] = new double[n];
         }
-        double[] XWPt = new double[4];
+        double[] XWPt;
         
         double[][] x1Pt = new double[3][1];
         double[][] x2Pt = new double[3][1];
@@ -215,9 +215,8 @@ public class Reconstruction {
                 x1Pt[ii][0] = x1[ii][i];
                 x2Pt[ii][0] = x2[ii][i];
             }
-            //
-            XWPt = Triangulation.calculateWCSPoint(
-                camera1, camera2, x1Pt, x2Pt);
+            //length is 4
+            XWPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
             for (ii = 0; ii < 4; ++ii) {
                 XW[ii][i] = XWPt[ii];
             } 
@@ -238,7 +237,7 @@ public class Reconstruction {
      * Two-camera case.   it's a distorted version of euclidean 3d.
      * 
      * NOTE that because the camera calibration, that is, intrinsic parameters,
-     * are not known, only the projective reconstruction is possible,,
+     * are not known, only the projective reconstruction is possible,
      * but this can be upgraded to 
      affine (parallelism preserved) and Euclidean (parallelism and orthogonality preserved) 
      reconstructions.
@@ -287,11 +286,11 @@ public class Reconstruction {
         /*
         http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
-        (1) compute fundamental mat5rix FM from the correspondence x1, x2
+        (1) compute fundamental matrix FM from the correspondence x1, x2
         (2) compute the camera matrices P1, P2 from FM.
         (3) For each point correspondence, compute the point X in 3D space (triangularization)
         
-        see also notes above frpm notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+        see also notes above from notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
         */
         
         DenseMatrix x1M = new DenseMatrix(x1);
@@ -323,6 +322,7 @@ public class Reconstruction {
                     errorType, tolerance);
         }
         */
+                
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
@@ -604,7 +604,7 @@ public class Reconstruction {
         8. Adapt projective motion, to account for the normalization transformations Ti of
         step 1.
         */
-        
+                
         // following proj_recons_fsvd.m
         //    pairs of image sets can be formed either by using the first
         //    image as x1 for all images, or chaining them all together.
