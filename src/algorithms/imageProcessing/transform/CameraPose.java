@@ -21,6 +21,12 @@ import no.uib.cipr.matrix.RQ;
  * TODO: consider solving with M-estimators.
  * see http://research.microsoft.com/en- us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
  * 
+ * From Tumurbaatar, and Kim 2019, Sensors (Basel). 2019 Apr; 19(8): 1905.
+ * "Comparative Study of Relative-Pose Estimations from a Monocular Image 
+ * Sequence in Computer Vision and Photogrammetry"
+ * We show that homography-based approaches are more accurate than essential-matrix 
+ * or relative orientation–based approaches under noisy conditions.
+ * 
  * @author nichole
  */
 public class CameraPose {
@@ -240,7 +246,7 @@ public class CameraPose {
         double[][] rSelected = MatrixUtil.zeros(3, 3);
         double[] tSelected = new double[3];
         double[][] XW = MatrixUtil.zeros(4, x1[0].length);
-        chooseRAndT(x1, x2, k1, k2, r1, r2, t1, t2, rSelected, tSelected, XW);  
+        bestInCheiralityTest(x1, x2, k1, k2, r1, r2, t1, t2, rSelected, tSelected, XW);  
         
         Camera.CameraExtrinsicParameters c1 = new Camera.CameraExtrinsicParameters();
         c1.setRotation(MatrixUtil.createIdentityMatrix(3));
@@ -485,7 +491,7 @@ public class CameraPose {
      * @param outputX the real world coordinates of the projection of x1 and x2 using
      * triangulation. else null if no valid solution was found
      */
-    private static void chooseRAndT(double[][] x1, double[][] x2, 
+    private static void bestInCheiralityTest(double[][] x1, double[][] x2, 
         double[][] k1, double[][] k2,
         double[][] R1, double[][] R2, double[] t1, double[] t2, 
         double[][] rSelected, double[] tSelected, double[][] outputX) {

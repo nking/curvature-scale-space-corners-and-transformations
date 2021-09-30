@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.transform;
 
+import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
@@ -50,6 +51,15 @@ public class CameraPoseTest extends TestCase {
         
         System.out.printf("\ndifference in rot between img1 and img5=\n%s\n", 
            FormatArray.toString(diffRSameCenter, "%.4e"));
+        
+        double[] out = new double[3];
+        extractThetaFromZYX(diffRSameCenter, out);
+        
+        System.out.printf("\ndifference in rot between img1 and img5in euler angles=\n");
+        for (double a : out) {
+            System.out.printf("%.2f ", 180.*a/Math.PI);
+        }
+        System.out.println();
     }
 
     /**
