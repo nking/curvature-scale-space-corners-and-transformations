@@ -22,6 +22,16 @@ import no.uib.cipr.matrix.DenseMatrix;
  * matched point lists under the assumption that some of the matched points
  * are not true (correct) matches.
  *
+ * from wikipedia:
+Random sample consensus (RANSAC) is an iterative method to estimate parameters 
+of a mathematical model from a set of observed data that contains outliers, 
+when outliers are to be accorded no influence on the values of the estimates. 
+Subsets are drawn from the sample a number of times such that the probability of drawing
+a sample that is a specified percentage of inliers is met.  The best model is determined from the best fitting
+subset and that model is then applied to all data.
+calculating the number of iterations needed for finding a subset that is all inliers is
+an important part of the algorithm to keep the runtime tractable.
+* 
  * <pre>
  * useful reading:
  * add references in comments below here..
