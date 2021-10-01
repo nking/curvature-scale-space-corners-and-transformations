@@ -279,6 +279,27 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
     for nPoints=7 amd only 1 solution in the cubic constraints, model_dimension=2,
     else for nPoints=7, model_dimension = 3.
  </pre>
+ <pre>
+ A summary of epipolar geometry is in chapter 5 of 
+ Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision".
+ 
+    e2 when normalized by 3rd coord is in coord space of left image and
+       it is the location of the right camera center.
+    e2 is the last column of svd.u
+    e2 is the left null space of F
+    (e2^T*F = 0  e2^T*E = 0)
+      ==> e2~T  where T is translation and ~ is equality up to a scale factor
+
+    e1 is the last row of svd.vt
+    e1 is the right null space of F
+    (F*e1 = 0  E*e1 = 0)
+      ==> e1~R^T*T  where R is rotation and T is translation
+    l2 = E*x1
+    l1 = E^T*x2
+    (x1^T*l1=0 and l1^T*e1=0)
+    (x2^T*l2=0 and l2^T*e2=0)
+ </pre>
+ 
  NOTE:
 For "7-point" correspondences, consider implementing MLESAC.
      "MLESAC: A new robust estimator with application to estimating image geometry"
@@ -1445,9 +1466,8 @@ public class EpipolarTransformer {
              e1 = last column of V divided by it's last item <---
              e2 = last column of U divided by it's last item
 
-        coords of epipole e’ (==e2) w.r.t. left image coords (==img1) is where 
-        the right camera is w.r.t. left image coords=
-            svd(F^T*F).u[2]/svd(F^T*F).u[2][2]
+        e2 when normalized by 3rd coord is in coord space of left image and
+               it is the location of the right camera center.
         */
              
         SVDProducts svdE = null;

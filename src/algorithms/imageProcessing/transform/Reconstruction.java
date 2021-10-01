@@ -161,11 +161,11 @@ public class Reconstruction {
      * given 2 sets of correspondence from 2 different images taken from
      * 2 cameras whose intrinsic and extrinsic parameters are known,
      * determine the world scene coordinates of the correspondence points.
+     * This method simply uses triangulation on each correspondence pair.
      * <pre>
      * following CMU lectures of Kris Kitani at 
      * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
      * 
-     * add other references here
      * </pre>
      * @param camera1 image 1 camera matrices of intrinsic and extrinsic parameters.
      * the size is 3 x 4.
@@ -230,10 +230,6 @@ public class Reconstruction {
     }
     
     /**
-     * TODO: proof read and write test for this.
-     * recover the 3-D coordinates in WCS from pairs of corresponding
-     * un-calibrated image points, that is, points in the image reference frame in pixels.
-     * 
      * This is also called Projective Structure From Motion for the
      * Two-camera case.   it's a distorted version of euclidean 3d.
      * 
@@ -250,6 +246,9 @@ public class Reconstruction {
      * NOTE: this solution is fine for cases with no noise, otherwise, the
      * results should be the initial values for a non-linear optimization method.
      
+     * The method uses the fundamental matrix to compute the camera matrices P1, P2
+     * and then uses triangulation on each correspondence pair.
+     * 
      * <pre>
      * following CMU lectures of Kris Kitani at 
      * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
@@ -776,10 +775,18 @@ public class Reconstruction {
      * given correspondence between two images in image coordinates calculate 
      * the extrinsic camera parameters and the 3-D points.
      * 
+     * This method calculates the essential matrix and uses the SVD of it to
+     * extract the translation and possible rotation matrices which are
+     * filtered to find the best while calculating triangulation for each point.
+     * 
+     * Note that the absolute translation between the two cameras can never be 
+     * recovered from pure image measurements alone, regardless of how many 
+     * cameras or points are used as ground control points are
+     * needed.
      * <pre>
      * following CMU lectures of Kris Kitani at 
      http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
-     Szeliski 2010, eqn (7.25)
+     Szeliski 2010, Chapter 7, and eqn (7.25).
      Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision", pg 121 
      * </pre>
      * @param k1 intrinsic camera matrix for image 1 in units of pixels.
@@ -961,6 +968,9 @@ public class Reconstruction {
         rr.k2ExtrRot = rSelected;
         rr.k2ExtrTrans = tSelected;
         rr.k2Intr = k2;
+        rr.essentialMatrix = _essentialMatrix;
+        rr.svd = svdE;
+        rr.fundamentalMatrix = null;
 
         return rr;        
     }
@@ -2181,6 +2191,9 @@ public class Reconstruction {
         double[] k1ExtrTrans;
         double[][] k2ExtrRot;
         double[] k2ExtrTrans;
+        double[][] essentialMatrix;
+        SVDProducts svd;
+        double[][] fundamentalMatrix;
         
         @Override
         public String toString() {

@@ -2,7 +2,9 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.Reconstruction.ReconstructionResults;
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -16,8 +18,10 @@ import no.uib.cipr.matrix.NotConvergedException;
  */
 public class Rectification {
 
-    // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
-    // and Ma, Soatto, Kosecka,& Sastry "Invitation to Computer Vision, From Images to Geometric Models",
+    // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD.
+    // other references from Kris Kitani's lectures in 16-385 Computer Vision,
+    // Carnegie Mellon University,
+    // and Ma, Soatto, Kosecka,& Sastry 2012 "Invitation to Computer Vision, From Images to Geometric Models",
     //
     // homogeneous repr of a point is x_vec = (x, y, 1)^T
     // equation f a line is ell = a*x + b*y + c = 0;
@@ -101,6 +105,112 @@ public class Rectification {
     //
     
     /**
+     * Rectify (i.e, warp) the left image correspondence points x1 and
+     * right image correspondence points x2
+     * so that corresponding horizontal scanlines are epipolar lines.
+     
+     * <pre>
+     * references:
+     * following the algorithm of Kitani lecture 13.1, class 16-385 Computer Vision,
+         Carnegie Mellon University.
+       
+       there are many alternative approaches depending on datasets mentioned in
+       Seliski 2010, "Computer Vision: Algorithms and Applications"
+    
+       also useful reading:
+       Ma, Soatto, Kosecka,& Sastry 2012 "Invitation to Computer Vision, From Images to Geometric Models",
+    
+     * </pre>
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * @param k1Intr intrinsic parameters for camera 1
+     * @param k2Intr intrinsic parameters for camera 2
+     * @return 
+     */
+    public static RectifiedPoints epipolar(double[][] k1Intr,
+        double[][] k2Intr, double[][] x1, double[][] x2) throws NotConvergedException {
+        
+        /*
+        from Kitani lecture:
+        
+       when rectified, the images are parallel, i.e. epipolar lines are horizontal:
+      R = 1 0 0   t = T,0,0  [t]_x = 0 0 0
+          0 1 0                      0 0 -T
+          0 0 1                      0 T 0
+
+      E = [t]_x*R = 0  0  0
+                    0  0 -T
+                    0  T  0
+
+      and x^T*E*x' = 0 has to remain true
+
+      [u v 1] [0  0  0] [u'] = 0
+              [0  0 -T] [v']
+              [0  T  0] [1 ]
+
+          [u v 1] [0   ] = 0
+          [-T  ]
+          [v'*T]
+
+   0 + -v*T + v'*T = 0
+   v*T = v'*T;  y coord is always the same
+
+   to reproject image planes onto a common plane parallel to the line
+   between camera centers, need a homography (3X3 tranform) for each
+   image.
+
+   1. Rotate the right camera by R  
+      (aligns camera coordinate system orientation only)
+      1a. Compute E to get R
+          (use reconstruction w/ intrinsic if have it, or without if not)
+          Reconstruction.calculateUsingEssentialMatrix
+          Reconstruction.calculateProjectiveReconstruction
+       and the epipoles e1, e2
+        e2 is the last column of svd.u
+            e2 is the left null space of F (e2^T*F = 0  or e2^T*E = 0)
+            e2 when normalized by 3rd coord is in coord space of left image and
+               it is the location of the right camera center.
+        e1 is the last row of svd.vt
+            e1 is the right null space of F (F*e1 = 0 or E*e1 = 0)
+       epipolar lines l1_i and l2_i
+        l2 = E*x1
+        l1 = E^T*x2
+        */
+        
+       ReconstructionResults re = Reconstruction.calculateUsingEssentialMatrix(k1Intr, k2Intr, x1, x2);
+       double[] t = re.k2ExtrTrans;
+       double[] e1 = re.svd.vT[2];
+       double[] e2 = MatrixUtil.transpose(re.svd.u)[2];
+       
+       /*
+       let r_1 = e1 = T/||T|| so that epipole coincides w/ translation vector
+       */
+       double[] r1 = Arrays.copyOf(t, t.length);
+       r1 = MatrixUtil.normalizeL2(r1);
+       System.out.printf("t=%s\ne1=%s\nr1=%s\n", 
+           FormatArray.toString(t, "%.4e"),
+           FormatArray.toString(e1, "%.4e"),
+           FormatArray.toString(e1, "%.4e"));
+       
+       /*
+       let r_2 = (1/sqrt(T_x^2 + T_y^2))*[-T_x  T_y  0]
+                  cross product of e and the direction vector of the optical axis
+       */
+       double td = 1./Math.sqrt(t[0]*t[0] + t[1]*t[1]);
+       double[] r2 = new double[]{-t[0]*td, t[1]*td, 0};
+       
+       /*
+       let r_3 = r1Xr2 orthogonal vector
+       */
+       double[] r3 = MatrixUtil.crossProduct(r1, r2);
+       
+       
+       throw new UnsupportedOperationException("not yet finished");
+    }
+    
+    /**
      * implementation of epipolar rectification following algorithm 11.9 of
      * Ma, Soatto, Kosecka,& Sastry "Invitation to Computer Vision, From Images to Geometric Models".
      * This is for un-calibrated cameras.  If the images have a large range of
@@ -114,7 +224,6 @@ public class Rectification {
      * known, users of this method should presumably center the coordinates in
      * some manner (e.g. subtract the image center or centroid of points) since
      * internally an identity matrix is used for K.
-     * @param x1
      * @param x2 the image 2 set of correspondence points. format is 3 x N where
      * N is the number of points. NOTE: since intrinsic parameters are not
      * known, users of this method should presumably center the coordinates in
@@ -513,4 +622,129 @@ public class Rectification {
         public double[][] h1;
     }
 
+    
+    public static class RectifiedPoints {
+        private double[][] x1Rect;
+        private double[][] rot1;
+        private double[] trans1;
+        private double[][] intr1;
+        
+        private double[][] x2Rect;
+        private double[][] rot2;
+        private double[] trans2;
+        private double[][] intr2;
+
+        /**
+         * @return the x1Rect
+         */
+        public double[][] getX1Rect() {
+            return x1Rect;
+        }
+
+        /**
+         * @param x1Rect the x1Rect to set
+         */
+        public void setX1Rect(double[][] x1Rect) {
+            this.x1Rect = x1Rect;
+        }
+
+        /**
+         * @return the rot1
+         */
+        public double[][] getRot1() {
+            return rot1;
+        }
+
+        /**
+         * @param rot1 the rot1 to set
+         */
+        public void setRot1(double[][] rot1) {
+            this.rot1 = rot1;
+        }
+
+        /**
+         * @return the trans1
+         */
+        public double[] getTrans1() {
+            return trans1;
+        }
+
+        /**
+         * @param trans1 the trans1 to set
+         */
+        public void setTrans1(double[] trans1) {
+            this.trans1 = trans1;
+        }
+
+        /**
+         * @return the intr1
+         */
+        public double[][] getIntr1() {
+            return intr1;
+        }
+
+        /**
+         * @param intr1 the intr1 to set
+         */
+        public void setIntr1(double[][] intr1) {
+            this.intr1 = intr1;
+        }
+
+        /**
+         * @return the x2Rect
+         */
+        public double[][] getX2Rect() {
+            return x2Rect;
+        }
+
+        /**
+         * @param x2Rect the x2Rect to set
+         */
+        public void setX2Rect(double[][] x2Rect) {
+            this.x2Rect = x2Rect;
+        }
+
+        /**
+         * @return the rot2
+         */
+        public double[][] getRot2() {
+            return rot2;
+        }
+
+        /**
+         * @param rot2 the rot2 to set
+         */
+        public void setRot2(double[][] rot2) {
+            this.rot2 = rot2;
+        }
+
+        /**
+         * @return the trans2
+         */
+        public double[] getTrans2() {
+            return trans2;
+        }
+
+        /**
+         * @param trans2 the trans2 to set
+         */
+        public void setTrans2(double[] trans2) {
+            this.trans2 = trans2;
+        }
+
+        /**
+         * @return the intr2
+         */
+        public double[][] getIntr2() {
+            return intr2;
+        }
+
+        /**
+         * @param intr2 the intr2 to set
+         */
+        public void setIntr2(double[][] intr2) {
+            this.intr2 = intr2;
+        }
+    }
+    
 }
