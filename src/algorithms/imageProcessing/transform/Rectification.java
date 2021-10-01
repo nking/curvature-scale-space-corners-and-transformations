@@ -180,8 +180,9 @@ public class Rectification {
         */
         
        ReconstructionResults re = Reconstruction.calculateUsingEssentialMatrix(k1Intr, k2Intr, x1, x2);
-       double[] t = re.k2ExtrTrans;
-       double[] e1 = re.svd.vT[2];
+       double[] t = Arrays.copyOf(re.k2ExtrTrans, re.k2ExtrTrans.length);
+       double[][] r = MatrixUtil.copy(re.k2ExtrRot);
+       double[] e1 = Arrays.copyOf(re.svd.vT[2], re.svd.vT[2].length);
        double[] e2 = MatrixUtil.transpose(re.svd.u)[2];
        
        /*
@@ -189,22 +190,51 @@ public class Rectification {
        */
        double[] r1 = Arrays.copyOf(t, t.length);
        r1 = MatrixUtil.normalizeL2(r1);
-       System.out.printf("t=%s\ne1=%s\nr1=%s\n", 
+       System.out.printf("t=%s\ne1=%s\ne2=%s\nr1=%s\n", 
            FormatArray.toString(t, "%.4e"),
-           FormatArray.toString(e1, "%.4e"),
-           FormatArray.toString(e1, "%.4e"));
+           FormatArray.toString(e1, "%.4e"), FormatArray.toString(e2, "%.4e"),
+           FormatArray.toString(r1, "%.4e"));
        
        /*
        let r_2 = (1/sqrt(T_x^2 + T_y^2))*[-T_x  T_y  0]
                   cross product of e and the direction vector of the optical axis
        */
-       double td = 1./Math.sqrt(t[0]*t[0] + t[1]*t[1]);
-       double[] r2 = new double[]{-t[0]*td, t[1]*td, 0};
+       double td = Math.sqrt(t[0]*t[0] + t[1]*t[1]);
+       double[] r2 = new double[]{1./(-t[0]*td), 1./(t[1]*td), 0};
        
        /*
        let r_3 = r1Xr2 orthogonal vector
        */
        double[] r3 = MatrixUtil.crossProduct(r1, r2);
+       
+       double[][] rRect = MatrixUtil.zeros(3, 3);
+       System.arraycopy(r1, 0, rRect[0], 0, r1.length);
+       System.arraycopy(r2, 0, rRect[1], 0, r2.length);
+       System.arraycopy(r3, 0, rRect[2], 0, r3.length);
+       
+       System.out.printf("rRect=%s\n", FormatArray.toString(rRect, "%.4e"));
+       
+           double[] tst = MatrixUtil.multiplyMatrixByColumnVector(rRect, r1);
+           System.out.printf("rRect*r1=%s\nexpecting=[1, 0, 0]\n",
+               FormatArray.toString(tst, "%.4e"));
+              
+       //Set R1=Rrect and R2 = R*Rrect
+       double[][] r1Rot = MatrixUtil.copy(rRect);
+       double[][] r2Rot = MatrixUtil.multiply(r, rRect);
+       
+       /*
+       2. Rotate (rectify) the left camera so that the epipole is at infinity
+          [x2 y2 z2] = R1 * [x1 y1 z1] = warped left which should equal [x2 y2 z2] with caveat
+                             due to occulsion, etc.
+
+       points p = (f/z2)*[x2 y2 z2]
+       if have intrinsic parameters matrix K then
+           points p ~ K*R1*[x1 y1 z1]
+             *Kitani notes that you may need to alter f inside K to keep
+              points within the original image size
+       
+       f=(W/2)*((tan(fov/2))^-1)
+       */
        
        
        throw new UnsupportedOperationException("not yet finished");
