@@ -284,6 +284,10 @@ public class Reconstruction {
         }
         
         /*
+        Similar to CameraPose.calculateUsingEssentialMatrix()
+        except for use of uncalibrated points and use of a different diagonal
+        in constrcting the fundamental matrix.
+                        
         http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
         (1) compute fundamental matrix FM from the correspondence x1, x2
@@ -322,11 +326,13 @@ public class Reconstruction {
                     errorType, tolerance);
         }
         */
+        
+        boolean calibrated = false;
                 
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations, false);
+                reCalcIterations, calibrated);
         
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
             fitR.getFundamentalMatrix(), 
@@ -346,57 +352,45 @@ public class Reconstruction {
         
         //(2) compute the camera matrices P1, P2 from FM.
         
-        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(_fm);
-        double[] s = Arrays.copyOf(svd.s, svd.s.length);
-        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(s, "%.3e"));
+        MatrixUtil.SVDProducts svdF = MatrixUtil.performSVD(_fm);
         
-        assert(svd.u[0].length == 3 && svd.u.length == 3);
-
-        // Szeliski 2010 eqn 7.30.reform dropping the last singular value.
-        s[2] = 0;
-        _fm = MatrixUtil.multiplyByDiagonal(svd.u, s);
-        _fm = MatrixUtil.multiply(_fm, svd.vT);
-        svd = MatrixUtil.performSVD(_fm);
-        double[] e2 = MatrixUtil.extractColumn(svd.u, 2);
-        double[] e1 = svd.vT[2];
+        assert(svdF.u[0].length == 3 && svdF.u.length == 3);
         
-        double detV = MatrixUtil.determinant(svd.vT);
+        double detU = MatrixUtil.determinant(svdF.u);
+        double detV = MatrixUtil.determinant(svdF.vT);
         
-        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(svd.u, "%.3e"));
-        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(s, "%.3e"));
-        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(svd.vT, "%.3e"));
-        System.out.printf("det(SVD.u)=%.2f\n", MatrixUtil.determinant(svd.u));
+        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(svdF.u, "%.3e"));
+        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svdF.s, "%.3e"));
+        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(svdF.vT, "%.3e"));
+        System.out.printf("det(SVD.u)=%.2f\n", detU);
         System.out.printf("det(SVD.vT)=%.2f\n", detV);
-                   
-        // form the ambiguous homography:
-        //   ~H = U * (R_90)^T * ~Sigma * V^T
-        //    where ~sigma is the singular value matrix with the smallest value 
-        //  replaced by a reasonable alternative (say, the middle value)
-       
+        
+        //H = +U * R_Z(+-90)^T * sigma_hat * V^T
+        double[][] r90T = new double[3][3];
+        r90T[0] = new double[]{0, 1, 0};
+        r90T[1] = new double[]{-1, 0, 0};
+        r90T[2] = new double[]{0, 0, 1};
+        
+        double[][] h = MatrixUtil.multiply(
+            MatrixUtil.multiplyByDiagonal(
+                MatrixUtil.multiply(svdF.u, r90T),
+                new double[]{svdF.s[0], svdF.s[1], svdF.s[2]}),
+            svdF.vT);
+        
+        // last column in u is the second epipole and is the direction of vector t
+        double[] t1 = MatrixUtil.extractColumn(svdF.u, 2);
+        double[] e2 = t1;
+        double[] e1 = svdF.vT[2];
+        
+        System.out.printf("e1=%s\n", FormatArray.toString(e1, "%.3e"));
+        System.out.printf("e2=%s\n", FormatArray.toString(e2, "%.3e"));
+         
         // camera matrix P for left image = [I | 0 ]
         double[][] camera1 = MatrixUtil.zeros(3, 4);
         for (int i = 0; i < 3; ++i) {
             camera1[i][i] = 1;
         }
         
-        double[][] r90 = new double[3][3];
-        r90[0] = new double[]{0, -1, 0};
-        r90[1] = new double[]{1, 0, 0};
-        r90[2] = new double[]{0, 0, 1};        
-        double[][] r90T = MatrixUtil.transpose(r90);
-        s = Arrays.copyOf(svd.s, svd.s.length);
-        s[2] = s[1]; // should this be 0?
-        
-        double[][] homog = MatrixUtil.multiply(svd.u, r90T);
-        homog = MatrixUtil.multiplyByDiagonal(homog, s);
-        homog = MatrixUtil.multiply(homog, svd.vT);
-        
-        e2 = MatrixUtil.extractColumn(svd.u, 2);
-        e1 = svd.vT[2];
-        
-        System.out.printf("e1=%s\n", FormatArray.toString(e1, "%.3e"));
-        System.out.printf("e2=%s\n", FormatArray.toString(e2, "%.3e"));
-         
         // Szeliksi 2010 eqn 7.34:  P0 =[I|0] and P0 =[H|e],
         //    and then he finishes w/ triangulation
         // kitani lecture has P2 = [ [e1]_x * F | e2 ]
@@ -409,67 +403,23 @@ public class Reconstruction {
         
         // NOTE: not necessary to normalize the epipoles by the last value
         
-        double[][] camera2S = MatrixUtil.zeros(3, 4);
+        double[][] camera2 = MatrixUtil.zeros(3, 4);
         for (int i = 0; i < 3; ++i) {
-            camera2S[i] = new double[4];
-            System.arraycopy(homog[i], 0, camera2S[i], 0, 3);
-            camera2S[i][3] = e2[i];
+            camera2[i] = new double[4];
+            System.arraycopy(h[i], 0, camera2[i], 0, 3);
+            camera2[i][3] = e2[i];
         }
         
-        double[][] e1SkewSym = MatrixUtil.skewSymmetric(e1);
-        double[][] e1F = MatrixUtil.multiply(e1SkewSym, _fm);
-        double[][] camera2K = MatrixUtil.zeros(3, 4);
-        for (int i = 0; i < 3; ++i) {
-            camera2K[i] = new double[4];
-            System.arraycopy(e1F[i], 0, camera2K[i], 0, 3);
-            camera2K[i][3] = e2[i];
-        }
-        double[][] e2SkewSymT = MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2));
-        MatrixUtil.multiply(e2SkewSymT, -1);
-        double[][] e2TF = MatrixUtil.multiply(e2SkewSymT, _fm);
-        double[][] camera2H = MatrixUtil.zeros(3, 4);
-        for (int i = 0; i < 3; ++i) {
-            camera2H[i] = new double[4];
-            System.arraycopy(e2TF[i], 0, camera2H[i], 0, 3);
-            camera2H[i][3] = e2[i];
-        }
-        
-        e2SkewSymT = MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2));
-        e2TF = MatrixUtil.multiply(e2SkewSymT, _fm);
-        double[][] camera2B = MatrixUtil.zeros(3, 4);
-        for (int i = 0; i < 3; ++i) {
-            camera2B[i] = new double[4];
-            System.arraycopy(e2TF[i], 0, camera2B[i], 0, 3);
-            camera2B[i][3] = e2[i];
-        }
-        
-        System.out.printf("Szeliski P2\n%s\n", FormatArray.toString(camera2S, "%.3e"));
-        
-        System.out.printf("Kitani P2\n%s\n", FormatArray.toString(camera2K, "%.3e"));
-        
-        System.out.printf("Hartley & Zisserman P2\n%s\n", FormatArray.toString(camera2H, "%.3e"));
-        
-        System.out.printf("Belongie P2\n%s\n", FormatArray.toString(camera2B, "%.3e"));
+        System.out.printf("Szeliski P2\n%s\n", FormatArray.toString(camera2, "%.3e"));
         
         CameraProjection P1 = new CameraProjection(camera1);
-        CameraProjection P2S = new CameraProjection(camera2S);
-        CameraProjection P2K = new CameraProjection(camera2K);
-        CameraProjection P2H = new CameraProjection(camera2H);
-        CameraProjection P2B = new CameraProjection(camera2B);
+        CameraProjection P2 = new CameraProjection(camera2);
         
-        double[][] XWS, XWK, XWH, XWB;
+        double[][] XW;
         double[] XWPt;
-        
-        XWPt = new double[4];
-        XWS = new double[4][n];
-        XWK = new double[4][n];
-        XWH = new double[4][n];
-        XWB = new double[4][n];
+        XW = new double[4][n];
         for (int i = 0; i < 4; ++i) {
-            XWS[i] = new double[n];
-            XWK[i] = new double[n];
-            XWH[i] = new double[n];
-            XWB[i] = new double[n];
+            XW[i] = new double[n];
         }
         
         double[][] x1Pt = new double[3][1];
@@ -485,40 +435,22 @@ public class Reconstruction {
                 x1Pt[j][0] = x1[j][i];
                 x2Pt[j][0] = x2[j][i];
             }
-            XWPt = Triangulation.calculateWCSPoint(P1, P2S, x1Pt, x2Pt);
+            XWPt = Triangulation.calculateWCSPoint(P1, P2, x1Pt, x2Pt);
             for (j = 0; j < 4; ++j) {
-                XWS[j][i] = XWPt[j];
-            }
-            XWPt = Triangulation.calculateWCSPoint(P1, P2K, x1Pt, x2Pt);
-            for (j = 0; j < 4; ++j) {
-                XWK[j][i] = XWPt[j];
-            }
-            XWPt = Triangulation.calculateWCSPoint(P1, P2H, x1Pt, x2Pt);
-            for (j = 0; j < 4; ++j) {
-                XWH[j][i] = XWPt[j];
-            }
-            XWPt = Triangulation.calculateWCSPoint(P1, P2B, x1Pt, x2Pt);
-            for (j = 0; j < 4; ++j) {
-                XWB[j][i] = XWPt[j];
+                XW[j][i] = XWPt[j];
             }
         }
         
-        System.out.printf("Szeliski reconstruction\n%s\n", FormatArray.toString(XWS, "%.3e"));
-        
-        System.out.printf("Kitani reconstruction\n%s\n", FormatArray.toString(XWK, "%.3e"));
-        
-        System.out.printf("Hartley & Zisserman reconstruction\n%s\n", FormatArray.toString(XWH, "%.3e"));
-        
-        System.out.printf("Belongie reconstruction\n%s\n", FormatArray.toString(XWB, "%.3e"));
+        System.out.printf("Szeliski reconstruction\n%s\n", FormatArray.toString(XW, "%.3e"));
         
         ProjectionResults rr = new ProjectionResults();
-        rr.XW = XWK;
+        rr.XW = XW;
         rr.projectionMatrices = MatrixUtil.zeros(3*2, 4);
         for (i = 0; i < 3; ++i) {
             System.arraycopy(P1.getP()[i], 0, rr.projectionMatrices[i], 0, 4);
         }
         for (i = 0; i < 3; ++i) {
-            System.arraycopy(P2B.getP()[i], 0, rr.projectionMatrices[3 + i], 0, 4);
+            System.arraycopy(P2.getP()[i], 0, rr.projectionMatrices[3 + i], 0, 4);
         }
         return rr;
     }

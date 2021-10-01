@@ -19,7 +19,7 @@ seq7/frame00039.png  -13.182436 -18.442966 1.724784 0.678307 0.569025 -0.308146 
 seq8/frame00074.png   13.236864 -24.132282 1.828876 0.769271 0.637893 -0.030718 0.019230
 
 is (x,y,z) the position and wpqr quaternion format rotation?
-* if quaternion, format is presumably Hamilton and not Barfoot?
+if quaternion, format is presumably Hamilton and not Barfoot?
 
 Spatial Extent (m) of entire KC dataset is 140 x 40m
 Dist. to Conv. 2-3m, 2.70-3 degrees

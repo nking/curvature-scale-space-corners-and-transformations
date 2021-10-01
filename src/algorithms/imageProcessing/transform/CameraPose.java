@@ -230,18 +230,12 @@ public class CameraPose {
         //    eigenvector.  it is epipole2, that is, the right image position 
         //    of the epipolar projection of the left camera center.
         //    it's int the left null space of E.
-        
-        //or use directions x1Direction, x2Direction
-                
-        x1M = extractIndices(new DenseMatrix(x1), fitR.inlierIndexes);
-        x2M = extractIndices(new DenseMatrix(x2), fitR.inlierIndexes);
+                        
+        x1M = extractIndices(new DenseMatrix(x1Direction), fitR.inlierIndexes);
+        x2M = extractIndices(new DenseMatrix(x2Direction), fitR.inlierIndexes);
         x1 = MatrixUtil.convertToRowMajor(x1M);
         x2 = MatrixUtil.convertToRowMajor(x2M);
         
-        // solution 1:  Rot1 and T1
-        // solution 2:  Rot1 and T2
-        // solution 3:  Rot2 and T2
-        // solution 4:  Rot2 and T1
         double[][] rSelected = MatrixUtil.zeros(3, 3);
         double[] tSelected = new double[3];
         double[][] XW = MatrixUtil.zeros(4, x1[0].length);
@@ -611,7 +605,7 @@ public class CameraPose {
         System.out.flush();
         
         for (i = 0; i < XW.length; ++i) {
-            System.arraycopy(XW[i], 0, outputX[i], 0, XW[i].length);
+            System.arraycopy(bestXW[i], 0, outputX[i], 0, bestXW[i].length);
         }
         
     }
