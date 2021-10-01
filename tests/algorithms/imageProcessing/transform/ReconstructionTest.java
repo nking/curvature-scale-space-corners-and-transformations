@@ -1,9 +1,11 @@
 package algorithms.imageProcessing.transform;
 
+import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertNotNull;
 import no.uib.cipr.matrix.NotConvergedException;
 import org.junit.Test;
 
@@ -14,6 +16,57 @@ import org.junit.Test;
 public class ReconstructionTest extends TestCase {
     
     public ReconstructionTest() {
+    }
+    
+      /**
+     * Test of calculateUsingEssentialMatrix method, of class CameraPose.
+     */
+    public void testCalculateUsingEssentialMatrix() throws Exception {
+        System.out.println("calculateUsingEssentialMatrix");
+       
+        double[][] k1 = Zhang98Data.getIntrinsicCameraMatrix();
+        double[][] k2 = MatrixUtil.copy(k1);
+        //x1, x2 size is 3 X 256
+        double[][] x1 = Zhang98Data.getObservedFeaturesInImage(1);
+        double[][] x2 = Zhang98Data.getObservedFeaturesInImage(5);
+                
+        Reconstruction.ReconstructionResults result = 
+            Reconstruction.calculateUsingEssentialMatrix(k1, k2, x1, x2);
+        
+        assertNotNull(result);
+        
+        System.out.printf("\nresult:\nrot1=%strans1=%s\n", 
+            FormatArray.toString(result.k1ExtrRot, "%.4e"),
+            FormatArray.toString(result.k1ExtrTrans, "%.4e"));
+        System.out.printf("\nresult:\nrot2=%strans2=%s\n", 
+            FormatArray.toString(result.k2ExtrRot, "%.4e"),
+            FormatArray.toString(result.k2ExtrTrans, "%.4e"));
+        
+        System.out.printf("\nimg1:\nrot=%strans=%s\n", 
+                FormatArray.toString(Zhang98Data.getRotation(1), "%.4e"),
+                FormatArray.toString(Zhang98Data.getTranslation(1), "%.4e"));
+        System.out.printf("\nimg5:\nrot=%strans=%s\n", 
+                FormatArray.toString(Zhang98Data.getRotation(5), "%.4e"),
+                FormatArray.toString(Zhang98Data.getTranslation(5), "%.4e"));
+        
+        double[][] diffRSameCenter = Rotation.procrustesAlgorithmForRotation(
+            Zhang98Data.getRotation(1), Zhang98Data.getRotation(5));
+        
+        System.out.printf("\ndifference in rot between img1 and img5=\n%s\n", 
+           FormatArray.toString(diffRSameCenter, "%.4e"));
+        
+        double[] out = new double[3];
+        extractThetaFromZYX(diffRSameCenter, out);
+        
+        System.out.printf("\ndifference in rot between img1 and img5 in euler angles=\n");
+        for (double a : out) {
+            System.out.printf("%.2f ", 180.*a/Math.PI);
+        }
+        System.out.println();
+        double[] diffTrans = MatrixUtil.subtract(Zhang98Data.getTranslation(1), Zhang98Data.getTranslation(5));
+        System.out.printf("\ndifference in trans between img1 and img5=\n%s\n",
+            FormatArray.toString(diffTrans, "%.3e"));
+        System.out.flush();
     }
 
     /**
