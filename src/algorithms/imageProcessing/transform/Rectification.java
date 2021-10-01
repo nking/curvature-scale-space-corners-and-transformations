@@ -109,7 +109,7 @@ public class Rectification {
      * If one has camera intrinsic and extrinsic parameters, Ma et al. suggest
      * use method of Fusiello et al. 1997 for Euclidean projection. 
      * 
-     * *@param x1 the image 1 set of correspondence points. format is 3 x N
+     * @param x1 the image 1 set of correspondence points. format is 3 x N
      * where N is the number of points. NOTE: since intrinsic parameters are not
      * known, users of this method should presumably center the coordinates in
      * some manner (e.g. subtract the image center or centroid of points) since

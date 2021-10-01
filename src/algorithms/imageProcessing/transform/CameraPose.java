@@ -17,6 +17,7 @@ import no.uib.cipr.matrix.RQ;
  given a set of features in image coordinates and world coordinate space with
   known camera intrinsic parameters, estimate the camera pose, that is
   extract the camera extrinsic parameters.
+ <em>See also PNP.java</em>
  
  * TODO: consider solving with M-estimators.
  * see http://research.microsoft.com/en- us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
@@ -313,9 +314,10 @@ public class CameraPose {
         
         MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
         
+        //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
         // vT is 12X12.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] xOrth = svd.vT[svd.vT.length - 1];
-        
+                
         // reshape into 3 X 4
         double[][] P2 = MatrixUtil.zeros(3, 4);
         System.arraycopy(xOrth, 0, P2[0], 0, 4);
@@ -329,12 +331,20 @@ public class CameraPose {
         double[] check0 = MatrixUtil.multiplyMatrixByColumnVector(P2, c);
         System.out.printf("check that P2*c=0:%s\n", FormatArray.toString(check0, "%.3e"));
         
+        /*
+        Szeliski Sect 6.2.1
+        Since K is by convention upper-triangular 
+        (see the discussion in Section 2.1.5), both K and R can be obtained 
+        from the front 3 ⇥ 3 sub-matrix of P using RQ factorization 
+        (Golub and Van Loan 1996)
+        */
+        
         double[][] M = MatrixUtil.copySubMatrix(P2, 0, 2, 0, 2);
         RQ rq = RQ.factorize(new DenseMatrix(M));
         
-        System.out.printf("RQ.R=\n%s\n", FormatArray.toString(
+        System.out.printf("RQ.R=intr\n%s\n", FormatArray.toString(
             MatrixUtil.convertToRowMajor(rq.getR()), "%.3e"));
-        System.out.printf("RQ.Q=\n%s\n", FormatArray.toString(
+        System.out.printf("RQ.Q=rot=\n%s\n", FormatArray.toString(
             MatrixUtil.convertToRowMajor(rq.getQ()), "%.3e"));
         
         double[][] kIntr = MatrixUtil.convertToRowMajor(rq.getR());
@@ -433,9 +443,9 @@ public class CameraPose {
      * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3features are needed to 
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
-     * @return 
+     @return 
      */
-    public static CameraExtrinsicParameters calculatePoseUsingPNP(
+    /*public static CameraExtrinsicParameters calculatePoseUsingPNP(
         Camera.CameraIntrinsicParameters intrinsics, double[][] x,
         double[][] X) throws NotConvergedException {
                 
@@ -446,6 +456,7 @@ public class CameraPose {
             throw new IllegalArgumentException("X.length must be 3");
         }
         int n = x[0].length;
+        
         if (n < 4) {
             throw new IllegalArgumentException("x must have at least 4 correspondences");
         }
@@ -461,6 +472,7 @@ public class CameraPose {
         
         throw new UnsupportedOperationException("not yet implemented");
     }
+    */
     
      /**
      * among the 4 rotation and translation combinations from R1, R1, T1, and T2, 
