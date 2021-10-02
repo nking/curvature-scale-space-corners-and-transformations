@@ -1,5 +1,7 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Reconstruction.ReconstructionResults;
@@ -263,8 +265,14 @@ public class Rectification {
                 x2R[j][i] /= x2R[2][i];
             }
         }
-       
-       throw new UnsupportedOperationException("not yet finished");
+      
+        RectifiedPoints rPts = new RectifiedPoints();
+        rPts.setX1(x1R);
+        rPts.setX2(x2R);
+        rPts.setH1(_h1);
+        rPts.setH2(_h2);
+        
+        return rPts;
     }
     
     /**
@@ -289,7 +297,7 @@ public class Rectification {
      * @param oY camera optical center along y-axis
      * @return
      */
-    public static RectifiedImage rectify(double[][] x1, double[][] x2, double oX, double oY) throws NoSuchAlgorithmException, NotConvergedException {
+    public static RectifiedPoints rectify(double[][] x1, double[][] x2, double oX, double oY) throws NoSuchAlgorithmException, NotConvergedException {
 
         if (x1.length != 3 || x2.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
@@ -548,11 +556,11 @@ public class Rectification {
             }
         }
         
-        RectifiedImage out = new RectifiedImage();
-        out.x1 = x1R;
-        out.x2 = x2R;
-        out.h1 = h1;
-        out.h2 = h2;
+        RectifiedPoints out = new RectifiedPoints();
+        out.setX1(x1R);
+        out.setX2(x2R);
+        out.setH1(_h1);
+        out.setH2(_h2);
 
         return out;        
     }
@@ -560,21 +568,21 @@ public class Rectification {
     /**
      use the homography from rectify(...) to warp the image img such that
      epipolar lines correspond to scan lines.
+     
      following Hwarp.m in examples-code from Ma et al. supplementary book material
      https://cs.gmu.edu/~kosecka/MASKS_book.html
      which states:
      "THE CODE ON THIS PAGE IS DISTRIBUTED FREE FOR NON-COMMERCIAL USE.
      Copyright (c) MASKS, 2003."
         
-     * @param img two dimension array holding pixel intensities in format
-     * where x axis is along columns and y axis is along rows.
+     * @param img image to be rectified
      * @param h
      * @return 
      */
-    public static RectifiedImage hWarp(double[][] img, double[][] h) throws NotConvergedException {
+    public static RectifiedImage hWarp(Image img, double[][] h) throws NotConvergedException {
         
-        int ydim = img.length/2;
-        int xdim = img[0].length/2;
+        int ydim = img.getHeight();
+        int xdim = img.getWidth();
         
         //NOTE: handling the zero-base coordinates offset at end
         
@@ -589,10 +597,10 @@ public class Rectification {
         MatrixUtil.multiply(lrc, 1./lrc[2]);
   
         // compute the new meshgrid 
-        int xmin = (int)Math.min(Math.min(Math.min(ulc[0], llc[0]), urc[0]), lrc[0]);
-        int xmax = (int)Math.max(Math.max(Math.max(ulc[0], llc[0]), urc[0]), lrc[0]);
-        int ymin = (int)Math.min(Math.min(Math.min(ulc[1], llc[1]), urc[1]), lrc[1]);
-        int ymax = (int)Math.max(Math.max(Math.max(ulc[1], llc[1]), urc[1]), lrc[1]);
+        int xmin = (int)min(ulc[0], llc[0], urc[0], lrc[0]);
+        int xmax = (int)max(ulc[0], llc[0], urc[0], lrc[0]);
+        int ymin = (int)min(ulc[1], llc[1], urc[1], lrc[1]);
+        int ymax = (int)max(ulc[1], llc[1], urc[1], lrc[1]);
                 
         // generate coordinates in the new image  
         //range_x = xmin:xmax;
@@ -602,33 +610,60 @@ public class Rectification {
         //        where each row is [xmin, xmin+1, ... xmax]
         // ==> y2 is a double array of size ydim X xdim
         //        where each column is [ymin, ymin+1, ... ymax]
+        /*
+        matlab example https://www.mathworks.com/help/matlab/ref/meshgrid.html
+        x = 1:3;
+        y = 1:5;
+        [X,Y] = meshgrid(x,y)
+        
+        X = 5×3
+
+             1     2     3
+             1     2     3
+             1     2     3
+             1     2     3
+             1     2     3
+
+        Y = 5×3
+
+             1     1     1
+             2     2     2
+             3     3     3
+             4     4     4
+             5     5     5
+        */
         
         //[ydim, xdim] = size(x2);
         ydim = ymax-ymin+1;
         xdim = xmax-xmin+1;
         
+        // X is ydim X xdim matrix size [rows, cols]
+        // each row of X is xmin:xmax inclusive
+        // Y is ydim X xdim matrix size [rows, cols]
+        // each col of Y is ymin:ymax inclusive
+        
         int len = ydim*xdim;
         
         //xx = reshape(x2,[1,ydim*xdim]);
         //yy = reshape(y2,[1,ydim*xdim]);
-        // matlab's reshape fills column by column
+        // matlab's reshape:
+        //    read input by each element in column 0, then column 1, etc
+        //    and write output to each column element filling column 0, column 1, etc.
+        //    where the write is into an array of specified size
         double[] xx = new double[len];
         double[] yy = new double[len];
+        
+        //xx is numbers xmin thru xmax inclusive each number repeated ydim times
+        //yy is numbers ymin thru ymax inclusive then that same range repeated xdim times.
+        
         int row, col, c;
         c = 0;
-        // x2 is xmin, xmin+1, ... xmax
-        //       xmin, xmin+1, ... xmax
-        //       ...
         for (col = xmin; col <= xmax; ++col) {
             for (row = 0; row < ydim; ++row) {
                 xx[c] = col;
                 c++;
             }
         }
-        // y2 is ymin,   ymin,   ...
-        //       ymin+1, ymin+1, ... 
-        //       ...
-        //       ymax    ymax
         c = 0;
         for (row = 0; row < xdim; ++row) {
             for (col = ymin; col <= ymax; ++col) {
@@ -659,8 +694,8 @@ public class Rectification {
         
         //xi = reshape(wx,[ydim,xdim]);
         //yi = reshape(wy,[ydim,xdim]);        
-        double[][] xi = new double[ydim][xdim];
-        double[][] yi = new double[ydim][xdim];
+        double[][] xi = MatrixUtil.zeros(ydim,xdim);
+        double[][] yi = MatrixUtil.zeros(ydim,xdim);
         //  00  01   =>  00  20  01
         //  10  11       10  01  11
         //  20  21
@@ -678,6 +713,23 @@ public class Rectification {
         // NOTE: need to handle the zero-based coordinate system
         // im0[yi[0][0][xi[0][0]]
         
+        double[] auxArr1 = new double[2];
+        double[][] auxArr2 = MatrixUtil.zeros(2, 2);
+        double[] auxArr3 = new double[2];
+        ImageProcessor imageProcessor = new ImageProcessor();
+        double x, y;
+        double[] outRGB = new double[3];
+        int i, j;
+        for (i = 0; i < xi.length; ++i) {
+            for (j = 0; j < xi[i].length; ++j) {
+                x = xi[i][j];
+                y = yi[i][j];
+                imageProcessor.biLinearInterpolation(img, x, y, outRGB, auxArr1, auxArr2, auxArr3);
+                System.out.printf("(%d,%d) x=%.1f y=%.1f rgb=%s\n",
+                    i, j, x, y, FormatArray.toString(outRGB, "%.0f"));
+            }
+        }
+        
         throw new UnsupportedOperationException("unfinished");
     }
 
@@ -694,136 +746,86 @@ public class Rectification {
         return out;
     }
 
-    public static class RectifiedImage {
-        public double[][] x1;
-        public double[][] x2;
-        public double[][] h2;
-        public double[][] h1;
+    private static double min(double d0, double d1, double d2, double d3) {
+        double a = Math.min(d0, d1);
+        double b = Math.min(d2, d3);
+        return Math.min(a, b);
+    }
+    
+    private static double max(double d0, double d1, double d2, double d3) {
+        double a = Math.max(d0, d1);
+        double b = Math.max(d2, d3);
+        return Math.max(a, b);
+    }
+    
+    public static class RectifiedImage extends Image {
+
+        public RectifiedImage(int theWidth, int theHeight) {
+            super(theWidth, theHeight);
+        }
     }
 
-    
     public static class RectifiedPoints {
-        private double[][] x1Rect;
-        private double[][] rot1;
-        private double[] trans1;
-        private double[][] intr1;
-        
-        private double[][] x2Rect;
-        private double[][] rot2;
-        private double[] trans2;
-        private double[][] intr2;
+        private double[][] x1;
+        private double[][] x2;
+        private double[][] h2;
+        private double[][] h1;
 
         /**
-         * @return the x1Rect
+         * @return the x1
          */
-        public double[][] getX1Rect() {
-            return x1Rect;
+        public double[][] getX1() {
+            return x1;
         }
 
         /**
-         * @param x1Rect the x1Rect to set
+         * @param x1 the x1 to set
          */
-        public void setX1Rect(double[][] x1Rect) {
-            this.x1Rect = x1Rect;
+        public void setX1(double[][] x1) {
+            this.x1 = x1;
         }
 
         /**
-         * @return the rot1
+         * @return the x2
          */
-        public double[][] getRot1() {
-            return rot1;
+        public double[][] getX2() {
+            return x2;
         }
 
         /**
-         * @param rot1 the rot1 to set
+         * @param x2 the x2 to set
          */
-        public void setRot1(double[][] rot1) {
-            this.rot1 = rot1;
+        public void setX2(double[][] x2) {
+            this.x2 = x2;
         }
 
         /**
-         * @return the trans1
+         * @return the h2
          */
-        public double[] getTrans1() {
-            return trans1;
+        public double[][] getH2() {
+            return h2;
         }
 
         /**
-         * @param trans1 the trans1 to set
+         * @param h2 the h2 to set
          */
-        public void setTrans1(double[] trans1) {
-            this.trans1 = trans1;
+        public void setH2(double[][] h2) {
+            this.h2 = h2;
         }
 
         /**
-         * @return the intr1
+         * @return the h1
          */
-        public double[][] getIntr1() {
-            return intr1;
+        public double[][] getH1() {
+            return h1;
         }
 
         /**
-         * @param intr1 the intr1 to set
+         * @param h1 the h1 to set
          */
-        public void setIntr1(double[][] intr1) {
-            this.intr1 = intr1;
-        }
-
-        /**
-         * @return the x2Rect
-         */
-        public double[][] getX2Rect() {
-            return x2Rect;
-        }
-
-        /**
-         * @param x2Rect the x2Rect to set
-         */
-        public void setX2Rect(double[][] x2Rect) {
-            this.x2Rect = x2Rect;
-        }
-
-        /**
-         * @return the rot2
-         */
-        public double[][] getRot2() {
-            return rot2;
-        }
-
-        /**
-         * @param rot2 the rot2 to set
-         */
-        public void setRot2(double[][] rot2) {
-            this.rot2 = rot2;
-        }
-
-        /**
-         * @return the trans2
-         */
-        public double[] getTrans2() {
-            return trans2;
-        }
-
-        /**
-         * @param trans2 the trans2 to set
-         */
-        public void setTrans2(double[] trans2) {
-            this.trans2 = trans2;
-        }
-
-        /**
-         * @return the intr2
-         */
-        public double[][] getIntr2() {
-            return intr2;
-        }
-
-        /**
-         * @param intr2 the intr2 to set
-         */
-        public void setIntr2(double[][] intr2) {
-            this.intr2 = intr2;
+        public void setH1(double[][] h1) {
+            this.h1 = h1;
         }
     }
-    
+
 }
