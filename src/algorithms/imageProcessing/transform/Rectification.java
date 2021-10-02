@@ -218,27 +218,27 @@ public class Rectification {
        /*
        let r_3 = r1Xr2 orthogonal vector
        */
-       double[] r3 = MatrixUtil.crossProduct(r1, r2);
-       
-       double[][] rRect = MatrixUtil.zeros(3, 3);
-       System.arraycopy(r1, 0, rRect[0], 0, r1.length);
-       System.arraycopy(r2, 0, rRect[1], 0, r2.length);
-       System.arraycopy(r3, 0, rRect[2], 0, r3.length);
-       
-       System.out.printf("rRect=%s\n", FormatArray.toString(rRect, "%.4e"));
-       
-           double[] tst = MatrixUtil.multiplyMatrixByColumnVector(rRect, r1);
-           System.out.printf("rRect*r1=%s\nexpecting=[1, 0, 0]\n",
-               FormatArray.toString(tst, "%.4e"));
-              
-       //Set R1=Rrect and R2 = R*Rrect
-       double[][] r1Rot = MatrixUtil.copy(rRect);
-       double[][] r2Rot = MatrixUtil.multiply(r, rRect);
-       
-       /*
+        double[] r3 = MatrixUtil.crossProduct(r1, r2);
+
+        double[][] rRect = MatrixUtil.zeros(3, 3);
+        System.arraycopy(r1, 0, rRect[0], 0, r1.length);
+        System.arraycopy(r2, 0, rRect[1], 0, r2.length);
+        System.arraycopy(r3, 0, rRect[2], 0, r3.length);
+
+        System.out.printf("rRect=%s\n", FormatArray.toString(rRect, "%.4e"));
+
+        double[] tst = MatrixUtil.multiplyMatrixByColumnVector(rRect, r1);
+        System.out.printf("rRect*r1=%s\nexpecting=[1, 0, 0]\n",
+                FormatArray.toString(tst, "%.4e"));
+
+        //Set R1=Rrect and R2 = R*Rrect
+        double[][] r1Rot = MatrixUtil.copy(rRect);
+        double[][] r2Rot = MatrixUtil.multiply(r, rRect);
+
+        /*
        2. Rotate (rectify) the left camera so that the epipole is at infinity
           [x2 y2 z2] = R1 * [x1 y1 z1] = warped left which should equal [x2 y2 z2] with caveat
-                             due to occulsion, etc.
+                             due to occlusion, etc.
 
        points p = (f/z2)*[x2 y2 z2]
        if have intrinsic parameters matrix K then
@@ -247,8 +247,22 @@ public class Rectification {
               points within the original image size
        
        f=(W/2)*((tan(fov/2))^-1)
-       */
-       
+         */
+        double[][] _h1 = MatrixUtil.multiply(k1Intr, r1Rot);
+        double[][] _h2 = MatrixUtil.multiply(k2Intr, r2Rot);
+
+        double[][] x1R = MatrixUtil.multiply(_h1, x1);
+        double[][] x2R = MatrixUtil.multiply(_h2, x2);
+
+        // normalize z-coords to be 1
+        int i, j;
+        int n = x1[0].length;
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 3; ++j) {
+                x1R[j][i] /= x1R[2][i];
+                x2R[j][i] /= x2R[2][i];
+            }
+        }
        
        throw new UnsupportedOperationException("not yet finished");
     }
