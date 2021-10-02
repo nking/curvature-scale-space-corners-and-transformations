@@ -1430,7 +1430,8 @@ public class EpipolarTransformer {
      * where e1 = the left image position of the epipolar projection 
      of the right camera center (= last column of V) 
      and e2 = the right image position of the epipolar projection 
-     of the left camera center (= last column of U).
+     of the left camera center (= last column of U).  both are normalized by their
+     * last elements.
      */
     @SuppressWarnings({"unchecked"})
     double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {

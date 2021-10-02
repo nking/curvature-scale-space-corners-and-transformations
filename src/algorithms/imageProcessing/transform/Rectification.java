@@ -180,27 +180,40 @@ public class Rectification {
         */
         
        ReconstructionResults re = Reconstruction.calculateUsingEssentialMatrix(k1Intr, k2Intr, x1, x2);
+       
        double[] t = Arrays.copyOf(re.k2ExtrTrans, re.k2ExtrTrans.length);
        double[][] r = MatrixUtil.copy(re.k2ExtrRot);
        double[] e1 = Arrays.copyOf(re.svd.vT[2], re.svd.vT[2].length);
        double[] e2 = MatrixUtil.transpose(re.svd.u)[2];
        
        /*
+       MASKS Proposition 5.3: 
+            e2^T*E = 0, E*e1 = 0.
+            e2 ~ T and e1 ~ R^T * T where ~ is up to a scale factor
+       
        let r_1 = e1 = T/||T|| so that epipole coincides w/ translation vector
        */
        double[] r1 = Arrays.copyOf(t, t.length);
        r1 = MatrixUtil.normalizeL2(r1);
-       System.out.printf("t=%s\ne1=%s\ne2=%s\nr1=%s\n", 
+       
+       
+       double[][] tSkewSym = MatrixUtil.skewSymmetric(t);
+       double[][] rtSkewSym = MatrixUtil.multiply(r, tSkewSym);
+       
+       System.out.printf("t=%s\ne1=%s\ne2=%s\nr1=%s\nessentialMatrix=\n%s\n(R*(t_skewsym))=\n%s\n", 
            FormatArray.toString(t, "%.4e"),
            FormatArray.toString(e1, "%.4e"), FormatArray.toString(e2, "%.4e"),
-           FormatArray.toString(r1, "%.4e"));
+           FormatArray.toString(r1, "%.4e"),
+           FormatArray.toString(re.essentialMatrix, "%.4e"),
+           FormatArray.toString(rtSkewSym, "%.4e"));
        
        /*
-       let r_2 = (1/sqrt(T_x^2 + T_y^2))*[-T_x  T_y  0]
-                  cross product of e and the direction vector of the optical axis
+       let r_2 = (1/sqrt(T_x^2 + T_y^2)*[-T_x  T_y  0])
+                  cross product of e and the direction vector of the optical axis       
        */
-       double td = Math.sqrt(t[0]*t[0] + t[1]*t[1]);
-       double[] r2 = new double[]{1./(-t[0]*td), 1./(t[1]*td), 0};
+       double td = 1./Math.sqrt(t[0]*t[0] + t[1]*t[1]);
+       double[] r2 = new double[]{-t[0]*td, t[1]*td, 0};
+       
        
        /*
        let r_3 = r1Xr2 orthogonal vector
@@ -434,9 +447,11 @@ public class Rectification {
         
         double[] pim2R = MatrixUtil.multiplyMatrixByColumnVector(g, p2R);
         
+        
         double[][] h2 = MatrixUtil.multiply(g, gR);
         h2 = MatrixUtil.multiply(h2, gT);
         
+        //M = skew(ep2)'*F + ep2*rand(1,3);
         double[][] M = MatrixUtil.multiply(
             MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2)), _fm);
             //  + ep2*rand(1,3);  3X1 * 1X3 = 3X3 
@@ -447,6 +462,7 @@ public class Rectification {
         randV[2] = rand.nextDouble();
         double[][] randEp2 = MatrixUtil.outerProduct(e2, randV);
         M = MatrixUtil.elementwiseAdd(M, randEp2);
+        
         
         // determine H then H1 by solving for unknown plane v to minimize the 
         //   disparity in matching homography
@@ -459,7 +475,7 @@ public class Rectification {
         
         double t1 = e2[0]; 
         double t2 = e2[1]; 
-        double t3 = e2[3];
+        double t3 = e2[2];
         double[][] a = new double[2*n][3];
         double[] b = new double[2*n];
         for (int i = 0; i < n;++i) {
@@ -475,6 +491,8 @@ public class Rectification {
                   + M[2][1]*x1[1][i]*x2[0][i] + M[2][2]*x2[0][i];
         }
         
+        // matrix left division
+        // x = A\B: Solve systems of linear equations Ax = B for x
         // 3 X n
         double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
         
@@ -490,13 +508,30 @@ public class Rectification {
         //H1 = H2*H;
         double[][] h1 = MatrixUtil.multiply(h2, h);
         
-        double[][] x1R = MatrixUtil.multiply(h1, x1);
-        double[][] x2R = MatrixUtil.multiply(h2, x2);
+         
+        // is inv(Tr) correct??
+        //   the inverse of translations is -1*each translation and leave diagonal as +1
+        double[][] invTr = MatrixUtil.inverse(gT);
+        double[][]_invTr = MatrixUtil.createIdentityMatrix(3);
+        _invTr[0][2] = oX;
+        _invTr[1][2] = oY;
+        
+        //H1 = inv(Tr)*H1;
+        double[][] _h1 = MatrixUtil.multiply(invTr, h1);
+        
+        //H2 = inv(Tr)*H2;
+        double[][] _h2 = MatrixUtil.multiply(invTr, h2);
+        
+        double[][] x1R = MatrixUtil.multiply(_h1, x1);
+        double[][] x2R = MatrixUtil.multiply(_h2, x2);
         
         // normalize z-coords to be 1
-        for (int i = 0; i < n; ++i) {
-            x1R[0][i] /= x1R[2][i];
-            x2R[0][i] /= x2R[2][i];
+        int i, j;
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 3; ++j) {
+                x1R[j][i] /= x1R[2][i];
+                x2R[j][i] /= x2R[2][i];
+            }
         }
         
         RectifiedImage out = new RectifiedImage();
