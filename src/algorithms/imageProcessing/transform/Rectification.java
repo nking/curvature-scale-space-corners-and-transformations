@@ -208,11 +208,11 @@ public class Rectification {
            FormatArray.toString(rtSkewSym, "%.4e"));
        
        /*
-       let r_2 = (1/sqrt(T_x^2 + T_y^2)*[-T_x  T_y  0])
+       let r_2 = (1/sqrt(T_x^2 + T_y^2))*[-T_y  T_x  0]
                   cross product of e and the direction vector of the optical axis       
        */
        double td = 1./Math.sqrt(t[0]*t[0] + t[1]*t[1]);
-       double[] r2 = new double[]{-t[0]*td, t[1]*td, 0};
+       double[] r2 = new double[]{-t[1]*td, t[0]*td, 0};
        
        
        /*
