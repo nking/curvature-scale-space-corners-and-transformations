@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -464,24 +465,92 @@ public class ImageProcessorTest extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        Image img = new Image(10, 10);
-        for (int i = 0; i < img.getNPixels(); ++i) {
-            img.setRGB(i, 100, 200, 50);
+        /* 
+           j
+           |
+           V
+           3  0  1  2  3
+           2  0  1  2  3
+           1  0  1  2  3
+           0  0  1  2  3  
+        i->   0  1  2  3
+        */        
+        
+        Image img = new Image(4, 4);
+        double eps = 0.01;
+        int i, j;
+        float x, y;
+        double[] rgb;
+        for (i = 0; i < img.getWidth(); ++i) {
+            for (j = 0; j < img.getHeight(); ++j) {
+                img.setRGB(i, j, i, i, i);
+            }
         }
         
-        float x = 2f;
-        float y = 2f;
-        double[] rgb = imageProcessor.biLinearInterpolation(img, x, y);
-        assertTrue(Math.abs(rgb[0] - 100) < 0.1);
-        assertTrue(Math.abs(rgb[1] - 200) < 0.1);
-        assertTrue(Math.abs(rgb[2] - 50) < 0.1);
-        
-        x = 2.2f;
-        y = 2.7f;
+        x = 2f;
+        y = 2f;
         rgb = imageProcessor.biLinearInterpolation(img, x, y);
-        assertTrue(Math.abs(rgb[0] - 100) < 0.1);
-        assertTrue(Math.abs(rgb[1] - 200) < 0.1);
-        assertTrue(Math.abs(rgb[2] - 50) < 0.1);
+        assertTrue(Math.abs(rgb[0] - x) < eps);
+        assertTrue(Math.abs(rgb[1] - x) < eps);
+        assertTrue(Math.abs(rgb[2] - x) < eps);
+        
+        x = 2.5f;
+        y = 1.5f;
+        rgb = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(rgb[0] - x) < eps);
+        assertTrue(Math.abs(rgb[1] - x) < eps);
+        assertTrue(Math.abs(rgb[2] - x) < eps);
+        
+        double[] auxArr1 = new double[2];
+        double[][] auxArr2 = MatrixUtil.zeros(2, 2);
+        double[] auxArr3 = new double[2];
+        x = 2f;
+        y = 2f;
+        imageProcessor.biLinearInterpolation(img, x, y, rgb, auxArr1, auxArr2, auxArr3);
+        assertTrue(Math.abs(rgb[0] - x) < eps);
+        assertTrue(Math.abs(rgb[1] - x) < eps);
+        assertTrue(Math.abs(rgb[2] - x) < eps);
+        
+        x = 2.5f;
+        y = 1.5f;
+        imageProcessor.biLinearInterpolation(img, x, y, rgb, auxArr1, auxArr2, auxArr3);
+        assertTrue(Math.abs(rgb[0] - x) < eps);
+        assertTrue(Math.abs(rgb[1] - x) < eps);
+        assertTrue(Math.abs(rgb[2] - x) < eps);
+        
+        for (i = 0; i < img.getWidth(); ++i) {
+            for (j = 0; j < img.getHeight(); ++j) {
+                img.setRGB(i, j, j, j, j);
+            }
+        }
+        
+        x = 2f;
+        y = 2f;
+        rgb = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(rgb[0] - y) < eps);
+        assertTrue(Math.abs(rgb[1] - y) < eps);
+        assertTrue(Math.abs(rgb[2] - y) < eps);
+        
+        x = 2.5f;
+        y = 1.5f;
+        rgb = imageProcessor.biLinearInterpolation(img, x, y);
+        assertTrue(Math.abs(rgb[0] - y) < eps);
+        assertTrue(Math.abs(rgb[1] - y) < eps);
+        assertTrue(Math.abs(rgb[2] - y) < eps);
+        
+        x = 2f;
+        y = 2f;
+        imageProcessor.biLinearInterpolation(img, x, y, rgb, auxArr1, auxArr2, auxArr3);
+        assertTrue(Math.abs(rgb[0] - y) < eps);
+        assertTrue(Math.abs(rgb[1] - y) < eps);
+        assertTrue(Math.abs(rgb[2] - y) < eps);
+        
+        x = 2.5f;
+        y = 1.5f;
+        imageProcessor.biLinearInterpolation(img, x, y, rgb, auxArr1, auxArr2, auxArr3);
+        assertTrue(Math.abs(rgb[0] - y) < eps);
+        assertTrue(Math.abs(rgb[1] - y) < eps);
+        assertTrue(Math.abs(rgb[2] - y) < eps);
         
         // ------
         String fileName = "lab.gif";

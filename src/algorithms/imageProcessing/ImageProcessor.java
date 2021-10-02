@@ -2489,9 +2489,71 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         return v;
     }
-
+    
     /**
-    NOT YET TESTED
+     http://en.wikipedia.org/wiki/Bilinear_interpolation
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
+     *
+     * @param clrImg
+     * @param x
+     * @param y
+     * @param outRGB r, g, b interpolated values.
+     * @param auxArr1 auxiliary array of length 2 to use internally.  contents
+     *    are written over and do not hold results for this method.
+     * @param auxArr2 auxiliary array of size 2X2 to use internally.  contents
+     *    are written over and do not hold results for this method.
+     * @param auxArr3 auxiliary array of length 2 to use internally.  contents
+     *    are written over and do not hold results for this method.
+     */
+    public void biLinearInterpolation(Image clrImg, double x, double y, double[] outRGB,
+        double[] auxArr1, double[][] auxArr2, double[] auxArr3) {
+        
+        int x1 = (int)Math.floor(x);
+        int x2 = (int)Math.ceil(x);
+        int y1 = (int)Math.floor(y);
+        int y2 = (int)Math.ceil(y);
+        
+        if ((x1 == x2) || (y1 == y2)) {
+            biLinearInterpolation(clrImg, (float)x, (float)y, outRGB);
+            return;
+        }
+                
+        assert(x2 != x1);
+        assert(y2 != y1);
+
+        double d;
+        auxArr1[0] = x2 - x;
+        auxArr1[1] = x - x1;
+        auxArr3[0] = y2 - y;
+        auxArr3[1] = y - y1;
+        d = 1./((x2-x1)*(y2-y1));
+                        
+        auxArr2[0][0] = clrImg.getR(x1, y1);
+        auxArr2[0][1] = clrImg.getR(x1, y2);
+        auxArr2[1][0] = clrImg.getR(x2, y1);
+        auxArr2[1][1] = clrImg.getR(x2, y2);
+        outRGB[0] = MatrixUtil.innerProduct(
+            MatrixUtil.multiplyRowVectorByMatrix(auxArr1, auxArr2), auxArr3);
+        outRGB[0] *= d;
+        
+        auxArr2[0][0] = clrImg.getG(x1, y1);
+        auxArr2[0][1] = clrImg.getG(x1, y2);
+        auxArr2[1][0] = clrImg.getG(x2, y1);
+        auxArr2[1][1] = clrImg.getG(x2, y2);
+        outRGB[1] = MatrixUtil.innerProduct(
+            MatrixUtil.multiplyRowVectorByMatrix(auxArr1, auxArr2), auxArr3);
+        outRGB[1] *= d;
+        
+        auxArr2[0][0] = clrImg.getB(x1, y1);
+        auxArr2[0][1] = clrImg.getB(x1, y2);
+        auxArr2[1][0] = clrImg.getB(x2, y1);
+        auxArr2[1][1] = clrImg.getB(x2, y2);
+        outRGB[2] = MatrixUtil.innerProduct(
+            MatrixUtil.multiplyRowVectorByMatrix(auxArr1, auxArr2), auxArr3);
+        outRGB[2] *= d;
+    }
+    
+    /**
      http://en.wikipedia.org/wiki/Bilinear_interpolation
      http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
      *
@@ -2500,6 +2562,20 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * @return
      */
     public double[] biLinearInterpolation(Image clrImg, float x, float y) {
+        double[] rgb = new double[3];
+        biLinearInterpolation(clrImg, x, y, rgb);
+        return rgb;
+    }
+
+    /**
+     http://en.wikipedia.org/wiki/Bilinear_interpolation
+     http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
+     *
+     * @param x
+     * @param y
+     * @param outRGB
+     */
+    public void biLinearInterpolation(Image clrImg, float x, float y, double[] outRGB) {
 
         double x1 = Math.floor(x);
 
@@ -2518,7 +2594,10 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             b1 = clrImg.getB((int)x1, (int)y1);
 
             if (y1 == y2) {
-                return new double[]{r1, g1, b1};
+                outRGB[0] = r1;
+                outRGB[1] = g1;
+                outRGB[2] = b1;
+                return;
             }
 
             r2 = clrImg.getR((int)x1, (int)y2);
@@ -2541,7 +2620,10 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                 v1X1Frac * clrImg.getB((int)x2, (int)y1);
 
             if (y1 == y2) {
-                return new double[]{r1, g1, b1};
+                outRGB[0] = r1;
+                outRGB[1] = g1;
+                outRGB[2] = b1;
+                return;
             }
 
             // interpolate over row y2
@@ -2567,7 +2649,9 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         // interpolate the fraction of v1 and v2 over rows
         double b = v1Y2Frac * b1 + v1Y1Frac * b2;
 
-        return new double[]{r, g, b};
+        outRGB[0] = r;
+        outRGB[1] = g;
+        outRGB[2] = b;
     }
 
     public void applyAdaptiveMeanThresholding(GreyscaleImage img) {
