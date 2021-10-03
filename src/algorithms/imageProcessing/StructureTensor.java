@@ -148,9 +148,7 @@ public class StructureTensor {
     public float[][] getDeterminant() {
         
         if (detA == null) {
-            
-            ImageProcessor imageProcessor = new ImageProcessor();
-            
+                        
             // detA = Axx * Ayy - Axy ** 2
             
             float[][] axxyy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXSq, dYSq);

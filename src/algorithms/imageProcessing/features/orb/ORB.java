@@ -31,6 +31,12 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
+ * NOTE: this class is not ready for use yet, though it passes tests in
+ * ORBTest.java.   Use on testresources/susan-in_plus.png
+ * (which has a solid black background in the image)
+ * shows that ImageProcessor.peakLocalMax() adds far too many points for
+ * default settings.
+
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
  * (paper reference is Rublee, Rabaud, Konolige, and Bradski, 2011).
  * http://www.vision.cs.chubu.ac.jp/CV-R/pdf/Rublee_iccv2011.pdf
@@ -576,11 +582,10 @@ public class ORB {
 
         // filter for number of points if requested
         if (kpc0s.size() > this.nKeypoints) {
-            while (kpc0s.size() > this.nKeypoints) {
-                int idx = kpc0s.size() - 1;
-                kpc0s.removeAt(idx);
-                kpc1s.removeAt(idx);
-            }
+            int rmi = this.nKeypoints;
+            int len = kpc0s.size() - this.nKeypoints;
+            kpc0s.remove(rmi, len);
+            kpc1s.remove(rmi, len);
         }
         
         // populate the lists for each octave
@@ -588,6 +593,7 @@ public class ORB {
         for (int octave = 0; octave < scales.length; ++octave) {
 
             float scale = scales[octave];
+            // size is pyramid image [height][width]
             harrisResponse = harrisResponseImages[octave].a;
 
             // make a keypoint list for each scale, using set first
@@ -601,13 +607,15 @@ public class ORB {
                 // reduce to octave coord system
                 int c0 = Math.round((float)kpc0s.get(i)/scale);
                 int c1 = Math.round((float)kpc1s.get(i)/scale);
+                // if larger than pyramid image height
                 if (c0 > (harrisResponse.length - 1)) {
                     c0 = harrisResponse.length - 1;
                 }
+                // if larger than pyramid image width
                 if (c1 > (harrisResponse[0].length - 1)) {
                     c1 = harrisResponse[0].length - 1;
                 }
-                PairInt p = new PairInt(c0, c1);
+                PairInt p = new PairInt(c0, c1); // y, x
                 if (set.contains(p)) {
                     continue;
                 }
@@ -744,6 +752,7 @@ public class ORB {
  
         // list of format [row, col, ...] of filtered maxima ordered by intensity
         cornerPeaks(fastResponse, 1, keypoints0, keypoints1);
+        int nkp = keypoints0.size();
         if (keypoints0.isEmpty()) {
             Resp r2 = new Resp();
             r2.keypoints0 = keypoints0;
@@ -751,7 +760,7 @@ public class ORB {
             return r2;
         }
 
-        maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
+ //editing       maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
 
         if (doCreate1stDerivKeypoints) {
 
@@ -850,11 +859,15 @@ public class ORB {
                 exists.add(p);
             }
         }
+        nkp = keypoints0.size();
 
         // --- harris corners from response image ----
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.peakLocalMax(harrisResponse, 1, 0.1f,
+        imageProcessor.peakLocalMax(harrisResponse, 
+            1, 0.1f,
             true, keypoints0, keypoints1);
+
+        nkp = keypoints0.size();
 
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
@@ -1050,19 +1063,19 @@ public class ORB {
 
         /* making single pixel index out of coordinates:
         (row * width) + col
-        pixIdxs[count] = (j * nRows) + i;
+        pixIdxs[count] = (j * nRows) + i;  this is consistent with Image.java for plotting 
         */
         for (int i = 0; i < keypoints0.size(); ++i) {
-            int ii = keypoints0.get(i);
-            int jj = keypoints1.get(i);
-            int pixIdx = (jj * nRows) + ii;
+            int ii = keypoints0.get(i);//row
+            int jj = keypoints1.get(i);//col
+            int pixIdx = (ii * nRows) + jj;
             peaks.add(pixIdx);
         }
 
         for (int i = 0; i < keypoints0.size(); ++i) {
-            int ii = keypoints0.get(i);
-            int jj = keypoints1.get(i);
-            int pixIdx = (jj * nRows) + ii;
+            int ii = keypoints0.get(i); //row
+            int jj = keypoints1.get(i); //col
+            int pixIdx = (ii * nRows) + jj;
             if (!peaks.contains(pixIdx)) {
                 continue;
             }
@@ -1074,7 +1087,7 @@ public class ORB {
                     if ((k1 < 0) || (k1 > (nCols - 1)) || (k0 == ii && k1 == jj)) {
                         continue;
                     }
-                    int pixIdx2 = (k1 * nRows) + k0;
+                    int pixIdx2 = (k0 * nRows) + k1;
                     if (peaks.contains(pixIdx2)) {
                         peaks.remove(pixIdx2);
                     }
@@ -1085,9 +1098,9 @@ public class ORB {
         TIntList keypoints0_2 = new TIntArrayList(peaks.size());
         TIntList keypoints1_2 = new TIntArrayList(peaks.size());
         for (int i = 0; i < keypoints0.size(); ++i) {
-            int ii = keypoints0.get(i);
-            int jj = keypoints1.get(i);
-            int pixIdx = (jj * nRows) + ii;
+            int ii = keypoints0.get(i);//row
+            int jj = keypoints1.get(i);//col
+            int pixIdx = (ii * nRows) + jj;
             if (peaks.contains(pixIdx)) {
                 keypoints0_2.add(ii);
                 keypoints1_2.add(jj);
@@ -1648,7 +1661,8 @@ public class ORB {
     /**
      * get a list of each octave's keypoint rows as a combined list.
      * The list contains coordinates which have already been scaled to the
-     * full image reference frame.
+     * full image reference frame.  These are the row coordinates of
+     * key-points.  (The column coordinates are in keypoints1).
      * @return
      */
     public TIntList getAllKeyPoints0() {
@@ -1705,6 +1719,8 @@ public class ORB {
      * get a list of each octave's keypoint cols as a combined list.
      * The list contains coordinates which have already been scaled to the
      * full image reference frame.
+     * These are the column coordinates of
+     * key-points.  (The row coordinates are in keypoints0).
      * @return
      */
     public TIntList getAllKeyPoints1() {
@@ -1751,7 +1767,7 @@ public class ORB {
     }
 
     /**
-     * get a list of each octave's harris responses as a combined list.
+     * get a list of each octave's harris response strengths as a combined list.
      * The corresponding coordinates can be obtained with getAllKeyPoints();
      * @return
      */

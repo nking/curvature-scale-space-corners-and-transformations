@@ -6,14 +6,17 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.imageProcessing.features.orb.ORB.Descriptors;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import algorithms.util.TwoDFloatArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -39,7 +42,7 @@ public class ORBTest extends TestCase {
     public void testPeakLocalMax() {
         
         /*
-        using a test embedded in scipy code.
+        using a est embedded in scipy code.
         
         (see their copyright in the ORB.java class documentation).
         
@@ -158,7 +161,7 @@ public class ORBTest extends TestCase {
         ORB orb = new ORB(image, 10);
         
         /*
-        using a test embedded in scipy code.
+        using a est embedded in scipy code.
         
         print square
         [[ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]
@@ -184,7 +187,7 @@ public class ORBTest extends TestCase {
         float[][] cf = orb.cornerFast(img, 9, 0.15f);
         
         /*
-        using a test embedded in scipy code.
+        using a est embedded in scipy code.
         
         cf = corner_fast(square, 9); cf
 
@@ -557,31 +560,50 @@ public class ORBTest extends TestCase {
         
         //NOTE: the ridges are picked up well with reduced threshold
         
-        ORB orb = new ORB(img.copyToGreyscale2(), 500);
+        ORB orb = new ORB(img.copyToGreyscale2(), 600);
         orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
-        orb.overrideFastThreshold(0.01f);
+        //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
+        //orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract();
         
         TIntList keypoints0 = orb.getAllKeyPoints0();
         TIntList keypoints1 = orb.getAllKeyPoints1();
-        TFloatList responses = orb.getAllHarrisResponses();
-        TDoubleList orientations = orb.getAllOrientations();
+        //TFloatList responses = orb.getAllHarrisResponses();
+        //TDoubleList orientations = orb.getAllOrientations();
         //System.out.println("keypoints0=" + keypoints0.toString());
         //System.out.println("keypoints1=" + keypoints1.toString());
         //System.out.println("scales=" + scales.toString());
         //System.out.println("responses=" + responses.toString());
         //System.out.println("orientations=" + orientations.toString());
         
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);
             int x = keypoints1.get(i);
-            ImageIOHelper.addPointToImage(x, y, img0, 2, 255, 0, 0);
+            ImageIOHelper.addPointToImage(x, y, img, 2, 255, 0, 0);
+            if (y < minY) {
+                minY = y;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+            if (x < minX) {
+                minX = x;
+            }
+            if (x > maxX) {
+                maxX = x;
+            }
         }
-        MiscDebug.writeImage(img0, "orb_keypoints_01");
-        
+        System.out.println("minY=" + minY + " maxY=" + maxY + " imgHeight=" + img.getHeight());
+        System.out.println("minX=" + minX + " maxX=" + maxX + " imgWidth=" + img.getWidth());
+        MiscDebug.writeImage(img, "orb_keypoints_01");
+        int z = 1;
     }
     
     public void testKeypoints_2() throws Exception {
@@ -949,7 +971,103 @@ public class ORBTest extends TestCase {
         MiscDebug.writeImage(img0, "orb_keypoints_12");
         
     }
+    
+    public void testKeypoints_13() throws Exception {
+        
+        String fileName = "nc_book_01.png";  
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+        
+        //NOTE: the ridges are picked up well with reduced threshold
+        
+        ORB orb = new ORB(img.copyToGreyscale2(), 600);
+        orb.overrideToUseSmallestPyramid();
+        //orb.overrideFastN(12);
+        //orb.overrideFastThreshold(0.01f);
+        orb.overrideToNotCreateDescriptors();
+        //orb.overrideToAlsoCreate1stDerivKeypoints();
+        
+        orb.detectAndExtract();
+        
+        TIntList keypoints0 = orb.getAllKeyPoints0();
+        TIntList keypoints1 = orb.getAllKeyPoints1();
+        //TFloatList responses = orb.getAllHarrisResponses();
+        //TDoubleList orientations = orb.getAllOrientations();
+        //System.out.println("keypoints0=" + keypoints0.toString());
+        //System.out.println("keypoints1=" + keypoints1.toString());
+        //System.out.println("scales=" + scales.toString());
+        //System.out.println("responses=" + responses.toString());
+        //System.out.println("orientations=" + orientations.toString());
+        
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img, 2, 255, 0, 0);
+            if (y < minY) {
+                minY = y;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+            if (x < minX) {
+                minX = x;
+            }
+            if (x > maxX) {
+                maxX = x;
+            }
+        }
+        System.out.println("minY=" + minY + " maxY=" + maxY + " imgHeight=" + img.getHeight());
+        System.out.println("minX=" + minX + " maxX=" + maxX + " imgWidth=" + img.getWidth());
+        MiscDebug.writeImage(img, "orb_keypoints_13");
+        int z = 1;
+    }
    
+    /*public void testKeypoints_14() throws Exception {
+        
+        String fileName = "nc_book_01.png";  
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        Image img0 = ImageIOHelper.readImageAsGrayScale(filePath);
+        //ImageExt img = ImageIOHelper.readImageExt(filePath);
+        ImageExt img = img0.copyToImageExt();
+               
+        TIntList keypoints0 = new TIntArrayList();
+        TIntList keypoints1 = new TIntArrayList();
+        
+        use another method for keypoints
+       
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            int y = keypoints0.get(i);
+            int x = keypoints1.get(i);
+            ImageIOHelper.addPointToImage(x, y, img, 2, 255, 0, 0);
+            if (y < minY) {
+                minY = y;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+            if (x < minX) {
+                minX = x;
+            }
+            if (x > maxX) {
+                maxX = x;
+            }
+        }
+        System.out.println("minY=" + minY + " maxY=" + maxY + " imgHeight=" + img.getHeight());
+        System.out.println("minX=" + minX + " maxX=" + maxX + " imgWidth=" + img.getWidth());
+        MiscDebug.writeImage(img, "orb_keypoints_14");
+        int z = 1;
+    }*/ 
+     
     public void __estDescriptors() throws IOException {
         
         /*
@@ -960,13 +1078,13 @@ public class ORBTest extends TestCase {
         
         
         /*
-        2 test images:
+        2 est images:
            one a figure 8 of length 32 and other same image rotated by 90.
         
-        positive test:
-           test that descriptors of the center match each other
-        negative test:
-           test that descriptor on edge does not match well a descriptor
+        positive est:
+           est that descriptors of the center match each other
+        negative est:
+           est that descriptor on edge does not match well a descriptor
               from the center of the figure.
         */
         

@@ -5355,6 +5355,11 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
 
     /**
+    NOTE: this method is not ready for use.
+    when testing on testresources/susan-in_plus.png
+    (which has a solid black background in the image)
+    there are far too many keypoints added.
+    
      Find peaks in an image as coordinate list
      Peaks are the local maxima in a region of `2 * min_distance + 1`
      (i.e. peaks are separated by at least `min_distance`).
@@ -5413,7 +5418,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     image. Previously, the scipy method ignored all negative numbers so images
     of only negative previously returned no peaks.
     
-    @param img
+    @param img output image 
     @param minDistance
         Minimum number of pixels separating peaks in a region of `2 *
         min_distance + 1` (i.e. peaks are separated by at least
