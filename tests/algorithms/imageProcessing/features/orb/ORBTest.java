@@ -14,6 +14,7 @@ import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
+import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
@@ -395,9 +396,7 @@ public class ORBTest extends TestCase {
         img[2][2] = 1.f;
         
         ORB orb = new ORB(image, 100);
-        
-        orb.overrideToUseSmallestPyramid();
-        
+                
         StructureTensor tensorComponents = new 
             StructureTensor(img, 0.1f, false);
                 
@@ -464,7 +463,6 @@ public class ORBTest extends TestCase {
         }
         
         ORB orb = new ORB(image, 100);
-        orb.overrideToUseSmallestPyramid();
         
         StructureTensor tensorComponents = new 
             StructureTensor(img, 0.f, true);
@@ -561,7 +559,6 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(img.copyToGreyscale2(), 600);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -620,7 +617,6 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -652,7 +648,6 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -682,7 +677,6 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastThreshold(0.01f);
         
         //orb.overrideToNotCreateDescriptors();
@@ -713,7 +707,6 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -744,7 +737,6 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -775,7 +767,6 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -813,7 +804,6 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -845,7 +835,6 @@ public class ORBTest extends TestCase {
         ImageExt img = img0.copyToImageExt();
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 2000);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -886,7 +875,6 @@ public class ORBTest extends TestCase {
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 2000);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -920,7 +908,6 @@ public class ORBTest extends TestCase {
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 2000);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         
@@ -953,7 +940,6 @@ public class ORBTest extends TestCase {
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 2000);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         orb.overrideToAlsoCreate1stDerivKeypoints();
@@ -983,7 +969,6 @@ public class ORBTest extends TestCase {
         //NOTE: the ridges are picked up well with reduced threshold
         
         ORB orb = new ORB(img.copyToGreyscale2(), 600);
-        orb.overrideToUseSmallestPyramid();
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -1068,7 +1053,7 @@ public class ORBTest extends TestCase {
         int z = 1;
     }*/ 
      
-    public void __estDescriptors() throws IOException {
+    public void testDescriptors() throws IOException {
         
         /*
         NOTE: disabled this method because it will change.
@@ -1078,7 +1063,7 @@ public class ORBTest extends TestCase {
         
         
         /*
-        2 est images:
+        2 test images:
            one a figure 8 of length 32 and other same image rotated by 90.
         
         positive est:
@@ -1108,43 +1093,62 @@ public class ORBTest extends TestCase {
         Image img90 = tr.applyTransformation(img, params, w, h);
         */
         String fileName = "test_img_r90.png";  
+        fileName = "test_img_r90.png";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img90 = ImageIOHelper.readImageAsGrayScale(filePath);
-        
         
         MiscDebug.writeImage(img, "_orig_");
         MiscDebug.writeImage(img90, "_rotated_");
         
-        ORB orb = new ORB(img.copyToGreyscale2(), 1);
-        orb.overrideToUseSmallestPyramid();
+        int np = 1;
+        ORB orb = new ORB(img.copyToGreyscale2(), np);
+        orb.overrideToNotCreateATrousKeypoints();
         orb.detectAndExtract();
 
-        ORB orb1 = new ORB(img90.copyToGreyscale2(), 1);
-        orb1.overrideToUseSmallestPyramid();
+        ORB orb1 = new ORB(img90.copyToGreyscale2(), np);
+        orb1.overrideToNotCreateATrousKeypoints();
         orb1.detectAndExtract();
-        List<PairInt> kp90 = new ArrayList<PairInt>();
+        
+        List<PairInt> kp00;// = new ArrayList<PairInt>();
+        Descriptors desc00 = new Descriptors();
+        desc00.descriptors = orb.getAllDescriptors().descriptors;
+        kp00 = orb.getAllKeyPoints();
+        //desc00.descriptors = orb.getDescriptorsList().get(0).descriptors;
+        /*for (int i = 0; i < orb.getKeyPoint0List().get(0).size();
+            ++i) {
+            kp00.add(new PairInt(
+                orb.getKeyPoint1List().get(0).get(i),
+                orb.getKeyPoint0List().get(0).get(i)));
+        }*/
+        
+        List<PairInt> kp90;// = new ArrayList<PairInt>();
         Descriptors desc90 = new Descriptors();
-        desc90.descriptors = orb1.getDescriptorsList().get(0).descriptors;
+        desc90.descriptors = orb1.getAllDescriptors().descriptors;
+        kp90 = orb1.getAllKeyPoints();
+        /*desc90.descriptors = orb1.getDescriptorsList().get(0).descriptors;
         for (int i = 0; i < orb1.getKeyPoint0List().get(0).size();
             ++i) {
             kp90.add(new PairInt(
                 orb1.getKeyPoint1List().get(0).get(i),
                 orb1.getKeyPoint0List().get(0).get(i)));
+        }*/
+        PairInt xy;
+        Image tmp1 = img.copyToGreyscale2().copyToColorGreyscale();
+        for (int ii = 0; ii < orb.getPyramidImages().length; ++ii) {
+            xy = kp00.get(ii);
+            ImageIOHelper.addPointToImage(xy.getX(), xy.getY(), tmp1, 1, 255, 0, 0);
         }
-        
-        List<PairInt> kp00 = new ArrayList<PairInt>();
-        Descriptors desc00 = new Descriptors();
-        desc00.descriptors = orb.getDescriptorsList().get(0).descriptors;
-        for (int i = 0; i < orb.getKeyPoint0List().get(0).size();
-            ++i) {
-            kp00.add(new PairInt(
-                orb.getKeyPoint1List().get(0).get(i),
-                orb.getKeyPoint0List().get(0).get(i)));
+        Image tmp2 = img90.copyToGreyscale2().copyToColorGreyscale();
+        for (int ii = 0; ii < orb1.getPyramidImages().length; ++ii) {
+            xy = kp90.get(ii);
+            ImageIOHelper.addPointToImage(xy.getX(), xy.getY(), tmp2, 1, 255, 0, 0);
         }
+        CorrespondencePlotter plotter = new CorrespondencePlotter(tmp1, tmp2);
+        plotter.writeImage("_corres_gs_test_img_r90");
        
         int[][] costMatrix = ORB.calcDescriptorCostMatrix(
             desc00.descriptors, desc90.descriptors);
-
+        
         int c00 = costMatrix[0][0];
         //System.out.println("c00=" + c00);         
         // ideally, this would be 0, but there
@@ -1153,69 +1157,6 @@ public class ORBTest extends TestCase {
         // due to even sized image and rotation of integer size pizels.
         assertTrue(c00 < 0.11*256.);
        
-        int np = 1;
-        orb = new ORB(img.copyToGreyscale2(), np);
-        orb.overrideToUseSmallestPyramid();
-        orb.detectAndExtract();
-        List<PairInt> kpA = new ArrayList<PairInt>();
-        Descriptors descA = new Descriptors();
-        descA.descriptors = orb.getDescriptorsList().get(0).descriptors;
-        for (int i = 0; i < orb.getKeyPoint0List().get(0).size();
-            ++i) {
-            kpA.add(new PairInt(
-                orb.getKeyPoint1List().get(0).get(i),
-                orb.getKeyPoint0List().get(0).get(i)));
-        }
-        
-        // --- looking at same image as img, but size 85% and 70%
-        for (int i = 0; i < 2; ++i) {
-            Image img2;
-            if (i == 0) {
-                img2 = getFigureEight1();
-            } else {
-                img2 = getFigureEight2();
-            }
-            ORB orb2 = new ORB(img2.copyToGreyscale2(), np);
-            orb2.overrideToUseSmallestPyramid();
-            orb2.detectAndExtract();
-            List<PairInt> kpB = new ArrayList<PairInt>();
-            Descriptors descB = new Descriptors();
-            descB.descriptors = orb2.getDescriptorsList().get(0).descriptors;
-            for (int ii = 0; ii < orb2.getKeyPoint0List().get(0).size();
-                ++ii) {
-                kpB.add(new PairInt(
-                    orb2.getKeyPoint1List().get(0).get(ii),
-                    orb2.getKeyPoint0List().get(0).get(ii)));
-            }
-
-            int[][] costMatrix2 = ORB.calcDescriptorCostMatrix(
-                descA.descriptors, descB.descriptors);
-
-            boolean foundCenterCostIsZero = false;
-            
-            for (int j = 0; j < costMatrix2.length; ++j) {
-                for (int k = 0; k < costMatrix2[j].length; ++k) {
-                    int c = costMatrix2[j][k];
-                    //System.out.println(
-                    //    "i=" + i + 
-                    //    String.format(" %s:%s ", kp0.get(j),
-                    //    kp2.get(k)) +
-                    //    " c[" + j +"]["+k+"] c=" + c);
-                    
-                    if ((Math.abs(kpA.get(j).getX() - 32) < 3)
-                        && (Math.abs(kpA.get(j).getY() - 32) < 3)
-                        && (Math.abs(kpB.get(k).getX() - 32) < 3)
-                        && (Math.abs(kpB.get(k).getY() - 32) < 3)) {
-                        if (c < (0.11*256.)/(0.6*0.6)) {
-                            foundCenterCostIsZero = true;
-                        }
-                    }
-                }
-            }
-            
-            assertTrue(foundCenterCostIsZero);
-        }
-    
     }
     
     private Image getColorRectangles() {

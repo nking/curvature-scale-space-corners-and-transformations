@@ -31,12 +31,6 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * NOTE: this class is not ready for use yet, though it passes tests in
- * ORBTest.java.   Use on testresources/susan-in_plus.png
- * (which has a solid black background in the image)
- * shows that ImageProcessor.peakLocalMax() adds far too many points for
- * default settings.
-
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
  * (paper reference is Rublee, Rabaud, Konolige, and Bradski, 2011).
  * http://www.vision.cs.chubu.ac.jp/CV-R/pdf/Rublee_iccv2011.pdf
@@ -197,8 +191,6 @@ public class ORB {
 
     protected int nPyramidB = 3;
 
-    protected boolean useSmallestPyramid = false;
-
     protected boolean doCreate1stATrousKeypoints = true;
     
     protected final GreyscaleImage img;
@@ -233,16 +225,6 @@ public class ORB {
     }
     public void overrideFastThreshold(float threshold) {
         this.fastThreshold = threshold;
-    }
-
-    public void overrideToUseSmallestPyramid() {
-        
-        if (useSingleScale) {
-            throw new IllegalArgumentException("useSingleScale=true so cannot "
-                + " set this parameter");
-        }
-        
-        useSmallestPyramid = true;
     }
 
     /**
@@ -373,20 +355,12 @@ public class ORB {
         //   see the upsampling code in image processing to reverse...
 
         ImageProcessor imageProcessor = new ImageProcessor();
-
-        List<GreyscaleImage> output;
         
         int dl = useSingleScale ?
             Math.min(img.getWidth(), img.getHeight()) - 1 :
             decimationLimit;
         
-        if (useSmallestPyramid) {
-            output = new ArrayList<GreyscaleImage>();
-            MedianTransform mt = new MedianTransform();
-            mt.multiscalePyramidalMedianTransform2(img, output, dl);
-        } else {
-           output = imageProcessor.buildPyramid2(img, dl);
-        }
+        List<GreyscaleImage> output = imageProcessor.buildPyramid2(img, dl);
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         for (int i = 0; i < output.size(); ++i) {
@@ -515,142 +489,153 @@ public class ORB {
         if (doCreate1stATrousKeypoints) {
             extractATrousKeypoints(atk0, atk1);
         }
+                
+        Resp r;
+        TIntList mask;
+        float[][] harrisResponse;
+        int n, count, i, x, y, c0, c1;
+        float[] scores;
+        PairInt[] points;
+        TIntList kpc0s;
+        TIntList kpc1s;
+        float scale;
         
-        Resp r = extractKeypoints(0);
-
-        if (!atk0.isEmpty()) {
-            r.keypoints0.addAll(atk0);
-            r.keypoints1.addAll(atk1);
-        }
-
-        //mask of length orientations.size() containing a 1 or 0
-        // indicating if pixels are within the image (``True``) or in the
-        // border region of the image (``False``).
-        TIntList mask = filterNearBorder(pyramidImages[0].a, 
-            r.keypoints0, r.keypoints1);
+        // largest pyramid harris response image and tensor image size
+        int rH = harrisResponseImages[0].a.length;
+        int cH = harrisResponseImages[0].a[0].length;
         
-        // order by response and filter
-        
-        //TODO: revisit decision to only use the largest image harris response
-        float[][] harrisResponse = harrisResponseImages[0].a;
-
-        int n = r.keypoints0.size();
-
-        float[] scores = new float[n];
-        PairInt[] points = new PairInt[n];
-        
-        System.out.println("n=" + n + " h=" 
-            + img.getHeight() + " w=" + img.getWidth() +
-            " hRows=" + harrisResponse.length + 
-            " hCols=" + harrisResponse[0].length +
-            " pRows=" + pyramidImages[0].a.length + 
-            " pCols=" + pyramidImages[0].a[0].length + 
-            " dRows=" + tensorComponents[0].getDeterminant().length +
-            " dCols=" + tensorComponents[0].getDeterminant()[0].length);
-        
-        int count = 0;
-        for (int ii = 0; ii < n; ++ii) {
-            int x = r.keypoints1.get(ii);
-            int y = r.keypoints0.get(ii);
-            points[count] = new PairInt(x, y);
-            //NOTE: because scale[0] is the full size frame, these coords
-            // do not need to be rescaled
-            scores[count] = harrisResponse[y][x];
-            count++;
-        }
-     
-        if (n > 0) {
-            // the harris points are negative values.
-            //    strongest response is the smallest value (i.e. -2 is stronger than 0)
-            QuickSort.sortBy1stArg(scores, points);
-        }
-        
-        TIntList kpc0s = new TIntArrayList(this.nKeypoints);
-        TIntList kpc1s = new TIntArrayList(this.nKeypoints);
-
-        for (int i = 0; i < points.length; i++) {
-            PairInt p = points[i];
-            int x = p.getX();
-            int y = p.getY();
-            kpc1s.add(x);
-            kpc0s.add(y);
-        }
-
-        // then filter
-        maskCoordinates(kpc0s, kpc1s, harrisResponse.length,
-            harrisResponse[0].length, 4);//8);
-
-        // at this point kpc0s, kpc1s are in coord frame of largest image
-
-        // filter for number of points if requested
-        if (kpc0s.size() > this.nKeypoints) {
-            int rmi = this.nKeypoints;
-            int len = kpc0s.size() - this.nKeypoints;
-            kpc0s.remove(rmi, len);
-            kpc1s.remove(rmi, len);
-        }
-        
-        // populate the lists for each octave
-
+        Set<PairInt> set;
+        TIntList kp0s;
+        TIntList kp1s;
+        float[][] octaveImage;
+        TDoubleList orientations;
+        TFloatList responses;
+        int rmi = this.nKeypoints;
+        int len;
+            
         for (int octave = 0; octave < scales.length; ++octave) {
+            // order by response and filter
+            
+            scale = scales[octave];
+            
+            r = extractKeypoints(octave);
 
-            float scale = scales[octave];
-            // size is pyramid image [height][width]
+            if (!atk0.isEmpty()) {
+                for (i = 0; i < atk0.size(); ++i) {
+                    // shrink the atrous keypoints for this octave scale
+                    c0 = Math.round((float)atk0.get(i)/scale);
+                    c1 = Math.round((float)atk1.get(i)/scale);
+                    r.keypoints0.add(c0);
+                    r.keypoints1.add(c1);
+                }
+            }
+
+            //mask of length orientations.size() containing a 1 or 0
+            // indicating if pixels are within the image (``True``) or in the
+            // border region of the image (``False``).
+            mask = filterNearBorder(pyramidImages[octave].a, r.keypoints0, r.keypoints1);
+        
             harrisResponse = harrisResponseImages[octave].a;
 
-            // make a keypoint list for each scale, using set first
-            // to remove redundant points.
-            // TODO: may need to apply a local max filter if points cluster in
-            //    smaller image
-            Set<PairInt> set = new HashSet<PairInt>();
-            TIntList kp0s = new TIntArrayList(set.size());
-            TIntList kp1s = new TIntArrayList(set.size());
-            for (int i = 0; i < kpc0s.size(); ++i) {
-                // reduce to octave coord system
-                int c0 = Math.round((float)kpc0s.get(i)/scale);
-                int c1 = Math.round((float)kpc1s.get(i)/scale);
-                // if larger than pyramid image height
-                if (c0 > (harrisResponse.length - 1)) {
-                    c0 = harrisResponse.length - 1;
+            n = r.keypoints0.size();
+                        
+            assert(harrisResponse.length == pyramidImages[octave].a.length);
+            assert(harrisResponse.length == tensorComponents[octave].getDXSquared().length);
+            assert(harrisResponse[0].length == pyramidImages[octave].a[0].length);
+            assert(harrisResponse[0].length == tensorComponents[octave].getDXSquared()[0].length);
+            
+            scores = new float[n];
+            points = new PairInt[n];
+            count = 0;
+            for (i = 0; i < n; ++i) {
+                // these are in octave reference frame
+                x = r.keypoints1.get(i);
+                y = r.keypoints0.get(i);
+                points[count] = new PairInt(x, y);
+                scores[count] = harrisResponse[y][x];
+                count++;
+            }
+     
+            if (n > 0) {
+                // the harris points are negative values.
+                //    strongest response is the smallest value (i.e. -2 is stronger than 0)
+                QuickSort.sortBy1stArg(scores, points);
+            }
+        
+            kpc0s = new TIntArrayList(this.nKeypoints);
+            kpc1s = new TIntArrayList(this.nKeypoints);
+
+            for (i = 0; i < points.length; i++) {
+                PairInt p = points[i];
+                x = p.getX();
+                y = p.getY();
+                kpc1s.add(x);
+                kpc0s.add(y);
+            }
+
+            // then filter
+            maskCoordinates(kpc0s, kpc1s, harrisResponse.length,
+                harrisResponse[0].length, 4);//8);
+
+            // filter for number of points if requested
+            if (kpc0s.size() > this.nKeypoints) {
+                len = kpc0s.size() - this.nKeypoints;
+                kpc0s.remove(rmi, len);
+                kpc1s.remove(rmi, len);
+            }
+        
+            // filter to remove redundant points when rescaled
+            set = new HashSet<PairInt>();
+            kp0s = new TIntArrayList(set.size());
+            kp1s = new TIntArrayList(set.size());
+            for (i = 0; i < kpc0s.size(); ++i) {
+                // coords are in octave reference frame so expand to largest pyramid frame
+                //    for redundancy and boundary check
+                y = kpc0s.get(i);
+                x = kpc1s.get(i);
+                c0 = Math.round((float)y*scale);
+                c1 = Math.round((float)x*scale);
+                // if larger than largest pyramid image height
+                if (c0 >= rH) {
+                    c0 = rH - 1;
                 }
-                // if larger than pyramid image width
-                if (c1 > (harrisResponse[0].length - 1)) {
-                    c1 = harrisResponse[0].length - 1;
+                // if larger than largest pyramid image width
+                if (c1 >= cH) {
+                    c1 = cH - 1;
                 }
                 PairInt p = new PairInt(c0, c1); // y, x
                 if (set.contains(p)) {
                     continue;
                 }
                 set.add(p);
-                kp0s.add(c0);
-                kp1s.add(c1);
+                kp0s.add(y);
+                kp1s.add(x);
             }
-
-            // then filter for best within a pixel range
-            maskCoordinates(kp0s, kp1s, harrisResponse.length,
-                harrisResponse[0].length, 4);//8);
-
-            TFloatList responses = new TFloatArrayList(kp0s.size());
-
-            for (int i = 0; i < kp0s.size(); ++i) {
-                int c0 = kp0s.get(i);
-                int c1 = kp1s.get(i);
-                float v = harrisResponse[c0][c1];
-                responses.add(v);
+            
+            // coords are in octave reference frame so expand to largest pyramid frame
+            octaveImage = pyramidImages[octave].a;
+            orientations = calculateOrientations(octaveImage, kpc0s, kpc1s);
+            
+            responses = new TFloatArrayList(kp0s.size());
+            for (i = 0; i < kp0s.size(); ++i) {
+                c0 = kpc0s.get(i);
+                c1 = kpc1s.get(i);
+                responses.add(harrisResponse[c0][c1]);
             }
+            
+            // transform keypoints to full size coordinate reference frame.
+            for (i = 0; i < kp0s.size(); ++i) {
+                c0 = Math.round(scale * kp0s.get(i));
+                if (c0 >= rH) {
+                    c0 = rH - 1;
+                }
+                kp0s.set(i, c0);
 
-            float[][] octaveImage = pyramidImages[octave].a;
-
-            TDoubleList orientations = calculateOrientations(octaveImage,
-                kp0s, kp1s);
-
-            // transform keypoints to full size coordinate reference frame
-            for (int i = 0; i < kp0s.size(); ++i) {
-                int v = Math.round(scale * kp0s.get(i));
-                kp0s.set(i, v);
-
-                v = Math.round(scale * kp1s.get(i));
-                kp1s.set(i, v);
+                c1 = Math.round(scale * kp1s.get(i));
+                if (c1 >= cH) {
+                    c1 = cH - 1;
+                }
+                kp1s.set(i, c1);
             }
 
             // kp0s and kp1s are in coord frame of largest image
@@ -1482,6 +1467,8 @@ public class ORB {
         if (POS1 == null) {
             POS1 = ORBDescriptorPositions.POS1;
         }
+        
+        assert(keypoints0.size() == orientations.size());
 
         int nKP = orientations.size();
 
@@ -1490,19 +1477,19 @@ public class ORB {
         // each item is a 256 length bit string
         VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
 
-        double pr0, pc0, pr1, pc1;
-        int spr0, spc0, spr1, spc1;
-
+        double pr0, pc0, pr1, pc1, angle, sinA, cosA;
+        int spr0, spc0, spr1, spc1, kr, kc;
+      
         for (int i = 0; i < descriptors.length; ++i) {
 
             descriptors[i] = new VeryLongBitString(POS1.length);
 
-            double angle = orientations.get(i);
-            double sinA = Math.sin(angle);
-            double cosA = Math.cos(angle);
+            angle = orientations.get(i);
+            sinA = Math.sin(angle);
+            cosA = Math.cos(angle);
 
-            int kr = keypoints0.get(i);
-            int kc = keypoints1.get(i);
+            kr = keypoints0.get(i);
+            kc = keypoints1.get(i);
 
             // put kr and kc into pyramid image reference frame.
             kr = (int)(kr/scale);

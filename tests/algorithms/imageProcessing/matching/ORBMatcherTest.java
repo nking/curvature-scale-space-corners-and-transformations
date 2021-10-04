@@ -68,8 +68,8 @@ public class ORBMatcherTest extends TestCase {
                 lbl = "rot90_";
             }
 
-            for (int i = 0; i < filePairs.length; ++i) {
-            //for (int i = 2; i < 3; ++i) {
+            //for (int i = 0; i < filePairs.length; ++i) {
+            for (int i = 0; i < 1; ++i) {
 
                 String fileName1 = filePairs[i][0];
                 String fileName2 = filePairs[i][1];
@@ -152,26 +152,30 @@ public class ORBMatcherTest extends TestCase {
                 }
 
 
-                int np = 100;       
+                int np = 300;//100;       
 
                 ORB orb1 = new ORB(img1GS, np);
                 //orb1.overrideToAlsoCreate1stDerivKeypoints();
                 //orb1.overrideToCreateCurvaturePoints();
                 orb1.overrideToNotCreateATrousKeypoints();
-                //orb1.overrideToUseSingleScale();
+           //orb1.overrideToUseSingleScale();
                 orb1.detectAndExtract();
 
                 ORB orb2 = new ORB(img2GS, np);
                 //orb2.overrideToAlsoCreate1stDerivKeypoints();
                 //orb2.overrideToCreateCurvaturePoints();
                 orb2.overrideToNotCreateATrousKeypoints();
-                //orb2.overrideToUseSingleScale();
+           //orb2.overrideToUseSingleScale();
                 orb2.detectAndExtract();
 
                 Descriptors d1 = orb1.getDescriptorsList().get(0);
                 Descriptors d2 = orb2.getDescriptorsList().get(0);
                 List<PairInt> kp1 = orb1.getKeyPointListColMaj(0);
                 List<PairInt> kp2 = orb2.getKeyPointListColMaj(0);
+                d1 = orb1.getAllDescriptors();
+                d2 = orb2.getAllDescriptors();
+                kp1 = orb1.getAllKeyPoints();
+                kp2 = orb2.getAllKeyPoints();
                 QuadInt[] matched;
 
                 if (i == 2) {
@@ -204,6 +208,7 @@ public class ORBMatcherTest extends TestCase {
                         ImageIOHelper.addCurveToImage(pixIdxs, tmp2, 1, 255, 0, 0);
                     }
                     MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
+                    System.out.println(lbl + fileName1Root + " matched=" + matched.length);
                     CorrespondencePlotter plotter = 
                         new CorrespondencePlotter(tmp1, tmp2);
                     for (int ii = 0; ii < matched.length; ++ii) {
