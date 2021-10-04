@@ -397,10 +397,11 @@ public class ORBMatcher {
         return results;
     }
     
+    //@param ratioLimit Mikolajczyk and Schmid 2005) 0.8 or 0.9.
     private static int[] findGreedyBestIsolated(int[][] cost, float ratioLimit) {
         int n1 = cost.length;
         int n2 = cost[0].length;
-        
+//editing        
         int[] bestMatch = new int[n1];
         for (int i = 0; i < n1; ++i) {
             int bc = Integer.MAX_VALUE;
@@ -438,7 +439,7 @@ public class ORBMatcher {
                 bestMatch[i] = bcIdx;
             } else {
                 float ratio = (float)bc/(float)bc2;
-                if (ratio < 0.8) {
+                if (ratio < ratioLimit) {
                     bestMatch[i] = bcIdx;
                 } else {
                     bestMatch[i] = -1;

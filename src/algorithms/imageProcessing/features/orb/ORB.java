@@ -390,8 +390,7 @@ public class ORB {
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         for (int i = 0; i < output.size(); ++i) {
-            float[][] rowMajorImg = imageProcessor.copyToRowMajor(
-                output.get(i));
+            float[][] rowMajorImg = imageProcessor.copyToRowMajor(output.get(i));
             MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
             TwoDFloatArray f = new TwoDFloatArray(rowMajorImg);
             output2.add(f);
@@ -532,6 +531,7 @@ public class ORB {
         
         // order by response and filter
         
+        //TODO: revisit decision to only use the largest image harris response
         float[][] harrisResponse = harrisResponseImages[0].a;
 
         int n = r.keypoints0.size();
@@ -560,13 +560,15 @@ public class ORB {
         }
      
         if (n > 0) {
+            // the harris points are negative values.
+            //    strongest response is the smallest value (i.e. -2 is stronger than 0)
             QuickSort.sortBy1stArg(scores, points);
         }
         
         TIntList kpc0s = new TIntArrayList(this.nKeypoints);
         TIntList kpc1s = new TIntArrayList(this.nKeypoints);
-        
-        for (int i = (points.length - 1); i > -1; --i) {
+
+        for (int i = 0; i < points.length; i++) {
             PairInt p = points[i];
             int x = p.getX();
             int y = p.getY();
@@ -1812,7 +1814,7 @@ public class ORB {
      */
     public TIntList getKeyPointListPix(int octave) {
         int w = this.pyramidImages[octave].a[0].length;
-        
+        //(row * width) + col
         TIntList out = new TIntArrayList();
         for (int i = 0; i < keypoints0List.get(octave).size(); ++i) {
             int x = keypoints1List.get(octave).get(i);
