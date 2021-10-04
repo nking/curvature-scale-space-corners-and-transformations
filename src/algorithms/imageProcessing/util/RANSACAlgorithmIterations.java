@@ -86,12 +86,18 @@ public class RANSACAlgorithmIterations {
        https://www.robots.ox.ac.uk/ActiveVision/Publications/torr_murray_ijcv1997/torr_murray_ijcv1997.pdf
     
     <pre>
-    for probablity gamma in excess of 95%:
-    let p = sub-sample size
+    equation to estimate the number of subsamples required
+    for the probablity gamma to be in excess of 95%, that is,
+    the probability that all the data points selected in one subsample are non-outliers.
+    
+    let p = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
+    let eps = fraction of contaminated data
     let m = number of subsamples to achieve gamma probability
-    let eps = percentage of bad data
     
     gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    
+    m = Math.log(1. - 0.95)
+           /(Math.log(1. - Math.pow(1. - ((double)outlierPercent/100.), p)
     
     table of m's for p=7 and eps from 5%to 50%:
     
@@ -158,7 +164,7 @@ public class RANSACAlgorithmIterations {
         double g = 1. - 0.95;
         
         double m = Math.log(g) / Math.log(z);
-                
+                        
         return (int)Math.ceil(m);
     }
     

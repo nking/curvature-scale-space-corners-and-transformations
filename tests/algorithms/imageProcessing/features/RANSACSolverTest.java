@@ -56,7 +56,7 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
@@ -148,7 +148,7 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
@@ -268,7 +268,7 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
@@ -375,7 +375,7 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
@@ -447,7 +447,7 @@ public class RANSACSolverTest extends TestCase {
         NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
         DenseMatrix leftM = normXY1.getXy();
         DenseMatrix rightM = normXY2.getXy();
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
         
         RANSACSolver solver = new RANSACSolver();
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(

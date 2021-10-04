@@ -94,7 +94,7 @@ public class RANSACEuclideanSolver {
         */
         
         int outlierPercent = 50;
-        int t = (int)Math.ceil((1. - outlierPercent)*nPoints);
+        int t = (int)Math.ceil((1. - (outlierPercent/100.))*nPoints);
       
         long nMaxIter;
         if (nPoints == nSet) {
