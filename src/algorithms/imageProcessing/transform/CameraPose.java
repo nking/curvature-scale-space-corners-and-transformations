@@ -1,14 +1,10 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.features.RANSACSolver;
-import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
-import java.util.Arrays;
-import java.util.List;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.RQ;

@@ -103,9 +103,9 @@ public class PartialShapeMatcher2Test extends TestCase {
 
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
-    //    shapeMatcher.overrideSamplingDistance(1);
+        shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
-     shapeMatcher.setToRemoveOutliers();
+        shapeMatcher.setToRemoveOutliers();
         //shapeMatcher.overrideMinimumLength(4);
         shapeMatcher.setToUseEuclidean();
         

@@ -9,12 +9,18 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
 import algorithms.VeryLongBitString;
+import algorithms.bipartite.Graph;
+import algorithms.bipartite.MinCostUnbalancedAssignment;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
+import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -271,6 +277,9 @@ public class ORBMatcher {
         //nearest neighbor distance ratio (Mikolajczyk and Schmid 2005):
         // using a ratio of 0.8 or 0.9.
         int[] bestMatch = findGreedyBestIsolated(cost, 0.8f);
+        
+        //int[] bestMatch = minCostBipartiteUnbalanced(cost);
+        
         assert(bestMatch.length == n1);
         
         int nBest = 0;
@@ -397,19 +406,58 @@ public class ORBMatcher {
         return results;
     }
     
+    private static int[] minCostBipartiteUnbalanced(int[][] cost) {
+        
+        TObjectIntMap<PairInt> weights = new TObjectIntHashMap<PairInt>();
+            
+        int i, j;
+        for (i = 0; i < cost.length; ++i) {
+            for (j = 0; j < cost[i].length; ++j) {
+                weights.put(new PairInt(i, j), cost[i][j]);
+            }
+        }
+        boolean createSourceAndSinkEdges = true;
+        Graph g = new Graph(cost.length, cost[0].length, weights, createSourceAndSinkEdges);
+        
+        MinCostUnbalancedAssignment bipartite = 
+            new MinCostUnbalancedAssignment();
+        
+        TIntIntMap map = bipartite.flowAssign(g);
+        
+        int[] bestMatch = new int[cost.length];
+        Arrays.fill(bestMatch, -1);
+        
+        TIntIntIterator iter = map.iterator();
+        for (i = 0; i < map.size(); ++i) {
+            iter.advance();
+            bestMatch[iter.key()] = iter.value();
+        }
+        return bestMatch;
+    }
+    
     //@param ratioLimit Mikolajczyk and Schmid 2005) 0.8 or 0.9.
     private static int[] findGreedyBestIsolated(int[][] cost, float ratioLimit) {
         int n1 = cost.length;
         int n2 = cost[0].length;
-//editing        
+                
+        // best match cost
+        int bc;
+        // best match index
+        int bcIdx;
+        // 2nd best match cost
+        int bc2;
+        // 2nd best match index
+        int bc2Idx;
+        int c;
         int[] bestMatch = new int[n1];
-        for (int i = 0; i < n1; ++i) {
-            int bc = Integer.MAX_VALUE;
-            int bc2 = Integer.MAX_VALUE;
-            int bcIdx = -1;
-            int bc2Idx = -1;
-            for (int j = 0; j < n2; ++j) {
-                int c = cost[i][j];
+        int i, j;
+        for (i = 0; i < n1; ++i) {
+            bc = Integer.MAX_VALUE;
+            bc2 = Integer.MAX_VALUE;
+            bcIdx = -1;
+            bc2Idx = -1;
+            for (j = 0; j < n2; ++j) {
+                c = cost[i][j];
                 if (c >= bc2) {
                     continue;
                 }

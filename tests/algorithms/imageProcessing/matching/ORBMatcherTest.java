@@ -6,7 +6,6 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.features.orb.ORB.Descriptors;
@@ -18,7 +17,6 @@ import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.list.TDoubleList;
-import gnu.trove.list.TIntList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -61,18 +59,19 @@ public class ORBMatcherTest extends TestCase {
             "checkerboard_01.jpg",
             "checkerboard_02.jpg"};
         
-        for (int rotate = 0; rotate < 2; ++rotate) {
+        int i, ii;
+        for (int rotate = 0; rotate < 1/*2*/; ++rotate) {
             
             String lbl = "_";
             if (rotate == 1) {
                 lbl = "rot90_";
             }
 
-            //for (int i = 0; i < filePairs.length; ++i) {
-            for (int i = 0; i < 1; ++i) {
+            for (ii = 0; ii < filePairs.length; ++ii) {
+            //for (ii = 1; ii < 2; ++ii) {
 
-                String fileName1 = filePairs[i][0];
-                String fileName2 = filePairs[i][1];
+                String fileName1 = filePairs[ii][0];
+                String fileName2 = filePairs[ii][1];
 
                 int idx = fileName1.lastIndexOf(".");
                 String fileName1Root = fileName1.substring(0, idx);
@@ -151,39 +150,32 @@ public class ORBMatcherTest extends TestCase {
                             lch2[2].getHeight(), lch2[2].getWidth());
                 }
 
-
-                int np = 300;//100;       
+                int x, y;
+                
+                int np = 300;       
 
                 ORB orb1 = new ORB(img1GS, np);
-                //orb1.overrideToAlsoCreate1stDerivKeypoints();
-                //orb1.overrideToCreateCurvaturePoints();
-                orb1.overrideToNotCreateATrousKeypoints();
-           //orb1.overrideToUseSingleScale();
                 orb1.detectAndExtract();
+                orb1.overrideToAlsoCreate1stDerivKeypoints();
+                orb1.overrideToNotCreateATrousKeypoints();
 
                 ORB orb2 = new ORB(img2GS, np);
-                //orb2.overrideToAlsoCreate1stDerivKeypoints();
-                //orb2.overrideToCreateCurvaturePoints();
-                orb2.overrideToNotCreateATrousKeypoints();
-           //orb2.overrideToUseSingleScale();
                 orb2.detectAndExtract();
+                orb1.overrideToAlsoCreate1stDerivKeypoints();
+                orb2.overrideToNotCreateATrousKeypoints();
 
-                Descriptors d1 = orb1.getDescriptorsList().get(0);
-                Descriptors d2 = orb2.getDescriptorsList().get(0);
-                List<PairInt> kp1 = orb1.getKeyPointListColMaj(0);
-                List<PairInt> kp2 = orb2.getKeyPointListColMaj(0);
-                d1 = orb1.getAllDescriptors();
-                d2 = orb2.getAllDescriptors();
-                kp1 = orb1.getAllKeyPoints();
-                kp2 = orb2.getAllKeyPoints();
+                Descriptors d1 = orb1.getAllDescriptors();
+                Descriptors d2 = orb2.getAllDescriptors();
+                List<PairInt> kp1 = orb1.getAllKeyPoints();
+                List<PairInt> kp2 = orb2.getAllKeyPoints();
                 QuadInt[] matched;
 
-                if (i == 2) {
+                if (ii == 2) {
 
                     HOGs hogs1 = new HOGs(img1GS, 1, 6);
                     HOGs hogs2 = new HOGs(img2GS, 1, 6);
-                    TDoubleList orientations1 = orb1.getOrientationsList().get(0);
-                    TDoubleList orientations2 = orb2.getOrientationsList().get(0);
+                    TDoubleList orientations1 = orb1.getAllOrientations();
+                    TDoubleList orientations2 = orb2.getAllOrientations();
 
                     matched = ORBMatcher.matchDescriptors(d1, d2, kp1, kp2,
                         hogs1, hogs2, orientations1, orientations2);
@@ -194,85 +186,77 @@ public class ORBMatcherTest extends TestCase {
                         d1, d2, kp1, kp2);
                 }
 
+                int x1, x2, y1, y2;
                 {//DEBUG
                     Image tmp1 = img1.copyToGreyscale2().copyToColorGreyscale();
-                    for (int ii = 0; ii < 1; ++ii) {
-                        TIntList pixIdxs = orb1.getKeyPointListPix(ii);
-                        ImageIOHelper.addCurveToImage(pixIdxs, tmp1, 1, 255, 0, 0);
+                    for (i = 0; i < kp1.size(); ++i) {
+                        y = kp1.get(i).getY();
+                        x = kp1.get(i).getX();
+                        ImageIOHelper.addPointToImage(x, y, tmp1, 2, 255, 0, 0);
                     }
                     MiscDebug.writeImage(tmp1, "_kp_gs_" + lbl + fileName1Root);
 
                     Image tmp2 = img2GS.copyToColorGreyscale();
-                    for (int ii = 0; ii < 1; ++ii) {
-                        TIntList pixIdxs = orb2.getKeyPointListPix(ii);
-                        ImageIOHelper.addCurveToImage(pixIdxs, tmp2, 1, 255, 0, 0);
+                    for (i = 0; i < kp2.size(); ++i) {
+                        y = kp2.get(i).getY();
+                        x = kp2.get(i).getX();
+                        ImageIOHelper.addPointToImage(x, y, tmp2, 2, 255, 0, 0);
                     }
                     MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
                     System.out.println(lbl + fileName1Root + " matched=" + matched.length);
                     CorrespondencePlotter plotter = 
                         new CorrespondencePlotter(tmp1, tmp2);
-                    for (int ii = 0; ii < matched.length; ++ii) {
-                        int x1 = matched[ii].getA();
-                        int y1 = matched[ii].getB();
-                        int x2 = matched[ii].getC();
-                        int y2 = matched[ii].getD();
-                        plotter.drawLineInAlternatingColors(x1, y1, 
-                            x2, y2, 1);
+                    for (i = 0; i < matched.length; ++i) {
+                        x1 = matched[i].getA();
+                        y1 = matched[i].getB();
+                        x2 = matched[i].getC();
+                        y2 = matched[i].getD();
+                        plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                     }
                     plotter.writeImage("_corres_gs_" + lbl + fileName1Root);
                 }
 
 
                 ORB orb1c = new ORB(lch1[2], np);
-                //orb1c.overrideToAlsoCreate1stDerivKeypoints();
-                //orb1c.overrideToCreateCurvaturePoints();
-                orb1c.overrideToUseSingleScale();
-                orb1c.overrideToNotCreateATrousKeypoints();
                 orb1c.detectAndExtract();
 
                 ORB orb2c = new ORB(lch2[2], np);
-                //orb2c.overrideToAlsoCreate1stDerivKeypoints();
-                //orb2c.overrideToCreateCurvaturePoints();
-                orb2c.overrideToUseSingleScale();
-                orb2c.overrideToNotCreateATrousKeypoints();
                 orb2c.detectAndExtract();
 
                 ORB orb1csh = new ORB(h1Shifted, np);
-                orb1csh.overrideToUseSingleScale();
-                orb1csh.overrideToNotCreateATrousKeypoints();
                 orb1csh.detectAndExtract();
 
                 ORB orb2csh = new ORB(h2Shifted, np);
-                orb2csh.overrideToUseSingleScale();
-                orb2csh.overrideToNotCreateATrousKeypoints();
                 orb2csh.detectAndExtract();
 
-                Descriptors d1c = orb1c.getDescriptorsList().get(0);
-                Descriptors d2c = orb2c.getDescriptorsList().get(0);
-                List<PairInt> kp1c = orb1c.getKeyPointListColMaj(0);
-                List<PairInt> kp2c = orb2c.getKeyPointListColMaj(0);
+                Descriptors d1c = orb1c.getAllDescriptors();
+                Descriptors d2c = orb2c.getAllDescriptors();
+                List<PairInt> kp1c = orb1c.getAllKeyPoints();
+                List<PairInt> kp2c = orb2c.getAllKeyPoints();
 
-                Descriptors d1csh = orb1csh.getDescriptorsList().get(0);
-                Descriptors d2csh = orb2csh.getDescriptorsList().get(0);
-                List<PairInt> kp1csh = orb1csh.getKeyPointListColMaj(0);
-                List<PairInt> kp2csh = orb2csh.getKeyPointListColMaj(0);
-                TDoubleList o1csh = orb1csh.getOrientationsList().get(0);
-                TDoubleList o2csh = orb2csh.getOrientationsList().get(0);
-
-                Object[] combined1 = ORB.combine(d1c, kp1c, orb1c.getOrientationsList().get(0), d1csh, kp1csh, o1csh);
+                Descriptors d1csh = orb1csh.getAllDescriptors();
+                Descriptors d2csh = orb2csh.getAllDescriptors();
+                List<PairInt> kp1csh = orb1csh.getAllKeyPoints();
+                List<PairInt> kp2csh = orb2csh.getAllKeyPoints();
+                TDoubleList o1csh = orb1csh.getAllOrientations();
+                TDoubleList o2csh = orb2csh.getAllOrientations();
+                
+                Object[] combined1 = ORB.combine(d1c, kp1c, orb1c.getAllOrientations(), 
+                    d1csh, kp1csh, o1csh);
                 Descriptors combined1D = (Descriptors)combined1[0];
                 @SuppressWarnings("unchecked")
                 List<PairInt> combined1K = (List<PairInt>)combined1[1];
                 TDoubleList combined1O = (TDoubleList)combined1[2];
-
-                Object[] combined2 = ORB.combine(d2c, kp2c, orb2c.getOrientationsList().get(0), d2csh, kp2csh, o2csh);
+                
+                assertEquals(combined1D.descriptors.length, combined1K.size());
+                assertEquals(combined1K.size(), combined1O.size());
+        
+                Object[] combined2 = ORB.combine(d2c, kp2c, orb2c.getAllOrientations(), 
+                    d2csh, kp2csh, o2csh);
                 Descriptors combined2D = (Descriptors)combined2[0];
                 @SuppressWarnings("unchecked")
                 List<PairInt> combined2K = (List<PairInt>)combined2[1];
                 TDoubleList combined2O = (TDoubleList)combined2[2];
-
-                assertEquals(combined1D.descriptors.length, combined1K.size());
-                assertEquals(combined1O.size(), combined1K.size());
                 assertEquals(combined2D.descriptors.length, combined2K.size());
                 assertEquals(combined2O.size(), combined2K.size());
 
@@ -317,11 +301,11 @@ public class ORBMatcherTest extends TestCase {
                     MiscDebug.writeImage(tmp2, "_kp_comb_" + lbl + fileName2Root);
                     CorrespondencePlotter plotter = 
                         new CorrespondencePlotter(tmp1, tmp2);
-                    for (int ii = 0; ii < matched.length; ++ii) {
-                        int x1 = matched[ii].getA();
-                        int y1 = matched[ii].getB();
-                        int x2 = matched[ii].getC();
-                        int y2 = matched[ii].getD();
+                    for (i = 0; i < matched.length; ++i) {
+                        x1 = matched[i].getA();
+                        y1 = matched[i].getB();
+                        x2 = matched[i].getC();
+                        y2 = matched[i].getD();
                         plotter.drawLineInAlternatingColors(x1, y1, 
                             x2, y2, 1);
                     }
