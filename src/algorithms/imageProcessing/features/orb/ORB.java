@@ -5,7 +5,6 @@ import algorithms.imageProcessing.ATrousWaveletTransform;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MedianTransform;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.StructureTensor;
 import algorithms.matrix.MatrixUtil;
@@ -13,6 +12,7 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.VeryLongBitString;
+import algorithms.sort.MiscSorter;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -161,6 +161,11 @@ public class ORB {
     //decision pixel-pair. It is ``Q == np.sum(mask)``.
     private List<Descriptors> descriptorsList = null;
     
+    private List<PairInt> combinedKeypointList = null;
+    private TDoubleList combinedOrientationList = null;
+    private TFloatList combinedHarrisResponseList = null;
+    private Descriptors combinedDescriptors = null;
+    
     protected static double twoPI = 2. * Math.PI;
 
     protected float curvatureThresh = 0.05f;
@@ -303,12 +308,14 @@ public class ORB {
         // NOTE that the keypoints are all in the coord frame of the largest image
         extractKeypoints();
 
+        extractDescriptors();
+
+        combineAndFilterTotal();
+
         int nKeyPointsTotal = countKeypoints();
 
         log.info("nKeypointsTotal=" + nKeyPointsTotal +
-            " number of allowed Keypoints=" + this.nKeypoints);
-                
-        extractDescriptors();
+            " number of allowed Keypoints=" + this.nKeypoints);                
     }
   
     private void buildPyramid() {
@@ -363,10 +370,13 @@ public class ORB {
         List<GreyscaleImage> output = imageProcessor.buildPyramid2(img, dl);
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
+        float[][] rowMajorImg;
+        TwoDFloatArray f;
+        
         for (int i = 0; i < output.size(); ++i) {
-            float[][] rowMajorImg = imageProcessor.copyToRowMajor(output.get(i));
+            rowMajorImg = imageProcessor.copyToRowMajor(output.get(i));
             MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
-            TwoDFloatArray f = new TwoDFloatArray(rowMajorImg);
+            f = new TwoDFloatArray(rowMajorImg);
             output2.add(f);
         }
 
@@ -647,11 +657,119 @@ public class ORB {
 
         } // end loop over octave
 
+        // note, at this point, each octave has the limit of this.nKeypoints,
+        //    but the total may be as large as scales.length*this.nKeypoints
+        
         assert(pyramidImages.length == keypoints0List.size());
         assert(pyramidImages.length == keypoints1List.size());
         assert(pyramidImages.length == orientationsList.size());
         assert(pyramidImages.length == this.harrisResponses.size());
         assert(pyramidImages.length == scales.length);        
+    }
+
+    private void combineAndFilterTotal() {
+        //combined into one list and sort by harris response then take first nKeypoints
+                
+        combinedKeypointList = new ArrayList<PairInt>();
+        combinedOrientationList = new TDoubleArrayList();
+        combinedHarrisResponseList = new TFloatArrayList();
+        
+        if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {
+            combinedDescriptors = new Descriptors();
+        }
+        
+        final int nTotal = countKeypoints();
+        
+        int octave, i;
+        int count = 0;
+        TFloatList h;
+        
+        if (nTotal < this.nKeypoints) {
+            //fill the arrays and return
+            
+            VeryLongBitString[] combinedD = new VeryLongBitString[nTotal];
+            TDoubleList orList;
+            TIntList kp0List, kp1List;
+            Descriptors d;
+            
+            for (octave = 0; octave < scales.length; ++octave) {
+                kp0List = keypoints0List.get(octave);
+                kp1List = keypoints1List.get(octave);
+                orList = orientationsList.get(octave);
+                h = harrisResponses.get(octave);
+                for (i = 0; i < kp0List.size(); ++i) {
+                    combinedKeypointList.add(new PairInt(kp1List.get(i), kp0List.get(i)));
+                    combinedHarrisResponseList.add(h.get(i));
+                    combinedOrientationList.add(orList.get(i));
+                }
+            }
+            count = 0;
+            if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {
+                for (octave = 0; octave < scales.length; ++octave) {
+                    d = descriptorsList.get(octave);
+                    System.arraycopy(d.descriptors, 0, combinedD, count, d.descriptors.length);
+                    count += d.descriptors.length;
+                }
+                combinedDescriptors.descriptors = combinedD;
+                assert (combinedDescriptors.descriptors.length == nTotal);
+            }
+            assert(combinedKeypointList.size() == nTotal);
+            assert (combinedOrientationList.size() == nTotal);
+            assert (combinedHarrisResponseList.size() == nTotal);
+
+            return;
+        }
+    
+        PairInt[] idxs00 = new PairInt[nTotal];
+        int[] idxs0 = new int[nTotal];
+        
+        count = 0;
+        for (octave = 0; octave < scales.length; ++octave) {
+            h = harrisResponses.get(octave);
+            for (i = 0; i < h.size(); ++i) {
+                idxs00[count] = new PairInt(octave, i);
+                idxs0[count] = count;
+                count++;
+                combinedHarrisResponseList.add(h.get(i));
+            }
+        }
+        
+        QuickSort.sortBy1stArg(combinedHarrisResponseList, idxs0);
+        
+        VeryLongBitString[] combinedD = new VeryLongBitString[this.nKeypoints];
+        int idxOctave, idxList, idx0;
+        PairInt p;
+        
+        for (i = 0; i < this.nKeypoints; ++i) {
+            idx0 = idxs0[i];
+            idxOctave = idxs00[idx0].getX();
+            idxList = idxs00[idx0].getY();
+            
+            p = new PairInt(keypoints1List.get(idxOctave).get(idxList),
+                keypoints0List.get(idxOctave).get(idxList));
+            combinedKeypointList.add(p);
+            
+            combinedOrientationList.add(this.orientationsList.get(idxOctave).get(idxList));            
+        }
+        if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {
+            count = 0;
+            for (i = 0; i < this.nKeypoints; ++i) {
+                idx0 = idxs0[i];
+                idxOctave = idxs00[idx0].getX();
+                idxList = idxs00[idx0].getY();
+                // this is the descriptor for one keypoint
+                combinedD[count] = descriptorsList.get(idxOctave).descriptors[idxList];
+                count++;
+            }
+            combinedDescriptors.descriptors = combinedD;
+            assert(combinedDescriptors.descriptors.length == this.nKeypoints);
+        }
+        
+        combinedHarrisResponseList.remove(this.nKeypoints, nTotal - this.nKeypoints);
+        
+        assert(combinedKeypointList.size() == this.nKeypoints);
+        assert(combinedOrientationList.size() == this.nKeypoints);
+        assert(combinedHarrisResponseList.size() == this.nKeypoints);
     }
 
     private void extractDescriptors() {
@@ -739,19 +857,16 @@ public class ORB {
  
         // list of format [row, col, ...] of filtered maxima ordered by intensity
         cornerPeaks(fastResponse, 1, keypoints0, keypoints1);
-        int nkp = keypoints0.size();
         if (keypoints0.isEmpty()) {
             Resp r2 = new Resp();
             r2.keypoints0 = keypoints0;
             r2.keypoints1 = keypoints1;
             return r2;
         }
-
- //editing       maskCoordinates(keypoints0, keypoints1, nRows, nCols, 8);//16);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
 
         if (doCreate1stDerivKeypoints) {
-
-            ImageProcessor imageProcessor = new ImageProcessor();
 
             float hLimit = 0.01f;//0.09f;
 
@@ -788,8 +903,6 @@ public class ORB {
         }
 
         if (doCreateCurvatureKeyPoints) {
-
-            ImageProcessor imageProcessor = new ImageProcessor();
 
             // usually, only create these points for points on an edge.
             // wanting the min and max of curvature,
@@ -830,15 +943,12 @@ public class ORB {
                 System.out.println(e.getMessage());
             }*/
         }
-        
-        // size is same a octaveImage
-        float[][] harrisResponse = harrisResponseImages[octave].a;
-
+           
         // remove redundant keypoints
         Set<PairInt> exists = new HashSet<PairInt>();
+        PairInt p;
         for (int i = (keypoints0.size() - 1); i > -1; --i) {
-            PairInt p = new PairInt(keypoints0.get(i),
-               keypoints1.get(i));
+            p = new PairInt(keypoints0.get(i), keypoints1.get(i));
             if (exists.contains(p)) {
                 keypoints0.removeAt(i);
                 keypoints1.removeAt(i);
@@ -846,20 +956,19 @@ public class ORB {
                 exists.add(p);
             }
         }
-        nkp = keypoints0.size();
+               
+        // size is same a octaveImage
+        float[][] harrisResponse = harrisResponseImages[octave].a;
 
         // --- harris corners from response image ----
-        ImageProcessor imageProcessor = new ImageProcessor();
+        
         imageProcessor.peakLocalMax(harrisResponse, 
             1, 0.1f,
             true, keypoints0, keypoints1);
 
-        nkp = keypoints0.size();
-
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
-        
         
         /*{//DEBUG
             Image dbg = new Image(harrisResponse[0].length,
@@ -889,7 +998,6 @@ public class ORB {
             System.out.println("nKP=" + keypoints0.size() + " for octave=" + 
                 octave);
         }*/
-        
         
         return r2;
     }
@@ -1452,6 +1560,7 @@ public class ORB {
      * @param keypoints0
      * @param keypoints1
      * @param orientations
+     * @param scale the scale for this octave image.
      * @return
      * array of bit vectors of which only 256 bits are used
      * length is [orientations.size]
@@ -1468,19 +1577,23 @@ public class ORB {
             POS1 = ORBDescriptorPositions.POS1;
         }
         
-        assert(keypoints0.size() == orientations.size());
-
-        int nKP = orientations.size();
+        int nKP = keypoints0.size();
 
         log.fine("nKP=" + nKP);
 
         // each item is a 256 length bit string
         VeryLongBitString[] descriptors = new VeryLongBitString[nKP];
+        
+        if (nKP == 0) {
+            return descriptors;
+        }
+        
+        System.out.printf("scale=%.2f, nKP=%d\n", scale, nKP);
 
         double pr0, pc0, pr1, pc1, angle, sinA, cosA;
-        int spr0, spc0, spr1, spc1, kr, kc;
+        int spr0, spc0, spr1, spc1, kr, kc, i, j, x0, y0, x1, y1;
       
-        for (int i = 0; i < descriptors.length; ++i) {
+        for (i = 0; i < nKP; ++i) {
 
             descriptors[i] = new VeryLongBitString(POS1.length);
 
@@ -1495,7 +1608,7 @@ public class ORB {
             kr = (int)(kr/scale);
             kc = (int)(kc/scale);
 
-            for (int j = 0; j < POS0.length; ++j) {
+            for (j = 0; j < POS0.length; ++j) {
                 pr0 = POS0[j][0];
                 pc0 = POS0[j][1];
                 pr1 = POS1[j][0];
@@ -1506,10 +1619,10 @@ public class ORB {
                 spr1 = (int)Math.round(sinA * pr1 + cosA * pc1);
                 spc1 = (int)Math.round(cosA * pr1 - sinA * pc1);
 
-                int x0 = kr + spr0;
-                int y0 = kc + spc0;
-                int x1 = kr + spr1;
-                int y1 = kc + spc1;
+                x0 = kr + spr0;
+                y0 = kc + spc0;
+                x1 = kr + spr1;
+                y1 = kc + spc1;
 
                 if (x0 < 0 || y0 < 0 || x1 < 0 || y1 < 0 ||
                     (x0 > (octaveImage.length - 1)) ||
@@ -1546,8 +1659,7 @@ public class ORB {
      * @return
      */
     public Descriptors getAllDescriptors() {
-
-        return combineDescriptors(descriptorsList);
+        return combinedDescriptors;
     }
 
     /**
@@ -1656,54 +1768,16 @@ public class ORB {
      */
     public TIntList getAllKeyPoints0() {
 
-        int n = 0;
-        for (TIntList ks : keypoints0List) {
-            n += ks.size();
-        }
-
-        TIntList combined = new TIntArrayList(n);
-
-        for (int i = 0; i < keypoints0List.size(); ++i) {
-
-            TIntList ks = keypoints0List.get(i);
-
-            combined.addAll(ks);
+        TIntList combined = new TIntArrayList(combinedKeypointList.size());
+        PairInt p;
+        for (int i = 0; i < combinedKeypointList.size(); ++i) {
+            p = combinedKeypointList.get(i);
+            combined.add(p.getY());
         }
 
         return combined;
     }
-
-    /**
-     * get a list of each octave's keypoint rows as a combined list.
-     * The list contains coordinates which have already been scaled to the
-     * full image reference frame and are in column major format.
-     * @return
-     */
-    public List<PairInt> getAllKeyPoints() {
-
-        int n = 0;
-        for (TIntList ks : keypoints0List) {
-            n += ks.size();
-        }
-
-        List<PairInt> combined = new ArrayList<PairInt>(n);
-
-        for (int i = 0; i < keypoints0List.size(); ++i) {
-
-            TIntList kp0 = keypoints0List.get(i);
-            TIntList kp1 = keypoints1List.get(i);
-
-            for (int j = 0; j < kp0.size(); ++j) {
-                int y = kp0.get(j);
-                int x = kp1.get(j);
-                PairInt p = new PairInt(x, y);
-                combined.add(p);
-            }
-        }
-
-        return combined;
-    }
-
+    
     /**
      * get a list of each octave's keypoint cols as a combined list.
      * The list contains coordinates which have already been scaled to the
@@ -1714,22 +1788,27 @@ public class ORB {
      */
     public TIntList getAllKeyPoints1() {
 
-        int n = 0;
-        for (TIntList ks : keypoints1List) {
-            n += ks.size();
-        }
-
-        TIntList combined = new TIntArrayList(n);
-
-        for (int i = 0; i < keypoints1List.size(); ++i) {
-
-            TIntList ks = keypoints1List.get(i);
-
-            combined.addAll(ks);
+        TIntList combined = new TIntArrayList(combinedKeypointList.size());
+        PairInt p;
+        for (int i = 0; i < combinedKeypointList.size(); ++i) {
+            p = combinedKeypointList.get(i);
+            combined.add(p.getX());
         }
 
         return combined;
     }
+
+
+    /**
+     * get a list of each octave's keypoint rows as a combined list.
+     * The list contains coordinates which have already been scaled to the
+     * full image reference frame and are in column major format.
+     * @return
+     */
+    public List<PairInt> getAllKeyPoints() {
+        return combinedKeypointList;
+    }
+
 
     /**
      * get a list of each octave's orientations as a combined list.
@@ -1737,22 +1816,7 @@ public class ORB {
      * @return
      */
     public TDoubleList getAllOrientations() {
-
-        int n = 0;
-        for (TDoubleList ks : orientationsList) {
-            n += ks.size();
-        }
-
-        TDoubleList combined = new TDoubleArrayList(n);
-
-        for (int i = 0; i < orientationsList.size(); ++i) {
-
-            TDoubleList ks = orientationsList.get(i);
-
-            combined.addAll(ks);
-        }
-
-        return combined;
+        return combinedOrientationList;
     }
 
     /**
@@ -1761,22 +1825,7 @@ public class ORB {
      * @return
      */
     public TFloatList getAllHarrisResponses() {
-
-        int n = 0;
-        for (TFloatList ks : harrisResponses) {
-            n += ks.size();
-        }
-
-        TFloatList combined = new TFloatArrayList(n);
-
-        for (int i = 0; i < harrisResponses.size(); ++i) {
-
-            TFloatList ks = harrisResponses.get(i);
-
-            combined.addAll(ks);
-        }
-
-        return combined;
+        return combinedHarrisResponseList;
     }
 
     /**

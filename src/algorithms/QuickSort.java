@@ -110,6 +110,13 @@ public class QuickSort {
         MiscSorter.sortBy1stArg(a, b);    
     }
     
+    public static void sortBy1stArg(TFloatList a, int[] b) {
+        if (b.length != a.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        sortBy1stArg(a, b, 0, a.size() - 1);    
+    }
+    
     public static void sortByA(IntIntDouble[] abc) {
         
         if (abc == null) {
@@ -506,6 +513,70 @@ public class QuickSort {
             sortBy1stArg(a, b, c, idxLo, idxMid - 1);
 
             sortBy1stArg(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stArg(TFloatList a, int[] b, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.size() != b.length) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        if (a.size() < 2) {
+            return;
+        }
+        
+        float swap;
+        int swap2;
+        if (idxLo < idxHi) {
+
+            float x = a.get(idxLo);
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a.get(store) < x));
+                do {
+                    idxMid--;
+                } while (a.get(idxMid) > x);
+                if (store > idxMid) {
+                    break;
+                }
+                swap = a.get(store);
+                a.set(store, a.get(idxMid));
+                a.set(idxMid, swap);
+                
+                swap2 = b[store];
+                b[store] = b[idxMid];
+                b[idxMid] = swap2;
+            }
+            swap = a.get(idxLo);
+            a.set(idxLo, a.get(idxMid));
+            a.set(idxMid, swap);
+            
+            swap2 = b[idxLo];
+            b[idxLo] = b[idxMid];
+            b[idxMid] = swap2;
+         
+            sortBy1stArg(a, b, idxLo, idxMid - 1);
+
+            sortBy1stArg(a, b, idxMid + 1, idxHi);
         }
     }
     

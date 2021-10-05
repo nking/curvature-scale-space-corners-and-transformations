@@ -1134,12 +1134,12 @@ public class ORBTest extends TestCase {
         }*/
         PairInt xy;
         Image tmp1 = img.copyToGreyscale2().copyToColorGreyscale();
-        for (int ii = 0; ii < orb.getPyramidImages().length; ++ii) {
+        for (int ii = 0; ii < kp00.size(); ++ii) {
             xy = kp00.get(ii);
             ImageIOHelper.addPointToImage(xy.getX(), xy.getY(), tmp1, 1, 255, 0, 0);
         }
         Image tmp2 = img90.copyToGreyscale2().copyToColorGreyscale();
-        for (int ii = 0; ii < orb1.getPyramidImages().length; ++ii) {
+        for (int ii = 0; ii < kp90.size(); ++ii) {
             xy = kp90.get(ii);
             ImageIOHelper.addPointToImage(xy.getX(), xy.getY(), tmp2, 1, 255, 0, 0);
         }

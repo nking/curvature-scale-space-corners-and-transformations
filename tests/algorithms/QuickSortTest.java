@@ -497,6 +497,21 @@ public class QuickSortTest extends TestCase {
             assertEquals(i, b.get(i));
             assertEquals(i, c.get(i));
         }
+        
+        //============
+        
+        int[] d = new int[10];
+        a.clear();
+        for (int i = 0; i < 10; ++i) {
+            a.add(9 - i);
+            d[i] = 9 - i;
+        }
+        QuickSort.sortBy1stArg(a, d);
+        for (int i = 0; i < 10; ++i) {
+            assertEquals((float)i, a.get(i));
+            assertEquals(i, d[i]);
+        }
+        
     }
     
     public void testSortByA() {
