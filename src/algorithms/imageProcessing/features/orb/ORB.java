@@ -228,6 +228,11 @@ public class ORB {
     protected void overrideFastN(int nFast) {
         this.fastN = nFast;
     }
+    /**
+     * default is 0.08f.
+     * For a low resolution image, may want to use 0.01f.
+     * @param threshold 
+     */
     public void overrideFastThreshold(float threshold) {
         this.fastThreshold = threshold;
     }
@@ -314,8 +319,8 @@ public class ORB {
 
         int nKeyPointsTotal = countKeypoints();
 
-        log.info("nKeypointsTotal=" + nKeyPointsTotal +
-            " number of allowed Keypoints=" + this.nKeypoints);                
+        //log.info("nKeypointsTotal=" + nKeyPointsTotal +
+        //    " number of allowed Keypoints=" + this.nKeypoints);                
     }
   
     private void buildPyramid() {
@@ -586,13 +591,6 @@ public class ORB {
             // then filter
             maskCoordinates(kpc0s, kpc1s, harrisResponse.length,
                 harrisResponse[0].length, 4);//8);
-
-            // filter for number of points if requested
-            if (kpc0s.size() > this.nKeypoints) {
-                len = kpc0s.size() - this.nKeypoints;
-                kpc0s.remove(rmi, len);
-                kpc1s.remove(rmi, len);
-            }
         
             // filter to remove redundant points when rescaled
             set = new HashSet<PairInt>();
@@ -621,15 +619,25 @@ public class ORB {
                 kp0s.add(y);
                 kp1s.add(x);
             }
+            // let the VM reclaim the memory if it chooses:
+            set = null;
+            kpc0s = null;
+            kpc1s = null;
             
+            // filter for number of points if requested
+            if (kp0s.size() > this.nKeypoints) {
+                len = kp0s.size() - this.nKeypoints;
+                kp0s.remove(rmi, len);
+                kp1s.remove(rmi, len);
+            }
             // coords are in octave reference frame so expand to largest pyramid frame
             octaveImage = pyramidImages[octave].a;
-            orientations = calculateOrientations(octaveImage, kpc0s, kpc1s);
+            orientations = calculateOrientations(octaveImage, kp0s, kp1s);
             
             responses = new TFloatArrayList(kp0s.size());
             for (i = 0; i < kp0s.size(); ++i) {
-                c0 = kpc0s.get(i);
-                c1 = kpc1s.get(i);
+                c0 = kp0s.get(i);
+                c1 = kp1s.get(i);
                 responses.add(harrisResponse[c0][c1]);
             }
             
@@ -654,6 +662,10 @@ public class ORB {
             keypoints1List.add(kp1s);
             orientationsList.add(orientations);
             harrisResponses.add(responses);
+            
+            assert(orientations.size() == kp0s.size());
+            assert(responses.size() == kp0s.size());
+            assert(kp1s.size() == kp0s.size());
 
         } // end loop over octave
 
@@ -782,13 +794,16 @@ public class ORB {
         
         descriptorsList = new ArrayList<Descriptors>(nScales);
     
+        TIntList kp0;
+        TIntList kp1;
+        TDoubleList or;
         for (int i = 0; i < nScales; ++i) {
 
             float[][] octaveImage = pyramidImages[i].a;
 
-            TIntList kp0 = this.keypoints0List.get(i);
-            TIntList kp1 = this.keypoints1List.get(i);
-            TDoubleList or = this.orientationsList.get(i);
+            kp0 = this.keypoints0List.get(i);
+            kp1 = this.keypoints1List.get(i);
+            or = this.orientationsList.get(i);
 
             // result contains descriptors and mask.
             // also, modified by mask are the keypoints and orientations
@@ -1588,7 +1603,7 @@ public class ORB {
             return descriptors;
         }
         
-        System.out.printf("scale=%.2f, nKP=%d\n", scale, nKP);
+        //System.out.printf("scale=%.2f, nKP=%d\n", scale, nKP);
 
         double pr0, pc0, pr1, pc1, angle, sinA, cosA;
         int spr0, spc0, spr1, spc1, kr, kc, i, j, x0, y0, x1, y1;
@@ -1727,35 +1742,46 @@ public class ORB {
             throw new IllegalArgumentException("k2.size and o2.size must be the same");
         }
         
+        int n = k1.size() + k2.size();
 
         Set<PairInt> k12 = new HashSet<PairInt>();
-        k12.addAll(k1);
-        k12.addAll(k2);
-        
-        int n = k12.size();
-        
-        List<PairInt> kCombined = new ArrayList<PairInt>(n);
+                
+        List<PairInt> kCombined = new ArrayList<PairInt>();
         Descriptors dCombined = new Descriptors();
         dCombined.descriptors = new VeryLongBitString[n];
         TDoubleList oCombined = new TDoubleArrayList();
         
-        for (int idx = 0; idx < k1.size(); ++idx) {
-            dCombined.descriptors[idx] = d1.descriptors[idx].copy();
-            kCombined.add(k1.get(idx));
-            oCombined.add(o1.get(idx));
-            k12.remove(k1.get(idx));
-        }
-        for (int idx = 0; idx < k2.size(); ++idx) {
-            PairInt p = k2.get(idx);
-            if (k12.contains(p)) {
-                int j = kCombined.size();
-                dCombined.descriptors[j] = d2.descriptors[idx].copy();
+        PairInt p;
+        int idx, j;
+        for (idx = 0; idx < k1.size(); ++idx) {
+            p = k1.get(idx);
+            if (!k12.contains(p)) {
+                kCombined.add(k1.get(idx));
+                oCombined.add(o1.get(idx));
+                j = k12.size();
+                dCombined.descriptors[j] = d1.descriptors[idx].copy();
+                k12.add(k1.get(idx));
+            }
+        }    
+        for (idx = 0; idx < k2.size(); ++idx) {
+            p = k2.get(idx);
+            if (!k12.contains(p)) {
                 kCombined.add(p);
                 oCombined.add(o2.get(idx));
-                k12.remove(p);
+                j = k12.size();
+                dCombined.descriptors[j] = d2.descriptors[idx].copy();
+                k12.add(p);
             }
         }
-
+        
+        if (k12.size() < n) {
+            dCombined.descriptors = Arrays.copyOf(dCombined.descriptors, k12.size());
+        }
+        
+        assert(dCombined.descriptors.length == kCombined.size());
+        assert(kCombined.size() == oCombined.size());
+        assert(kCombined.size() == k12.size());
+        
         return new Object[]{dCombined, kCombined, oCombined};
     }
 

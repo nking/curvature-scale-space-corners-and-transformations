@@ -576,31 +576,12 @@ public class ORBTest extends TestCase {
         //System.out.println("responses=" + responses.toString());
         //System.out.println("orientations=" + orientations.toString());
         
-        int minY = Integer.MAX_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        int minX = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img, 2, 255, 0, 0);
-            if (y < minY) {
-                minY = y;
-            }
-            if (y > maxY) {
-                maxY = y;
-            }
-            if (x < minX) {
-                minX = x;
-            }
-            if (x > maxX) {
-                maxX = x;
-            }
         }
-        System.out.println("minY=" + minY + " maxY=" + maxY + " imgHeight=" + img.getHeight());
-        System.out.println("minX=" + minX + " maxX=" + maxX + " imgWidth=" + img.getWidth());
         MiscDebug.writeImage(img, "orb_keypoints_01");
-        int z = 1;
     }
     
     public void testKeypoints_2() throws Exception {
@@ -676,10 +657,11 @@ public class ORBTest extends TestCase {
         
         //NOTE: the ridges are picked up well with reduced threshold
         
-        ORB orb = new ORB(img.copyToGreyscale2(), 500);
-        //orb.overrideFastThreshold(0.01f);
-        
-        //orb.overrideToNotCreateDescriptors();
+        int np = 300;
+        ORB orb = new ORB(img.copyToGreyscale2(), np);
+        //orb.overrideFastThreshold(0.75f);
+        orb.overrideToNotCreateATrousKeypoints();
+        orb.overrideToNotCreateDescriptors();
         //orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract();
@@ -706,9 +688,10 @@ public class ORBTest extends TestCase {
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
                 
-        ORB orb = new ORB(img.copyToGreyscale2(), 500);
+        int np = 700;
+        ORB orb = new ORB(img.copyToGreyscale2(), np);
         //orb.overrideFastN(12);
-        orb.overrideFastThreshold(0.01f);
+     //   orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
         
         orb.detectAndExtract();
@@ -736,10 +719,13 @@ public class ORBTest extends TestCase {
         //ImageExt img = ImageIOHelper.readImageExt(filePath);
         ImageExt img = img0.copyToImageExt();
                 
-        ORB orb = new ORB(img.copyToGreyscale2(), 500);
+        int np = 700;
+        
+        ORB orb = new ORB(img.copyToGreyscale2(), np);
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate1stDerivKeypoints();
+        //orb.overrideToAlsoCreate1stDerivKeypoints();
+        orb.overrideToNotCreateATrousKeypoints();
         
         orb.detectAndExtract();
         
@@ -768,7 +754,8 @@ public class ORBTest extends TestCase {
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 500);
         //orb.overrideFastN(12);
-        orb.overrideFastThreshold(0.01f);
+        //orb.overrideFastThreshold(0.01f);
+        orb.overrideToNotCreateATrousKeypoints();
         orb.overrideToNotCreateDescriptors();
         
         orb.detectAndExtract();
@@ -836,7 +823,7 @@ public class ORBTest extends TestCase {
                 
         ORB orb = new ORB(img.copyToGreyscale2(), 2000);
         //orb.overrideFastN(12);
-        orb.overrideFastThreshold(0.01f);
+        //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
         
         orb.detectAndExtract();
@@ -907,7 +894,8 @@ public class ORBTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
                 
-        ORB orb = new ORB(img.copyToGreyscale2(), 2000);
+        int np = 2000;
+        ORB orb = new ORB(img.copyToGreyscale2(), np);
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
         
@@ -938,11 +926,13 @@ public class ORBTest extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO), 0, 255);
-                
-        ORB orb = new ORB(img.copyToGreyscale2(), 2000);
+          
+        int np = 3000;
+        ORB orb = new ORB(img.copyToGreyscale2(), np);
         //orb.overrideFastN(12);
         orb.overrideToNotCreateDescriptors();
-        orb.overrideToAlsoCreate1stDerivKeypoints();
+        //orb.overrideToNotCreateATrousKeypoints();
+        //orb.overrideToAlsoCreate1stDerivKeypoints();
         
         orb.detectAndExtract();
         
@@ -968,7 +958,8 @@ public class ORBTest extends TestCase {
         
         //NOTE: the ridges are picked up well with reduced threshold
         
-        ORB orb = new ORB(img.copyToGreyscale2(), 600);
+        int np = 500;
+        ORB orb = new ORB(img.copyToGreyscale2(), np);
         //orb.overrideFastN(12);
         //orb.overrideFastThreshold(0.01f);
         orb.overrideToNotCreateDescriptors();
@@ -986,31 +977,12 @@ public class ORBTest extends TestCase {
         //System.out.println("responses=" + responses.toString());
         //System.out.println("orientations=" + orientations.toString());
         
-        int minY = Integer.MAX_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        int minX = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
         for (int i = 0; i < keypoints0.size(); ++i) {
             int y = keypoints0.get(i);
             int x = keypoints1.get(i);
             ImageIOHelper.addPointToImage(x, y, img, 2, 255, 0, 0);
-            if (y < minY) {
-                minY = y;
-            }
-            if (y > maxY) {
-                maxY = y;
-            }
-            if (x < minX) {
-                minX = x;
-            }
-            if (x > maxX) {
-                maxX = x;
-            }
         }
-        System.out.println("minY=" + minY + " maxY=" + maxY + " imgHeight=" + img.getHeight());
-        System.out.println("minX=" + minX + " maxX=" + maxX + " imgWidth=" + img.getWidth());
         MiscDebug.writeImage(img, "orb_keypoints_13");
-        int z = 1;
     }
    
     /*public void testKeypoints_14() throws Exception {
@@ -1097,10 +1069,10 @@ public class ORBTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img90 = ImageIOHelper.readImageAsGrayScale(filePath);
         
-        MiscDebug.writeImage(img, "_orig_");
-        MiscDebug.writeImage(img90, "_rotated_");
+        //MiscDebug.writeImage(img, "_orig_");
+        //MiscDebug.writeImage(img90, "_rotated_");
         
-        int np = 1;
+        int np = 10;
         ORB orb = new ORB(img.copyToGreyscale2(), np);
         orb.overrideToNotCreateATrousKeypoints();
         orb.detectAndExtract();
