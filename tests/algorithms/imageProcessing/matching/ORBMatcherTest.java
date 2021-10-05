@@ -40,7 +40,7 @@ public class ORBMatcherTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
-        String[][] filePairs = new String[5][];
+        String[][] filePairs = new String[6][];
         filePairs[0] = new String[]{
             "venturi_mountain_j6_0001.png",
             "venturi_mountain_j6_0010.png"};
@@ -59,7 +59,11 @@ public class ORBMatcherTest extends TestCase {
             "checkerboard_01.jpg",
             "checkerboard_02.jpg"};
         
-        int i, ii;
+        filePairs[5] = new String[]{
+            "nc_book_01.png",
+            "nc_book_02.png"};
+        
+        int i, ii, np;
         for (int rotate = 0; rotate < 1/*2*/; ++rotate) {
             
             String lbl = "_";
@@ -67,8 +71,8 @@ public class ORBMatcherTest extends TestCase {
                 lbl = "rot90_";
             }
 
-            for (ii = 0; ii < filePairs.length; ++ii) {
-            //for (ii = 1; ii < 2; ++ii) {
+            //for (ii = 0; ii < filePairs.length; ++ii) {
+            for (ii = 5; ii < 6; ++ii) {
 
                 String fileName1 = filePairs[ii][0];
                 String fileName2 = filePairs[ii][1];
@@ -152,7 +156,7 @@ public class ORBMatcherTest extends TestCase {
 
                 int x, y;
                 
-                int np = 300;       
+                np = 300;       
 
                 ORB orb1 = new ORB(img1GS, np);
                 orb1.detectAndExtract();
