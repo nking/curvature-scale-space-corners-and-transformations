@@ -35,9 +35,66 @@ import java.util.logging.Logger;
  * (paper reference is Rublee, Rabaud, Konolige, and Bradski, 2011).
  * http://www.vision.cs.chubu.ac.jp/CV-R/pdf/Rublee_iccv2011.pdf
  *
+ * excerpts from the paper:
+ * ORB is a very fast binary descriptor based on BRIEF, 
+ * which is rotation invariant and resistant to noise.
+ * It builds on the well-known FAST keypoint detector and the recently-developed 
+ * BRIEF descriptor [6]; for this reason we call it 
+ * ORB (Oriented FAST and Rotated BRIEF).
+ * 
+ * FAST and its variants are the method of choice for finding keypoints in 
+ * real-time systems that match visual features, for example, Parallel Tracking 
+ * and Mapping. It is efficient and finds reasonable corner keypoints, although 
+ * it must be augmented with pyramid schemes for scale, and in our case, 
+ * a Harris corner filter [11] to reject edges and provide a reasonable score.
+ * 
+ * ORB orientation operator is built using the centroid technique of Rosin.
+ * 
+   Descriptor BRIEF:
+   *   is a recent feature descriptor (a bit string description of an image 
+   *   patch) that uses simple binary 
+   *   tests between pixels in a smoothed image patch. Its performance is similar
+   *   to SIFT in many respects, including robustness to lighting, blur, and 
+   *   perspective distortion. However, it is very sensitive to in-plane 
+   *   rotation.
+ 
+ *     BRIEF grew out of research that uses binary tests to train a set of 
+ *     classification trees [4]. Once trained on a set of 500 or so typical 
+ *     keypoints, the trees can be used to return a signature for any arbitrary 
+ *     keypoint [5]. In a similar manner, we look for the tests least sensitive 
+ *     to orientation...NOTE that PCA and SIFT are computationally intensive.
+ * 
+ *     Visual vocabulary methods [21, 27] use offline clustering to find exemplars 
+ *     that are uncorrelated and can be used in matching. These techniques might 
+ *     also be useful in finding uncorrelated binary tests.
+ * 
+ * FAST detector: 
+ *    the intensity threshold between the center pixel and those in a circular 
+ *    ring about the center (e.g. a circular radius of 9).
+ *    FAST does not produce a measure of cornerness, and it has large responses 
+ *    along edges. We employ a Harris corner measure [11] to order the FAST 
+ *    keypoints. For a target number N of keypoints, we first set the threshold 
+ *    low enough to get more than N keypoints, then order them according to the 
+ *    Harris measure, and pick the top N points.
+ *    FAST is used on each image in a scaled image pyramid.
+ * 
+ * Orientation:
+ *     corner orientation, the intensity centroid [22]. The intensity centroid 
+ *     assumes that a corner’s intensity is offset from its center, and this vector 
+ *     may be used to impute an orientation. Rosin defines the moments of a patch as:
+ * 
+ *    m_p_q = moments = summation_over_x_and_y( (x^p) * (y^q) * I(x,y) 
+ *       where I(x,y) is the pixel intensity.
+ * 
+ *    C = the centroid = ( m_1_0/m_0_0, m_0_1/m_0_0)
+ *    
+ *    orientation = theta = atan2( m_0_1, m_1_0)
+ * 
+ *     
+ * ---------
  * The implementation below is adapted from the scipy implementation which has
- * the following copyright:
-
+ * the following copyright:* 
+* 
  https://github.com/scikit-image/scikit-image/blob/master/LICENSE.txt
 
 -- begin scipy, skimage copyright ---

@@ -11,13 +11,17 @@ import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.features.orb.ORB.Descriptors;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.matrix.MatrixUtil;
+import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.MiscDebug;
 import algorithms.util.CorrespondencePlotter;
+import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.list.TDoubleList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -64,7 +68,8 @@ public class ORBMatcherTest extends TestCase {
             "nc_book_02.png"};
         
         int i, ii, np;
-        for (int rotate = 0; rotate < 1/*2*/; ++rotate) {
+        //for (int rotate = 0; rotate < 2; ++rotate) {
+        for (int rotate = 0; rotate < 1; ++rotate) {
             
             String lbl = "_";
             if (rotate == 1) {
@@ -144,21 +149,27 @@ public class ORBMatcherTest extends TestCase {
                 
                 int x1, x2, y1, y2;
                 {//DEBUG
-                    Image tmp1 = img1.copyToGreyscale2().copyToColorGreyscale();
+                    Image tmp1 = img1GS.copyToColorGreyscale();
                     for (i = 0; i < kp1.size(); ++i) {
                         y = kp1.get(i).getY();
                         x = kp1.get(i).getX();
                         ImageIOHelper.addPointToImage(x, y, tmp1, 2, 255, 0, 0);
+                        /*if (x == 213 && y == 58) {
+                            ImageIOHelper.addPointToImage(x, y, tmp1, 3, 255, 255, 0);
+                        }*/
                     }
-                    MiscDebug.writeImage(tmp1, "_kp_gs_" + lbl + fileName1Root);
+                    //MiscDebug.writeImage(tmp1, "_kp_gs_" + lbl + fileName1Root);
 
                     Image tmp2 = img2GS.copyToColorGreyscale();
                     for (i = 0; i < kp2.size(); ++i) {
                         y = kp2.get(i).getY();
                         x = kp2.get(i).getX();
                         ImageIOHelper.addPointToImage(x, y, tmp2, 2, 255, 0, 0);
+                        /*if (x == 178 && y == 177) {
+                            ImageIOHelper.addPointToImage(x, y, tmp2, 3, 255, 255, 0);
+                        }*/
                     }
-                    MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
+                    //MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
                     System.out.println(lbl + fileName1Root + " matched=" + matched.length);
                     CorrespondencePlotter plotter = 
                         new CorrespondencePlotter(tmp1, tmp2);
@@ -169,7 +180,125 @@ public class ORBMatcherTest extends TestCase {
                         y2 = matched[i].getD();
                         plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                     }
-                    plotter.writeImage("_corres_gs_" + lbl + fileName1Root);
+                    plotter.writeImage("_corres_orb_gs_" + lbl + fileName1Root);
+                    
+                    /*
+                    Using DLT (see wikipedia):
+                    
+                    p2 = A * p1   where p1 is (x1, y1) and p2 is (x2, y2)
+                                  A = a00 a01, a10 a11
+
+                    A = P2 * P1^T * (P!*P1^T)^-1
+
+                    H = 0  -1
+                        1   0  anti-symmetric matrix
+
+                    alpha * P2 = A * P1
+                    multiply both sides of equation from the left by (P2)^T*H
+                    (P2)^T*H * alpha * P2 = (P2)^T*H * A * P1
+                    note that (P2)^T*H*P2 = 0
+                    then have (P2)^T*H*A*P1 = 0
+
+                    [x2 y2] * [0  -1 ] * [a00  a01 ] * [x1] = 0
+                              [1   0 ]   [a10  a11 ]   [y1]
+
+                    [ y2  -x2 ] * [a00  a01 ] * [x1] = 0
+                                  [a10  a11 ]   [y1]
+
+                    [ y2*a00 - x2*a10   y2*a01 - x2*a11 ] * [x1] = 0
+                                                            [y1]
+
+                      a00*y2*x1 - a10*x2*x1 + a01*y2*y1 - a11*x2*y1 = 0
+
+                      can be written as 0 = (b)^T * a where b and a are vectors
+                       A = (y2*x1)  x=(a00)
+                           (y2*y1)    (a01)
+                           (-x2*x1)   (a10)
+                           (-x2*y1)   (a11)
+                    
+                  solving for x = argmin_x ( ||A*x||^2 ) subject to ||x||^2 = 1
+
+                    SVD(A).vT[last row]
+                    
+                    reprojection error: 
+                          y2*(a00*x1+a01*y1) + x2*(-a10*x1-a11*y1) = 0
+                          y2*(a00*x1+a01*y1) = x2*(a10*x1+a11*y1) 
+                          x2/y2 = ( (a00*x1+a01*y1)/(a10*x1+a11*y1) )
+                    */
+                    
+                    SVDProducts svd = null;
+                    double[][] ai = new double[1][5];
+                    double[][] a = new double[1*matched.length][5];
+                    double[][] aNo4 = new double[1*matched.length-1][5];
+                    double[] xHat;
+                    double rei;// reprojection error for i
+                    double re = 0; // reprojection error for all
+                    double reNo4 = 0; // reprojection error for all w/o i=4
+                    int c = 0;
+                    int _x2, _y2;
+                    for (i = 0; i < matched.length; ++i) {
+                        x1 = matched[i].getA();
+                        y1 = matched[i].getB();
+                        x2 = matched[i].getC();
+                        y2 = matched[i].getD();
+                        
+                        /*
+                        A = (y2*x1)  x=(a00)
+                           (y2*y1)    (a01)
+                           (-x2*x1)   (a10)
+                           (-x2*y1)   (a11)
+                        */
+                        ai[0] = new double[]{y2*x1, y2*y1, -x2*x1, -x2*y1};
+                        a[i] = Arrays.copyOf(ai[0], ai[0].length);
+                        if (i!=4) {
+                            aNo4[c] = Arrays.copyOf(ai[0], ai[0].length);
+                            c++;
+                        }
+                        
+                        svd = MatrixUtil.performSVD(ai);
+                        xHat = svd.vT[svd.vT.length - 1];
+                        //xHat = MatrixUtil.extractColumn(svd.u, svd.u.length - 1);
+                        System.out.printf("%d (x1,y1), (x2,y2) = (%d,%d), (%d,%d)\n", i, x1, y1, x2, y2);
+                        System.out.printf("xhat_%d=%s\n", i, FormatArray.toString(xHat, "%.3e"));
+                        
+                        /*
+                          y2*(a00*x1+a01*y1) + x2*(-a10*x1-a11*y1) = 0
+                          y2*(a00*x1+a01*y1) = x2*(a10*x1+a11*y1) 
+                          x2/y2 = ( (a00*x1+a01*y1)/(a10*x1+a11*y1) )
+                        */
+                        _x2 = (int)(xHat[0]*x1+xHat[1]*y1); 
+                        _y2 = (int)(xHat[2]*x1+xHat[3]*y1);
+                        
+                        //(u1*xhat[0]+v1*xhat[1] - u2)^2 + (u1*xhat[2]+v1*xhat[3] - v2)^2
+                        rei = Math.pow(_x2 - x2, 2) + Math.pow(_y2 - y2, 2);
+                        re += rei;
+                        if (i!=4) {
+                            reNo4 += rei;
+                        }
+                        System.out.printf("reprojection error=%.3f\n", rei);
+                        
+                    }
+                    svd = MatrixUtil.performSVD(a);
+                    xHat = svd.vT[svd.vT.length - 1];
+                    System.out.printf("xhat_all=%s\n", FormatArray.toString(xHat, "%.3e"));
+                    System.out.printf("reprojection error all/n=%.3f\n", re/(double)matched.length);
+                    svd = MatrixUtil.performSVD(aNo4);
+                    xHat = svd.vT[svd.vT.length - 1];
+                    System.out.printf("xhat_w/o#4=%s\n", FormatArray.toString(xHat, "%.3e"));
+                    System.out.printf("reprojection error w/o#4/n=%.3f\n", reNo4/((double)matched.length - 1));
+                    
+                    // apply this to all image 1 points
+                    tmp1 = img1GS.copyToColorGreyscale();
+                    tmp2 = img2GS.copyToColorGreyscale();
+                    plotter = new CorrespondencePlotter(tmp1, tmp2);
+                    for (i = 0; i < kp1.size(); ++i) {
+                        x1 = kp1.get(i).getX();
+                        y1 = kp1.get(i).getY();
+                        x2 = (int)(x1*xHat[0]+y1*xHat[1]); 
+                        y2 = (int)(x1*xHat[2]+y1*xHat[3]);
+                        plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
+                    }
+                    plotter.writeImage("_corres_orb_gs_proj_" + lbl + fileName1Root);
                 }
             }
         }

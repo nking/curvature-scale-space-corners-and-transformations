@@ -136,7 +136,7 @@ public class ORBMatcher {
             can iterate over subsamples of the input point to remove points from it,
                 fit and evaluate the affine projection
             
-            apply the best affine projection to keypoints1 to fins close matches
+            apply the best affine projection to keypoints1 to find close matches
                in keypoints2 where close match is (x,y) and descriptor cost.
             
             if there are a large number of matches, proceed to RANSAC below,
