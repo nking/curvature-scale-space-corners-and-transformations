@@ -1065,7 +1065,6 @@ public class ORBTest extends TestCase {
         Image img90 = tr.applyTransformation(img, params, w, h);
         */
         String fileName = "test_img_r90.png";  
-        fileName = "test_img_r90.png";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         Image img90 = ImageIOHelper.readImageAsGrayScale(filePath);
         
