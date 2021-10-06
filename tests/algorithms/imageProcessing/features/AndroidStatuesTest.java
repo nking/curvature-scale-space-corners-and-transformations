@@ -551,7 +551,7 @@ public class AndroidStatuesTest extends TestCase {
             }
         }
 
-        plotter.writeImage("_orb_corres_final_" + 
+        plotter.writeImage("_mser_hog_corres_final_" + 
             debugLabel);
         System.out.println(cor.getPoints1().size() + 
             " matches " + debugLabel);

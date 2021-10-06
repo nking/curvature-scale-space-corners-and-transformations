@@ -134,7 +134,7 @@ public class InflectionMapperTwoObjectTest extends TestCase {
         String dirPath = ResourceFinder.findDirectory("bin");
         
         ImageIOHelper.writeOutputImage(
-            dirPath + "/transformed_edges_" + rotDegrees + ".png", img);
+            dirPath + "/css_transformed_edges_" + rotDegrees + ".png", img);
     }
     
     private void debugAddCurveToImage(PairIntArray edge, Image input, 

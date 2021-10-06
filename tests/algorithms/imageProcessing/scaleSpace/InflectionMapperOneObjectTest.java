@@ -123,7 +123,7 @@ public class InflectionMapperOneObjectTest extends TestCase {
 
                 img2 = ImageIOHelper.readImageExt(filePath2);
 
-                MiscDebug.writeImage(transformedEdges, img2, "transformed_edges_" + rotDegrees);
+                MiscDebug.writeImage(transformedEdges, img2, "css_transformed_edges_" + rotDegrees);
                 
 //MiscDebug.writeImage(edges1, img1, "check_1_" + rotDegrees + "_" + MiscDebug.getCurrentTimeFormatted());
 //MiscDebug.writeImage(edges2, img2, "check_2_" + rotDegrees + "_" + MiscDebug.getCurrentTimeFormatted());

@@ -547,8 +547,8 @@ public class RANSACEuclideanSolverTest extends TestCase {
         
         ImageIOHelper.addCurveToImage(set2, img2, 3, 255, 0, 0);
         
-        MiscDebug.writeImage(img1, "_kp_1_" + lbl);
-        MiscDebug.writeImage(img2, "_kp_2_" + lbl);
+        //MiscDebug.writeImage(img1, "_kp_1_" + lbl);
+        //MiscDebug.writeImage(img2, "_kp_2_" + lbl);
 
         CorrespondencePlotter plotter = new CorrespondencePlotter(img1, img2);
         for (int ii = 0; ii < set1.getN(); ++ii) {

@@ -91,7 +91,7 @@ public class MSEREdges2Test extends TestCase {
                 ImageIOHelper.addCurveToImage(edgeList.get(ii), im, 0, clr[0],
                     clr[1], clr[2]);
             }
-            MiscDebug.writeImage(im, "_" + fileName1 + "_edges_");
+            MiscDebug.writeImage(im, "_" + fileName1 + "_mser_edges_");
         }
     }
     

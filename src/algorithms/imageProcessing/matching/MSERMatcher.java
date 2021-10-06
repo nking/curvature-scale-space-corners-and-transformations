@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * A class to match objects as regions defined by MSER.
+ * The matching method uses Histograms of Oriented Gradients (HOGs).
  *
  * @author nichole
  */

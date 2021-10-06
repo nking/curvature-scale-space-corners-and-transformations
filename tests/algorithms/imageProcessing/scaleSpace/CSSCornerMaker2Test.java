@@ -106,7 +106,7 @@ public class CSSCornerMaker2Test extends TestCase {
                 tmp, 0, 0, 255, 0);
         }
         
-        MiscDebug.writeImage(tmp, "_CORNERS_");
+        MiscDebug.writeImage(tmp, "_css_CORNERS_");
         
         
         tmp = new Image(nCols, nRows);

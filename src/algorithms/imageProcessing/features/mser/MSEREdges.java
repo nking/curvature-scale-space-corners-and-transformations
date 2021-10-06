@@ -573,7 +573,7 @@ public class MSEREdges {
             ImageIOHelper.addCurveToImage(labeledEdges.get(i), im, 0, clr[0],
                 clr[1], clr[2]);
         }
-        MiscDebug.writeImage(im, "_" + ts + "_edges_");
+        MiscDebug.writeImage(im, "_" + ts + "_mser_edges_");
         im = clrImg.copyImage();
         ImageIOHelper.addAlternatingColorCurvesToImage3(
             labeledSets, im, 0);
@@ -1359,7 +1359,7 @@ public class MSEREdges {
         GreyscaleImage scaled = edgeProducts.getGradientXY();
         scaled.multiply(255/scaled.max());
         //MiscDebug.writeImage(scaled, debugLabel
-        //    + "_lc_edges_");
+        //    + "_lc_mser_edges_");
 
         /*
         GreyscaleImage sobelLCH =
