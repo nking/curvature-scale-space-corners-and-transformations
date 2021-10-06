@@ -32,7 +32,7 @@ public class RotationTest extends TestCase {
         //System.out.printf("expected=\n%s\n", FormatArray.toString(expected,"%.3e"));
         
         assertEquals(expected.length, r.length);
-        double tol = 1e-4;
+        double tol = 1e-3;
         double diff;
         int i, j;
         for (i = 0; i < r.length; ++i) {
@@ -55,8 +55,8 @@ public class RotationTest extends TestCase {
         System.out.printf("axis2=%s\n", FormatArray.toString(axis2, "%.3e"));
         System.out.printf("angle2=%.3e\n", angle2);
         
-        for (i = 0; i < axis.length; ++i) {
-            diff = Math.abs(axis[i] - axis2[i]);
+        for (i = 0; i < axis1.length; ++i) {
+            diff = Math.abs(axis1[i] - axis2[i]);
             assertTrue(diff < tol);
         }
        
