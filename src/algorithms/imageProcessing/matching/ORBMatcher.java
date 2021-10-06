@@ -126,13 +126,48 @@ public class ORBMatcher {
             hogs1, hogs2, orientations1, orientations2);
 
         if (matches.length < 7) {
-/*TODO
-should at least filter for consistent homography.
+            // 6!/(1!5!) + 6!/(2!4!) + 6!/(3!3!) + 6!/(2!4!) + 6!/(1!5!) = 6 + 15 + 20 + 15 + 6=62
+            // 5!/(1!4!) + 5!/(2!3!) + 5!/(3!2!) + 5!/(1!4!) = 5 + 10 + 10 + 5 = 20
+            // 4!/(1!3!) + 4!/(2!2!) + 4!/(1!3!) = 4+6+4=14
+            // 3!/(1!2!) + 3!/(2!1!) = 3 + 3
+            // 2!/(1!1!) = 2
+            /*
+            considering how to filter for outliers in these few number of points.
             
-would be good to use these to try to include more points
-and if successful, continue to
-use RANSAC, else, return these few matches
-*/
+            can use affine projection.
+            can iterate over subsamples of the input point to remove points from it,
+                fit and evaluate the affine projection
+            
+            apply the best affine projection to keypoints1 to fins close matches
+               in keypoints2 where close match is (x,y) and descriptor cost.
+            
+            if there are a large number of matches, proceed to RANSAC below,
+            else return either the matches that are the best fitting subset
+            or return the subset and additional points found through the projection.
+            ------
+            the projection algorithm solves for rotation and real world scene coordinates.
+            It does not solve for translation,
+            but one could make a rough translation if the image scales are the
+            same by subtracting the 2nd image correspondence points from the
+            1st image correspondence points rotated.
+            
+            OrthographicProjectionResults re = Reconstruction.calculateAffineReconstruction(
+                double[][] x, int mImages).
+            
+            where OrthographicProjectionResults results = new OrthographicProjectionResults();
+            results.XW = s;
+            results.rotationMatrices = rotStack;
+            
+            Considering the paper 
+            "Outlier Correction in Image Sequences for the Affine Camera"
+               by Huartley, and Heydeon 2003
+               Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
+               
+               excerpt from the abstract:
+                  In this paper, we present an outlier correction scheme that 
+                  iteratively updates the elements of the image measurement matrix
+            */
+
             QuadInt[] qs = new QuadInt[matches.length];
             for (int i = 0; i < matches.length; ++i) {
                 int idx1 = matches[i][0];
