@@ -71,6 +71,10 @@ public class ORBMatcherTest extends TestCase {
                 lbl = "rot90_";
             }
 
+ //TODO: consider not rescaling these images to see if 
+ //the descriptor matching improves.
+ //TODO: also follow-up on the images w/ large number of correspondences: percentage bad > 50%?
+ 
             for (ii = 0; ii < filePairs.length; ++ii) {
             //for (ii = 5; ii < 6; ++ii) {
 
