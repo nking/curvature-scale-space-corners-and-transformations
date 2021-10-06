@@ -67,6 +67,8 @@ public class ORBMatcherTest extends TestCase {
             "nc_book_01.png",
             "nc_book_02.png"};
         
+        boolean binImages = true;
+        
         int i, ii, np;
         //for (int rotate = 0; rotate < 2; ++rotate) {
         for (int rotate = 0; rotate < 1; ++rotate) {
@@ -92,11 +94,13 @@ public class ORBMatcherTest extends TestCase {
                 ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
                 int w1 = img1.getWidth();
                 int h1 = img1.getHeight();
-                int binFactor1 = (int) Math.ceil(Math.max(
+                if (binImages) {
+                    int binFactor1 = (int) Math.ceil(Math.max(
                     (float) w1 / maxDimension,
                     (float) h1 / maxDimension));
-                img1 = imageProcessor.binImage(img1, binFactor1);
-                //MiscDebug.writeImage(img1, "_"  + fileName1Root);
+                    img1 = imageProcessor.binImage(img1, binFactor1);
+                    //MiscDebug.writeImage(img1, "_"  + fileName1Root);
+                }
                 GreyscaleImage img1GS = img1.copyToGreyscale2();
 
                 idx = fileName2.lastIndexOf(".");
@@ -105,10 +109,12 @@ public class ORBMatcherTest extends TestCase {
                 ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
                 int w2 = img2.getWidth();
                 int h2 = img2.getHeight();
-                int binFactor2 = (int) Math.ceil(Math.max(
-                    (float) w2 / maxDimension,
-                    (float) h2 / maxDimension));
-                img2 = imageProcessor.binImage(img2, binFactor2);
+                if (binImages) {
+                    int binFactor2 = (int) Math.ceil(Math.max(
+                        (float) w2 / maxDimension,
+                        (float) h2 / maxDimension));
+                    img2 = imageProcessor.binImage(img2, binFactor2);
+                }
                 GreyscaleImage img2GS = img2.copyToGreyscale2();
                 
                 Transformer tr = new Transformer();
@@ -128,7 +134,11 @@ public class ORBMatcherTest extends TestCase {
 
                 int x, y;
                 
-                np = 300;       
+                if (binImages) {
+                    np = 300;
+                } else {
+                    np = 600;  
+                }
 
                 ORB orb1 = new ORB(img1GS, np);
                 orb1.detectAndExtract();
