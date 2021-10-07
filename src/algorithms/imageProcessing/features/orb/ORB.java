@@ -1435,8 +1435,8 @@ public class ORB {
               http://users.cs.cf.ac.uk/Paul.Rosin/corner2.pdf
      * @param octaveImage
            Input grayscale image.
-     * @param keypoints0
-     * @param keypoints1
+     * @param keypoints0 keypoint y coords in reference frame of this octave image
+     * @param keypoints1 keypoint x coords in reference frame of this octave iamge
      * @localParam OFAST_MASK
      *     Mask defining the local neighborhood of the corner used for the
            calculation of the central moment.
@@ -1465,9 +1465,8 @@ public class ORB {
             cImage[i] = new double[nCols2];
             if ((i >= nMaskRows2) && (i < (nRows2 - nMaskRows2 - 1))) {
                 float[] src = octaveImage[i - nMaskRows2];
-                double[] dest = cImage[i];
                 for (int ii = 0; ii < src.length; ++ii) {
-                    dest[ii + nMaskCols2] = src[ii];
+                    cImage[i][ii + nMaskCols2] = src[ii];
                 }
             }
         }
@@ -1477,6 +1476,7 @@ public class ORB {
 
         TDoubleList orientations = new TDoubleArrayList(nCorners);
 
+        // eqns (1), (2), (3) of Rublee et al.
         double curr_pixel;
         double m01, m10, m01_tmp;
 
@@ -1597,8 +1597,10 @@ public class ORB {
      * to the border and then create descriptors for the remaining.
      *
      * @param octaveImage
-     * @param keypoints0
-     * @param keypoints1
+     * @param keypoints0 keypoint y coordinates in the 
+     * reference frame of the largest pyramid image
+     * @param keypoints1 keypoint x coordinates in the 
+     * reference frame of the largest pyramid image
      * @param orientations
      * @param scale
      * @return the encapsulated descriptors and mask
@@ -1629,8 +1631,10 @@ public class ORB {
      * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb_cy.pyx
      *
      * @param octaveImage
-     * @param keypoints0
-     * @param keypoints1
+     * @param keypoints0 keypoint y coords in reference frame of the largest
+     * pyramid image
+     * @param keypoints1 keypoint x coords in reference frame of the largest
+     * pyramid image
      * @param orientations
      * @param scale the scale for this octave image.
      * @return
@@ -1676,7 +1680,7 @@ public class ORB {
             kr = keypoints0.get(i);
             kc = keypoints1.get(i);
 
-            // put kr and kc into pyramid image reference frame.
+            // put kr and kc into this octave's pyramid image reference frame.
             kr = (int)(kr/scale);
             kc = (int)(kc/scale);
 
@@ -1704,6 +1708,7 @@ public class ORB {
                     ) {
                     continue;
                 }
+                // eqn (4) of Rublee et al.
                 if (octaveImage[x0][y0] < octaveImage[x1][y1]) {
                     descriptors[i].setBit(j);
                 }

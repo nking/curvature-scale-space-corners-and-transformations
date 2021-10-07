@@ -6,9 +6,9 @@ import java.util.Arrays;
 
 /**
  * Holds X(t, sigma), Y(t, sigma), k(t, sigma) and the array t where t is 
- * the range of indexes for the curve in edges, normalized to values that 
- * range from 0 to 1.   Also holds information on inflection points (where
- * the curvature is zero).
+ * the point index in the closed curve it is on, normalized to values that 
+ * range from [0, 1) (e.g. a closed curve w/ 10 points would have t[index]=[0, 0.1, 0.2, ...0.9]).
+ * Also holds information on inflection points (where the curvature is zero).
  * 
  * @author nichole
  */
@@ -32,8 +32,9 @@ public class ScaleSpaceCurve {
     private final float[] k;
 
     /**
-     * the values of the point indexes rescaled to have values between 0 and 1.
-     * For example, the point at x[10] has a t value from t[10]
+     * the values of the point indexes relative to the closed edge it is on,
+     * are rescaled to have values between 0 and 1.
+     * For example, an edge having 10 points has point indexes 0, 0.1, 0.2, 0.3, ...0.9
      */
     private final float[] t;
     

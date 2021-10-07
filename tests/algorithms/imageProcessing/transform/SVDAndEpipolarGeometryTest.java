@@ -111,7 +111,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         double tolerance = 3.84;// 5.99 7.82        
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
 
         DenseMatrix normalizedFM = null;
         Distances distances = new Distances();
@@ -319,7 +319,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.SAMPSONS;
         EpipolarTransformationFit fitR = null;
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
         EpipolarTransformer tr = new EpipolarTransformer();
         
         /*

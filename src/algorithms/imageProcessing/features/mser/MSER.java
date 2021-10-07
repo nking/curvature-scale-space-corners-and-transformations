@@ -261,16 +261,18 @@ public class MSER {
         //       enter the current pixel back into the queue of boundary pixels 
         //       for later processing (with the next edge number), 
         //       consider the new pixel and its grey-level and go to 3.
+        int x, y, neighborPixel;
+        boolean s3;
         while (true) {
 
-            int x = curPixel % width;
-            int y = curPixel / width;
+            x = curPixel % width;
+            y = curPixel / width;
 
-            boolean s3 = false;
+            s3 = false;
 
             for (; curEdge < (eight_ ? 8 : 4); ++curEdge) {
 
-                int neighborPixel = curPixel;
+                neighborPixel = curPixel;
 
                 if (eight_) {
                     //pix = (row * w) + col

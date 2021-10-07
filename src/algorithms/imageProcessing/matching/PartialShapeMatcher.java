@@ -191,7 +191,7 @@ public class PartialShapeMatcher {
     }
     
     /**
-     * override the threshold for using a chord differernce value
+     * override the threshold for using a chord difference value
      * for the average value.   
      * By default it is set to 1.
      * @param t 

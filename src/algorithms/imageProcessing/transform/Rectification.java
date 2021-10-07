@@ -322,7 +322,7 @@ public class Rectification {
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.SAMPSONS;
         EpipolarTransformationFit fitR = null;
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
 
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(

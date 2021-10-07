@@ -309,7 +309,8 @@ public class Reconstruction {
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.SAMPSONS;
         EpipolarTransformationFit fitR = null;
-        boolean reCalcIterations = false;
+        
+        boolean reCalcIterations = true;
         
         //EpipolarTransformer tr = new EpipolarTransformer();
         
@@ -841,7 +842,7 @@ public class Reconstruction {
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.SAMPSONS;
         EpipolarTransformationFit fitR = null;
-        boolean reCalcIterations = false;
+        boolean reCalcIterations = true;
         
         DenseMatrix normalizedE;
         

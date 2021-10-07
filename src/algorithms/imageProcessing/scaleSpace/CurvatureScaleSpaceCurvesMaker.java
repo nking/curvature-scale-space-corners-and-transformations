@@ -22,6 +22,11 @@ public class CurvatureScaleSpaceCurvesMaker {
      * X(t,sigma), Y(t,sigma), k(t, sigma) for sigma=1 until sigma=the level at 
      * which there are no more values of k that equal 0, that is until no 
      * more inflection points are found on the extremely smoothed curve.  
+     * X, Y are the coordinates of a point from the original edge convolved
+     * by a gaussian with sigma.
+     * k is the curvature calculated from the 1st and 2nd derivatives at
+     * that point in the edge.
+     * the zero-crossings in the curvature along an edge are the inflection points.
      * 
      * Note that the method re-uses iterative convolution, so each interval
      * of sigma is 2^(1/8) times the previous convolution result using a kernel
@@ -161,6 +166,7 @@ public class CurvatureScaleSpaceCurvesMaker {
             
             int nPoints = scaleSpaceCurve.getSize();
                             
+            // number of inflection points
             int nz = scaleSpaceCurve.getKIsZeroIdxSize();
                 
             float[] row = new float[nz];
