@@ -573,7 +573,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="nc" id="L573">            ImageIOHelper.addCurveToImage(labeledEdges.get(i), im, 0, clr[0],</span>
                 clr[1], clr[2]);
         }
-<span class="nc" id="L576">        MiscDebug.writeImage(im, &quot;_&quot; + ts + &quot;_edges_&quot;);</span>
+<span class="nc" id="L576">        MiscDebug.writeImage(im, &quot;_&quot; + ts + &quot;_mser_edges_&quot;);</span>
 <span class="nc" id="L577">        im = clrImg.copyImage();</span>
 <span class="nc" id="L578">        ImageIOHelper.addAlternatingColorCurvesToImage3(</span>
             labeledSets, im, 0);
@@ -1359,7 +1359,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L1359">        GreyscaleImage scaled = edgeProducts.getGradientXY();</span>
 <span class="fc" id="L1360">        scaled.multiply(255/scaled.max());</span>
         //MiscDebug.writeImage(scaled, debugLabel
-        //    + &quot;_lc_edges_&quot;);
+        //    + &quot;_lc_mser_edges_&quot;);
 
         /*
         GreyscaleImage sobelLCH =

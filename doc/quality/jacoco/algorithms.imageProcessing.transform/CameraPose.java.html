@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CameraPose.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">CameraPose.java</span></div><h1>CameraPose.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.features.RANSACSolver;
-import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
-import java.util.Arrays;
-import java.util.List;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.RQ;
@@ -17,315 +13,23 @@ import no.uib.cipr.matrix.RQ;
  given a set of features in image coordinates and world coordinate space with
   known camera intrinsic parameters, estimate the camera pose, that is
   extract the camera extrinsic parameters.
+ &lt;em&gt;See also PNP.java&lt;/em&gt;
  
  * TODO: consider solving with M-estimators.
  * see http://research.microsoft.com/en- us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
  * 
+ * From Tumurbaatar, and Kim 2019, Sensors (Basel). 2019 Apr; 19(8): 1905.
+ * &quot;Comparative Study of Relative-Pose Estimations from a Monocular Image 
+ * Sequence in Computer Vision and Photogrammetry&quot;
+ * We show that homography-based approaches are more accurate than essential-matrix 
+ * or relative orientation–based approaches under noisy conditions.
+ * 
  * @author nichole
  */
-<span class="nc bnc" id="L26" title="All 2 branches missed.">public class CameraPose {</span>
+<span class="nc" id="L29">public class CameraPose {</span>
     
-<span class="nc" id="L28">    public static double eps = 1e-7;</span>
-    /**
-     * given correspondence between two images in image coordinates calculate 
-     * the extrinsic camera parameters.
-     * 
-     * &lt;pre&gt;
-     * following CMU lectures of Kris Kitani at 
-     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
-     * 
-     * add other references:
-     * &lt;/pre&gt;
-     * @param k1 intrinsic camera matrix for image 1 in units of pixels.
-     * @param k2 intrinsic camera matrix for image 2 in units of pixels.
-     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
-     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
-     * @return 
-     * @throws no.uib.cipr.matrix.NotConvergedException 
-     */
-    public static Camera.CameraExtrinsicParameters[] calculateUsingEssentialMatrix(
-        double[][] k1, double[][] k2,
-        double[][] x1, double[][] x2) throws NotConvergedException {
-        
-<span class="nc" id="L52">        double[][] outputXW = MatrixUtil.zeros(4, x1[0].length);</span>
-<span class="nc" id="L53">        return calculateUsingEssentialMatrix(k1, k2, x1, x2, outputXW);</span>
-    }
+<span class="fc" id="L31">    public static double eps = 1e-7;</span>
     
-     /**
-     * given correspondence between two images in image coordinates calculate 
-     * the extrinsic camera parameters.
-     * 
-     * &lt;pre&gt;
-     * following CMU lectures of Kris Kitani at 
-     * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
-     * 
-     * add:
-     * Sect 7.2 of Szeliski 2010
-     * &lt;/pre&gt;
-     * @param k1 intrinsic camera matrix for image 1 in units of pixels.
-     * @param k2 intrinsic camera matrix for image 2 in units of pixels.
-     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
-     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
-     * @param outputXW
-     * @return 
-     * @throws no.uib.cipr.matrix.NotConvergedException 
-     */
-    public static CameraExtrinsicParameters[] calculateUsingEssentialMatrix(
-        double[][] k1, double[][] k2,
-        double[][] x1, double[][] x2, double[][] outputXW) throws NotConvergedException {
-                        
-<span class="nc bnc" id="L81" title="All 4 branches missed.">        if (x1.length != 3 || x2.length != 3) {</span>
-<span class="nc" id="L82">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
-        }
-<span class="nc" id="L84">        int n = x1[0].length;</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (x2[0].length != n) {</span>
-<span class="nc" id="L86">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
-        }
-        
-        /*
-        http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
-        
-        (1) compute fundamental mat5rix FM from the correspondence x1, x2
-        (2) compute the camera matrices P1, P2 from FM.
-        (3) For each point correspondence, compute the point X in 3D space (triangularization)
-        */
-        
-<span class="nc" id="L97">        double[][] k1IntrInv = Camera.createIntrinsicCameraMatrixInverse(k1);</span>
-<span class="nc" id="L98">        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(k2);</span>
-        
-        // the direction of the points is calculated by K^-1 * x
-<span class="nc" id="L101">        double[][] x1Direction = MatrixUtil.multiply(k1IntrInv, x1);</span>
-<span class="nc" id="L102">        double[][] x2Direction = MatrixUtil.multiply(k2IntrInv, x2);</span>
-                
-<span class="nc" id="L104">        DenseMatrix x1M = new DenseMatrix(x1Direction);</span>
-<span class="nc" id="L105">        DenseMatrix x2M = new DenseMatrix(x2Direction);</span>
-        
-        // normalizing by unit standard to improve results of epipolar solution:
-<span class="nc" id="L108">        EpipolarTransformer.NormalizedXY normXY1 </span>
-<span class="nc" id="L109">            = EpipolarTransformer.normalizeUsingUnitStandard(x1M);</span>
-<span class="nc" id="L110">        EpipolarTransformer.NormalizedXY normXY2 </span>
-<span class="nc" id="L111">            = EpipolarTransformer.normalizeUsingUnitStandard(x2M);</span>
-        
-<span class="nc" id="L113">        DenseMatrix leftM = normXY1.getXy();</span>
-<span class="nc" id="L114">        DenseMatrix rightM = normXY2.getXy();</span>
-        
-<span class="nc" id="L116">        double tolerance = 3.84; //3.84 5.99 7.82        </span>
-<span class="nc" id="L117">        boolean useToleranceAsStatFactor = true;</span>
-<span class="nc" id="L118">        ErrorType errorType = ErrorType.SAMPSONS;</span>
-<span class="nc" id="L119">        EpipolarTransformationFit fitR = null;</span>
-<span class="nc" id="L120">        boolean reCalcIterations = false;</span>
-        
-        DenseMatrix normalizedE;
-        
-<span class="nc" id="L124">        EpipolarTransformer tr = new EpipolarTransformer();</span>
-        
-        /*
-        normalizedE = tr.calculateEpipolarProjection(leftM, rightM);
-        DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
-        
-        Distances distances = new Distances();
-        if (useToleranceAsStatFactor) {
-            fitR = distances.calculateError2(vNFM, leftM, rightM,
-                    errorType, tolerance);
-        } else {
-            fitR = distances.calculateError(vNFM, leftM, rightM,
-                    errorType, tolerance);
-        }*/
-        
-<span class="nc" id="L139">        RANSACSolver solver = new RANSACSolver();</span>
-<span class="nc" id="L140">        fitR = solver.calculateEpipolarProjection(</span>
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations, true);
-        
-<span class="nc" id="L144">        System.out.println(&quot;RANSAC fit=&quot; + fitR.toString());</span>
-        
-<span class="nc" id="L146">        normalizedE = fitR.getFundamentalMatrix();</span>
-        
-        // this is now back in the reference frame of the x1Direction and x2Direction
-<span class="nc" id="L149">        DenseMatrix essentialM = EpipolarTransformer.denormalizeTheFundamentalMatrix(</span>
-<span class="nc" id="L150">            normalizedE, normXY1.getNormalizationMatrices(),</span>
-<span class="nc" id="L151">            normXY2.getNormalizationMatrices());</span>
-        
-<span class="nc" id="L153">        double[][] _essentialMatrix = MatrixUtil.convertToRowMajor(essentialM);</span>
-        
-<span class="nc" id="L155">        MatrixUtil.SVDProducts svdE = MatrixUtil.performSVD(_essentialMatrix);</span>
-        
-<span class="nc bnc" id="L157" title="All 6 branches missed.">        assert(svdE.u[0].length == 3 &amp;&amp; svdE.u.length == 3);</span>
-        
-<span class="nc" id="L159">        double detU = MatrixUtil.determinant(svdE.u);</span>
-<span class="nc" id="L160">        double detV = MatrixUtil.determinant(svdE.vT);</span>
-        
-<span class="nc" id="L162">        System.out.printf(&quot;SVD.u=\n%s\n&quot;, FormatArray.toString(svdE.u, &quot;%.3e&quot;));</span>
-<span class="nc" id="L163">        System.out.printf(&quot;SVD.s=\n%s\n&quot;, FormatArray.toString(svdE.s, &quot;%.3e&quot;));</span>
-<span class="nc" id="L164">        System.out.printf(&quot;SVD.vT=\n%s\n&quot;, FormatArray.toString(svdE.vT, &quot;%.3e&quot;));</span>
-<span class="nc" id="L165">        System.out.printf(&quot;det(SVD.u)=%.2f\n&quot;, detU);</span>
-<span class="nc" id="L166">        System.out.printf(&quot;det(SVD.vT)=%.2f\n&quot;, detV);</span>
-        
-        /*
-        szeliski:
-        Once an estimate for the essential matrix E has been recovered, 
-        the direction of the translation vector t can be estimated. 
-        
-        Note that the absolute distance between the two cameras can never 
-        be recovered from pure image measurements alone without knowledge 
-        about absolute camera and point positions or distances, often called ground 
-        control points in photogrammetry.
-        */
-                   
-        // last column in svdE.u is the second epipole and is the direction of vector t
-<span class="nc" id="L180">        double[] t1 = MatrixUtil.extractColumn(svdE.u, 2);</span>
-<span class="nc" id="L181">        double[] t2 = Arrays.copyOf(t1, t1.length);</span>
-<span class="nc" id="L182">        MatrixUtil.multiply(t2, -1); </span>
-        
-        // or is Kitani using U_3 as the 3x3 matrix U which would be R*t?
-        // TODO: follow up on the math
-        
-        //R_z_90
-<span class="nc" id="L188">        double[][] r90 = new double[3][3];</span>
-<span class="nc" id="L189">        r90[0] = new double[]{0, -1, 0};</span>
-<span class="nc" id="L190">        r90[1] = new double[]{1, 0, 0};</span>
-<span class="nc" id="L191">        r90[2] = new double[]{0, 0, 1};</span>
-                  
-        //R_z_90^T, positive 90 transposed to give R_z_-90
-<span class="nc" id="L194">        double[][] r90T = MatrixUtil.transpose(r90);</span>
-        
-        //R = ±U R^T±90^T V^T
-<span class="nc" id="L197">        double[][] uNegative = MatrixUtil.copy(svdE.u);</span>
-<span class="nc" id="L198">        MatrixUtil.multiply(uNegative, -1.);</span>
-        
-<span class="nc" id="L200">        double[][] R1 = MatrixUtil.multiply(svdE.u, r90T);</span>
-<span class="nc" id="L201">        R1 = MatrixUtil.multiply(R1, svdE.vT);</span>
-        
-<span class="nc" id="L203">        double[][] R2 = MatrixUtil.multiply(svdE.u, r90);</span>
-<span class="nc" id="L204">        R2 = MatrixUtil.multiply(R2, svdE.vT);</span>
-        
-        //different here than in reconstruction lecture which has the
-        // 4 pairs, but does not suggest to find the 2 below which have det(R)=1:
-        //(1) R1, T1; (2) R1, T2; (3) R2, T2; (4) R2, T1
-                
-<span class="nc" id="L210">        double[][] R3 = MatrixUtil.multiply(uNegative, r90T);</span>
-<span class="nc" id="L211">        R3 = MatrixUtil.multiply(R3, svdE.vT);</span>
-        
-<span class="nc" id="L213">        double[][] R4 = MatrixUtil.multiply(uNegative, r90);</span>
-<span class="nc" id="L214">        R4 = MatrixUtil.multiply(R4, svdE.vT);</span>
-        
-        //NOTE: from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
-        // refers to Ma, Soatto, Kosecka, and Sastry 2003
-        // &quot;An Invitation to 3D Vision From Images to Geometric Models&quot;, Eqn (5.9):
-        // R1 = U * (r90)^T * V^T
-        // R2 = U * (r90) * V^T
-        // T1 = U * (r90)^T * diag(1, 1, 0) * V^T  &lt;== last term should be U^T
-        // T2 = U * (r90) * diag(1, 1, 0) * V^T    &lt;== last term should be U^T
-<span class="nc" id="L223">        double[][] t1M = MatrixUtil.multiply(svdE.u, r90T);</span>
-<span class="nc" id="L224">        t1M = MatrixUtil.multiplyByDiagonal(t1M, new double[]{1, 1, 0});</span>
-<span class="nc" id="L225">        t1M = MatrixUtil.multiply(t1M, MatrixUtil.transpose(svdE.u));</span>
-<span class="nc" id="L226">        double[][] t2M = MatrixUtil.multiply(svdE.u, r90);</span>
-<span class="nc" id="L227">        t2M = MatrixUtil.multiplyByDiagonal(t2M, new double[]{1, 1, 0});</span>
-<span class="nc" id="L228">        t2M = MatrixUtil.multiply(t2M, MatrixUtil.transpose(svdE.u));</span>
-        
-        // det(R)=1 is a proper rotation matrix.  rotation angles are counterclockwise.
-        //           it's a special orthogonal matrix and provides the
-        //           defining matrix representation of the group of proper n-dimensional rotations, denoted
-        //           by SO(n). http://scipp.ucsc.edu/~haber/ph251/rotreflect_17.pdf
-        // det(R)=-1 is an improper rotation matrix representing rotations that
-        //           require mirrors.
-        //           The most general improper rotation matrix is a product of a proper rotation by an
-        //           angle θ about some axis nˆ and a mirror reflection through a plane that passes through
-        //           the origin and is perpendicular to nˆ.  NOTE: nˆ is determined by
-        //           the right hand rule.
-<span class="nc" id="L240">        double detR1 = MatrixUtil.determinant(R1);</span>
-<span class="nc" id="L241">        double detR2 = MatrixUtil.determinant(R2);</span>
-<span class="nc" id="L242">        double detR3 = MatrixUtil.determinant(R3);</span>
-<span class="nc" id="L243">        double detR4 = MatrixUtil.determinant(R4);</span>
-        
-<span class="nc" id="L245">        double[][] R3N = MatrixUtil.copy(R3);</span>
-<span class="nc" id="L246">        MatrixUtil.multiply(R3N, 1./R3N[2][2]);</span>
-<span class="nc" id="L247">        double[][] R4N = MatrixUtil.copy(R4);</span>
-<span class="nc" id="L248">        MatrixUtil.multiply(R4N, 1./R4N[2][2]);</span>
-        
-<span class="nc" id="L250">        System.out.printf(&quot;t1=\n%s\n&quot;, FormatArray.toString(t1, &quot;%.3e&quot;));</span>
-<span class="nc" id="L251">        System.out.printf(&quot;t2=\n%s\n&quot;, FormatArray.toString(t2, &quot;%.3e&quot;));</span>
-<span class="nc" id="L252">        System.out.printf(&quot;R1=\n%s\n&quot;, FormatArray.toString(R1, &quot;%.3e&quot;));</span>
-<span class="nc" id="L253">        System.out.printf(&quot;R2=\n%s\n&quot;, FormatArray.toString(R2, &quot;%.3e&quot;));</span>
-<span class="nc" id="L254">        System.out.printf(&quot;R3=\n%s\n&quot;, FormatArray.toString(R3, &quot;%.3e&quot;));</span>
-<span class="nc" id="L255">        System.out.printf(&quot;R3N=\n%s\n&quot;, FormatArray.toString(R3N, &quot;%.3e&quot;));</span>
-<span class="nc" id="L256">        System.out.printf(&quot;R4=\n%s\n&quot;, FormatArray.toString(R4, &quot;%.3e&quot;));</span>
-<span class="nc" id="L257">        System.out.printf(&quot;R4N=\n%s\n&quot;, FormatArray.toString(R4N, &quot;%.3e&quot;));</span>
-<span class="nc" id="L258">        System.out.printf(&quot;t1M=\n%s\n&quot;, FormatArray.toString(t1M, &quot;%.3e&quot;));</span>
-<span class="nc" id="L259">        System.out.printf(&quot;t2M=\n%s\n&quot;, FormatArray.toString(t2M, &quot;%.3e&quot;));</span>
-<span class="nc" id="L260">        System.out.printf(&quot;det(R1)=%.3e\n&quot;, detR1);</span>
-<span class="nc" id="L261">        System.out.printf(&quot;det(R2)=%.3e\n\n&quot;, detR2);</span>
-<span class="nc" id="L262">        System.out.printf(&quot;det(R3)=%.3e\n&quot;, detR3);</span>
-<span class="nc" id="L263">        System.out.printf(&quot;det(R4)=%.3e\n\n&quot;, detR4);</span>
-                
-        // keep the 2 that have det(R) == 1 
-<span class="nc" id="L266">        double[][] rot1 = null; </span>
-<span class="nc" id="L267">        double[][] rot2 = null;</span>
-<span class="nc bnc" id="L268" title="All 2 branches missed.">        if (Math.abs(detR1 - 1.) &lt; eps) {</span>
-<span class="nc" id="L269">            rot1 = R1;</span>
-        }
-<span class="nc bnc" id="L271" title="All 2 branches missed.">        if (Math.abs(detR2 - 1.) &lt; eps) {</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">            if (rot1 == null) {</span>
-<span class="nc" id="L273">                rot1 = R2;</span>
-            } else {
-<span class="nc" id="L275">                rot2 = R2;</span>
-            }
-        }
-<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (Math.abs(detR3 - 1.) &lt; eps) {</span>
-<span class="nc bnc" id="L279" title="All 2 branches missed.">            if (rot1 == null) {</span>
-<span class="nc" id="L280">                rot1 = R3;</span>
-            } else {
-<span class="nc" id="L282">                rot2 = R3;</span>
-            }
-        }
-<span class="nc bnc" id="L285" title="All 2 branches missed.">        if (Math.abs(detR4 - 1.) &lt; eps) {</span>
-<span class="nc bnc" id="L286" title="All 2 branches missed.">            if (rot1 == null) {</span>
-<span class="nc" id="L287">                rot1 = R4;</span>
-            } else {
-<span class="nc" id="L289">                rot2 = R4;</span>
-            }
-        }
-        
-<span class="nc bnc" id="L293" title="All 4 branches missed.">        if (rot1 == null &amp;&amp; rot2 == null) {</span>
-<span class="nc" id="L294">            return null;</span>
-        }
-        
-        //then of the 4 possible choices find the one with largest number of positive Z.
-          
-        //NOTE: the last column vector in u is the smallest
-        //    eigenvector.  it is epipole2, that is, the right image position 
-        //    of the epipolar projection of the left camera center.
-        //    it's int the left null space of E.
-           
-<span class="nc" id="L304">        x1M = extractIndices(new DenseMatrix(x1), fitR.inlierIndexes);</span>
-<span class="nc" id="L305">        x2M = extractIndices(new DenseMatrix(x2), fitR.inlierIndexes);</span>
-<span class="nc" id="L306">        x1 = MatrixUtil.convertToRowMajor(x1M);</span>
-<span class="nc" id="L307">        x2 = MatrixUtil.convertToRowMajor(x2M);</span>
-        
-       // solution 1:  Rot1 and T1
-        // solution 2:  Rot1 and T2
-        // solution 3:  Rot2 and T2
-        // solution 4:  Rot2 and T1
-<span class="nc" id="L313">        double[][] rSelected = MatrixUtil.zeros(3, 3);</span>
-<span class="nc" id="L314">        double[] tSelected = new double[3];</span>
-<span class="nc" id="L315">        double[][] XW = MatrixUtil.zeros(4, x1[0].length);</span>
-<span class="nc" id="L316">        chooseRAndT(x1, x2, k1, k2, rot1, rot2, t1, t2, rSelected, tSelected, XW);        </span>
-        
-<span class="nc" id="L318">        Camera.CameraExtrinsicParameters c1 = new Camera.CameraExtrinsicParameters();</span>
-<span class="nc" id="L319">        c1.setRotation(MatrixUtil.createIdentityMatrix(3));</span>
-<span class="nc" id="L320">        c1.setTranslation(new double[]{0, 0, 0});</span>
-          
-<span class="nc" id="L322">        Camera.CameraExtrinsicParameters c2 = new Camera.CameraExtrinsicParameters();</span>
-<span class="nc" id="L323">        c2.setRotation(rSelected);</span>
-<span class="nc" id="L324">        c2.setTranslation(tSelected);</span>
-        
-<span class="nc" id="L326">        return new Camera.CameraExtrinsicParameters[]{c1, c2};</span>
-    }
-
     /**
      * given a set of features in image space and world coordinate space with
      * known camera intrinsic parameters, estimate the camera pose, that is
@@ -351,18 +55,18 @@ import no.uib.cipr.matrix.RQ;
     public static CameraParameters calculatePoseUsingDLT(double[][] x, double[][] X) 
         throws NotConvergedException {
                 
-<span class="nc bnc" id="L354" title="All 2 branches missed.">        if (x.length != 3) {</span>
-<span class="nc" id="L355">            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (x.length != 3) {</span>
+<span class="nc" id="L59">            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);</span>
         }
-<span class="nc bnc" id="L357" title="All 2 branches missed.">        if (X.length != 3) {</span>
-<span class="nc" id="L358">            throw new IllegalArgumentException(&quot;X.length must be 3&quot;);</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (X.length != 3) {</span>
+<span class="nc" id="L62">            throw new IllegalArgumentException(&quot;X.length must be 3&quot;);</span>
         }
-<span class="nc" id="L360">        int n = x[0].length;</span>
-<span class="nc bnc" id="L361" title="All 2 branches missed.">        if (n &lt; 6) {</span>
-<span class="nc" id="L362">            throw new IllegalArgumentException(&quot;x must have at least 6 correspondences&quot;);</span>
+<span class="nc" id="L64">        int n = x[0].length;</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (n &lt; 6) {</span>
+<span class="nc" id="L66">            throw new IllegalArgumentException(&quot;x must have at least 6 correspondences&quot;);</span>
         }
-<span class="nc bnc" id="L364" title="All 2 branches missed.">        if (X[0].length != n) {</span>
-<span class="nc" id="L365">            throw new IllegalArgumentException(&quot;the number of columns in X must be the same as in x&quot;);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (X[0].length != n) {</span>
+<span class="nc" id="L69">            throw new IllegalArgumentException(&quot;the number of columns in X must be the same as in x&quot;);</span>
         }
         
         // normalize by last coordinate:
@@ -373,62 +77,71 @@ import no.uib.cipr.matrix.RQ;
                 
         // 2*n X 12       
         double xi, yi, Xi, Yi, Zi;
-<span class="nc" id="L376">        double[][] ell = new double[2*n][12];</span>
-<span class="nc bnc" id="L377" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc" id="L378">            xi = x[0][i];</span>
-<span class="nc" id="L379">            yi = x[1][i];</span>
-<span class="nc" id="L380">            Xi = X[0][i];</span>
-<span class="nc" id="L381">            Yi = X[1][i];</span>
-<span class="nc" id="L382">            Zi = X[2][i];</span>
+<span class="nc" id="L80">        double[][] ell = new double[2*n][12];</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L82">            xi = x[0][i];</span>
+<span class="nc" id="L83">            yi = x[1][i];</span>
+<span class="nc" id="L84">            Xi = X[0][i];</span>
+<span class="nc" id="L85">            Yi = X[1][i];</span>
+<span class="nc" id="L86">            Zi = X[2][i];</span>
             // http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
-<span class="nc" id="L384">            ell[2*i]     = new double[]{Xi, Yi, Zi, 1, 0, 0, 0, 0, -xi*Xi, -xi*Yi, -xi*Zi, -xi};</span>
-<span class="nc" id="L385">            ell[2*i + 1] = new double[]{0, 0, 0, 0, Xi, Yi, Zi, 1, -yi*Xi, -yi*Yi, -yi*Zi, -yi};</span>
+<span class="nc" id="L88">            ell[2*i]     = new double[]{Xi, Yi, Zi, 1, 0, 0, 0, 0, -xi*Xi, -xi*Yi, -xi*Zi, -xi};</span>
+<span class="nc" id="L89">            ell[2*i + 1] = new double[]{0, 0, 0, 0, Xi, Yi, Zi, 1, -yi*Xi, -yi*Yi, -yi*Zi, -yi};</span>
         }
         
-<span class="nc" id="L388">        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);</span>
+<span class="nc" id="L92">        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);</span>
         
+        //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
         // vT is 12X12.  last row in vT is the eigenvector for the smallest eigenvalue
-<span class="nc" id="L391">        double[] xOrth = svd.vT[svd.vT.length - 1];</span>
-        
+<span class="nc" id="L96">        double[] xOrth = svd.vT[svd.vT.length - 1];</span>
+                
         // reshape into 3 X 4
-<span class="nc" id="L394">        double[][] P2 = MatrixUtil.zeros(3, 4);</span>
-<span class="nc" id="L395">        System.arraycopy(xOrth, 0, P2[0], 0, 4);</span>
-<span class="nc" id="L396">        System.arraycopy(xOrth, 4, P2[1], 0, 4);</span>
-<span class="nc" id="L397">        System.arraycopy(xOrth, 8, P2[2], 0, 4);</span>
+<span class="nc" id="L99">        double[][] P2 = MatrixUtil.zeros(3, 4);</span>
+<span class="nc" id="L100">        System.arraycopy(xOrth, 0, P2[0], 0, 4);</span>
+<span class="nc" id="L101">        System.arraycopy(xOrth, 4, P2[1], 0, 4);</span>
+<span class="nc" id="L102">        System.arraycopy(xOrth, 8, P2[2], 0, 4);</span>
         
-<span class="nc" id="L399">        MatrixUtil.SVDProducts svdP2 = MatrixUtil.performSVD(P2);</span>
-<span class="nc" id="L400">        double[] c = MatrixUtil.extractColumn(svdP2.u, 2);</span>
+<span class="nc" id="L104">        MatrixUtil.SVDProducts svdP2 = MatrixUtil.performSVD(P2);</span>
+<span class="nc" id="L105">        double[] c = MatrixUtil.extractColumn(svdP2.u, 2);</span>
         
         // assert P2*c = 0
-<span class="nc" id="L403">        double[] check0 = MatrixUtil.multiplyMatrixByColumnVector(P2, c);</span>
-<span class="nc" id="L404">        System.out.printf(&quot;check that P2*c=0:%s\n&quot;, FormatArray.toString(check0, &quot;%.3e&quot;));</span>
+<span class="nc" id="L108">        double[] check0 = MatrixUtil.multiplyMatrixByColumnVector(P2, c);</span>
+<span class="nc" id="L109">        System.out.printf(&quot;check that P2*c=0:%s\n&quot;, FormatArray.toString(check0, &quot;%.3e&quot;));</span>
         
-<span class="nc" id="L406">        double[][] M = MatrixUtil.copySubMatrix(P2, 0, 2, 0, 2);</span>
-<span class="nc" id="L407">        RQ rq = RQ.factorize(new DenseMatrix(M));</span>
+        /*
+        Szeliski Sect 6.2.1
+        Since K is by convention upper-triangular 
+        (see the discussion in Section 2.1.5), both K and R can be obtained 
+        from the front 3 ⇥ 3 sub-matrix of P using RQ factorization 
+        (Golub and Van Loan 1996)
+        */
         
-<span class="nc" id="L409">        System.out.printf(&quot;RQ.R=\n%s\n&quot;, FormatArray.toString(</span>
-<span class="nc" id="L410">            MatrixUtil.convertToRowMajor(rq.getR()), &quot;%.3e&quot;));</span>
-<span class="nc" id="L411">        System.out.printf(&quot;RQ.Q=\n%s\n&quot;, FormatArray.toString(</span>
-<span class="nc" id="L412">            MatrixUtil.convertToRowMajor(rq.getQ()), &quot;%.3e&quot;));</span>
+<span class="nc" id="L119">        double[][] M = MatrixUtil.copySubMatrix(P2, 0, 2, 0, 2);</span>
+<span class="nc" id="L120">        RQ rq = RQ.factorize(new DenseMatrix(M));</span>
         
-<span class="nc" id="L414">        double[][] kIntr = MatrixUtil.convertToRowMajor(rq.getR());</span>
-<span class="nc" id="L415">        MatrixUtil.multiply(kIntr, 1./kIntr[2][2]);</span>
+<span class="nc" id="L122">        System.out.printf(&quot;RQ.R=intr\n%s\n&quot;, FormatArray.toString(</span>
+<span class="nc" id="L123">            MatrixUtil.convertToRowMajor(rq.getR()), &quot;%.3e&quot;));</span>
+<span class="nc" id="L124">        System.out.printf(&quot;RQ.Q=rot=\n%s\n&quot;, FormatArray.toString(</span>
+<span class="nc" id="L125">            MatrixUtil.convertToRowMajor(rq.getQ()), &quot;%.3e&quot;));</span>
+        
+<span class="nc" id="L127">        double[][] kIntr = MatrixUtil.convertToRowMajor(rq.getR());</span>
+<span class="nc" id="L128">        MatrixUtil.multiply(kIntr, 1./kIntr[2][2]);</span>
             
-<span class="nc" id="L417">        double[][] kExtrRot = MatrixUtil.convertToRowMajor(rq.getQ());</span>
-<span class="nc" id="L418">        System.out.printf(&quot;  decomposed into intrinsic=\n   %s\n&quot;, FormatArray.toString(kIntr, &quot;%.3e&quot;));</span>
-<span class="nc" id="L419">        System.out.printf(&quot;  decomposed into extrinsic rotation=\n   %s\n&quot;, FormatArray.toString(kExtrRot, &quot;%.3e&quot;));</span>
+<span class="nc" id="L130">        double[][] kExtrRot = MatrixUtil.convertToRowMajor(rq.getQ());</span>
+<span class="nc" id="L131">        System.out.printf(&quot;  decomposed into intrinsic=\n   %s\n&quot;, FormatArray.toString(kIntr, &quot;%.3e&quot;));</span>
+<span class="nc" id="L132">        System.out.printf(&quot;  decomposed into extrinsic rotation=\n   %s\n&quot;, FormatArray.toString(kExtrRot, &quot;%.3e&quot;));</span>
             
-<span class="nc" id="L421">        System.out.printf(&quot;  decomposed into extrinsic translation=\n   %s\n&quot;, FormatArray.toString(c, &quot;%.3e&quot;));</span>
+<span class="nc" id="L134">        System.out.printf(&quot;  decomposed into extrinsic translation=\n   %s\n&quot;, FormatArray.toString(c, &quot;%.3e&quot;));</span>
         
-<span class="nc" id="L423">        CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();</span>
-<span class="nc" id="L424">        extrinsics.setRotation(kExtrRot);</span>
-<span class="nc" id="L425">        extrinsics.setTranslation(c);</span>
+<span class="nc" id="L136">        CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();</span>
+<span class="nc" id="L137">        extrinsics.setRotation(kExtrRot);</span>
+<span class="nc" id="L138">        extrinsics.setTranslation(c);</span>
         
-<span class="nc" id="L427">        CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();</span>
-<span class="nc" id="L428">        intrinsics.setIntrinsic(kIntr);</span>
-<span class="nc" id="L429">        CameraParameters camera = new CameraParameters(intrinsics, extrinsics);</span>
+<span class="nc" id="L140">        CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();</span>
+<span class="nc" id="L141">        intrinsics.setIntrinsic(kIntr);</span>
+<span class="nc" id="L142">        CameraParameters camera = new CameraParameters(intrinsics, extrinsics);</span>
         
-<span class="nc" id="L431">        return camera;</span>
+<span class="nc" id="L144">        return camera;</span>
     }
     
     /**
@@ -461,29 +174,29 @@ import no.uib.cipr.matrix.RQ;
         Camera.CameraIntrinsicParameters intrinsics, double[][] x,
         double[][] X) throws NotConvergedException {
                 
-<span class="nc bnc" id="L464" title="All 2 branches missed.">        if (x.length != 3) {</span>
-<span class="nc" id="L465">            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (x.length != 3) {</span>
+<span class="nc" id="L178">            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);</span>
         }
-<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (X.length != 3) {</span>
-<span class="nc" id="L468">            throw new IllegalArgumentException(&quot;X.length must be 3&quot;);</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (X.length != 3) {</span>
+<span class="nc" id="L181">            throw new IllegalArgumentException(&quot;X.length must be 3&quot;);</span>
         }
-<span class="nc" id="L470">        int n = x[0].length;</span>
-<span class="nc bnc" id="L471" title="All 2 branches missed.">        if (n &lt; 3) {</span>
-<span class="nc" id="L472">            throw new IllegalArgumentException(&quot;x must have at least 3 correspondences&quot;);</span>
+<span class="nc" id="L183">        int n = x[0].length;</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        if (n &lt; 3) {</span>
+<span class="nc" id="L185">            throw new IllegalArgumentException(&quot;x must have at least 3 correspondences&quot;);</span>
         }
-<span class="nc bnc" id="L474" title="All 2 branches missed.">        if (X[0].length != n) {</span>
-<span class="nc" id="L475">            throw new IllegalArgumentException(&quot;the number of columns in X must be the same as in x&quot;);</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (X[0].length != n) {</span>
+<span class="nc" id="L188">            throw new IllegalArgumentException(&quot;the number of columns in X must be the same as in x&quot;);</span>
         }
         
-<span class="nc" id="L478">        int nImages = 1;</span>
+<span class="nc" id="L191">        int nImages = 1;</span>
         
         // following Ma et al. 2003
-<span class="nc" id="L481">        double[][] h = CameraCalibration.solveForHomography(x, X);</span>
+<span class="nc" id="L194">        double[][] h = CameraCalibration.solveForHomography(x, X);</span>
         
-<span class="nc" id="L483">        CameraExtrinsicParameters kExtr = CameraCalibration.solveForExtrinsic(</span>
+<span class="nc" id="L196">        CameraExtrinsicParameters kExtr = CameraCalibration.solveForExtrinsic(</span>
             intrinsics, h);
         
-<span class="nc" id="L486">        return kExtr;</span>
+<span class="nc" id="L199">        return kExtr;</span>
     }
     
     /**
@@ -507,24 +220,25 @@ import no.uib.cipr.matrix.RQ;
      * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3features are needed to 
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
-     * @return 
+     @return 
      */
-    public static CameraExtrinsicParameters calculatePoseUsingPNP(
+    /*public static CameraExtrinsicParameters calculatePoseUsingPNP(
         Camera.CameraIntrinsicParameters intrinsics, double[][] x,
         double[][] X) throws NotConvergedException {
                 
-<span class="nc bnc" id="L516" title="All 2 branches missed.">        if (x.length != 3) {</span>
-<span class="nc" id="L517">            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);</span>
+        if (x.length != 3) {
+            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);
         }
-<span class="nc bnc" id="L519" title="All 2 branches missed.">        if (X.length != 3) {</span>
-<span class="nc" id="L520">            throw new IllegalArgumentException(&quot;X.length must be 3&quot;);</span>
+        if (X.length != 3) {
+            throw new IllegalArgumentException(&quot;X.length must be 3&quot;);
         }
-<span class="nc" id="L522">        int n = x[0].length;</span>
-<span class="nc bnc" id="L523" title="All 2 branches missed.">        if (n &lt; 4) {</span>
-<span class="nc" id="L524">            throw new IllegalArgumentException(&quot;x must have at least 4 correspondences&quot;);</span>
+        int n = x[0].length;
+        
+        if (n &lt; 4) {
+            throw new IllegalArgumentException(&quot;x must have at least 4 correspondences&quot;);
         }
-<span class="nc bnc" id="L526" title="All 2 branches missed.">        if (X[0].length != n) {</span>
-<span class="nc" id="L527">            throw new IllegalArgumentException(&quot;the number of columns in X must be the same as in x&quot;);</span>
+        if (X[0].length != n) {
+            throw new IllegalArgumentException(&quot;the number of columns in X must be the same as in x&quot;);
         }
         
         // Szeliski 2010 refers to perspective-n-point-problem (PnP) references  
@@ -533,168 +247,10 @@ import no.uib.cipr.matrix.RQ;
         //port the c++ impl of  Moreno-Noguer, Lepetit, and Fua (2007)  here?
         //https://github.com/cvlab-epfl/EPnP/tree/master/cpp   
         
-<span class="nc" id="L536">        throw new UnsupportedOperationException(&quot;not yet implemented&quot;);</span>
+        throw new UnsupportedOperationException(&quot;not yet implemented&quot;);
     }
+    */
     
-     /**
-     * among the 4 rotation and translation combinations from R1, R1, T1, and T2, 
-     * select the one with the largest number of projected Z coordinates which are
-     * positive, that is, in front of both cameras.
-     * NOTE that inaccuracies in this chirality are larger for points further 
-     * away from the cameras and closer to the plane at infinity.
-     * NOTE that the determinants of R1 and R2 should have already been checked to be +1.
-     * @param x1 image 1 portion of the correspondence pairs.
-     * @param x2 image 2 portion of the correspondence pairs.
-     * @param k1 intrinsic camera matrix for camera 1
-     * @param k2 intrinsic camera matrix for camera 2
-     * @param R1 rotation matrix whose determinant is +1
-     * @param R2 rotation matrix whose determinant is +1
-     * @param t1 translation vector (the direction between camera centers)
-     * @param t2 translation vector (the direction between camera centers)
-     * @param rSelected output variable holding the R1 or R2, whichever was the 
-     * first found as a valid solution.
-     * @param tSelected output variable holding the t1 or t2, whichever was the 
-     * first found as a valid solution.
-     * @param outputX the real world coordinates of the projection of x1 and x2 using
-     * triangulation. else null if no valid solution was found
-     */
-    private static void chooseRAndT(double[][] x1, double[][] x2, 
-        double[][] k1, double[][] k2,
-        double[][] R1, double[][] R2, double[] t1, double[] t2, 
-        double[][] rSelected, double[] tSelected, double[][] outputX) {
-    
-<span class="nc" id="L566">        int n = x1[0].length;</span>
-        
-<span class="nc bnc" id="L568" title="All 2 branches missed.">        if (outputX.length != 4) {</span>
-<span class="nc" id="L569">            throw new IllegalArgumentException(&quot;outputX.length must be 4&quot;);</span>
-        }
-<span class="nc bnc" id="L571" title="All 2 branches missed.">        if (outputX[0].length != n) {</span>
-<span class="nc" id="L572">            throw new IllegalArgumentException(&quot;outputX[0].length must be the same as x1[0].length&quot;);</span>
-        }
-        
-        // for this model, for the first image, the camera extrinsics are
-        //    R = I and t = [0], which leaves all rotation and translation in
-        //    the 2nd camera extrinsics w.r.t. the first.
-<span class="nc" id="L578">        double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);</span>
-<span class="nc" id="L579">        double[] k1ExtrTrans = new double[3];</span>
-        
-        // save the first that pass the tests for Z&gt;=0.
-<span class="nc" id="L582">        double[][] bestR = null;</span>
-<span class="nc" id="L583">        double[] bestT = null;</span>
-<span class="nc" id="L584">        double[][] bestXW = null;</span>
-<span class="nc" id="L585">        String bestLabel = null;</span>
-<span class="nc" id="L586">        int bestNPosZ = Integer.MIN_VALUE;</span>
-        
-        double[][] XW;
-        double[] XWPt;
-<span class="nc" id="L590">        String label = null;</span>
-        
-<span class="nc" id="L592">        XWPt = new double[4];</span>
-<span class="nc" id="L593">        XW = new double[4][n];</span>
-<span class="nc bnc" id="L594" title="All 2 branches missed.">        for (int i = 0; i &lt; 4; ++i) {</span>
-<span class="nc" id="L595">            XW[i] = new double[n];</span>
-        }
-            
-<span class="nc" id="L598">        double[][] rTst = null;</span>
-<span class="nc" id="L599">        double[] tTst = null;</span>
-<span class="nc" id="L600">        double[][] x1Pt = new double[3][1];</span>
-<span class="nc" id="L601">        double[][] x2Pt = new double[3][1];</span>
-        int i, j, ii;
-<span class="nc bnc" id="L603" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L604">            x1Pt[i] = new double[1];</span>
-<span class="nc" id="L605">            x2Pt[i] = new double[1];</span>
-        }
-        
-        int nPosZ; 
-        
-<span class="nc bnc" id="L610" title="All 2 branches missed.">        for (j = 0; j &lt; 4; ++j) {</span>
-<span class="nc bnc" id="L611" title="All 4 branches missed.">            switch(j) {</span>
-                case 0: {
-<span class="nc" id="L613">                    label = &quot;R1, T1&quot;;</span>
-<span class="nc" id="L614">                    rTst = R1;</span>
-<span class="nc" id="L615">                    tTst = t1;</span>
-<span class="nc" id="L616">                    break;</span>
-                }
-                case 1: {
-<span class="nc" id="L619">                    label = &quot;R1, T2&quot;;</span>
-<span class="nc" id="L620">                    rTst = R1;</span>
-<span class="nc" id="L621">                    tTst = t2;</span>
-<span class="nc" id="L622">                    break;</span>
-                }
-                case 2: {
-<span class="nc" id="L625">                    label = &quot;R2, T1&quot;;</span>
-<span class="nc" id="L626">                    rTst = R2;</span>
-<span class="nc" id="L627">                    tTst = t1;</span>
-<span class="nc" id="L628">                    break;</span>
-                }
-                default: {                    
-<span class="nc" id="L631">                    label = &quot;R2, T2&quot;;</span>
-<span class="nc" id="L632">                    rTst = R2;</span>
-<span class="nc" id="L633">                    tTst = t2;</span>
-                    break;
-                }
-            }
-<span class="nc" id="L637">            nPosZ = 0;</span>
-<span class="nc bnc" id="L638" title="All 2 branches missed.">            for (i = 0; i &lt; n; ++i) {</span>
-<span class="nc bnc" id="L639" title="All 2 branches missed.">                for (ii = 0; ii &lt; 3; ++ii) {</span>
-<span class="nc" id="L640">                    x1Pt[ii][0] = x1[ii][i];</span>
-<span class="nc" id="L641">                    x2Pt[ii][0] = x2[ii][i];</span>
-                }
-                //
-<span class="nc" id="L644">                XWPt = Triangulation.calculateWCSPoint(</span>
-                    k1, k1ExtrRot, k1ExtrTrans, 
-                    k2, rTst, tTst, 
-                    x1Pt, x2Pt);
-<span class="nc bnc" id="L648" title="All 2 branches missed.">                if (XWPt[2] &gt;= 0) {</span>
-<span class="nc" id="L649">                    nPosZ++;</span>
-                }
-<span class="nc bnc" id="L651" title="All 2 branches missed.">                for (ii = 0; ii &lt; 4; ++ii) {</span>
-<span class="nc" id="L652">                    XW[ii][i] = XWPt[ii];</span>
-                } 
-            }
-<span class="nc bnc" id="L655" title="All 2 branches missed.">            if (nPosZ &gt; bestNPosZ) {</span>
-<span class="nc" id="L656">                bestNPosZ = nPosZ;</span>
-<span class="nc" id="L657">                bestR = rTst;</span>
-<span class="nc" id="L658">                bestT = tTst;</span>
-<span class="nc" id="L659">                bestLabel = label;</span>
-<span class="nc" id="L660">                bestXW = MatrixUtil.copy(XW);</span>
-            }
-        }
-        
-<span class="nc bnc" id="L664" title="All 2 branches missed.">        if (bestR == null) {</span>
-<span class="nc" id="L665">            return;</span>
-        }
-        
-        // copy into output variables:
-<span class="nc bnc" id="L669" title="All 2 branches missed.">        for (i = 0; i &lt; bestR.length; ++i) {</span>
-<span class="nc" id="L670">            System.arraycopy(bestR[i], 0, rSelected[i], 0, bestR[i].length);</span>
-        }
-<span class="nc" id="L672">        System.arraycopy(bestT, 0, tSelected, 0, bestT.length);</span>
-        
-<span class="nc" id="L674">        System.out.println(&quot;choosing solution: &quot; + bestLabel);</span>
-        //double estimatedRotY = Math.atan(R[0][2]/R[0][0]) * (180./Math.PI);
-<span class="nc" id="L676">        double estimatedRotZ = Math.atan(-bestR[1][0]/bestR[1][1]) * (180./Math.PI);</span>
-<span class="nc" id="L677">        System.out.printf(&quot;estimated rotation in degrees about z axis from R=%.2f\n&quot;, estimatedRotZ);</span>
-<span class="nc" id="L678">        System.out.printf(&quot;X_WCS=\n%s\n&quot;, FormatArray.toString(bestXW, &quot;%.3e&quot;));</span>
-<span class="nc" id="L679">        System.out.flush();</span>
-        
-<span class="nc bnc" id="L681" title="All 2 branches missed.">        for (i = 0; i &lt; XW.length; ++i) {</span>
-<span class="nc" id="L682">            System.arraycopy(XW[i], 0, outputX[i], 0, XW[i].length);</span>
-        }
-        
-<span class="nc" id="L685">    }</span>
-    
-    private static DenseMatrix extractIndices(DenseMatrix m, List&lt;Integer&gt; inlierIndexes) {
-<span class="nc" id="L688">        DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());</span>
-<span class="nc" id="L689">        int r = 0;</span>
-<span class="nc bnc" id="L690" title="All 2 branches missed.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
-<span class="nc" id="L691">            int idx = inlierIndexes.get(i);</span>
-<span class="nc bnc" id="L692" title="All 2 branches missed.">            for (int j = 0; j &lt; m.numRows(); ++j) {</span>
-<span class="nc" id="L693">                out.add(j, r, m.get(j, idx));</span>
-            }
-<span class="nc" id="L695">            r++;</span>
-        }
-<span class="nc" id="L697">        return out;</span>
-    }
+   
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

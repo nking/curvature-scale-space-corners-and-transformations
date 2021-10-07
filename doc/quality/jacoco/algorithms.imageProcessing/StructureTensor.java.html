@@ -148,28 +148,26 @@ public class StructureTensor {
     public float[][] getDeterminant() {
         
 <span class="fc bfc" id="L150" title="All 2 branches covered.">        if (detA == null) {</span>
-            
-<span class="fc" id="L152">            ImageProcessor imageProcessor = new ImageProcessor();</span>
-            
+                        
             // detA = Axx * Ayy - Axy ** 2
             
-<span class="fc" id="L156">            float[][] axxyy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXSq, dYSq);</span>
+<span class="fc" id="L154">            float[][] axxyy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXSq, dYSq);</span>
 
-<span class="fc" id="L158">            float[][] axyxy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXdY, dXdY);</span>
+<span class="fc" id="L156">            float[][] axyxy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXdY, dXdY);</span>
 
-<span class="fc" id="L160">            detA = MatrixUtil.subtract(axxyy, axyxy);</span>
+<span class="fc" id="L158">            detA = MatrixUtil.subtract(axxyy, axyxy);</span>
         }
         
-<span class="fc" id="L163">        return detA;</span>
+<span class="fc" id="L161">        return detA;</span>
     }
     
     public float[][] getTrace() {
         
-<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (traceA == null) {</span>
-<span class="fc" id="L169">            traceA = MatrixUtil.add(dXSq, dYSq);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (traceA == null) {</span>
+<span class="fc" id="L167">            traceA = MatrixUtil.add(dXSq, dYSq);</span>
         }
         
-<span class="fc" id="L172">        return traceA;</span>
+<span class="fc" id="L170">        return traceA;</span>
     }
     
     /**
@@ -178,7 +176,7 @@ public class StructureTensor {
      * @return 
      */
     public float[][] getDXSquared() {
-<span class="fc" id="L181">        return dXSq;</span>
+<span class="fc" id="L179">        return dXSq;</span>
     }
     
     /**
@@ -186,7 +184,7 @@ public class StructureTensor {
      * @return 
      */
     public float[][] getDYSquared() {
-<span class="fc" id="L189">        return dYSq;</span>
+<span class="fc" id="L187">        return dYSq;</span>
     }
     
     /**
@@ -194,23 +192,23 @@ public class StructureTensor {
      * @return 
      */
     public float[][] getDXDY() {
-<span class="fc" id="L197">        return dXdY;</span>
+<span class="fc" id="L195">        return dXdY;</span>
     }
     
     public float[][] getDX() {
-<span class="nc" id="L201">        return dX;</span>
+<span class="nc" id="L199">        return dX;</span>
     }
     
     public float[][] getDY() {
-<span class="nc" id="L205">        return dY;</span>
+<span class="nc" id="L203">        return dY;</span>
     }
     
     public float[][] getDDX() {
-<span class="nc" id="L209">        return d2X;</span>
+<span class="nc" id="L207">        return d2X;</span>
     }
     
     public float[][] getDDY() {
-<span class="nc" id="L213">        return d2Y;</span>
+<span class="nc" id="L211">        return d2Y;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

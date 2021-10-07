@@ -1075,8 +1075,8 @@ import javax.swing.ImageIcon;
                 
 <span class="fc" id="L1076">                int xx = x + dx;</span>
                 
-<span class="pc bpc" id="L1078" title="1 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="fc" id="L1079">                    continue;</span>
+<span class="pc bpc" id="L1078" title="2 of 4 branches missed.">                if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1079">                    continue;</span>
                 }
 <span class="fc bfc" id="L1081" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1082">                    int yy = y + dy;</span>
@@ -1246,7 +1246,7 @@ import javax.swing.ImageIcon;
                 }
 <span class="fc bfc" id="L1247" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1248">                    int yy = y + dy;</span>
-<span class="pc bpc" id="L1249" title="2 of 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="pc bpc" id="L1249" title="1 of 4 branches missed.">                    if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
 <span class="nc" id="L1250">                        continue;</span>
                     }
 <span class="fc" id="L1252">                    input.setRGB(xx, yy, rClr, gClr, bClr);</span>
@@ -1418,12 +1418,12 @@ import javax.swing.ImageIcon;
 
 <span class="fc" id="L1419">            int xx = x + dx;</span>
 
-<span class="pc bpc" id="L1421" title="1 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="pc bpc" id="L1421" title="2 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="nc" id="L1422">                continue;</span>
             }
 <span class="fc bfc" id="L1424" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1425">                int yy = y + dy;</span>
-<span class="pc bpc" id="L1426" title="1 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="pc bpc" id="L1426" title="2 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
 <span class="nc" id="L1427">                    continue;</span>
                 }
 <span class="fc" id="L1429">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>

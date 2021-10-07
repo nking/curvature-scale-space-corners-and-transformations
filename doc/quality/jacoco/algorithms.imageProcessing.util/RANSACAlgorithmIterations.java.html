@@ -86,12 +86,18 @@ simplified below.
        https://www.robots.ox.ac.uk/ActiveVision/Publications/torr_murray_ijcv1997/torr_murray_ijcv1997.pdf
     
     &lt;pre&gt;
-    for probablity gamma in excess of 95%:
-    let p = sub-sample size
+    equation to estimate the number of subsamples required
+    for the probablity gamma to be in excess of 95%, that is,
+    the probability that all the data points selected in one subsample are non-outliers.
+    
+    let p = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
+    let eps = fraction of contaminated data
     let m = number of subsamples to achieve gamma probability
-    let eps = percentage of bad data
     
     gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    
+    m = Math.log(1. - 0.95)
+           /(Math.log(1. - Math.pow(1. - ((double)outlierPercent/100.), p)
     
     table of m's for p=7 and eps from 5%to 50%:
     
@@ -101,7 +107,7 @@ simplified below.
     &lt;/pre&gt;
     */
     public static int numberOfSubsamplesOfSize7For95PercentInliers(int outlierPercent) {
-<span class="fc" id="L104">        return numberOfSubsamplesFor95PercentInliers(outlierPercent, 7);</span>
+<span class="fc" id="L110">        return numberOfSubsamplesFor95PercentInliers(outlierPercent, 7);</span>
     }
     
     /*
@@ -135,14 +141,14 @@ simplified below.
     public static int numberOfSubsamplesFor95PercentInliers(int outlierPercent,
         int subSampleSize) {
     
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (outlierPercent &lt; 0) {</span>
-<span class="nc" id="L139">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
-        }
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (outlierPercent &gt; 50) {</span>
-<span class="nc" id="L142">            throw new IllegalArgumentException(&quot;outlierPercent must be 50 percent or less&quot;);</span>
-        }
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (subSampleSize &lt; 0) {</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (outlierPercent &lt; 0) {</span>
 <span class="nc" id="L145">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
+        }
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (outlierPercent &gt; 50) {</span>
+<span class="nc" id="L148">            throw new IllegalArgumentException(&quot;outlierPercent must be 50 percent or less&quot;);</span>
+        }
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (subSampleSize &lt; 0) {</span>
+<span class="nc" id="L151">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
         }
         
         /*
@@ -153,13 +159,13 @@ simplified below.
         log(g) = m*log(Z);       
         m = log(g) / log(Z)
         */
-<span class="fc" id="L156">        int p = subSampleSize;</span>
-<span class="fc" id="L157">        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);</span>
-<span class="fc" id="L158">        double g = 1. - 0.95;</span>
+<span class="fc" id="L162">        int p = subSampleSize;</span>
+<span class="fc" id="L163">        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);</span>
+<span class="fc" id="L164">        double g = 1. - 0.95;</span>
         
-<span class="fc" id="L160">        double m = Math.log(g) / Math.log(z);</span>
-                
-<span class="fc" id="L162">        return (int)Math.ceil(m);</span>
+<span class="fc" id="L166">        double m = Math.log(g) / Math.log(z);</span>
+                        
+<span class="fc" id="L168">        return (int)Math.ceil(m);</span>
     }
     
 }

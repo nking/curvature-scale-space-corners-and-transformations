@@ -94,7 +94,7 @@ import java.util.logging.Logger;
         */
         
 <span class="fc" id="L96">        int outlierPercent = 50;</span>
-<span class="fc" id="L97">        int t = (int)Math.ceil((1. - outlierPercent)*nPoints);</span>
+<span class="fc" id="L97">        int t = (int)Math.ceil((1. - (outlierPercent/100.))*nPoints);</span>
       
         long nMaxIter;
 <span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (nPoints == nSet) {</span>
@@ -171,7 +171,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L171">                continue;</span>
             }
             
-<span class="pc bpc" id="L174" title="1 of 4 branches missed.">            if (nInliers &gt; nSet &amp;&amp; nInliers &gt; t) {</span>
+<span class="fc bfc" id="L174" title="All 4 branches covered.">            if (nInliers &gt; nSet &amp;&amp; nInliers &gt; t) {</span>
                 // redo the transformation with all inliers
 <span class="fc" id="L176">                PairIntArray inliersLeftXY = new PairIntArray(nInliers);</span>
 <span class="fc" id="L177">                PairIntArray inliersRightXY = new PairIntArray(nInliers);</span>

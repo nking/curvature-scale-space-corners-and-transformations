@@ -375,11 +375,11 @@ import no.uib.cipr.matrix.DenseMatrix;
 
 <span class="fc" id="L376">        EpipolarTransformationFit fit = null;</span>
 
-<span class="fc bfc" id="L378" title="All 2 branches covered.">        if (errors.size() &gt; 0) {</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">        if (errors.size() &gt; 0) {</span>
 <span class="fc" id="L379">            fit = new EpipolarTransformationFit(fm, inlierIndexes,</span>
                 ErrorType.SAMPSONS, errors, t);
         } else {
-<span class="fc" id="L382">            fit = new EpipolarTransformationFit(fm, new ArrayList&lt;Integer&gt;(),</span>
+<span class="nc" id="L382">            fit = new EpipolarTransformationFit(fm, new ArrayList&lt;Integer&gt;(),</span>
                 ErrorType.SAMPSONS, new ArrayList&lt;Double&gt;(), t);
         }
 

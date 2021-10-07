@@ -56,10 +56,10 @@ import java.util.Map.Entry;
 <span class="fc" id="L56">    private int[][] distToLowerIntensityPixel = null;</span>
 
     /**
-     * create a component labelled image with watershed pixels labelled as '0'.
+     * create a component labeled image with watershed pixels labeled as '0'.
      * runtime is quasi-linear.
      * @param img
-     * @return the labelled image.  Note that if all intensities in img are 
+     * @return the labeled image.  Note that if all intensities in img are 
      * the same, the method will return null.
      */
     public int[][] createLabelledImage(GreyscaleImage img) {
@@ -226,7 +226,7 @@ import java.util.Map.Entry;
     }
 
     /**
-     * Algorithm 4.7 Scan-line algorithm for labelling level components based on
+     * Algorithm 4.7 Scan-line algorithm for labeling level components based on
      * disjoint sets.
      * from
       &quot;The Watershed Transform: Definitions, Algorithms and Parallelization Strategies&quot;

@@ -799,12 +799,12 @@ import java.util.Collection;
 <span class="fc bfc" id="L799" title="All 2 branches covered.">        if (r == 0) {</span>
 <span class="fc" id="L800">            r0 = 0;</span>
 <span class="fc" id="L801">            r1 = 0;</span>
-<span class="fc bfc" id="L802" title="All 2 branches covered.">        } else if ((N_PIX_PER_CELL_DIM &amp; 1) == 1) {</span>
+<span class="pc bpc" id="L802" title="1 of 2 branches missed.">        } else if ((N_PIX_PER_CELL_DIM &amp; 1) == 1) {</span>
 <span class="fc" id="L803">            r0 = -r;</span>
 <span class="fc" id="L804">            r1 = r;</span>
         } else {
-<span class="fc" id="L806">            r0 = -r;</span>
-<span class="fc" id="L807">            r1 = r - 1;</span>
+<span class="nc" id="L806">            r0 = -r;</span>
+<span class="nc" id="L807">            r1 = r - 1;</span>
         }
         
         float factor;
