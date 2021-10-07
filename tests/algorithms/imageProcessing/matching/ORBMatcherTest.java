@@ -257,6 +257,9 @@ public class ORBMatcherTest extends TestCase {
                        
                         svd = MatrixUtil.performSVD(ai);
                         xHat = svd.vT[svd.vT.length - 1];
+                        for (int z = 0; z < xHat.length; ++z) {
+                            xHat[z] /= xHat[xHat.length - 1];
+                        }
                         //xHat = MatrixUtil.extractColumn(svd.u, svd.u.length - 1);
                         System.out.printf("%d (x1,y1), (x2,y2) = (%d,%d), (%d,%d)\n", i, x1, y1, x2, y2);
                         System.out.printf("xhat_%d=%s\n", i, FormatArray.toString(xHat, "%.3e"));
@@ -276,6 +279,9 @@ public class ORBMatcherTest extends TestCase {
                     }
                     svd = MatrixUtil.performSVD(a);
                     xHat = svd.vT[svd.vT.length - 1];
+                    for (int z = 0; z < xHat.length; ++z) {
+                        xHat[z] /= xHat[xHat.length - 1];
+                    }
                     System.out.printf("xhat_all=%s\n", FormatArray.toString(xHat, "%.3e"));
                     System.out.printf("svd(a).s =%s\n", i, FormatArray.toString(svd.s, "%.3e"));
                     System.out.printf("reprojection error all/n=%.3f\n", re/(double)matched.length);
@@ -337,6 +343,9 @@ public class ORBMatcherTest extends TestCase {
                     a = Arrays.copyOf(a, count);
                     svd = MatrixUtil.performSVD(a);
                     xHat = svd.vT[svd.vT.length - 1];
+                    for (int z = 0; z < xHat.length; ++z) {
+                        xHat[z] /= xHat[xHat.length - 1];
+                    }
                     System.out.printf("xhat_filtered=%s\n", FormatArray.toString(xHat, "%.3e"));
                     System.out.printf("svd(a).s =%s\n", i, FormatArray.toString(svd.s, "%.3e"));
                     System.out.printf("reprojection error filtered/n=%.3f\n", re/(double)count);
