@@ -315,6 +315,7 @@ public class ORBMatcherTest extends TestCase {
                     tmp1 = img1GS.copyToColorGreyscale();
                     tmp2 = img2GS.copyToColorGreyscale();
                     plotter = new CorrespondencePlotter(tmp1, tmp2);
+                    // should instead use  median absolute deviation and interquartile range or other robust dispersion methods
                     double[] meanStdev = MiscMath.getAvgAndStDev(res);
                     System.out.printf("reprojection error mean=%.4e stdev=%.4e\n", meanStdev[0], meanStdev[1]);
                     int count = 0;
