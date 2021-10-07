@@ -14,6 +14,7 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
@@ -77,10 +78,6 @@ public class ORBMatcherTest extends TestCase {
             if (rotate == 1) {
                 lbl = "rot90_";
             }
-
- //TODO: consider not rescaling these images to see if 
- //the descriptor matching improves.
- //TODO: also follow-up on the images w/ large number of correspondences: percentage bad > 50%?
  
             for (ii = 0; ii < filePairs.length; ++ii) {
             //for (ii = 5; ii < 6; ++ii) {
@@ -238,14 +235,11 @@ public class ORBMatcherTest extends TestCase {
                     
                     SVDProducts svd = null;
                     double[][] ai = new double[1][5];
-                    double[][] a = new double[1*matched.length][5];
-                    double[][] aNo4 = new double[1*matched.length-1][5];
+                    double[][] a = new double[matched.length][5];
                     double[] xHat;
-                    double rei;// reprojection error for i
                     double re = 0; // reprojection error for all
-                    double reNo4 = 0; // reprojection error for all w/o i=4
-                    int c = 0;
                     int _x2, _y2;
+                    double[] res = new double[matched.length]; // reprojection error for each i
                     for (i = 0; i < matched.length; ++i) {
                         x1 = matched[i].getA();
                         y1 = matched[i].getB();
@@ -260,11 +254,7 @@ public class ORBMatcherTest extends TestCase {
                         */
                         ai[0] = new double[]{y2*x1, y2*y1, -x2*x1, -x2*y1};
                         a[i] = Arrays.copyOf(ai[0], ai[0].length);
-                        if (i!=4) {
-                            aNo4[c] = Arrays.copyOf(ai[0], ai[0].length);
-                            c++;
-                        }
-                        
+                       
                         svd = MatrixUtil.performSVD(ai);
                         xHat = svd.vT[svd.vT.length - 1];
                         //xHat = MatrixUtil.extractColumn(svd.u, svd.u.length - 1);
@@ -280,22 +270,15 @@ public class ORBMatcherTest extends TestCase {
                         _y2 = (int)(xHat[2]*x1+xHat[3]*y1);
                         
                         //(u1*xhat[0]+v1*xhat[1] - u2)^2 + (u1*xhat[2]+v1*xhat[3] - v2)^2
-                        rei = Math.pow(_x2 - x2, 2) + Math.pow(_y2 - y2, 2);
-                        re += rei;
-                        if (i!=4) {
-                            reNo4 += rei;
-                        }
-                        System.out.printf("reprojection error=%.3f\n", rei);
-                        
+                        res[i] = Math.pow(_x2 - x2, 2) + Math.pow(_y2 - y2, 2);
+                        re += res[i];
+                        System.out.printf("reprojection error=%.3f\n", res[i]);
                     }
                     svd = MatrixUtil.performSVD(a);
                     xHat = svd.vT[svd.vT.length - 1];
                     System.out.printf("xhat_all=%s\n", FormatArray.toString(xHat, "%.3e"));
+                    System.out.printf("svd(a).s =%s\n", i, FormatArray.toString(svd.s, "%.3e"));
                     System.out.printf("reprojection error all/n=%.3f\n", re/(double)matched.length);
-                    svd = MatrixUtil.performSVD(aNo4);
-                    xHat = svd.vT[svd.vT.length - 1];
-                    System.out.printf("xhat_w/o#4=%s\n", FormatArray.toString(xHat, "%.3e"));
-                    System.out.printf("reprojection error w/o#4/n=%.3f\n", reNo4/((double)matched.length - 1));
                     
                     // apply this to all image 1 points
                     tmp1 = img1GS.copyToColorGreyscale();
@@ -309,6 +292,54 @@ public class ORBMatcherTest extends TestCase {
                         plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                     }
                     plotter.writeImage("_corres_orb_gs_proj_" + lbl + fileName1Root);
+                    
+                    /*NOTE: from this next outlier removal, can see in the images
+                       that the rotation of each transformation is also needed for
+                       use in outlier removal.
+                       
+                       Rotation is obtained from the affine reconstruction:
+                          OrthographicProjectionResults re = Reconstruction.calculateAffineReconstruction(
+                               double[][] x, int mImages).
+
+                           where OrthographicProjectionResults results = new OrthographicProjectionResults();
+                           results.XW = s;
+                           results.rotationMatrices = rotStack;
+                    
+                       Further considering algorithm in paper on outlier correction:
+                           https://www.researchgate.net/publication/221110532_Outlier_Correction_in_Image_Sequences_for_the_Affine_Camera
+                       "Outlier Correction in Image Sequences for the Affine Camera"
+                          by Huartley, and Heydeon 2003
+                          Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
+                    */
+                    
+                    tmp1 = img1GS.copyToColorGreyscale();
+                    tmp2 = img2GS.copyToColorGreyscale();
+                    plotter = new CorrespondencePlotter(tmp1, tmp2);
+                    double[] meanStdev = MiscMath.getAvgAndStDev(res);
+                    System.out.printf("reprojection error mean=%.4e stdev=%.4e\n", meanStdev[0], meanStdev[1]);
+                    int count = 0;
+                    re = 0;
+                    for (i = 0; i < matched.length; ++i) {
+                        if (Math.abs(res[i] - meanStdev[0]) <= meanStdev[1]/2.){//2.5*meanStdev[1]) {
+                            x1 = matched[i].getA();
+                            y1 = matched[i].getB();
+                            x2 = matched[i].getC();
+                            y2 = matched[i].getD();
+                            re += res[i];
+                            a[count] = new double[]{y2*x1, y2*y1, -x2*x1, -x2*y1};                            
+                            count++;
+                            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
+                        }
+                    }
+                    plotter.writeImage("_corres_orb_gs_filtered_" + lbl + fileName1Root);
+                    System.out.printf("number removed=%d\n", matched.length - count);
+                    a = Arrays.copyOf(a, count);
+                    svd = MatrixUtil.performSVD(a);
+                    xHat = svd.vT[svd.vT.length - 1];
+                    System.out.printf("xhat_filtered=%s\n", FormatArray.toString(xHat, "%.3e"));
+                    System.out.printf("svd(a).s =%s\n", i, FormatArray.toString(svd.s, "%.3e"));
+                    System.out.printf("reprojection error filtered/n=%.3f\n", re/(double)count);
+                    
                 }
             }
         }
