@@ -308,7 +308,7 @@ public class ORBMatcherTest extends TestCase {
                        Further considering algorithm in paper on outlier correction:
                            https://www.researchgate.net/publication/221110532_Outlier_Correction_in_Image_Sequences_for_the_Affine_Camera
                        "Outlier Correction in Image Sequences for the Affine Camera"
-                          by Huartley, and Heydeon 2003
+                          by Huynh, Hartley, and Heydeon 2003
                           Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
                     */
                     

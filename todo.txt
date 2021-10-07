@@ -1,3 +1,45 @@
+-- ORBMatcher.matchDescriptors()
+   has a branch that could be improved.  For the case when descriptor
+   matching results in fewer than 7 points, the code is currently
+   just returning those matched points as there are too few in number
+   to use RANSAC to remove the outliers.
+
+   To remove the outliers in this small matches case:
+       can use affine projection.
+       can iterate over subsamples of the input point to remove points from it,
+           fit and evaluate the affine projection
+       
+       apply the best affine projection to keypoints1 to fins close matches
+          in keypoints2 where close match is (x,y) and descriptor cost.
+       
+       if there are a large number of matches, proceed to RANSAC below,
+       else return either the matches that are the best fitting subset
+       or return the subset and additional points found through the projection.
+       ------
+       the projection algorithm solves for rotation and real world scene coordinates.
+       It does not solve for translation,
+       but one could estimate a rough lateral difference, (not the camera translation
+       in the camera reference frame coords) if the image scales are the
+       same by subtracting the 2nd image correspondence points from the
+       1st image correspondence points rotated.
+       
+       OrthographicProjectionResults re = Reconstruction.calculateAffineReconstruction(
+           double[][] x, int mImages).
+       
+       where OrthographicProjectionResults results = new OrthographicProjectionResults();
+       results.XW = s;
+       results.rotationMatrices = rotStack;
+       
+       Considering the paper 
+       https://www.researchgate.net/publication/221110532_Outlier_Correction_in_Image_Sequences_for_the_Affine_Camera
+       "Outlier Correction in Image Sequences for the Affine Camera"
+          by Huynh, Hartley, and Heydeon 2003
+          Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
+          
+          excerpt from the abstract:
+             In this paper, we present an outlier correction scheme that 
+             iteratively updates the elements of the image measurement matrix
+
 -- note, when considering computer vision in water,
    -- consider that the mantis shrimp holds 16 color receptive cones
    compared to only just r,g,b.  also has polarization sensitivity.
