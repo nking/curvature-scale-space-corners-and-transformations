@@ -1025,6 +1025,8 @@ public class Reconstruction {
      * Orthographic projection does not account for the apparent change in size 
      * of an object as it moves toward or away from the camera, nor the different 
      * angle from which an object is viewed as it moves parallel to the image plane.
+     * NOTE: consider implementing Section 3.3 Sequential Factorization Algorithm
+     * from the Morita & Kanade paper (1997?1994?)
      * @param x the image coordinates of feature correspondences in 2 or more
      * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
      * and row 1 holds the y-coordinates and each image's features are given
@@ -1073,15 +1075,16 @@ public class Reconstruction {
         double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);
         double[] t = new double[2*mImages];
         int i, j;
-        int m, n, rowU, rowV;
+        int m, n, rowU, rowV, col;
         for (m = 0; m < mImages; ++m) {
             rowU = m;
             rowV = mImages + m;
             for (n = 0; n < nFeatures; ++n) {
-                w[rowU][n] = x[0][n];
-                t[rowU] += x[0][n];
-                w[rowV][n] = x[1][n];
-                t[rowV] += x[1][n];
+                col = nFeatures*m + n;
+                w[rowU][n] = x[0][col];
+                t[rowU] += x[0][col];
+                w[rowV][n] = x[1][col];
+                t[rowV] += x[1][col];
             }
             t[rowU] /= (double)nFeatures;
             t[rowV] /= (double)nFeatures;
@@ -1128,13 +1131,54 @@ public class Reconstruction {
         //   can be ignored (the noise portion is the block partitions not copied to U3, sqrtS3 and vT3).
         double sRatio = svd.s[2]/svd.s[3];
         System.out.printf("svd.s[2]/svd.s[3]=%.3e\n", sRatio);
-                
+        
         //Tamasi & Kanade
         // (2*mImages)X3
         double[][] rC = MatrixUtil.multiply(u3, sqrts3);
         // 3XnFeatures
         double[][] sC = MatrixUtil.multiply(sqrts3, vT3);
         
+        System.out.printf("rC=\n%s\n", FormatArray.toString(rC, "%.4e"));
+        double[][] rAsRotStack = MatrixUtil.zeros(3*mImages, 3);
+        double[][] rrTAsRotStack = new double[3*mImages][];
+        double[][] tmp = new double[3][];
+        for (int ii = 0; ii < mImages; ++ii) {
+            rAsRotStack[ii*mImages] = rC[ii];
+            rAsRotStack[ii*mImages + 1] = rC[ii + mImages];
+            rAsRotStack[ii*mImages + 2] = 
+                MatrixUtil.crossProduct(rAsRotStack[ii*mImages], 
+                rAsRotStack[ii*mImages + 1]);
+            for (int iii=0;iii<3;++iii) {
+                tmp[iii] = Arrays.copyOf(rAsRotStack[ii*mImages + iii],
+                    rAsRotStack[ii*mImages + iii].length);
+            }
+            System.out.printf("rC_%d=\n%s\n", ii, FormatArray.toString(tmp, "%.4e"));
+            double detR = MatrixUtil.determinant(tmp);
+            System.out.printf("det(rC_%d)=%.4e\n", ii, detR);
+            
+            SVDProducts svdRC = MatrixUtil.performSVD(tmp);
+            double[][] r_uvtt = MatrixUtil.multiply(svdRC.u, 
+                MatrixUtil.transpose(svdRC.vT));
+            System.out.printf("r_uvtt=\n%s\n", FormatArray.toString(r_uvtt, "%.4e"));
+            detR = MatrixUtil.determinant(r_uvtt);
+            System.out.printf("det(r_uvtt_%d)=%.4e\n", ii, detR);
+            
+            tmp = MatrixUtil.multiply(tmp, MatrixUtil.transpose(tmp));
+            System.out.printf("rC_%d * (rC_%d)^T=\n%s\n", ii, ii,
+                FormatArray.toString(tmp, "%.4e"));
+            
+            tmp = MatrixUtil.multiply(r_uvtt, MatrixUtil.transpose(r_uvtt));
+            System.out.printf("r_uvtt_%d * (r_uvtt_%d)^T=\n%s\n", ii, ii,
+                FormatArray.toString(tmp, "%.4e"));
+            
+            System.out.flush();
+            int z = 1;
+        }
+                
+        /*
+        cayley(A)=(I+A)^−1*(I-A)
+        R_a = cayley((R^T - R)/(1 + Tr(R)))
+        */
         
         // wC = rC * sC  
         //rC and sC are linear translations of the true rotation matrix R and
@@ -1275,6 +1319,7 @@ public class Reconstruction {
         // enforcing positive definiteness of L (which is ell here).
         double eps = 1.e-11;
         double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
+        assert(MatrixUtil.isPositiveDefinite(lPSD));
        
         //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
         double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);
