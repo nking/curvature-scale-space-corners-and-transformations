@@ -9,6 +9,7 @@ import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
 import algorithms.imageProcessing.transform.Camera.CameraProjection;
 import static algorithms.imageProcessing.transform.CameraPose.eps;
+import algorithms.matrix.LinearEquations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.util.FormatArray;
@@ -977,6 +978,8 @@ public class Reconstruction {
     }
 
     /**
+     * NOTE: not ready for use yet.
+     * 
      * TODO: proof read the algorithm and write test for this.
      * for the case where the cameras are viewing small, distant scenes,
      * recover the 3-D coordinates in WCS and the rotation matrices 
@@ -993,10 +996,16 @@ public class Reconstruction {
      * http://www-cse.ucsd.edu/classes/sp04/cse252b/notes/lec16/lec16.pdf
      * 
      * lectures of Deva Ramanan at http://16720.courses.cs.cmu.edu/lec/sfm.pdf
-     * .
+     * .:w
+     * 
      * Tomasi & Kanade 1991, "Shape and motion from image streams under 
      * orthography: a factorization method", International journal of computer vision 
      * 
+     *  Morita and Kanade for solving Q.
+         T. Morita and T. Kanade, A Sequential Factorization Method for Recovering Shape and Motion
+         from Image Streams, Pattern Analysis and Machine Intelligence, IEEE Transactions on, vol. 19,
+         no.8, pp.858-867, Aug 1997  (1994?)
+         
      * Higham, 1988, “Computing a Nearest Symmetric Positive Semidefinite Matrix,” 
      *    Linear Algebra and Appl., 103:103-118, 1988
      * 
@@ -1028,7 +1037,7 @@ public class Reconstruction {
      */
     public static OrthographicProjectionResults calculateAffineReconstruction(
         double[][] x, int mImages) throws NotConvergedException {
-                        
+                                
         if (x.length != 2) {
             throw new IllegalArgumentException("x.length must be 2");
         }
@@ -1040,54 +1049,83 @@ public class Reconstruction {
         //2mn >= 8m + 3n – 12
         if ((2*mImages * nFeatures) < (8*mImages +3*nFeatures - 12)) {
             throw new IllegalArgumentException("more points are necessary:"
-                + "2 * mImages * nFeatures >= 8 * mImages + 3 * nFeatures – 12");
+                + "2 * mImages * nFeatures >= 8 * mImages + 3 * nFeatures – 12."
+                +  "\narguments: mImages=" + mImages + " nFeatures=" + nFeatures
+                + "\n" + (2*mImages * nFeatures) + " < " +
+                    (8*mImages +3*nFeatures - 12));
         }
         // for mImages=2, need 4 features
         
+        // Tomasi & Kanade 1992: An image stream can be represented by the
+        //  2*F X P measurment matrix W of image coordinates of P points
+        // tracked through F frames.
+        
         // create matrix W composed of U and V 
-        //     where U is rows of each image's x coordinates (size os mImages X nFeatures).
-        //     where V is rows of each image's y coordinates (size os mImages X nFeatures).
+        //     where U is rows of each image's x coordinates (size is mImages X nFeatures).
+        //     where V is rows of each image's y coordinates (size is mImages X nFeatures).
         // create matrix t which holds the centroids of each row of W
         // create matrix WC = W - t
         
+        // row[0] = image_0_x[0], image_0_x[1], image_0_x[2], ...
+        // row[1] = image_1_x[0], image_1_x[1], image_1_x[2], ...
+        // ...
+        // row[mImages+0] = image_0_y[0], image_0_y[1], image_0_y[2], ...
         double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);
         double[] t = new double[2*mImages];
         int i, j;
-        int m, n, xCol, vRow;
+        int m, n, rowU, rowV;
         for (m = 0; m < mImages; ++m) {
-            vRow = mImages + m;
+            rowU = m;
+            rowV = mImages + m;
             for (n = 0; n < nFeatures; ++n) {
-                xCol = m * nFeatures + n;
-                w[m][n] = x[0][xCol];
-                t[m] += x[0][xCol];
-                w[vRow][n] = x[1][xCol];
-                t[vRow] += x[1][xCol];
+                w[rowU][n] = x[0][n];
+                t[rowU] += x[0][n];
+                w[rowV][n] = x[1][n];
+                t[rowV] += x[1][n];
             }
-            t[m] /= (double)nFeatures;
-            t[vRow] /= (double)nFeatures;
+            t[rowU] /= (double)nFeatures;
+            t[rowV] /= (double)nFeatures;
         }
         
         //registered measurement matrix:
         double[][] wC = MatrixUtil.copy(w);
         for (i = 0; i < t.length; ++i) {
-            for (n = 0; n < nFeatures; ++n) {
+            for (n = 0; n < wC[i].length; ++n) {
                 wC[i][n] -= t[i];
             }
         }
         
+        // see Fig 3.1 of Tomasi & Kanade 1991 or Fig 2. of Belongie lecture notes
+        
+        // under orthography, this coordinate centered matrix has rank 3
+        // and can be factored into the product of 2 matrices, R and S:
+        // the camera rotation matrix R (size 2FX3) and 
+        // the shape matrix S (size 3XP) which is shape in a coordinate system 
+        // attached to the object centroid.
+        //The two components of the camera translation along the image plane
+        // are computed as averages of the rows of W
+                
+        // the registered measurement matrix is highly rank deficient
+        
         SVDProducts svd = MatrixUtil.performSVD(wC);
+        // Tomasi & Kanade 1992,eqn (3.12): 1st 3 columns of U, upper 3X3 of S, and first 3 rows of V^T
+        //U3 is 2FX3 where F is the number of image frames
+        //S3 is 3X3
+        //VT3 is 3XP where P is the number of points, that is features, per image
         double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);
         double[][] s3 = MatrixUtil.zeros(3, 3);
         s3[0][0] = svd.s[0];
         s3[1][1] = svd.s[1];
         s3[2][2] = svd.s[2];
-        double[][] sqrts3 = MatrixUtil.zeros(3, 3);
-        sqrts3[0][0] = Math.sqrt(svd.s[0]);
-        sqrts3[1][1] = Math.sqrt(svd.s[1]);
-        sqrts3[2][2] = Math.sqrt(svd.s[2]);
+        double[][] sqrts3 = MatrixUtil.copy(s3);
+        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);
+        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);
+        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);
         double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);
         
-        // if this is large, then the noise contribution can be ignored (cholesky not necessary)
+        // if the ratio between the 3rd and 4th largest singular value of the registered measurement matrix
+        //   is large, then the noise portion of the full decomposition
+        //   can be ignored (the noise portion is the block partitions not copied to U3, sqrtS3 and vT3).
         double sRatio = svd.s[2]/svd.s[3];
         System.out.printf("svd.s[2]/svd.s[3]=%.3e\n", sRatio);
                 
@@ -1097,56 +1135,60 @@ public class Reconstruction {
         // 3XnFeatures
         double[][] sC = MatrixUtil.multiply(sqrts3, vT3);
         
-        // see Fig 3.1 of Tomasi & Kanade 1991 or Fig 2. of Belongie lecture notes
         
-        // Belongie Section 16.4.4 (c)
-        // See Step 3 - Metric Constraints
+        // wC = rC * sC  
+        //rC and sC are linear translations of the true rotation matrix R and
+        //  the true shape matrix S, respectively.
+        // Morita and Kanade: the decomposition is not completely unique.  
+        //     it's unique only up to an affine transformation
+        
+        //Tomasi & Kanade eqn (3.15) and Belongie Section 16.4.4 (c)
+        // metric constraints:  
+        // note that R is composed of rows of unit vectors.
+        // note that the first F rows in R are orthogonal to the last F rows in R.
+        
         /*
         The rows of R represent the orientations of the horizontal and vertical camera
         reference axes throughout the stream, 
         while the columns of S are the coordinates of the P feature
         points with respect to their centroid.
         
-        rC = [ i_C_1^T ]
-             [   ...   ]
-             [ i_C_m^T ]
-             [ j_C_1^T ]
-             [   ...   ]
-             [ j_C_m^T ]
+        rC = [ i_hat_0[0] i_hat_0[2] i_hat_0[2] ] where i_hat_f are unit vectors
+             [ i_hat_1[0] i_hat_1[2] i_hat_1[2] ]
+             [   ..._m-1 ...                    ]
+             [ j_hat_0[0] j_hat_0[2] j_hat_0[2] ]
+             [ j_hat_1[0] j_hat_1[2] j_hat_1[2] ] where j_hat_f are unit vectors
+             [  ..._m-1 ... ]
         
-        sC = [s_C_1  ...  s_C_m]
-        */
+        sC = [s_C_1  ...  s_C_m] is [3XP] where P is the number of points per image frame
+        NOTE that the summation over columns of sC = 0 (they are centered w.r.t. image points)
         
-        // constraints: enforce image axes to be orthonogal and length 1
-        //    that is, the the rows of rC must have unit norm
-        //    and the i_f's of rC must be perpendicular to the j_f’s where f is the
-        //    image number(== frame number).
-        /*
-          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1
+        R = rC*Q
+        S = (Q^-1)*sC
+        
+          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1   [dimensions 1X3 * 3X3 * 3X1 = 1]
           eqn (2)  (`j_f)^T * Q * Q^T * (`j_f) = 1
           eqn (3)  (`i_f)^T * Q * Q^T * (`j_f) = 0
-        where Q is a 3 × 3 matrix
         
-        L = Q*Q^T and solve the linear system of equations for L 
+        find Q as a 3 × 3 matrix, non-singular matrix
+        
+        //Morita and Kanade
+        L = Q^T * Q
+        solve the linear system of equations for L 
             and use Cholesky decomposition to get Q.
             Correct the decomposition to enforce L to be positive definite
             symmetric.
         
-        Seo notes reference Morita and Kanade for solving Q.
+        See notes reference Morita and Kanade for solving Q.
          T. Morita and T. Kanade, A Sequential Factorization Method for Recovering Shape and Motion
          from Image Streams, Pattern Analysis and Machine Intelligence, IEEE Transactions on, vol. 19,
-         no.8, pp.858-867, Aug 1997    
+         no.8, pp.858-867, Aug 1997  (1994?)
         
         http://note.sonots.com/SciSoftware/Factorization.html#cse252b
         
-          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1
-          eqn (2)  (`j_f)^T * Q * Q^T * (`j_f) = 1
-          eqn (3)  (`i_f)^T * Q * Q^T * (`j_f) = 0
-
-        let L = Q*Q^T.  it's symmetric and square:
-            L = [ l1 l2 l3 ]
-                [ l2 l4 l5 ]
-                [ l3 l5 l6 ]
+        L = [ l1 l2 l3 ]
+            [ l2 l4 l5 ]
+            [ l3 l5 l6 ]     
 
         the knowns are `i_f and `j_f, so we are solving for the 6 unknowns in L.
 
@@ -1165,15 +1207,6 @@ public class Reconstruction {
                              [ l2 l4 l5 ]   [ jf_1 ]
                              [ l3 l5 l6 ]   [ jf_2 ]
         
-        (if0*l1 + if1*l2 + if2*l3)*if0 + (if0*l2 + if1*l4 + if2*l5)*if1 + (if0*l3 + if1*l5 + if2*l6)*if2   = 1
-        (jf0*l1 + jf1*l2 + jf2*l3)*jf0 + (jf0*l2 + jf1*l4 + jf2*l5)*jf1 + (jf0*l3 + jf1*l5 + jf2*l6)*if2   = 1
-        (if0*l1 + if1*l2 + if2*l3)*jf0 + (if0*l2 + if1*l4 + if2*l5)*jf1 + (if0*l3 + if1*l5 + if2*l6)*jf2   = 0
-
-        rewriting:
-        l1*if0*if0 + l2*if1*if0 + l3*if2*if0 + l2*if0*if1 + l4*if1*if1 + l5*if2*if1 + l3*if0*if2 + l5*if1*if2 + l6*if2*if2   = 1
-        l1*jf0*jf0 + l2*jf1*jf0 + l3*jf2*jf0 + l2*jf0*jf1 + l4*jf1*jf1 + l5*jf2*jf1 + l3*jf0*jf2 + l5*jf1*jf2 + l6*jf2*jf2   = 1
-        l1*if0*jf0 + l2*if1*jf0 + l3*if2*jf0 + l2*if0*jf1 + l4*if1*jf1 + l5*if2*jf1 + l3*if0*jf2 + l5*if1*jf2 + l6*if2*jf2   = 0
-
         factor out the L terms, linearly
         l1           l2                    l3                    l4           l5                    l6         const
         (if0*if0)    (if1*if0 + if0*if1)   (if2*if0 + if0*if2)   (if1*if1)    (if2*if1 + if1*if2)   (if2*if2)   1
@@ -1189,6 +1222,10 @@ public class Reconstruction {
                     [a1*b2 + a2*b1 ]
                     [a2*b2         ]
 
+        G size is 3*F X 6
+        L is a vector of length 6
+        c size is 3*F
+        
         the G = [ g(i_0, i_0)^T       ]   L_vectorized = [l1]    c = [2*F rows of 1]
                 [ ...each row thru F  ]                  [l2]        [F rows of 0  ]
                 [ g(j_0, j_0)^T       ]                  [l3]
@@ -1204,73 +1241,48 @@ public class Reconstruction {
             c[i] = 1;
         }
         
-        //g is 3F × 6
+        //g is 3F X 6
         double[][] g = new double[3*mImages][6];
         for (i = 0; i < 2*mImages; ++i) {
             g[i] = gT(rC[i], rC[i]);
             assert(g[i].length == 6);
         }
-        j = 0;
-        for (i = 2*mImages; i < 3*mImages; ++i) {
-            g[i] = gT(rC[j], rC[mImages + j]);
-            j++;
+        for (i = 2*mImages, j=0; i < 3*mImages; ++i, j++) {
+            g[i] = gT(rC[mImages + j], rC[j]);
         }
+        
+        //G * L = c
+        // G^T * G * L = G^T * c
+        // L = (G^T*G)^-1*G^T * c
+        //     pseudoinverse of G is (G^T*G)^-1*G^T
         double[][] gInv = MatrixUtil.pseudoinverseRankDeficient(g);
         
         // 6X1
-        double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);
-        assert(iVector.length == 6);
+        double[] lVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);
+        assert(lVector.length == 6);
         
         // 3X3
         double[][] ell = new double[3][3];
-        ell[0] = new double[]{iVector[0], iVector[1], iVector[2]};
-        ell[1] = new double[]{iVector[1], iVector[3], iVector[4]};
-        ell[2] = new double[]{iVector[2], iVector[4], iVector[5]};
+        ell[0] = new double[]{lVector[0], lVector[1], lVector[2]};
+        ell[1] = new double[]{lVector[1], lVector[3], lVector[4]};
+        ell[2] = new double[]{lVector[2], lVector[4], lVector[5]};
         
         // Q can be determined :
         //   as the square root of ell,
         //   or with the Cholesky decomposition
         //   or with eigendecomposition
         
-        /*
         // enforcing positive definiteness of L (which is ell here).
-        ell = MatrixUtil.elementwiseAdd(ell, MatrixUtil.transpose(ell));
-        MatrixUtil.multiply(ell, 0.5);
+        double eps = 1.e-11;
+        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
+       
+        //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
+        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);
         
-        Not using this as ell is written above as symmetric.
-        The correction might be for use with the eigenvalue decomposition.
-        If one uses the general EVD instead of the symmetric EVD method, 
-        the left and right eigenvector matrices are a little different
-        so forming one out of the average of both would be useful as input
-        for forming Q below.  The correction's not necessary for the symmetric EVD method.
-        */
-        double eps = 1e-5;
+        //Q is an affine transformation which transforms rC into R in motion space
+        //   and the inverse of Q transforms sC into S in the shape space
         
-        /*
-        eigen decompose A = L * (sigma+) * L^T
-        (sigma+) is a diagonal matrix whose negative values should be
-            replaced by a small value near 0.
-        Q = L * sqrt(sigma+)
-        */
-        
-        // eigen vectors in the columns of the left and right eigenvector matrices.
-        //    eigenvalues form the diagonal of sigma
-        //EVD evd = EVD.factorize(new DenseMatrix(ell));
-        SymmDenseEVD evd = SymmDenseEVD.factorize(new DenseMatrix(ell));
-        
-        double[] ellSigmaSqrt = new double[evd.getEigenvalues().length];
-        for (i = 0; i < ellSigmaSqrt.length; ++i) {
-            if (evd.getEigenvalues()[i] < 0) {
-                // replace with very small value
-                ellSigmaSqrt[i] = eps;
-            } else {
-                ellSigmaSqrt[i] = Math.sqrt(evd.getEigenvalues()[i]);
-            }
-        }
-        double[][] lEig = MatrixUtil.convertToRowMajor(evd.getEigenvectors());
-        
-        // 3X3
-        double[][] q = MatrixUtil.multiplyByDiagonal(lEig, ellSigmaSqrt);
+        // finding Q is called "Metric Transformation"
         
         // rC size is  (2*mImages)X3
         // sC size is 3XnFeatures
