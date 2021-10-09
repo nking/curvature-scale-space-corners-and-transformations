@@ -1689,7 +1689,7 @@ public class CameraCalibration {
         }
            
         //k = (D^T*D)^−1*D^T*d = pseudoInv(D) * d
-        double[][] dInv = MatrixUtil.pseudoinverseFullRank(dM);
+        double[][] dInv = MatrixUtil.pseudoinverseFullColumnRank(dM);
         double[] k = MatrixUtil.multiplyMatrixByColumnVector(dInv, dV);
                 
         return k;

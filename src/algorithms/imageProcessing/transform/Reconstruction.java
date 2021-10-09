@@ -1001,7 +1001,7 @@ public class Reconstruction {
      * Tomasi & Kanade 1991, "Shape and motion from image streams under 
      * orthography: a factorization method", International journal of computer vision 
      * 
-     *  Morita and Kanade for solving Q.
+     *  Morita and Kanade 1997 for solving Q.
          T. Morita and T. Kanade, A Sequential Factorization Method for Recovering Shape and Motion
          from Image Streams, Pattern Analysis and Machine Intelligence, IEEE Transactions on, vol. 19,
          no.8, pp.858-867, Aug 1997  (1994?)
@@ -1026,7 +1026,7 @@ public class Reconstruction {
      * of an object as it moves toward or away from the camera, nor the different 
      * angle from which an object is viewed as it moves parallel to the image plane.
      * NOTE: consider implementing Section 3.3 Sequential Factorization Algorithm
-     * from the Morita & Kanade paper (1997?1994?)
+     * from the Morita & Kanade 1997 paper (1994?)
      * @param x the image coordinates of feature correspondences in 2 or more
      * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
      * and row 1 holds the y-coordinates and each image's features are given
@@ -1109,8 +1109,9 @@ public class Reconstruction {
         // are computed as averages of the rows of W
                 
         // the registered measurement matrix is highly rank deficient
-        
+        // eqn (3.11)
         SVDProducts svd = MatrixUtil.performSVD(wC);
+        
         // Tomasi & Kanade 1992,eqn (3.12): 1st 3 columns of U, upper 3X3 of S, and first 3 rows of V^T
         //U3 is 2FX3 where F is the number of image frames
         //S3 is 3X3
@@ -1128,7 +1129,9 @@ public class Reconstruction {
         
         // if the ratio between the 3rd and 4th largest singular value of the registered measurement matrix
         //   is large, then the noise portion of the full decomposition
-        //   can be ignored (the noise portion is the block partitions not copied to U3, sqrtS3 and vT3).
+        //   can be ignored (the noise portion is the block partitions not 
+        //   copied to U3, sqrtS3 and vT3).
+        // there is more about this in Morita & Kanade 1994/1997
         double sRatio = svd.s[2]/svd.s[3];
         System.out.printf("svd.s[2]/svd.s[3]=%.3e\n", sRatio);
         
@@ -1152,40 +1155,36 @@ public class Reconstruction {
         //     it's unique only up to an affine transformation
         
         /*
-        NLK: the rotation matrices aren't orthormal, so am considering using
-           transformation of both rC2 and sC2 so that rC2 is orthormal.
-        (1) reforming elements of rC into individual 3X3 rotation matrices
-            called rC2 (with the x row, y row, and cross product of those)
-            let sC2 be the similarly recomposed elements of sC, excepting a last row should be 1.
-        (2) caveat, need to consider whether this stage as applied
-            to different elements of rC and sC are consistent over all of wC.
+        NLK: the rotation matrices aren't orthormal, so one needs to apply a linear
+        transformation to rC that makes it orthonormal while applying the
+        inverse transformation to sC to maintain the value of wC.
         
-            the orthormal individual rotation matrices can be formed from
-              the SVD(rC2)
-            rC2O = SVD(rC2).U * (SVD(rC2).VT)^T)
+        wC = rC * sC
+
+        let rC' be a single rotation matrix formed from the x-row of a frame in rC,
+            the y-row of the same frame in rC, and the cross product of the x and y rows.
+        rCO is obtained from SVD(rC').U*(SVD(rC').VT)^T)
+
+        Z is needed to transform rC' into rCO
+        and we need to maintain the value of wC', so will also use the property Z*pseudoinv(Z)=I
+           which is a right inverse.
+        wC' = rC'*Z*pseudoinv(Z)*sC' , where rC'*Z = rCO
+
+        need pseudoinv(Z) to apply to sC'
+
+        rC'*Z = rCO
+        rC' is full column rank, so we can use pseudoinv(A) * A = I.
+        pseudoinv(rC')*rC'*Z = pseudoinv(rC')*rCO
+        Z = pseudoinv(rC')*rCO;
         
-            wC2 = rC2*Z^-1 * Z*sC2 where Z is what is needed to transform rC2 into rC2O:
-        
-                that is, rC2*pseudoinv(Z) = rC2O
-        
-                rC2*pseudoinv(Z)*Z = rC2O*Z
-                     where pseudoinv(Z)*Z = I
-                rC2 = rC2O*Z
-                     since rC2O is orthormal, inv(rC2O) = rC2O^T
-                rC2O^T * rC2 = I * Z
-        
-                ==> Z = rC2O^T * rC2
-        
-            Then apply Z to sC2
-        
-            Need to consider the reformed 
-                wC2, rotation, shape, and Z
-                to make sure the math is consistent.
+        (since the rotation matrix rC' was formed from 2 rows of data, and a full
+        3 columns, should use the full column rank inverse)
         
         (3) Can continue with the rest of the Tomasi & Kanade and Morita & Kanade
             algorithm, eqn (3.15) below...
         */
         {
+            editing
         double[][] rAsRotStack = MatrixUtil.zeros(3*mImages, 3);
         double[][] tmp = new double[3][];
         for (int ii = 0; ii < mImages; ++ii) {
@@ -1805,7 +1804,7 @@ public class Reconstruction {
         double[] c = new double[2*mImages + 1];
         c[2*mImages] = 1;
         
-        double[][] gInv = MatrixUtil.pseudoinverseFullRank(g);
+        double[][] gInv = MatrixUtil.pseudoinverseFullColumnRank(g);
         double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);
         assert(iVector.length == 9);
         

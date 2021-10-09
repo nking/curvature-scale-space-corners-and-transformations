@@ -516,7 +516,7 @@ public class Rectification {
         // matrix left division
         // x = A\B: Solve systems of linear equations Ax = B for x
         // 3 X n
-        double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
+        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);
         
         // 3 x 1
         //aa = A\b;

@@ -750,7 +750,7 @@ public class PNP {
         MatrixUtil.multiply(identity, lambda);
         // 6 X 6
         double[][] a = MatrixUtil.elementwiseAdd(jTJ, identity);
-        double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);
+        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);
         
         double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBF);
         

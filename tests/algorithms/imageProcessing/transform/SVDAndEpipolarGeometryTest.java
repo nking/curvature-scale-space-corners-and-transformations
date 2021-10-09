@@ -1114,7 +1114,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         k[1] = new double[]{0, focalLength, yC};
         k[2]= new double[]{0, 0, 1};
                
-        double[][] kInv = MatrixUtil.pseudoinverseFullRank(k);
+        double[][] kInv = MatrixUtil.pseudoinverseFullColumnRank(k);
         //double[][] kInv = MatrixUtil.pseudoinverseRankDeficient(k);
         
         System.out.printf("KInverse full rank=\n  %s\n", FormatArray.toString(kInv, "%.4e"));
