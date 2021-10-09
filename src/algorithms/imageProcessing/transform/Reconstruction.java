@@ -1139,8 +1139,54 @@ public class Reconstruction {
         double[][] sC = MatrixUtil.multiply(sqrts3, vT3);
         
         System.out.printf("rC=\n%s\n", FormatArray.toString(rC, "%.4e"));
+        
+        System.out.printf("wC=\n%s\n", FormatArray.toString(wC, "%.4e"));
+        System.out.printf("rC*sC=\n%s\n", FormatArray.toString(
+            MatrixUtil.multiply(rC, sC), 
+            "%.4e"));
+        
+        // wC = rC * sC  
+        //rC and sC are linear translations of the true rotation matrix R and
+        //  the true shape matrix S, respectively.
+        // Morita and Kanade: the decomposition is not completely unique.  
+        //     it's unique only up to an affine transformation
+        
+        /*
+        NLK: the rotation matrices aren't orthormal, so am considering using
+           transformation of both rC2 and sC2 so that rC2 is orthormal.
+        (1) reforming elements of rC into individual 3X3 rotation matrices
+            called rC2 (with the x row, y row, and cross product of those)
+            let sC2 be the similarly recomposed elements of sC, excepting a last row should be 1.
+        (2) caveat, need to consider whether this stage as applied
+            to different elements of rC and sC are consistent over all of wC.
+        
+            the orthormal individual rotation matrices can be formed from
+              the SVD(rC2)
+            rC2O = SVD(rC2).U * (SVD(rC2).VT)^T)
+        
+            wC2 = rC2*Z^-1 * Z*sC2 where Z is what is needed to transform rC2 into rC2O:
+        
+                that is, rC2*pseudoinv(Z) = rC2O
+        
+                rC2*pseudoinv(Z)*Z = rC2O*Z
+                     where pseudoinv(Z)*Z = I
+                rC2 = rC2O*Z
+                     since rC2O is orthormal, inv(rC2O) = rC2O^T
+                rC2O^T * rC2 = I * Z
+        
+                ==> Z = rC2O^T * rC2
+        
+            Then apply Z to sC2
+        
+            Need to consider the reformed 
+                wC2, rotation, shape, and Z
+                to make sure the math is consistent.
+        
+        (3) Can continue with the rest of the Tomasi & Kanade and Morita & Kanade
+            algorithm, eqn (3.15) below...
+        */
+        {
         double[][] rAsRotStack = MatrixUtil.zeros(3*mImages, 3);
-        double[][] rrTAsRotStack = new double[3*mImages][];
         double[][] tmp = new double[3][];
         for (int ii = 0; ii < mImages; ++ii) {
             rAsRotStack[ii*mImages] = rC[ii];
@@ -1172,19 +1218,8 @@ public class Reconstruction {
                 FormatArray.toString(tmp, "%.4e"));
             
             System.out.flush();
-            int z = 1;
         }
-                
-        /*
-        cayley(A)=(I+A)^−1*(I-A)
-        R_a = cayley((R^T - R)/(1 + Tr(R)))
-        */
-        
-        // wC = rC * sC  
-        //rC and sC are linear translations of the true rotation matrix R and
-        //  the true shape matrix S, respectively.
-        // Morita and Kanade: the decomposition is not completely unique.  
-        //     it's unique only up to an affine transformation
+        }
         
         //Tomasi & Kanade eqn (3.15) and Belongie Section 16.4.4 (c)
         // metric constraints:  
