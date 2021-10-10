@@ -1178,20 +1178,13 @@ public class Reconstruction {
             algorithm, eqn (3.15) below...
         */
         
-        // rCO is the orthonormal version of rC (rC * Z), formatted in same manner as rC.
-        // sCO is the inverse transform of Z applied to sC.
-        // (2*mImages)X3
-        double[][] rCO = MatrixUtil.zeros(rC.length, rC[0].length);
-        // 3XnFeatures
-        double[][] sCO = MatrixUtil.zeros(sC.length, sC[0].length);
+        // rCO is the orthonormal version of rC
+        double[][] rCO = new double[rC.length][rC[0].length];
         
         // 3X3
         double[][] rCP = new double[3][];
         
-        //rC'*Z*pseudoinv(Z)*sC'
-        double[][] zC;
         // 3X1:
-        double[] sCP = new double[3];
         for (int ii = 0; ii < mImages; ++ii) {
             rCP[0] = rC[ii];
             rCP[1] = rC[ii + mImages];
@@ -1217,8 +1210,16 @@ public class Reconstruction {
                 FormatArray.toString(rCP, "%.4e"));
             
             System.out.flush();
+        
+            rCO[ii] = Arrays.copyOf(r_uvtt[0], r_uvtt.length);
+            rCO[ii + mImages] = Arrays.copyOf(r_uvtt[1], r_uvtt.length);
         }
-        }
+        
+        //Z^-1 = pseudoInv(rCO)*wC * pseudoInv(sC)
+        
+        // 3XnFeatures
+        double[][] sCO = MatrixUtil.zeros(sC.length, sC[0].length);
+        
         
         //Tomasi & Kanade eqn (3.15) and Belongie Section 16.4.4 (c)
         // metric constraints:  
