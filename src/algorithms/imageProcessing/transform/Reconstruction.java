@@ -1165,7 +1165,7 @@ public class Reconstruction {
             the y-row of the same frame in rC, and the cross product of the x and y rows.
         rCO is obtained from SVD(rC').U*(SVD(rC').VT)^T)
 
-        let rC2 be the reformatted the orthogonal rCO into the x, y row format of rC
+        let rC2 be the orthogonal rCO matrices reformatted into the x, y row format of rC
         
         since wC = rC * Z * z^-1 * sC
               wC = rC2 * Z^-1 * sC
@@ -1187,29 +1187,7 @@ public class Reconstruction {
         
         // 3X3
         double[][] rCP = new double[3][];
-        // 3X3
-        double[][] z;
         
-        rearrange rows of wC, rC, and sC and wlak through the mutliplication
-        /*
-        wC = rC * sC
-        mImages = 2.
-        nFeatures = 5;                          each column is x,y,z for a feature
-                      rC                            sC
-   x's:     r_0[0][0]  r_0[0][1]  r_0[0][2]         s[0][0]  s[0][1]  s[0][2]  s[0][3]  s[0][4]
-            r_1[0][0]  r_1[0][1]  r_1[0][2]         s[1][0]  s[1][1]  s[1][2]  s[1][3]  s[1][4]
-            ----------                              s[2][0]  s[2][1]  s[2][2]  s[2][3]  s[2][4]
-   y's:     r_0[1][0]  r_0[1][1]  r_0[1][2]
-            r_1[1][0]  r_1[1][1]  r_1[1][2]
-                
-                
-        */
-        
-        /*
-        r0_x0 r0_x1 r0_x2   z0_00 z0_01 z0_02  this is for each image... sC is for each feature
-        r0_y0 r0_y1 r0_y2   z0_10 z0_11 z0_12
-        r0_z0 r0_z1 r0_z2   z0_20 z0_21 z0_22   
-        */
         //rC'*Z*pseudoinv(Z)*sC'
         double[][] zC;
         // 3X1:
