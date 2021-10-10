@@ -1165,56 +1165,78 @@ public class Reconstruction {
             the y-row of the same frame in rC, and the cross product of the x and y rows.
         rCO is obtained from SVD(rC').U*(SVD(rC').VT)^T)
 
-        Z is needed to transform rC' into rCO
-        and we need to maintain the value of wC', so will also use the property Z*pseudoinv(Z)=I
-           which is a right inverse.
-        wC' = rC'*Z*pseudoinv(Z)*sC' , where rC'*Z = rCO
-
-        need pseudoinv(Z) to apply to sC'
-
-        rC'*Z = rCO
-        rC' is full column rank, so we can use pseudoinv(A) * A = I.
-        pseudoinv(rC')*rC'*Z = pseudoinv(rC')*rCO
-        Z = pseudoinv(rC')*rCO;
+        let rC2 be the reformatted the orthogonal rCO into the x, y row format of rC
         
-        (since the rotation matrix rC' was formed from 2 rows of data, and a full
-        3 columns, should use the full column rank inverse)
+        since wC = rC * Z * z^-1 * sC
+              wC = rC2 * Z^-1 * sC
+              pseudoInv(rC2)*wC = pseudoInv(rC2)*rC2 * Z^-1 * sC
+              pseudoInv(rC2)*wC * pseudoInv(sC) = Z^-1 if inv(rC2)*rC2=I
+               
+              then can use Z^-1 to transform sC into sC2
         
         (3) Can continue with the rest of the Tomasi & Kanade and Morita & Kanade
             algorithm, eqn (3.15) below...
         */
-        {
-            editing
-        double[][] rAsRotStack = MatrixUtil.zeros(3*mImages, 3);
-        double[][] tmp = new double[3][];
+        
+        // rCO is the orthonormal version of rC (rC * Z), formatted in same manner as rC.
+        // sCO is the inverse transform of Z applied to sC.
+        // (2*mImages)X3
+        double[][] rCO = MatrixUtil.zeros(rC.length, rC[0].length);
+        // 3XnFeatures
+        double[][] sCO = MatrixUtil.zeros(sC.length, sC[0].length);
+        
+        // 3X3
+        double[][] rCP = new double[3][];
+        // 3X3
+        double[][] z;
+        
+        rearrange rows of wC, rC, and sC and wlak through the mutliplication
+        /*
+        wC = rC * sC
+        mImages = 2.
+        nFeatures = 5;                          each column is x,y,z for a feature
+                      rC                            sC
+   x's:     r_0[0][0]  r_0[0][1]  r_0[0][2]         s[0][0]  s[0][1]  s[0][2]  s[0][3]  s[0][4]
+            r_1[0][0]  r_1[0][1]  r_1[0][2]         s[1][0]  s[1][1]  s[1][2]  s[1][3]  s[1][4]
+            ----------                              s[2][0]  s[2][1]  s[2][2]  s[2][3]  s[2][4]
+   y's:     r_0[1][0]  r_0[1][1]  r_0[1][2]
+            r_1[1][0]  r_1[1][1]  r_1[1][2]
+                
+                
+        */
+        
+        /*
+        r0_x0 r0_x1 r0_x2   z0_00 z0_01 z0_02  this is for each image... sC is for each feature
+        r0_y0 r0_y1 r0_y2   z0_10 z0_11 z0_12
+        r0_z0 r0_z1 r0_z2   z0_20 z0_21 z0_22   
+        */
+        //rC'*Z*pseudoinv(Z)*sC'
+        double[][] zC;
+        // 3X1:
+        double[] sCP = new double[3];
         for (int ii = 0; ii < mImages; ++ii) {
-            rAsRotStack[ii*mImages] = rC[ii];
-            rAsRotStack[ii*mImages + 1] = rC[ii + mImages];
-            rAsRotStack[ii*mImages + 2] = 
-                MatrixUtil.crossProduct(rAsRotStack[ii*mImages], 
-                rAsRotStack[ii*mImages + 1]);
-            for (int iii=0;iii<3;++iii) {
-                tmp[iii] = Arrays.copyOf(rAsRotStack[ii*mImages + iii],
-                    rAsRotStack[ii*mImages + iii].length);
-            }
-            System.out.printf("rC_%d=\n%s\n", ii, FormatArray.toString(tmp, "%.4e"));
-            double detR = MatrixUtil.determinant(tmp);
+            rCP[0] = rC[ii];
+            rCP[1] = rC[ii + mImages];
+            rCP[2] = MatrixUtil.crossProduct(rCP[0], rCP[1]);
+            
+            System.out.printf("rC_%d=\n%s\n", ii, FormatArray.toString(rCP, "%.4e"));
+            double detR = MatrixUtil.determinant(rCP);
             System.out.printf("det(rC_%d)=%.4e\n", ii, detR);
             
-            SVDProducts svdRC = MatrixUtil.performSVD(tmp);
+            SVDProducts svdRC = MatrixUtil.performSVD(rCP);
             double[][] r_uvtt = MatrixUtil.multiply(svdRC.u, 
                 MatrixUtil.transpose(svdRC.vT));
             System.out.printf("r_uvtt=\n%s\n", FormatArray.toString(r_uvtt, "%.4e"));
             detR = MatrixUtil.determinant(r_uvtt);
             System.out.printf("det(r_uvtt_%d)=%.4e\n", ii, detR);
             
-            tmp = MatrixUtil.multiply(tmp, MatrixUtil.transpose(tmp));
+            rCP = MatrixUtil.multiply(rCP, MatrixUtil.transpose(rCP));
             System.out.printf("rC_%d * (rC_%d)^T=\n%s\n", ii, ii,
-                FormatArray.toString(tmp, "%.4e"));
+                FormatArray.toString(rCP, "%.4e"));
             
-            tmp = MatrixUtil.multiply(r_uvtt, MatrixUtil.transpose(r_uvtt));
+            rCP = MatrixUtil.multiply(r_uvtt, MatrixUtil.transpose(r_uvtt));
             System.out.printf("r_uvtt_%d * (r_uvtt_%d)^T=\n%s\n", ii, ii,
-                FormatArray.toString(tmp, "%.4e"));
+                FormatArray.toString(rCP, "%.4e"));
             
             System.out.flush();
         }
