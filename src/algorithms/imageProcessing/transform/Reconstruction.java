@@ -1074,6 +1074,7 @@ public class Reconstruction {
         // ...
         // row[mImages+0] = image_0_y[0], image_0_y[1], image_0_y[2], ...
         double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);
+        // t points to the camera's focal point
         double[] t = new double[2*mImages];
         int i, j;
         int m, n, rowU, rowV, col;
@@ -1700,20 +1701,41 @@ public class Reconstruction {
     */
     
     /**
-     * TODO: proof read the algorithm and write test for this.
      * for the case where the cameras are viewing small, distant scenes,
      * recover the 3-D coordinates in WCS and the projection matrices 
      * from pairs of corresponding
      * un-calibrated image points, that is, points in the image reference frame in pixels.
      * assumes a para-perspective camera model.
      *
-     * <pre>
-     * references:
-     * 
-     * Poelman & Kanade 1997, "A Paraperspective Factorization Method for Shape 
-     * and Motion Recovery" 
-     * 
-     * </pre>
+     * Input set of P feature point coordinates (x_f_p,y_f_p) , for each of 
+     * the F frames of the image sequence. From this information, our goal is 
+     * to recover the estimated shape of the object, given by the position 
+     * s_P, of every point, and the estimated motion of the
+camera, given by |i, 3I, f• and i! for each frame in the sequence. Rather than recover if in world coordinates, we generally recover the threems.eparate components ], tf. jf, and
+if'if.
+ 
+      
+     <pre>
+      references:
+      
+     Poelman & Kanade 1997 (1994), "A Paraperspective Factorization Method for Shape 
+     and Motion Recovery" 
+     
+     Description from Poelman & Kanade:
+      
+     Each feature point p that we track corresponds to a single world point, 
+      located at position s. in some fixed world coordinate system.
+
+      Each image f was taken at some specific camera orientation, which we 
+      describe by the orthonormal unit vectors i_f, j_f and k_f 
+      where kf_ points along the camera's line of sight, 
+      i_f corresponds to the camera image plane's x-axis, 
+      and j_f corresponds to the camera image's y-axis.
+      
+      t_f is a vector pointing from the origin of the fixed world coordinate system
+      to the camera's focal plane.  it's the position of the camera in each fram f.
+      
+     </pre>
      * 
      * @param x the image coordinates of feature correspondences in 2 or more
      * images.  format is 2 X (nImages * nFeatures) where row 0 holds the x-coordinates
