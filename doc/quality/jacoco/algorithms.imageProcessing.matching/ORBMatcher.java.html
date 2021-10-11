@@ -122,7 +122,7 @@ import no.uib.cipr.matrix.DenseMatrix;
         // pairs of indexes of matches
 <span class="fc" id="L123">        int[][] matches = greedyMatch(keypoints1, keypoints2, cost);</span>
         
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (matches.length &lt; 7) {</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (matches.length &lt; 7) {</span>
             
             // 6!/(1!5!) + 6!/(2!4!) + 6!/(3!3!) + 6!/(2!4!) + 6!/(1!5!) = 6 + 15 + 20 + 15 + 6=62
             // 5!/(1!4!) + 5!/(2!3!) + 5!/(3!2!) + 5!/(1!4!) = 5 + 10 + 10 + 5 = 20
@@ -184,28 +184,28 @@ import no.uib.cipr.matrix.DenseMatrix;
          
         // ransac to remove outliers.
         //NOTE: the fundamental matrix in the fit has not been de-normalized.
-<span class="fc" id="L187">        EpipolarTransformationFit fit = fitWithRANSAC(matches, </span>
+<span class="nc" id="L187">        EpipolarTransformationFit fit = fitWithRANSAC(matches, </span>
             keypoints1, keypoints2);
         
-<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (fit == null) {</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (fit == null) {</span>
 <span class="nc" id="L191">            return null;</span>
         }
         
-<span class="fc" id="L194">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
+<span class="nc" id="L194">        System.out.println(&quot;fit=&quot; + fit.toString());</span>
 
         int i, idx;
-<span class="fc" id="L197">        List&lt;Integer&gt; inliers = fit.getInlierIndexes();</span>
-<span class="fc" id="L198">        QuadInt[] qs = new QuadInt[inliers.size()];</span>
-<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (i = 0; i &lt; inliers.size(); ++i) {</span>
-<span class="fc" id="L200">            idx = inliers.get(i);</span>
-<span class="fc" id="L201">            QuadInt q = new QuadInt(</span>
-<span class="fc" id="L202">                keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),</span>
-<span class="fc" id="L203">                keypoints2.get(idx).getX(), keypoints2.get(idx).getY()</span>
+<span class="nc" id="L197">        List&lt;Integer&gt; inliers = fit.getInlierIndexes();</span>
+<span class="nc" id="L198">        QuadInt[] qs = new QuadInt[inliers.size()];</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        for (i = 0; i &lt; inliers.size(); ++i) {</span>
+<span class="nc" id="L200">            idx = inliers.get(i);</span>
+<span class="nc" id="L201">            QuadInt q = new QuadInt(</span>
+<span class="nc" id="L202">                keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),</span>
+<span class="nc" id="L203">                keypoints2.get(idx).getX(), keypoints2.get(idx).getY()</span>
             );
-<span class="fc" id="L205">            qs[i] = q;</span>
+<span class="nc" id="L205">            qs[i] = q;</span>
         }
         
-<span class="fc" id="L208">        return qs;        </span>
+<span class="nc" id="L208">        return qs;        </span>
     }
 
     /**
@@ -271,8 +271,8 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="fc" id="L271">            idx2 = index12.getY();</span>
 <span class="fc" id="L272">            p1 = keypoints1.get(idx1);</span>
 <span class="fc" id="L273">            p2 = keypoints2.get(idx2);</span>
-<span class="fc bfc" id="L274" title="All 4 branches covered.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
-<span class="fc" id="L275">                continue;</span>
+<span class="pc bpc" id="L274" title="1 of 4 branches missed.">            if (set1.contains(p1) || set2.contains(p2)) {</span>
+<span class="nc" id="L275">                continue;</span>
             }
             //System.out.println(&quot;p1=&quot; + p1 + &quot; &quot; + &quot; p2=&quot; + p2 + &quot; cost=&quot; + costs[i]);
 <span class="fc" id="L278">            matches.add(index12);</span>
@@ -407,44 +407,44 @@ import no.uib.cipr.matrix.DenseMatrix;
     private static EpipolarTransformationFit fitWithRANSAC(int[][] matches, 
         List&lt;PairInt&gt; keypoints1, List&lt;PairInt&gt; keypoints2) {
         
-<span class="fc" id="L410">        int n0 = matches.length;</span>
+<span class="nc" id="L410">        int n0 = matches.length;</span>
 
-<span class="fc" id="L412">        double[][] left = new double[3][n0];</span>
-<span class="fc" id="L413">        double[][] right = new double[3][n0];</span>
-<span class="fc bfc" id="L414" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L415">            left[i] = new double[n0];</span>
-<span class="fc" id="L416">            right[i] = new double[n0];</span>
+<span class="nc" id="L412">        double[][] left = new double[3][n0];</span>
+<span class="nc" id="L413">        double[][] right = new double[3][n0];</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L415">            left[i] = new double[n0];</span>
+<span class="nc" id="L416">            right[i] = new double[n0];</span>
         }
-<span class="fc" id="L418">        Arrays.fill(left[2], 1.0);</span>
-<span class="fc" id="L419">        Arrays.fill(right[2], 1.0);</span>
+<span class="nc" id="L418">        Arrays.fill(left[2], 1.0);</span>
+<span class="nc" id="L419">        Arrays.fill(right[2], 1.0);</span>
         int i, idx1, idx2;
-<span class="fc bfc" id="L421" title="All 2 branches covered.">        for (i = 0; i &lt; n0; ++i) {</span>
-<span class="fc" id="L422">            idx1 = matches[i][0];</span>
-<span class="fc" id="L423">            idx2 = matches[i][1];</span>
-<span class="fc" id="L424">            left[0][i] = keypoints1.get(idx1).getX();</span>
-<span class="fc" id="L425">            left[1][i] = keypoints1.get(idx1).getY();</span>
-<span class="fc" id="L426">            right[0][i] = keypoints2.get(idx2).getX();</span>
-<span class="fc" id="L427">            right[1][i] = keypoints2.get(idx2).getY();</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">        for (i = 0; i &lt; n0; ++i) {</span>
+<span class="nc" id="L422">            idx1 = matches[i][0];</span>
+<span class="nc" id="L423">            idx2 = matches[i][1];</span>
+<span class="nc" id="L424">            left[0][i] = keypoints1.get(idx1).getX();</span>
+<span class="nc" id="L425">            left[1][i] = keypoints1.get(idx1).getY();</span>
+<span class="nc" id="L426">            right[0][i] = keypoints2.get(idx2).getX();</span>
+<span class="nc" id="L427">            right[1][i] = keypoints2.get(idx2).getY();</span>
         }
     
         // normalize left and right
-<span class="fc" id="L431">        boolean useToleranceAsStatFactor = true;</span>
-<span class="fc" id="L432">        final double tolerance = 3.8;</span>
-<span class="fc" id="L433">        ErrorType errorType = ErrorType.SAMPSONS;</span>
+<span class="nc" id="L431">        boolean useToleranceAsStatFactor = true;</span>
+<span class="nc" id="L432">        final double tolerance = 3.8;</span>
+<span class="nc" id="L433">        ErrorType errorType = ErrorType.SAMPSONS;</span>
         
-<span class="fc" id="L435">        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));</span>
-<span class="fc" id="L436">        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));</span>
-<span class="fc" id="L437">        DenseMatrix leftM = normXY1.getXy();</span>
-<span class="fc" id="L438">        DenseMatrix rightM = normXY2.getXy();</span>
+<span class="nc" id="L435">        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));</span>
+<span class="nc" id="L436">        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));</span>
+<span class="nc" id="L437">        DenseMatrix leftM = normXY1.getXy();</span>
+<span class="nc" id="L438">        DenseMatrix rightM = normXY2.getXy();</span>
         
-<span class="fc" id="L440">        boolean reCalcIterations = false;</span>
-<span class="fc" id="L441">        RANSACSolver solver = new RANSACSolver();</span>
+<span class="nc" id="L440">        boolean reCalcIterations = false;</span>
+<span class="nc" id="L441">        RANSACSolver solver = new RANSACSolver();</span>
         
-<span class="fc" id="L443">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
+<span class="nc" id="L443">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
             leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
             reCalcIterations, false);                
         
-<span class="fc" id="L447">        return fit;        </span>
+<span class="nc" id="L447">        return fit;        </span>
     }
 
 }

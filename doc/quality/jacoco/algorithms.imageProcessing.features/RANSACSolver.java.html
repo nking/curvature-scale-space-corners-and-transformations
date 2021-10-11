@@ -284,7 +284,7 @@ an important part of the algorithm to keep the runtime tractable.
                 
 <span class="fc" id="L285">                int nInliers = fitI.getInlierIndexes().size();</span>
 <span class="fc bfc" id="L286" title="All 4 branches covered.">                if (nInliers &gt;= nSet &amp;&amp; fitI.isBetter(fit)) {</span>
-<span class="fc bfc" id="L287" title="All 4 branches covered.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
+<span class="pc bpc" id="L287" title="1 of 4 branches missed.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
                         // redo the FM transformation with all inliers
 <span class="fc" id="L289">                        DenseMatrix inliersLeftXY = EpipolarTransformer</span>
 <span class="fc" id="L290">                            .extractIndices(leftCorres, fitI.getInlierIndexes());</span>
@@ -329,7 +329,7 @@ an important part of the algorithm to keep the runtime tractable.
                 //System.out.flush();
                 
                 // recalculate nMaxIter
-<span class="pc bpc" id="L332" title="1 of 6 branches missed.">                if (reCalcIterations &amp;&amp; (nf &gt; nb) &amp;&amp; nMaxIter &gt; 1) {</span>
+<span class="pc bpc" id="L332" title="2 of 6 branches missed.">                if (reCalcIterations &amp;&amp; (nf &gt; nb) &amp;&amp; nMaxIter &gt; 1) {</span>
 <span class="fc" id="L333">                    double outlierPercentI = 100.*</span>
 <span class="fc" id="L334">                        (double)(nPoints - bestFit.getInlierIndexes().size()) / (double)nPoints;</span>
 <span class="pc bpc" id="L335" title="1 of 2 branches missed.">                    if (outlierPercentI &lt; outlierPercent) {</span>

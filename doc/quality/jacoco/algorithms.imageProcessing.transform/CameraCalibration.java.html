@@ -1689,7 +1689,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         }
            
         //k = (D^T*D)^−1*D^T*d = pseudoInv(D) * d
-<span class="fc" id="L1692">        double[][] dInv = MatrixUtil.pseudoinverseFullRank(dM);</span>
+<span class="fc" id="L1692">        double[][] dInv = MatrixUtil.pseudoinverseFullColumnRank(dM);</span>
 <span class="fc" id="L1693">        double[] k = MatrixUtil.multiplyMatrixByColumnVector(dInv, dV);</span>
                 
 <span class="fc" id="L1695">        return k;</span>

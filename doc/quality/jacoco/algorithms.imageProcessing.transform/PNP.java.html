@@ -750,7 +750,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="nc" id="L750">        MatrixUtil.multiply(identity, lambda);</span>
         // 6 X 6
 <span class="nc" id="L752">        double[][] a = MatrixUtil.elementwiseAdd(jTJ, identity);</span>
-<span class="nc" id="L753">        double[][] aInv = MatrixUtil.pseudoinverseFullRank(a);</span>
+<span class="nc" id="L753">        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);</span>
         
 <span class="nc" id="L755">        double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBF);</span>
         
