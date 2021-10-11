@@ -1155,91 +1155,21 @@ public class Reconstruction {
         // Morita and Kanade: the decomposition is not completely unique.  
         //     it's unique only up to an affine transformation
         
-        /*
-        NLK: the rotation matrices aren't orthormal, so one needs to apply a linear
-        transformation to rC that makes it orthonormal while applying the
-        inverse transformation to sC to maintain the value of wC.
-        
-        wC = rC * sC
-
-        let rC' be a single rotation matrix formed from the x-row of a frame in rC,
-            the y-row of the same frame in rC, and the cross product of the x and y rows.
-        rCO is obtained from SVD(rC').U*(SVD(rC').VT)^T)
-
-        let R be the orthogonal rCO matrices reformatted into the x, y row format of rC
-        
-        since wC = R * Z * z^-1 * sC
-              wC = R * Z^-1 * sC
-              pseudoInv(R)*wC = pseudoInv(R)*R * Z^-1 * sC
-              pseudoInv(R)*wC * pseudoInv(sC) = Z^-1 if inv(R)*R=I
-               
-              then can use Z^-1 to transform sC into s
-        
-        
-        (3) Can continue with the rest of the Tomasi & Kanade and Morita & Kanade
-            algorithm, eqn (3.15) below...
-        */
-        
-        // rCO is the orthonormal version of rC
-        double[][] r = new double[rC.length][rC[0].length];
-        
-        // 3X3
-        double[][] rCP = new double[3][];
-        //3X3
-        double[][] rCO;
-        
-        for (int ii = 0; ii < mImages; ++ii) {
-            rCP[0] = rC[ii];
-            rCP[1] = rC[ii + mImages];
-            rCP[2] = MatrixUtil.crossProduct(rCP[0], rCP[1]);
-            
-            System.out.printf("rC_%d=\n%s\n", ii, FormatArray.toString(rCP, "%.4e"));
-            double detR = MatrixUtil.determinant(rCP);
-            System.out.printf("det(rC_%d)=%.4e\n", ii, detR);
-            
-            SVDProducts svdRC = MatrixUtil.performSVD(rCP);
-            rCO = MatrixUtil.multiply(svdRC.u, MatrixUtil.transpose(svdRC.vT));
-            System.out.printf("r_uvtt=\n%s\n", FormatArray.toString(rCO, "%.4e"));
-            detR = MatrixUtil.determinant(rCO);
-            System.out.printf("det(r_uvtt_%d)=%.4e\n", ii, detR);
-           
-            System.out.printf("rC_%d * (rC_%d)^T=\n%s\n", ii, ii,
-                FormatArray.toString(MatrixUtil.multiply(rCP, MatrixUtil.transpose(rCP)), "%.4e"));
-            
-            System.out.printf("r_uvtt_%d * (r_uvtt_%d)^T=\n%s\n", ii, ii,
-                FormatArray.toString(MatrixUtil.multiply(rCO, MatrixUtil.transpose(rCO)), "%.4e"));
-            
-            System.out.flush();
-        
-            r[ii] = Arrays.copyOf(rCO[0], rCO.length);
-            r[ii + mImages] = Arrays.copyOf(rCO[1], rCO.length);
-        }
-        
-        // r:  rank=3, m=2*mImages, n=3
-        // sC: rank=3, m=3, n=nFeatures
-        
-        //Z^-1 = pseudoInv(r)*wC * pseudoInv(sC)
-        double[][] invR = MatrixUtil.pseudoinverseFullColumnRank(r);
-        
-        double[][] invSC = MatrixUtil.pseudoinverseFullRowRank(sC);
-        
-        //System.out.printf("invfullcol(r)=\n%s\n", FormatArray.toString(invR, "%.4e"));
-        //System.out.printf("invfullrow(sC)=\n%s\n", FormatArray.toString(invSC, "%.4e"));
-        
-        double[][] zInv = MatrixUtil.multiply(MatrixUtil.multiply(invR, wC), invSC);
-                
-        //System.out.printf("zInv=inv(R)*wC*inv(SC)=\n%s\n", FormatArray.toString(zInv, "%.4e"));
-        
-        // 3XnFeatures
-        double[][] s = MatrixUtil.multiply(zInv, sC);
-                
-        System.out.printf("r*s=\n%s\n", FormatArray.toString(MatrixUtil.multiply(r, s), 
-            "%.4e"));
-                        
         //Tomasi & Kanade eqn (3.15) and Belongie Section 16.4.4 (c)
         // metric constraints:  
         // note that R is composed of rows of unit vectors.
         // note that the first F rows in R are orthogonal to the last F rows in R.
+        
+        /*
+        NOTE: can make a rotation matrix orthonormal:
+        svd = MatrixUtil.performSVD(rotationMAtrix);
+        ortho = MatrixUtil.multiply(svd.u, MatrixUtil.transpose(svd.vT));
+        detR = MatrixUtil.determinant(ortho);
+        assert(Math.abs(detR - 1.)<1.e-7);
+
+        if no translation, can use procrustes to get difference in rotation:
+           double[][] ar = Rotation.procrustesAlgorithmForRotation(rot1, _r2);
+        */
         
         /*
         The rows of R represent the orientations of the horizontal and vertical camera
@@ -1338,13 +1268,14 @@ public class Reconstruction {
         //g is 3F X 6
         double[][] g = new double[3*mImages][6];
         for (i = 0; i < 2*mImages; ++i) {
-            g[i] = gT(r[i], r[i]);
+            g[i] = gT(rC[i], rC[i]);
             assert(g[i].length == 6);
         }
         for (i = 2*mImages, j=0; i < 3*mImages; ++i, j++) {
-            g[i] = gT(r[mImages + j], r[j]);
+            g[i] = gT(rC[mImages + j], rC[j]);
         }
-        
+                
+        // rank of G is 4
         //G * L = c
         // G^T * G * L = G^T * c
         // L = (G^T*G)^-1*G^T * c
@@ -1387,10 +1318,10 @@ public class Reconstruction {
         
         // rC size is  (2*mImages)X3
         // sC size is 3XnFeatures
-        double[][] r2 = MatrixUtil.multiply(r, q);
-        double[][] s2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), s);
+        double[][] r2 = MatrixUtil.multiply(rC, q);
+        double[][] s2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);
         
-        // assert that wC is the same as wCO
+        // assert that wC is the same as wC2
         System.out.printf("r2*s2=\n%s\n", FormatArray.toString(MatrixUtil.multiply(r2, s2), 
             "%.4e"));
         
@@ -1410,44 +1341,54 @@ public class Reconstruction {
         j1x j1y j1z
         */
         
- //paused here revisting code and papers
+        System.out.printf("r2=\n%s\n", FormatArray.toString(r2, "%.4e"));
  
-        double[] i1 = Arrays.copyOf(r2[0], r2[0].length);
-        double i1Norm = MatrixUtil.lPSum(i1, 2);
-        MatrixUtil.multiply(i1, 1./i1Norm);
-        double[] j1 = Arrays.copyOf(r2[mImages], r2[mImages].length);
-        double j1Norm = MatrixUtil.lPSum(j1, 2);
-        MatrixUtil.multiply(j1, 1./j1Norm);
-        double[] k1 = MatrixUtil.crossProduct(i1, j1);
-        double k1Norm = MatrixUtil.lPSum(k1, 2);
-        MatrixUtil.multiply(k1, 1./k1Norm);
+        /* r2 * R0 = I
+                R0 = inv(r2)
+        */
+        double[][] rFirst = new double[3][3];
+        rFirst[0] = Arrays.copyOf(r2[0], r2[0].length);
+        rFirst[1] = Arrays.copyOf(r2[mImages], r2[mImages].length);
+        rFirst[2] = MatrixUtil.crossProduct(rFirst[0], rFirst[1]);
+        double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);
         
-        double[][] r0 = new double[3][3];
-        for (i = 0; i < 3; ++i) {
-            r0[i] = new double[]{i1[i], j1[i], k1[i]};
-        }
+        System.out.printf("chk==1: \n%s\n", FormatArray.toString(
+            MatrixUtil.multiply(rFirst, r0),"%.4e"));
         
         // with orthographic, can only recover rotation, not translation
         //(2*mImages)X3
-        double[][] motion = MatrixUtil.multiply(r2, r0);
-        // s now holds the world reference frame coordinates
-        // 3XnFeatures
-        double[][] shape = MatrixUtil.multiply(MatrixUtil.transpose(r0), s2);
-        
+        //apply to indiv rotation matrices
+         
         // r has the i and j direction and k=i cross j.
         // create a stack of rotation matrices, one per image.
         double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
-        double[] ic, jc, kc;
+        double[][] r3 = new double[2*mImages][];//(2*mImages)X3
+        double[][] rTmp = new double[3][];
         for (i = 0; i < mImages; ++i) {
-            ic = motion[i];
-            jc = motion[mImages + i];
-            kc = MatrixUtil.crossProduct(ic, jc);
+            rTmp[0] = Arrays.copyOf(r2[i], r2[i].length);
+            rTmp[1] = Arrays.copyOf(r2[mImages + i], r2[mImages + i].length);
+            rTmp[2] = MatrixUtil.crossProduct(rTmp[0], rTmp[1]);
+            rTmp = MatrixUtil.multiply(rTmp, r0);
             for (j = 0; j < 3; ++j) {
-                rotStack[i*3 + j][0] = ic[j]; 
-                rotStack[i*3 + j][1] = jc[j];
-                rotStack[i*3 + j][2] = kc[j];
+                rotStack[i*3 + j] = rTmp[j]; 
             }
+            r3[i] = rTmp[0];
+            r3[i + mImages] = rTmp[1];
         }
+        
+        double[][] shape = s2;
+        //double[][] shape = MatrixUtil.multiply(MatrixUtil.transpose(r0), s2);
+        
+        System.out.printf("**r3=\n%s\n", FormatArray.toString(r3, 
+            "%.4e"));
+        System.out.printf("**rot stack=\n%s\n", FormatArray.toString(rotStack, 
+            "%.4e"));
+        
+        System.out.printf("shape=\n%s\n", FormatArray.toString(shape, 
+            "%.4e"));
+        
+        System.out.printf("t=\n%s\n", FormatArray.toString(t, 
+            "%.4e"));
         
         //assert eqn (3.7) of Tomasi & Kanade:
         // original measurement matrix 
@@ -1457,9 +1398,11 @@ public class Reconstruction {
         double[] ep = new double[nFeatures];
         Arrays.fill(ep, 1);
         double[][] tep = MatrixUtil.outerProduct(t, ep);
-        double[][] w3 = MatrixUtil.elementwiseAdd(
-                MatrixUtil.multiply(motion, shape), tep);
-        System.out.printf("W = R*X + t*(e_p)^T=\n%s\n", FormatArray.toString(w3, 
+        System.out.printf("W = R*X + t*(e_p)^T=\n%s\n", 
+            FormatArray.toString(MatrixUtil.elementwiseAdd(
+                MatrixUtil.multiply(r3, shape), tep), 
+            "%.4e"));
+        System.out.printf("orig W = \n%s\n", FormatArray.toString(w, 
             "%.4e"));
         
         OrthographicProjectionResults results = new OrthographicProjectionResults();
@@ -1467,6 +1410,277 @@ public class Reconstruction {
         results.rotationMatrices = rotStack;
                 
         return results;
+    }
+    
+    /**
+     * a look at enforcing orthonormal rotation
+     * 
+     * @param x
+     * @param mImages
+     * @return
+     * @throws NotConvergedException 
+     */
+    static OrthographicProjectionResults _DoNotUseThisCalculateAffineReconstruction(
+        double[][] x, int mImages) throws NotConvergedException {
+                                
+        if (x.length != 2) {
+            throw new IllegalArgumentException("x.length must be 2");
+        }
+        if ((x[0].length % mImages) != 0) {
+            throw new IllegalArgumentException("x must have a multiple of mImages as the number of columns");
+        }
+        int nFeatures = x[0].length / mImages;
+        
+        //2mn >= 8m + 3n – 12
+        if ((2*mImages * nFeatures) < (8*mImages +3*nFeatures - 12)) {
+            throw new IllegalArgumentException("more points are necessary:"
+                + "2 * mImages * nFeatures >= 8 * mImages + 3 * nFeatures – 12."
+                +  "\narguments: mImages=" + mImages + " nFeatures=" + nFeatures
+                + "\n" + (2*mImages * nFeatures) + " < " +
+                    (8*mImages +3*nFeatures - 12));
+        }
+        // for mImages=2, need 4 features
+        
+        // Tomasi & Kanade 1992: An image stream can be represented by the
+        //  2*F X P measurment matrix W of image coordinates of P points
+        // tracked through F frames.
+        
+        // create matrix W composed of U and V 
+        //     where U is rows of each image's x coordinates (size is mImages X nFeatures).
+        //     where V is rows of each image's y coordinates (size is mImages X nFeatures).
+        // create matrix t which holds the centroids of each row of W
+        // create matrix WC = W - t
+        
+        // row[0] = image_0_x[0], image_0_x[1], image_0_x[2], ...
+        // row[1] = image_1_x[0], image_1_x[1], image_1_x[2], ...
+        // ...
+        // row[mImages+0] = image_0_y[0], image_0_y[1], image_0_y[2], ...
+        //NOTE: adding the Z axis=1
+        double[][] w = MatrixUtil.zeros(3*mImages, nFeatures);
+        double[] t = new double[3*mImages];
+        int i, j;
+        int m, n, rowX, rowY, rowZ, col;
+        for (m = 0; m < mImages; ++m) {
+            rowX = m;
+            rowY = mImages + m;
+            rowZ = 2*mImages + m;
+            for (n = 0; n < nFeatures; ++n) {
+                col = nFeatures*m + n;
+                w[rowX][n] = x[0][col];
+                t[rowX] += x[0][col];
+                w[rowY][n] = x[1][col];
+                t[rowY] += x[1][col];
+                w[rowZ][n] = 1;
+                t[rowZ] += 1;
+            }
+            t[rowX] /= (double)nFeatures;
+            t[rowY] /= (double)nFeatures;
+            t[rowZ] /= (double)nFeatures;
+        }
+        
+        //registered measurement matrix:
+        double[][] wC = MatrixUtil.copy(w);
+        for (i = 0; i < t.length; ++i) {
+            for (n = 0; n < wC[i].length; ++n) {
+                wC[i][n] -= t[i];
+            }
+        }
+        
+        // see Fig 3.1 of Tomasi & Kanade 1991 or Fig 2. of Belongie lecture notes
+        
+        // under orthography, this coordinate centered matrix has rank 3
+        // and can be factored into the product of 2 matrices, R and S:
+        // the camera rotation matrix R (size 2FX3) and 
+        // the shape matrix S (size 3XP) which is shape in a coordinate system 
+        // attached to the object centroid.
+        //The two components of the camera translation along the image plane
+        // are computed as averages of the rows of W
+                
+        // the registered measurement matrix is highly rank deficient
+        // eqn (3.11)
+        SVDProducts svd = MatrixUtil.performSVD(wC);
+        
+        // Tomasi & Kanade 1992,eqn (3.12): 1st 3 columns of U, upper 3X3 of S, and first 3 rows of V^T
+        //U3 is 2FX3 where F is the number of image frames
+        //S3 is 3X3
+        //VT3 is 3XP where P is the number of points, that is features, per image
+        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);
+        double[][] s3 = MatrixUtil.zeros(3, 3);
+        s3[0][0] = svd.s[0];
+        s3[1][1] = svd.s[1];
+        s3[2][2] = svd.s[2];
+        double[][] sqrts3 = MatrixUtil.copy(s3);
+        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);
+        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);
+        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);
+        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);
+        
+        // if the ratio between the 3rd and 4th largest singular value of the registered measurement matrix
+        //   is large, then the noise portion of the full decomposition
+        //   can be ignored (the noise portion is the block partitions not 
+        //   copied to U3, sqrtS3 and vT3).
+        // there is more about this in Morita & Kanade 1994/1997
+        double sRatio = svd.s[2]/svd.s[3];
+        System.out.printf("svd.s[2]/svd.s[3]=%.3e\n", sRatio);
+        
+        //Tamasi & Kanade
+        // (2*mImages)X3
+        double[][] rC = MatrixUtil.multiply(u3, sqrts3);
+        // 3XnFeatures
+        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);
+        
+        System.out.printf("rC=\n%s\n", FormatArray.toString(rC, "%.4e"));
+        
+        System.out.printf("w=\n%s\n", FormatArray.toString(w, "%.4e"));
+        System.out.printf("wC=\n%s\n", FormatArray.toString(wC, "%.4e"));
+        System.out.printf("rC*sC=\n%s\n", FormatArray.toString(
+            MatrixUtil.multiply(rC, sC), 
+            "%.4e"));
+        
+        // wC = rC * sC  
+        //rC and sC are linear translations of the true rotation matrix R and
+        //  the true shape matrix S, respectively.
+        // Morita and Kanade: the decomposition is not completely unique.  
+        //     it's unique only up to an affine transformation
+        
+        /*
+        NLK: the rotation matrices aren't orthormal, so one needs to apply a linear
+        transformation to rC that makes it orthonormal while applying the
+        inverse transformation to sC to maintain the value of wC.
+        
+        wC = rC * sC
+
+        let rC' be a single rotation matrix formed from the x-row of a frame in rC,
+            the y-row of the same frame in rC, and the cross product of the x and y rows.
+        rCO is obtained from SVD(rC').U*(SVD(rC').VT)^T)
+
+        let R be the orthogonal rCO matrices reformatted into the x, y row format of rC
+        
+        since wC = R * Z * z^-1 * sC
+              wC = R * Z^-1 * sC
+              pseudoInv(R)*wC = pseudoInv(R)*R * Z^-1 * sC
+              pseudoInv(R)*wC * pseudoInv(sC) = Z^-1 if inv(R)*R=I
+               
+              then can use Z^-1 to transform sC into s
+        
+        (3) Can continue with the rest of the Tomasi & Kanade and Morita & Kanade
+            algorithm, eqn (3.15) below...
+        */
+        
+        //sC is 3XnFeatures
+        
+        double[][] invR;
+        
+        double[][] rot = new double[3*mImages][3];
+        double[][] r3 = new double[2*mImages][3];
+        double[][] shape = new double[3*mImages][nFeatures];
+        
+        // 3X3
+        double[][] rCP = new double[3][];
+        double[] tmp;
+        //3X3
+        double[][] rCO;
+        SVDProducts svdRC;
+        double[][] si;
+        double[][] wCij = new double[3][];//3XnFeatures
+        for (int ii = 0; ii < mImages; ++ii) {
+            rCP[0] = rC[ii];
+            rCP[1] = rC[ii + mImages];
+            rCP[2] = rC[ii + 2*mImages];
+            tmp = MatrixUtil.crossProduct(rCP[0], rCP[1]);
+            System.out.printf("compare %s to %s\n", 
+                FormatArray.toString(rCP[2], "%.3e"), FormatArray.toString(tmp, "%.3e"));
+    
+            System.out.printf("rC_%d=\n%s\n", ii, FormatArray.toString(rCP, "%.4e"));
+            double detR = MatrixUtil.determinant(rCP);
+            System.out.printf("det(rC_%d)=%.4e\n", ii, detR);
+            
+            svdRC = MatrixUtil.performSVD(rCP);
+            rCO = MatrixUtil.multiply(svdRC.u, MatrixUtil.transpose(svdRC.vT));
+            System.out.printf("r_uvtt=\n%s\n", FormatArray.toString(rCO, "%.4e"));
+            detR = MatrixUtil.determinant(rCO);
+            System.out.printf("det(r_uvtt_%d)=%.4e\n", ii, detR);
+           
+            System.out.printf("rC_%d * (rC_%d)^T=\n%s\n", ii, ii,
+                FormatArray.toString(MatrixUtil.multiply(rCP, MatrixUtil.transpose(rCP)), "%.4e"));
+            
+            System.out.printf("r_uvtt_%d * (r_uvtt_%d)^T=\n%s\n", ii, ii,
+                FormatArray.toString(MatrixUtil.multiply(rCO, MatrixUtil.transpose(rCO)), "%.4e"));
+            
+            System.out.flush();
+           
+            for (j = 0; j < 3; ++j) {
+                rot[ii*3 + j] = rCO[j];
+            }
+            r3[ii] = Arrays.copyOf(rCO[0], rCO[0].length);
+            r3[ii + mImages] = Arrays.copyOf(rCO[1], rCO[1].length);
+            
+            /*
+            block[0] = rCP[0] times sC = 1XnFeatures
+            block[1] = rCP[1] times sC
+            block[2] = rCp[2] times sC 
+            
+            rC*z * (z^-1)*sC = 3X3*3X3*3XnFeatures = 3XnFeatures = block of wC
+            rOrth * (z^-1)*sC= wC_i_j
+            (z^-1)*sC= inv(rOth)*wC_i_j
+            store in blocks of trans
+            */     
+            invR = MatrixUtil.pseudoinverseFullColumnRank(rCO);
+            
+            // 3XnFeatures
+            wCij[0] = wC[ii];
+            wCij[1] = wC[ii + mImages];
+            wCij[2] = wC[ii + 2*mImages];
+            
+            //3XnFeatures
+            si = MatrixUtil.multiply(invR, wCij);
+            
+            //double[][] trans = new double[3*mImages][nFeatures];
+            for (j = 0; j < 3; ++j) {
+                shape[ii*3 + j] = si[j];
+            }
+            
+            // TODO: need to consider the rotation and translation origins now
+            System.out.printf("for image%d have shape=\n%s\n", ii, FormatArray.toString(si, "%.4e"));
+        }
+        
+        System.out.printf("rot stack=\n%s\n", FormatArray.toString(rot, 
+            "%.4e"));
+        
+        System.out.printf("shape=\n%s\n", FormatArray.toString(shape, 
+            "%.4e"));
+        
+        System.out.printf("t=\n%s\n", FormatArray.toString(t, 
+            "%.4e"));
+        // shape size is
+        //r3 = new double[2*mImages][3];
+        double[][] _si = new double[3][nFeatures];
+        double[][] _ri = new double[2][3];
+        double[][] _rs;
+        for (i = 0; i < mImages; ++i) {
+            _si[0] = shape[i*mImages + i];//3XnFeatures
+            _si[1] = shape[i*mImages + i + 1];
+            _si[2] = shape[i*mImages + i + 2]; 
+            _ri[0] = r3[i*mImages + 0];//2X3
+            _ri[1] = r3[i*mImages + 1];
+            _rs = MatrixUtil.multiply(_ri, _si);//2XnFeatures
+            for (int k = 0; k < nFeatures; ++k) {
+                _rs[0][k] += t[i*mImages + i];
+                _rs[1][k] += t[i*mImages + i + 1];
+            }
+            
+            System.out.printf("W = R*X + t*(e_p)^T=\n%s\n", 
+                FormatArray.toString(_rs, "%.4e"));
+        }
+        System.out.printf("original W = \n%s\n", 
+            FormatArray.toString(w, "%.4e"));
+        
+        OrthographicProjectionResults results = new OrthographicProjectionResults();
+        results.XW = shape;
+        results.rotationMatrices = rot;
+                
+        return results;
+           
     }
     
     /*
