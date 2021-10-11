@@ -1376,8 +1376,7 @@ public class Reconstruction {
             r3[i + mImages] = rTmp[1];
         }
         
-        double[][] shape = s2;
-        //double[][] shape = MatrixUtil.multiply(MatrixUtil.transpose(r0), s2);
+        double[][] shape = MatrixUtil.multiply(rFirst, s2);
         
         System.out.printf("**r3=\n%s\n", FormatArray.toString(r3, 
             "%.4e"));
