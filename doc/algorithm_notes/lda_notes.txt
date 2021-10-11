@@ -1,0 +1,49 @@
+From book "Elements of Statistical Learning" by Hastie, Tibshirani, and Friedman
+
+finding the sequences of optimal subspaces for LDA involves the following steps:
+  • compute the K × p matrix of class centroids M and the common
+    covariance matrix W (for within-class covariance);
+  • compute M∗ = MW^−1/2 using the eigen-decomposition of W;
+  • compute B∗ , the covariance matrix of M∗
+    (B for between-class covariance), and its eigen-decomposition B∗ = V∗DBV∗T
+    . The columns v ∗ ℓ of V∗ in sequence from first to last define the 
+    coordinates of the optimal subspaces.
+
+Combining all these operations the ℓth discriminant variable is given by
+Zℓ = v T ℓ X with vℓ = W− 1 2 v ∗ ℓ .
+
+Fisher arrived at this decomposition via a different route, without 
+referring to Gaussian distributions at all. He posed the problem:
+  Find the linear combination Z = a T X such that the between class 
+  variance is maximized relative to the within-class variance.
+Again, the between class variance is the variance of the class means of
+Z, and the within class variance is the pooled variance about the means.
+
+The between-class variance of Z is a T Ba and the within-class variance
+a TWa, where W is defined earlier, and B is the covariance matrix of the
+class centroid matrix M. Note that B + W = T, where T is the total
+covariance matrix of X, ignoring class information.
+
+Fisher’s problem therefore amounts to maximizing the Rayleigh quotient,
+max_ a a T Ba / a TWa , (4.15)
+or equivalently max_ a a T Ba subject to a TWa = 1.
+
+This is a generalized eigenvalue problem, with a given by the largest
+eigenvalue of W−1B. It is not hard to show (Exercise 4.1) that the optimal
+a1 is identical to v1 defined above. Similarly one can find the next direction
+a2, orthogonal in W to a1, such that a T 2 Ba2/aT 2 Wa2 is maximized; the
+solution is a2 = v2, and so on. The aℓ are referred to as discriminant
+coordinates, not to be confused with discriminant functions. They are also
+referred to as canonical variates, since an alternative derivation of these
+results is through a canonical correlation analysis of the indicator response
+matrix Y on the predictor matrix X. This line is pursued in Section 12.5.
+To summarize the developments so far:
+• Gaussian classification with common covariances leads to linear decision boundaries. Classification can be achieved by sphering the data
+with respect to W, and classifying to the closest centroid (modulo
+log πk) in the sphered space.
+• Since only the relative distances to the centroids count, one can confine the data to the subspace spanned by the centroids in the sphered
+space.
+• This subspace can be further decomposed into successively optimal
+subspaces in term of centroid separation. This decomposition is identical to the decomposition due to Fisher.
+
+
