@@ -4,8 +4,6 @@ import algorithms.dimensionReduction.CURDecomposition;
 import algorithms.dimensionReduction.CURDecomposition.CUR;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.ErrorType;
-import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
-import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
 import algorithms.imageProcessing.transform.Camera.CameraProjection;
 import static algorithms.imageProcessing.transform.CameraPose.eps;
@@ -18,7 +16,6 @@ import java.util.List;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.NotConvergedException;
-import no.uib.cipr.matrix.SymmDenseEVD;
 
 /**
  * given correspondence between two images calculate the camera
@@ -1365,6 +1362,7 @@ public class Reconstruction {
         double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
         double[][] r3 = new double[2*mImages][];//(2*mImages)X3
         double[][] rTmp = new double[3][];
+        //r2 size is (2*mImages)X3
         for (i = 0; i < mImages; ++i) {
             rTmp[0] = Arrays.copyOf(r2[i], r2[i].length);
             rTmp[1] = Arrays.copyOf(r2[mImages + i], r2[mImages + i].length);
@@ -1699,7 +1697,7 @@ public class Reconstruction {
     direction parallel to the image plane.
 
     */
-    
+          
     /**
      * for the case where the cameras are viewing small, distant scenes,
      * recover the 3-D coordinates in WCS and the projection matrices 
@@ -1711,8 +1709,10 @@ public class Reconstruction {
      * the F frames of the image sequence. From this information, our goal is 
      * to recover the estimated shape of the object, given by the position 
      * s_P, of every point, and the estimated motion of the
-camera, given by |i, 3I, f• and i! for each frame in the sequence. Rather than recover if in world coordinates, we generally recover the threems.eparate components ], tf. jf, and
-if'if.
+     camera, given by iHat_f, jHat_f, kHat_f for each frame in the sequence. 
+     Rather than recover iHat_f in world coordinates, we generally recover 
+     the three.eparate components tHat_f dot iHat_f, tHat_f dot jHat_f,
+     tHat_f dot kHat_f.
  
       
      <pre>
@@ -1758,56 +1758,70 @@ if'if.
         }
         int nFeatures = x[0].length / mImages;
         
-        //2mn >= 8m + 3n – 12
+        ///2mn >= 8m + 3n – 12
         if ((2*mImages * nFeatures) < (8*mImages +3*nFeatures - 12)) {
             throw new IllegalArgumentException("more points are necessary:"
-                + "2 * mImages * nFeatures >= 8 * mImages + 3 * nFeatures – 12");
+                + "2 * mImages * nFeatures >= 8 * mImages + 3 * nFeatures – 12."
+                +  "\narguments: mImages=" + mImages + " nFeatures=" + nFeatures
+                + "\n" + (2*mImages * nFeatures) + " < " +
+                    (8*mImages +3*nFeatures - 12));
         }
         // for mImages=2, need 4 features
         
-        // create matrix W composed of U and V 
+        //NOTE: assumes the camera's focal length = 1
+        
+        // create measurement matrix W composed of U and V 
         //     where U is rows of each image's x coordinates (size os mImages X nFeatures).
         //     where V is rows of each image's y coordinates (size os mImages X nFeatures).
         // create matrix t which holds the centroids of each row of W
-        // create matrix WC = W - t
+        // create registered measurement matrix WC = W - t
         double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);
+        // t points to the camera's focal point
         double[] t = new double[2*mImages];
         int i, j;
-        int m, n, xCol, vRow;
+        int m, n, rowU, rowV, col;
         for (m = 0; m < mImages; ++m) {
-            vRow = mImages + m;
+            rowU = m;
+            rowV = mImages + m;
             for (n = 0; n < nFeatures; ++n) {
-                xCol = m * nFeatures + n;
-                w[m][n] = x[0][xCol];
-                t[m] += x[0][xCol];
-                w[vRow][n] = x[1][xCol];
-                t[vRow] += x[1][xCol];
+                col = nFeatures*m + n;
+                w[rowU][n] = x[0][col];
+                t[rowU] += x[0][col];
+                w[rowV][n] = x[1][col];
+                t[rowV] += x[1][col];
             }
-            t[m] /= (double)nFeatures;
-            t[vRow] /= (double)nFeatures;
+            t[rowU] /= (double)nFeatures;
+            t[rowV] /= (double)nFeatures;
         }
         
         //registered measurement matrix:
         double[][] wC = MatrixUtil.copy(w);
         for (i = 0; i < t.length; ++i) {
-            for (n = 0; n < nFeatures; ++n) {
+            for (n = 0; n < wC[i].length; ++n) {
                 wC[i][n] -= t[i];
             }
         }
         
         SVDProducts svd = MatrixUtil.performSVD(wC);
+        //U3 is 2FX3 where F is the number of image frames
+        //S3 is 3X3
+        //VT3 is 3XP where P is the number of points, that is features, per image
         double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);
         double[][] s3 = MatrixUtil.zeros(3, 3);
         s3[0][0] = svd.s[0];
         s3[1][1] = svd.s[1];
         s3[2][2] = svd.s[2];
-        double[][] sqrts3 = MatrixUtil.zeros(3, 3);
-        sqrts3[0][0] = Math.sqrt(svd.s[0]);
-        sqrts3[1][1] = Math.sqrt(svd.s[1]);
-        sqrts3[2][2] = Math.sqrt(svd.s[2]);
+        double[][] sqrts3 = MatrixUtil.copy(s3);
+        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);
+        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);
+        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);
         double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);
         
-        // if this is large, then the noise contribution can be ignored (cholesky not necessary)
+        // if the ratio between the 3rd and 4th largest singular value of the registered measurement matrix
+        //   is large, then the noise portion of the full decomposition
+        //   can be ignored (the noise portion is the block partitions not 
+        //   copied to U3, sqrtS3 and vT3).
+        // there is more about this in Morita & Kanade 1994/1997
         double sRatio = svd.s[2]/svd.s[3];
         System.out.printf("svd.s[2]/svd.s[3]=%.3e\n", sRatio);
                 
@@ -2096,21 +2110,19 @@ if'if.
         //   or with the Cholesky decomposition
         //   or with eigendecomposition
 
-        double eps = 1e-5;
-
-        SymmDenseEVD evd = SymmDenseEVD.factorize(new DenseMatrix(ell));
-        double[][] ellSigmaSqrt = MatrixUtil.zeros(evd.getEigenvalues().length, evd.getEigenvalues().length);
-        for (i = 0; i < ellSigmaSqrt.length; ++i) {
-            if (ellSigmaSqrt[i][i] < 0) {
-                // replace with very small value
-                ellSigmaSqrt[i][i] = eps;
-            } else {
-                ellSigmaSqrt[i][i] = Math.sqrt(ellSigmaSqrt[i][i]);
-            }
-        }
-        double[][] lEig = MatrixUtil.convertToRowMajor(evd.getEigenvectors());
-        // 3X3
-        double[][] q = MatrixUtil.multiply(lEig, ellSigmaSqrt);
+        double eps = 1e-17;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
+        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
+        EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
+        double[] eig = evd2.getRealEigenvalues();
+        System.out.printf("eig(L_PSD)=\n%s\n", FormatArray.toString(eig, "%.4e"));
+        double[][] aMinusPSD = MatrixUtil.elementwiseSubtract(ell, lPSD);
+        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
+        
+        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);
+        assert(ipd);
+        
+        //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
+        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);
         
         // (2*mImages)X3
         double[][] _M = MatrixUtil.multiply(mC, q);
@@ -2239,22 +2251,40 @@ if'if.
         j0x j0y j0z
         j1x j1y j1z
         */
-        double[] i1 = Arrays.copyOf(_M2[0], _M2[0].length);
-        double i1Norm = MatrixUtil.lPSum(i1, 2);
-        MatrixUtil.multiply(i1, 1./i1Norm);
-        double[] j1 = Arrays.copyOf(_M2[mImages], _M2[mImages].length);
-        double j1Norm = MatrixUtil.lPSum(j1, 2);
-        MatrixUtil.multiply(j1, 1./j1Norm);
-        double[] k1 = Arrays.copyOf(_M2[2*mImages], _M2[2*mImages].length);
-        double k1Norm = MatrixUtil.lPSum(k1, 2);
-        MatrixUtil.multiply(k1, 1./k1Norm);
-
-        double[][] r0 = new double[3][3];
-        for (i = 0; i < 3; ++i) {
-            r0[i] = new double[]{i1[i], j1[i], k1[i]};
+        
+        double[][] rFirst = new double[3][3];
+        rFirst[0] = Arrays.copyOf(_M2[0], _M2[0].length);
+        rFirst[1] = Arrays.copyOf(_M2[mImages], _M2[mImages].length);
+        rFirst[2] = Arrays.copyOf(_M2[2*mImages], _M2[2*mImages].length);
+                //MatrixUtil.crossProduct(rFirst[0], rFirst[1]);
+        double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);
+        
+        System.out.printf("chk==1: \n%s\n", FormatArray.toString(
+            MatrixUtil.multiply(rFirst, r0),"%.4e"));
+                  
+        // multiply _M2 by r0
+        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
+        double[][] _M3 = new double[2*mImages][];//(2*mImages)X3
+        double[][] rTmp = new double[3][];
+        for (i = 0; i < mImages; ++i) {
+            rTmp[0] = Arrays.copyOf(_M2[i], _M2[i].length);
+            rTmp[1] = Arrays.copyOf(_M2[mImages + i], _M2[mImages + i].length);
+            rTmp[2] = Arrays.copyOf(_M2[2*mImages + i], _M2[2*mImages + i].length);
+                    //MatrixUtil.crossProduct(rTmp[0], rTmp[1]);
+            rTmp = MatrixUtil.multiply(rTmp, r0);
+            for (j = 0; j < 3; ++j) {
+                rotStack[i*3 + j] = rTmp[j]; 
+            }
+            _M3[i] = rTmp[0];
+            _M3[i + mImages] = rTmp[1];
+            _M3[i + 2*mImages] = rTmp[2];
         }
-        _M2 = MatrixUtil.multiply(_M2, r0);
-        _S = MatrixUtil.multiply(MatrixUtil.transpose(r0), _S);
+        
+        _S = MatrixUtil.multiply(rFirst, _S);
+        
+        System.out.printf("_M3=\n%s\n", FormatArray.toString(_M3,  "%.4e"));
+        System.out.printf("rot stack=\n%s\n", FormatArray.toString(rotStack,  "%.4e"));
+        System.out.printf("shape=\n%s\n", FormatArray.toString(_S, "%.4e"));
         
         /*
         Poelman & Kanade, last paragraph, Sect 3.4:
@@ -2319,20 +2349,6 @@ if'if.
             assert(i3Vector.length == 3);
             
             trans[i] = new double[]{i3Vector[0], i3Vector[1], i3Vector[2]};
-        }
-        
-        // reshape _M2 into a stack of rotation matrices, one per image.
-        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
-        double[] ic, jc, kc;
-        for (i = 0; i < mImages; ++i) {
-            ic = _M2[i];
-            jc = _M2[mImages + i];
-            kc = _M2[2*mImages + i];
-            for (j = 0; j < 3; ++j) {
-                rotStack[i*3 + j][0] = ic[j]; 
-                rotStack[i*3 + j][1] = jc[j];
-                rotStack[i*3 + j][2] = kc[j];
-            }
         }
         
         ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();
