@@ -2137,16 +2137,19 @@ public class Reconstruction {
         
         System.out.printf("_M=\n%s\n", FormatArray.toString(_M, "%.4e"));
         
-        // assert that wC is the same as wC2
+        // assert that wC is the same as _M*_S
         System.out.printf("_M*_S=\n%s\n", FormatArray.toString(MatrixUtil.multiply(_M, _S), 
             "%.4e"));
+        
         /*
-        --------------------------------
+               --------------------------------
         Paraperspective Motion Recovery
         --------------------------------
         eqn(19) :
-         `i_f = z_f * m_f + x_f * `k_f
-         `j_f = z_f * n_f + y_f * `k_f
+         `i_f = z_f*m_f + x_f*`k_f
+
+         `j_f = z_f*n_f + y_f*`k_f
+
 
          Since the `i, `j, `k  produced must be orthonormal,
             they can be written as functions of only 3 rotational variables.
@@ -2154,49 +2157,82 @@ public class Reconstruction {
               solving an overconstrained system of 6 equations
               (the expansion of (19) to each of its vector components)
               in 4 variables (the 3 rotational variables and zs).
-            
+
               `i_f[0] = z_f * m_f[0] + x_f * `k_f[0]
               `i_f[1] = z_f * m_f[1] + x_f * `k_f[1]
               `i_f[2] = z_f * m_f[2] + x_f * `k_f[2]
+
               `j_f[0] = z_f * n_f[0] + y_f * `k_f[0]
               `j_f[1] = z_f * n_f[1] + y_f * `k_f[1]
               `j_f[2] = z_f * n_f[2] + y_f * `k_f[2]
-        
-          using the equalities of `k_f terms:
-           ==> `i_f[0] = `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f)
-           ==> `i_f[1] = `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f)
-           ==> `i_f[2] = `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f)
 
-        rewrite the 6 eqns of (19)
-          `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) = z_f * m_f[0] + x_f * `k_f[0]
-          `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f) = z_f * m_f[1] + x_f * `k_f[1]
-          `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f) = z_f * m_f[2] + x_f * `k_f[2]
-          `j_f[0] = z_f * n_f[0] + y_f * `k_f[0]
-          `j_f[1] = z_f * n_f[1] + y_f * `k_f[1]
-          `j_f[2] = z_f * n_f[2] + y_f * `k_f[2]
-        rewrite again:
-          `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) - z_f * m_f[0] - x_f * `k_f[0] = 0
-          `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f) - z_f * m_f[1] - x_f * `k_f[1] = 0
-          `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f) - z_f * m_f[2] - x_f * `k_f[2] = 0
-          `j_f[0] - z_f * n_f[0] - y_f * `k_f[0] = 0
-          `j_f[1] - z_f * n_f[1] - y_f * `k_f[1] = 0
-          `j_f[2] - z_f * n_f[2] - y_f * `k_f[2] = 0
+          using the equalities of `k_f terms from eqn (19):
+            `k_f[0]: (same for vector components [1] and [2]):
 
-       factor:
-          jf0                  jf1             jf2            kf0           kf1            kf2         const
-        --------------------------------------------------------------------------------------------------------------------
-         (x_f/y_f)               0              0            -x_f             0            0           m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f) - z_f * m_f[0]
-            0                 (x_f/y_f)         0              0            -x_f           0           m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
-            0                    0           (x_f/y_f)         0              0           -x_f         m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f) - z_f * m_f[1]
-            1                    0              0            -y_f             0            0           -z_f * n_f[0]
-            0                    1              0              0            -y_f           0           -z_f * n_f[1]
-            0                    0              1              0              0           -y_f         -z_f * n_f[2]
-           
-         also, as in eqn (17), use arithmetic mean for (1/z_f^2):
-           z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
-        */
+                (1/x_f)*(`i_f[0] - z_f * m_f[0]) = `k_f[0]
+
+                (1/y_f)*(`j_f[0] - z_f * n_f[0]) = `k_f[0]
+
+                (1/x_f)*(`i_f[0] - z_f * m_f[0]) = (1/y_f)*(`j_f[0] - z_f * n_f[0])
+                `i_f[0] = z_f * m_f[0] + (x_f/y_f)*(`j_f[0] - z_f * n_f[0])
+                        = `j_f[0]*(x_f/y_f) + z_f * m_f[0] - (x_f/y_f)*(z_f * n_f[0])
+               generalized for each component::
+                `i_f = `j_f*(x_f/y_f) + z_f*m_f - (x_f/y_f)*(z_f*n_f)
         
-//ERROR HERE
+        *          rewriting `i_f, `j_f, and `k_f in terms of `j_f, m_f, n_f:
+            `i_f = `j_f*(x_f/y_f) + z_f*m_f - (x_f/y_f)*(z_f*n_f)
+            `j_f
+            `k_f = `j_f*(1/y_f) - z_f*n_f*(1/y_f)
+
+           dot product metrics:
+            idoti: `i_f dot `i_f = 1
+            jdotj: `j_f dot `j_f = 1
+            idotj: `i_f dot `j_f = 0 or `i_f cross `j_f = 1
+
+            idoti: `i_f dot `i_f = 1:
+                (`j_f dot `j_f)*(x_f/y_f)^2 + (m_f dot m_f)*(z_f)^2 - (n_f dot n_f)*(z_f)^2*(x_f/y_f)^2 = 1
+                (1)*(x_f/y_f)^2 + (m_f dot m_f)*(z_f)^2 - (n_f dot n_f)*(z_f)^2*(x_f/y_f)^2 = 1
+*          ====> can solve for (z_f)^2 from this
+
+            jdotj:`j_f dot `j_f = 1:
+
+            idotj:`i_f dot `j_f = 0:
+                `j_f*(x_f/y_f) + z_f*m_f - (x_f/y_f)*(z_f*n_f) dot j_f = 0
+                (`j_f dot `j_f)*(x_f/y_f) + j_f*m_f*z_f - j_f*(z_f*n_f)*(x_f/y_f) = 0
+                (1)*(x_f/y_f) + j_f*m_f*z_f - j_f*(z_f*n_f)*(x_f/y_f) = 0
+                `j_f*(m_f*z_f - (z_f*n_f)*(x_f/y_f)) + (x_f/y_f) = 0
+                `j_f*(m_f*z_f - (z_f*n_f)*(x_f/y_f)) = -(x_f/y_f)
+                `j_f*(x_f/y_f)*(m_f*z_f*y_f/x_f - (z_f*n_f)) = -(x_f/y_f)
+                `j_f*(m_f*z_f*y_f/x_f - (z_f*n_f)) = -1
+                `j_f*(1/x_f)*(m_f*z_f*y_f - (z_f*n_f*x_f)) = -1
+                `j_f = -x_f/(m_f*z_f*y_f - z_f*n_f*x_f)
+*            ===> can solve for j_f from this
+
+            rewrite `i_f from eqn (19) using the equalities of `k_f terms from above:
+               `i_f[0] = `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f)
+               `i_f[1] = `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f)
+               `i_f[2] = `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*(z_f*x_f/y_f)
+*            ===> can solve for `i_f from this
+
+          using orthogonality of `i_f,`j_f,`k_f to define `k_f:
+               `k_f = `i_f cross `j_f
+               `k_f[0] = `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]
+               `k_f[1] = `i_f[2]*`j_f[0] - `i_f[0]*`j_f[2]
+               `k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
+*            ===> can solve for `k_f from this
+              uneeded details:
+               `k_f[0] = `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]
+                       = `j_f[2]*(`j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f))
+                          - `j_f[1]*(`j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f))
+               `k_f[1] = `i_f[2]*`j_f[0] - `i_f[0]*`j_f[2]
+                       = `j_f[0]*(`j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*z_f*(x_f/y_f))
+                          - `j_f[2]*(`j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f))
+               `k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
+                       = `j_f[1]*(`j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f))
+                          - `j_f[0]*(`j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f))
+    */    
+//paused here in solving for Paraperspective Motion Recovery
+        
         double[][] _M2 = new double[3*mImages][3]; // holding all i_f, then j_f, then k_f
         double xDivY, zf, mfsq, nfsq, tmp;
         double[] mf, nf;
