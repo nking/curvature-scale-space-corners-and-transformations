@@ -1296,7 +1296,7 @@ public class Reconstruction {
         //   or with eigendecomposition
         
         // enforcing positive definiteness of L (which is ell here).
-        double eps = 1e-17;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
+        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
         double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
         /*EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
         double[] eig = evd2.getRealEigenvalues();
@@ -1830,6 +1830,12 @@ public class Reconstruction {
         // 3XnFeatures
         double[][] sC = MatrixUtil.multiply(sqrts3, vT3);
         
+        System.out.printf("wC=\n%s\n", FormatArray.toString(wC, "%.4e"));
+        
+        // assert that wC is the same as wC2
+        System.out.printf("mC*sC=\n%s\n", FormatArray.toString(MatrixUtil.multiply(mC, sC), 
+            "%.4e"));
+        
         /*
         ------------------------------------------------------------------
         Paraperspective Normalization
@@ -2110,7 +2116,7 @@ public class Reconstruction {
         //   or with the Cholesky decomposition
         //   or with eigendecomposition
 
-        double eps = 1e-17;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
+        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
         double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
         EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
         double[] eig = evd2.getRealEigenvalues();
@@ -2128,7 +2134,12 @@ public class Reconstruction {
         double[][] _M = MatrixUtil.multiply(mC, q);
         // 3XnFeatures
         double[][] _S = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);
-                        
+        
+        System.out.printf("_M=\n%s\n", FormatArray.toString(_M, "%.4e"));
+        
+        // assert that wC is the same as wC2
+        System.out.printf("_M*_S=\n%s\n", FormatArray.toString(MatrixUtil.multiply(_M, _S), 
+            "%.4e"));
         /*
         --------------------------------
         Paraperspective Motion Recovery
@@ -2184,7 +2195,8 @@ public class Reconstruction {
          also, as in eqn (17), use arithmetic mean for (1/z_f^2):
            z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
         */
-        // TODO: revisit this for most robust solution
+        
+//ERROR HERE
         double[][] _M2 = new double[3*mImages][3]; // holding all i_f, then j_f, then k_f
         double xDivY, zf, mfsq, nfsq, tmp;
         double[] mf, nf;
@@ -2264,7 +2276,7 @@ public class Reconstruction {
                   
         // multiply _M2 by r0
         double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
-        double[][] _M3 = new double[2*mImages][];//(2*mImages)X3
+        double[][] _M3 = new double[3*mImages][];//(2*mImages)X3
         double[][] rTmp = new double[3][];
         for (i = 0; i < mImages; ++i) {
             rTmp[0] = Arrays.copyOf(_M2[i], _M2[i].length);
@@ -2285,6 +2297,8 @@ public class Reconstruction {
         System.out.printf("_M3=\n%s\n", FormatArray.toString(_M3,  "%.4e"));
         System.out.printf("rot stack=\n%s\n", FormatArray.toString(rotStack,  "%.4e"));
         System.out.printf("shape=\n%s\n", FormatArray.toString(_S, "%.4e"));
+        System.out.printf("t=\n%s\n", FormatArray.toString(t, 
+            "%.4e"));
         
         /*
         Poelman & Kanade, last paragraph, Sect 3.4:
@@ -2330,17 +2344,17 @@ public class Reconstruction {
             // i_f[i] is _M2[i]
             // j_f[i] is _M2[mImages + i]
             // k_f[i] is _M2[2*mImages + i]
-            tf[0][0] = -_M2[2*mImages + i][0];
-            tf[0][1] = -_M2[2*mImages + i][1];
-            tf[0][2] = -_M2[2*mImages + i][2];
+            tf[0][0] = -_M3[2*mImages + i][0];
+            tf[0][1] = -_M3[2*mImages + i][1];
+            tf[0][2] = -_M3[2*mImages + i][2];
             
-            tf[1][0] = _M2[i][0]*(-1./xf);
-            tf[1][1] = _M2[i][1]*(-1./xf);
-            tf[1][2] = _M2[i][2]*(-1./xf);
+            tf[1][0] = _M3[i][0]*(-1./xf);
+            tf[1][1] = _M3[i][1]*(-1./xf);
+            tf[1][2] = _M3[i][2]*(-1./xf);
             
-            tf[2][0] = _M2[mImages + i][0]*(-1./yf);
-            tf[2][1] = _M2[mImages + i][1]*(-1./yf);
-            tf[2][2] = _M2[mImages + i][2]*(-1./yf);
+            tf[2][0] = _M3[mImages + i][0]*(-1./yf);
+            tf[2][1] = _M3[mImages + i][1]*(-1./yf);
+            tf[2][2] = _M3[mImages + i][2]*(-1./yf);
             
             Arrays.fill(cs, zf);
             
@@ -2350,6 +2364,8 @@ public class Reconstruction {
             
             trans[i] = new double[]{i3Vector[0], i3Vector[1], i3Vector[2]};
         }
+        
+        System.out.printf("trans=\n%s\n", FormatArray.toString(trans, "%.4e"));
         
         ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();
         results.XW = _S;
