@@ -2142,7 +2142,7 @@ public class Reconstruction {
             "%.4e"));
         
         /*
-               --------------------------------
+        --------------------------------
         Paraperspective Motion Recovery
         --------------------------------
         eqn(19) :
@@ -2179,7 +2179,7 @@ public class Reconstruction {
                generalized for each component::
                 `i_f = `j_f*(x_f/y_f) + z_f*m_f - (x_f/y_f)*(z_f*n_f)
         
-        *          rewriting `i_f, `j_f, and `k_f in terms of `j_f, m_f, n_f:
+         rewriting `i_f, `j_f, and `k_f in terms of `j_f, m_f, n_f:
             `i_f = `j_f*(x_f/y_f) + z_f*m_f - (x_f/y_f)*(z_f*n_f)
             `j_f
             `k_f = `j_f*(1/y_f) - z_f*n_f*(1/y_f)
@@ -2187,12 +2187,17 @@ public class Reconstruction {
            dot product metrics:
             idoti: `i_f dot `i_f = 1
             jdotj: `j_f dot `j_f = 1
-            idotj: `i_f dot `j_f = 0 or `i_f cross `j_f = 1
+            idotj: `i_f dot `j_f = 0
 
             idoti: `i_f dot `i_f = 1:
                 (`j_f dot `j_f)*(x_f/y_f)^2 + (m_f dot m_f)*(z_f)^2 - (n_f dot n_f)*(z_f)^2*(x_f/y_f)^2 = 1
                 (1)*(x_f/y_f)^2 + (m_f dot m_f)*(z_f)^2 - (n_f dot n_f)*(z_f)^2*(x_f/y_f)^2 = 1
+                (z_f)^2*((m_f dot m_f)-(n_f dot n_f)*(x_f/y_f)^2) + (x_f/y_f)^2 = 1
+                (z_f)^2*((m_f[0]^2 + m_f[1]^2 + m_f[2]^2)-(n_f[0]^2 + n_f[1]^2 + n_f[2]^2)*(x_f/y_f)^2) + (x_f/y_f)^2 = 1
+                (z_f)^2 = (1-(x_f/y_f)^2) / ((m_f[0]^2 + m_f[1]^2 + m_f[2]^2)-(n_f[0]^2 + n_f[1]^2 + n_f[2]^2)*(x_f/y_f)^2)
 *          ====> can solve for (z_f)^2 from this
+           ==>   Instead, using eqn (15) averages: 
+                  zf^2 = (1/2)*( ((1+xf^2)/(mf*mf)) + ((1+yf^2)/(nf*nf)))
 
             jdotj:`j_f dot `j_f = 1:
 
@@ -2231,62 +2236,92 @@ public class Reconstruction {
                        = `j_f[1]*(`j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f))
                           - `j_f[0]*(`j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*z_f*(x_f/y_f))
     */    
-//paused here in solving for Paraperspective Motion Recovery
         
-        double[][] _M2 = new double[3*mImages][3]; // holding all i_f, then j_f, then k_f
-        double xDivY, zf, mfsq, nfsq, tmp;
-        double[] mf, nf;
-        double[] zfs = new double[mImages];
-        double[] cs = new double[6];
-        double[][] g2 = new double[6][6];
-        double[][] g2Inv;
-        double[] i2Vector;
+        /*
+        solve for z_f
+           zf^2 = (1/2)*( ((1+xf^2)/(mf*mf)) + ((1+yf^2)/(nf*nf)))
+        
+        solve for `j_f:
+            j_f = -x_f/(m_f*z_f*y_f - z_f*n_f*x_f)
+        
+        solve for `i_f:
+            `i_f[0] = `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f)
+             i_f[1] = `j_f[1]*(x_f/y_f) + m_f[1]*z_f - n_f[1]*(z_f*x_f/y_f)
+             i_f[2] = `j_f[2]*(x_f/y_f) + m_f[2]*z_f - n_f[2]*(z_f*x_f/y_f)
+        
+        solve for k_f:
+            `k_f[0] = `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]
+            `k_f[1] = `i_f[2]*`j_f[0] - `i_f[0]*`j_f[2]
+            `k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
+        */
+        double[] zf = new double[mImages];
+        double[] mf, nf, tmp1, tmp2, tmp3;
+        double xDivY, mDotM, nDotN, tmp4, tmp5;
+        //NOTE: _M2 holds the k vectors too while _M holds only i and j
+        double[][] _M2 = new double[3*mImages][3];
         for (i = 0; i < mImages; ++i) {
             xf = t[i];
             yf = t[mImages + i];
             xDivY = xf/yf;
             mf = _M[i];
             nf = _M[mImages + i];
-            
-            mfsq = 0;
-            nfsq = 0;
-            for (j = 0; j < mf.length; ++j) {
-                mfsq += (mf[j]*mf[j]);
-                nfsq += (nf[j]*nf[j]);
+            mDotM = 0;
+            nDotN = 0;
+            for (j=0; j<mf.length; ++j) {
+                mDotM += mf[i] * mf[i];
+                nDotN += nf[i] * nf[i];
             }
-            //z_f = sqrt(2/( |m_f|^2/(1+x_f^2) + |n_f|^2/(1+y_f^2)))
-            tmp = (mfsq/(1. + xf*xf)) + (nfsq/(1. + yf*yf));
-            zf = Math.sqrt(2./tmp);
-            zfs[i] = zf;
-              
-            g2[0] = new double[]{xDivY, 0, 0, -xf, 0, 0};
-            cs[0] = (-mf[0]*zf + nf[0]*(zf*xDivY) + zf*mf[0]);
-            g2[1] = new double[]{0, xDivY, 0, 0, -xf, 0,};
-            cs[1] = (-mf[1]*zf + nf[1]*(zf*xDivY) + zf*mf[1]);
-            g2[2] = new double[]{0, 0, xDivY, 0, 0, -xf};
-            cs[2] = (-mf[2]*zf + nf[2]*(zf*xDivY) + zf*mf[2]);
-            g2[3] = new double[]{1, 0, 0, -yf, 0, 0};
-            cs[3] = zf*nf[0];
-            g2[4] = new double[]{0, 1, 0, 0, -yf, 0};
-            cs[4] = zf*nf[1];
-            g2[5] = new double[]{0, 0, 1, 0, 0, -yf};
-            cs[5] = zf*nf[2];
-            
-            g2Inv = MatrixUtil.pseudoinverseRankDeficient(g2);
-            i2Vector = MatrixUtil.multiplyMatrixByColumnVector(g2Inv, cs);
-            assert(i2Vector.length == 6);
-            
+            //take an average of eqn (15)
+            tmp4 = 1 + xf * xf;
+            tmp4 /= mDotM;
+            tmp5 = 1 + yf * yf;
+            tmp5 /= nDotN;
+            zf[i] = (tmp4 + tmp5) / 2.;
+            zf[i] = Math.sqrt(zf[i]);
+
+            //j_f = -x_f/(m_f*z_f*y_f - z_f*n_f*x_f)
+            tmp1 = Arrays.copyOf(mf, mf.length);
+            MatrixUtil.multiply(tmp1, zf[i]);
+            MatrixUtil.multiply(tmp1, yf);
+            tmp2 = Arrays.copyOf(nf, nf.length);
+            MatrixUtil.multiply(tmp2, zf[i]);
+            MatrixUtil.multiply(tmp2, xf);
             // j_f
-            _M2[mImages + i] = new double[]{i2Vector[0], i2Vector[1], i2Vector[2]}; 
-            // k_f
-            _M2[2*mImages + i] = new double[]{i2Vector[3], i2Vector[4], i2Vector[5]};
+            _M2[mImages + i] = new double[3];
+            for (j = 0; j < 3; ++j) {
+                _M2[mImages + i][j] = -xf/(tmp1[j] - tmp2[j]);
+            }
+            
+            //`i_f = `j_f*(x_f/y_f) + m_f*z_f - n_f*(z_f*x_f/y_f)
+            tmp1 = Arrays.copyOf(_M2[mImages + i], _M2[mImages + i].length);
+            MatrixUtil.multiply(tmp1, xDivY);
+            tmp2 = Arrays.copyOf(mf, mf.length);
+            MatrixUtil.multiply(tmp2, zf[i]);
+            tmp3 = Arrays.copyOf(nf, nf.length);
+            MatrixUtil.multiply(tmp3, zf[i]);
+            MatrixUtil.multiply(tmp3, xDivY);
             // i_f
-            _M2[i] = MatrixUtil.crossProduct(_M2[mImages + i], _M2[2*mImages + i]);            
+            _M2[i] = new double[3];
+            for (j = 0; j < 3; ++j) {
+                _M2[i][j] = tmp1[j] + tmp2[j] - tmp3[j];
+            }
+            
+            //`k_f[0] = `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]
+            //`k_f[1] = `i_f[2]*`j_f[0] - `i_f[0]*`j_f[2]
+            //`k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
+            // k_f
+            _M2[2*mImages + i] = new double[]{
+                _M2[i][1] * _M2[mImages + i][2] - _M2[i][2]*_M2[mImages + i][1],
+                _M2[i][2] * _M2[mImages + i][0] - _M2[i][0]*_M2[mImages + i][2],
+                _M2[i][0] * _M2[mImages + i][1] - _M2[i][1]*_M2[mImages + i][0]
+            };        
         }
+        
+        System.out.printf("_M2=\n%s\n", FormatArray.toString(_M2,"%.4e"));
            
         /*
         from Tomasi & Kanade 1992:
-        If desired, align the ^Lfirst camera reference system with the world
+        If desired, align the first camera reference system with the world
         reference system by forming the products R*R_0 and R_0^T*S,
         where the orthonormal matrix R_0 = [i1 j1 k1] rotates the ^Lfirst camera
         reference system into the identity matrix
@@ -2299,7 +2334,7 @@ public class Reconstruction {
         j0x j0y j0z
         j1x j1y j1z
         */
-        
+//TODO: fix ERROR(S) still present        
         double[][] rFirst = new double[3][3];
         rFirst[0] = Arrays.copyOf(_M2[0], _M2[0].length);
         rFirst[1] = Arrays.copyOf(_M2[mImages], _M2[mImages].length);
@@ -2335,7 +2370,7 @@ public class Reconstruction {
         System.out.printf("shape=\n%s\n", FormatArray.toString(_S, "%.4e"));
         System.out.printf("t=\n%s\n", FormatArray.toString(t, 
             "%.4e"));
-        
+//paused here revisiting algorithm        
         /*
         Poelman & Kanade, last paragraph, Sect 3.4:
         All that remain to be computed are the translations for each frame. 
@@ -2371,11 +2406,10 @@ public class Reconstruction {
         double[][] tf = MatrixUtil.zeros(3, 3);
         double[][] g3Inv;
         double[] i3Vector;
-        cs = new double[3];
+        double[] cs = new double[3];
         for (i = 0; i < mImages; ++i) {
             xf = t[i];
             yf = t[mImages + i];
-            zf = zfs[i];
             
             // i_f[i] is _M2[i]
             // j_f[i] is _M2[mImages + i]
@@ -2392,7 +2426,7 @@ public class Reconstruction {
             tf[2][1] = _M3[mImages + i][1]*(-1./yf);
             tf[2][2] = _M3[mImages + i][2]*(-1./yf);
             
-            Arrays.fill(cs, zf);
+            Arrays.fill(cs, zf[i]);
             
             g3Inv = MatrixUtil.pseudoinverseRankDeficient(tf);
             i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);
