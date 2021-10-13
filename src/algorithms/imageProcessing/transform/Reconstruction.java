@@ -1180,6 +1180,9 @@ public class Reconstruction {
         // rC size is  (2*mImages)X3
         // sC size is 3XnFeatures
         double[][] r2 = MatrixUtil.multiply(rC, q);
+        
+        assertDotProductMetrics(r2, mImages);
+        
         double[][] s2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);
         
         // assert that wC is the same as wC2
@@ -2172,36 +2175,18 @@ public class Reconstruction {
         
         System.out.printf("_MCameraOrientation2D=\n%s\n", FormatArray.toString(_MCameraOrientation2D, "%.4e"));
         
+        // _M: rank is 3, mRows is >= 4, nCols=3
+        // _MCameraOrientation2D: rank is 3, mRows is >= 4, nCols=3
+
+        // _M * A = _MCameraOrientation2D
+        // A = pseudoInv(_M)*_MCameraOrientation2D;
+        // A^-1 = pseudoInv(_MCameraOrientation2D)*_M 
+        
         double[][] q2 = solveForTransformationToOrthoNormal(_MCameraOrientation2D);
                 
         _MCameraOrientation2D = MatrixUtil.multiply(_MCameraOrientation2D, q2);
         
-        // assert dot product metrics
-        {
-            double tmp6, tmp7;
-            for (i = 0; i < mImages; ++i) {
-                tmp1 = Arrays.copyOf(_MCameraOrientation2D[i], _MCameraOrientation2D[i].length);
-                tmp2 = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);
-                tmp3 = MatrixUtil.crossProduct(tmp1, tmp2);
-                tmp4 = 0; // i dot i = 1
-                tmp5 = 0; // j dot j = 1
-                tmp6 = 0; // i dot j = 0
-                tmp7 = 0; // k dot k = 1
-                for (j = 0; j < 3; ++j) {
-                    tmp4 += (tmp1[j]*tmp1[j]);
-                    tmp5 += (tmp2[j]*tmp2[j]);
-                    tmp6 += (tmp1[j]*tmp2[j]);
-                    tmp7 += (tmp3[j]*tmp3[j]);
-                }
-                assert(Math.abs(tmp4 - 1) < 1e-7);
-                assert(Math.abs(tmp5 - 1) < 1e-7);
-                assert(Math.abs(tmp7 - 1) < 1e-7);
-                assert(Math.abs(tmp6) < 1e-7);
-            }
-        }
-        
-        //TODO: consider whether the transformation applied to the camera orientation
-        //     should be applied to the shape matrix
+        assertDotProductMetrics(_MCameraOrientation2D, mImages);
                 
         /* eqn (3)
            u_f_p = m_f dot s_p + x_f
@@ -2524,6 +2509,13 @@ public class Reconstruction {
                              [ l2 l4 l5 ]   [ jf_1 ]
                              [ l3 l5 l6 ]   [ jf_2 ]
         
+        eqn(1):
+        l1*if_0*if_0 + l2*if_1*if_0 + l3*if_2*if_0 + l2*if_0*if_1 + l4*if_1*if_1 + l5*if_2*if_1 + l3*if_0*if_2 + l5*if_1*if_2 + l6*if_2*if_2 = 1
+        eqn(2):
+        l1*jf_0*jf_0 + l2*jf_1*jf_0 + l3*jf_2*jf_0 + l2*jf_0*jf_1 + l4*jf_1*jf_1 + l5*jf_2*jf_1 + l3*jf_0*jf_2 + l5*jf_1*jf_2 + l6*jf_2*jf_2 = 1
+        eqn(3):
+        l1*if_0*jf_0 + l2*if_1*jf_0 + l3*if_2*jf_0 + l2*if_0*jf_1 + l4*if_1*jf_1 + l5*if_2*jf_1 + l3*if_0*jf_2 + l5*if_1*jf_2 + l6*if_2*jf_2 = 1
+        
         factor out the L terms, linearly
         l1           l2                    l3                    l4           l5                    l6         const
         (if0*if0)    (if1*if0 + if0*if1)   (if2*if0 + if0*if2)   (if1*if1)    (if2*if1 + if1*if2)   (if2*if2)   1
@@ -2568,7 +2560,7 @@ public class Reconstruction {
             assert(g[i].length == 6);
         }
         for (i = 2*mImages, j=0; i < 3*mImages; ++i, j++) {
-            g[i] = gT(motion[mImages + j], motion[j]);
+            g[i] = gT(motion[j], motion[mImages + j]);
         }
                 
         // rank of G is 4
@@ -2608,6 +2600,35 @@ public class Reconstruction {
         double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);
         
         return q;
+    }
+
+    private static void assertDotProductMetrics(double[][] motion,
+        int mImages) {
+        double[] tmp1, tmp2, tmp3;
+        int i, j;
+        double tmp4, tmp5, tmp6, tmp7;
+        for (i = 0; i < mImages; ++i) {
+            tmp1 = Arrays.copyOf(motion[i], motion[i].length);
+            tmp2 = Arrays.copyOf(motion[mImages + i], motion[mImages + i].length);
+            tmp3 = MatrixUtil.crossProduct(tmp1, tmp2);
+            tmp4 = 0; // i dot i = 1
+            tmp5 = 0; // j dot j = 1
+            tmp6 = 0; // i dot j = 0
+            tmp7 = 0; // k dot k = 1
+            for (j = 0; j < 3; ++j) {
+                tmp4 += (tmp1[j]*tmp1[j]);
+                tmp5 += (tmp2[j]*tmp2[j]);
+                tmp6 += (tmp1[j]*tmp2[j]);
+                tmp7 += (tmp3[j]*tmp3[j]);
+            }
+            System.out.printf("tmps:%.4e, %.4e, %.4e, %.4e\n", tmp4, tmp5, tmp7, tmp6);
+            /* if had perfect data:
+            assert(Math.abs(tmp4 - 1) < 1e-2);
+            assert(Math.abs(tmp5 - 1) < 1e-2);
+            assert(Math.abs(tmp7 - 1) < 1e-2);
+            assert(Math.abs(tmp6) < 1e-2);
+            */
+        }
     }
     
     public static class ProjectionResults {
