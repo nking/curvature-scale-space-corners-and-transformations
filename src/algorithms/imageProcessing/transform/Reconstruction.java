@@ -1181,7 +1181,7 @@ public class Reconstruction {
         // sC size is 3XnFeatures
         double[][] r2 = MatrixUtil.multiply(rC, q);
         
-        assertDotProductMetrics(r2, mImages);
+        //assertDotProductMetrics(r2, mImages);
         
         double[][] s2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);
         
@@ -2181,39 +2181,30 @@ public class Reconstruction {
         // _M * A = _MCameraOrientation2D
         // A = pseudoInv(_M)*_MCameraOrientation2D;
         // A^-1 = pseudoInv(_MCameraOrientation2D)*_M 
+        double[][] aInv = MatrixUtil.multiply(
+            MatrixUtil.pseudoinverseFullColumnRank(_MCameraOrientation2D), _M);
+        double[][] __S2 = MatrixUtil.multiply(aInv, _S);
+        
         
         double[][] q2 = solveForTransformationToOrthoNormal(_MCameraOrientation2D);
                 
         _MCameraOrientation2D = MatrixUtil.multiply(_MCameraOrientation2D, q2);
         
-        assertDotProductMetrics(_MCameraOrientation2D, mImages);
-                
-        /* eqn (3)
-           u_f_p = m_f dot s_p + x_f
-           and 
-           v_f_p = n_f dot s_p + y_f
-              where u_f_p and v_f_p are the original feature coordinates per image
-                 in the measurement matrix
-              where x_f and y_f are each image's centroid of all features.
-           the registered measurement matrix holds
-             `u_f_p = u_f_p - x_f
-             `v_f_p = v_f_p - y_f
+        //assertDotProductMetrics(_MCameraOrientation2D, mImages);
         
-        u_f_p = m_f dot s_p + x_f
-        `u_f_p = m_f dot s_p  <== decomposition gives motion and shape
-         u_f_p/m_f[0] = s_p
-        */
-        
-        //Looking at overall transformation to get to camera orientation
-        //    and applying inverse to _S before inv(q2)
-        
+        //_S2 is inv(q2)*shape
+        //__S2 is inv(q2)*inv(a)*shape
         double[][] _S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), _S);
+        __S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), __S2);
         
         System.out.printf("after orthonormalization: _MCameraOrientation2D=\n%s\n", 
             FormatArray.toString(_MCameraOrientation2D, "%.4e"));
         
+        System.out.printf("__S2=inv(q2)*inv(a)*_S=\n%s\n", FormatArray.toString(__S2, "%.4e"));
         System.out.printf("_S2=inv(q2)*_S=\n%s\n", FormatArray.toString(_S2, "%.4e"));
         
+        System.out.printf("_MCameraOrientation2D*__S2=\n%s\n", 
+            FormatArray.toString(MatrixUtil.multiply(_MCameraOrientation2D, __S2), "%.4e"));
         System.out.printf("_MCameraOrientation2D*_S2=\n%s\n", 
             FormatArray.toString(MatrixUtil.multiply(_MCameraOrientation2D, _S2), "%.4e"));
                   
@@ -2246,7 +2237,7 @@ public class Reconstruction {
         System.out.printf("chk==1: \n%s\n", FormatArray.toString(
             MatrixUtil.multiply(rFirst, r0),"%.4e"));
                   
-        // multiply _M2 by r0
+        // multiply rotation matrices in the elements of the latest motion matrix by r0
         double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);
         double[][] _M3 = new double[3*mImages][];//(2*mImages)X3
         double[][] rTmp = new double[3][];
@@ -2263,7 +2254,7 @@ public class Reconstruction {
             _M3[i + 2*mImages] = rTmp[2];
         }
         
-        double[][] _S3 = MatrixUtil.multiply(rFirst, _S2);
+        double[][] _S3 = MatrixUtil.multiply(rFirst, __S2);
         
         System.out.printf("_M3=\n%s\n", FormatArray.toString(_M3,  "%.4e"));
         System.out.printf("rot stack=\n%s\n", FormatArray.toString(rotStack,  "%.4e"));
@@ -2307,21 +2298,20 @@ public class Reconstruction {
         double[] i3Vector;
         double[] cs = new double[3];
         for (i = 0; i < mImages; ++i) {
+            Arrays.fill(cs, -zf[i]);
             xf = t[i];
             yf = t[mImages + i];
             
-            // i_f[i] is _M2[i]
-            // j_f[i] is _M2[mImages + i]
-            // k_f[i] is _M2[2*mImages + i]
+            // i_f[i] is _M3[i]
+            // j_f[i] is _M3[mImages + i]
+            // k_f[i] is _M3[2*mImages + i]
             for (j = 0; j < 3; ++j) {
                 tf[0][j] = _M3[2*mImages + i][j];
                 tf[1][j] = _M3[i][j]/xf;
                 tf[2][j] = _M3[mImages + i][j]/yf;
-            }
-            
-            Arrays.fill(cs, -zf[i]);
-            SVDProducts svdi = MatrixUtil.performSVD(tf);
-            g3Inv = MatrixUtil.pseudoinverseRankDeficient(tf);
+            }            
+            //SVDProducts svdi = MatrixUtil.performSVD(tf);
+            g3Inv = MatrixUtil.pseudoinverseFullColumnRank(tf);
             i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);
             assert(i3Vector.length == 3);
             
@@ -2331,7 +2321,7 @@ public class Reconstruction {
         System.out.printf("trans=\n%s\n", FormatArray.toString(trans, "%.4e"));
         
         ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();
-        results.XW = _S;
+        results.XW = _S3;
         results.rotationMatrices = rotStack;
         results.translationVectors = trans;
           
