@@ -1350,6 +1350,8 @@ public class Reconstruction {
         rFirst[2] = MatrixUtil.crossProduct(rFirst[0], rFirst[1]);
         double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);
         
+        System.out.printf("r0= \n%s\n", FormatArray.toString(r0,"%.4e"));
+        
         System.out.printf("chk==1: \n%s\n", FormatArray.toString(
             MatrixUtil.multiply(rFirst, r0),"%.4e"));
         
@@ -2203,14 +2205,12 @@ public class Reconstruction {
 
             idotj:`i_f dot `j_f = 0:
                 `j_f*(x_f/y_f) + z_f*m_f - (x_f/y_f)*(z_f*n_f) dot j_f = 0
-                (`j_f dot `j_f)*(x_f/y_f) + j_f*m_f*z_f - j_f*(z_f*n_f)*(x_f/y_f) = 0
-                (1)*(x_f/y_f) + j_f*m_f*z_f - j_f*(z_f*n_f)*(x_f/y_f) = 0
-                `j_f*(m_f*z_f - (z_f*n_f)*(x_f/y_f)) + (x_f/y_f) = 0
-                `j_f*(m_f*z_f - (z_f*n_f)*(x_f/y_f)) = -(x_f/y_f)
-                `j_f*(x_f/y_f)*(m_f*z_f*y_f/x_f - (z_f*n_f)) = -(x_f/y_f)
-                `j_f*(m_f*z_f*y_f/x_f - (z_f*n_f)) = -1
-                `j_f*(1/x_f)*(m_f*z_f*y_f - (z_f*n_f*x_f)) = -1
-                `j_f = -x_f/(m_f*z_f*y_f - z_f*n_f*x_f)
+                (`j_f dot `j_f)*(x_f/y_f) + (j_f dot m_f)*z_f - (j_f dot nf)*(z_f*x_f/y_f) = 0
+                 (j_f dot m_f)*z_f - (j_f dot n_f)*(z_f*x_f/y_f) + (x_f/y_f) = 0
+               factor this out for each component:
+                (j_f[0]*m_f[0])*z_f - (j_f[0]*n_f[0])*(z_f*x_f/y_f) = -(x_f/y_f)
+                j_f[0]*(m_f[0]*z_f - (n_f[0]*z_f*x_f/y_f)) = -(x_f/y_f)
+                j_f[0] = -(x_f/y_f)/ (m_f[0]*z_f - (n_f[0]*z_f*x_f/y_f))
 *            ===> can solve for j_f from this
 
             rewrite `i_f from eqn (19) using the equalities of `k_f terms from above:
@@ -2242,7 +2242,8 @@ public class Reconstruction {
            zf^2 = (1/2)*( ((1+xf^2)/(mf*mf)) + ((1+yf^2)/(nf*nf)))
         
         solve for `j_f:
-            j_f = -x_f/(m_f*z_f*y_f - z_f*n_f*x_f)
+            j_f[0] = -(x_f/y_f)/ (m_f[0]*z_f - (n_f[0]*z_f*x_f/y_f))
+                  ...
         
         solve for `i_f:
             `i_f[0] = `j_f[0]*(x_f/y_f) + m_f[0]*z_f - n_f[0]*(z_f*x_f/y_f)
@@ -2257,8 +2258,8 @@ public class Reconstruction {
         double[] zf = new double[mImages];
         double[] mf, nf, tmp1, tmp2, tmp3;
         double xDivY, mDotM, nDotN, tmp4, tmp5;
-        //NOTE: _M2 holds the k vectors too while _M holds only i and j
-        double[][] _M2 = new double[3*mImages][3];
+        //NOTE: _MCameraOrientation holds the k vectors too while _M holds only i and j
+        double[][] _MCameraOrientation = new double[3*mImages][3];
         for (i = 0; i < mImages; ++i) {
             xf = t[i];
             yf = t[mImages + i];
@@ -2279,21 +2280,26 @@ public class Reconstruction {
             zf[i] = (tmp4 + tmp5) / 2.;
             zf[i] = Math.sqrt(zf[i]);
 
-            //j_f = -x_f/(m_f*z_f*y_f - z_f*n_f*x_f)
+            //j_f[0] = -(x_f/y_f)/ (m_f[0]*z_f - (n_f[0]*z_f*x_f/y_f))
             tmp1 = Arrays.copyOf(mf, mf.length);
             MatrixUtil.multiply(tmp1, zf[i]);
-            MatrixUtil.multiply(tmp1, yf);
             tmp2 = Arrays.copyOf(nf, nf.length);
             MatrixUtil.multiply(tmp2, zf[i]);
             MatrixUtil.multiply(tmp2, xf);
             // j_f
-            _M2[mImages + i] = new double[3];
+            _MCameraOrientation[mImages + i] = new double[3];
+            tmp4 = 0;
             for (j = 0; j < 3; ++j) {
-                _M2[mImages + i][j] = -xf/(tmp1[j] - tmp2[j]);
+                _MCameraOrientation[mImages + i][j] = -xDivY/(tmp1[j] - (tmp2[j]/yf));
+                tmp4 += (_MCameraOrientation[mImages + i][j]*_MCameraOrientation[mImages + i][j]);
             }
+ //TODO: can see need to transform `i_f, `j_f, and `k_f to orthonormal           
+            // check j dot j = 1
+            assert(Math.abs(tmp4 - 1) < 1e-7);
+            
             
             //`i_f = `j_f*(x_f/y_f) + m_f*z_f - n_f*(z_f*x_f/y_f)
-            tmp1 = Arrays.copyOf(_M2[mImages + i], _M2[mImages + i].length);
+            tmp1 = Arrays.copyOf(_MCameraOrientation[mImages + i], _MCameraOrientation[mImages + i].length);
             MatrixUtil.multiply(tmp1, xDivY);
             tmp2 = Arrays.copyOf(mf, mf.length);
             MatrixUtil.multiply(tmp2, zf[i]);
@@ -2301,23 +2307,33 @@ public class Reconstruction {
             MatrixUtil.multiply(tmp3, zf[i]);
             MatrixUtil.multiply(tmp3, xDivY);
             // i_f
-            _M2[i] = new double[3];
+            _MCameraOrientation[i] = new double[3];
+            tmp4 = 0;
             for (j = 0; j < 3; ++j) {
-                _M2[i][j] = tmp1[j] + tmp2[j] - tmp3[j];
+                _MCameraOrientation[i][j] = tmp1[j] + tmp2[j] - tmp3[j];
+                tmp4 += (_MCameraOrientation[i][j]*_MCameraOrientation[i][j]);
             }
+            // check j dot j = 1
+            assert(Math.abs(tmp4 - 1) < 1e-7);
             
             //`k_f[0] = `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]
             //`k_f[1] = `i_f[2]*`j_f[0] - `i_f[0]*`j_f[2]
             //`k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
             // k_f
-            _M2[2*mImages + i] = new double[]{
-                _M2[i][1] * _M2[mImages + i][2] - _M2[i][2]*_M2[mImages + i][1],
-                _M2[i][2] * _M2[mImages + i][0] - _M2[i][0]*_M2[mImages + i][2],
-                _M2[i][0] * _M2[mImages + i][1] - _M2[i][1]*_M2[mImages + i][0]
-            };        
+            _MCameraOrientation[2*mImages + i] = new double[]{
+                _MCameraOrientation[i][1] * _MCameraOrientation[mImages + i][2] - _MCameraOrientation[i][2]*_MCameraOrientation[mImages + i][1],
+                _MCameraOrientation[i][2] * _MCameraOrientation[mImages + i][0] - _MCameraOrientation[i][0]*_MCameraOrientation[mImages + i][2],
+                _MCameraOrientation[i][0] * _MCameraOrientation[mImages + i][1] - _MCameraOrientation[i][1]*_MCameraOrientation[mImages + i][0]
+            }; 
+            tmp4 = 0;
+            for (j = 0; j < 3; ++j) {
+                tmp4 += (_MCameraOrientation[2*mImages + i][j]*_MCameraOrientation[2*mImages + i][j]);
+            }
+            // check k dot k = 1
+            assert(Math.abs(tmp4 - 1) < 1e-7);
         }
         
-        System.out.printf("_M2=\n%s\n", FormatArray.toString(_M2,"%.4e"));
+        System.out.printf("_M2=\n%s\n", FormatArray.toString(_MCameraOrientation,"%.4e"));
            
         /*
         from Tomasi & Kanade 1992:
@@ -2334,13 +2350,17 @@ public class Reconstruction {
         j0x j0y j0z
         j1x j1y j1z
         */
-//TODO: fix ERROR(S) still present        
+        
+//TODO: fix ERROR(S) still present 
+
         double[][] rFirst = new double[3][3];
-        rFirst[0] = Arrays.copyOf(_M2[0], _M2[0].length);
-        rFirst[1] = Arrays.copyOf(_M2[mImages], _M2[mImages].length);
-        rFirst[2] = Arrays.copyOf(_M2[2*mImages], _M2[2*mImages].length);
+        rFirst[0] = Arrays.copyOf(_MCameraOrientation[0], _MCameraOrientation[0].length);
+        rFirst[1] = Arrays.copyOf(_MCameraOrientation[mImages], _MCameraOrientation[mImages].length);
+        rFirst[2] = Arrays.copyOf(_MCameraOrientation[2*mImages], _MCameraOrientation[2*mImages].length);
                 //MatrixUtil.crossProduct(rFirst[0], rFirst[1]);
         double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);
+        
+        System.out.printf("r0= \n%s\n", FormatArray.toString(r0,"%.4e"));
         
         System.out.printf("chk==1: \n%s\n", FormatArray.toString(
             MatrixUtil.multiply(rFirst, r0),"%.4e"));
@@ -2350,9 +2370,9 @@ public class Reconstruction {
         double[][] _M3 = new double[3*mImages][];//(2*mImages)X3
         double[][] rTmp = new double[3][];
         for (i = 0; i < mImages; ++i) {
-            rTmp[0] = Arrays.copyOf(_M2[i], _M2[i].length);
-            rTmp[1] = Arrays.copyOf(_M2[mImages + i], _M2[mImages + i].length);
-            rTmp[2] = Arrays.copyOf(_M2[2*mImages + i], _M2[2*mImages + i].length);
+            rTmp[0] = Arrays.copyOf(_MCameraOrientation[i], _MCameraOrientation[i].length);
+            rTmp[1] = Arrays.copyOf(_MCameraOrientation[mImages + i], _MCameraOrientation[mImages + i].length);
+            rTmp[2] = Arrays.copyOf(_MCameraOrientation[2*mImages + i], _MCameraOrientation[2*mImages + i].length);
                     //MatrixUtil.crossProduct(rTmp[0], rTmp[1]);
             rTmp = MatrixUtil.multiply(rTmp, r0);
             for (j = 0; j < 3; ++j) {
@@ -2370,7 +2390,6 @@ public class Reconstruction {
         System.out.printf("shape=\n%s\n", FormatArray.toString(_S, "%.4e"));
         System.out.printf("t=\n%s\n", FormatArray.toString(t, 
             "%.4e"));
-//paused here revisiting algorithm        
         /*
         Poelman & Kanade, last paragraph, Sect 3.4:
         All that remain to be computed are the translations for each frame. 
@@ -2398,9 +2417,9 @@ public class Reconstruction {
         factor:
            tf[0]           tf[1]           tf[2]         const
            -------------------------------------------
-           -kf[0]          -kf[1]         -kf[2]         -zf
-           -(1/xf)*if[0]   -(1/xf)*if[1]  -(1/xf)*if[2]  -zf
-           -(1/yf)*jf[0]   -(1/yf)*jf[1]  -(1/yf)*jf[2]  -zf
+            kf[0]           kf[1]          kf[2]         -zf
+            (1/xf)*if[0]    (1/xf)*if[1]   (1/xf)*if[2]  -zf
+            (1/yf)*jf[0]    (1/yf)*jf[1]   (1/yf)*jf[2]  -zf
         */
         double[][] trans = new double[mImages][3];
         double[][] tf = MatrixUtil.zeros(3, 3);
@@ -2414,20 +2433,14 @@ public class Reconstruction {
             // i_f[i] is _M2[i]
             // j_f[i] is _M2[mImages + i]
             // k_f[i] is _M2[2*mImages + i]
-            tf[0][0] = -_M3[2*mImages + i][0];
-            tf[0][1] = -_M3[2*mImages + i][1];
-            tf[0][2] = -_M3[2*mImages + i][2];
+            for (j = 0; j < 3; ++j) {
+                tf[0][j] = _M3[2*mImages + i][j];
+                tf[1][j] = _M3[i][j]/xf;
+                tf[2][j] = _M3[mImages + i][j]/yf;
+            }
             
-            tf[1][0] = _M3[i][0]*(-1./xf);
-            tf[1][1] = _M3[i][1]*(-1./xf);
-            tf[1][2] = _M3[i][2]*(-1./xf);
-            
-            tf[2][0] = _M3[mImages + i][0]*(-1./yf);
-            tf[2][1] = _M3[mImages + i][1]*(-1./yf);
-            tf[2][2] = _M3[mImages + i][2]*(-1./yf);
-            
-            Arrays.fill(cs, zf[i]);
-            
+            Arrays.fill(cs, -zf[i]);
+            SVDProducts svdi = MatrixUtil.performSVD(tf);
             g3Inv = MatrixUtil.pseudoinverseRankDeficient(tf);
             i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);
             assert(i3Vector.length == 3);
