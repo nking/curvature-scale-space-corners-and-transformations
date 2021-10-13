@@ -30,10 +30,26 @@ import no.uib.cipr.matrix.NotConvergedException;
             |     0        0    1 |    |    0  -sin θ   cos θ |  | -sin ψ    0  cos ψ |        
         
  * useful reading:
- * <pre>
- * http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
- * add other references here
- * </pre>
+  http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
+  Fig 1.8 of "Computing Intrinsic Images" by Aloimonos 1986 for a snapshot in time of c.v. algorithms
+
+   Motion - the rotation and translation of an object in front of a camera.
+            sometimes represented as the 3X4 projection matria P = |R | t|
+   Shape - the local surface orientation where surface orientation is 
+           usually the surface normal vector.
+           sometimes represented by X, the 3-D coordinates w.r.t. a world reference system.
+           From "Computing Intrinsic Images" by Aloimonos 1986
+             perspective projection is pinhole camera.
+             Under orthographic projection, the image coordinates of a point 
+             are equal to the corresponding 3-D coordinates, i.e. (x.y ) =(X,Y)
+             and we do not know its depth.
+   Depth - the Z-coordinate of a 3-D object in the world coordinate system.
+
+   test datasets:
+      https://www.cs.cmu.edu/afs/cs/project/vision/vasc/idb/www/html_permanent/index.html
+      http://www.cs.cmu.edu/afs/cs/project/cil/www/v-images.html
+ </pre>
+
  * @author nichole
  */
 public class Reconstruction {
@@ -2321,7 +2337,7 @@ public class Reconstruction {
         System.out.printf("trans=\n%s\n", FormatArray.toString(trans, "%.4e"));
         
         ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();
-        results.XW = _S3;
+        results.XW = _S3; // or _S
         results.rotationMatrices = rotStack;
         results.translationVectors = trans;
           

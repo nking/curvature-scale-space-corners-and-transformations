@@ -36,7 +36,7 @@ public class ReconstructionTest extends TestCase {
       /**
      * Test of calculateUsingEssentialMatrix method, of class CameraPose.
      */
-    public void estCalculateUsingEssentialMatrix() throws Exception {
+    public void testCalculateUsingEssentialMatrix() throws Exception {
         System.out.println("calculateUsingEssentialMatrix");
        
         double[][] k1 = Zhang98Data.getIntrinsicCameraMatrix();
@@ -87,7 +87,7 @@ public class ReconstructionTest extends TestCase {
     /**
      * Test of calculateReconstruction method, of class Reconstruction.
      */
-    public void estCalculateReconstructionWithIntrinsicCamera() throws NotConvergedException {
+    public void testCalculateReconstructionWithIntrinsicCamera() throws NotConvergedException {
         
         //test data from:
         //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html        
@@ -162,7 +162,7 @@ public class ReconstructionTest extends TestCase {
         */
     }
     
-    public void estAffine() throws NotConvergedException, IOException {
+    public void testAffine() throws NotConvergedException, IOException {
     
         double[][] xIn = loadNCBook(false);
 

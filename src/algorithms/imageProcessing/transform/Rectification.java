@@ -119,9 +119,9 @@ public class Rectification {
        there are many alternative approaches depending on datasets mentioned in
        Seliski 2010, "Computer Vision: Algorithms and Applications"
     
-       also useful reading:
-       Ma, Soatto, Kosecka,& Sastry 2012 "Invitation to Computer Vision, From Images to Geometric Models",
-    
+       Ma, Soatto, Kosecka,& Sastry 2012 "Invitation to Computer Vision, 
+           From Images to Geometric Models",
+       Chapter 11, Section 11.5.1
      * </pre>
      * @param x1 the image 1 set of correspondence points.  format is 3 x N where
      * N is the number of points.
@@ -153,8 +153,8 @@ public class Rectification {
               [0  T  0] [1 ]
 
           [u v 1] [0   ] = 0
-          [-T  ]
-          [v'*T]
+                  [-T  ]
+                  [v'*T]
 
    0 + -v*T + v'*T = 0
    v*T = v'*T;  y coord is always the same
@@ -170,12 +170,15 @@ public class Rectification {
           Reconstruction.calculateUsingEssentialMatrix
           Reconstruction.calculateProjectiveReconstruction
        and the epipoles e1, e2
+         e1 is the last row of svd.vt
+            e1 is the right null space (in right singular vector) of F 
+               (F*e1 = 0 or E*e1 = 0)
         e2 is the last column of svd.u
-            e2 is the left null space of F (e2^T*F = 0  or e2^T*E = 0)
+            e2 is the left null space (in left singular vector) of F 
+                (e2^T*F = 0  or e2^T*E = 0)
             e2 when normalized by 3rd coord is in coord space of left image and
                it is the location of the right camera center.
-        e1 is the last row of svd.vt
-            e1 is the right null space of F (F*e1 = 0 or E*e1 = 0)
+            NOTE: translation is also the last col of svd.u
        epipolar lines l1_i and l2_i
         l2 = E*x1
         l1 = E^T*x2
@@ -185,41 +188,44 @@ public class Rectification {
        
        double[] t = Arrays.copyOf(re.k2ExtrTrans, re.k2ExtrTrans.length);
        double[][] r = MatrixUtil.copy(re.k2ExtrRot);
+       
+       // right null space of F:
        double[] e1 = Arrays.copyOf(re.svd.vT[2], re.svd.vT[2].length);
+       // left null space of F:
        double[] e2 = MatrixUtil.transpose(re.svd.u)[2];
+       //MatrixUtil.multiply(e1, 1./e1[2]);
+       //MatrixUtil.multiply(e2, 1./e2[2]);
+       e1 =  MatrixUtil.normalizeL2(e1);
+       e2 =  MatrixUtil.normalizeL2(e2);
        
        /*
        MASKS Proposition 5.3: 
             e2^T*E = 0, E*e1 = 0.
             e2 ~ T and e1 ~ R^T * T where ~ is up to a scale factor
        
-       let r_1 = e1 = T/||T|| so that epipole coincides w/ translation vector
+       let r_1 = e2 = T/||T|| so that epipole coincides w/ translation vector
+              
        */
        double[] r1 = Arrays.copyOf(t, t.length);
        r1 = MatrixUtil.normalizeL2(r1);
-       
        
        double[][] tSkewSym = MatrixUtil.skewSymmetric(t);
        double[][] rtSkewSym = MatrixUtil.multiply(r, tSkewSym);
        
        System.out.printf("t=%s\ne1=%s\ne2=%s\nr1=%s\nessentialMatrix=\n%s\n(R*(t_skewsym))=\n%s\n", 
            FormatArray.toString(t, "%.4e"),
-           FormatArray.toString(e1, "%.4e"), FormatArray.toString(e2, "%.4e"),
+           FormatArray.toString(e1, "%.4e"),
+           FormatArray.toString(e2, "%.4e"),
            FormatArray.toString(r1, "%.4e"),
            FormatArray.toString(re.essentialMatrix, "%.4e"),
            FormatArray.toString(rtSkewSym, "%.4e"));
        
-       /*
-       let r_2 = (1/sqrt(T_x^2 + T_y^2))*[-T_y  T_x  0]
-                  cross product of e and the direction vector of the optical axis       
-       */
+       //let r_2 = [-T_y  T_x  0]/sqrt(T_x^2 + T_y^2)
+       //           cross product of e and the direction vector of the optical axis       
        double td = 1./Math.sqrt(t[0]*t[0] + t[1]*t[1]);
-       double[] r2 = new double[]{-t[1]*td, t[0]*td, 0};
-       
-       
-       /*
-       let r_3 = r1Xr2 orthogonal vector
-       */
+        double[] r2 = new double[]{-t[1] * td, t[0] * td, 0};
+
+        //let r_3 = r1Xr2 orthogonal vector
         double[] r3 = MatrixUtil.crossProduct(r1, r2);
 
         double[][] rRect = MatrixUtil.zeros(3, 3);
@@ -253,17 +259,27 @@ public class Rectification {
         double[][] _h1 = MatrixUtil.multiply(k1Intr, r1Rot);
         double[][] _h2 = MatrixUtil.multiply(k2Intr, r2Rot);
 
+        // x1 is left image points
         double[][] x1R = MatrixUtil.multiply(_h1, x1);
+        // x2 is right image points
         double[][] x2R = MatrixUtil.multiply(_h2, x2);
 
-        // normalize z-coords to be 1
         int i, j;
         int n = x1[0].length;
+        
+        // normalize z-coords to be 1        
         for (i = 0; i < n; ++i) {
             for (j = 0; j < 3; ++j) {
                 x1R[j][i] /= x1R[2][i];
                 x2R[j][i] /= x2R[2][i];
             }
+        }
+        
+        System.out.println("rectified");
+        for (i = 0; i < n; ++i) {
+            System.out.printf("%d) (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)\n",
+                i, x1R[0][i], x1R[1][i], x1R[2][i],
+                x2R[0][i], x2R[1][i], x2R[2][i]);
         }
       
         RectifiedPoints rPts = new RectifiedPoints();
