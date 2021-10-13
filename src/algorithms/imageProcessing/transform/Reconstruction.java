@@ -2173,15 +2173,54 @@ public class Reconstruction {
         System.out.printf("_MCameraOrientation2D=\n%s\n", FormatArray.toString(_MCameraOrientation2D, "%.4e"));
         
         double[][] q2 = solveForTransformationToOrthoNormal(_MCameraOrientation2D);
-        
-        //TODO: considering whether shape can be transformed by inverse q2
-        
+                
         _MCameraOrientation2D = MatrixUtil.multiply(_MCameraOrientation2D, q2);
         
-        // assert dot products
+        // assert dot product metrics
         {
-            
+            double tmp6, tmp7;
+            for (i = 0; i < mImages; ++i) {
+                tmp1 = Arrays.copyOf(_MCameraOrientation2D[i], _MCameraOrientation2D[i].length);
+                tmp2 = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);
+                tmp3 = MatrixUtil.crossProduct(tmp1, tmp2);
+                tmp4 = 0; // i dot i = 1
+                tmp5 = 0; // j dot j = 1
+                tmp6 = 0; // i dot j = 0
+                tmp7 = 0; // k dot k = 1
+                for (j = 0; j < 3; ++j) {
+                    tmp4 += (tmp1[j]*tmp1[j]);
+                    tmp5 += (tmp2[j]*tmp2[j]);
+                    tmp6 += (tmp1[j]*tmp2[j]);
+                    tmp7 += (tmp3[j]*tmp3[j]);
+                }
+                assert(Math.abs(tmp4 - 1) < 1e-7);
+                assert(Math.abs(tmp5 - 1) < 1e-7);
+                assert(Math.abs(tmp7 - 1) < 1e-7);
+                assert(Math.abs(tmp6) < 1e-7);
+            }
         }
+        
+        //TODO: consider whether the transformation applied to the camera orientation
+        //     should be applied to the shape matrix
+                
+        /* eqn (3)
+           u_f_p = m_f dot s_p + x_f
+           and 
+           v_f_p = n_f dot s_p + y_f
+              where u_f_p and v_f_p are the original feature coordinates per image
+                 in the measurement matrix
+              where x_f and y_f are each image's centroid of all features.
+           the registered measurement matrix holds
+             `u_f_p = u_f_p - x_f
+             `v_f_p = v_f_p - y_f
+        
+        u_f_p = m_f dot s_p + x_f
+        `u_f_p = m_f dot s_p  <== decomposition gives motion and shape
+         u_f_p/m_f[0] = s_p
+        */
+        
+        //Looking at overall transformation to get to camera orientation
+        //    and applying inverse to _S before inv(q2)
         
         double[][] _S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), _S);
         
