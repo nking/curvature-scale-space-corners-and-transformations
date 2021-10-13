@@ -107,6 +107,8 @@ public class Rectification {
     //
     
     /**
+     * NOT READY FOR USE.
+     * 
      * Rectify (i.e, warp) the left image correspondence points x1 and
      * right image correspondence points x2
      * so that corresponding horizontal scanlines are epipolar lines.
@@ -245,7 +247,8 @@ public class Rectification {
 
         /*
        2. Rotate (rectify) the left camera so that the epipole is at infinity
-          [x2 y2 z2] = R1 * [x1 y1 z1] = warped left which should equal [x2 y2 z2] with caveat
+          [x2 y2 z2] = R1 * [x1 y1 z1] = warped left which should 
+           equal [x2 y2 z2] with caveat
                              due to occlusion, etc.
 
        points p = (f/z2)*[x2 y2 z2]
@@ -253,11 +256,27 @@ public class Rectification {
            points p ~ K*R1*[x1 y1 z1]
              *Kitani notes that you may need to alter f inside K to keep
               points within the original image size
-       
+              (details are in Ma et al "An Invitiation to #-D..."
+               pg 400, Chapt 11)
+        
        f=(W/2)*((tan(fov/2))^-1)
          */
+        k1Intr = MatrixUtil.copy(k1Intr);
+        k2Intr = MatrixUtil.copy(k2Intr);
+        k1Intr[0][0] *= -1; 
+        k1Intr[1][1] *= -1;
+        k2Intr[0][0] *= -1; 
+        k2Intr[1][1] *= -1;
+        
+        System.out.printf("R1=rRect=%s\n",
+                FormatArray.toString(r1Rot, "%.4e"));
+        System.out.printf("R2=R*rRect=%s\n",
+                FormatArray.toString(r2Rot, "%.4e"));
+        
         double[][] _h1 = MatrixUtil.multiply(k1Intr, r1Rot);
         double[][] _h2 = MatrixUtil.multiply(k2Intr, r2Rot);
+        //_h1 = r1Rot;
+        //_h2 = r2Rot;
 
         // x1 is left image points
         double[][] x1R = MatrixUtil.multiply(_h1, x1);
@@ -275,6 +294,11 @@ public class Rectification {
             }
         }
         
+        //ERROR above.
+        //  all of the x for image 1 are the same
+        //  and all of the x for image 2 are the same
+        // aligned the x-points instead of y-points...
+        // expecting each correspondence pair to each have the same y.
         System.out.println("rectified");
         for (i = 0; i < n; ++i) {
             System.out.printf("%d) (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)\n",
