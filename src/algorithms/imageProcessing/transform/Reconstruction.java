@@ -1169,146 +1169,9 @@ public class Reconstruction {
            double[][] ar = Rotation.procrustesAlgorithmForRotation(rot1, _r2);
         */
         
-        /*
-        The rows of R represent the orientations of the horizontal and vertical camera
-        reference axes throughout the stream, 
-        while the columns of S are the coordinates of the P feature
-        points with respect to their centroid.
+        double[][] q = solveForTransformationToOrthoNormal(rC);
         
-        rC = [ i_hat_0[0] i_hat_0[2] i_hat_0[2] ] where i_hat_f are unit vectors
-             [ i_hat_1[0] i_hat_1[2] i_hat_1[2] ]
-             [   ..._m-1 ...                    ]
-             [ j_hat_0[0] j_hat_0[2] j_hat_0[2] ]
-             [ j_hat_1[0] j_hat_1[2] j_hat_1[2] ] where j_hat_f are unit vectors
-             [  ..._m-1 ... ]
-        
-        sC = [s_C_1  ...  s_C_m] is [3XP] where P is the number of points per image frame
-        NOTE that the summation over columns of sC = 0 (they are centered w.r.t. image points)
-        
-        R = rC*Q
-        S = (Q^-1)*sC
-        
-          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1   [dimensions 1X3 * 3X3 * 3X1 = 1]
-          eqn (2)  (`j_f)^T * Q * Q^T * (`j_f) = 1
-          eqn (3)  (`i_f)^T * Q * Q^T * (`j_f) = 0
-        
-        find Q as a 3 × 3 matrix, non-singular matrix
-        
-        //Morita and Kanade
-        L = Q^T * Q
-        solve the linear system of equations for L 
-            and use Cholesky decomposition to get Q.
-            Correct the decomposition to enforce L to be positive definite
-            symmetric.
-        
-        See notes reference Morita and Kanade for solving Q.
-         T. Morita and T. Kanade, A Sequential Factorization Method for Recovering Shape and Motion
-         from Image Streams, Pattern Analysis and Machine Intelligence, IEEE Transactions on, vol. 19,
-         no.8, pp.858-867, Aug 1997  (1994?)
-        
-        http://note.sonots.com/SciSoftware/Factorization.html#cse252b
-        
-        L = [ l1 l2 l3 ]
-            [ l2 l4 l5 ]
-            [ l3 l5 l6 ]     
-
-        the knowns are `i_f and `j_f, so we are solving for the 6 unknowns in L.
-
-        expand the terms:
-
-        eqn(1):
-        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ if_0 ] = 1
-                             [ l2 l4 l5 ]   [ if_1 ]
-                             [ l3 l5 l6 ]   [ if_2 ]
-        eqn(2):
-        jf_0  jf_1  jf_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 1
-                             [ l2 l4 l5 ]   [ jf_1 ]
-                             [ l3 l5 l6 ]   [ jf_2 ]
-        eqn(3):
-        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 0
-                             [ l2 l4 l5 ]   [ jf_1 ]
-                             [ l3 l5 l6 ]   [ jf_2 ]
-        
-        factor out the L terms, linearly
-        l1           l2                    l3                    l4           l5                    l6         const
-        (if0*if0)    (if1*if0 + if0*if1)   (if2*if0 + if0*if2)   (if1*if1)    (if2*if1 + if1*if2)   (if2*if2)   1
-        (jf0*jf0)    (jf1*jf0 + jf0*jf1)   (jf2*jf0 + jf0*jf2)   (jf1*jf1)    (jf2*jf1 + jf1*jf2)   (jf2*jf2)   1
-        (if0*jf0)    (if1*jf0 + if0*jf1)   (if2*jf0 + if0*jf2)   (if1*jf1)    (if2*jf1 + if1*jf2)   (if2*jf2)   0
-
-        since the terms in the rows have a similar pattern, can write the equation more concisely using
-        a function to generate them:
-           g(a,b) = [a0*b0         ]
-                    [a0*b1 + a1*b0 ]
-                    [a0*b2 + a2*b0 ]
-                    [a1*b1         ]
-                    [a1*b2 + a2*b1 ]
-                    [a2*b2         ]
-
-        G size is 3*F X 6
-        L is a vector of length 6
-        c size is 3*F
-        
-        the G = [ g(i_0, i_0)^T       ]   L_vectorized = [l1]    c = [2*F rows of 1]
-                [ ...each row thru F  ]                  [l2]        [F rows of 0  ]
-                [ g(j_0, j_0)^T       ]                  [l3]
-                [ ...each row thru F  ]                  [l4]
-                [ g(i_0, j_0)^T       ]                  [l5]
-                [ ...each row thru F  ]                  [l6]
-
-        G*L_vectorized = c ==>  L_vectorized = G^-1 * c
-        */
-        
-        double[] c = new double[3*mImages];
-        for (i = 0; i < 2*mImages; ++i) {
-            c[i] = 1;
-        }
-        
-        //g is 3F X 6
-        double[][] g = new double[3*mImages][6];
-        for (i = 0; i < 2*mImages; ++i) {
-            g[i] = gT(rC[i], rC[i]);
-            assert(g[i].length == 6);
-        }
-        for (i = 2*mImages, j=0; i < 3*mImages; ++i, j++) {
-            g[i] = gT(rC[mImages + j], rC[j]);
-        }
-                
-        // rank of G is 4
-        //G * L = c
-        // G^T * G * L = G^T * c
-        // L = (G^T*G)^-1*G^T * c
-        //     pseudoinverse of G is (G^T*G)^-1*G^T
-        double[][] gInv = MatrixUtil.pseudoinverseRankDeficient(g);
-        
-        // 6X1
-        double[] lVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);
-        assert(lVector.length == 6);
-        
-        // 3X3
-        double[][] ell = new double[3][3];
-        ell[0] = new double[]{lVector[0], lVector[1], lVector[2]};
-        ell[1] = new double[]{lVector[1], lVector[3], lVector[4]};
-        ell[2] = new double[]{lVector[2], lVector[4], lVector[5]};
-        
-        // Q can be determined :
-        //   as the square root of ell,
-        //   or with the Cholesky decomposition
-        //   or with eigendecomposition
-        
-        // enforcing positive definiteness of L (which is ell here).
-        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
-        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
-        /*EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
-        double[] eig = evd2.getRealEigenvalues();
-        double[][] aMinusPSD = MatrixUtil.elementwiseSubtract(ell, lPSD);
-        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
-        */
-        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);
-        assert(ipd);
        
-        //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
-        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);
-        
         //Q is an affine transformation which transforms rC into R in motion space
         //   and the inverse of Q transforms sC into S in the shape space
         
@@ -2142,7 +2005,7 @@ public class Reconstruction {
         // assert that wC is the same as _M*_S
         System.out.printf("_M*_S=\n%s\n", FormatArray.toString(MatrixUtil.multiply(_M, _S), 
             "%.4e"));
-        
+                
         /*
         --------------------------------
         Paraperspective Motion Recovery
@@ -2255,11 +2118,11 @@ public class Reconstruction {
             `k_f[1] = `i_f[2]*`j_f[0] - `i_f[0]*`j_f[2]
             `k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
         */
+                
         double[] zf = new double[mImages];
         double[] mf, nf, tmp1, tmp2, tmp3;
         double xDivY, mDotM, nDotN, tmp4, tmp5;
-        //NOTE: _MCameraOrientation holds the k vectors too while _M holds only i and j
-        double[][] _MCameraOrientation = new double[3*mImages][3];
+        double[][] _MCameraOrientation2D = new double[2*mImages][3];
         for (i = 0; i < mImages; ++i) {
             xf = t[i];
             yf = t[mImages + i];
@@ -2272,7 +2135,7 @@ public class Reconstruction {
                 mDotM += mf[i] * mf[i];
                 nDotN += nf[i] * nf[i];
             }
-            //take an average of eqn (15)
+            //for z_f^2 take an average of eqn (15).  it's always positive
             tmp4 = 1 + xf * xf;
             tmp4 /= mDotM;
             tmp5 = 1 + yf * yf;
@@ -2285,21 +2148,15 @@ public class Reconstruction {
             MatrixUtil.multiply(tmp1, zf[i]);
             tmp2 = Arrays.copyOf(nf, nf.length);
             MatrixUtil.multiply(tmp2, zf[i]);
-            MatrixUtil.multiply(tmp2, xf);
+            MatrixUtil.multiply(tmp2, xDivY);
             // j_f
-            _MCameraOrientation[mImages + i] = new double[3];
-            tmp4 = 0;
+            _MCameraOrientation2D[mImages + i] = new double[3];
             for (j = 0; j < 3; ++j) {
-                _MCameraOrientation[mImages + i][j] = -xDivY/(tmp1[j] - (tmp2[j]/yf));
-                tmp4 += (_MCameraOrientation[mImages + i][j]*_MCameraOrientation[mImages + i][j]);
+                _MCameraOrientation2D[mImages + i][j] = -xDivY/(tmp1[j] - (tmp2[j]/yf));
             }
- //TODO: can see need to transform `i_f, `j_f, and `k_f to orthonormal           
-            // check j dot j = 1
-            assert(Math.abs(tmp4 - 1) < 1e-7);
-            
             
             //`i_f = `j_f*(x_f/y_f) + m_f*z_f - n_f*(z_f*x_f/y_f)
-            tmp1 = Arrays.copyOf(_MCameraOrientation[mImages + i], _MCameraOrientation[mImages + i].length);
+            tmp1 = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);
             MatrixUtil.multiply(tmp1, xDivY);
             tmp2 = Arrays.copyOf(mf, mf.length);
             MatrixUtil.multiply(tmp2, zf[i]);
@@ -2307,34 +2164,35 @@ public class Reconstruction {
             MatrixUtil.multiply(tmp3, zf[i]);
             MatrixUtil.multiply(tmp3, xDivY);
             // i_f
-            _MCameraOrientation[i] = new double[3];
-            tmp4 = 0;
+            _MCameraOrientation2D[i] = new double[3];
             for (j = 0; j < 3; ++j) {
-                _MCameraOrientation[i][j] = tmp1[j] + tmp2[j] - tmp3[j];
-                tmp4 += (_MCameraOrientation[i][j]*_MCameraOrientation[i][j]);
+                _MCameraOrientation2D[i][j] = tmp1[j] + tmp2[j] - tmp3[j];
             }
-            // check j dot j = 1
-            assert(Math.abs(tmp4 - 1) < 1e-7);
-            
-            //`k_f[0] = `i_f[1]*`j_f[2] - `i_f[2]*`j_f[1]
-            //`k_f[1] = `i_f[2]*`j_f[0] - `i_f[0]*`j_f[2]
-            //`k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
-            // k_f
-            _MCameraOrientation[2*mImages + i] = new double[]{
-                _MCameraOrientation[i][1] * _MCameraOrientation[mImages + i][2] - _MCameraOrientation[i][2]*_MCameraOrientation[mImages + i][1],
-                _MCameraOrientation[i][2] * _MCameraOrientation[mImages + i][0] - _MCameraOrientation[i][0]*_MCameraOrientation[mImages + i][2],
-                _MCameraOrientation[i][0] * _MCameraOrientation[mImages + i][1] - _MCameraOrientation[i][1]*_MCameraOrientation[mImages + i][0]
-            }; 
-            tmp4 = 0;
-            for (j = 0; j < 3; ++j) {
-                tmp4 += (_MCameraOrientation[2*mImages + i][j]*_MCameraOrientation[2*mImages + i][j]);
-            }
-            // check k dot k = 1
-            assert(Math.abs(tmp4 - 1) < 1e-7);
         }
         
-        System.out.printf("_M2=\n%s\n", FormatArray.toString(_MCameraOrientation,"%.4e"));
-           
+        System.out.printf("_MCameraOrientation2D=\n%s\n", FormatArray.toString(_MCameraOrientation2D, "%.4e"));
+        
+        double[][] q2 = solveForTransformationToOrthoNormal(_MCameraOrientation2D);
+        
+        //TODO: considering whether shape can be transformed by inverse q2
+        
+        _MCameraOrientation2D = MatrixUtil.multiply(_MCameraOrientation2D, q2);
+        
+        // assert dot products
+        {
+            
+        }
+        
+        double[][] _S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), _S);
+        
+        System.out.printf("after orthonormalization: _MCameraOrientation2D=\n%s\n", 
+            FormatArray.toString(_MCameraOrientation2D, "%.4e"));
+        
+        System.out.printf("_S2=inv(q2)*_S=\n%s\n", FormatArray.toString(_S2, "%.4e"));
+        
+        System.out.printf("_MCameraOrientation2D*_S2=\n%s\n", 
+            FormatArray.toString(MatrixUtil.multiply(_MCameraOrientation2D, _S2), "%.4e"));
+                  
         /*
         from Tomasi & Kanade 1992:
         If desired, align the first camera reference system with the world
@@ -2351,13 +2209,12 @@ public class Reconstruction {
         j1x j1y j1z
         */
         
-//TODO: fix ERROR(S) still present 
 
         double[][] rFirst = new double[3][3];
-        rFirst[0] = Arrays.copyOf(_MCameraOrientation[0], _MCameraOrientation[0].length);
-        rFirst[1] = Arrays.copyOf(_MCameraOrientation[mImages], _MCameraOrientation[mImages].length);
-        rFirst[2] = Arrays.copyOf(_MCameraOrientation[2*mImages], _MCameraOrientation[2*mImages].length);
-                //MatrixUtil.crossProduct(rFirst[0], rFirst[1]);
+        rFirst[0] = Arrays.copyOf(_MCameraOrientation2D[0], _MCameraOrientation2D[0].length);
+        rFirst[1] = Arrays.copyOf(_MCameraOrientation2D[mImages], _MCameraOrientation2D[mImages].length);
+        rFirst[2] = MatrixUtil.crossProduct(rFirst[0], rFirst[1]);
+        
         double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);
         
         System.out.printf("r0= \n%s\n", FormatArray.toString(r0,"%.4e"));
@@ -2370,10 +2227,9 @@ public class Reconstruction {
         double[][] _M3 = new double[3*mImages][];//(2*mImages)X3
         double[][] rTmp = new double[3][];
         for (i = 0; i < mImages; ++i) {
-            rTmp[0] = Arrays.copyOf(_MCameraOrientation[i], _MCameraOrientation[i].length);
-            rTmp[1] = Arrays.copyOf(_MCameraOrientation[mImages + i], _MCameraOrientation[mImages + i].length);
-            rTmp[2] = Arrays.copyOf(_MCameraOrientation[2*mImages + i], _MCameraOrientation[2*mImages + i].length);
-                    //MatrixUtil.crossProduct(rTmp[0], rTmp[1]);
+            rTmp[0] = Arrays.copyOf(_MCameraOrientation2D[i], _MCameraOrientation2D[i].length);
+            rTmp[1] = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);
+            rTmp[2] = MatrixUtil.crossProduct(rTmp[0], rTmp[1]);
             rTmp = MatrixUtil.multiply(rTmp, r0);
             for (j = 0; j < 3; ++j) {
                 rotStack[i*3 + j] = rTmp[j]; 
@@ -2383,11 +2239,11 @@ public class Reconstruction {
             _M3[i + 2*mImages] = rTmp[2];
         }
         
-        _S = MatrixUtil.multiply(rFirst, _S);
+        double[][] _S3 = MatrixUtil.multiply(rFirst, _S2);
         
         System.out.printf("_M3=\n%s\n", FormatArray.toString(_M3,  "%.4e"));
         System.out.printf("rot stack=\n%s\n", FormatArray.toString(rotStack,  "%.4e"));
-        System.out.printf("shape=\n%s\n", FormatArray.toString(_S, "%.4e"));
+        System.out.printf("shape=\n%s\n", FormatArray.toString(_S3, "%.4e"));
         System.out.printf("t=\n%s\n", FormatArray.toString(t, 
             "%.4e"));
         /*
@@ -2556,6 +2412,163 @@ public class Reconstruction {
         outputPoint[0] = x[0][idx];
         outputPoint[1] = x[1][idx];
         outputPoint[2] = x[2][idx];
+    }
+
+    /**
+     * 
+     * @param motion 2*F X 3 matrix of rotation for images
+     * where the first F rows are the first rows of each image's rotation matrix
+     * and the second F rows are the second rows of each image's rotation matrix.
+     * the third row of rotation is recreated when needed using the cross
+     * product of the first 2 rows of each image's rotation matrix;
+     * @return
+     * @throws NotConvergedException 
+     */
+    private static double[][] solveForTransformationToOrthoNormal(double[][] motion) throws NotConvergedException {
+         /*
+        The rows of R represent the orientations of the horizontal and vertical camera
+        reference axes throughout the stream, 
+        while the columns of S are the coordinates of the P feature
+        points with respect to their centroid.
+        
+    motion = [ i_hat_0[0] i_hat_0[2] i_hat_0[2] ] where i_hat_f are unit vectors
+             [ i_hat_1[0] i_hat_1[2] i_hat_1[2] ]
+             [   ..._m-1 ...                    ]
+             [ j_hat_0[0] j_hat_0[2] j_hat_0[2] ]
+             [ j_hat_1[0] j_hat_1[2] j_hat_1[2] ] where j_hat_f are unit vectors
+             [  ..._m-1 ... ]
+        
+    shape = [s_C_1  ...  s_C_m] is [3XP] where P is the number of points per image frame
+        NOTE that the summation over columns of sC = 0 (they are centered w.r.t. image points)
+        
+        R = motion*Q
+        S = (Q^-1)*shape
+        
+          eqn (1)  (`i_f)^T * Q * Q^T * (`i_f) = 1   [dimensions 1X3 * 3X3 * 3X1 = 1]
+          eqn (2)  (`j_f)^T * Q * Q^T * (`j_f) = 1
+          eqn (3)  (`i_f)^T * Q * Q^T * (`j_f) = 0
+        
+        find Q as a 3 × 3 matrix, non-singular matrix
+        
+        //Morita and Kanade
+        L = Q^T * Q
+        solve the linear system of equations for L 
+            and use Cholesky decomposition to get Q.
+            Correct the decomposition to enforce L to be positive definite
+            symmetric.
+        
+        See notes reference Morita and Kanade for solving Q.
+         T. Morita and T. Kanade, A Sequential Factorization Method for Recovering Shape and Motion
+         from Image Streams, Pattern Analysis and Machine Intelligence, IEEE Transactions on, vol. 19,
+         no.8, pp.858-867, Aug 1997  (1994?)
+        
+        http://note.sonots.com/SciSoftware/Factorization.html#cse252b
+        
+        L = [ l1 l2 l3 ]
+            [ l2 l4 l5 ]
+            [ l3 l5 l6 ]     
+
+        the knowns are `i_f and `j_f, so we are solving for the 6 unknowns in L.
+
+        expand the terms:
+
+        eqn(1):
+        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ if_0 ] = 1
+                             [ l2 l4 l5 ]   [ if_1 ]
+                             [ l3 l5 l6 ]   [ if_2 ]
+        eqn(2):
+        jf_0  jf_1  jf_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 1
+                             [ l2 l4 l5 ]   [ jf_1 ]
+                             [ l3 l5 l6 ]   [ jf_2 ]
+        eqn(3):
+        if_0  if_1  if_2 ] * [ l1 l2 l3 ] * [ jf_0 ] = 0
+                             [ l2 l4 l5 ]   [ jf_1 ]
+                             [ l3 l5 l6 ]   [ jf_2 ]
+        
+        factor out the L terms, linearly
+        l1           l2                    l3                    l4           l5                    l6         const
+        (if0*if0)    (if1*if0 + if0*if1)   (if2*if0 + if0*if2)   (if1*if1)    (if2*if1 + if1*if2)   (if2*if2)   1
+        (jf0*jf0)    (jf1*jf0 + jf0*jf1)   (jf2*jf0 + jf0*jf2)   (jf1*jf1)    (jf2*jf1 + jf1*jf2)   (jf2*jf2)   1
+        (if0*jf0)    (if1*jf0 + if0*jf1)   (if2*jf0 + if0*jf2)   (if1*jf1)    (if2*jf1 + if1*jf2)   (if2*jf2)   0
+
+        since the terms in the rows have a similar pattern, can write the equation more concisely using
+        a function to generate them:
+           g(a,b) = [a0*b0         ]
+                    [a0*b1 + a1*b0 ]
+                    [a0*b2 + a2*b0 ]
+                    [a1*b1         ]
+                    [a1*b2 + a2*b1 ]
+                    [a2*b2         ]
+
+        G size is 3*F X 6
+        L is a vector of length 6
+        c size is 3*F
+        
+        the G = [ g(i_0, i_0)^T       ]   L_vectorized = [l1]    c = [2*F rows of 1]
+                [ ...each row thru F  ]                  [l2]        [F rows of 0  ]
+                [ g(j_0, j_0)^T       ]                  [l3]
+                [ ...each row thru F  ]                  [l4]
+                [ g(i_0, j_0)^T       ]                  [l5]
+                [ ...each row thru F  ]                  [l6]
+
+        G*L_vectorized = c ==>  L_vectorized = G^-1 * c
+        */
+        
+         int mImages = motion.length/2;
+        
+        int i, j;
+        double[] c = new double[3*mImages];
+        for (i = 0; i < 2*mImages; ++i) {
+            c[i] = 1;
+        }
+        
+        //g is 3F X 6
+        double[][] g = new double[3*mImages][6];
+        for (i = 0; i < 2*mImages; ++i) {
+            g[i] = gT(motion[i], motion[i]);
+            assert(g[i].length == 6);
+        }
+        for (i = 2*mImages, j=0; i < 3*mImages; ++i, j++) {
+            g[i] = gT(motion[mImages + j], motion[j]);
+        }
+                
+        // rank of G is 4
+        //G * L = c
+        // G^T * G * L = G^T * c
+        // L = (G^T*G)^-1*G^T * c
+        //     pseudoinverse of G is (G^T*G)^-1*G^T
+        double[][] gInv = MatrixUtil.pseudoinverseRankDeficient(g);
+        
+        // 6X1
+        double[] lVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);
+        assert(lVector.length == 6);
+        
+        // 3X3
+        double[][] ell = new double[3][3];
+        ell[0] = new double[]{lVector[0], lVector[1], lVector[2]};
+        ell[1] = new double[]{lVector[1], lVector[3], lVector[4]};
+        ell[2] = new double[]{lVector[2], lVector[4], lVector[5]};
+        
+        // Q can be determined :
+        //   as the square root of ell,
+        //   or with the Cholesky decomposition
+        //   or with eigendecomposition
+        
+        // enforcing positive definiteness of L (which is ell here).
+        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
+        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
+        /*EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
+        double[] eig = evd2.getRealEigenvalues();
+        double[][] aMinusPSD = MatrixUtil.elementwiseSubtract(ell, lPSD);
+        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
+        */
+        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);
+        assert(ipd);
+       
+        //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
+        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);
+        
+        return q;
     }
     
     public static class ProjectionResults {
