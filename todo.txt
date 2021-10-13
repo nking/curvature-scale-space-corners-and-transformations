@@ -15,21 +15,9 @@
        if there are a large number of matches, proceed to RANSAC below,
        else return either the matches that are the best fitting subset
        or return the subset and additional points found through the projection.
+
+       see projection method options in Reconstruction.java
        ------
-       the projection algorithm solves for rotation and real world scene coordinates.
-       It does not solve for translation,
-       but one could estimate a rough lateral difference, (not the camera translation
-       in the camera reference frame coords) if the image scales are the
-       same by subtracting the 2nd image correspondence points from the
-       1st image correspondence points rotated.
-       
-       OrthographicProjectionResults re = Reconstruction.calculateAffineReconstruction(
-           double[][] x, int mImages).
-       
-       where OrthographicProjectionResults results = new OrthographicProjectionResults();
-       results.XW = s;
-       results.rotationMatrices = rotStack;
-       
        Considering the paper 
        https://www.researchgate.net/publication/221110532_Outlier_Correction_in_Image_Sequences_for_the_Affine_Camera
        "Outlier Correction in Image Sequences for the Affine Camera"
@@ -39,6 +27,8 @@
           excerpt from the abstract:
              In this paper, we present an outlier correction scheme that 
              iteratively updates the elements of the image measurement matrix
+
+-- browse from https://homepages.inf.ed.ac.uk/rbf/CVonline/books.htm
 
 -- note, when considering computer vision in water,
    -- consider that the mantis shrimp holds 16 color receptive cones
