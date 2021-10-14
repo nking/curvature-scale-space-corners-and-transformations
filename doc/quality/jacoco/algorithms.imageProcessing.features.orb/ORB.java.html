@@ -773,14 +773,14 @@ Still testing the class, there may be bugs present.
                 }
             }
 <span class="fc" id="L775">            count = 0;</span>
-<span class="pc bpc" id="L776" title="1 of 2 branches missed.">            if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
-<span class="nc bnc" id="L777" title="All 2 branches missed.">                for (octave = 0; octave &lt; scales.length; ++octave) {</span>
-<span class="nc" id="L778">                    d = descriptorsList.get(octave);</span>
-<span class="nc" id="L779">                    System.arraycopy(d.descriptors, 0, combinedD, count, d.descriptors.length);</span>
-<span class="nc" id="L780">                    count += d.descriptors.length;</span>
+<span class="fc bfc" id="L776" title="All 2 branches covered.">            if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
+<span class="fc bfc" id="L777" title="All 2 branches covered.">                for (octave = 0; octave &lt; scales.length; ++octave) {</span>
+<span class="fc" id="L778">                    d = descriptorsList.get(octave);</span>
+<span class="fc" id="L779">                    System.arraycopy(d.descriptors, 0, combinedD, count, d.descriptors.length);</span>
+<span class="fc" id="L780">                    count += d.descriptors.length;</span>
                 }
-<span class="nc" id="L782">                combinedDescriptors.descriptors = combinedD;</span>
-<span class="nc bnc" id="L783" title="All 4 branches missed.">                assert (combinedDescriptors.descriptors.length == nTotal);</span>
+<span class="fc" id="L782">                combinedDescriptors.descriptors = combinedD;</span>
+<span class="pc bpc" id="L783" title="3 of 4 branches missed.">                assert (combinedDescriptors.descriptors.length == nTotal);</span>
             }
 <span class="pc bpc" id="L785" title="3 of 4 branches missed.">            assert(combinedKeypointList.size() == nTotal);</span>
 <span class="pc bpc" id="L786" title="3 of 4 branches missed.">            assert (combinedOrientationList.size() == nTotal);</span>

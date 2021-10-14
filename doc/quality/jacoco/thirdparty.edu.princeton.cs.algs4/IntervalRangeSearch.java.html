@@ -105,9 +105,9 @@ import java.util.List;
         // if xmin &gt; interval.max
         //   search rgt
         
-<span class="pc bpc" id="L108" title="3 of 4 branches missed.">        if ((x.left != null) &amp;&amp; (intersects || </span>
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">        if ((x.left != null) &amp;&amp; (intersects || </span>
 <span class="nc bnc" id="L109" title="All 2 branches missed.">            (x.key.max().compareTo(interval.min()) &lt; 1)) ) {</span>
-<span class="nc" id="L110">            range0(x.left, interval, list);</span>
+<span class="fc" id="L110">            range0(x.left, interval, list);</span>
         }
         
 <span class="fc bfc" id="L113" title="All 4 branches covered.">        if ((x.right != null) &amp;&amp; (intersects || </span>

@@ -722,7 +722,7 @@ public class Sky {
 <span class="fc" id="L722">                        int idx = iter.next();</span>
 <span class="fc" id="L723">                        float[] norm = normPTCHs.get(idx).a;</span>
                         // collect the sky w/o green that has similar intensity
-<span class="fc bfc" id="L725" title="All 4 branches covered.">                        if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
+<span class="pc bpc" id="L725" title="1 of 4 branches missed.">                        if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
 <span class="fc" id="L726">                            int avg = topAvgGrey.get(idx);</span>
 <span class="fc" id="L727">                            filtered.add(idx);</span>
                         }
