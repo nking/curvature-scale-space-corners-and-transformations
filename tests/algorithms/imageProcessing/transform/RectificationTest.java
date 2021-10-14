@@ -29,6 +29,18 @@ public class RectificationTest extends TestCase {
         RectifiedPoints result = Rectification.epipolar(k1, k2, x1, x2);
         
         assertNotNull(result);
+        
+        int i;
+        double[][] x1R= result.getX1();
+        double[][] x2R= result.getX2();
+        int n = x1R[0].length;
+        System.out.println("rectified");
+        for (i = 0; i < n; ++i) {
+            System.out.printf("%d) (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)\n",
+                i, x1R[0][i], x1R[1][i], x1R[2][i],
+                x2R[0][i], x2R[1][i], x2R[2][i]);
+        }
+      
     }
     
 }

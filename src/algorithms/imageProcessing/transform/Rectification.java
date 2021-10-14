@@ -206,7 +206,6 @@ public class Rectification {
             e2 ~ T and e1 ~ R^T * T where ~ is up to a scale factor
        
        let r_1 = e2 = T/||T|| so that epipole coincides w/ translation vector
-              
        */
        double[] r1 = Arrays.copyOf(t, t.length);
        r1 = MatrixUtil.normalizeL2(r1);
@@ -237,13 +236,17 @@ public class Rectification {
 
         System.out.printf("rRect=%s\n", FormatArray.toString(rRect, "%.4e"));
 
-        double[] tst = MatrixUtil.multiplyMatrixByColumnVector(rRect, r1);
-        System.out.printf("rRect*r1=%s\nexpecting=[1, 0, 0]\n",
-                FormatArray.toString(tst, "%.4e"));
+        double[][] r2Rot = MatrixUtil.copy(rRect);
+        double[][] r1Rot = MatrixUtil.multiply(r, rRect);
 
-        //Set R1=Rrect and R2 = R*Rrect
-        double[][] r1Rot = MatrixUtil.copy(rRect);
-        double[][] r2Rot = MatrixUtil.multiply(r, rRect);
+        // MASKS eqn (11.28) where H2*e2 is r2Rot*r1 here.  assert = [1,0,0]^T.
+        double[] tst = MatrixUtil.multiplyMatrixByColumnVector(r1Rot, e1);
+        System.out.printf("r2Rot*e1=%s\nexpecting=[1, 0, 0]\n",
+                FormatArray.toString(tst, "%.4e"));
+        
+        tst = MatrixUtil.multiplyMatrixByColumnVector(r2Rot, e2);
+        System.out.printf("r2Rot*e2=%s\nexpecting=[1, 0, 0]\n\n",
+                FormatArray.toString(tst, "%.4e"));
 
         /*
        2. Rotate (rectify) the left camera so that the epipole is at infinity
@@ -284,7 +287,7 @@ public class Rectification {
         double[][] x2R = MatrixUtil.multiply(_h2, x2);
 
         int i, j;
-        int n = x1[0].length;
+        int n = x1R[0].length;
         
         // normalize z-coords to be 1        
         for (i = 0; i < n; ++i) {
@@ -294,18 +297,6 @@ public class Rectification {
             }
         }
         
-        //ERROR above.
-        //  all of the x for image 1 are the same
-        //  and all of the x for image 2 are the same
-        // aligned the x-points instead of y-points...
-        // expecting each correspondence pair to each have the same y.
-        System.out.println("rectified");
-        for (i = 0; i < n; ++i) {
-            System.out.printf("%d) (%.1f, %.1f, %.1f)  (%.1f, %.1f, %.1f)\n",
-                i, x1R[0][i], x1R[1][i], x1R[2][i],
-                x2R[0][i], x2R[1][i], x2R[2][i]);
-        }
-      
         RectifiedPoints rPts = new RectifiedPoints();
         rPts.setX1(x1R);
         rPts.setX2(x2R);
