@@ -97,8 +97,7 @@
 
     <!-- =========== clean  ========== -->
     <target name="clean"
-        description="Delete dirs: build, doc/api, and src tree classes">
-        <delete dir="${doc.dir}/api"/>
+        description="Delete dirs: build, and src tree classes">
         <delete quiet="true">
             <fileset dir="${classes.dir}" />
         </delete>
