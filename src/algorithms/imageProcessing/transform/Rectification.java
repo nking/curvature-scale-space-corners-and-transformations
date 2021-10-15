@@ -549,15 +549,25 @@ public class Rectification {
         System.out.printf("H2*e2=G*G_R*G_T*e2=%s\n expecting [*,0,0]\n",
             FormatArray.toString(gGRGTE2, "%.3e"));
         
-        double[][] h2 = MatrixUtil.multiply(g, gR);
-        h2 = MatrixUtil.multiply(h2, gT);
+        double[][] rRect = MatrixUtil.multiply(g, gR);
+        rRect = MatrixUtil.multiply(rRect, gT);
        
         // 3 X 3
         //H1 = H2*H;
         double[][] h = Reconstruction.calculateProjectiveHomographyWithLeastSquares(
             x1, x2, _fm, e2);
         
-        double[][] h1 = MatrixUtil.multiply(h2, h);
+        System.out.printf("H=\n%s\ndet(H)=%.4e\n",
+            FormatArray.toString(h, "%.3e"), MatrixUtil.determinant(h));
+        
+//NOTE: these are reverse of what Kitani lectures recommend, but are what
+// MASKS use on pg 405.
+// TODO: will write a reprojection error method to look at the 
+//     differences, estimate inliers, 
+//     and offer corrected outliers.
+
+        double[][] h2 = rRect;
+        double[][] h1 = MatrixUtil.multiply(rRect, h);
         
         System.out.printf("H1*e1=%s\n expecting [*,0,0]\n",
             FormatArray.toString(
