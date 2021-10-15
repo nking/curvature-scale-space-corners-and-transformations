@@ -2636,6 +2636,196 @@ public class Reconstruction {
             */
         }
     }
+
+    /**
+     * calculates the canonical pose for the un-calibrated camera
+     * (the projective projection as the 2nd image's projection
+     * in the canonical decomposition, pg 189 of MASKS).
+     * <pre>
+     * the homography H in [x2]_x*H*x1 = [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 ~ 0
+     * where [v]_x is the skew-symmetric matrix of vector v.
+     *
+     * the skew symmetric matrix multiplication replaces the cross product.
+     * x2 cross H*x1 ~ 0.
+     *
+     * Details from Chapter 6 of Ma, Soatto, Kosecka,& Sastry (MASKS)
+     * "An Invitation to Computer Vision, From Images to Geometric Models"
+     *
+     * let X' = K*X and T'=K*T where K is the intrinsic camera parameters matrix.
+     *
+     * from euclidean transformation, we can derive the
+     * epipolar constraint:  x2'^T * [T']_x * K *R * K^-1 * x1' = 0
+     *
+     * x2^T*[T]_x*R*x1=0 <==> x2'^T * [T']_x * K *R * K^-1 * x1' = 0
+    F = K^-T * [T]_x * R * K^-1 (when K=I, F=E)
+    = [T']_x * K * R * K^-1 if det(K)=1, else it's approx (up to a scale factor)
+    epipoles e2^T*F = 0, F*e1 = 0.
+    e2 = K*T
+    e1 = K*R^T*T
+    epipolar constraint for uncalibrated cameras:
+    x2'^T * [T']_x * K *R * K^-1 * x1' = x2'^T * [T']_x * (K*R*K^-1 + T'*v^T)*x1'
+    = x2'^T * [T']_x * R' * x1'
+    where v is an arbitraty vector
+    since F = T']_x * K *R * K^-1,
+    fitting for the projection |(K*R*K^-1 + T'*v^T), v_4*T'|
+    one can then approximate the unclibrated camera pose.
+    this is a 4-parameter family of ambiguous decompositions.
+    pg 187 of MASKS.
+    This method implements point 4 in algorithm 11.9 on pg 405, Section 11.5 of MASKS.
+     * </pre>
+     * @param x1P the image 1 (a.k.a. left) half of correspondence points. format is 3 x N
+     * where N is the number of points. NOTE: since intrinsic parameters are not
+     * known, users of this method should presumably center the coordinates in
+     * some manner (e.g. subtract the image center or centroid of points) since
+     * internally an identity matrix is used for K.
+     * @param x2P the image 2 (a.k.a. right) half of correspondence points. format is 3 x N where
+     * N is the number of points. NOTE: since intrinsic parameters are not
+     * known, users of this method should presumably center the coordinates in
+     * some manner (e.g. subtract the image center or centroid of points).
+     * @param fm the fundamental matrix.  size is 3X3.
+     * @param e2 the left null space in the left singular vector of F.
+     * it's the last column of svd(fm).u and represents the location of
+     * the image 1 optical center (a.k.a. camera center).
+     * The epipole is the point where the baseline (the line joining the two
+     * camera centers ol, O2) intersects the image plane in each view,
+     * e2^T*F=0.  e2 = K*T where T is translation vector between cameras
+     * (a.k.a. the extrinsic camera parameter called translation).
+     * (NOTE: e1=K*R^T*T where R and T are extrinsic camera rotation and translation).
+     * @return
+     * @throws NotConvergedException
+     */
+    public static double[][] calculateProjectiveHomographyWithLeastSquares(double[][] x1P, double[][] x2P, double[][] fm, double[] e2) throws NotConvergedException {
+        /*
+        Compute the least-squares solution v from equation (11.30) using the
+        set of matched feature points, and determine the matching homography
+        [x2]_x*H*x1 = [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 ~ 0
+        fit for v=[v0,v1,v2]^T w/ total least squares
+        that is minarg_v( summation_over_j( || [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 ||^2)
+        where j is the enumeration of points
+        then determine H: = ([e2]_x)^T * F + e2*v^T
+        calculate [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 in pieces, separating the multiplication
+        that includes v from the rest:
+        [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1
+        = [x2]_x*( ([e2]_x)^T * F)*x1 + [x2]_x*( (e2*v^T)*x1 )
+        [x2]_x =|0       -x2[2]  x2[1]  |
+        |x2[2]   0       -x2[0] |
+        |-x2[1]  x2[0]   0      |
+        ([e2]_x)^T =| 0      -e2[2]   e2[1] |^T = | 0       e2[2]  -e2[1]|
+        | e2[2]      0   -e2[0] |     | -e2[2]  0       e2[0]|
+        | -e2[1]  e2[0]     0   |     | e2[1]   -e2[0]  0    |
+        ([e2]_x)^T * F = | 0       e2[2]  -e2[1]| * | F00 F01 F02 |
+        | -e2[2]  0       e2[0]|   | F10 F11 F12 |
+        | e2[1]   -e2[0]  0    |   | F20 F21 F22 |
+        = e2[2]*F10 - e2[1]*F20   e2[2]*F11 - e2[1]*F21   e2[2]*F12 - e2[1]*F22
+        -e2[2]*F00 + e2[0]*F20  -e2[2]*F01 + e2[0]*F21  -e2[2]*F02 + e2[0]*F22
+        e2[1]*F00 - e2[0]*F10   e2[1]*F01 - e2[0]*F11   e2[1]*F02 - e2[0]*F12
+        for simpler notation,
+        use e2STF = ([e2]_x)^T * F = | e2STF00 e2STF01 e2STF02 |
+        | e2STF10 e2STF11 e2STF12 |
+        | e2STF20 e2STF21 e2STF22 |
+        let x1=[x10,x11,x12] and x1=[x20,x21,x22]
+        ( ([e2]_x)^T * F)*x1
+        =| e2STF00 e2STF01 e2STF02 | * | x10 |
+        | e2STF10 e2STF11 e2STF12 |   | x11 |
+        | e2STF20 e2STF21 e2STF22 |   | x12 |
+        =| e2STF00*x10+e2STF01*x11+e2STF02*x12 |
+        | e2STF10*x10+e2STF11*x11+e2STF12*x12 |
+        | e2STF20*x10+e2STF21*x11+e2STF12*x22 |
+        [x2]_x*( ([e2]_x)^T * F)*x1 = 3X3 * 3X1 = 3X1
+        for simpler notation,
+        using b = the 3X1 product of [x2]_x*( ([e2]_x)^T * F)*x1
+        b = b0
+        b1
+        b2
+        now the multiplication that includes v: [x2]_x*( (e2*v^T)*x1 )
+        let e2[0]=e20, e2[1]=e21, e2[2]=e22
+        let x1[0][i] = x10, x1[1][i] = x11, x1[1][i] = x11
+        let x2[0][i] = x20, x2[1][i] = x21, x2[1][i] = x21
+        let v=v1,v2,v3
+        e2*v^T = e20*v0  e20*v1  e20*v2
+        e21*v0  e21*v1  e21*v2
+        e22*v0  e22*v1  e22*v2
+        [x2]_x*(e2*v^T)*x1
+        = |0     -x22  x21 | * | e20*v0  e20*v1  e20*v2 | * | x10 |
+        |x22   0    -x20 |   | e21*v0  e21*v1  e21*v2 |   | x11 |
+        |-x21  x20   0   |   | e22*v0  e22*v1  e22*v2 |   | x12 |
+        = |0     -x22  x21 | * | e20*v0*x10 + e20*v1*x11 + e20*v2*x12 |
+        |x22   0    -x20 |   | e21*v0*x10 + e21*v1*x11 + e21*v2*x12 |
+        |-x21  x20   0   |   | e22*v0*x10 + e22*v1*x11 + e22*v2*x12 |
+        = |-x22*(e21*v0*x10 + e21*v1*x11 + e21*v2*x12) + x21*(e22*v0*x10 + e22*v1*x11 + e22*v2*x12) |
+        |x22*(e20*v0*x10 + e20*v1*x11 + e20*v2*x12) -x20*(e22*v0*x10 + e22*v1*x11 + e22*v2*x12)   |
+        |-x21*(e20*v0*x10 + e20*v1*x11 + e20*v2*x12) + x20*(e21*v0*x10 + e21*v1*x11 + e21*v2*x12  |
+        = |v0*(-x22*e21*x10+x21*e22*x10) + v1*(-x22*e21*x11+x21*e22*x11) + v2*(-x22*e21*x12+x21*e22*x12) |
+        |v0*(x22*e20*x10-x20*e22*x10) + v1*(x22*e20*x11-x20*e22*x11) + v2*(x22*e20*x12-x20*e22*x12)    |
+        |v0*(-x21*e20*x10+x20*e21*x10) + v1*(-x21*e20*x11+x20*e21*x11) + v2*(-x21*e20*x12+x20*e21*x12) |
+        A * x = b where A_i is size 3X3 matrix of v factors
+        x is size 1X3 vector to be solved for
+        b is size 1X3 =  -1*remaining terms for each row of the objective
+        |i=0: v0 factors  v1 factors  v2 factors | * |v0| = |-b0|
+        |v1|   |-b1|
+        |v2|   |-b2|
+         */
+        // these are 3X3
+        double[][] e2SkewT = MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2));
+        double[][] e2SkewTF = MatrixUtil.multiply(e2SkewT, fm);
+        int n = x1P[0].length;
+        int i;
+        double[] x1 = new double[3];
+        double[] x2 = new double[3];
+        //3*n X 1
+        double[] b = new double[3 * n];
+        //3*n X 3
+        double[][] a = new double[3 * n][];
+        //3X3
+        double[][] x2Skew = MatrixUtil.zeros(3, 3);
+        double[][] tmp = MatrixUtil.zeros(3, 3);
+        double[] tmp2 = new double[3];
+        double x10;
+        double x11;
+        double x12;
+        double x20;
+        double x21;
+        double x22;
+        double e20;
+        double e21;
+        double e22;
+        for (i = 0; i < x1P[0].length; ++i) {
+            MatrixUtil.extractColumn(x1P, i, x1);
+            MatrixUtil.extractColumn(x2P, i, x2);
+            MatrixUtil.skewSymmetric(x2, x2Skew);
+            // 3X1  [x2]_x*( ([e2]_x)^T * F)*x1
+            MatrixUtil.multiply(x2Skew, e2SkewTF, tmp);
+            MatrixUtil.multiplyMatrixByColumnVector(tmp, x1, tmp2);
+            System.arraycopy(tmp2, 0, b, i * 3, 3);
+            x10 = x1[0];
+            x11 = x1[1];
+            x12 = x1[2];
+            x20 = x2[0];
+            x21 = x2[1];
+            x22 = x2[2];
+            e20 = e2[0];
+            e21 = e2[1];
+            e22 = e2[2];
+            /*
+            [x2]_x*(e2*v^T)*x1
+            = |v0*(-x22*e21*x10+x21*e22*x10) + v1*(-x22*e21*x11+x21*e22*x11) + v2*(-x22*e21*x12+x21*e22*x12) |
+            |v0*(x22*e20*x10-x20*e22*x10) + v1*(x22*e20*x11-x20*e22*x11) + v2*(x22*e20*x12-x20*e22*x12)    |
+            |v0*(-x21*e20*x10+x20*e21*x10) + v1*(-x21*e20*x11+x20*e21*x11) + v2*(-x21*e20*x12+x20*e21*x12) |
+             */
+            a[i * 3] = new double[]{-x22 * e21 * x10 + x21 * e22 * x10, -x22 * e21 * x11 + x21 * e22 * x11, -x22 * e21 * x12 + x21 * e22 * x12};
+            a[i * 3 + 1] = new double[]{x22 * e20 * x10 - x20 * e22 * x10, x22 * e20 * x11 - x20 * e22 * x11, x22 * e20 * x12 - x20 * e22 * x12};
+            a[i * 3 + 2] = new double[]{-x21 * e20 * x10 + x20 * e21 * x10, -x21 * e20 * x11 + x20 * e21 * x11, -x21 * e20 * x12 + x20 * e21 * x12};
+        }
+        //A * x = b
+        // x = A^-1 * b
+        // 3 X n
+        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);
+        double[] v = MatrixUtil.multiplyMatrixByColumnVector(aInv, b);
+        //H = ([e2]_x)^T * F + e2*v^T
+        //  = e2SkewTF + e2*v^T
+        double[][] h = MatrixUtil.elementwiseAdd(e2SkewTF, MatrixUtil.outerProduct(e2, v));
+        return h;
+    }
     
     public static class ProjectionResults {
         /**

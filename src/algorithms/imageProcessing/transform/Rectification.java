@@ -508,7 +508,7 @@ public class Rectification {
         //     Copyright (c) MASKS, 2003."
         // 
         // This project has a more permissive license allowing commercial use,
-        // so below implements the book algorithm outline.
+        // so below implements the book algorithm outline instead of the Matlab code.
         
         // see Section 11.5 of MASKS, pg 405.
   
@@ -554,7 +554,7 @@ public class Rectification {
        
         // 3 X 3
         //H1 = H2*H;
-        double[][] h = EpipolarTransformer.calculateHomographyWithLeastSquares(
+        double[][] h = Reconstruction.calculateProjectiveHomographyWithLeastSquares(
             x1, x2, _fm, e2);
         
         double[][] h1 = MatrixUtil.multiply(h2, h);
@@ -564,16 +564,18 @@ public class Rectification {
             MatrixUtil.multiplyMatrixByColumnVector(h1, e1), 
             "%.3e"));
         
-        // multiply by intrinsic camera matrix
-        double[][] invTr = MatrixUtil.createIdentityMatrix(3);
-        invTr[0][2] = oX;
-        invTr[1][2] = oY;
+        // multiply by intrinsic camera matrix (note: f=1 and skew=0)
+        double[][] k = MatrixUtil.createIdentityMatrix(3);
+        k[0][2] = oX;
+        k[1][2] = oY;
         
-        //H1 = inv(Tr)*H1;
-        double[][] _h1 = MatrixUtil.multiply(invTr, h1);
+        System.out.printf("det(K)=%.4e\n", MatrixUtil.determinant(k));
         
-        //H2 = inv(Tr)*H2;
-        double[][] _h2 = MatrixUtil.multiply(invTr, h2);
+        //H1 = K*H1;
+        double[][] _h1 = MatrixUtil.multiply(k, h1);
+        
+        //H2 = K*H2;
+        double[][] _h2 = MatrixUtil.multiply(k, h2);
         
         double[][] x1R = MatrixUtil.multiply(_h1, x1);
         double[][] x2R = MatrixUtil.multiply(_h2, x2);
