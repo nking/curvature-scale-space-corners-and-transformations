@@ -2,8 +2,10 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.transform.Rectification.RectifiedPoints;
 import algorithms.matrix.MatrixUtil;
+import java.security.NoSuchAlgorithmException;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertNotNull;
+import no.uib.cipr.matrix.NotConvergedException;
 import org.junit.Test;
 
 /**
@@ -26,9 +28,14 @@ public class RectificationTest extends TestCase {
         double[][] x1 = Zhang98Data.getObservedFeaturesInImage(1);
         double[][] x2 = Zhang98Data.getObservedFeaturesInImage(5);
                 
-        RectifiedPoints result = Rectification.epipolar(k1, k2, x1, x2);
+        RectifiedPoints result;
         
+        result = Rectification.epipolar(k1, k2, x1, x2);
         assertNotNull(result);
+        
+        double oX = k1[0][2]; 
+        double oY = k1[1][2];
+        result = Rectification.rectify(x1, x2, oX, oY);
         
         int i;
         double[][] x1R= result.getX1();

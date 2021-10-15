@@ -6,6 +6,7 @@ import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Reconstruction.ReconstructionResults;
 import algorithms.matrix.MatrixUtil;
+import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.util.FormatArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -107,12 +108,12 @@ public class Rectification {
     //
     
     /**
-     * NOT READY FOR USE.
-     * 
      * Rectify (i.e, warp) the left image correspondence points x1 and
      * right image correspondence points x2
      * so that corresponding horizontal scanlines are epipolar lines.
      
+     * NOTE that the method rectify() is preferred.
+     * 
      * <pre>
      * references:
      * following the algorithm of Kitani lecture 13.1, class 16-385 Computer Vision,
@@ -221,9 +222,26 @@ public class Rectification {
            FormatArray.toString(re.essentialMatrix, "%.4e"),
            FormatArray.toString(rtSkewSym, "%.4e"));
        
-       //let r_2 = [-T_y  T_x  0]/sqrt(T_x^2 + T_y^2)
-       //           cross product of e and the direction vector of the optical axis       
-       double td = 1./Math.sqrt(t[0]*t[0] + t[1]*t[1]);
+        /*
+        forming rRect to transform the epipole e2 to [1,0,0]^T.
+          rRect * e2 = [1,0,0]
+       
+          direction vector of optical axis = [0, 0, -1], pointing towards positive z
+       
+          r1 = rRect[0] = e2
+          r2 = rRect[1] = cross product of e and the direction vector of the optical axis
+          r3 = rRect[2] = r1 cross r2.
+       
+         cross proeduct of e2 and optical axis direction [0,0,1]
+           (T_y*-1 - T_z*0)/||T|| = -T_y/||T||
+           (T_z*0 - T_x*-1)/||T|| = T_x/||T||
+           (T_x*0 - T_y*0)/||T||; = 0
+         except for dropping the T_z^2 term from ||T|| in the normalization.
+       
+         r_2 = [-T_y  T_x  0]/sqrt(T_x^2 + T_y^2)
+        */
+        
+        double td = 1./Math.sqrt(t[0]*t[0] + t[1]*t[1]);
         double[] r2 = new double[]{-t[1] * td, t[0] * td, 0};
 
         //let r_3 = r1Xr2 orthogonal vector
@@ -308,7 +326,8 @@ public class Rectification {
     
     /**
      * implementation of epipolar rectification following algorithm 11.9 of
-     * Ma, Soatto, Kosecka,& Sastry "Invitation to Computer Vision, From Images to Geometric Models".
+     * Ma, Soatto, Kosecka,& Sastry (MASKS) 
+     * "An Invitation to Computer Vision, From Images to Geometric Models".
      * This is for un-calibrated cameras.  If the images have a large range of
      * depth in them or if the epipoles are inside the images, 
      * this algorithm can result in distortions.
@@ -326,9 +345,10 @@ public class Rectification {
      * some manner (e.g. subtract the image center or centroid of points).
      * @param oX camera optical center along x-axis
      * @param oY camera optical center along y-axis
-     * @return
+     * @return rectified points and the homography matrices used to transform them.
      */
-    public static RectifiedPoints rectify(double[][] x1, double[][] x2, double oX, double oY) throws NoSuchAlgorithmException, NotConvergedException {
+    public static RectifiedPoints rectify(double[][] x1, double[][] x2, 
+        double oX, double oY) throws NoSuchAlgorithmException, NotConvergedException {
 
         if (x1.length != 3 || x2.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
@@ -379,6 +399,7 @@ public class Rectification {
         EpipolarTransformer tr = new EpipolarTransformer();
         double[][] e1e2 = tr.calculateEpipoles(fm);
         double[] e2 = e1e2[1];
+        double[] e1 = e1e2[0];
         
         /*
         
@@ -423,7 +444,7 @@ public class Rectification {
         right null-space of A.
         So H can be solved for nPoints .geq. 4.
         
-        If the data are not exact and more than 4 points are used, therank of A is 9
+        If the data are not exact and more than 4 points are used, the rank of A is 9
         and a least squares solution is sought.
         
         The least-squares solution for vec(H^T) is the singular vector 
@@ -475,99 +496,78 @@ public class Rectification {
             And in that case, parallax*[1, 0,0]^T = x2 - x1.
         */
         
-        // a translation:
+        // a translation:  NOTE: this is the same as the inverse intrinsic parameters camera matrix with f=1 and skew=0
         double[][] gT = MatrixUtil.createIdentityMatrix(3);
         gT[0][2] = -oX;
         gT[1][2] = -oY;
-        
+                
         // see projRectify.m in examples-code from Ma et al. supplementary book material
         // https://cs.gmu.edu/~kosecka/MASKS_book.html
-        // which states:
-        // "THE CODE ON THIS PAGE IS DISTRIBUTED FREE FOR NON-COMMERCIAL USE.
-        // Copyright (c) MASKS, 2003."
+        // their Matlab code license:
+        //    "THE CODE ON THIS PAGE IS DISTRIBUTED FREE FOR NON-COMMERCIAL USE.
+        //     Copyright (c) MASKS, 2003."
+        // 
+        // This project has a more permissive license allowing commercial use,
+        // so below implements the book algorithm outline.
         
-        // gR is a rotation:
-        // gR * gT * e2 = [e2_x, 0, 1]^T
-        double[] p2T = MatrixUtil.multiplyMatrixByColumnVector(gT, e2);
+        // see Section 11.5 of MASKS, pg 405.
+  
+        double[] gTE2 = MatrixUtil.multiplyMatrixByColumnVector(gT, e2);
+        /*
+         G_T*e2 =
+        | e2[0]-O_x*e2[2] |
+        | e2[1]-O_y*e2[2] |
+        | e2[2]           |
+        
+        gR is a rotation about the z-axis.
+        
+        gR * gT * e2 = [e2_x, 0, 1]^T
+        
+        cc rotation about z-axis (yaw):
+            | cos φ   -sin φ    0 |
+            | sin φ    cos φ    0 |
+            |     0        0    1 |
+        */
+        
         // rotate the epipole to lie on the x-axis
-        double theta = Math.atan(-p2T[1]/p2T[0]);
+        double theta = Math.atan(-gTE2[1]/gTE2[0]);
         // rotation about z-axis:
         double[][] gR = Rotation.createYawRotationMatrix(theta);
-        double[] p2R = MatrixUtil.multiplyMatrixByColumnVector(gR, p2T);
+        
+        double[] gRGTE2 = MatrixUtil.multiplyMatrixByColumnVector(gR, gTE2);
        
+        System.out.printf("e2=%s\n", FormatArray.toString(e2, "%.3e"));
+        System.out.printf("G_R*G_T*e2=%s\n expecting [*,0,1]\n",
+            FormatArray.toString(gRGTE2, "%.3e"));
+        
+        //MASKS Section 11.5, pg 405, above eqn (11.29)
         double[][] g = MatrixUtil.createIdentityMatrix(3);
-        g[2][0] = -1./p2R[0];
+        g[2][0] = -1./gRGTE2[0];
         
-        double[] pim2R = MatrixUtil.multiplyMatrixByColumnVector(g, p2R);
+        double[] gGRGTE2 = MatrixUtil.multiplyMatrixByColumnVector(g, gRGTE2);
         
+        System.out.printf("H2*e2=G*G_R*G_T*e2=%s\n expecting [*,0,0]\n",
+            FormatArray.toString(gGRGTE2, "%.3e"));
         
         double[][] h2 = MatrixUtil.multiply(g, gR);
         h2 = MatrixUtil.multiply(h2, gT);
-        
-        //M = skew(ep2)'*F + ep2*rand(1,3);
-        double[][] M = MatrixUtil.multiply(
-            MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2)), _fm);
-            //  + ep2*rand(1,3);  3X1 * 1X3 = 3X3 
-        double[] randV = new double[3];
-        SecureRandom rand = SecureRandom.getInstanceStrong();
-        randV[0] = rand.nextDouble();
-        randV[1] = rand.nextDouble();
-        randV[2] = rand.nextDouble();
-        double[][] randEp2 = MatrixUtil.outerProduct(e2, randV);
-        M = MatrixUtil.elementwiseAdd(M, randEp2);
-        
-        
-        // determine H then H1 by solving for unknown plane v to minimize the 
-        //   disparity in matching homography
-        
-        // from Chap 11 near eqn (11.30) of Ma, Soatto, et al.)
-        //  algebraic error assoc w/ homography transfer:
-        //     [x2]_x * H * x1 = [x2]_x * ( ([t]_x)^T * F + t*v^T ) * x1 is approx 0
-        //     where [*]_x is the skew-symmetric matrix used in cross product operations
-        //     and t is the 2nd epipole of the fundamental matrix.
-        
-        double t1 = e2[0]; 
-        double t2 = e2[1]; 
-        double t3 = e2[2];
-        double[][] a = new double[2*n][3];
-        double[] b = new double[2*n];
-        for (int i = 0; i < n;++i) {
-            a[2*i] = new double[]{
-                -t2*x1[0][i] + t3*x1[0][i]*x2[1][i],
-                -t2*x1[1][i] + t3*x1[1][i]*x2[1][i], -t2+t3*x2[1][i]};
-            a[2*i + 1] = new double[]{
-                t1*x1[0][i] - t3*x1[0][i]*x2[0][i],
-                t1*x1[1][i] - t3*x1[1][i]*x2[0][i], t1-t3*x2[0][i]};
-            b[2*i] = M[1][0]*x1[0][i] + M[1][1]*x1[1][i] + M[1][2] - M[2][0]*x1[0][i]*x2[1][i]
-                  - M[2][1]*x1[1][i]*x2[1][i] - M[2][2]*x2[1][i];
-            b[2*i + 1] = -M[0][0]*x1[0][i] - M[0][1]*x1[1][i] - M[0][2] + M[2][0]*x1[0][i]*x2[0][i]
-                  + M[2][1]*x1[1][i]*x2[0][i] + M[2][2]*x2[0][i];
-        }
-        
-        // matrix left division
-        // x = A\B: Solve systems of linear equations Ax = B for x
-        // 3 X n
-        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);
-        
-        // 3 x 1
-        //aa = A\b;
-        double[] aa = MatrixUtil.multiplyMatrixByColumnVector(aInv, b);
-        
-        // 3 X 3
-        //H = M + ep2*aa';
-        double[][] h = MatrixUtil.elementwiseAdd(M, MatrixUtil.outerProduct(e2, aa));
-        
+       
         // 3 X 3
         //H1 = H2*H;
+        double[][] h = EpipolarTransformer.calculateHomographyWithLeastSquares(
+            x1, x2, _fm, e2);
+        
         double[][] h1 = MatrixUtil.multiply(h2, h);
         
-         
-        // is inv(Tr) correct??
-        //   the inverse of translations is -1*each translation and leave diagonal as +1
-        double[][] invTr = MatrixUtil.inverse(gT);
-        double[][]_invTr = MatrixUtil.createIdentityMatrix(3);
-        _invTr[0][2] = oX;
-        _invTr[1][2] = oY;
+        System.out.printf("H1*e1=%s\n expecting [*,0,0]\n",
+            FormatArray.toString(
+            MatrixUtil.multiplyMatrixByColumnVector(h1, e1), 
+            "%.3e"));
+        
+        // multiply by intrinsic camera matrix
+        double[][] invTr = MatrixUtil.createIdentityMatrix(3);
+        invTr[0][2] = oX;
+        invTr[1][2] = oY;
         
         //H1 = inv(Tr)*H1;
         double[][] _h1 = MatrixUtil.multiply(invTr, h1);
@@ -595,175 +595,20 @@ public class Rectification {
 
         return out;        
     }
-    
+   
     /**
      use the homography from rectify(...) to warp the image img such that
      epipolar lines correspond to scan lines.
      
-     following Hwarp.m in examples-code from Ma et al. supplementary book material
-     https://cs.gmu.edu/~kosecka/MASKS_book.html
-     which states:
-     "THE CODE ON THIS PAGE IS DISTRIBUTED FREE FOR NON-COMMERCIAL USE.
-     Copyright (c) MASKS, 2003."
-        
      * @param img image to be rectified
      * @param h
      * @return 
-     */
-    public static RectifiedImage hWarp(Image img, double[][] h) throws NotConvergedException {
-        
-        int ydim = img.getHeight();
-        int xdim = img.getWidth();
-        
-        //NOTE: handling the zero-base coordinates offset at end
-        
-        // upper, lower, left and right corners
-        double[] ulc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{1, 1, 1});
-        MatrixUtil.multiply(ulc, 1./ulc[2]);
-        double[] urc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{xdim, 1, 1});
-        MatrixUtil.multiply(urc, 1./urc[2]);
-        double[] llc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{1, ydim, 1});
-        MatrixUtil.multiply(llc, 1./llc[2]);
-        double[] lrc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{xdim, ydim, 1});
-        MatrixUtil.multiply(lrc, 1./lrc[2]);
   
-        // compute the new meshgrid 
-        int xmin = (int)min(ulc[0], llc[0], urc[0], lrc[0]);
-        int xmax = (int)max(ulc[0], llc[0], urc[0], lrc[0]);
-        int ymin = (int)min(ulc[1], llc[1], urc[1], lrc[1]);
-        int ymax = (int)max(ulc[1], llc[1], urc[1], lrc[1]);
-                
-        // generate coordinates in the new image  
-        //range_x = xmin:xmax;
-        //range_y = ymin:ymax;
-        //[x2, y2] = meshgrid(range_x,range_y); % original image 
-        // ==> x2 is a double array of size (ymax-ymin+1) X (xmax-xmin+1)
-        //        where each row is [xmin, xmin+1, ... xmax]
-        // ==> y2 is a double array of size ydim X xdim
-        //        where each column is [ymin, ymin+1, ... ymax]
-        /*
-        matlab example https://www.mathworks.com/help/matlab/ref/meshgrid.html
-        x = 1:3;
-        y = 1:5;
-        [X,Y] = meshgrid(x,y)
-        
-        X = 5×3
-
-             1     2     3
-             1     2     3
-             1     2     3
-             1     2     3
-             1     2     3
-
-        Y = 5×3
-
-             1     1     1
-             2     2     2
-             3     3     3
-             4     4     4
-             5     5     5
-        */
-        
-        //[ydim, xdim] = size(x2);
-        ydim = ymax-ymin+1;
-        xdim = xmax-xmin+1;
-        
-        // X is ydim X xdim matrix size [rows, cols]
-        // each row of X is xmin:xmax inclusive
-        // Y is ydim X xdim matrix size [rows, cols]
-        // each col of Y is ymin:ymax inclusive
-        
-        int len = ydim*xdim;
-        
-        //xx = reshape(x2,[1,ydim*xdim]);
-        //yy = reshape(y2,[1,ydim*xdim]);
-        // matlab's reshape:
-        //    read input by each element in column 0, then column 1, etc
-        //    and write output to each column element filling column 0, column 1, etc.
-        //    where the write is into an array of specified size
-        double[] xx = new double[len];
-        double[] yy = new double[len];
-        
-        //xx is numbers xmin thru xmax inclusive each number repeated ydim times
-        //yy is numbers ymin thru ymax inclusive then that same range repeated xdim times.
-        
-        int row, col, c;
-        c = 0;
-        for (col = xmin; col <= xmax; ++col) {
-            for (row = 0; row < ydim; ++row) {
-                xx[c] = col;
-                c++;
-            }
-        }
-        c = 0;
-        for (row = 0; row < xdim; ++row) {
-            for (col = ymin; col <= ymax; ++col) {
-                yy[c] = col;
-                c++;
-            }
-        }
-        
-        //gg = [xx; yy; ones(1,ydim*xdim)];
-        //ww = H \ gg;
-        double[][] gg = new double[3][len];
-        gg[0] = xx;
-        gg[1] = yy;
-        gg[2] = new double[len];
-        Arrays.fill(gg[2], 1.);
-        
-        // 3x3
-        double[][] hInv = MatrixUtil.pseudoinverseRankDeficient(h);
-        // 3Xlen
-        double[][] ww = MatrixUtil.multiply(hInv, gg);
-        
-        double[] wx = ww[0];//Arrays.copyOf(ww[0], len);
-        double[] wy = ww[1];//Arrays.copyOf(ww[1], len);
-        for (col = 0; col < ww[0].length; ++col) {
-            wx[col] /= ww[2][col];
-            wy[col] /= ww[2][col];
-        }
-        
-        //xi = reshape(wx,[ydim,xdim]);
-        //yi = reshape(wy,[ydim,xdim]);        
-        double[][] xi = MatrixUtil.zeros(ydim,xdim);
-        double[][] yi = MatrixUtil.zeros(ydim,xdim);
-        //  00  01   =>  00  20  01
-        //  10  11       10  01  11
-        //  20  21
-        c = 0;
-        for (col = 0; col < xdim; ++col) {
-            for (row = 0; row < ydim; ++row) {
-                xi[row][col] = wx[c];
-                yi[row][col] = wy[c];
-                c++;
-            }
-        }
-        
-        //im1 = interp2(double(im0),xi,yi,'bilinear');
-        //
-        // NOTE: need to handle the zero-based coordinate system
-        // im0[yi[0][0][xi[0][0]]
-        
-        double[] auxArr1 = new double[2];
-        double[][] auxArr2 = MatrixUtil.zeros(2, 2);
-        double[] auxArr3 = new double[2];
-        ImageProcessor imageProcessor = new ImageProcessor();
-        double x, y;
-        double[] outRGB = new double[3];
-        int i, j;
-        for (i = 0; i < xi.length; ++i) {
-            for (j = 0; j < xi[i].length; ++j) {
-                x = xi[i][j];
-                y = yi[i][j];
-                imageProcessor.biLinearInterpolation(img, x, y, outRGB, auxArr1, auxArr2, auxArr3);
-                System.out.printf("(%d,%d) x=%.1f y=%.1f rgb=%s\n",
-                    i, j, x, y, FormatArray.toString(outRGB, "%.0f"));
-            }
-        }
+    public static RectifiedImage hWarp(Image img, double[][] h) throws NotConvergedException {
         
         throw new UnsupportedOperationException("unfinished");
     }
-
+    */
     private static DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
         DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());
         int r = 0;
