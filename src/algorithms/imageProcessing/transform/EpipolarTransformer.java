@@ -1814,10 +1814,19 @@ public class EpipolarTransformer {
     
     /** untested
      * 
-     * @param x1P
-     * @param x2P
-     * @param fm
-     * @param e2
+     * @param x1P the image 1 (a.k.a. left) half of correspondence points. format is 3 x N
+     * where N is the number of points. NOTE: since intrinsic parameters are not
+     * known, users of this method should presumably center the coordinates in
+     * some manner (e.g. subtract the image center or centroid of points) since
+     * internally an identity matrix is used for K.
+     * @param x2P the image 2 (a.k.a. right) half of correspondence points. format is 3 x N where
+     * N is the number of points. NOTE: since intrinsic parameters are not
+     * known, users of this method should presumably center the coordinates in
+     * some manner (e.g. subtract the image center or centroid of points).
+     * @param fm the fundamental matrix.  size is 3X3.
+     * @param e2 the left null space in the left singular vector of F.
+     * it's the last column of svd(fm).u and represents the location of
+     * the image 1 optical center (a.k.a. camera center).
      * @return
      * @throws NotConvergedException 
      */
