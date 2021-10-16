@@ -4,7 +4,10 @@ import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
+import algorithms.misc.MiscMath0;
+import algorithms.util.FormatArray;
 import algorithms.util.PairFloatArray;
+import gnu.trove.list.TIntList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -306,6 +309,90 @@ public class Distances {
         fit.calculateErrorStatistics();
 
         return fit;
+    }
+    
+    /**
+     * given rectified correspondence pairs in x1, x2, calculate the
+     * square root of the sum of squares of the differences in the
+     * y coordinates, or both x and y if useXToo is true.
+     * Also uses MAD or Tukey fences to determine inliers.
+     * 
+     * @param x1 the image 1 set of correspondence points. format is 3 x N
+     * where N is the number of points. NOTE: since intrinsic parameters are not
+     * known, users of this method should presumably center the coordinates in
+     * some manner (e.g. subtract the image center or centroid of points) since
+     * internally an identity matrix is used for K.
+     * @param x2 the image 2 set of correspondence points. format is 3 x N where
+     * N is the number of points. NOTE: since intrinsic parameters are not
+     * known, users of this method should presumably center the coordinates in
+     * some manner (e.g. subtract the image center or centroid of points).
+     * @param outErrors array of length x1[0].length to be used to return each
+     * error as the square root of the sum of differences between each x1 and x2.
+     * @param outInlierIndexes indexes of points which are within the robust 
+     * statistics range for inliers (defined as not being outliers).
+     * @param useXToo if true, the errors are not only the differences between the
+     * y coordinates of x1 and x2, but also the x-xoordinates of x1 and x2.
+     * @return square root of the sum of squared errors
+     */
+    public static double calculateRectificationErrors(
+    double[][] x1, double[][] x2,
+    double[] outErrors, TIntList outInlierIndexes, boolean useXToo) {
+        
+        int n = x1[0].length;
+        if (x1.length !=3 && x1.length != 2) {
+            throw new IllegalArgumentException("x1.length must be 3 or 2");
+        }
+        if (x2.length !=3 && x2.length != 2) {
+            throw new IllegalArgumentException("x2.length  must be 3 or 2");
+        }
+        if (x2[0].length != n) {
+            throw new IllegalArgumentException("x2 must be size 3Xn and the same as size of x1");
+        }
+        if (outErrors.length !=n) {
+            throw new IllegalArgumentException("outErrors.length  must be n");
+        }
+        if (outInlierIndexes == null) {
+            throw new IllegalArgumentException("outInlierIndexes cannot be null");
+        }
+        double diff;
+        double sum = 0;
+        double sumI;
+        int i;
+        for (i = 0; i < n; ++i) {
+            diff = x1[1][i] - x2[1][i];
+            sumI = diff*diff;
+            if (useXToo) {
+                diff = x1[0][i] - x2[0][i];
+                sumI += diff*diff;
+            }
+            sum += sumI;
+            outErrors[i] = Math.sqrt(sumI);
+        }
+        sum = Math.sqrt(sum);
+        
+        // use MAD or Tukey fences
+                
+        //median of absolute deviation of x, median, min, and max.
+        double[] mADMinMax = MiscMath0.calculateMedianOfAbsoluteDeviation(outErrors);
+        double kMAD = 1.4826;
+        double s = kMAD*mADMinMax[0];
+        double r0 = mADMinMax[1] - 3*s;
+        double r1 = mADMinMax[1] + 3*s;
+        
+        int[] inliers2 = MiscMath0.findInliersUsingTukeyFences(outErrors);
+        
+        for (i = 0; i < n; ++i) {
+            diff = outErrors[i];
+            if (diff >= r0 && diff <= r1) {
+                outInlierIndexes.add(i);
+            }
+        }
+        
+        System.out.printf("inliers using MAD=\n%s\ninliers using Tukey fences=\n%s\n", 
+            Arrays.toString(outInlierIndexes.toArray()),
+            Arrays.toString(inliers2));
+        
+        return sum;
     }
     
     /**

@@ -8,6 +8,8 @@ import algorithms.imageProcessing.transform.Reconstruction.ReconstructionResults
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.util.FormatArray;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -560,14 +562,10 @@ public class Rectification {
         System.out.printf("H=\n%s\ndet(H)=%.4e\n",
             FormatArray.toString(h, "%.3e"), MatrixUtil.determinant(h));
         
-//NOTE: these are reverse of what Kitani lectures recommend, but are what
-// MASKS use on pg 405.
-// TODO: will write a reprojection error method to look at the 
-//     differences, estimate inliers, 
-//     and offer corrected outliers.
-
-        double[][] h2 = rRect;
-        double[][] h1 = MatrixUtil.multiply(rRect, h);
+        // MASKS pg 405 use h2=rRect and h1=rRect*h
+        //   while Kitani lectures use h1=rRect and h2 = rRect*h
+        double[][] h1 = rRect;
+        double[][] h2 = MatrixUtil.multiply(rRect, h);
         
         System.out.printf("H1*e1=%s\n expecting [*,0,0]\n",
             FormatArray.toString(
@@ -598,6 +596,14 @@ public class Rectification {
                 x2R[j][i] /= x2R[2][i];
             }
         }
+        
+        boolean calcXToo = false;
+        TIntList inlierIndexes = new TIntArrayList();
+        double[] errors = new double[n];
+        double err = Distances.calculateRectificationErrors(
+            x1R, x2R, errors, inlierIndexes, calcXToo);
+        System.out.printf("err=%.4e\n", err);
+        System.out.printf("n=%d,  nInliers=%d\n", n, inlierIndexes.size());
         
         RectifiedPoints out = new RectifiedPoints();
         out.setX1(x1R);
