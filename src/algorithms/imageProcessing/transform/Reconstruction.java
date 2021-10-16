@@ -48,6 +48,11 @@ import no.uib.cipr.matrix.NotConvergedException;
    test datasets:
       https://www.cs.cmu.edu/afs/cs/project/vision/vasc/idb/www/html_permanent/index.html
       http://www.cs.cmu.edu/afs/cs/project/cil/www/v-images.html
+       
+      
+ TODO: implement more of Chapt 11 of MASKS (Ma, Soatto, Kosecká, and Sastry 2012, 
+ * "An Invitation to 3-D Vision")
+ * 
  </pre>
 
  * @author nichole
@@ -166,8 +171,7 @@ public class Reconstruction {
                 values for a non-linear optimization method.
     
     NOTE: to solve affine reconstruction for the case of pure translation, 
-    see Example 6.6 of Ma, Soatto, Kosecká, & Shankar Sastry book
-    "Invitation to 3D".
+    see Example 6.6 of Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision"".
     For the case of pure rotation, see Example 6.10.
     
     */
@@ -2638,12 +2642,12 @@ public class Reconstruction {
     }
 
     /**
-     * calculates the canonical pose for the un-calibrated camera
+     * calculates the homography as the canonical pose for the un-calibrated camera
      * (the projective projection as the 2nd image's projection
      * in the canonical decomposition, pg 189 of MASKS).
      * <pre>
-     * the homography H in [x2]_x*H*x1 = [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 ~ 0
-     * where [v]_x is the skew-symmetric matrix of vector v.
+     * The homography H in [x2]_x*H*x1 = [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 ~ 0
+     * where [b]_x is the skew-symmetric matrix of vector b.
      *
      * the skew symmetric matrix multiplication replaces the cross product.
      * x2 cross H*x1 ~ 0.
@@ -2670,9 +2674,9 @@ public class Reconstruction {
         = x2'^T * [T']_x * R' * x1'
            where v is an arbitraty vector
            
-    since F = T']_x * K *R * K^-1,
+    since F = [T']_x * K *R * K^-1,
        fitting for the projection |(K*R*K^-1 + T'*v^T), v_4*T'|
-    one can then approximate the unclibrated camera pose.
+    one can then approximate the uncalibrated camera pose.
     this is a 4-parameter family of ambiguous decompositions.
     pg 187 of MASKS.
     This method implements point 4 in algorithm 11.9 on pg 405, Section 11.5 of MASKS.    

@@ -18,7 +18,15 @@ import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
- *
+ * given correspondences, pairs of points for the same objected projected into 2 images,
+ * methods in this class calculate transformations necessary to make two images
+ * parallel to the baseline between the camera optical centers
+ * and at the focal distance.  Rectification makes the epipolar lines parallel
+ * and the epipoles at infinity.
+ * 
+ * NOTE: if the epipoles are within the images, consider using Pollefeys, 2000
+ * (not implemented here at this time).
+ * 
  * @author nichole
  */
 public class Rectification {

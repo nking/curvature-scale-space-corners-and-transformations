@@ -58,6 +58,13 @@ import no.uib.cipr.matrix.NotConvergedException;
  * where (9^3)*mImages > (3^3)*nFeatures,  The "reduced camera system" is
  * currently implemented.
  * 
+ * <pre>
+ * for a bigger picture summary, see Section 
+ * "Objective functions for estimating epipolar geometry" on page 169 of
+ *  MASKS (Ma, Soatto, Kosecká, and Sastry 2012, 
+ * "An Invitation to 3-D Vision").
+ * Also see Chap 5.2, pp 127-128 of MASKS for constrained optimization.
+ * </pre>
  * @author nichole
  */
 public class BundleAdjustment {
