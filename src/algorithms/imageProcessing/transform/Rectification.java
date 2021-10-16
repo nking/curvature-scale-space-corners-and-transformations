@@ -564,8 +564,8 @@ public class Rectification {
         
         // MASKS pg 405 use h2=rRect and h1=rRect*h
         //   while Kitani lectures use h1=rRect and h2 = rRect*h
-        double[][] h1 = rRect;
-        double[][] h2 = MatrixUtil.multiply(rRect, h);
+        double[][] h2 = rRect;
+        double[][] h1 = MatrixUtil.multiply(rRect, h);
         
         System.out.printf("H1*e1=%s\n expecting [*,0,0]\n",
             FormatArray.toString(
@@ -597,7 +597,7 @@ public class Rectification {
             }
         }
         
-        boolean calcXToo = false;
+        boolean calcXToo = true;
         TIntList inlierIndexes = new TIntArrayList();
         double[] errors = new double[n];
         double err = Distances.calculateRectificationErrors(
