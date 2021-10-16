@@ -89,8 +89,8 @@ adapted from http://algs4.cs.princeton.edu/92search/
 <span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (x == null) return null;</span>
 <span class="fc" id="L90">        int cmp = key.compareTo(x.key);</span>
 <span class="fc bfc" id="L91" title="All 2 branches covered.">        if      (cmp == 0) return x.val;</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">        else if (cmp  &lt; 0) return get(x.left,  key);</span>
-<span class="fc" id="L93">        else               return get(x.right, key);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        else if (cmp  &lt; 0) return get(x.left,  key);</span>
+<span class="nc" id="L93">        else               return get(x.right, key);</span>
     }
 
    /***************************************************************************
@@ -288,8 +288,8 @@ adapted from http://algs4.cs.princeton.edu/92search/
 <span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (x == null) return null; </span>
 <span class="fc" id="L289">        int cmp = key.compareTo(x.key);</span>
 <span class="fc bfc" id="L290" title="All 2 branches covered.">        if      (cmp == 0) x = joinLR(x.left, x.right);</span>
-<span class="fc bfc" id="L291" title="All 2 branches covered.">        else if (cmp  &lt; 0) x.left  = remove(x.left,  key);</span>
-<span class="fc" id="L292">        else               x.right = remove(x.right, key);</span>
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">        else if (cmp  &lt; 0) x.left  = remove(x.left,  key);</span>
+<span class="nc" id="L292">        else               x.right = remove(x.right, key);</span>
 <span class="fc" id="L293">        fix(x);</span>
 <span class="fc" id="L294">        return x;</span>
     }

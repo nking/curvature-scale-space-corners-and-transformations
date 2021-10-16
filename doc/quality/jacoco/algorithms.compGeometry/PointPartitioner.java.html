@@ -147,8 +147,8 @@ import java.util.Set;
 <span class="fc" id="L147">                Set&lt;Integer&gt; chosen = new HashSet&lt;Integer&gt;();</span>
 <span class="fc bfc" id="L148" title="All 2 branches covered.">                while (chosen.size() &lt; nPerBin) {</span>
 <span class="fc" id="L149">                    int idx = sr.nextInt(binOfPoints.getN());</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                    while (chosen.contains(Integer.valueOf(idx))) {</span>
-<span class="nc" id="L151">                        idx = sr.nextInt(binOfPoints.getN());</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                    while (chosen.contains(Integer.valueOf(idx))) {</span>
+<span class="fc" id="L151">                        idx = sr.nextInt(binOfPoints.getN());</span>
                     }
 <span class="fc" id="L153">                    reduced.add(binOfPoints.getX(idx), binOfPoints.getY(idx));</span>
 <span class="fc" id="L154">                    chosen.add(Integer.valueOf(idx));</span>
