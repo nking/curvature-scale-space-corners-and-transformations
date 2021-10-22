@@ -155,56 +155,6 @@ public class TSPPrimsMSTTest extends TestCase {
         
         int[] tour = new int[]{0, 1, 2, 3, 4, 5, 7, 6, 0};
         
-        TourHandler tourHandler = new TourHandler(
-            tour, adjCostMap, points);
-        
-        for (int i = 0; i < tour.length; ++i) {
-            assertEquals(tour[i], tourHandler.getVertexIndex(i));
-        }
-        assertEquals(0, tourHandler.getTourIndex(0));
-        assertEquals(7, tourHandler.getTourIndex(6));
-        assertEquals(6, tourHandler.getTourIndex(7));
-        assertEquals(2, tourHandler.getTourIndex(2));
-        
-        assertEquals(5, tourHandler.getPrevVertexIndex(7));
-        assertEquals(6, tourHandler.getNextVertexIndex(7));
-    
-        assertEquals(6, tourHandler.getPrevVertexIndex(0));
-        assertEquals(0, tourHandler.getNextVertexIndex(6));
-    
-        assertEquals(4+2+18+2+2+5+9+4+16+4, tourHandler.getPathSum());
-        
-        System.out.println("pathSum=" + tourHandler.getPathSum());
-    
-        /*
-        Ideal First swap:
-         0, 1, 2, 3, 4, 5, 7, 6
-               2, 7        6  3 
-        */
-        int tmp = tourHandler.peekSumPathChanges(
-            1, 
-            2, 3,
-            4,
-            5,
-            6, 7,
-            0,
-            2, 6, 7, 3);
-        
-        assertEquals(42, tmp);
-        
-        /*
-        public int changePaths(int idxEdgeAVertex1,
-        int idxEdgeBVertex1, int[] vertexIdxs)
-        */
-        /*
-        Ideal First swap:
-        0, 1, 2, 3, 4, 5, 7, 6, 0
-              2, 7        6  3        
-        */
-        int pathSum = tourHandler.changePaths(2, 7,
-            new int[]{2, 7, 6, 3});
-        assertEquals(42, pathSum);
-        
     }
     
     public void test0() {
@@ -326,26 +276,15 @@ public class TSPPrimsMSTTest extends TestCase {
         }
         
         
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
         PrimsMST prims = new PrimsMST();
-        prims.calculateMinimumSpanningTree(points.length, 
-            adjCostMap);
-        int[] walk = prims.getPreOrderWalkOfTree();
+        prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
+        int[] walk = prims.getPreorderIndexes().toArray();
         System.out.println("prims walk=" +
             Arrays.toString(walk));
         assertTrue(Arrays.equals(
             new int[]{0, 1, 2, 3, 4, 5, 7, 6}, walk));
-        
-        TSPPrimsMST tsp = new TSPPrimsMST();
-        int[] tour = tsp.approxTSPTour(
-            points, adjCostMap, false);
-        System.out.println("tsp tour=" +
-            Arrays.toString(tour));
-                
-        assertEquals(expected.length, tour.length);
-        for (int i = 0; i < tour.length; ++i) {
-            int tourIdx = tour[i];
-            assertEquals(expected[i], tourIdx);
-        }
+       
     }
     
     public void testATT48() throws Exception {
@@ -361,10 +300,7 @@ public class TSPPrimsMSTTest extends TestCase {
         PairInt[] points = pointList.toArray(new PairInt[pointList.size()]);
         
         TSPPrimsMST tsp = new TSPPrimsMST();
-        int[] tour = tsp.approxTSPTour(
-            points, adjCostMap, true);
-        System.out.println("tsp tour=" +
-            Arrays.toString(tour));
+        int[] tour = tsp.approxTSPTour(adjCostMap.size(), adjCostMap);
         
         /*ScatterPointPlotterPNG plotter = new
             ScatterPointPlotterPNG();

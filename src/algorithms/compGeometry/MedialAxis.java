@@ -403,14 +403,12 @@ public class MedialAxis {
         
        // System.out.println("nVertexes=" + vertexIndexes.size());
        // System.out.println("nEdges=" + vertexEdgeMap.size());
-        
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
         PrimsMST mst = new PrimsMST();
-        mst.calculateMinimumSpanningTree(vertexIndexes.size(), 
-            adjCostMap);
+        mst.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
-        int[] prev = mst.getPrecessorArray();
-        TIntObjectMap<TIntList> revPrevMap =
-            mst.createReverseMap();
+        int[] prev = mst.getPredeccessorArray();
+        Map<Integer, LinkedList<Integer>> treeMap = mst.makeTreeFromPrev();
                 
         TIntSet rm2 = new TIntHashSet();
         
@@ -438,7 +436,7 @@ public class MedialAxis {
 
                 rmEdges.add(vertexEdgeMap.get(rmKey));
                 
-                TIntList pC = revPrevMap.get(prevIdx);
+                LinkedList<Integer> pC = treeMap.get(prevIdx);
                 if (pC == null) {
                     break;
                 }

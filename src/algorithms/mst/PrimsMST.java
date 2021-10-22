@@ -1,26 +1,25 @@
 package algorithms.mst;
 
-import algorithms.heapsAndPQs.Heap;
+import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.heapsAndPQs.HeapNode;
 import gnu.trove.iterator.TIntIntIterator;
-import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 /**
  * minimum spanning tree is the subset of edges in a weighted undirected graph
  * that connect all vertexes for a total minimum cost (sum of edge weights).
+ * 
  *
  * Implemented from pseudo code in Cormen et al. Introduction to Algorithms and
  * from http://en.wikipedia.org/wiki/Prim's_algorithm.
@@ -36,8 +35,8 @@ import java.util.Stack;
  *     Fibonacci heap and adjacency list	O(E + N lg2 N)
  *     YFastTrie and adjacency list         O(E + V)
  *     
- * this implementation uses a Fibonacci heap and adjacency list
- *      
+ * this implementation uses a YFastTrie min priority queue and adjacency list.
+ * 
  * @author nichole
  */
 public class PrimsMST {
@@ -48,46 +47,64 @@ public class PrimsMST {
     
     /**
      * 
-     * @param nVertexes
      * @param adjCostMap key=vertex1 index, 
      *   value=map with key = vertex2 index and
-     *    value = cost of edge between vertex1 and vertex2
-     * @return 
+     *   value = cost of edge between vertex1 and vertex2.  Note that the 
+     *   algorithm assumes the map key values are 0 through the number of vertexes
+     *   without gaps.
+     * @param maximumWeightInGraph the maximum value of any weight in the graph.
+     * This sets the word size of the YFastTrie used as the min priority q which
+     * is used by default if the VM has enough memory (a large number of items
+     * requires more memory).  If the YFastTrie is expected to consume more 
+     * memory than available, this class will use a Fibonacci Heap instead.
+     * 
      */
     public void calculateMinimumSpanningTree(
-        final int nVertexes, final TIntObjectMap<TIntIntMap>
-            adjCostMap) {
+        final TIntObjectMap<TIntIntMap> adjCostMap, 
+        int maximumWeightInGraph) {
 
         this.adjCostMap = adjCostMap;
+        
+        int nVertexes = adjCostMap.size();
         
         boolean[] inQ = new boolean[nVertexes];
         Arrays.fill(inQ, true);
         prev = new int[nVertexes];
         Arrays.fill(prev, -1);
         
-        Heap heap = new Heap();
+        int sentinel = (maximumWeightInGraph < Integer.MAX_VALUE) ? 
+            (maximumWeightInGraph + 1) : Integer.MAX_VALUE;
         
+        int maxNumberOfBits = (int)Math.ceil(Math.log(sentinel)/Math.log(2));
+        
+        MinHeapForRT2012 heap = new MinHeapForRT2012(sentinel,
+            nVertexes, maxNumberOfBits);
+   
+        // extra data structure needed to hold references to the nodes to be
+        //     able to read the nodes still in the queue.
         List<HeapNode> nodes = new ArrayList<HeapNode>();
 
-        // initialize heap
+        // initialize heap by adding all nodes
         for (int i = 0; i < nVertexes; i++) {
-        	HeapNode v = new HeapNode();
-        	if (i == 0) {
+            HeapNode v = new HeapNode();
+            if (i == 0) {
                 v.setKey(0);
             } else {
-                v.setKey(Integer.MAX_VALUE);
+                v.setKey(sentinel);
             }
-            v.setData(Integer.valueOf(i));
+            // i is the index in nodes list in inQ array
+            v.setData(Integer.valueOf(i)); 
             heap.insert(v);
             nodes.add(v);
         }
         
+        //O(|V|)
         while (heap.getNumberOfNodes() > 0) {
 
-        	HeapNode u = heap.extractMin(); 
+            // O(log_2 log_2(w_bits)) or O(log_2(|V|))
+            HeapNode u = heap.extractMin(); 
            
-            Integer uIndex = (Integer)u.getData();
-            int uIdx = uIndex.intValue();
+            int uIdx = ((Integer)u.getData()).intValue();
             inQ[uIdx] = false;
             
             TIntIntMap adjMap0 = adjCostMap.get(uIdx);
@@ -103,7 +120,8 @@ public class PrimsMST {
                 long distV = nodes.get(vIdx).getKey();
                
                 if (inQ[vIdx] && (cost < distV)) {
-                    prev[vIdx] = uIndex.intValue();
+                    prev[vIdx] = uIdx;
+                    // O(log_2 log_2(w_bits)) or O(1)
                     heap.decreaseKey(nodes.get(vIdx), cost); 
                 }
             }
@@ -112,292 +130,127 @@ public class PrimsMST {
         //System.out.println(Arrays.toString(prev));
     }
     
-    public int[] getPrecessorArray() {
+    public int[] getPredeccessorArray() {
         if (prev == null) {
             return null;
         }
         return Arrays.copyOf(prev, prev.length);
     }
     
-    public int[] getPreOrderWalkOfTree() {
-        
-        //pre-order is
-        //root, left subtree, right subtree
-        //given the top node as the starter
-        //level 0            [0]
-        //level 1      [1]            [6]
-        //level 2   [2]   [3]       [7] [8]
-        //level 3       [4][5]
-        // process node sees 0,1,2,3,4,5,6,7,8 
-
-        TIntObjectMap<TIntList> nodeMap = 
-            createReverseMap();
-                
-        int count = 0;
-        int[] walk = new int[prev.length];
-        
-        Integer node = Integer.valueOf(0);
-        
-        TIntSet inW = new TIntHashSet();
-        
-        Stack<Integer> stack = new Stack<Integer>();
-        while (!stack.isEmpty() || (node != null)) {
-            if (node != null) {
-                //process node
-                if (!inW.contains(node.intValue())) {
-                    walk[count] = node.intValue();
-                    count++;
-                    inW.add(node.intValue());
-                }
-                stack.push(node);
-                int origIdx = node.intValue();
-                TIntList children = nodeMap.get(node.intValue());
-                if (children == null) {
-                    node = null;
-                } else {
-                    node = children.get(0);
-                    //NOTE: an expensive delete. could change structure
-                    boolean rm = children.remove(node.intValue());
-                    assert(rm);
-                }
-                if ((children != null) && children.isEmpty()) {
-                    nodeMap.remove(origIdx);
-                }
-            } else {
-                node = stack.pop();
-                int origIdx = node.intValue();
-                TIntList children = nodeMap.get(node.intValue());
-                if (children == null) {
-                    node = null;
-                } else {
-                    node = children.get(0);
-                    boolean rm = children.remove(node.intValue());
-                    assert(rm);
-                }
-                if ((children != null) && children.isEmpty()) {
-                    nodeMap.remove(origIdx);
-                }
-            }
-        }
-        
-        return walk;
-    }
-
-    /**
-     * NOT READY FOR USE - not tested yet
-       NOTE: consider sorting by decreasing y
-       then increasing x before Prim's for
-       best results.
-     * @return 
-     */
-    public int[] getPreOrderPostOrderWalk() {
-
-        //NOTE: not yet tested.
-        //  for best use, might need to order
-        //  (sort) points by decr Y, incr x before prims so that
-        //  children are in order...
-        //  other ordering might be necessary...
-        //  
-        
-        TIntObjectMap<TIntList> nodeMap = 
-            createReverseMap();
-
-        //level 0            [0]
-        //level 1      [1]            [6]
-        //level 2   [2]   [3]       [7] [8]
-        //level 3       [4][5]
-        // PRE  0, 1, 2,-1, 3, 4,-1, 5, -1, 6, 7,-1, 8, -1
-        // POST 2,-1, 4,-1, 5, 3, 1,-1,  7,-1, 8, 6, 0
-                        
-        LinkedList<Integer> pre = getPreOrderWalkOfTreeWithMarkers(nodeMap);
-        
-        LinkedList<Integer> post = getPostOrderWalkOfTreeWithMarkers(nodeMap);
-        
-        TIntSet added = new TIntHashSet();
-        TIntList output = new TIntArrayList();
-        
-        while (!pre.isEmpty() && !post.isEmpty()) {
-            while (!pre.isEmpty()) {
-                Integer node = pre.pollFirst();
-                int idx = node.intValue();
-                if (idx == -1) {
-                    break;
-                }
-                if (!added.contains(idx)) {
-                    output.add(idx);
-                    added.add(idx);
-                }
-            }
-            
-            // read forward until a -1 after an "add"
-            boolean foundMarker = false;
-            boolean foundAdd = false;
-            while (!foundMarker && !post.isEmpty()) {
-                Integer node = post.pollFirst();
-                int idx = node.intValue();
-                if (idx == -1) {
-                    if (foundAdd) {
-                        foundMarker = true;
-                    }
-                } else if (!added.contains(idx)) {
-                    output.add(idx);
-                    added.add(idx);
-                    foundAdd = true;
-                }
-            }
-        }
-        
-        int[] walk = new int[output.size()];
-        for (int i = 0; i < output.size(); ++i) {
-            walk[i] = output.get(i);
-        }
-        
-        return walk;
-    }   
-    
-    protected LinkedList<Integer> getPreOrderWalkOfTreeWithMarkers(
-        TIntObjectMap<TIntList> nodeMap) {
-        
-        //pre-order is
-        //root, left subtree, right subtree
-        //given the top node as the starter
-        //level 0            [0]
-        //level 1      [1]            [6]
-        //level 2   [2]   [3]       [7] [8]
-        //level 3       [4][5]
-        // process node sees 0,1,2,-1, 3,4,-1, 5, -1, 6,7,-1, 8, -1 
-        // (-1's added where no children)
-      
-        TIntSet added = new TIntHashSet();
-        
-        // key = node, map = children
-        TIntObjectMap<LinkedList<Integer>> cMap 
-            = new TIntObjectHashMap<LinkedList<Integer>>();
-        
-        LinkedList<Integer> walk = new LinkedList<Integer>();
-                
-        Integer node = Integer.valueOf(0);
-                
-        Stack<Integer> stack = new Stack<Integer>();
-        while (!stack.isEmpty() || (node != null)) {
-            if (node != null) {
-                int idx = node.intValue();
-                if (!added.contains(idx)) {
-                    walk.add(idx);
-                    added.add(idx);
-                    
-                    TIntList c = nodeMap.get(idx);
-                    if (c != null) {
-                        LinkedList<Integer> cL = new LinkedList<Integer>();
-                        cMap.put(idx, cL);
-                        TIntIterator iter = c.iterator();
-                        while (iter.hasNext()) {
-                            cL.add(Integer.valueOf(iter.next()));
-                        }
-                    } else {
-                        walk.add(-1);
-                    }
-                }
-                stack.push(node);
-                if (!cMap.containsKey(idx)) {
-                    node = null;
-                } else {
-                    LinkedList<Integer> cL = cMap.get(idx);
-                    node = cL.removeFirst();
-                    if (cL.isEmpty()) {
-                        cMap.remove(idx);
-                    }
-                }
-            } else {
-                // add a marker
-                walk.add(-1);
-                node = stack.pop();
-                int idx = node.intValue();
-                if (!cMap.containsKey(idx)) {
-                    node = null;
-                } else {
-                    LinkedList<Integer> cL = cMap.get(idx);
-                    node = cL.removeFirst();
-                    if (cL.isEmpty()) {
-                        cMap.remove(idx);
-                    }
-                }
-            }
-        }
-        
-        return walk;
-    }
-    
-    protected LinkedList<Integer> getPostOrderWalkOfTreeWithMarkers(
-        TIntObjectMap<TIntList> nodeMap) {
-        
-        //post-order traversal:  left subtree, right subtree, root
-        // given the top node as the starter
-        //level 0            [0]
-        //level 1      [1]            [6]
-        //level 2   [2]   [3]       [7] [8]
-        //level 3       [4][5]
-        // process node sees  -1, 2,-1,4,-1,5,3,1,-1,7,-1,8,6,0
-        //  (-1's added where there were no children)
-                
-        ArrayDeque<Integer> children = new ArrayDeque<Integer>();
-        
-        LinkedList<Integer> walk = new LinkedList<Integer>();
-               
-        Stack<Integer> stack = new Stack<Integer>();
-        Stack<Integer> stack2 = new Stack<Integer>();
-        
-        Integer node = Integer.valueOf(0);
-        
-        stack.push(node);
-            
-        while (!stack.isEmpty()) {
-            node = stack.pop();
-            stack2.push(node);
-            int idx = node.intValue();
-            TIntList c = nodeMap.get(idx);
-            if (c != null) {
-                TIntIterator iter = c.iterator();
-                while (iter.hasNext()) {
-                    stack.push(iter.next());
-                }
-            } else {
-                stack2.push(Integer.valueOf(-1));
-            }
-        }
-        
-        // remove first -1
-        if (!stack2.isEmpty()) {
-            stack2.pop();
-        }
-
-        while (!stack2.isEmpty()) {
-            node = stack2.pop();
-            walk.add(node.intValue());
-        }
-        
-        return walk;
-    }
-    
-    public TIntObjectMap<TIntList> createReverseMap() {
-    
-        TIntObjectMap<TIntList> revPrevMap 
-            = new TIntObjectHashMap<TIntList>();
-        
+    public int findRoot() {
+        // in prev array, since all vertices are connected, all except one
+        // should have a predecessor.
+        int root = -1;
         for (int i = 0; i < prev.length; ++i) {
-            int parentIdx = prev[i];
-            if (parentIdx == -1) {
+            if (prev[i] == -1) {
+                root = i;
+                break;
+            }
+        }
+        return root;
+    }
+    
+    public Map<Integer, LinkedList<Integer>> makeTreeFromPrev() {
+        Map<Integer, LinkedList<Integer>> tree = new HashMap<Integer, LinkedList<Integer>>();
+        int parent;
+        LinkedList<Integer> children;
+        for (int child = 0; child < prev.length; ++child) {
+            parent = prev[child];
+            if (parent == -1) {
                 continue;
             }
-            TIntList indexes = revPrevMap.get(parentIdx);
-            if (indexes == null) {
-                indexes = new TIntArrayList();
-                revPrevMap.put(parentIdx, indexes);
+            children = tree.get(parent);
+            if (children == null) {
+                children = new LinkedList<Integer>();
+                tree.put(parent, children);
             }
-            indexes.add(i);
+            children.add(child);
         }
-                
-        return revPrevMap;
+        return tree;
     }
     
+    /**
+     * walk the tree in prev as a pre-order traversal and return the indexes
+     * of the nodes in that order.
+     * The pre-order traversal visits subtrees of root, then left, then right.
+     * @return 
+     */
+    public TIntList getPreorderIndexes() {
+        if (prev == null) {
+            return null;
+        }
+        int root = findRoot();
+        return getPreorderIndexes(root);
+    }
+    private TIntList getPreorderIndexes(int root) {
+        TIntList out = new TIntArrayList();
+        Map<Integer, LinkedList<Integer>> tree = makeTreeFromPrev();
+        int node = root;
+        int pNode;
+        Stack<Integer> stack = new Stack<Integer>();
+        stack.add(node);
+        // removing the tree nodes as they are used
+        LinkedList<Integer> children;
+        while (!stack.isEmpty() || node != -1) {
+            if (node != -1) {
+                out.add(node);
+                stack.push(node);
+                pNode = node;
+                children = tree.get(pNode);
+                if (children != null) {
+                    node = children.removeFirst();
+                    if (children.isEmpty()) {
+                        tree.remove(pNode);
+                    }
+                } else {
+                    node = - 1;
+                }
+            } else {
+                node = stack.pop();// discard as it's already in out
+                // get next node from tree.
+                // since it might be n-ary tree, will keep taking from front of list
+                //    though there's no reason to choose first over last
+                pNode = node;
+                children = tree.get(pNode);
+                if (children != null) {
+                    node = children.removeFirst();
+                    if (children.isEmpty()) {
+                        tree.remove(pNode);
+                    }
+                } else {
+                    node = - 1;
+                }
+            }
+        }
+        return out;
+    }
+    
+    /**
+     * 
+     * @param adjCostMap adjacency map with cost.  key=index1, value = map
+     * with key=index2 and value=cost.
+     * @return maximum cost found in adjCostMap
+     */
+    public static int maxEdgeCost(TIntObjectMap<TIntIntMap> adjCostMap) {
+        int max = Integer.MIN_VALUE;
+        TIntObjectIterator<TIntIntMap> iter = adjCostMap.iterator();
+        int i, j, idx1, idx2, c;
+        TIntIntIterator iter2;
+        TIntIntMap map;
+        for (i = 0; i < adjCostMap.size(); ++i) {
+            iter.advance();
+            idx1 = iter.key();
+            map = iter.value();
+            iter2 = map.iterator();            
+            for (j = 0; j < map.size(); ++j) {
+                iter2.advance();
+                idx2 = iter2.key();
+                c = iter2.value();
+                if (c > max) {
+                    max = c;
+                }
+            }
+        }
+        return max;
+    }    
 }

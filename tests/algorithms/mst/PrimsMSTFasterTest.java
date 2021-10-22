@@ -1,12 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package algorithms.mst;
 
 import algorithms.compGeometry.convexHull.PolarAngleQuickSort;
 import algorithms.util.PairInt;
+import gnu.trove.list.TIntList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -24,12 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertTrue;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -110,7 +100,7 @@ public class PrimsMSTFasterTest extends TestCase {
         map.put(2, 2);
         map.put(7, 7);
       
-        PrimsMSTFaster prims = new PrimsMSTFaster();
+        PrimsMST prims = new PrimsMST();
         prims.calculateMinimumSpanningTree(adjCostMap, 14);                
         
         /*         / [b]           /[c]-- 7  -- [d]\
@@ -130,7 +120,7 @@ public class PrimsMSTFasterTest extends TestCase {
             new int[]{-1, 0, 5, 2, 3, 6, 7, 0, 2}, 
             predecessorArray));
         
-        int[] treeWalk = prims.getPreOrderWalkOfTree();
+        TIntList treeWalk = prims.getPreorderIndexes();
         
         /*         / [b]           /[c]-- 7  -- [d]\
          *       4               2     \              9
@@ -140,14 +130,17 @@ public class PrimsMSTFasterTest extends TestCase {
         */
         
         // traverse the tree to find these from root=0 
-        /*
-        0 1, 0 7
-        7 6
-        6 5
-        5 2
-        2 8, 2 3
-        3 4 
+        /*  a=0,b=1,c=2,d=3,e=4,f=5,g=6,h=7,i=8
+        0 -> 1,7
+        7 -> 6
+        6 -> 5
+        5 -> 2
+        2 -> 3,8
+        3 -> 4 
         */
+        int[] expected = new int[]{0,1,7,6,5,2,3,4,8};
+        int[] w = treeWalk.toArray();
+        assertTrue(Arrays.equals(expected, w));
         
     }
     
@@ -171,11 +164,12 @@ public class PrimsMSTFasterTest extends TestCase {
         TIntObjectMap<TIntIntMap> adjCostMap = 
             createAdjacencyMap(points);
         
-        PrimsMST mst = new PrimsMST();
-        mst.calculateMinimumSpanningTree(points.size(), 
-            adjCostMap);
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+        PrimsMST prims = new PrimsMST();
+        prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
-        int[] walk = mst.getPreOrderPostOrderWalk();
+        int[] walk = prims.getPreorderIndexes().toArray();
+        
          
         print(walk, points, pointMap);
     
@@ -186,11 +180,11 @@ public class PrimsMSTFasterTest extends TestCase {
                         
             adjCostMap = createAdjacencyMap(points);
         
-            mst = new PrimsMST();
-            mst.calculateMinimumSpanningTree(points.size(), 
-                adjCostMap);
+            maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+            prims = new PrimsMST();
+            prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
-            walk = mst.getPreOrderPostOrderWalk();
+            walk = prims.getPreorderIndexes().toArray();
         
             print(walk, points, pointMap);
         }        
@@ -218,11 +212,11 @@ public class PrimsMSTFasterTest extends TestCase {
         TIntObjectMap<TIntIntMap> adjCostMap = 
             createAdjacencyMap(points);
         
-        PrimsMST mst = new PrimsMST();
-        mst.calculateMinimumSpanningTree(points.size(), 
-            adjCostMap);
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+        PrimsMST prims = new PrimsMST();
+        prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
-        int[] walk = mst.getPreOrderPostOrderWalk();
+        int[] walk = prims.getPreorderIndexes().toArray();
         
         print2(walk, points, pointMap, 0);
        
@@ -235,11 +229,11 @@ public class PrimsMSTFasterTest extends TestCase {
             
             adjCostMap = createAdjacencyMap(points);
         
-            mst = new PrimsMST();
-            mst.calculateMinimumSpanningTree(points.size(), 
-                adjCostMap);
+            maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+            prims = new PrimsMST();
+            prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
-            walk = mst.getPreOrderPostOrderWalk();
+            walk = prims.getPreorderIndexes().toArray();
         
             print2(walk, points, pointMap, i + 1);
         }        

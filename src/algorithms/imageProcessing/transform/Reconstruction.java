@@ -50,7 +50,7 @@ import no.uib.cipr.matrix.NotConvergedException;
       http://www.cs.cmu.edu/afs/cs/project/cil/www/v-images.html
        
       
- TODO: implement more of Chapt 11 of MASKS (Ma, Soatto, Kosecká, and Sastry 2012, 
+ TODO: implement more of Chap 11 of MASKS (Ma, Soatto, Kosecká, and Sastry 2012, 
  * "An Invitation to 3-D Vision")
  * 
  </pre>

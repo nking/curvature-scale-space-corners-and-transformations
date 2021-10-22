@@ -107,9 +107,9 @@ public class PrimsMSTTest extends TestCase {
         map.put(2, 2);
         map.put(7, 7);
       
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
         PrimsMST prims = new PrimsMST();
-        prims.calculateMinimumSpanningTree(
-            nVertexes, adjCostMap);                
+        prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
         /*         / [b]           /[c]-- 7  -- [d]\
          *       4               2     \              9
@@ -128,12 +128,12 @@ public class PrimsMSTTest extends TestCase {
         7 0  
         */
         
-        int[] predecessorArray = prims.getPrecessorArray();
+        int[] predecessorArray = prims.getPredeccessorArray();
         assertTrue(Arrays.equals(
             new int[]{-1, 0, 5, 2, 3, 6, 7, 0, 2}, 
             predecessorArray));
         
-        int[] treeWalk = prims.getPreOrderWalkOfTree();
+        int[] treeWalk = prims.getPreorderIndexes().toArray();
         
         /*         / [b]           /[c]-- 7  -- [d]\
          *       4               2     \              9
@@ -174,11 +174,12 @@ public class PrimsMSTTest extends TestCase {
         TIntObjectMap<TIntIntMap> adjCostMap = 
             createAdjacencyMap(points);
         
-        PrimsMST mst = new PrimsMST();
-        mst.calculateMinimumSpanningTree(points.size(), 
-            adjCostMap);
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+        PrimsMST prims = new PrimsMST();
+        prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
+        int[] prev = prims.getPredeccessorArray();
         
-        int[] walk = mst.getPreOrderPostOrderWalk();
+        int[] walk = prims.getPreorderIndexes().toArray();
          
         print(walk, points, pointMap);
     
@@ -189,11 +190,11 @@ public class PrimsMSTTest extends TestCase {
                         
             adjCostMap = createAdjacencyMap(points);
         
-            mst = new PrimsMST();
-            mst.calculateMinimumSpanningTree(points.size(), 
-                adjCostMap);
+            maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+            prims = new PrimsMST();
+            prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
-            walk = mst.getPreOrderPostOrderWalk();
+            walk = prims.getPreorderIndexes().toArray();
         
             print(walk, points, pointMap);
         }        
@@ -221,11 +222,11 @@ public class PrimsMSTTest extends TestCase {
         TIntObjectMap<TIntIntMap> adjCostMap = 
             createAdjacencyMap(points);
         
-        PrimsMST mst = new PrimsMST();
-        mst.calculateMinimumSpanningTree(points.size(), 
-            adjCostMap);
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+        PrimsMST prims = new PrimsMST();
+        prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
         
-        int[] walk = mst.getPreOrderPostOrderWalk();
+        int[] walk = prims.getPreorderIndexes().toArray();
         
         print2(walk, points, pointMap, 0);
        
@@ -238,12 +239,12 @@ public class PrimsMSTTest extends TestCase {
             
             adjCostMap = createAdjacencyMap(points);
         
-            mst = new PrimsMST();
-            mst.calculateMinimumSpanningTree(points.size(), 
-                adjCostMap);
-        
-            walk = mst.getPreOrderPostOrderWalk();
-        
+            maxCost = PrimsMST.maxEdgeCost(adjCostMap);
+            prims = new PrimsMST();
+            prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
+
+            walk = prims.getPreorderIndexes().toArray();
+            
             print2(walk, points, pointMap, i + 1);
         }        
     }

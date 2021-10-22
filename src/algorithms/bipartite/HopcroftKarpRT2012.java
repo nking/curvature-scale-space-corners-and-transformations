@@ -753,10 +753,10 @@ public class HopcroftKarpRT2012 {
         }
                 
         // use prim's mst to make a maximal set of edges
+        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);
         PrimsMST prims = new PrimsMST();
-        prims.calculateMinimumSpanningTree(
-            nVertexes, adjCostMap); 
-        int[] prev = prims.getPrecessorArray();
+        prims.calculateMinimumSpanningTree(adjCostMap, maxCost);
+        int[] prev = prims.getPredeccessorArray();
         log.fine("predecessors=" + Arrays.toString(prev));
         
         edges.clear();

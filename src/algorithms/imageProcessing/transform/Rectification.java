@@ -24,9 +24,13 @@ import no.uib.cipr.matrix.NotConvergedException;
  * and at the focal distance.  Rectification makes the epipolar lines parallel
  * and the epipoles at infinity.
  * 
- * NOTE: if the epipoles are within the images, consider using Pollefeys, 2000
- * (not implemented here at this time).
- * 
+   NOTE: if the epipoles are within the images, consider using Pollefeys, 2000
+   (not implemented here at this time).
+
+   NOTE: alternatively, if have at least 7 points to create an epipolar mapping, can skip
+   rectification and use stereo matching:
+   "Stereo Processing by Semi-Global Matching and Mutual Information" by Hirschmuller 2008
+   
  * @author nichole
  */
 public class Rectification {

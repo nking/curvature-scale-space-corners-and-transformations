@@ -112,30 +112,30 @@ public class LongestCommonSubsequence {
      * back track through the matrix to get the letters.  runtime complexity O(m + n).
      * @param b
      * @param x
-     * @param i
-     * @param j
+     * @param row
+     * @param col
      * @param str
-     * @param currentIndex
+     * @param currentLength
      * @return 
      */
-    private static int getLCS(final byte[][]b, char[]x, int i, int j, char[] str, 
-        int currentIndex) {
+    private static int getLCS(final byte[][]b, char[]x, int row, int col, char[] str, 
+        int currentLength) {
 
-        if (i == 0 || j == 0) {
-            return currentIndex;
+        if (row == 0 || col == 0) {
+            return currentLength;
         }
 
-        if (b[i][j] == UPLEFT) {
-            currentIndex = getLCS(b, x, i-1, j-1, str, currentIndex);
-            str[currentIndex] = x[i-1];
-            currentIndex++;
-        } else if (b[i][j] == UP) {
-            currentIndex = getLCS(b, x, i-1, j, str, currentIndex);
+        if (b[row][col] == UPLEFT) {
+            currentLength = getLCS(b, x, row-1, col-1, str, currentLength);
+            str[currentLength] = x[row-1];
+            currentLength++;
+        } else if (b[row][col] == UP) {
+            currentLength = getLCS(b, x, row-1, col, str, currentLength);
         } else {
-            currentIndex = getLCS(b, x, i, j-1, str, currentIndex);
+            currentLength = getLCS(b, x, row, col-1, str, currentLength);
         }
 
-        return currentIndex;
+        return currentLength;
     }
     
 }
