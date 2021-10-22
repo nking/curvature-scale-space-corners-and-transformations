@@ -1,21 +1,15 @@
 package algorithms.mst;
 
-import algorithms.QuickSort;
-import algorithms.Rotate;
-import algorithms.util.PairInt;
-import gnu.trove.iterator.TIntIntIterator;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import java.util.Arrays;
 
 /**
  * adapted from Cormen et al. Introduction to Algorithms
  *
  * An approximate solution to the traveling salesman problem.
+ * The algorithms provides solution which is at most, twice the cost of an
+ * optimal tour.
  *
  * Input:
  *    -- G = (V, E) is a complete undirected graph
@@ -30,11 +24,8 @@ import java.util.Arrays;
  * Minimum spanning tree is the minimal network that spans all nodes in a tree
  * and has the smallest cost (sum of edges).
  *
- * The MST is implemented from pseudo code in Cormen et al. Introduction to Algorithms and
- * from http://en.wikipedia.org/wiki/Prim's_algorithm.
-   Useful also was
-  http://www.i-programmer.info/projects/61-algorithms/534-minimum-spanning-tree.html?start=1
-  
+ * Closer to optimal in:
+ * https://en.wikipedia.org/wiki/Travelling_salesman_problem
        
  * @author nichole
  */
