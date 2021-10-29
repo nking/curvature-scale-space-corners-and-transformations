@@ -131,12 +131,12 @@ public class PrimsMSTFasterTest extends TestCase {
         
         // traverse the tree to find these from root=0 
         /*  a=0,b=1,c=2,d=3,e=4,f=5,g=6,h=7,i=8
-        0 -> 1,7
-        7 -> 6
-        6 -> 5
-        5 -> 2
-        2 -> 3,8
-        3 -> 4 
+        0 -> 1,7    a->b,h
+        7 -> 6      h->g
+        6 -> 5      g->f
+        5 -> 2      f->c
+        2 -> 3,8    c->d,i
+        3 -> 4      d->e
         */
         int[] expected = new int[]{0,1,7,6,5,2,3,4,8};
         int[] w = treeWalk.toArray();

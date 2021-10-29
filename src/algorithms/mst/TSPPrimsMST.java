@@ -26,7 +26,13 @@ import gnu.trove.map.TIntObjectMap;
  *
  * Closer to optimal in:
  * https://en.wikipedia.org/wiki/Travelling_salesman_problem
-       
+ * 
+ * For some datasets, especially large and clustered, it's likely a common
+ * practice to solve TSP within the clusters, then between those clusters...?
+ 
+ * Exact dynamic programming TSP can be found in the shared project
+ * src/test/java/algorithms/exponential/TSPDynamic.java
+ * 
  * @author nichole
  */
 public class TSPPrimsMST {

@@ -4,6 +4,9 @@ import algorithms.util.OneDIntArray;
 import java.util.*;
 
 /**
+ * Hungarian algorithm finds in a weighted bipartite graph, 
+ * a matching of a given size, in which the sum of weights of the edges is minimum.
+ * 
  The algorithm below was adapted from code by Gary Baker
 
  * Edits were made to the code below to allow rectangular matrix with more

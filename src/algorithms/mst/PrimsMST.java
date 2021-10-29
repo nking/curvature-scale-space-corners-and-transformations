@@ -121,7 +121,6 @@ public class PrimsMST {
                
                 if (inQ[vIdx] && (cost < distV)) {
                     prev[vIdx] = uIdx;
-                    // O(log_2 log_2(w_bits)) or O(1)
                     heap.decreaseKey(nodes.get(vIdx), cost); 
                 }
             }
