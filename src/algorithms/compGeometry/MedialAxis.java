@@ -6,7 +6,7 @@ import algorithms.imageProcessing.BresenhamsLine;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.misc.MiscMath;
-import algorithms.mst.PrimsMST;
+import algorithms.msts.PrimsMST;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;

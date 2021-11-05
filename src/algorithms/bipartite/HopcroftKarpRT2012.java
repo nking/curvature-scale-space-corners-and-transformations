@@ -7,7 +7,7 @@ import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
 import static algorithms.bipartite.MinCostUnbalancedAssignment.extractNodes;
 import algorithms.DoubleLinkedCircularList;
 import algorithms.heapsAndPQs.HeapNode;
-import algorithms.mst.PrimsMST;
+import algorithms.msts.PrimsMST;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
