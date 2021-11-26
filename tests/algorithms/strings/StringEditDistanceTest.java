@@ -20,9 +20,9 @@ public class StringEditDistanceTest extends TestCase {
         return new String(r);
     }
     
-    //String a = "rosettacode"; // 6 matches, m=11
-    //String b = "raisethysword"; // n=13
-    //int nExpected = 8;
+    String a = "rosettacode"; // 6 matches, m=11
+    String b = "raisethysword"; // n=13
+    int nExpected = 8;
         
     /*
     //          01234567890123456
@@ -37,9 +37,9 @@ public class StringEditDistanceTest extends TestCase {
     // 10,8  9,7  8,6  7,5    5,3  4,2  3,1
     int nExpected = 10;
     */
-    String b = "abcd";
-    String a = "zxplmn";
-    int nExpected = 6;
+    /*String a = "abcd";
+    String b = "zxplmn";
+    int nExpected = 6;*/
     
     public StringEditDistanceTest() {
     }

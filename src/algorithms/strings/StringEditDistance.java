@@ -224,10 +224,11 @@ public class StringEditDistance {
                 
         for (j = 1; j <= n; ++j) {
             dN[0][1] = j; //j*cIns
+            System.out.printf("j=%d: ", j-1);
             for (i = 1; i <= m; ++i) {
                 if (a.charAt(i-1) == b.charAt(j-1)) {
                     c = 0;
-                    System.out.printf("(i,j),  ", i-1, j-1); //subtracting 1 for 0-based indexes
+                    System.out.printf("(%d,%d),  ", i-1, j-1); //subtracting 1 for 0-based indexes
                 } else {
                     c = cChangeUnequal;
                 }
