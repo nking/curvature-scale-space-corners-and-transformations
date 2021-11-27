@@ -1,6 +1,9 @@
 package algorithms.strings;
 
 import algorithms.util.PairIntArray;
+import gnu.trove.list.TCharList;
+import gnu.trove.list.array.TCharArrayList;
+import gnu.trove.list.linked.TCharLinkedList;
 
 /**
  * find the number of insert, delete, and substitution operations to change
@@ -25,6 +28,10 @@ public class StringEditDistance {
      * 
      * Also, see Levenshtein Distance:
      * https://en.wikipedia.org/wiki/Levenshtein_distance
+     * 
+     * see also https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm
+     * and
+     * Vintsyuk TK (1968). "Speech discrimination by dynamic programming". Kibernetika. 4: 81–88.
      * 
      * @param a string to edit
      * @param b target string to change a into.
@@ -257,9 +264,25 @@ public class StringEditDistance {
         
         // cannot backtrack to recover path from d, but
         //    could presumably recover the best consistent stretches of matches.
-        //    for each j, store the (i-1, j-1) paris above where c=0.
+        //    for each j, store the (i-1, j-1) pairs above where c=0.
         //    then find the consistent stretches of matches, knowing that the
         //    number of matches = max(string a length, string b length) - nEdits.
+        // can see patterns of minima for the optimal path if store the path length with the (i-1, j-1) pairs...
+        
+        /*
+        The Ukkonen algorithm with the Powell checkpoint method can be used
+        to recover alignment in addition to the edit distance using
+        O(N) space:
+        "A versatile divide and conquer technique for optimal string alignment"
+         Powell, Allison, and Dix, Information Processing Letters 70 (1999) 127–139 
+        
+        alignment can be global or local, optimal or approximate, 
+        pairwise, mutlple sequence, etc.
+        
+        A 2004 review of use of it in biological context can be found the book 
+        "Bioinformatics Sequence and Genome
+        Analysis" by David Mount.
+        */
         
         return dN[m][1];
     }
@@ -296,5 +319,21 @@ public class StringEditDistance {
             }
         } 
     }
-   
+    
+    private int maximum(int a, int b, int c) {
+        if (a >= b) {
+            if (a >= c) {
+                return a;
+            } else {
+                return c;
+            }
+        } else {
+            // b > a
+            if (b >= c) {
+                return b;
+            } else {
+                return c;
+            }
+        } 
+    }
 }
