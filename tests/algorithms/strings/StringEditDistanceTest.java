@@ -1,6 +1,7 @@
 package algorithms.strings;
 
 import algorithms.util.PairIntArray;
+import gnu.trove.list.TCharList;
 import java.util.Arrays;
 import junit.framework.TestCase;
 
@@ -11,36 +12,11 @@ import junit.framework.TestCase;
  */
 public class StringEditDistanceTest extends TestCase {
     
-    public static String reverse(String str) {
-        int n = str.length();
-        char[] r = new char[n];
-        for (int i = 0;  i < n; ++i) {
-            r[i] = str.charAt(n-i-1);
-        }
-        return new String(r);
-    }
-    
-    String a = "rosettacode"; // 6 matches, m=11
+    String a = "rosettacode";   // 6 matches, m=11
     String b = "raisethysword"; // n=13
     int nExpected = 8;
         
-    /*
-    //          01234567890123456
-    //             ... ....     <=== better match
-    //                  ...  ....
-    String a = "acadefcqdefabqdef";
-    //String b =       "zdefgqdef";
-    //                   ... ....
-    //             ... ....
-    String b =   "zdefgqdef"; // <=== better match for having same single gap
-    //            012345678
-    // 10,8  9,7  8,6  7,5    5,3  4,2  3,1
-    int nExpected = 10;
-    */
-    /*String a = "abcd";
-    String b = "zxplmn";
-    int nExpected = 6;*/
-    
+ 
     public StringEditDistanceTest() {
     }
     
@@ -68,8 +44,36 @@ public class StringEditDistanceTest extends TestCase {
         
         StringEditDistance sed = new StringEditDistance();
         int nEdits = sed.calculateWithModifiedWagnerFischer(a, b);
-        System.out.println("nEdits=" + nEdits);
+        //System.out.println("nEdits=" + nEdits);
         assertEquals(nExpected, nEdits);
         
     }
+    
+    public void testHirschberg() {
+        System.out.println("testHirschberg");
+        
+        //a = "AGTACGCA";
+        //b = "TATGC";
+        
+        StringEditDistance sed = new StringEditDistance();
+        TCharList[] xyAligned = sed.hirschbergOptimal(
+        //    x.toCharArray(), y.toCharArray());
+            a.toCharArray(), b.toCharArray());
+        System.out.println("*"+ Arrays.toString(xyAligned[0].toArray()));
+        System.out.println("*"+ Arrays.toString(xyAligned[1].toArray()));
+        /*
+        W = AGTACGCA
+        Z = --TATGC-
+        */
+    }
+    
+    /*
+    String x = "AGTA";
+    String y = "ATA";
+    
+    "AGTACGCA"
+    "TATGC"
+    
+    
+    */
 }

@@ -4,6 +4,7 @@ import algorithms.util.PairIntArray;
 import gnu.trove.list.TCharList;
 import gnu.trove.list.array.TCharArrayList;
 import gnu.trove.list.linked.TCharLinkedList;
+import java.util.Arrays;
 
 /**
  * find the number of insert, delete, and substitution operations to change
@@ -14,6 +15,12 @@ import gnu.trove.list.linked.TCharLinkedList;
       by Arslan and Egecioglu, 1999
       https://www.researchgate.net/publication/3820090_An_Efficient_Uniform-Cost_Normalized_Edit_Distance_Algorithm
  * 
+ * NOTE: the alignment algorithms could be sped up to a runtime of O(N^2/log^2(N))
+ * where N is max of string lengths, bu using
+ * Arlazarov, Dinic, Kronrod, Faradzev Four Russian algorithm.
+ * 
+ * NOTE also that the linear space algorithms can be improved by using
+ * "check point" algorithms.  See Optimal alignments in linear space", Myers and Miller, 1988.
  * @author nichole
  */
 public class StringEditDistance {
@@ -43,6 +50,15 @@ public class StringEditDistance {
         
         final int cDel = 1;
         final int cIns = 1;
+         /*
+        The positive costs and minimization are the common forms in this
+        algorithm in context of computer science.
+        In biology negative costs and maximization are often used instead
+        to represent similarity.
+        "Reduced space sequence alignment"
+         Grice, Hughey, & Speck, Bioinformatics, Volume 13, Issue 1, February 1997, 
+         Pages 45–53, https://doi.org/10.1093/bioinformatics/13.1.45
+        */
         
         int cChangeUnequal = 1;
         int m = a.length();
@@ -88,6 +104,7 @@ public class StringEditDistance {
             d[i][0] = i; //i*cDel
         }
         for (int i = 1; i <= n; ++i) {
+            //a conversion of empty string 'a' into 'b' is all inserts
             d[0][i] = i; //i*cIns
         }
         
@@ -161,6 +178,15 @@ public class StringEditDistance {
        
         final int cDel = 1;
         final int cIns = 1;
+        /*
+        The positive costs and minimization are the common forms in this
+        algorithm in context of computer science.
+        In biology negative costs and maximization are often used instead
+        to represent similarity.
+        "Reduced space sequence alignment"
+         Grice, Hughey, & Speck, Bioinformatics, Volume 13, Issue 1, February 1997, 
+         Pages 45–53, https://doi.org/10.1093/bioinformatics/13.1.45
+        */
        
         /*
             Entries in jth column only depend on (j − 1)’s column and earlier 
@@ -231,11 +257,11 @@ public class StringEditDistance {
                 
         for (j = 1; j <= n; ++j) {
             dN[0][1] = j; //j*cIns
-            System.out.printf("j=%d: ", j-1);
+            //System.out.printf("j=%d: ", j-1);
             for (i = 1; i <= m; ++i) {
                 if (a.charAt(i-1) == b.charAt(j-1)) {
                     c = 0;
-                    System.out.printf("(%d,%d),  ", i-1, j-1); //subtracting 1 for 0-based indexes
+                    //System.out.printf("(%d,%d),  ", i-1, j-1); //subtracting 1 for 0-based indexes
                 } else {
                     c = cChangeUnequal;
                 }
@@ -254,29 +280,29 @@ public class StringEditDistance {
                     }
                 }
             }
-            System.out.printf("\n, ");
+            //System.out.printf("\n, ");
             
             // for i = 1 to m do Copy N[i, 0] = N[i, 1]
             for (i = 1; i <= m; ++i) {
                 dN[i][0] = dN[i][1];
             }
         }
-        
-        // cannot backtrack to recover path from d, but
-        //    could presumably recover the best consistent stretches of matches.
-        //    for each j, store the (i-1, j-1) pairs above where c=0.
-        //    then find the consistent stretches of matches, knowing that the
-        //    number of matches = max(string a length, string b length) - nEdits.
-        // can see patterns of minima for the optimal path if store the path length with the (i-1, j-1) pairs...
-        
+         
         /*
+        can use checkpoint methods to recover the alignment in O(n) space where
+        n is the length of the longest string:
+        
+        "Reduced space sequence alignment"
+         Grice, Hughey, & Speck, Bioinformatics, Volume 13, Issue 1, February 1997, 
+         Pages 45–53, https://doi.org/10.1093/bioinformatics/13.1.45
+        
         The Ukkonen algorithm with the Powell checkpoint method can be used
         to recover alignment in addition to the edit distance using
         O(N) space:
         "A versatile divide and conquer technique for optimal string alignment"
          Powell, Allison, and Dix, Information Processing Letters 70 (1999) 127–139 
         
-        alignment can be global or local, optimal or approximate, 
+        alignment can be global, semi-lobal, local, optimal, approximate, 
         pairwise, mutlple sequence, etc.
         
         A 2004 review of use of it in biological context can be found the book 
@@ -285,6 +311,179 @@ public class StringEditDistance {
         */
         
         return dN[m][1];
+    }
+    
+        /**
+     * calculate the number of insert, delete, and substitution operations to change
+     * one string into another as an implementation of the Needleman-Wunsch
+     * scoring. (The scoring is a modification of the modified Wagner-Fischer algorithm.)
+     * <pre>
+     * The pseudocode is at https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm
+     * see also
+     * LongestCommonSubsequence.java
+     * </pre>
+     * @param a string to edit
+     * @param b target string to change a into.
+     * 
+     * @return the edit distance which is the minimum number of deletes of 
+     * characters in string a and inserts of characters into string b to turn
+     * string a into string b.
+     */
+    public int calculateNeedlemanWunschScoring(char[] a, char[] b) {
+       
+        final int cDel = -2;
+        final int cIns = -2;
+        final int subUnequal = -1;
+        final int subEqual = 2;
+       
+        /*
+            Entries in jth column only depend on (j − 1)’s column and earlier 
+               entries in jth column.
+            Only store the current column and the previous column reusing space; 
+               N(i, 0) stores M(i, j − 1) and N(i, 1) stores M(i, j)
+        */
+        
+        int m = a.length;
+        int n = b.length;
+        int[][] dN = new int[m + 1][];
+        int i;
+        //dN(i, 0) stores M(i, j − 1) and dN(i, 1) stores M(i, j)
+        for (i = 0; i <= m; ++i) {
+            dN[i] = new int[2];
+        }
+        for (i = 1; i <= m; ++i) {
+            dN[i][0] = i*cDel;
+        }
+        
+        int j;
+        int c = 0;
+                        
+        for (j = 1; j <= n; ++j) {
+            dN[0][1] = j*cIns;
+            for (i = 1; i <= m; ++i) {
+                if (a[i-1] == b[j-1]) {
+                    c = subEqual;
+                    //System.out.printf("(%d,%d),  ", i-1, j-1); //subtracting 1 for 0-based indexes
+                } else {
+                    c = subUnequal;
+                }
+                dN[i][1] = maximum(dN[i-1][0] + c, dN[i-1][1] + cDel, dN[i][0] + cIns);
+            }
+            //System.out.printf("\n, ");
+            
+            // for i = 1 to m do Copy N[i, 0] = N[i, 1]
+            for (i = 1; i <= m; ++i) {
+                dN[i][0] = dN[i][1];
+            }
+        }
+        
+        return dN[m][1];
+    }
+    
+    /**
+     * find the optimal string metric distance between 2 strings using
+     * Hirschberg's algorithm.  The scoring uses Levenshtein distance, 
+     * defined to be the sum of the costs of insertions, replacements, deletions, 
+     * and null actions needed to change one string into the other. 
+     * <pre>
+     * https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm
+     * </pre>
+     * @param a
+     * @param b
+     * @return 
+     */
+    public TCharList[] hirschbergOptimal(char[] a, char[] b) {
+                
+        TCharList z = new TCharArrayList();
+        TCharList w = new TCharLinkedList();
+        
+        int m = a.length;
+        int n = b.length;
+        int i;
+        if (m == 0) {
+            for (i = 0; i < n; ++i) {
+                z.add('-');
+                w.add(b[i]);
+            }
+            return new TCharList[]{z, w};
+        } else if (n == 0) {
+            for (i = 0; i < m; ++i) {
+                z.add(a[i]);
+                w.add('-');
+            }
+            return new TCharList[]{z, w};
+        } else if (m==1 || n==1) {
+            PairIntArray outIndexes = new PairIntArray();
+            int nEdits = calculateWithWagnerFischer(new String(a), new String(b), outIndexes);
+            char[] resultA = new char[outIndexes.getN()];
+            char[] resultB = new char[outIndexes.getN()];
+            for (int ii = 0; ii < resultA.length; ++ii) {
+                resultA[ii] = a[outIndexes.getX(ii)];
+                resultB[ii] = b[outIndexes.getY(ii)];
+            }
+            z.addAll(resultA);
+            w.addAll(resultB);
+            return new TCharList[]{z, w};
+        }
+        //m: xlen = length(X)
+        int aMid = m/2;
+        //n: ylen = length(Y)
+        //ScoreL = NWScore(X1:xmid, Y)
+        //int scoreL = calculateNeedlemanWunschScoring(Arrays.copyOfRange(a, 0, aMid), b);
+        //ScoreR = NWScore(rev(Xxmid+1:xlen), rev(Y))
+        //int scoreR = calculateNeedlemanWunschScoring(
+        //    reverse2(Arrays.copyOfRange(a, aMid + 1, m)), reverse2(b));
+        //ymid = arg max ScoreL + rev(ScoreR)
+        /* "Optimal alignments in linear space", Myers and Miller, 1988
+        Let rev(A) denote the reverse of A, i.e. a_{M-1}a_M...a_0
+        and A^T denote the suffix a_{i+1}a_{i+2}...a_M of A. 
+        http://www.cs.tau.ac.il/~rshamir/algmb/98/scribe/html/lec02/node9.html
+        find k in 0<=k<=n that maximizes D(m,n) = {D(m/2, k) + D^T(m/2, n-k) }
+            where 
+            D(m/2, k) is D(string1[1:m/2], string2[1:k])
+            = D( a.substring(0, aMid), b.substring(0, k) )
+            and D^T(m/2, n-k) is 
+              D( reversed string1[(m/2)+1:m], reversed string2[k+1:n])
+            = D( reverse( a.substring(aMid + 1, m)),reverse( b.substring(k + 1, n)) )
+        bMid = ymid = k;
+        */
+        int bMid = argmax(aMid, a, b);
+                
+        //(Z,W) = Hirschberg(X1:xmid, y1:ymid) + Hirschberg(Xxmid+1:xlen, Yymid+1:ylen)
+        
+        TCharList[] zW0 = hirschbergOptimal(
+            Arrays.copyOfRange(a, 0, aMid), Arrays.copyOfRange(b, 0, bMid));
+        TCharList[] zW1 = hirschbergOptimal( 
+            Arrays.copyOfRange(a, aMid, m), Arrays.copyOfRange(b, bMid, n));
+        
+        TCharList[] zW = new TCharList[2];
+        zW[0] = new TCharArrayList(zW0[0]);
+        zW[0].addAll(zW1[0]);
+        zW[1] = new TCharArrayList(zW0[1]);
+        zW[1].addAll(zW1[1]);
+        
+        return zW;
+    }
+    
+    private String reverse(String a) {
+        char[] r = a.toCharArray();
+        reverse(r);
+        return new String(r);
+    }
+    private void reverse(char[] a) {
+        int n = a.length;
+        int i, i2, mid = n/2;
+        char swap;
+        for (i = 0, i2=n-1; i < mid; ++i, i2--) {
+            swap = a[i];
+            a[i] = a[i2];
+            a[i2] = swap;
+        }
+    }
+    private char[] reverse2(char[] a) {
+        char[] out = Arrays.copyOf(a, a.length);
+        reverse(out);
+        return out;
     }
     
     private int minimum(int a, int b, int c) {
@@ -335,5 +534,46 @@ public class StringEditDistance {
                 return c;
             }
         } 
+    }
+
+    /**
+     * find the index in b which maximizes the total score
+     *    D( a.substring(0, aMid), b.substring(0, k) )
+             + D( reverse( a.substring(aMid + 1, m)), reverse(b.substring(k + 1, n)) ) );
+       where D is the score from algorithm NeedlemanWunsch.
+     * @param aMid
+     * @param a
+     * @param b
+     * @return 
+     */
+    private int argmax(int aMid, char[] a, char[] b) {
+        /*
+        D( a.substring(0, aMid), b.substring(0, k) )
+             + D( reverse( a.substring(aMid + 1, m) ), 
+                  reverse( b.substring(k + 1, n) ) );
+        */
+        char[] a0Mid = Arrays.copyOfRange(a, 0, aMid);
+        char[] aMidMRev = Arrays.copyOfRange(a, aMid, a.length);
+        reverse(aMidMRev);
+        
+        int maxK = -1;
+        int maxVal = Integer.MIN_VALUE;
+        int k, sL, sR, tot;
+        char[] b0k, bkMidRev;
+        for (k = 0; k < b.length; ++k) {
+            b0k = Arrays.copyOfRange(b, 0, k);
+            bkMidRev = Arrays.copyOfRange(b, k, b.length);
+            reverse(bkMidRev);
+            
+            sL = calculateNeedlemanWunschScoring(a0Mid, b0k);
+            sR = calculateNeedlemanWunschScoring(aMidMRev, bkMidRev);
+            
+            tot = sL + sR;
+            if (tot > maxVal) {
+                maxVal = tot;
+                maxK = k;
+            }
+        }
+        return maxK;
     }
 }
