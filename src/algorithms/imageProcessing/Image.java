@@ -985,11 +985,11 @@ public class Image {
                 "internalIndex is out of bounds:");
         }
    
-        int row = internalIndex/width;
+        //int row = internalIndex/width;
         
-        int col = internalIndex - (row * width);
+        //int col = internalIndex - (row * width);
         
-        return col;
+        return internalIndex % width;
     }
     
     /**

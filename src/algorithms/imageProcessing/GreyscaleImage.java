@@ -480,11 +480,11 @@ public class GreyscaleImage {
    
         // int idx = (row * width) + col;
         //     idx/w = row  + 0;
-        int row = pixelIndex/width;
+        //int row = pixelIndex/width;
         
-        int col = pixelIndex - (row * width);
+        //int col = pixelIndex - (row * width);
         
-        return col;
+        return pixelIndex % width;
     }
     
     /**
