@@ -1,7 +1,7 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.compGeometry.LinesAndAngles;
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.util.PairFloat;
 import algorithms.util.Stack;
 

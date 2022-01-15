@@ -1,6 +1,6 @@
 package algorithms.util;
 
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;

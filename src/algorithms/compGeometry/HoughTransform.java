@@ -1,6 +1,6 @@
 package algorithms.compGeometry;
 
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;

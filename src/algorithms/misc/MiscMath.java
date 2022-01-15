@@ -1,7 +1,7 @@
 package algorithms.misc;
 
 import algorithms.sort.CountingSort;
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;

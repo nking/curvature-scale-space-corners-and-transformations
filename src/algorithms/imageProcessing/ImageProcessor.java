@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.FixedSizeSortedVector;
-import algorithms.MultiArrayMergeSort;
 import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.orb.ORB;
@@ -20,6 +19,7 @@ import algorithms.util.ResourceFinder;
 import algorithms.util.TwoDFloatArray;
 import algorithms.VeryLongBitString;
 import algorithms.heapsAndPQs.HeapNode;
+import algorithms.sort.MultiArrayMergeSort;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;

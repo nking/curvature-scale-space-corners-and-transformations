@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.scaleSpace;
 
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.features.CornerRegion;

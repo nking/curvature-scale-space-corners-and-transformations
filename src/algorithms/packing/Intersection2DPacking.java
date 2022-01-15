@@ -1,6 +1,6 @@
 package algorithms.packing;
 
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import gnu.trove.iterator.TIntIterator;

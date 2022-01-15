@@ -1,7 +1,7 @@
 package algorithms.imageProcessing.util;
 
 import algorithms.MergeSort;
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import java.util.List;
 

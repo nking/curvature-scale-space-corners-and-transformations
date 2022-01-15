@@ -1,6 +1,6 @@
 package algorithms.compGeometry;
 
-import algorithms.MultiArrayMergeSort;
+import algorithms.sort.MultiArrayMergeSort;
 import algorithms.util.PairFloat;
 import java.util.Arrays;
 import java.util.HashSet;
