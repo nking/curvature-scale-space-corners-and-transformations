@@ -116,7 +116,7 @@ public class MiscDebug {
             aIndexes[count] = edgeIndex.intValue();
             count++;
         }
-        aIndexes = CountingSort.sort(aIndexes, 2*edges.size());
+        aIndexes = CountingSort.sort(aIndexes);
         
         StringBuilder sb = new StringBuilder("output indexes of size ");
         sb.append(Integer.toString(edges.size())).append("\n");

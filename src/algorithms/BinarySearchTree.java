@@ -13,7 +13,7 @@ import java.util.Stack;
    The left and right subtrees are also binary search trees
 
  use a Node with left, right and parent.
- use a binary search method impl as: while loop rot != null: if (root.value 
+ use a binary search method impl as: while loop root != null: if (root.value 
   .lt. value) root=root.getRight()...
  
  adapted upon pseudocode from Cormen et al. Introduction to Algorithms.  
