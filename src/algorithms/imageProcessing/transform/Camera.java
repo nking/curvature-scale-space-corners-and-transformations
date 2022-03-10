@@ -282,6 +282,10 @@ public class Camera {
      * in the image reference frame in units of pixels.
      * In terms of Table 1 of Ma et al. 2004, the input is a double array of (x, y)
      * and the output is a double array of (u_d, v_d).
+     * The radial distortion functions to choose are from Ma et al. 2004 Table 2.
+        The choices are model #4, f(r) = 1 +k1*r^2 + k2*r^4,
+        or model #3, f(r) = 1 +k1*r + k2*r^2.
+        Note that if rCoeffs is null or empty, no radial distortion is applied.
      * Also useful reading is NVM Tools by Alex Locher
     https://github.com/alexlocher/nvmtools.git
      * @param xC distortion-free camera centered coordinates. 
@@ -295,9 +299,9 @@ public class Camera {
      * @param centerY y coordinate of principal point in pixels, usually image center.
      * @return pixels in the reference frame of image with distortion applied.
      * In terms of Table 1 of Ma et al. 2004, this is a double array of (u_d, v_d)
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
+     * @param useR2R4 if true use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+        f(r) = 1 +k1*r^2 + k2*r^4,
+        else if false use model #3 f(r) = 1 +k1*r + k2*r^2.
         note that if rCoeffs is null or empty, no radial distortion is applied.
      */
     public static double[][] cameraToPixelCoordinates(double[][] xC, double[] rCoeffs,
@@ -372,7 +376,7 @@ public class Camera {
      /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
     reference frame then applying Lp2-normalization.
      * @param x points in the camera centered reference frame. 
-     * format is 3XN for N points. 
+     * format is 3XN for N points in row-major format. 
      * @param intrinsic 
      * @return pixels transformed to camera coordinate reerence frame then 
      * Lp2-normalized.

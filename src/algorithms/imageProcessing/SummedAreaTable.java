@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import java.util.PriorityQueue;
+
 /**
  * An algorithm to make cumulative sums at a pixel adding to it
  * the value from the pixel
