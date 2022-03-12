@@ -1,6 +1,7 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import java.util.Arrays;
 import java.util.List;
@@ -17,6 +18,52 @@ import java.util.List;
  */
 public class PolarAngleQuickSort {
 
+    /**
+     * sort the given points in place by polar angle in counterclockwise order 
+     * around the first point x[0], y[0].
+     * @param x array of x points
+     * @param y array of y points of same length as x.
+     * @param outPolarAngle output variable to hold the polar angles in units of
+     * radians.  outPolarAngle should be given as an instantiated array of size x.length.
+     */
+    public static int sortCCWBy1stPoint(long[] x, long[] y, double[] outPolarAngle) {
+
+        if (x.length != y.length || x.length != outPolarAngle.length) {
+            throw new IllegalArgumentException("x and y and outPolarAngle must be same length");
+        }
+        
+        if (x.length < 3) {
+            return x.length;
+        }
+        
+        // angles are in radians, though the reduction to unique angles is done
+        // in rounded integer degrees.
+        double[] outPolarAngle1 = new double[x.length - 1];
+        
+        long x0 = x[0];
+        long y0 = y[0];
+        
+        long[] x1 = Arrays.copyOfRange(x, 1, x.length);
+        long[] y1 = Arrays.copyOfRange(y, 1, y.length);
+
+        sortCCWBy1stPoint(x0, y0, x1, y1, outPolarAngle1);
+        
+        // for same polar angles, keep the one which is furthest from x0, p0.
+        // assuming an angular resolution of 1 degree and using rounded integers for the angle degrees
+        int nUsable = reduceToUniquePolarAngles(x0, y0, x1, y1, outPolarAngle1);
+        
+        System.arraycopy(x1, 0, x, 1, nUsable);
+        System.arraycopy(y1, 0, y, 1, nUsable);
+        outPolarAngle[0] = 0;
+        System.arraycopy(outPolarAngle1, 0, outPolarAngle, 1, nUsable);
+                
+        // this method is different from the others in separating the 1st point from
+        //  the x1, y1.
+        //TODO: edit method to keep x0,y0 in x1, y1... that will reduce new array instantiations and
+        //    and make the behavior similar to the other methods
+        return nUsable + 1;
+    }
+    
     public static <T extends PairInt> int sort(T p0, T[] points) {
 
         if (p0 == null) {
@@ -89,119 +136,122 @@ public class PolarAngleQuickSort {
     static int reduceToUniquePolarAngles(float xP0, float yP0, float[] x, 
         float[] y, double[] polarAngle) {
 
-        int lastKeptIndex = 0;
+        double maxDist = Double.NEGATIVE_INFINITY;
+        int iMaxDist;
+        double dist;
+        int nextI;
+        int i2 = 1;
         
         double eps = 0;
 
         for (int i = 1; i < x.length; i++) {
 
-            // store
-            x[lastKeptIndex + 1] = x[i];
-            y[lastKeptIndex + 1] = y[i];
-
             // look ahead
-            int nSkip = 0;
-            int nextI = i + 1;
-            double maxDistance = relativeLengthOfLine(xP0, yP0, x[i], y[i]);
-            int indexMaxDistance = i;
+            nextI = i + 1;
+            iMaxDist = i;
+            
+            if ( (nextI < x.length)  
+                && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
+                maxDist = relativeLengthOfLine(xP0, yP0, x[i], y[i]);
+            }
 
-            while ( (nextI < x.length) && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
-                double dist = relativeLengthOfLine(xP0, yP0, x[nextI], y[nextI]);
-                if (maxDistance < dist) {
-                    maxDistance = dist;
-                    indexMaxDistance = nextI;
+            while ( (nextI < x.length) 
+                && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
+                dist = relativeLengthOfLine(xP0, yP0, x[nextI], y[nextI]);
+                if (maxDist < dist) {
+                    maxDist = dist;
+                    iMaxDist = nextI;
                 }
-                nSkip++;
                 nextI++;
             }
-            if (nSkip > 0) {
-                x[lastKeptIndex + 1] = x[indexMaxDistance];
-                y[lastKeptIndex + 1] = y[indexMaxDistance];
-                i = nextI - 1;
-            }
-
-            lastKeptIndex++;
+            
+            x[i2] = x[iMaxDist];
+            y[i2] = y[iMaxDist];
+            i = nextI - 1;
+            ++i2;
         }
-        return lastKeptIndex + 1;
+        
+        return i2;
     }
     
     static <T extends PairInt> int reduceToUniquePolarAngles(T p0, T[] points, 
         double[] polarAngle) {
 
-        int lastKeptIndex = 0;
+        double maxDist = Double.NEGATIVE_INFINITY;
+        int iMaxDist;
+        double dist;
+        int nextI;
+        int i2 = 1;
         
         double eps = 0;
 
         for (int i = 1; i < points.length; i++) {
 
-            // store
-            points[lastKeptIndex + 1] = points[i];
-
             // look ahead
-            int nSkip = 0;
-            int nextI = i + 1;
-            double maxDistance = relativeLengthOfLine(p0, points[i]);
-            int indexMaxDistance = i;
+            nextI = i + 1;
+            iMaxDist = i;
+            
+            if ( (nextI < points.length)  
+                && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
+                maxDist = relativeLengthOfLine(p0, points[i]);
+            }
 
-            while ( (nextI < points.length) && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
-                double dist = relativeLengthOfLine(p0, points[nextI]);
-                if (maxDistance < dist) {
-                    maxDistance = dist;
-                    indexMaxDistance = nextI;
+            while ( (nextI < points.length) 
+                && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
+                dist = relativeLengthOfLine(p0, points[nextI]);
+                if (maxDist < dist) {
+                    maxDist = dist;
+                    iMaxDist = nextI;
                 }
-                nSkip++;
                 nextI++;
             }
             
-            if (nSkip > 0) {
-                points[lastKeptIndex + 1] = points[indexMaxDistance];
-                i = nextI - 1;
-            }
-
-            lastKeptIndex++;
+            points[i2] = points[iMaxDist];
+            i = nextI - 1;
+            ++i2;
         }
         
-        return lastKeptIndex + 1;
+        return i2;
     }
 
     static <T extends PairInt> int reduceToUniquePolarAngles(
         T p0, List<T> points, double[] polarAngle) {
-
-        int lastKeptIndex = 0;
+         
+        double maxDist = Double.NEGATIVE_INFINITY;
+        int iMaxDist;
+        double dist;
+        int nextI;
+        int i2 = 1;
         
         double eps = 0;
 
         for (int i = 1; i < points.size(); i++) {
 
-            // store
-            points.set(lastKeptIndex + 1, points.get(i));
-
             // look ahead
-            int nSkip = 0;
-            int nextI = i + 1;
-            double maxDistance = relativeLengthOfLine(p0, points.get(i));
-            int indexMaxDistance = i;
+            nextI = i + 1;
+            iMaxDist = i;
+            
+            if ( (nextI < points.size()) 
+                && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
+                maxDist = relativeLengthOfLine(p0, points.get(i));
+            }
 
             while ( (nextI < points.size()) 
                 && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
-                double dist = relativeLengthOfLine(p0, points.get(nextI));
-                if (maxDistance < dist) {
-                    maxDistance = dist;
-                    indexMaxDistance = nextI;
+                dist = relativeLengthOfLine(p0, points.get(nextI));
+                if (maxDist < dist) {
+                    maxDist = dist;
+                    iMaxDist = nextI;
                 }
-                nSkip++;
                 nextI++;
             }
             
-            if (nSkip > 0) {
-                points.set(lastKeptIndex + 1, points.get(indexMaxDistance));
-                i = nextI - 1;
-            }
-
-            lastKeptIndex++;
+            points.set(i2, points.get(iMaxDist));
+            i = nextI - 1;
+            ++i2;
         }
         
-        return lastKeptIndex + 1;
+        return i2;
     }
 
     static <T extends PairInt> void sortByPolarAngle(T[] a, int idxLo, 
@@ -373,5 +423,144 @@ public class PolarAngleQuickSort {
         dy2 *= dy2;
         //double d = Math.sqrt(dx2 + dy2);
         return dx2 + dy2;
+    }
+
+    private static void sortCCWBy1stPoint(long x0, long y0, long[] x, long[] y, 
+        double[] outPolarAngle) {
+        
+        if (x.length != outPolarAngle.length || x.length != y.length) {
+            throw new IllegalArgumentException("x, y, and outPolarAngle must be same lengths");
+        }
+        
+        for (int i = 0; i < outPolarAngle.length; i++) {
+            outPolarAngle[i] = AngleUtil.polarAngleCCW((double)(x[i] - x0), (double)(y[i] - y0));
+        }
+        
+        // sort x, y by outPolarAngle
+        sortCCW(x, y, outPolarAngle, 0, x.length - 1);
+    }
+
+    private static void sortCCW(long[] x, long[] y, double[] pA, int iLo, int iHi) {
+        if (iLo < iHi) {
+            int iMid = partitionCCW(x, y, pA, iLo, iHi);
+            sortCCW(x, y, pA, iLo, iMid-1);
+            sortCCW(x, y, pA, iMid+1, iHi);
+        }
+    }
+
+    private static int partitionCCW(long[] x, long[] y, double[] pA, int iLo, int iHi) {
+        double pAR = pA[iHi];
+        int i = iLo - 1;
+        long swap;
+        double swap2;
+        
+        for (int k = iLo; k < iHi; ++k) {
+            if (pA[k] <= pAR) {
+                ++i;
+                
+                swap2 = pA[k];
+                pA[k] = pA[i];
+                pA[i] = swap2;
+                
+                swap = x[k];
+                x[k] = x[i];
+                x[i] = swap;
+                
+                swap = y[k];
+                y[k] = y[i];
+                y[i] = swap;
+            }
+        }
+        ++i;
+        swap2 = pA[iHi];
+        pA[iHi] = pA[i];
+        pA[i] = swap2;
+        
+        swap = x[iHi];
+        x[iHi] = x[i];
+        x[i] = swap;
+        
+        swap = y[iHi];
+        y[iHi] = y[i];
+        y[i] = swap;
+        
+        return i;
+    }
+
+    /**
+     * traverse the polar angles in pA, convert the angles to rounded integer degrees, and if
+     * points have the same polar angles only keep the one furthest from (x0, y0).
+     * note that all points (x, y) have been sorted by increasing angle in
+     * pA inCCW order.
+     * the arrays x, y, and pA are compacted so that the usable values are at the
+     * top r indexes where r is returned by this method
+     * @param x0
+     * @param y0
+     * @param x
+     * @param y
+     * @param pA 
+     * @return returns the number of indexes usable in each of x, y, and pA
+     * after compacting the arrays to remove redundant polar angle degrees.
+     */
+    private static int reduceToUniquePolarAngles(long x0, long y0, long[] x, 
+        long[] y, double[] pA) {
+        
+        if (x.length != pA.length || x.length != y.length) {
+            throw new IllegalArgumentException("x, y, and pA must be same lengths");
+        }
+        
+        // traverse the list of pA, converting to rounded degrees, and store each
+        // pA in a list by index
+        
+        // then traverse the degree list and if there is only one point with
+        //   that angle, store it in (x2,y2,pa2) else compare the distances form (x0,y0) among
+        //   those with the same angle and keep the largest distance.
+        
+        int i;
+        int[] deg = new int[pA.length];
+        for (i = 0; i < pA.length; ++i) {
+            deg[i] = (int)Math.round(pA[i]*(180./Math.PI));
+        }
+        
+        long maxDist = Long.MIN_VALUE;
+        int iMaxDist;
+        long dist;
+        int nextI;
+        int i2 = 0;
+        
+        long xd;
+        long yd;
+        
+        for (i = 0; i < pA.length; ++i) {
+
+            // look ahead
+            nextI = i + 1;
+            iMaxDist = i;
+            
+            if ( (nextI < pA.length) && (deg[i] == deg[nextI]) ) {
+                xd = x0 - x[i];
+                yd = y0 - y[i];
+                maxDist = (xd * xd + yd * yd);
+            }
+            
+            while ( (nextI < pA.length) && (deg[i] == deg[nextI]) ) {
+                xd = x0 - x[nextI];
+                yd = y0 - y[nextI];
+                dist = (xd * xd + yd * yd);
+                if (maxDist < dist) {
+                    maxDist = dist;
+                    iMaxDist = nextI;
+                }
+                nextI++;
+            }
+            
+            x[i2] = x[iMaxDist];
+            y[i2] = y[iMaxDist];
+            pA[i2] = pA[iMaxDist];
+            i = nextI - 1;
+            ++i2;            
+        }
+        
+        return i2;
     }
 }

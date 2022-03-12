@@ -42,51 +42,11 @@ public class PolarAngleMergeSort {
         
         sort(xP0, yP0, x, y, 1, x.length - 1, polarAngle);
         
-        int nUsable = reduceToUniquePolarAngles(xP0, yP0, x, y, polarAngle);
+        int nUsable = PolarAngleQuickSort.reduceToUniquePolarAngles(xP0, yP0, x, y, polarAngle);
         
         return nUsable;
     }
     
-    static int reduceToUniquePolarAngles(float xP0, float yP0, float[] x, 
-        float[] y, double[] polarAngle) {
-
-        int lastKeptIndex = 0;
-        
-        //TODO: consider making this zero
-        double eps = 0;//0.000000001;
-
-        for (int i = 1; i < x.length; i++) {
-
-            // store
-            x[lastKeptIndex + 1] = x[i];
-            y[lastKeptIndex + 1] = y[i];
-
-            // look ahead
-            int nSkip = 0;
-            int nextI = i + 1;
-            double maxDistance = relativeLengthOfLine(xP0, yP0, x[i], y[i]);
-            int indexMaxDistance = i;
-
-            while ( (nextI < x.length) && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
-                double dist = relativeLengthOfLine(xP0, yP0, x[nextI], y[nextI]);
-                if (maxDistance < dist) {
-                    maxDistance = dist;
-                    indexMaxDistance = nextI;
-                }
-                nSkip++;
-                nextI++;
-            }
-            if (nSkip > 0) {
-                x[lastKeptIndex + 1] = x[indexMaxDistance];
-                y[lastKeptIndex + 1] = y[indexMaxDistance];
-                i = nextI - 1;
-            }
-
-            lastKeptIndex++;
-        }
-        return lastKeptIndex + 1;
-    }
-
     protected static void sort(float xP0, float yP0, float[] x, float[] y, 
         int indexLo, int indexHi, double[] polarAngle) {
 

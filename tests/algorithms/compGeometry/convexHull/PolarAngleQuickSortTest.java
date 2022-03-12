@@ -1,8 +1,11 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.sort.MiscSorter;
+import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import java.util.logging.Logger;
@@ -26,6 +29,40 @@ public class PolarAngleQuickSortTest extends TestCase {
      */
     protected void tearDown() throws Exception {
         super.tearDown();
+    }
+    
+    public void testSortCCWBy1stPoint() {
+        /*            2,6
+         *
+         *
+         *     0,2   2,2 3,2
+         *                      7,1
+         *            2,0
+         *         
+         */
+        int n = 6;
+        long[] x = new long[]{0, 2, 7, 2, 2, 3};
+        long[] y = new long[]{2, 2, 1, 6, 0, 2};
+        
+        long[] ex = new long[]{2, 7, 0, 2, 3, 2};
+        long[] ey = new long[]{0, 1, 2, 2, 2, 6};
+        int[] origIdxs = MiscSorter.sortBy1stArg2(y, x);
+                
+        assertTrue(Arrays.equals(ex, x));
+        assertTrue(Arrays.equals(ey, y));
+        
+        double[] outPolarAngle = new double[n];
+        ex = new long[]{2, 7, 3, 2, 0};
+        ey = new long[]{0, 1, 2, 6, 2};
+        int nR = PolarAngleQuickSort.sortCCWBy1stPoint(x, y, outPolarAngle);
+        assertEquals(5, nR);
+        
+        x = Arrays.copyOf(x, nR);
+        y = Arrays.copyOf(y, nR);
+        outPolarAngle = Arrays.copyOf(outPolarAngle, nR);
+                
+        assertTrue(Arrays.equals(ex, x));
+        assertTrue(Arrays.equals(ey, y));
     }
 
     public void testReduceToUniquePolarAngles() throws Exception {

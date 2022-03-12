@@ -50,7 +50,7 @@ public class PolarAngleMergeSortTest extends TestCase {
                 (double)(yy[i] - yy[0]));
         }
 
-        int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], 
+        int nUsable = PolarAngleQuickSort.reduceToUniquePolarAngles(xx[0], 
             yy[0], xx, yy, ap);
 
         double[] expectedxx = {2, 4, 2, 0};
@@ -100,7 +100,7 @@ public class PolarAngleMergeSortTest extends TestCase {
                 (double)(yy[i] - yy[0]));
         }
 
-        int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
+        int nUsable = PolarAngleQuickSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
 
         double[] expectedxx = {2, 5, 1};
     	double[] expectedyy = {1, 4, 2.5};
@@ -149,7 +149,7 @@ public class PolarAngleMergeSortTest extends TestCase {
                 (double)(yy[i] - yy[0]));
         }
 
-        int nUsable = PolarAngleMergeSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
+        int nUsable = PolarAngleQuickSort.reduceToUniquePolarAngles(xx[0], yy[0], xx, yy, ap);
 
         double[] expectedxx = {3, 4, 1};
     	double[] expectedyy = {1, 3, 3};
