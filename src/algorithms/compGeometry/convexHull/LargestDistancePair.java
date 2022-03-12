@@ -53,9 +53,10 @@ public class LargestDistancePair {
      * use counting sort and integer degree bands for the angles.
      * Counting sort runtime complexity is O(max(N, range of data)), so
      * if the range of data were constrained to 0 to 359 for N >= 360,
-     * the sort could be done in O(N).  
-     * If N were less than 360, and O(N) were more appealing than accuracy,
-     * the 0 to 359 intervals could be made into a smaller number than 360 evenly
+     * the sort could be done in less than O(N) 
+     * and the remaining hull and largest pair algorithm runtime complexity is still O(N).  
+     * For the counting sort, if N were less than 360, and O(N) were more appealing than accuracy,
+     * the 0 to 359 intervals could be made into a smaller number than 360 of evenly
      * sized bands.
      * 
      * @param x input array of x coordinates.  note that this method modifies the order of x
