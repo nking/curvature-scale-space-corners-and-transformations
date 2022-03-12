@@ -58,9 +58,8 @@ public class PolarAngleQuickSort {
         System.arraycopy(outPolarAngle1, 0, outPolarAngle, 1, nUsable);
                 
         // this method is different from the others in separating the 1st point from
-        //  the x1, y1.
-        //TODO: edit method to keep x0,y0 in x1, y1... that will reduce new array instantiations and
-        //    and make the behavior similar to the other methods
+        //  the arrays x1, y1 in the reduce method, so needs to add 1 to the return value
+        //  for the first point put back into the array
         return nUsable + 1;
     }
     

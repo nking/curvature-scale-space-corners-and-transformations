@@ -1,86 +1,49 @@
 package algorithms.compGeometry.convexHull;
 
+import algorithms.compGeometry.convexHull.GrahamScanLong.CH;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 import algorithms.util.PolygonAndPointPlotter;
-import java.util.List;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.framework.TestCase;
 
-public class GrahamScanPairIntTest extends TestCase {
+public class GrahamScanLongTest extends TestCase {
 
-    protected static Logger log = Logger.getLogger(GrahamScanPairIntTest.class.getName());
+    protected static Logger log = Logger.getLogger(GrahamScanLongTest.class.getName());
     
     public void testScan() throws Exception {
 
-        /*            2,6
+        /*            2,6*
          *
          *
-         *     0,2   2,2 3,2
-         *                      7,1
-         *            2,0
-         *    7
-         *    6   <>
-         *    5   
-         *    4       
-         *    3       
-         *    <> <> <>        
-         *    1             <>
-         *    0 1<> 3 4 5 6 7        
+         *     0,2*   2,2 3,2
+         *                      7,1*
+         *            2,0*
+         *         
          */
-        PairInt[] points = new PairInt[6];
-        points[0] = new PairInt(0, 2);
-        points[1] = new PairInt(2, 2);
-        points[2] = new PairInt(7, 1);
-        points[3] = new PairInt(2, 6);
-        points[4] = new PairInt(2, 0);
-        points[5] = new PairInt(3, 2);
-
-        GrahamScanPairInt<PairInt> scan = new GrahamScanPairInt<PairInt>();
-        scan.computeHull(points);
-        List<PairInt> hull = scan.getHull();
-
-        assertTrue(hull.size() == 5);
+        int n = 6;
+        long[] x = new long[]{0, 2, 7, 2, 2, 3};
+        long[] y = new long[]{2, 2, 1, 6, 0, 2};
+        
+        CH ch = GrahamScanLong.computeHull(x, y);
+        
+        //System.out.printf("ch=%s\n", ch.toString());
+        
+        assertEquals(5, ch.getXH().length);
 
         // clockwise order
-        float[] expectedxx = new float[]{0, 2, 7, 2, 0};
-        float[] expectedyy = new float[]{2, 6, 1, 0, 2};
+        long[] expectedxx = new long[]{2, 7, 2, 0, 2};
+        long[] expectedyy = new long[]{0, 1, 6, 2, 0};
 
         for (int i = 0; i < expectedxx.length; i++) {
-            assertTrue(Math.abs(expectedxx[i] - hull.get(i).getX()) < 0.01);
-            assertTrue(Math.abs(expectedyy[i] - hull.get(i).getY()) < 0.01);
+            assertEquals(expectedxx[i], ch.getXH()[i]);
+            assertEquals(expectedyy[i], ch.getYH()[i]);
         }
 
-        PairIntArray curve = new PairIntArray(hull.size());
-        for (int i = 0; i < hull.size(); ++i) {
-            int x = hull.get(i).getX();
-            int y = hull.get(i).getY();
-            curve.add(x, y);
-        }
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        boolean isCW = curveHelper.curveIsOrderedClockwise(curve);
-        assertTrue(isCW);
-        
-        points = new PairInt[5];
-        points[0] = new PairInt(0, 2);
-        points[1] = new PairInt(2, 6);
-        points[2] = new PairInt(7, 1);
-        points[3] = new PairInt(2, 0);
-        points[4] = new PairInt(0, 2);
-        curve = new PairIntArray(points.length);
-        for (int i = 0; i < points.length; ++i) {
-            int x = points[i].getX();
-            int y = points[i].getY();
-            curve.add(x, y);
-        }
-        isCW = curveHelper.curveIsOrderedClockwise2(curve);
-        assertTrue(isCW);
     }
     
     public void testScanExceptions() throws Exception {
@@ -88,95 +51,93 @@ public class GrahamScanPairIntTest extends TestCase {
         boolean threwException = false;
         
         try {
-            GrahamScanPairInt<PairInt> scan = new GrahamScanPairInt<PairInt>();
-            scan.computeHull(null);
+            CH ch = GrahamScanLong.computeHull(null, null);
         } catch (IllegalArgumentException e) {
             threwException = true;
         }
         assertTrue(threwException);
         
-        PairInt[] points = new PairInt[2];
-        points[0] = new PairInt(0, 2);
-        points[1] = new PairInt(2, 2);
+        long[] x = new long[]{0, 2};
+        long[] y = new long[]{2, 2};
         
         try {
-            GrahamScanPairInt<PairInt> scan = new GrahamScanPairInt<PairInt>();
-            scan.computeHull(points);
+            CH ch = GrahamScanLong.computeHull(x, y);
         } catch (IllegalArgumentException e) {
             threwException = true;
         }
         assertTrue(threwException);
         
-        points = new PairInt[3];
-        points[0] = new PairInt(0, 2);
-        points[1] = new PairInt(2, 2);
-        points[2] = new PairInt(2, 2);
+        x = new long[]{0, 2, 2};
+        y = new long[]{2, 2, 2};
         
         try {
-            GrahamScanPairInt<PairInt> scan = new GrahamScanPairInt<PairInt>();
-            scan.computeHull(points);
+            CH ch = GrahamScanLong.computeHull(x, y);
         } catch (GrahamScanTooFewPointsException e) {
             threwException = true;
         }
         assertTrue(threwException);
         
-        try {
-            GrahamScanPairInt<PairInt> scan = new GrahamScanPairInt<PairInt>();
-            scan.populateHull();
-        } catch (GrahamScanTooFewPointsException e) {
-            threwException = true;
-        }
-        assertTrue(threwException);
     }
 
     public void testCalculateConvexHull6() throws Exception {
 
         int ntries = 1;
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.nanoTime();
+        System.out.println("seed=" + seed);
+        sr.setSeed(seed);
 
-        float xMin = 10;
-        float yMin = 10;
-        float xMax = 1000;
-        float yMax = 1000;
+        long xMin = 10;
+        long yMin = 10;
+        long xMax = 1000;
+        long yMax = 1000;
             
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(xMin, xMax, yMin, yMax);
         
         for (int i = 0; i < ntries; i++) {
             int n = 1000;
-            float[] x = new float[n];
-            float[] y = new float[n];
+            long[] x = new long[n];
+            long[] y = new long[n];
+            
+            float[] xF = new float[n];
+            float[] yF = new float[n];
 
             float maxRadius = 200;
 
-            createRandomPointsAroundCenter(maxRadius, n, 600.f, 400.f, x, y, 0);
+            for (int ii = 0; ii < n; ii++) {
 
-            GrahamScanPairInt<PairInt> scan = new GrahamScanPairInt<PairInt>();
-            
-            PairInt[] points = new PairInt[n];
-            for (int ii = 0; ii < n; ++ii) {
-                points[ii] = new PairInt(Math.round(x[ii]), Math.round(y[ii]));
+                float radius = maxRadius * sr.nextFloat();
+                double angle = 360. * sr.nextDouble();
+
+                float[] xy = calculateXAndYFromXcYcAndRadius(600.f, 400.f, radius, angle);
+
+                xF[ii] = xy[0];
+                yF[ii] = xy[1];
+                x[ii] = (long)(Math.round(xy[0]));
+                y[ii] = (long)(Math.round(xy[1]));
             }
             
-            scan.computeHull(points);
+            CH ch = GrahamScanLong.computeHull(x, y);
             
-            List<PairInt> hull = scan.getHull();
-            
-            PairIntArray curve = new PairIntArray(hull.size() - 1);
-            float[] xHull = new float[hull.size()];
-            float[] yHull = new float[hull.size()];
-            for (int ii = 0; ii < hull.size(); ++ii) {
-                xHull[ii] = hull.get(ii).getX();
-                yHull[ii] = hull.get(ii).getY();
-                if (ii < (hull.size() - 1)) {
-                    curve.add(hull.get(ii).getX(), hull.get(ii).getY());
+            int nH = ch.getXH().length;
+                        
+            PairIntArray curve = new PairIntArray(nH - 1);
+            float[] xHull = new float[nH];
+            float[] yHull = new float[nH];
+            for (int ii = 0; ii < nH; ++ii) {
+                xHull[ii] = ch.getXH()[ii];
+                yHull[ii] = ch.getYH()[ii];
+                if (ii < (nH - 1)) {
+                    curve.add((int)xHull[ii], (int)yHull[ii]);
                 }
             }
-            
-            plotter.addPlot(x, y, xHull, yHull, "gs");
+            plotter.addPlot(xF, yF, xHull, yHull, "gs");
             plotter.writeFile();
             
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            boolean isCW = curveHelper.curveIsOrderedClockwise(curve);
-            assertTrue(isCW);
+            boolean isCCW = !curveHelper.curveIsOrderedClockwise(curve);
+            assertTrue(isCCW);
         }
 
         for (int i = 0; i < ntries; i++) {
@@ -189,44 +150,6 @@ public class GrahamScanPairIntTest extends TestCase {
 
         }
         
-    }
-
-    protected void createRandomPointsAroundCenter(float maxRadius,
-        int numberOfPoints, float xc, float yc, double[] x, double[] y, 
-        int xyStartOffset) throws NoSuchAlgorithmException {
-
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.nanoTime());
-
-        for (int i = 0; i < numberOfPoints; i++) {
-
-            float radius = maxRadius * sr.nextFloat();
-            double angle = 360. * sr.nextDouble();
-
-            float[] xy = calculateXAndYFromXcYcAndRadius(xc, yc, radius, angle);
-
-            x[xyStartOffset + i] = xy[0];
-            y[xyStartOffset + i] = xy[1];
-        }
-    }
-
-    protected void createRandomPointsAroundCenter(float maxRadius,
-        int numberOfPoints, float xc, float yc, float[] x, float[] y, 
-        int xyStartOffset) throws NoSuchAlgorithmException {
-
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        sr.setSeed(System.nanoTime());
-
-        for (int i = 0; i < numberOfPoints; i++) {
-
-            float radius = maxRadius * sr.nextFloat();
-            double angle = 360. * sr.nextDouble();
-
-            float[] xy = calculateXAndYFromXcYcAndRadius(xc, yc, radius, angle);
-
-            x[xyStartOffset + i] = xy[0];
-            y[xyStartOffset + i] = xy[1];
-        }
     }
     
     protected void createRandomPointsAroundCenter(int maxRadius,
@@ -270,7 +193,7 @@ public class GrahamScanPairIntTest extends TestCase {
      */
     public static Test suite() {
         log.fine("Creating a TestSuite for GrahamScan");
-        return new TestSuite(GrahamScanPairIntTest.class);
+        return new TestSuite(GrahamScanLongTest.class);
     }
 
     /**
