@@ -42,6 +42,7 @@ import algorithms.compGeometry.convexHull.GrahamScanLong.CH;
 public class LargestDistancePair {
     
     /**
+     * NOT READY FOR USE.
      * find the largest distance between the given pairs of points.
      * The runtime complexity is <em>O(N*log_2(N))</em>, 
      * worse case runtime complexity is if the number of hull points
@@ -89,6 +90,8 @@ public class LargestDistancePair {
         long y0 = ch.getYH()[0];
         
         int i0 = 0;
+        
+        //TODO: fix error
         
         // find furthest point from the first point.  that will be the scan range;
         int i;
