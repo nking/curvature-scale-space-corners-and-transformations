@@ -46,19 +46,28 @@ public class LargestDistancePairTest extends TestCase {
     
     public void testRandomInput() throws Exception {
         
-        // generate points in this coordinate range:
-        int min = 1;
-        int max = 10000;
-        
         long seed = System.nanoTime();
+        //seed = 375796260475819L;
         System.out.printf("seed=%d\n", seed);
         Random rand = Misc.getSecureRandom();
         rand.setSeed(seed);
                 
+        int nTests = 100;
+        
+        for (int i = 0; i < nTests; ++i) {
+            runRandomInput(rand);
+        }
+    }
+        
+    private void runRandomInput(Random rand) throws Exception {
+        // generate points in this coordinate range:
+        int min = 1;
+        int max = 10000;
+        
         // generate this many points:
         int n = 100 + rand.nextInt(1000 - 100);
         
-        System.out.printf("n=%d  min=%d max=%d   max-min=%d\n", n, min, max, max-min);
+        //System.out.printf("n=%d  min=%d max=%d   max-min=%d\n", n, min, max, max-min);
         
         long[] x = new long[n];
         long[] y = new long[n];
@@ -103,37 +112,34 @@ public class LargestDistancePairTest extends TestCase {
         
         assertFalse(expectedX0s.isEmpty());
         
-        System.out.printf("number of max dist pairs=%d\n", expectedX0s.size());
+        //System.out.printf("number of max dist pairs=%d\n", expectedX0s.size());
         
         // returns a pair in format [x0, y0, x1, y1]
         long[] result = LargestDistancePair.findLargestDistancePair(x, y);
         
-        long x0;
-        long y0;
         long xd;
         long yd;
         long distSq;
         
-        xd = result[0] - result[2];
-        yd = result[1] - result[3];
-        distSq = xd*xd + yd*yd;
-        System.out.printf("result=(%d,%d)(%d,%d), d=%d\n", 
-            result[0], result[1], result[2], result[3], distSq);
+        long resultDistSq = ( (result[0] - result[2])*(result[0] - result[2]) +
+            (result[1] - result[3])*(result[1] - result[3]));
+        //System.out.printf("result=(%d,%d)(%d,%d), d=%d\n", 
+        //    result[0], result[1], result[2], result[3], resultDistSq);
         
         boolean found = false;
-        for (i = 0; i < expectedX0s.size(); ++i) {
-            if (expectedX0s.contains(result[0])) {
-                if (expectedY0s.contains(result[1])) {
-                    if (expectedX1s.contains(result[2])) {
-                        if (expectedY1s.contains(result[3])) {
+        for (i = 0; i < expectedXH0s.size(); ++i) {
+            if (expectedXH0s.contains(result[0])) {
+                if (expectedYH0s.contains(result[1])) {
+                    if (expectedXH1s.contains(result[2])) {
+                        if (expectedYH1s.contains(result[3])) {
                             found = true;
                         }
                     }
                 }
-            } else if (expectedX0s.contains(result[2])) {
-                if (expectedY0s.contains(result[3])) {
-                    if (expectedX1s.contains(result[0])) {
-                        if (expectedY1s.contains(result[1])) {
+            } else if (expectedXH0s.contains(result[2])) {
+                if (expectedYH0s.contains(result[3])) {
+                    if (expectedXH1s.contains(result[0])) {
+                        if (expectedYH1s.contains(result[1])) {
                             found = true;
                         }
                     }
@@ -146,21 +152,22 @@ public class LargestDistancePairTest extends TestCase {
             xd = expectedX0s.get(i) - expectedX1s.get(i);
             yd = expectedY0s.get(i) - expectedY1s.get(i);
             distSq = xd*xd + yd*yd;
-            System.out.printf("expected for x, y =(%d,%d)(%d,%d) distSq=%d\n", 
+            /*System.out.printf("expected for x, y =(%d,%d)(%d,%d) distSq=%d\n", 
                 expectedX0s.get(i), expectedY0s.get(i), expectedX1s.get(i), 
-                expectedY1s.get(i), distSq);
+                expectedY1s.get(i), distSq);*/
         }
         
-        for (i = 0; i < expectedXH0s.size(); ++i) {
+        distSq = 0;
+        for (i = 0; i < 1/*expectedXH0s.size()*/; ++i) {
             xd = expectedXH0s.get(i) - expectedXH1s.get(i);
             yd = expectedYH0s.get(i) - expectedYH1s.get(i);
             distSq = xd*xd + yd*yd;
-            System.out.printf("expected for xh, yh =(%d,%d)(%d,%d) distSq=%d\n", 
+            /*System.out.printf("expected for xh, yh =(%d,%d)(%d,%d) distSq=%d\n", 
                 expectedXH0s.get(i), expectedYH0s.get(i), expectedXH1s.get(i), 
-                expectedYH1s.get(i), distSq);
+                expectedYH1s.get(i), distSq);*/
         }
         
-        assertTrue(found);
+        assertEquals(distSq, resultDistSq);
     }
 
     private void bruteForceMaxDist(TLongList expectedX0s, 

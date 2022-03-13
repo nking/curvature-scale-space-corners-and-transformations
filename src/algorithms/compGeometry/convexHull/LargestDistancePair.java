@@ -1,6 +1,7 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.compGeometry.convexHull.GrahamScanLong.CH;
+import algorithms.misc.MiscMath0;
 
 /**
  * finds the pair of points most distant from one another a.k.a. the
@@ -42,7 +43,6 @@ import algorithms.compGeometry.convexHull.GrahamScanLong.CH;
 public class LargestDistancePair {
     
     /**
-     * NOT READY FOR USE.
      * find the largest distance between the given pairs of points.
      * The runtime complexity is <em>O(N*log_2(N))</em>, 
      * worse case runtime complexity is if the number of hull points
@@ -59,6 +59,8 @@ public class LargestDistancePair {
      * For the counting sort, if N were less than 360, and O(N) were more appealing than accuracy,
      * the 0 to 359 intervals could be made into a smaller number than 360 of evenly
      * sized bands.
+     * TODO: working on that now, and when ready, this algorithm will have a runtime
+     * complexity of max(O(N), O(n_hull^2)).
      * 
      * @param x input array of x coordinates.  note that this method modifies the order of x
      * upon CCW sorting of x and y, so copy the arrays in if need to kep the
@@ -69,7 +71,7 @@ public class LargestDistancePair {
      * @return an array of the pair of points furthest from one another.  the
      * format in the return array is [xa, ya, yb, yb].
      * If there are more than one points with same maximum distance,
-     * only one is returned, and that one is the lastest point in roughly the 1st half of the
+     * only one is returned, and that one is the latest point in roughly the 1st half of the
      * convex hull and it last pairing in terms of CCW ordering of the hull points.
      * @throws algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException
      * if the unique polar angles w.r.t. the smallest y point in the arrays
@@ -79,6 +81,11 @@ public class LargestDistancePair {
         
         // x and y
         CH ch = GrahamScanLong.computeHull(x, y);
+        
+        int n = ch.getXH().length;
+        
+        double meanX = MiscMath0.getAvgAndStDev(ch.getXH(), n)[0];
+        double meanY = MiscMath0.getAvgAndStDev(ch.getYH(), n)[0];
                 
         long maxDist = Long.MIN_VALUE;
         int iMaxDist = 0;
@@ -86,19 +93,20 @@ public class LargestDistancePair {
         long xd;
         long yd;
         
-        long x0 = ch.getXH()[0];
-        long y0 = ch.getYH()[0];
+        int iRef = getPointFurthestFromMean(meanX, meanY, ch.getXH(), ch.getYH());
+        long xRef = ch.getXH()[iRef];
+        long yRef = ch.getYH()[iRef];
         
-        int i0 = 0;
-        
-        //TODO: fix error
-        
-        // find furthest point from the first point.  that will be the scan range;
-        int i;
+        // find furthest point from the reference point.  that will be the scan range;
+        int i = iRef + 1;
+        int iter = 0;
         // scan to the 2nd to last point because the last point in the hull is the same as the first point
-        for (i = 1; i < ch.getXH().length - 1; ++i) {
-            xd = ch.getXH()[i] - x0;
-            yd = ch.getYH()[i] - y0;
+        while (iter < (n - 1)) {
+            if (i > (n - 2)) {
+                i = 0;
+            }
+            xd = ch.getXH()[i] - xRef;
+            yd = ch.getYH()[i] - yRef;
             distSq = xd * xd + yd * yd;
             
             if (distSq >= maxDist) {
@@ -109,33 +117,104 @@ public class LargestDistancePair {
                 // will increase or stay the same and then decrease.
                 break;
             }
+            ++iter;
+            ++i;
         }
         
-        int nScan = i;
+        // using a larger scan range than iter is also necessary
+        int nScan = n-1;//iter;
+        
+        //System.out.printf("nScan = %d, n-1=%d\n", iter, n - 1);
+        
+        //System.out.printf("i0=%d, i1=%d, distSq=%d\n", iRef, iMaxDist, maxDist);
         
         int j;
         
+        long maxDistJ;
+        int jMaxDist = 0;
+        
+        // this O(n_hull^2) section is necessary
+        
         // try pairs i0: [2, nScan) to see if an i1 pairing has dist > maxDist
-        for (i = 1; i < nScan; ++i) {
-            x0 = ch.getXH()[i];
-            y0 = ch.getYH()[i];
-            for (j = i + 1; j < ch.getXH().length - 1; ++j) {
-                xd = ch.getXH()[j] - x0;
-                yd = ch.getYH()[j] - y0;
+        i = iRef + 1;
+        iter = 0;
+        int iterJ;
+        while (iter <= nScan) {
+            if (i > (n - 2)) {
+                i = 0;
+            }
+            xRef = ch.getXH()[i];
+            yRef = ch.getYH()[i];
+            //System.out.printf("%d)\n", i);
+            
+            iterJ = 0;
+            j = i + 1;
+            
+            maxDistJ = Long.MIN_VALUE;
+            while (iterJ <= nScan) {
+                if (j > (n - 2)) {
+                    j = 0;
+                }
+                xd = ch.getXH()[j] - xRef;
+                yd = ch.getYH()[j] - yRef;
                 distSq = xd * xd + yd * yd;
-                if (distSq >= maxDist) {
-                    i0 = i;
-                    maxDist = distSq;
-                    iMaxDist = j;
-                } else if (j > (i + nScan)) {
-                    //TODO: consider letting the scan continue further than this along the hull
+                //System.out.printf("   %10d  %20d", j, distSq);
+                if (distSq >= maxDistJ) {
+                    maxDistJ = distSq;
+                    jMaxDist = j;
+                    //System.out.printf("*\n");
+                } else {
+                    //System.out.printf("\n");
                     break;
                 }
+                ++iterJ;
+                ++j;
             }
+            if (maxDistJ > maxDist) {
+                iRef = i;
+                iMaxDist = jMaxDist;
+                maxDist = maxDistJ;
+                //System.out.printf("    j: i0=%d, i1=%d, distSq=%d\n", iRef, iMaxDist, maxDist);
+            }
+            ++iter;
+            ++i;
         }
         
-        assert(maxDist > Long.MIN_VALUE);
+        /*System.out.printf("MAXDISTSQ=%d  (x[%d]=%d, y[%d]=%d), (x[%d]=%d, y[%d]=%d)\n", 
+            maxDist, 
+            iRef, ch.getXH()[iRef], 
+            iRef, ch.getYH()[iRef],
+            iMaxDist, ch.getXH()[iMaxDist],
+            iMaxDist, ch.getYH()[iMaxDist]);*/
         
-        return new long[]{x[i0], y[i0], x[iMaxDist], y[iMaxDist]};
+        long[] result = new long[]{ch.getXH()[iRef], ch.getYH()[iRef], ch.getXH()[iMaxDist], ch.getYH()[iMaxDist]};
+        
+        assert(maxDist > Long.MIN_VALUE);
+        assert(maxDist == ( (result[0] - result[2])*(result[0] - result[2]) +
+            (result[1] - result[3])*(result[1] - result[3])));
+        
+        return result;
     }
+
+    protected static int getPointFurthestFromMean(double meanX, double meanY, 
+        long[] xh, long[] yh) {
+        
+        int i;
+        double xd;
+        double yd;
+        double distSq;
+        double maxDist = Double.NEGATIVE_INFINITY;
+        int iMaxDist = -1;
+        for (i = 0; i < xh.length; ++i) {
+            xd = xh[i] - meanX;
+            yd = yh[i] - meanY;
+            distSq = xd*xd + yd*yd;
+            if (distSq > maxDist) {
+                maxDist = distSq;
+                iMaxDist = i;
+            }
+        }
+        return  iMaxDist;
+    }
+
 }
