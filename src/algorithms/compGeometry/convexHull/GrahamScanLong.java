@@ -71,6 +71,8 @@ public class GrahamScanLong {
     /**
      * find the convex hull of the given (x, y) points.  Note that the resulting
      * hull points have the same first point as last point.
+     * runtime complexity is O(N) because counting sort is used in the polar angle
+     * sort, removing the O(N*log_2(N)) component.
      * 
      * @param x
      * @param y
@@ -116,15 +118,20 @@ public class GrahamScanLong {
 
         // (1) let p0 be the point in Q w/ minimum yCoord,
         //     or the leftmost point if more than one w/ same minimum yCoord.
-        int[] origIdxs = MiscSorter.sortBy1stArg2(y, x);
+        int p0Index = findIndexOfMinY(x, y);
         
-        int p0Index = 0;
-
+        if (p0Index != 0) {
+            // move the point at index [iP0] to index [0] and move the rest of the arrays as needed
+            rewriteToPlaceAt0(p0Index, x, y);
+        }
+                
         // (2) let <p1, p2, ..., pm> be the remaining points in Q, sorted
 	    //     by polar angle in counterclockwise order around p0
 	    //     (if more than one pt has same angle, keep only the furthest from p0)
-        double[] pA = new double[x.length];
-    	int nPointsUsable = PolarAngleQuickSort.sortCCWBy1stPoint(x, y, pA);
+                
+        // this step uses angles rounded to degrees between 0 and 360.
+        // the runtime complexity is O( max(x.length, 360) )
+    	int nPointsUsable = PolarAngleQuickSort.sortCCWBy1stPoint(x, y);
 
         if (nPointsUsable < 3) {
 	     throw new GrahamScanTooFewPointsException("polar angle sorting has reduced the number of points to less than 3");
@@ -189,6 +196,50 @@ public class GrahamScanLong {
         yH[xH.length - 1] = y[0];
         CH ch = new CH(xH, yH);
         return ch;
+    }
+
+    protected static int findIndexOfMinY(long[] x, long[] y) {
+        if (x.length < 1) {
+            throw new IllegalArgumentException("x and y must be longer than 1");
+        }
+        int iMin = 0;
+        long minY = y[0];
+        long minX = x[0];
+        int i;
+        for (i = 1; i < x.length; ++i) {
+            if ((y[i] < minY) || ( (y[i] == minY) && (x[i] < minX))) {
+                minY = y[i];
+                minX = x[i];
+                iMin = i;
+            }
+        }
+        return iMin;
+    }
+    
+    /**
+     * move the point at index [iP0] to index [0] and move the rest of the array as needed
+     * @param iP0
+     * @param x
+     * @param y 
+     */
+    protected static void rewriteToPlaceAt0(final int iP0, long[] x, long[] y) {
+        long x0 = x[iP0];
+        long y0 = y[iP0];
+        
+        /*
+        0---- modify
+        1---- modify
+        2 iP0
+        3 -----  not affected by iP0 move
+        4 -----
+        */
+        int i;
+        for (i = iP0; i > 0; --i) {
+            x[i] = x[i - 1];
+            y[i] = y[i - 1];
+        }
+        x[0] = x0;
+        y[0] = y0;
     }
 
 }

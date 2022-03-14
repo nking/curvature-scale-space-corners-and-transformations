@@ -3,15 +3,12 @@ package algorithms.compGeometry.convexHull;
 import algorithms.misc.Misc;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.TLongLongMap;
 import gnu.trove.map.TLongObjectMap;
-import gnu.trove.map.hash.TLongLongHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 
 /**

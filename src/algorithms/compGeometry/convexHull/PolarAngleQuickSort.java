@@ -1,6 +1,7 @@
 package algorithms.compGeometry.convexHull;
 
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.sort.CountingSort;
 import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import java.util.Arrays;
@@ -21,41 +22,49 @@ public class PolarAngleQuickSort {
     /**
      * sort the given points in place by polar angle in counterclockwise order 
      * around the first point x[0], y[0].
+     * NOTE that the angles are rounded to degree integers for the "reduce to
+     * unique" step.
+     * The runtime complexity is O( max(x.length, 360) ).
      * @param x array of x points
      * @param y array of y points of same length as x.
-     * @param outPolarAngle output variable to hold the polar angles in units of
-     * radians.  outPolarAngle should be given as an instantiated array of size x.length.
      */
-    public static int sortCCWBy1stPoint(long[] x, long[] y, double[] outPolarAngle) {
+    public static int sortCCWBy1stPoint(long[] x, long[] y) {
 
-        if (x.length != y.length || x.length != outPolarAngle.length) {
-            throw new IllegalArgumentException("x and y and outPolarAngle must be same length");
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("x and y must be same length");
         }
         
         if (x.length < 3) {
             return x.length;
         }
         
-        // angles are in radians, though the reduction to unique angles is done
-        // in rounded integer degrees.
-        double[] outPolarAngle1 = new double[x.length - 1];
-        
         long x0 = x[0];
         long y0 = y[0];
         
         long[] x1 = Arrays.copyOfRange(x, 1, x.length);
         long[] y1 = Arrays.copyOfRange(y, 1, y.length);
-
-        sortCCWBy1stPoint(x0, y0, x1, y1, outPolarAngle1);
         
+        double degRadians;
+        int[] polarAngleDegree1 = new int[x.length - 1];
+        
+        for (int i = 0; i < x1.length; i++) {
+            degRadians = AngleUtil.polarAngleCCW((double)(x1[i] - x0), (double)(y1[i] - y0));
+            polarAngleDegree1[i] = (int)Math.round(degRadians * (180./Math.PI));
+        }
+        
+        int[] sortedIndexes1 = CountingSort.sortAndReturnIndexes(polarAngleDegree1);
+        
+        // re-order x1 and y1 by sortedIndexes1
+        rewriteBySortedIndexes(sortedIndexes1, x1);
+        rewriteBySortedIndexes(sortedIndexes1, y1);
+        rewriteBySortedIndexes(sortedIndexes1, polarAngleDegree1);
+                
         // for same polar angles, keep the one which is furthest from x0, p0.
         // assuming an angular resolution of 1 degree and using rounded integers for the angle degrees
-        int nUsable = reduceToUniquePolarAngles(x0, y0, x1, y1, outPolarAngle1);
+        int nUsable = reduceToUniquePolarAngles(x0, y0, x1, y1, polarAngleDegree1);
         
         System.arraycopy(x1, 0, x, 1, nUsable);
         System.arraycopy(y1, 0, y, 1, nUsable);
-        outPolarAngle[0] = 0;
-        System.arraycopy(outPolarAngle1, 0, outPolarAngle, 1, nUsable);
                 
         // this method is different from the others in separating the 1st point from
         //  the arrays x1, y1 in the reduce method, so needs to add 1 to the return value
@@ -561,5 +570,104 @@ public class PolarAngleQuickSort {
         }
         
         return i2;
+    }
+    
+    /**
+     * traverse the polar angles in pA, convert the angles to rounded integer degrees, and if
+     * points have the same polar angles only keep the one furthest from (x0, y0).
+     * note that all points (x, y) have been sorted by increasing angle in
+     * pA inCCW order.
+     * the arrays x, y, and pA are compacted so that the usable values are at the
+     * top r indexes where r is returned by this method
+     * @param x0
+     * @param y0
+     * @param x
+     * @param y
+     * @param deg polar angle in degrees
+     * @return returns the number of indexes usable in each of x, y, and pA
+     * after compacting the arrays to remove redundant polar angle degrees.
+     */
+    private static int reduceToUniquePolarAngles(long x0, long y0, long[] x, 
+        long[] y, int[] deg) {
+        
+        if (x.length != deg.length || x.length != y.length) {
+            throw new IllegalArgumentException("x, y, and deg must be same lengths");
+        }
+        
+        // traverse the list of pA, converting to rounded degrees, and store each
+        // pA in a list by index
+        
+        // then traverse the degree list and if there is only one point with
+        //   that angle, store it in (x2,y2,pa2) else compare the distances form (x0,y0) among
+        //   those with the same angle and keep the largest distance.
+        
+        long maxDist = Long.MIN_VALUE;
+        int iMaxDist;
+        long dist;
+        int nextI;
+        int i2 = 0;
+        
+        long xd;
+        long yd;
+        
+        int i;
+        
+        for (i = 0; i < deg.length; ++i) {
+
+            // look ahead
+            nextI = i + 1;
+            iMaxDist = i;
+            
+            if ( (nextI < deg.length) && (deg[i] == deg[nextI]) ) {
+                xd = x0 - x[i];
+                yd = y0 - y[i];
+                maxDist = (xd * xd + yd * yd);
+            }
+            
+            while ( (nextI < deg.length) && (deg[i] == deg[nextI]) ) {
+                xd = x0 - x[nextI];
+                yd = y0 - y[nextI];
+                dist = (xd * xd + yd * yd);
+                if (maxDist < dist) {
+                    maxDist = dist;
+                    iMaxDist = nextI;
+                }
+                nextI++;
+            }
+            
+            x[i2] = x[iMaxDist];
+            y[i2] = y[iMaxDist];
+            deg[i2] = deg[iMaxDist];
+            i = nextI - 1;
+            ++i2;            
+        }
+        
+        return i2;
+    }
+
+    private static void rewriteBySortedIndexes(int[] sortedIndexes1, 
+        long[] x) {
+        
+        int n = x.length;
+        
+        long[] x2 = new long[n];
+        for (int i = 0; i < n; ++i) {
+            x2[i] = x[sortedIndexes1[i]];
+        }
+        
+        System.arraycopy(x2, 0, x, 0, n);
+    }
+    
+    private static void rewriteBySortedIndexes(int[] sortedIndexes1, 
+        int[] x) {
+        
+        int n = x.length;
+        
+        int[] x2 = new int[n];
+        for (int i = 0; i < n; ++i) {
+            x2[i] = x[sortedIndexes1[i]];
+        }
+        
+        System.arraycopy(x2, 0, x, 0, n);
     }
 }

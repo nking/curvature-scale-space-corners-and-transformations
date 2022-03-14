@@ -50,15 +50,13 @@ public class PolarAngleQuickSortTest extends TestCase {
         assertTrue(Arrays.equals(ex, x));
         assertTrue(Arrays.equals(ey, y));
         
-        double[] outPolarAngle = new double[n];
         ex = new long[]{2, 7, 3, 2, 0};
         ey = new long[]{0, 1, 2, 6, 2};
-        int nR = PolarAngleQuickSort.sortCCWBy1stPoint(x, y, outPolarAngle);
+        int nR = PolarAngleQuickSort.sortCCWBy1stPoint(x, y);
         assertEquals(5, nR);
         
         x = Arrays.copyOf(x, nR);
         y = Arrays.copyOf(y, nR);
-        outPolarAngle = Arrays.copyOf(outPolarAngle, nR);
                 
         assertTrue(Arrays.equals(ex, x));
         assertTrue(Arrays.equals(ey, y));
