@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GrahamScanLong.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.convexHull</a> &gt; <span class="el_source">GrahamScanLong.java</span></div><h1>GrahamScanLong.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.convexHull;
+
+import algorithms.sort.MiscSorter;
+import algorithms.util.FormatArray;
+import algorithms.util.Stack;
+import java.util.Arrays;
+
+/**
+ * adapted from 
+ * https://code.google.com/p/two-point-correlation/source/browse/src/test/java/algorithms/compGeometry/convexHull/
+ * under MIT License (MIT), Nichole King 2013
+ * 
+  &lt;pre&gt;
+  Solves the Convex Hull problem w/ a stack S of candidate points.
+ 
+  Given a set of Q points returns the vertices of the ConvexHull(Q) in counter-clockwise
+  order.   a convex hull is the smallest convex polygon that will include all points in Q.
+ 
+  This Graham's Scan runs in O(n) due to use of a linear runtime polar angle sorter
+  to reduce the allowed angles to integer degrees.
+ 
+  It uses a technique called 'rotational sweep' to process vertices in the order
+  of the polar angles they form with a reference vertex.
+ 
+  constructed from pseudo-code in Cormen et al. &quot;Introduction to Algorithms
+ &lt;/pre&gt;
+ 
+ * @author nichole
+ */
+<span class="nc" id="L30">public class GrahamScanLong {</span>
+
+    public static class CH {
+        private long[] xH;
+        private long[] yH;
+        public CH(long[] x, long[] y) {
+            this.xH = x;
+            this.yH = y;
+        }
+
+        /**
+         * @return the xH
+         */
+        public long[] getXH() {
+            return xH;
+        }
+
+        /**
+         * @return the yH
+         */
+        public long[] getYH() {
+            return yH;
+        }
+        
+        @Override
+        public String toString() {
+            if (xH == null) {
+                return &quot;[]&quot;;
+            }
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i &lt; xH.length; ++i) {
+                if (i &gt; 0) {
+                    sb.append(&quot;, &quot;);
+                }
+                sb.append(&quot;(&quot;).append(xH[i]).append(&quot;,&quot;).append(yH[i]).append(&quot;)&quot;);
+            }
+            return sb.toString();
+        }
+    }
+    
+    /**
+     * find the convex hull of the given (x, y) points.  Note that the resulting
+     * hull points have the same first point as last point.
+     * runtime complexity is O(N) because counting sort is used in the polar angle
+     * sort (which is O(max(N, 360)), removing the O(N*log_2(N)) component.
+     * 
+     * @param x
+     * @param y
+     * @return convex hull of points (x, y).  note that the last point equals the first point.
+     * @throws GrahamScanTooFewPointsException 
+     */
+    public static CH computeHull(long[] x, long[] y) throws GrahamScanTooFewPointsException {
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (x == null) {</span>
+<span class="fc" id="L84">            throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (y == null) {</span>
+<span class="nc" id="L87">            throw new IllegalArgumentException(&quot;y cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (x.length != y.length) {</span>
+<span class="nc" id="L90">            throw new IllegalArgumentException(&quot;x must have the same number of items as y&quot;);</span>
+        }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (x.length &lt; 3) {</span>
+<span class="fc" id="L93">            throw new IllegalArgumentException(&quot;x must have at least 3 items&quot;);</span>
+        }
+
+        /*
+         * Q is a stack of candidate points which have been pushed once onto the stack
+         * and removed if they are not vertices of the stack.
+         *
+         * when complete, the stack S contains the vertices of the hull in counterclockwise order.
+         *
+         * Q &gt; 3
+         *
+         * 1 -- let p0 be the point in Q w/ min y-coordinate, or leftmost point of a tie
+         * 2 -- let &lt;p1, p2, ... pm&gt; be the remaining points in Q.
+         *      sorted by polar angle in counter clockwise order around p0.
+         *      ** if more than one point has the same angle, remove all but the one that is furthest from p0. **
+         * 3 -- push p0 onto S
+         * 4 -- push p1 onto S
+         * 5 -- push p2 onto S
+         * 6 -- for i=3 to m
+         * 7 --     do while the angle formed by points NEXT-TO-TOP(S), TOP(S), and p_i makes a nonleft turn
+         * 8 --         pop(S)
+         * 9 --     push(pi, S)
+         * 10 -return S
+         */
+
+        // (1) let p0 be the point in Q w/ minimum yCoord,
+        //     or the leftmost point if more than one w/ same minimum yCoord.
+<span class="fc" id="L120">        int p0Index = findIndexOfMinY(x, y);</span>
+        
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (p0Index != 0) {</span>
+            // move the point at index [iP0] to index [0] and move the rest of the arrays as needed
+<span class="fc" id="L124">            rewriteToPlaceAt0(p0Index, x, y);</span>
+            
+<span class="fc" id="L126">            p0Index = 0;</span>
+        }
+                
+        // (2) let &lt;p1, p2, ..., pm&gt; be the remaining points in Q, sorted
+	    //     by polar angle in counterclockwise order around p0
+	    //     (if more than one pt has same angle, keep only the furthest from p0)
+                
+        // this step uses angles rounded to degrees between 0 and 360.
+        // the runtime complexity is O( max(x.length, 360) )
+<span class="fc" id="L135">    	int nPointsUsable = PolarAngleQuickSort.sortCCWBy1stPoint(x, y);</span>
+
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (nPointsUsable &lt; 3) {</span>
+<span class="fc" id="L138">	     throw new GrahamScanTooFewPointsException(&quot;polar angle sorting has reduced the number of points to less than 3&quot;);</span>
+        }
+        
+<span class="fc" id="L141">        Stack&lt;Integer&gt; stack = new Stack&lt;Integer&gt;();</span>
+        
+<span class="fc" id="L143">        stack.push(p0Index);</span>
+<span class="fc" id="L144">        stack.push(1);</span>
+<span class="fc" id="L145">        stack.push(2);</span>
+                
+        // for i = 3 to m
+        //    while angle between next-to-top(S), top(S) and p_i makes a nonleft turn
+        //        do pop(S)
+        //    push(pi, S)
+        int top; // p1
+        int nextToTop; // p2
+        long dir;
+        int i;
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (i = 3; i &lt; nPointsUsable; i++) {</span>
+<span class="fc" id="L156">            top = stack.peek();</span>
+<span class="fc" id="L157">            nextToTop = stack.peekPopNext();</span>
+            //do while the angle formed by points NEXT-TO-TOP(S), TOP(S), and p_i makes a nonleft turn
+            //         pop(S)
+            //push(pi, S)
+            
+            // takes a left turn (counter-clockwise) when dir is &lt; 0
+            // dir = (x1 - x0)(y2 - y0) - (x2 - x0)(y1 - y0) 
+            // (x:top - i)(y:nextToTop - i) - (x:nextToTop - i)(y:top - i)
+<span class="fc" id="L165">            dir = (x[top] - x[i]) * (y[nextToTop] - y[i]) - (x[nextToTop] - x[i]) * (y[top] - y[i]);</span>
+                        
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            while (dir &gt;= 0) {</span>
+                
+<span class="fc" id="L169">                stack.pop();</span>
+                                
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">                if (stack.size() &lt; 2) {</span>
+                    // cannot peak at 2 in stack
+<span class="nc" id="L173">                    break;</span>
+                }
+
+<span class="fc" id="L176">                top = stack.peek();</span>
+<span class="fc" id="L177">                nextToTop = stack.peekPopNext();</span>
+                
+<span class="fc" id="L179">                dir = (x[top] - x[i]) * (y[nextToTop] - y[i]) - (x[nextToTop] - x[i]) * (y[top] - y[i]);                </span>
+            }
+            
+<span class="fc" id="L182">            stack.push(i);</span>
+        }
+        
+<span class="fc" id="L185">        int nH = stack.size();</span>
+                
+<span class="fc" id="L187">        i = nH - 1;</span>
+<span class="fc" id="L188">        long[] xH = new long[nH + 1];</span>
+<span class="fc" id="L189">        long[] yH = new long[nH + 1];</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L191">            top = stack.pop();</span>
+<span class="fc" id="L192">            xH[i] = x[top];   </span>
+<span class="fc" id="L193">            yH[i] = y[top];</span>
+<span class="fc" id="L194">            --i;</span>
+        }
+<span class="fc" id="L196">        xH[xH.length - 1] = x[0];</span>
+<span class="fc" id="L197">        yH[xH.length - 1] = y[0];</span>
+<span class="fc" id="L198">        CH ch = new CH(xH, yH);</span>
+<span class="fc" id="L199">        return ch;</span>
+    }
+
+    protected static int findIndexOfMinY(long[] x, long[] y) {
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (x.length &lt; 1) {</span>
+<span class="nc" id="L204">            throw new IllegalArgumentException(&quot;x and y must be longer than 1&quot;);</span>
+        }
+<span class="fc" id="L206">        int iMin = 0;</span>
+<span class="fc" id="L207">        long minY = y[0];</span>
+<span class="fc" id="L208">        long minX = x[0];</span>
+        int i;
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        for (i = 1; i &lt; x.length; ++i) {</span>
+<span class="fc bfc" id="L211" title="All 6 branches covered.">            if ((y[i] &lt; minY) || ( (y[i] == minY) &amp;&amp; (x[i] &lt; minX))) {</span>
+<span class="fc" id="L212">                minY = y[i];</span>
+<span class="fc" id="L213">                minX = x[i];</span>
+<span class="fc" id="L214">                iMin = i;</span>
+            }
+        }
+<span class="fc" id="L217">        return iMin;</span>
+    }
+    
+    /**
+     * move the point at index [iP0] to index [0] and move the rest of the array as needed
+     * @param iP0
+     * @param x
+     * @param y 
+     */
+    protected static void rewriteToPlaceAt0(final int iP0, long[] x, long[] y) {
+<span class="fc" id="L227">        long x0 = x[iP0];</span>
+<span class="fc" id="L228">        long y0 = y[iP0];</span>
+        
+        /*
+        0---- modify
+        1---- modify
+        2 iP0
+        3 -----  not affected by iP0 move
+        4 -----
+        */
+        int i;
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        for (i = iP0; i &gt; 0; --i) {</span>
+<span class="fc" id="L239">            x[i] = x[i - 1];</span>
+<span class="fc" id="L240">            y[i] = y[i - 1];</span>
+        }
+<span class="fc" id="L242">        x[0] = x0;</span>
+<span class="fc" id="L243">        y[0] = y0;</span>
+<span class="fc" id="L244">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -362,8 +362,8 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="fc" id="L362">            diff = x1[1][i] - x2[1][i];</span>
 <span class="fc" id="L363">            sumI = diff*diff;</span>
 <span class="pc bpc" id="L364" title="1 of 2 branches missed.">            if (useXToo) {</span>
-<span class="nc" id="L365">                diff = x1[0][i] - x2[0][i];</span>
-<span class="nc" id="L366">                sumI += diff*diff;</span>
+<span class="fc" id="L365">                diff = x1[0][i] - x2[0][i];</span>
+<span class="fc" id="L366">                sumI += diff*diff;</span>
             }
 <span class="fc" id="L368">            sum += sumI;</span>
 <span class="fc" id="L369">            outErrors[i] = Math.sqrt(sumI);</span>

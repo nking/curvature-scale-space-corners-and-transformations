@@ -2154,38 +2154,38 @@ import java.util.List;
     public static &lt;T extends PairInt&gt; void 
     sortByDecrYThenIncrX(T[] a, int[] b) {
         
-<span class="pc bpc" id="L2157" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc bnc" id="L2157" title="All 2 branches missed.">        if (a == null) {</span>
 <span class="nc" id="L2158">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L2160" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc bnc" id="L2160" title="All 2 branches missed.">        if (a.length &lt; 2) {</span>
 <span class="nc" id="L2161">            return;</span>
         }
-<span class="pc bpc" id="L2163" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc bnc" id="L2163" title="All 2 branches missed.">        if (a.length != b.length) {</span>
 <span class="nc" id="L2164">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
         }
         
-<span class="fc" id="L2167">        sortByDecrYThenIncrX(a, b, 0, a.length - 1);</span>
-<span class="fc" id="L2168">    }</span>
+<span class="nc" id="L2167">        sortByDecrYThenIncrX(a, b, 0, a.length - 1);</span>
+<span class="nc" id="L2168">    }</span>
     
     public static &lt;T extends PairInt&gt; void 
     sortByDecrYThenIncrX(T[] a, int[] b, int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L2173" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc bnc" id="L2173" title="All 2 branches missed.">        if (a == null) {</span>
 <span class="nc" id="L2174">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L2176" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc bnc" id="L2176" title="All 2 branches missed.">        if (a.length &lt; 2) {</span>
 <span class="nc" id="L2177">            return;</span>
         }
-<span class="pc bpc" id="L2179" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc bnc" id="L2179" title="All 2 branches missed.">        if (a.length != b.length) {</span>
 <span class="nc" id="L2180">            throw new IllegalArgumentException(&quot;a and b must be same length&quot;);</span>
         }
         
-<span class="fc bfc" id="L2183" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
-<span class="fc" id="L2184">            int idxMid = partitionByDecrYThenIncrX(a, b, idxLo, idxHi);</span>
-<span class="fc" id="L2185">            sortByDecrYThenIncrX(a, b, idxLo, idxMid - 1);</span>
-<span class="fc" id="L2186">            sortByDecrYThenIncrX(a, b, idxMid + 1, idxHi);</span>
+<span class="nc bnc" id="L2183" title="All 2 branches missed.">        if (idxLo &lt; idxHi) {</span>
+<span class="nc" id="L2184">            int idxMid = partitionByDecrYThenIncrX(a, b, idxLo, idxHi);</span>
+<span class="nc" id="L2185">            sortByDecrYThenIncrX(a, b, idxLo, idxMid - 1);</span>
+<span class="nc" id="L2186">            sortByDecrYThenIncrX(a, b, idxMid + 1, idxHi);</span>
         }
-<span class="fc" id="L2188">    }</span>
+<span class="nc" id="L2188">    }</span>
     
     public static &lt;T extends PairInt&gt; void sortByYThenX(T[] a, int idxLo, int idxHi) {
         
@@ -2589,36 +2589,36 @@ import java.util.List;
     private static &lt;T extends PairInt&gt; int 
     partitionByDecrYThenIncrX(T[] a, int[] b, int idxLo, int idxHi) {
      
-<span class="fc" id="L2592">        T x = a[idxHi];</span>
-<span class="fc" id="L2593">        int store = idxLo - 1;</span>
+<span class="nc" id="L2592">        T x = a[idxHi];</span>
+<span class="nc" id="L2593">        int store = idxLo - 1;</span>
         
-<span class="fc bfc" id="L2595" title="All 2 branches covered.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
-<span class="fc" id="L2596">            boolean doSwap = false;</span>
-<span class="fc bfc" id="L2597" title="All 2 branches covered.">            if (a[i].getY() &gt; x.getY()) {</span>
-<span class="fc" id="L2598">                doSwap = true;</span>
-<span class="pc bpc" id="L2599" title="1 of 2 branches missed.">            } else if (a[i].getY() == x.getY()) {</span>
+<span class="nc bnc" id="L2595" title="All 2 branches missed.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
+<span class="nc" id="L2596">            boolean doSwap = false;</span>
+<span class="nc bnc" id="L2597" title="All 2 branches missed.">            if (a[i].getY() &gt; x.getY()) {</span>
+<span class="nc" id="L2598">                doSwap = true;</span>
+<span class="nc bnc" id="L2599" title="All 2 branches missed.">            } else if (a[i].getY() == x.getY()) {</span>
 <span class="nc bnc" id="L2600" title="All 2 branches missed.">                if (a[i].getX() &lt; x.getX()) {</span>
 <span class="nc" id="L2601">                    doSwap = true;</span>
                 }
             }
-<span class="fc bfc" id="L2604" title="All 2 branches covered.">            if (doSwap) {</span>
-<span class="fc" id="L2605">                store++;</span>
-<span class="fc" id="L2606">                T swap = a[store];</span>
-<span class="fc" id="L2607">                a[store] = a[i];</span>
-<span class="fc" id="L2608">                a[i] = swap;</span>
-<span class="fc" id="L2609">                int swap2 = b[store];</span>
-<span class="fc" id="L2610">                b[store] = b[i];</span>
-<span class="fc" id="L2611">                b[i] = swap2;</span>
+<span class="nc bnc" id="L2604" title="All 2 branches missed.">            if (doSwap) {</span>
+<span class="nc" id="L2605">                store++;</span>
+<span class="nc" id="L2606">                T swap = a[store];</span>
+<span class="nc" id="L2607">                a[store] = a[i];</span>
+<span class="nc" id="L2608">                a[i] = swap;</span>
+<span class="nc" id="L2609">                int swap2 = b[store];</span>
+<span class="nc" id="L2610">                b[store] = b[i];</span>
+<span class="nc" id="L2611">                b[i] = swap2;</span>
             }
         }
-<span class="fc" id="L2614">        store++;</span>
-<span class="fc" id="L2615">        T swap = a[store];</span>
-<span class="fc" id="L2616">        a[store] = a[idxHi];</span>
-<span class="fc" id="L2617">        a[idxHi] = swap;</span>
-<span class="fc" id="L2618">        int swap2 = b[store];</span>
-<span class="fc" id="L2619">        b[store] = b[idxHi];</span>
-<span class="fc" id="L2620">        b[idxHi] = swap2;</span>
-<span class="fc" id="L2621">        return store;</span>
+<span class="nc" id="L2614">        store++;</span>
+<span class="nc" id="L2615">        T swap = a[store];</span>
+<span class="nc" id="L2616">        a[store] = a[idxHi];</span>
+<span class="nc" id="L2617">        a[idxHi] = swap;</span>
+<span class="nc" id="L2618">        int swap2 = b[store];</span>
+<span class="nc" id="L2619">        b[store] = b[idxHi];</span>
+<span class="nc" id="L2620">        b[idxHi] = swap2;</span>
+<span class="nc" id="L2621">        return store;</span>
     }
     
     private static int partitionBy1stThen2nd(double[] a, double[] b, int[] c,

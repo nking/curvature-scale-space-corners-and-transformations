@@ -11,8 +11,8 @@ public class QuadInt {
 <span class="pc" id="L11">    private int c = Integer.MIN_VALUE;</span>
 <span class="pc" id="L12">    private int d = Integer.MIN_VALUE;</span>
     
-<span class="fc" id="L14">    public QuadInt() {</span>
-<span class="fc" id="L15">    }</span>
+<span class="nc" id="L14">    public QuadInt() {</span>
+<span class="nc" id="L15">    }</span>
 <span class="fc" id="L16">    public QuadInt(int aPoint, int bPoint, int cPoint, int dPoint) {</span>
 <span class="fc" id="L17">        a = aPoint;</span>
 <span class="fc" id="L18">        b = bPoint;</span>
@@ -26,11 +26,11 @@ public class QuadInt {
 <span class="nc" id="L26">        d = cd.getY();</span>
 <span class="nc" id="L27">    }</span>
     public void setA(int aPoint) {
-<span class="fc" id="L29">        a = aPoint;</span>
-<span class="fc" id="L30">    }</span>
+<span class="nc" id="L29">        a = aPoint;</span>
+<span class="nc" id="L30">    }</span>
     public void setB(int bPoint) {
-<span class="fc" id="L32">        b = bPoint;</span>
-<span class="fc" id="L33">    }</span>
+<span class="nc" id="L32">        b = bPoint;</span>
+<span class="nc" id="L33">    }</span>
     public void setC(int cPoint) {
 <span class="nc" id="L35">        c = cPoint;</span>
 <span class="nc" id="L36">    }</span>
@@ -64,7 +64,7 @@ public class QuadInt {
         
 <span class="fc" id="L65">        QuadInt other = (QuadInt)obj;</span>
         
-<span class="pc bpc" id="L67" title="1 of 4 branches missed.">        return (a == other.getA()) &amp;&amp; (b == other.getB()) </span>
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">        return (a == other.getA()) &amp;&amp; (b == other.getB()) </span>
 <span class="pc bpc" id="L68" title="2 of 4 branches missed.">            &amp;&amp; (c == other.getC()) &amp;&amp; (d == other.getD());</span>
     }
 

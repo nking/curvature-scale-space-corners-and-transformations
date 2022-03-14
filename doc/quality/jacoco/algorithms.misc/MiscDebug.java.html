@@ -116,7 +116,7 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc" id="L116">            aIndexes[count] = edgeIndex.intValue();</span>
 <span class="nc" id="L117">            count++;</span>
 <span class="nc" id="L118">        }</span>
-<span class="nc" id="L119">        aIndexes = CountingSort.sort(aIndexes, 2*edges.size());</span>
+<span class="nc" id="L119">        aIndexes = CountingSort.sort(aIndexes);</span>
         
 <span class="nc" id="L121">        StringBuilder sb = new StringBuilder(&quot;output indexes of size &quot;);</span>
 <span class="nc" id="L122">        sb.append(Integer.toString(edges.size())).append(&quot;\n&quot;);</span>

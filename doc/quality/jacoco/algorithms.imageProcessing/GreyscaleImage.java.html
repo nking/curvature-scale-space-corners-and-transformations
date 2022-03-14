@@ -480,11 +480,11 @@ import java.util.Arrays;
    
         // int idx = (row * width) + col;
         //     idx/w = row  + 0;
-<span class="fc" id="L483">        int row = pixelIndex/width;</span>
+        //int row = pixelIndex/width;
         
-<span class="fc" id="L485">        int col = pixelIndex - (row * width);</span>
+        //int col = pixelIndex - (row * width);
         
-<span class="fc" id="L487">        return col;</span>
+<span class="fc" id="L487">        return pixelIndex % width;</span>
     }
     
     /**

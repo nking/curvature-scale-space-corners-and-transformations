@@ -985,11 +985,11 @@ import java.awt.image.BufferedImage;
                 &quot;internalIndex is out of bounds:&quot;);
         }
    
-<span class="fc" id="L988">        int row = internalIndex/width;</span>
+        //int row = internalIndex/width;
         
-<span class="fc" id="L990">        int col = internalIndex - (row * width);</span>
+        //int col = internalIndex - (row * width);
         
-<span class="fc" id="L992">        return col;</span>
+<span class="fc" id="L992">        return internalIndex % width;</span>
     }
     
     /**

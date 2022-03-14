@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LargestDistancePair.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry.convexHull</a> &gt; <span class="el_source">LargestDistancePair.java</span></div><h1>LargestDistancePair.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry.convexHull;
+
+import algorithms.compGeometry.convexHull.GrahamScanLong.CH;
+import algorithms.misc.MiscMath0;
+
+/**
+ * finds the pair of points most distant from one another a.k.a. the
+ * furthest pair problem.
+ * one can imagine a rough estimate by fitting an ellipse around the given points
+ * and determining the major axis of the points.
+ * even more precisely, one can fit a convex hull around the points and
+ * determine which pair of points has the largest distance between them.
+ * Note that the convex hull returns points ordered in a counter-clockwise manner
+ * so is suitable for ordered traversal already.
+ * 
+ * One can speculate that a &quot;rotating calipers&quot; approach could reduce the
+ * further search by half, that is, only traversing half of the convex hull points,
+ * but random input testing shows that the possibly very uneven distribution
+ * of points on the convex hull should all be visited.  The savings by roughly
+ * half arises by terminating each leading points' search for distance pair
+ * as soon as the distances start to decrease.
+ * 
+ * In this algorithm, since whole number are given as input, the convex hull
+ * uses an internal sorting by polar angles rounded to integers between 0
+ * and 359, inclusive, making the convex hull algorithm runtime complexity
+ * O(N) where N is the number of x, y points given to this class.
+ * 
+ * The largest distance between a pair then proceeds to use the number of 
+ * points on the convex hull, n_H.  The runtime complexity of the largest
+ * distance algorithm is O(n_h^2).
+ * 
+ * We can speculate about the size of the hull from information in Cormen
+ * et al. Introduction to Algorithms, Exercise 33-5
+ * for sparse-hulled distributions of a unit-radius disk, a convex polygon with k sides,
+ * and a 2-D normal distribution respectively as n^(1/3), log_2(n), sqrt(log_2(n)).
+ * 
+ * Then, assuming that N &gt; n_h^2, this algorithm's total runtime complexity is
+ * O(N).
+ * 
+ * @author nichole
+ */
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">public class LargestDistancePair {</span>
+    
+    /**
+     * find the largest distance between the given pairs of points.
+     * The runtime complexity is &lt;em&gt;O(N*log_2(N))&lt;/em&gt;, 
+     * worse case runtime complexity is if the number of hull points
+     * is equivalent to the number of points, O(N^2) = O(h^2).
+     * 
+     * NOTE: one could make an O(N) version of this algorithm assuming h^2 is
+     * less than N, by rewriting the bottleneck of the algorithm, the sorting.
+     * For the polar angle counter-clockwise sorting of points, one could
+     * use counting sort and integer degree bands for the angles.
+     * Counting sort runtime complexity is O(max(N, range of data)), so
+     * if the range of data were constrained to 0 to 359 for N &gt;= 360,
+     * the sort could be done in less than O(N) 
+     * and the remaining hull and largest pair algorithm runtime complexity is still O(N).  
+     * For the counting sort, if N were less than 360, and O(N) were more appealing than accuracy,
+     * the 0 to 359 intervals could be made into a smaller number than 360 of evenly
+     * sized bands.
+     * TODO: working on that now, and when ready, this algorithm will have a runtime
+     * complexity of max(O(N), O(n_hull^2)).
+     * 
+     * @param x input array of x coordinates.  note that this method modifies the order of x
+     * upon CCW sorting of x and y, so copy the arrays in if need to kep the
+     * original order.
+     * @param y x input array of x coordinates.  note that this method modifies the order of x
+     * upon CCW sorting of x and y, so copy the arrays in if need to kep the
+     * original order.
+     * @return an array of the pair of points furthest from one another.  the
+     * format in the return array is [xa, ya, yb, yb].
+     * If there are more than one points with same maximum distance,
+     * only one is returned, and that one is the latest point in roughly the 1st half of the
+     * convex hull and it last pairing in terms of CCW ordering of the hull points.
+     * @throws algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException
+     * if the unique polar angles w.r.t. the smallest y point in the arrays
+     * are fewer than 3 in number.
+     */
+    public static long[] findLargestDistancePair(long[] x, long[] y) throws GrahamScanTooFewPointsException {
+        
+        /*
+        NOTE: the code is actually brute force search of pairs of points on
+        the convex hull, truncated for each starting point when the distance
+        starts to decrease.
+        
+        The implementation below is left as is to show myself that cannot use
+        the commonly, possibly mis-interpreted, version of rotating calipers
+        that suggests using as a scan range, the furthest point from the mean
+        as the start reference point and its furthest point along the hull
+        as the end of the scan range and then applying that same range as
+        the restricted search range of start points in the next pairs.
+        The code below shows that sometimes further than that range
+        must be search as first points, and that some pairs of points have
+        a larger range of indexes in their own most distant pair.
+        */
+        
+        // x and y
+<span class="fc" id="L98">        CH ch = GrahamScanLong.computeHull(x, y);</span>
+        
+<span class="fc" id="L100">        int n = ch.getXH().length;</span>
+        
+<span class="fc" id="L102">        double meanX = MiscMath0.getAvgAndStDev(ch.getXH(), n)[0];</span>
+<span class="fc" id="L103">        double meanY = MiscMath0.getAvgAndStDev(ch.getYH(), n)[0];</span>
+                
+<span class="fc" id="L105">        long maxDist = Long.MIN_VALUE;</span>
+<span class="fc" id="L106">        int iMaxDist = 0;</span>
+        long distSq;
+        long xd;
+        long yd;
+        
+<span class="fc" id="L111">        int iRef = getPointFurthestFromMean(meanX, meanY, ch.getXH(), ch.getYH());</span>
+<span class="fc" id="L112">        long xRef = ch.getXH()[iRef];</span>
+<span class="fc" id="L113">        long yRef = ch.getYH()[iRef];</span>
+        
+        // find furthest point from the reference point.  that will be the scan range;
+<span class="fc" id="L116">        int i = iRef + 1;</span>
+<span class="fc" id="L117">        int iter = 0;</span>
+        // scan to the 2nd to last point because the last point in the hull is the same as the first point
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        while (iter &lt; (n - 1)) {</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (i &gt; (n - 2)) {</span>
+<span class="fc" id="L121">                i = 0;</span>
+            }
+<span class="fc" id="L123">            xd = ch.getXH()[i] - xRef;</span>
+<span class="fc" id="L124">            yd = ch.getYH()[i] - yRef;</span>
+<span class="fc" id="L125">            distSq = xd * xd + yd * yd;</span>
+            
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            if (distSq &gt;= maxDist) {</span>
+<span class="fc" id="L128">                maxDist = distSq;</span>
+<span class="fc" id="L129">                iMaxDist = i;</span>
+            } else {
+                // because the hull points are sorted in CCW order, the max dist
+                // will increase or stay the same and then decrease.
+                break;
+            }
+<span class="fc" id="L135">            ++iter;</span>
+<span class="fc" id="L136">            ++i;</span>
+        }
+        
+        // using a larger scan range than iter is also necessary
+<span class="fc" id="L140">        int nScan = n-1;//iter;</span>
+        
+        //System.out.printf(&quot;nScan = %d, n-1=%d\n&quot;, iter, n - 1);
+        
+        //System.out.printf(&quot;i0=%d, i1=%d, distSq=%d\n&quot;, iRef, iMaxDist, maxDist);
+        
+        int j;
+        
+        long maxDistJ;
+<span class="fc" id="L149">        int jMaxDist = 0;</span>
+        
+        // this O(n_hull^2) section is necessary
+        
+        // try pairs i0: [2, nScan) to see if an i1 pairing has dist &gt; maxDist
+<span class="fc" id="L154">        i = iRef + 1;</span>
+<span class="fc" id="L155">        iter = 0;</span>
+        int iterJ;
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        while (iter &lt;= nScan) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            if (i &gt; (n - 2)) {</span>
+<span class="fc" id="L159">                i = 0;</span>
+            }
+<span class="fc" id="L161">            xRef = ch.getXH()[i];</span>
+<span class="fc" id="L162">            yRef = ch.getYH()[i];</span>
+            //System.out.printf(&quot;%d)\n&quot;, i);
+            
+<span class="fc" id="L165">            iterJ = 0;</span>
+<span class="fc" id="L166">            j = i + 1;</span>
+            
+<span class="fc" id="L168">            maxDistJ = Long.MIN_VALUE;</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">            while (iterJ &lt;= nScan) {</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">                if (j &gt; (n - 2)) {</span>
+<span class="fc" id="L171">                    j = 0;</span>
+                }
+<span class="fc" id="L173">                xd = ch.getXH()[j] - xRef;</span>
+<span class="fc" id="L174">                yd = ch.getYH()[j] - yRef;</span>
+<span class="fc" id="L175">                distSq = xd * xd + yd * yd;</span>
+                //System.out.printf(&quot;   %10d  %20d&quot;, j, distSq);
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                if (distSq &gt;= maxDistJ) {</span>
+<span class="fc" id="L178">                    maxDistJ = distSq;</span>
+<span class="fc" id="L179">                    jMaxDist = j;</span>
+                    //System.out.printf(&quot;*\n&quot;);
+                } else {
+                    //System.out.printf(&quot;\n&quot;);
+                    break;
+                }
+<span class="fc" id="L185">                ++iterJ;</span>
+<span class="fc" id="L186">                ++j;</span>
+            }
+<span class="fc bfc" id="L188" title="All 2 branches covered.">            if (maxDistJ &gt; maxDist) {</span>
+<span class="fc" id="L189">                iRef = i;</span>
+<span class="fc" id="L190">                iMaxDist = jMaxDist;</span>
+<span class="fc" id="L191">                maxDist = maxDistJ;</span>
+                //System.out.printf(&quot;    j: i0=%d, i1=%d, distSq=%d\n&quot;, iRef, iMaxDist, maxDist);
+            }
+<span class="fc" id="L194">            ++iter;</span>
+<span class="fc" id="L195">            ++i;</span>
+        }
+        
+        /*System.out.printf(&quot;MAXDISTSQ=%d  (x[%d]=%d, y[%d]=%d), (x[%d]=%d, y[%d]=%d)\n&quot;, 
+            maxDist, 
+            iRef, ch.getXH()[iRef], 
+            iRef, ch.getYH()[iRef],
+            iMaxDist, ch.getXH()[iMaxDist],
+            iMaxDist, ch.getYH()[iMaxDist]);*/
+        
+<span class="fc" id="L205">        long[] result = new long[]{ch.getXH()[iRef], ch.getYH()[iRef], ch.getXH()[iMaxDist], ch.getYH()[iMaxDist]};</span>
+        
+<span class="pc bpc" id="L207" title="3 of 4 branches missed.">        assert(maxDist &gt; Long.MIN_VALUE);</span>
+<span class="pc bpc" id="L208" title="3 of 4 branches missed.">        assert(maxDist == ( (result[0] - result[2])*(result[0] - result[2]) +</span>
+            (result[1] - result[3])*(result[1] - result[3])));
+        
+<span class="fc" id="L211">        return result;</span>
+    }
+
+    protected static int getPointFurthestFromMean(double meanX, double meanY, 
+        long[] xh, long[] yh) {
+        
+        int i;
+        double xd;
+        double yd;
+        double distSq;
+<span class="fc" id="L221">        double maxDist = Double.NEGATIVE_INFINITY;</span>
+<span class="fc" id="L222">        int iMaxDist = -1;</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        for (i = 0; i &lt; xh.length; ++i) {</span>
+<span class="fc" id="L224">            xd = xh[i] - meanX;</span>
+<span class="fc" id="L225">            yd = yh[i] - meanY;</span>
+<span class="fc" id="L226">            distSq = xd*xd + yd*yd;</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (distSq &gt; maxDist) {</span>
+<span class="fc" id="L228">                maxDist = distSq;</span>
+<span class="fc" id="L229">                iMaxDist = i;</span>
+            }
+        }
+<span class="fc" id="L232">        return  iMaxDist;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
