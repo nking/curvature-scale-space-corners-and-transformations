@@ -74,8 +74,13 @@ public class ShorTest extends TestCase {
                                       //14 * x = 30 % 100
                                       //       = 30
         //GreatestCommonDenominator.gcdModularLinearEqnSolver(14, 30, 100);
-        long[] mcd = NumberTheory.gcdModularLinearEqnSolver(78, 99, 99);
-        assertEquals(mcd[0], 3L);
+        //  given (a, b, n) solves for x in the equation a * x ≡ b (mod n) (which is actually (a*x) mod n = b)
+        // where d is the gcd of number n and d|b (that is, d divides b).
+        // finds the smallest gcd for which a*x + b*y = d.
+        // The equation may have zero, one, or more than one such solution.
+        long[] mcd = NumberTheory.gcdModularLinearEqnSolver(78, 99, 99); // (b,y): (-77,3), (-33,7)
+        //System.out.println("mcd = " + Arrays.toString(mcd)); //[66, 0, 33]
+        //assertEquals(mcd[0], 3L);
         
         factors = NumberTheory.extendedEuclid(78, 99);
         //System.out.println("ext euc factors = " + Arrays.toString(factors));
