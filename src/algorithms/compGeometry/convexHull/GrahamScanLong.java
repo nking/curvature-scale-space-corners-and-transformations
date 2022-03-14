@@ -123,6 +123,8 @@ public class GrahamScanLong {
         if (p0Index != 0) {
             // move the point at index [iP0] to index [0] and move the rest of the arrays as needed
             rewriteToPlaceAt0(p0Index, x, y);
+            
+            p0Index = 0;
         }
                 
         // (2) let <p1, p2, ..., pm> be the remaining points in Q, sorted
