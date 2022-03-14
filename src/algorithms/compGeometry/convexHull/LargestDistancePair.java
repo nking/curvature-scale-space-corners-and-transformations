@@ -78,7 +78,21 @@ public class LargestDistancePair {
      */
     public static long[] findLargestDistancePair(long[] x, long[] y) throws GrahamScanTooFewPointsException {
         
-        //TODO: improve this
+        /*
+        NOTE: the code is actually brute force search of pairs of points on
+        the convex hull, truncated for each starting point when the distance
+        starts to decrease.
+        
+        The implementation below is left as is to show myself that cannot use
+        the commonly, possibly mis-interpreted, version of rotating calipers
+        that suggests using as a scan range, the furthest point from the mean
+        as the start reference point and its furthest point along the hull
+        as the end of the scan range and then applying that same range as
+        the restricted search range of start points in the next pairs.
+        The code below shows that sometimes further than that range
+        must be search as first points, and that some pairs of points have
+        a larger range of indexes in their own most distant pair.
+        */
         
         // x and y
         CH ch = GrahamScanLong.computeHull(x, y);
