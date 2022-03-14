@@ -65,8 +65,8 @@ public class Stack<T> {
         return n;
     }
     
-    protected class Node<S> {
-        Node<S> next = null;
+    protected static class Node<T> {
+        Node<T> next = null;
         T data = null;
     }
 }
