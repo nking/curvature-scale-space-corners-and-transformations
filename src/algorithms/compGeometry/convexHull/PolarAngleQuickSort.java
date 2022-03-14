@@ -57,7 +57,6 @@ public class PolarAngleQuickSort {
         // re-order x1 and y1 by sortedIndexes1
         rewriteBySortedIndexes(sortedIndexes1, x1);
         rewriteBySortedIndexes(sortedIndexes1, y1);
-        rewriteBySortedIndexes(sortedIndexes1, polarAngleDegree1);
                 
         // for same polar angles, keep the one which is furthest from x0, p0.
         // assuming an angular resolution of 1 degree and using rounded integers for the angle degrees
