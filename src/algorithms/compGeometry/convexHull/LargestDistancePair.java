@@ -17,7 +17,7 @@ import algorithms.misc.MiscMath0;
  * further search by half, that is, only traversing half of the convex hull points,
  * but random input testing shows that the possibly very uneven distribution
  * of points on the convex hull should all be visited.  The savings by roughly
- * half arises by terminating each leading points search for distance pair
+ * half arises by terminating each leading points' search for distance pair
  * as soon as the distances start to decrease.
  * 
  * In this algorithm, since whole number are given as input, the convex hull
