@@ -12,31 +12,30 @@ import algorithms.misc.MiscMath0;
  * determine which pair of points has the largest distance between them.
  * Note that the convex hull returns points ordered in a counter-clockwise manner
  * so is suitable for ordered traversal already.
- * An efficient way of comparing the point distances on the hull is to start
- * with the first point and determine its distance to the next point i, continuing
- * with increasing i and increasing distance.  that comparison should be
- * roughly h/2 comparisons where h is the number of points in the hull.
- * then for the i points just used in the calculation, do the same analysis
- * to find their most distant point (these points are called antipodal points).
- * the total number of "i" visited are roughly h/2 and each antipodal search is
- * h/2 = O(h^2).
- * The algorithm total runtime complexity is O(convex hull) + O(h^2).
  * 
- * If one uses Graham Scan for the convex hull algorithm, 
- * O(convex hull) = O(N*log_2(N)) where N is the number of points given.
- * If one instead uses Jarvis March for the convex hull algorithm, 
- * O(convex hull) = O(N*log_2(h)) where N is the number of points given and
- * h is the number of points in the resulting convex hull.
+ * One can speculate that a "rotating calipers" approach could reduce the
+ * further search by half, that is, only traversing half of the convex hull points,
+ * but random input testing shows that the possibly very uneven distribution
+ * of points on the convex hull should all be visited.  The savings by roughly
+ * half arises by terminating each leading points search for distance pair
+ * as soon as the distances start to decrease.
  * 
- * If N is greater than h, the total runtime complexity is
- * O(N*log_2(N)) if use the Graham Scan.
- * If N is equal to h, the total runtime complexity is
- * O(N^2) = O(h^2).
+ * In this algorithm, since whole number are given as input, the convex hull
+ * uses an internal sorting by polar angles rounded to integers between 0
+ * and 359, inclusive, making the convex hull algorithm runtime complexity
+ * O(N) where N is the number of x, y points given to this class.
+ * 
+ * The largest distance between a pair then proceeds to use the number of 
+ * points on the convex hull, n_H.  The runtime complexity of the largest
+ * distance algorithm is O(n_h^2).
  * 
  * We can speculate about the size of the hull from information in Cormen
  * et al. Introduction to Algorithms, Exercise 33-5
  * for sparse-hulled distributions of a unit-radius disk, a convex polygon with k sides,
  * and a 2-D normal distribution respectively as n^(1/3), log_2(n), sqrt(log_2(n)).
+ * 
+ * Then, assuming that N > n_h^2, this algorithm's total runtime complexity is
+ * O(N).
  * 
  * @author nichole
  */
@@ -78,6 +77,8 @@ public class LargestDistancePair {
      * are fewer than 3 in number.
      */
     public static long[] findLargestDistancePair(long[] x, long[] y) throws GrahamScanTooFewPointsException {
+        
+        //TODO: improve this
         
         // x and y
         CH ch = GrahamScanLong.computeHull(x, y);

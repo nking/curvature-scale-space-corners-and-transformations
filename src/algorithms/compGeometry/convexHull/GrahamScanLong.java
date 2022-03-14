@@ -16,11 +16,10 @@ import java.util.Arrays;
   Given a set of Q points returns the vertices of the ConvexHull(Q) in counter-clockwise
   order.   a convex hull is the smallest convex polygon that will include all points in Q.
  
-  Graham's Scan runs in O(n lg n).
-    (in contrast to Jarvis's March which runs in O(nh) where h is the number of
-    vertices in the convex hull.)
+  This Graham's Scan runs in O(n) due to use of a linear runtime polar angle sorter
+  to reduce the allowed angles to integer degrees.
  
-  Both use a technique called 'rotational sweep' to process vertices in the order
+  It uses a technique called 'rotational sweep' to process vertices in the order
   of the polar angles they form with a reference vertex.
  
   constructed from pseudo-code in Cormen et al. "Introduction to Algorithms
@@ -72,7 +71,7 @@ public class GrahamScanLong {
      * find the convex hull of the given (x, y) points.  Note that the resulting
      * hull points have the same first point as last point.
      * runtime complexity is O(N) because counting sort is used in the polar angle
-     * sort, removing the O(N*log_2(N)) component.
+     * sort (which is O(max(N, 360)), removing the O(N*log_2(N)) component.
      * 
      * @param x
      * @param y
