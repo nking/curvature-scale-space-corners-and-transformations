@@ -1,5 +1,4 @@
 algorithms
-algorithms.bipartite
 algorithms.clustering
 algorithms.compGeometry
 algorithms.compGeometry.convexHull
@@ -16,9 +15,7 @@ algorithms.imageProcessing.segmentation
 algorithms.imageProcessing.transform
 algorithms.imageProcessing.util
 algorithms.misc
-algorithms.mst
 algorithms.packing
 algorithms.random
 algorithms.search.global
-algorithms.strings
 algorithms.util
