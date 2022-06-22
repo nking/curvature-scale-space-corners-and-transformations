@@ -1,3 +1,18 @@
+-- some of the algorithms operate on images whose values are
+    from polar theta transformations of color space, that is,
+    the values are degrees between 0 and 360 or scaled to some
+    range within that.
+    The segmentation algorithms, color histograms, etc, usually
+    accept images as arguments and so perform difference operations.
+    I usually perform the segmentation on those images and copies
+    of them that have been shifted by an amount to cover the 
+    circular discontinuity from the period to 0, e.g. 360 to 0.
+    - need to improve this by writing methods for circular data.
+      e.g. circular math subtraction: 
+            diff = |A-B|
+            if (diff > (period/2)
+               diff = period-diff
+
 -- ORBMatcher.matchDescriptors()
    has a branch that could be improved.  For the case when descriptor
    matching results in fewer than 7 points, the code is currently
