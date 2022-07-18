@@ -11,7 +11,7 @@ import java.util.Arrays;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class CornerArray {</span>
+<span class="fc" id="L14">public class CornerArray {</span>
     
     protected final SIGMA sigma;
     
@@ -87,7 +87,7 @@ import java.util.Arrays;
         
 <span class="fc" id="L88">        expandIfNeeded(n + 1);</span>
         
-<span class="pc bpc" id="L90" title="3 of 4 branches missed.">        assert(xy.getN() == n);</span>
+<span class="pc bnc" id="L90" title="All 2 branches missed.">        assert(xy.getN() == n);</span>
         
 <span class="fc" id="L92">        xy.add(xPoint, yPoint);</span>
 <span class="fc" id="L93">        k[n] = curvature;</span>
@@ -156,7 +156,7 @@ import java.util.Arrays;
 <span class="nc" id="L156">            throw new IllegalArgumentException(&quot;index is out of bounds of arrays&quot;);</span>
         }
         
-<span class="nc bnc" id="L159" title="All 4 branches missed.">        assert(xy.getN() == n);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        assert(xy.getN() == n);</span>
         
 <span class="nc" id="L161">        expandIfNeeded(n + 1);</span>
         
@@ -181,7 +181,7 @@ import java.util.Arrays;
         
 <span class="nc" id="L182">        n++;</span>
         
-<span class="nc bnc" id="L184" title="All 4 branches missed.">        assert(xy.getN() == n);</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        assert(xy.getN() == n);</span>
 <span class="nc" id="L185">    }</span>
   
     public int getX(int index) {
@@ -395,4 +395,4 @@ import java.util.Arrays;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -20,7 +20,7 @@ import java.util.Arrays;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L23" title="1 of 2 branches missed.">public class GradientIntegralHistograms {</span>
+<span class="fc" id="L23">public class GradientIntegralHistograms {</span>
     
 <span class="fc" id="L25">    public GradientIntegralHistograms() {</span>
         
@@ -50,7 +50,7 @@ import java.util.Arrays;
 <span class="nc" id="L50">            t = 0;</span>
         }
 <span class="fc" id="L52">        v = theta.getValue(pixIdx);</span>
-<span class="pc bpc" id="L53" title="3 of 4 branches missed.">        assert(v &gt;= 0.);</span>
+<span class="pc bnc" id="L53" title="All 2 branches missed.">        assert(v &gt;= 0.);</span>
 
 <span class="fc" id="L55">        b = (double)t/binWidth;</span>
 <span class="fc" id="L56">        b0 = (int)b;</span>
@@ -58,8 +58,8 @@ import java.util.Arrays;
 
 <span class="fc" id="L59">        f1 = Math.abs((double)(c0 - t)/binWidth);</span>
 <span class="fc" id="L60">        f0 = 1. - f1;</span>
-<span class="pc bpc" id="L61" title="3 of 4 branches missed.">        assert(f1 &gt;= 0.);</span>
-<span class="pc bpc" id="L62" title="3 of 4 branches missed.">        assert(f0 &gt;= 0.);</span>
+<span class="pc bnc" id="L61" title="All 2 branches missed.">        assert(f1 &gt;= 0.);</span>
+<span class="pc bnc" id="L62" title="All 2 branches missed.">        assert(f0 &gt;= 0.);</span>
 
 <span class="fc bfc" id="L64" title="All 2 branches covered.">        if (t == c0) {</span>
             // t is centered in bin
@@ -122,7 +122,7 @@ import java.util.Arrays;
 <span class="fc" id="L122">                pixIdx = gradient.getInternalIndex(x, y);</span>
                 
 <span class="fc" id="L124">                v = gradient.getValue(pixIdx);</span>
-<span class="pc bpc" id="L125" title="3 of 4 branches missed.">                assert(v &gt;= 0.);</span>
+<span class="pc bnc" id="L125" title="All 2 branches missed.">                assert(v &gt;= 0.);</span>
                 
                 // t, b0, b1, f0, f1;
 <span class="fc" id="L128">                calculateBinsAndFractions(x, y, theta, nBins, bilinearParams);</span>
@@ -133,7 +133,7 @@ import java.util.Arrays;
 <span class="fc" id="L133">                f0 = bilinearParams[3];</span>
 <span class="fc" id="L134">                f1 = bilinearParams[4];</span>
                 
-<span class="pc bpc" id="L136" title="3 of 4 branches missed.">                assert(Math.abs((f0 + f1) - 1) &lt; 0.01);</span>
+<span class="pc bnc" id="L136" title="All 2 branches missed.">                assert(Math.abs((f0 + f1) - 1) &lt; 0.01);</span>
                 
 <span class="fc bfc" id="L138" title="All 2 branches covered.">                if (pixIdx == 0) {</span>
                     //x==0 &amp;&amp; y==0
@@ -283,4 +283,4 @@ import java.util.Arrays;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

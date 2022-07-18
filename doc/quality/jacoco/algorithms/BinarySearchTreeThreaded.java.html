@@ -24,7 +24,7 @@ import java.util.Map;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L27" title="1 of 2 branches missed.">public class BinarySearchTreeThreaded&lt;T extends HeapNode&gt; {</span>
+<span class="fc" id="L27">public class BinarySearchTreeThreaded&lt;T extends HeapNode&gt; {</span>
 
     //TODO: note, have made a snall change which needs
     // a careful look and possibly changes at compariions.
@@ -124,20 +124,20 @@ import java.util.Map;
     
     private boolean hasALeftChild(T node) {
 <span class="fc" id="L126">        Integer v = threadMap.get(node);</span>
-<span class="pc bpc" id="L127" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="pc bnc" id="L127" title="All 2 branches missed.">        assert(v != null);</span>
 <span class="fc bfc" id="L128" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 1)) != 0;</span>
     }
     private boolean hasALeftChild(Integer v) {
-<span class="pc bpc" id="L131" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="pc bnc" id="L131" title="All 2 branches missed.">        assert(v != null);</span>
 <span class="fc bfc" id="L132" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 1)) != 0;</span>
     }
     private boolean hasARightChild(T node) {
 <span class="fc" id="L135">        Integer v = threadMap.get(node);</span>
-<span class="pc bpc" id="L136" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="pc bnc" id="L136" title="All 2 branches missed.">        assert(v != null);</span>
 <span class="fc bfc" id="L137" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 2)) != 0;</span>
     }
     private boolean hasARightChild(Integer v) {
-<span class="pc bpc" id="L140" title="3 of 4 branches missed.">        assert(v != null);</span>
+<span class="pc bnc" id="L140" title="All 2 branches missed.">        assert(v != null);</span>
 <span class="fc bfc" id="L141" title="All 2 branches covered.">        return (v.intValue() &amp; (1 &lt;&lt; 2)) != 0;</span>
     }
     
@@ -151,7 +151,7 @@ import java.util.Map;
 
         //http://adtinfo.org/libavl.html/Inserting-into-a-TBST.html#256
         
-<span class="pc bpc" id="L154" title="3 of 4 branches missed.">        assert(item != null);</span>
+<span class="pc bnc" id="L154" title="All 2 branches missed.">        assert(item != null);</span>
         
 <span class="fc" id="L156">        threadMap.put(item, Integer.valueOf(0));</span>
                
@@ -218,7 +218,7 @@ import java.util.Map;
         
 <span class="fc" id="L219">        n++;</span>
         
-<span class="pc bpc" id="L221" title="3 of 4 branches missed.">        assert(threadMap.size() == n);</span>
+<span class="pc bnc" id="L221" title="All 2 branches missed.">        assert(threadMap.size() == n);</span>
 <span class="fc" id="L222">    }</span>
     
     @SuppressWarnings({&quot;unchecked&quot;})
@@ -430,7 +430,7 @@ import java.util.Map;
                 
 <span class="fc" id="L431">        n--;</span>
         
-<span class="pc bpc" id="L433" title="3 of 4 branches missed.">        assert(threadMap.size() == n);</span>
+<span class="pc bnc" id="L433" title="All 2 branches missed.">        assert(threadMap.size() == n);</span>
         
 <span class="fc" id="L435">        return current;</span>
     }
@@ -552,4 +552,4 @@ import java.util.Map;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

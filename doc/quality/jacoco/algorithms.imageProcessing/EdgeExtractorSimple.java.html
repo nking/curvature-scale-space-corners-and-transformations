@@ -31,7 +31,7 @@ import java.util.Stack;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">public class EdgeExtractorSimple {</span>
+<span class="fc" id="L34">public class EdgeExtractorSimple {</span>
     
 <span class="pc" id="L36">    private Set&lt;PairInt&gt; junctions = new HashSet&lt;PairInt&gt;();</span>
     
@@ -274,7 +274,7 @@ import java.util.Stack;
                     }
 
 <span class="fc" id="L276">                    PairIntArray edge2 = theEdges.get(index2.intValue());</span>
-<span class="pc bpc" id="L277" title="3 of 4 branches missed.">                    assert(edge2.getN() &gt; 0);</span>
+<span class="pc bnc" id="L277" title="All 2 branches missed.">                    assert(edge2.getN() &gt; 0);</span>
 
 <span class="fc" id="L279">                    int n2 = edge2.getN();</span>
 
@@ -312,8 +312,8 @@ import java.util.Stack;
 
 <span class="fc" id="L313">                        } else {</span>
                             // edge2 join is end
-<span class="pc bpc" id="L315" title="3 of 4 branches missed.">                            assert(p2.getX() == edge2.getX(n2 - 1));</span>
-<span class="pc bpc" id="L316" title="3 of 4 branches missed.">                            assert(p2.getY() == edge2.getY(n2 - 1));</span>
+<span class="pc bnc" id="L315" title="All 2 branches missed.">                            assert(p2.getX() == edge2.getX(n2 - 1));</span>
+<span class="pc bnc" id="L316" title="All 2 branches missed.">                            assert(p2.getY() == edge2.getY(n2 - 1));</span>
 
                             /*
                             e1_2
@@ -344,8 +344,8 @@ import java.util.Stack;
 
                     } else {
                         // ep is at the end
-<span class="pc bpc" id="L347" title="3 of 4 branches missed.">                        assert(ep.getX() == edge.getX(n - 1));</span>
-<span class="pc bpc" id="L348" title="3 of 4 branches missed.">                        assert(ep.getY() == edge.getY(n - 1));</span>
+<span class="pc bnc" id="L347" title="All 2 branches missed.">                        assert(ep.getX() == edge.getX(n - 1));</span>
+<span class="pc bnc" id="L348" title="All 2 branches missed.">                        assert(ep.getY() == edge.getY(n - 1));</span>
 
 <span class="fc bfc" id="L350" title="All 2 branches covered.">                        if ((p2.getX() == edge2.getX(0)) &amp;&amp; </span>
 <span class="fc bfc" id="L351" title="All 2 branches covered.">                            (p2.getY() == edge2.getY(0))) {</span>
@@ -376,8 +376,8 @@ import java.util.Stack;
 <span class="fc" id="L376">                        } else {</span>
 
                             // edge2 join is end
-<span class="pc bpc" id="L379" title="3 of 4 branches missed.">                            assert(p2.getX() == edge2.getX(n2 - 1));</span>
-<span class="pc bpc" id="L380" title="3 of 4 branches missed.">                            assert(p2.getY() == edge2.getY(n2 - 1));</span>
+<span class="pc bnc" id="L379" title="All 2 branches missed.">                            assert(p2.getX() == edge2.getX(n2 - 1));</span>
+<span class="pc bnc" id="L380" title="All 2 branches missed.">                            assert(p2.getY() == edge2.getY(n2 - 1));</span>
 
                             /*
                             e1_0
@@ -673,4 +673,4 @@ import java.util.Stack;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

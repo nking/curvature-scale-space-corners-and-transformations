@@ -49,7 +49,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">public class ImageProcessor {</span>
+<span class="fc" id="L52">public class ImageProcessor {</span>
 
 <span class="fc" id="L54">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
 
@@ -1035,13 +1035,13 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
                 }
 
 <span class="fc" id="L1037">                double radians = Math.atan2(gY, gX);</span>
-<span class="pc bpc" id="L1038" title="5 of 6 branches missed.">                assert(radians &gt;= 0. &amp;&amp; radians &lt;= 2.*Math.PI);</span>
+<span class="pc bnc" id="L1038" title="All 4 branches missed.">                assert(radians &gt;= 0. &amp;&amp; radians &lt;= 2.*Math.PI);</span>
                 
 <span class="fc" id="L1040">                int theta = (int)(radians * 180./Math.PI);</span>
 <span class="fc bfc" id="L1041" title="All 2 branches covered.">                if (theta == 180) {</span>
 <span class="fc" id="L1042">                    theta = 0;</span>
                 }
-<span class="pc bpc" id="L1044" title="5 of 6 branches missed.">                assert(theta &gt;= 0 &amp;&amp; theta &lt; 180);</span>
+<span class="pc bnc" id="L1044" title="All 4 branches missed.">                assert(theta &gt;= 0 &amp;&amp; theta &lt; 180);</span>
                 
 <span class="fc" id="L1046">                output.setValue(i, j, theta);</span>
             }
@@ -2035,8 +2035,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="fc" id="L2035">                            (float)input.getValue(i0 + 1, j0));</span>
                     }
 <span class="fc" id="L2037">                    int vI2 = Math.round(vI2End);</span>
-<span class="pc bpc" id="L2038" title="2 of 4 branches missed.">                    vI2 = (vI2 &lt; minValue) ? minValue :</span>
-                        ((vI2 &gt; maxValue) ? maxValue : vI2);
+<span class="pc bpc" id="L2038" title="1 of 2 branches missed.">                    vI2 = (vI2 &lt; minValue) ? minValue :</span>
+<span class="pc bpc" id="L2039" title="1 of 2 branches missed.">                        ((vI2 &gt; maxValue) ? maxValue : vI2);</span>
                     
 <span class="fc bfc" id="L2041" title="All 2 branches covered.">                    for (int jj = j2; jj &lt; _j2End; ++jj) {</span>
                         
@@ -2058,8 +2058,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="fc" id="L2058">                        vJ2End += ((1.f - fractionY) * input.getValue(i0, j0 + 1));</span>
                     }
 <span class="fc" id="L2060">                    int vJ2 = Math.round(vJ2End);</span>
-<span class="pc bpc" id="L2061" title="2 of 4 branches missed.">                    vJ2 = (vJ2 &lt; minValue) ? minValue :</span>
-                        ((vJ2 &gt; maxValue) ? maxValue : vJ2);
+<span class="pc bpc" id="L2061" title="1 of 2 branches missed.">                    vJ2 = (vJ2 &lt; minValue) ? minValue :</span>
+<span class="pc bpc" id="L2062" title="1 of 2 branches missed.">                        ((vJ2 &gt; maxValue) ? maxValue : vJ2);</span>
                     
                     //System.out.format(
                     //&quot;     **set(%d,%d)=%d\n&quot;, i2, j2End, vJ2);
@@ -2077,8 +2077,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
                     
 <span class="fc" id="L2078">                    int avg = Math.round((vI2End + vJ2End)/2.f);</span>
                     
-<span class="pc bpc" id="L2080" title="2 of 4 branches missed.">                    avg = (avg &lt; minValue) ? minValue :</span>
-                        ((avg &gt; maxValue) ? maxValue : avg);
+<span class="pc bpc" id="L2080" title="1 of 2 branches missed.">                    avg = (avg &lt; minValue) ? minValue :</span>
+<span class="pc bpc" id="L2081" title="1 of 2 branches missed.">                        ((avg &gt; maxValue) ? maxValue : avg);</span>
                     
                     //System.out.format(&quot;     **set(%d,%d)=%d\n&quot;, i2End, j2End, avg);
                     
@@ -2152,8 +2152,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
 <span class="nc" id="L2153">         Complex1D[] ccOut = create2DFFT2WithSwapMajor(input, forward);</span>
 
-<span class="nc bnc" id="L2155" title="All 4 branches missed.">         assert(ccOut.length == input.getHeight());</span>
-<span class="nc bnc" id="L2156" title="All 4 branches missed.">         assert(ccOut[0].x.length == input.getWidth());</span>
+<span class="nc bnc" id="L2155" title="All 2 branches missed.">         assert(ccOut.length == input.getHeight());</span>
+<span class="nc bnc" id="L2156" title="All 2 branches missed.">         assert(ccOut[0].x.length == input.getWidth());</span>
 
 <span class="nc bnc" id="L2158" title="All 2 branches missed.">         for (int i0 = 0; i0 &lt; ccOut.length; ++i0) {</span>
 <span class="nc bnc" id="L2159" title="All 2 branches missed.">             for (int i1 = 0; i1 &lt; ccOut[i0].x.length; ++i1) {</span>
@@ -2518,8 +2518,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="fc" id="L2518">            return;</span>
         }
                 
-<span class="pc bpc" id="L2521" title="3 of 4 branches missed.">        assert(x2 != x1);</span>
-<span class="pc bpc" id="L2522" title="3 of 4 branches missed.">        assert(y2 != y1);</span>
+<span class="pc bnc" id="L2521" title="All 2 branches missed.">        assert(x2 != x1);</span>
+<span class="pc bnc" id="L2522" title="All 2 branches missed.">        assert(y2 != y1);</span>
 
         double d;
 <span class="fc" id="L2525">        auxArr1[0] = x2 - x;</span>
@@ -4063,7 +4063,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
 <span class="fc" id="L4064">                        HeapNode node = heap.extractMin();</span>
 
-<span class="pc bpc" id="L4066" title="3 of 4 branches missed.">                        assert(node != null);</span>
+<span class="pc bnc" id="L4066" title="All 2 branches missed.">                        assert(node != null);</span>
 
 <span class="fc" id="L4068">                        int pixIdx = ((Integer)node.getData()).intValue();</span>
 <span class="fc" id="L4069">                        int y = pixIdx/w;</span>
@@ -4195,7 +4195,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
 <span class="fc" id="L4196">                        HeapNode node = heap.extractMin();</span>
 
-<span class="pc bpc" id="L4198" title="3 of 4 branches missed.">                        assert(node != null);</span>
+<span class="pc bnc" id="L4198" title="All 2 branches missed.">                        assert(node != null);</span>
 
 <span class="fc" id="L4200">                        int pixIdx = ((Integer)node.getData()).intValue();</span>
 <span class="fc" id="L4201">                        int y = pixIdx/w;</span>
@@ -4320,7 +4320,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 
 <span class="fc" id="L4321">                        HeapNode node = heap.extractMin();</span>
 
-<span class="pc bpc" id="L4323" title="3 of 4 branches missed.">                        assert(node != null);</span>
+<span class="pc bnc" id="L4323" title="All 2 branches missed.">                        assert(node != null);</span>
 
 <span class="fc" id="L4325">                        int pixIdx = ((Integer)node.getData()).intValue();</span>
 <span class="fc" id="L4326">                        int y = pixIdx/w;</span>
@@ -4488,8 +4488,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
         // -- switch to row-major ----
 <span class="nc" id="L4489">        float[][] image = multiply(img, 1.f/max);</span>
 
-<span class="nc bnc" id="L4491" title="All 4 branches missed.">        assert(image.length == img.getHeight());</span>
-<span class="nc bnc" id="L4492" title="All 4 branches missed.">        assert(image[0].length == img.getWidth());</span>
+<span class="nc bnc" id="L4491" title="All 2 branches missed.">        assert(image.length == img.getHeight());</span>
+<span class="nc bnc" id="L4492" title="All 2 branches missed.">        assert(image[0].length == img.getWidth());</span>
 
 <span class="nc" id="L4494">        return createCurvatureImage(image, sigma);</span>
     }
@@ -5465,8 +5465,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
         //# Non maximum filter
 <span class="fc" id="L5466">        int size = 2 * minDistance + 1;</span>
 <span class="fc" id="L5467">        float[][] imageMax = maximumFilter(img, size);</span>
-<span class="pc bpc" id="L5468" title="3 of 4 branches missed.">        assert(nRows == imageMax.length);</span>
-<span class="pc bpc" id="L5469" title="3 of 4 branches missed.">        assert(nCols == imageMax[0].length);</span>
+<span class="pc bnc" id="L5468" title="All 2 branches missed.">        assert(nRows == imageMax.length);</span>
+<span class="pc bnc" id="L5469" title="All 2 branches missed.">        assert(nCols == imageMax[0].length);</span>
         //mask = image == image_max
         
         //debugPrint(&quot;before shift imageMax=&quot;, imageMax);
@@ -5812,8 +5812,8 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="nc" id="L5812">            mt.multiscalePyramidalMedianTransform2(b, gsB, 32);</span>
         }
 
-<span class="pc bpc" id="L5815" title="3 of 4 branches missed.">        assert(gsR.size() == gsG.size());</span>
-<span class="pc bpc" id="L5816" title="3 of 4 branches missed.">        assert(gsR.size() == gsB.size());</span>
+<span class="pc bnc" id="L5815" title="All 2 branches missed.">        assert(gsR.size() == gsG.size());</span>
+<span class="pc bnc" id="L5816" title="All 2 branches missed.">        assert(gsR.size() == gsB.size());</span>
 
 <span class="fc bfc" id="L5818" title="All 2 branches covered.">        for (int i = 0; i &lt; gsR.size(); ++i) {</span>
 <span class="fc" id="L5819">            GreyscaleImage r2 = gsR.get(i);</span>
@@ -6363,7 +6363,7 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
 <span class="fc" id="L6363">            output.put(label, nbrs);</span>
         }
         
-<span class="pc bpc" id="L6366" title="3 of 4 branches missed.">        assert(output.size() == labeledPoints.size());</span>
+<span class="pc bnc" id="L6366" title="All 2 branches missed.">        assert(output.size() == labeledPoints.size());</span>
 
 <span class="fc" id="L6368">        return output;</span>
     }
@@ -6555,4 +6555,4 @@ import thirdparty.ca.uol.aig.fftpack.Complex1D;
     // and trilateral filter by Tumblin et al. 2003
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

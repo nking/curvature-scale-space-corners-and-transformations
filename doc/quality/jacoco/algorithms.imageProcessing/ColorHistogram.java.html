@@ -17,7 +17,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L20" title="1 of 2 branches missed.">public class ColorHistogram {</span>
+<span class="fc" id="L20">public class ColorHistogram {</span>
     
     /**
      * histogram of 16 bins each of r' = r/(r+g+b) and g' = g/(r+g+b).
@@ -377,7 +377,7 @@ import java.util.Set;
             
 <span class="fc" id="L378">            int hIdx = (binNumberC * nBins) + binNumberH;</span>
             
-<span class="pc bpc" id="L380" title="3 of 4 branches missed.">            assert(hIdx &lt; nTot);</span>
+<span class="pc bnc" id="L380" title="All 2 branches missed.">            assert(hIdx &lt; nTot);</span>
             
 <span class="fc" id="L382">            hist[hIdx]++;</span>
 <span class="fc" id="L383">        }</span>
@@ -440,7 +440,7 @@ import java.util.Set;
             
 <span class="fc" id="L441">            int hIdx = (binNumberC * nBins) + binNumberH;</span>
             
-<span class="pc bpc" id="L443" title="3 of 4 branches missed.">            assert(hIdx &lt; nTot);</span>
+<span class="pc bnc" id="L443" title="All 2 branches missed.">            assert(hIdx &lt; nTot);</span>
             
 <span class="fc" id="L445">            hist[hIdx]++;</span>
         }
@@ -1046,4 +1046,4 @@ import java.util.Set;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -38,7 +38,7 @@ import java.util.Stack;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L41" title="1 of 2 branches missed.">public abstract class AbstractWaterShed {</span>
+<span class="fc" id="L41">public abstract class AbstractWaterShed {</span>
 
 <span class="fc" id="L43">    protected static final PairInt sentinel = new PairInt(-1, -1);</span>
 
@@ -200,7 +200,7 @@ import java.util.Stack;
 <span class="nc" id="L200">                repr = componentLabelMap.get(rs.getP()).getParent().getMember();</span>
             }
 
-<span class="nc bnc" id="L203" title="All 4 branches missed.">            assert (repr != null);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">            assert (repr != null);</span>
 
 <span class="nc" id="L205">            int n = dag.getConnectedNumber(rs.getP());</span>
 
@@ -223,7 +223,7 @@ import java.util.Stack;
 
 <span class="nc" id="L224">                PairInt lowerNode = dag.getConnectedNode(rs.getP(), i);</span>
 
-<span class="nc bnc" id="L226" title="All 4 branches missed.">                assert (lowerNode != null);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">                assert (lowerNode != null);</span>
 
 <span class="nc bnc" id="L228" title="All 6 branches missed.">                if (!lowerNode.equals(rs.p) &amp;&amp; !lowerNode.equals(sentinel) &amp;&amp; !dag.isResolved(lowerNode)) {</span>
 
@@ -357,12 +357,12 @@ import java.util.Stack;
         }
 
 <span class="nc bnc" id="L359" title="All 4 branches missed.">        if ((reprSet != null) &amp;&amp; reprSet.size() &gt; 0) {</span>
-<span class="nc bnc" id="L360" title="All 4 branches missed.">            assert (reprSet.size() == 1);</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">            assert (reprSet.size() == 1);</span>
 <span class="nc" id="L361">            return reprSet.iterator().next();</span>
         }
 
 <span class="nc bnc" id="L364" title="All 4 branches missed.">        if ((rootSet != null) &amp;&amp; !rootSet.isEmpty()) {</span>
-<span class="nc bnc" id="L365" title="All 4 branches missed.">            assert (rootSet.size() == 1);</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            assert (rootSet.size() == 1);</span>
 <span class="nc" id="L366">            return rootSet.iterator().next();</span>
         }
 
@@ -387,7 +387,7 @@ import java.util.Stack;
         }
 
 <span class="nc bnc" id="L389" title="All 4 branches missed.">        if ((rootSet != null) &amp;&amp; !rootSet.isEmpty()) {</span>
-<span class="nc bnc" id="L390" title="All 4 branches missed.">            assert (rootSet.size() == 1);</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">            assert (rootSet.size() == 1);</span>
 <span class="nc" id="L391">            return rootSet.iterator().next();</span>
         }
 
@@ -462,4 +462,4 @@ import java.util.Stack;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

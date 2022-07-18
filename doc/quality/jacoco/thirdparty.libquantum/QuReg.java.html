@@ -28,7 +28,7 @@ Quantum register management
 
  */
 
-<span class="pc bpc" id="L31" title="1 of 2 branches missed.">public class QuReg {</span>
+<span class="fc" id="L31">public class QuReg {</span>
 
     /**
      * Our 64-bit multiplicative hash function
@@ -130,7 +130,7 @@ Quantum register management
 <span class="fc" id="L130">        int end = 1 &lt;&lt; reg.hashw;</span>
 <span class="fc" id="L131">        Arrays.fill(reg.hash, 0, end, 0);</span>
    
-<span class="pc bpc" id="L133" title="3 of 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
+<span class="pc bnc" id="L133" title="All 2 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
         
 <span class="fc bfc" id="L135" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
 <span class="fc" id="L136">            quantum_add_hash(reg.node[i].state, i, reg);</span>
@@ -158,7 +158,7 @@ Quantum register management
 <span class="fc" id="L158">        int end = 1 &lt;&lt; reg.hashw;</span>
 <span class="fc" id="L159">        Arrays.fill(reg.hash, 0, end, 0);</span>
    
-<span class="pc bpc" id="L161" title="3 of 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
+<span class="pc bnc" id="L161" title="All 2 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
         
 <span class="fc bfc" id="L163" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
 <span class="fc" id="L164">            quantum_add_hash(reg.node[i].state, i, reg);</span>
@@ -398,11 +398,11 @@ Quantum register management
    public void quantum_print_hash(QuantumReg reg) {
         int i;
 <span class="nc" id="L400">        long tmp = 1L &lt;&lt; reg.hashw;</span>
-<span class="nc bnc" id="L401" title="All 4 branches missed.">        assert(reg.hash.length == tmp);</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        assert(reg.hash.length == tmp);</span>
 <span class="nc" id="L402">        int hashMax = MiscMath.findMax(reg.hash);</span>
 <span class="nc" id="L403">        System.out.println(&quot;hash length=&quot; + reg.hash.length + &quot; max value=&quot; </span>
             + hashMax + &quot; node.length=&quot; + reg.node.length);
-<span class="nc bnc" id="L405" title="All 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
 <span class="nc bnc" id="L406" title="All 2 branches missed.">        for (i = 0; i &lt; tmp; i++) {</span>
 <span class="nc bnc" id="L407" title="All 4 branches missed.">            if (i &gt; 0 &amp;&amp; reg.hash[i] &gt; 0) {</span>
 <span class="nc" id="L408">                int idx = reg.hash[i] - 1;</span>
@@ -771,4 +771,4 @@ Quantum register management
         }
 <span class="nc" id="L772">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

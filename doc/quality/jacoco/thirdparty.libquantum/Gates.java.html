@@ -28,7 +28,7 @@ Quantum Error Correction.
    MA 02110-1301, USA
 
  */
-<span class="pc bpc" id="L31" title="1 of 2 branches missed.">public class Gates {</span>
+public class Gates {
 
 <span class="fc" id="L33">    private final float epsilon = 0.000001f;</span>
     
@@ -353,9 +353,9 @@ Quantum Error Correction.
                 + &quot;m.rows must == 2&quot;);
         }
         
-<span class="pc bpc" id="L356" title="3 of 4 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
+<span class="pc bnc" id="L356" title="All 2 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
         
-<span class="pc bpc" id="L358" title="3 of 4 branches missed.">        assert(reg.hashw &gt;= 0);</span>
+<span class="pc bnc" id="L358" title="All 2 branches missed.">        assert(reg.hashw &gt;= 0);</span>
               
 <span class="pc bpc" id="L360" title="1 of 2 branches missed.">        if (reg.hashw &gt; 0) {</span>
                         
@@ -375,7 +375,7 @@ Quantum Error Correction.
 <span class="fc" id="L375">            int sz2 = reg.size + addsize;</span>
 <span class="fc bfc" id="L376" title="All 2 branches covered.">            if (reg.node.length != sz2) {</span>
 <span class="fc" id="L377">                reg.node = Arrays.copyOf(reg.node, sz2);</span>
-<span class="pc bpc" id="L378" title="3 of 4 branches missed.">                assert(sz2 == reg.node.length);</span>
+<span class="pc bnc" id="L378" title="All 2 branches missed.">                assert(sz2 == reg.node.length);</span>
             }
 
 <span class="fc bfc" id="L381" title="All 2 branches covered.">            for (i = 0; i &lt; addsize; i++) {</span>
@@ -486,7 +486,7 @@ Quantum Error Correction.
         }
 <span class="fc" id="L487">        reg.size += addsize;</span>
         
-<span class="pc bpc" id="L489" title="3 of 4 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
+<span class="pc bnc" id="L489" title="All 2 branches missed.">        assert(reg.size &lt;= reg.node.length);</span>
         
         // remove basis states with extremely small amplitude 
 <span class="pc bpc" id="L492" title="1 of 2 branches missed.">        if (reg.hashw != 0) {</span>
@@ -544,7 +544,7 @@ Quantum Error Correction.
 <span class="nc" id="L544">        int end = (1 &lt;&lt; reg.hashw);</span>
 <span class="nc" id="L545">        Arrays.fill(reg.hash, 0, end, 0);</span>
       
-<span class="nc bnc" id="L547" title="All 4 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">        assert(reg.node.length &gt;= reg.size);</span>
         
 <span class="nc bnc" id="L549" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
 <span class="nc" id="L550">            QuReg.quantum_add_hash(reg.node[i].state, i, reg);</span>
@@ -1610,4 +1610,4 @@ Quantum Error Correction.
 <span class="fc" id="L1610">    }</span>
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

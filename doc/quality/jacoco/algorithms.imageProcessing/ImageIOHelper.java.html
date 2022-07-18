@@ -49,7 +49,7 @@ import javax.swing.ImageIcon;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">public class ImageIOHelper {</span>
+<span class="pc" id="L52">public class ImageIOHelper {</span>
     
     public static Image readImage(String filePath) throws IOException {
      
@@ -126,7 +126,7 @@ import javax.swing.ImageIcon;
 <span class="fc" id="L126">                lstPth = iter0.next().toString();</span>
             }
             
-<span class="pc bpc" id="L129" title="5 of 6 branches missed.">            assert(lstPth.endsWith(&quot;jpg&quot;) || lstPth.endsWith(&quot;jpeg&quot;) </span>
+<span class="pc bnc" id="L129" title="All 4 branches missed.">            assert(lstPth.endsWith(&quot;jpg&quot;) || lstPth.endsWith(&quot;jpeg&quot;) </span>
 <span class="nc bnc" id="L130" title="All 4 branches missed.">                || lstPth.endsWith(&quot;jPG&quot;) || lstPth.endsWith(&quot;JPEG&quot;));</span>
             
 <span class="fc" id="L132">            in = new FileImageInputStream(file);</span>
@@ -150,7 +150,7 @@ import javax.swing.ImageIcon;
                 
 <span class="fc" id="L151">                System.out.println(&quot;nJPEG bands=&quot; + nImages);</span>
                 
-<span class="pc bpc" id="L153" title="3 of 4 branches missed.">                assert(nImages &gt;= 1);</span>
+<span class="pc bnc" id="L153" title="All 2 branches missed.">                assert(nImages &gt;= 1);</span>
                                 
 <span class="fc" id="L155">                int w = rdr.getWidth(0);</span>
 <span class="fc" id="L156">                int h = rdr.getHeight(0);</span>
@@ -2379,4 +2379,4 @@ import javax.swing.ImageIcon;
 <span class="nc" id="L2379">        }</span>
 <span class="nc" id="L2380">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

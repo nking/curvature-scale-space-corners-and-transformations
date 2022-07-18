@@ -43,7 +43,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">public class UnsupervisedTextureFinder {</span>
+<span class="fc" id="L46">public class UnsupervisedTextureFinder {</span>
    
     public TexturePatchesAndResponse[] createTextureImages(ImageExt img,
         PhaseCongruencyDetector.PhaseCongruencyProducts products,
@@ -89,7 +89,7 @@ import java.util.Set;
 <span class="pc bpc" id="L89" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
 <span class="nc" id="L90">            x2[i] = new float[3];</span>
 <span class="nc" id="L91">            int[][] ch = chs[i];</span>
-<span class="nc bnc" id="L92" title="All 4 branches missed.">            assert (ch.length == sum.length);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            assert (ch.length == sum.length);</span>
 <span class="nc" id="L93">            chhist.chiSquaredSum(ch, sum, x2[i]);</span>
 <span class="nc" id="L94">            valuesH[i] = x2[i][0];</span>
 <span class="nc" id="L95">            valuesS[i] = x2[i][1];</span>
@@ -647,4 +647,4 @@ import java.util.Set;
 
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

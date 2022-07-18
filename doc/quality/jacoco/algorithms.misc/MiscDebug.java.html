@@ -42,7 +42,7 @@ import no.uib.cipr.matrix.DenseMatrix;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L45" title="1 of 2 branches missed.">public class MiscDebug {</span>
+<span class="nc" id="L45">public class MiscDebug {</span>
     
 <span class="fc" id="L47">    private static Logger log = Logger.getLogger(MiscDebug.class.getName());</span>
     
@@ -159,13 +159,13 @@ import no.uib.cipr.matrix.DenseMatrix;
         
 <span class="nc bnc" id="L160" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, PairInt&gt; entry : junctionLocationMap.entrySet()) {</span>
 <span class="nc" id="L161">            Integer pixelIndex = entry.getKey();</span>
-<span class="nc bnc" id="L162" title="All 4 branches missed.">            assert(pixelIndex != null);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            assert(pixelIndex != null);</span>
 <span class="nc" id="L163">            PairInt loc = entry.getValue();</span>
 <span class="nc" id="L164">            int edgeIdx = loc.getX();</span>
 <span class="nc" id="L165">            int idx = loc.getY();</span>
 <span class="nc" id="L166">            PairIntArray edge = edges.get(edgeIdx);</span>
-<span class="nc bnc" id="L167" title="All 4 branches missed.">            assert(edge != null);</span>
-<span class="nc bnc" id="L168" title="All 4 branches missed.">            assert (idx &lt; edge.getN()) :</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            assert(edge != null);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            assert (idx &lt; edge.getN()) :</span>
 <span class="nc" id="L169">                &quot;idx=&quot; + idx + &quot; edgeN=&quot; + edge.getN() + &quot; edgeIndex=&quot; + edgeIdx;</span>
 <span class="nc" id="L170">        }</span>
         /*
@@ -196,22 +196,22 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc" id="L196">            Set&lt;Integer&gt; adjPixelIndexes = entry.getValue();</span>
             
 <span class="nc" id="L198">            PairInt loc = junctionLocationMap.get(pixelIndex);</span>
-<span class="nc bnc" id="L199" title="All 4 branches missed.">            assert(loc != null);</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            assert(loc != null);</span>
             
 <span class="nc" id="L201">            int edgeIdx = loc.getX();</span>
 <span class="nc" id="L202">            int idx = loc.getY();</span>
 <span class="nc" id="L203">            PairIntArray edge = edges.get(edgeIdx);</span>
-<span class="nc bnc" id="L204" title="All 4 branches missed.">            assert(edge != null);</span>
-<span class="nc bnc" id="L205" title="All 4 branches missed.">            assert(idx &lt; edge.getN());</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">            assert(edge != null);</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            assert(idx &lt; edge.getN());</span>
             
 <span class="nc bnc" id="L207" title="All 2 branches missed.">            for (Integer adjPixelIndex : adjPixelIndexes) {</span>
 <span class="nc" id="L208">                PairInt adjLoc = junctionLocationMap.get(adjPixelIndex);</span>
-<span class="nc bnc" id="L209" title="All 4 branches missed.">                assert(adjLoc != null);</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">                assert(adjLoc != null);</span>
 <span class="nc" id="L210">                edgeIdx = adjLoc.getX();</span>
 <span class="nc" id="L211">                idx = adjLoc.getY();</span>
 <span class="nc" id="L212">                edge = edges.get(edgeIdx);</span>
-<span class="nc bnc" id="L213" title="All 4 branches missed.">                assert(edge != null);</span>
-<span class="nc bnc" id="L214" title="All 4 branches missed.">                assert(idx &lt; edge.getN());</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">                assert(edge != null);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                assert(idx &lt; edge.getN());</span>
 <span class="nc" id="L215">            }</span>
 <span class="nc" id="L216">        }</span>
         
@@ -220,18 +220,18 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc" id="L220">            Set&lt;Integer&gt; pixelIndexes = entry.getValue();</span>
             
 <span class="nc" id="L222">            PairIntArray edge = edges.get(edgeIndex.intValue());</span>
-<span class="nc bnc" id="L223" title="All 4 branches missed.">            assert(edge != null);</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">            assert(edge != null);</span>
             
 <span class="nc bnc" id="L225" title="All 2 branches missed.">            for (Integer pixelIndex : pixelIndexes) {</span>
 <span class="nc" id="L226">                PairInt loc = junctionLocationMap.get(pixelIndex);</span>
-<span class="nc bnc" id="L227" title="All 4 branches missed.">                assert(loc != null);</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">                assert(loc != null);</span>
 
 <span class="nc" id="L229">                int edgeIdx = loc.getX();</span>
 <span class="nc" id="L230">                int idx = loc.getY();</span>
                 
-<span class="nc bnc" id="L232" title="All 4 branches missed.">                assert(edgeIdx == edgeIndex.intValue());</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">                assert(edgeIdx == edgeIndex.intValue());</span>
                 
-<span class="nc bnc" id="L234" title="All 4 branches missed.">                assert(idx &lt; edge.getN());</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">                assert(idx &lt; edge.getN());</span>
 <span class="nc" id="L235">            }</span>
 <span class="nc" id="L236">        }</span>
 <span class="nc" id="L237">    }</span>
@@ -246,21 +246,21 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc bnc" id="L246" title="All 2 branches missed.">        for (PointPairInt entry : theJoinPoints) {</span>
 <span class="nc" id="L247">            PairInt loc0 = entry.getKey();</span>
 <span class="nc" id="L248">            PairInt loc1 = entry.getValue();</span>
-<span class="nc bnc" id="L249" title="All 4 branches missed.">            assert(!loc0.equals(loc1));</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">            assert(!loc0.equals(loc1));</span>
             
 <span class="nc" id="L251">            PairIntArray edge0 = edges.get(loc0.getX());</span>
 <span class="nc" id="L252">            PairIntArray edge1 = edges.get(loc1.getX());</span>
 <span class="nc" id="L253">            int n0 = edge0.getN();</span>
 <span class="nc" id="L254">            int n1 = edge1.getN();</span>
             
-<span class="nc bnc" id="L256" title="All 4 branches missed.">            assert(loc0.getY() &lt; n0);</span>
-<span class="nc bnc" id="L257" title="All 4 branches missed.">            assert(loc1.getY() &lt; n1);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            assert(loc0.getY() &lt; n0);</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">            assert(loc1.getY() &lt; n1);</span>
             
 <span class="nc bnc" id="L259" title="All 4 branches missed.">            if (!(skipForSize3 &amp;&amp; (n0 == 3))) {</span>
-<span class="nc bnc" id="L260" title="All 4 branches missed.">                assert(!joinPointsSet.contains(loc0));</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">                assert(!joinPointsSet.contains(loc0));</span>
             }
 <span class="nc bnc" id="L262" title="All 4 branches missed.">            if (!(skipForSize3 &amp;&amp; (n1 == 3))) {</span>
-<span class="nc bnc" id="L263" title="All 4 branches missed.">                assert(!joinPointsSet.contains(loc1));</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">                assert(!joinPointsSet.contains(loc1));</span>
             }
             
 <span class="nc" id="L266">            joinPointsSet.add(loc0);</span>
@@ -270,9 +270,9 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc bnc" id="L270" title="All 2 branches missed.">        for (PointPairInt entry : theJoinPoints) {</span>
 <span class="nc" id="L271">            PairInt loc0 = entry.getKey();</span>
 <span class="nc" id="L272">            PairInt loc1 = entry.getValue();</span>
-<span class="nc bnc" id="L273" title="All 4 branches missed.">            assert(!loc0.equals(loc1));</span>
-<span class="nc bnc" id="L274" title="All 4 branches missed.">            assert(!joinPointsSet.contains(loc0));</span>
-<span class="nc bnc" id="L275" title="All 4 branches missed.">            assert(!joinPointsSet.contains(loc1));</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">            assert(!loc0.equals(loc1));</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">            assert(!joinPointsSet.contains(loc0));</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">            assert(!joinPointsSet.contains(loc1));</span>
 <span class="nc" id="L276">            joinPointsSet.add(loc0);</span>
 <span class="nc" id="L277">            joinPointsSet.add(loc1);</span>
 <span class="nc" id="L278">        }</span>
@@ -282,8 +282,8 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc bnc" id="L282" title="All 2 branches missed.">            for (PointPairInt joinPoint : entry.getValue()) {</span>
 <span class="nc" id="L283">                PairInt loc0 = joinPoint.getKey();</span>
 <span class="nc" id="L284">                PairInt loc1 = joinPoint.getValue();</span>
-<span class="nc bnc" id="L285" title="All 4 branches missed.">                assert(loc0 != null);</span>
-<span class="nc bnc" id="L286" title="All 4 branches missed.">                assert(loc1 != null);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">                assert(loc0 != null);</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">                assert(loc1 != null);</span>
                                 
 <span class="nc" id="L288">                boolean contains = theJoinPoints.contains(joinPoint);                   </span>
 <span class="nc bnc" id="L289" title="All 2 branches missed.">                if (!contains) {</span>
@@ -296,7 +296,7 @@ import no.uib.cipr.matrix.DenseMatrix;
                         }
 <span class="nc" id="L297">                    }</span>
                 }
-<span class="nc bnc" id="L299" title="All 4 branches missed.">                assert(contains);</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">                assert(contains);</span>
 <span class="nc" id="L300">            }</span>
 <span class="nc" id="L301">        }</span>
 <span class="nc bnc" id="L302" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, Set&lt;PointPairInt&gt;&gt; entry : edgeLastEndPointMap.entrySet()) {</span>
@@ -304,8 +304,8 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc bnc" id="L304" title="All 2 branches missed.">            for (PointPairInt joinPoint : entry.getValue()) {</span>
 <span class="nc" id="L305">                PairInt loc0 = joinPoint.getKey();</span>
 <span class="nc" id="L306">                PairInt loc1 = joinPoint.getValue();</span>
-<span class="nc bnc" id="L307" title="All 4 branches missed.">                assert(loc0 != null);</span>
-<span class="nc bnc" id="L308" title="All 4 branches missed.">                assert(loc1 != null);</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">                assert(loc0 != null);</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">                assert(loc1 != null);</span>
 <span class="nc" id="L309">                boolean contains = theJoinPoints.contains(joinPoint);                   </span>
 <span class="nc bnc" id="L310" title="All 2 branches missed.">                if (!contains) {</span>
 <span class="nc" id="L311">                    int hash = joinPoint.hashCode();</span>
@@ -358,7 +358,7 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc bnc" id="L358" title="All 2 branches missed.">            for (Map.Entry&lt;PairInt, PairInt&gt; entry : theJoinPointMap.entrySet()) {</span>
 <span class="nc" id="L359">                PairInt loc0 = entry.getKey();</span>
 <span class="nc" id="L360">                PairInt loc1 = entry.getValue();</span>
-<span class="nc bnc" id="L361" title="All 4 branches missed.">                assert(!loc0.equals(loc1));</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">                assert(!loc0.equals(loc1));</span>
 
 <span class="nc" id="L363">                PairIntArray edge0 = edges.get(loc0.getX());</span>
 <span class="nc" id="L364">                PairIntArray edge1 = edges.get(loc1.getX());</span>
@@ -521,7 +521,7 @@ import no.uib.cipr.matrix.DenseMatrix;
                     imageMaxColumn);
             }
             
-<span class="nc bnc" id="L524" title="All 4 branches missed.">            assert(!empty);</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">            assert(!empty);</span>
         }        
 <span class="nc" id="L526">    }</span>
 
@@ -1199,8 +1199,8 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="nc" id="L1199">            xs.remove(x);</span>
 <span class="nc" id="L1200">            ys.remove(y);</span>
 <span class="nc" id="L1201">        }</span>
-<span class="nc bnc" id="L1202" title="All 4 branches missed.">        assert(xs.isEmpty());</span>
-<span class="nc bnc" id="L1203" title="All 4 branches missed.">        assert(ys.isEmpty());</span>
+<span class="nc bnc" id="L1202" title="All 2 branches missed.">        assert(xs.isEmpty());</span>
+<span class="nc bnc" id="L1203" title="All 2 branches missed.">        assert(ys.isEmpty());</span>
 <span class="nc" id="L1204">    }</span>
     
     public static void writeAlternatingColor(Image img, 
@@ -1501,4 +1501,4 @@ import no.uib.cipr.matrix.DenseMatrix;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

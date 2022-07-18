@@ -136,9 +136,9 @@ import java.util.logging.Logger;
 <span class="fc" id="L136">            double numerator = ((xFirstDerivInteg * ySecondDerivInteg) -</span>
                 (yFirstDerivInteg * xSecondDerivInteg));
             
-<span class="pc bpc" id="L139" title="1 of 4 branches missed.">            double curvature = (denominator == 0)  ? </span>
-                (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
-                : numerator / denominator;
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            double curvature = (denominator == 0)  ? </span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                (numerator == 0) ? 0 : Double.POSITIVE_INFINITY</span>
+<span class="fc" id="L141">                : numerator / denominator;</span>
            
 <span class="fc" id="L143">            scaleSpaceCurve.setK(i, (float)curvature);</span>
                       
@@ -207,9 +207,9 @@ import java.util.logging.Logger;
 <span class="fc" id="L207">            double numerator = ((xFirstDerivInteg * ySecondDerivInteg) -</span>
                 (yFirstDerivInteg * xSecondDerivInteg));
             
-<span class="pc bpc" id="L210" title="1 of 4 branches missed.">            double curvature = (denominator == 0)  ? </span>
-                (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
-                : numerator / denominator;
+<span class="fc bfc" id="L210" title="All 2 branches covered.">            double curvature = (denominator == 0)  ? </span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">                (numerator == 0) ? 0 : Double.POSITIVE_INFINITY</span>
+<span class="fc" id="L212">                : numerator / denominator;</span>
            
 <span class="fc" id="L214">            output.add(curve.getX(i), curve.getY(i), (float)curvature, </span>
                  (float)xFirstDerivInteg, (float)xSecondDerivInteg, 
@@ -425,4 +425,4 @@ import java.util.logging.Logger;
 
 <span class="nc" id="L426">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

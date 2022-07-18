@@ -27,7 +27,7 @@ import no.uib.cipr.matrix.SVD;
  * them, then use triangulation to get the WCS coordinates.
  * @author nichole
  */
-<span class="pc bpc" id="L30" title="1 of 2 branches missed.">public class Triangulation {</span>
+<span class="pc" id="L30">public class Triangulation {</span>
     
     /**
      * given the intrinsic and extrinsic camera matrices for 2 images
@@ -443,8 +443,8 @@ import no.uib.cipr.matrix.SVD;
         // A is  4*N X 4
         // A^T*A is 4 X 4
 <span class="fc" id="L445">        double[][] aTa = MatrixUtil.createATransposedTimesA(a);</span>
-<span class="pc bpc" id="L446" title="3 of 4 branches missed.">        assert(aTa.length == 4);</span>
-<span class="pc bpc" id="L447" title="3 of 4 branches missed.">        assert(aTa[0].length == 4);</span>
+<span class="pc bnc" id="L446" title="All 2 branches missed.">        assert(aTa.length == 4);</span>
+<span class="pc bnc" id="L447" title="All 2 branches missed.">        assert(aTa[0].length == 4);</span>
         
         //NOTE: SVD(A).V is the same as SVD(A^TA).V
         
@@ -457,8 +457,8 @@ import no.uib.cipr.matrix.SVD;
 <span class="fc" id="L457">        }</span>
         
 <span class="fc" id="L459">        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());</span>
-<span class="pc bpc" id="L460" title="3 of 4 branches missed.">        assert(vT.length == 4);</span>
-<span class="pc bpc" id="L461" title="3 of 4 branches missed.">        assert(vT[0].length == 4);</span>
+<span class="pc bnc" id="L460" title="All 2 branches missed.">        assert(vT.length == 4);</span>
+<span class="pc bnc" id="L461" title="All 2 branches missed.">        assert(vT[0].length == 4);</span>
         
         // eigenvector corresponding to smallest eigenvector is last row in svd.V^T
 <span class="fc" id="L464">        double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);</span>
@@ -701,4 +701,4 @@ import no.uib.cipr.matrix.SVD;
         
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

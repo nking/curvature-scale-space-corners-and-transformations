@@ -9,7 +9,7 @@ import java.util.Arrays;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L12" title="1 of 2 branches missed.">public class MedianSmooth {</span>
+<span class="fc" id="L12">public class MedianSmooth {</span>
     
     /**
      * calculate a running median of a window of size xWindow, yWindow.
@@ -61,8 +61,8 @@ import java.util.Arrays;
                 }
             }
             
-<span class="pc bpc" id="L64" title="3 of 4 branches missed.">            assert(sVec.n == sVec.a.length);</span>
-<span class="pc bpc" id="L65" title="3 of 4 branches missed.">            assert(sVec.sorted);</span>
+<span class="pc bnc" id="L64" title="All 2 branches missed.">            assert(sVec.n == sVec.a.length);</span>
+<span class="pc bnc" id="L65" title="All 2 branches missed.">            assert(sVec.sorted);</span>
 
             //O(k) + (N)*lg2(k)
             int median;
@@ -81,17 +81,17 @@ import java.util.Arrays;
 
 <span class="fc bfc" id="L82" title="All 2 branches covered.">                    for (int j = row; j &lt; (row + yWindow); ++j) {</span>
 
-<span class="pc bpc" id="L84" title="3 of 4 branches missed.">                        assert(sVec.n == sVec.a.length);</span>
+<span class="pc bnc" id="L84" title="All 2 branches missed.">                        assert(sVec.n == sVec.a.length);</span>
                         
                         // remove : O(log_2(k))
 <span class="fc" id="L87">                        sVec.remove(input.getValue(i - xWindow + 1, j));</span>
 
-<span class="pc bpc" id="L89" title="3 of 4 branches missed.">                        assert(sVec.n == (sVec.a.length - 1));</span>
+<span class="pc bnc" id="L89" title="All 2 branches missed.">                        assert(sVec.n == (sVec.a.length - 1));</span>
                         
                         // add : O(log_2(k)) + &lt; O(k)
 <span class="fc" id="L92">                        sVec.insertIntoOpenSlot(input.getValue(i + 1, j));</span>
                         
-<span class="pc bpc" id="L94" title="3 of 4 branches missed.">                        assert(sVec.n == sVec.a.length);</span>
+<span class="pc bnc" id="L94" title="All 2 branches missed.">                        assert(sVec.n == sVec.a.length);</span>
                     }
                 }
             }
@@ -348,4 +348,4 @@ import java.util.Arrays;
         }
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

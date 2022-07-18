@@ -247,7 +247,7 @@ import java.util.Arrays;
 <span class="fc" id="L247">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);</span>
 
 <span class="pc bpc" id="L249" title="1 of 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
-<span class="pc" id="L250">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, </span>
+<span class="nc" id="L250">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, </span>
                 simulatedErrors)
 <span class="fc" id="L252">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
                 10, pixValues, simulatedErrors);
@@ -379,4 +379,4 @@ import java.util.Arrays;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

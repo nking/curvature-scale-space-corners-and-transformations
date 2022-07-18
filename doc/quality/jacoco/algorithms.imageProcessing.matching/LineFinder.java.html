@@ -46,7 +46,7 @@ Also, the summed table of the chord differences is only along columns.
 
 @author nichole
 */
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">public class LineFinder {</span>
+<span class="fc" id="L49">public class LineFinder {</span>
 
     /**
       dp is the set distance between sampling points.
@@ -475,7 +475,7 @@ Also, the summed table of the chord differences is only along columns.
 
 <span class="fc bfc" id="L476" title="All 2 branches covered.">                            if (compSD &lt; currentSD) {</span>
 <span class="fc" id="L477">                                Integer rmvd0 = rangeSearch.remove(interval);</span>
-<span class="pc bpc" id="L478" title="3 of 4 branches missed.">                                assert(rmvd0 != null);</span>
+<span class="pc bnc" id="L478" title="All 2 branches missed.">                                assert(rmvd0 != null);</span>
                                 //re-insert existing interval
 <span class="fc" id="L480">                                Integer rmvd = rangeSearch.put(comp, existing);</span>
 <span class="pc bpc" id="L481" title="1 of 2 branches missed.">                                if (rmvd != null) {</span>
@@ -726,13 +726,13 @@ Also, the summed table of the chord differences is only along columns.
         subtracting only the MXM portion
         */
 
-<span class="pc bpc" id="L729" title="3 of 4 branches missed.">        assert(a1.length == a1[0].length);</span>
-<span class="pc bpc" id="L730" title="3 of 4 branches missed.">        assert(a2.length == a2[0].length);</span>
+<span class="pc bnc" id="L729" title="All 2 branches missed.">        assert(a1.length == a1[0].length);</span>
+<span class="pc bnc" id="L730" title="All 2 branches missed.">        assert(a2.length == a2[0].length);</span>
 
 <span class="fc" id="L732">        int n1 = a1.length;</span>
 <span class="fc" id="L733">        int n2 = a2.length;</span>
 
-<span class="pc bpc" id="L735" title="3 of 4 branches missed.">        assert(n1 &lt;= n2);</span>
+<span class="pc bnc" id="L735" title="All 2 branches missed.">        assert(n1 &lt;= n2);</span>
 
 <span class="fc" id="L737">        float[][] output = new float[n1][];</span>
 <span class="fc bfc" id="L738" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
@@ -893,4 +893,4 @@ Also, the summed table of the chord differences is only along columns.
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

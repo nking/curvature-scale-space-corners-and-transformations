@@ -16,7 +16,7 @@ import java.util.Stack;
  * copyright for authors Robert Sedgewick and Kevin Wayne
  * is GPLV3, http://algs4.cs.princeton.edu/faq/
  */
-<span class="pc bpc" id="L19" title="1 of 2 branches missed.">public class QuadTreeInterval2D&lt;T extends Comparable&lt;T&gt;, Value&gt;  {</span>
+<span class="fc" id="L19">public class QuadTreeInterval2D&lt;T extends Comparable&lt;T&gt;, Value&gt;  {</span>
     
     private Node&lt;T&gt; root;
 
@@ -93,7 +93,7 @@ import java.util.Stack;
                 }
 <span class="fc" id="L94">                return;</span>
             } else {
-<span class="pc bpc" id="L96" title="3 of 4 branches missed.">                assert(!parents.isEmpty());</span>
+<span class="pc bnc" id="L96" title="All 2 branches missed.">                assert(!parents.isEmpty());</span>
 <span class="fc" id="L97">                Node&lt;T&gt; parent = parents.get(parents.size() - 1);</span>
 <span class="pc bpc" id="L98" title="1 of 2 branches missed.">                if (isH) {</span>
 <span class="fc" id="L99">                    removeNodeReattachChildren(parent, box);</span>
@@ -360,4 +360,4 @@ import java.util.Stack;
         }
 <span class="fc" id="L361">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

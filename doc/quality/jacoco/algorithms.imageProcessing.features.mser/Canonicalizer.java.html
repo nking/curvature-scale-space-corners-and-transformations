@@ -38,7 +38,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L41" title="1 of 2 branches missed.">public class Canonicalizer {</span>
+<span class="fc" id="L41">public class Canonicalizer {</span>
 
     /*
     affine transformation
@@ -704,7 +704,7 @@ import java.util.Set;
         
 <span class="nc" id="L705">        double autocorrel = calcAutoCorrel(meanWindowedImg, </span>
             cRegion.ellipseParams.xC, cRegion.ellipseParams.yC, 
-<span class="nc" id="L707">            cRegion.offsetsToOrigCoords);</span>
+            cRegion.offsetsToOrigCoords);
 
 <span class="nc" id="L709">        cRegion.autocorrel = Math.sqrt(autocorrel)/255.;</span>
 
@@ -726,8 +726,8 @@ import java.util.Set;
 
 <span class="fc" id="L727">        PairIntArray xy = new PairIntArray();</span>
         
-<span class="pc bpc" id="L729" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="pc bpc" id="L730" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="pc bnc" id="L729" title="All 4 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bnc" id="L730" title="All 4 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
         //double[] m = r.calcParamTransCoeff();
@@ -741,7 +741,7 @@ import java.util.Set;
 <span class="fc" id="L741">        double minor = 2. * m[5];</span>
 
 <span class="fc" id="L743">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="pc bpc" id="L744" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
+<span class="pc bnc" id="L744" title="All 2 branches missed.">        assert(!Double.isNaN(ecc));</span>
 
         // elliptical bounds
         // find the ranges of the untransformed ellipse first
@@ -780,8 +780,8 @@ import java.util.Set;
 <span class="fc" id="L780">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
 <span class="fc" id="L781">        int x = xyCen[0];</span>
 <span class="fc" id="L782">        int y = xyCen[1];</span>
-<span class="pc bpc" id="L783" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="pc bpc" id="L784" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="pc bnc" id="L783" title="All 4 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bnc" id="L784" title="All 4 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
 <span class="fc" id="L787">        double[] m = r.calcParamTransCoeff();</span>
@@ -795,7 +795,7 @@ import java.util.Set;
 <span class="fc" id="L795">        double minor = 2. * m[5];</span>
 
 <span class="fc" id="L797">        double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="pc bpc" id="L798" title="3 of 4 branches missed.">        assert(!Double.isNaN(ecc));</span>
+<span class="pc bnc" id="L798" title="All 2 branches missed.">        assert(!Double.isNaN(ecc));</span>
 
         PairIntArray xy;
 
@@ -861,8 +861,8 @@ import java.util.Set;
 <span class="nc" id="L861">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
 <span class="nc" id="L862">        int x = xyCen[0];</span>
 <span class="nc" id="L863">        int y = xyCen[1];</span>
-<span class="nc bnc" id="L864" title="All 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="nc bnc" id="L865" title="All 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="nc bnc" id="L864" title="All 4 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="nc bnc" id="L865" title="All 4 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
 <span class="nc" id="L868">        double[] m = r.calcParamTransCoeff();</span>
@@ -931,8 +931,8 @@ import java.util.Set;
 <span class="fc" id="L931">        r.calculateXYCentroid(xyCen, imageWidth, imageHeight);</span>
 <span class="fc" id="L932">        int x = xyCen[0];</span>
 <span class="fc" id="L933">        int y = xyCen[1];</span>
-<span class="pc bpc" id="L934" title="5 of 6 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
-<span class="pc bpc" id="L935" title="5 of 6 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
+<span class="pc bnc" id="L934" title="All 4 branches missed.">        assert(x &gt;= 0 &amp;&amp; x &lt; imageWidth);</span>
+<span class="pc bnc" id="L935" title="All 4 branches missed.">        assert(y &gt;= 0 &amp;&amp; y &lt; imageHeight);</span>
 
         //v0x, v1x, v0y, v1y
 <span class="fc" id="L938">        double[] m = r.calcParamTransCoeff();</span>
@@ -1082,7 +1082,7 @@ import java.util.Set;
 <span class="nc" id="L1082">                double minor = cr.ellipseParams.minor/scale;</span>
 
 <span class="nc" id="L1084">                double ecc = Math.sqrt(major * major - minor * minor)/major;</span>
-<span class="nc bnc" id="L1085" title="All 4 branches missed.">                assert(!Double.isNaN(ecc));</span>
+<span class="nc bnc" id="L1085" title="All 2 branches missed.">                assert(!Double.isNaN(ecc));</span>
 
 <span class="nc" id="L1087">                RegionGeometry rg = new RegionGeometry();</span>
 <span class="nc" id="L1088">                rg.eccentricity = ecc;</span>
@@ -1347,8 +1347,8 @@ import java.util.Set;
 <span class="nc" id="L1347">                    off++;</span>
 <span class="nc" id="L1348">                    next = rowColRange.get(i + off);</span>
                 }
-<span class="nc bnc" id="L1350" title="All 4 branches missed.">                assert(prev != null);</span>
-<span class="nc bnc" id="L1351" title="All 4 branches missed.">                assert(next != null);</span>
+<span class="nc bnc" id="L1350" title="All 2 branches missed.">                assert(prev != null);</span>
+<span class="nc bnc" id="L1351" title="All 2 branches missed.">                assert(next != null);</span>
 <span class="nc" id="L1352">                x0 = Math.round(((float)prev.getX() + (float)next.getX())/2.f);</span>
 <span class="nc" id="L1353">                x1 = Math.round(((float)prev.getY() + (float)next.getY())/2.f);</span>
 <span class="nc" id="L1354">            } else {</span>
@@ -1433,7 +1433,7 @@ import java.util.Set;
 <span class="fc" id="L1433">                    maxAreaIdx = rIdx;</span>
                 }               
 <span class="fc" id="L1435">            }</span>
-<span class="pc bpc" id="L1436" title="3 of 4 branches missed.">            assert(maxAreaIdx &gt; -1);</span>
+<span class="pc bnc" id="L1436" title="All 2 branches missed.">            assert(maxAreaIdx &gt; -1);</span>
 <span class="fc" id="L1437">            iter3 = groupPixs.iterator();</span>
 <span class="fc bfc" id="L1438" title="All 2 branches covered.">            while (iter3.hasNext()) {</span>
 <span class="fc" id="L1439">                long pixIdx = iter3.next();</span>
@@ -1455,4 +1455,4 @@ import java.util.Set;
 <span class="fc" id="L1455">    }</span>
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

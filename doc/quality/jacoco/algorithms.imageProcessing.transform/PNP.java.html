@@ -31,7 +31,7 @@ import no.uib.cipr.matrix.NotConvergedException;
    using an incremental rotation, as described in Section 6.2.2.&quot;
  * @author nichole
  */
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">public class PNP {</span>
+<span class="pc" id="L34">public class PNP {</span>
     
     /**
      * NOT YET TESTED.
@@ -439,7 +439,7 @@ import no.uib.cipr.matrix.NotConvergedException;
                 // near the minimimum, which is good.
                 // decrease lambda
 <span class="fc" id="L441">                lambda /= lambdaF;</span>
-<span class="pc bpc" id="L442" title="3 of 4 branches missed.">                assert(fTest &lt; fPrev);</span>
+<span class="pc bnc" id="L442" title="All 2 branches missed.">                assert(fTest &lt; fPrev);</span>
 <span class="fc" id="L443">                fPrev = fTest;</span>
                 
 <span class="fc" id="L445">                System.out.printf(&quot;fPrev updated to fTest: fPrev=%.11e fTest=%.11e\n&quot;, fPrev, fTest);</span>
@@ -593,7 +593,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         }
         
         //TODO: assert worldC[2][*] = 1 for local device frame
-<span class="pc bpc" id="L596" title="3 of 4 branches missed.">        assert(Math.abs(worldC[2][0] - 1.) &lt; 1e-5);</span>
+<span class="pc bnc" id="L596" title="All 2 branches missed.">        assert(Math.abs(worldC[2][0] - 1.) &lt; 1e-5);</span>
         
         // (2*n) X 9
 <span class="fc" id="L599">        double[][] jF = MatrixUtil.zeros(2*n, 9);</span>
@@ -629,8 +629,8 @@ import no.uib.cipr.matrix.NotConvergedException;
         //TODO: assert worldC[2] = 1 for local device frame
         //assert(Math.abs(worldC[2] - 1.) &lt; 1e-5);
         
-<span class="nc bnc" id="L632" title="All 4 branches missed.">        assert(outJF.length == 2);</span>
-<span class="nc bnc" id="L633" title="All 4 branches missed.">        assert(outJF[0].length == 9);</span>
+<span class="nc bnc" id="L632" title="All 2 branches missed.">        assert(outJF.length == 2);</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">        assert(outJF[0].length == 9);</span>
         
         int i, j;
         double x, y, s1, s2, d, dsq;
@@ -980,4 +980,4 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc" id="L980">        return max;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

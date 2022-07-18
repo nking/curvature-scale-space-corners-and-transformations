@@ -24,7 +24,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L27" title="1 of 2 branches missed.">public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {</span>
+<span class="fc" id="L27">public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {</span>
     
     /*
        4     
@@ -116,7 +116,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="fc" id="L116">                ++nPix;</span>
             }
         }
-<span class="pc bpc" id="L119" title="3 of 4 branches missed.">        assert(nPix == img.getNPixels());</span>
+<span class="pc bnc" id="L119" title="All 2 branches missed.">        assert(nPix == img.getNPixels());</span>
 
 <span class="fc" id="L121">        int[] labeled = new int[nPix];</span>
 <span class="fc bfc" id="L122" title="All 2 branches covered.">        for (int i = 0; i &lt; n0; ++i) {</span>
@@ -165,7 +165,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="nc" id="L165">            int idx1 = index1.intValue();</span>
 <span class="nc bnc" id="L166" title="All 2 branches missed.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="nc" id="L167">                int idx2 = index2.intValue();</span>
-<span class="nc bnc" id="L168" title="All 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="nc bnc" id="L170" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
 <span class="nc" id="L171">                    p = new PairInt(idx1, idx2);</span>
@@ -203,7 +203,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="nc" id="L203">            int idx1 = index1.intValue();</span>
 <span class="nc bnc" id="L204" title="All 2 branches missed.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="nc" id="L205">                int idx2 = index2.intValue();</span>
-<span class="nc bnc" id="L206" title="All 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="nc bnc" id="L208" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
 <span class="nc" id="L209">                    p = new PairInt(idx1, idx2);</span>
@@ -217,7 +217,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
                 
                 // set both [i][j] and [j][i] to make symmetric matrix
 <span class="nc" id="L219">                double d = diffOrSim.get(idx1, idx2);</span>
-<span class="nc bnc" id="L220" title="All 4 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
 <span class="nc" id="L221">                double similarity = Math.exp(-1*d*d/sigma);</span>
 <span class="nc" id="L222">  System.out.println(&quot;similarity=&quot; + similarity);      </span>
 <span class="nc" id="L223">                diffOrSim.set(idx1, idx2, similarity);</span>
@@ -252,7 +252,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="nc" id="L252">            int idx1 = index1.intValue();</span>
 <span class="nc bnc" id="L253" title="All 2 branches missed.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="nc" id="L254">                int idx2 = index2.intValue();</span>
-<span class="nc bnc" id="L255" title="All 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="nc bnc" id="L257" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
 <span class="nc" id="L258">                    p = new PairInt(idx1, idx2);</span>
@@ -279,7 +279,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="nc" id="L279">            int idx1 = index1.intValue();</span>
 <span class="nc bnc" id="L280" title="All 2 branches missed.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="nc" id="L281">                int idx2 = index2.intValue();</span>
-<span class="nc bnc" id="L282" title="All 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="nc bnc" id="L284" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
 <span class="nc" id="L285">                    p = new PairInt(idx1, idx2);</span>
@@ -293,7 +293,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
                 
                 // set both [i][j] and [j][i] to make symmetric matrix
 <span class="nc" id="L295">                double d = diffOrSim.get(idx1, idx2);</span>
-<span class="nc bnc" id="L296" title="All 4 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
 <span class="nc" id="L297">                double similarity = Math.exp(-1*d*d/sigma);</span>
 <span class="nc" id="L298">  System.out.println(&quot;ch similarity=&quot; + similarity);      </span>
 <span class="nc" id="L299">                diffOrSim.set(idx1, idx2, similarity);</span>
@@ -331,7 +331,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="nc" id="L331">            int idx1 = index1.intValue();</span>
 <span class="nc bnc" id="L332" title="All 2 branches missed.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="nc" id="L333">                int idx2 = index2.intValue();</span>
-<span class="nc bnc" id="L334" title="All 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="nc bnc" id="L336" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
 <span class="nc" id="L337">                    p = new PairInt(idx1, idx2);</span>
@@ -369,7 +369,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="nc" id="L369">            int idx1 = index1.intValue();</span>
 <span class="nc bnc" id="L370" title="All 2 branches missed.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="nc" id="L371">                int idx2 = index2.intValue();</span>
-<span class="nc bnc" id="L372" title="All 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="nc bnc" id="L374" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
 <span class="nc" id="L375">                    p = new PairInt(idx1, idx2);</span>
@@ -383,7 +383,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
                 
                 // set both [i][j] and [j][i] to make symmetric matrix
 <span class="nc" id="L385">                double d = diffOrSim.get(idx1, idx2);</span>
-<span class="nc bnc" id="L386" title="All 4 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
 <span class="nc" id="L387">                double similarity = Math.exp(-1*d*d/sigma);</span>
 <span class="nc" id="L388">  System.out.println(&quot;similarity=&quot; + similarity);      </span>
 <span class="nc" id="L389">                diffOrSim.set(idx1, idx2, similarity);</span>
@@ -404,7 +404,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="fc" id="L404">            int idx1 = index1.intValue();</span>
 <span class="fc bfc" id="L405" title="All 2 branches covered.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="fc" id="L406">                int idx2 = index2.intValue();</span>
-<span class="pc bpc" id="L407" title="3 of 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="pc bnc" id="L407" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="fc bfc" id="L409" title="All 2 branches covered.">                if (idx1 &lt; idx2) {</span>
 <span class="fc" id="L410">                    p = new PairInt(idx1, idx2);</span>
@@ -418,7 +418,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
                 
                 // set both [i][j] and [j][i] to make symmetric matrix
 <span class="fc" id="L420">                double d = diffOrSim.get(idx1, idx2);</span>
-<span class="pc bpc" id="L421" title="3 of 4 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
+<span class="pc bnc" id="L421" title="All 2 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
 <span class="fc" id="L422">                double similarity = Math.exp(-1*d*d/sigma);</span>
 <span class="pc bpc" id="L423" title="1 of 2 branches missed.">                if (useAdjMap) {</span>
 <span class="pc bpc" id="L424" title="1 of 2 branches missed.">                    if (!adjacencyMap.containsKey(index1) ||</span>
@@ -446,7 +446,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="nc" id="L446">            int idx1 = index1.intValue();</span>
 <span class="nc bnc" id="L447" title="All 2 branches missed.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="nc" id="L448">                int idx2 = index2.intValue();</span>
-<span class="nc bnc" id="L449" title="All 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="nc bnc" id="L451" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
 <span class="nc" id="L452">                    p = new PairInt(idx1, idx2);</span>
@@ -460,7 +460,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
                 
                 // set both [i][j] and [j][i] to make symmetric matrix
 <span class="nc" id="L462">                double d = diffOrSim.get(idx1, idx2);</span>
-<span class="nc bnc" id="L463" title="All 4 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">                assert(d == diffOrSim.get(idx2, idx1));</span>
 <span class="nc" id="L464">                double diff = Math.abs(d);</span>
 <span class="nc" id="L465">                diffOrSim.set(idx1, idx2, diff);</span>
 <span class="nc" id="L466">                diffOrSim.set(idx2, idx1, diff);</span>
@@ -581,7 +581,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
         
 <span class="nc" id="L582">        int nl = labelMap.size();</span>
         
-<span class="nc bnc" id="L584" title="All 4 branches missed.">        assert(nl == nNodes);</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">        assert(nl == nNodes);</span>
         
 <span class="nc" id="L586">        ColorHistogram clrHist = new ColorHistogram();</span>
         
@@ -623,7 +623,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 <span class="fc" id="L623">            int idx1 = index1.intValue();</span>
 <span class="fc bfc" id="L624" title="All 2 branches covered.">            for (Integer index2 : entry.getValue()) {</span>
 <span class="fc" id="L625">                int idx2 = index2.intValue();</span>
-<span class="pc bpc" id="L626" title="3 of 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="pc bnc" id="L626" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p;
 <span class="fc bfc" id="L628" title="All 2 branches covered.">                if (idx1 &lt; idx2) {</span>
 <span class="fc" id="L629">                    p = new PairInt(idx1, idx2);</span>
@@ -691,4 +691,4 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -60,7 +60,7 @@ import java.util.Arrays;
   Mathematical Imaging and Vision, vol 39:2, pp. 161-179, 2011.
  &lt;/pre&gt;
  */
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">public class PeriodicFFT {</span>
+<span class="fc" id="L63">public class PeriodicFFT {</span>
     
     /**
      * calculates the 2D fft of periodic image component and returns that and
@@ -221,8 +221,8 @@ import java.util.Arrays;
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
         // using notation a[row][col]
 <span class="fc" id="L223">        Complex[][] capP = imageProcessor.create2DFFTWithSwapMajor(img, false, true);</span>
-<span class="pc bpc" id="L224" title="3 of 4 branches missed.">        assert(capP.length == capS.length);</span>
-<span class="pc bpc" id="L225" title="3 of 4 branches missed.">        assert(capP[0].length == capS[0].length);</span>
+<span class="pc bnc" id="L224" title="All 2 branches missed.">        assert(capP.length == capS.length);</span>
+<span class="pc bnc" id="L225" title="All 2 branches missed.">        assert(capP[0].length == capS[0].length);</span>
 <span class="fc bfc" id="L226" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
 <span class="fc bfc" id="L227" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
 <span class="fc" id="L228">                Complex v0 = capP[row][col];</span>
@@ -359,4 +359,4 @@ import java.util.Arrays;
 <span class="nc" id="L359">    }</span>
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

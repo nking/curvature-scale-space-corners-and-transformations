@@ -25,7 +25,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L28" title="1 of 2 branches missed.">public class MiscMath {</span>
+<span class="fc" id="L28">public class MiscMath {</span>
 
     public static int findPowerOf10_2(float a) {
 <span class="fc" id="L31">        return MiscMath0.findPowerOf10_2(a);</span>
@@ -962,7 +962,7 @@ import java.util.Set;
         float rotDelta) {
         
 <span class="fc bfc" id="L964" title="All 2 branches covered.">        float rotStopMinusStart = (rotStop &lt; rotStart) ? </span>
-            ((360 - rotStart) + rotStop) : (rotStop - rotStart);
+<span class="fc" id="L965">            ((360 - rotStart) + rotStop) : (rotStop - rotStart);</span>
         
 <span class="fc" id="L967">        int nRot = (int)((rotStopMinusStart/rotDelta) + 1);</span>
 <span class="fc" id="L968">        int np = 0;</span>
@@ -1042,7 +1042,7 @@ import java.util.Set;
     
     public static int calculateSumXOR(int[] d1, int[] d2) {
         
-<span class="nc bnc" id="L1045" title="All 4 branches missed.">        assert(d1.length == d2.length);</span>
+<span class="nc bnc" id="L1045" title="All 2 branches missed.">        assert(d1.length == d2.length);</span>
         
 <span class="nc" id="L1047">        int sum = 0;</span>
         
@@ -2517,4 +2517,4 @@ import java.util.Set;
 <span class="fc" id="L2517">    }</span>
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -68,7 +68,7 @@ an important part of the algorithm to keep the runtime tractable.
  * &lt;/pre&gt;
  * @author nichole
  */
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">public class RANSACSolver {</span>
+<span class="fc" id="L71">public class RANSACSolver {</span>
     
     //TODO: edit to be able to choose nSet = 8 or 7
 
@@ -284,7 +284,7 @@ an important part of the algorithm to keep the runtime tractable.
                 
 <span class="fc" id="L285">                int nInliers = fitI.getInlierIndexes().size();</span>
 <span class="fc bfc" id="L286" title="All 4 branches covered.">                if (nInliers &gt;= nSet &amp;&amp; fitI.isBetter(fit)) {</span>
-<span class="fc bfc" id="L287" title="All 4 branches covered.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
+<span class="pc bpc" id="L287" title="1 of 4 branches missed.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
                         // redo the FM transformation with all inliers
 <span class="fc" id="L289">                        DenseMatrix inliersLeftXY = EpipolarTransformer</span>
 <span class="fc" id="L290">                            .extractIndices(leftCorres, fitI.getInlierIndexes());</span>
@@ -337,7 +337,7 @@ an important part of the algorithm to keep the runtime tractable.
 <span class="pc bpc" id="L337" title="1 of 2 branches missed.">                        if (outlierPercent &lt; 5) {</span>
 <span class="fc" id="L338">                            outlierPercent = 5;</span>
                         }
-<span class="pc bpc" id="L340" title="3 of 4 branches missed.">                        assert(outlierPercent &lt; 50);</span>
+<span class="pc bnc" id="L340" title="All 2 branches missed.">                        assert(outlierPercent &lt; 50);</span>
 <span class="fc" id="L341">                        nMaxIter = RANSACAlgorithmIterations</span>
 <span class="fc" id="L342">                            .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);</span>
 <span class="pc bpc" id="L343" title="1 of 2 branches missed.">                        if (nMaxIter &gt; nPointsSubsets) {</span>
@@ -364,4 +364,4 @@ an important part of the algorithm to keep the runtime tractable.
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

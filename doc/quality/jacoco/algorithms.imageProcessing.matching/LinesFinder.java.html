@@ -30,7 +30,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="nc bnc" id="L33" title="All 2 branches missed.">public class LinesFinder {</span>
+<span class="nc" id="L33">public class LinesFinder {</span>
     
     /**
      * array of x coordinates of points found as lines.  note that some of the
@@ -127,7 +127,7 @@ import java.util.Set;
         // -- find the lines around each boundary using shape fitting
         // -- store results as member variables
         
-<span class="nc bnc" id="L130" title="All 4 branches missed.">        assert(assertUniquePoints2(listOfContigousLabels));</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        assert(assertUniquePoints2(listOfContigousLabels));</span>
         
 <span class="nc" id="L132">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
@@ -149,7 +149,7 @@ import java.util.Set;
 <span class="nc" id="L149">                listOfBounds.add(b);            </span>
             }
         }
-<span class="nc bnc" id="L152" title="All 4 branches missed.">        assert(assertUniquePoints(listOfBounds));</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        assert(assertUniquePoints(listOfBounds));</span>
         
 <span class="nc" id="L154">Image dbg = new Image(256, 192);</span>
 <span class="nc" id="L155">ImageIOHelper.addAlternatingColorCurvesToImage(</span>
@@ -687,4 +687,4 @@ listOfBounds, dbg, 0);
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

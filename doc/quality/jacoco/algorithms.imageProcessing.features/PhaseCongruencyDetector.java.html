@@ -176,7 +176,7 @@ import java.util.logging.Logger;
      intensity contrast.
 
  */
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">public class PhaseCongruencyDetector {</span>
+<span class="fc" id="L179">public class PhaseCongruencyDetector {</span>
 
     final private static double epsilon = 1E-4;
 
@@ -957,7 +957,7 @@ import java.util.logging.Logger;
                 0, 40, 20, clusterSizes, 
 <span class="fc" id="L958">                Errors.populateYErrorsBySqrt(clusterSizes));</span>
 <span class="fc" id="L959">            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
-<span class="pc bpc" id="L960" title="3 of 4 branches missed.">            assert(peakIdx != -1); </span>
+<span class="pc bnc" id="L960" title="All 2 branches missed.">            assert(peakIdx != -1); </span>
 <span class="fc" id="L961">            float sizeLimit = hist.getXHist()[peakIdx];</span>
 <span class="pc bpc" id="L962" title="1 of 2 branches missed.">            if (peakIdx &lt; (hist.getXHist().length - 2)) {</span>
 <span class="fc" id="L963">                sizeLimit = hist.getXHist()[peakIdx + 2];</span>
@@ -1880,4 +1880,4 @@ import java.util.logging.Logger;
 <span class="nc" id="L1880">        return capIm;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

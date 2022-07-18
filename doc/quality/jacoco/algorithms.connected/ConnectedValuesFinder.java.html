@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L30" title="1 of 2 branches missed.">public class ConnectedValuesFinder {</span>
+<span class="fc" id="L30">public class ConnectedValuesFinder {</span>
     
     // key = groupIdx, value = pixels
 <span class="pc" id="L33">    private TIntObjectMap&lt;TIntSet&gt; groupPixIdxsMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
@@ -190,7 +190,7 @@ import java.util.logging.Logger;
             }
             
 <span class="fc bfc" id="L192" title="All 2 branches covered.">            int uPixValue = (img != null) ? img.getValue(uPoint) : </span>
-                imgValues[uPoint];
+<span class="fc" id="L193">                imgValues[uPoint];</span>
             
 <span class="fc bfc" id="L195" title="All 8 branches covered.">            if ((notValue &amp;&amp; (uPixValue == pixelValue)) ||</span>
                 (!notValue &amp;&amp; (uPixValue != pixelValue))) {
@@ -221,7 +221,7 @@ import java.util.logging.Logger;
                 }
                 
 <span class="fc bfc" id="L223" title="All 2 branches covered.">                int vPixValue = (img != null) ? img.getValue(vPoint) :</span>
-                    imgValues[vPoint];
+<span class="fc" id="L224">                    imgValues[vPoint];</span>
 
 <span class="fc bfc" id="L226" title="All 8 branches covered.">                if ((notValue &amp;&amp; (vPixValue == pixelValue)) ||</span>
                     (!notValue &amp;&amp; (vPixValue != pixelValue))) {
@@ -352,7 +352,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L352">            int reprIdx = iter2.key();</span>
 <span class="fc" id="L353">            TIntSet pixIdxs = iter2.value();</span>
             
-<span class="pc bpc" id="L355" title="3 of 4 branches missed.">            assert(pixIdxs != null);</span>
+<span class="pc bnc" id="L355" title="All 2 branches missed.">            assert(pixIdxs != null);</span>
             
 <span class="pc bpc" id="L357" title="1 of 2 branches missed.">            if (pixIdxs.size() &gt;= minimumNumberInCluster) {</span>
 <span class="fc" id="L358">                groupList.add(pixIdxs);            </span>
@@ -406,4 +406,4 @@ import java.util.logging.Logger;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

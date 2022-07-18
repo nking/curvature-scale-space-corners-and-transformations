@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L30">        boolean hasABorderPixel = hasAtLeastOneBorderPixel(input);</span>
         
 <span class="fc bfc" id="L32" title="All 2 branches covered.">        GreyscaleImage input2 = hasABorderPixel ? addOnePixelBorders(input) :</span>
-            input;
+<span class="fc" id="L33">            input;</span>
         
 <span class="fc" id="L35">        int w2 = input2.getWidth();</span>
 <span class="fc" id="L36">        int h2 = input2.getHeight();</span>
@@ -53,7 +53,7 @@ import java.util.logging.Logger;
         
                 
 <span class="fc bfc" id="L55" title="All 2 branches covered.">        GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)</span>
-            : input2;
+<span class="fc" id="L56">            : input2;</span>
         
 <span class="fc" id="L58">        input.resetTo(input3);</span>
                 
@@ -64,7 +64,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L64">        boolean hasABorderPixel = hasAtLeastOneBorderPixelInv(input);</span>
         
 <span class="nc bnc" id="L66" title="All 2 branches missed.">        GreyscaleImage input2 = hasABorderPixel ? addOnePixelBordersInv(input) :</span>
-            input;
+<span class="nc" id="L67">            input;</span>
         
 <span class="nc" id="L69">        int w2 = input2.getWidth();</span>
 <span class="nc" id="L70">        int h2 = input2.getHeight();</span>
@@ -97,7 +97,7 @@ import java.util.logging.Logger;
         */
         
 <span class="nc bnc" id="L99" title="All 2 branches missed.">        GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)</span>
-            : input2;
+<span class="nc" id="L100">            : input2;</span>
         
 <span class="nc" id="L102">        input.resetTo(input3);</span>
                 
@@ -291,4 +291,4 @@ import java.util.logging.Logger;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

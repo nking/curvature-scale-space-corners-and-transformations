@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L35" title="1 of 2 branches missed.">public class MSERMatcher {</span>
+<span class="fc" id="L35">public class MSERMatcher {</span>
 
 <span class="fc" id="L37">    private boolean debug = false;</span>
     
@@ -128,8 +128,8 @@ import java.util.Set;
 
 <span class="fc" id="L129">            int w0_i = ptI0.getWidth();</span>
 <span class="fc" id="L130">            int h0_i = ptI0.getHeight();</span>
-<span class="pc bpc" id="L131" title="3 of 4 branches missed.">            assert(gsI0.getWidth() == w0_i);</span>
-<span class="pc bpc" id="L132" title="3 of 4 branches missed.">            assert(gsI0.getHeight() == h0_i);</span>
+<span class="pc bnc" id="L131" title="All 2 branches missed.">            assert(gsI0.getWidth() == w0_i);</span>
+<span class="pc bnc" id="L132" title="All 2 branches missed.">            assert(gsI0.getHeight() == h0_i);</span>
 <span class="fc" id="L133">            float scale0 = (</span>
                 ((float) w0 / (float) w0_i)
                 + ((float) h0 / (float) h0_i)) / 2.f;
@@ -140,13 +140,13 @@ import java.util.Set;
 <span class="fc" id="L140">            HOGRegionsManager hogsMgr0 = getOrCreate(hogsMap0, regions0, </span>
                 w0_i, h0_i, pyrIdx0);
             
-<span class="pc bpc" id="L143" title="3 of 4 branches missed.">            assert(regionPoints0.size() &gt; 0);</span>
+<span class="pc bnc" id="L143" title="All 2 branches missed.">            assert(regionPoints0.size() &gt; 0);</span>
             
 <span class="fc" id="L145">            hogsMgr0.populateRegionsIfNeeded(</span>
                 regionPoints0, scale0, hogsMgr0, gsI0, ptI0);
             
 <span class="fc" id="L148">            int nr0 = regions0.size();</span>
-<span class="pc bpc" id="L149" title="3 of 4 branches missed.">            assert(nr0 &gt; 0);</span>
+<span class="pc bnc" id="L149" title="All 2 branches missed.">            assert(nr0 &gt; 0);</span>
             
 <span class="fc" id="L151">            FixedSizeSortedVector&lt;Obj&gt; bestPerOctave =</span>
                 //new FixedSizeSortedVector&lt;Obj&gt;(2, Obj.class);
@@ -175,7 +175,7 @@ import java.util.Set;
                     regionPoints1, scale1, hogsMgr1, gsI1, ptI1);
                 
 <span class="fc" id="L177">                int nr1 = regions1.size();</span>
-<span class="pc bpc" id="L178" title="3 of 4 branches missed.">                assert(nr1 &gt; 0);</span>
+<span class="pc bnc" id="L178" title="All 2 branches missed.">                assert(nr1 &gt; 0);</span>
                  
 <span class="fc" id="L180">                TIntObjectIterator&lt;CRegion&gt; iter0 = regions0.iterator();</span>
 <span class="fc bfc" id="L181" title="All 2 branches covered.">                for (int i0 = 0; i0 &lt; nr0; ++i0) {</span>
@@ -519,8 +519,8 @@ import java.util.Set;
 <span class="nc" id="L519">            return null;</span>
         }
 
-<span class="pc bpc" id="L522" title="3 of 4 branches missed.">        assert(cr0.dataIdx != -1);</span>
-<span class="pc bpc" id="L523" title="3 of 4 branches missed.">        assert(cr1.dataIdx != -1);</span>
+<span class="pc bnc" id="L522" title="All 2 branches missed.">        assert(cr0.dataIdx != -1);</span>
+<span class="pc bnc" id="L523" title="All 2 branches missed.">        assert(cr1.dataIdx != -1);</span>
         
 <span class="fc" id="L525">        int orientation0 = cr0.hogOrientation;</span>
 <span class="fc" id="L526">        int orientation1 = cr1.hogOrientation;</span>
@@ -552,7 +552,7 @@ import java.util.Set;
             }
 
 <span class="fc" id="L554">            PairInt xy0 = cr0.getOffsetsToOrigCoords().get(pOffset0);</span>
-<span class="pc bpc" id="L555" title="3 of 4 branches missed.">            assert(xy0 != null);</span>
+<span class="pc bnc" id="L555" title="All 2 branches missed.">            assert(xy0 != null);</span>
             
 <span class="pc bpc" id="L557" title="1 of 2 branches missed.">            if (!hogMgr0.extractBlockHOG(cr0.dataIdx, xy0.getX(), xy0.getY(), h0)) {</span>
 <span class="nc" id="L558">                continue;</span>
@@ -606,8 +606,8 @@ import java.util.Set;
 <span class="nc" id="L606">            return null;</span>
         }
 
-<span class="nc bnc" id="L609" title="All 4 branches missed.">        assert(cr0.dataIdx != -1);</span>
-<span class="nc bnc" id="L610" title="All 4 branches missed.">        assert(cr1.dataIdx != -1);</span>
+<span class="nc bnc" id="L609" title="All 2 branches missed.">        assert(cr0.dataIdx != -1);</span>
+<span class="nc bnc" id="L610" title="All 2 branches missed.">        assert(cr1.dataIdx != -1);</span>
         
 <span class="nc" id="L612">        int orientation0 = cr0.hogOrientation;</span>
 <span class="nc" id="L613">        int orientation1 = cr1.hogOrientation;</span>
@@ -639,7 +639,7 @@ import java.util.Set;
             }
 
 <span class="nc" id="L641">            PairInt xy0 = cr0.getOffsetsToOrigCoords().get(pOffset0);</span>
-<span class="nc bnc" id="L642" title="All 4 branches missed.">            assert(xy0 != null);</span>
+<span class="nc bnc" id="L642" title="All 2 branches missed.">            assert(xy0 != null);</span>
             
 <span class="nc bnc" id="L644" title="All 2 branches missed.">            if (!_hogMgr0.extractBlockHOG(xy0.getX(), xy0.getY(), h0)) {</span>
 <span class="nc" id="L645">                continue;</span>
@@ -921,4 +921,4 @@ import java.util.Set;
 <span class="nc" id="L921">        return (int) Math.sqrt(diffX * diffX + diffY * diffY);</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

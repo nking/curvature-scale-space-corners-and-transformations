@@ -30,7 +30,7 @@ import java.util.Stack;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L33" title="1 of 2 branches missed.">public class PerimeterFinder2 {</span>
+<span class="fc" id="L33">public class PerimeterFinder2 {</span>
    
     /**
      * finds the pixels with neighbors not in given point
@@ -530,7 +530,7 @@ import java.util.Stack;
 <span class="fc bfc" id="L530" title="All 2 branches covered.">                if (!remaining.contains(p2)) {</span>
 <span class="fc" id="L531">                    continue;</span>
                 }
-<span class="pc bpc" id="L533" title="3 of 4 branches missed.">                assert(!prev.equals(p2));</span>
+<span class="pc bnc" id="L533" title="All 2 branches missed.">                assert(!prev.equals(p2));</span>
 <span class="fc" id="L534">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
 <span class="fc" id="L535">                    xPrev, yPrev, p2.getX(), p2.getY(), x, y);</span>
 <span class="pc bpc" id="L536" title="1 of 2 branches missed.">                if (Double.isNaN(angle)) {</span>
@@ -595,7 +595,7 @@ import java.util.Stack;
 <span class="fc" id="L595">                continue;</span>
             }
             
-<span class="pc bpc" id="L598" title="3 of 4 branches missed.">            assert(minP != null);</span>
+<span class="pc bnc" id="L598" title="All 2 branches missed.">            assert(minP != null);</span>
             
 <span class="fc" id="L600">            prev = curr;</span>
 <span class="fc" id="L601">            curr = minP;</span>
@@ -633,18 +633,18 @@ import java.util.Stack;
                         // this cannot be last point, because other neighbor
                         // would have been found before, so can assume
                         // the next point is one of the other neighbors
-<span class="nc bnc" id="L636" title="All 4 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
                     
 <span class="nc" id="L638">                        int x2 = orderedOutput.getX(ii + 1);</span>
 <span class="nc" id="L639">                        int y2 = orderedOutput.getY(ii + 1);</span>
                         
 <span class="nc" id="L641">                        int diffX = Math.abs(x2 - nbr.getX());</span>
 <span class="nc" id="L642">                        int diffY = Math.abs(y2 - nbr.getY());</span>
-<span class="nc bnc" id="L643" title="All 10 branches missed.">                        assert((diffX == 0 &amp;&amp; diffY == 1) || </span>
+<span class="nc bnc" id="L643" title="All 8 branches missed.">                        assert((diffX == 0 &amp;&amp; diffY == 1) || </span>
                             (diffX == 1 &amp;&amp; diffY == 0));
 <span class="nc" id="L645">                        PairInt p2 = new PairInt(x2, y2);</span>
                         
-<span class="nc bnc" id="L647" title="All 4 branches missed.">                        assert(nbrsSet.contains(p2));</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">                        assert(nbrsSet.contains(p2));</span>
                         
 <span class="nc" id="L649">                        orderedOutput.insert(ii, nbr.getX(), nbr.getY());</span>
                         
@@ -652,7 +652,7 @@ import java.util.Stack;
 <span class="nc" id="L652">                        break;</span>
                     }
                 }
-<span class="nc bnc" id="L655" title="All 4 branches missed.">                assert(found);</span>
+<span class="nc bnc" id="L655" title="All 2 branches missed.">                assert(found);</span>
 <span class="nc" id="L656">            }</span>
         }
 
@@ -761,7 +761,7 @@ import java.util.Stack;
 <span class="nc" id="L761">            nXY = filterForLargestNonShapeIntersection(</span>
                 x, y, nXY, neighborsX, neighborsY,
                 contiguousShapePoints);
-<span class="nc bnc" id="L764" title="All 4 branches missed.">            assert(nXY != 0);</span>
+<span class="nc bnc" id="L764" title="All 2 branches missed.">            assert(nXY != 0);</span>
         }
 <span class="nc bnc" id="L766" title="All 2 branches missed.">        if (nXY == 1) {</span>
 <span class="nc" id="L767">            return 0;</span>
@@ -775,7 +775,7 @@ import java.util.Stack;
         
 <span class="nc" id="L776">        Set&lt;PairInt&gt; medAxisClosest = nn.findClosest(x, y);</span>
  
-<span class="nc bnc" id="L778" title="All 4 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
+<span class="nc bnc" id="L778" title="All 2 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
 <span class="nc" id="L779">        PairInt medAxisP = medAxisClosest.iterator().next();</span>
         
         //System.out.println(
@@ -909,7 +909,7 @@ import java.util.Stack;
         }
 
         // place maxNSIdx at top of neighbors
-<span class="nc bnc" id="L912" title="All 4 branches missed.">        assert(nXY &lt; (neighborsX.length - 1));</span>
+<span class="nc bnc" id="L912" title="All 2 branches missed.">        assert(nXY &lt; (neighborsX.length - 1));</span>
         
         // shift neighborsX,Y down by 1
 <span class="nc bnc" id="L915" title="All 2 branches missed.">        for (int i = (neighborsX.length - 1); i &gt; 0; --i) {</span>
@@ -918,7 +918,7 @@ import java.util.Stack;
         }
 <span class="nc bnc" id="L919" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
 <span class="nc" id="L920">            int idx = maxNSIdx[i] + 1;</span>
-<span class="nc bnc" id="L921" title="All 4 branches missed.">            assert(idx &gt; i);</span>
+<span class="nc bnc" id="L921" title="All 2 branches missed.">            assert(idx &gt; i);</span>
 <span class="nc" id="L922">            neighborsX[i] = neighborsX[idx];</span>
 <span class="nc" id="L923">            neighborsY[i] = neighborsY[idx];</span>
         }
@@ -1259,7 +1259,7 @@ import java.util.Stack;
         */
         
 <span class="nc" id="L1261">        Set&lt;PairInt&gt; medAxisClosest = nn.findClosest(x, y);</span>
-<span class="nc bnc" id="L1262" title="All 4 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
+<span class="nc bnc" id="L1262" title="All 2 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
 <span class="nc" id="L1263">        PairInt medAxisP = medAxisClosest.iterator().next();</span>
        
         /*
@@ -1698,7 +1698,7 @@ import java.util.Stack;
 <span class="fc" id="L1698">                ph.toPixelCoords(pixIdx2, imgWidth, xyout);</span>
 <span class="fc" id="L1699">                int y2 = xyout[1];</span>
 <span class="fc" id="L1700">                int x2 = xyout[0];        </span>
-<span class="pc bpc" id="L1701" title="5 of 6 branches missed.">                assert(!(prevX == x2 &amp;&amp; prevY == y2));</span>
+<span class="pc bnc" id="L1701" title="All 4 branches missed.">                assert(!(prevX == x2 &amp;&amp; prevY == y2));</span>
 <span class="fc" id="L1702">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
                     prevX, prevY, x2, y2, x, y);
 <span class="pc bpc" id="L1704" title="1 of 2 branches missed.">                if (Double.isNaN(angle)) {</span>
@@ -1772,7 +1772,7 @@ import java.util.Stack;
 <span class="fc" id="L1772">                continue;</span>
             }
             
-<span class="pc bpc" id="L1775" title="3 of 4 branches missed.">            assert(minP != -1);</span>
+<span class="pc bnc" id="L1775" title="All 2 branches missed.">            assert(minP != -1);</span>
             
 <span class="fc" id="L1777">            prevPixX = currX;</span>
 <span class="fc" id="L1778">            prevPixY = currY;</span>
@@ -1816,7 +1816,7 @@ import java.util.Stack;
                         // this cannot be last point, because other neighbor
                         // would have been found before, so can assume
                         // the next point is one of the other neighbors
-<span class="pc bpc" id="L1819" title="3 of 4 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
+<span class="pc bnc" id="L1819" title="All 2 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
                     
 <span class="fc" id="L1821">                        int x2 = orderedOutput.getX(ii + 1);</span>
 <span class="fc" id="L1822">                        int y2 = orderedOutput.getY(ii + 1);</span>
@@ -1824,7 +1824,7 @@ import java.util.Stack;
 <span class="fc" id="L1824">                        int diffX = Math.abs(x2 - nbrX);</span>
 <span class="fc" id="L1825">                        int diffY = Math.abs(y2 - nbrY);</span>
               
-<span class="pc bpc" id="L1827" title="5 of 6 branches missed.">                        assert(diffX &lt;= 1 &amp;&amp; diffY &lt;= 1);</span>
+<span class="pc bnc" id="L1827" title="All 4 branches missed.">                        assert(diffX &lt;= 1 &amp;&amp; diffY &lt;= 1);</span>
                         
                         //int pixIdx2 = (int)ph.toPixelIndex(x2, y2, imgWidth);
                         //assert(nbrsSet.contains(pixIdx2));
@@ -1835,7 +1835,7 @@ import java.util.Stack;
 <span class="fc" id="L1835">                        break;</span>
                     }
                 }
-<span class="pc bpc" id="L1838" title="3 of 4 branches missed.">                assert(found);</span>
+<span class="pc bnc" id="L1838" title="All 2 branches missed.">                assert(found);</span>
 <span class="fc" id="L1839">            }</span>
         }
 
@@ -1843,4 +1843,4 @@ import java.util.Stack;
     }   
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

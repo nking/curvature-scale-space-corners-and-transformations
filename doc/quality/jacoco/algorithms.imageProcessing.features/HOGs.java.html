@@ -98,7 +98,7 @@ import java.util.Collection;
 
   @author nichole
 */
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">public class HOGs {</span>
+public class HOGs {
 
 <span class="fc" id="L103">    private static float eps = 0.000001f;</span>
     
@@ -290,7 +290,7 @@ import java.util.Collection;
 <span class="fc" id="L290">        HOGUtil.extractWindow(gHists, startX, stopX, startY, stopY, w, h, </span>
             outHist, outputN);
         
-<span class="pc bpc" id="L293" title="3 of 4 branches missed.">        assert(isAllPositive(outHist));</span>
+<span class="pc bnc" id="L293" title="All 2 branches missed.">        assert(isAllPositive(outHist));</span>
             
 <span class="fc" id="L295">        double blockTotal = sumCounts(outHist);</span>
 <span class="fc" id="L296">        blockTotal *= blockTotal;</span>
@@ -484,7 +484,7 @@ import java.util.Collection;
             }
         }
         
-<span class="pc bpc" id="L487" title="3 of 4 branches missed.">        assert(blockTotal &gt;= 0.);</span>
+<span class="pc bnc" id="L487" title="All 2 branches missed.">        assert(blockTotal &gt;= 0.);</span>
         
         //System.out.println(&quot;NH=&quot; + nH + &quot; count=&quot; + count + &quot; blockTotal=&quot; + blockTotal);
         
@@ -497,7 +497,7 @@ import java.util.Collection;
 <span class="nc" id="L497">            norm = 255.;</span>
         }
         
-<span class="pc bpc" id="L500" title="3 of 4 branches missed.">        assert(!Double.isNaN(norm));</span>
+<span class="pc bnc" id="L500" title="All 2 branches missed.">        assert(!Double.isNaN(norm));</span>
 
 <span class="fc bfc" id="L502" title="All 2 branches covered.">        for (int i = 0; i &lt; out.length; ++i) {</span>
 <span class="fc" id="L503">            out[i] *= norm;</span>
@@ -883,4 +883,4 @@ import java.util.Collection;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

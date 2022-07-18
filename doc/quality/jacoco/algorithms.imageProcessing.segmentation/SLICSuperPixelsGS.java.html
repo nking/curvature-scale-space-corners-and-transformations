@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L27" title="All 2 branches missed.">public class SLICSuperPixelsGS {</span>
+<span class="nc" id="L27">public class SLICSuperPixelsGS {</span>
 
 <span class="nc" id="L29">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
 
@@ -449,7 +449,7 @@ import java.util.logging.Logger;
 
         double diff;
 <span class="nc bnc" id="L451" title="All 2 branches missed.">        for (int kCurrent = 0; kCurrent &lt; k; ++kCurrent) {</span>
-<span class="nc bnc" id="L452" title="All 4 branches missed.">            assert(count[kCurrent] &gt; 0);</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">            assert(count[kCurrent] &gt; 0);</span>
 <span class="nc" id="L453">            float nc = count[kCurrent];</span>
 <span class="nc bnc" id="L454" title="All 2 branches missed.">            for (int m = 0; m &lt; 3; ++m) {</span>
 <span class="nc" id="L455">                meanDescriptors[kCurrent][m] /= nc;</span>
@@ -549,7 +549,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L549">            int pixIdx = iter.next();</span>
             
 <span class="nc" id="L551">            TIntSet neighbors = adjAssignedMap.get(pixIdx);</span>
-<span class="nc bnc" id="L552" title="All 4 branches missed.">            assert(neighbors != null);</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">            assert(neighbors != null);</span>
             
 <span class="nc" id="L554">            int nNeigbhors = neighbors.size();</span>
             
@@ -562,13 +562,13 @@ import java.util.logging.Logger;
 <span class="nc" id="L562">            heap.insert(node);</span>
 <span class="nc" id="L563">        }</span>
         
-<span class="nc bnc" id="L565" title="All 4 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
+<span class="nc bnc" id="L565" title="All 2 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
         
 <span class="nc bnc" id="L567" title="All 2 branches missed.">        while (heap.getNumberOfNodes() &gt; 0) {</span>
                         
 <span class="nc" id="L569">            HeapNode node = heap.extractMin();</span>
             
-<span class="nc bnc" id="L571" title="All 4 branches missed.">            assert(node != null);</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">            assert(node != null);</span>
             
 <span class="nc" id="L573">            int pixIdx = ((Integer)node.getData()).intValue();</span>
             
@@ -579,7 +579,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L579">                    adjAssignedMap.size() + &quot; heap.n=&quot; +</span>
 <span class="nc" id="L580">                    heap.getNumberOfNodes());</span>
             }
-<span class="nc bnc" id="L582" title="All 4 branches missed.">            assert(!adjAssigned.isEmpty());</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">            assert(!adjAssigned.isEmpty());</span>
         
 <span class="nc" id="L584">            int y1 = pixIdx/w;</span>
 <span class="nc" id="L585">            int x1 = pixIdx - (y1 * w);</span>
@@ -621,30 +621,30 @@ import java.util.logging.Logger;
                 
                 // this is an unassigned pixel
 <span class="nc" id="L623">                int pixIdx2 = iter2.next();</span>
-<span class="nc bnc" id="L624" title="All 4 branches missed.">                assert(pixIdx != pixIdx2);</span>
+<span class="nc bnc" id="L624" title="All 2 branches missed.">                assert(pixIdx != pixIdx2);</span>
                 
                 // pixIdx should be in it's adj unassigned and then removed
 <span class="nc" id="L627">                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);</span>
-<span class="nc bnc" id="L628" title="All 4 branches missed.">                assert(adj2 != null);</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">                assert(adj2 != null);</span>
 <span class="nc" id="L629">                boolean rmvd = adj2.remove(pixIdx);</span>
-<span class="nc bnc" id="L630" title="All 4 branches missed.">                assert(rmvd);</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">                assert(rmvd);</span>
                 
                 // add pixIdx to it's assigned pixels
 <span class="nc" id="L633">                adj2 = adjAssignedMap.get(pixIdx2);</span>
-<span class="nc bnc" id="L634" title="All 4 branches missed.">                assert(adj2 != null);</span>
+<span class="nc bnc" id="L634" title="All 2 branches missed.">                assert(adj2 != null);</span>
 <span class="nc" id="L635">                adj2.add(pixIdx);</span>
 
 <span class="nc" id="L637">                HeapNode node2 = unAMap.get(pixIdx2);</span>
-<span class="nc bnc" id="L638" title="All 4 branches missed.">                assert(node2 != null);</span>
+<span class="nc bnc" id="L638" title="All 2 branches missed.">                assert(node2 != null);</span>
 <span class="nc" id="L639">                long key2 = 8 - adj2.size();</span>
-<span class="nc bnc" id="L640" title="All 4 branches missed.">                assert(key2 &gt; -1);</span>
+<span class="nc bnc" id="L640" title="All 2 branches missed.">                assert(key2 &gt; -1);</span>
 <span class="nc bnc" id="L641" title="All 2 branches missed.">                if (key2 &lt; node2.getKey()) {</span>
 <span class="nc" id="L642">                    heap.decreaseKey(node2, key2);</span>
                 }
 <span class="nc" id="L644">            }</span>
 <span class="nc" id="L645">        }</span>
 
-<span class="nc bnc" id="L647" title="All 4 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
 <span class="nc" id="L648">    }</span>
 
     private void addNeighborLabelsForPoint(int[] labels,
@@ -658,7 +658,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L658">        TIntSet adjLabels = adjAssignedMap.get(pixIdx);</span>
 <span class="nc" id="L659">        TIntSet adjULabels = adjUnassignedMap.get(pixIdx);</span>
 <span class="nc bnc" id="L660" title="All 2 branches missed.">        if (adjLabels == null) {</span>
-<span class="nc bnc" id="L661" title="All 4 branches missed.">            assert(adjULabels == null);</span>
+<span class="nc bnc" id="L661" title="All 2 branches missed.">            assert(adjULabels == null);</span>
             
 <span class="nc" id="L663">            adjLabels = new TIntHashSet();</span>
 <span class="nc" id="L664">            adjAssignedMap.put(pixIdx, adjLabels);</span>
@@ -690,4 +690,4 @@ import java.util.logging.Logger;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

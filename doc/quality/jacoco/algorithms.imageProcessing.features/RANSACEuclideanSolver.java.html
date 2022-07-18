@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L30" title="1 of 2 branches missed.">public class RANSACEuclideanSolver {</span>
+<span class="fc" id="L30">public class RANSACEuclideanSolver {</span>
 
 <span class="fc" id="L32">    private boolean debug = true;</span>
 
@@ -163,7 +163,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L163">            EuclideanTransformationFit fit = evaluator.evaluate(matchedLeftXY,</span>
                 matchedRightXY, params, tolerance);
             
-<span class="pc bpc" id="L166" title="3 of 4 branches missed.">            assert(fit != null);</span>
+<span class="pc bnc" id="L166" title="All 2 branches missed.">            assert(fit != null);</span>
                                     
 <span class="fc" id="L168">            int nInliers = fit.getInlierIndexes().size();</span>
 <span class="fc bfc" id="L169" title="All 2 branches covered.">            if (!fit.isBetter(bestFit)) {</span>
@@ -215,7 +215,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L215" title="All 2 branches covered.">                        if (outlierPercent &lt; 5) {</span>
 <span class="fc" id="L216">                            outlierPercent = 5;</span>
                         }
-<span class="pc bpc" id="L218" title="3 of 4 branches missed.">                        assert(outlierPercent &lt;= 50);</span>
+<span class="pc bnc" id="L218" title="All 2 branches missed.">                        assert(outlierPercent &lt;= 50);</span>
 <span class="fc" id="L219">                        nMaxIter = RANSACAlgorithmIterations</span>
 <span class="fc" id="L220">                            .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);</span>
 <span class="pc bpc" id="L221" title="1 of 2 branches missed.">                        if (nMaxIter &gt; nPointsSubsets) {</span>
@@ -255,4 +255,4 @@ import java.util.logging.Logger;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

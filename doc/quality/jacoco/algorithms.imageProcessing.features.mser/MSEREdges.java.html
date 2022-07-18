@@ -77,7 +77,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">public class MSEREdges {</span>
+public class MSEREdges {
 
     /*
     given a color image
@@ -192,9 +192,9 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 
 <span class="fc" id="L193">        extractBoundaries();</span>
 
-<span class="pc bpc" id="L195" title="3 of 4 branches missed.">        assert(labeledSets != null);</span>
-<span class="pc bpc" id="L196" title="3 of 4 branches missed.">        assert(labeledEdges != null);</span>
-<span class="pc bpc" id="L197" title="3 of 4 branches missed.">        assert(labeledEdges.size() == labeledSets.size());</span>
+<span class="pc bnc" id="L195" title="All 2 branches missed.">        assert(labeledSets != null);</span>
+<span class="pc bnc" id="L196" title="All 2 branches missed.">        assert(labeledEdges != null);</span>
+<span class="pc bnc" id="L197" title="All 2 branches missed.">        assert(labeledEdges.size() == labeledSets.size());</span>
 
 <span class="pc bpc" id="L199" title="1 of 2 branches missed.">        if (debug) {</span>
 <span class="nc" id="L200">            printEdges();</span>
@@ -513,7 +513,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L513">            ns += group.size();</span>
         }
         
-<span class="pc bpc" id="L516" title="3 of 4 branches missed.">        assert(ns == nonEdgePixels.size());</span>
+<span class="pc bnc" id="L516" title="All 2 branches missed.">        assert(ns == nonEdgePixels.size());</span>
         
 <span class="fc" id="L518">        return output;</span>
     }
@@ -594,9 +594,9 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
         
 <span class="fc" id="L595">        long t0 = System.currentTimeMillis();</span>
 
-<span class="pc bpc" id="L597" title="3 of 4 branches missed.">        assert(labeledSets != null);</span>
-<span class="pc bpc" id="L598" title="3 of 4 branches missed.">        assert(labeledEdges != null);</span>
-<span class="pc bpc" id="L599" title="3 of 4 branches missed.">        assert(labeledSets.size() == labeledEdges.size());</span>
+<span class="pc bnc" id="L597" title="All 2 branches missed.">        assert(labeledSets != null);</span>
+<span class="pc bnc" id="L598" title="All 2 branches missed.">        assert(labeledEdges != null);</span>
+<span class="pc bnc" id="L599" title="All 2 branches missed.">        assert(labeledSets.size() == labeledEdges.size());</span>
 
 <span class="fc" id="L601">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
@@ -809,7 +809,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L809">                    labeledSets.get(label2).clear();</span>
 <span class="fc" id="L810">                    labeledEdges.get(label2).clear();</span>
                     
-<span class="pc bpc" id="L812" title="3 of 4 branches missed.">                    assert(labeledEdges.size() == labeledSets.size());</span>
+<span class="pc bnc" id="L812" title="All 2 branches missed.">                    assert(labeledEdges.size() == labeledSets.size());</span>
 
                     // subtr edges from sets
 <span class="fc" id="L815">                    set1 = new TIntHashSet(labeledSets.get(label));</span>
@@ -860,7 +860,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L860">            finder2.extractBorder2(set, embedded, outerBorder, w);</span>
 <span class="fc" id="L861">            labeledEdges.add(outerBorder);</span>
         }
-<span class="pc bpc" id="L863" title="3 of 4 branches missed.">        assert(getEdgeList().size() == labeledSets.size());</span>
+<span class="pc bnc" id="L863" title="All 2 branches missed.">        assert(getEdgeList().size() == labeledSets.size());</span>
         
 <span class="pc bpc" id="L865" title="1 of 2 branches missed.">        if (debug) {</span>
 <span class="nc" id="L866">            Image imgCp = clrImg.copyImage();</span>
@@ -1749,7 +1749,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="nc" id="L1749">            System.out.println(ne + &quot; pixels in edgeList&quot;);</span>
         }
 
-<span class="pc bpc" id="L1752" title="3 of 4 branches missed.">        assert(labeledSets.size() == labeledEdges.size());</span>
+<span class="pc bnc" id="L1752" title="All 2 branches missed.">        assert(labeledSets.size() == labeledEdges.size());</span>
 
 <span class="fc" id="L1754">        System.out.println(labeledSets.size() + &quot; labeled sets&quot;);</span>
 <span class="fc" id="L1755">    }</span>
@@ -1800,7 +1800,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L1800">            int pixIdx = iter.next();</span>
             
 <span class="fc" id="L1802">            TIntSet neighbors = adjAssignedMap.get(pixIdx);</span>
-<span class="pc bpc" id="L1803" title="3 of 4 branches missed.">            assert(neighbors != null);</span>
+<span class="pc bnc" id="L1803" title="All 2 branches missed.">            assert(neighbors != null);</span>
             
 <span class="fc" id="L1805">            int nNeigbhors = neighbors.size();</span>
             
@@ -1813,7 +1813,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L1813">            heap.insert(node);</span>
 <span class="fc" id="L1814">        }</span>
         
-<span class="pc bpc" id="L1816" title="3 of 4 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
+<span class="pc bnc" id="L1816" title="All 2 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
         
 <span class="fc" id="L1818">        float[] lab2 = null;</span>
 <span class="fc" id="L1819">        float[] lab = new float[3];</span>
@@ -1830,7 +1830,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
                         
 <span class="fc" id="L1831">            HeapNode node = heap.extractMin();</span>
             
-<span class="pc bpc" id="L1833" title="3 of 4 branches missed.">            assert(node != null);</span>
+<span class="pc bnc" id="L1833" title="All 2 branches missed.">            assert(node != null);</span>
             
 <span class="fc" id="L1835">            int pixIdx = ((Integer)node.getData()).intValue();</span>
  
@@ -1843,7 +1843,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="nc" id="L1843">                    adjAssignedMap.size() + &quot; heap.n=&quot; +</span>
 <span class="nc" id="L1844">                    heap.getNumberOfNodes());</span>
             }
-<span class="pc bpc" id="L1846" title="3 of 4 branches missed.">            assert(!adjAssigned.isEmpty());</span>
+<span class="pc bnc" id="L1846" title="All 2 branches missed.">            assert(!adjAssigned.isEmpty());</span>
             
 <span class="fc" id="L1848">            double minD = Double.MAX_VALUE;</span>
 <span class="fc" id="L1849">            int minLabel2 = -1;</span>
@@ -1887,30 +1887,30 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
                 
                 // this is an unassigned pixel
 <span class="fc" id="L1889">                int pixIdx2 = iter2.next();</span>
-<span class="pc bpc" id="L1890" title="3 of 4 branches missed.">                assert(pixIdx != pixIdx2);</span>
+<span class="pc bnc" id="L1890" title="All 2 branches missed.">                assert(pixIdx != pixIdx2);</span>
                 
                 // pixIdx should be in it's adj unassigned and then removed
 <span class="fc" id="L1893">                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);</span>
-<span class="pc bpc" id="L1894" title="3 of 4 branches missed.">                assert(adj2 != null);</span>
+<span class="pc bnc" id="L1894" title="All 2 branches missed.">                assert(adj2 != null);</span>
 <span class="fc" id="L1895">                boolean rmvd = adj2.remove(pixIdx);</span>
-<span class="pc bpc" id="L1896" title="3 of 4 branches missed.">                assert(rmvd);</span>
+<span class="pc bnc" id="L1896" title="All 2 branches missed.">                assert(rmvd);</span>
                 
                 // add pixIdx to it's assigned pixels
 <span class="fc" id="L1899">                adj2 = adjAssignedMap.get(pixIdx2);</span>
-<span class="pc bpc" id="L1900" title="3 of 4 branches missed.">                assert(adj2 != null);</span>
+<span class="pc bnc" id="L1900" title="All 2 branches missed.">                assert(adj2 != null);</span>
 <span class="fc" id="L1901">                adj2.add(pixIdx);</span>
 
 <span class="fc" id="L1903">                HeapNode node2 = unAMap.get(pixIdx2);</span>
-<span class="pc bpc" id="L1904" title="3 of 4 branches missed.">                assert(node2 != null);</span>
+<span class="pc bnc" id="L1904" title="All 2 branches missed.">                assert(node2 != null);</span>
 <span class="fc" id="L1905">                long key2 = 8 - adj2.size();</span>
-<span class="pc bpc" id="L1906" title="3 of 4 branches missed.">                assert(key2 &gt; -1);</span>
+<span class="pc bnc" id="L1906" title="All 2 branches missed.">                assert(key2 &gt; -1);</span>
 <span class="pc bpc" id="L1907" title="1 of 2 branches missed.">                if (key2 &lt; node2.getKey()) {</span>
 <span class="fc" id="L1908">                    heap.decreaseKey(node2, key2);</span>
                 }
 <span class="fc" id="L1910">            }</span>
 <span class="fc" id="L1911">        }</span>
 
-<span class="pc bpc" id="L1913" title="3 of 4 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
+<span class="pc bnc" id="L1913" title="All 2 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
 
 <span class="fc" id="L1915">        iter = unassignedSet.iterator();</span>
 <span class="fc bfc" id="L1916" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
@@ -1966,7 +1966,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L1966">            int pixIdx = iter.next();</span>
             
 <span class="fc" id="L1968">            TIntSet neighbors = adjAssignedMap.get(pixIdx);</span>
-<span class="pc bpc" id="L1969" title="3 of 4 branches missed.">            assert(neighbors != null);</span>
+<span class="pc bnc" id="L1969" title="All 2 branches missed.">            assert(neighbors != null);</span>
             
 <span class="fc" id="L1971">            int nNeigbhors = neighbors.size();</span>
             
@@ -1979,7 +1979,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L1979">            heap.insert(node);</span>
 <span class="fc" id="L1980">        }</span>
         
-<span class="pc bpc" id="L1982" title="3 of 4 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
+<span class="pc bnc" id="L1982" title="All 2 branches missed.">        assert(unassignedSet.size() == heap.getNumberOfNodes());</span>
         
 <span class="fc" id="L1984">        float[] luv2 = null;</span>
 <span class="fc" id="L1985">        float[] luv = new float[3];</span>
@@ -1996,7 +1996,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
                         
 <span class="fc" id="L1997">            HeapNode node = heap.extractMin();</span>
             
-<span class="pc bpc" id="L1999" title="3 of 4 branches missed.">            assert(node != null);</span>
+<span class="pc bnc" id="L1999" title="All 2 branches missed.">            assert(node != null);</span>
             
 <span class="fc" id="L2001">            int pixIdx = ((Integer)node.getData()).intValue();</span>
             
@@ -2010,7 +2010,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="nc" id="L2010">                    adjAssignedMap.size() + &quot; heap.n=&quot; +</span>
 <span class="nc" id="L2011">                    heap.getNumberOfNodes());</span>
             }
-<span class="pc bpc" id="L2013" title="3 of 4 branches missed.">            assert(!adjAssigned.isEmpty());</span>
+<span class="pc bnc" id="L2013" title="All 2 branches missed.">            assert(!adjAssigned.isEmpty());</span>
             
 <span class="fc" id="L2015">            double minD = Double.MAX_VALUE;</span>
 <span class="fc" id="L2016">            int minLabel2 = -1;</span>
@@ -2052,30 +2052,30 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
                 
                 // this is an unassigned pixel
 <span class="fc" id="L2054">                int pixIdx2 = iter2.next();</span>
-<span class="pc bpc" id="L2055" title="3 of 4 branches missed.">                assert(pixIdx != pixIdx2);</span>
+<span class="pc bnc" id="L2055" title="All 2 branches missed.">                assert(pixIdx != pixIdx2);</span>
                 
                 // pixIdx should be in it's adj unassigned and then removed
 <span class="fc" id="L2058">                TIntSet adj2 = adjUnassignedMap.get(pixIdx2);</span>
-<span class="pc bpc" id="L2059" title="3 of 4 branches missed.">                assert(adj2 != null);</span>
+<span class="pc bnc" id="L2059" title="All 2 branches missed.">                assert(adj2 != null);</span>
 <span class="fc" id="L2060">                boolean rmvd = adj2.remove(pixIdx);</span>
-<span class="pc bpc" id="L2061" title="3 of 4 branches missed.">                assert(rmvd);</span>
+<span class="pc bnc" id="L2061" title="All 2 branches missed.">                assert(rmvd);</span>
                 
                 // add pixIdx to it's assigned pixels
 <span class="fc" id="L2064">                adj2 = adjAssignedMap.get(pixIdx2);</span>
-<span class="pc bpc" id="L2065" title="3 of 4 branches missed.">                assert(adj2 != null);</span>
+<span class="pc bnc" id="L2065" title="All 2 branches missed.">                assert(adj2 != null);</span>
 <span class="fc" id="L2066">                adj2.add(pixIdx);</span>
 
 <span class="fc" id="L2068">                HeapNode node2 = unAMap.get(pixIdx2);</span>
-<span class="pc bpc" id="L2069" title="3 of 4 branches missed.">                assert(node2 != null);</span>
+<span class="pc bnc" id="L2069" title="All 2 branches missed.">                assert(node2 != null);</span>
 <span class="fc" id="L2070">                long key2 = 8 - adj2.size();</span>
-<span class="pc bpc" id="L2071" title="3 of 4 branches missed.">                assert(key2 &gt; -1);</span>
+<span class="pc bnc" id="L2071" title="All 2 branches missed.">                assert(key2 &gt; -1);</span>
 <span class="pc bpc" id="L2072" title="1 of 2 branches missed.">                if (key2 &lt; node2.getKey()) {</span>
 <span class="fc" id="L2073">                    heap.decreaseKey(node2, key2);</span>
                 }
 <span class="fc" id="L2075">            }</span>
 <span class="fc" id="L2076">        }</span>
 
-<span class="pc bpc" id="L2078" title="3 of 4 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
+<span class="pc bnc" id="L2078" title="All 2 branches missed.">        assert(adjAssignedMap.isEmpty());</span>
 
 <span class="fc" id="L2080">        iter = unassignedSet.iterator();</span>
 <span class="fc bfc" id="L2081" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
@@ -2096,7 +2096,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L2096">        TIntSet adjLabels = adjAssignedMap.get(pixIdx);</span>
 <span class="fc" id="L2097">        TIntSet adjULabels = adjUnassignedMap.get(pixIdx);</span>
 <span class="pc bpc" id="L2098" title="1 of 2 branches missed.">        if (adjLabels == null) {</span>
-<span class="pc bpc" id="L2099" title="3 of 4 branches missed.">            assert(adjULabels == null);</span>
+<span class="pc bnc" id="L2099" title="All 2 branches missed.">            assert(adjULabels == null);</span>
             
 <span class="fc" id="L2101">            adjLabels = new TIntHashSet();</span>
 <span class="fc" id="L2102">            adjAssignedMap.put(pixIdx, adjLabels);</span>
@@ -2313,7 +2313,7 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L2313">                    = findEndpoints(segment, mpIdxMap,</span>
 <span class="fc" id="L2314">                        clrImg.getWidth(), clrImg.getHeight());</span>
 
-<span class="pc bpc" id="L2316" title="3 of 4 branches missed.">                assert (!umEPIdxMap.isEmpty());</span>
+<span class="pc bnc" id="L2316" title="All 2 branches missed.">                assert (!umEPIdxMap.isEmpty());</span>
 
                 // for any 2 entries in umEPIdxMap
                 //   if the set difference operation results in 2 edge
@@ -2361,4 +2361,4 @@ import thirdparty.edu.princeton.cs.algs4.QuadTree;
 <span class="fc" id="L2361">        return state;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  *  
  * @author nichole
  */
-<span class="pc bpc" id="L38" title="1 of 2 branches missed.">public class VeryLargeNumber implements Comparable&lt;VeryLargeNumber&gt;, Cloneable {</span>
+<span class="fc" id="L38">public class VeryLargeNumber implements Comparable&lt;VeryLargeNumber&gt;, Cloneable {</span>
     
     // could consider using a larger base for compaction, 
     // and making use of the space not used by positive values,
@@ -201,7 +201,7 @@ import java.util.logging.Logger;
             } else {
                     
 <span class="fc bfc" id="L203" title="All 2 branches covered.">                int ts = shorterIsPositive ? shorter[idxShorter] : </span>
-                    -1*shorter[idxShorter];
+<span class="fc" id="L204">                    -1*shorter[idxShorter];</span>
                     
 <span class="fc bfc" id="L206" title="All 8 branches covered.">                if (!shorterIsPositive &amp;&amp; longerIsPositive &amp;&amp; </span>
                     (shorter[idxShorter] &gt; longer[i]) &amp;&amp; (i &gt; 0)) {
@@ -696,12 +696,12 @@ import java.util.logging.Logger;
 <span class="fc" id="L696">            VeryLargeNumber high1 = highLow1[0];</span>
 <span class="fc" id="L697">            VeryLargeNumber low1 = highLow1[1];</span>
             
-<span class="pc bpc" id="L699" title="3 of 4 branches missed.">            assert(high1.nLen + low1.nLen == num1.nLen);</span>
+<span class="pc bnc" id="L699" title="All 2 branches missed.">            assert(high1.nLen + low1.nLen == num1.nLen);</span>
 
 <span class="fc" id="L701">            VeryLargeNumber high2 = highLow2[0];</span>
 <span class="fc" id="L702">            VeryLargeNumber low2 = highLow2[1];</span>
 
-<span class="pc bpc" id="L704" title="3 of 4 branches missed.">            assert(high2.nLen + low2.nLen == num2.nLen);</span>
+<span class="pc bnc" id="L704" title="All 2 branches missed.">            assert(high2.nLen + low2.nLen == num2.nLen);</span>
             
 <span class="fc" id="L706">            VeryLargeNumber z1pt1 = VeryLargeNumber.add(low1, high1);</span>
 <span class="fc" id="L707">            VeryLargeNumber z1pt2 = VeryLargeNumber.add(low2, high2);</span>
@@ -762,7 +762,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L762">                        result.reversePolarity();</span>
                     }
                     
-<span class="pc bpc" id="L765" title="3 of 4 branches missed.">                    assert(keys.isEmpty());</span>
+<span class="pc bnc" id="L765" title="All 2 branches missed.">                    assert(keys.isEmpty());</span>
                     
 <span class="fc" id="L767">                    return result;</span>
                 }
@@ -1591,4 +1591,4 @@ import java.util.logging.Logger;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -31,7 +31,7 @@ import java.util.Map;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">public class HOGRegionsManager {</span>
+public class HOGRegionsManager {
     
 <span class="fc" id="L36">    private static float eps = 0.000001f;</span>
     
@@ -167,10 +167,10 @@ import java.util.Map;
 <span class="fc" id="L167">        regionIndexRegions.putIfAbsent(rIndex, cRegion);</span>
         
 <span class="fc" id="L169">        int[] minMaxXY = cRegion.getMinMaxXY();</span>
-<span class="pc bpc" id="L170" title="3 of 4 branches missed.">        assert(minMaxXY[0] &lt; Integer.MAX_VALUE);</span>
-<span class="pc bpc" id="L171" title="3 of 4 branches missed.">        assert(minMaxXY[2] &lt; Integer.MAX_VALUE);</span>
-<span class="pc bpc" id="L172" title="3 of 4 branches missed.">        assert(minMaxXY[1] &gt; Integer.MIN_VALUE);</span>
-<span class="pc bpc" id="L173" title="3 of 4 branches missed.">        assert(minMaxXY[3] &gt; Integer.MIN_VALUE);</span>
+<span class="pc bnc" id="L170" title="All 2 branches missed.">        assert(minMaxXY[0] &lt; Integer.MAX_VALUE);</span>
+<span class="pc bnc" id="L171" title="All 2 branches missed.">        assert(minMaxXY[2] &lt; Integer.MAX_VALUE);</span>
+<span class="pc bnc" id="L172" title="All 2 branches missed.">        assert(minMaxXY[1] &gt; Integer.MIN_VALUE);</span>
+<span class="pc bnc" id="L173" title="All 2 branches missed.">        assert(minMaxXY[3] &gt; Integer.MIN_VALUE);</span>
         
 <span class="fc" id="L175">        OneDIntArray key = new OneDIntArray(minMaxXY);</span>
         
@@ -189,9 +189,9 @@ import java.util.Map;
                 subImageGSImg, subImagePixelCoords, nHistBins, N_PIX_PER_CELL_DIM);
 <span class="nc" id="L190">            histHGSMap.put(key, new TwoDIntArray(histogramsHGS));</span>
         }
-<span class="pc bpc" id="L192" title="3 of 4 branches missed.">        assert(histHOGMap.size() &gt; 0);</span>
-<span class="pc bpc" id="L193" title="3 of 4 branches missed.">        assert(histHCPTMap.size() &gt; 0);</span>
-<span class="pc bpc" id="L194" title="3 of 4 branches missed.">        assert(histHGSMap.size() &gt; 0);</span>
+<span class="pc bnc" id="L192" title="All 2 branches missed.">        assert(histHOGMap.size() &gt; 0);</span>
+<span class="pc bnc" id="L193" title="All 2 branches missed.">        assert(histHCPTMap.size() &gt; 0);</span>
+<span class="pc bnc" id="L194" title="All 2 branches missed.">        assert(histHGSMap.size() &gt; 0);</span>
 <span class="fc" id="L195">    }</span>
 
     private TLongSet transformByOffsets(TLongSet pixs, int w, int w2, 
@@ -480,21 +480,21 @@ import java.util.Map;
 <span class="fc" id="L480">                continue;</span>
             }
             
-<span class="pc bpc" id="L483" title="1 of 2 branches missed.">            assert(regionPointsNotScaled.accX.size() == </span>
+<span class="pc" id="L483">            assert(regionPointsNotScaled.accX.size() == </span>
 <span class="nc bnc" id="L484" title="All 2 branches missed.">                regionPointsNotScaled.accY.size());</span>
             
 <span class="fc" id="L486">            RegionPoints regionPointsScaled = </span>
 <span class="fc" id="L487">                regionPointsNotScaled.createNewDividedByScale(</span>
                 scale, w - 1, h - 1);
             
-<span class="pc bpc" id="L490" title="3 of 4 branches missed.">            assert(!regionPointsScaled.accX.isEmpty());</span>
-<span class="pc bpc" id="L491" title="3 of 4 branches missed.">            assert(!regionPointsScaled.accY.isEmpty());</span>
+<span class="pc bnc" id="L490" title="All 2 branches missed.">            assert(!regionPointsScaled.accX.isEmpty());</span>
+<span class="pc bnc" id="L491" title="All 2 branches missed.">            assert(!regionPointsScaled.accY.isEmpty());</span>
             
 <span class="fc" id="L493">            int[] minMaxXY = regionPointsScaled.getMinMaxXY();</span>
-<span class="pc bpc" id="L494" title="3 of 4 branches missed.">            assert(minMaxXY[0] != Integer.MAX_VALUE);</span>
-<span class="pc bpc" id="L495" title="3 of 4 branches missed.">            assert(minMaxXY[2] != Integer.MAX_VALUE);</span>
-<span class="pc bpc" id="L496" title="3 of 4 branches missed.">            assert(minMaxXY[1] != Integer.MIN_VALUE);</span>
-<span class="pc bpc" id="L497" title="3 of 4 branches missed.">            assert(minMaxXY[3] != Integer.MIN_VALUE);</span>
+<span class="pc bnc" id="L494" title="All 2 branches missed.">            assert(minMaxXY[0] != Integer.MAX_VALUE);</span>
+<span class="pc bnc" id="L495" title="All 2 branches missed.">            assert(minMaxXY[2] != Integer.MAX_VALUE);</span>
+<span class="pc bnc" id="L496" title="All 2 branches missed.">            assert(minMaxXY[1] != Integer.MIN_VALUE);</span>
+<span class="pc bnc" id="L497" title="All 2 branches missed.">            assert(minMaxXY[3] != Integer.MIN_VALUE);</span>
 <span class="fc" id="L498">            int w2 = minMaxXY[1] - minMaxXY[0] + 1;</span>
 <span class="fc" id="L499">            int h2 = minMaxXY[3] - minMaxXY[2] + 1;</span>
 <span class="fc bfc" id="L500" title="All 4 branches covered.">            if (w2 &lt; 3 || h2 &lt; 3) {</span>
@@ -503,7 +503,7 @@ import java.util.Map;
             
 <span class="fc" id="L504">            TLongSet refFramePixs = regionPointsScaled</span>
 <span class="fc" id="L505">                .createAccPixelCoords(w);</span>
-<span class="pc bpc" id="L506" title="3 of 4 branches missed.">            assert(!refFramePixs.isEmpty());</span>
+<span class="pc bnc" id="L506" title="All 2 branches missed.">            assert(!refFramePixs.isEmpty());</span>
             
             /*if (true) {
                 Image tmp;
@@ -595,7 +595,7 @@ import java.util.Map;
 <span class="fc" id="L595">            List&lt;CRegion&gt; crsScaled = cn.canonicalizeRegions(</span>
                 w, h, regionPointsScaled);
             
-<span class="pc bpc" id="L598" title="3 of 4 branches missed.">            assert(!crsScaled.isEmpty());</span>
+<span class="pc bnc" id="L598" title="All 2 branches missed.">            assert(!crsScaled.isEmpty());</span>
           
             //DEBUG
             /*{
@@ -629,13 +629,13 @@ import java.util.Map;
                     crScaled, minMaxXY, refFramePixs);
                 
 <span class="fc" id="L631">                c++;</span>
-<span class="pc bpc" id="L632" title="3 of 4 branches missed.">                assert(regionIndexRegions.containsKey(rIdx));</span>
-<span class="pc bpc" id="L633" title="3 of 4 branches missed.">                assert(regionIndexMinMaxXY.containsKey(rIdx));</span>
-<span class="pc bpc" id="L634" title="3 of 4 branches missed.">                assert(regionCoords.containsKey(rIdx));</span>
-<span class="pc bpc" id="L635" title="3 of 4 branches missed.">                assert(cRegionMapReference.get(rIdx).equals(crScaled));</span>
-<span class="pc bpc" id="L636" title="3 of 4 branches missed.">                assert(!histHOGMap.isEmpty());</span>
-<span class="pc bpc" id="L637" title="3 of 4 branches missed.">                assert(!histHCPTMap.isEmpty());</span>
-<span class="pc bpc" id="L638" title="3 of 4 branches missed.">                assert(!histHGSMap.isEmpty());</span>
+<span class="pc bnc" id="L632" title="All 2 branches missed.">                assert(regionIndexRegions.containsKey(rIdx));</span>
+<span class="pc bnc" id="L633" title="All 2 branches missed.">                assert(regionIndexMinMaxXY.containsKey(rIdx));</span>
+<span class="pc bnc" id="L634" title="All 2 branches missed.">                assert(regionCoords.containsKey(rIdx));</span>
+<span class="pc bnc" id="L635" title="All 2 branches missed.">                assert(cRegionMapReference.get(rIdx).equals(crScaled));</span>
+<span class="pc bnc" id="L636" title="All 2 branches missed.">                assert(!histHOGMap.isEmpty());</span>
+<span class="pc bnc" id="L637" title="All 2 branches missed.">                assert(!histHCPTMap.isEmpty());</span>
+<span class="pc bnc" id="L638" title="All 2 branches missed.">                assert(!histHGSMap.isEmpty());</span>
 <span class="fc" id="L639">            }</span>
 <span class="fc bfc" id="L640" title="All 2 branches covered.">            if (c &gt; 0) {</span>
 <span class="fc" id="L641">                count++;</span>
@@ -643,12 +643,12 @@ import java.util.Map;
         }
  
         
-<span class="pc bpc" id="L646" title="3 of 4 branches missed.">        assert(!histHOGMap.isEmpty());</span>
-<span class="pc bpc" id="L647" title="3 of 4 branches missed.">        assert(!histHCPTMap.isEmpty());</span>
-<span class="pc bpc" id="L648" title="3 of 4 branches missed.">        assert(!histHGSMap.isEmpty());</span>
-<span class="pc bpc" id="L649" title="3 of 4 branches missed.">        assert(regionCoords.size() &gt;= count);</span>
-<span class="pc bpc" id="L650" title="3 of 4 branches missed.">        assert(regionIndexRegions.size() &gt;= count);</span>
-<span class="pc bpc" id="L651" title="3 of 4 branches missed.">        assert(regionIndexMinMaxXY.size() &gt;= count);</span>
+<span class="pc bnc" id="L646" title="All 2 branches missed.">        assert(!histHOGMap.isEmpty());</span>
+<span class="pc bnc" id="L647" title="All 2 branches missed.">        assert(!histHCPTMap.isEmpty());</span>
+<span class="pc bnc" id="L648" title="All 2 branches missed.">        assert(!histHGSMap.isEmpty());</span>
+<span class="pc bnc" id="L649" title="All 2 branches missed.">        assert(regionCoords.size() &gt;= count);</span>
+<span class="pc bnc" id="L650" title="All 2 branches missed.">        assert(regionIndexRegions.size() &gt;= count);</span>
+<span class="pc bnc" id="L651" title="All 2 branches missed.">        assert(regionIndexMinMaxXY.size() &gt;= count);</span>
         
 <span class="fc" id="L653">    }</span>
     
@@ -784,4 +784,4 @@ import java.util.Map;
 <span class="nc" id="L784">        return regionIndexMinMaxXY;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

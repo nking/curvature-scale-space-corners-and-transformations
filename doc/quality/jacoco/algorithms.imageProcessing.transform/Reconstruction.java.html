@@ -57,7 +57,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 
  * @author nichole
  */
-<span class="pc bpc" id="L60" title="1 of 2 branches missed.">public class Reconstruction {</span>
+<span class="pc" id="L60">public class Reconstruction {</span>
     
     /*
     // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
@@ -374,7 +374,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         
 <span class="nc" id="L375">        MatrixUtil.SVDProducts svdF = MatrixUtil.performSVD(_fm);</span>
         
-<span class="nc bnc" id="L377" title="All 6 branches missed.">        assert(svdF.u[0].length == 3 &amp;&amp; svdF.u.length == 3);</span>
+<span class="nc bnc" id="L377" title="All 4 branches missed.">        assert(svdF.u[0].length == 3 &amp;&amp; svdF.u.length == 3);</span>
         
 <span class="nc" id="L379">        double detU = MatrixUtil.determinant(svdF.u);</span>
 <span class="nc" id="L380">        double detV = MatrixUtil.determinant(svdF.vT);</span>
@@ -902,7 +902,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         
 <span class="fc" id="L903">        MatrixUtil.SVDProducts svdE = MatrixUtil.performSVD(_essentialMatrix);</span>
         
-<span class="pc bpc" id="L905" title="5 of 6 branches missed.">        assert(svdE.u[0].length == 3 &amp;&amp; svdE.u.length == 3);</span>
+<span class="pc bnc" id="L905" title="All 4 branches missed.">        assert(svdE.u[0].length == 3 &amp;&amp; svdE.u.length == 3);</span>
         
 <span class="fc" id="L907">        double detU = MatrixUtil.determinant(svdE.u);</span>
 <span class="fc" id="L908">        double detV = MatrixUtil.determinant(svdE.vT);</span>
@@ -1991,7 +1991,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         
 <span class="fc" id="L1992">        double[][] gInv = MatrixUtil.pseudoinverseFullColumnRank(g);</span>
 <span class="fc" id="L1993">        double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
-<span class="pc bpc" id="L1994" title="3 of 4 branches missed.">        assert(iVector.length == 9);</span>
+<span class="pc bnc" id="L1994" title="All 2 branches missed.">        assert(iVector.length == 9);</span>
         
         // 3X3
 <span class="fc" id="L1997">        double[][] ell = new double[3][3];</span>
@@ -2013,7 +2013,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc" id="L2013">        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);</span>
         
 <span class="fc" id="L2015">        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);</span>
-<span class="pc bpc" id="L2016" title="3 of 4 branches missed.">        assert(ipd);</span>
+<span class="pc bnc" id="L2016" title="All 2 branches missed.">        assert(ipd);</span>
         
         //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
 <span class="fc" id="L2019">        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);</span>
@@ -2333,7 +2333,7 @@ import no.uib.cipr.matrix.NotConvergedException;
             //SVDProducts svdi = MatrixUtil.performSVD(tf);
 <span class="fc" id="L2334">            g3Inv = MatrixUtil.pseudoinverseFullColumnRank(tf);</span>
 <span class="fc" id="L2335">            i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);</span>
-<span class="pc bpc" id="L2336" title="3 of 4 branches missed.">            assert(i3Vector.length == 3);</span>
+<span class="pc bnc" id="L2336" title="All 2 branches missed.">            assert(i3Vector.length == 3);</span>
             
 <span class="fc" id="L2338">            trans[i] = new double[]{i3Vector[0], i3Vector[1], i3Vector[2]};</span>
         }
@@ -2431,10 +2431,10 @@ import no.uib.cipr.matrix.NotConvergedException;
          It is the right image position of the epipolar projection of the left camera center
         */
         
-<span class="nc bnc" id="L2434" title="All 4 branches missed.">        assert(svdE.u[0].length == 3);</span>
-<span class="nc bnc" id="L2435" title="All 4 branches missed.">        assert(svdE.u.length == 3);</span>
-<span class="nc bnc" id="L2436" title="All 4 branches missed.">        assert(svdE.vT[0].length == 3);</span>
-<span class="nc bnc" id="L2437" title="All 4 branches missed.">        assert(svdE.vT.length == 3);</span>
+<span class="nc bnc" id="L2434" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
+<span class="nc bnc" id="L2435" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
+<span class="nc bnc" id="L2436" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
+<span class="nc bnc" id="L2437" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
         
         //double e1Div = svdE.vT[2][2];
 <span class="nc bnc" id="L2440" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
@@ -2567,7 +2567,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc" id="L2567">        double[][] g = new double[3*mImages][6];</span>
 <span class="fc bfc" id="L2568" title="All 2 branches covered.">        for (i = 0; i &lt; 2*mImages; ++i) {</span>
 <span class="fc" id="L2569">            g[i] = gT(motion[i], motion[i]);</span>
-<span class="pc bpc" id="L2570" title="3 of 4 branches missed.">            assert(g[i].length == 6);</span>
+<span class="pc bnc" id="L2570" title="All 2 branches missed.">            assert(g[i].length == 6);</span>
         }
 <span class="fc bfc" id="L2572" title="All 2 branches covered.">        for (i = 2*mImages, j=0; i &lt; 3*mImages; ++i, j++) {</span>
 <span class="fc" id="L2573">            g[i] = gT(motion[j], motion[mImages + j]);</span>
@@ -2582,7 +2582,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         
         // 6X1
 <span class="fc" id="L2584">        double[] lVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
-<span class="pc bpc" id="L2585" title="3 of 4 branches missed.">        assert(lVector.length == 6);</span>
+<span class="pc bnc" id="L2585" title="All 2 branches missed.">        assert(lVector.length == 6);</span>
         
         // 3X3
 <span class="fc" id="L2588">        double[][] ell = new double[3][3];</span>
@@ -2604,7 +2604,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
         */
 <span class="fc" id="L2606">        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);</span>
-<span class="pc bpc" id="L2607" title="3 of 4 branches missed.">        assert(ipd);</span>
+<span class="pc bnc" id="L2607" title="All 2 branches missed.">        assert(ipd);</span>
        
         //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
 <span class="fc" id="L2610">        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);</span>
@@ -3206,21 +3206,21 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc" id="L3206">        boolean useUPos = true;</span>
         
         int i;
-<span class="fc bfc" id="L3209" title="All 2 branches covered.">        if (Math.abs(det1 - 1.) &lt; eps) {</span>
+<span class="pc bpc" id="L3209" title="1 of 2 branches missed.">        if (Math.abs(det1 - 1.) &lt; eps) {</span>
 <span class="fc" id="L3210">            System.out.printf(&quot;using +U\n&quot;);</span>
 <span class="fc bfc" id="L3211" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
 <span class="fc" id="L3212">                System.arraycopy(rr1[i], 0, r1Out[i], 0, rr1[i].length);</span>
             }
-<span class="pc bpc" id="L3214" title="1 of 2 branches missed.">        } else if (Math.abs(det2 - 1.) &lt; eps) {</span>
-<span class="fc" id="L3215">            System.out.printf(&quot;using -U\n&quot;);</span>
-<span class="fc" id="L3216">            useUPos = false;</span>
-<span class="fc bfc" id="L3217" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3218">                System.arraycopy(rr2[i], 0, r1Out[i], 0, rr2[i].length);</span>
+<span class="nc bnc" id="L3214" title="All 2 branches missed.">        } else if (Math.abs(det2 - 1.) &lt; eps) {</span>
+<span class="nc" id="L3215">            System.out.printf(&quot;using -U\n&quot;);</span>
+<span class="nc" id="L3216">            useUPos = false;</span>
+<span class="nc bnc" id="L3217" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3218">                System.arraycopy(rr2[i], 0, r1Out[i], 0, rr2[i].length);</span>
             }
         } else {
 <span class="nc" id="L3221">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
         }
-<span class="fc bfc" id="L3223" title="All 2 branches covered.">        if (Math.abs(det3 - 1.) &lt; eps) {</span>
+<span class="pc bpc" id="L3223" title="1 of 2 branches missed.">        if (Math.abs(det3 - 1.) &lt; eps) {</span>
 <span class="pc bpc" id="L3224" title="1 of 2 branches missed.">            if (!useUPos) {</span>
 <span class="nc" id="L3225">                throw new IllegalStateException(&quot;expecting to need +U&quot;);</span>
             }
@@ -3228,27 +3228,27 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc bfc" id="L3228" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
 <span class="fc" id="L3229">                System.arraycopy(rr3[i], 0, r2Out[i], 0, rr3[i].length);</span>
             }
-<span class="pc bpc" id="L3231" title="1 of 2 branches missed.">        } else if (Math.abs(det4 - 1.) &lt; eps) {</span>
-<span class="pc bpc" id="L3232" title="1 of 2 branches missed.">            if (useUPos) {</span>
+<span class="nc bnc" id="L3231" title="All 2 branches missed.">        } else if (Math.abs(det4 - 1.) &lt; eps) {</span>
+<span class="nc bnc" id="L3232" title="All 2 branches missed.">            if (useUPos) {</span>
 <span class="nc" id="L3233">                throw new IllegalStateException(&quot;expecting to need -U&quot;);</span>
             }
-<span class="fc" id="L3235">            System.out.printf(&quot;using -U\n&quot;);</span>
-<span class="fc bfc" id="L3236" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3237">                System.arraycopy(rr4[i], 0, r2Out[i], 0, rr4[i].length);</span>
+<span class="nc" id="L3235">            System.out.printf(&quot;using -U\n&quot;);</span>
+<span class="nc bnc" id="L3236" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3237">                System.arraycopy(rr4[i], 0, r2Out[i], 0, rr4[i].length);</span>
             }
         } else {
 <span class="nc" id="L3240">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
         }
         
-<span class="fc bfc" id="L3243" title="All 2 branches covered.">        if (useUPos) {</span>
+<span class="pc bpc" id="L3243" title="1 of 2 branches missed.">        if (useUPos) {</span>
 <span class="fc bfc" id="L3244" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
 <span class="fc" id="L3245">                System.arraycopy(u[i], 0, uOut[i], 0, u[i].length);</span>
             }
         } else {
-<span class="fc bfc" id="L3248" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3249">                System.arraycopy(uNeg[i], 0, uOut[i], 0, uNeg[i].length);</span>
+<span class="nc bnc" id="L3248" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3249">                System.arraycopy(uNeg[i], 0, uOut[i], 0, uNeg[i].length);</span>
             }
         }
 <span class="fc" id="L3252">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -310,7 +310,7 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
  * for the case where arguments are the camera intrinsic parameters and the correspondence.
  * @author nichole
  */
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">public class EpipolarTransformer {</span>
+<span class="fc" id="L313">public class EpipolarTransformer {</span>
 
 <span class="fc" id="L315">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
@@ -387,8 +387,8 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
          */
       
 <span class="fc" id="L389">        int n = svd.vT.length;</span>
-<span class="pc bpc" id="L390" title="3 of 4 branches missed.">        assert(n == 9);</span>
-<span class="pc bpc" id="L391" title="3 of 4 branches missed.">        assert(svd.vT[0].length == 9);</span>
+<span class="pc bnc" id="L390" title="All 2 branches missed.">        assert(n == 9);</span>
+<span class="pc bnc" id="L391" title="All 2 branches missed.">        assert(svd.vT[0].length == 9);</span>
 
         // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
 <span class="fc" id="L394">        double[][] ff = new double[3][3];</span>
@@ -606,8 +606,8 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
 <span class="fc" id="L606">        log.fine(&quot;conditionNumber=&quot; + conditionNumber);</span>
         
 <span class="fc" id="L608">        int n = vT.numRows();</span>
-<span class="pc bpc" id="L609" title="3 of 4 branches missed.">        assert(n == 9);</span>
-<span class="pc bpc" id="L610" title="3 of 4 branches missed.">        assert(svd.getU().numRows() == nSet);</span>
+<span class="pc bnc" id="L609" title="All 2 branches missed.">        assert(n == 9);</span>
+<span class="pc bnc" id="L610" title="All 2 branches missed.">        assert(svd.getU().numRows() == nSet);</span>
                 
 <span class="fc" id="L612">        double[][] ff1 = new double[3][3];</span>
 <span class="fc" id="L613">        double[][] ff2 = new double[3][3];</span>
@@ -904,10 +904,10 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
 <span class="nc" id="L904">            return null;</span>
 <span class="nc" id="L905">        }</span>
         
-<span class="nc bnc" id="L907" title="All 4 branches missed.">        assert(svdE.u[0].length == 3);</span>
-<span class="nc bnc" id="L908" title="All 4 branches missed.">        assert(svdE.u.length == 3);</span>
-<span class="nc bnc" id="L909" title="All 4 branches missed.">        assert(svdE.vT[0].length == 3);</span>
-<span class="nc bnc" id="L910" title="All 4 branches missed.">        assert(svdE.vT.length == 3);</span>
+<span class="nc bnc" id="L907" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
+<span class="nc bnc" id="L908" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
+<span class="nc bnc" id="L909" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
+<span class="nc bnc" id="L910" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
         // e2 = last column of U but not normalized by the last item of that column
 <span class="nc" id="L912">        double[] e2 = new double[svdE.u.length];</span>
 <span class="nc bnc" id="L913" title="All 2 branches missed.">        for (int i = 0; i &lt; e2.length; i++) {</span>
@@ -1479,10 +1479,10 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
 <span class="nc" id="L1479">            return null;</span>
 <span class="fc" id="L1480">        }</span>
         
-<span class="pc bpc" id="L1482" title="3 of 4 branches missed.">        assert(svdE.u[0].length == 3);</span>
-<span class="pc bpc" id="L1483" title="3 of 4 branches missed.">        assert(svdE.u.length == 3);</span>
-<span class="pc bpc" id="L1484" title="3 of 4 branches missed.">        assert(svdE.vT[0].length == 3);</span>
-<span class="pc bpc" id="L1485" title="3 of 4 branches missed.">        assert(svdE.vT.length == 3);</span>
+<span class="pc bnc" id="L1482" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
+<span class="pc bnc" id="L1483" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
+<span class="pc bnc" id="L1484" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
+<span class="pc bnc" id="L1485" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
         
         // e2 = last column of U / last item of that column
         // e1 = last row of V / last item of that row
@@ -1826,4 +1826,4 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
 <span class="nc" id="L1826">        return sb.toString();</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

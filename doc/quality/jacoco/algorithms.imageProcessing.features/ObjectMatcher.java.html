@@ -49,7 +49,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">public class ObjectMatcher {</span>
+<span class="fc" id="L52">public class ObjectMatcher {</span>
 
 <span class="fc" id="L54">    private boolean debug = false;</span>
 
@@ -313,16 +313,16 @@ import java.util.Set;
 <span class="fc" id="L313">        maskOutNonRegion(luvTheta1, pix1);</span>
                 
 <span class="fc" id="L315">        List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB0 = imageProcessor.buildColorPyramid(</span>
-<span class="fc" id="L316">            img0Trimmed, settings.useLargerPyramid0);</span>
+            img0Trimmed, settings.useLargerPyramid0);
         
 <span class="fc" id="L318">        List&lt;GreyscaleImage&gt; pyrPT0 = imageProcessor.buildPyramid(</span>
-<span class="fc" id="L319">            luvTheta0, settings.useLargerPyramid0);</span>
+            luvTheta0, settings.useLargerPyramid0);
 
 <span class="fc" id="L321">        List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB1 = imageProcessor.buildColorPyramid(</span>
-<span class="fc" id="L322">            img1, settings.useLargerPyramid1);</span>
+            img1, settings.useLargerPyramid1);
 
 <span class="fc" id="L324">        List&lt;GreyscaleImage&gt; pyrPT1 = imageProcessor.buildPyramid(</span>
-<span class="fc" id="L325">            luvTheta1, settings.useLargerPyramid1);</span>
+            luvTheta1, settings.useLargerPyramid1);
        
         //// applyWindowedMean(pyrRGB0, 1);
         ////applyWindowedMean(pyrRGB1, 1);
@@ -731,7 +731,7 @@ import java.util.Set;
 <span class="fc" id="L731">            rIdxs[count] = rIdx;</span>
 <span class="fc" id="L732">            count++;</span>
         }
-<span class="pc bpc" id="L734" title="3 of 4 branches missed.">        assert(ns.length == count);</span>
+<span class="pc bnc" id="L734" title="All 2 branches missed.">        assert(ns.length == count);</span>
         
 <span class="fc" id="L736">        QuickSort.sortBy1stArg(ns, rIdxs);</span>
          
@@ -782,8 +782,8 @@ import java.util.Set;
                 }
             }
         }
-<span class="pc bpc" id="L785" title="3 of 4 branches missed.">        assert(maxIdxA &gt; -1);</span>
-<span class="pc bpc" id="L786" title="3 of 4 branches missed.">        assert(maxIdxB &gt; -1);</span>
+<span class="pc bnc" id="L785" title="All 2 branches missed.">        assert(maxIdxA &gt; -1);</span>
+<span class="pc bnc" id="L786" title="All 2 branches missed.">        assert(maxIdxB &gt; -1);</span>
 <span class="fc" id="L787">        keep.add(maxIdxA);</span>
 <span class="fc" id="L788">        keep.add(maxIdxB);</span>
         
@@ -947,4 +947,4 @@ import java.util.Set;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

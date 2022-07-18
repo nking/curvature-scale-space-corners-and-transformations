@@ -13,7 +13,7 @@ import java.util.Collection;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L16" title="1 of 2 branches missed.">public class HOGUtil {</span>
+<span class="nc" id="L16">public class HOGUtil {</span>
     
 <span class="fc" id="L18">    private static float eps = 0.000001f;</span>
     
@@ -458,8 +458,8 @@ import java.util.Collection;
 <span class="nc" id="L458">            long pixIdx = ph.toPixelIndex(xy.getX() - xOffset, </span>
 <span class="nc" id="L459">                xy.getY() - yOffset, w2);</span>
             
-<span class="nc bnc" id="L461" title="All 4 branches missed.">            assert(pixIdx &gt;= 0);</span>
-<span class="nc bnc" id="L462" title="All 4 branches missed.">            assert(pixIdx &lt; (w2 * h2));</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">            assert(pixIdx &gt;= 0);</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">            assert(pixIdx &lt; (w2 * h2));</span>
             
 <span class="nc" id="L464">            outputRefFramePixs.add(pixIdx);</span>
 <span class="nc" id="L465">        }</span>
@@ -1046,4 +1046,4 @@ import java.util.Collection;
 <span class="fc" id="L1046">        return sum;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

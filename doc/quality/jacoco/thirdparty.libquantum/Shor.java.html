@@ -54,7 +54,7 @@ The initial number of qubits was reduced to 1.
    (estimate is from &quot;Quantum algorithms: an overview&quot; by Montaro)
    
  */
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">public class Shor {</span>
+<span class="fc" id="L57">public class Shor {</span>
     
 <span class="pc" id="L59">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
@@ -203,7 +203,7 @@ The initial number of qubits was reduced to 1.
         
 <span class="fc" id="L204">        QuantumReg qr = qureg.quantum_new_qureg(0, width);</span>
         
-<span class="pc bpc" id="L206" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+<span class="pc bnc" id="L206" title="All 2 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
         
 <span class="fc" id="L208">        Gates gates = new Gates(rng);</span>
         
@@ -227,7 +227,7 @@ The initial number of qubits was reduced to 1.
             + &quot; hash.length=&quot; + qr.hash.length);
         qureg.quantum_print_qureg(qr);
         */
-<span class="pc bpc" id="L230" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+<span class="pc bnc" id="L230" title="All 2 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
         
         
         // ---- shift existing node states left by nbits ----
@@ -257,7 +257,7 @@ The initial number of qubits was reduced to 1.
             + &quot; hash.length=&quot; + qr.hash.length);
 <span class="fc" id="L258">        qureg.quantum_print_qureg(qr);</span>
         
-<span class="pc bpc" id="L260" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+<span class="pc bnc" id="L260" title="All 2 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
      
 <span class="fc" id="L262">        Measure measure = new Measure();</span>
         
@@ -265,7 +265,7 @@ The initial number of qubits was reduced to 1.
 <span class="fc" id="L265">            measure.quantum_bmeasure(0, qr, rng);</span>
         }
        
-<span class="pc bpc" id="L268" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+<span class="pc bnc" id="L268" title="All 2 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
  
         /*
         //log.info(
@@ -306,7 +306,7 @@ The initial number of qubits was reduced to 1.
             + &quot; hash.length=&quot; + qr.hash.length);
         qureg.quantum_print_qureg(qr);
         */
-<span class="pc bpc" id="L309" title="3 of 4 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
+<span class="pc bnc" id="L309" title="All 2 branches missed.">        assert(qr.hash.length == (1 &lt;&lt; qr.hashw));</span>
 
 <span class="fc" id="L311">        long c = measure.quantum_measure(qr, rng);</span>
 
@@ -371,4 +371,4 @@ The initial number of qubits was reduced to 1.
 <span class="fc" id="L371">        return new int[]{factor, N/factor};</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

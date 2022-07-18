@@ -26,7 +26,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L29" title="1 of 2 branches missed.">public class LabelToColorHelper {</span>
+<span class="pc" id="L29">public class LabelToColorHelper {</span>
     
     /**
      * calculate the average r,g,b of pixels grouped by their labels and
@@ -88,10 +88,10 @@ import java.util.Set;
 <span class="fc bfc" id="L88" title="All 2 branches covered.">            for (PairInt p : out.get(i)) {</span>
 <span class="fc" id="L89">                int pixIdx = img.getInternalIndex(p);</span>
 <span class="fc" id="L90">                labels[pixIdx] = i;</span>
-<span class="pc bpc" id="L91" title="3 of 4 branches missed.">                assert(img.getCol(pixIdx) &lt; img.getWidth());</span>
-<span class="pc bpc" id="L92" title="3 of 4 branches missed.">                assert(img.getRow(pixIdx) &lt; img.getHeight());</span>
-<span class="pc bpc" id="L93" title="3 of 4 branches missed.">                assert(img.getCol(pixIdx) &gt; -1);</span>
-<span class="pc bpc" id="L94" title="3 of 4 branches missed.">                assert(img.getRow(pixIdx) &gt; -1);</span>
+<span class="pc bnc" id="L91" title="All 2 branches missed.">                assert(img.getCol(pixIdx) &lt; img.getWidth());</span>
+<span class="pc bnc" id="L92" title="All 2 branches missed.">                assert(img.getRow(pixIdx) &lt; img.getHeight());</span>
+<span class="pc bnc" id="L93" title="All 2 branches missed.">                assert(img.getCol(pixIdx) &gt; -1);</span>
+<span class="pc bnc" id="L94" title="All 2 branches missed.">                assert(img.getRow(pixIdx) &gt; -1);</span>
 <span class="fc" id="L95">            }</span>
         }
         
@@ -113,8 +113,8 @@ import java.util.Set;
 <span class="nc bnc" id="L113" title="All 2 branches missed.">        for (int i = 0; i &lt; out.size(); ++i) {</span>
 <span class="nc bnc" id="L114" title="All 2 branches missed.">            for (PairInt p : out.get(i)) {</span>
 <span class="nc" id="L115">                labels[p.getX()][p.getY()] = i;</span>
-<span class="nc bnc" id="L116" title="All 4 branches missed.">                assert(p.getX() &lt; img.getWidth());</span>
-<span class="nc bnc" id="L117" title="All 4 branches missed.">                assert(p.getY() &lt; img.getHeight());</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                assert(p.getX() &lt; img.getWidth());</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                assert(p.getY() &lt; img.getHeight());</span>
 <span class="nc" id="L118">            }</span>
         }
        
@@ -157,7 +157,7 @@ import java.util.Set;
             }
         }
  
-<span class="pc bpc" id="L160" title="3 of 4 branches missed.">        assert(assertAllPointsFound(out, img.getWidth(), img.getHeight()));</span>
+<span class="pc bnc" id="L160" title="All 2 branches missed.">        assert(assertAllPointsFound(out, img.getWidth(), img.getHeight()));</span>
         
 <span class="fc" id="L162">        return out;</span>
     }
@@ -200,7 +200,7 @@ import java.util.Set;
     public static TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; extractLabelPoints(
         Image img, int[] labels) {
         
-<span class="pc bpc" id="L203" title="3 of 4 branches missed.">        assert(labels.length == img.getNPixels());</span>
+<span class="pc bnc" id="L203" title="All 2 branches missed.">        assert(labels.length == img.getNPixels());</span>
         
 <span class="fc" id="L205">        TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; out </span>
             = new TIntObjectHashMap&lt;Set&lt;PairInt&gt;&gt;();
@@ -227,7 +227,7 @@ import java.util.Set;
     public static TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; extractRowMajorLabelPoints(
         Image img, int[][] labels) {
         
-<span class="nc bnc" id="L230" title="All 4 branches missed.">        assert(labels.length*labels[0].length == img.getNPixels());</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        assert(labels.length*labels[0].length == img.getNPixels());</span>
         
 <span class="nc" id="L232">        TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; out </span>
             = new TIntObjectHashMap&lt;Set&lt;PairInt&gt;&gt;();
@@ -261,7 +261,7 @@ import java.util.Set;
 <span class="fc" id="L261">            }</span>
 <span class="fc" id="L262">            count++;</span>
         }
-<span class="pc bpc" id="L264" title="3 of 4 branches missed.">        assert(sets.size() == count);</span>
+<span class="pc bnc" id="L264" title="All 2 branches missed.">        assert(sets.size() == count);</span>
         
 <span class="fc" id="L266">        return labels;</span>
     }
@@ -478,7 +478,7 @@ import java.util.Set;
 <span class="nc" id="L478">                    return false;</span>
                 }
 <span class="nc" id="L480">                boolean rmvd = allPoints.remove(p);</span>
-<span class="nc bnc" id="L481" title="All 4 branches missed.">                assert(rmvd);</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">                assert(rmvd);</span>
             }
         }
         
@@ -548,4 +548,4 @@ import java.util.Set;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

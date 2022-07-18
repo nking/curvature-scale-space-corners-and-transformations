@@ -25,7 +25,7 @@ import java.util.Stack;
  
  * @author nichole
  */
-<span class="pc bpc" id="L28" title="1 of 2 branches missed.">@SuppressWarnings({&quot;unchecked&quot;})</span>
+<span class="fc" id="L28">@SuppressWarnings({&quot;unchecked&quot;})</span>
 <span class="fc" id="L29">public class BinarySearchTree&lt;T extends HeapNode&gt; {</span>
 
 <span class="fc" id="L31">    protected int n = 0;</span>
@@ -73,10 +73,10 @@ import java.util.Stack;
 <span class="fc" id="L73">            return minimum((T)x.getRight());</span>
         }
 <span class="pc bpc" id="L75" title="1 of 2 branches missed.">        T y = (x.getParent() != null) ? (T) x.getParent() : null;</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        while ((y != null) &amp;&amp;</span>
-<span class="fc bfc" id="L77" title="All 4 branches covered.">            (y.getRight() != null &amp;&amp; x.equals(y.getRight()))) {</span>
-<span class="fc" id="L78">            x = y;</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">            y = (y.getParent() != null) ? (T) y.getParent() : null;</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        while ((y != null) &amp;&amp;</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">            (y.getRight() != null &amp;&amp; x.equals(y.getRight()))) {</span>
+<span class="nc" id="L78">            x = y;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            y = (y.getParent() != null) ? (T) y.getParent() : null;</span>
         }
 <span class="fc" id="L81">        return y;</span>
     }
@@ -157,7 +157,7 @@ import java.util.Stack;
 <span class="pc bpc" id="L157" title="2 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
 <span class="fc" id="L158">                    parent.setLeft(null);</span>
                 } else {
-<span class="nc bnc" id="L160" title="All 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">                    assert (parent.getRight().equals(z));</span>
 <span class="nc bnc" id="L161" title="All 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
 <span class="nc" id="L162">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
                     }
@@ -198,7 +198,7 @@ import java.util.Stack;
 <span class="pc bpc" id="L198" title="2 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
 <span class="fc" id="L199">                    parent.setLeft(y);</span>
                 } else {
-<span class="nc bnc" id="L201" title="All 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">                    assert (parent.getRight().equals(z));</span>
 <span class="nc bnc" id="L202" title="All 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
 <span class="nc" id="L203">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
                     }
@@ -232,7 +232,7 @@ import java.util.Stack;
 <span class="pc bpc" id="L232" title="1 of 4 branches missed.">                if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(z)) {</span>
 <span class="fc" id="L233">                    parent.setLeft(child);</span>
                 } else {
-<span class="pc bpc" id="L235" title="3 of 4 branches missed.">                    assert (parent.getRight().equals(z));</span>
+<span class="pc bnc" id="L235" title="All 2 branches missed.">                    assert (parent.getRight().equals(z));</span>
 <span class="pc bpc" id="L236" title="2 of 4 branches missed.">                    if (parent.getRight() == null || !parent.getRight().equals(z)) {</span>
 <span class="nc" id="L237">                        throw new IllegalStateException(&quot;tree state is corrupted&quot;);</span>
                     }
@@ -374,9 +374,9 @@ import java.util.Stack;
 <span class="nc bnc" id="L374" title="All 2 branches missed.">                    if (node.getParent() != null) {</span>
 <span class="nc" id="L375">                        T parent = (T)node.getParent();</span>
 <span class="nc bnc" id="L376" title="All 4 branches missed.">                        if (parent.getLeft() != null &amp;&amp; parent.getLeft().equals(node)) {</span>
-<span class="nc bnc" id="L377" title="All 4 branches missed.">                            assert(node.getKey() &lt;= node.getParent().getKey());</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                            assert(node.getKey() &lt;= node.getParent().getKey());</span>
 <span class="nc bnc" id="L378" title="All 2 branches missed.">                        } else if (parent.getRight() != null) {</span>
-<span class="nc bnc" id="L379" title="All 4 branches missed.">                            assert(node.getParent().getKey() &lt;= node.getKey());</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">                            assert(node.getParent().getKey() &lt;= node.getKey());</span>
                         }
                     }
                 }
@@ -447,4 +447,4 @@ import java.util.Stack;
 <span class="nc" id="L447">        return array;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -126,7 +126,7 @@ public class StructureTensor {
             
             // for curvature, need d/dy(dy) and d/dx(dx)
 <span class="pc bpc" id="L128" title="1 of 2 branches missed.">            kernel = (sigma &gt; 0) ?</span>
-<span class="pc" id="L129">                Gaussian1DFirstDeriv.getKernel(sigma) :</span>
+<span class="nc" id="L129">                Gaussian1DFirstDeriv.getKernel(sigma) :</span>
 <span class="fc" id="L130">                Gaussian1DFirstDeriv.getKernel(SIGMA.ZEROPOINTSEVENONE);</span>
             
 <span class="fc" id="L132">            d2X = imageProcessor.copy(gX);</span>
@@ -211,4 +211,4 @@ public class StructureTensor {
 <span class="nc" id="L211">        return d2Y;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

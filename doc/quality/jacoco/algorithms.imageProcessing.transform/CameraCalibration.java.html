@@ -36,7 +36,7 @@ import no.uib.cipr.matrix.NotConvergedException;
  * &lt;/pre&gt;
  * @author nichole
  */
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">public class CameraCalibration {</span>
+<span class="nc" id="L39">public class CameraCalibration {</span>
     
     public static final double eps = 1e-7;
     public static final double eps2 = 1e-5;
@@ -628,7 +628,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc" id="L628">        r2 = MatrixUtil.extractColumn(r, 1);        </span>
 <span class="fc" id="L629">        double chk = MatrixUtil.innerProduct(r1, r2);</span>
 <span class="fc" id="L630">        System.out.printf(&quot;asserting that r1 dot r2 ~ 0: %.4e\n&quot;, chk);</span>
-<span class="pc bpc" id="L631" title="3 of 4 branches missed.">        assert(Math.abs(chk) &lt; 1.e-7);</span>
+<span class="pc bnc" id="L631" title="All 2 branches missed.">        assert(Math.abs(chk) &lt; 1.e-7);</span>
        
 <span class="fc" id="L633">        CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();</span>
 <span class="fc" id="L634">        kExtr.setRotation(r);</span>
@@ -1836,4 +1836,4 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc" id="L1836">        output[1] = divc2p1;</span>
 <span class="fc" id="L1837">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

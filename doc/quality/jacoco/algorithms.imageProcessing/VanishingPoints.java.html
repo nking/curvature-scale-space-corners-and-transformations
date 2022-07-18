@@ -35,7 +35,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L38" title="All 2 branches missed.">public class VanishingPoints {</span>
+<span class="nc" id="L38">public class VanishingPoints {</span>
         
 <span class="nc" id="L40">    private boolean debug = false;</span>
     
@@ -103,7 +103,7 @@ import java.util.Set;
             new TIntObjectHashMap&lt;TIntList&gt;();
 <span class="nc bnc" id="L104" title="All 2 branches missed.">        for (int i = 0; i &lt; xs.size(); ++i) {</span>
 <span class="nc" id="L105">            PairInt p = new PairInt(xs.get(i), ys.get(i));</span>
-<span class="nc bnc" id="L106" title="All 4 branches missed.">            assert(pointSegmentedIndexMap.containsKey(p));</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            assert(pointSegmentedIndexMap.containsKey(p));</span>
 <span class="nc" id="L107">            int segIdx = pointSegmentedIndexMap.get(p);</span>
             
 <span class="nc" id="L109">            TIntList idxs = segmentedLineIndexes.get(segIdx);</span>
@@ -155,4 +155,4 @@ import java.util.Set;
 <span class="nc" id="L155">        return vanishingLines;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

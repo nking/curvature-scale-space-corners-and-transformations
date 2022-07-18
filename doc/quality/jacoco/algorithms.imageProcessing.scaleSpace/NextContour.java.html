@@ -12,7 +12,7 @@ import java.util.TreeSet;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L15" title="1 of 2 branches missed.">public class NextContour {</span>
+<span class="fc" id="L15">public class NextContour {</span>
     
     /**
      * a list of closed contours extracted from a digital image
@@ -73,13 +73,13 @@ import java.util.TreeSet;
 <span class="fc bfc" id="L73" title="All 2 branches covered.">        if (matchedEdgeNumber1 == -1) {</span>
 <span class="fc" id="L74">            matchedEdgeNumber1 = contour1.getEdgeNumber();</span>
         } else {
-<span class="pc bpc" id="L76" title="3 of 4 branches missed.">            assert(matchedEdgeNumber1 == contour1.getEdgeNumber());</span>
+<span class="pc bnc" id="L76" title="All 2 branches missed.">            assert(matchedEdgeNumber1 == contour1.getEdgeNumber());</span>
         }
         
 <span class="fc bfc" id="L79" title="All 2 branches covered.">        if (matchedEdgeNumber2 == -1) {</span>
 <span class="fc" id="L80">            matchedEdgeNumber2 = contour2.getEdgeNumber();</span>
         } else {
-<span class="pc bpc" id="L82" title="3 of 4 branches missed.">            assert(matchedEdgeNumber2 == contour2.getEdgeNumber());</span>
+<span class="pc bnc" id="L82" title="All 2 branches missed.">            assert(matchedEdgeNumber2 == contour2.getEdgeNumber());</span>
         }    
 <span class="fc" id="L84">    }</span>
     
@@ -101,7 +101,7 @@ import java.util.TreeSet;
         
 <span class="fc" id="L102">        boolean removed = remainingContours.remove(contour);</span>
                 
-<span class="pc bpc" id="L104" title="3 of 4 branches missed.">        assert(removed == true);</span>
+<span class="pc bnc" id="L104" title="All 2 branches missed.">        assert(removed == true);</span>
         
 <span class="fc" id="L106">        return contour;</span>
     }
@@ -144,7 +144,7 @@ import java.util.TreeSet;
             
 <span class="fc" id="L145">            boolean removed = remainingContours.remove(nextLower);</span>
             
-<span class="pc bpc" id="L147" title="3 of 4 branches missed.">            assert(removed);</span>
+<span class="pc bnc" id="L147" title="All 2 branches missed.">            assert(removed);</span>
             
 <span class="fc" id="L149">            return nextLower;</span>
         }
@@ -160,4 +160,4 @@ import java.util.TreeSet;
 <span class="fc" id="L160">        return matchedContours2;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

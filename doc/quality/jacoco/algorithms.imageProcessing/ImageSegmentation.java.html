@@ -55,7 +55,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L58" title="1 of 2 branches missed.">public class ImageSegmentation {</span>
+<span class="fc" id="L58">public class ImageSegmentation {</span>
 
 <span class="fc" id="L60">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
 
@@ -179,7 +179,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L179">                    minColorDiffIndex = index;</span>
                 }
 <span class="fc" id="L181">            }</span>
-<span class="pc bpc" id="L182" title="3 of 4 branches missed.">            assert(minColorDiffIndex != null);</span>
+<span class="pc bnc" id="L182" title="All 2 branches missed.">            assert(minColorDiffIndex != null);</span>
 
             // update the lists to remove point
 <span class="fc bfc" id="L185" title="All 2 branches covered.">            for (Integer index : indexes) {</span>
@@ -268,8 +268,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L268">        int w = gXY.getWidth();</span>
 <span class="fc" id="L269">        int h = gXY.getHeight();</span>
         
-<span class="pc bpc" id="L271" title="3 of 4 branches missed.">        assert(img.getWidth() == w);</span>
-<span class="pc bpc" id="L272" title="3 of 4 branches missed.">        assert(img.getHeight() == h);</span>
+<span class="pc bnc" id="L271" title="All 2 branches missed.">        assert(img.getWidth() == w);</span>
+<span class="pc bnc" id="L272" title="All 2 branches missed.">        assert(img.getHeight() == h);</span>
         
 <span class="fc" id="L274">        int[][] thinned = new int[w][];</span>
 <span class="fc bfc" id="L275" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
@@ -373,14 +373,14 @@ import java.util.logging.Logger;
 <span class="fc" id="L373">        populateEdgeLists(input, edges, clusterPoints, clusterDescriptors,</span>
             clrSpace);
 
-<span class="pc bpc" id="L376" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L376" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="fc" id="L378">        List&lt;Integer&gt; longEdgeIndexes = new ArrayList&lt;Integer&gt;();</span>
 <span class="fc" id="L379">        List&lt;Integer&gt; shortEdgeIndexes = new ArrayList&lt;Integer&gt;();</span>
 <span class="fc" id="L380">        populateEdgeLengthLists(clusterDescriptors, tLen, longEdgeIndexes,</span>
             shortEdgeIndexes);
 
-<span class="pc bpc" id="L383" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L383" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
         // ----------- merge long edges ----------
 
@@ -405,7 +405,7 @@ import java.util.logging.Logger;
         //  a color histogram with bin size being color tolerance
         //  and counting the number of peaks.
 
-<span class="pc bpc" id="L408" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L408" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="pc bpc" id="L410" title="1 of 2 branches missed.">        if (doPlot) {</span>
             // DEBUG
@@ -429,7 +429,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L429">        mergeShortEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,</span>
             shortEdgeIndexes);
 
-<span class="pc bpc" id="L432" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L432" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="pc bpc" id="L434" title="1 of 2 branches missed.">        if (doPlot) {</span>
             // DEBUG
@@ -448,7 +448,7 @@ import java.util.logging.Logger;
                 &quot;_&quot; + clrSpace);
         }
 
-<span class="pc bpc" id="L451" title="3 of 4 branches missed.">        assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));</span>
+<span class="pc bnc" id="L451" title="All 2 branches missed.">        assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));</span>
 
 <span class="fc" id="L453">        Map&lt;PairInt, Integer&gt; pointIndexMap = new HashMap&lt;PairInt, Integer&gt;();</span>
 <span class="fc bfc" id="L454" title="All 2 branches covered.">        for (int i = 0; i &lt; clusterPoints.size(); ++i) {</span>
@@ -463,7 +463,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L463">        growEdges(input, clusterPoints, clusterDescriptors, pointIndexMap,</span>
             clrSpace, tColor, shortEdgeIndexes, longEdgeIndexes);
 
-<span class="pc bpc" id="L466" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L466" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="fc" id="L468">        longEdgeIndexes = null;</span>
 <span class="fc" id="L469">        shortEdgeIndexes = null;</span>
@@ -482,7 +482,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L482">        clusterDescriptors = condenseAndUpdate(clusterPoints,</span>
             clusterDescriptors, pointIndexMap);
 
-<span class="pc bpc" id="L485" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L485" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="fc" id="L487">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjacencyMap = createAdjacencyMap(</span>
             clusterPoints);
@@ -490,7 +490,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L490">        mergeByColorHistograms(input, clusterPoints, adjacencyMap,</span>
             clrSpace, tR);
 
-<span class="pc bpc" id="L493" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L493" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="pc bpc" id="L495" title="1 of 2 branches missed.">        if (doPlot) {</span>
             // DEBUG
@@ -507,12 +507,12 @@ import java.util.logging.Logger;
 <span class="fc" id="L507">        clusterDescriptors = condenseAndUpdate(clusterPoints,</span>
             clusterDescriptors, pointIndexMap);
 
-<span class="pc bpc" id="L510" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L510" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="fc" id="L512">        mergeSmallClusters(input, clusterPoints, clusterDescriptors,</span>
             clrSpace, tNumber, debugTag);
 
-<span class="pc bpc" id="L515" title="3 of 4 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
+<span class="pc bnc" id="L515" title="All 2 branches missed.">        assert(clusterPoints.size() == clusterDescriptors.length);</span>
 
 <span class="fc" id="L517">        return clusterPoints;</span>
     }
@@ -659,8 +659,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L659">            float n2 = set2.size();</span>
 <span class="fc" id="L660">            float nTot = n1 + n2;</span>
 
-<span class="pc bpc" id="L662" title="3 of 4 branches missed.">            assert(Math.abs(n1 - desc1[3]) &lt; 0.1);</span>
-<span class="pc bpc" id="L663" title="3 of 4 branches missed.">            assert(Math.abs(n2 - desc2[3]) &lt; 0.1);</span>
+<span class="pc bnc" id="L662" title="All 2 branches missed.">            assert(Math.abs(n1 - desc1[3]) &lt; 0.1);</span>
+<span class="pc bnc" id="L663" title="All 2 branches missed.">            assert(Math.abs(n2 - desc2[3]) &lt; 0.1);</span>
 
             //{h, s, v, nPix, cenX, cenY}
             // update desc1 contents for contents in desc2
@@ -695,7 +695,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L695">                    p13 = new PairInt(idx3, idx1);</span>
                 }
 <span class="fc" id="L697">                HeapNode node3 = pairEdgePindexNodes.get(p13);</span>
-<span class="pc bpc" id="L698" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="pc bnc" id="L698" title="All 2 branches missed.">                assert(node3 != null);</span>
 <span class="fc" id="L699">                heap.remove(node3);</span>
 <span class="fc" id="L700">                pairEdgePindexNodes.remove(p13);</span>
 <span class="fc" id="L701">            }</span>
@@ -714,7 +714,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L714">                    p23 = new PairInt(idx3, idx2);</span>
                 }
 <span class="fc" id="L716">                HeapNode node3 = pairEdgePindexNodes.get(p23);</span>
-<span class="pc bpc" id="L717" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="pc bnc" id="L717" title="All 2 branches missed.">                assert(node3 != null);</span>
 <span class="fc" id="L718">                heap.remove(node3);</span>
 <span class="fc" id="L719">                pairEdgePindexNodes.remove(p23);</span>
 <span class="fc" id="L720">            }</span>
@@ -857,7 +857,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L857">                return;</span>
             }
 
-<span class="pc bpc" id="L860" title="1 of 2 branches missed.">            assert(img.getNPixels() == (unassignedAndIndexes.size() +</span>
+<span class="pc" id="L860">            assert(img.getNPixels() == (unassignedAndIndexes.size() +</span>
 <span class="nc bnc" id="L861" title="All 2 branches missed.">                pointIndexMap.size()));</span>
 
 <span class="fc" id="L863">            int count = 0;</span>
@@ -1031,9 +1031,9 @@ import java.util.logging.Logger;
             }
         }
 
-<span class="pc bpc" id="L1034" title="3 of 4 branches missed.">        assert(assertShortEdgesAreEmpty(shortEdgeIndexes, clusterPoints));</span>
+<span class="pc bnc" id="L1034" title="All 2 branches missed.">        assert(assertShortEdgesAreEmpty(shortEdgeIndexes, clusterPoints));</span>
 
-<span class="pc bpc" id="L1036" title="3 of 4 branches missed.">        assert(pointIndexMap.size() == img.getNPixels());</span>
+<span class="pc bnc" id="L1036" title="All 2 branches missed.">        assert(pointIndexMap.size() == img.getNPixels());</span>
 <span class="fc" id="L1037">    }</span>
 
     private void mergeShortEdges(List&lt;Set&lt;PairInt&gt;&gt; clusterPoints,
@@ -1064,7 +1064,7 @@ import java.util.logging.Logger;
 
 <span class="nc" id="L1065">            float[] desc1 = clusterDescriptors[idx1];</span>
 
-<span class="nc bnc" id="L1067" title="All 4 branches missed.">            assert(Math.abs(set1.size() - desc1[3]) &lt; 0.1);</span>
+<span class="nc bnc" id="L1067" title="All 2 branches missed.">            assert(Math.abs(set1.size() - desc1[3]) &lt; 0.1);</span>
 
 <span class="nc" id="L1069">            double minDistSq = Double.MAX_VALUE;</span>
 <span class="nc" id="L1070">            int minDistIdx = -1;</span>
@@ -1081,7 +1081,7 @@ import java.util.logging.Logger;
                 //{h, s, v, nPix, cenX, cenY}
 <span class="nc" id="L1082">                float[] desc2 = clusterDescriptors[idx2];</span>
 
-<span class="nc bnc" id="L1084" title="All 4 branches missed.">                assert(Math.abs(set2.size() - desc2[3]) &lt; 0.1);</span>
+<span class="nc bnc" id="L1084" title="All 2 branches missed.">                assert(Math.abs(set2.size() - desc2[3]) &lt; 0.1);</span>
 
                 double diff;
 <span class="nc bnc" id="L1087" title="All 2 branches missed.">                if (clrSpace == 0) {</span>
@@ -1165,7 +1165,7 @@ import java.util.logging.Logger;
 <span class="nc" id="L1165">            int n = clusterPoints.get(i).size();</span>
 <span class="nc bnc" id="L1166" title="All 2 branches missed.">            if (n == 0) { continue;}</span>
 <span class="nc" id="L1167">            float diff = Math.abs(n - clusterDescriptors[i][3]);</span>
-<span class="nc bnc" id="L1168" title="All 4 branches missed.">            assert(diff &lt; 0.1);</span>
+<span class="nc bnc" id="L1168" title="All 2 branches missed.">            assert(diff &lt; 0.1);</span>
         }
 
 <span class="nc" id="L1171">        return true;</span>
@@ -1204,7 +1204,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L1204">            int idx1 = index1.intValue();</span>
 
 <span class="fc" id="L1206">            int[][] hist1 = colorHistograms[idx1];</span>
-<span class="pc bpc" id="L1207" title="3 of 4 branches missed.">            assert(hist1 != null);</span>
+<span class="pc bnc" id="L1207" title="All 2 branches missed.">            assert(hist1 != null);</span>
 
 <span class="fc" id="L1209">            Set&lt;Integer&gt; indexes2 = entry.getValue();</span>
 
@@ -1212,7 +1212,7 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L1213">                int idx2 = index2.intValue();</span>
 
-<span class="pc bpc" id="L1215" title="3 of 4 branches missed.">                assert(idx1 != idx2);</span>
+<span class="pc bnc" id="L1215" title="All 2 branches missed.">                assert(idx1 != idx2);</span>
                 PairInt p12;
 <span class="fc bfc" id="L1217" title="All 2 branches covered.">                if (idx1 &lt; idx2) {</span>
 <span class="fc" id="L1218">                    p12 = new PairInt(idx1, idx2);</span>
@@ -1225,7 +1225,7 @@ import java.util.logging.Logger;
                 }
 
 <span class="fc" id="L1227">                int[][] hist2 = colorHistograms[index2.intValue()];</span>
-<span class="pc bpc" id="L1228" title="3 of 4 branches missed.">                assert(hist2 != null);</span>
+<span class="pc bnc" id="L1228" title="All 2 branches missed.">                assert(hist2 != null);</span>
 
 <span class="fc" id="L1230">                float similarity = 3.0f - ch.intersection(hist1, hist2);</span>
 
@@ -1235,7 +1235,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L1235">                heap.insert(node);</span>
 <span class="fc" id="L1236">                nodesMap.put(p12, node);</span>
 
-<span class="pc bpc" id="L1238" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
+<span class="pc bnc" id="L1238" title="All 2 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
 <span class="fc" id="L1239">            }</span>
 <span class="fc" id="L1240">        }</span>
 
@@ -1308,10 +1308,10 @@ import java.util.logging.Logger;
 <span class="fc" id="L1308">                    p13 = new PairInt(idx3, idx1);</span>
                 }
 <span class="fc" id="L1310">                HeapNode node3 = nodesMap.get(p13);</span>
-<span class="pc bpc" id="L1311" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="pc bnc" id="L1311" title="All 2 branches missed.">                assert(node3 != null);</span>
 <span class="fc" id="L1312">                heap.remove(node3);</span>
 <span class="fc" id="L1313">                nodesMap.remove(p13);</span>
-<span class="pc bpc" id="L1314" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
+<span class="pc bnc" id="L1314" title="All 2 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
 <span class="fc" id="L1315">            }</span>
 <span class="fc" id="L1316">            Set&lt;Integer&gt; indexes2 = adjacencyMap.get(index2);</span>
 <span class="fc bfc" id="L1317" title="All 2 branches covered.">            for (Integer index3 : indexes2) {</span>
@@ -1327,10 +1327,10 @@ import java.util.logging.Logger;
 <span class="fc" id="L1327">                    p23 = new PairInt(idx3, idx2);</span>
                 }
 <span class="fc" id="L1329">                HeapNode node3 = nodesMap.get(p23);</span>
-<span class="pc bpc" id="L1330" title="3 of 4 branches missed.">                assert(node3 != null);</span>
+<span class="pc bnc" id="L1330" title="All 2 branches missed.">                assert(node3 != null);</span>
 <span class="fc" id="L1331">                heap.remove(node3);</span>
 <span class="fc" id="L1332">                nodesMap.remove(p23);</span>
-<span class="pc bpc" id="L1333" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
+<span class="pc bnc" id="L1333" title="All 2 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
 <span class="fc" id="L1334">            }</span>
 
             //update adjacency map
@@ -1352,12 +1352,12 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L1352" title="All 2 branches covered.">            for (Integer index3 : indexes1) {</span>
 <span class="fc" id="L1353">                int idx3 = index3.intValue();</span>
 <span class="fc" id="L1354">                Set&lt;PairInt&gt; set3 = clusterPoints.get(idx3);</span>
-<span class="pc bpc" id="L1355" title="3 of 4 branches missed.">                assert(idx1 != idx3);</span>
+<span class="pc bnc" id="L1355" title="All 2 branches missed.">                assert(idx1 != idx3);</span>
 <span class="pc bpc" id="L1356" title="1 of 2 branches missed.">                if (set3.isEmpty()) {</span>
 <span class="nc" id="L1357">                    continue;</span>
                 }
 <span class="fc" id="L1359">                int[][] hist3 = colorHistograms[idx3];</span>
-<span class="pc bpc" id="L1360" title="3 of 4 branches missed.">                assert(hist3 != null);</span>
+<span class="pc bnc" id="L1360" title="All 2 branches missed.">                assert(hist3 != null);</span>
 
                 PairInt p13;
 <span class="fc bfc" id="L1363" title="All 2 branches covered.">                if (idx1 &lt; idx3) {</span>
@@ -1374,7 +1374,7 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L1375">                heap.insert(node3);</span>
 <span class="fc" id="L1376">                nodesMap.put(p13, node3);</span>
-<span class="pc bpc" id="L1377" title="3 of 4 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
+<span class="pc bnc" id="L1377" title="All 2 branches missed.">                assert(heap.getNumberOfNodes() == nodesMap.size());</span>
 <span class="fc" id="L1378">            }</span>
 
 <span class="fc" id="L1380">            nMerged++;</span>
@@ -1510,7 +1510,7 @@ import java.util.logging.Logger;
             }
         }
 
-<span class="pc bpc" id="L1513" title="3 of 4 branches missed.">        assert(pointIndexMap.size() + unassignedAndIndexes.size() == img.getNPixels());</span>
+<span class="pc bnc" id="L1513" title="All 2 branches missed.">        assert(pointIndexMap.size() + unassignedAndIndexes.size() == img.getNPixels());</span>
 
 <span class="fc" id="L1515">        return unassignedAndIndexes;</span>
     }
@@ -1665,7 +1665,7 @@ import java.util.logging.Logger;
             }
 <span class="fc" id="L1666">            int idx2 = minDiffIndex.intValue();</span>
 <span class="fc" id="L1667">            Set&lt;PairInt&gt; set2 = clusterPoints.get(idx2);</span>
-<span class="pc bpc" id="L1668" title="3 of 4 branches missed.">            assert(!set2.isEmpty());</span>
+<span class="pc bnc" id="L1668" title="All 2 branches missed.">            assert(!set2.isEmpty());</span>
 <span class="fc" id="L1669">            float[] desc2 = clusterDescriptors[idx2];</span>
 <span class="fc" id="L1670">            int n2 = set2.size();</span>
 <span class="fc" id="L1671">            int n1 = set1.size();</span>
@@ -2165,7 +2165,7 @@ import java.util.logging.Logger;
 
 <span class="nc bnc" id="L2166" title="All 2 branches missed.">        for (Integer index : indexes) {</span>
 <span class="nc" id="L2167">            Set&lt;PairInt&gt; set = clusterSets.get(index.intValue());</span>
-<span class="nc bnc" id="L2168" title="All 4 branches missed.">            assert(set.isEmpty());</span>
+<span class="nc bnc" id="L2168" title="All 2 branches missed.">            assert(set.isEmpty());</span>
 <span class="nc" id="L2169">        }</span>
 
 <span class="nc" id="L2171">        return true;</span>
@@ -2230,4 +2230,4 @@ import java.util.logging.Logger;
 <span class="fc" id="L2230">    }</span>
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

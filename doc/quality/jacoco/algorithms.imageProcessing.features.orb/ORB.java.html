@@ -178,7 +178,7 @@ Still testing the class, there may be bugs present.
     
  * &lt;/pre&gt;
  */
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">public class ORB {</span>
+public class ORB {
    
 <span class="fc" id="L183">    protected boolean useSingleScale = false;</span>
 
@@ -426,8 +426,8 @@ Still testing the class, there may be bugs present.
 <span class="fc" id="L426">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
 <span class="pc bpc" id="L428" title="1 of 2 branches missed.">        int dl = useSingleScale ?</span>
-<span class="pc" id="L429">            Math.min(img.getWidth(), img.getHeight()) - 1 :</span>
-            decimationLimit;
+<span class="nc" id="L429">            Math.min(img.getWidth(), img.getHeight()) - 1 :</span>
+<span class="fc" id="L430">            decimationLimit;</span>
         
 <span class="fc" id="L432">        List&lt;GreyscaleImage&gt; output = imageProcessor.buildPyramid2(img, dl);</span>
 
@@ -611,10 +611,10 @@ Still testing the class, there may be bugs present.
 
 <span class="fc" id="L612">            n = r.keypoints0.size();</span>
                         
-<span class="pc bpc" id="L614" title="3 of 4 branches missed.">            assert(harrisResponse.length == pyramidImages[octave].a.length);</span>
-<span class="pc bpc" id="L615" title="3 of 4 branches missed.">            assert(harrisResponse.length == tensorComponents[octave].getDXSquared().length);</span>
-<span class="pc bpc" id="L616" title="3 of 4 branches missed.">            assert(harrisResponse[0].length == pyramidImages[octave].a[0].length);</span>
-<span class="pc bpc" id="L617" title="3 of 4 branches missed.">            assert(harrisResponse[0].length == tensorComponents[octave].getDXSquared()[0].length);</span>
+<span class="pc bnc" id="L614" title="All 2 branches missed.">            assert(harrisResponse.length == pyramidImages[octave].a.length);</span>
+<span class="pc bnc" id="L615" title="All 2 branches missed.">            assert(harrisResponse.length == tensorComponents[octave].getDXSquared().length);</span>
+<span class="pc bnc" id="L616" title="All 2 branches missed.">            assert(harrisResponse[0].length == pyramidImages[octave].a[0].length);</span>
+<span class="pc bnc" id="L617" title="All 2 branches missed.">            assert(harrisResponse[0].length == tensorComponents[octave].getDXSquared()[0].length);</span>
             
 <span class="fc" id="L619">            scores = new float[n];</span>
 <span class="fc" id="L620">            points = new PairInt[n];</span>
@@ -720,20 +720,20 @@ Still testing the class, there may be bugs present.
 <span class="fc" id="L720">            orientationsList.add(orientations);</span>
 <span class="fc" id="L721">            harrisResponses.add(responses);</span>
             
-<span class="pc bpc" id="L723" title="3 of 4 branches missed.">            assert(orientations.size() == kp0s.size());</span>
-<span class="pc bpc" id="L724" title="3 of 4 branches missed.">            assert(responses.size() == kp0s.size());</span>
-<span class="pc bpc" id="L725" title="3 of 4 branches missed.">            assert(kp1s.size() == kp0s.size());</span>
+<span class="pc bnc" id="L723" title="All 2 branches missed.">            assert(orientations.size() == kp0s.size());</span>
+<span class="pc bnc" id="L724" title="All 2 branches missed.">            assert(responses.size() == kp0s.size());</span>
+<span class="pc bnc" id="L725" title="All 2 branches missed.">            assert(kp1s.size() == kp0s.size());</span>
 
         } // end loop over octave
 
         // note, at this point, each octave has the limit of this.nKeypoints,
         //    but the total may be as large as scales.length*this.nKeypoints
         
-<span class="pc bpc" id="L732" title="3 of 4 branches missed.">        assert(pyramidImages.length == keypoints0List.size());</span>
-<span class="pc bpc" id="L733" title="3 of 4 branches missed.">        assert(pyramidImages.length == keypoints1List.size());</span>
-<span class="pc bpc" id="L734" title="3 of 4 branches missed.">        assert(pyramidImages.length == orientationsList.size());</span>
-<span class="pc bpc" id="L735" title="3 of 4 branches missed.">        assert(pyramidImages.length == this.harrisResponses.size());</span>
-<span class="pc bpc" id="L736" title="3 of 4 branches missed.">        assert(pyramidImages.length == scales.length);        </span>
+<span class="pc bnc" id="L732" title="All 2 branches missed.">        assert(pyramidImages.length == keypoints0List.size());</span>
+<span class="pc bnc" id="L733" title="All 2 branches missed.">        assert(pyramidImages.length == keypoints1List.size());</span>
+<span class="pc bnc" id="L734" title="All 2 branches missed.">        assert(pyramidImages.length == orientationsList.size());</span>
+<span class="pc bnc" id="L735" title="All 2 branches missed.">        assert(pyramidImages.length == this.harrisResponses.size());</span>
+<span class="pc bnc" id="L736" title="All 2 branches missed.">        assert(pyramidImages.length == scales.length);        </span>
 <span class="fc" id="L737">    }</span>
 
     private void combineAndFilterTotal() {
@@ -780,11 +780,11 @@ Still testing the class, there may be bugs present.
 <span class="fc" id="L780">                    count += d.descriptors.length;</span>
                 }
 <span class="fc" id="L782">                combinedDescriptors.descriptors = combinedD;</span>
-<span class="pc bpc" id="L783" title="3 of 4 branches missed.">                assert (combinedDescriptors.descriptors.length == nTotal);</span>
+<span class="pc bnc" id="L783" title="All 2 branches missed.">                assert (combinedDescriptors.descriptors.length == nTotal);</span>
             }
-<span class="pc bpc" id="L785" title="3 of 4 branches missed.">            assert(combinedKeypointList.size() == nTotal);</span>
-<span class="pc bpc" id="L786" title="3 of 4 branches missed.">            assert (combinedOrientationList.size() == nTotal);</span>
-<span class="pc bpc" id="L787" title="3 of 4 branches missed.">            assert (combinedHarrisResponseList.size() == nTotal);</span>
+<span class="pc bnc" id="L785" title="All 2 branches missed.">            assert(combinedKeypointList.size() == nTotal);</span>
+<span class="pc bnc" id="L786" title="All 2 branches missed.">            assert (combinedOrientationList.size() == nTotal);</span>
+<span class="pc bnc" id="L787" title="All 2 branches missed.">            assert (combinedHarrisResponseList.size() == nTotal);</span>
 
 <span class="fc" id="L789">            return;</span>
         }
@@ -831,14 +831,14 @@ Still testing the class, there may be bugs present.
 <span class="fc" id="L831">                count++;</span>
             }
 <span class="fc" id="L833">            combinedDescriptors.descriptors = combinedD;</span>
-<span class="pc bpc" id="L834" title="3 of 4 branches missed.">            assert(combinedDescriptors.descriptors.length == this.nKeypoints);</span>
+<span class="pc bnc" id="L834" title="All 2 branches missed.">            assert(combinedDescriptors.descriptors.length == this.nKeypoints);</span>
         }
         
 <span class="fc" id="L837">        combinedHarrisResponseList.remove(this.nKeypoints, nTotal - this.nKeypoints);</span>
         
-<span class="pc bpc" id="L839" title="3 of 4 branches missed.">        assert(combinedKeypointList.size() == this.nKeypoints);</span>
-<span class="pc bpc" id="L840" title="3 of 4 branches missed.">        assert(combinedOrientationList.size() == this.nKeypoints);</span>
-<span class="pc bpc" id="L841" title="3 of 4 branches missed.">        assert(combinedHarrisResponseList.size() == this.nKeypoints);</span>
+<span class="pc bnc" id="L839" title="All 2 branches missed.">        assert(combinedKeypointList.size() == this.nKeypoints);</span>
+<span class="pc bnc" id="L840" title="All 2 branches missed.">        assert(combinedOrientationList.size() == this.nKeypoints);</span>
+<span class="pc bnc" id="L841" title="All 2 branches missed.">        assert(combinedHarrisResponseList.size() == this.nKeypoints);</span>
 <span class="fc" id="L842">    }</span>
 
     private void extractDescriptors() {
@@ -1111,7 +1111,7 @@ Still testing the class, there may be bugs present.
      */
     protected float[][] cornerFast(final float[][] img, final int n, final float threshold) {
 
-<span class="pc bpc" id="L1114" title="3 of 4 branches missed.">        assert(n == fastN);</span>
+<span class="pc bnc" id="L1114" title="All 2 branches missed.">        assert(n == fastN);</span>
 
 <span class="fc" id="L1116">        int nRows = img.length;</span>
 <span class="fc" id="L1117">        int nCols = img[0].length;</span>
@@ -1224,7 +1224,7 @@ Still testing the class, there may be bugs present.
     private void maskCoordinates(TIntList keypoints0, TIntList keypoints1,
         int nRows, int nCols, int maskRadius) {
 
-<span class="pc bpc" id="L1227" title="3 of 4 branches missed.">        assert(keypoints0.size() == keypoints1.size());</span>
+<span class="pc bnc" id="L1227" title="All 2 branches missed.">        assert(keypoints0.size() == keypoints1.size());</span>
 
 <span class="fc" id="L1229">        TIntSet peaks = new TIntHashSet();</span>
 
@@ -1341,8 +1341,8 @@ Still testing the class, there may be bugs present.
 <span class="fc" id="L1341">                mask.add(0);</span>
             }
         }
-<span class="pc bpc" id="L1344" title="3 of 4 branches missed.">        assert(coords0.size() == mask.size());</span>
-<span class="pc bpc" id="L1345" title="3 of 4 branches missed.">        assert(coords0.size() == coords1.size());</span>
+<span class="pc bnc" id="L1344" title="All 2 branches missed.">        assert(coords0.size() == mask.size());</span>
+<span class="pc bnc" id="L1345" title="All 2 branches missed.">        assert(coords0.size() == coords1.size());</span>
 
 <span class="fc" id="L1347">        return mask;</span>
     }
@@ -1609,8 +1609,8 @@ Still testing the class, there may be bugs present.
         TIntList keypoints0, TIntList keypoints1,
         TDoubleList orientations, float scale) {
 
-<span class="pc bpc" id="L1612" title="3 of 4 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
-<span class="pc bpc" id="L1613" title="3 of 4 branches missed.">        assert(orientations.size() == keypoints1.size());</span>
+<span class="pc bnc" id="L1612" title="All 2 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
+<span class="pc bnc" id="L1613" title="All 2 branches missed.">        assert(orientations.size() == keypoints1.size());</span>
 
 <span class="fc" id="L1615">        Descriptors desc = new Descriptors();</span>
 
@@ -1644,7 +1644,7 @@ Still testing the class, there may be bugs present.
     private VeryLongBitString[] orbLoop(float[][] octaveImage, TIntList keypoints0,
         TIntList keypoints1, TDoubleList orientations, float scale) {
       
-<span class="pc bpc" id="L1647" title="3 of 4 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
+<span class="pc bnc" id="L1647" title="All 2 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
 
 <span class="fc bfc" id="L1649" title="All 2 branches covered.">        if (POS0 == null) {</span>
 <span class="fc" id="L1650">            POS0 = ORBDescriptorPositions.POS0;</span>
@@ -1840,9 +1840,9 @@ Still testing the class, there may be bugs present.
 <span class="nc" id="L1840">            dCombined.descriptors = Arrays.copyOf(dCombined.descriptors, k12.size());</span>
         }
         
-<span class="nc bnc" id="L1843" title="All 4 branches missed.">        assert(dCombined.descriptors.length == kCombined.size());</span>
-<span class="nc bnc" id="L1844" title="All 4 branches missed.">        assert(kCombined.size() == oCombined.size());</span>
-<span class="nc bnc" id="L1845" title="All 4 branches missed.">        assert(kCombined.size() == k12.size());</span>
+<span class="nc bnc" id="L1843" title="All 2 branches missed.">        assert(dCombined.descriptors.length == kCombined.size());</span>
+<span class="nc bnc" id="L1844" title="All 2 branches missed.">        assert(kCombined.size() == oCombined.size());</span>
+<span class="nc bnc" id="L1845" title="All 2 branches missed.">        assert(kCombined.size() == k12.size());</span>
         
 <span class="nc" id="L1847">        return new Object[]{dCombined, kCombined, oCombined};</span>
     }
@@ -2038,7 +2038,7 @@ Still testing the class, there may be bugs present.
     public static int[][] calcDescriptorCostMatrix(
         Descriptors[] desc1, Descriptors[] desc2) {
 
-<span class="nc bnc" id="L2041" title="All 4 branches missed.">        assert(desc1.length == desc2.length);</span>
+<span class="nc bnc" id="L2041" title="All 2 branches missed.">        assert(desc1.length == desc2.length);</span>
 
 <span class="nc" id="L2043">        int nd = desc1.length;</span>
 
@@ -2056,8 +2056,8 @@ Still testing the class, there may be bugs present.
 <span class="nc bnc" id="L2056" title="All 2 branches missed.">        for (int k = 0; k &lt; nd; ++k) {</span>
 <span class="nc" id="L2057">            VeryLongBitString[] d1 = desc1[k].descriptors;</span>
 <span class="nc" id="L2058">            VeryLongBitString[] d2 = desc2[k].descriptors;</span>
-<span class="nc bnc" id="L2059" title="All 4 branches missed.">            assert(d1.length == n1);</span>
-<span class="nc bnc" id="L2060" title="All 4 branches missed.">            assert(d2.length == n2);</span>
+<span class="nc bnc" id="L2059" title="All 2 branches missed.">            assert(d1.length == n1);</span>
+<span class="nc bnc" id="L2060" title="All 2 branches missed.">            assert(d2.length == n2);</span>
 <span class="nc bnc" id="L2061" title="All 2 branches missed.">            for (int i = 0; i &lt; n1; ++i) {</span>
 <span class="nc bnc" id="L2062" title="All 2 branches missed.">                for (int j = 0; j &lt; n2; ++j) {</span>
                     //cost[i][j] += (nbits * nbits); could use sq diff...
@@ -2166,4 +2166,4 @@ Still testing the class, there may be bugs present.
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

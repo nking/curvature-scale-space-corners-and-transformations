@@ -10,7 +10,7 @@ import java.awt.image.BufferedImage;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L13" title="1 of 2 branches missed.">public class Image {</span>
+<span class="fc" id="L13">public class Image {</span>
     
     //TODO:  add alpha when needed
         
@@ -307,7 +307,7 @@ import java.awt.image.BufferedImage;
                 
 <span class="fc" id="L308">        rowValue += shifted;</span>
                 
-<span class="pc bpc" id="L310" title="3 of 4 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255L) == setValue);</span>
+<span class="pc bnc" id="L310" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255L) == setValue);</span>
         
 <span class="fc" id="L312">        return rowValue;</span>
     }
@@ -326,7 +326,7 @@ import java.awt.image.BufferedImage;
                 
 <span class="fc" id="L327">        rowValue += shifted;</span>
                 
-<span class="pc bpc" id="L329" title="3 of 4 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255) == setValue);</span>
+<span class="pc bnc" id="L329" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255) == setValue);</span>
         
 <span class="fc" id="L331">        return rowValue;</span>
     }
@@ -723,7 +723,7 @@ import java.awt.image.BufferedImage;
         }
         
 <span class="fc bfc" id="L725" title="All 2 branches covered.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-            GreyscaleImage.Type.Bits32;
+<span class="fc" id="L726">            GreyscaleImage.Type.Bits32;</span>
         
 <span class="fc" id="L728">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
@@ -741,8 +741,8 @@ import java.awt.image.BufferedImage;
                     
 <span class="fc" id="L742">                int v = Math.round((r + g + b)/3.f);</span>
                 
-<span class="pc bpc" id="L744" title="3 of 4 branches missed.">                assert(v &lt;= 255);</span>
-<span class="pc bpc" id="L745" title="3 of 4 branches missed.">                assert(v &gt;= 0);</span>
+<span class="pc bnc" id="L744" title="All 2 branches missed.">                assert(v &lt;= 255);</span>
+<span class="pc bnc" id="L745" title="All 2 branches missed.">                assert(v &gt;= 0);</span>
                 
 <span class="fc" id="L747">                out.setValue(i, j, v);</span>
             }
@@ -754,7 +754,7 @@ import java.awt.image.BufferedImage;
     public GreyscaleImage copyToGreyscale2() {
         
 <span class="pc bpc" id="L756" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-            GreyscaleImage.Type.Bits32;
+<span class="pc" id="L757">            GreyscaleImage.Type.Bits32;</span>
         
 <span class="fc" id="L759">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
@@ -781,8 +781,8 @@ import java.awt.image.BufferedImage;
                     
                 //int v = Math.round((r + g + b)/3.f);
                 
-<span class="pc bpc" id="L784" title="3 of 4 branches missed.">                assert(v &lt;= 255);</span>
-<span class="pc bpc" id="L785" title="3 of 4 branches missed.">                assert(v &gt;= 0);</span>
+<span class="pc bnc" id="L784" title="All 2 branches missed.">                assert(v &lt;= 255);</span>
+<span class="pc bnc" id="L785" title="All 2 branches missed.">                assert(v &gt;= 0);</span>
                 
 <span class="fc" id="L787">                out.setValue(i, j, v);</span>
             }
@@ -799,7 +799,7 @@ import java.awt.image.BufferedImage;
     public GreyscaleImage copyRedToGreyscale() {
         
 <span class="pc bpc" id="L801" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-            GreyscaleImage.Type.Bits32;
+<span class="pc" id="L802">            GreyscaleImage.Type.Bits32;</span>
         
 <span class="fc" id="L804">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
@@ -825,7 +825,7 @@ import java.awt.image.BufferedImage;
     public GreyscaleImage copyGreenToGreyscale() {
         
 <span class="pc bpc" id="L827" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-            GreyscaleImage.Type.Bits32;
+<span class="pc" id="L828">            GreyscaleImage.Type.Bits32;</span>
         
 <span class="fc" id="L830">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
@@ -851,7 +851,7 @@ import java.awt.image.BufferedImage;
     public GreyscaleImage copyBlueToGreyscale() {
         
 <span class="pc bpc" id="L853" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-            GreyscaleImage.Type.Bits32;
+<span class="pc" id="L854">            GreyscaleImage.Type.Bits32;</span>
         
 <span class="fc" id="L856">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
@@ -1024,4 +1024,4 @@ import java.awt.image.BufferedImage;
 <span class="fc" id="L1024">        System.out.println(sb.toString());</span>
 <span class="fc" id="L1025">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

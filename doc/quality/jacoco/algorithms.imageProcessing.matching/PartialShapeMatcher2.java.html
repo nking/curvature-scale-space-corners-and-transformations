@@ -134,7 +134,7 @@ based upon algorithm in paper
   &lt;/pre&gt;
   @author nichole
  */
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">public class PartialShapeMatcher2 {</span>
+<span class="fc" id="L137">public class PartialShapeMatcher2 {</span>
 
     /**
      * in sampling the boundaries of the shapes, one can
@@ -326,7 +326,7 @@ based upon algorithm in paper
 <span class="fc" id="L326">            r.idx1s.add(idx1);</span>
 <span class="fc" id="L327">            r.idx2s.add(idx2);</span>
         }
-<span class="pc bpc" id="L329" title="3 of 4 branches missed.">        assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
+<span class="pc bnc" id="L329" title="All 2 branches missed.">        assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
 <span class="fc" id="L330">        r.chordDiffSum = rSub.chordDiffSum;</span>
 <span class="fc" id="L331">        r.distSum = rSub.distSum;</span>
         
@@ -489,7 +489,7 @@ based upon algorithm in paper
             
 <span class="fc" id="L490">            PairIntArray left = new PairIntArray(r.idx1s.size());</span>
 <span class="fc" id="L491">            PairIntArray right = new PairIntArray(r.idx2s.size());</span>
-<span class="pc bpc" id="L492" title="3 of 4 branches missed.">            assert(r.idx1s.size() == r.idx2s.size());</span>
+<span class="pc bnc" id="L492" title="All 2 branches missed.">            assert(r.idx1s.size() == r.idx2s.size());</span>
 <span class="fc bfc" id="L493" title="All 2 branches covered.">            for (int i = 0; i &lt; r.idx1s.size(); ++i) {</span>
 <span class="fc" id="L494">                int idx = r.idx1s.get(i);</span>
 <span class="fc" id="L495">                left.add(p.getX(idx), p.getY(idx));</span>
@@ -573,7 +573,7 @@ based upon algorithm in paper
 <span class="pc bpc" id="L573" title="1 of 2 branches missed.">                if (debug) {</span>
 <span class="nc" id="L574">                    System.out.println(&quot;not transposed&quot;);</span>
                 }
-<span class="pc bpc" id="L576" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
+<span class="pc bnc" id="L576" title="All 2 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
             }
         } else {
 <span class="fc" id="L579">            md = createDifferenceMatrices(q, p);</span>
@@ -584,7 +584,7 @@ based upon algorithm in paper
 <span class="nc" id="L584">                    System.out.println(&quot;transpose&quot;);</span>
                 }
 <span class="fc" id="L586">                r = r.transpose();</span>
-<span class="pc bpc" id="L587" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
+<span class="pc bnc" id="L587" title="All 2 branches missed.">                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));</span>
             }
 <span class="fc" id="L589">            pToQ = false;</span>
         }
@@ -672,7 +672,7 @@ based upon algorithm in paper
 <span class="fc" id="L672">                Result result = results.get(i);</span>
 <span class="fc" id="L673">                populateWithChordDiffs(result, md, p.getN(), q.getN());</span>
 <span class="fc" id="L674">                log.fine(&quot;calc'ed chords: &quot; + result.toStringAbbrev());</span>
-<span class="pc bpc" id="L675" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
+<span class="pc bnc" id="L675" title="All 2 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
             }
 
             // need to decide between using the total chord diff sum
@@ -1126,13 +1126,13 @@ based upon algorithm in paper
 <span class="fc" id="L1126">                leftUnmatchedXY.getY(idxIdx.getX())</span>
             );
 <span class="fc" id="L1128">            int pIdx = pPoints.get(ell);</span>
-<span class="pc bpc" id="L1129" title="3 of 4 branches missed.">            assert(pIdx &gt; -1);</span>
+<span class="pc bnc" id="L1129" title="All 2 branches missed.">            assert(pIdx &gt; -1);</span>
 <span class="fc" id="L1130">            PairInt ar = new PairInt(</span>
 <span class="fc" id="L1131">                rightUnmatchedXY.getX(idxIdx.getY()),</span>
 <span class="fc" id="L1132">                rightUnmatchedXY.getY(idxIdx.getY())</span>
             );
 <span class="fc" id="L1134">            int qIdx = qPoints.get(ar);</span>
-<span class="pc bpc" id="L1135" title="3 of 4 branches missed.">            assert(qIdx &gt; -1);</span>
+<span class="pc bnc" id="L1135" title="All 2 branches missed.">            assert(qIdx &gt; -1);</span>
 
 <span class="fc" id="L1137">            result.insert(pIdx, qIdx, dist);</span>
 
@@ -1147,11 +1147,11 @@ based upon algorithm in paper
 
 <span class="fc" id="L1148">            PairInt ell = new PairInt(leftXY.getX(i), leftXY.getY(i));</span>
 <span class="fc" id="L1149">            int pIdx = pPoints.get(ell);</span>
-<span class="pc bpc" id="L1150" title="3 of 4 branches missed.">            assert(pIdx &gt; -1);</span>
+<span class="pc bnc" id="L1150" title="All 2 branches missed.">            assert(pIdx &gt; -1);</span>
 
 <span class="fc" id="L1152">            PairInt ar = new PairInt(rightXY.getX(i), rightXY.getY(i));</span>
 <span class="fc" id="L1153">            int qIdx = qPoints.get(ar);</span>
-<span class="pc bpc" id="L1154" title="3 of 4 branches missed.">            assert(qIdx &gt; -1);</span>
+<span class="pc bnc" id="L1154" title="All 2 branches missed.">            assert(qIdx &gt; -1);</span>
 
 <span class="fc" id="L1156">            result.insert(pIdx, qIdx, dist);</span>
         }
@@ -1527,7 +1527,7 @@ based upon algorithm in paper
         
 <span class="fc" id="L1528">        rangeSearch.getAllIntervals(outputIntervals, outputValues);</span>
     
-<span class="pc bpc" id="L1530" title="3 of 4 branches missed.">        assert(outputIntervals.size() == outputValues.size());</span>
+<span class="pc bnc" id="L1530" title="All 2 branches missed.">        assert(outputIntervals.size() == outputValues.size());</span>
 <span class="fc" id="L1531">    }</span>
 
     /**
@@ -1614,8 +1614,8 @@ based upon algorithm in paper
             // NOTE: absolute values are stored.
             //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
 <span class="fc" id="L1616">            md[i] = subtract(a1, shifted2);</span>
-<span class="pc bpc" id="L1617" title="3 of 4 branches missed.">            assert(md[i].length == n1);</span>
-<span class="pc bpc" id="L1618" title="3 of 4 branches missed.">            assert(md[i][0].length == n1);</span>
+<span class="pc bnc" id="L1617" title="All 2 branches missed.">            assert(md[i].length == n1);</span>
+<span class="pc bnc" id="L1618" title="All 2 branches missed.">            assert(md[i][0].length == n1);</span>
 <span class="fc" id="L1619">            prevA2Shifted = shifted2;</span>
         }
        
@@ -1789,13 +1789,13 @@ based upon algorithm in paper
         subtracting only the MXM portion
         */
 
-<span class="pc bpc" id="L1792" title="3 of 4 branches missed.">        assert(a1.length == a1[0].length);</span>
-<span class="pc bpc" id="L1793" title="3 of 4 branches missed.">        assert(a2.length == a2[0].length);</span>
+<span class="pc bnc" id="L1792" title="All 2 branches missed.">        assert(a1.length == a1[0].length);</span>
+<span class="pc bnc" id="L1793" title="All 2 branches missed.">        assert(a2.length == a2[0].length);</span>
 
 <span class="fc" id="L1795">        int n1 = a1.length;</span>
 <span class="fc" id="L1796">        int n2 = a2.length;</span>
 
-<span class="pc bpc" id="L1798" title="3 of 4 branches missed.">        assert(n1 &lt;= n2);</span>
+<span class="pc bnc" id="L1798" title="All 2 branches missed.">        assert(n1 &lt;= n2);</span>
 
 <span class="fc" id="L1800">        float[][] output = new float[n1][];</span>
 <span class="fc bfc" id="L1801" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
@@ -2063,7 +2063,7 @@ based upon algorithm in paper
             }
             
 <span class="pc bpc" id="L2065" title="1 of 2 branches missed.">            if (result != null) {</span>
-<span class="pc bpc" id="L2066" title="3 of 4 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
+<span class="pc bnc" id="L2066" title="All 2 branches missed.">                assert(assertIndexesWithinBounds(result, p.getN(), q.getN()));</span>
 <span class="fc" id="L2067">                results.add(result);</span>
 <span class="fc" id="L2068">                addedPointLists.add(added);</span>
             }
@@ -2090,7 +2090,7 @@ based upon algorithm in paper
     private void populateWithChordDiffs(Result result,
         float[][][] md, int n1, int n2) {
        
-<span class="pc bpc" id="L2093" title="3 of 4 branches missed.">        assert(md[0][0].length == n1);</span>
+<span class="pc bnc" id="L2093" title="All 2 branches missed.">        assert(md[0][0].length == n1);</span>
         
         //md[0:n2-1][0:n1-1][0:n1-1]
         
@@ -2159,9 +2159,9 @@ based upon algorithm in paper
     private TDoubleList extractChordDiffs(float[][][] md, int n1, int n2,
         PairIntArray matchedIndexes) {
        
-<span class="nc bnc" id="L2162" title="All 4 branches missed.">        assert(md[0][0].length == n1);</span>
-<span class="nc bnc" id="L2163" title="All 4 branches missed.">        assert(md.length == n2);</span>
-<span class="nc bnc" id="L2164" title="All 4 branches missed.">        assert(md[0].length == n1);</span>
+<span class="nc bnc" id="L2162" title="All 2 branches missed.">        assert(md[0][0].length == n1);</span>
+<span class="nc bnc" id="L2163" title="All 2 branches missed.">        assert(md.length == n2);</span>
+<span class="nc bnc" id="L2164" title="All 2 branches missed.">        assert(md[0].length == n1);</span>
         
         //md[0:n2-1][0:n1-1][0:n1-1]
         
@@ -2245,7 +2245,7 @@ based upon algorithm in paper
 <span class="fc bfc" id="L2245" title="All 2 branches covered.">        for (int i = 0; i &lt; len; ++i) {</span>
 
 <span class="fc" id="L2247">            int pIdx = i;</span>
-<span class="pc bpc" id="L2248" title="3 of 4 branches missed.">            assert(pIdx &lt; n1);</span>
+<span class="pc bnc" id="L2248" title="All 2 branches missed.">            assert(pIdx &lt; n1);</span>
 
 <span class="fc" id="L2250">            pIdxs.add(pIdx);</span>
 <span class="fc" id="L2251">            pOut.add(p.getX(pIdx), p.getY(pIdx));</span>
@@ -2259,8 +2259,8 @@ based upon algorithm in paper
 <span class="fc" id="L2259">            qOut.add(q.getX(qIdx), q.getY(qIdx));</span>
         }
 
-<span class="pc bpc" id="L2262" title="3 of 4 branches missed.">        assert(pOut.getN() == len);</span>
-<span class="pc bpc" id="L2263" title="3 of 4 branches missed.">        assert(qOut.getN() == len);</span>
+<span class="pc bnc" id="L2262" title="All 2 branches missed.">        assert(pOut.getN() == len);</span>
+<span class="pc bnc" id="L2263" title="All 2 branches missed.">        assert(qOut.getN() == len);</span>
 
         // -- populate unmatched p ----
 <span class="fc bfc" id="L2266" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
@@ -2275,8 +2275,8 @@ based upon algorithm in paper
             }
         }
         
-<span class="pc bpc" id="L2278" title="3 of 4 branches missed.">        assert(pUnmatchedOut.getN() + pOut.getN() == p.getN());</span>
-<span class="pc bpc" id="L2279" title="3 of 4 branches missed.">        assert(qUnmatchedOut.getN() + qOut.getN() == q.getN());</span>
+<span class="pc bnc" id="L2278" title="All 2 branches missed.">        assert(pUnmatchedOut.getN() + pOut.getN() == p.getN());</span>
+<span class="pc bnc" id="L2279" title="All 2 branches missed.">        assert(qUnmatchedOut.getN() + qOut.getN() == q.getN());</span>
 <span class="fc" id="L2280">    }</span>
     
     private Result addByTransformation(SR sr, PairIntArray p, PairIntArray q,
@@ -2459,12 +2459,12 @@ based upon algorithm in paper
 <span class="nc" id="L2459">        double angleA1 = LinesAndAngles.calcAngle(</span>
             pXRef1, pYRef1, pX, pY, pXRef2, pYRef2
         );
-<span class="nc bnc" id="L2462" title="All 4 branches missed.">        assert(!Double.isNaN(angleA1));</span>
+<span class="nc bnc" id="L2462" title="All 2 branches missed.">        assert(!Double.isNaN(angleA1));</span>
            
 <span class="nc" id="L2464">        double angleA2 = LinesAndAngles.calcAngle(</span>
             qXRef1, qYRef1, qX, qY, qXRef2, qYRef2
         );
-<span class="nc bnc" id="L2467" title="All 4 branches missed.">        assert(!Double.isNaN(angleA2));</span>
+<span class="nc bnc" id="L2467" title="All 2 branches missed.">        assert(!Double.isNaN(angleA2));</span>
         
 <span class="nc" id="L2469">        double v = angleA1 - angleA2;</span>
 <span class="nc bnc" id="L2470" title="All 2 branches missed.">        if (v &lt; 0) {</span>
@@ -2484,4 +2484,4 @@ based upon algorithm in paper
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

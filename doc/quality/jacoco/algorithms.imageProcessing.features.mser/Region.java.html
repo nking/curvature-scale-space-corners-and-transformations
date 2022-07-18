@@ -52,7 +52,7 @@ image, and optionally fits ellipses to them.
 * The equals and hashcode have been tailored to consider the composite of
 * pixel_, area_ and moments_ as the primary key (for Collections, etc.).
 */
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">public class Region {</span>
+public class Region {
 
     /**
      * Level at which the region is processed.
@@ -147,8 +147,8 @@ image, and optionally fits ellipses to them.
 <span class="fc" id="L147">    }</span>
 
     void merge(Region child) {
-<span class="pc bpc" id="L150" title="3 of 4 branches missed.">        assert(child.parent_ == null);</span>
-<span class="pc bpc" id="L151" title="3 of 4 branches missed.">        assert(child.next_ == null);</span>
+<span class="pc bnc" id="L150" title="All 2 branches missed.">        assert(child.parent_ == null);</span>
+<span class="pc bnc" id="L151" title="All 2 branches missed.">        assert(child.next_ == null);</span>
 
         // Add the moments together
 <span class="fc" id="L154">        area_ += child.area_;</span>
@@ -379,7 +379,7 @@ image, and optionally fits ellipses to them.
 <span class="nc" id="L379">                wSum += w;</span>
             }
         }
-<span class="nc bnc" id="L382" title="All 4 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
                 
 <span class="nc" id="L384">        outputXY[0] = (int)Math.round(xSum);</span>
 <span class="nc" id="L385">        outputXY[1] = (int)Math.round(ySum);</span>
@@ -507,7 +507,7 @@ image, and optionally fits ellipses to them.
 <span class="nc" id="L507">                wSum += w;</span>
             }
         }
-<span class="nc bnc" id="L510" title="All 4 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
+<span class="nc bnc" id="L510" title="All 2 branches missed.">        assert(Math.abs(wSum - 1) &lt; 0.01);</span>
                 
 <span class="nc" id="L512">        outputXY[0] = (int)Math.round(xSum);</span>
 <span class="nc" id="L513">        outputXY[1] = (int)Math.round(ySum);</span>
@@ -704,7 +704,7 @@ image, and optionally fits ellipses to them.
 <span class="nc" id="L704">            output[count] = new TrioInt(yC, minX, maxX);</span>
 <span class="nc" id="L705">            count++;</span>
         }
-<span class="nc bnc" id="L707" title="All 4 branches missed.">        assert(count == n);</span>
+<span class="nc bnc" id="L707" title="All 2 branches missed.">        assert(count == n);</span>
         
 <span class="nc" id="L709">        return output;</span>
     }
@@ -921,4 +921,4 @@ image, and optionally fits ellipses to them.
 <span class="fc" id="L921">        return sum;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

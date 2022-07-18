@@ -1063,8 +1063,8 @@ import java.util.List;
 <span class="fc" id="L1063">		double T =  1.0 - 0.17 * Math.cos(Hmeanprime - Math.PI/6.0) + 0.24 * Math.cos(2*Hmeanprime)</span>
 <span class="fc" id="L1064">            + 0.32 * Math.cos(3*Hmeanprime + Math.PI/30) - 0.2 * Math.cos(4*Hmeanprime - 21*Math.PI/60);</span>
 
-<span class="fc bfc" id="L1066" title="All 4 branches covered.">		double deltahprime =  ((Math.abs(h1prime - h2prime) &lt;= Math.PI) ? h2prime - h1prime :</span>
-            (h2prime &lt;= h1prime) ? h2prime - h1prime + 2*Math.PI : h2prime - h1prime - 2*Math.PI);
+<span class="fc bfc" id="L1066" title="All 2 branches covered.">		double deltahprime =  ((Math.abs(h1prime - h2prime) &lt;= Math.PI) ? h2prime - h1prime :</span>
+<span class="fc bfc" id="L1067" title="All 2 branches covered.">            (h2prime &lt;= h1prime) ? h2prime - h1prime + 2*Math.PI : h2prime - h1prime - 2*Math.PI);</span>
 
 <span class="fc" id="L1069">		double deltaLprime = L2 - L1;</span>
 <span class="fc" id="L1070">		double deltaCprime = C2prime - C1prime;</span>
@@ -1461,4 +1461,4 @@ import java.util.List;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

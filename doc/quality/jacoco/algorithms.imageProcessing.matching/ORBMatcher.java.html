@@ -49,7 +49,7 @@ import no.uib.cipr.matrix.DenseMatrix;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">public class ORBMatcher {</span>
+<span class="pc" id="L52">public class ORBMatcher {</span>
 
     /**
      * greedy matching of d1 to d2 by min cost, with unique mappings for
@@ -236,7 +236,7 @@ import no.uib.cipr.matrix.DenseMatrix;
         
         //int[] bestMatch = minCostBipartiteUnbalanced(cost);
         
-<span class="pc bpc" id="L239" title="3 of 4 branches missed.">        assert(bestMatch.length == n1);</span>
+<span class="pc bnc" id="L239" title="All 2 branches missed.">        assert(bestMatch.length == n1);</span>
         
 <span class="fc" id="L241">        int nBest = 0;</span>
 <span class="fc bfc" id="L242" title="All 2 branches covered.">        for (int idx : bestMatch) {</span>
@@ -258,7 +258,7 @@ import no.uib.cipr.matrix.DenseMatrix;
             }
         }
         
-<span class="pc bpc" id="L261" title="3 of 4 branches missed.">        assert(count == nBest);</span>
+<span class="pc bnc" id="L261" title="All 2 branches missed.">        assert(count == nBest);</span>
 <span class="fc" id="L262">        QuickSort.sortBy1stArg(costs, indexes);</span>
 <span class="fc" id="L263">        Set&lt;PairInt&gt; set1 = new HashSet&lt;PairInt&gt;();</span>
 <span class="fc" id="L264">        Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;();</span>
@@ -354,7 +354,7 @@ import no.uib.cipr.matrix.DenseMatrix;
 <span class="fc" id="L354">                        bc = c;</span>
 <span class="fc" id="L355">                        bcIdx = j;</span>
                     } else {
-<span class="nc bnc" id="L357" title="All 6 branches missed.">                        assert(c == bc2 &amp;&amp; bc == bc2);</span>
+<span class="nc bnc" id="L357" title="All 4 branches missed.">                        assert(c == bc2 &amp;&amp; bc == bc2);</span>
                     }
                 } else {
                     // c &gt; bc
@@ -448,4 +448,4 @@ import no.uib.cipr.matrix.DenseMatrix;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

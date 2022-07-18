@@ -46,7 +46,7 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
        
  * @author nichole
  */
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">public class ParabolaLeastSquares {</span>
+<span class="fc" id="L49">public class ParabolaLeastSquares {</span>
  
     //x    y    x^2    x^3    x^4    xy    yx^2
     protected final double[] moments_;
@@ -209,7 +209,7 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
     }
     
     private static float[] reverse(float[] coeff) {
-<span class="pc bpc" id="L212" title="3 of 4 branches missed.">        assert(coeff.length == 3);</span>
+<span class="pc bnc" id="L212" title="All 2 branches missed.">        assert(coeff.length == 3);</span>
 <span class="fc" id="L213">        float[] rev = new float[3];</span>
 <span class="fc" id="L214">        rev[0] = coeff[2];</span>
 <span class="fc" id="L215">        rev[1] = coeff[1];</span>
@@ -229,4 +229,4 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 <span class="nc" id="L229">        return cp;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

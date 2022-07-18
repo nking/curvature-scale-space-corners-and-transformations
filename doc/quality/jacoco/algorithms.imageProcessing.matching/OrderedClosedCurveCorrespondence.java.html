@@ -31,7 +31,7 @@ import java.util.TreeMap;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">class OrderedClosedCurveCorrespondence {</span>
+<span class="fc" id="L34">class OrderedClosedCurveCorrespondence {</span>
 
     // visit each interval in order of smallest cost,
     // and only add the clockwise consistent intervals to a combined output
@@ -143,7 +143,7 @@ import java.util.TreeMap;
      */
     public void addInterval(SR sr, int n1, int n2) {
 
-<span class="pc bpc" id="L146" title="3 of 4 branches missed.">        assert(sr.startIdx1 != sr.stopIdx1);</span>
+<span class="pc bnc" id="L146" title="All 2 branches missed.">        assert(sr.startIdx1 != sr.stopIdx1);</span>
 
 <span class="fc bfc" id="L148" title="All 2 branches covered.">        if (t1.isEmpty()) {</span>
 <span class="fc" id="L149">            addFirstInterval(sr);</span>
@@ -277,7 +277,7 @@ import java.util.TreeMap;
 
             // no entries below sr are in t1
 
-<span class="pc bpc" id="L280" title="3 of 4 branches missed.">            assert(sr.startIdx1 &gt; 0);</span>
+<span class="pc bnc" id="L280" title="All 2 branches missed.">            assert(sr.startIdx1 &gt; 0);</span>
             
 <span class="pc bpc" id="L282" title="1 of 2 branches missed.">            if (above == null) {</span>
                 // this can happen if there's only one item in t1 and
@@ -350,7 +350,7 @@ import java.util.TreeMap;
 <span class="fc" id="L350">            return;</span>
         }
 
-<span class="pc bpc" id="L353" title="3 of 4 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
+<span class="pc bnc" id="L353" title="All 2 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
 
 <span class="fc" id="L355">        sr.startIdx1 = subsetIdx1s.get(0);</span>
 <span class="fc" id="L356">        sr.stopIdx1 = subsetIdx1s.get(ns - 1);</span>
@@ -412,7 +412,7 @@ import java.util.TreeMap;
 <span class="nc" id="L412">            return;</span>
         }
 
-<span class="nc bnc" id="L415" title="All 4 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
 
 <span class="nc" id="L417">        sr.startIdx1 = subsetIdx1s.get(0);</span>
 <span class="nc" id="L418">        sr.stopIdx1 = subsetIdx1s.get(ns - 1);</span>
@@ -575,7 +575,7 @@ import java.util.TreeMap;
 <span class="fc" id="L575">            return;</span>
         }
 
-<span class="pc bpc" id="L578" title="3 of 4 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
+<span class="pc bnc" id="L578" title="All 2 branches missed.">        assert(assertContiguous(subsetIdx1s));</span>
 
 <span class="fc" id="L580">        SR ceil = stp1Ceil.getValue();</span>
 <span class="fc" id="L581">        calculateIds2s(ceil, n2);</span>
@@ -591,7 +591,7 @@ import java.util.TreeMap;
 <span class="nc" id="L591">            return;</span>
         }
 
-<span class="pc bpc" id="L594" title="3 of 4 branches missed.">        assert(assertContiguous(subsetIdx1s2));</span>
+<span class="pc bnc" id="L594" title="All 2 branches missed.">        assert(assertContiguous(subsetIdx1s2));</span>
 
 <span class="fc" id="L596">        sr.startIdx1 = subsetIdx1s2.get(0);</span>
 <span class="fc" id="L597">        sr.stopIdx1 = subsetIdx1s2.get(ns - 1);</span>
@@ -677,4 +677,4 @@ import java.util.TreeMap;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

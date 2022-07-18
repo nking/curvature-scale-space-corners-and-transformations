@@ -20,7 +20,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L23" title="1 of 2 branches missed.">public class ObjectMatcherWrapper {</span>
+<span class="fc" id="L23">public class ObjectMatcherWrapper {</span>
     
 <span class="fc" id="L25">    private static int maxDimension = 256;</span>
 <span class="fc" id="L26">    private SIGMA sigma = SIGMA.ZEROPOINTFIVE;//SIGMA.ONE;</span>
@@ -167,7 +167,7 @@ import java.util.Set;
     
 <span class="fc" id="L168">        ImageExt img0Masked = img0.copyToImageExt();</span>
                 
-<span class="pc bpc" id="L170" title="3 of 4 branches missed.">        assert(imgMask0.getNPixels() == img0.getNPixels());</span>
+<span class="pc bnc" id="L170" title="All 2 branches missed.">        assert(imgMask0.getNPixels() == img0.getNPixels());</span>
 
 <span class="fc bfc" id="L172" title="All 2 branches covered.">        for (int pixIdx = 0; pixIdx &lt; imgMask0.getNPixels(); ++pixIdx) {</span>
 <span class="fc bfc" id="L173" title="All 2 branches covered.">            if (imgMask0.getR(pixIdx) == 0) {</span>
@@ -195,4 +195,4 @@ import java.util.Set;
 <span class="nc" id="L195">        return searchImage;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

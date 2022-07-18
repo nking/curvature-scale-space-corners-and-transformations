@@ -26,7 +26,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L29" title="1 of 2 branches missed.">public class ConnectedPointsFinder {</span>
+<span class="fc" id="L29">public class ConnectedPointsFinder {</span>
     
     // key = groupIdx, value = pixels
 <span class="fc" id="L32">    private TIntObjectMap&lt;TIntSet&gt; groupPixIdxsMap = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
@@ -265,7 +265,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L265">            int gIdx = iter2.key();</span>
 <span class="fc" id="L266">            TIntSet pixIdxs = iter2.value();</span>
             
-<span class="pc bpc" id="L268" title="3 of 4 branches missed.">            assert(pixIdxs != null);</span>
+<span class="pc bnc" id="L268" title="All 2 branches missed.">            assert(pixIdxs != null);</span>
             
 <span class="fc bfc" id="L270" title="All 2 branches covered.">            if (pixIdxs.size() &gt;= minimumNumberInCluster) {</span>
 <span class="fc" id="L271">                groupList.add(pixIdxs);            </span>
@@ -318,4 +318,4 @@ import java.util.logging.Logger;
 <span class="fc" id="L318">        return set;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

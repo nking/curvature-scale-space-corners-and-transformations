@@ -12,7 +12,7 @@ import java.util.TreeSet;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L15" title="All 2 branches missed.">public class NextCorner&lt;T extends CornerRegion&gt; {</span>
+<span class="nc" id="L15">public class NextCorner&lt;T extends CornerRegion&gt; {</span>
     
     /**
      * a list of corners extracted from a closed curve in a digital image
@@ -89,13 +89,13 @@ import java.util.TreeSet;
 <span class="nc bnc" id="L89" title="All 2 branches missed.">        if (matchedEdgeNumber1 == -1) {</span>
 <span class="nc" id="L90">            matchedEdgeNumber1 = corner1.getEdgeIdx();</span>
         } else {
-<span class="nc bnc" id="L92" title="All 4 branches missed.">            assert(matchedEdgeNumber1 == corner1.getEdgeIdx());</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            assert(matchedEdgeNumber1 == corner1.getEdgeIdx());</span>
         }
         
 <span class="nc bnc" id="L95" title="All 2 branches missed.">        if (matchedEdgeNumber2 == -1) {</span>
 <span class="nc" id="L96">            matchedEdgeNumber2 = corner2.getEdgeIdx();</span>
         } else {
-<span class="nc bnc" id="L98" title="All 4 branches missed.">            assert(matchedEdgeNumber2 == corner2.getEdgeIdx());</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            assert(matchedEdgeNumber2 == corner2.getEdgeIdx());</span>
         }    
 <span class="nc" id="L100">    }</span>
     
@@ -142,7 +142,7 @@ import java.util.TreeSet;
         
 <span class="nc" id="L143">        boolean removed = remainingCorners.remove(corner);</span>
                 
-<span class="nc bnc" id="L145" title="All 4 branches missed.">        assert(removed == true);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        assert(removed == true);</span>
         
 <span class="nc" id="L147">        return corner;</span>
     }
@@ -183,7 +183,7 @@ import java.util.TreeSet;
             
 <span class="nc" id="L184">            boolean removed = remainingCorners.remove(nextLower);</span>
             
-<span class="nc bnc" id="L186" title="All 4 branches missed.">            assert(removed);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            assert(removed);</span>
             
 <span class="nc" id="L188">            return nextLower;</span>
         }
@@ -207,4 +207,4 @@ import java.util.TreeSet;
 <span class="nc" id="L207">        return matchedDist;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

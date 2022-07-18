@@ -14,7 +14,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L17" title="1 of 2 branches missed.">public class OtsuThresholding {</span>
+<span class="fc" id="L17">public class OtsuThresholding {</span>
    
     /**
      * 
@@ -372,7 +372,7 @@ import java.util.Set;
             }
         }
         
-<span class="pc bpc" id="L375" title="3 of 4 branches missed.">        assert(assertSums(p, nPix));</span>
+<span class="pc bnc" id="L375" title="All 2 branches missed.">        assert(assertSums(p, nPix));</span>
                 
 <span class="fc" id="L377">        double minP = Double.MAX_VALUE;</span>
         // finish array of probabilities
@@ -385,7 +385,7 @@ import java.util.Set;
             }
 <span class="fc" id="L386">        }</span>
         
-<span class="pc bpc" id="L388" title="3 of 4 branches missed.">        assert(assertSums(p, 1));</span>
+<span class="pc bnc" id="L388" title="All 2 branches missed.">        assert(assertSums(p, 1));</span>
         
         /*
        for any given point in P_i_j, noted as (s, t) where s is i and t is j,
@@ -448,7 +448,7 @@ import java.util.Set;
 <span class="fc" id="L448">        SummedAreaTable summed = new SummedAreaTable();</span>
 <span class="fc" id="L449">        double[][] pTable = summed.createAbsoluteSummedAreaTable(p);</span>
         
-<span class="pc bpc" id="L451" title="3 of 4 branches missed.">        assert(allAreRealNumbers(pTable));</span>
+<span class="pc bnc" id="L451" title="All 2 branches missed.">        assert(allAreRealNumbers(pTable));</span>
         
 <span class="fc" id="L453">        double[] binFactors = new double[nBins];</span>
 <span class="fc bfc" id="L454" title="All 2 branches covered.">        for (int i = 0; i &lt; nBins; ++i) {</span>
@@ -492,16 +492,16 @@ import java.util.Set;
 <span class="fc" id="L492">                    iv = iPTable[i][j - 1] + iFactor*p[i][j];</span>
 <span class="fc" id="L493">                    jv = jPTable[i][j - 1] + jFactor*p[i][j];</span>
                 } else {
-<span class="pc bpc" id="L495" title="5 of 6 branches missed.">                    assert(i == 0 &amp;&amp; j == 0);</span>
+<span class="pc bnc" id="L495" title="All 4 branches missed.">                    assert(i == 0 &amp;&amp; j == 0);</span>
 <span class="fc" id="L496">                    iv = iFactor*p[0][0];</span>
 <span class="fc" id="L497">                    jv = jFactor*p[0][0];</span>
                 }
 <span class="fc" id="L499">                iPTable[i][j] = iv;</span>
 <span class="fc" id="L500">                jPTable[i][j] = jv;</span>
-<span class="pc bpc" id="L501" title="3 of 4 branches missed.">                assert(!Double.isNaN(iPTable[i][j]));</span>
-<span class="pc bpc" id="L502" title="3 of 4 branches missed.">                assert(!Double.isNaN(jPTable[i][j]));</span>
-<span class="pc bpc" id="L503" title="3 of 4 branches missed.">                assert(Double.isFinite(iPTable[i][j]));</span>
-<span class="pc bpc" id="L504" title="3 of 4 branches missed.">                assert(Double.isFinite(jPTable[i][j]));</span>
+<span class="pc bnc" id="L501" title="All 2 branches missed.">                assert(!Double.isNaN(iPTable[i][j]));</span>
+<span class="pc bnc" id="L502" title="All 2 branches missed.">                assert(!Double.isNaN(jPTable[i][j]));</span>
+<span class="pc bnc" id="L503" title="All 2 branches missed.">                assert(Double.isFinite(iPTable[i][j]));</span>
+<span class="pc bnc" id="L504" title="All 2 branches missed.">                assert(Double.isFinite(jPTable[i][j]));</span>
                 
                 /*System.out.println(String.format(
                 &quot;pair=(%.2f,%.2f)  w=%.2f  iv=%.2f  jv=%.2f&quot;,
@@ -557,24 +557,24 @@ import java.util.Set;
 <span class="fc" id="L557">                m0I = iPTable[s - 1][t - 1];</span>
 <span class="fc" id="L558">                m0J = jPTable[s - 1][t - 1];</span>
 <span class="fc bfc" id="L559" title="All 2 branches covered.">            } else if (s &gt; 0) {</span>
-<span class="pc bpc" id="L560" title="3 of 4 branches missed.">                assert(t == 0);</span>
+<span class="pc bnc" id="L560" title="All 2 branches missed.">                assert(t == 0);</span>
 <span class="fc" id="L561">                w0 = pTable[s - 1][t];</span>
 <span class="fc" id="L562">                m0I = iPTable[s - 1][t];</span>
 <span class="fc" id="L563">                m0J = jPTable[s - 1][t];</span>
 <span class="fc bfc" id="L564" title="All 2 branches covered.">            } else if (t &gt; 0) {</span>
-<span class="pc bpc" id="L565" title="3 of 4 branches missed.">                assert(s == 0);</span>
+<span class="pc bnc" id="L565" title="All 2 branches missed.">                assert(s == 0);</span>
 <span class="fc" id="L566">                w0 = pTable[s][t - 1];</span>
 <span class="fc" id="L567">                m0I = iPTable[s][t - 1];</span>
 <span class="fc" id="L568">                m0J = jPTable[s][t - 1];</span>
             } else {
                 // i == 0 and j == 0
-<span class="pc bpc" id="L571" title="3 of 4 branches missed.">                assert(s == 0);</span>
-<span class="pc bpc" id="L572" title="3 of 4 branches missed.">                assert(t == 0);</span>
+<span class="pc bnc" id="L571" title="All 2 branches missed.">                assert(s == 0);</span>
+<span class="pc bnc" id="L572" title="All 2 branches missed.">                assert(t == 0);</span>
 <span class="fc" id="L573">                w0 = p[s][t];</span>
 <span class="fc" id="L574">                m0I = iPTable[s][t];</span>
 <span class="fc" id="L575">                m0J = jPTable[s][t];</span>
             }
-<span class="pc bpc" id="L577" title="3 of 4 branches missed.">            assert(w0 &lt;= 1.);</span>
+<span class="pc bnc" id="L577" title="All 2 branches missed.">            assert(w0 &lt;= 1.);</span>
 <span class="fc" id="L578">            m0I /= w0;</span>
 <span class="fc" id="L579">            m0J /= w0;</span>
 <span class="fc" id="L580">            m1I /= w1;</span>
@@ -603,7 +603,7 @@ import java.util.Set;
             } else {
 <span class="fc" id="L604">                trace = w0 * (a + b) + w1 * (c + d);</span>
             }
-<span class="pc bpc" id="L606" title="3 of 4 branches missed.">            assert(!Double.isNaN(trace));</span>
+<span class="pc bnc" id="L606" title="All 2 branches missed.">            assert(!Double.isNaN(trace));</span>
             
             /*System.out.println(String.format(
                 &quot;thresh=(%.2f,%.2f)  tr=%.2f&quot;,
@@ -663,4 +663,4 @@ import java.util.Set;
 <span class="nc bnc" id="L663" title="All 2 branches missed.">        return (Math.abs(expectedSum - sum) &lt; 0.0001);</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -34,7 +34,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">public class KMeansPlusPlus {</span>
+<span class="fc" id="L37">public class KMeansPlusPlus {</span>
     
 <span class="fc" id="L39">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
@@ -381,12 +381,12 @@ import java.util.logging.Logger;
 <span class="fc" id="L381">            int v = values[pixIdx];</span>
             
 <span class="fc" id="L383">            TIntSet nearest = nn1d.findClosest(v);</span>
-<span class="pc bpc" id="L384" title="5 of 6 branches missed.">            assert(nearest != null &amp;&amp; !nearest.isEmpty());</span>
+<span class="pc bnc" id="L384" title="All 4 branches missed.">            assert(nearest != null &amp;&amp; !nearest.isEmpty());</span>
             
 <span class="fc" id="L386">            iter = nearest.iterator();</span>
 <span class="fc" id="L387">            int seedValue = iter.next();</span>
            
-<span class="pc bpc" id="L389" title="3 of 4 branches missed.">            assert(seedValueIndexMap.containsKey(seedValue));</span>
+<span class="pc bnc" id="L389" title="All 2 branches missed.">            assert(seedValueIndexMap.containsKey(seedValue));</span>
             
 <span class="fc" id="L391">            int seedIdx = seedValueIndexMap.get(seedValue);</span>
                                     
@@ -531,7 +531,7 @@ import java.util.logging.Logger;
             
 <span class="fc" id="L532">            TIntSet nearest = nn1d.findClosest(v);</span>
             
-<span class="pc bpc" id="L534" title="5 of 6 branches missed.">            assert(nearest != null &amp;&amp; !nearest.isEmpty());</span>
+<span class="pc bnc" id="L534" title="All 4 branches missed.">            assert(nearest != null &amp;&amp; !nearest.isEmpty());</span>
             
 <span class="fc" id="L536">            int seedValue = nearest.iterator().next();</span>
                         
@@ -565,7 +565,7 @@ import java.util.logging.Logger;
         }
         
 <span class="fc" id="L567">        long v = nDistrC[idx];</span>
-<span class="pc bfc" id="L568" title="All 2 branches covered.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="pc bpc" id="L568" title="1 of 2 branches missed.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
 <span class="pc bpc" id="L569" title="1 of 2 branches missed.">            if (nDistrC[i] == v) {</span>
 <span class="nc" id="L570">                idx = i;</span>
             } else {
@@ -577,4 +577,4 @@ import java.util.logging.Logger;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

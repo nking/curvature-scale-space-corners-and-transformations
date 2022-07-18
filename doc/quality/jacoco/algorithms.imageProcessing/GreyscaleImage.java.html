@@ -11,7 +11,7 @@ import java.util.Arrays;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L14" title="1 of 2 branches missed.">public class GreyscaleImage {</span>
+<span class="fc" id="L14">public class GreyscaleImage {</span>
 
     /**
      * type for how data is stored which is by default Bits32 for a 32 bit
@@ -394,7 +394,7 @@ import java.util.Arrays;
                 
 <span class="fc" id="L395">        rowValue += shifted;</span>
         
-<span class="pc bpc" id="L397" title="3 of 4 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; mask) == setValue);</span>
+<span class="pc bnc" id="L397" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; mask) == setValue);</span>
         
 <span class="fc" id="L399">        return rowValue;</span>
     }
@@ -421,7 +421,7 @@ import java.util.Arrays;
                 
 <span class="fc" id="L422">        rowValue += shifted;</span>
                 
-<span class="pc bpc" id="L424" title="3 of 4 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; mask) == setValue);</span>
+<span class="pc bnc" id="L424" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; mask) == setValue);</span>
         
 <span class="fc" id="L426">        return rowValue;</span>
     }
@@ -1199,4 +1199,4 @@ import java.util.Arrays;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -14,7 +14,7 @@ import java.util.Arrays;
  
   @author nichole
 */
-<span class="pc bpc" id="L17" title="1 of 2 branches missed.">public class HCPT {</span>
+public class HCPT {
    
 <span class="fc" id="L19">    private static float eps = 0.000001f;</span>
     
@@ -415,11 +415,11 @@ import java.util.Arrays;
         
 <span class="fc" id="L416">        double norm = 255./(blockTotal + eps);</span>
 
-<span class="pc bpc" id="L418" title="3 of 4 branches missed.">        assert(!Double.isNaN(norm));</span>
+<span class="pc bnc" id="L418" title="All 2 branches missed.">        assert(!Double.isNaN(norm));</span>
 
 <span class="fc bfc" id="L420" title="All 2 branches covered.">        for (int i = 0; i &lt; out.length; ++i) {</span>
 <span class="fc" id="L421">            out[i] *= norm;</span>
-<span class="pc bpc" id="L422" title="3 of 4 branches missed.">            assert(out[i] &gt;= 0);</span>
+<span class="pc bnc" id="L422" title="All 2 branches missed.">            assert(out[i] &gt;= 0);</span>
         }
 
 <span class="fc" id="L425">        return out;</span>
@@ -511,4 +511,4 @@ import java.util.Arrays;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

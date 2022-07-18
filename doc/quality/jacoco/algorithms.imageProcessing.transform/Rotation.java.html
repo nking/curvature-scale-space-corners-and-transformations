@@ -217,7 +217,7 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
  * &lt;/pre&gt;
  * @author nichole
  */
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">public class Rotation {</span>
+<span class="pc" id="L220">public class Rotation {</span>
 
     /**
      * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
@@ -1171,7 +1171,7 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
 <span class="nc" id="L1171">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }
 <span class="fc" id="L1173">        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);</span>
-<span class="pc bpc" id="L1174" title="3 of 4 branches missed.">        assert(eps.length == 3);</span>
+<span class="pc bnc" id="L1174" title="All 2 branches missed.">        assert(eps.length == 3);</span>
 <span class="fc" id="L1175">        double eta = quaternion[3];</span>
         
 <span class="fc" id="L1177">        double[][] minusSkewEps = MatrixUtil.skewSymmetric(eps);</span>
@@ -1226,7 +1226,7 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
 <span class="nc" id="L1226">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }
 <span class="fc" id="L1228">        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);</span>
-<span class="pc bpc" id="L1229" title="3 of 4 branches missed.">        assert(eps.length == 3);</span>
+<span class="pc bnc" id="L1229" title="All 2 branches missed.">        assert(eps.length == 3);</span>
 <span class="fc" id="L1230">        double eta = quaternion[3];</span>
         
 <span class="fc" id="L1232">        double[][] skewEps = MatrixUtil.skewSymmetric(eps);</span>
@@ -2331,4 +2331,4 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
