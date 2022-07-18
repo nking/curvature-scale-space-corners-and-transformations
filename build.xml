@@ -218,7 +218,6 @@
             <jvmarg value="-Xmx1024m"/>
             <jvmarg value="-Xss1024k"/>
             <jvmarg line="-Xdebug -Xprof -XX:+UnlockExperimentalVMOptions -XX:+ExtendedDTraceProbes"/>
-            <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
                 <pathelement location="${basedir}/res/META-INF/"/>
@@ -261,8 +260,6 @@
             <sysproperty key="java.util.logging.config.file" 
                 value="${src.out.dir}/logging.properties"/>
 
-            <jvmarg value="-XX:-UseSplitVerifier" />
-
             <jvmarg value="-enableassertions" />
             
             <batchtest fork="true" todir="${tests.out.dir}">
@@ -292,8 +289,6 @@
             <formatter type="plain" usefile="true"/>
             <sysproperty key="java.util.logging.config.file" 
                 value="${src.out.dir}/logging.properties"/>
-
-            <jvmarg value="-XX:-UseSplitVerifier" />
 
             <jvmarg value="-enableassertions" />
             
@@ -326,8 +321,6 @@
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
             </classpath>
-            
-            <jvmarg value="-XX:-UseSplitVerifier" />
             
             <formatter type="plain" usefile="true"/>
 
@@ -409,8 +402,6 @@
                 <path refid="test.classpath"/>
             </classpath>
             
-            <jvmarg value="-XX:-UseSplitVerifier" />
-            
             <formatter type="plain" usefile="true"/>
 
             <jvmarg value="-enableassertions" />
@@ -442,8 +433,6 @@
                 <path refid="test.classpath"/>
             </classpath>
             
-            <jvmarg value="-XX:-UseSplitVerifier" />
-            
             <formatter type="plain" usefile="true"/>
 
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
@@ -469,7 +458,7 @@
                 <enable/>
             </assertions>
             
-            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
 
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <classpath>
@@ -494,7 +483,7 @@
                 <enable/>
             </assertions>
             
-            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
 
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <classpath>
@@ -575,10 +564,9 @@
         <java classname="algorithms.imageProcessing.SkylineTestImageMaker" fork="true" failonerror="true">
             <jvmarg value="-Xms512m"/>
             <jvmarg value="-Xmx1024m"/>
-            <jvmarg value="-XX:-UseSplitVerifier" />
 
             <!--
-                <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+                <jvmarg line="-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"/>
             -->
 
             <sysproperty key="java.util.logging.config.file" 

@@ -3,7 +3,6 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.features.*;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceImagePoint;
 import algorithms.util.PairFloatArray;

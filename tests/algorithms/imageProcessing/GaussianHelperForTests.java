@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.util.VeryLargeNumber;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -387,7 +388,7 @@ public class GaussianHelperForTests {
                         sb.append("(float)(").append(out[i]).append("l*a), ");
                     } else {
                         // divide by max to keep numbers small
-                        out[i] = out[i].divide(max, 5, BigDecimal.ROUND_DOWN);
+                        out[i] = out[i].divide(max, 5, RoundingMode.DOWN);
                         String divStr = out[i].toString();
                         sb.append("(float)(").append(divStr).append(")*a, ");
                     }
