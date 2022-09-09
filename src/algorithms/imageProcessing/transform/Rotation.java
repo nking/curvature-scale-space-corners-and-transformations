@@ -1181,7 +1181,7 @@ public class Rotation {
         MatrixUtil.multiply(i3Eta, eta);
         
         // 3X3
-        double[][] block00 = MatrixUtil.elementwiseAdd(i3Eta, minusSkewEps);
+        double[][] block00 = MatrixUtil.pointwiseAdd(i3Eta, minusSkewEps);
         
         double[][] lhc = MatrixUtil.zeros(4, 4);
         int i;
@@ -1235,7 +1235,7 @@ public class Rotation {
         MatrixUtil.multiply(i3Eta, eta);
         
         // 3X3
-        double[][] block00 = MatrixUtil.elementwiseAdd(i3Eta, skewEps);
+        double[][] block00 = MatrixUtil.pointwiseAdd(i3Eta, skewEps);
         
         double[][] lhc = MatrixUtil.zeros(4, 4);
         int i;

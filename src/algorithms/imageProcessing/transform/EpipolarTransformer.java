@@ -788,7 +788,7 @@ public class EpipolarTransformer {
         DenseMatrix fX2 = MatrixUtil.multiply(solution, rightXY);
         
         // 3 x 7
-        double[][] fX2l1 = MatrixUtil.elementwiseMultiplication(
+        double[][] fX2l1 = MatrixUtil.pointwiseMultiplication(
             MatrixUtil.convertToRowMajor(fX2), l1);
         
         // matlab sum function:

@@ -445,8 +445,8 @@ public class PNP {
                 System.out.printf("fPrev updated to fTest: fPrev=%.11e fTest=%.11e\n", fPrev, fTest);
                 System.out.flush();
                 
-                System.out.printf("elementwise diff in rotation:\n%s\n", 
-                    FormatArray.toString(MatrixUtil.elementwiseSubtract(outExtr.getRotation(), rTest),
+                System.out.printf("pointwise diff in rotation:\n%s\n", 
+                    FormatArray.toString(MatrixUtil.pointwiseSubtract(outExtr.getRotation(), rTest),
                     "%.11e"));
             
                 outExtr.setRotation(MatrixUtil.copy(rTest));
@@ -749,7 +749,7 @@ public class PNP {
         double[][] identity = MatrixUtil.createIdentityMatrix(6);
         MatrixUtil.multiply(identity, lambda);
         // 6 X 6
-        double[][] a = MatrixUtil.elementwiseAdd(jTJ, identity);
+        double[][] a = MatrixUtil.pointwiseAdd(jTJ, identity);
         double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);
         
         double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBF);

@@ -132,23 +132,19 @@ public class PeriodicFFT {
         
         for (int col = 0; col < nCols; ++col) {
             //s[row=0, col=:] = im[row=0, col=:] - im[row=-1, col=:]
-            int v = img.getValue(col, 0) - img.getValue(col, nRows - 1);
-            s[0][col] = v;
+            s[0][col] = img.getValue(col, 0) - img.getValue(col, nRows - 1);
         }
         for (int col = 0; col < nCols; ++col) {
             //s[row=-1, col=:] = -s[row=0, col=:]
-            double v = s[0][col];
-            s[nRows - 1][col] = -v;
+            s[nRows - 1][col] = -s[0][col];
         }
         for (int row = 0; row < nRows; ++row) {
             //s[:, 0] = s[:, 0]  + im[:, 0] - im[:, -1]
-            double v = s[row][0] + img.getValue(0, row) - img.getValue(nCols - 1, row);
-            s[row][0] = v;
+            s[row][0] = s[row][0] + img.getValue(0, row) - img.getValue(nCols - 1, row);
         }
         for (int row = 0; row < nRows; ++row) {
             //s[row=:, col=-1] = s[row=:, col=-1] - im[row=:, col=0] + im[row=:, col=-1]
-            double v = s[row][nCols - 1] - img.getValue(0, row) + img.getValue(nCols - 1, row);
-            s[row][nCols - 1] = v;
+            s[row][nCols - 1] = s[row][nCols - 1] - img.getValue(0, row) + img.getValue(nCols - 1, row);
         }
     
         double twoPiDivNRows = 2. * Math.PI/(double)nRows;

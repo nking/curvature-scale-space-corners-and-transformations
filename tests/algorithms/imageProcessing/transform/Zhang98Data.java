@@ -378,7 +378,7 @@ public class Zhang98Data {
         double[][] x = getObservedTransformedToCameraFrame();
         double[][] xHat = getFeaturesProjectedToAllCameraFrames();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }
@@ -388,7 +388,7 @@ public class Zhang98Data {
         double[][] x = getObservedTransformedToCameraFrame();
         double[][] xHat = getFeaturesProjectedToAllCameraFramesEqn2();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }
@@ -482,7 +482,7 @@ public class Zhang98Data {
         double[][] x = getObservedFeaturesInAllImages();
         double[][] xHat = getFeaturesProjectedToAllImageFrames();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }
@@ -492,7 +492,7 @@ public class Zhang98Data {
         double[][] x = getObservedFeaturesInAllImages();
         double[][] xHat = getFeaturesProjectedToAllImageFramesEqn2();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }

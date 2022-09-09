@@ -11,7 +11,7 @@ import java.util.List;
 MSER.java and Region.java are java ports of the C++ MSER
 implementation of MSER by Charles Dubout, charles.dubout@idiap.ch,
 downloaded from https://github.com/idiap/mser
-His C++ code is an implementation of  
+The Dubout C++ code is an implementation of
 "Linear Time Maximally Stable Extremal Regions",
 by D. Nistér and H. Stewénius, ECCV 2008.
 

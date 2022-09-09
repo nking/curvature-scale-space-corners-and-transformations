@@ -224,7 +224,7 @@ public class Reconstruction {
         
         double[][] x1Pt = new double[3][1];
         double[][] x2Pt = new double[3][1];
-        int i, j, ii;
+        int i, ii;
         for (i = 0; i < 3; ++i) {
             x1Pt[i] = new double[1];
             x2Pt[i] = new double[1];
@@ -1285,7 +1285,7 @@ public class Reconstruction {
         Arrays.fill(ep, 1);
         double[][] tep = MatrixUtil.outerProduct(t, ep);
         System.out.printf("W = R*X + t*(e_p)^T=\n%s\n", 
-            FormatArray.toString(MatrixUtil.elementwiseAdd(
+            FormatArray.toString(MatrixUtil.pointwiseAdd(
                 MatrixUtil.multiply(r3, shape), tep), 
             "%.4e"));
         System.out.printf("orig W = \n%s\n", FormatArray.toString(w, 
@@ -2009,7 +2009,7 @@ public class Reconstruction {
         EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
         double[] eig = evd2.getRealEigenvalues();
         System.out.printf("eig(L_PSD)=\n%s\n", FormatArray.toString(eig, "%.4e"));
-        double[][] aMinusPSD = MatrixUtil.elementwiseSubtract(ell, lPSD);
+        double[][] aMinusPSD = MatrixUtil.pointwiseSubtract(ell, lPSD);
         double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
         
         boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);
@@ -2600,7 +2600,7 @@ public class Reconstruction {
         double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
         /*EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
         double[] eig = evd2.getRealEigenvalues();
-        double[][] aMinusPSD = MatrixUtil.elementwiseSubtract(ell, lPSD);
+        double[][] aMinusPSD = MatrixUtil.pointwiseSubtract(ell, lPSD);
         double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
         */
         boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);
@@ -2855,7 +2855,7 @@ public class Reconstruction {
         double[] v = MatrixUtil.multiplyMatrixByColumnVector(aInv, b);
         //H = ([e2]_x)^T * F + e2*v^T
         //  = e2SkewTF + e2*v^T
-        double[][] h = MatrixUtil.elementwiseAdd(e2SkewTF, MatrixUtil.outerProduct(e2, v));
+        double[][] h = MatrixUtil.pointwiseAdd(e2SkewTF, MatrixUtil.outerProduct(e2, v));
         return h;
     }
     

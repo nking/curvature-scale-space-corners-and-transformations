@@ -589,8 +589,8 @@ public class BundleAdjustment {
                     
                     fPrev = fTest;
 
-                    double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);
-                    double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetas, extrRotThetasTest);
+                    double[][] _dt = MatrixUtil.pointwiseSubtract(extrTrans, extrTransTest);
+                    double[][] _rt = MatrixUtil.pointwiseSubtract(extrRotThetas, extrRotThetasTest);
                     double _dts = MatrixUtil.frobeniusNorm(_dt);
                     double _rts = MatrixUtil.frobeniusNorm(_rt);
                     log.fine(String.format("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e")));
@@ -1026,7 +1026,7 @@ public class BundleAdjustment {
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
 
                     // [1X3] - [1X3] = [1X3]
-                    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);
+                    MatrixUtil.pointwiseSubtract(xIJ, xIJHat, fIJ);
                     if ((i % (nFeatures/3)) == 0) {
                         log.fine(String.format("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e")));
                         log.fine(String.format("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e")));
@@ -1046,7 +1046,7 @@ public class BundleAdjustment {
                     // xIJC are the observed points in the camera reference frame with distortion removed
                     
                     // [1X3] - [1X3] = [1X3]
-                    MatrixUtil.elementwiseSubtract(xIJC, xWCNI, fIJ);
+                    MatrixUtil.pointwiseSubtract(xIJC, xWCNI, fIJ);
                 }
                 
                 //sum of squares
@@ -1074,7 +1074,7 @@ public class BundleAdjustment {
                 */
 
                 //[3 X 1]
-                MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);
+                MatrixUtil.pointwiseSubtract(bPI, bIJTF, bPI);
                 
                 if ((i % (nFeatures / 3)) == 0) {
                     log.fine(String.format("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e")));
@@ -1089,8 +1089,8 @@ public class BundleAdjustment {
                 //    HPP_i = V_i = Σ_j(BIJT*B1J) 
                 // Engels: add jP^T*JP to upper triangular part of hPP aka V.
                 // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
-                //     elementwise addition of 3X3 blocks:
-                MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);
+                //     pointwise addition of 3X3 blocks:
+                MatrixUtil.pointwiseAdd(hPPI, bIJsq, hPPI);
             
                 // temporary exit until find reasons for very large numbers in some
                 //   of the arrays
@@ -1107,7 +1107,7 @@ public class BundleAdjustment {
                     MatrixUtil.multiply(aIJT, aIJ, auxMA);
 
                     mA.getBlock(auxMA2, j, j);
-                    MatrixUtil.elementwiseAdd(auxMA, auxMA2, auxMA3);
+                    MatrixUtil.pointwiseAdd(auxMA, auxMA2, auxMA3);
                     mA.setBlock(auxMA3, j, j);
         
                     //dont use U_j (= mA) yet, nor augment it with damping term
@@ -1138,7 +1138,7 @@ public class BundleAdjustment {
                     // fill bCJ with last entry for image J
                     System.arraycopy(bC, j*9, bCJ, 0, 9);
      
-                    MatrixUtil.elementwiseSubtract(bCJ, aIJTF, bCJ);
+                    MatrixUtil.pointwiseSubtract(bCJ, aIJTF, bCJ);
 
                     //bC length is [9*mImages]
                     System.arraycopy(bCJ, 0, bC, j*9, 9);                    
@@ -1266,7 +1266,7 @@ public class BundleAdjustment {
         
         // mA -= tPC*HPC  [9*mImages X 9*mImages]
         double[][] mARight = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());
-        mARight = MatrixUtil.elementwiseSubtract(mA.getA(), mARight);
+        mARight = MatrixUtil.pointwiseSubtract(mA.getA(), mARight);
         mA = new BlockMatrixIsometric(mARight, 9, 9);
         
         /* TODO: (optional) Fix gauge by freezing coordinates and thereby reducing 

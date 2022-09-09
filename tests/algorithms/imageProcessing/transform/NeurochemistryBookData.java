@@ -412,7 +412,7 @@ public class NeurochemistryBookData {
         double[][] x = getObservedTransformedToCameraFrame();
         double[][] xHat = getFeaturesProjectedToAllCameraFrames();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }
@@ -423,7 +423,7 @@ public class NeurochemistryBookData {
         double[][] x = getObservedTransformedToCameraFrame();
         double[][] xHat = getFeaturesProjectedToAllCameraFrames_H_LftHnd();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }
@@ -510,7 +510,7 @@ public class NeurochemistryBookData {
         double[][] x = getObservedFeaturesInAllImages();
         double[][] xHat = getFeaturesProjectedToAllImageFrames();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }
@@ -522,7 +522,7 @@ public class NeurochemistryBookData {
         double[][] x = getObservedFeaturesInAllImages();
         double[][] xHat = getFeaturesProjectedToAllImageFrames_H_LftHnd();
         
-        double[][] m = MatrixUtil.elementwiseSubtract(x, xHat);
+        double[][] m = MatrixUtil.pointwiseSubtract(x, xHat);
         
         return m;
     }
