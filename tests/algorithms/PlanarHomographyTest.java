@@ -3,11 +3,16 @@ package algorithms;
 import algorithms.imageProcessing.transform.Camera;
 import algorithms.imageProcessing.transform.Rotation;
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.Complex;
 import algorithms.misc.MiscMath0;
+import algorithms.statistics.Standardization;
+import algorithms.statistics.UnivariateNormalDistribution;
+import algorithms.imageProcessing.transform.CameraCalibration;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -38,6 +43,7 @@ public class PlanarHomographyTest extends TestCase {
         double angle = Math.PI/10.;
         double d = 5;
         double lambda = 4;
+        // rotation is cc about the y-axis (pitch)
         double[][] r = new double[3][];
         r[0] = new double[]{Math.cos(angle), 0, Math.sin(angle)};
         r[1] = new double[]{0, 1, 0};
@@ -49,11 +55,11 @@ public class PlanarHomographyTest extends TestCase {
         double[] t = new double[]{2, 0, 0};
         double[] n = new double[]{1, 0, 2}; // chosen to not have sqrt(sqsum))=1
 
-        System.out.printf("angle=%.3f, depth d=%.1f, lambda scale=%.1f\n",
+        System.out.printf("angle of rotation about y axis =%.3f, depth d=%.1f, lambda scale=%.1f\n",
                 angle, d, lambda);
-        System.out.printf("Rotation=\n%s\n", FormatArray.toString(r, "%.3e"));
-        System.out.printf("T=\n%s\n", FormatArray.toString(t, "%.3e"));
-        System.out.printf("N=\n%s\n", FormatArray.toString(n, "%.3e"));
+        System.out.printf("from camera1 to camera2, Rotation=\n%s\n", FormatArray.toString(r, "%.3e"));
+        System.out.printf("from camera1 to camera2, T=\n%s\n", FormatArray.toString(t, "%.3e"));
+        System.out.printf("perpendicular to plane P: N=\n%s\n", FormatArray.toString(n, "%.3e"));
 
         double[][] hl = MatrixUtil.outerProduct(t, n);
         MatrixUtil.multiply(hl, 1./d);
@@ -307,7 +313,7 @@ public class PlanarHomographyTest extends TestCase {
         or N = (1, 0, 2)  unnormalized
         d = 5
         (1) create a plane P and generate points on plane P
-        (2) create image plane 1 in direction N from plane P and a distance d
+        (2) create image plane 1 in direction N from plane P and at a distance d
         (3) project plane P points to image plane 1
         (4) rotate and translate image plane 1 to create image plane 2
         (5) rotate and translate points from image 1 to the reference frame of image 2
@@ -327,7 +333,7 @@ public class PlanarHomographyTest extends TestCase {
 
         then using n, xw_1 and the equation for the plane:
             n[0]*(x - xw_1[0]) + n[1]*(y - xw_1[1]) + n[2]*(z - xw_1[2]) = 0
-        repeat this for 4 more points, while avoiding colinear sets of any 3 points.
+        repeat this for 3 more points, while avoiding colinear sets of any 3 points.
         x = rand.next(double)
         y = rand.next(double)
         n[2]*(z - xw_1[2]) = -n[0]*(x - xw_1[0]) - n[1]*(y - xw_1[1])
@@ -336,45 +342,129 @@ public class PlanarHomographyTest extends TestCase {
 
         assert:
            n[0]*(x - xw_1[0]) + n[1]*(y - xw_1[1]) + n[2]*(z - xw_1[2]) = 0
-           and n[0]*x + n[1]*y + n[2]*z = d
 
         */
 
+        // generate points in plane P in WCS
         double[][] XW = new double[4][nCorres];
-
-        for (int row = 0; row < 3; ++row) {
-            XW[row] = new double[nCorres];
-        }
+        XW[2] = new double[nCorres];
+        XW[3] = new double[nCorres];
         Arrays.fill(XW[3], 1);
-
-        // generate 1 point in the plane
-        i = 0;
-        XW[0][i] = rand.nextDouble();
-        XW[1][i] = rand.nextDouble();
-        XW[2][i] = rand.nextDouble();
-
-        // generate the remaining points
         boolean isCollinear = false;
-        for (i = 1; i < nCorres; ++i) {
-            do {
-                XW[0][i] = rand.nextDouble();
-                XW[1][i] = rand.nextDouble();
-                //z = xw_1[2] + ( (-n[0]*(x - xw_1[0]) - n[1]*(y - xw_1[1]))/n[2])
-                XW[2][i] = XW[2][0] + ( (-solnN[0]*(XW[0][i] - XW[0][0])
-                        - solnN[1]*(XW[1][i] - XW[1][0]))/solnN[2]);
-                if (i >= 2) {
-                    // avoid collinear for any 3 points
-                    isCollinear = areCollinear(i+1, XW, tol);
-                }
-            } while (isCollinear);
-            //assert that n[0]*(x - xw_1[0]) + n[1]*(y - xw_1[1]) + n[2]*(z - xw_1[2]) = 0
-            double chk = solnN[0]*(XW[0][i] - XW[0][0]) + solnN[1]*(XW[1][i] - XW[1][0])
-                    + solnN[2]*(XW[2][i] - XW[2][0]);
-            System.out.printf("chk=%.3e\n", chk);
-        }
+        do {
+            // z is 0 for planar homography
+            for (int row = 0; row < 2; ++row) {
+                XW[row] = UnivariateNormalDistribution.randomSampleOfUnitStandard(rand, nCorres);
+            }
+            isCollinear = areCollinear(i+1, XW, tol);
+        } while (isCollinear);
+
         System.out.printf("XW=\n%s\n", FormatArray.toString(XW, "%.3f"));
 
-        
+        // adapted from MASKS book test_5_2.m
+
+        // x1 = [3X4 projection for plane P to camera 1] * XW
+
+        // n is the direction perpendicular to the plane P.
+        // rotate the plane by n
+        double[][] rWCSC1 = Rotation.createRodriguesFormulaRotationMatrix(solnN);
+
+        // d is 5
+        // |x1_i - xw_i| = 5  = sqrt of sq sums of translation components.
+        // will translate along z only:
+        System.out.printf("rotation from plane P to camera 1 plane is n.  translating by z only");
+        double[][] pWCSC1 = new double[3][];
+        pWCSC1[0] = new double[]{rWCSC1[0][0], rWCSC1[0][1], rWCSC1[0][2], 0};
+        pWCSC1[1] = new double[]{rWCSC1[1][0], rWCSC1[1][1], rWCSC1[1][2], 0};
+        pWCSC1[2] = new double[]{rWCSC1[2][0], rWCSC1[2][1], rWCSC1[2][2], d};
+
+        // [3X4] * [4XnCorres] = [3XnCorres]
+        double[][] xc1 = MatrixUtil.multiply(pWCSC1, XW);
+
+        // check the distances
+        double chk;
+        double dX, dY, dZ;
+        for (i = 0; i < nCorres; ++i) {
+            dX = xc1[0][i] - XW[0][i];
+            dY = xc1[1][i] - XW[1][i];
+            dZ = xc1[2][i] - XW[2][i];
+            chk = Math.sqrt(dX*dX + dY*dY + dZ*dZ);
+            System.out.printf("plane P to camera 1 d=%.4e\n", chk);
+        }
+
+        // to get the normal to xc1, can solve for the right null space of A*x=0 where
+        // A is the stack of rows of xc points.  the right null space is the
+        // last column of SVD(A).V where the last column is for eigenvalue=0.
+        {
+            double[][] stack1 = new double [nCorres][4];
+            for (i = 0; i < nCorres; ++i) {
+                stack1[i] = new double[]{xc1[0][i], xc1[1][i], xc1[2][i], 1};
+            }
+            MatrixUtil.SVDProducts svd4 = MatrixUtil.performSVD(stack1);
+            System.out.printf("the normal to camera 1 plane =%s\n",
+                FormatArray.toString(svd4.vT[3],"%.4e"));
+            System.out.printf("the distance to camera 1 plane =%.4e\n", svd4.vT[3][3]);
+            System.out.printf("%.4e, %.4e, %.4e\n", n[0]/svd4.vT[3][0], n[1]/svd4.vT[3][1],
+                    n[2]/svd4.vT[3][2]);
+        }
+
+        // xc2 = R*XC1 + t
+        double[][] xc2 = MatrixUtil.multiply(r, xc1);
+        for (i = 0; i < nCorres; ++i) {
+            for (j = 0; j < 3; ++j) {
+                xc2[j][i] += t[j];
+            }
+        }
+
+      //  assert x0 = (h00x+h01y+h02)/(h20x + h21y + h22)
+      //       and y0 = (h10x+h11y+h12)/(h20x + h21y + h22)
+
+        // given R and t, can construct essential matrix E = [t]_x*R
+        //    and then
+
+        //lambda2 * x2 = H * lambda1 * x1
+
+        //solnN is the unit normal vector of the plane P with respect to the first camera frame.
+
+        // section 2.4.1 is homogeneous coordinate system
+
+        System.out.printf("XC1=\n%s\n", FormatArray.toString(xc1, "%.3f"));
+        System.out.printf("XC2=\n%s\n", FormatArray.toString(xc2, "%.3f"));
+
+        // with camera intrinsic matrices, we can create the image coordinates.
+        double[][] intr = MatrixUtil.zeros(3, 3);
+        intr[0][0] = 1200; //1200 <== these unused are from test_5_2.m
+        intr[1][1] = 900; //900
+        intr[0][2] = 600; //600
+        intr[1][2] = 450; //450
+        intr[2][2] = 1;
+
+        // no radial distortions in these cameras
+        double[][] x1 = new double[3][nCorres];
+        double[][] x2 = new double[3][nCorres];
+        for (i = 0; i < nCorres; ++i) {
+            // normalized pinhole projection X_c/Z_c
+            x1[0][i] = xc1[0][i]/xc1[2][i];
+            x1[1][i] = xc1[1][i]/xc1[2][i];
+            x1[2][i] = 1;
+            x2[0][i] = xc2[0][i]/xc2[2][i];
+            x2[1][i] = xc2[1][i]/xc2[2][i];
+            x2[2][i] = 1;
+        }
+        x1 = MatrixUtil.multiply(intr, x1); // 3 x nCorres
+        x2 = MatrixUtil.multiply(intr, x2);
+
+        double[][] hEst3 = CameraCalibration.solveForHomography(x1, x2);
+
+        MatrixUtil.SVDProducts svd5 = MatrixUtil.performSVD(hEst3);
+
+        double[][] h3 = MatrixUtil.copy(hEst3);
+        MatrixUtil.multiply(h3, 1./svd5.s[1]);
+
+        // see algorithm 5.2
+
+        System.out.printf("h3=\n%s\n", FormatArray.toString(h3, "%.3e"));
+
     }
 
     private void createSkewMatrix(double[][] x2, int col, double[][] x2j) {
@@ -389,10 +479,10 @@ public class PlanarHomographyTest extends TestCase {
         x2j[2][1] = x2[0][col];
     }
 
-    private void extractColumn(double[][] x1, int col, double[][] x1j) {
-        x1j[0][0] = x1[0][col];
-        x1j[1][0] = x1[1][col];
-        x1j[2][0] = x1[2][col];
+    private void extractColumn(double[][] x, int col, double[][] xj) {
+        xj[0][0] = x[0][col];
+        xj[1][0] = x[1][col];
+        xj[2][0] = x[2][col];
     }
 
     private boolean areCollinear(int ns, double[][] X, double tol) {

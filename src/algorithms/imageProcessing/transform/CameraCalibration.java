@@ -199,7 +199,7 @@ public class CameraCalibration {
                to the same features and order of coordsI_i
      * @return the homography, projection matrix
      */
-    static double[][] solveForHomography(double[][] coordsI, double[][] coordsW) throws NotConvergedException {
+    public static double[][] solveForHomography(double[][] coordsI, double[][] coordsW) throws NotConvergedException {
         
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI must have 3 rows.");

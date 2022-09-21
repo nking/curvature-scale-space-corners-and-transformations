@@ -564,56 +564,39 @@ public class EpipolarTransformer {
         if (leftXY.numRows() != 3) {
             throw new IllegalArgumentException("leftXY.numRows must be 3");
         }
-        
+
+        // m is [nData X 9]
         double[][] m = createFundamentalMatrix(leftXY, rightXY);
 
-        DenseMatrix aMatrix = new DenseMatrix(m);
-        SVD svd = null;
-        DenseMatrix vT = null;
-        double[] s = null;
+        // [9X9]
+        double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
+
+        // S   is  min(m, n) the singular values (stored in descending order)
+        // V^T is  n X n = 9x9    the right singular vectors, **row-wise**
+
+        SVDProducts svd = null;
         try {
-            svd = SVD.factorize(aMatrix);
-            vT = svd.getVt();
-            s = svd.getS();
+            svd = MatrixUtil.performSVD(aTa);
         } catch (NotConvergedException e) {
-            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
-            //SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U
-            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
-            //    and sqrt( SVD(A^TA) eigenvalues )
-            try { 
-                svd = SVD.factorize(new DenseMatrix(aTa));
-                vT = svd.getVt();
-                s = svd.getS();
-                for (int i = 0; i < s.length; ++i) {
-                    if (s[i] > 0) {
-                        s[i] = Math.sqrt(s[i]);
-                    }
-                }
-            } catch (NotConvergedException ex) {
-                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
-                return null;
-            }
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
+            return null;
         }
 
-        // U   is 7x7
-        // V^T is 9X9
-        // A*V = U*s
-        
+        //when condition number is large, the 2 smallest eigenvalues are close to on another
+        //and that makes their eigenvectors sensitive to small perturbations.
+        double conditionNumber = svd.s[0]/svd.s[svd.s.length-2];
+        log.fine("conditionNumber=" + conditionNumber);
+
         //for i <=r:
         //    A*v_i = σ*u_i
         //for i >r:
         //    A*v_i = 0 and A^T*u_i = 0
 
-        //when condition numbr is large, the 2 smallest eigenvalues are close to on another
-        //and that makes their eigenvectors sensitive to small pertubations.
-        double conditionNumber = s[0]/s[s.length-2];
-        log.fine("conditionNumber=" + conditionNumber);
-        
-        int n = vT.numRows();
+        int n = svd.vT.length;
         assert(n == 9);
-        assert(svd.getU().numRows() == nSet);
-                
+
+        // last singular value being 0, the last column of V is a solution to the nullspace, that is A*x=0
+
         double[][] ff1 = new double[3][3];
         double[][] ff2 = new double[3][3];
         for (int i = 0; i < 3; i++) {
@@ -621,13 +604,13 @@ public class EpipolarTransformer {
             ff1[i] = new double[3];
             ff2[i] = new double[3];
             
-            ff1[i][0] = vT.get(n - 1, (i * 3) + 0);
-            ff1[i][1] = vT.get(n - 1, (i * 3) + 1);
-            ff1[i][2] = vT.get(n - 1, (i * 3) + 2);
+            ff1[i][0] = svd.vT[n - 1][(i * 3) + 0];
+            ff1[i][1] = svd.vT[n - 1][(i * 3) + 1];
+            ff1[i][2] = svd.vT[n - 1][(i * 3) + 2];
             
-            ff2[i][0] = vT.get(n - 2, (i * 3) + 0);
-            ff2[i][1] = vT.get(n - 2, (i * 3) + 1);
-            ff2[i][2] = vT.get(n - 2, (i * 3) + 2);
+            ff2[i][0] = svd.vT[n - 2][(i * 3) + 0];
+            ff2[i][1] = svd.vT[n - 2][(i * 3) + 1];
+            ff2[i][2] = svd.vT[n - 2][(i * 3) + 2];
         }
         
         DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
@@ -1379,7 +1362,7 @@ public class EpipolarTransformer {
      * second is y.
      * @param normXY2 a matrix of size 3 x nPoints, where 1st row is x,
      * second is y.
-     * @return
+     * @return fundamental matrix of size [nPoints x 9]
      */
     double[][] createFundamentalMatrix(DenseMatrix normXY1,
         DenseMatrix normXY2) {
