@@ -5,9 +5,9 @@ import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
+import no.uib.cipr.matrix.RQ;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
-import no.uib.cipr.matrix.RQ;
 
 /**
  given a set of features in image coordinates and world coordinate space with
@@ -47,7 +47,7 @@ public class CameraPose {
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
      * @param X the world coordinates of the features in format 3 X N where
-     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3features are needed to 
+     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3 features are needed to
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
      * @return 
@@ -88,7 +88,7 @@ public class CameraPose {
             ell[2*i]     = new double[]{Xi, Yi, Zi, 1, 0, 0, 0, 0, -xi*Xi, -xi*Yi, -xi*Zi, -xi};
             ell[2*i + 1] = new double[]{0, 0, 0, 0, Xi, Yi, Zi, 1, -yi*Xi, -yi*Yi, -yi*Zi, -yi};
         }
-        
+
         MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
         
         //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
@@ -150,6 +150,7 @@ public class CameraPose {
      * extract the camera extrinsic parameters.
      * calibrating the camera extrinsic parameters is a.k.a. 
      * perspective-n-point-problem where n is the number of features (a.k.a. points).
+     * It's also called planar homography decomposition.
      * This method uses DLT and could be followed by non-linear optimization
      * to improve the parameter estimates.
      * <pre>
@@ -165,7 +166,7 @@ public class CameraPose {
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
      * @param X the world coordinates of the features in format 3 X N where
-     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3features are needed to 
+     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3 features are needed to
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
      * @return 

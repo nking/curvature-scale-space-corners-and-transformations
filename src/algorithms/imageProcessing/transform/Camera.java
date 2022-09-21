@@ -191,7 +191,7 @@ public class Camera {
         if (t.length != 3) {
             throw new IllegalArgumentException("t must be length 3");
         }
-        
+
         /*
             4x4     
         [ R  -R*t ]
@@ -375,7 +375,7 @@ public class Camera {
     
      /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
     reference frame then applying Lp2-normalization.
-     * @param x points in the camera centered reference frame. 
+     * @param x points in the image reference frame.
      * format is 3XN for N points in row-major format. 
      * @param intrinsic 
      * @return pixels transformed to camera coordinate reerence frame then 
@@ -604,7 +604,7 @@ public class Camera {
        
         double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(
             intr);
-        
+
         // put x into camera coordinates reference frame:
         double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);
         
@@ -643,7 +643,7 @@ public class Camera {
         for (j = 0; j < norm.length; ++j) {
             sum = 0;
             for (i = 0; i < norm.length; ++i) {
-                sum += (norm[i][j]*norm[i][j]);
+                sum += (norm[i][j] *norm[i][j]);
             }
             sum = Math.sqrt(sum);
             for (i = 0; i < norm.length; ++i) {

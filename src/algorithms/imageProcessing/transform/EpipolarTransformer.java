@@ -44,8 +44,8 @@ import algorithms.util.FormatArray;
  * Some definitions:
     vectors are treated as columns unless noted otherwise.
     vector as a row uses notation u^T.
-    u^T*v represents the inner product.
-    u*v^T is a matrix.
+    u^T*v represents the inner product (= dot product).  result is a scalar.
+    u*v^T represents the outer product. result is a matrix.
     u_1 is the (x,y) points from image 1 and u_2 are the matched (x,y) points
         from image 2.
 
@@ -83,7 +83,7 @@ import algorithms.util.FormatArray;
  
     To avoid the trivial scale, ||f|| = 1 where f is the norm of f
 
-    the rank of f is then 8.
+    the rank of A is 8, but noise and other errors make it 9.
     if A is longer than 8, the system is over-determined (over specified) and
     so must be solved using least squares.  the set may be over determined
     and not have a zero solution.
@@ -94,7 +94,7 @@ import algorithms.util.FormatArray;
     the solution is the unit eigenvector corresponding to the smallest
     eigenvalue of A^T*A.
 
-    Since A^T*A is semi-definite and symmetric, all of its eigenvectors
+    Since A^T*A is positive semi-definite and symmetric, all of its eigenvectors
     are real and positive or zero.
     This eigenvector is what he calls the least eigenvector of A^T*A and
     it is found via the Jacobi algorithm or Singular Value Decomposition.
@@ -184,7 +184,7 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
 
   note:
     because translation is not a linear transformation (see Strang Chap 7)
-       one has to keep it as a separate tranformation matrix when
+       one has to keep it as a separate transformation matrix when
        performing operations on a sequence of matrices such as inverse
        and transpose operations.
 
@@ -202,7 +202,7 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
         A^(-1) =  ------ C^(T)  where C_ij = cofactor of a_ij
                    det A
 
-  NOTE: the normalization suggested by Hartely is explored further in 
+  NOTE: the normalization suggested by Hartley is explored further in
   Chojnacki et al. 2003,  "Revisiting Hartley’s Normalized Eight-Point Algorithm"
   
   Some excerpts:
@@ -359,7 +359,9 @@ public class EpipolarTransformer {
 
         calculate [U,D,V] from svd(A):
         */
-        DenseMatrix aMatrix = new DenseMatrix(m);
+        double[][] aTa = MatrixUtil.createATransposedTimesA(m);
+        //DenseMatrix aMatrix = new DenseMatrix(m);
+        DenseMatrix aTaMatrix = new DenseMatrix(aTa);
         
         //System.out.printf("matrix A dimensions = %d x %d\n", m.length, m[0].length);
         
@@ -367,16 +369,19 @@ public class EpipolarTransformer {
         // U   is  m X m = nData X nData the left singular vectors, **column-wise**
         // S   is  min(m, n) the singular values (stored in descending order)
         // V^T is  n X n = 9x9    the right singular vectors, **row-wise**
+
+        //A^T * A is 9x9
+
         SVDProducts svd = null;
         try {
-            svd = MatrixUtil.performSVD(aMatrix);
+            svd = MatrixUtil.performSVD(aTaMatrix);
         } catch (NotConvergedException e) {            
             Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
-        
-        //when condition numbr is large, the 2 smallest eigenvalues are close to on another
-        //and that makes their eigenvectors sensitive to small pertubations.
+
+        //when condition number is large, the 2 smallest eigenvalues are close to on another
+        //and that makes their eigenvectors sensitive to small perturbations.
         double conditionNumber = svd.s[0]/svd.s[svd.s.length-2];
         log.fine("conditionNumber=" + conditionNumber);
         
@@ -1369,6 +1374,7 @@ public class EpipolarTransformer {
     }
 
     /**
+     * a = xLeft ⊗ xRight
      * @param normXY1 a matrix of size 3 x nPoints, where 1st row is x,
      * second is y.
      * @param normXY2 a matrix of size 3 x nPoints, where 1st row is x,

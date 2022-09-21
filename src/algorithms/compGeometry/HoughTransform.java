@@ -318,9 +318,7 @@ public class HoughTransform {
      * to remove outliers.
      * @param linePoints input and output modified set
      * @param roughTheta
-     * @param meanTolerance
-     * @param stDvTolerance
-     * @return 
+     * @return
      */
     private float[] calculateReducedLinePolarCoordsAndStats(
         Set<PairInt> linePoints, Integer roughTheta) {

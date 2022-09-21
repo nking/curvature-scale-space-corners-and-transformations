@@ -833,7 +833,7 @@ public class Reconstruction {
         /*
         http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
-        (1) compute fundamental mat5rix FM from the correspondence x1, x2
+        (1) compute fundamental matrix FM from the correspondence x1, x2
         (2) compute the camera matrices P1, P2 from FM.
         (3) For each point correspondence, compute the point X in 3D space (triangularization)
         */

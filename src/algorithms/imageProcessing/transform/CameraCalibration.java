@@ -229,7 +229,7 @@ public class CameraCalibration {
                 [ h13 h23 h33 ]
 
           Let h_i be the ith row of H:
-              h_i = ]h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+              h_i = [h_i_1]^T = [h_i_1  h_i_2  h_i_3]
                     [h_i_2]
                     [h_i_3]
         */
@@ -436,9 +436,9 @@ public class CameraCalibration {
         // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
         // homogeneous repr of a point is x_vec = (x, y, 1)^T
         // equation f a line is ell = a*x + b*y + c = 0;
-        // line rewritten in homogeneous coordinatrs is x_vec^T * ell.
+        // line rewritten in homogeneous coordinates is x_vec^T * ell.
         // general conic in 3 dimensions is a*x^2 + b*x*y + c*y^2 + d*x*z + e*y*z + f*z^2 = 0.
-        //     rewritten using 2D homogenouse coords, quadratice form: x_vec^T * C * x_vec = 0
+        //     rewritten using 2D homogeneous coordinates, quadratic form: x_vec^T * C * x_vec = 0
         //                  [a   b/2   d/2 ]
         //        where C = [b/2   c   c/2 ]
         //                  [d/2 c/2     f ]
@@ -851,7 +851,7 @@ public class CameraCalibration {
              [1]           [Z_w]     [Z_c]
                            [1  ]
     
-    ==> To Apply Radial Distorion, given coefficients k1, k2 and coordinates
+    ==> To Apply Radial Distortion, given coefficients k1, k2 and coordinates
       (eqn 7) r_d = r * f(r) = r*(1 + k1*r + k2*r^2 + k3*r^3 + ...)
       (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r + k2*r^2)
     
@@ -958,7 +958,7 @@ public class CameraCalibration {
              [1]           [Z_w]     [Z_c]
                            [1  ]
     
-    ==> To Apply Radial Distorion, given coefficients k1, k2 and coordinates
+    ==> To Apply Radial Distortion, given coefficients k1, k2 and coordinates
       (eqn 7) r_d = r * f(r) = r*(1 + k1*r + k2*r^2 + k3*r^3 + ...)
       (eqn 8) using only 2 coeffs: f(r) = (1 + k1*r + k2*r^2)
     

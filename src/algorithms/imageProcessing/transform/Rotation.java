@@ -1881,7 +1881,9 @@ public class Rotation {
          q2 = -sin(z/2)*sin(y/2)*cos(x/2) + sin(x/2)*cos(z/2)*cos(y/2)
          q3 =  sin(z/2)*sin(x/2)*cos(y/2) + sin(y/2)*cos(z/2)*cos(x/2)
          q4 =  sin(z/2)*cos(y/2)*cos(x/2) - sin(y/2)*sin(x/2)*cos(z/2)
-     
+
+     This is what is used in eqn (2.40) of "An Invitation to 3-D Vision",
+     Ma, Soatto, Kosecka, and Sastry (MASKS).
      * </pre>
      * @param angle
      * @param axis
