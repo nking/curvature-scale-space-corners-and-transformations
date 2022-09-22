@@ -55,6 +55,9 @@ public class PlanarHomographyTest extends TestCase {
         double[] t = new double[]{2, 0, 0};
         double[] n = new double[]{1, 0, 2}; // chosen to not have sqrt(sqsum))=1
 
+        // then the plane P is tangent to n
+        // which is (-2, 0, 1) or any multiple of that.
+
         System.out.printf("angle of rotation about y axis =%.3f, depth d=%.1f, lambda scale=%.1f\n",
                 angle, d, lambda);
         System.out.printf("from camera1 to camera2, Rotation=\n%s\n", FormatArray.toString(r, "%.3e"));
@@ -345,18 +348,44 @@ public class PlanarHomographyTest extends TestCase {
 
         */
 
+        //TODO:
+        //put these into a method for extracting motion and structure from 2 views from 2 calibrated images
+
+        // the plane P is tangent to n
+        // which is (-2, 0, 1) or any multiple of that.
+
+        /*
+        N = n[0]i + n[1]j + n[2]k
+        d = n[0]*xw_1[0] + n[1]*xw_1[1] + n[2]*xw_1[2]
+        Plane passing thru xw_1 perpendicular to vector N is
+           n[0]*(x - xw_1[0]) + n[1]*(y - xw_1[1]) + n[2]*(z - xw_1[2]) = 0
+           OR
+           n[0]*x + n[1]*y + n[2]*z = d
+           generate the first point in the plane as (0,0,0)
+           then for n[0]*(x) + 0 + n[2]*(z) = 0
+              generate x, and set y = 0
+              calc z = -(n[0]*x)/n[2]
+       */
+
         // generate points in plane P in WCS
         double[][] XW = new double[4][nCorres];
-        XW[2] = new double[nCorres];
-        XW[3] = new double[nCorres];
+        for (i = 0; i < 4; ++i) {
+            XW[i] = new double[nCorres];
+        }
         Arrays.fill(XW[3], 1);
+        XW[0][0] = 0;
+        XW[1][0] = 0;
+        XW[2][0] = 0;
         boolean isCollinear = false;
         do {
-            // z is 0 for planar homography
-            for (int row = 0; row < 2; ++row) {
-                XW[row] = UnivariateNormalDistribution.randomSampleOfUnitStandard(rand, nCorres);
+            // y is 0 for this example's planar homography
+            System.arraycopy(
+                    UnivariateNormalDistribution.randomSampleOfUnitStandard(rand, nCorres-1),
+                    0, XW[0], 1, nCorres - 1);
+            for (i = 1;  i < nCorres; ++i) {
+                XW[2][i] = -(solnN[0]*XW[0][i])/solnN[2];
             }
-            isCollinear = areCollinear(i+1, XW, tol);
+            isCollinear = areCollinear(nCorres, XW, tol);
         } while (isCollinear);
 
         System.out.printf("XW=\n%s\n", FormatArray.toString(XW, "%.3f"));
@@ -367,12 +396,24 @@ public class PlanarHomographyTest extends TestCase {
 
         // n is the direction perpendicular to the plane P.
         // rotate the plane by n
-        double[][] rWCSC1 = Rotation.createRodriguesFormulaRotationMatrix(solnN);
+        double[] solnNNeg = Arrays.copyOf(solnN, solnN.length);
+        MatrixUtil.multiply(solnNNeg, -1);
 
+        /*
+        what are the positions and orientations of the plane P with respect to camera 1 and
+        camera 2?  we have that N is the direction normal to the plane P
+        and that d is the distance between plane P and camera 1 where the origin is
+        the reference frame of camera 1.
+        the hypotenuse of this right triangle is along the direction of N but a distance along it
+        has not been set by the example.
+        */
+
+        double[][] rWCSC1 = Rotation.createRotationZYX(
+                new double[]{Math.PI*90./180., 0, Math.PI*60./180.});
         // d is 5
         // |x1_i - xw_i| = 5  = sqrt of sq sums of translation components.
         // will translate along z only:
-        System.out.printf("rotation from plane P to camera 1 plane is n.  translating by z only");
+        System.out.println("rotation from plane P to camera 1 plane is n.  translating by z only");
         double[][] pWCSC1 = new double[3][];
         pWCSC1[0] = new double[]{rWCSC1[0][0], rWCSC1[0][1], rWCSC1[0][2], 0};
         pWCSC1[1] = new double[]{rWCSC1[1][0], rWCSC1[1][1], rWCSC1[1][2], 0};
@@ -396,16 +437,19 @@ public class PlanarHomographyTest extends TestCase {
         // A is the stack of rows of xc points.  the right null space is the
         // last column of SVD(A).V where the last column is for eigenvalue=0.
         {
-            double[][] stack1 = new double [nCorres][4];
+            double[][] stack1 = new double [nCorres][];
             for (i = 0; i < nCorres; ++i) {
                 stack1[i] = new double[]{xc1[0][i], xc1[1][i], xc1[2][i], 1};
+                //stack1[i] = new double[]{XW[0][i], XW[1][i], XW[2][i], XW[3][i]};
             }
+            int idx = stack1[0].length;
             MatrixUtil.SVDProducts svd4 = MatrixUtil.performSVD(stack1);
             System.out.printf("the normal to camera 1 plane =%s\n",
-                FormatArray.toString(svd4.vT[3],"%.4e"));
-            System.out.printf("the distance to camera 1 plane =%.4e\n", svd4.vT[3][3]);
-            System.out.printf("%.4e, %.4e, %.4e\n", n[0]/svd4.vT[3][0], n[1]/svd4.vT[3][1],
-                    n[2]/svd4.vT[3][2]);
+                FormatArray.toString(svd4.vT[idx-1],"%.4e"));
+
+            System.out.printf("the distance to camera 1 plane =%.4e\n", svd4.vT[idx-1][idx-1]);
+            System.out.printf("(%.4e, %.4e, %.4e)\n", n[0]/svd4.vT[idx-1][0], n[1]/svd4.vT[idx-1][1],
+                    n[2]/svd4.vT[idx-1][2]);
         }
 
         // xc2 = R*XC1 + t
