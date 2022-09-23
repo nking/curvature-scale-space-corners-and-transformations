@@ -423,6 +423,42 @@ public class Rotation {
         out[2][2] = 1;
         
     }
+
+    /**
+     * calculate the rotation needed to tranform direction v1 to direction v2 using
+     * a quaternion.
+     * @param v1
+     * @param v2
+     * @return
+     */
+    public static double[][] rotationBetweenTwoDirections0(double[] v1, double[] v2) {
+        double[] n1 = MatrixUtil.normalizeL2(v1);
+        double[] n2 = MatrixUtil.normalizeL2(v2);
+        double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);
+        double[] axis = MatrixUtil.crossProduct(n1, n2);
+        //TODO: check the method createUnitLengthQuaternionBarfoot with results for quatB here
+        double[] quatH = Rotation.createHamiltonQuaternionZYX(angle, axis);
+        double[] quatB = Rotation.convertHamiltonToBarfootQuaternion(quatH);
+        double[][] r = Rotation.createRotationMatrixFromQuaternion4(quatB);
+        r = MatrixUtil.copySubMatrix(r, 0, 2, 0, 2);
+        return r;
+    }
+
+    /**
+     * calculate the rotation needed to tranform direction v1 to direction v2 using
+     * Rodrigues formula.
+     * @param v1
+     * @param v2
+     * @return
+     */
+    public static double[][] rotationBetweenTwoDirections1(double[] v1, double[] v2) {
+        double[] n1 = MatrixUtil.normalizeL2(v1);
+        double[] n2 = MatrixUtil.normalizeL2(v2);
+        double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);
+        double[] axis = MatrixUtil.crossProduct(n1, n2);
+        double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis);
+        return r;
+    }
     
     /**
      * given axis as an array of rotations about x, y, and z, calculate the 
