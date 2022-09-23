@@ -420,7 +420,14 @@ public class PlanarHomographyTest extends TestCase {
             double[] checkNC1 = MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm);
             assertTrue(Math.abs(checkNC1[0] - nC1Norm[0]) < 1E-7);
             assertTrue(Math.abs(checkNC1[1] - nC1Norm[1]) < 1E-7);
-            assertTrue(Math.abs(checkNC1[2] - nC1Norm[2]) < 1E-7);
+            assertTrue(Math.abs(checkNC1[2] - qnC1Norm[2]) < 1E-7);
+
+            // using the rodrigues formula was faster but a little less accurate:
+        double[][] r2 = Rotation.createRodriguesFormulaRotationMatrix(axisWCSC1);
+        System.out.printf("r*v=\n%s\n", FormatArray.toString(
+                MatrixUtil.multiplyMatrixByColumnVector(r2, nPNorm),
+                "%.4e"
+        ));
 
         // d is 5
         // |x1_i - xw_i| = 5  = sqrt of sq sums of translation components.
