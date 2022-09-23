@@ -400,16 +400,28 @@ public class PlanarHomographyTest extends TestCase {
         MatrixUtil.multiply(solnNNeg, -1);
 
         /*
-        what are the positions and orientations of the plane P with respect to camera 1 and
-        camera 2?  we have that N is the direction normal to the plane P
-        and that d is the distance between plane P and camera 1 where the origin is
-        the reference frame of camera 1.
-        the hypotenuse of this right triangle is along the direction of N but a distance along it
-        has not been set by the example.
+        We need the rotation that turns direction vector (1, 0, 2) to the direction vector (0, 0, 1) so that
+        it is pointing at camera 1.
+        We can calculate the axis of rotation as the cross product of the
+        vectors and the angle of rotation as the dot product of the vectors,
+        then form the Barfoot quaternion from the angle and axis,
+        then the rotation matrix from the quaternion.
         */
+        // normalize the directions to make the math simpler.
+        double[] nPNorm = MatrixUtil.normalizeL2(n);
+        double[] nC1Norm = new double[]{0, 0, 1};
+        double thetaWCSC1 = -Math.acos(nPNorm[0]*nC1Norm[0] + nPNorm[1]*nC1Norm[1] + nPNorm[2]*nC1Norm[2]);
+        double[] axisWCSC1 = MatrixUtil.crossProduct(nPNorm, nC1Norm);
+        double[] quatH = Rotation.createHamiltonQuaternionZYX(thetaWCSC1, axisWCSC1);
+        double[] quatB = Rotation.convertHamiltonToBarfootQuaternion(quatH);
+        double[][] rWCSC1 = Rotation.createRotationMatrixFromQuaternion4(quatB);
+        rWCSC1 = MatrixUtil.copySubMatrix(rWCSC1, 0, 2, 0, 2);
+            // expecting (0, 0, 1)
+            double[] checkNC1 = MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm);
+            assertTrue(Math.abs(checkNC1[0] - nC1Norm[0]) < 1E-7);
+            assertTrue(Math.abs(checkNC1[1] - nC1Norm[1]) < 1E-7);
+            assertTrue(Math.abs(checkNC1[2] - nC1Norm[2]) < 1E-7);
 
-        double[][] rWCSC1 = Rotation.createRotationZYX(
-                new double[]{Math.PI*90./180., 0, Math.PI*60./180.});
         // d is 5
         // |x1_i - xw_i| = 5  = sqrt of sq sums of translation components.
         // will translate along z only:
@@ -508,6 +520,13 @@ public class PlanarHomographyTest extends TestCase {
         // see algorithm 5.2
 
         System.out.printf("h3=\n%s\n", FormatArray.toString(h3, "%.3e"));
+
+        // ===========================
+        // another approach:
+        //     randomly generate xc1 in camera frame,
+        //     use xc2 ~ H * xc1 <--> also x2 ~ H * x1
+        //     and then triangulation to derive XW.
+        //     the cameras' intrinsics are known.
 
     }
 

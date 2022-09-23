@@ -362,7 +362,7 @@ public class EpipolarTransformer {
         double[][] aTa = MatrixUtil.createATransposedTimesA(m);
         //DenseMatrix aMatrix = new DenseMatrix(m);
         DenseMatrix aTaMatrix = new DenseMatrix(aTa);
-        
+
         //System.out.printf("matrix A dimensions = %d x %d\n", m.length, m[0].length);
         
         //aMatrix is m x n  (== nData X 9)
@@ -443,9 +443,11 @@ public class EpipolarTransformer {
             // if this is solving the Essential matrix instead of the Fundamental 
             //    Matrix, the diagonal is 
             // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
+            // MASKS Theorem 5.9
             double sig = (svd.s[0] + svd.s[1])/2.;
             d.set(0, 0, sig);
             d.set(1, 1, sig);
+            //NOTE: to normalize E, one can use sig = 1 here. see p. 122 of MASKS chapt 5.
         } else {
             if (svd.s.length > 0) {
                 d.set(0, 0, svd.s[0]);
