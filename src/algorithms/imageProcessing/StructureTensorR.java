@@ -1,10 +1,12 @@
 package algorithms.imageProcessing;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscMath0;
 
 /**
  * create first derivative products and optionally second derivative
  * products of an image.
+ * tailored to row-major image format (i.e. image[row][col])
  * 
  * some amount of the code below has been adapted from
      https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
@@ -48,37 +50,37 @@ import algorithms.matrix.MatrixUtil;
    
  * @author nichole
  */
-public class StructureTensor {
-    
+public class StructureTensorR {
+
     private final float sigma;
-    
-    private final float[][] dXSq;
-    
-    private final float[][] dYSq;
-    
-    private final float[][] dXdY;
-    
+
+    private final double[][] dXSq;
+
+    private final double[][] dYSq;
+
+    private final double[][] dXdY;
+
     // optional:
-    private final float[][] dX;
-    private final float[][] d2X;
-    private final float[][] dY;
-    private final float[][] d2Y;
-    
+    private final double[][] dX;
+    private final double[][] d2X;
+    private final double[][] dY;
+    private final double[][] d2Y;
+
     // created on demand
-    private float[][] detA = null;
-    private float[][] traceA = null;
-    
+    private double[][] detA = null;
+    private double[][] traceA = null;
+
     /**
      * create sobel x and y derivatives (== first deriv gaussians w/ sigma =
      * sqrt(2)/2) followed by smoothing with a gaussian of sigma=given sigma.
      * If create2ndDerivs is true, the second derivatives needed for curvature
      * are calculated too.
-     * 
-     * @param image
+     *
+     * @param image assumed to be row major format
      * @param sigma
-     * @param create2ndDerivs 
+     * @param create2ndDerivs
      */
-    public StructureTensor(float[][] image, float sigma, boolean create2ndDerivs) {
+    public StructureTensorR(double[][] image, float sigma, boolean create2ndDerivs) {
 
         this.sigma = sigma;
         
@@ -88,33 +90,33 @@ public class StructureTensor {
         // switch X and Y sobel operations to match scipy (column major to row major or vice versa)
 
         // NOTE: may need to revisit this
-        float norm = 4.f;//(0.707f * (float)Math.sqrt(2. * Math.PI));
+        double norm = 4.f;//(0.707f * (double)Math.sqrt(2. * Math.PI));
         
-        float[][] gX = imageProcessor.copy(image);
-        imageProcessor.applySobelY(gX);
+        double[][] gX = imageProcessor.copy(image);
+        imageProcessor.applySobelX(gX);
         MatrixUtil.multiply(gX, norm);
 
-        float[][] gY = imageProcessor.copy(image);
-        imageProcessor.applySobelX(gY);
+        double[][] gY = imageProcessor.copy(image);
+        imageProcessor.applySobelY(gY);
         MatrixUtil.multiply(gY, norm);
         
         // --- create structure tensors ----
-        float[] kernel = (sigma > 0) ? Gaussian1D.getKernel(sigma) : null;
+        double[] kernel = (sigma > 0) ? MiscMath0.convertFloatToDouble(Gaussian1D.getKernel(sigma)) : null;
         
         //Axx
-        dXSq = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gX, gX);
+        dXSq = MatrixUtil.pointwiseMultiplication(gX, gX);
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dXSq, kernel);
         }
         
         //Ayy
-        dYSq = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gY, gY);
+        dYSq = MatrixUtil.pointwiseMultiplication(gY, gY);
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dYSq, kernel);
         }
         
         //Axy
-        dXdY = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(gX, gY);
+        dXdY = MatrixUtil.pointwiseMultiplication(gX, gY);
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dXdY, kernel);
         }
@@ -126,16 +128,14 @@ public class StructureTensor {
             
             // for curvature, need d/dy(dy) and d/dx(dx)
             kernel = (sigma > 0) ?
-                Gaussian1DFirstDeriv.getKernel(sigma) :
-                Gaussian1DFirstDeriv.getKernel(SIGMA.ZEROPOINTSEVENONE);
+                    MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getKernel(sigma)) :
+                    MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getKernel(SIGMA.ZEROPOINTSEVENONE));
             
             d2X = imageProcessor.copy(gX);
             d2Y = imageProcessor.copy(gY);
         
-            //TODO: revisit this in detail:
-            // row major, so need to use y operations for x and vice versa
-            imageProcessor.applyKernel1D(d2X, kernel, false);
-            imageProcessor.applyKernel1D(d2Y, kernel, true);
+            imageProcessor.applyKernel1D(d2X, kernel, true);
+            imageProcessor.applyKernel1D(d2Y, kernel, false);
         
         } else {
             dX = null;
@@ -145,26 +145,26 @@ public class StructureTensor {
         }
     }
    
-    public float[][] getDeterminant() {
+    public double[][] getDeterminant() {
         
         if (detA == null) {
                         
             // detA = Axx * Ayy - Axy ** 2
             
-            float[][] axxyy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXSq, dYSq);
+            double[][] axxyy = MatrixUtil.pointwiseMultiplication(dXSq, dYSq);
 
-            float[][] axyxy = algorithms.imageProcessing.util.MatrixUtil.multiplyPointwise(dXdY, dXdY);
+            double[][] axyxy = MatrixUtil.pointwiseMultiplication(dXdY, dXdY);
 
-            detA = MatrixUtil.subtract(axxyy, axyxy);
+            detA = MatrixUtil.pointwiseSubtract(axxyy, axyxy);
         }
         
         return detA;
     }
     
-    public float[][] getTrace() {
+    public double[][] getTrace() {
         
         if (traceA == null) {
-            traceA = MatrixUtil.add(dXSq, dYSq);
+            traceA = MatrixUtil.pointwiseAdd(dXSq, dYSq);
         }
         
         return traceA;
@@ -175,7 +175,7 @@ public class StructureTensor {
      * 
      * @return 
      */
-    public float[][] getDXSquared() {
+    public double[][] getDXSquared() {
         return dXSq;
     }
     
@@ -183,7 +183,7 @@ public class StructureTensor {
      * get Ayy
      * @return 
      */
-    public float[][] getDYSquared() {
+    public double[][] getDYSquared() {
         return dYSq;
     }
     
@@ -191,23 +191,23 @@ public class StructureTensor {
      * get Axy
      * @return 
      */
-    public float[][] getDXDY() {
+    public double[][] getDXDY() {
         return dXdY;
     }
     
-    public float[][] getDX() {
+    public double[][] getDX() {
         return dX;
     }
     
-    public float[][] getDY() {
+    public double[][] getDY() {
         return dY;
     }
     
-    public float[][] getDDX() {
+    public double[][] getDDX() {
         return d2X;
     }
     
-    public float[][] getDDY() {
+    public double[][] getDDY() {
         return d2Y;
     }
 }

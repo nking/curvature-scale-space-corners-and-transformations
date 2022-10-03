@@ -1,12 +1,7 @@
 package algorithms.imageProcessing.features.orb;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.ATrousWaveletTransform;
-import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.StructureTensor;
+import algorithms.imageProcessing.*;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -456,7 +451,8 @@ public class ORB {
         for (int i = 0; i < scales.length; ++i) {
             
             TwoDFloatArray octaveImage = pyramidImages[i];
-            
+
+            // octaveImage.a is in row-major format
             tensorComponents[i] = new StructureTensor(octaveImage.a,
                 sigma, doCreateCurvatureKeyPoints);
         }
@@ -1509,7 +1505,8 @@ public class ORB {
 
     /**
       Compute Harris corner measure response image.
-        This corner detector uses information from the auto-correlation matrix A::
+        This corner detector uses information from the auto-correlation matrix A
+        (a.k.a. he structure tensor):
             A = [(imx**2)   (imx*imy)] = [Axx Axy]
                 [(imx*imy)   (imy**2)]   [Axy Ayy]
         Where imx and imy are first derivatives, averaged with a gaussian filter.
@@ -1553,6 +1550,70 @@ public class ORB {
         for (int i = 0; i < detA.length; ++i) {
             for (int j = 0; j < detA[i].length; ++j) {
                 float v = k * (traceA[i][j] * traceA[i][j]);
+                if (detAAll0s) {
+                    response[i][j] = v;
+                } else {
+                    response[i][j] = detA[i][j] - v;
+                }
+            }
+        }
+
+        return response;
+    }
+
+    /**
+     Compute Harris corner measure response image
+     ([Harris and Stephens, 1988).
+     This corner detector uses information from the auto-correlation matrix A
+     (a.k.a. the structure tensor):
+     <pre>
+     A = [(imx**2)   (imx*imy)] = [Axx Axy]
+        [(imx*imy)   (imy**2)]   [Axy Ayy]
+     </pre>
+     Where imx and imy are first derivatives, averaged with a gaussian filter.
+     The corner measure is then defined as::
+     MASKS eqn (11.1)
+         det(A) + k * trace(A)**2
+
+     originally adapted
+     from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
+
+     @param image
+     @return the harris corner response image of same size as image,
+      *   and composed of
+      *   response = detA + k * traceA ** 2 built from the 2nd derivatives of
+      *   image intensity.
+     */
+    public static double[][] cornerHarris(double[][] image) {
+
+        float sigma = 1.f;
+
+        StructureTensorR tensor = new StructureTensorR(image, sigma, false);
+
+        // method = 'k'.  k is Sensitivity factor to separate corners from edges,
+        // Small values of k result in detection of sharp corners.
+        double k = 0.04;
+
+        double[][] detA = tensor.getDeterminant();
+        double[][] traceA = tensor.getTrace();
+        int i;
+        int j;
+        boolean detAAll0s = true;
+        //response = detA - k * traceA ** 2
+        double[][] response = new double[detA.length][];
+        for (i = 0; i < detA.length; ++i) {
+            response[i] = new double[detA[0].length];
+            for (j = 0; j < detA[i].length; ++j) {
+                if (detA[i][j] != 0.f) {
+                    detAAll0s = false;
+                    break;
+                }
+            }
+        }
+        double v;
+        for (i = 0; i < detA.length; ++i) {
+            for (j = 0; j < detA[i].length; ++j) {
+                v = k * (traceA[i][j] * traceA[i][j]);
                 if (detAAll0s) {
                     response[i][j] = v;
                 } else {

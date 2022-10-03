@@ -1,11 +1,14 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.EpipolarTransformer.NormalizationTransformations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
+import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
@@ -292,10 +295,10 @@ public class EpipolarTransformerTest extends TestCase {
         }
         return true;
     }
-    
-     
-    public void testMoreThan7Points() throws Exception {
-            
+
+    public void testMoreThan7Points1() throws Exception {
+        System.out.println("testMoreThan7Points1");
+
         PairIntArray leftTrueMatches = new PairIntArray();
         PairIntArray rightTrueMatches = new PairIntArray();
         getMertonCollege10TrueMatches(leftTrueMatches, rightTrueMatches);
@@ -318,7 +321,6 @@ public class EpipolarTransformerTest extends TestCase {
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
             normalizedFM, normXY1.getNormalizationMatrices(),
             normXY2.getNormalizationMatrices());
-                
         
         boolean useToleranceAsStatFactor = true;//false;
         final double tolerance = 3.88;
@@ -336,7 +338,7 @@ public class EpipolarTransformerTest extends TestCase {
         
         assertNotNull(fit);
         assertNotNull(fit.getErrorType());
-        System.out.println("nCorr=" + fit.getInlierIndexes().size());
+        System.out.println("fit=" + fit.toString());
         assertEquals(10, fit.getErrors().size());
         assertEquals(10, fit.getInlierIndexes().size());
         fit.calculateErrorStatistics();
@@ -368,8 +370,100 @@ public class EpipolarTransformerTest extends TestCase {
             image1Width, image1Height, image2Width, image2Height, 
             "e_merton_college_10pts" + Integer.valueOf(0).toString());
     }
-    
-    public void test7Points() throws Exception {
+
+    public void testCorners() throws IOException {
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+        GreyscaleImage image1 = ImageIOHelper.readImageAsGreyscaleFullRange(filePath1);
+        GreyscaleImage image2 = ImageIOHelper.readImageAsGreyscaleFullRange(filePath2);
+        double[][] img1 = convertToDouble(image1.toNormalizedRowMajorArray());
+        double[][] img2 = convertToDouble(image2.toNormalizedRowMajorArray());
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        int minDist = 1;
+        float thresholdRel = 0.01f;//0.1f;
+        boolean ignore0sInThresh = true;
+
+        int[][] keyPoints1 = imageProcessor.calcHarrisCorners(img1, minDist, thresholdRel, ignore0sInThresh);
+        int[][] keyPoints2 = imageProcessor.calcHarrisCorners(img2, minDist, thresholdRel, ignore0sInThresh);
+
+        overplotKeypoints(keyPoints1, keyPoints2, image1.copyToColorGreyscale(), image2.copyToColorGreyscale(),
+                Integer.toString(0));
+
+    }
+
+    public void testMoreThan7Points2() throws Exception {
+
+        System.out.println("testMoreThan7Points2");
+
+        PairIntArray leftTrueMatches = new PairIntArray();
+        PairIntArray rightTrueMatches = new PairIntArray();
+        getMertonCollege10TrueMatches(leftTrueMatches, rightTrueMatches);
+
+        EpipolarTransformer spTransformer = new EpipolarTransformer();
+
+        double[][] left = convertToDouble(leftTrueMatches);
+        double[][] right = convertToDouble(leftTrueMatches);
+
+        double[][] fm = spTransformer.calculateEpipolarProjection2(left, right, false);
+
+        assertNotNull(fm);
+
+        boolean useToleranceAsStatFactor = true;//false;
+        final double tolerance = 3.88;
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
+
+        Distances distances = new Distances();
+        EpipolarTransformationFit fit = null;
+        if (useToleranceAsStatFactor) {
+            fit = distances.calculateError2(new DenseMatrix(fm),
+                    new DenseMatrix(left), new DenseMatrix(right), errorType, tolerance);
+        } else {
+            fit = distances.calculateError(new DenseMatrix(fm),
+                    new DenseMatrix(left), new DenseMatrix(right), errorType, tolerance);
+        }
+
+        assertNotNull(fit);
+        assertNotNull(fit.getErrorType());
+        System.out.println("fit=" + fit.toString());
+        assertEquals(10, fit.getErrors().size());
+        assertEquals(10, fit.getInlierIndexes().size());
+        fit.calculateErrorStatistics();
+        double mean = fit.getMeanError();
+        double stdev = fit.getStDevFromMean();
+        List<Double> errors = fit.getErrors();
+
+        assertTrue(mean < tolerance);
+        assertTrue(stdev < tolerance);
+        for (Double error : errors) {
+            assertTrue(error < tolerance);
+        }
+
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+
+        overplotEpipolarLines(new DenseMatrix(fm),
+                leftTrueMatches, rightTrueMatches,
+                img1, img2,
+                image1Width, image1Height, image2Width, image2Height,
+                "e_merton_college_10pts" + Integer.valueOf(1).toString());
+    }
+
+    public void test7Points1() throws Exception {
+
+        System.out.println("test7Points1");
             
         PairIntArray leftTrueMatches = new PairIntArray();
         PairIntArray rightTrueMatches = new PairIntArray();
@@ -441,6 +535,8 @@ public class EpipolarTransformerTest extends TestCase {
         for (Double error : errors) {
             assertTrue(error < 0.01);
         }
+
+        System.out.printf("bestfit=" + bestFit.toString());
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
@@ -459,6 +555,103 @@ public class EpipolarTransformerTest extends TestCase {
             img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
             "e_merton_college_7pts" + Integer.valueOf(0).toString()); 
+    }
+
+    public void test7Points2() throws Exception {
+
+        System.out.println("test7Points2");
+
+        PairIntArray leftTrueMatches = new PairIntArray();
+        PairIntArray rightTrueMatches = new PairIntArray();
+        getMertonCollege7TrueMatches(leftTrueMatches, rightTrueMatches);
+
+        double[][] left = convertToDouble(leftTrueMatches);
+        double[][] right = convertToDouble(leftTrueMatches);
+        DenseMatrix leftM = new DenseMatrix(left);
+        DenseMatrix rightM = new DenseMatrix(right);
+
+        EpipolarTransformer spTransformer = new EpipolarTransformer();
+
+        double[][] fms = spTransformer.calculateEpipolarProjectionUsing7Points(left, right);
+
+        int nSolns = fms.length/3;
+        System.out.printf("nSolns=%d\n", nSolns);
+
+        assertNotNull(fms);
+
+        boolean useToleranceAsStatFactor = false;
+        final double tolerance = 3;
+
+        ErrorType errorType = ErrorType.SAMPSONS;
+        Distances distances = new Distances();
+
+        List<EpipolarTransformationFit> fits = new ArrayList<EpipolarTransformationFit>();
+
+        EpipolarTransformationFit bestFit = null;
+        int bestFitIdx = -1;
+
+        double[][] fm = MatrixUtil.zeros(3, 3);
+
+        double[][] bestFM = null;
+
+        for (int i = 0; i < nSolns; ++i) {
+
+            for (int j = 0; j < 3; ++j) {
+                System.arraycopy(fms[i*3 + j], 0, fm[j], 0, 3);
+            }
+
+            EpipolarTransformationFit fit = null;
+            if (useToleranceAsStatFactor) {
+                fit = distances.calculateError2(new DenseMatrix(fm),
+                        leftM, rightM, errorType, tolerance);
+            } else {
+                fit = distances.calculateError(new DenseMatrix(fm),
+                        leftM, rightM, errorType, tolerance);
+            }
+
+            fits.add(fit);
+
+            if (fit.isBetter(bestFit)) {
+                bestFit = fit;
+                bestFitIdx = fits.size() - 1;
+                bestFM = MatrixUtil.copy(fm);
+            }
+        }
+
+        assertNotNull(bestFit);
+        assertNotNull(bestFit.getErrorType());
+        assertEquals(7, bestFit.getErrors().size());
+        assertEquals(7, bestFit.getInlierIndexes().size());
+        bestFit.calculateErrorStatistics();
+        double mean = bestFit.getMeanError();
+        double stdev = bestFit.getStDevFromMean();
+        List<Double> errors = bestFit.getErrors();
+
+        System.out.printf("bestfit=" + bestFit.toString());
+
+        assertTrue(mean < 0.01);
+        assertTrue(stdev < 0.01);
+        for (Double error : errors) {
+            assertTrue(error < 0.01);
+        }
+
+        String fileName1 = "merton_college_I_001.jpg";
+        String fileName2 = "merton_college_I_002.jpg";
+        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+
+        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
+        int image1Width = img1.getWidth();
+        int image1Height = img1.getHeight();
+        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
+        int image2Width = img2.getWidth();
+        int image2Height = img2.getHeight();
+
+        overplotEpipolarLines(new DenseMatrix(bestFM),
+                leftTrueMatches, rightTrueMatches,
+                img1, img2,
+                image1Width, image1Height, image2Width, image2Height,
+                "e_merton_college_7pts" + Integer.valueOf(1).toString());
     }
     
     
@@ -523,6 +716,27 @@ public class EpipolarTransformerTest extends TestCase {
             dirPath + "/tmp_m_1_" + outfileNumber + ".png", img1);
         ImageIOHelper.writeOutputImage(
             dirPath + "/tmp_m_2_" + outfileNumber + ".png", img2);
+    }
+
+    private void overplotKeypoints(int[][] keypoints1, int[][] keypoints2,
+            Image img1, Image img2, String outfileNumber)
+            throws IOException {
+
+        int ii;
+        for (ii = 0; ii < keypoints1.length; ii++) {
+            ImageIOHelper.addPointToImage(keypoints1[ii][1], keypoints1[ii][0], img1, 3,
+                    255, 0, 0);
+        }
+        for (ii = 0; ii < keypoints2.length; ii++) {
+            ImageIOHelper.addPointToImage(keypoints2[ii][1], keypoints2[ii][0], img2, 3,
+                    255, 0, 0);
+        }
+
+        String dirPath = ResourceFinder.findDirectory("bin");
+        ImageIOHelper.writeOutputImage(
+                dirPath + "/m_1_harriscorners_" + outfileNumber + ".png", img1);
+        ImageIOHelper.writeOutputImage(
+                dirPath + "/m_2_harriscorners_" + outfileNumber + ".png", img2);
     }
     
     private Color getColor(Color clr) {
@@ -611,6 +825,18 @@ public class EpipolarTransformerTest extends TestCase {
         }
         return out;
     }
+
+    private double[][] convertToDouble(float[][] a) {
+        double[][] c = new double[a.length][];
+        int i, j;
+        for (i = 0; i < a.length; ++i) {
+            c[i] = new double[a[0].length];
+            for (j = 0; j < a[0].length; ++j) {
+                c[i][j] = a[i][j];
+            }
+        }
+        return c;
+    }
     
     public void testIsDegenerate() {
 
@@ -673,6 +899,35 @@ public class EpipolarTransformerTest extends TestCase {
         
         d = EpipolarTransformer.isDegenerate(x1M, x2M);
         assertFalse(d);
+    }
+
+    public void testNormalizeUsingUnitStandard() {
+        int n = 3;
+        double[][] xy = new double[3][];
+        xy[0] = new double[]{20, 30, 40};
+        xy[1] = new double[]{2, 3, 4};
+        xy[2] = new double[]{1, 1, 1};
+
+        double[] expected = new double[]{30, 3, 10, 1};
+        double[][] expectedXY = MatrixUtil.copy(xy);
+        int i;
+        int j;
+        double[] mean = new double[1];
+        double[] sD = new double[1];
+        expectedXY[0] = Standardization.standardUnitNormalization(expectedXY[0], 1, mean, sD);
+        expectedXY[1] = Standardization.standardUnitNormalization(expectedXY[1], 1, mean, sD);
+
+        double tol = 1E-7;
+
+        double[] ms = EpipolarTransformer.normalizeUsingUnitStandard(xy);
+        for (i = 0; i < 4; ++i) {
+            assertTrue(Math.abs(ms[i] - expected[i]) < tol);
+        }
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 3; ++j) {
+                assertTrue(Math.abs(expectedXY[j][i] - xy[j][i]) < tol);
+            }
+        }
     }
     
     public static void main(String[] args) {

@@ -6,17 +6,8 @@ import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.matrix.MatrixUtil;
-import algorithms.misc.MiscMath;
-import algorithms.util.PairIntArray;
-import algorithms.util.PairInt;
-import algorithms.misc.Complex;
-import algorithms.misc.ComplexModifiable;
-import algorithms.misc.MedianSmooth;
-import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
-import algorithms.util.PixelHelper;
-import algorithms.util.ResourceFinder;
-import algorithms.util.TwoDFloatArray;
+import algorithms.misc.*;
+import algorithms.util.*;
 import algorithms.VeryLongBitString;
 import algorithms.heapsAndPQs.HeapNode;
 import algorithms.sort.MultiArrayMergeSort;
@@ -570,6 +561,19 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         
         applyKernel1D(input, kernel, true);
     }
+    public void applySobelX(double[][] input) {
+
+        double[] kernel = MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive());
+
+        /*
+         1
+         2  * [1 0 -1]
+         1
+        */
+        applyKernel1D(input, new double[]{0.5, 1., 0.5}, false);
+
+        applyKernel1D(input, kernel, true);
+    }
 
     public void applySobelY(float[][] input) {
 
@@ -578,12 +582,29 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
          0  * [1 2 1]
          -1
         */
-        
+
+        //0.5f, 0.0f, -0.5f
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
 
         applyKernel1D(input, kernel, false);
         
         applyKernel1D(input, new float[]{0.5f, 1.f, 0.5f}, true);
+    }
+
+    public void applySobelY(double[][] input) {
+
+        /*
+         1
+         0  * [1 2 1]
+         -1
+        */
+
+        //0.5f, 0.0f, -0.5f
+        double[] kernel = MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive());
+
+        applyKernel1D(input, kernel, false);
+
+        applyKernel1D(input, new double[]{0.5, 1., 0.5}, true);
     }
     
     /**
@@ -1290,6 +1311,13 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
     }
 
+    public void applyKernelTwo1Ds(double[][] input, double[] kernel) {
+
+        applyKernel1D(input, kernel, true);
+
+        applyKernel1D(input, kernel, false);
+    }
+
     protected void blur(GreyscaleImage input, float[] kernel, int minValue, int maxValue) {
 
         applyKernel1D(input, kernel, true, minValue, maxValue);
@@ -1636,6 +1664,12 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         }
     }
 
+    /**
+     *
+     * @param input
+     * @param kernel
+     * @param calcForX convolve along columns if true, else rows
+     */
     public void applyKernel1D(float[][] input, float[] kernel,
         boolean calcForX) {
 
@@ -1646,9 +1680,10 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         float[][] output = new float[w][];
 
-        for (int i = 0; i < w; i++) {
+        for (int i = 0; i < w; i++) { // rows
             output[i] = new float[h];
-            for (int j = 0; j < h; j++) {
+            for (int j = 0; j < h; j++) { // cols
+                //if calcX is true: convolution is over the column at the fixed row.
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, calcForX);
                 float g = (float)conv;
@@ -1657,6 +1692,36 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         }
 
         for (int i = 0; i < w; i++) {
+            System.arraycopy(output[i], 0, input[i], 0, h);
+        }
+    }
+
+    /**
+     *
+     * @param input
+     * @param kernel
+     * @param calcForX convolve along columns if true, else rows
+     */
+    public void applyKernel1D(double[][] input, double[] kernel, boolean calcForX) {
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.length;
+        int h = input[0].length;
+
+        double[][] output = new double[w][];
+
+        int i;
+        int j;
+        for (i = 0; i < w; i++) { // rows
+            output[i] = new double[h];
+            for (j = 0; j < h; j++) { // cols
+                //if calcX is true: convolution is over the column at the fixed row.
+                output[i][j] = kernel1DHelper.convolvePointWithKernel(input, i, j, kernel, calcForX);
+            }
+        }
+
+        for (i = 0; i < w; i++) {
             System.arraycopy(output[i], 0, input[i], 0, h);
         }
     }
@@ -3131,7 +3196,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     
     /**
      * output is row major format
-     * @param input
+     * @param m
      * @return
      */
     public double[][] copyToDouble2D(Matrix m) {
@@ -3233,7 +3298,14 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         return out;
     }
-    
+
+    /**
+     *
+     * @param image 2 dimensional array of data, assumed row-major format
+     * @param sigma
+     * @param outKeypoints0
+     * @param outKeypoints1
+     */
     public void createFirstDerivKeyPoints(float[][] image,
         float sigma, TIntList outKeypoints0, TIntList outKeypoints1) {
 
@@ -3850,11 +3922,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return out;
     }
 
-    /**
-     *
-     * @param img
-     * @return
-     */
     private Set<PairInt> dilate(Set<PairInt> set,
         int imageWidth, int imageHeight, boolean dilate) {
 
@@ -5329,6 +5396,56 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
         return out;
     }
+
+    /**
+     * calculate Harris Corner responses for each pixel in the image then use
+     * local maximum thresholding with a minimum separation between maxima, to find the peaks.
+     *
+     * @param img
+     * @return image pairs in row major format. For example:
+     *   keypoint[0] = int[]{row_i0, col_i0};
+     *   keypoint[1] = int[]{row_i1, col_i1};
+     *   ...
+     */
+    public int[][] calcHarrisCorners(double[][] img) {
+        int minDist = 1;
+        float thresholdRel = 0.1f;
+        boolean ignore0sInThresh = true;
+        return calcHarrisCorners(img, minDist, thresholdRel, ignore0sInThresh);
+    }
+
+    public static int[][] calcHarrisCorners(double[][] img, int minDist, float thresholdRel,
+                                            boolean ignore0sInThresh) {
+
+        float sigmaBlur = 1;
+        StructureTensorR tensorComponents = new
+                StructureTensorR(img, sigmaBlur, false);
+
+        double[][] detA = tensorComponents.getDeterminant();
+
+        double[][] traceA = tensorComponents.getTrace();
+
+        double[][] hr = ORB.cornerHarris(img);
+
+        //System.out.printf("harris response=\n%s\n", FormatArray.toString(hr, "%.1f"));
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        // keypoints0 are the row numbers
+        TIntList keypoints0 = new TIntArrayList();
+        // keypoints1 are the column numbers
+        TIntList keypoints1 = new TIntArrayList();
+
+        imageProcessor.peakLocalMax(MatrixUtil.convertToFloat(hr),
+                minDist, thresholdRel,
+                ignore0sInThresh, keypoints0, keypoints1);
+
+        int[][] keypoints = new int[keypoints0.size()][];
+        for (int i = 0; i < keypoints0.size(); ++i) {
+            keypoints[i] = new int[]{keypoints0.get(i), keypoints1.get(i)};
+        }
+
+        return keypoints;
+    }
     
     public TIntSet convertPointsToIndexes(Set<PairInt> points, int width) {
         TIntSet set = new TIntHashSet(points.size());
@@ -5969,8 +6086,6 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * to calculate polar angle around 0 in degrees.
      * If maxV of 360, returns full value image,
      * else if is 255, scales the values to max value of 255, etc.
-     * @param img
-     * @param maxV
      * @return
      */
     public int calculateCIELABTheta(int red, int green, int blue, int maxV) {

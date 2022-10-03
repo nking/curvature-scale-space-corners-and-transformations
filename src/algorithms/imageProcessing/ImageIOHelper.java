@@ -50,7 +50,7 @@ import javax.swing.ImageIcon;
  * @author nichole
  */
 public class ImageIOHelper {
-    
+
     public static Image readImage(String filePath) throws IOException {
      
         if (filePath == null) {
@@ -1189,9 +1189,6 @@ public class ImageIOHelper {
      * @param y2
      * @param input
      * @param nExtraForDot
-     * @param rClr
-     * @param gClr
-     * @param bClr 
      */
     public static void drawLineInImage(int x1, int y1, 
         int x2, int y2,
@@ -1400,8 +1397,10 @@ public class ImageIOHelper {
      * draw the point over the image using the given rgb colors and the size
      * of the dot beyond 1 pixel.
      * 
-     * @param x of point
-     * @param y of point
+     * @param x of point (NOTE that if the points are from a row major reference frame,
+     *          you will want to use 'y' here instead).
+     * @param y of point (NOTE that if the points are from a row major reference frame,
+     *      *          you will want to use 'x' here instead).
      * @param input
      * @param nExtraForDot
      * @param rClr

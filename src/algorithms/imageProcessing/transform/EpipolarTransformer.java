@@ -1,12 +1,16 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.SubsetChooser;
+import algorithms.misc.PolynomialRootSolver;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
+import algorithms.statistics.Standardization;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
@@ -315,22 +319,269 @@ public class EpipolarTransformer {
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     private static double eps = 1e-12;
-    
+
     /**
-     * calculate the epipolar projection for a set of 8 or more matched points.
-     * NOTE that for best results, the method should be given unit standard
-     * normalized coordinates.
-     * @param leftXY left image correspondence in format of
-     * double array with x points on row 0, y points on row 1, 
-     *     and 1's on row 2.  the number of columns is the number of data points.
-     * @param rightXY right image correspondence in format of 
-     * double array with x points on row 0, y points on row 1, 
-     *     and 1's on row 2.  the number of columns is the number of data points.
-     * @param calibrated if true, solves for the Essential Matrix, else solves for the
-     * Fundamental matrix.  The difference is only in the diagonal used for
-     * dimension reduction.
-     * @return
+     * calculate the epipolar projection.  all normalizations and de-normalizations are handled internally.
+     * if the camera calibration is known, the essential matrix is returned.
+     * @param leftXY the left image coordinates of the feature correspondences
+     * @param rightXY the right image coordinates of the feature correspondences
+     * @param calibrated whether or not the camera calibration is known.  if true, the essential matrix is returned.
+     * @return the fundamental matrix (or essential matrix) of the epipolar projection.
      */
+    public double[][] calculateEpipolarProjection2(double[][] leftXY, double[][] rightXY,
+                                                   boolean calibrated) throws IOException {
+
+        if (leftXY.length != 3) {
+            throw new IllegalArgumentException("leftXY.length must be 3");
+        }
+        if (rightXY.length != 3) {
+            throw new IllegalArgumentException("rightXY.length must be 3");
+        }
+        int n = leftXY[0].length;
+        if (rightXY[0].length != n) {
+            throw new IllegalArgumentException("leftXY and rightXY must have same dimensions");
+        }
+        if (n < 7) {
+            throw new IllegalArgumentException("not enough points.  currently, this method only calculates the epipolar projection" +
+                    "matrix for 7 or more points");
+        }
+
+        if (n == 7) {
+            return calculateEpipolarProjectionUsing7Points(leftXY, rightXY);
+        }
+
+        leftXY = MatrixUtil.copy(leftXY);
+        rightXY = MatrixUtil.copy(rightXY);
+
+        // note that if the camera's are calibrated, and the points are already expressed relative to the optic
+        // center, the normalization has little effect. (MASKSAppendeix 6.A).
+        double[] mSLeft = normalizeUsingUnitStandard(leftXY);
+        double[] mSRight = normalizeUsingUnitStandard(rightXY);
+
+        double[][] a = createFundamentalMatrix(leftXY, rightXY);
+
+        SVDProducts svd = null;
+        try {
+            svd = MatrixUtil.performSVD(a);
+        } catch (NotConvergedException ex) {
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+        int ns = 9;
+        assert(svd.vT[0].length == ns);
+        // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
+        double[][] ff = new double[3][3];
+        int i;
+        for (i = 0; i < 3; i++) {
+            ff[i] = new double[3];
+            ff[i][0] = svd.vT[ns - 1][(i * 3) + 0];
+            ff[i][1] = svd.vT[ns - 1][(i * 3) + 1];
+            ff[i][2] = svd.vT[ns - 1][(i * 3) + 2];
+        }
+
+        //denormalize with F = H2^T*F*H1
+
+        //H1:
+        double[][] leftT = new double[3][];
+        leftT[0] = new double[]{1./mSLeft[2],       0,     -mSLeft[0]/mSLeft[2]};
+        leftT[1] = new double[]{0,           1./mSLeft[3], -mSLeft[1]/mSLeft[3]};
+        leftT[2] = new double[]{0,           0,           1};
+
+        // H2^T
+        double[][] rightTT = new double[3][];
+        rightTT[0] = new double[]{1./mSRight[2],       0,     -mSRight[0]/mSRight[2]};
+        rightTT[1] = new double[]{0,           1./mSRight[3], -mSRight[1]/mSRight[3]};
+        rightTT[2] = new double[]{0,           0,           1};
+        rightTT = MatrixUtil.transpose(rightTT);
+
+        ff = MatrixUtil.multiply(rightTT, MatrixUtil.multiply(ff, leftT));
+        double factor = 1./(ff[2][2] + eps);
+        MatrixUtil.multiply(ff, factor);
+
+        // enforce rank=2
+        svd = null;
+        try {
+            svd = MatrixUtil.performSVD(ff);
+        } catch (NotConvergedException e) {
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+        // keep the largest 2 values in sDiag to make the diagonal rank 2
+        double[][] d = MatrixUtil.zeros(3,3);
+        if (calibrated) {
+            //from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+            // refers to Ma, Soatto, Kosecka, and Sastry 2003
+            // "An Invitation to 3D Vision From Images to Geometric Models", p. 114
+            // if this is solving the Essential matrix instead of the Fundamental
+            //    Matrix, the diagonal is
+            // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
+            // MASKS Theorem 5.9
+            double sig = (svd.s[0] + svd.s[1])/2.;
+            d[0][0] = sig;
+            d[1][1] = sig;
+            //NOTE: to normalize E, one can use sig = 1 here. see p. 122 of MASKS chapt 5.
+        } else {
+            d[0][0] = svd.s[0];
+            d[1][1] = svd.s[1];
+        }
+
+        /*
+        multiply the terms:
+             F = dot(U, dot(diag(D),V^T))
+        */
+        double[][] dDotV = MatrixUtil.multiply(d, svd.vT);
+
+        // 3x3 with rank 2
+        double[][] fm = MatrixUtil.multiply(svd.u, dDotV);
+
+        return fm;
+    }
+
+    /**
+     * calculate the epipolar projection given 7 pairs of points.  all normalizations and de-normalizations are handled internally.
+     * if the camera calibration is known, the essential matrix is returned.
+     * @param leftXY the left image coordinates of the feature correspondences
+     * @param rightXY the right image coordinates of the feature correspondences
+     * @return the fundamental matrix (or essential matrix) of the epipolar projection.
+     */
+    public double[][] calculateEpipolarProjectionUsing7Points(double[][] leftXY, double[][] rightXY)
+    throws IOException {
+
+        if (leftXY.length != 3) {
+            throw new IllegalArgumentException("leftXY.length must be 3");
+        }
+        if (rightXY.length != 3) {
+            throw new IllegalArgumentException("rightXY.length must be 3");
+        }
+        int n = 7;
+        if (rightXY[0].length != n || leftXY[0].length != n) {
+            throw new IllegalArgumentException("leftXY and rightXY must have 7 points");
+        }
+
+        leftXY = MatrixUtil.copy(leftXY);
+        rightXY = MatrixUtil.copy(rightXY);
+
+        // note that if the camera's are calibrated, and the points are already expressed relative to the optic
+        // center, the normalization has little effect. (MASKSAppendeix 6.A).
+        double[] mSLeft = normalizeUsingUnitStandard(leftXY);
+        double[] mSRight = normalizeUsingUnitStandard(rightXY);
+
+        double[][] a = createFundamentalMatrix(leftXY, rightXY);
+
+        SVDProducts svd = null;
+        try {
+            svd = MatrixUtil.performSVD(a);
+        } catch (NotConvergedException ex) {
+            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+        int ns = 9;
+        assert(svd.vT[0].length == ns);
+        // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
+        double[][] ff1 = new double[3][3];
+        double[][] ff2 = new double[3][3];
+        int i;
+        for (i = 0; i < 3; i++) {
+            ff1[i] = new double[3];
+            ff2[i] = new double[3];
+
+            ff1[i][0] = svd.vT[ns - 2][(i * 3) + 0];
+            ff1[i][1] = svd.vT[ns - 2][(i * 3) + 1];
+            ff1[i][2] = svd.vT[ns - 2][(i * 3) + 2];
+
+            ff2[i][0] = svd.vT[ns - 1][(i * 3) + 0];
+            ff2[i][1] = svd.vT[ns - 1][(i * 3) + 1];
+            ff2[i][2] = svd.vT[ns - 1][(i * 3) + 2];
+        }
+
+        //denormalize with F = H2^T*F*H1
+
+        //H1:
+        double[][] leftT = new double[3][];
+        leftT[0] = new double[]{1./mSLeft[2],       0,     -mSLeft[0]/mSLeft[2]};
+        leftT[1] = new double[]{0,           1./mSLeft[3], -mSLeft[1]/mSLeft[3]};
+        leftT[2] = new double[]{0,           0,           1};
+
+        // H2^T
+        double[][] rightTT = new double[3][];
+        rightTT[0] = new double[]{1./mSRight[2],       0,     -mSRight[0]/mSRight[2]};
+        rightTT[1] = new double[]{0,           1./mSRight[3], -mSRight[1]/mSRight[3]};
+        rightTT[2] = new double[]{0,           0,           1};
+        rightTT = MatrixUtil.transpose(rightTT);
+
+        ff1 = MatrixUtil.multiply(rightTT, MatrixUtil.multiply(ff1, leftT));
+        double factor = 1./(ff1[2][2] + eps);
+        MatrixUtil.multiply(ff1, factor);
+
+        ff2 = MatrixUtil.multiply(rightTT, MatrixUtil.multiply(ff2, leftT));
+        factor = 1./(ff2[2][2] + eps);
+        MatrixUtil.multiply(ff2, factor);
+
+        //det A = 0 ==> det(α*F1 + (1 − α)*F2) = 0
+
+        /*
+        to solve for 'a' as the roots of a polynomial, write out the multiplication
+        including that in the determinant in detail, then group by the powers of a to
+        calculate the polynomial coefficients.
+        see docs/miscNotes/fundamental_cube_roots.txt
+         */
+        double[] coeffs = calcOrderCoeffs(ff1, ff2);
+
+        double eps = 1E-4;
+        double[] roots = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);
+
+        // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
+
+        return filterForZeroDeterminant(ff1, ff2, roots, eps);
+    }
+
+    // det(α*F1 + (1 − α)*F2) = 0
+    private double[][] filterForZeroDeterminant(double[][] f1, double[][] f2, double[] roots, double eps) {
+        int i;
+        int j;
+        int c = 0;
+        double[][] f;
+        double[][] t1;
+        double[][] t2;
+        double detF;
+        double[][] solns = MatrixUtil.zeros(3*roots.length, 3);
+        for (i = 0; i < roots.length; ++i) {
+            t1 = MatrixUtil.copy(f1);
+            t2 = MatrixUtil.copy(f2);
+            MatrixUtil.multiply(t1, roots[i]);
+            MatrixUtil.multiply(t2, 1. - roots[i]);
+            f = MatrixUtil.pointwiseAdd(t1, t2);
+            detF = MatrixUtil.determinant(f);
+            if (Math.abs(detF) < eps) {
+                for (j = 0; j < 3; ++j) {
+                    solns[c * 3 + j] = f[j];
+                    System.arraycopy(f[j], 0, solns[c * 3 + j], 0, f[j].length);
+                }
+                ++c;
+            }
+        }
+        // number of solutions is c
+        if (c < roots.length) {
+            solns = MatrixUtil.copySubMatrix(solns, 0, 3*c, 0, 2);
+        }
+        return solns;
+    }
+
+        /**
+         * calculate the epipolar projection for a set of 8 or more matched points.
+         * NOTE that for best results, the method should be given unit standard
+         * normalized coordinates.
+         * @param leftXY left image correspondence in format of
+         * double array with x points on row 0, y points on row 1,
+         *     and 1's on row 2.  the number of columns is the number of data points.
+         * @param rightXY right image correspondence in format of
+         * double array with x points on row 0, y points on row 1,
+         *     and 1's on row 2.  the number of columns is the number of data points.
+         * @param calibrated if true, solves for the Essential Matrix, else solves for the
+         * Fundamental matrix.  The difference is only in the diagonal used for
+         * dimension reduction.
+         * @return
+         */
     public DenseMatrix calculateEpipolarProjection(
         DenseMatrix leftXY, DenseMatrix rightXY, boolean calibrated) {
 
@@ -961,7 +1212,191 @@ public class EpipolarTransformer {
             solutions[i] = new DenseMatrix(m);
         }
 
+        // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
+
         return solutions;
+    }
+
+    // see docs/miscNotes/fundamental_cube_roots.txt
+    private double[] calcOrderCoeffs( double[][] ff1, double[][] ff2) {
+
+        double f100 = ff1[0][0];
+        double f110 = ff1[1][0];
+        double f120 = ff1[2][0];
+        double f101 = ff1[0][1];
+        double f111 = ff1[1][1];
+        double f121 = ff1[2][1];
+        double f102 = ff1[0][2];
+        double f112 = ff1[1][2];
+        double f122 = ff1[2][2];
+
+        double f200 = ff2[0][0];
+        double f210 = ff2[1][0];
+        double f220 = ff2[2][0];
+        double f201 = ff2[0][1];
+        double f211 = ff2[1][1];
+        double f221 = ff2[2][1];
+        double f202 = ff2[0][2];
+        double f212 = ff2[1][2];
+        double f222 = ff2[2][2];
+
+        double c3 = f100*f111*f122
+                - f100*f111*f222
+                - f100*f112*f121
+                + f100*f112*f221
+                + f100*f121*f212
+                - f100*f122*f211
+                + f100*f211*f222
+                - f100*f212*f221
+                - f101*f110*f122
+                + f101*f110*f222
+                + f101*f112*f120
+                - f101*f112*f220
+                - f101*f120*f212
+                + f101*f122*f210
+                - f101*f210*f222
+                + f101*f212*f220
+
+                + f102*f110*f121
+                - f102*f111*f120
+                + f102*f111*f220
+                + f102*f120*f211
+                - f102*f121*f210
+                + f102*f210*f221
+                - f102*f211*f220
+
+                - f110*f102*f221
+                + f110*f122*f201
+                - f110*f202*f121
+                + f110*f202*f221
+                - f110*f222*f201
+
+                + f111*f120*f202
+                + f111*f200*f222
+                - f111*f200*f122
+                - f111*f202*f220
+
+                - f112*f120*f201
+                + f112*f121*f200
+                - f112*f221*f200
+                + f112*f201*f220
+
+                + f120*f201*f212
+                - f120*f202*f211
+
+                + f121*f202*f210
+                - f121*f212*f200
+
+                - f122*f201*f210
+                + f122*f211*f200
+
+                - f200*f211*f222
+                + f200*f212*f221
+
+                + f201*f210*f222
+                - f201*f212*f220
+
+                - f202*f210*f221
+                + f202*f211*f220;
+
+        double c2 = f100*f111*f222
+                - f100*f112*f221
+                - f100*f121*f212
+                + f100*f122*f211
+                - 2 * f100*f211*f222
+                + 2 * f100*f212*f221
+
+                - f101*f110*f222
+                + f101*f112*f220
+                + f101*f120*f212
+                - f101*f122*f210
+                + 2 * f101*f210*f222
+                - 2 * f101*f212*f220
+
+                + f102*f110*f221
+                - f102*f111*f220
+                + f102*f121*f210
+                - f102*f120*f211
+                - 2 * f102*f210*f221
+                + 2 * f102*f211*f220
+
+                + f110*f121*f202
+                - f110*f122*f201
+                + 2 * f110*f201*f222
+                - 2 * f110*f202*f221
+
+                - f111*f120*f202
+                + f111*f122*f200
+                - 2 * f111*f200*f222
+                + 2 * f111*f202*f220
+
+                + f112*f120*f201
+                - f112*f121*f200
+                + 2 * f112*f200*f221
+                - 2 * f112*f201*f220
+
+                - 2 * f120*f201*f212
+                + 2 * f120*f202*f211
+
+                - 2 * f122*f200*f211
+                + 2 * f121*f200*f212
+                - 2 * f121*f202*f210
+
+                + 2 * f122*f201*f210
+
+                + 3 * f200*f211*f222
+                - 3 * f200*f212*f221
+
+                - 3 * f201*f210*f222
+                + 3 * f201*f212*f220
+
+                + 3 * f202*f210*f221
+                - 3 * f202*f211*f220;
+
+        double c1 = f100*f211*f222
+                - f100*f221*f212
+
+                - f101*f210*f222
+                + f101*f212*f220
+
+                + f102*f210*f221
+                - f102*f211*f220
+
+                + f200*f111*f222
+                - f200*f112*f221
+                - f200*f121*f212
+                + f200*f211*f122
+
+                - 3 * f200*f211*f222
+
+                + 3 * f200*f221*f212
+
+                - f201*f110*f222
+                + f201*f112*f220
+                + f201*f120*f212
+                - f201*f210*f122
+
+                + 3 * f201*f210*f222
+
+                - 3 * f201*f212*f220
+                + f202*f110*f221
+                - f202*f120*f211
+
+                - f202*f111*f220
+                + f202*f121*f210
+
+                - 3 * f202*f210*f221
+
+                + 3 * f202*f211*f220;
+
+        double c0 = f202*f210*f221
+                - f201*f210*f222
+                - f202*f211*f220
+                + f200*f211*f222
+                - f200*f212*f221
+                + f201*f212*f220;
+
+        return new double[]{c3, c2, c1, c0};
     }
 
     private double calculateCubicRoot3rdOrderCoefficientFor7Point(
@@ -1186,7 +1621,7 @@ public class EpipolarTransformer {
         return normalizedXY;
     }
     
-       /**
+   /**
      normalize the x,y coordinates as recommended by Hartley 1997 and return
      the matrix and coordinates.
      does not modify the state of this transformer instance.
@@ -1242,6 +1677,60 @@ public class EpipolarTransformer {
         normalizedXY.setXy(normXY);
 
         return normalizedXY;
+    }
+
+    /**
+     perform unit standard normalization of the points xy to result in a mean of 0 for xy and a standard deviation of 1,
+     and return the mean of x, mean of y, st. dev of x and st dev of y.  note that no normalization is performed on the z coordinates.
+     note that the normalization alters the input.
+     * @param xy data points in format [3 X n].  e.g. xy[0][0] is x, xy[1][0] is y, xy[2][0] is z for point 0.
+     * @return mean of x, mean of y, st. dev of x and st dev of y
+     */
+    @SuppressWarnings({"unchecked"})
+    public static double[] normalizeUsingUnitStandard(double[][] xy) {
+
+        if (xy.length != 3) {
+            throw new IllegalArgumentException("xy.length must be 3");
+        }
+        int n = xy[0].length;
+
+        double[] mS = new double[4];
+
+        int i;
+        int j;
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 2; ++j) {
+                mS[j] += xy[j][i];
+            }
+        }
+
+        for (j = 0; j < 2; ++j) {
+            mS[j] /= n;
+        }
+
+        double d;
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 2; ++j) {
+                d = (xy[j][i] - mS[j]);
+                mS[j + 2] += (d * d);
+            }
+        }
+        for (j = 2; j < 4; ++j) {
+            mS[j] = Math.sqrt(mS[j]/(n - 1.0));
+        }
+
+        double[][] t = new double[3][];
+        t[0] = new double[]{1./mS[2],       0,     -mS[0]/mS[2]};
+        t[1] = new double[]{0,           1./mS[3], -mS[1]/mS[3]};
+        t[2] = new double[]{0,           0,           1};
+
+        double[] chk = MatrixUtil.multiplyMatrixByColumnVector(t, MatrixUtil.extractColumn(xy, 0));
+
+        double[][] xyN = MatrixUtil.multiply(t, xy);
+        for (i = 0; i < 3; ++i) {
+            System.arraycopy(xyN[i], 0, xy[i], 0, xyN[i].length);
+        }
+        return mS;
     }
 
     /**
@@ -1394,6 +1883,55 @@ public class EpipolarTransformer {
             x2 = normXY2.get(0, i);
             y1 = normXY1.get(1, i);
             y2 = normXY2.get(1, i);
+            a[i][0] = x1 * x2;
+            a[i][1] = x1 * y2;
+            a[i][2] = x1;
+            a[i][3] = y1 * x2;
+            a[i][4] = y1 * y2;
+            a[i][5] = y1;
+            a[i][6] = x2;
+            a[i][7] = y2;
+            a[i][8] = 1;
+        }
+
+        return a;
+    }
+
+    /**
+     * a = xLeft ⊗ xRight
+     * @param normXY1 a matrix of size 3 x nPoints, where 1st row is x,
+     * second is y.
+     * @param normXY2 a matrix of size 3 x nPoints, where 1st row is x,
+     * second is y.
+     * @return fundamental matrix of size [nPoints x 9]
+     */
+    double[][] createFundamentalMatrix(double[][] normXY1,
+                                       double[][] normXY2) {
+
+        if (normXY1 == null) {
+            throw new IllegalArgumentException("normXY1 cannot be null");
+        }
+        if (normXY2 == null) {
+            throw new IllegalArgumentException("normXY2 cannot be null");
+        }
+        int nXY1 = normXY1[0].length;
+        if (nXY1 != normXY2[0].length) {
+            throw new IllegalArgumentException(
+                    "the number of columns in normXY1 != number of cols in normXY2");
+        }
+
+        /*
+        (2) each row in matrix A:
+            x_1*x_2,  x_1*y_2,  x_1,  y_1*x_2,  y_1*y_2,  y_1,  x_2,  y_2,  1
+        */
+        double x1, x2, y1, y2;
+        double[][] a = new double[nXY1][9];
+        for (int i = 0; i < nXY1; i++) {
+            a[i] = new double[9];
+            x1 = normXY1[0][i];
+            x2 = normXY2[0][i];
+            y1 = normXY1[1][i];
+            y2 = normXY2[1][i];
             a[i][0] = x1 * x2;
             a[i][1] = x1 * y2;
             a[i][2] = x1;

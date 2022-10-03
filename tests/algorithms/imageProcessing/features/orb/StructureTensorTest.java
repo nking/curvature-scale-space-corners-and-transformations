@@ -1,8 +1,14 @@
 package algorithms.imageProcessing.features.orb;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.StructureTensor;
+import algorithms.imageProcessing.StructureTensorR;
+import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
+import algorithms.util.FormatArray;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import junit.framework.TestCase;
 
 /**
@@ -12,6 +18,53 @@ import junit.framework.TestCase;
 public class StructureTensorTest extends TestCase {
     
     public StructureTensorTest() {
+    }
+
+    static double[][] convertIntToDouble(float[][] a) {
+        double[][] c = new double[a.length][];
+        int i, j;
+        for (i = 0; i < a.length; ++i) {
+            c[i] = new double[a[0].length];
+            for (j = 0; j < a[0].length; ++j) {
+                c[i][j] = a[i][j];
+            }
+        }
+        return c;
+    }
+
+    public void testDel() {
+        System.out.println("testDel");
+        float[][] gX = new float[3][3];
+        gX[0] = new float[]{1f, 0, 1f};
+        gX[1] = new float[]{0f, 1, 0f};
+        gX[2] = new float[]{1f, 0, 1f};
+
+        float[][] gY = new float[3][3];
+        gY[0] = new float[]{1f, 0, 1f};
+        gY[1] = new float[]{0f, 1, 0f};
+        gY[2] = new float[]{1f, 0, 1f};
+
+        double fNormX0 = MatrixUtil.frobeniusNorm(convertIntToDouble(gX));
+        double fNormY0 = MatrixUtil.frobeniusNorm(convertIntToDouble(gY));
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applySobelX(gX);
+        imageProcessor.applySobelY(gY);
+
+        double fNormX = MatrixUtil.frobeniusNorm(convertIntToDouble(gX));
+        double fNormY = MatrixUtil.frobeniusNorm(convertIntToDouble(gY));
+
+        System.out.printf("gX=\n%s\n", FormatArray.toString(gX, "%.3e"));
+        System.out.printf("gY=\n%s\n", FormatArray.toString(gY, "%.3e"));
+        System.out.printf("fNormX=%.3e\n", fNormX);
+        System.out.printf("fNormY=%.3e\n", fNormY);
+        System.out.printf("fNormX0=%.3e\n", fNormX0);
+        System.out.printf("fNormY0=%.3e\n", fNormY0);
+        System.out.printf("fNormX0/fNormX=%.3e\n", fNormX0/fNormX);
+        System.out.printf("fNormY0/fNormY=%.3e\n", fNormY0/fNormY);
+
+        //MatrixUtil.multiply(gX, norm);
+        //MatrixUtil.multiply(gY, norm);
     }
     
     public void test00() {
@@ -117,33 +170,8 @@ public class StructureTensorTest extends TestCase {
         }
     }
     
-    public void est0() {
-        
-        int sz = 10;
-        
-        GreyscaleImage image = new GreyscaleImage(sz, sz);
-        
-        float[][] img = new float[sz][];
-        for (int i = 0; i < img.length; ++i) {
-            img[i] = new float[sz];
-        }
-        for (int i = 2; i < 8; ++i) {
-            for (int j = 2; j < 8; ++j) {
-                img[i][j] = 1.f;
-            }
-        }
-        
-        StructureTensor tensorComponents = new 
-            StructureTensor(img, 1, false);
-        
-        float[][] detA = tensorComponents.getDeterminant();
+    public void test0() {
 
-        float[][] traceA = tensorComponents.getTrace();
-        
-        //float[][] hc = orb.cornerHarris(img, detA, traceA);
-        
-        //orb.debugPrint("hc=", hc);
-        
         /*
          >>> from skimage.feature import corner_harris, corner_peaks
         >>> import numpy as np
@@ -151,6 +179,7 @@ public class StructureTensorTest extends TestCase {
         >>> square3[2:8, 2:8] = 1
         >>> square3.astype(int)
         array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
@@ -160,10 +189,32 @@ public class StructureTensorTest extends TestCase {
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-        
-        
         */
-        
+        double[][] img = MatrixUtil.zeros(11, 10);
+        int i;
+        int j;
+        for (i = 3; i < 9; ++i) {
+            for (j = 2; j < 8; ++j) {
+                img[i][j] = 1;
+            }
+        }
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        int[][] keypoints = imageProcessor.calcHarrisCorners(img);
+
+        int[][] expected = new int[4][2];
+        expected[0] = new int[]{3, 2};
+        expected[1] = new int[]{3, 7};
+        expected[2] = new int[]{8, 2};
+        expected[3] = new int[]{8, 7};
+
+        assertEquals(expected.length, keypoints.length);
+
+        for (i = 0; i < keypoints.length; ++i) {
+            for (j = 0; j < 2; ++j) {
+                assertEquals(expected[i][j], keypoints[i][j]);
+            }
+        }
        
     }
     

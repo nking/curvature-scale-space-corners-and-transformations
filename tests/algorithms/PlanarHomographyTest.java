@@ -416,11 +416,15 @@ public class PlanarHomographyTest extends TestCase {
         double[] quatB = Rotation.convertHamiltonToBarfootQuaternion(quatH);
         double[][] rWCSC1 = Rotation.createRotationMatrixFromQuaternion4(quatB);
         rWCSC1 = MatrixUtil.copySubMatrix(rWCSC1, 0, 2, 0, 2);
+        System.out.printf("r*v=\n%s\n", FormatArray.toString(
+                MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm),
+                "%.4e"
+        ));
             // expecting (0, 0, 1)
             double[] checkNC1 = MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm);
             assertTrue(Math.abs(checkNC1[0] - nC1Norm[0]) < 1E-7);
             assertTrue(Math.abs(checkNC1[1] - nC1Norm[1]) < 1E-7);
-            assertTrue(Math.abs(checkNC1[2] - qnC1Norm[2]) < 1E-7);
+            assertTrue(Math.abs(checkNC1[2] - nC1Norm[2]) < 1E-7);
 
             // using the rodrigues formula was faster but a little less accurate:
         double[][] r2 = Rotation.createRodriguesFormulaRotationMatrix(axisWCSC1);
