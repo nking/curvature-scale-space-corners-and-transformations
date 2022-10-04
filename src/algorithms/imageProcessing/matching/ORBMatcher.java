@@ -3,6 +3,7 @@ package algorithms.imageProcessing.matching;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.RANSACSolver;
+import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.util.PairInt;
@@ -21,6 +22,8 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -45,7 +48,6 @@ import no.uib.cipr.matrix.DenseMatrix;
  * NOTE that methods are being added specifically for the sparse matching.
  * 
  * @see ORB
- * @see ObjectMatcher
  *
  * @author nichole
  */
@@ -86,8 +88,8 @@ public class ORBMatcher {
      *
      * @param d1
      * @param d2
-     * @param keypoints2
      * @param keypoints1
+     * @param keypoints2
      * @return matches array of objects encapsulating a pair of
      * matched points
      */
@@ -118,8 +120,8 @@ public class ORBMatcher {
         //[n1][n2]
         int[][] cost = ORB.calcDescriptorCostMatrix(
             d1.descriptors, d2.descriptors);
-       
-        // pairs of indexes of matches
+
+        // pairs of indexes of matches.  it does not matter whether keypoints holds row,col pairs or col,row pairs
         int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
         
         if (matches.length < 7) {
@@ -167,7 +169,7 @@ public class ORBMatcher {
                   In this paper, we present an outlier correction scheme that 
                   iteratively updates the elements of the image measurement matrix
             */
-            
+
             QuadInt[] qs = new QuadInt[matches.length];
             for (int i = 0; i < matches.length; ++i) {
                 int idx1 = matches[i][0];
@@ -181,7 +183,7 @@ public class ORBMatcher {
 
             return qs;
         }
-         
+
         // ransac to remove outliers.
         //NOTE: the fundamental matrix in the fit has not been de-normalized.
         EpipolarTransformationFit fit = fitWithRANSAC(matches, 
@@ -206,6 +208,140 @@ public class ORBMatcher {
         }
         
         return qs;        
+    }
+
+    /**
+     * greedy matching of d1 to d2 by min difference, with unique mappings for
+     * all indexes.
+     * NOTE that if 2 descriptors match equally well, either one
+     * might get the assignment.
+     * Consider using instead, matchDescriptors2 which matches
+     * by descriptor and relative spatial location.
+     *  this method is tailored for keypoints1 and keypoints2 being row-major format compatible
+     * @param d1
+     * @param d2
+     * @param keypoints1 pairs of points in format row, col
+     * @param keypoints2 pairs of points in format row, col
+     * @return matches array of objects encapsulating a pair of
+     * matched points.  format is row1, col1, row2, col2
+     */
+    public static QuadInt[] matchDescriptorsRC(ORB.Descriptors d1,
+                                             ORB.Descriptors d2, List<PairInt> keypoints1,
+                                             List<PairInt> keypoints2) throws IOException {
+
+        int n1 = d1.descriptors.length;
+        int n2 = d2.descriptors.length;
+        if (n1 == 0 || n2 == 0) {
+            return null;
+        }
+
+        if (d1.descriptors[0].getCapacity() != d2.descriptors[0].getCapacity()) {
+            throw new IllegalArgumentException("d1 and d2 must have same bitstring"
+                    + " capacities (== 256) " +
+                    d1.descriptors[0].getCapacity() + " " +
+                    d2.descriptors[0].getCapacity()
+            );
+        }
+
+        if (n1 != keypoints1.size()) {
+            throw new IllegalArgumentException("number of descriptors in " + " d1 bitstrings must be same as keypoints1 length");
+        }
+        if (n2 != keypoints2.size()) {
+            throw new IllegalArgumentException("number of descriptors in " + " d2 bitstrings must be same as keypoints2 length");
+        }
+        //[n1][n2]
+        int[][] cost = ORB.calcDescriptorCostMatrix(
+                d1.descriptors, d2.descriptors);
+
+        // pairs of indexes of matches.  it does not matter whether keypoints holds row,col pairs or col,row pairs
+        int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
+
+        if (matches.length < 7) {
+
+            // 6!/(1!5!) + 6!/(2!4!) + 6!/(3!3!) + 6!/(2!4!) + 6!/(1!5!) = 6 + 15 + 20 + 15 + 6=62
+            // 5!/(1!4!) + 5!/(2!3!) + 5!/(3!2!) + 5!/(1!4!) = 5 + 10 + 10 + 5 = 20
+            // 4!/(1!3!) + 4!/(2!2!) + 4!/(1!3!) = 4+6+4=14
+            // 3!/(1!2!) + 3!/(2!1!) = 3 + 3
+            // 2!/(1!1!) = 2
+            /*
+            considering how to filter for outliers in these few number of points.
+
+            can use affine projection.
+            can iterate over subsamples of the input point to remove points from it,
+                fit and evaluate the affine projection
+
+            apply the best affine projection to keypoints1 to find close matches
+               in keypoints2 where close match is (x,y) and descriptor cost.
+
+            if there are a large number of matches, proceed to RANSAC below,
+            else return either the matches that are the best fitting subset
+            or return the subset and additional points found through the projection.
+            ------
+            the projection algorithm solves for rotation and real world scene coordinates.
+            It does not solve for translation,
+            but one could estimate a rough lateral difference, (not the camera translation
+            in the camera reference frame coords) if the image scales are the
+            same by subtracting the 2nd image correspondence points from the
+            1st image correspondence points rotated.
+
+            OrthographicProjectionResults re = Reconstruction.calculateAffineReconstruction(
+                double[][] x, int mImages).
+
+            where OrthographicProjectionResults results = new OrthographicProjectionResults();
+            results.XW = s;
+            results.rotationMatrices = rotStack;
+
+            Considering the paper
+            https://www.researchgate.net/publication/221110532_Outlier_Correction_in_Image_Sequences_for_the_Affine_Camera
+            "Outlier Correction in Image Sequences for the Affine Camera"
+               by Huynh, Hartley, and Heydeon 2003
+               Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
+
+               excerpt from the abstract:
+                  In this paper, we present an outlier correction scheme that
+                  iteratively updates the elements of the image measurement matrix
+            */
+
+            QuadInt[] qs = new QuadInt[matches.length];
+            for (int i = 0; i < matches.length; ++i) {
+                int idx1 = matches[i][0];
+                int idx2 = matches[i][1];
+                // row1, col1, row2, col2
+                QuadInt q = new QuadInt(
+                        keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),
+                        keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()
+                );
+                qs[i] = q;
+            }
+
+            return qs;
+        }
+
+        // ransac to remove outliers.
+        //NOTE: the fundamental matrix in the fit has not been de-normalized.
+        EpipolarTransformationFit fit = fitWithRANSAC2(matches,
+                keypoints1, keypoints2);
+
+        if (fit == null) {
+            return null;
+        }
+
+        System.out.println("fit=" + fit.toString());
+
+        int i, idx;
+        List<Integer> inliers = fit.getInlierIndexes();
+        QuadInt[] qs = new QuadInt[inliers.size()];
+        for (i = 0; i < inliers.size(); ++i) {
+            idx = inliers.get(i);
+            // row1, col1, row2, col2
+            QuadInt q = new QuadInt(
+                    keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),
+                    keypoints2.get(idx).getX(), keypoints2.get(idx).getY()
+            );
+            qs[i] = q;
+        }
+
+        return qs;
     }
 
     /**
@@ -447,4 +583,51 @@ public class ORBMatcher {
         return fit;        
     }
 
+    /**
+     * calculate the fundamental matrix given the correspondence matches.
+     * the correspondence is normalized and the fundamental matrix is calculated,
+     * then the errors are estimated using the Sampson's distance as errors
+     * and a 3.8*sigma as inlier threshold.
+     * @param matches
+     * @param keypoints1 pairs of points in format row, col
+     * @param keypoints2 pairs of points in format row, col
+     * @return epipolar fit to the matches
+     */
+    private static EpipolarTransformationFit fitWithRANSAC2(int[][] matches,
+                                                           List<PairInt> keypoints1, List<PairInt> keypoints2) throws IOException {
+
+        int n0 = matches.length;
+
+        double[][] left = new double[3][n0];
+        double[][] right = new double[3][n0];
+        for (int i = 0; i < 3; ++i) {
+            left[i] = new double[n0];
+            right[i] = new double[n0];
+        }
+        Arrays.fill(left[2], 1.0);
+        Arrays.fill(right[2], 1.0);
+        int i, idx1, idx2;
+        for (i = 0; i < n0; ++i) {
+            idx1 = matches[i][0];
+            idx2 = matches[i][1];
+            left[0][i] = keypoints1.get(idx1).getY();
+            left[1][i] = keypoints1.get(idx1).getX();
+            right[0][i] = keypoints2.get(idx2).getY();
+            right[1][i] = keypoints2.get(idx2).getX();
+        }
+
+        // normalize left and right
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+
+        boolean reCalcIterations = false;
+        RANSACSolver2 solver = new RANSACSolver2();
+
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+                left, right, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations, false);
+
+        return fit;
+    }
 }

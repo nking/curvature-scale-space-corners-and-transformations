@@ -4,15 +4,17 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.features.RANSACSolver;
+import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.features.orb.ORB2;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.transform.EpipolarTransformer.NormalizationTransformations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.statistics.Standardization;
-import algorithms.util.FormatArray;
-import algorithms.util.ResourceFinder;
-import algorithms.util.PairFloatArray;
-import algorithms.util.PairIntArray;
+import algorithms.util.*;
+
 import java.awt.Color;
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -387,11 +389,121 @@ public class EpipolarTransformerTest extends TestCase {
         float thresholdRel = 0.01f;//0.1f;
         boolean ignore0sInThresh = true;
 
-        int[][] keyPoints1 = imageProcessor.calcHarrisCorners(img1, minDist, thresholdRel, ignore0sInThresh);
-        int[][] keyPoints2 = imageProcessor.calcHarrisCorners(img2, minDist, thresholdRel, ignore0sInThresh);
+        int[][] keyPoints1 = ImageProcessor.calcHarrisCorners(img1, minDist, thresholdRel, ignore0sInThresh);
+        int[][] keyPoints2 = ImageProcessor.calcHarrisCorners(img2, minDist, thresholdRel, ignore0sInThresh);
 
         overplotKeypoints(keyPoints1, keyPoints2, image1.copyToColorGreyscale(), image2.copyToColorGreyscale(),
                 Integer.toString(0));
+
+        System.out.printf("nKP=%d, %d\n", keyPoints1.length, keyPoints2.length);
+
+        int nKP = Math.min(keyPoints1.length, keyPoints2.length);
+        //nKP = 100; can reduce the number to see the matches more easily
+        nKP = (int)(0.75*nKP);
+        
+        ORB2 orb1 = new ORB2(image1, nKP);
+        ORB2 orb2 = new ORB2(image1, nKP);
+
+        orb1.detectAndExtract();
+        orb2.detectAndExtract();
+
+        ORB.Descriptors d1 = orb1.getAllDescriptors();
+        ORB.Descriptors d2 = orb2.getAllDescriptors();
+        List<PairInt> kp1 = orb1.getAllKeyPointsRC();
+        List<PairInt> kp2 = orb2.getAllKeyPointsRC();
+
+        System.out.printf("keypoints in 1 and 2 = %d, %d\n", kp1.size(), kp2.size());
+
+        // matched are format row1, col1, row2, col2
+        QuadInt[] matched = ORBMatcher.matchDescriptorsRC(d1, d2, kp1, kp2);
+
+        System.out.printf("pairs matched by descriptors = %d\n", matched.length);
+
+        int i;
+        int r1, r2, c1, c2;
+        int row, col;
+        Image tmp1 = image1.copyToColorGreyscale();
+        for (i = 0; i < kp1.size(); ++i) {
+            col = kp1.get(i).getY();
+            row = kp1.get(i).getX();
+            ImageIOHelper.addPointToImage(col, row, tmp1, 2, 255, 0, 0);
+        }
+        //MiscDebug.writeImage(tmp1, "_kp_gs_" + lbl + fileName1Root);
+
+        Image tmp2 = image2.copyToColorGreyscale();
+        for (i = 0; i < kp2.size(); ++i) {
+            col = kp2.get(i).getY();
+            row = kp2.get(i).getX();
+            ImageIOHelper.addPointToImage(col, row, tmp2, 2, 255, 0, 0);
+        }
+        //MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
+        System.out.println(fileName1 + " matched=" + matched.length);
+        CorrespondencePlotter plotter =
+                new CorrespondencePlotter(tmp1, tmp2);
+        for (i = 0; i < matched.length; ++i) {
+            r1 = matched[i].getA();
+            c1 = matched[i].getB();
+            r2 = matched[i].getC();
+            c2 = matched[i].getD();
+            plotter.drawLineInAlternatingColors(c1, r1, c2, r2, 1);
+        }
+        plotter.writeImage("_corres_orb_gs_merton_college_I_001_002");
+
+        // next RANSAC
+
+        /*
+        final DenseMatrix leftCorres, final DenseMatrix rightCorres,
+        ErrorType errorType,
+        boolean useToleranceAsStatFactor, final double tolerance,
+        boolean reCalcIterations, boolean calibrated
+
+        RANSACSolver solver = new RANSACSolver();
+        solver.calculateEpipolarProjection()
+        editing
+        use these to test RANSACSolver and RANSACSolver2*/
+    }
+
+    public void testORB2() {
+        /*
+         >>> from skimage.feature import corner_harris, corner_peaks
+        >>> import numpy as np
+        >>> square3 = np.zeros([10, 10])
+        >>> square3[2:8, 2:8] = 1
+        >>> square3.astype(int)
+        array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+        */
+        GreyscaleImage image = new GreyscaleImage(10, 11);
+        double[][] img = MatrixUtil.zeros(11, 10);
+        int i;
+        int j;
+        for (i = 3; i < 9; ++i) {
+            for (j = 2; j < 8; ++j) {
+                img[i][j] = 1;
+                image.setValue(j, i, 1);
+            }
+        }
+
+        int[][] expected = new int[4][2];
+        expected[0] = new int[]{3, 2};
+        expected[1] = new int[]{3, 7};
+        expected[2] = new int[]{8, 2};
+        expected[3] = new int[]{8, 7};
+
+        ORB2 orb = new ORB2(image, 10*expected.length);
+        orb.detectAndExtract();
+        List<PairInt> kp = orb.getAllKeyPointsRC();
+        TwoDFloatArray[] p = orb.getPyramidImages();
+        ORB.Descriptors d = orb.getAllDescriptors();
 
     }
 

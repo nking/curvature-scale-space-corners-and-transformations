@@ -1,13 +1,12 @@
 package algorithms.imageProcessing.features.orb;
 
 import algorithms.QuickSort;
+import algorithms.VeryLongBitString;
 import algorithms.imageProcessing.*;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
-import algorithms.VeryLongBitString;
-import algorithms.sort.MiscSorter;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -18,11 +17,9 @@ import gnu.trove.map.TFloatIntMap;
 import gnu.trove.map.hash.TFloatIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import algorithms.imageProcessing.features.orb.ORB.Descriptors;
+
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -173,8 +170,8 @@ Still testing the class, there may be bugs present.
     
  * </pre>
  */
-public class ORB {
-   
+public class ORB2 {
+
     protected boolean useSingleScale = false;
 
     // these could be made static across all instances, but needs guards for synchronous initialization
@@ -195,7 +192,7 @@ public class ORB {
     */
     protected TwoDFloatArray[] pyramidImages = null;
     protected float[] scales = null;
-    protected StructureTensor[] tensorComponents = null;
+    protected StructureTensorR[] tensorComponents = null;
     protected TwoDFloatArray[] harrisResponseImages = null;
 
     /**
@@ -204,26 +201,27 @@ public class ORB {
      */
     protected List<TIntList> keypoints0List = null;
     protected List<TIntList> keypoints1List = null;
-    
+
     protected List<TDoubleList> orientationsList = null;
     protected List<TFloatList> harrisResponses = null;
-    
+
     //`True`` or ``False`` representing
     //the outcome of the intensity comparison for i-th keypoint on j-th
     //decision pixel-pair. It is ``Q == np.sum(mask)``.
     private List<Descriptors> descriptorsList = null;
-    
+
+    // combinedKeypointList holds row number, column number pairs
     private List<PairInt> combinedKeypointList = null;
     private TDoubleList combinedOrientationList = null;
     private TFloatList combinedHarrisResponseList = null;
     private Descriptors combinedDescriptors = null;
-    
+
     protected static double twoPI = 2. * Math.PI;
 
     protected float curvatureThresh = 0.05f;
 
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     /**
      * a map holding the scale factor of a pyramid image as key
      * and the octave number of pyramid images.
@@ -242,37 +240,33 @@ public class ORB {
     }
     private DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;
 
-    protected boolean doCreate1stDerivKeypoints = false;
-
-    protected boolean doCreateCurvatureKeyPoints = false;
+    protected boolean extractOnlyHarrisKeypoints = true;
 
     protected int nPyramidB = 3;
 
-    protected boolean doCreate1stATrousKeypoints = true;
-    
     protected final GreyscaleImage img;
-    
+
     /**
      * Still testing the class, there may be bugs present.
      * @param image
      * @param nKeypoints
      */
-    public ORB(GreyscaleImage image, int nKeypoints) {
+    public ORB2(GreyscaleImage image, int nKeypoints) {
 
         initMasks();
 
         this.img = image;
-                
+
         this.nKeypoints = nKeypoints;
     }
-   
+
     /**
      * @param descrChoice the descrChoice to set
      */
     public void setDescrChoice(DescriptorChoice descrChoice) {
         this.descrChoice = descrChoice;
     }
-    
+
     public void overrideToUseSingleScale() {
         useSingleScale = true;
     }
@@ -283,7 +277,7 @@ public class ORB {
     /**
      * default is 0.08f.
      * For a low resolution image, may want to use 0.01f.
-     * @param threshold 
+     * @param threshold
      */
     public void overrideFastThreshold(float threshold) {
         this.fastThreshold = threshold;
@@ -296,12 +290,12 @@ public class ORB {
      * @param n
      */
     public void overridePyamidalExtraN(int n) {
-        
+
         if (useSingleScale) {
             throw new IllegalArgumentException("useSingleScale=true so cannot "
                 + " set this parameter");
         }
-        
+
         this.nPyramidB = n;
     }
 
@@ -311,32 +305,23 @@ public class ORB {
     public void overrideToNotCreateDescriptors() {
         descrChoice = DescriptorChoice.NONE;
     }
-    
-    public void overrideToAlsoCreate1stDerivKeypoints() {
-        doCreate1stDerivKeypoints = true;
-    }
-    
-    public void overrideToNotCreateATrousKeypoints() {
-        doCreate1stATrousKeypoints = false;
-    }
-
-    public void overrideToCreateCurvaturePoints() {
-        doCreateCurvatureKeyPoints = true;
-    }
 
     private void initMasks() {
 
         OFAST_MASK = new int[31][31];
-        for (int i = 0; i < 31; ++i) {
+        int i;
+        for (i = 0; i < 31; ++i) {
             OFAST_MASK[i] = new int[31];
         }
 
         OFAST_UMAX = new int[]{15, 15, 15, 15, 14, 14, 14, 13, 13, 12, 11, 10,
             9, 8, 6, 3};
 
-        for (int i = -15; i < 16; ++i) {
-            int absI = Math.abs(i);
-            for (int j = -OFAST_UMAX[absI]; j < (OFAST_UMAX[absI] + 1); ++j) {
+        int absI;
+        int j;
+        for (i = -15; i < 16; ++i) {
+            absI = Math.abs(i);
+            for (j = -OFAST_UMAX[absI]; j < (OFAST_UMAX[absI] + 1); ++j) {
                 OFAST_MASK[15 + j][15 + i] = 1;
             }
         }
@@ -357,11 +342,11 @@ public class ORB {
     public void detectAndExtract() {
 
         buildPyramid();
-        
+
         buildTensors();
-        
+
         buildHarrisImages();
-        
+
         // NOTE that the keypoints are all in the coord frame of the largest image
         extractKeypoints();
 
@@ -372,28 +357,28 @@ public class ORB {
         int nKeyPointsTotal = countKeypoints();
 
         //log.info("nKeypointsTotal=" + nKeyPointsTotal +
-        //    " number of allowed Keypoints=" + this.nKeypoints);                
+        //    " number of allowed Keypoints=" + this.nKeypoints);
     }
-  
+
     private void buildPyramid() {
-       
+
         List<TwoDFloatArray> pyr = buildPyramid(img);
 
         int nScales = pyr.size();
 
         pyramidImages = new TwoDFloatArray[nScales];
-        
+
         scales = new float[nScales];
-        
+
         float prevScl = 1.f;
         scales[0] = prevScl;
-        
+
         for (int i = 0; i < nScales; ++i) {
-            
+
             pyramidImages[i] = pyr.get(i);
-            
+
             float scale = prevScl;
-            
+
             if (i > 0) {
                 float x0 = (float)pyramidImages[i - 1].a.length/
                     (float)pyramidImages[i].a.length;
@@ -401,12 +386,12 @@ public class ORB {
                     (float)pyramidImages[i].a[0].length;
                 scale = prevScl * (x0 + y0)/2.f;
                 prevScl = scale;
-         
+
                 scales[i] = scale;
             }
         }
     }
-  
+
     /**
      * @param img in col major format
      * @return float array of pyramid images in row major format
@@ -419,17 +404,17 @@ public class ORB {
         //   see the upsampling code in image processing to reverse...
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         int dl = useSingleScale ?
             Math.min(img.getWidth(), img.getHeight()) - 1 :
             decimationLimit;
-        
+
         List<GreyscaleImage> output = imageProcessor.buildPyramid2(img, dl);
 
         List<TwoDFloatArray> output2 = new ArrayList<TwoDFloatArray>();
         float[][] rowMajorImg;
         TwoDFloatArray f;
-        
+
         for (int i = 0; i < output.size(); ++i) {
             rowMajorImg = imageProcessor.copyToRowMajor(output.get(i));
             MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
@@ -439,51 +424,58 @@ public class ORB {
 
         return output2;
     }
-    
+
     protected void buildTensors() {
-    
+
         // Standard deviation used for the Gaussian kernel, which is used as
         // weighting function for the auto-correlation matrix.
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTFIVE);
-        
-        tensorComponents = new StructureTensor[scales.length];
-        
+
+        tensorComponents = new StructureTensorR[scales.length];
+
+        TwoDFloatArray octaveImage;
+
         for (int i = 0; i < scales.length; ++i) {
-            
-            TwoDFloatArray octaveImage = pyramidImages[i];
+
+            octaveImage = pyramidImages[i];
 
             // octaveImage.a is in row-major format
-            tensorComponents[i] = new StructureTensor(octaveImage.a,
-                sigma, doCreateCurvatureKeyPoints);
+            tensorComponents[i] = new StructureTensorR(
+                    MatrixUtil.convertToDouble(octaveImage.a),
+                sigma, false);
         }
-        
+
     }
 
     private void buildHarrisImages() {
-        
-        harrisResponseImages = new TwoDFloatArray[scales.length];
-        
-        for (int i = 0; i < scales.length; ++i) {
-            
-            TwoDFloatArray octaveImage = pyramidImages[i];
-            
-            StructureTensor tensors = tensorComponents[i];
-            
-            float[][] detA = tensors.getDeterminant();
 
-            float[][] traceA = tensors.getTrace();
+        harrisResponseImages = new TwoDFloatArray[scales.length];
+
+        TwoDFloatArray octaveImage;
+
+        for (int i = 0; i < scales.length; ++i) {
+
+            octaveImage = pyramidImages[i];
+
+            StructureTensorR tensors = tensorComponents[i];
+            double[][] detA = tensors.getDeterminant();
+            double[][] traceA = tensors.getTrace();
+
+            double[][] harrisResponse = cornerHarris(
+                    MatrixUtil.convertToDouble(octaveImage.a), detA, traceA);
 
             // size is same a octaveImage
-            float[][] harrisResponse = cornerHarris(octaveImage.a, detA, traceA);
+            //float[][] harrisResponse = cornerHarris(octaveImage.a, detA, traceA);
 
-            harrisResponseImages[i] = new TwoDFloatArray(harrisResponse);
+            harrisResponseImages[i] = new TwoDFloatArray(
+                    MatrixUtil.convertToFloat(harrisResponse));
         }
     }
-    
+
     protected void debugPrint(String label, float[][] a) {
 
         String str = MiscDebug.getPrintRowMajor(a, label);
-        
+
         log.info(str);
     }
 
@@ -550,28 +542,22 @@ public class ORB {
         keypoints1List = new ArrayList<TIntList>();
         orientationsList = new ArrayList<TDoubleList>();
         harrisResponses = new ArrayList<TFloatList>();
-     
-        // atrous keypoints if any
-        TIntList atk0 = new TIntArrayList();
-        TIntList atk1 = new TIntArrayList();
-        if (doCreate1stATrousKeypoints) {
-            extractATrousKeypoints(atk0, atk1);
-        }
-                
+
         Resp r;
         TIntList mask;
         float[][] harrisResponse;
-        int n, count, i, x, y, c0, c1;
+        int n, count, i, c0, c1;
         float[] scores;
         PairInt[] points;
         TIntList kpc0s;
         TIntList kpc1s;
         float scale;
-        
+        int row, col;
+
         // largest pyramid harris response image and tensor image size
         int rH = harrisResponseImages[0].a.length;
         int cH = harrisResponseImages[0].a[0].length;
-        
+
         Set<PairInt> set;
         TIntList kp0s;
         TIntList kp1s;
@@ -580,71 +566,64 @@ public class ORB {
         TFloatList responses;
         int rmi = this.nKeypoints;
         int len;
-            
+
         for (int octave = 0; octave < scales.length; ++octave) {
             // order by response and filter
-            
-            scale = scales[octave];
-            
-            r = extractKeypoints(octave);
 
-            if (!atk0.isEmpty()) {
-                for (i = 0; i < atk0.size(); ++i) {
-                    // shrink the atrous keypoints for this octave scale
-                    c0 = Math.round((float)atk0.get(i)/scale);
-                    c1 = Math.round((float)atk1.get(i)/scale);
-                    r.keypoints0.add(c0);
-                    r.keypoints1.add(c1);
-                }
-            }
+            scale = scales[octave];
+
+            // keypoints lists are in row major format:
+            //  row numbers are in keypoints0, column numbers are in keypoints1
+            r = extractHarrisCornerKeypoints(octave);
 
             //mask of length orientations.size() containing a 1 or 0
             // indicating if pixels are within the image (``True``) or in the
             // border region of the image (``False``).
             mask = filterNearBorder(pyramidImages[octave].a, r.keypoints0, r.keypoints1);
-        
+
             harrisResponse = harrisResponseImages[octave].a;
 
             n = r.keypoints0.size();
-                        
+
             assert(harrisResponse.length == pyramidImages[octave].a.length);
             assert(harrisResponse.length == tensorComponents[octave].getDXSquared().length);
             assert(harrisResponse[0].length == pyramidImages[octave].a[0].length);
             assert(harrisResponse[0].length == tensorComponents[octave].getDXSquared()[0].length);
-            
+
             scores = new float[n];
             points = new PairInt[n];
             count = 0;
+
             for (i = 0; i < n; ++i) {
                 // these are in octave reference frame
-                x = r.keypoints1.get(i);
-                y = r.keypoints0.get(i);
-                points[count] = new PairInt(x, y);
-                scores[count] = harrisResponse[y][x];
+                col = r.keypoints1.get(i); // col numbers
+                row = r.keypoints0.get(i); // row numbers
+                points[count] = new PairInt(row, col);
+                scores[count] = harrisResponse[row][col];
                 count++;
             }
-     
+
             if (n > 0) {
                 // the harris points are negative values.
                 //    strongest response is the smallest value (i.e. -2 is stronger than 0)
                 QuickSort.sortBy1stArg(scores, points);
             }
-        
+
             kpc0s = new TIntArrayList(this.nKeypoints);
             kpc1s = new TIntArrayList(this.nKeypoints);
 
             for (i = 0; i < points.length; i++) {
                 PairInt p = points[i];
-                x = p.getX();
-                y = p.getY();
-                kpc1s.add(x);
-                kpc0s.add(y);
+                row = p.getX();
+                col = p.getY();
+                kpc1s.add(col);
+                kpc0s.add(row);
             }
 
             // then filter
             maskCoordinates(kpc0s, kpc1s, harrisResponse.length,
                 harrisResponse[0].length, 4);//8);
-        
+
             // filter to remove redundant points when rescaled
             set = new HashSet<PairInt>();
             kp0s = new TIntArrayList(set.size());
@@ -652,10 +631,10 @@ public class ORB {
             for (i = 0; i < kpc0s.size(); ++i) {
                 // coords are in octave reference frame so expand to largest pyramid frame
                 //    for redundancy and boundary check
-                y = kpc0s.get(i);
-                x = kpc1s.get(i);
-                c0 = Math.round((float)y*scale);
-                c1 = Math.round((float)x*scale);
+                row = kpc0s.get(i);
+                col = kpc1s.get(i);
+                c0 = Math.round((float)row*scale);
+                c1 = Math.round((float)col*scale);
                 // if larger than largest pyramid image height
                 if (c0 >= rH) {
                     c0 = rH - 1;
@@ -664,19 +643,19 @@ public class ORB {
                 if (c1 >= cH) {
                     c1 = cH - 1;
                 }
-                PairInt p = new PairInt(c0, c1); // y, x
+                PairInt p = new PairInt(c0, c1);
                 if (set.contains(p)) {
                     continue;
                 }
                 set.add(p);
-                kp0s.add(y);
-                kp1s.add(x);
+                kp0s.add(row); // these are in ref frame of octave image
+                kp1s.add(col);
             }
             // let the VM reclaim the memory if it chooses:
             set = null;
             kpc0s = null;
             kpc1s = null;
-            
+
             // filter for number of points if requested
             if (kp0s.size() > this.nKeypoints) {
                 len = kp0s.size() - this.nKeypoints;
@@ -686,14 +665,14 @@ public class ORB {
             // coords are in octave reference frame so expand to largest pyramid frame
             octaveImage = pyramidImages[octave].a;
             orientations = calculateOrientations(octaveImage, kp0s, kp1s);
-            
+
             responses = new TFloatArrayList(kp0s.size());
             for (i = 0; i < kp0s.size(); ++i) {
                 c0 = kp0s.get(i);
                 c1 = kp1s.get(i);
                 responses.add(harrisResponse[c0][c1]);
             }
-            
+
             // transform keypoints to full size coordinate reference frame.
             for (i = 0; i < kp0s.size(); ++i) {
                 c0 = Math.round(scale * kp0s.get(i));
@@ -715,7 +694,7 @@ public class ORB {
             keypoints1List.add(kp1s);
             orientationsList.add(orientations);
             harrisResponses.add(responses);
-            
+
             assert(orientations.size() == kp0s.size());
             assert(responses.size() == kp0s.size());
             assert(kp1s.size() == kp0s.size());
@@ -724,46 +703,46 @@ public class ORB {
 
         // note, at this point, each octave has the limit of this.nKeypoints,
         //    but the total may be as large as scales.length*this.nKeypoints
-        
+
         assert(pyramidImages.length == keypoints0List.size());
         assert(pyramidImages.length == keypoints1List.size());
         assert(pyramidImages.length == orientationsList.size());
         assert(pyramidImages.length == this.harrisResponses.size());
-        assert(pyramidImages.length == scales.length);        
+        assert(pyramidImages.length == scales.length);
     }
 
     private void combineAndFilterTotal() {
         //combined into one list and sort by harris response then take first nKeypoints
-                
+
         combinedKeypointList = new ArrayList<PairInt>();
         combinedOrientationList = new TDoubleArrayList();
         combinedHarrisResponseList = new TFloatArrayList();
-        
+
         if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {
             combinedDescriptors = new Descriptors();
         }
-        
+
         final int nTotal = countKeypoints();
-        
+
         int octave, i;
         int count = 0;
         TFloatList h;
-        
+
         if (nTotal < this.nKeypoints) {
             //fill the arrays and return
-            
+
             VeryLongBitString[] combinedD = new VeryLongBitString[nTotal];
             TDoubleList orList;
             TIntList kp0List, kp1List;
             Descriptors d;
-            
+
             for (octave = 0; octave < scales.length; ++octave) {
                 kp0List = keypoints0List.get(octave);
                 kp1List = keypoints1List.get(octave);
                 orList = orientationsList.get(octave);
                 h = harrisResponses.get(octave);
                 for (i = 0; i < kp0List.size(); ++i) {
-                    combinedKeypointList.add(new PairInt(kp1List.get(i), kp0List.get(i)));
+                    combinedKeypointList.add(new PairInt(kp0List.get(i), kp1List.get(i)));
                     combinedHarrisResponseList.add(h.get(i));
                     combinedOrientationList.add(orList.get(i));
                 }
@@ -784,10 +763,10 @@ public class ORB {
 
             return;
         }
-    
+
         PairInt[] idxs00 = new PairInt[nTotal];
         int[] idxs0 = new int[nTotal];
-        
+
         count = 0;
         for (octave = 0; octave < scales.length; ++octave) {
             h = harrisResponses.get(octave);
@@ -798,23 +777,23 @@ public class ORB {
                 combinedHarrisResponseList.add(h.get(i));
             }
         }
-        
+
         QuickSort.sortBy1stArg(combinedHarrisResponseList, idxs0);
-        
+
         VeryLongBitString[] combinedD = new VeryLongBitString[this.nKeypoints];
         int idxOctave, idxList, idx0;
         PairInt p;
-        
+
         for (i = 0; i < this.nKeypoints; ++i) {
             idx0 = idxs0[i];
             idxOctave = idxs00[idx0].getX();
             idxList = idxs00[idx0].getY();
-            
-            p = new PairInt(keypoints1List.get(idxOctave).get(idxList),
-                keypoints0List.get(idxOctave).get(idxList));
+
+            p = new PairInt(keypoints0List.get(idxOctave).get(idxList),
+                keypoints1List.get(idxOctave).get(idxList));
             combinedKeypointList.add(p);
-            
-            combinedOrientationList.add(this.orientationsList.get(idxOctave).get(idxList));            
+
+            combinedOrientationList.add(this.orientationsList.get(idxOctave).get(idxList));
         }
         if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {
             count = 0;
@@ -829,9 +808,9 @@ public class ORB {
             combinedDescriptors.descriptors = combinedD;
             assert(combinedDescriptors.descriptors.length == this.nKeypoints);
         }
-        
+
         combinedHarrisResponseList.remove(this.nKeypoints, nTotal - this.nKeypoints);
-        
+
         assert(combinedKeypointList.size() == this.nKeypoints);
         assert(combinedOrientationList.size() == this.nKeypoints);
         assert(combinedHarrisResponseList.size() == this.nKeypoints);
@@ -842,11 +821,11 @@ public class ORB {
         if (descrChoice.equals(DescriptorChoice.NONE)) {
             return;
         }
-        
+
         int nScales = scales.length;
-        
+
         descriptorsList = new ArrayList<Descriptors>(nScales);
-    
+
         TIntList kp0;
         TIntList kp1;
         TDoubleList or;
@@ -854,8 +833,8 @@ public class ORB {
 
             float[][] octaveImage = pyramidImages[i].a;
 
-            kp0 = this.keypoints0List.get(i);
-            kp1 = this.keypoints1List.get(i);
+            kp0 = this.keypoints0List.get(i); // row number
+            kp1 = this.keypoints1List.get(i); // col number
             or = this.orientationsList.get(i);
 
             // result contains descriptors and mask.
@@ -893,180 +872,33 @@ public class ORB {
         TIntList keypoints1;
     }
 
-    public static class Descriptors {
-        //NOTE: consider packing 4 descriptors into one or
-        // doing as Image.java does with sensing 64 bit and 32 bit to make
-        // long or int bit vectors
-        public VeryLongBitString[] descriptors;
-    }
-
-    /**
-     * adapted from
-     * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb.py
-     *
-     * @param octave
-     * @return
-     */
-    private Resp extractKeypoints(int octave) {
+    private Resp extractHarrisCornerKeypoints(int octave) {
 
         float[][] octaveImage = pyramidImages[octave].a;
-        
-        float scale = scales[octave];
-        
-        StructureTensor tensors = tensorComponents[octave];
-        
-        float[][] fastResponse = cornerFast(octaveImage, fastN, fastThreshold);
 
-        int nRows = fastResponse.length;
-        int nCols = fastResponse[0].length;
+        float scale = scales[octave];
+
+        float sigmaBlur = 1;
+        //StructureTensorR tensors = tensorComponents[octave];
+        //double[][] detA = tensors.getDeterminant();
+        //double[][] traceA = tensors.getTrace();
 
         TIntList keypoints0 = new TIntArrayList();
         TIntList keypoints1 = new TIntArrayList();
- 
-        // list of format [row, col, ...] of filtered maxima ordered by intensity
-        cornerPeaks(fastResponse, 1, keypoints0, keypoints1);
-        if (keypoints0.isEmpty()) {
-            Resp r2 = new Resp();
-            r2.keypoints0 = keypoints0;
-            r2.keypoints1 = keypoints1;
-            return r2;
-        }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
 
-        if (doCreate1stDerivKeypoints) {
-
-            float hLimit = 0.01f;//0.09f;
-
-            imageProcessor.createFirstDerivKeyPoints(
-                tensors, keypoints0, keypoints1, hLimit);
-            
-            /*try {
-                float factor = 255.f;
-                Image img2 = new Image(nCols, nRows);
-                for (int i = 0; i < nRows; ++i) {
-                    for (int j = 0; j < nCols; ++j) {
-                        int v = Math.round(factor * octaveImage[i][j]);
-                        if (v > 255) {
-                            v = 255;
-                        } else if (v < 0) {
-                            v = 0;
-                        }
-                        img2.setRGB(j, i, v, v, v);
-                    }
-                }
-                for (int i = 0; i < keypoints0.size(); ++i) {
-                    int x = keypoints1.get(i);
-                    int y = keypoints0.get(i);
-                    img2.setRGB(x, y, 255, 0, 0);
-                }
-                System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                //algorithms.imageProcessing.ImageDisplayer.displayImage("first deriv", img2);
-                MiscDebug.writeImage(img2, "_fr_" 
-                    + MiscDebug.getCurrentTimeFormatted());
-                int z = 1;
-            } catch(Exception e) {
-                System.out.println(e.getMessage());
-            }*/
-        }
-
-        if (doCreateCurvatureKeyPoints) {
-
-            // usually, only create these points for points on an edge.
-            // wanting the min and max of curvature,
-            // and then those maxima that are 2 or 3 times stronger than
-            // one of the adjacent minima.
-            // with a single edge, the peak curvature should be larger than
-            // 2 times that of the preceding or proceeding minima.
-
-            //default thresh is 0.01f
-            imageProcessor.createCurvatureKeyPoints(tensors, 
-                keypoints0, keypoints1, curvatureThresh);
-
-            /*try {
-                float factor = 255.f;
-                Image img2 = new Image(nCols, nRows);
-                for (int i = 0; i < nRows; ++i) {
-                    for (int j = 0; j < nCols; ++j) {
-                        int v = Math.round(factor * octaveImage[i][j]);
-                        if (v > 255) {
-                            v = 255;
-                        } else if (v < 0) {
-                            v = 0;
-                        }
-                        img2.setRGB(j, i, v, v, v);
-                    }
-                }
-                for (int i = 0; i < keypoints0.size(); ++i) {
-                    int x = keypoints1.get(i);
-                    int y = keypoints0.get(i);
-                    img2.setRGB(x, y, 255, 0, 0);
-                }
-                System.out.println("nRows=" + nRows + " nCols=" + nCols);
-                //algorithms.imageProcessing.ImageDisplayer.displayImage("curvature", img2);
-                MiscDebug.writeImage(img2, "_curve_" 
-                    + MiscDebug.getCurrentTimeFormatted());
-                int z = 1;
-            } catch(Exception e) {
-                System.out.println(e.getMessage());
-            }*/
-        }
-           
-        // remove redundant keypoints
-        Set<PairInt> exists = new HashSet<PairInt>();
-        PairInt p;
-        for (int i = (keypoints0.size() - 1); i > -1; --i) {
-            p = new PairInt(keypoints0.get(i), keypoints1.get(i));
-            if (exists.contains(p)) {
-                keypoints0.removeAt(i);
-                keypoints1.removeAt(i);
-            } else {
-                exists.add(p);
-            }
-        }
-               
         // size is same a octaveImage
         float[][] harrisResponse = harrisResponseImages[octave].a;
 
-        // --- harris corners from response image ----
-        
-        imageProcessor.peakLocalMax(harrisResponse, 
-            1, 0.1f,
-            true, keypoints0, keypoints1);
+        imageProcessor.peakLocalMax(harrisResponse,
+                1, 0.01f,
+                true, keypoints0, keypoints1);
 
         Resp r2 = new Resp();
         r2.keypoints0 = keypoints0;
         r2.keypoints1 = keypoints1;
-        
-        /*{//DEBUG
-            Image dbg = new Image(harrisResponse[0].length,
-                harrisResponse.length);
-            float[] tmp = new float[dbg.getNPixels()];
-            tmp = new float[dbg.getNPixels()];
-            for (int i = 0; i < dbg.getNPixels(); ++i) {
-                int x = dbg.getCol(i);
-                int y = dbg.getRow(i);
-                tmp[i] = harrisResponse[y][x];
-            }
-            MiscMath.rescale(tmp, 0, 255);
-            for (int i = 0; i < dbg.getNPixels(); ++i) {
-                if (tmp[i] > 0) {
-                    dbg.setRGB(i, 255, 255, 255);
-                }
-            }
-            PairIntArray tmp2 = new PairIntArray(keypoints0.size());
-            for (int i = 0; i < keypoints0.size(); ++i) {
-                int x = keypoints1.get(i);
-                int y = keypoints0.get(i);
-                tmp2.add(x, y);
-            }
-            ImageIOHelper.addCurveToImage(tmp2, dbg, 2, 255, 0, 0);
-            MiscDebug.writeImage(dbg, "_hr_" + 
-                MiscDebug.getCurrentTimeFormatted());
-            System.out.println("nKP=" + keypoints0.size() + " for octave=" + 
-                octave);
-        }*/
-        
+
         return r2;
     }
 
@@ -1224,21 +1056,17 @@ public class ORB {
 
         TIntSet peaks = new TIntHashSet();
 
-        /* making single pixel index out of coordinates:
-        (row * width) + col
-        pixIdxs[count] = (j * nRows) + i;  this is consistent with Image.java for plotting 
-        */
         for (int i = 0; i < keypoints0.size(); ++i) {
-            int ii = keypoints0.get(i);//row
-            int jj = keypoints1.get(i);//col
-            int pixIdx = (ii * nRows) + jj;
+            int ii = keypoints0.get(i); // row number
+            int jj = keypoints1.get(i); // column number
+            int pixIdx = (ii * nCols) + jj;
             peaks.add(pixIdx);
         }
 
         for (int i = 0; i < keypoints0.size(); ++i) {
-            int ii = keypoints0.get(i); //row
-            int jj = keypoints1.get(i); //col
-            int pixIdx = (ii * nRows) + jj;
+            int ii = keypoints0.get(i); // row number
+            int jj = keypoints1.get(i); // column number
+            int pixIdx = (ii * nCols) + jj;
             if (!peaks.contains(pixIdx)) {
                 continue;
             }
@@ -1250,8 +1078,7 @@ public class ORB {
                     if ((k1 < 0) || (k1 > (nCols - 1)) || (k0 == ii && k1 == jj)) {
                         continue;
                     }
-                    //TODO: check this.  looks like error in pixIdx2
-                    int pixIdx2 = (k0 * nRows) + k1;
+                    int pixIdx2 = (k0 * nCols) + k1;
                     if (peaks.contains(pixIdx2)) {
                         peaks.remove(pixIdx2);
                     }
@@ -1262,9 +1089,9 @@ public class ORB {
         TIntList keypoints0_2 = new TIntArrayList(peaks.size());
         TIntList keypoints1_2 = new TIntArrayList(peaks.size());
         for (int i = 0; i < keypoints0.size(); ++i) {
-            int ii = keypoints0.get(i);//row
-            int jj = keypoints1.get(i);//col
-            int pixIdx = (ii * nRows) + jj;
+            int ii = keypoints0.get(i); // row number
+            int jj = keypoints1.get(i); // column number
+            int pixIdx = (ii * nCols) + jj;
             if (peaks.contains(pixIdx)) {
                 keypoints0_2.add(ii);
                 keypoints1_2.add(jj);
@@ -1295,20 +1122,24 @@ public class ORB {
         /* making single pixel index out of coordinates:
         (row * width) + col
         pixIdxs[count] = (j * nRows) + i;
+        TODO: have changed the use of keypoints0 and keypoints1 to hold the
+        row numbers and column numbers, respectively:
+            pixIdxs[count] = (rowNumber * nCols) + colNumber;
         */
+
         for (int i = 0; i < coords0.size(); ++i) {
-            int ii = coords0.get(i);
-            int jj = coords1.get(i);
-            int pixIdx = (jj * nRows) + ii;
+            int ii = coords0.get(i); // row number
+            int jj = coords1.get(i); // column number
+            int pixIdx = (ii * nCols) + jj;
             set.add(pixIdx);
         }
 
         int nBefore = set.size();
 
         for (int i = 0; i < coords0.size(); ++i) {
-            int ii = coords0.get(i);
-            int jj = coords1.get(i);
-            int pixIdx = (jj * nRows) + ii;
+            int ii = coords0.get(i); // row number
+            int jj = coords1.get(i); // column number
+            int pixIdx = (ii * nCols) + jj;
             if (!set.contains(pixIdx)) {
                 continue;
             }
@@ -1328,9 +1159,9 @@ public class ORB {
 
         TIntList mask = new TIntArrayList(coords0.size());
         for (int i = 0; i < coords0.size(); ++i) {
-            int ii = coords0.get(i);
-            int jj = coords1.get(i);
-            int pixIdx = (jj * nRows) + ii;
+            int ii = coords0.get(i); // row number
+            int jj = coords1.get(i); // column number
+            int pixIdx = (ii * nCols) + jj;
             if (set.contains(pixIdx)) {
                 mask.add(1);
             } else {
@@ -1360,7 +1191,6 @@ public class ORB {
 
         //threshold_abs=None,
         float thresholdRel = 0.1f;
-        boolean excludeBorder = true;
         boolean indices = true;
         int numPeaks = Integer.MAX_VALUE;
         //footprint=None, labels=None
@@ -1589,13 +1419,21 @@ public class ORB {
         float sigma = 1.f;
 
         StructureTensorR tensor = new StructureTensorR(image, sigma, false);
+        double[][] detA = tensor.getDeterminant();
+        double[][] traceA = tensor.getTrace();
+        return cornerHarris(image, detA, traceA);
+    }
+
+    public static double[][] cornerHarris(double[][] image, double[][] detA, double[][] traceA) {
+
+        float sigma = 1.f;
+
+        StructureTensorR tensor = new StructureTensorR(image, sigma, false);
 
         // method = 'k'.  k is Sensitivity factor to separate corners from edges,
         // Small values of k result in detection of sharp corners.
         double k = 0.04;
 
-        double[][] detA = tensor.getDeterminant();
-        double[][] traceA = tensor.getTrace();
         int i;
         int j;
         boolean detAAll0s = true;
@@ -1630,8 +1468,8 @@ public class ORB {
      * to the border and then create descriptors for the remaining.
      *
      * @param octaveImage
-     * @param keypoints0
-     * @param keypoints1
+     * @param keypoints0 holds row numbers
+     * @param keypoints1 holds column numbers
      * @return the encapsulated descriptors and mask
      */
     protected TIntList filterNearBorder(float[][] octaveImage,
@@ -1640,8 +1478,13 @@ public class ORB {
         int nRows = octaveImage.length;
         int nCols = octaveImage[0].length;
 
+        int border = 5;
+        if (Math.min(nRows, nCols)/20. < border) {
+            border = (int)(Math.min(nRows, nCols)/20.);
+        }
+
         TIntList mask = maskCoordinatesIfBorder(keypoints0, keypoints1,
-            nRows, nCols, 5);//16);
+            nRows, nCols, border);//16);
 
         for (int i = (mask.size() - 1); i > -1; --i) {
             if (mask.get(i) == 0) {
@@ -1667,8 +1510,8 @@ public class ORB {
      * @return the encapsulated descriptors and mask
      */
     protected Descriptors extractOctaveDescriptor(float[][] octaveImage,
-        TIntList keypoints0, TIntList keypoints1,
-        TDoubleList orientations, float scale) {
+                                                      TIntList keypoints0, TIntList keypoints1,
+                                                      TDoubleList orientations, float scale) {
 
         assert(orientations.size() == keypoints0.size());
         assert(orientations.size() == keypoints1.size());
@@ -1692,9 +1535,9 @@ public class ORB {
      * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb_cy.pyx
      *
      * @param octaveImage
-     * @param keypoints0 keypoint y coords in reference frame of the largest
+     * @param keypoints0 keypoint row numbers in reference frame of the largest
      * pyramid image
-     * @param keypoints1 keypoint x coords in reference frame of the largest
+     * @param keypoints1 keypoint column numbers in reference frame of the largest
      * pyramid image
      * @param orientations
      * @param scale the scale for this octave image.
@@ -1728,7 +1571,7 @@ public class ORB {
         //System.out.printf("scale=%.2f, nKP=%d\n", scale, nKP);
 
         double pr0, pc0, pr1, pc1, angle, sinA, cosA;
-        int spr0, spc0, spr1, spc1, kr, kc, i, j, x0, y0, x1, y1;
+        int spr0, spc0, spr1, spc1, kr, kc, i, j, row0, col0, row1, col1;
       
         for (i = 0; i < nKP; ++i) {
 
@@ -1738,8 +1581,8 @@ public class ORB {
             sinA = Math.sin(angle);
             cosA = Math.cos(angle);
 
-            kr = keypoints0.get(i);
-            kc = keypoints1.get(i);
+            kr = keypoints0.get(i); // row number
+            kc = keypoints1.get(i); // col number
 
             // put kr and kc into this octave's pyramid image reference frame.
             kr = (int)(kr/scale);
@@ -1756,21 +1599,21 @@ public class ORB {
                 spr1 = (int)Math.round(sinA * pr1 + cosA * pc1);
                 spc1 = (int)Math.round(cosA * pr1 - sinA * pc1);
 
-                x0 = kr + spr0;
-                y0 = kc + spc0;
-                x1 = kr + spr1;
-                y1 = kc + spc1;
+                row0 = kr + spr0;
+                col0 = kc + spc0;
+                row1 = kr + spr1;
+                col1 = kc + spc1;
 
-                if (x0 < 0 || y0 < 0 || x1 < 0 || y1 < 0 ||
-                    (x0 > (octaveImage.length - 1)) ||
-                    (x1 > (octaveImage.length - 1)) ||
-                    (y0 > (octaveImage[0].length - 1)) ||
-                    (y1 > (octaveImage[0].length - 1))
+                if (row0 < 0 || col0 < 0 || row1 < 0 || col1 < 0 ||
+                    (row0 > (octaveImage.length - 1)) ||
+                    (row1 > (octaveImage.length - 1)) ||
+                    (col0 > (octaveImage[0].length - 1)) ||
+                    (col1 > (octaveImage[0].length - 1))
                     ) {
                     continue;
                 }
                 // eqn (4) of Rublee et al.
-                if (octaveImage[x0][y0] < octaveImage[x1][y1]) {
+                if (octaveImage[row0][col0] < octaveImage[row1][col1]) {
                     descriptors[i].setBit(j);
                 }
             }
@@ -1921,7 +1764,7 @@ public class ORB {
         PairInt p;
         for (int i = 0; i < combinedKeypointList.size(); ++i) {
             p = combinedKeypointList.get(i);
-            combined.add(p.getY());
+            combined.add(p.getX());
         }
 
         return combined;
@@ -1941,7 +1784,7 @@ public class ORB {
         PairInt p;
         for (int i = 0; i < combinedKeypointList.size(); ++i) {
             p = combinedKeypointList.get(i);
-            combined.add(p.getX());
+            combined.add(p.getY());
         }
 
         return combined;
@@ -1951,10 +1794,10 @@ public class ORB {
     /**
      * get a list of each octave's keypoint rows as a combined list.
      * The list contains coordinates which have already been scaled to the
-     * full image reference frame and are in column major format.
+     * full image reference frame and are in row major format (= row, col).
      * @return
      */
-    public List<PairInt> getAllKeyPoints() {
+    public List<PairInt> getAllKeyPointsRC() {
         return combinedKeypointList;
     }
 
@@ -1991,25 +1834,7 @@ public class ORB {
         }
         return out;
     }
-    
-    /**
-     * get a list of an octave's keypoints in pixel indexes,
-     * that is pixIdx = (y * imageWidth) + x.
-     * @return
-     */
-    public TIntList getKeyPointListPix(int octave) {
-        int w = this.pyramidImages[octave].a[0].length;
-        //(row * width) + col
-        TIntList out = new TIntArrayList();
-        for (int i = 0; i < keypoints0List.get(octave).size(); ++i) {
-            int x = keypoints1List.get(octave).get(i);
-            int y = keypoints0List.get(octave).get(i);
-            int pixIdx = (y * w) + x;
-            out.add(pixIdx);
-        }
-        return out;
-    }
-    
+
     /**
      * get a list of each octave's keypoint rows in the reference frame
      * of the original full image size.  NOTE that the list
@@ -2151,45 +1976,7 @@ public class ORB {
         }
         return img;
     }
-    
-    private void extractATrousKeypoints(TIntList outputKP0, TIntList outputKP1) {
-        
-        List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
-        List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
 
-        ATrousWaveletTransform at = new ATrousWaveletTransform();
-        at.calculateWithB3SplineScalingFunction(img, transformed, coeffs, 2);
-
-        if (coeffs.size() >= 2) {
-
-            ImageProcessor imageProcessor = new ImageProcessor();
-            float[][] rowMajorImg = imageProcessor.copyToRowMajor(
-                coeffs.get(1));
-            MatrixUtil.multiply(rowMajorImg, 1.f / 255.f);
-
-            // lowering this results in more keypoints
-            float ff = 0.08f;
-
-            float[][] fastResponse = cornerFast(rowMajorImg, fastN, ff);
-
-            float f = 0.1f;
-            imageProcessor.peakLocalMax(fastResponse, 1, f, 
-                true, outputKP0, outputKP1);
-            /*
-            float factor = 255.f;
-            Image img2 = img.createWithDimensions().copyToColorGreyscale();
-            for (int i = 0; i < outputKP0.size(); ++i) {
-                int x = outputKP1.get(i);
-                int y = outputKP0.get(i);
-                img2.setRGB(x, y, 255, 0, 0);
-            }
-            algorithms.misc.MiscDebug.writeImage(img2, "_atrous_" 
-                + algorithms.misc.MiscDebug.getCurrentTimeFormatted());
-            */
-            log.fine("  atrous nKeypoints= " + outputKP0.size());
-        }
-    }
-    
     /**
      * create col major image from row major input
      * @param a

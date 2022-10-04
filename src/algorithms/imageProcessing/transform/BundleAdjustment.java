@@ -268,7 +268,7 @@ public class BundleAdjustment {
             throw new IllegalArgumentException("imageFeaturesMap size must equal "
             + "the number of images which = coordsI[0].length/coordsW[0].length");
         }
-                
+
         //TODO: as part of "fix the gauge", need to consider the first
         //    camera to have axes aligned with world axes, so that the
         //    origin of the world scence is [0,0,0] or [0,0,0,1]

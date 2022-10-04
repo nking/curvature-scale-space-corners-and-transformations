@@ -1083,7 +1083,7 @@ public class ORBTest extends TestCase {
         List<PairInt> kp00;// = new ArrayList<PairInt>();
         Descriptors desc00 = new Descriptors();
         desc00.descriptors = orb.getAllDescriptors().descriptors;
-        kp00 = orb.getAllKeyPoints();
+        kp00 = orb.getAllKeyPoints(); // these are col, row (==col major format)
         //desc00.descriptors = orb.getDescriptorsList().get(0).descriptors;
         /*for (int i = 0; i < orb.getKeyPoint0List().get(0).size();
             ++i) {
@@ -1095,7 +1095,7 @@ public class ORBTest extends TestCase {
         List<PairInt> kp90;// = new ArrayList<PairInt>();
         Descriptors desc90 = new Descriptors();
         desc90.descriptors = orb1.getAllDescriptors().descriptors;
-        kp90 = orb1.getAllKeyPoints();
+        kp90 = orb1.getAllKeyPoints(); //these are col, row (==col major format)
         /*desc90.descriptors = orb1.getDescriptorsList().get(0).descriptors;
         for (int i = 0; i < orb1.getKeyPoint0List().get(0).size();
             ++i) {

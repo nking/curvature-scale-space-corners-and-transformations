@@ -10,16 +10,14 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -625,7 +623,7 @@ public class MiscMath {
     }
     
      /**
-      * solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a4 = 0;
+      * solve for the roots of equation a * x^3 + b * x^2 + c * x + d = 0;
       * 
       * most of the method is adapted from 
       * http://www.csse.uwa.edu.au/~pk/research/matlabfns/Misc/cubicroots.m
@@ -647,10 +645,10 @@ public class MiscMath {
 
         Nov 2008
          
-      * @param a
-      * @param b
-      * @param c
-      * @param d
+      * @param a coeff for 3rd order
+      * @param b coeff for 2nd order
+      * @param c coeff for 1st order
+      * @param d coeff for 0th order
       * @return 
       */
     public static double[] solveCubicRoots(double a, double b, double c, 
@@ -720,61 +718,37 @@ public class MiscMath {
      * @param nMax the upper limit from which to choose numbers from for 
      * 'selected', where the possible numbers are 0 through nMax-1.
      */
-    public static void chooseRandomly(SecureRandom sr, int[] selected, int nMax) {
+    public static void chooseRandomly(Random rand, int[] selected, int nMax) {
         
         if (nMax < selected.length) {
             throw new IllegalArgumentException("cannot draw " + 
                 Integer.toString(selected.length) + " distinct random numbers "
                 + " from only " + Integer.toString(nMax) + " numbers");
         }
-        
-        // TODO: ideally, would like to be able to predict the ith iteration of 
-        // a subset chooser (@see getNextSubsetBitstring)
-      
+
         if (selected.length == nMax) {
             for (int i = 0; i < selected.length; i++) {
                 selected[i] = i;
             }
             return;
         }
-        
-        int nLimit = selected.length * 3;
-        // when nMax is smaller than some limit, choose randomly from 
-        // unchosen numbers
-        if (nMax < nLimit) {
-            
-            // populate numbers to choose from:
-            List<Integer> numbers = new ArrayList<Integer>();
-            for (int i = 0; i < nMax; i++) {
-                numbers.add(Integer.valueOf(i));
+
+        TIntSet in = new TIntHashSet();
+        int count = 0;
+        int a;
+        while (count < selected.length) {
+            a = rand.nextInt(nMax);
+            while (!in.add(a)) {
+                a = rand.nextInt(nMax);
             }
-            
-            for (int i = 0; i < selected.length; i++) {
-                int selIdx = sr.nextInt(numbers.size());
-                Integer sel = numbers.get(selIdx);
-                selected[i] = sel.intValue();
-                numbers.remove(sel);
-            }
-            
-            return;
+            ++count;
         }
-        
-        for (int i = 0; i < selected.length; i++) {
-            int sel = sr.nextInt(nMax);
-            while (contains(selected, i, sel)) {
-                sel = sr.nextInt(nMax);
-            }
-            selected[i] = sel;
+        TIntIterator iter = in.iterator();
+        count = 0;
+        while (iter.hasNext()) {
+            selected[count] = iter.next();
+            ++count;
         }
-    }
-    
-    private static boolean contains(int[] values, int lastIdx, int valueToCheck) {
-        for (int i = 0; i < lastIdx; i++) {
-            if (values[i] == valueToCheck) {
-                return true;
-            }
-        }
-        return false;
     }
     
      /**
