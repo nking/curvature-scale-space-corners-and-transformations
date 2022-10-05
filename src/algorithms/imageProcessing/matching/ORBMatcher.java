@@ -6,6 +6,8 @@ import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
+import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.QuadInt;
@@ -29,7 +31,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import no.uib.cipr.matrix.DenseMatrix;
+import thirdparty.HungarianAlgorithm;
 
 /**
  * a class to hold various methods related to matching
@@ -250,11 +256,34 @@ public class ORBMatcher {
             throw new IllegalArgumentException("number of descriptors in " + " d2 bitstrings must be same as keypoints2 length");
         }
         //[n1][n2]
-        int[][] cost = ORB.calcDescriptorCostMatrix(
-                d1.descriptors, d2.descriptors);
+        int[][] cost = ORB.calcDescriptorCostMatrix(d1.descriptors, d2.descriptors);
 
         // pairs of indexes of matches.  it does not matter whether keypoints holds row,col pairs or col,row pairs
-        int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
+        int[][] matches;
+        if ((n1*n2) > 2.5e5) {
+            //runtime complexity is O(n1*n2) where n1=cost.length and n2=cost[0].length
+            matches = greedyMatch(keypoints1, keypoints2, cost);
+
+            int nUnmatched = Math.min(keypoints1.size(), keypoints2.size()) - matches.length;
+
+            System.out.printf("nMatched=%d  nUnMatched=%d\n", matches.length, nUnmatched);
+            System.out.flush();
+
+            int[][] matches2 = greedyMatchRemaining(matches, keypoints1, keypoints2, cost);
+
+            matches = stack(matches, matches2);
+
+            nUnmatched = Math.min(keypoints1.size(), keypoints2.size()) - matches.length;
+            System.out.printf("after match remaining nMatched=%d  nUnMatched=%d\n", matches.length, nUnmatched);
+            System.out.flush();
+
+        } else {
+            //runtime complexity is ~ O(n^4) but could be improved
+            matches = new HungarianAlgorithm().computeAssignments(MatrixUtil.convertToFloat(cost));
+        }
+
+        //System.out.printf("greedy matches=\n%s\n", FormatArray.toString(matches, "%d"));
+        //System.out.printf("bipart matches=\n%s\n", FormatArray.toString(matches, "%d"));
 
         if (matches.length < 7) {
 
@@ -319,8 +348,7 @@ public class ORBMatcher {
 
         // ransac to remove outliers.
         //NOTE: the fundamental matrix in the fit has not been de-normalized.
-        EpipolarTransformationFit fit = fitWithRANSAC2(matches,
-                keypoints1, keypoints2);
+        EpipolarTransformationFit fit = fitWithRANSAC2(matches, keypoints1, keypoints2);
 
         if (fit == null) {
             return null;
@@ -344,6 +372,68 @@ public class ORBMatcher {
         return qs;
     }
 
+    private static int[][] stack(int[][] matches, int[][] matches2) {
+        if (matches2.length == 0) {
+            return matches;
+        }
+        int n2 = matches.length + matches2.length;
+        int[][] m = new int[n2][2];
+        int i;
+        for (i = 0; i < matches.length; ++i) {
+            m[i] = Arrays.copyOf(matches[i], matches[i].length);
+        }
+        int j = matches.length;
+        for (i = 0; i < matches2.length; ++i, ++j) {
+            m[j] = Arrays.copyOf(matches2[i], matches2[i].length);
+        }
+        return m;
+    }
+
+    private static int[][] greedyMatchRemaining(int[][] matches, List<PairInt> keypoints1, List<PairInt> keypoints2, int[][] cost) {
+
+        assert(cost.length == keypoints1.size());
+        assert(cost[0].length == keypoints2.size());
+
+        // lists of the remaining indexes:
+        TIntList kp1R = new TIntArrayList();
+        TIntList kp2R = new TIntArrayList();
+        int[][] cost2 = modifyForRemaining(cost, matches);
+
+        int[][] matches2 = greedyMatch(keypoints1, keypoints2, cost2);
+
+        return matches2;
+    }
+
+    /**
+     * copy the cost array and set the matched items to Integer.MAX_VALUE so they will not be matched.
+     * @param cost
+     * @return the extracted rows and columns of cost that are present in kp1R and
+     */
+    private static int[][] modifyForRemaining(int[][] cost, int[][] matches) {
+        TIntSet kp1I = new TIntHashSet();
+        TIntSet kp2I = new TIntHashSet();
+        int i;
+        for (i = 0; i < matches.length; ++i) {
+            kp1I.add(matches[i][0]);
+            kp2I.add(matches[i][1]);
+        }
+        int[][] cost2 = new int[cost.length][];
+        int j;
+        for (i = 0; i < cost.length; ++i) {
+            cost2[i] = Arrays.copyOf(cost[i], cost[i].length);
+            if (kp1I.contains(i)) {
+                Arrays.fill(cost2[i], Integer.MAX_VALUE);
+                continue;
+            }
+            for (j = 0; j < cost[i].length; ++j) {
+                if (kp2I.contains(j)) {
+                    cost2[i][j] = Integer.MAX_VALUE;
+                }
+            }
+        }
+        return cost2;
+    }
+
     /**
      * finds best match for each point if a close second best does not exist,
      * then sorts by lowest cost to keep the unique best starter points.
@@ -362,16 +452,14 @@ public class ORBMatcher {
         /*
         -- for each keypoint, finding best match, but only keeping it if there is
            no close 2nd best.
-        -- sorting the results by lowest cost and keepint the unique of those.
+        -- sorting the results by lowest cost and keeping the unique of those.
         -- return correspondence
         */
         
         //nearest neighbor distance ratio (Mikolajczyk and Schmid 2005):
         // using a ratio of 0.8 or 0.9.
         int[] bestMatch = findGreedyBestIsolated(cost, 0.8f);
-        
-        //int[] bestMatch = minCostBipartiteUnbalanced(cost);
-        
+
         assert(bestMatch.length == n1);
         
         int nBest = 0;
@@ -380,7 +468,7 @@ public class ORBMatcher {
                 nBest++;
             }
         }
-        
+
         PairInt[] indexes = new PairInt[nBest];
         int[] costs = new int[nBest];
         int count = 0;
@@ -451,7 +539,13 @@ public class ORBMatcher {
         }
         return bestMatch;
     }
-    
+
+    /**
+     * runtime complexity is O(n1*n2) where n1=cost.length and n2=cost[0].length
+     * @param cost
+     * @param ratioLimit
+     * @return
+     */
     //@param ratioLimit Mikolajczyk and Schmid 2005) 0.8 or 0.9.
     private static int[] findGreedyBestIsolated(int[][] cost, float ratioLimit) {
         int n1 = cost.length;
@@ -588,7 +682,9 @@ public class ORBMatcher {
      * the correspondence is normalized and the fundamental matrix is calculated,
      * then the errors are estimated using the Sampson's distance as errors
      * and a 3.8*sigma as inlier threshold.
-     * @param matches
+     * @param matches array of size [2 x nMatches] where each row is a pair of indexes for suggested matches,
+     *                that is [(index in keypoints1 for match0, index in keypoints2 for match0),
+     *                (index in keypoints1 for match1, index in keypoints2 for match1), ...]
      * @param keypoints1 pairs of points in format row, col
      * @param keypoints2 pairs of points in format row, col
      * @return epipolar fit to the matches

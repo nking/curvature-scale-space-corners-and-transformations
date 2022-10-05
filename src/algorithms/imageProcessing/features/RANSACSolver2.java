@@ -205,7 +205,7 @@ public class RANSACSolver2 {
         */
        
         // n!/(k!*(n-k)!
-        final BigInteger nPointsSubsets = MiscMath0.computeNDivKTimesNMinusKBigInteger(nPoints, nSet);
+        //final BigInteger nPointsSubsets = MiscMath0.computeNDivKTimesNMinusKBigInteger(nPoints, nSet);
         boolean useAllSubsets = false;
 
         EpipolarTransformer spTransformer = new EpipolarTransformer();
@@ -232,19 +232,17 @@ public class RANSACSolver2 {
             where T is the probability that all the data 
             points selected in one subsample are non-outliers.
             */
-            // maximum is 382 for nSet=7
+            // maximum is 382 for nSet=7 and outlierPercent=50%
             nMaxIter = RANSACAlgorithmIterations
                 .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
         }
         
-        System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
-            nMaxIter + ", (n!/(k!*(n-k)!)=" + nPointsSubsets.toString());
+        //System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
+        //    nMaxIter + ", (n!/(k!*(n-k)!)=" + nPointsSubsets.toString());
 
-        // compareTo: -1, 0 or 1 as this BigInteger is numerically less than, equal to, or greater than val
-        // TODO: consider removing this as max iter for nSet=7 is 382
-        if (nPointsSubsets.compareTo(new BigInteger(Long.toString(nMaxIter))) < 0) {
-            // nPoints subsets is smaller than nMaxIter
-            nMaxIter = nPointsSubsets.longValue();
+        // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
+        if (nPoints < 12) {
+            nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
             useAllSubsets = true;
         }
         
@@ -389,11 +387,9 @@ public class RANSACSolver2 {
                         assert(outlierPercent < 50);
                         nMaxIter = RANSACAlgorithmIterations
                             .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
-                        // compareTo: -1, 0 or 1 as this BigInteger is numerically less than, equal to, or greater than val.
-                        // TODO: consider removing this as max iter for nSet=7 is 382
-                        if (nPointsSubsets.compareTo(new BigInteger(Long.toString(nMaxIter))) < 0) {
-                            // nPoints subsets is smaller than nMaxIter
-                            nMaxIter = nPointsSubsets.longValue();
+                        // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
+                        if (nPoints < 12) {
+                            nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
                             useAllSubsets = true;
                         }
                     }

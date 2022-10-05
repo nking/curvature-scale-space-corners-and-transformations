@@ -18,9 +18,7 @@ import algorithms.util.*;
 import java.awt.Color;
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertFalse;
@@ -399,10 +397,10 @@ public class EpipolarTransformerTest extends TestCase {
 
         int nKP = Math.min(keyPoints1.length, keyPoints2.length);
         //nKP = 100; can reduce the number to see the matches more easily
-        nKP = (int)(0.75*nKP);
-        
+        nKP = (int)(2.5*nKP);
+
         ORB2 orb1 = new ORB2(image1, nKP);
-        ORB2 orb2 = new ORB2(image1, nKP);
+        ORB2 orb2 = new ORB2(image2, nKP);
 
         orb1.detectAndExtract();
         orb2.detectAndExtract();
@@ -436,18 +434,32 @@ public class EpipolarTransformerTest extends TestCase {
             row = kp2.get(i).getX();
             ImageIOHelper.addPointToImage(col, row, tmp2, 2, 255, 0, 0);
         }
+        Image tmp3 = image1.copyToColorGreyscale();
+        Image tmp4 = image2.copyToColorGreyscale();
+
         //MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
         System.out.println(fileName1 + " matched=" + matched.length);
         CorrespondencePlotter plotter =
                 new CorrespondencePlotter(tmp1, tmp2);
+        Color clr = null;
         for (i = 0; i < matched.length; ++i) {
             r1 = matched[i].getA();
             c1 = matched[i].getB();
             r2 = matched[i].getC();
             c2 = matched[i].getD();
             plotter.drawLineInAlternatingColors(c1, r1, c2, r2, 1);
+
+            clr = getColor(clr);
+            ImageIOHelper.addPointToImage(c1, r1, tmp3, 2, clr.getRed(), clr.getGreen(), clr.getBlue());
+            ImageIOHelper.addPointToImage(c2, r2, tmp4, 2, clr.getRed(), clr.getGreen(), clr.getBlue());
         }
         plotter.writeImage("_corres_orb_gs_merton_college_I_001_002");
+
+        String dirPath = ResourceFinder.findDirectory("bin");
+        ImageIOHelper.writeOutputImage(
+                dirPath + "/matched_merton_college_I_001" + ".png", tmp3);
+        ImageIOHelper.writeOutputImage(
+                dirPath + "/matched_merton_college_I_002" + ".png", tmp4);
 
         // next RANSAC
 
@@ -463,7 +475,7 @@ public class EpipolarTransformerTest extends TestCase {
         use these to test RANSACSolver and RANSACSolver2*/
     }
 
-    public void testORB2() {
+    public void testORB2() throws IOException {
         /*
          >>> from skimage.feature import corner_harris, corner_peaks
         >>> import numpy as np
@@ -473,8 +485,8 @@ public class EpipolarTransformerTest extends TestCase {
         array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
-               [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+               [0, 0, 3, 2, 1, 1, 1, 1, 0, 0],
+               [0, 0, 2, 1, 1, 1, 1, 1, 0, 0],
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
@@ -492,6 +504,20 @@ public class EpipolarTransformerTest extends TestCase {
                 image.setValue(j, i, 1);
             }
         }
+        img[3][2] = 3;
+        img[4][2] = 2;
+        img[3][3] = 2;
+        image.setValue(2, 3, 3);
+        image.setValue(2, 4, 2);
+        image.setValue(3, 3, 2);
+
+        Transformer tr = new Transformer();
+        GreyscaleImage image2 = image.copyImage();
+        TransformationParameters params = new TransformationParameters();
+        params.setTranslationY(image2.getWidth()-1);
+        // counter-clockwise rotation by 90.
+        params.setRotationInDegrees(90);
+        image2 = tr.applyTransformation(image2, params, image2.getHeight(), image2.getWidth());
 
         int[][] expected = new int[4][2];
         expected[0] = new int[]{3, 2};
@@ -499,12 +525,38 @@ public class EpipolarTransformerTest extends TestCase {
         expected[2] = new int[]{8, 2};
         expected[3] = new int[]{8, 7};
 
-        ORB2 orb = new ORB2(image, 10*expected.length);
-        orb.detectAndExtract();
-        List<PairInt> kp = orb.getAllKeyPointsRC();
-        TwoDFloatArray[] p = orb.getPyramidImages();
-        ORB.Descriptors d = orb.getAllDescriptors();
+        int nKP = 3*expected.length;
 
+        ORB2 orb1 = new ORB2(image, nKP);
+        ORB2 orb2 = new ORB2(image2, nKP);
+
+        orb1.detectAndExtract();
+        orb2.detectAndExtract();
+
+        ORB.Descriptors d1 = orb1.getAllDescriptors();
+        ORB.Descriptors d2 = orb2.getAllDescriptors();
+        List<PairInt> kp1 = orb1.getAllKeyPointsRC();
+        List<PairInt> kp2 = orb2.getAllKeyPointsRC();
+
+        /*
+        test expecting
+                  (8, 2) <--> (7, 8)  => idx 0, 1  (bits diff=0)
+                  (8, 7) <--> (2, 8)         1, 0  (bits diff=0)
+                  (3, 7) <--> (2, 3)         2, 2  (bits diff=0)
+                  (3, 2) <--> (7, 3)         3, 3  (bits diff=0)
+         */
+        QuadInt[] matched = ORBMatcher.matchDescriptorsRC(d1, d2, kp1, kp2);
+        Set<QuadInt> expectedM = new HashSet<QuadInt>();
+        expectedM.add(new QuadInt(8, 2, 7, 8));
+        expectedM.add(new QuadInt(8, 7, 2, 8));
+        expectedM.add(new QuadInt(3, 7, 2, 3));
+        expectedM.add(new QuadInt(3, 2, 7, 3));
+        assertEquals(expectedM.size(), matched.length);
+        for (i = 0; i < matched.length; ++i) {
+            System.out.printf("matched=%s\n", matched[i].toString());
+            assertTrue(expectedM.remove(matched[i]));
+        }
+        assertEquals(0, expectedM.size());
     }
 
     public void testMoreThan7Points2() throws Exception {
@@ -805,8 +857,7 @@ public class EpipolarTransformerTest extends TestCase {
         for (int ii = 0; ii < input2.numColumns(); ii++) {
             clr = getColor(clr);
             DenseMatrix epipolarLinesInLeft = 
-                MatrixUtil.multiply(
-                algorithms.matrix.MatrixUtil.transpose(fm), input2);
+                MatrixUtil.multiply(algorithms.matrix.MatrixUtil.transpose(fm), input2);
             PairIntArray leftLine = spTransformer.getEpipolarLine(
                 epipolarLinesInLeft, image1Width, image1Height, ii);
             ImageIOHelper.addCurveToImage(leftLine, img1, 0,

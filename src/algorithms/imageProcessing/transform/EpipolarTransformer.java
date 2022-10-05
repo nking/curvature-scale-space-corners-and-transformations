@@ -529,11 +529,15 @@ public class EpipolarTransformer {
 
         double eps = 1E-4;
         double[] roots;
-        try {
-            roots = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);
-        } catch (IOException e) {
-            log.severe("PolynomialRootSolver error: " + e.getMessage());
+        if (Math.abs(coeffs[3]) < 1E-7) {
             roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+        } else {
+            try {
+                roots = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);
+            } catch (IOException e) {
+                log.severe("PolynomialRootSolver error: " + e.getMessage());
+                roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+            }
         }
 
         // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
