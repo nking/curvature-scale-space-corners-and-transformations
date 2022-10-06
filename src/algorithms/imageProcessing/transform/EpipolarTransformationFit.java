@@ -11,16 +11,27 @@ import no.uib.cipr.matrix.DenseMatrix;
 public class EpipolarTransformationFit extends AbstractTransformationFit {
     
     private final ErrorType errorType;
-    
+
+    //TODO: change type to double[][] when have finished changes to RANSACSolver2 and ORB2 and classes that use the previous versions
     private DenseMatrix fundamentalMatrix;
-    
+
     public EpipolarTransformationFit(DenseMatrix theFundamentalMatrix,
         List<Integer> theInlierIndexes, ErrorType theErrorType,
         List<Double> theErrors, double theTolerance) {
-        
+
         super(theInlierIndexes, theErrors, theTolerance);
-        
+
         fundamentalMatrix = theFundamentalMatrix.copy();
+        errorType = theErrorType;
+    }
+
+    public EpipolarTransformationFit(double[][] theFundamentalMatrix,
+                                     List<Integer> theInlierIndexes, ErrorType theErrorType,
+                                     List<Double> theErrors, double theTolerance) {
+
+        super(theInlierIndexes, theErrors, theTolerance);
+
+        fundamentalMatrix = new DenseMatrix(theFundamentalMatrix);
         errorType = theErrorType;
     }
    

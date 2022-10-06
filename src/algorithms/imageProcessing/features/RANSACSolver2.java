@@ -1,22 +1,16 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.SubsetChooser;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Distances;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.matrix.MatrixUtil;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
-import no.uib.cipr.matrix.DenseMatrix;
 
 import java.io.IOException;
-import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -76,13 +70,34 @@ public class RANSACSolver2 {
 
     private boolean debug = true;
 
-    private Logger log = Logger.getLogger(this.getClass().getName());
+    //TODO: make this a configuration change
+    private boolean use7Pts = true;
+    private int nSet = 7;
+
+    private final Logger log = Logger.getLogger(this.getClass().getName());
+
+    /**
+     * configure the solver to use the 8-point algorithm.
+     * The default configuration is for the 7-point algorithm.
+     */
+    public void setToUse8PointSolver() {
+        use7Pts = false;
+        nSet = 8;
+    }
+
+    /**
+     * configure the solver to use the 7-point algorithm.
+     * The default configuration is for the 7-point algorithm.
+     */
+    public void setToUse7PointSolver() {
+        use7Pts = true;
+        nSet = 7;
+    }
 
     /**
      * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
-     * true matches.   NOTE: for best results, one should perform unit standard
-     * normalization on the correspondence first.
+     * true matches.  Standard unit normalization and denormalization is handled internally.
      *
      * @param leftCorres left correspondence holding (x,y) points from left image
      * in format 3 X nData matrix with rows being x, y, and 1's respectively
@@ -119,14 +134,10 @@ public class RANSACSolver2 {
                 reCalcIterations, calibrated, new Random(seed));
     }
 
-    /*
-
-     */
     /**
      * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
-     * true matches.   NOTE: for best results, one should perform unit standard
-     * normalization on the correspondence first.
+     * true matches.  Standard unit normalization and denormalization is handled internally.
      *
      * @param leftCorres left correspondence holding (x,y) points from left image
      * in format 3 X nData matrix with rows being x, y, and 1's respectively
@@ -154,17 +165,15 @@ public class RANSACSolver2 {
         ErrorType errorType,
         boolean useToleranceAsStatFactor, final double tolerance,
         boolean reCalcIterations, boolean calibrated, Random rand) throws IOException {
-        
-        //int nPoints = leftCorres.numColumns();
+
         int nPoints = leftCorres[0].length;
-        final int nSet = 7;
 
         double eps = 1.e-6;
         
         if (nPoints < nSet) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
-                "the algorithms require 7 or more points.  leftCorres nPoints=" + nPoints);
+                String.format("the algorithm requires %d or more points.  leftCorres nPoints=%d", nSet, nPoints));
         }
         if (leftCorres.length != 3) {
             // cannot use this algorithm.
@@ -179,7 +188,7 @@ public class RANSACSolver2 {
         }
 
         /*        
-        Using 7 point samples for epipolar transformation fits.
+        Using 7 point samples (or 8 point samples) for epipolar transformation fits.
         -- the number of iterations for testing sub-samples of nPoints 
            (each of size 7) and finding one to be a good sub-sample with an
            excess of probability of 95% is estimated for a given
@@ -232,16 +241,17 @@ public class RANSACSolver2 {
             where T is the probability that all the data 
             points selected in one subsample are non-outliers.
             */
-            // maximum is 382 for nSet=7 and outlierPercent=50%
+            // maximum is 382 for nSet=7 and outlierPercent=50%, and for nSet=8 it is 766
             nMaxIter = RANSACAlgorithmIterations
-                .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
+                .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
         }
         
         //System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
         //    nMaxIter + ", (n!/(k!*(n-k)!)=" + nPointsSubsets.toString());
 
         // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
-        if (nPoints < 12) {
+        // max iter for nSet=8 is 766 for 50%.  12!/(8!*(12-8)!)=495
+        if ((nSet==7 && nPoints < 12) || (nSet == 8 && nPoints < 13)) {
             nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
             useAllSubsets = true;
         }
@@ -280,12 +290,16 @@ public class RANSACSolver2 {
             }
 
             if (MiscMath0.areColinear(sampleLeft, eps) || MiscMath0.areColinear(sampleRight, eps)) {
-                nIter++;
                 continue;
             }
             
             // calculates 7-point solutions then filters using chirality checks.
-            double[][] fms = spTransformer.calculateEpipolarProjectionUsing7Points(sampleLeft, sampleLeft);
+            double[][] fms = null;
+            if (nSet == 7) {
+                fms = spTransformer.calculateEpipolarProjectionUsing7Points(sampleLeft, sampleLeft);
+            } else {
+                fms = spTransformer.calculateEpipolarProjection2(sampleLeft, sampleRight, calibrated);
+            }
 
             if (fms == null || fms.length == 0) {
                 nIter++;
@@ -315,14 +329,14 @@ public class RANSACSolver2 {
 
                 EpipolarTransformationFit fit;
 
-                //TODO:  write Distance methods for double[][]
-                // and overloading for others below:
                 if (useToleranceAsStatFactor) {
-                    fit = distances.calculateError2(new DenseMatrix(fm),
-                            new DenseMatrix(leftCorres), new DenseMatrix(rightCorres), errorType, tolerance);
+                    fit = distances.calculateError2(fm, leftCorres, rightCorres, errorType, tolerance);
                 } else {
-                    fit = distances.calculateError(new DenseMatrix(fm),
-                            new DenseMatrix(leftCorres), new DenseMatrix(rightCorres), errorType, tolerance);
+                    fit = distances.calculateError(fm, leftCorres, rightCorres, errorType, tolerance);
+                }
+
+                if (fit.getInlierIndexes().isEmpty()) {
+                    continue;
                 }
 
                 if (fit.isBetter(bestFit)) {
@@ -333,22 +347,17 @@ public class RANSACSolver2 {
                     if (nInliers >= nSet && bestFitI.isBetter(fit)) {
                         if (nInliers > t && nInliers > nSet) {
                             // redo the FM transformation with all inliers
-                            DenseMatrix inliersLeftXY = EpipolarTransformer
-                                    .extractIndices(new DenseMatrix(leftCorres), bestFitI.getInlierIndexes());
-                            DenseMatrix inliersRightXY = EpipolarTransformer
-                                    .extractIndices(new DenseMatrix(rightCorres), bestFitI.getInlierIndexes());
+                            double[][] inliersLeftXY = EpipolarTransformer.extractIndices(leftCorres, bestFitI.getInlierIndexes());
+                            double[][] inliersRightXY = EpipolarTransformer.extractIndices(rightCorres, bestFitI.getInlierIndexes());
 
-                            DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(
-                                    inliersLeftXY, inliersRightXY, calibrated);
+                            double[][] fm2 = spTransformer.calculateEpipolarProjection2(inliersLeftXY, inliersRightXY, calibrated);
 
                             if (fm2 != null) {
                                 EpipolarTransformationFit fit2 = null;
                                 if (useToleranceAsStatFactor) {
-                                    fit2 = distances.calculateError2(fm2,
-                                            new DenseMatrix(leftCorres), new DenseMatrix(rightCorres), errorType, tolerance);
+                                    fit2 = distances.calculateError2(fm2, leftCorres, rightCorres, errorType, tolerance);
                                 } else {
-                                    fit2 = distances.calculateError(fm2,
-                                            new DenseMatrix(leftCorres), new DenseMatrix(rightCorres), errorType, tolerance);
+                                    fit2 = distances.calculateError(fm2, leftCorres, rightCorres, errorType, tolerance);
                                 }
                                 if (fit2 != null && fit2.isBetter(bestFitI)) {
                                     bestFitI = fit2;
@@ -385,10 +394,9 @@ public class RANSACSolver2 {
                             outlierPercent = 5;
                         }
                         assert(outlierPercent < 50);
-                        nMaxIter = RANSACAlgorithmIterations
-                            .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
+                        nMaxIter = RANSACAlgorithmIterations.numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
                         // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
-                        if (nPoints < 12) {
+                        if ((nSet==7 && nPoints < 12) || (nSet==8 && nPoints < 13)) {
                             nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
                             useAllSubsets = true;
                         }

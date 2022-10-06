@@ -525,7 +525,12 @@ public class EpipolarTransformer {
         calculate the polynomial coefficients.
         see docs/miscNotes/fundamental_cube_roots.txt
          */
+
         double[] coeffs = calcOrderCoeffs(ff1, ff2);
+
+        //double[] coeffs3 = calculateCubicRootCoefficientsHartley(ff1, ff2);
+        //System.out.printf("Hartley's coeffs:\n%s\n", FormatArray.toString(coeffs3, "%.3e"));
+        //System.out.printf("coeffs current:\n%s\n", FormatArray.toString(coeffs, "%.3e"));
 
         double eps = 1E-4;
         double[] roots;
@@ -543,6 +548,47 @@ public class EpipolarTransformer {
         // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
 
         return filterForZeroDeterminant(ff1, ff2, roots, eps);
+    }
+
+    private double[] calculateCubicRootCoefficientsHartley(double[][] ff1, double[][] ff2) {
+
+        // follow Hartley's vgg_singF_from_FF.m to calc the coeffs:
+        // which is rewritten by imkaywu.github.io for opencv
+        //TODO: fill in those 2 references here
+        double[][][] d = new double[2][2][2];
+        double[][] dTmp = MatrixUtil.zeros(3, 3);
+        for (int i1 = 0; i1 < 2; ++i1) {
+            d[i1] = new double[2][2];
+            for (int i2 = 0; i2 < 2; ++i2) {
+                d[i1][i2] = new double[2];
+                for (int i3 = 0; i3 < 2; ++i3) {
+                    if (i1 == 0) {
+                        dTmp[0] = MatrixUtil.extractColumn(ff1, 0) ;
+                    } else {
+                        dTmp[0] = MatrixUtil.extractColumn(ff2, 0) ;
+                    }
+                    if (i2 == 0) {
+                        dTmp[1] = MatrixUtil.extractColumn(ff1, 1) ;
+                    } else {
+                        dTmp[1] = MatrixUtil.extractColumn(ff2, 1) ;
+                    }
+                    if (i3 == 0) {
+                        dTmp[2] = MatrixUtil.extractColumn(ff1, 2) ;
+                    } else {
+                        dTmp[2] = MatrixUtil.extractColumn(ff2, 2) ;
+                    }
+                    dTmp = MatrixUtil.transpose(dTmp);
+                    d[i1][i2][i3] = MatrixUtil.determinant(dTmp);
+                }
+            }
+        }
+
+        double c3 = -d[1][0][0]+d[0][1][1]+d[0][0][0]+d[1][1][0]+d[1][0][1]-d[0][1][0]-d[0][0][1]-d[1][1][1];
+        double c2 = d[0][0][1]-2*d[0][1][1]-2*d[1][0][1]+d[1][0][0]-2*d[1][1][0]+d[0][1][0]+3*d[1][1][1];
+        double c1 = d[1][1][0]+d[0][1][1]+d[1][0][1]-3*d[1][1][1];
+        double c0 = d[1][1][1];
+
+        return new double[]{c3, c2, c1, c0};
     }
 
     // det(α*F1 + (1 − α)*F2) = 0
@@ -572,7 +618,7 @@ public class EpipolarTransformer {
         }
         // number of solutions is c
         if (c < roots.length) {
-            solns = MatrixUtil.copySubMatrix(solns, 0, 3*c, 0, 2);
+            solns = MatrixUtil.copySubMatrix(solns, 0, 3*c - 1, 0, 2);
         }
         return solns;
     }
@@ -1192,13 +1238,9 @@ public class EpipolarTransformer {
     DenseMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
 
         //solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a3 = 0;
-        
-        double a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);
-        double a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);
-        double a2 = calculateCubicRoot1stOrderCoefficientFor7Point(ff1, ff2);
-        double a3 = calculateCubicRoot0thOrderCoefficientFor7Point(ff1, ff2);
 
-        double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);
+        double[] coeffs = calcOrderCoeffs(ff1, ff2);
+        double[] roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
 
         double[][] m = new double[3][];
         for (int i = 0; i < 3; i++) {
@@ -1407,155 +1449,6 @@ public class EpipolarTransformer {
                 + f201*f212*f220;
 
         return new double[]{c3, c2, c1, c0};
-    }
-
-    private double calculateCubicRoot3rdOrderCoefficientFor7Point(
-        double[][] ff1, double[][] ff2) {
-
-        double b = ff1[0][0];
-        double e = ff1[1][0];
-        double h = ff1[2][0];
-        double c = ff1[0][1];
-        double f = ff1[1][1];
-        double i = ff1[2][1];
-        double d = ff1[0][2];
-        double g = ff1[1][2];
-        double j = ff1[2][2];
-
-        double k = ff2[0][0];
-        double n = ff2[1][0];
-        double q = ff2[2][0];
-        double l = ff2[0][1];
-        double o = ff2[1][1];
-        double r = ff2[2][1];
-        double m = ff2[0][2];
-        double p = ff2[1][2];
-        double s = ff2[2][2];
-
-        double sum = h*g*c + h*o*d + h*o*m + h*p*l + i*e*d + i*g*k
-            + i*n*m + i*p*b + j*e*l + j*k*o + j*n*c + q*f*d
-            + q*f*m + q*g*l + q*p*c + r*e*m + r*g*b + r*n*d
-            + r*p*k + s*b*o + s*e*c + s*k*f + s*n*l + b*j*f
-            - h*f*d - h*f*m - h*g*l - h*p*c - i*e*m - i*g*b
-            - i*n*d - i*p*k - j*b*o - j*e*c - j*k*f - j*n*l
-            - q*g*c - q*o*d - q*o*m - q*p*l - r*e*d - r*g*k
-            - r*n*m - r*p*b - s*b*f - s*e*l - s*k*o - s*n*c;
-
-        return sum;
-    }
-
-    private double calculateCubicRoot2ndOrderCoefficientFor7Point(double[][] ff1,
-        double[][] ff2) {
-
-        double b = ff1[0][0];
-        double e = ff1[1][0];
-        double h = ff1[2][0];
-        double c = ff1[0][1];
-        double f = ff1[1][1];
-        double i = ff1[2][1];
-        double d = ff1[0][2];
-        double g = ff1[1][2];
-        double j = ff1[2][2];
-
-        double k = ff2[0][0];
-        double n = ff2[1][0];
-        double q = ff2[2][0];
-        double l = ff2[0][1];
-        double o = ff2[1][1];
-        double r = ff2[2][1];
-        double m = ff2[0][2];
-        double p = ff2[1][2];
-        double s = ff2[2][2];
-
-        double sum = h*f*m + h*g*l + h*p*c + i*e*m + i*n*d + i*p*k
-            + i*p*k + j*b*o + j*k*f + j*n*l + j*n*l + q*g*c
-            + q*o*d + q*o*d + q*o*m + q*o*m + q*o*m + q*p*l
-            + q*p*l + q*p*l + r*e*d + r*g*k + r*g*k + r*n*m
-            + r*n*m + r*n*m + r*p*b + r*p*b + s*o*k + s*b*f
-            + s*e*l + s*e*l + s*k*o + s*k*o + s*n*c + s*n*c
-            - h*o*d - h*o*m - h*o*m - h*p*l - h*p*l - i*g*k
-            - i*n*m - i*n*m - i*p*b - j*e*l - j*k*o - j*n*c
-            - j*o*k - q*f*d - q*f*m - q*f*m - q*g*l - q*g*l
-            - q*p*c - q*p*c - r*e*m - r*e*m - r*g*b - r*n*d
-            - r*n*d - r*p*k - r*p*k - r*p*k - s*b*o - s*b*o
-            - s*e*c - s*k*f - s*k*f - s*n*l - s*n*l - s*n*l;
-
-        return sum;
-    }
-
-    private double calculateCubicRoot1stOrderCoefficientFor7Point(double[][] ff1,
-        double[][] ff2) {
-
-        /*
-        f1 =
-         b c d
-         e f g
-         h i j
-        f2 =
-         k l m
-         n o p
-         q r s
-        */
-
-        double b = ff1[0][0];
-        double e = ff1[1][0];
-        double h = ff1[2][0];
-        double c = ff1[0][1];
-        double f = ff1[1][1];
-        double i = ff1[2][1];
-        double d = ff1[0][2];
-        double g = ff1[1][2];
-        double j = ff1[2][2];
-
-        double k = ff2[0][0];
-        double n = ff2[1][0];
-        double q = ff2[2][0];
-        double l = ff2[0][1];
-        double o = ff2[1][1];
-        double r = ff2[2][1];
-        double m = ff2[0][2];
-        double p = ff2[1][2];
-        double s = ff2[2][2];
-
-        double sum = h*o*m + h*p*l + i*n*m + j*o*k + q*f*m + q*g*l + q*p*c
-            + r*e*m + r*n*d + r*p*k + r*p*k + r*p*k + s*b*o + s*k*f
-            + s*n*l + s*n*l + s*n*l
-            - i*p*k - j*n*l - q*o*d - q*o*m - q*o*m - q*o*m
-            - q*p*l - q*p*l - q*p*l - r*g*k - r*n*m - r*n*m
-            - r*n*m - r*p*b - s*e*l - s*k*o - s*n*c - s*o*k
-            - s*o*k;
-
-        return sum;
-    }
-
-    private double calculateCubicRoot0thOrderCoefficientFor7Point(
-        double[][] ff1, double[][] ff2) {
-
-        /*
-        f1 =
-         b c d
-         e f g
-         h i j
-        f2 =
-         k l m
-         n o p
-         q r s
-        */
-
-        double k = ff2[0][0];
-        double n = ff2[1][0];
-        double q = ff2[2][0];
-        double l = ff2[0][1];
-        double o = ff2[1][1];
-        double r = ff2[2][1];
-        double m = ff2[0][2];
-        double p = ff2[1][2];
-        double s = ff2[2][2];
-
-        double sum = q * o * m + q * p * l + r * n * m + s * o * k - r*p*k
-            - s*n*l;
-
-        return sum;
     }
 
     @SuppressWarnings({"unchecked"})
@@ -2195,6 +2088,20 @@ public class EpipolarTransformer {
             int idx = inlierIndexes.get(i);
             for (int j = 0; j < m.numRows(); ++j) {
                 out.add(j, r, m.get(j, idx));
+            }
+            r++;
+        }
+        return out;
+    }
+
+    public static double[][] extractIndices(double[][] m, List<Integer> inlierIndexes) {
+        double[][] out = MatrixUtil.zeros(m.length, inlierIndexes.size());
+        int r = 0;
+        int i, j;
+        for (i = 0; i < inlierIndexes.size(); ++i) {
+            int idx = inlierIndexes.get(i);
+            for (j = 0; j < m.length; ++j) {
+                out[j][r] = m[j][idx];
             }
             r++;
         }

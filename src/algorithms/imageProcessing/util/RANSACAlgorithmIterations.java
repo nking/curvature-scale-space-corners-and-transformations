@@ -96,8 +96,7 @@ public class RANSACAlgorithmIterations {
     
     gamma = 1 - ( (1 - (1 - eps)^p)^m)
     
-    m = Math.log(1. - 0.95)
-           /(Math.log(1. - Math.pow(1. - ((double)outlierPercent/100.), p)
+    m = Math.log(1. - 0.95)/Math.log(1. - Math.pow(1. - (outlierPercent/100.), p))
     
     table of m's for p=7 and eps from 5%to 50%:
     
@@ -136,6 +135,7 @@ public class RANSACAlgorithmIterations {
     p |  5%  10%  20%  25%  30%  40%  50%
     --------------------------------------
     7 |  3   5    13   21   35   106  382
+    8 |  3   6    17   29   51   177  766
     </pre>
     */
     public static int numberOfSubsamplesFor95PercentInliers(int outlierPercent,

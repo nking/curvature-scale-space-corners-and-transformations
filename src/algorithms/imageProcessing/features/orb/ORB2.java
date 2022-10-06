@@ -198,6 +198,8 @@ public class ORB2 {
     /**
      * although there may be multiple color images in the pyramid, there is
      * only one set of coordinates derived for each scale.
+     keypoints0List is row numbers (w.r.t. row-major format)
+     keypoints1List is column numbers (w.r.t. row-major format)
      */
     protected List<TIntList> keypoints0List = null;
     protected List<TIntList> keypoints1List = null;
@@ -1830,6 +1832,21 @@ public class ORB2 {
         for (int i = 0; i < keypoints0List.get(octave).size(); ++i) {
             int x = keypoints1List.get(octave).get(i);
             int y = keypoints0List.get(octave).get(i);
+            out.add(new PairInt(x, y));
+        }
+        return out;
+    }
+
+    /**
+     * get a list of an octave's keypoints in row major format,
+     * that is pairint(x=row, y=column).
+     * @return
+     */
+    public List<PairInt> getKeyPointListRowMaj(int octave) {
+        List<PairInt> out = new ArrayList<PairInt>();
+        for (int i = 0; i < keypoints0List.get(octave).size(); ++i) {
+            int x = keypoints0List.get(octave).get(i);
+            int y = keypoints1List.get(octave).get(i);
             out.add(new PairInt(x, y));
         }
         return out;

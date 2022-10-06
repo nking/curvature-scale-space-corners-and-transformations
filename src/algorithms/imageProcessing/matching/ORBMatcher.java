@@ -269,6 +269,7 @@ public class ORBMatcher {
             System.out.printf("nMatched=%d  nUnMatched=%d\n", matches.length, nUnmatched);
             System.out.flush();
 
+            // for one test dataset, this picks up roughly 10% * matches.length:
             int[][] matches2 = greedyMatchRemaining(matches, keypoints1, keypoints2, cost);
 
             matches = stack(matches, matches2);
@@ -278,8 +279,15 @@ public class ORBMatcher {
             System.out.flush();
 
         } else {
-            //runtime complexity is ~ O(n^4) but could be improved
+            //runtime complexity is ~ O(n^4) but could be improved.
             matches = new HungarianAlgorithm().computeAssignments(MatrixUtil.convertToFloat(cost));
+            System.out.printf("hungarian nMatched=%d  nUnMatched=%d\n", matches.length,
+                    Math.min(keypoints1.size(), keypoints2.size()) - matches.length);
+            System.out.flush();
+
+            //TODO: consider adding jgrapht library.  MaximumWeightBipartiteMatching can be used
+            // with a cost matrix inverted to a score matrix.
+            // O(n(m+nlogn))
         }
 
         //System.out.printf("greedy matches=\n%s\n", FormatArray.toString(matches, "%d"));
@@ -346,17 +354,16 @@ public class ORBMatcher {
             return qs;
         }
 
-        // ransac to remove outliers.
-        //NOTE: the fundamental matrix in the fit has not been de-normalized.
-        EpipolarTransformationFit fit = fitWithRANSAC2(matches, keypoints1, keypoints2);
+        int i, idx;
 
+        // ransac to remove outliers.
+        //TODO: check this
+        EpipolarTransformationFit fit = fitWithRANSAC2(matches, keypoints1, keypoints2);
         if (fit == null) {
             return null;
         }
-
         System.out.println("fit=" + fit.toString());
 
-        int i, idx;
         List<Integer> inliers = fit.getInlierIndexes();
         QuadInt[] qs = new QuadInt[inliers.size()];
         for (i = 0; i < inliers.size(); ++i) {
@@ -706,14 +713,13 @@ public class ORBMatcher {
         for (i = 0; i < n0; ++i) {
             idx1 = matches[i][0];
             idx2 = matches[i][1];
-            left[0][i] = keypoints1.get(idx1).getY();
-            left[1][i] = keypoints1.get(idx1).getX();
-            right[0][i] = keypoints2.get(idx2).getY();
-            right[1][i] = keypoints2.get(idx2).getX();
+            left[0][i] = keypoints1.get(idx1).getY(); // column
+            left[1][i] = keypoints1.get(idx1).getX(); // row
+            right[0][i] = keypoints2.get(idx2).getY(); // column
+            right[1][i] = keypoints2.get(idx2).getX(); // row
         }
 
-        // normalize left and right
-        boolean useToleranceAsStatFactor = true;
+        boolean useToleranceAsStatFactor = false;//true;
         final double tolerance = 3.8;
         ErrorType errorType = ErrorType.SAMPSONS;
 

@@ -5414,6 +5414,15 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return calcHarrisCorners(img, minDist, thresholdRel, ignore0sInThresh);
     }
 
+    /**
+     * calculate the Harris Corners with local max threshholding and return a stacked array of pairs
+     * of (row, col) for each corner.
+     * @param img
+     * @param minDist
+     * @param thresholdRel
+     * @param ignore0sInThresh
+     * @return
+     */
     public static int[][] calcHarrisCorners(double[][] img, int minDist, float thresholdRel,
                                             boolean ignore0sInThresh) {
 

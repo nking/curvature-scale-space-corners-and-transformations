@@ -5,6 +5,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.features.RANSACSolver;
+import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.features.orb.ORB2;
 import algorithms.imageProcessing.matching.ErrorType;
@@ -12,10 +13,12 @@ import algorithms.imageProcessing.matching.ORBMatcher;
 import algorithms.imageProcessing.transform.EpipolarTransformer.NormalizationTransformations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
+import algorithms.misc.MiscMath0;
 import algorithms.statistics.Standardization;
 import algorithms.util.*;
 
 import java.awt.Color;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.*;
@@ -405,17 +408,32 @@ public class EpipolarTransformerTest extends TestCase {
         orb1.detectAndExtract();
         orb2.detectAndExtract();
 
-        ORB.Descriptors d1 = orb1.getAllDescriptors();
-        ORB.Descriptors d2 = orb2.getAllDescriptors();
-        List<PairInt> kp1 = orb1.getAllKeyPointsRC();
-        List<PairInt> kp2 = orb2.getAllKeyPointsRC();
+        float[] scales1 = orb1.getScales();
+        ORB.Descriptors d1 = orb1.getDescriptorsList().get(0);
+        ORB.Descriptors d2 = orb2.getDescriptorsList().get(0);
+        //(row, col) for octave 0
+        List<PairInt> kp1 = orb1.getKeyPointListRowMaj(0);
+        List<PairInt> kp2 = orb2.getKeyPointListRowMaj(0);
 
-        System.out.printf("keypoints in 1 and 2 = %d, %d\n", kp1.size(), kp2.size());
+        d1 = orb1.getAllDescriptors();
+        d2 = orb2.getAllDescriptors();
+        kp1 = orb1.getAllKeyPointsRC();
+        kp2 = orb2.getAllKeyPointsRC();
+        //writeToCWD(kp1, kp2);
+
+        int[][] indexesOfSeveralTrueMatches = indexesOfSeveralTrueMatchesMerton(kp1, kp2);
+        printDescriptorMatches(d1, d2, indexesOfSeveralTrueMatches);
+
+        System.out.printf("several true matches, indexes:\n%s\n",
+                FormatArray.toString(indexesOfSeveralTrueMatches, "%d"));
+
+        System.out.printf("# keypoints in 1 and 2 = %d, %d\n", kp1.size(), kp2.size());
 
         // matched are format row1, col1, row2, col2
         QuadInt[] matched = ORBMatcher.matchDescriptorsRC(d1, d2, kp1, kp2);
 
         System.out.printf("pairs matched by descriptors = %d\n", matched.length);
+        String dirPath = ResourceFinder.findDirectory("bin");
 
         int i;
         int r1, r2, c1, c2;
@@ -434,6 +452,11 @@ public class EpipolarTransformerTest extends TestCase {
             row = kp2.get(i).getX();
             ImageIOHelper.addPointToImage(col, row, tmp2, 2, 255, 0, 0);
         }
+        ImageIOHelper.writeOutputImage(
+                dirPath + "/m1_harriscorners_02" + ".png", tmp1);
+        ImageIOHelper.writeOutputImage(
+                dirPath + "/m2_harriscorners_02" + ".png", tmp2);
+
         Image tmp3 = image1.copyToColorGreyscale();
         Image tmp4 = image2.copyToColorGreyscale();
 
@@ -455,24 +478,160 @@ public class EpipolarTransformerTest extends TestCase {
         }
         plotter.writeImage("_corres_orb_gs_merton_college_I_001_002");
 
-        String dirPath = ResourceFinder.findDirectory("bin");
+
         ImageIOHelper.writeOutputImage(
                 dirPath + "/matched_merton_college_I_001" + ".png", tmp3);
         ImageIOHelper.writeOutputImage(
                 dirPath + "/matched_merton_college_I_002" + ".png", tmp4);
 
-        // next RANSAC
+       // printRANSAC2ForTrueMatches();
+    }
 
-        /*
-        final DenseMatrix leftCorres, final DenseMatrix rightCorres,
-        ErrorType errorType,
-        boolean useToleranceAsStatFactor, final double tolerance,
-        boolean reCalcIterations, boolean calibrated
+    private void printRANSAC2ForTrueMatches() throws IOException {
 
-        RANSACSolver solver = new RANSACSolver();
-        solver.calculateEpipolarProjection()
-        editing
-        use these to test RANSACSolver and RANSACSolver2*/
+        List<PairInt> keypoints1 = new ArrayList<PairInt>();
+        List<PairInt> keypoints2 = new ArrayList<PairInt>();
+        populateSeveralTrueMatchesMerton(keypoints1, keypoints2);
+
+        //keypoints1.remove(6);
+        //keypoints2.remove(6);
+        int n0 = keypoints1.size();
+
+        double[][] left = new double[3][n0];
+        double[][] right = new double[3][n0];
+        for (int i = 0; i < 3; ++i) {
+            left[i] = new double[n0];
+            right[i] = new double[n0];
+        }
+        Arrays.fill(left[2], 1.0);
+        Arrays.fill(right[2], 1.0);
+        int i, idx1, idx2;
+        for (i = 0; i < n0; ++i) {
+            left[0][i] = keypoints1.get(i).getY(); // column
+            left[1][i] = keypoints1.get(i).getX(); // row
+            right[0][i] = keypoints2.get(i).getY(); // column
+            right[1][i] = keypoints2.get(i).getX(); // row
+        }
+        boolean useToleranceAsStatFactor = false;//true;
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+
+        boolean reCalcIterations = false;
+        RANSACSolver2 solver = new RANSACSolver2();
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+                left, right, errorType, useToleranceAsStatFactor, tolerance,
+                reCalcIterations, false);
+
+        if (fit != null)
+        System.out.printf("merton college ransac2 fit: %d true points, fit=\n%s\n",
+                n0, fit.toString());
+
+        EpipolarTransformer tr = new EpipolarTransformer();
+        double[][] fm = tr.calculateEpipolarProjection2(left, right, false);
+        Distances distances = new Distances();
+        if (useToleranceAsStatFactor) {
+            fit = distances.calculateError2(fm,
+                    left, right, errorType, tolerance);
+        } else {
+            fit = distances.calculateError(fm,
+                    left, right, errorType, tolerance);
+        }
+        System.out.printf("merton college 8 point fit: %d true points, fit=\n%s\n",
+                n0, fit.toString());
+    }
+
+    private void printDescriptorMatches(ORB.Descriptors d1, ORB.Descriptors d2,
+                                        int[][] indexesOfSeveralTrueMatches) {
+
+        int[][] cost = ORB2.calcDescriptorCostMatrix(d1.descriptors, d2.descriptors);
+
+        // statistics of cost matrix
+        double[] costD = stack(cost);
+        double[] mADMinMax = MiscMath0.calculateMedianOfAbsoluteDeviation(costD);
+        double kMAD = 1.4826;
+        double s = kMAD*mADMinMax[0];
+        double r0 = mADMinMax[1] - 3 * s;
+        double r1 = mADMinMax[1] + 3 * s;
+        double[] medianAndIQR = MiscMath0.calcMedianAndIQR(costD);
+        System.out.printf("cost matrix median=%.3e, median of abs dev=%.3e,  s=%.3e\n",
+                mADMinMax[1], mADMinMax[0], s);
+        System.out.printf("cost matrix median=%.3e, IQR=%.3e\n", medianAndIQR[0], medianAndIQR[1]);
+
+        int i;
+        int i1, i2;
+        double c;
+        for (i = 0; i < indexesOfSeveralTrueMatches.length; ++i) {
+            i1 = indexesOfSeveralTrueMatches[i][0];
+            i2 = indexesOfSeveralTrueMatches[i][1];
+            System.out.printf("cost of idxs %d:%d = %d", i1, i2, cost[i1][i2]);
+            c = (mADMinMax[1] - cost[i1][i2])/s;
+            if (c > 2.5) {
+                System.out.printf(" * ");
+            }
+            System.out.println();
+        }
+    }
+
+    private double[] stack(int[][] cost) {
+        int n = cost.length * cost[0].length;
+        double[] s = new double[n];
+        int i, j;
+        int c = 0;
+        for (i = 0; i < cost.length; ++i) {
+            for (j = 0; j < cost[0].length; ++j) {
+                s[c] = cost[i][j];
+                ++c;
+            }
+        }
+        return s;
+    }
+
+    private void writeToCWD(List<PairInt> keyPoints1, List<PairInt> keyPoints2) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        int i, j;
+        int row, col;
+        sb.append("# row, col is format for compatibility with row-major data\n");
+        for (i = 0; i < keyPoints1.size(); ++i) {
+            col = keyPoints1.get(i).getY();
+            row = keyPoints1.get(i).getX();
+            sb.append(Integer.toString(row)).append(",").append(Integer.toString(col)).append("\n");
+        }
+        String fileName =  "merton_001_corners.txt";
+        ResourceFinder.writeToCWD(sb.toString(), fileName);
+
+        sb = new StringBuilder();
+        sb.append("# row, col is format for compatibility with row-major data\n");
+        for (i = 0; i < keyPoints2.size(); ++i) {
+            col = keyPoints2.get(i).getY();
+            row = keyPoints2.get(i).getX();
+            sb.append(Integer.toString(row)).append(",").append(Integer.toString(col)).append("\n");
+        }
+        fileName =  "merton_002_corners.txt";
+        ResourceFinder.writeToCWD(sb.toString(), fileName);
+    }
+
+    private void writeToCWD(int[][] keyPoints1, int[][] keyPoints2) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        int i, j;
+        int row, col;
+        sb.append("# row, col is format for compatibility with row-major data\n");
+        for (i = 0; i < keyPoints1.length; ++i) {
+            col = keyPoints1[i][1];
+            row = keyPoints1[i][0];
+            sb.append(Integer.toString(row)).append(",").append(Integer.toString(col)).append("\n");
+        }
+        String fileName =  "merton_001_corners.txt";
+        ResourceFinder.writeToCWD(sb.toString(), fileName);
+
+        sb = new StringBuilder();
+        sb.append("# row, col is format for compatibility with row-major data\n");
+        for (i = 0; i < keyPoints2.length; ++i) {
+            col = keyPoints2[i][1];
+            row = keyPoints2[i][0];
+            sb.append(Integer.toString(row)).append(",").append(Integer.toString(col)).append("\n");
+        }
+        fileName =  "merton_002_corners.txt";
+        ResourceFinder.writeToCWD(sb.toString(), fileName);
     }
 
     public void testORB2() throws IOException {
@@ -950,10 +1109,88 @@ public class EpipolarTransformerTest extends TestCase {
         left.add(737, 305);   right.add(762, 335);
         left.add(84, 273);   right.add(60, 298);
     }
+
+    protected int[][] indexesOfSeveralTrueMatchesMerton(
+            List<PairInt> keypoints1, List<PairInt> keypoints2) {
+
+        List<PairInt> m1 = new ArrayList<PairInt>();
+        List<PairInt> m2 = new ArrayList<PairInt>();
+        populateSeveralTrueMatchesMerton(m1, m2);
+        assertEquals(m1.size(), m2.size());
+
+        int[][] indexes = new int[m1.size()][2];
+
+        int i;
+        int idx1, idx2;
+        for(i = 0; i < m1.size(); ++i) {
+            idx1 = keypoints1.indexOf(m1.get(i));
+            idx2 = keypoints2.indexOf(m2.get(i));
+
+            //assert(idx1 > -1);
+            //assert(idx2 > -1);
+            indexes[i] = new int[]{idx1, idx2};
+            System.out.printf("m1m2 [idx %d:%d], (row,col  %d,%d  %d,%d)\n",
+                    idx1, idx2,
+                    m1.get(i).getX(), m1.get(i).getY(),
+                    m2.get(i).getX(), m2.get(i).getY());
+        }
+        return indexes;
+    }
+
+    protected void populateSeveralTrueMatchesMerton(
+        List<PairInt> keypoints1, List<PairInt> keypoints2
+    ) {
     
     protected void getMertonCollege7TrueMatches(PairIntArray left, 
         PairIntArray right) {
         
+        /*
+        extracted from list of local max filtered harris corners w/ descriptor matches bettern
+        than 2.5 * st. dev of all cost combinations.
+
+        #row, col
+        58,449
+        195,79
+        418,430
+        487,356
+        436,899
+        293,770
+        70,851
+        249,542
+        */
+        keypoints1.add(new PairInt(58,449));
+        keypoints1.add(new PairInt(195,79));
+        keypoints1.add(new PairInt(418,430));
+        keypoints1.add(new PairInt(487,356));
+        keypoints1.add(new PairInt(436,899));
+        keypoints1.add(new PairInt(293,770));
+        keypoints1.add(new PairInt(70,851));
+        keypoints1.add(new PairInt(249,542));
+
+        /*
+        #row, col
+        60,430
+        207,55
+        455,424
+        532,350
+        478,943
+        326,806
+        92,885
+        270,537
+         */
+        keypoints2.add(new PairInt(60,430));
+        keypoints2.add(new PairInt(207,55));
+        keypoints2.add(new PairInt(455,424));
+        keypoints2.add(new PairInt(532,350));
+        keypoints2.add(new PairInt(478,943));
+        keypoints2.add(new PairInt(326,806));
+        keypoints2.add(new PairInt(92,885));
+        keypoints2.add(new PairInt(270,537));
+    }
+
+    protected void getMertonCollege7TrueMatches(PairIntArray left,
+                                                PairIntArray right) {
+
         /*
         58, 103   32, 100
         486, 46   474, 49
@@ -962,9 +1199,9 @@ public class EpipolarTransformerTest extends TestCase {
         541, 428  533, 460
         225, 453  213, 498
         49, 509   21, 571
-        
+
         */
-        
+
         left.add(58, 103);  right.add(32, 100);
         left.add(486, 46);   right.add(474, 49);
         left.add(845, 127);   right.add(878, 151);
@@ -972,9 +1209,9 @@ public class EpipolarTransformerTest extends TestCase {
         left.add(541, 428);   right.add(533, 460);
         left.add(225, 453);   right.add(213, 498);
         left.add(49, 509);   right.add(21, 571);
-        
+
     }
-    
+
     private double[][] convertToDouble(PairIntArray a) {
         int n = a.getN();
         double[][] out = new double[3][n];
