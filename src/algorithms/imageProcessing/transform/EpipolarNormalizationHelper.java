@@ -1,8 +1,29 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import no.uib.cipr.matrix.NotConvergedException;
 
 public class EpipolarNormalizationHelper {
+
+    /*
+    MASKS eqn (6.79)
+    x1n = x coords that have been normalized to a mean of 0 and standard deviation of 1.
+    x2n = y coords normalized similarly.
+    let H1 and H2 be their respective normalization transformation matrices.
+
+    x1n = H1 * x1
+    x2n = H2 * x2
+
+    x2^T * F * x1 = x2nT * H2^(-T) * F * H1^(-1) * x1n = 0
+
+    when calculating the fundamental matrix using normalized coordinates,
+    one is actually calculation Fn = H2^(-T) * F * H1^(-1)
+
+    so to de-normalize F, we have F = H2^T * Fn * H1
+
+    x2^T = x2n^T * H2^-T
+    x1 = H1^-1 * x1n
+     */
 
     /*
     <pre>
@@ -15,30 +36,9 @@ public class EpipolarNormalizationHelper {
         inverse rotation matrix: inverse is the transpose of rotation matrix.
         inverse scaling matrix: inverse is performed on each element, that is, the reciprocal.
 
-        denormalized x2 = transpose(normalized x2) * transpose(T2^1)
+        denormalized x2^T = transpose(normalized x2) * transpose(T2^1)
         denormalized x1 = (T1^-1) * (normalized x1)
         denormalized FM = transpose(T2) * FM_normalized * T1
-
-                | 1/s   0  0 |   | 1  0  -xc |
-            T = |  0  1/s  0 | * | 0  1  -yc |
-                |  0    0  1 |   | 0  0   1  |
-
-                   | 1  0  xc |   | s  0   0 | = | s  0  xc |
-            T^-1 = | 0  1  yc | * | 0  s   0 |   | 0  s  yc |
-                   | 0  0   1 |   | 0  0   1 |   | 0  0  1  |
-
-            transposed(T^-1) = | s   0    0 |
-                               | 0   s    0 |
-                               | xc  yc   1 |
-
-                          | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |
-            T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |
-                          | 0  0   1 |   | 0    0    1 |   | xc yc 1 |
-
-                          | s^2 + xc^2   xc*yc       xc |
-                        = | yc*xc        s^2 + yc^2  yc |
-                          | xc           yc          1  |
-         </pre>
          */
 
     /**
@@ -54,7 +54,7 @@ public class EpipolarNormalizationHelper {
      *
      *     to denormalize the points and the fundamental matrix:
      *
-     *     denormalized x2 = transpose(normalized x2) * transpose(T2^1)
+     *     denormalized x2^T = transpose(normalized x2) * transpose(T2^1)
      *     denormalized x1 = (T1^-1) * (normalized x1)
      *     denormalized FM = transpose(T2) * FM_normalized * T1
      *
@@ -118,7 +118,7 @@ public class EpipolarNormalizationHelper {
     }
 
     /**
-     * denormalized x2 = transpose(normalized x2) * transpose(T2^1)
+     * denormalized x2^T = transpose(normalized x2) * transpose(T2^1)
      * denormalized x1 = (T1^-1) * (normalized x1)
      *
      * @param x1 a.k.a. xLeft are data that have been normalized using the given
@@ -156,22 +156,25 @@ public class EpipolarNormalizationHelper {
         }
 
         /*
-        denormalized x2 = transpose(normalized x2) * transpose(T2^1)
+        denormalized x2^T = transpose(normalized x2) * transpose(T2^-1)
         denormalized x1 = (T1^-1) * (normalized x1)
         denormalized FM = transpose(T2) * FM_normalized * T1
          */
-        double[][] tInv2 = transposeInverseT(t2);
+
+        double[][] tInv2T = transposeInverseT(t2);
         double[][] tInv1 = inverseT(t1);
 
-        double[][] x2D = MatrixUtil.multiply(MatrixUtil.transpose(x2), tInv2);
+        // [NX3]*[3X3]=[NX3]
+        double[][] x2D = MatrixUtil.multiply(MatrixUtil.transpose(x2), tInv2T);
+        x2D = MatrixUtil.transpose(x2D);
         double[][] x1D = MatrixUtil.multiply(tInv1, x1);
 
         int i;
-        for (i = 0; i < x1[0].length; ++i) {
-            System.arraycopy(x1D[i], 0, x1, 0, x1D[i].length);
+        for (i = 0; i < 3; ++i) {
+            System.arraycopy(x1D[i], 0, x1[i], 0, x1D[i].length);
         }
-        for (i = 0; i < x2[0].length; ++i) {
-            System.arraycopy(x2D[i], 0, x2, 0, x2D[i].length);
+        for (i = 0; i < 3; ++i) {
+            System.arraycopy(x2D[i], 0, x2[i], 0, x2D[i].length);
         }
     }
 
@@ -211,8 +214,8 @@ public class EpipolarNormalizationHelper {
         tinv[0][0] = 1. / t[0][0];
         tinv[1][1] = 1. / t[1][1];
         tinv[2][2] = 1;
-        tinv[2][0] = -1. * t[0][2];
-        tinv[2][1] = -1. * t[1][2];
+        tinv[2][0] = -1. * t[0][2]/t[0][0];
+        tinv[2][1] = -1. * t[1][2]/t[1][1];
 
         return tinv;
     }
@@ -223,8 +226,14 @@ public class EpipolarNormalizationHelper {
         inv[0][0] = 1./t[0][0];
         inv[1][1] = 1./t[1][1];
         inv[2][2] = 1;
-        inv[0][2] = -1.*t[0][2];
-        inv[1][2] = -1.*t[1][2];
+        inv[0][2] = -1.*t[0][2]/t[0][0];
+        inv[1][2] = -1.*t[1][2]/t[1][1];
+
+        /* from camera calibration inverse
+           | 1/fx   0           -xc/fx  |
+         = | 0       1/fy        -yc/fy  |
+           | 0       0           1       |
+        */
 
         return inv;
     }

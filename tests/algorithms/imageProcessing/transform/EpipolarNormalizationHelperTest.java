@@ -66,13 +66,13 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         int i;
         double[] ms;
         // "check"'s columns have means ~ 3E-3 and stdev ~ 0.1
-        for (i = 0; i < check.length; ++i) {
+  /*      for (i = 0; i < check.length; ++i) {
             ms = MiscMath0.getAvgAndStDev(check[i]);
             System.out.printf("r%d: %s\n", i, FormatArray.toString(ms, "%.3e"));
             ms = MiscMath0.getAvgAndStDev(MatrixUtil.extractColumn(check, i));
             System.out.printf("c%d: %s\n", i, FormatArray.toString(ms, "%.3e"));
         }
-
+*/
         double[][] eEM = new double[3][];
         eEM[0] = new double[]{-0.0811666, 0.255449, -0.0478999};
         eEM[1] = new double[]{-0.192392, -0.0531675, 0.119547};
@@ -109,23 +109,25 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         //x2' * F * x1 = 0. // [N X 3]*[3 X 3]*[3 X N] = [N X N]
         double[][] checkN = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(x2c),
                 MatrixUtil.multiply(fmN, x1c));
-
+/*
         for (i = 0; i < checkN.length; ++i) {
             ms = MiscMath0.getAvgAndStDev(checkN[i]);
             System.out.printf("r%d: %s\n", i, FormatArray.toString(ms, "%.3e"));
             ms = MiscMath0.getAvgAndStDev(MatrixUtil.extractColumn(checkN, i));
             System.out.printf("c%d: %s\n", i, FormatArray.toString(ms, "%.3e"));
         }
-
+*/
         double[][] fmD = MatrixUtil.copy(fmN);
         EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
 
+        /*
         System.out.printf("fm0 =\n%s\n", FormatArray.toString(fm0, "%.6f"));
         System.out.printf("fmN =\n%s\n", FormatArray.toString(fmN, "%.6f"));
         System.out.printf("denormalized fm=\n%s\n", FormatArray.toString(fmD, "%.6f"));
 
         System.out.printf("%.3e * fm0 =\n%s\n", c, FormatArray.toString(fm0c, "%.6f"));
         System.out.printf("expected FM =\n%s\n", FormatArray.toString(eFM, "%.6f"));
+        */
 
         int j;
         for (i = 0; i < eFM.length; ++i) {
@@ -133,5 +135,25 @@ public class EpipolarNormalizationHelperTest extends TestCase {
                 assertTrue(Math.abs(eFM[i][j] - fm0c[i][j]) < 1E-1);
             }
         }
+
+        double[][] x1cD = MatrixUtil.copy(x1c);
+        double[][] x2cD = MatrixUtil.copy(x2c);
+        EpipolarNormalizationHelper.denormalize(x1cD, x2cD, t1, t2);
+
+        for (i = 0; i < x1cD.length; ++i) {
+            for (j = 0; j < x1cD[0].length; ++j) {
+                assertTrue(Math.abs(x1[i][j] - x1cD[i][j]) < 1E-7);
+            }
+        }
+        for (i = 0; i < x2cD.length; ++i) {
+            for (j = 0; j < x2cD[0].length; ++j) {
+                assertTrue(Math.abs(x2[i][j] - x2cD[i][j]) < 1E-7);
+            }
+        }
+        /*System.out.printf("denorm x1 =\n%s\n", FormatArray.toString(x1cD, "%.6f"));
+        System.out.printf("x1 =\n%s\n", FormatArray.toString(x1, "%.6f"));
+        System.out.printf("denorm x2 =\n%s\n", FormatArray.toString(x2cD, "%.6f"));
+        System.out.printf("x2 =\n%s\n", FormatArray.toString(x2, "%.6f"));
+        */
     }
 }
