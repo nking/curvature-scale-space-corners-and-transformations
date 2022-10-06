@@ -699,6 +699,9 @@ public class ORBMatcher {
     private static EpipolarTransformationFit fitWithRANSAC2(int[][] matches,
                                                            List<PairInt> keypoints1, List<PairInt> keypoints2) throws IOException {
 
+        System.out.printf("begin filtering the matches using RANSAC\n");
+        System.out.flush();
+
         int n0 = matches.length;
 
         double[][] left = new double[3][n0];
@@ -725,6 +728,7 @@ public class ORBMatcher {
 
         boolean reCalcIterations = false;
         RANSACSolver2 solver = new RANSACSolver2();
+        solver.setToUse8PointSolver();
 
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
                 left, right, errorType, useToleranceAsStatFactor, tolerance,

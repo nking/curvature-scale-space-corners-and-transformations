@@ -326,7 +326,7 @@ public class EpipolarTransformer {
      * @param leftXY the left image coordinates of the feature correspondences
      * @param rightXY the right image coordinates of the feature correspondences
      * @param calibrated whether or not the camera calibration is known.  if true, the essential matrix is returned.
-     * @return the fundamental matrix (or essential matrix) of the epipolar projection.
+     * @return the fundamental matrix (or essential matrix) of the epipolar projection, else null if SVD failed.
      */
     public double[][] calculateEpipolarProjection2(double[][] leftXY, double[][] rightXY,
                                                    boolean calibrated) throws IOException {
@@ -350,13 +350,8 @@ public class EpipolarTransformer {
             return calculateEpipolarProjectionUsing7Points(leftXY, rightXY);
         }
 
-        leftXY = MatrixUtil.copy(leftXY);
-        rightXY = MatrixUtil.copy(rightXY);
-
-        // note that if the camera's are calibrated, and the points are already expressed relative to the optic
-        // center, the normalization has little effect. (MASKSAppendeix 6.A).
-        double[] mSLeft = normalizeUsingUnitStandard(leftXY);
-        double[] mSRight = normalizeUsingUnitStandard(rightXY);
+        //leftXY = MatrixUtil.copy(leftXY);
+        //rightXY = MatrixUtil.copy(rightXY);
 
         double[][] a = createFundamentalMatrix(leftXY, rightXY);
 
@@ -364,7 +359,7 @@ public class EpipolarTransformer {
         try {
             svd = MatrixUtil.performSVD(a);
         } catch (NotConvergedException ex) {
-            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
             return null;
         }
         int ns = 9;
@@ -378,25 +373,6 @@ public class EpipolarTransformer {
             ff[i][1] = svd.vT[ns - 1][(i * 3) + 1];
             ff[i][2] = svd.vT[ns - 1][(i * 3) + 2];
         }
-
-        //denormalize with F = H2^T*F*H1
-
-        //H1:
-        double[][] leftT = new double[3][];
-        leftT[0] = new double[]{1./mSLeft[2],       0,     -mSLeft[0]/mSLeft[2]};
-        leftT[1] = new double[]{0,           1./mSLeft[3], -mSLeft[1]/mSLeft[3]};
-        leftT[2] = new double[]{0,           0,           1};
-
-        // H2^T
-        double[][] rightTT = new double[3][];
-        rightTT[0] = new double[]{1./mSRight[2],       0,     -mSRight[0]/mSRight[2]};
-        rightTT[1] = new double[]{0,           1./mSRight[3], -mSRight[1]/mSRight[3]};
-        rightTT[2] = new double[]{0,           0,           1};
-        rightTT = MatrixUtil.transpose(rightTT);
-
-        ff = MatrixUtil.multiply(rightTT, MatrixUtil.multiply(ff, leftT));
-        double factor = 1./(ff[2][2] + eps);
-        MatrixUtil.multiply(ff, factor);
 
         // enforce rank=2
         svd = null;
@@ -458,14 +434,6 @@ public class EpipolarTransformer {
             throw new IllegalArgumentException("leftXY and rightXY must have 7 points");
         }
 
-        leftXY = MatrixUtil.copy(leftXY);
-        rightXY = MatrixUtil.copy(rightXY);
-
-        // note that if the camera's are calibrated, and the points are already expressed relative to the optic
-        // center, the normalization has little effect. (MASKSAppendeix 6.A).
-        double[] mSLeft = normalizeUsingUnitStandard(leftXY);
-        double[] mSRight = normalizeUsingUnitStandard(rightXY);
-
         double[][] a = createFundamentalMatrix(leftXY, rightXY);
 
         SVDProducts svd = null;
@@ -493,29 +461,6 @@ public class EpipolarTransformer {
             ff2[i][1] = svd.vT[ns - 1][(i * 3) + 1];
             ff2[i][2] = svd.vT[ns - 1][(i * 3) + 2];
         }
-
-        //denormalize with F = H2^T*F*H1
-
-        //H1:
-        double[][] leftT = new double[3][];
-        leftT[0] = new double[]{1./mSLeft[2],       0,     -mSLeft[0]/mSLeft[2]};
-        leftT[1] = new double[]{0,           1./mSLeft[3], -mSLeft[1]/mSLeft[3]};
-        leftT[2] = new double[]{0,           0,           1};
-
-        // H2^T
-        double[][] rightTT = new double[3][];
-        rightTT[0] = new double[]{1./mSRight[2],       0,     -mSRight[0]/mSRight[2]};
-        rightTT[1] = new double[]{0,           1./mSRight[3], -mSRight[1]/mSRight[3]};
-        rightTT[2] = new double[]{0,           0,           1};
-        rightTT = MatrixUtil.transpose(rightTT);
-
-        ff1 = MatrixUtil.multiply(rightTT, MatrixUtil.multiply(ff1, leftT));
-        double factor = 1./(ff1[2][2] + eps);
-        MatrixUtil.multiply(ff1, factor);
-
-        ff2 = MatrixUtil.multiply(rightTT, MatrixUtil.multiply(ff2, leftT));
-        factor = 1./(ff2[2][2] + eps);
-        MatrixUtil.multiply(ff2, factor);
 
         //det A = 0 ==> det(α*F1 + (1 − α)*F2) = 0
 
@@ -1676,21 +1621,35 @@ public class EpipolarTransformer {
         y[0]  y[1]  y[2]  y[3]
         1      1      1     1
 
-        t * xy = tranformed xy
-                
+        t * xy = transformed xy
+
         to reverse the operation, that is de-normalize, need division by scale, 
         then addition of centroid    
         
         Revisiting Hartley’s Normalized Eight-Point Algorithm
         Chojnacki et al. 2003
-        
+
+        inverse changes the order of operations,
+        inverse translation matrix: inverse changes the signs of the translation elements,
+                but not the diagonal.
+        inverse rotation matrix: inverse is the transpose of rotation matrix.
+        inverse scaling matrix: inverse is performed on each element, that is, the reciprocal.
+
+        denormalized x2 = transpose(normalized x2) * transpose(T2^1)
+        denormalized x1 = (T1^-1) * (normalized x1)
+        denormalized FM = transpose(T2) * FM_normalized * T1
+
                 | 1/s   0  0 |   | 1  0  -xc |
             T = |  0  1/s  0 | * | 0  1  -yc |
                 |  0    0  1 |   | 0  0   1  |
 
-                   | 1  0  xc |   | s  0   0 |
-            T^-1 = | 0  1  yc | * | 0  s   0 |
-                   | 0  0   1 |   | 0  0   1 |
+                   | 1  0  xc |   | s  0   0 | = | s  0  xc |
+            T^-1 = | 0  1  yc | * | 0  s   0 |   | 0  s  yc |
+                   | 0  0   1 |   | 0  0   1 |   | 0  0  1  |
+
+            transposed(T^-1) = | s   0    0 |
+                               | 0   s    0 |
+                               | xc  yc   1 |
 
                           | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |
             T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |
@@ -1742,7 +1701,8 @@ public class EpipolarTransformer {
         DenseMatrix t1 = new DenseMatrix(leftNT.t);
 
         DenseMatrix denormFundamentalMatrix =
-            MatrixUtil.multiply(t2T, MatrixUtil.multiply(normalizedFundamentalMatrix, t1));
+            MatrixUtil.multiply(t2T,
+                    MatrixUtil.multiply(normalizedFundamentalMatrix, t1));
         
         double factor = 1./(denormFundamentalMatrix.get(2, 2) + eps);
         MatrixUtil.multiply(denormFundamentalMatrix, factor);
