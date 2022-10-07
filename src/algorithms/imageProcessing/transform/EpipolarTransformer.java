@@ -2047,7 +2047,7 @@ public class EpipolarTransformer {
         for (int i = 0; i < inlierIndexes.size(); ++i) {
             int idx = inlierIndexes.get(i);
             for (int j = 0; j < m.numRows(); ++j) {
-                out.add(j, r, m.get(j, idx));
+                out.set(j, r, m.get(j, idx));
             }
             r++;
         }
