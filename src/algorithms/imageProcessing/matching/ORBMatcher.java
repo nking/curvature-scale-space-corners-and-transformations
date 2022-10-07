@@ -726,13 +726,13 @@ public class ORBMatcher {
         double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(left);
         double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(right);
 
-        boolean useToleranceAsStatFactor = false;//true;
+        boolean useToleranceAsStatFactor = true;
         final double tolerance = 3.8;
         ErrorType errorType = ErrorType.SAMPSONS;
 
         boolean reCalcIterations = false;
         RANSACSolver2 solver = new RANSACSolver2();
-        solver.setToUse8PointSolver();
+        //solver.setToUse8PointSolver();
 
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
                 left, right, errorType, useToleranceAsStatFactor, tolerance,
