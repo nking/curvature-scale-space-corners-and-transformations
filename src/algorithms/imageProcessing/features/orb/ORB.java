@@ -7,7 +7,6 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.VeryLongBitString;
-import algorithms.sort.MiscSorter;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
@@ -1588,7 +1587,7 @@ public class ORB {
 
         float sigma = 1.f;
 
-        StructureTensorR tensor = new StructureTensorR(image, sigma, false);
+        StructureTensorD tensor = new StructureTensorD(image, sigma, false);
 
         // method = 'k'.  k is Sensitivity factor to separate corners from edges,
         // Small values of k result in detection of sharp corners.

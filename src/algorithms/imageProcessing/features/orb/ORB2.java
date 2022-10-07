@@ -23,6 +23,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 /**
+ *
  * An implementation of "ORB: an efficient alternative to SIFT or SURF"
  * (paper reference is Rublee, Rabaud, Konolige, and Bradski, 2011).
  * http://www.vision.cs.chubu.ac.jp/CV-R/pdf/Rublee_iccv2011.pdf
@@ -192,7 +193,7 @@ public class ORB2 {
     */
     protected TwoDFloatArray[] pyramidImages = null;
     protected float[] scales = null;
-    protected StructureTensorR[] tensorComponents = null;
+    protected StructureTensorD[] tensorComponents = null;
     protected TwoDFloatArray[] harrisResponseImages = null;
 
     /**
@@ -433,7 +434,7 @@ public class ORB2 {
         // weighting function for the auto-correlation matrix.
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTFIVE);
 
-        tensorComponents = new StructureTensorR[scales.length];
+        tensorComponents = new StructureTensorD[scales.length];
 
         TwoDFloatArray octaveImage;
 
@@ -442,7 +443,7 @@ public class ORB2 {
             octaveImage = pyramidImages[i];
 
             // octaveImage.a is in row-major format
-            tensorComponents[i] = new StructureTensorR(
+            tensorComponents[i] = new StructureTensorD(
                     MatrixUtil.convertToDouble(octaveImage.a),
                 sigma, false);
         }
@@ -459,7 +460,7 @@ public class ORB2 {
 
             octaveImage = pyramidImages[i];
 
-            StructureTensorR tensors = tensorComponents[i];
+            StructureTensorD tensors = tensorComponents[i];
             double[][] detA = tensors.getDeterminant();
             double[][] traceA = tensors.getTrace();
 
@@ -1420,7 +1421,7 @@ public class ORB2 {
 
         float sigma = 1.f;
 
-        StructureTensorR tensor = new StructureTensorR(image, sigma, false);
+        StructureTensorD tensor = new StructureTensorD(image, sigma, false);
         double[][] detA = tensor.getDeterminant();
         double[][] traceA = tensor.getTrace();
         return cornerHarris(image, detA, traceA);
@@ -1430,7 +1431,7 @@ public class ORB2 {
 
         float sigma = 1.f;
 
-        StructureTensorR tensor = new StructureTensorR(image, sigma, false);
+        StructureTensorD tensor = new StructureTensorD(image, sigma, false);
 
         // method = 'k'.  k is Sensitivity factor to separate corners from edges,
         // Small values of k result in detection of sharp corners.
@@ -1504,9 +1505,9 @@ public class ORB2 {
      *
      * @param octaveImage
      * @param keypoints0 keypoint y coordinates in the 
-     * reference frame of the largest pyramid image
+     * reference frame of the largest pyramid image.  row numbers...
      * @param keypoints1 keypoint x coordinates in the 
-     * reference frame of the largest pyramid image
+     * reference frame of the largest pyramid image.  column numbers...
      * @param orientations
      * @param scale
      * @return the encapsulated descriptors and mask
@@ -1574,7 +1575,7 @@ public class ORB2 {
 
         double pr0, pc0, pr1, pc1, angle, sinA, cosA;
         int spr0, spc0, spr1, spc1, kr, kc, i, j, row0, col0, row1, col1;
-      
+
         for (i = 0; i < nKP; ++i) {
 
             descriptors[i] = new VeryLongBitString(POS1.length);

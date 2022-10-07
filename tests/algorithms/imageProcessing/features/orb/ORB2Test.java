@@ -1,43 +1,28 @@
 package algorithms.imageProcessing.features.orb;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MedianTransform;
-import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.StructureTensor;
+import algorithms.imageProcessing.*;
 import algorithms.imageProcessing.features.orb.ORB.Descriptors;
-import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.transform.Transformer;
-import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import algorithms.util.TwoDFloatArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import junit.framework.TestCase;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  *
  * @author nichole
  */
-public class ORBTest extends TestCase {
-    
-    public ORBTest() {
+public class ORB2Test extends TestCase {
+
+    public ORB2Test() {
     }
     
     public void testPeakLocalMax() {
@@ -373,17 +358,16 @@ public class ORBTest extends TestCase {
     public void testTensor() {
         
         /*
-        from skimage.feature import structure_tensor
-        square = np.zeros((5, 5))
-        square[2, 2] = 1
-        # rc is for "row, column" format
-        Axx, Axy, Ayy = structure_tensor(square, sigma=0.1, order="rc")
-        Axx
-        array([[0., 0., 0., 0., 0.],
-           [0., 1., 4., 1., 0.],
-           [0., 0., 0., 0., 0.],
-           [0., 1., 4., 1., 0.],
-           [0., 0., 0., 0., 0.]])
+        >>> from skimage.feature import structure_tensor
+        >>> square = np.zeros((5, 5))
+        >>> square[2, 2] = 1
+        >>> Axx, Axy, Ayy = structure_tensor(square, sigma=0.1)
+        >>> Axx
+        array([[ 0.,  0.,  0.,  0.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  4.,  0.,  4.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.]])
         */
         
         int sz = 5;
@@ -405,24 +389,46 @@ public class ORBTest extends TestCase {
         //for (int i = 0; i < axx.length; ++i) {
         //    System.out.println("axx[" + i + "]=" + Arrays.toString(axx[i]));
         //}
+        
+        assertTrue(Math.abs(axx[0][0]) < 0.01);
+        assertTrue(Math.abs(axx[1][0]) < 0.01);
+        assertTrue(Math.abs(axx[2][0]) < 0.01);
+        assertTrue(Math.abs(axx[3][0]) < 0.01);
+        assertTrue(Math.abs(axx[4][0]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][1]) < 0.01);
+        assertTrue(Math.abs(axx[4][1]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][2]) < 0.01);
+        assertTrue(Math.abs(axx[1][2]) < 0.01);
+        assertTrue(Math.abs(axx[2][2]) < 0.01);
+        assertTrue(Math.abs(axx[3][2]) < 0.01);
+        assertTrue(Math.abs(axx[4][2]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][3]) < 0.01);
+        assertTrue(Math.abs(axx[4][3]) < 0.01);
+        
+        assertTrue(Math.abs(axx[0][4]) < 0.01);
+        assertTrue(Math.abs(axx[1][4]) < 0.01);
+        assertTrue(Math.abs(axx[2][4]) < 0.01);
+        assertTrue(Math.abs(axx[3][4]) < 0.01);
+        assertTrue(Math.abs(axx[4][4]) < 0.01);
+        
+        /*
+        array([[ 0.,  0.,  0.,  0.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  4.,  0.,  4.,  0.],
+               [ 0.,  1.,  0.,  1.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.]])
+        */
+        
         int factor = 16;
-        int i, j;
-        for (i = 0; i < axx.length; ++i) {
-            for (j = 0; j < axx[i].length; ++j) {
-                if (i == 0 || i == 2 || i == 4) {
-                    assertTrue(Math.abs(axx[i][j]) < 0.01);
-                } else if (i == 1 || i == 3) {
-                    if (j == 0 || j == 4) {
-                        assertTrue(Math.abs(axx[i][j]) < 0.01);
-                    } else if (j == 1 || j == 3) {
-                        assertTrue((Math.round(axx[i][j])/factor - 1.) < 0.01);
-                    } else {
-                        assertTrue((Math.round(axx[i][j])/factor - 4.) < 0.01);
-                    }
-                }
-            }
-        }
-
+        //System.out.println(Math.round(axx[1][1])/factor);
+        //System.out.println(Math.round(axx[2][1])/factor);
+        //System.out.println(Math.round(axx[3][1])/factor);
+        assertTrue((Math.round(axx[1][1])/factor - 1.) < 0.01);
+        assertTrue((Math.round(axx[2][1])/factor - 4.) < 0.01);
+        assertTrue((Math.round(axx[3][1])/factor - 1.) < 0.01);
     }
     
     public void testCornerHarris() {
@@ -481,6 +487,7 @@ public class ORBTest extends TestCase {
                [2, 7],
                [7, 2],
                [7, 7]])
+        
         */
         
         TIntList keypoints0 = new TIntArrayList();

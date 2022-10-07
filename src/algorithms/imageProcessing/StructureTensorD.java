@@ -50,7 +50,7 @@ import algorithms.misc.MiscMath0;
    
  * @author nichole
  */
-public class StructureTensorR {
+public class StructureTensorD {
 
     private final float sigma;
 
@@ -80,7 +80,7 @@ public class StructureTensorR {
      * @param sigma
      * @param create2ndDerivs
      */
-    public StructureTensorR(double[][] image, float sigma, boolean create2ndDerivs) {
+    public StructureTensorD(double[][] image, float sigma, boolean create2ndDerivs) {
 
         this.sigma = sigma;
         

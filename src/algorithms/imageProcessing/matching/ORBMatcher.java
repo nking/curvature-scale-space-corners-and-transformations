@@ -5,6 +5,7 @@ import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.features.orb.ORB2;
 import algorithms.imageProcessing.transform.EpipolarNormalizationHelper;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.matrix.MatrixUtil;
@@ -40,6 +41,9 @@ import no.uib.cipr.matrix.Matrices;
 import thirdparty.HungarianAlgorithm;
 
 /**
+ * NOT READY FOR USE.  the matchDescriptor methods are not producing
+ * reasonable results currently.
+ *
  * a class to hold various methods related to matching
  * the descriptors of ORB.
  * See also ObjectMatcher.
@@ -182,6 +186,8 @@ public class ORBMatcher {
             for (int i = 0; i < matches.length; ++i) {
                 int idx1 = matches[i][0];
                 int idx2 = matches[i][1];
+                //getX() is row, getY() is column
+                // row1, col1, row2, col2
                 QuadInt q = new QuadInt(
                     keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),
                     keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()
@@ -208,6 +214,7 @@ public class ORBMatcher {
         QuadInt[] qs = new QuadInt[inliers.size()];
         for (i = 0; i < inliers.size(); ++i) {
             idx = inliers.get(i);
+            // row1, col1, row2, col2
             QuadInt q = new QuadInt(
                 keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),
                 keypoints2.get(idx).getX(), keypoints2.get(idx).getY()
@@ -258,7 +265,7 @@ public class ORBMatcher {
             throw new IllegalArgumentException("number of descriptors in " + " d2 bitstrings must be same as keypoints2 length");
         }
         //[n1][n2]
-        int[][] cost = ORB.calcDescriptorCostMatrix(d1.descriptors, d2.descriptors);
+        int[][] cost = ORB2.calcDescriptorCostMatrix(d1.descriptors, d2.descriptors);
 
         // pairs of indexes of matches.  it does not matter whether keypoints holds row,col pairs or col,row pairs
         int[][] matches;
@@ -281,8 +288,21 @@ public class ORBMatcher {
             System.out.flush();
 
         } else {
+            // hungarian needs nRows <= nColumns
+            boolean tr = cost.length > cost[0].length;
+            if (tr) {
+                cost = MatrixUtil.transpose(cost);
+            }
             //runtime complexity is ~ O(n^4) but could be improved.
             matches = new HungarianAlgorithm().computeAssignments(MatrixUtil.convertToFloat(cost));
+            if (tr) {
+                int tmp;
+                for (int i = 0; i < matches.length; ++i) {
+                    tmp = matches[i][0];
+                    matches[i][0] = matches[i][1];
+                    matches[i][1] = tmp;
+                }
+            }
             System.out.printf("hungarian nMatched=%d  nUnMatched=%d\n", matches.length,
                     Math.min(keypoints1.size(), keypoints2.size()) - matches.length);
             System.out.flush();
@@ -449,7 +469,9 @@ public class ORBMatcher {
      * @param keypoints1
      * @param keypoints2
      * @param cost
-     * @return 
+     * @return pairs of indexes relative to image 1, image 2.
+     * e.g. row[0] = [10,4] for index 10 of keypoints1 list is paired with
+     * index 4 of keypoints2 list.
      */
     private static int[][] greedyMatch(List<PairInt> keypoints1,
         List<PairInt> keypoints2, int[][] cost) {
@@ -726,8 +748,8 @@ public class ORBMatcher {
         double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(left);
         double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(right);
 
-        boolean useToleranceAsStatFactor = true;
-        final double tolerance = 3.8;
+        boolean useToleranceAsStatFactor = false;//true;
+        final double tolerance = 1;//3.8;
         ErrorType errorType = ErrorType.SAMPSONS;
 
         boolean reCalcIterations = false;
@@ -740,9 +762,11 @@ public class ORBMatcher {
 
         //TODO: add a flag in fit to indicate whether the fm is normalized or not,
         //   and make use of that consistent
-        double[][] fmD = Matrices.getArray(fit.getFundamentalMatrix());
-        EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
-        fit.setFundamentalMatrix(new DenseMatrix(fmD));
+        if (fit != null && fit.getFundamentalMatrix() != null) {
+            double[][] fmD = Matrices.getArray(fit.getFundamentalMatrix());
+            EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
+            fit.setFundamentalMatrix(new DenseMatrix(fmD));
+        }
 
         return fit;
     }

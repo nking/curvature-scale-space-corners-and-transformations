@@ -1,14 +1,9 @@
 package algorithms.imageProcessing.features.orb;
 
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.StructureTensor;
-import algorithms.imageProcessing.StructureTensorR;
 import algorithms.matrix.MatrixUtil;
-import algorithms.misc.MiscDebug;
 import algorithms.util.FormatArray;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
 import junit.framework.TestCase;
 
 /**

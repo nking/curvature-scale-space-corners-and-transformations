@@ -12,12 +12,10 @@ import algorithms.VeryLongBitString;
 import algorithms.heapsAndPQs.HeapNode;
 import algorithms.sort.MultiArrayMergeSort;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -5427,8 +5425,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
                                             boolean ignore0sInThresh) {
 
         float sigmaBlur = 1;
-        StructureTensorR tensorComponents = new
-                StructureTensorR(img, sigmaBlur, false);
+        StructureTensorD tensorComponents = new
+                StructureTensorD(img, sigmaBlur, false);
 
         double[][] detA = tensorComponents.getDeterminant();
 

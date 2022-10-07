@@ -1,43 +1,29 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.features.HOGs;
+import algorithms.imageProcessing.*;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.features.orb.ORB.Descriptors;
-import algorithms.imageProcessing.transform.Reconstruction;
+import algorithms.imageProcessing.features.orb.ORB2;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.matrix.MatrixUtil;
-import algorithms.matrix.MatrixUtil.SVDProducts;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
-import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
-import gnu.trove.list.TDoubleList;
-import java.util.ArrayList;
-import java.util.Arrays;
+import junit.framework.TestCase;
+
 import java.util.List;
 import java.util.logging.Logger;
-import junit.framework.TestCase;
-import no.uib.cipr.matrix.NotConvergedException;
 
 /**
  *
  * @author nichole
  */
-public class ORBMatcherTest extends TestCase {
+public class ORBMatcher2Test extends TestCase {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public ORBMatcherTest() {
+    public ORBMatcher2Test() {
     }
 
     public void test0() throws Exception {
@@ -47,7 +33,7 @@ public class ORBMatcherTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
-        String[][] filePairs = new String[7][];
+        String[][] filePairs = new String[6][];
         filePairs[0] = new String[]{
             "venturi_mountain_j6_0001.png",
             "venturi_mountain_j6_0010.png"};
@@ -69,12 +55,6 @@ public class ORBMatcherTest extends TestCase {
         filePairs[5] = new String[]{
             "nc_book_01.png",
             "nc_book_02.png"};
-
-        // matching good keypoints among repetitive image characteristics is not well done with
-        // my version of ORB descriptors and descriptor matching
-        filePairs[6] = new String[]{
-                "merton_college_I_001.jpg",
-                "merton_college_I_002.jpg"};
         
         boolean binImages = true;
         
@@ -145,30 +125,31 @@ public class ORBMatcherTest extends TestCase {
                     np = 600;  
                 }
 
-                ORB orb1 = new ORB(img1GS, np);
+                ORB2 orb1 = new ORB2(img1GS, np);
                 orb1.detectAndExtract();
-                orb1.overrideToAlsoCreate1stDerivKeypoints();
-                orb1.overrideToNotCreateATrousKeypoints();
+                //orb1.overrideToAlsoCreate1stDerivKeypoints();
+                //orb1.overrideToNotCreateATrousKeypoints();
 
-                ORB orb2 = new ORB(img2GS, np);
+                ORB2 orb2 = new ORB2(img2GS, np);
                 orb2.detectAndExtract();
-                orb1.overrideToAlsoCreate1stDerivKeypoints();
-                orb2.overrideToNotCreateATrousKeypoints();
+                //orb1.overrideToAlsoCreate1stDerivKeypoints();
+                //orb2.overrideToNotCreateATrousKeypoints();
 
                 Descriptors d1 = orb1.getAllDescriptors();
                 Descriptors d2 = orb2.getAllDescriptors();
-                List<PairInt> kp1 = orb1.getAllKeyPoints();
-                List<PairInt> kp2 = orb2.getAllKeyPoints();
+                List<PairInt> kp1 = orb1.getAllKeyPointsRC();
+                List<PairInt> kp2 = orb2.getAllKeyPointsRC();
                 
-                QuadInt[] matched = ORBMatcher.matchDescriptors(d1, d2, kp1, kp2);
-                
+                QuadInt[] matched = ORBMatcher.matchDescriptorsRC(d1, d2, kp1, kp2);
+
                 int x1, x2, y1, y2;
+                int col, row;
                 {//DEBUG
                     Image tmp1 = img1GS.copyToColorGreyscale();
                     for (i = 0; i < kp1.size(); ++i) {
-                        y = kp1.get(i).getY();
-                        x = kp1.get(i).getX();
-                        ImageIOHelper.addPointToImage(x, y, tmp1, 2, 255, 0, 0);
+                        col = kp1.get(i).getY();
+                        row = kp1.get(i).getX();
+                        ImageIOHelper.addPointToImage(col, row, tmp1, 2, 255, 0, 0);
                         /*if (x == 213 && y == 58) {
                             ImageIOHelper.addPointToImage(x, y, tmp1, 3, 255, 255, 0);
                         }*/
@@ -177,9 +158,9 @@ public class ORBMatcherTest extends TestCase {
 
                     Image tmp2 = img2GS.copyToColorGreyscale();
                     for (i = 0; i < kp2.size(); ++i) {
-                        y = kp2.get(i).getY();
-                        x = kp2.get(i).getX();
-                        ImageIOHelper.addPointToImage(x, y, tmp2, 2, 255, 0, 0);
+                        col = kp2.get(i).getY();
+                        row = kp2.get(i).getX();
+                        ImageIOHelper.addPointToImage(col, row, tmp2, 2, 255, 0, 0);
                         /*if (x == 178 && y == 177) {
                             ImageIOHelper.addPointToImage(x, y, tmp2, 3, 255, 255, 0);
                         }*/
@@ -189,10 +170,10 @@ public class ORBMatcherTest extends TestCase {
                     CorrespondencePlotter plotter = 
                         new CorrespondencePlotter(tmp1, tmp2);
                     for (i = 0; i < matched.length; ++i) {
-                        x1 = matched[i].getA();
-                        y1 = matched[i].getB();
-                        x2 = matched[i].getC();
-                        y2 = matched[i].getD();
+                        y1 = matched[i].getA();
+                        x1 = matched[i].getB();
+                        y2 = matched[i].getC();
+                        x2 = matched[i].getD();
                         plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                     }
                     plotter.writeImage("_corres_orb_gs_" + lbl + fileName1Root);

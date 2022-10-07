@@ -65,12 +65,28 @@ public class RANSACSolverTest extends TestCase {
         
         assertNotNull(fit);
         
-        log.info("normalized fit=" + fit.toString());
-        log.info("normalized fm=" + fit.getFundamentalMatrix().toString());
+        log.info("normalized 7-pt fit=\n" + fit.toString());
+        log.info("normalized 7-pt fm=\n" + fit.getFundamentalMatrix().toString());
 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
             fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
             normXY2.getNormalizationMatrices());
+
+        RANSACSolver2 solver2 = new RANSACSolver2();
+        solver2.setToUse7PointSolver();
+        EpipolarTransformationFit fit2 = solver2.calculateEpipolarProjection(left, right, errorType, useToleranceAsStatFactor,tolerance,
+                reCalcIterations, false);
+        log.info("solver2 7-pt fit=" + fit2.toString());
+        log.info("solver2 7-pt fm=" + fit2.getFundamentalMatrix().toString());
+        solver2.setToUse8PointSolver();
+        fit2 = solver2.calculateEpipolarProjection(left, right, errorType, useToleranceAsStatFactor,tolerance,
+                reCalcIterations, false);
+        if (fit2 != null) {
+            log.info("solver2 8-pt fit=" + fit2.toString());
+            log.info("solver2 8-pt fm=" + fit2.getFundamentalMatrix().toString());
+        } else {
+            log.info("solver2 8-pt fit, fm = null");
+        }
         
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";

@@ -91,11 +91,11 @@ public class StructureTensor {
         float norm = 4.f;//(0.707f * (float)Math.sqrt(2. * Math.PI));
         
         float[][] gX = imageProcessor.copy(image);
-        imageProcessor.applySobelY(gX);
+        imageProcessor.applySobelX(gX);
         MatrixUtil.multiply(gX, norm);
 
         float[][] gY = imageProcessor.copy(image);
-        imageProcessor.applySobelX(gY);
+        imageProcessor.applySobelY(gY);
         MatrixUtil.multiply(gY, norm);
         
         // --- create structure tensors ----
@@ -134,8 +134,8 @@ public class StructureTensor {
         
             //TODO: revisit this in detail:
             // row major, so need to use y operations for x and vice versa
-            imageProcessor.applyKernel1D(d2X, kernel, false);
-            imageProcessor.applyKernel1D(d2Y, kernel, true);
+            imageProcessor.applyKernel1D(d2X, kernel, true);
+            imageProcessor.applyKernel1D(d2Y, kernel, false);
         
         } else {
             dX = null;
