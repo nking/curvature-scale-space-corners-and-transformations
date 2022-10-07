@@ -9,6 +9,7 @@ import algorithms.imageProcessing.transform.Util;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import algorithms.misc.MiscMath0;
 import algorithms.util.PairIntArray;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -158,7 +159,7 @@ public class RANSACSolver {
         */
        
         // n!/(k!*(n-k)!
-        final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(nPoints, nSet);
+        //final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(nPoints, nSet);
         boolean useAllSubsets = false;
         
         SecureRandom sr = Misc.getSecureRandom();
@@ -190,16 +191,18 @@ public class RANSACSolver {
             where T is the probability that all the data 
             points selected in one subsample are non-outliers.
             */
+            // maximum is 382 for nSet=7 and outlierPercent=50%, and for nSet=8 it is 766
             nMaxIter = RANSACAlgorithmIterations
-                .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
-            
+                .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);
         }
         
-        System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
-            nMaxIter + ", (n!/(k!*(n-k)!)=" + nPointsSubsets);
+        //System.out.println("nPoints=" + nPoints + " estimate for nMaxIter=" +
+        //    nMaxIter + ", (n!/(k!*(n-k)!)=" + nPointsSubsets);
 
-        if (nMaxIter > nPointsSubsets) {
-            nMaxIter = nPointsSubsets;
+        // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
+        // max iter for nSet=8 is 766 for 50%.  12!/(8!*(12-8)!)=495
+        if ((nSet==7 && nPoints < 12) || (nSet == 8 && nPoints < 13)) {
+            nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
             useAllSubsets = true;
         }
         
@@ -214,9 +217,12 @@ public class RANSACSolver {
             sampleLeft.set(2, i, 1);
             sampleRight.set(2, i, 1);
         }
-        
-        SubsetChooser chooser = new SubsetChooser(nPoints, nSet);
-        
+
+        SubsetChooser chooser = null;
+        if (useAllSubsets) {
+            chooser = new SubsetChooser(nPoints, nSet);
+        }
+
         Distances distances = new Distances();
         
         while (nIter < nMaxIter) {
@@ -246,7 +252,8 @@ public class RANSACSolver {
                 
                 count++;
             }
-            
+
+            //TODO: replace with MiscMath0.arColinear
             if (EpipolarTransformer.isDegenerate(sampleLeft, sampleRight)) {
                 nIter++;
                 continue;
@@ -340,9 +347,13 @@ public class RANSACSolver {
                         assert(outlierPercent < 50);
                         nMaxIter = RANSACAlgorithmIterations
                             .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
-                        if (nMaxIter > nPointsSubsets) {
-                            nMaxIter = nPointsSubsets;
+                        // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
+                        if ((nSet==7 && nPoints < 12) || (nSet==8 && nPoints < 13)) {
+                            nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
                             useAllSubsets = true;
+                            if (chooser == null) {
+                                chooser = new SubsetChooser(nPoints, nSet);
+                            }
                         }
                     }
                 }

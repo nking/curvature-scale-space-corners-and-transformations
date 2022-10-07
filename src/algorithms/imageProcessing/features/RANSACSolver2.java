@@ -97,7 +97,8 @@ public class RANSACSolver2 {
     /**
      * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
-     * true matches.  Standard unit normalization and denormalization is handled internally.
+     * true matches.  NOTE: for best results, one should perform unit standard
+     * normalization on the correspondence first.
      *
      * @param leftCorres left correspondence holding (x,y) points from left image
      * in format 3 X nData matrix with rows being x, y, and 1's respectively
@@ -137,7 +138,8 @@ public class RANSACSolver2 {
     /**
      * calculate the epipolar transformation among the given points with the
      * assumption that some of the points in the matched lists are not
-     * true matches.  Standard unit normalization and denormalization is handled internally.
+     * true matches.  NOTE: for best results, one should perform unit standard
+     * normalization on the correspondence first.
      *
      * @param leftCorres left correspondence holding (x,y) points from left image
      * in format 3 X nData matrix with rows being x, y, and 1's respectively
