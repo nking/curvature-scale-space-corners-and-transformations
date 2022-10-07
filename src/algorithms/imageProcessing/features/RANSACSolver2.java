@@ -283,13 +283,14 @@ public class RANSACSolver2 {
                 sampleLeft[0][count] = leftCorres[0][idx];
                 sampleLeft[1][count] = leftCorres[1][idx];
                                 
-                sampleRight[1][count] = rightCorres[0][idx];
+                sampleRight[0][count] = rightCorres[0][idx];
                 sampleRight[1][count] = rightCorres[1][idx];
                 
                 count++;
             }
 
             if (MiscMath0.areColinear(sampleLeft, eps) || MiscMath0.areColinear(sampleRight, eps)) {
+                ++nIter;
                 continue;
             }
             

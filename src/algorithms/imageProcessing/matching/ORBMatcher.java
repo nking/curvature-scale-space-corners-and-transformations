@@ -5,6 +5,7 @@ import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.transform.EpipolarNormalizationHelper;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
@@ -35,6 +36,7 @@ import java.util.Set;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.Matrices;
 import thirdparty.HungarianAlgorithm;
 
 /**
@@ -357,7 +359,6 @@ public class ORBMatcher {
         int i, idx;
 
         // ransac to remove outliers.
-        //TODO: check this
         EpipolarTransformationFit fit = fitWithRANSAC2(matches, keypoints1, keypoints2);
         if (fit == null) {
             return null;
@@ -722,6 +723,9 @@ public class ORBMatcher {
             right[1][i] = keypoints2.get(idx2).getX(); // row
         }
 
+        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(left);
+        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(right);
+
         boolean useToleranceAsStatFactor = false;//true;
         final double tolerance = 3.8;
         ErrorType errorType = ErrorType.SAMPSONS;
@@ -733,6 +737,12 @@ public class ORBMatcher {
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
                 left, right, errorType, useToleranceAsStatFactor, tolerance,
                 reCalcIterations, false);
+
+        //TODO: add a flag in fit to indicate whether the fm is normalized or not,
+        //   and make use of that consistent
+        double[][] fmD = Matrices.getArray(fit.getFundamentalMatrix());
+        EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
+        fit.setFundamentalMatrix(new DenseMatrix(fmD));
 
         return fit;
     }
