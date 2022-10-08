@@ -46,8 +46,6 @@ import algorithms.matrix.MatrixUtil;
     POSSIBILITY OF SUCH DAMAGE.
    -- end scikit-image copyright -- 
 
- TODO: add flag in constructor to build for "row major" or "column major".
-
  * @author nichole
  */
 public class StructureTensor {
@@ -76,7 +74,7 @@ public class StructureTensor {
      * If create2ndDerivs is true, the second derivatives needed for curvature
      * are calculated too.
      * 
-     * @param image
+     * @param image 2 dimensional image in row-major format
      * @param sigma
      * @param create2ndDerivs 
      */

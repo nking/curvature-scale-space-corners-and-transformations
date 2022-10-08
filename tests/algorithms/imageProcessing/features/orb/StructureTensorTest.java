@@ -75,6 +75,7 @@ public class StructureTensorTest extends TestCase {
             >>> square[2, 2] = 1
             >>> Axx, Axy, Ayy = structure_tensor(square, sigma=0.1)
             >>> Axx
+            this is in col-major format
             array([[ 0.,  0.,  0.,  0.,  0.],
                    [ 0.,  1.,  0.,  1.,  0.],
                    [ 0.,  4.,  0.,  4.,  0.],
@@ -83,7 +84,28 @@ public class StructureTensorTest extends TestCase {
             """
         
         */
-       
+        float[][] expectedAxx = new float[5][];
+        expectedAxx[0] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+        expectedAxx[1] = new float[]{0.f,  1.f,  0.f,  1.f,  0.f};
+        expectedAxx[2] = new float[]{0.f,  4.f,  0.f,  4.f,  0.f};
+        expectedAxx[3] = new float[]{0.f,  1.f,  0.f,  1.f,  0.f};
+        expectedAxx[4] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+        expectedAxx = MatrixUtil.transpose(expectedAxx); // transpose to row-major
+
+        float[][] expectedAxy = new float[5][];
+        expectedAxy[0] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+        expectedAxy[1] = new float[]{0.f,  1.f,  0.f,  -1.f,  0.f};
+        expectedAxy[2] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+        expectedAxy[3] = new float[]{0.f,  -1.f,  0.f,  1.f,  0.f};
+        expectedAxy[4] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+
+        float[][] expectedAyy = new float[5][];
+        expectedAyy[0] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+        expectedAyy[1] = new float[]{0.f,  1.f,  0.f,  1.f,  0.f};
+        expectedAyy[2] = new float[]{0.f,  4.f,  0.f,  4.f,  0.f};
+        expectedAyy[3] = new float[]{0.f,  1.f,  0.f,  1.f,  0.f};
+        expectedAyy[4] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+
         int sz = 5;
                 
         float[][] img = new float[sz][];
@@ -109,60 +131,25 @@ public class StructureTensorTest extends TestCase {
                 assertEquals(0.0f, detA[i][j]);
             }
         }
-        
-        //String str = MiscDebug.getPrintRowMajor(detA, "detA=");
-        //System.out.println(str);
-        //str = MiscDebug.getPrintRowMajor(traceA, "traceA=");
-        //System.out.println(str);
-        
-        assertTrue(Math.abs((Axx[2][1]/Axx[1][1]) - 4.) < 0.001);
-        assertTrue(Math.abs((Axx[2][1]/Axx[3][1]) - 4.) < 0.001);
-        assertTrue(Math.abs((Axx[2][3]/Axx[1][3]) - 4.) < 0.001);
-        assertTrue(Math.abs((Axx[2][3]/Axx[3][3]) - 4.) < 0.001);        
-        
-        for (int i = 0; i < Axx.length; ++i) {
-            assertEquals(0.f, Axx[i][0]);
-            assertEquals(0.f, Axx[i][2]);
-            assertEquals(0.f, Axx[i][4]);
+
+        for (int i = 0; i < expectedAxx.length; ++i) {
+            for (int j = 0; j < expectedAxx[0].length; ++j) {
+                assertTrue(Math.abs(expectedAxx[i][j] - Axx[i][j]) < 1E-4);
+            }
         }
-        for (int j = 0; j < Axx[0].length; ++j) {
-            assertEquals(0.f, Axx[0][j]);
-            assertEquals(0.f, Axx[4][j]);
+
+        for (int i = 0; i < expectedAxy.length; ++i) {
+            for (int j = 0; j < expectedAxy[0].length; ++j) {
+                assertTrue(Math.abs(expectedAxy[i][j] - Axy[i][j]) < 1E-4);
+            }
         }
-        
-        //str = MiscDebug.getPrintRowMajor(Axy, "Axy=");
-        //System.out.println(str);
-        
-        assertEquals(0.0625f * norm * norm, Axy[1][1]);
-        assertEquals(-0.0625f * norm * norm, Axy[3][1]);
-        assertEquals(-0.0625f * norm * norm, Axy[1][3]);
-        assertEquals(0.0625f * norm * norm, Axy[3][3]);
-        for (int i = 0; i < Axy.length; ++i) {
-            assertEquals(0.f, Math.abs(Axy[i][0]));
-            assertEquals(0.f, Math.abs(Axy[i][2]));
-            assertEquals(0.f, Math.abs(Axy[i][4]));
+
+        for (int i = 0; i < expectedAyy.length; ++i) {
+            for (int j = 0; j < expectedAyy[0].length; ++j) {
+                assertTrue(Math.abs(expectedAyy[i][j] - Ayy[i][j]) < 1E-4);
+            }
         }
-        for (int j = 0; j < Axy[0].length; ++j) {
-            assertEquals(0.f, Math.abs(Axy[0][j]));
-            assertEquals(0.f, Math.abs(Axy[4][j]));
-        }
-        
-        //str = MiscDebug.getPrintRowMajor(Ayy, "Ayy=");
-        //System.out.println(str);
-        
-        assertTrue(Math.abs((Ayy[1][2]/Ayy[1][1]) - 4.) < 0.001);
-        assertTrue(Math.abs((Ayy[1][2]/Ayy[1][3]) - 4.) < 0.001);
-        assertTrue(Math.abs((Ayy[3][2]/Ayy[3][1]) - 4.) < 0.001);
-        assertTrue(Math.abs((Ayy[3][2]/Ayy[3][3]) - 4.) < 0.001);        
-        for (int i = 0; i < Axy.length; ++i) {
-            assertEquals(0.f, Math.abs(Ayy[0][i]));
-            assertEquals(0.f, Math.abs(Ayy[2][i]));
-            assertEquals(0.f, Math.abs(Ayy[4][i]));
-        }
-        for (int j = 0; j < Axy[0].length; ++j) {
-            assertEquals(0.f, Math.abs(Ayy[j][0]));
-            assertEquals(0.f, Math.abs(Ayy[j][4]));
-        }
+
     }
     
     public void test0() {
