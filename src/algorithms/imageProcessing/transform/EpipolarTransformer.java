@@ -366,7 +366,6 @@ public class EpipolarTransformer {
         int ns = 9;
         double[][] vT = svd0.vT;
         assert(vT[0].length == ns);
-        // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
         double[][] ff = new double[3][3];
         int i;
         for (i = 0; i < 3; i++) {
@@ -408,6 +407,7 @@ public class EpipolarTransformer {
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
+        vT = MatrixUtil.convertToRowMajor(svd.getVt());
         double[][] dDotV = MatrixUtil.multiply(d, vT);
 
         // 3x3 with rank 2
