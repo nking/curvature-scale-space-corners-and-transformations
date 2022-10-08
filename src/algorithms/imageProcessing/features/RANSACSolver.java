@@ -253,7 +253,7 @@ public class RANSACSolver {
                 count++;
             }
 
-            //TODO: replace with MiscMath0.arColinear
+            //TODO: replace with MiscMath0.areColinear
             if (EpipolarTransformer.isDegenerate(sampleLeft, sampleRight)) {
                 nIter++;
                 continue;

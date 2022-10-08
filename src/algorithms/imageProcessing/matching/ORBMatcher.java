@@ -81,7 +81,7 @@ public class ORBMatcher {
         int n2 = d2.length;
         //[n1][n2]
         int[][] cost = ORB.calcDescriptorCostMatrix(d1, d2);
-        int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
+        int[][] matches = greedyMatch(cost);
         // greedy or optimal match can be performed here.
         // NOTE: some matching problems might benefit from using the spatial
         //   information at the same time.  for those, will consider adding
@@ -98,16 +98,18 @@ public class ORBMatcher {
      * Consider using instead, matchDescriptors2 which matches
      * by descriptor and relative spatial location.
      *
-     * @param d1
-     * @param d2
-     * @param keypoints1
-     * @param keypoints2
-     * @return matches array of objects encapsulating a pair of
-     * matched points
+     * @param d1 descriptors of the keypoints in image 1 (before any keypoint normalization).
+     * @param d2 descriptors of the keypoints in image 2 (before any keypoint normalization).
+     * @param keypoints1 keypoints from image 1 in format [3 X n].  any normalization that is needed should be
+     *                   performed on keypoints1 before given to this method.
+     * @param keypoints2 keypoints from image 2 in format [3 X n].  any normalization that is needed should be
+     *      *                   performed on keypoints2 before given to this method.
+     * @return matches as pairs of indexes relative to keypoints1 and keypoints2.  the result is dimension [n X 2]
+     * where each row is (index1, index2).
      */
-    public static QuadInt[] matchDescriptors(ORB.Descriptors d1, 
-        ORB.Descriptors d2, List<PairInt> keypoints1, 
-        List<PairInt> keypoints2) {
+    public static int[][] matchDescriptors(ORB.Descriptors d1,
+        ORB.Descriptors d2, double[][] keypoints1,
+        double[][] keypoints2) {
         
         int n1 = d1.descriptors.length;
         int n2 = d2.descriptors.length;
@@ -123,20 +125,18 @@ public class ORBMatcher {
             );
         }
         
-        if (n1 != keypoints1.size()) {
+        if (n1 != keypoints1[0].length) {
             throw new IllegalArgumentException("number of descriptors in " + " d1 bitstrings must be same as keypoints1 length");
         }
-        if (n2 != keypoints2.size()) {
+        if (n2 != keypoints2[0].length) {
             throw new IllegalArgumentException("number of descriptors in " + " d2 bitstrings must be same as keypoints2 length");
         }
         //[n1][n2]
-        int[][] cost = ORB.calcDescriptorCostMatrix(
-            d1.descriptors, d2.descriptors);
+        int[][] cost = ORB.calcDescriptorCostMatrix(d1.descriptors, d2.descriptors);
 
-        // pairs of indexes of matches.  it does not matter whether keypoints holds row,col pairs or col,row pairs
-        int[][] matches = greedyMatch(keypoints1, keypoints2, cost);
+        int[][] matched = greedyMatch(cost);
         
-        if (matches.length < 7) {
+        if (matched.length < 7) {
             
             // 6!/(1!5!) + 6!/(2!4!) + 6!/(3!3!) + 6!/(2!4!) + 6!/(1!5!) = 6 + 15 + 20 + 15 + 6=62
             // 5!/(1!4!) + 5!/(2!3!) + 5!/(3!2!) + 5!/(1!4!) = 5 + 10 + 10 + 5 = 20
@@ -182,27 +182,14 @@ public class ORBMatcher {
                   iteratively updates the elements of the image measurement matrix
             */
 
-            QuadInt[] qs = new QuadInt[matches.length];
-            for (int i = 0; i < matches.length; ++i) {
-                int idx1 = matches[i][0];
-                int idx2 = matches[i][1];
-                //getX() is row, getY() is column
-                // row1, col1, row2, col2
-                QuadInt q = new QuadInt(
-                    keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),
-                    keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()
-                );
-                qs[i] = q;
-            }
-
-            return qs;
+            return matched;
         }
 
         // ransac to remove outliers.
         //NOTE: the fundamental matrix in the fit has not been de-normalized.
-        EpipolarTransformationFit fit = fitWithRANSAC(matches, 
-            keypoints1, keypoints2);
-        
+        // and fit.inliers are indexes with respect to the matched array
+        EpipolarTransformationFit fit = fitWithRANSAC(matched, keypoints1, keypoints2);
+
         if (fit == null) {
             return null;
         }
@@ -211,18 +198,12 @@ public class ORBMatcher {
 
         int i, idx;
         List<Integer> inliers = fit.getInlierIndexes();
-        QuadInt[] qs = new QuadInt[inliers.size()];
+        int[][] matched2 = new int[inliers.size()][2];
         for (i = 0; i < inliers.size(); ++i) {
             idx = inliers.get(i);
-            // row1, col1, row2, col2
-            QuadInt q = new QuadInt(
-                keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),
-                keypoints2.get(idx).getX(), keypoints2.get(idx).getY()
-            );
-            qs[i] = q;
+            matched2[i] = Arrays.copyOf(matched[idx], 2);
         }
-        
-        return qs;        
+        return matched2;
     }
 
     /**
@@ -235,14 +216,16 @@ public class ORBMatcher {
      *  this method is tailored for keypoints1 and keypoints2 being row-major format compatible
      * @param d1
      * @param d2
-     * @param keypoints1 pairs of points in format row, col
-     * @param keypoints2 pairs of points in format row, col
-     * @return matches array of objects encapsulating a pair of
-     * matched points.  format is row1, col1, row2, col2
+     * @param keypoints1 keypoints from image 1 in format [3 X n].  any normalization that is needed should be
+     *                   performed on keypoints1 before given to this method.
+     * @param keypoints2 keypoints from image 2 in format [3 X n].  any normalization that is needed should be
+     *      *                   performed on keypoints2 before given to this method.
+     * @return matches as pairs of indexes relative to keypoints1 and keypoints2.  the result is dimension [n X 2]
+     * where each row is (index1, index2).
      */
-    public static QuadInt[] matchDescriptorsRC(ORB.Descriptors d1,
-                                             ORB.Descriptors d2, List<PairInt> keypoints1,
-                                             List<PairInt> keypoints2) throws IOException {
+    public static int[][] matchDescriptorsRC(ORB.Descriptors d1,
+                                           ORB.Descriptors d2, double[][] keypoints1,
+                                           double[][] keypoints2) throws IOException {
 
         int n1 = d1.descriptors.length;
         int n2 = d2.descriptors.length;
@@ -258,10 +241,10 @@ public class ORBMatcher {
             );
         }
 
-        if (n1 != keypoints1.size()) {
+        if (n1 != keypoints1[0].length) {
             throw new IllegalArgumentException("number of descriptors in " + " d1 bitstrings must be same as keypoints1 length");
         }
-        if (n2 != keypoints2.size()) {
+        if (n2 != keypoints2[0].length) {
             throw new IllegalArgumentException("number of descriptors in " + " d2 bitstrings must be same as keypoints2 length");
         }
         //[n1][n2]
@@ -271,19 +254,19 @@ public class ORBMatcher {
         int[][] matches;
         if ((n1*n2) > 2.5e5) {
             //runtime complexity is O(n1*n2) where n1=cost.length and n2=cost[0].length
-            matches = greedyMatch(keypoints1, keypoints2, cost);
+            matches = greedyMatch(cost);
 
-            int nUnmatched = Math.min(keypoints1.size(), keypoints2.size()) - matches.length;
+            int nUnmatched = Math.min(keypoints1[0].length, keypoints2[0].length) - matches.length;
 
             System.out.printf("nMatched=%d  nUnMatched=%d\n", matches.length, nUnmatched);
             System.out.flush();
 
             // for one test dataset, this picks up roughly 10% * matches.length:
-            int[][] matches2 = greedyMatchRemaining(matches, keypoints1, keypoints2, cost);
+            int[][] matches2 = greedyMatchRemaining(matches, cost);
 
             matches = stack(matches, matches2);
 
-            nUnmatched = Math.min(keypoints1.size(), keypoints2.size()) - matches.length;
+            nUnmatched = Math.min(keypoints1[0].length, keypoints2[0].length) - matches.length;
             System.out.printf("after match remaining nMatched=%d  nUnMatched=%d\n", matches.length, nUnmatched);
             System.out.flush();
 
@@ -304,7 +287,7 @@ public class ORBMatcher {
                 }
             }
             System.out.printf("hungarian nMatched=%d  nUnMatched=%d\n", matches.length,
-                    Math.min(keypoints1.size(), keypoints2.size()) - matches.length);
+                    Math.min(keypoints1[0].length, keypoints2[0].length) - matches.length);
             System.out.flush();
 
             //TODO: consider adding jgrapht library.  MaximumWeightBipartiteMatching can be used
@@ -360,44 +343,27 @@ public class ORBMatcher {
                   In this paper, we present an outlier correction scheme that
                   iteratively updates the elements of the image measurement matrix
             */
-
-            QuadInt[] qs = new QuadInt[matches.length];
-            for (int i = 0; i < matches.length; ++i) {
-                int idx1 = matches[i][0];
-                int idx2 = matches[i][1];
-                // row1, col1, row2, col2
-                QuadInt q = new QuadInt(
-                        keypoints1.get(idx1).getX(), keypoints1.get(idx1).getY(),
-                        keypoints2.get(idx2).getX(), keypoints2.get(idx2).getY()
-                );
-                qs[i] = q;
-            }
-
-            return qs;
+            return matches;
         }
 
         int i, idx;
 
         // ransac to remove outliers.
+        // fit.inliers are indexes with respect to the matches array
         EpipolarTransformationFit fit = fitWithRANSAC2(matches, keypoints1, keypoints2);
         if (fit == null) {
             return null;
         }
+
         System.out.println("fit=" + fit.toString());
 
         List<Integer> inliers = fit.getInlierIndexes();
-        QuadInt[] qs = new QuadInt[inliers.size()];
+        int[][] matched2 = new int[inliers.size()][2];
         for (i = 0; i < inliers.size(); ++i) {
             idx = inliers.get(i);
-            // row1, col1, row2, col2
-            QuadInt q = new QuadInt(
-                    keypoints1.get(idx).getX(), keypoints1.get(idx).getY(),
-                    keypoints2.get(idx).getX(), keypoints2.get(idx).getY()
-            );
-            qs[i] = q;
+            matched2[i] = Arrays.copyOf(matches[idx], 2);
         }
-
-        return qs;
+        return matched2;
     }
 
     private static int[][] stack(int[][] matches, int[][] matches2) {
@@ -417,17 +383,14 @@ public class ORBMatcher {
         return m;
     }
 
-    private static int[][] greedyMatchRemaining(int[][] matches, List<PairInt> keypoints1, List<PairInt> keypoints2, int[][] cost) {
-
-        assert(cost.length == keypoints1.size());
-        assert(cost[0].length == keypoints2.size());
+    private static int[][] greedyMatchRemaining(int[][] matches, int[][] cost) {
 
         // lists of the remaining indexes:
         TIntList kp1R = new TIntArrayList();
         TIntList kp2R = new TIntArrayList();
         int[][] cost2 = modifyForRemaining(cost, matches);
 
-        int[][] matches2 = greedyMatch(keypoints1, keypoints2, cost2);
+        int[][] matches2 = greedyMatch(cost2);
 
         return matches2;
     }
@@ -466,32 +429,29 @@ public class ORBMatcher {
      * finds best match for each point if a close second best does not exist,
      * then sorts by lowest cost to keep the unique best starter points.
      * returns matching indexes (no ransac performed in this method)
-     * @param keypoints1
-     * @param keypoints2
      * @param cost
      * @return pairs of indexes relative to image 1, image 2.
      * e.g. row[0] = [10,4] for index 10 of keypoints1 list is paired with
      * index 4 of keypoints2 list.
      */
-    private static int[][] greedyMatch(List<PairInt> keypoints1,
-        List<PairInt> keypoints2, int[][] cost) {
-        
-        int n1 = keypoints1.size();
-        int n2 = keypoints2.size();
-        
+    private static int[][] greedyMatch(int[][] cost) {
+
+        int n1 = cost.length;
+        int n2 = cost[0].length;
+
         /*
         -- for each keypoint, finding best match, but only keeping it if there is
            no close 2nd best.
         -- sorting the results by lowest cost and keeping the unique of those.
         -- return correspondence
         */
-        
+
         //nearest neighbor distance ratio (Mikolajczyk and Schmid 2005):
         // using a ratio of 0.8 or 0.9.
         int[] bestMatch = findGreedyBestIsolated(cost, 0.8f);
 
         assert(bestMatch.length == n1);
-        
+
         int nBest = 0;
         for (int idx : bestMatch) {
             if (idx > -1) {
@@ -511,27 +471,26 @@ public class ORBMatcher {
                 count++;
             }
         }
-        
+
         assert(count == nBest);
         QuickSort.sortBy1stArg(costs, indexes);
-        Set<PairInt> set1 = new HashSet<PairInt>();
-        Set<PairInt> set2 = new HashSet<PairInt>();
         List<PairInt> matches = new ArrayList<PairInt>();
-        PairInt index12, p1, p2;
+        PairInt index12;
+        TIntSet i1 = new TIntHashSet();
+        TIntSet i2 = new TIntHashSet();
         // visit lowest costs (== differences) first
         for (int i = 0; i < nBest; ++i) {
             index12 = indexes[i];
             idx1 = index12.getX();
             idx2 = index12.getY();
-            p1 = keypoints1.get(idx1);
-            p2 = keypoints2.get(idx2);
-            if (set1.contains(p1) || set2.contains(p2)) {
+
+            if (i1.contains(idx1) || i2.contains(idx2)) {
                 continue;
             }
             //System.out.println("p1=" + p1 + " " + " p2=" + p2 + " cost=" + costs[i]);
             matches.add(index12);
-            set1.add(p1);
-            set2.add(p2);
+            i1.add(idx1);
+            i2.add(idx2);
         }
         int[][] results = new int[matches.size()][2];
         for (int i = 0; i < matches.size(); ++i) {
@@ -539,7 +498,7 @@ public class ORBMatcher {
             results[i][1] = matches.get(i).getY();
         }
         return results;
-    } 
+    }
     
     private static int[] minCostBipartiteUnbalanced(int[][] cost) {
         
@@ -654,54 +613,51 @@ public class ORBMatcher {
 
     /**
      * calculate the fundamental matrix given the correspondence matches.
-     * the correspondence is normalized and the fundamental matrix is calculated,
+     * the fundamental matrix is calculated,
      * then the errors are estimated using the Sampson's distance as errors
      * and a 3.8*sigma as inlier threshold.
      * @param matches
-     * @param keypoints1
-     * @param keypoints2
-     * @return epipolar fit to the matches.  note that the correspondence
-     * is unit standard normalized and the fundamental matrix returned
-     * in the fit is not de-normalized.
+     * @param x1 (a.k.a. left) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
+     * @param x2 (a.k.a. right) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
+     * @return epipolar fit to the matches.  note that the if correspondence
+     * is unit standard normalized then the fundamental matrix returned
+     * in the fit is not de-normalized.  also note that the inliers in the fit are indexes
+     * with respect to the matches array.
      */
-    private static EpipolarTransformationFit fitWithRANSAC(int[][] matches, 
-        List<PairInt> keypoints1, List<PairInt> keypoints2) {
+    private static EpipolarTransformationFit fitWithRANSAC(int[][] matches,
+                                                           double[][] x1, double[][] x2) {
         
         int n0 = matches.length;
 
+        int i, idx1, idx2;
+
+        boolean useToleranceAsStatFactor = true;
+        final double tolerance = 1;//3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+
+        boolean reCalcIterations = false;
+        RANSACSolver solver = new RANSACSolver();
+
+        // left and right are the subset of keypoints1 and keypoints 2 designated by matches
         double[][] left = new double[3][n0];
         double[][] right = new double[3][n0];
-        for (int i = 0; i < 3; ++i) {
+        for (i = 0; i < 3; ++i) {
             left[i] = new double[n0];
             right[i] = new double[n0];
         }
         Arrays.fill(left[2], 1.0);
         Arrays.fill(right[2], 1.0);
-        int i, idx1, idx2;
         for (i = 0; i < n0; ++i) {
             idx1 = matches[i][0];
             idx2 = matches[i][1];
-            left[0][i] = keypoints1.get(idx1).getX();
-            left[1][i] = keypoints1.get(idx1).getY();
-            right[0][i] = keypoints2.get(idx2).getX();
-            right[1][i] = keypoints2.get(idx2).getY();
+            left[0][i] = x1[0][idx1];
+            left[1][i] = x1[1][idx1];
+            right[0][i] = x2[0][idx2];
+            right[1][i] = x2[1][idx2];
         }
-    
-        // normalize left and right
-        boolean useToleranceAsStatFactor = true;
-        final double tolerance = 3.8;
-        ErrorType errorType = ErrorType.SAMPSONS;
-        
-        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(new DenseMatrix(left));
-        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(new DenseMatrix(right));
-        DenseMatrix leftM = normXY1.getXy();
-        DenseMatrix rightM = normXY2.getXy();
-        
-        boolean reCalcIterations = false;
-        RANSACSolver solver = new RANSACSolver();
-        
+
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+            new DenseMatrix(left), new DenseMatrix(right), errorType, useToleranceAsStatFactor, tolerance,
             reCalcIterations, false);                
         
         return fit;        
@@ -709,44 +665,26 @@ public class ORBMatcher {
 
     /**
      * calculate the fundamental matrix given the correspondence matches.
-     * the correspondence is normalized and the fundamental matrix is calculated,
+     * the fundamental matrix is calculated,
      * then the errors are estimated using the Sampson's distance as errors
      * and a 3.8*sigma as inlier threshold.
      * @param matches array of size [2 x nMatches] where each row is a pair of indexes for suggested matches,
      *                that is [(index in keypoints1 for match0, index in keypoints2 for match0),
      *                (index in keypoints1 for match1, index in keypoints2 for match1), ...]
-     * @param keypoints1 pairs of points in format row, col
-     * @param keypoints2 pairs of points in format row, col
-     * @return epipolar fit to the matches
+     @param x1 (a.k.a. left) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
+      * @param x2 (a.k.a. right) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
+     * @return epipolar fit to the matches.  note that the if correspondence
+     *      * is unit standard normalized then the fundamental matrix returned
+     *      * in the fit is not de-normalized.  also note that the inliers in the fit are indexes
+     *      * with respect to the matches array.
      */
     private static EpipolarTransformationFit fitWithRANSAC2(int[][] matches,
-                                                           List<PairInt> keypoints1, List<PairInt> keypoints2) throws IOException {
+                                                           double[][] x1, double[][] x2) throws IOException {
 
         System.out.printf("begin filtering the matches using RANSAC\n");
         System.out.flush();
 
         int n0 = matches.length;
-
-        double[][] left = new double[3][n0];
-        double[][] right = new double[3][n0];
-        for (int i = 0; i < 3; ++i) {
-            left[i] = new double[n0];
-            right[i] = new double[n0];
-        }
-        Arrays.fill(left[2], 1.0);
-        Arrays.fill(right[2], 1.0);
-        int i, idx1, idx2;
-        for (i = 0; i < n0; ++i) {
-            idx1 = matches[i][0];
-            idx2 = matches[i][1];
-            left[0][i] = keypoints1.get(idx1).getY(); // column
-            left[1][i] = keypoints1.get(idx1).getX(); // row
-            right[0][i] = keypoints2.get(idx2).getY(); // column
-            right[1][i] = keypoints2.get(idx2).getX(); // row
-        }
-
-        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(left);
-        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(right);
 
         boolean useToleranceAsStatFactor = false;//true;
         final double tolerance = 1;//3.8;
@@ -756,17 +694,29 @@ public class ORBMatcher {
         RANSACSolver2 solver = new RANSACSolver2();
         //solver.setToUse8PointSolver();
 
+        int i, idx1, idx2;
+
+        // left and right are the subset of keypoints1 and keypoints 2 designated by matches
+        double[][] left = new double[3][n0];
+        double[][] right = new double[3][n0];
+        for (i = 0; i < 3; ++i) {
+            left[i] = new double[n0];
+            right[i] = new double[n0];
+        }
+        Arrays.fill(left[2], 1.0);
+        Arrays.fill(right[2], 1.0);
+        for (i = 0; i < n0; ++i) {
+            idx1 = matches[i][0];
+            idx2 = matches[i][1];
+            left[0][i] = x1[0][idx1];
+            left[1][i] = x1[1][idx1];
+            right[0][i] = x2[0][idx2];
+            right[1][i] = x2[1][idx2];
+        }
+
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
                 left, right, errorType, useToleranceAsStatFactor, tolerance,
                 reCalcIterations, false);
-
-        //TODO: add a flag in fit to indicate whether the fm is normalized or not,
-        //   and make use of that consistent
-        if (fit != null && fit.getFundamentalMatrix() != null) {
-            double[][] fmD = Matrices.getArray(fit.getFundamentalMatrix());
-            EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
-            fit.setFundamentalMatrix(new DenseMatrix(fmD));
-        }
 
         return fit;
     }

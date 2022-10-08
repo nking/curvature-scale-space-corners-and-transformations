@@ -355,29 +355,32 @@ public class EpipolarTransformer {
 
         double[][] a = createFundamentalMatrix(leftXY, rightXY);
 
-        SVDProducts svd = null;
+        SVDProducts svd0 = null;
         try {
-            svd = MatrixUtil.performSVD(a);
+            // we only need V in first SVD operation, so can let the method use a or a^T*a
+            svd0 = MatrixUtil.performSVD(a);
         } catch (NotConvergedException ex) {
             //Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
             return null;
         }
         int ns = 9;
-        assert(svd.vT[0].length == ns);
+        double[][] vT = svd0.vT;
+        assert(vT[0].length == ns);
         // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
         double[][] ff = new double[3][3];
         int i;
         for (i = 0; i < 3; i++) {
             ff[i] = new double[3];
-            ff[i][0] = svd.vT[ns - 1][(i * 3) + 0];
-            ff[i][1] = svd.vT[ns - 1][(i * 3) + 1];
-            ff[i][2] = svd.vT[ns - 1][(i * 3) + 2];
+            ff[i][0] = vT[ns - 1][(i * 3) + 0];
+            ff[i][1] = vT[ns - 1][(i * 3) + 1];
+            ff[i][2] = vT[ns - 1][(i * 3) + 2];
         }
 
         // enforce rank=2
-        svd = null;
+        SVD svd = null;
         try {
-            svd = MatrixUtil.performSVD(ff);
+            // we need to use "U" and "V" below
+            svd = SVD.factorize(new DenseMatrix(ff));
         } catch (NotConvergedException e) {
             Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
             return null;
@@ -392,23 +395,23 @@ public class EpipolarTransformer {
             //    Matrix, the diagonal is
             // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
             // MASKS Theorem 5.9
-            double sig = (svd.s[0] + svd.s[1])/2.;
+            double sig = (svd.getS()[0] + svd.getS()[1])/2.;
             d[0][0] = sig;
             d[1][1] = sig;
             //NOTE: to normalize E, one can use sig = 1 here. see p. 122 of MASKS chapt 5.
         } else {
-            d[0][0] = svd.s[0];
-            d[1][1] = svd.s[1];
+            d[0][0] = svd.getS()[0];
+            d[1][1] = svd.getS()[1];
         }
 
         /*
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        double[][] dDotV = MatrixUtil.multiply(d, svd.vT);
+        double[][] dDotV = MatrixUtil.multiply(d, vT);
 
         // 3x3 with rank 2
-        double[][] fm = MatrixUtil.multiply(svd.u, dDotV);
+        double[][] fm = MatrixUtil.multiply(MatrixUtil.convertToRowMajor(svd.getU()), dDotV);
 
         return fm;
     }
@@ -671,9 +674,9 @@ public class EpipolarTransformer {
             F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
         */
         
-        svd = null;
+        SVD svd2 = null;
         try {
-            svd = MatrixUtil.performSVD(fMatrix);
+            svd2 = SVD.factorize(fMatrix);
         } catch (NotConvergedException e) {            
             Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
             return null;
@@ -696,16 +699,16 @@ public class EpipolarTransformer {
             //    Matrix, the diagonal is 
             // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
             // MASKS Theorem 5.9
-            double sig = (svd.s[0] + svd.s[1])/2.;
+            double sig = (svd2.getS()[0] + svd2.getS()[1])/2.;
             d.set(0, 0, sig);
             d.set(1, 1, sig);
             //NOTE: to normalize E, one can use sig = 1 here. see p. 122 of MASKS chapt 5.
         } else {
-            if (svd.s.length > 0) {
-                d.set(0, 0, svd.s[0]);
+            if (svd2.getS().length > 0) {
+                d.set(0, 0, svd2.getS()[0]);
             }
-            if (svd.s.length > 1) {
-                d.set(1, 1, svd.s[1]);
+            if (svd2.getS().length > 1) {
+                d.set(1, 1, svd2.getS()[1]);
             }
         }        
         
@@ -718,10 +721,10 @@ public class EpipolarTransformer {
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-        DenseMatrix dDotV = MatrixUtil.multiply(d, new DenseMatrix(svd.vT));
+        DenseMatrix dDotV = MatrixUtil.multiply(d, svd2.getVt());
 
         // 3x3 with rank 2
-        DenseMatrix fm = MatrixUtil.multiply(new DenseMatrix(svd.u), dDotV);
+        DenseMatrix fm = MatrixUtil.multiply(svd2.getU(), dDotV);
  
         return fm;
     }
@@ -858,31 +861,51 @@ public class EpipolarTransformer {
             ff1[i] = new double[3];
             ff2[i] = new double[3];
             
-            ff1[i][0] = svd.vT[n - 1][(i * 3) + 0];
-            ff1[i][1] = svd.vT[n - 1][(i * 3) + 1];
-            ff1[i][2] = svd.vT[n - 1][(i * 3) + 2];
+            ff1[i][0] = svd.vT[n - 2][(i * 3) + 0];
+            ff1[i][1] = svd.vT[n - 2][(i * 3) + 1];
+            ff1[i][2] = svd.vT[n - 2][(i * 3) + 2];
             
-            ff2[i][0] = svd.vT[n - 2][(i * 3) + 0];
-            ff2[i][1] = svd.vT[n - 2][(i * 3) + 1];
-            ff2[i][2] = svd.vT[n - 2][(i * 3) + 2];
+            ff2[i][0] = svd.vT[n - 1][(i * 3) + 0];
+            ff2[i][1] = svd.vT[n - 1][(i * 3) + 1];
+            ff2[i][2] = svd.vT[n - 1][(i * 3) + 2];
         }
         
         DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
-                
-        List<DenseMatrix> validatedFM = new ArrayList<DenseMatrix>();
-        
-        for (DenseMatrix solution : solutions) {
 
-            //System.out.printf("validating FM=\n%s\n", FormatArray.toString(solution, "%.3e"));  
- 
+        double[][] solutions2 = null;
+        try {
+            solutions2 = calculateEpipolarProjectionUsing7Points(
+                    MatrixUtil.convertToRowMajor(leftXY), MatrixUtil.convertToRowMajor(rightXY));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        List<DenseMatrix> validatedFM = new ArrayList<DenseMatrix>();
+        for (DenseMatrix solution : solutions) {
+            //System.out.printf("validating FM=\n%s\n", FormatArray.toString(solution, "%.3e"));
             // chirality (cheirality) check
             DenseMatrix validated = validateSolution(solution, leftXY, rightXY);
-            
             if (validated == null) {
                 continue;
             }
-            
             validatedFM.add(solution);
+        }
+
+        List<DenseMatrix> validatedFM2 = new ArrayList<>();
+        if (solutions2 != null) {
+            DenseMatrix solution = new DenseMatrix(3, 3);
+            for (int i = 0; i < solutions2.length/3; ++i) {
+                for (int row = 0; row < 3; ++row) {
+                    solution.set(row, 0, solutions2[i*3 + row][0]);
+                    solution.set(row, 1, solutions2[i*3 + row][1]);
+                    solution.set(row, 2, solutions2[i*3 + row][2]);
+                }
+                DenseMatrix validated2 = validateSolution(solution, leftXY, rightXY);
+                if (validated2 == null) {
+                    continue;
+                }
+                validatedFM2.add(solution.copy());
+            }
         }
         
         return validatedFM;
@@ -1062,7 +1085,7 @@ public class EpipolarTransformer {
         }
         return null;
     }
-    
+
     /**
      * Determine the camera matrices of an image pair up to a scene 
      * homography, given their fundamental matrix using algorithm
@@ -1195,20 +1218,27 @@ public class EpipolarTransformer {
         DenseMatrix[] solutions = new DenseMatrix[roots.length];
 
         for (int i = 0; i < roots.length; i++) {
-
             //Fi = a(i)*FF{1} + (1-a(i))*FF{2};
-
             double a = roots[i];
-
             for (int row = 0; row < 3; row++) {
                 for (int col = 0; col < 3; col++) {
                     m[row][col] = a*ff1[row][col] + (1. - a)*ff2[row][col];
                 }
             }
-
             solutions[i] = new DenseMatrix(m);
         }
-
+        double eps = 1E-4;
+        double[] roots2;
+        if (Math.abs(coeffs[3]) < 1E-7) {
+            roots2 = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+        } else {
+            try {
+                roots2 = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);
+            } catch (IOException e) {
+                log.severe("PolynomialRootSolver error: " + e.getMessage());
+                roots2 = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+            }
+        }
         // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
 
         return solutions;

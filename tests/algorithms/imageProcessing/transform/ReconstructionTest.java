@@ -270,8 +270,6 @@ public class ReconstructionTest extends TestCase {
             List<PairInt> kp1 = orb1.getAllKeyPoints();
             List<PairInt> kp2 = orb2.getAllKeyPoints();
 
-            QuadInt[] matched = ORBMatcher.matchDescriptors(d1, d2, kp1, kp2);
-
             int x1, x2, y1, y2;
             {//DEBUG
                 Image tmp1 = img1GS.copyToColorGreyscale();
@@ -294,15 +292,42 @@ public class ReconstructionTest extends TestCase {
                         ImageIOHelper.addPointToImage(x, y, tmp2, 3, 255, 255, 0);
                     }*/
                 }
+
+                // kp1 and kp2 are in col major format (col, row) and we want normalized points, so converting to double[][]
+                double[][] xKP1 = convertToArray(kp1);
+                double[][] xKP2 = convertToArray(kp2);
+                double[][] xKP1n = MatrixUtil.copy(xKP1);
+                double[][] xKP2n = MatrixUtil.copy(xKP2);
+                double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
+                double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(xKP2n);
+
+                int[][] matchedIdxs = null;
+                if (true /*normalize points*/) {
+                    // col, row
+                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
+                    if (matchedIdxs != null) {
+                        System.out.printf("# matched after normalization = %d\n", matchedIdxs.length);
+                    }
+                } else {
+                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
+                }
+
+                if (matchedIdxs == null) {
+                    return null;
+                }
+
                 //MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
-                System.out.println(lbl + fileName1Root + " matched=" + matched.length);
-                CorrespondencePlotter plotter = 
+                System.out.println(lbl + fileName1Root + " matched=" + matchedIdxs.length);
+                CorrespondencePlotter plotter =
                     new CorrespondencePlotter(tmp1, tmp2);
-                for (i = 0; i < matched.length; ++i) {
-                    x1 = matched[i].getA();
-                    y1 = matched[i].getB();
-                    x2 = matched[i].getC();
-                    y2 = matched[i].getD();
+                int idx1, idx2;
+                for (i = 0; i < matchedIdxs.length; ++i) {
+                    idx1 = matchedIdxs[i][0];
+                    idx2 = matchedIdxs[i][1];
+                    x1 = kp1.get(idx1).getX();
+                    y1 = kp1.get(idx1).getY();
+                    x2 = kp2.get(idx2).getX();
+                    y2 = kp2.get(idx2).getY();
                     plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                 }
                 plotter.writeImage("_corres_orb_gs_" + lbl + fileName1Root);
@@ -353,16 +378,18 @@ public class ReconstructionTest extends TestCase {
 
                 MatrixUtil.SVDProducts svd = null;
                 double[][] ai = new double[1][5];
-                double[][] a = new double[matched.length][5];
+                double[][] a = new double[matchedIdxs.length][5];
                 double[] xHat;
                 double re = 0; // reprojection error for all
                 int _x2, _y2;
-                double[] res = new double[matched.length]; // reprojection error for each i
-                for (i = 0; i < matched.length; ++i) {
-                    x1 = matched[i].getA();
-                    y1 = matched[i].getB();
-                    x2 = matched[i].getC();
-                    y2 = matched[i].getD();
+                double[] res = new double[matchedIdxs.length]; // reprojection error for each i
+                for (i = 0; i < matchedIdxs.length; ++i) {
+                    idx1 = matchedIdxs[i][0];
+                    idx2 = matchedIdxs[i][1];
+                    x1 = kp1.get(idx1).getX();
+                    y1 = kp1.get(idx1).getY();
+                    x2 = kp2.get(idx2).getX();
+                    y2 = kp2.get(idx2).getY();
 
                     /*
                     A = (y2*x1)  x=(a00)
@@ -402,7 +429,7 @@ public class ReconstructionTest extends TestCase {
                 }
                 System.out.printf("xhat_all=%s\n", FormatArray.toString(xHat, "%.3e"));
                 System.out.printf("svd(a).s =%s\n", i, FormatArray.toString(svd.s, "%.3e"));
-                System.out.printf("reprojection error all/n=%.3f\n", re/(double)matched.length);
+                System.out.printf("reprojection error all/n=%.3f\n", re/(double)matchedIdxs.length);
 
                 // apply this to all image 1 points
                 tmp1 = img1GS.copyToColorGreyscale();
@@ -444,12 +471,14 @@ public class ReconstructionTest extends TestCase {
                 System.out.printf("reprojection error mean=%.4e stdev=%.4e\n", meanStdev[0], meanStdev[1]);
                 int count = 0;
                 re = 0;
-                for (i = 0; i < matched.length; ++i) {
+                for (i = 0; i < matchedIdxs.length; ++i) {
                     if (Math.abs(res[i] - meanStdev[0]) <= meanStdev[1]/2.){//2.5*meanStdev[1]) {
-                        x1 = matched[i].getA();
-                        y1 = matched[i].getB();
-                        x2 = matched[i].getC();
-                        y2 = matched[i].getD();
+                        idx1 = matchedIdxs[i][0];
+                        idx2 = matchedIdxs[i][1];
+                        x1 = kp1.get(idx1).getX();
+                        y1 = kp1.get(idx1).getY();
+                        x2 = kp2.get(idx2).getX();
+                        y2 = kp2.get(idx2).getY();
                         re += res[i];
                         a[count] = new double[]{y2*x1, y2*y1, -x2*x1, -x2*y1};                            
                         count++;
@@ -457,7 +486,7 @@ public class ReconstructionTest extends TestCase {
                     }
                 }
                 plotter.writeImage("_corres_orb_gs_filtered_" + lbl + fileName1Root);
-                System.out.printf("number removed=%d\n", matched.length - count);
+                System.out.printf("number removed=%d\n", matchedIdxs.length - count);
                 a = Arrays.copyOf(a, count);
                 svd = MatrixUtil.performSVD(a);
                 xHat = svd.vT[svd.vT.length - 1];
@@ -472,25 +501,30 @@ public class ReconstructionTest extends TestCase {
                 double[][] x1In = MatrixUtil.zeros(3, count);
                 double[][] x2In = MatrixUtil.zeros(3, count);
                 count = 0;
-                for (i = 0; i < matched.length; ++i) {
+                for (i = 0; i < matchedIdxs.length; ++i) {
                     if (Math.abs(res[i] - meanStdev[0]) <= meanStdev[1]/2.){//2.5*meanStdev[1]) {
-                        x1 = matched[i].getA();
-                        y1 = matched[i].getB();
+                        idx1 = matchedIdxs[i][0];
+                        idx2 = matchedIdxs[i][1];
+                        x1 = kp1.get(idx1).getX();
+                        y1 = kp1.get(idx1).getY();
+                        x2 = kp2.get(idx2).getX();
+                        y2 = kp2.get(idx2).getY();
                         xIn[0][count] = x1;
                         xIn[1][count] = y1;
                         x1In[0][count] = x1;
                         x1In[1][count] = y1;
                         x1In[2][count] = 1;
-                        x2In[0][count] = matched[i].getC();
-                        x2In[1][count] = matched[i].getD();
+                        x2In[0][count] = x2;
+                        x2In[1][count] = y2;
                         x2In[2][count] = 1;
                         count++;
                     }
                 }
-                for (i = 0; i < matched.length; ++i) {
+                for (i = 0; i < matchedIdxs.length; ++i) {
                     if (Math.abs(res[i] - meanStdev[0]) <= meanStdev[1]/2.){//2.5*meanStdev[1]) {
-                        x2 = matched[i].getC();
-                        y2 = matched[i].getD();
+                        idx2 = matchedIdxs[i][1];
+                        x2 = kp2.get(idx2).getX();
+                        y2 = kp2.get(idx2).getY();
                         xIn[0][count] = x2;
                         xIn[1][count] = y2;
                         count++;
@@ -499,4 +533,23 @@ public class ReconstructionTest extends TestCase {
                 return xIn;
         }
     }
+
+    /**
+     * given a list of keypoints in format (col, row), write a double array of size [2 X kP.size()] where the
+     * first row holds the col values, the second row holds the row values and the third row holds values "1" for
+     * the z-axis representation in homogeneous coordinates.
+     * @param kP input list of keypoints in format (col, row)
+     * @return the data in format [2 X kP.size()]
+     */
+    private double[][] convertToArray(List<PairInt> kP) {
+        int n = kP.size();
+        double[][] x = MatrixUtil.zeros(3, n);
+        for (int i = 0; i < n; ++i) {
+            x[0][i] = kP.get(i).getX();
+            x[1][i] = kP.get(i).getY();
+        }
+        Arrays.fill(x[2], 1);
+        return x;
+    }
+
 }

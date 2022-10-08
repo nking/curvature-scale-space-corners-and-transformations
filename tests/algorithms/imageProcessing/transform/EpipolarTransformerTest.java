@@ -39,7 +39,7 @@ public class EpipolarTransformerTest extends TestCase {
     public EpipolarTransformerTest() {
     }
     
-    public void testNormalization0() throws Exception {
+    public void estNormalization0() throws Exception {
         
         int m = 3;
         int n = 24;
@@ -299,7 +299,7 @@ public class EpipolarTransformerTest extends TestCase {
         return true;
     }
 
-    public void testMoreThan7Points1() throws Exception {
+    public void estMoreThan7Points1() throws Exception {
         System.out.println("testMoreThan7Points1");
 
         PairIntArray leftTrueMatches = new PairIntArray();
@@ -377,6 +377,11 @@ public class EpipolarTransformerTest extends TestCase {
     public void testCorners() throws IOException {
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
+        //fileName1 = "brown_lowe_2003_image1.jpg";
+        //fileName2 = "brown_lowe_2003_image2.jpg";
+        //fileName1 = "books_illum3_v0_695x555.png";
+        //fileName2 = "books_illum3_v6_695x555.png";
+
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         GreyscaleImage image1 = ImageIOHelper.readImageAsGreyscaleFullRange(filePath1);
@@ -384,14 +389,20 @@ public class EpipolarTransformerTest extends TestCase {
         double[][] img1 = convertToDouble(image1.toNormalizedRowMajorArray());
         double[][] img2 = convertToDouble(image2.toNormalizedRowMajorArray());
 
+        //printRANSAC2ForTrueMatches();
+
         ImageProcessor imageProcessor = new ImageProcessor();
 
         int minDist = 1;
         float thresholdRel = 0.01f;//0.1f;
         boolean ignore0sInThresh = true;
 
+        // sorting by descending strength of score.
+        // format is [nCorners X 2] where each row of the keypoint list is a pair of (row, col)
         int[][] keyPoints1 = ImageProcessor.calcHarrisCorners(img1, minDist, thresholdRel, ignore0sInThresh);
         int[][] keyPoints2 = ImageProcessor.calcHarrisCorners(img2, minDist, thresholdRel, ignore0sInThresh);
+
+        //writeToCWD(keyPoints1, keyPoints2);
 
         overplotKeypoints(keyPoints1, keyPoints2, image1.copyToColorGreyscale(), image2.copyToColorGreyscale(),
                 Integer.toString(0));
@@ -400,7 +411,7 @@ public class EpipolarTransformerTest extends TestCase {
 
         int nKP = Math.min(keyPoints1.length, keyPoints2.length);
         //nKP = 100; can reduce the number to see the matches more easily
-        nKP = (int)(2.5*nKP);
+        nKP = 1000;//(int)(2.5*nKP);
 
         ORB2 orb1 = new ORB2(image1, nKP);
         ORB2 orb2 = new ORB2(image2, nKP);
@@ -409,30 +420,28 @@ public class EpipolarTransformerTest extends TestCase {
         orb2.detectAndExtract();
 
         float[] scales1 = orb1.getScales();
-        ORB.Descriptors d1 = orb1.getDescriptorsList().get(0);
-        ORB.Descriptors d2 = orb2.getDescriptorsList().get(0);
+        // [0]=24X32, [1]=40X53, [5]=160X213
+        int nOct = 0;//scales1.length - 1;
+        ORB.Descriptors d1 = orb1.getDescriptorsList().get(nOct);
+        ORB.Descriptors d2 = orb2.getDescriptorsList().get(nOct);
         //(row, col) for octave 0
-        List<PairInt> kp1 = orb1.getKeyPointListRowMaj(0);
-        List<PairInt> kp2 = orb2.getKeyPointListRowMaj(0);
+        List<PairInt> kp1 = orb1.getKeyPointListRowMaj(nOct);
+        List<PairInt> kp2 = orb2.getKeyPointListRowMaj(nOct);
 
-        d1 = orb1.getAllDescriptors();
-        d2 = orb2.getAllDescriptors();
-        kp1 = orb1.getAllKeyPointsRC();
-        kp2 = orb2.getAllKeyPointsRC();
+        //d1 = orb1.getAllDescriptors();
+        //d2 = orb2.getAllDescriptors();
+        //kp1 = orb1.getAllKeyPointsRC();
+        //kp2 = orb2.getAllKeyPointsRC();
         //writeToCWD(kp1, kp2);
 
-        int[][] indexesOfSeveralTrueMatches = indexesOfSeveralTrueMatchesMerton(kp1, kp2);
-        printDescriptorMatches(d1, d2, indexesOfSeveralTrueMatches);
+        //int[][] indexesOfSeveralTrueMatches = indexesOfSeveralTrueMatchesMerton(kp1, kp2);
+        //printDescriptorMatches(d1, d2, indexesOfSeveralTrueMatches);
 
-        System.out.printf("several true matches, indexes:\n%s\n",
-                FormatArray.toString(indexesOfSeveralTrueMatches, "%d"));
+        //System.out.printf("several true matches, indexes:\n%s\n",
+        //        FormatArray.toString(indexesOfSeveralTrueMatches, "%d"));
 
         System.out.printf("# keypoints in 1 and 2 = %d, %d\n", kp1.size(), kp2.size());
 
-        // matched are format row1, col1, row2, col2
-        QuadInt[] matched = ORBMatcher.matchDescriptorsRC(d1, d2, kp1, kp2);
-
-        System.out.printf("pairs matched by descriptors = %d\n", matched.length);
         String dirPath = ResourceFinder.findDirectory("bin");
 
         int i;
@@ -460,16 +469,37 @@ public class EpipolarTransformerTest extends TestCase {
         Image tmp3 = image1.copyToColorGreyscale();
         Image tmp4 = image2.copyToColorGreyscale();
 
-        //MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
-        System.out.println(fileName1 + " matched=" + matched.length);
+
+        // matched are format row1, col1, row2, col2
+        // kp1 and kp2 are in row major format (row, col) and we want normalized points, so converting to double[][]
+        double[][] xKP1 = convertToArray(kp1);
+        double[][] xKP2 = convertToArray(kp2);
+        double[][] xKP1n = MatrixUtil.copy(xKP1);
+        double[][] xKP2n = MatrixUtil.copy(xKP2);
+        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
+        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(xKP2n);
+
+        int[][] matchedIdxs = null;
+        if (true /*normalize points*/) {
+            matchedIdxs = ORBMatcher.matchDescriptorsRC(d1, d2, xKP1n, xKP2n);
+        } else {
+            matchedIdxs = ORBMatcher.matchDescriptorsRC(d1, d2, xKP1, xKP2);
+        }
+        if (matchedIdxs == null) {
+            return;
+        }
+        System.out.println(fileName1 + " matched=" + matchedIdxs.length);
         CorrespondencePlotter plotter =
                 new CorrespondencePlotter(tmp1, tmp2);
         Color clr = null;
-        for (i = 0; i < matched.length; ++i) {
-            r1 = matched[i].getA();
-            c1 = matched[i].getB();
-            r2 = matched[i].getC();
-            c2 = matched[i].getD();
+        int idx1, idx2;
+        for (i = 0; i < matchedIdxs.length; ++i) {
+            idx1 = matchedIdxs[i][0];
+            idx2 = matchedIdxs[i][1];
+            r1 = kp1.get(idx1).getX();
+            c1 = kp1.get(idx1).getY();
+            r2 = kp2.get(idx1).getX();
+            c2 = kp2.get(idx1).getY();
             plotter.drawLineInAlternatingColors(c1, r1, c2, r2, 1);
 
             clr = getColor(clr);
@@ -477,7 +507,6 @@ public class EpipolarTransformerTest extends TestCase {
             ImageIOHelper.addPointToImage(c2, r2, tmp4, 2, clr.getRed(), clr.getGreen(), clr.getBlue());
         }
         plotter.writeImage("_corres_orb_gs_merton_college_I_001_002");
-
 
         ImageIOHelper.writeOutputImage(
                 dirPath + "/matched_merton_college_I_001" + ".png", tmp3);
@@ -512,12 +541,16 @@ public class EpipolarTransformerTest extends TestCase {
             right[0][i] = keypoints2.get(i).getY(); // column
             right[1][i] = keypoints2.get(i).getX(); // row
         }
-        boolean useToleranceAsStatFactor = false;//true;
+        boolean useToleranceAsStatFactor = true;
         final double tolerance = 3.8;
         ErrorType errorType = ErrorType.SAMPSONS;
 
+        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(left);
+        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(right);
+
         boolean reCalcIterations = false;
         RANSACSolver2 solver = new RANSACSolver2();
+        //using 7-point algorithm
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
                 left, right, errorType, useToleranceAsStatFactor, tolerance,
                 reCalcIterations, false);
@@ -697,28 +730,58 @@ public class EpipolarTransformerTest extends TestCase {
         List<PairInt> kp1 = orb1.getAllKeyPointsRC();
         List<PairInt> kp2 = orb2.getAllKeyPointsRC();
 
+        // kp1 and kp2 are in row major format (row, col) and we want normalized points, so converting to double[][]
+        double[][] xKP1 = convertToArray(kp1);
+        double[][] xKP2 = convertToArray(kp2);
+        double[][] xKP1n = MatrixUtil.copy(xKP1);
+        double[][] xKP2n = MatrixUtil.copy(xKP2);
+        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
+        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(xKP2n);
+
+        int[][] matchedIdxs = null;
+        if (true /*normalize points*/) {
+            matchedIdxs = ORBMatcher.matchDescriptorsRC(d1, d2, xKP1n, xKP2n);
+        } else {
+            matchedIdxs = ORBMatcher.matchDescriptorsRC(d1, d2, xKP1, xKP2);
+        }
         /*
-        test expecting
+        test expecting in (row, col) format
                   (8, 2) <--> (7, 8)  => idx 0, 1  (bits diff=0)
                   (8, 7) <--> (2, 8)         1, 0  (bits diff=0)
                   (3, 7) <--> (2, 3)         2, 2  (bits diff=0)
                   (3, 2) <--> (7, 3)         3, 3  (bits diff=0)
          */
-        QuadInt[] matched = ORBMatcher.matchDescriptorsRC(d1, d2, kp1, kp2);
+        // row1, col1, row2, col2
         Set<QuadInt> expectedM = new HashSet<QuadInt>();
         expectedM.add(new QuadInt(8, 2, 7, 8));
         expectedM.add(new QuadInt(8, 7, 2, 8));
         expectedM.add(new QuadInt(3, 7, 2, 3));
         expectedM.add(new QuadInt(3, 2, 7, 3));
-        assertEquals(expectedM.size(), matched.length);
-        for (i = 0; i < matched.length; ++i) {
-            System.out.printf("matched=%s\n", matched[i].toString());
-            assertTrue(expectedM.remove(matched[i]));
+        assertEquals(expectedM.size(), matchedIdxs.length);
+        int idx1, idx2;
+        QuadInt m;
+        for (i = 0; i < matchedIdxs.length; ++i) {
+            idx1 = matchedIdxs[i][0];
+            idx2 = matchedIdxs[i][1];
+            m = new QuadInt(kp1.get(idx1).getX(), kp1.get(idx1).getY(), kp2.get(idx2).getX(), kp2.get(idx2).getY());
+            System.out.printf("matched=%s\n", m.toString());
+            assertTrue(expectedM.remove(m));
         }
         assertEquals(0, expectedM.size());
     }
 
-    public void testMoreThan7Points2() throws Exception {
+    private double[][] convertToArray(List<PairInt> kP) {
+        int n = kP.size();
+        double[][] x = MatrixUtil.zeros(3, n);
+        for (int i = 0; i < n; ++i) {
+            x[0][i] = kP.get(i).getX();
+            x[1][i] = kP.get(i).getY();
+        }
+        Arrays.fill(x[2], 1);
+        return x;
+    }
+
+    public void estMoreThan7Points2() throws Exception {
 
         System.out.println("testMoreThan7Points2");
 
@@ -784,7 +847,7 @@ public class EpipolarTransformerTest extends TestCase {
                 "e_merton_college_10pts" + Integer.valueOf(1).toString());
     }
 
-    public void test7Points1() throws Exception {
+    public void est7Points1() throws Exception {
 
         System.out.println("test7Points1");
             
@@ -880,7 +943,7 @@ public class EpipolarTransformerTest extends TestCase {
             "e_merton_college_7pts" + Integer.valueOf(0).toString()); 
     }
 
-    public void test7Points2() throws Exception {
+    public void est7Points2() throws Exception {
 
         System.out.println("test7Points2");
 
@@ -1140,9 +1203,6 @@ public class EpipolarTransformerTest extends TestCase {
     protected void populateSeveralTrueMatchesMerton(
         List<PairInt> keypoints1, List<PairInt> keypoints2
     ) {
-    
-    protected void getMertonCollege7TrueMatches(PairIntArray left, 
-        PairIntArray right) {
         
         /*
         extracted from list of local max filtered harris corners w/ descriptor matches bettern
@@ -1238,7 +1298,7 @@ public class EpipolarTransformerTest extends TestCase {
         return c;
     }
     
-    public void testIsDegenerate() {
+    public void estIsDegenerate() {
 
         /* euler transformations
         
@@ -1301,7 +1361,7 @@ public class EpipolarTransformerTest extends TestCase {
         assertFalse(d);
     }
 
-    public void testNormalizeUsingUnitStandard() {
+    public void estNormalizeUsingUnitStandard() {
         int n = 3;
         double[][] xy = new double[3][];
         xy[0] = new double[]{20, 30, 40};
