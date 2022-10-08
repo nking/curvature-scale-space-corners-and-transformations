@@ -101,24 +101,43 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         double[][] fm0 = tr.calculateEpipolarProjection2(x1, x2, false);
         double[][] fmN = tr.calculateEpipolarProjection2(x1c, x2c, false);
 
+        double[][] em0 = tr.calculateEpipolarProjection2(x1, x2, true);
+        //double[][] emN = tr.calculateEpipolarProjection2(x1c, x2c, true);
+
         // fm0 resembles eFM, but scaled.
         double[][] fm0c = MatrixUtil.copy(fm0);
         double c = eFM[0][0]/fm0c[0][0];
         MatrixUtil.multiply(fm0c, c);
 
+        // frobenius norm of em0
+        double frE0 = MatrixUtil.frobeniusNorm(em0);
+        double frExp0 = MatrixUtil.frobeniusNorm(eEM);
+        double[][] em0c = MatrixUtil.copy(em0);
+        double c2 = frExp0/frE0;
+        MatrixUtil.multiply(em0c, c2);
+
+        // in the absence of noise checkN is 0.
+
         //x2' * F * x1 = 0. // [N X 3]*[3 X 3]*[3 X N] = [N X N]
         double[][] checkN = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(x2c),
                 MatrixUtil.multiply(fmN, x1c));
-/*
+
+        /*
         for (i = 0; i < checkN.length; ++i) {
             ms = MiscMath0.getAvgAndStDev(checkN[i]);
             System.out.printf("r%d: %s\n", i, FormatArray.toString(ms, "%.3e"));
             ms = MiscMath0.getAvgAndStDev(MatrixUtil.extractColumn(checkN, i));
             System.out.printf("c%d: %s\n", i, FormatArray.toString(ms, "%.3e"));
         }
-*/
+        */
         double[][] fmD = MatrixUtil.copy(fmN);
         EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
+
+        /*
+        System.out.printf("em0 =\n%s\n", FormatArray.toString(em0, "%.6f"));
+        System.out.printf("expected EM =\n%s\n", FormatArray.toString(eEM, "%.6f"));
+        System.out.printf("em0c =\n%s\n", FormatArray.toString(em0c, "%.6f"));
+        */
 
         /*
         System.out.printf("fm0 =\n%s\n", FormatArray.toString(fm0, "%.6f"));
@@ -133,6 +152,11 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         for (i = 0; i < eFM.length; ++i) {
             for (j = 0; j < eFM[0].length; ++j) {
                 assertTrue(Math.abs(eFM[i][j] - fm0c[i][j]) < 1E-1);
+            }
+        }
+        for (i = 0; i < eEM.length; ++i) {
+            for (j = 0; j < eEM[0].length; ++j) {
+                assertTrue(Math.abs(eEM[i][j] - em0c[i][j]) < 2E-1);
             }
         }
 
