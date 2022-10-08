@@ -13,8 +13,6 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TFloatIntMap;
-import gnu.trove.map.hash.TFloatIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -77,7 +75,7 @@ import java.util.logging.Logger;
  *     assumes that a corner’s intensity is offset from its center, and this vector 
  *     may be used to impute an orientation. Rosin defines the moments of a patch as:
  * 
- *    m_p_q = moments = summation_over_x_and_y( (x^p) * (y^q) * I(x,y) 
+ *    m_p_q = moments = summation_over_x_and_y( (x^p) * (y^q) * I(x,y) )
  *       where I(x,y) is the pixel intensity.
  * 
  *    C = the centroid = ( m_1_0/m_0_0, m_0_1/m_0_0)
@@ -134,11 +132,11 @@ replaced with existing functions in this project in this implementation below.
 Have also edited alot of the ordering of logic, but the core content is still adapted
 from the scipy code.
  
-Note: to include color information, consider combining the results of the
+Note: to include color information, consider combining the results of
 a greyscale ORB with the results of a "C" from LCH colorspace and/or another
 * color transformation that uses a chromaticity transformation 
 * to distinguish colors.  
-* For the later, would need to make a separate ORB because the
+* For the latter, would need to make a separate ORB because the
 * differences in the "H", that is polar theta, would need
 * to use a threshold of 20 degrees or so and a result of binary
 * difference, and would need a correction for wrap around the
@@ -216,27 +214,16 @@ public class ORB {
     private TDoubleList combinedOrientationList = null;
     private TFloatList combinedHarrisResponseList = null;
     private Descriptors combinedDescriptors = null;
-    
-    protected static double twoPI = 2. * Math.PI;
 
     protected float curvatureThresh = 0.05f;
 
-    private Logger log = Logger.getLogger(this.getClass().getName());
-    
-    /**
-     * a map holding the scale factor of a pyramid image as key
-     * and the octave number of pyramid images.
-     * it's meant to be useful for delayed creating of hsv pyramid
-     * to read the scalesList and remove an hsv pyramid image if not present in
-     * scales.
-     */
-    private TFloatIntMap octaveScaleMap = new TFloatIntHashMap();
+    private final Logger log = Logger.getLogger(this.getClass().getName());
 
     // pyramid images will be no smaller than this
     private final static int defaultDecimationLimit = 32;
     protected final int decimationLimit = defaultDecimationLimit;
 
-    public static enum DescriptorChoice {
+    public enum DescriptorChoice {
         NONE, GREYSCALE
     }
     private DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;
@@ -248,13 +235,16 @@ public class ORB {
     protected int nPyramidB = 3;
 
     protected boolean doCreate1stATrousKeypoints = true;
-    
+
     protected final GreyscaleImage img;
-    
+
     /**
      * Still testing the class, there may be bugs present.
-     * @param image
-     * @param nKeypoints
+     * @param image image to calculate keypoints and descriptors for.
+     * @param nKeypoints the limit to the number of keypoints per
+     *                   pyramidal octave scale, and the limit to the
+     *                   total combined keypoint list of all octave scales.
+     *
      */
     public ORB(GreyscaleImage image, int nKeypoints) {
 
@@ -282,7 +272,7 @@ public class ORB {
     /**
      * default is 0.08f.
      * For a low resolution image, may want to use 0.01f.
-     * @param threshold 
+     * @param threshold
      */
     public void overrideFastThreshold(float threshold) {
         this.fastThreshold = threshold;
@@ -291,7 +281,7 @@ public class ORB {
     /**
      * override the number of divisions of scale to add in
      * between the powers of 2 scalings.  The default number
-     * is 3;
+     * is 3.
      * @param n
      */
     public void overridePyamidalExtraN(int n) {
@@ -326,14 +316,15 @@ public class ORB {
     private void initMasks() {
 
         OFAST_MASK = new int[31][31];
-        for (int i = 0; i < 31; ++i) {
+        int i;
+        for (i = 0; i < 31; ++i) {
             OFAST_MASK[i] = new int[31];
         }
 
         OFAST_UMAX = new int[]{15, 15, 15, 15, 14, 14, 14, 13, 13, 12, 11, 10,
             9, 8, 6, 3};
 
-        for (int i = -15; i < 16; ++i) {
+        for (i = -15; i < 16; ++i) {
             int absI = Math.abs(i);
             for (int j = -OFAST_UMAX[absI]; j < (OFAST_UMAX[absI] + 1); ++j) {
                 OFAST_MASK[15 + j][15 + i] = 1;
@@ -362,13 +353,14 @@ public class ORB {
         buildHarrisImages();
         
         // NOTE that the keypoints are all in the coord frame of the largest image
+        // which is scales[0], that is, octave = 0.
         extractKeypoints();
 
         extractDescriptors();
 
         combineAndFilterTotal();
 
-        int nKeyPointsTotal = countKeypoints();
+        //int nKeyPointsTotal = countKeypoints();
 
         //log.info("nKeypointsTotal=" + nKeyPointsTotal +
         //    " number of allowed Keypoints=" + this.nKeypoints);                
@@ -381,28 +373,19 @@ public class ORB {
         int nScales = pyr.size();
 
         pyramidImages = new TwoDFloatArray[nScales];
-        
         scales = new float[nScales];
         
-        float prevScl = 1.f;
-        scales[0] = prevScl;
-        
-        for (int i = 0; i < nScales; ++i) {
-            
+        scales[0] = 1.f;
+        pyramidImages[0] = pyr.get(0);
+
+        float x0, y0;
+        for (int i = 1; i < nScales; ++i) {
             pyramidImages[i] = pyr.get(i);
-            
-            float scale = prevScl;
-            
-            if (i > 0) {
-                float x0 = (float)pyramidImages[i - 1].a.length/
-                    (float)pyramidImages[i].a.length;
-                float y0 = (float)pyramidImages[i - 1].a[0].length/
-                    (float)pyramidImages[i].a[0].length;
-                scale = prevScl * (x0 + y0)/2.f;
-                prevScl = scale;
-         
-                scales[i] = scale;
-            }
+            x0 = (float)pyramidImages[i - 1].a.length/
+                (float)pyramidImages[i].a.length;
+            y0 = (float)pyramidImages[i - 1].a[0].length/
+                (float)pyramidImages[i].a[0].length;
+            scales[i] = scales[i-1] * (x0 + y0)/2.f;
         }
     }
   
@@ -429,8 +412,8 @@ public class ORB {
         float[][] rowMajorImg;
         TwoDFloatArray f;
         
-        for (int i = 0; i < output.size(); ++i) {
-            rowMajorImg = imageProcessor.copyToRowMajor(output.get(i));
+        for (GreyscaleImage im : output) {
+            rowMajorImg = imageProcessor.copyToRowMajor(im);
             MatrixUtil.multiply(rowMajorImg, 1.f/255.f);
             f = new TwoDFloatArray(rowMajorImg);
             output2.add(f);
@@ -446,10 +429,12 @@ public class ORB {
         float sigma = SIGMA.getValue(SIGMA.ZEROPOINTFIVE);
         
         tensorComponents = new StructureTensor[scales.length];
-        
+
+        TwoDFloatArray octaveImage;
+
         for (int i = 0; i < scales.length; ++i) {
             
-            TwoDFloatArray octaveImage = pyramidImages[i];
+            octaveImage = pyramidImages[i];
 
             // octaveImage.a is in row-major format
             tensorComponents[i] = new StructureTensor(octaveImage.a,
@@ -461,19 +446,25 @@ public class ORB {
     private void buildHarrisImages() {
         
         harrisResponseImages = new TwoDFloatArray[scales.length];
-        
+
+        TwoDFloatArray octaveImage;
+        StructureTensor tensors;
+        float[][] detA;
+        float[][] traceA;
+        float[][] harrisResponse;
+
         for (int i = 0; i < scales.length; ++i) {
             
-            TwoDFloatArray octaveImage = pyramidImages[i];
+            octaveImage = pyramidImages[i];
             
-            StructureTensor tensors = tensorComponents[i];
+            tensors = tensorComponents[i];
             
-            float[][] detA = tensors.getDeterminant();
+            detA = tensors.getDeterminant();
 
-            float[][] traceA = tensors.getTrace();
+            traceA = tensors.getTrace();
 
             // size is same a octaveImage
-            float[][] harrisResponse = cornerHarris(octaveImage.a, detA, traceA);
+            harrisResponse = cornerHarris(octaveImage.a, detA, traceA);
 
             harrisResponseImages[i] = new TwoDFloatArray(harrisResponse);
         }
@@ -577,7 +568,6 @@ public class ORB {
         float[][] octaveImage;
         TDoubleList orientations;
         TFloatList responses;
-        int rmi = this.nKeypoints;
         int len;
             
         for (int octave = 0; octave < scales.length; ++octave) {
@@ -646,8 +636,8 @@ public class ORB {
         
             // filter to remove redundant points when rescaled
             set = new HashSet<PairInt>();
-            kp0s = new TIntArrayList(set.size());
-            kp1s = new TIntArrayList(set.size());
+            kp0s = new TIntArrayList(kpc0s.size());
+            kp1s = new TIntArrayList(kpc0s.size());
             for (i = 0; i < kpc0s.size(); ++i) {
                 // coords are in octave reference frame so expand to largest pyramid frame
                 //    for redundancy and boundary check
@@ -679,8 +669,10 @@ public class ORB {
             // filter for number of points if requested
             if (kp0s.size() > this.nKeypoints) {
                 len = kp0s.size() - this.nKeypoints;
-                kp0s.remove(rmi, len);
-                kp1s.remove(rmi, len);
+                // TIntList.remove(int offset, int length)
+                //          Removes length values from the list, starting at offset
+                kp0s.remove(this.nKeypoints, len);
+                kp1s.remove(this.nKeypoints, len);
             }
             // coords are in octave reference frame so expand to largest pyramid frame
             octaveImage = pyramidImages[octave].a;
@@ -783,6 +775,12 @@ public class ORB {
 
             return;
         }
+
+        // else sort and keep the top nKeypoints
+
+        //TODO: consider the filtering that went into each octave and apply similar
+        // here over the combined keypoint list as there are repeated keypoints and
+        // some keypoints which are very near several other.
     
         PairInt[] idxs00 = new PairInt[nTotal];
         int[] idxs0 = new int[nTotal];
@@ -903,7 +901,7 @@ public class ORB {
      * adapted from
      * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb.py
      *
-     * @param octave
+     * @param octave scale
      * @return
      */
     private Resp extractKeypoints(int octave) {
@@ -1357,12 +1355,7 @@ public class ORB {
     protected void cornerPeaks(float[][] img, int minDistance,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
 
-        //threshold_abs=None,
         float thresholdRel = 0.1f;
-        boolean excludeBorder = true;
-        boolean indices = true;
-        int numPeaks = Integer.MAX_VALUE;
-        //footprint=None, labels=None
 
         int nRows = img.length;
         int nCols = img[0].length;
@@ -1639,8 +1632,13 @@ public class ORB {
         int nRows = octaveImage.length;
         int nCols = octaveImage[0].length;
 
+        int border = 5;
+        if (Math.min(nRows, nCols)/20. < border) {
+            border = (int)(Math.min(nRows, nCols)/20.);
+        }
+
         TIntList mask = maskCoordinatesIfBorder(keypoints0, keypoints1,
-            nRows, nCols, 5);//16);
+            nRows, nCols, border);//16);
 
         for (int i = (mask.size() - 1); i > -1; --i) {
             if (mask.get(i) == 0) {
@@ -1910,8 +1908,8 @@ public class ORB {
     /**
      * get a list of each octave's keypoint rows as a combined list.
      * The list contains coordinates which have already been scaled to the
-     * full image reference frame.  These are the row coordinates of
-     * key-points.  (The column coordinates are in keypoints1).
+     * full image reference frame.
+     * These are the row coordinates of key-points.  (The column coordinates are in keypoints1).
      * @return
      */
     public TIntList getAllKeyPoints0() {
@@ -1924,6 +1922,54 @@ public class ORB {
         }
 
         return combined;
+    }
+
+    /**
+     * get a list of the octave's keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     * All coordinates are with respect to the largest image frame, scales[0],
+     * which is also called the first octave.
+     * @return keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     */
+    public double[][] getKeyPointsHomogenous(int octave) {
+        if (octave < 0 || octave >= scales.length) {
+            throw new IllegalArgumentException("octave can be 0 to " + (scales.length - 1) + ", inclusive");
+        }
+        TIntList rows = this.keypoints0List.get(octave);
+        TIntList cols = this.keypoints1List.get(octave);
+        int n = rows.size();
+        double[][] x = MatrixUtil.zeros(3, n);
+        for (int i = 0; i < n; ++i) {
+            x[0][i] = cols.get(i);
+            x[1][i] = rows.get(i);
+        }
+        Arrays.fill(x[2], 1);
+        return x;
+    }
+
+    /**
+     * get a list of all octave's keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     * All coordinates are with respect to the largest image frame, scales[0],
+     * which is also called the first octave.
+     * @return keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     */
+    public double[][] getAllKeyPointsHomogenous() {
+        // combined are x,y
+        int n = combinedKeypointList.size();
+        double[][] x = MatrixUtil.zeros(3, n);
+        for (int i = 0; i < n; ++i) {
+            x[0][i] = combinedKeypointList.get(i).getX();
+            x[1][i] = combinedKeypointList.get(i).getY();
+        }
+        Arrays.fill(x[2], 1);
+        return x;
     }
     
     /**
@@ -2016,6 +2062,10 @@ public class ORB {
      * @return
      */
     public List<TIntList> getKeyPoint0List() {
+        if (keypoints0List == null) {
+            //TODO: consider whether this should be an IllegalStateException
+            System.err.println("keypoint0List is null.  detectAndExtract() must be run first");
+        }
         return keypoints0List;
     }
 
@@ -2026,6 +2076,10 @@ public class ORB {
      * @return
      */
     public List<TIntList> getKeyPoint1List() {
+        if (keypoints1List == null) {
+            //TODO: consider whether this should be an IllegalStateException
+            System.err.println("keypoints1List is null.  detectAndExtract() must be run first");
+        }
         return keypoints1List;
     }
 

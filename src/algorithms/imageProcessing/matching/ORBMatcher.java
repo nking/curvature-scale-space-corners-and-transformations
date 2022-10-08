@@ -1,27 +1,17 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
-import algorithms.imageProcessing.features.orb.ORB2;
-import algorithms.imageProcessing.transform.EpipolarNormalizationHelper;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.matrix.MatrixUtil;
-import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import algorithms.util.QuadInt;
 import algorithms.VeryLongBitString;
 import algorithms.bipartite.Graph;
 import algorithms.bipartite.MinCostUnbalancedAssignment;
-import algorithms.imageProcessing.transform.EpipolarTransformer;
 import gnu.trove.iterator.TIntIntIterator;
-import gnu.trove.list.TDoubleList;
-import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
@@ -30,14 +20,11 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.Matrices;
 import thirdparty.HungarianAlgorithm;
 
 /**
@@ -202,166 +189,6 @@ public class ORBMatcher {
         for (i = 0; i < inliers.size(); ++i) {
             idx = inliers.get(i);
             matched2[i] = Arrays.copyOf(matched[idx], 2);
-        }
-        return matched2;
-    }
-
-    /**
-     * greedy matching of d1 to d2 by min difference, with unique mappings for
-     * all indexes.
-     * NOTE that if 2 descriptors match equally well, either one
-     * might get the assignment.
-     * Consider using instead, matchDescriptors2 which matches
-     * by descriptor and relative spatial location.
-     *  this method is tailored for keypoints1 and keypoints2 being row-major format compatible
-     * @param d1
-     * @param d2
-     * @param keypoints1 keypoints from image 1 in format [3 X n].  any normalization that is needed should be
-     *                   performed on keypoints1 before given to this method.
-     * @param keypoints2 keypoints from image 2 in format [3 X n].  any normalization that is needed should be
-     *      *                   performed on keypoints2 before given to this method.
-     * @return matches as pairs of indexes relative to keypoints1 and keypoints2.  the result is dimension [n X 2]
-     * where each row is (index1, index2).
-     */
-    public static int[][] matchDescriptorsRC(ORB.Descriptors d1,
-                                           ORB.Descriptors d2, double[][] keypoints1,
-                                           double[][] keypoints2) throws IOException {
-
-        int n1 = d1.descriptors.length;
-        int n2 = d2.descriptors.length;
-        if (n1 == 0 || n2 == 0) {
-            return null;
-        }
-
-        if (d1.descriptors[0].getCapacity() != d2.descriptors[0].getCapacity()) {
-            throw new IllegalArgumentException("d1 and d2 must have same bitstring"
-                    + " capacities (== 256) " +
-                    d1.descriptors[0].getCapacity() + " " +
-                    d2.descriptors[0].getCapacity()
-            );
-        }
-
-        if (n1 != keypoints1[0].length) {
-            throw new IllegalArgumentException("number of descriptors in " + " d1 bitstrings must be same as keypoints1 length");
-        }
-        if (n2 != keypoints2[0].length) {
-            throw new IllegalArgumentException("number of descriptors in " + " d2 bitstrings must be same as keypoints2 length");
-        }
-        //[n1][n2]
-        int[][] cost = ORB2.calcDescriptorCostMatrix(d1.descriptors, d2.descriptors);
-
-        // pairs of indexes of matches.  it does not matter whether keypoints holds row,col pairs or col,row pairs
-        int[][] matches;
-        if ((n1*n2) > 2.5e5) {
-            //runtime complexity is O(n1*n2) where n1=cost.length and n2=cost[0].length
-            matches = greedyMatch(cost);
-
-            int nUnmatched = Math.min(keypoints1[0].length, keypoints2[0].length) - matches.length;
-
-            System.out.printf("nMatched=%d  nUnMatched=%d\n", matches.length, nUnmatched);
-            System.out.flush();
-
-            // for one test dataset, this picks up roughly 10% * matches.length:
-            int[][] matches2 = greedyMatchRemaining(matches, cost);
-
-            matches = stack(matches, matches2);
-
-            nUnmatched = Math.min(keypoints1[0].length, keypoints2[0].length) - matches.length;
-            System.out.printf("after match remaining nMatched=%d  nUnMatched=%d\n", matches.length, nUnmatched);
-            System.out.flush();
-
-        } else {
-            // hungarian needs nRows <= nColumns
-            boolean tr = cost.length > cost[0].length;
-            if (tr) {
-                cost = MatrixUtil.transpose(cost);
-            }
-            //runtime complexity is ~ O(n^4) but could be improved.
-            matches = new HungarianAlgorithm().computeAssignments(MatrixUtil.convertToFloat(cost));
-            if (tr) {
-                int tmp;
-                for (int i = 0; i < matches.length; ++i) {
-                    tmp = matches[i][0];
-                    matches[i][0] = matches[i][1];
-                    matches[i][1] = tmp;
-                }
-            }
-            System.out.printf("hungarian nMatched=%d  nUnMatched=%d\n", matches.length,
-                    Math.min(keypoints1[0].length, keypoints2[0].length) - matches.length);
-            System.out.flush();
-
-            //TODO: consider adding jgrapht library.  MaximumWeightBipartiteMatching can be used
-            // with a cost matrix inverted to a score matrix.
-            // O(n(m+nlogn))
-        }
-
-        //System.out.printf("greedy matches=\n%s\n", FormatArray.toString(matches, "%d"));
-        //System.out.printf("bipart matches=\n%s\n", FormatArray.toString(matches, "%d"));
-
-        if (matches.length < 7) {
-
-            // 6!/(1!5!) + 6!/(2!4!) + 6!/(3!3!) + 6!/(2!4!) + 6!/(1!5!) = 6 + 15 + 20 + 15 + 6=62
-            // 5!/(1!4!) + 5!/(2!3!) + 5!/(3!2!) + 5!/(1!4!) = 5 + 10 + 10 + 5 = 20
-            // 4!/(1!3!) + 4!/(2!2!) + 4!/(1!3!) = 4+6+4=14
-            // 3!/(1!2!) + 3!/(2!1!) = 3 + 3
-            // 2!/(1!1!) = 2
-            /*
-            considering how to filter for outliers in these few number of points.
-
-            can use affine projection.
-            can iterate over subsamples of the input point to remove points from it,
-                fit and evaluate the affine projection
-
-            apply the best affine projection to keypoints1 to find close matches
-               in keypoints2 where close match is (x,y) and descriptor cost.
-
-            if there are a large number of matches, proceed to RANSAC below,
-            else return either the matches that are the best fitting subset
-            or return the subset and additional points found through the projection.
-            ------
-            the projection algorithm solves for rotation and real world scene coordinates.
-            It does not solve for translation,
-            but one could estimate a rough lateral difference, (not the camera translation
-            in the camera reference frame coords) if the image scales are the
-            same by subtracting the 2nd image correspondence points from the
-            1st image correspondence points rotated.
-
-            OrthographicProjectionResults re = Reconstruction.calculateAffineReconstruction(
-                double[][] x, int mImages).
-
-            where OrthographicProjectionResults results = new OrthographicProjectionResults();
-            results.XW = s;
-            results.rotationMatrices = rotStack;
-
-            Considering the paper
-            https://www.researchgate.net/publication/221110532_Outlier_Correction_in_Image_Sequences_for_the_Affine_Camera
-            "Outlier Correction in Image Sequences for the Affine Camera"
-               by Huynh, Hartley, and Heydeon 2003
-               Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
-
-               excerpt from the abstract:
-                  In this paper, we present an outlier correction scheme that
-                  iteratively updates the elements of the image measurement matrix
-            */
-            return matches;
-        }
-
-        int i, idx;
-
-        // ransac to remove outliers.
-        // fit.inliers are indexes with respect to the matches array
-        EpipolarTransformationFit fit = fitWithRANSAC2(matches, keypoints1, keypoints2);
-        if (fit == null) {
-            return null;
-        }
-
-        System.out.println("fit=" + fit.toString());
-
-        List<Integer> inliers = fit.getInlierIndexes();
-        int[][] matched2 = new int[inliers.size()][2];
-        for (i = 0; i < inliers.size(); ++i) {
-            idx = inliers.get(i);
-            matched2[i] = Arrays.copyOf(matches[idx], 2);
         }
         return matched2;
     }
@@ -586,7 +413,7 @@ public class ORBMatcher {
             if (bc2Idx == -1) {
                 bestMatch[i] = bcIdx;
             } else {
-                float ratio = (float)bc/(float)bc2;
+                float ratio = (bc == bc2) ? 1 : (float)bc/(float)bc2;
                 if (ratio < ratioLimit) {
                     bestMatch[i] = bcIdx;
                 } else {
@@ -687,7 +514,7 @@ public class ORBMatcher {
         int n0 = matches.length;
 
         boolean useToleranceAsStatFactor = false;//true;
-        final double tolerance = 1;//3.8;
+        final double tolerance = 2;//3.8;
         ErrorType errorType = ErrorType.SAMPSONS;
 
         boolean reCalcIterations = false;

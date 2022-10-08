@@ -234,7 +234,20 @@ public class ORBTest extends TestCase {
         assertEquals(9.f, cf[8][6]);
         assertEquals(10.f, cf[8][7]);
         assertEquals(11.f, cf[8][8]);        
-        
+
+        orb.detectAndExtract();
+        int nOct = 0;
+        TIntList kp00 = orb.getKeyPoint0List().get(nOct); // rows
+        TIntList kp01 = orb.getKeyPoint1List().get(nOct); // cols
+        double[][] kp0 = orb.getKeyPointsHomogenous(nOct);
+        int nKP = kp00.size();
+        assertEquals(nKP, kp01.size());
+        assertEquals(nKP, kp0[0].length);
+        for (int i = 0; i < nKP; ++i) {
+            assertEquals(kp01.get(i), (int)kp0[0][i]);
+            assertEquals(kp00.get(i), (int)kp0[1][i]);
+        }
+
         /*        
         min_distance = 1
         thresholdRel = 0.1
@@ -544,8 +557,14 @@ public class ORBTest extends TestCase {
         
         orb.detectAndExtract();
         
-        TIntList keypoints0 = orb.getAllKeyPoints0();
-        TIntList keypoints1 = orb.getAllKeyPoints1();
+        TIntList keypoints0 = orb.getAllKeyPoints0(); // row coords
+        TIntList keypoints1 = orb.getAllKeyPoints1(); // col coords
+        double[][] kp0n = orb.getAllKeyPointsHomogenous();
+        int n = keypoints0.size();
+        for (int i = 0; i < n; ++i) {
+            assertEquals(keypoints1.get(i), (int)kp0n[0][i]);
+            assertEquals(keypoints0.get(i), (int)kp0n[1][i]);
+        }
         //TFloatList responses = orb.getAllHarrisResponses();
         //TDoubleList orientations = orb.getAllOrientations();
         //System.out.println("keypoints0=" + keypoints0.toString());

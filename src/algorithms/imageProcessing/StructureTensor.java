@@ -45,7 +45,9 @@ import algorithms.matrix.MatrixUtil;
     IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
    -- end scikit-image copyright -- 
-   
+
+ TODO: add flag in constructor to build for "row major" or "column major".
+
  * @author nichole
  */
 public class StructureTensor {

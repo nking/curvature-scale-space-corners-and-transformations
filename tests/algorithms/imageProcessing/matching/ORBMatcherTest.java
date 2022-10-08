@@ -71,8 +71,6 @@ public class ORBMatcherTest extends TestCase {
             "nc_book_01.png",
             "nc_book_02.png"};
 
-        // matching good keypoints among repetitive image characteristics is not well done with
-        // my version of ORB descriptors and descriptor matching
         filePairs[6] = new String[]{
                 "merton_college_I_001.jpg",
                 "merton_college_I_002.jpg"};
@@ -80,8 +78,8 @@ public class ORBMatcherTest extends TestCase {
         boolean binImages = true;
         
         int i, ii, np;
-        //for (int rotate = 0; rotate < 2; ++rotate) {
-        for (int rotate = 0; rotate < 1; ++rotate) {
+        for (int rotate = 0; rotate < 2; ++rotate) {
+        //for (int rotate = 0; rotate < 1; ++rotate) {
             
             String lbl = "_";
             if (rotate == 1) {
@@ -89,7 +87,6 @@ public class ORBMatcherTest extends TestCase {
             }
  
             for (ii = 0; ii < filePairs.length; ++ii) {
-            //for (ii = 5; ii < 6; ++ii) {
 
                 String fileName1 = filePairs[ii][0];
                 String fileName2 = filePairs[ii][1];
@@ -158,34 +155,29 @@ public class ORBMatcherTest extends TestCase {
 
                 Descriptors d1 = orb1.getAllDescriptors();
                 Descriptors d2 = orb2.getAllDescriptors();
-                List<PairInt> kp1 = orb1.getAllKeyPoints();
-                List<PairInt> kp2 = orb2.getAllKeyPoints();
+                double[][] xKP1 = orb1.getAllKeyPointsHomogenous();
+                double[][] xKP2 = orb2.getAllKeyPointsHomogenous();
+
+                int nKP1 = xKP1[0].length;
+                int nKP2 = xKP2[0].length;
 
                 int x1, x2, y1, y2;
                 Image tmp1 = img1GS.copyToColorGreyscale();
-                for (i = 0; i < kp1.size(); ++i) {
-                    y = kp1.get(i).getY();
-                    x = kp1.get(i).getX();
+                for (i = 0; i < nKP1; ++i) {
+                    y = (int)xKP1[1][i];
+                    x = (int)xKP1[0][i];
                     ImageIOHelper.addPointToImage(x, y, tmp1, 2, 255, 0, 0);
-                    /*if (x == 213 && y == 58) {
-                        ImageIOHelper.addPointToImage(x, y, tmp1, 3, 255, 255, 0);
-                    }*/
                 }
                 //MiscDebug.writeImage(tmp1, "_kp_gs_" + lbl + fileName1Root);
 
                 Image tmp2 = img2GS.copyToColorGreyscale();
-                for (i = 0; i < kp2.size(); ++i) {
-                    y = kp2.get(i).getY();
-                    x = kp2.get(i).getX();
+                for (i = 0; i < nKP2; ++i) {
+                    y = (int)xKP2[1][i];
+                    x = (int)xKP2[0][i];
                     ImageIOHelper.addPointToImage(x, y, tmp2, 2, 255, 0, 0);
-                    /*if (x == 178 && y == 177) {
-                        ImageIOHelper.addPointToImage(x, y, tmp2, 3, 255, 255, 0);
-                    }*/
                 }
 
                 // kp1 and kp2 are in col major format (col, row) and we want normalized points, so converting to double[][]
-                double[][] xKP1 = convertToArray(kp1);
-                double[][] xKP2 = convertToArray(kp2);
                 double[][] xKP1n = MatrixUtil.copy(xKP1);
                 double[][] xKP2n = MatrixUtil.copy(xKP2);
                 double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
@@ -194,12 +186,7 @@ public class ORBMatcherTest extends TestCase {
                 int[][] matchedIdxs = null;
                 if (true /*normalize points*/) {
                     // col, row
-                    int[][] matched0 = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
                     matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
-
-                    if (matched0 != null) {
-                        System.out.printf("%d) # matched for not normalizing = %d\n", ii, matched0.length);
-                    }
                     if (matchedIdxs != null) {
                         System.out.printf("%d) # matched after normalization = %d\n", ii, matchedIdxs.length);
                     }
@@ -218,10 +205,10 @@ public class ORBMatcherTest extends TestCase {
                 for (i = 0; i < matchedIdxs.length; ++i) {
                     idx1 = matchedIdxs[i][0];
                     idx2 = matchedIdxs[i][1];
-                    x1 = kp1.get(idx1).getX();
-                    y1 = kp1.get(idx1).getY();
-                    x2 = kp2.get(idx2).getX();
-                    y2 = kp2.get(idx2).getY();
+                    x1 = (int)xKP1[0][idx1];
+                    y1 = (int)xKP1[1][idx1];
+                    x2 = (int)xKP2[0][idx2];
+                    y2 = (int)xKP2[1][idx2];
                     plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                 }
                 plotter.writeImage("_corres_orb_gs_" + lbl + fileName1Root);
@@ -235,57 +222,6 @@ public class ORBMatcherTest extends TestCase {
                 */
             }
         }
-    }
-
-    /**
-     * given array matchedN of format (x1, y1, x2, y2), denormalize the values using the transformation matrices t1, t2.
-     * @param matchedN
-     * @param t1
-     * @param t2
-     */
-    private void denormalize(QuadInt[] matchedN, double[][] t1, double[][] t2) {
-
-        int n = matchedN.length;
-
-        // put points into format [3 X n] for 2 data matrices
-        double[][] x1 = MatrixUtil.zeros(3, n);
-        Arrays.fill(x1[2], 1);
-        double[][] x2 = MatrixUtil.zeros(3, n);
-        Arrays.fill(x2[2], 1);
-        for (int i = 0; i < n; ++i) {
-            x1[0][i] = matchedN[i].getA();
-            x1[1][i] = matchedN[i].getB();
-            x2[0][i] = matchedN[i].getC();
-            x2[1][i] = matchedN[i].getD();
-        }
-
-        EpipolarNormalizationHelper.denormalize(x1, x2, t1, t2);
-
-        // populate matchedN with denormalized values
-        for (int i = 0; i < n; ++i) {
-            matchedN[i].setA((int)Math.round(x1[0][i]));
-            matchedN[i].setB((int)Math.round(x1[1][i]));
-            matchedN[i].setC((int)Math.round(x2[0][i]));
-            matchedN[i].setD((int)Math.round(x2[1][i]));
-        }
-    }
-
-    /**
-     * given a list of keypoints in format (col, row), write a double array of size [2 X kP.size()] where the
-     * first row holds the col values, the second row holds the row values and the third row holds values "1" for
-     * the z-axis representation in homogeneous coordinates.
-     * @param kP input list of keypoints in format (col, row)
-     * @return the data in format [2 X kP.size()]
-     */
-    private double[][] convertToArray(List<PairInt> kP) {
-        int n = kP.size();
-        double[][] x = MatrixUtil.zeros(3, n);
-        for (int i = 0; i < n; ++i) {
-            x[0][i] = kP.get(i).getX();
-            x[1][i] = kP.get(i).getY();
-        }
-        Arrays.fill(x[2], 1);
-        return x;
     }
 
 }
