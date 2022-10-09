@@ -2148,7 +2148,7 @@ public class EpipolarTransformer {
      * The code is part of the supplementary material for their book 
      * "Multiple View Geometry in Computer Vision Second Edition"
 
-       This method is adapted from the function is degenetae within
+       This method is adapted from the function is within
        ransacfithomography_vgg.m 
      * </pre>
      * @param x1 a 3-dimensional matrix of correspondence points
@@ -2167,7 +2167,7 @@ public class EpipolarTransformer {
         if (n < 4) {
             throw new IllegalArgumentException("x1 and x2 must have at least 4 columns");
         }
-        
+        editing
         int subsetSize = 4;
                 
         int np = (int) MiscMath0.computeNDivKTimesNMinusK(n, subsetSize);

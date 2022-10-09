@@ -202,7 +202,7 @@ public class RANSACSolver {
         // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
         // max iter for nSet=8 is 766 for 50%.  12!/(8!*(12-8)!)=495
         if ((nSet==7 && nPoints < 12) || (nSet == 8 && nPoints < 13)) {
-            nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
+            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));
             useAllSubsets = true;
         }
         
@@ -253,7 +253,6 @@ public class RANSACSolver {
                 count++;
             }
 
-            //TODO: replace with MiscMath0.areColinear
             if (EpipolarTransformer.isDegenerate(sampleLeft, sampleRight)) {
                 nIter++;
                 continue;
@@ -349,7 +348,7 @@ public class RANSACSolver {
                             .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);
                         // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
                         if ((nSet==7 && nPoints < 12) || (nSet==8 && nPoints < 13)) {
-                            nMaxIter = MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet);
+                            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));
                             useAllSubsets = true;
                             if (chooser == null) {
                                 chooser = new SubsetChooser(nPoints, nSet);
