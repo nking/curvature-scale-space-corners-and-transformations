@@ -1000,7 +1000,8 @@ public class EpipolarTransformerTest extends TestCase {
         DenseMatrix x1M = new DenseMatrix(x1);
         DenseMatrix x2M = new DenseMatrix(x2);
         
-        boolean d = EpipolarTransformer.isDegenerate(x1M, x2M);
+        boolean d = MiscMath0.areColinear(x1, 1E-6) ||
+                MiscMath0.areColinear(x2, 1E-6);
         assertTrue(d);
     
         /*               
@@ -1013,13 +1014,7 @@ public class EpipolarTransformerTest extends TestCase {
         x1[1] = new double[]{5,  10,   10, 15};// y's
         x1[2] = new double[]{1,   1,    1,  1};// z's
         
-        x2 = MatrixUtil.multiply(tPitch, x1);
-        x2 = MatrixUtil.multiply(tTransX, x2);        
-        
-        x1M = new DenseMatrix(x1);
-        x2M = new DenseMatrix(x2);
-        
-        d = EpipolarTransformer.isDegenerate(x1M, x2M);
+        d = MiscMath0.areColinear(x1, 1E-6);
         assertFalse(d);
     }
 
