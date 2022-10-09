@@ -7,13 +7,17 @@ import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.transform.Util;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.matrix.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
 import algorithms.util.PairIntArray;
+
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
 
@@ -109,24 +113,166 @@ public class RANSACSolver {
         ErrorType errorType,
         boolean useToleranceAsStatFactor, final double tolerance,
         boolean reCalcIterations, boolean calibrated) {
-        
-        int nPoints = leftCorres.numColumns();
+
+        double[][] left = convertX(leftCorres);
+        double[][] right = convertX(rightCorres);
+
+        long seed = System.currentTimeMillis();
+        log.info("SEED=" + seed);
+        Random rand = new Random(seed);
+
+        return run(left, right, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);
+    }
+
+    /**
+     * calculate the epipolar transformation among the given points with the
+     * assumption that some of the points in the matched lists are not
+     * true matches.   NOTE: for best results, one should perform unit standard
+     * normalization on the correspondence first.
+     *
+     * @param leftCorres left correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param rightCorres right correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param errorType algorithm used to evaluate the fit of the fundamental matrix solutions.
+     * @param useToleranceAsStatFactor if set to false, tolerance is used as
+     * a fixed number in outlier removal, else if set to true, tolerance
+     * is used as the chi-squared statistic factor for the standard deviation
+     * of errors use in outlier removal.
+     * @param tolerance tolerance in distance from epipolar line for a point to
+     * be an inlier in the final fit.   NOTE: if useToleranceAsStatFactor is true,
+     * it is interpreted as a chiSqStatFactor which is then used as
+     * tolerance = tolerance * standard deviation of the mean distance errors.
+     * @param reCalcIterations if true, upon each better fit found, the
+     * outlier percentage is re-estimated and then the number of iterations necessary for 95%
+     * probability that sample has all good points.
+     * @param calibrated if true, solves for the Essential Matrix, else solves
+     * for the Fundamental Matrix.  The difference is in the diagonal used for
+     * dimension reduction.
+     * @param rand instance of Random to use in choosing subsets of correspondence.
+     * @return
+     */
+    public EpipolarTransformationFit calculateEpipolarProjection(final DenseMatrix leftCorres, final DenseMatrix rightCorres,
+            ErrorType errorType,boolean useToleranceAsStatFactor, final double tolerance,
+            boolean reCalcIterations, boolean calibrated, Random rand) {
+
+        double[][] left = convertX(leftCorres);
+        double[][] right = convertX(rightCorres);
+
+        return run(left, right, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);
+    }
+
+    /**
+     * calculate the epipolar transformation among the given points with the
+     * assumption that some of the points in the matched lists are not
+     * true matches.   NOTE: for best results, one should perform unit standard
+     * normalization on the correspondence first.
+     *
+     * @param leftCorres left correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param rightCorres right correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param errorType algorithm used to evaluate the fit of the fundamental matrix solutions.
+     * @param useToleranceAsStatFactor if set to false, tolerance is used as
+     * a fixed number in outlier removal, else if set to true, tolerance
+     * is used as the chi-squared statistic factor for the standard deviation
+     * of errors use in outlier removal.
+     * @param tolerance tolerance in distance from epipolar line for a point to
+     * be an inlier in the final fit.   NOTE: if useToleranceAsStatFactor is true,
+     * it is interpreted as a chiSqStatFactor which is then used as
+     * tolerance = tolerance * standard deviation of the mean distance errors.
+     * @param reCalcIterations if true, upon each better fit found, the
+     * outlier percentage is re-estimated and then the number of iterations necessary for 95%
+     * probability that sample has all good points.
+     * @param calibrated if true, solves for the Essential Matrix, else solves
+     * for the Fundamental Matrix.  The difference is in the diagonal used for
+     * dimension reduction.
+     * @param rand instance of Random to use in choosing subsets of correspondence.
+     * @return
+     */
+    public EpipolarTransformationFit calculateEpipolarProjection(
+            final double[][] leftCorres, final double[][] rightCorres,
+            ErrorType errorType,
+            boolean useToleranceAsStatFactor, final double tolerance,
+            boolean reCalcIterations, boolean calibrated, Random rand) {
+
+        return run(leftCorres, rightCorres, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);
+    }
+
+    /**
+     * calculate the epipolar transformation among the given points with the
+     * assumption that some of the points in the matched lists are not
+     * true matches.   NOTE: for best results, one should perform unit standard
+     * normalization on the correspondence first.
+     *
+     * @param leftCorres left correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param rightCorres right correspondence holding (x,y) points from left image
+     * in format 3 X nData matrix with rows being x, y, and 1's respectively
+     * @param errorType algorithm used to evaluate the fit of the fundamental matrix solutions.
+     * @param useToleranceAsStatFactor if set to false, tolerance is used as
+     * a fixed number in outlier removal, else if set to true, tolerance
+     * is used as the chi-squared statistic factor for the standard deviation
+     * of errors use in outlier removal.
+     * @param tolerance tolerance in distance from epipolar line for a point to
+     * be an inlier in the final fit.   NOTE: if useToleranceAsStatFactor is true,
+     * it is interpreted as a chiSqStatFactor which is then used as
+     * tolerance = tolerance * standard deviation of the mean distance errors.
+     * @param reCalcIterations if true, upon each better fit found, the
+     * outlier percentage is re-estimated and then the number of iterations necessary for 95%
+     * probability that sample has all good points.
+     * @param calibrated if true, solves for the Essential Matrix, else solves
+     * for the Fundamental Matrix.  The difference is in the diagonal used for
+     * dimension reduction.
+     * @return
+     */
+    public EpipolarTransformationFit calculateEpipolarProjection(
+            final double[][] leftCorres, final double[][] rightCorres,
+            ErrorType errorType,
+            boolean useToleranceAsStatFactor, final double tolerance,
+            boolean reCalcIterations, boolean calibrated) {
+
+        long seed = System.currentTimeMillis();
+        log.info("SEED=" + seed);
+        Random rand = new Random(seed);
+
+        return run(leftCorres, rightCorres, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);
+    }
+
+    private double[][] convertX(DenseMatrix x) {
+        double[][] d = MatrixUtil.zeros(x.numRows(), x.numColumns());
+        int i, j;
+        for (i = 0; i < d.length; ++i) {
+            for (j = 0; j < d[i].length; ++j) {
+                d[i][j] = x.get(i, j);
+            }
+        }
+        return d;
+    }
+
+    private  EpipolarTransformationFit run(
+        final double[][] left, final double[][] right,
+        ErrorType errorType,
+        boolean useToleranceAsStatFactor, final double tolerance,
+        boolean reCalcIterations, boolean calibrated, Random rand) {
+
+        int nPoints = left[0].length;
         final int nSet = 7;
         
         if (nPoints < nSet) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the algorithms require 7 or more points."
-                + " leftCorres.n=" + leftCorres.numColumns());
+                + " leftCorres.n=" + left[0].length);
         }
-        if (leftCorres.numRows() != 3) {
+        if (left.length != 3) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the algorithms require 3 rows representing x, y, and '1' values."
-                + " leftCorres.n=" + leftCorres.numColumns());
+                + " leftCorres.n=" + left.length);
         }
-        if (leftCorres.numColumns() != rightCorres.numColumns() ||
-            leftCorres.numRows() != rightCorres.numRows()) {
+        if (left[0].length != right[0].length ||
+            left.length != right.length) {
             throw new IllegalArgumentException(
                 "leftCorres and rightCorres bmust be the same size");
         }
@@ -161,11 +307,6 @@ public class RANSACSolver {
         // n!/(k!*(n-k)!
         //final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(nPoints, nSet);
         boolean useAllSubsets = false;
-        
-        SecureRandom sr = Misc.getSecureRandom();
-        long seed = System.currentTimeMillis();
-        log.info("SEED=" + seed + " nPoints=" + nPoints);
-        sr.setSeed(seed);
 
         EpipolarTransformer spTransformer = new EpipolarTransformer();
                 
@@ -207,9 +348,21 @@ public class RANSACSolver {
         }
         
         int nIter = 0;
-        
-        int[] selectedIndexes = new int[nSet];
-        
+
+        double eps = 1.e-6;
+
+        //TODO: finish changes to replace DenseMatrix with double[][] throughout this method
+        DenseMatrix leftCorres = new DenseMatrix(left);
+        DenseMatrix rightCorres = new DenseMatrix(right);
+
+        /*
+        double[][] sampleLeft = MatrixUtil.zeros(3, nSet);
+        double[][] sampleRight = MatrixUtil.zeros(3, nSet);
+        // initialize the unchanging 3rd dimension
+        Arrays.fill(sampleLeft[2], 1);
+        Arrays.fill(sampleRight[2], 1);
+        */
+
         DenseMatrix sampleLeft = new DenseMatrix(3, nSet);
         DenseMatrix sampleRight = new DenseMatrix(3, nSet);
         // initialize the unchanging 3rd dimension
@@ -217,6 +370,8 @@ public class RANSACSolver {
             sampleLeft.set(2, i, 1);
             sampleRight.set(2, i, 1);
         }
+
+        int[] selectedIndexes = new int[nSet];
 
         SubsetChooser chooser = null;
         if (useAllSubsets) {
@@ -226,42 +381,49 @@ public class RANSACSolver {
         Distances distances = new Distances();
         
         while (nIter < nMaxIter) {
-            
             if (useAllSubsets) {
                 int chk = chooser.getNextSubset(selectedIndexes);
                 if (chk == -1) {
                     throw new IllegalStateException("have overrun subsets in chooser.");
                 }                
             } else {
-                MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
+                MiscMath.chooseRandomly(rand, selectedIndexes, nPoints);
             }
             
             Arrays.sort(selectedIndexes);
 
             int count = 0;
-            
             for (int bitIndex : selectedIndexes) {
-
-                int idx = bitIndex;
-
-                sampleLeft.set(0, count, leftCorres.get(0, idx));
-                sampleLeft.set(1, count, leftCorres.get(1, idx));
-                                
-                sampleRight.set(0, count, rightCorres.get(0, idx));
-                sampleRight.set(1, count, rightCorres.get(1, idx));
-                
+                /*sampleLeft[0][count] = leftCorres[0][bitIndex];
+                sampleLeft[1][count] = leftCorres[1][bitIndex];
+                sampleRight[0][count] = rightCorres[0][bitIndex];
+                sampleRight[1][count] = rightCorres[1][bitIndex];*/
+                sampleLeft.set(0, count, leftCorres.get(0, bitIndex));
+                sampleLeft.set(1, count, leftCorres.get(1, bitIndex));
+                sampleRight.set(0, count, rightCorres.get(0, bitIndex));
+                sampleRight.set(1, count, rightCorres.get(1, bitIndex));
                 count++;
             }
 
-            if (EpipolarTransformer.isDegenerate(sampleLeft, sampleRight)) {
-                nIter++;
+            if (MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleLeft), eps)
+                    || MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleRight), eps)) {
+                ++nIter;
                 continue;
             }
-            
+
             // calculates 7-point solutions then filters using chirality checks.
             List<DenseMatrix> fms = spTransformer
-                .calculateEpipolarProjectionFor7Points(sampleLeft, sampleRight);
-            
+                .calculateEpipolarProjectionFor7Points(new DenseMatrix(sampleLeft), new DenseMatrix(sampleRight));
+
+            //TODO: finish transformation to using double[][] instead of DenseMatrix
+            // calculates 7-point solutions then filters using chirality checks.
+            /*double[][] fms = null;
+            if (nSet == 7) {
+                fms = spTransformer.calculateEpipolarProjectionUsing7Points(sampleLeft, sampleLeft);
+            } else {
+                fms = spTransformer.calculateEpipolarProjection2(sampleLeft, sampleRight, calibrated);
+            }*/
+
             if (fms == null || fms.isEmpty()) {
                 nIter++;
                 continue;

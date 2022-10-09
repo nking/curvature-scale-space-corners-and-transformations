@@ -3,12 +3,10 @@ package algorithms.imageProcessing.features;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.matching.ErrorType;
-import algorithms.imageProcessing.transform.Distances;
-import algorithms.imageProcessing.transform.EpipolarTransformationFit;
-import algorithms.imageProcessing.transform.EpipolarTransformer;
+import algorithms.imageProcessing.transform.*;
 import algorithms.imageProcessing.transform.EpipolarTransformer.NormalizedXY;
-import algorithms.imageProcessing.transform.Util;
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -47,6 +45,11 @@ public class RANSACSolverTest extends TestCase {
         
         double[][] left = convertToDouble(leftTrueMatches);
         double[][] right = convertToDouble(leftTrueMatches);
+
+        double[][] leftN = MatrixUtil.copy(left);
+        double[][] rightN = MatrixUtil.copy(right);
+        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(leftN);
+        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(rightN);
         
         boolean useToleranceAsStatFactor = true;
         final double tolerance = 3.8;
@@ -69,25 +72,11 @@ public class RANSACSolverTest extends TestCase {
         log.info("normalized 7-pt fm=\n" + fit.getFundamentalMatrix().toString());
 
         DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
-            normXY2.getNormalizationMatrices());
+                fit.getFundamentalMatrix(), normXY1.getNormalizationMatrices(),
+                normXY2.getNormalizationMatrices());
 
-        RANSACSolver2 solver2 = new RANSACSolver2();
-        solver2.setToUse7PointSolver();
-        EpipolarTransformationFit fit2 = solver2.calculateEpipolarProjection(left, right, errorType, useToleranceAsStatFactor,tolerance,
-                reCalcIterations, false);
-        log.info("solver2 7-pt fit=" + fit2.toString());
-        log.info("solver2 7-pt fm=" + fit2.getFundamentalMatrix().toString());
-        solver2.setToUse8PointSolver();
-        fit2 = solver2.calculateEpipolarProjection(left, right, errorType, useToleranceAsStatFactor,tolerance,
-                reCalcIterations, false);
-        if (fit2 != null) {
-            log.info("solver2 8-pt fit=" + fit2.toString());
-            log.info("solver2 8-pt fm=" + fit2.getFundamentalMatrix().toString());
-        } else {
-            log.info("solver2 8-pt fit, fm = null");
-        }
-        
+        log.info("denormalized ransac 7-pt fm=\n%s\n" + FormatArray.toString(fm, "%.3e"));
+
         String fileName1 = "merton_college_I_001.jpg";
         String fileName2 = "merton_college_I_002.jpg";
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
@@ -103,8 +92,8 @@ public class RANSACSolverTest extends TestCase {
         overplotEpipolarLines(fm, leftTrueMatches, rightTrueMatches,
             img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
-            "ransac2");
-        
+            "ransac");
+
         List<Integer> inliers = fit.getInlierIndexes();
         
         int n = inliers.size();
@@ -122,14 +111,7 @@ public class RANSACSolverTest extends TestCase {
         */
         
         List<Double> errors = fit.getErrors();
-        if (leftTrueMatches.getN() != inliers.size()) {
-            
-            overplotEpipolarLines(fm, leftTrueMatches, rightTrueMatches,
-                img1, img2, 
-                image1Width, image1Height, image2Width, image2Height, 
-                "rr_merton"); 
-        }
-        
+
         for (double error : errors) {
             assertTrue(error <= tolerance);
         }
