@@ -145,13 +145,13 @@ public class ORBMatcherTest extends TestCase {
 
                 ORB orb1 = new ORB(img1GS, np);
                 orb1.detectAndExtract();
-                orb1.overrideToAlsoCreate1stDerivKeypoints();
-                orb1.overrideToNotCreateATrousKeypoints();
+                //orb1.overrideToAlsoCreate1stDerivKeypoints();
+                //orb1.overrideToNotCreateATrousKeypoints();
 
                 ORB orb2 = new ORB(img2GS, np);
                 orb2.detectAndExtract();
-                orb1.overrideToAlsoCreate1stDerivKeypoints();
-                orb2.overrideToNotCreateATrousKeypoints();
+                //orb2.overrideToAlsoCreate1stDerivKeypoints();
+                //orb2.overrideToNotCreateATrousKeypoints();
 
                 Descriptors d1 = orb1.getAllDescriptors();
                 Descriptors d2 = orb2.getAllDescriptors();

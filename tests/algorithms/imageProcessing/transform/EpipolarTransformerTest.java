@@ -4,7 +4,6 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.matching.ORBMatcher;
@@ -385,8 +384,6 @@ public class EpipolarTransformerTest extends TestCase {
         double[][] img1 = convertToDouble(image1.toNormalizedRowMajorArray());
         double[][] img2 = convertToDouble(image2.toNormalizedRowMajorArray());
 
-        //printRANSAC2ForTrueMatches();
-
         ImageProcessor imageProcessor = new ImageProcessor();
 
         int minDist = 1;
@@ -509,64 +506,6 @@ public class EpipolarTransformerTest extends TestCase {
         ImageIOHelper.writeOutputImage(
                 dirPath + "/matched_merton_college_I_002" + ".png", tmp4);
 
-       // printRANSAC2ForTrueMatches();
-    }
-
-    private void printRANSAC2ForTrueMatches() throws IOException {
-
-        List<PairInt> keypoints1 = new ArrayList<PairInt>();
-        List<PairInt> keypoints2 = new ArrayList<PairInt>();
-        populateSeveralTrueMatchesMerton(keypoints1, keypoints2);
-
-        //keypoints1.remove(6);
-        //keypoints2.remove(6);
-        int n0 = keypoints1.size();
-
-        double[][] left = new double[3][n0];
-        double[][] right = new double[3][n0];
-        for (int i = 0; i < 3; ++i) {
-            left[i] = new double[n0];
-            right[i] = new double[n0];
-        }
-        Arrays.fill(left[2], 1.0);
-        Arrays.fill(right[2], 1.0);
-        int i, idx1, idx2;
-        for (i = 0; i < n0; ++i) {
-            left[0][i] = keypoints1.get(i).getY(); // column
-            left[1][i] = keypoints1.get(i).getX(); // row
-            right[0][i] = keypoints2.get(i).getY(); // column
-            right[1][i] = keypoints2.get(i).getX(); // row
-        }
-        boolean useToleranceAsStatFactor = true;
-        final double tolerance = 3.8;
-        ErrorType errorType = ErrorType.SAMPSONS;
-
-        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(left);
-        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(right);
-
-        boolean reCalcIterations = false;
-        RANSACSolver2 solver = new RANSACSolver2();
-        //using 7-point algorithm
-        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-                left, right, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations, false);
-
-        if (fit != null)
-        System.out.printf("merton college ransac2 fit: %d true points, fit=\n%s\n",
-                n0, fit.toString());
-
-        EpipolarTransformer tr = new EpipolarTransformer();
-        double[][] fm = tr.calculateEpipolarProjection2(left, right, false);
-        Distances distances = new Distances();
-        if (useToleranceAsStatFactor) {
-            fit = distances.calculateError2(fm,
-                    left, right, errorType, tolerance);
-        } else {
-            fit = distances.calculateError(fm,
-                    left, right, errorType, tolerance);
-        }
-        System.out.printf("merton college 8 point fit: %d true points, fit=\n%s\n",
-                n0, fit.toString());
     }
 
     private void printDescriptorMatches(ORB.Descriptors d1, ORB.Descriptors d2,

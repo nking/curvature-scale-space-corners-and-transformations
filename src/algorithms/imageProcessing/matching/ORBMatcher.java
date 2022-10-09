@@ -2,10 +2,8 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.imageProcessing.features.RANSACSolver;
-import algorithms.imageProcessing.features.RANSACSolver2;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
-import algorithms.matrix.MatrixUtil;
 import algorithms.util.PairInt;
 import algorithms.VeryLongBitString;
 import algorithms.bipartite.Graph;
@@ -458,8 +456,10 @@ public class ORBMatcher {
 
         int i, idx1, idx2;
 
+        //TODO:  refactor  matchDescriptors to accept tolerance as an argument, and pass that
+        // into this method.  for some applications, a tolerance as small as 1 sigma is wanted
         boolean useToleranceAsStatFactor = true;
-        final double tolerance = 1;//3.8;
+        final double tolerance = 3;//3.8;
         ErrorType errorType = ErrorType.SAMPSONS;
 
         boolean reCalcIterations = false;
@@ -490,61 +490,4 @@ public class ORBMatcher {
         return fit;        
     }
 
-    /**
-     * calculate the fundamental matrix given the correspondence matches.
-     * the fundamental matrix is calculated,
-     * then the errors are estimated using the Sampson's distance as errors
-     * and a 3.8*sigma as inlier threshold.
-     * @param matches array of size [2 x nMatches] where each row is a pair of indexes for suggested matches,
-     *                that is [(index in keypoints1 for match0, index in keypoints2 for match0),
-     *                (index in keypoints1 for match1, index in keypoints2 for match1), ...]
-     @param x1 (a.k.a. left) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
-      * @param x2 (a.k.a. right) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
-     * @return epipolar fit to the matches.  note that the if correspondence
-     *      * is unit standard normalized then the fundamental matrix returned
-     *      * in the fit is not de-normalized.  also note that the inliers in the fit are indexes
-     *      * with respect to the matches array.
-     */
-    private static EpipolarTransformationFit fitWithRANSAC2(int[][] matches,
-                                                           double[][] x1, double[][] x2) throws IOException {
-
-        System.out.printf("begin filtering the matches using RANSAC\n");
-        System.out.flush();
-
-        int n0 = matches.length;
-
-        boolean useToleranceAsStatFactor = false;//true;
-        final double tolerance = 2;//3.8;
-        ErrorType errorType = ErrorType.SAMPSONS;
-
-        boolean reCalcIterations = false;
-        RANSACSolver2 solver = new RANSACSolver2();
-        //solver.setToUse8PointSolver();
-
-        int i, idx1, idx2;
-
-        // left and right are the subset of keypoints1 and keypoints 2 designated by matches
-        double[][] left = new double[3][n0];
-        double[][] right = new double[3][n0];
-        for (i = 0; i < 3; ++i) {
-            left[i] = new double[n0];
-            right[i] = new double[n0];
-        }
-        Arrays.fill(left[2], 1.0);
-        Arrays.fill(right[2], 1.0);
-        for (i = 0; i < n0; ++i) {
-            idx1 = matches[i][0];
-            idx2 = matches[i][1];
-            left[0][i] = x1[0][idx1];
-            left[1][i] = x1[1][idx1];
-            right[0][i] = x2[0][idx2];
-            right[1][i] = x2[1][idx2];
-        }
-
-        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-                left, right, errorType, useToleranceAsStatFactor, tolerance,
-                reCalcIterations, false);
-
-        return fit;
-    }
 }

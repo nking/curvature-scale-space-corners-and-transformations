@@ -103,7 +103,7 @@ public class RANSACSolverTest extends TestCase {
         overplotEpipolarLines(fm, leftTrueMatches, rightTrueMatches,
             img1, img2, 
             image1Width, image1Height, image2Width, image2Height, 
-            "r" + Integer.valueOf(0).toString()); 
+            "ransac2");
         
         List<Integer> inliers = fit.getInlierIndexes();
         

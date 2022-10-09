@@ -1065,7 +1065,8 @@ public class Reconstruction {
             throw new IllegalArgumentException("x must have a multiple of mImages as the number of columns");
         }
         int nFeatures = x[0].length / mImages;
-        
+
+        //TODO: check this
         //2mn >= 8m + 3n – 12
         if ((2*mImages * nFeatures) < (8*mImages +3*nFeatures - 12)) {
             throw new IllegalArgumentException("more points are necessary:"
@@ -1316,7 +1317,8 @@ public class Reconstruction {
             throw new IllegalArgumentException("x must have a multiple of mImages as the number of columns");
         }
         int nFeatures = x[0].length / mImages;
-        
+
+        //TODO: check this
         //2mn >= 8m + 3n – 12
         if ((2*mImages * nFeatures) < (8*mImages +3*nFeatures - 12)) {
             throw new IllegalArgumentException("more points are necessary:"
@@ -1645,7 +1647,8 @@ public class Reconstruction {
             throw new IllegalArgumentException("x must have a multiple of mImages as the number of columns");
         }
         int nFeatures = x[0].length / mImages;
-        
+
+        //TODO: check this
         ///2mn >= 8m + 3n – 12
         if ((2*mImages * nFeatures) < (8*mImages +3*nFeatures - 12)) {
             throw new IllegalArgumentException("more points are necessary:"
@@ -2598,13 +2601,20 @@ public class Reconstruction {
         // enforcing positive definiteness of L (which is ell here).
         double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps
         double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);
-        /*EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
+
+        // debugging
+        EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
         double[] eig = evd2.getRealEigenvalues();
         double[][] aMinusPSD = MatrixUtil.pointwiseSubtract(ell, lPSD);
         double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
-        */
+
         boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);
-        assert(ipd);
+        if (!ipd) {
+            //TODO: consider throwing an exception so i'll fix this...
+            System.err.printf("WARNING: matrix L_PSD is not positive semi-definite." +
+                    " The distance between L and L_PSD=%.3e, but should be near 0.\n", dist1);
+        }
+
        
         //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
         double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);
