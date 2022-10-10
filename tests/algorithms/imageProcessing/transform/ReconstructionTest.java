@@ -299,26 +299,27 @@ public class ReconstructionTest extends TestCase {
         double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
         double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(xKP2n);
 
-        int[][] matchedIdxs = null;
+        ORBMatcher.FitAndCorres fitC = null;
         if (true /*normalize points*/) {
             // col, row
-            matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
-            if (matchedIdxs != null) {
-                System.out.printf("# matched after normalization = %d\n", matchedIdxs.length);
-            }
+            fitC = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
         } else {
-            matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
+            fitC = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
         }
 
-        if (matchedIdxs == null) {
+        if (fitC.mI == null) {
             return null;
         }
+        int[][] mi = fitC.mI;
+        if (fitC.mIF != null) {
+            mi = fitC.mIF;
+        }
+
         int idx1, idx2;
-        System.out.println(lbl + fileName1Root + " matched=" + matchedIdxs.length);
         CorrespondencePlotter plotter = new CorrespondencePlotter(tmp1, tmp2);
-        for (i = 0; i < matchedIdxs.length; ++i) {
-            idx1 = matchedIdxs[i][0];
-            idx2 = matchedIdxs[i][1];
+        for (i = 0; i < mi.length; ++i) {
+            idx1 = mi[i][0];
+            idx2 = mi[i][1];
             x1 = (int) xKP1[0][idx1];
             y1 = (int) xKP1[1][idx1];
             x2 = (int) xKP2[0][idx2];
@@ -336,16 +337,17 @@ public class ReconstructionTest extends TestCase {
          * for example: row 0 = [img_0_feature_0, ... img_0_feature_n-1, ... img_m-1_feature_0,...
          *     img_m-1_feature_n-1].
          */
-        double[][] xIn = MatrixUtil.zeros(2, 2*matchedIdxs.length);
-        for (i = 0; i < matchedIdxs.length; ++i) {
-            idx1 = matchedIdxs[i][0];
+
+        double[][] xIn = MatrixUtil.zeros(2, 2*mi.length);
+        for (i = 0; i < mi.length; ++i) {
+            idx1 = mi[i][0];
             xIn[0][i] = (int) xKP1[0][idx1];
             xIn[1][i] = (int) xKP1[1][idx1];
         }
-        for (i = 0; i < matchedIdxs.length; ++i) {
-            idx2 = matchedIdxs[i][1];
-            xIn[0][i + matchedIdxs.length] = (int) xKP2[0][idx2];
-            xIn[1][i + matchedIdxs.length] = (int) xKP2[1][idx2];
+        for (i = 0; i < mi.length; ++i) {
+            idx2 = mi[i][1];
+            xIn[0][i + mi.length] = (int) xKP2[0][idx2];
+            xIn[1][i + mi.length] = (int) xKP2[1][idx2];
         }
 
         return xIn;

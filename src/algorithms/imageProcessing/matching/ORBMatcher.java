@@ -4,6 +4,7 @@ import algorithms.QuickSort;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
+import algorithms.matrix.MatrixUtil;
 import algorithms.util.PairInt;
 import algorithms.VeryLongBitString;
 import algorithms.bipartite.Graph;
@@ -15,7 +16,6 @@ import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +23,6 @@ import java.util.List;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import no.uib.cipr.matrix.DenseMatrix;
-import thirdparty.HungarianAlgorithm;
 
 /**
  * NOT READY FOR USE.  the matchDescriptor methods are not producing
@@ -88,11 +87,14 @@ public class ORBMatcher {
      * @param keypoints1 keypoints from image 1 in format [3 X n].  any normalization that is needed should be
      *                   performed on keypoints1 before given to this method.
      * @param keypoints2 keypoints from image 2 in format [3 X n].  any normalization that is needed should be
-     *      *                   performed on keypoints2 before given to this method.
-     * @return matches as pairs of indexes relative to keypoints1 and keypoints2.  the result is dimension [n X 2]
-     * where each row is (index1, index2).
+     * performed on keypoints2 before given to this method.
+     *
+     * @return the matches as pairs of indexes relative to keypoints1 and keypoints2, the epipolar fit fundamental
+     * matrix (or essential matrix), correspondence errors and
+     * tolerance used in the error analysis.  If there were too few points for a fit or if RANSAC failed to find a solution,
+     * there will be the unfiltered matched points and null entries in the returned instance of FitAndCorres.
      */
-    public static int[][] matchDescriptors(ORB.Descriptors d1,
+    public static FitAndCorres matchDescriptors(ORB.Descriptors d1,
                                            ORB.Descriptors d2, double[][] keypoints1,
                                            double[][] keypoints2) {
         boolean useToleranceAsStatFactor = true;
@@ -101,9 +103,9 @@ public class ORBMatcher {
         ErrorType errorType = ErrorType.SAMPSONS;
 
         return matchDescriptors(d1, d2, keypoints1, keypoints2, useToleranceAsStatFactor, tolerance, errorType,
-                recalcIterations);
+                recalcIterations, true);
     }
-    
+
     /**
      * greedy matching of d1 to d2 by min difference, with unique mappings for
      * all indexes.
@@ -128,19 +130,21 @@ public class ORBMatcher {
      *      * it is interpreted as a chiSqStatFactor which is then used as
      *      * tolerance = tolerance * standard deviation of the mean distance errors.
      *      * @param reCalcIterations if true, upon each better fit found, the
-     *      * outlier percentage is re-estimated and then the number of iterations necessary for 95%
-     *      * probability that sample has all good points.
-     *      * @param calibrated if true, solves for the Essential Matrix, else solves
-     *      * for the Fundamental Matrix.  The difference is in the diagonal used for
-     *      * dimension reduction.
-     * @return matches as pairs of indexes relative to keypoints1 and keypoints2.  the result is dimension [n X 2]
-     * where each row is (index1, index2).
+     *  outlier percentage is re-estimated and then the number of iterations necessary for 95%
+     * probability that sample has all good points.
+     *@param calibrated if true, solves for the Essential Matrix, else solves
+     * for the Fundamental Matrix.  The difference is in the diagonal used for
+     * dimension reduction.
+     * @return the matches as pairs of indexes relative to keypoints1 and keypoints2, the epipolar fit fundamental
+     * matrix (or essential matrix), correspondence errors and
+     * tolerance used in the error analysis.  If there were too few points for a fit or if RANSAC failed to find a solution,
+     * there will be the unfiltered matched points and null entries in the returned instance of FitAndCorres.
      */
-    public static int[][] matchDescriptors(ORB.Descriptors d1,
+    public static FitAndCorres matchDescriptors(ORB.Descriptors d1,
         ORB.Descriptors d2, double[][] keypoints1,
         double[][] keypoints2, boolean useToleranceAsStatFactor,
                                                    final double tolerance,
-                                                   ErrorType errorType, boolean reCalcIterations) {
+                                                   ErrorType errorType, boolean reCalcIterations, boolean calibrated) {
         
         int n1 = d1.descriptors.length;
         int n2 = d2.descriptors.length;
@@ -213,29 +217,22 @@ public class ORBMatcher {
                   iteratively updates the elements of the image measurement matrix
             */
 
-            return matched;
+            FitAndCorres fit = new FitAndCorres();
+            fit.mI = matched;
+
+            return fit;
         }
 
         // ransac to remove outliers.
         //NOTE: the fundamental matrix in the fit has not been de-normalized.
         // and fit.inliers are indexes with respect to the matched array
-        EpipolarTransformationFit fit = fitWithRANSAC(matched, keypoints1, keypoints2,
-                useToleranceAsStatFactor, tolerance, errorType, reCalcIterations);
-
+        FitAndCorres fit = fitWithRANSAC(matched, keypoints1, keypoints2,
+                useToleranceAsStatFactor, tolerance, errorType, reCalcIterations, calibrated);
         if (fit == null) {
             return null;
         }
-        
-        System.out.println("fit=" + fit.toString());
 
-        int i, idx;
-        List<Integer> inliers = fit.getInlierIndexes();
-        int[][] matched2 = new int[inliers.size()][2];
-        for (i = 0; i < inliers.size(); ++i) {
-            idx = inliers.get(i);
-            matched2[i] = Arrays.copyOf(matched[idx], 2);
-        }
-        return matched2;
+        return fit;
     }
 
     private static int[][] stack(int[][] matches, int[][] matches2) {
@@ -503,22 +500,25 @@ public class ORBMatcher {
       *      * @param reCalcIterations if true, upon each better fit found, the
       *      * outlier percentage is re-estimated and then the number of iterations necessary for 95%
       *      * probability that sample has all good points.
-      *      * @param calibrated if true, solves for the Essential Matrix, else solves
-      *      * for the Fundamental Matrix.  The difference is in the diagonal used for
-      *      * dimension reduction.
-     * @return epipolar fit to the matches.  note that the if correspondence
-     * is unit standard normalized then the fundamental matrix returned
-     * in the fit is not de-normalized.  also note that the inliers in the fit are indexes
-     * with respect to the matches array.
+      * @param calibrated if true, solves for the Essential Matrix, else solves
+      * for the Fundamental Matrix.  The difference is in the diagonal used for
+      * dimension reduction.
+     @return the matches as pairs of indexes relative to keypoints1 and keypoints2, the epipolar fit fundamental
+      * matrix (or essential matrix), correspondence errors and
+      * tolerance used in the error analysis.  If there were too few points for a fit or if RANSAC failed to find a solution,
+      * there will be the unfiltered matched points and null entries in the returned instance of FitAndCorres.
      */
-    public static EpipolarTransformationFit fitWithRANSAC(int[][] matches,
+    public static FitAndCorres fitWithRANSAC(int[][] matches,
                                                            double[][] x1, double[][] x2,
                                                           boolean useToleranceAsStatFactor,
                                                           final double tolerance,
-                                                          ErrorType errorType, boolean reCalcIterations) {
-        
-        int n0 = matches.length;
+                                                          ErrorType errorType, boolean reCalcIterations,
+                                             boolean calibrated) {
 
+        FitAndCorres fitC = new FitAndCorres();
+        fitC.mI = matches;
+
+        int n0 = matches.length;
         int i, idx1, idx2;
 
         RANSACSolver solver = new RANSACSolver();
@@ -543,9 +543,57 @@ public class ORBMatcher {
 
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             new DenseMatrix(left), new DenseMatrix(right), errorType, useToleranceAsStatFactor, tolerance,
-            reCalcIterations, false);                
-        
-        return fit;        
+            reCalcIterations, calibrated);
+
+        if (fit != null) {
+            System.out.println("fit=" + fit.toString());
+            int idx;
+            List<Integer> inliers = fit.getInlierIndexes();
+            int[][] matched2 = new int[inliers.size()][2];
+            for (i = 0; i < inliers.size(); ++i) {
+                idx = inliers.get(i);
+                matched2[i] = Arrays.copyOf(matches[idx], 2);
+            }
+            fitC.mIF = matched2;
+            fitC.fm = MatrixUtil.convertToRowMajor(fit.getFundamentalMatrix());
+            fitC.tolerance = fit.getTolerance();
+            fitC.errors = fit.getErrors();
+        }
+
+        return fitC;
+    }
+
+
+    public static class FitAndCorres {
+
+        /**
+         * the matched indexes from the keypoint lists, filtered by RANSAC.
+         * the array has dimension [n X 2] where each row is (index1, index2).
+         */
+        public int[][] mIF;
+
+        /**
+         * the matched indexes from the keypoint lists, before filtering by RANSAC.
+         * the array has dimension [n X 2] where each row is (index1, index2).
+         */
+        public int[][] mI;
+
+        /**
+         * the errors for the matched correspondence list.
+         */
+        public List<Double> errors;
+
+        /**
+         * the tolerance used in filtering out the outliers
+         */
+        public double tolerance;
+
+        /**
+         * the fundamental matrix associated with the best fit by RANSAC.  Note that if normalized points were
+         * given in the keypoint list, this matrix will need to be denormalized if used with points that were
+         * not normalized.
+         */
+        public double[][] fm;
     }
 
 }

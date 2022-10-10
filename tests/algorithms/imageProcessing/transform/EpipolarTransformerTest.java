@@ -472,23 +472,23 @@ public class EpipolarTransformerTest extends TestCase {
         double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
         double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(xKP2n);
 
-        int[][] matchedIdxs = null;
+        ORBMatcher.FitAndCorres fitC = null;
         if (true /*normalize points*/) {
-            matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
+            fitC = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
         } else {
-            matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
+            fitC = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
         }
-        if (matchedIdxs == null) {
+        if (fitC.mIF == null) {
             return;
         }
-        System.out.println(fileName1 + " matched=" + matchedIdxs.length);
+        System.out.println(fileName1 + " matched=" + fitC.mIF.length);
         CorrespondencePlotter plotter =
                 new CorrespondencePlotter(tmp1, tmp2);
         Color clr = null;
         int idx1, idx2;
-        for (i = 0; i < matchedIdxs.length; ++i) {
-            idx1 = matchedIdxs[i][0];
-            idx2 = matchedIdxs[i][1];
+        for (i = 0; i < fitC.mIF.length; ++i) {
+            idx1 = fitC.mIF[i][0];
+            idx2 = fitC.mIF[i][1];
             r1 = (int)xKP1[1][idx1];
             c1 = (int)xKP1[0][idx1];
             r2 = (int)xKP2[1][idx2];
@@ -670,11 +670,11 @@ public class EpipolarTransformerTest extends TestCase {
         double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
         double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(xKP2n);
 
-        int[][] matchedIdxs = null;
+        ORBMatcher.FitAndCorres fitC = null;
         if (true /*normalized points*/) {
-            matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
+            fitC = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
         } else {
-            matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
+            fitC = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
         }
         /*
         test expecting in (row, col) format
@@ -693,9 +693,9 @@ public class EpipolarTransformerTest extends TestCase {
     //    assertEquals(expectedM.size(), matchedIdxs.length);
         int idx1, idx2;
         QuadInt m;
-        for (i = 0; i < matchedIdxs.length; ++i) {
-            idx1 = matchedIdxs[i][0];
-            idx2 = matchedIdxs[i][1];
+        for (i = 0; i < fitC.mI.length; ++i) {
+            idx1 = fitC.mI[i][0];
+            idx2 = fitC.mI[i][1];
             m = new QuadInt((int)xKP1[1][idx1], (int)xKP1[0][idx1], (int)xKP2[1][idx2],(int)xKP2[0][idx2]);
             System.out.printf("matched=%s\n", m.toString());
             expectedM.remove(m);

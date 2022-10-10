@@ -68,15 +68,16 @@ public class ORBMatcherTest extends TestCase {
             "nc_book_01.png",
             "nc_book_02.png"};
 
+        // panoramic
         filePairs[6] = new String[]{
-                "merton_college_I_001.jpg",
-                "merton_college_I_002.jpg"};
+                "brown_lowe_2003_image1.jpg",
+                "brown_lowe_2003_image2.jpg"};
         
         boolean binImages = false;//true;
 
         boolean useToleranceAsStatFactor = true;
         boolean recalcIterations = false;// possibly faster if set to true
-        double tolerance = 3.8;
+        double tolerance;
         ErrorType errorType = ErrorType.SAMPSONS;
 
         int i, ii, np;
@@ -88,7 +89,7 @@ public class ORBMatcherTest extends TestCase {
                 lbl = "rot90_";
                 tolerance = 4;
             } else {
-                tolerance = 2;
+                tolerance = 3;
             }
  
             for (ii = 0; ii < filePairs.length; ++ii) {
@@ -188,64 +189,47 @@ public class ORBMatcherTest extends TestCase {
                 double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(xKP1n);
                 double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(xKP2n);
 
-                int[][] matchedIdxs = null;
+                ORBMatcher.FitAndCorres fitAndCorres = null;
                 if (true /*normalize points*/) {
                     // col, row
-                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n, useToleranceAsStatFactor,
-                            tolerance, errorType, recalcIterations);
-                    if (matchedIdxs != null) {
-                        System.out.printf("%d) # matched after normalization = %d\n", ii, matchedIdxs.length);
-                    }
-                } else {
-                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2, useToleranceAsStatFactor, tolerance, errorType,
-                            recalcIterations);
-                }
+                    fitAndCorres = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n, useToleranceAsStatFactor,
+                            tolerance, errorType, recalcIterations, false);
 
-                if (matchedIdxs == null) {
-                    continue;
+                } else {
+                    fitAndCorres = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2, useToleranceAsStatFactor, tolerance, errorType,
+                            recalcIterations, false);
                 }
 
                 //MiscDebug.writeImage(tmp2, "_kp_gs_" + lbl + fileName2Root);
                 int idx1, idx2;
-                System.out.println(lbl + fileName1Root + " matched=" + matchedIdxs.length);
                 CorrespondencePlotter plotter = new CorrespondencePlotter(tmp1, tmp2);
-                for (i = 0; i < matchedIdxs.length; ++i) {
-                    idx1 = matchedIdxs[i][0];
-                    idx2 = matchedIdxs[i][1];
-                    x1 = (int)xKP1[0][idx1];
-                    y1 = (int)xKP1[1][idx1];
-                    x2 = (int)xKP2[0][idx2];
-                    y2 = (int)xKP2[1][idx2];
-                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
-                }
-                plotter.writeImage("_corres_orb_gs_" + lbl + fileName1Root);
-
-                /*NOTE:
-                   Further considering algorithm in paper on outlier correction:
-                       https://www.researchgate.net/publication/221110532_Outlier_Correction_in_Image_Sequences_for_the_Affine_Camera
-                   "Outlier Correction in Image Sequences for the Affine Camera"
-                      by Huynh, Hartley, and Heydeon 2003
-                      Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
-                */
-
-                System.out.printf("ii=%d, file=%s  rotate=%d\n", ii, fileName1Root, rotate);
-                EpipolarTransformationFit fit = null;
-                if (matchedIdxs.length >= 7) {
-                    fit = ORBMatcher.fitWithRANSAC(matchedIdxs, xKP1n, xKP2n,
-                            useToleranceAsStatFactor, tolerance, errorType, recalcIterations);
-                }
-                if (fit != null) {
-                    List<Double> errors = fit.getErrors();
-                    double thresh = fit.getTolerance() * fit.getStDevFromMean();
-                    for (i = 0; i < errors.size(); ++i) {
-                        // if normalize the points and use the normalized
-                        //  matrix, can expect these to be <0.001
-                        System.out.printf("error=%.3e, thresh=%.3e\n", errors.get(i).doubleValue(), thresh);
-                        //assertTrue(Math.abs(errors.get(i).doubleValue()) < thresh);
+                if (fitAndCorres.mIF != null) {
+                    System.out.printf("%d) %s, #matched=%d, #filtered=%d\n", ii,
+                            lbl + fileName1Root, fitAndCorres.mI.length,
+                            fitAndCorres.mIF.length);
+                    for (i = 0; i < fitAndCorres.mIF.length; ++i) {
+                        idx1 = fitAndCorres.mIF[i][0];
+                        idx2 = fitAndCorres.mIF[i][1];
+                        x1 = (int)xKP1[0][idx1];
+                        y1 = (int)xKP1[1][idx1];
+                        x2 = (int)xKP2[0][idx2];
+                        y2 = (int)xKP2[1][idx2];
+                        plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                     }
                 } else {
-                    System.out.printf("ii=%d, no solution %s\n", ii, fileName1Root);
+                    System.out.printf("%d) %s, #matched=%d, but RANSAC fits failed\n", ii,
+                            lbl + fileName1Root, fitAndCorres.mI.length);
+                    for (i = 0; i < fitAndCorres.mI.length; ++i) {
+                        idx1 = fitAndCorres.mI[i][0];
+                        idx2 = fitAndCorres.mI[i][1];
+                        x1 = (int)xKP1[0][idx1];
+                        y1 = (int)xKP1[1][idx1];
+                        x2 = (int)xKP2[0][idx2];
+                        y2 = (int)xKP2[1][idx2];
+                        plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
+                    }
                 }
+                plotter.writeImage("_corres_orb_gs_" + lbl + fileName1Root);
             }
         }
     }
