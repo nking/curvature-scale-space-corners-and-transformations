@@ -89,10 +89,11 @@ public class ORBMatcherTest extends TestCase {
                 lbl = "rot90_";
                 tolerance = 4;
             } else {
-                tolerance = 3;
+                tolerance = 2;
             }
  
             for (ii = 0; ii < filePairs.length; ++ii) {
+            //for (ii = 6; ii < 7; ++ii) {
 
                 String fileName1 = filePairs[ii][0];
                 String fileName2 = filePairs[ii][1];

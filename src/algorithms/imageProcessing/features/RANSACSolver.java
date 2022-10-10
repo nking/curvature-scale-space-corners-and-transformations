@@ -11,6 +11,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
+import algorithms.util.FormatArray;
 import algorithms.util.PairIntArray;
 
 import java.io.IOException;

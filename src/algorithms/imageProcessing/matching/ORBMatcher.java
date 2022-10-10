@@ -521,8 +521,6 @@ public class ORBMatcher {
         int n0 = matches.length;
         int i, idx1, idx2;
 
-        RANSACSolver solver = new RANSACSolver();
-
         // left and right are the subset of keypoints1 and keypoints 2 designated by matches
         double[][] left = new double[3][n0];
         double[][] right = new double[3][n0];
@@ -540,6 +538,8 @@ public class ORBMatcher {
             right[0][i] = x2[0][idx2];
             right[1][i] = x2[1][idx2];
         }
+
+        RANSACSolver solver = new RANSACSolver();
 
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             new DenseMatrix(left), new DenseMatrix(right), errorType, useToleranceAsStatFactor, tolerance,

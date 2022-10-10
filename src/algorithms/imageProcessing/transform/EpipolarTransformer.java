@@ -53,6 +53,25 @@ import algorithms.util.FormatArray;
     u_1 is the (x,y) points from image 1 and u_2 are the matched (x,y) points
         from image 2.
 
+     Epipolar Plane:
+        An epipolar plane is defined by the principal points o1, and o2 of the cameras and the point p.
+     Epipoles:
+         The projection of one camera center onto the other camera's image plane is an epipole.
+         (the epipole can lie outside the image boundaries)
+         in the Essential Matrix: e2 ~ T and e1 ~ R*T up to a scalar factor.
+         in general: e1 is the left null space of E and e2 is the right null space of E.
+         e2^T*E = 0
+         E*e1 = 0
+         and e1 = SVD(E).u <-- last column, then divided by last item
+         e2 = SVD(E).v <-- last row, then divided by last item
+     Epipolar line of p:
+         intersection of the epipolar place of p with an image place is the epipolar line of p.
+         l2 ~ E*x1
+         l1 ~ E^T*x2
+
+         l*e=0 for (l1,e1) and also (l2,e2)
+         l^T*x=0 for (l1,x1) and also (l2,x2)
+
     the fundamental matrix is defined:
         u_2^T * F * u_1 = 0  
         where u are the x,y points in images _1 and _2
@@ -976,13 +995,11 @@ public class EpipolarTransformer {
                 
         function OK = signs_OK(F,x1,x2)
         [u,s,v] = svd(F'); where F' is the conjugate transpose of F
-        e1 = v(:,3); (NLK this is == the svd(F).u
+        e1 = v(:,3); <== this is e2 of svd(F)
         l1 = vgg_contreps(e1) * x1;
         s = sum( (F*x2) .* l1 );
         OK = all(s>0) | all(s<0);
 
-        (F*x2) .* l1 ==>  (solution * rightXY) .* (testE1 * leftXY)
-               
         'sum' is a matlab function to sum for each column
 
         'all' is a function that returns '1' is all items are non-zero, else
@@ -995,43 +1012,41 @@ public class EpipolarTransformer {
          // F * x1 = rightEpipolarLines, that is lines in right image 
                        due to epipolar projection of left points
          // e1 = last column of U / last item of that column
-         //    = the left image position of the epipolar projection of the right camera center
          // e2 = last row of V / last item of that row
-         //    = the right image position of the epipolar projection of the left camera center
         */
-                
+
+        // 3X3 * 3X7 = 3 X 7
+        DenseMatrix fX2 = MatrixUtil.multiply(solution, rightXY);
+
         // row 0 = e1 = right camera center projected into left image reference frame
         // row 1 = e2 = left camera center projected into right image reference frame
         double[][] leftRightEpipoles = calculateEpipoles(solution);
-        
+
         // 3 columns (x,y,1):
-        double[] testE1 = leftRightEpipoles[0];  // NOTE: this is normalized
         //vgg_contreps of a 3X1 vector e1 is
         //    Y = [0      e1(3)  -e1(2)
         //        -e1(3)  0      e1(1)
         //         e1(2) -e1(1)  0];
         //  [x y ] [x0 x1 x2 x3 x4 x5 x6]
         //         [y0 y1 y2 y3 y4 y5 y6]
-        double[][] contrepsE1 = new double[3][3];
-        contrepsE1[0] = new double[]{0, testE1[2], -testE1[1]};
-        contrepsE1[1] = new double[]{-testE1[2], 0, testE1[0]};
-        contrepsE1[2] = new double[]{testE1[1], -testE1[0], 0};
-        
-        //l1 = e1contreps*x1;
-        
-        // 3 X 7
-        double[][] l1 = MatrixUtil.multiply(contrepsE1, MatrixUtil.convertToRowMajor(leftXY));
+        double[][] contrepsE2 = MatrixUtil.skewSymmetric(leftRightEpipoles[1]);
+        MatrixUtil.multiply(contrepsE2, -1);
 
-        // s = sum( (F*x2) .* l1 );
-        
-        // 3X3 * 3X7 
-        //  3 X 7
-        DenseMatrix fX2 = MatrixUtil.multiply(solution, rightXY);
-        
+        // sum of ( (F * x2) .*  [e2]_x*x1 )
+        // =      ( l2 .*  [e2]_x*x1 )
+
+        // from MASKS, have
+        //    l2 ~ F*x1
+        //    l1 ~ F^T*x2
+        //     l^T*x=0 for (l1,x1) and also (l2,x2)
+        // and l*e=0 for (l1,e1) and also (l2,e2)
+
+        // 3 X 7
+        double[][] l1 = MatrixUtil.multiply(contrepsE2, MatrixUtil.convertToRowMajor(leftXY));
+
         // 3 x 7
-        double[][] fX2l1 = MatrixUtil.pointwiseMultiplication(
-            MatrixUtil.convertToRowMajor(fX2), l1);
-        
+        double[][] fX2l1 = MatrixUtil.pointwiseMultiplication(MatrixUtil.convertToRowMajor(fX2), l1);
+
         // matlab sum function:
         //    If A is a matrix, then sum(A) returns a row vector containing 
         //    the sum of each column.
@@ -1826,82 +1841,60 @@ public class EpipolarTransformer {
     /**
      * calculate the epipoles of the fundamental matrix and return them as
      * an array with left epipole in column 0 and right epipole in column 1.
-     The left epipole is e1 = the left image position of the epipolar projection 
-     of the right camera center.  It is the last column of V / last item of that 
-     column.
-     The right epipole e2 = the right image position of the epipolar projection 
-     of the left camera center.  It is the last row of U / last item of that row.
+     *Epipolar Plane:
+     *       An epipolar plane is defined by the principal points o1, and o2 of the cameras and the point p.
+     *    Epipoles:
+     *       In the epipolar plane, the point where the camera principal point intersects it image is the
+     *       epipole.  The location of the epipole in the other image can be thought of as the projection
+     *       of the other camera center onto its image.
+     *       (the epipole can lie outside the image boundaries)
+     *       e1 is the left null space of E and e2 is the right null space of E.
+     *         e2^T*E = 0
+     *         E*e1 = 0
+     *         and e1 = SVD(E).u <-- last column, then divided by last item
+     *             e2 = SVD(E).v <-- last row, then divided by last item
+     *         for the essential matrix: e2 ~ T and e1 ~ R*T up to a scalar factor.
+
      * @param fundamentalMatrix
      * @return a matrix holding whose first row holds e1 and 2nd row holds e2
-     * where e1 = the left image position of the epipolar projection 
-     of the right camera center (= last column of V) 
-     and e2 = the right image position of the epipolar projection 
-     of the left camera center (= last column of U).  both are normalized by their
-     * last elements.
      */
     @SuppressWarnings({"unchecked"})
     double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {
 
         /*
-        The representation of lines in homogeneous projective coordinates
-        is:   line a*x + b*y + c = 0
-            | a |
-            | b |
-            | c |
-        
-        slope = -a/b
-        x intercept = -c/a
-        y intercept = -c/b
-        
-        The line can be rewritten in slope, intercept form:
-            y = intercept + slope * x
-              = -(c/b) - (a/b)*x
-
-        written as homogenization form of lines:
-            | -a/b |
-            | -c/b |
-
-
-        From u_2^T * F * u_1 = 0
-        
         NOTE:
             SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
             SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U
         
         epipoles:
              [U,D,V] = svd(denormalized FundamentalMatrix);
-             e1 = last column of V divided by it's last item <---
+             e1 = last column of V divided by it's last item
              e2 = last column of U divided by it's last item
 
         e2 when normalized by 3rd coord is in coord space of left image and
                it is the location of the right camera center.
         */
              
-        SVDProducts svdE = null;
+        SVD svdE = null;
         try {
-            svdE = MatrixUtil.performSVD(fundamentalMatrix);
-        } catch (NotConvergedException e) {            
+            svdE = SVD.factorize(fundamentalMatrix);
+        } catch (NotConvergedException e) {
             Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
-        
-        assert(svdE.u[0].length == 3);
-        assert(svdE.u.length == 3);
-        assert(svdE.vT[0].length == 3);
-        assert(svdE.vT.length == 3);
-        
-        // e2 = last column of U / last item of that column
-        // e1 = last row of V / last item of that row
-        double[] e2 = new double[svdE.u.length];
-        double e2Div = svdE.u[2][2];
-        for (int i = 0; i < e2.length; i++) {
-            e2[i] = svdE.u[i][2]/e2Div;
+
+        // e1 = last column of U / last item of that column
+        // e2 = last row of V / last item of that row
+        double[] e1 = new double[3];
+        double e1Div = svdE.getU().get(2, 2);
+        for (int i = 0; i < e1.length; i++) {
+            e1[i] = svdE.getU().get(i, 2)/e1Div;
         }
         
-        double[] e1 = new double[svdE.vT[0].length];
-        double e1Div = svdE.vT[2][2];
-        for (int i = 0; i < e1.length; i++) {
-            e1[i] = svdE.vT[2][i]/e1Div;
+        double[] e2 = new double[3];
+        double e2Div = svdE.getVt().get(2, 2);
+        for (int i = 0; i < e2.length; i++) {
+            e2[i] = svdE.getVt().get(2, i)/e2Div;
         }
 
         double[][] e = new double[2][];

@@ -414,7 +414,9 @@ public class Rectification {
         double[][] e1e2 = tr.calculateEpipoles(fm);
         double[] e2 = e1e2[1];
         double[] e1 = e1e2[0];
-        
+
+        //TODO: finish this method
+
         /*
         
         having neither intrinsic nor extrinsic camera parameters:
